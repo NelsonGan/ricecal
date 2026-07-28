@@ -1,0 +1,14 @@
+{
+  "name": "@ricecal/shared",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"no tests in @ricecal/shared\" && exit 0"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  }
+}

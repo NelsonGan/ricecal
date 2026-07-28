@@ -1,0 +1,15 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    // Explicit rather than relying on typeRoots auto-discovery, which does not
+    // pick up @types/jest through pnpm's symlinked store. @types/react still
+    // resolves normally via the import graph.
+    "types": ["jest"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts", "nativewind-env.d.ts"],
+  "exclude": ["node_modules", "ios", "android", "dist"]
+}

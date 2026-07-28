@@ -1,0 +1,123 @@
+-- ---------------------------------------------------------------------------
+-- Table template — copy this shape for every new table.
+--
+-- This file is `.sql.example`, not `.sql`, so the declarative schema loader
+-- ignores it and it can never affect `supabase db diff`.
+--
+-- WHY THIS IS FOUR PARTS AND NOT ONE
+--
+-- This project was created with "Automatically expose new tables" UNCHECKED,
+-- which is the Supabase default for projects created after 2026-05-30. A table
+-- is therefore invisible to the Data API until it is explicitly granted.
+--
+-- Grants and RLS are independent layers, and you need both:
+--
+--   grants  -> can this role touch the table AT ALL
+--   RLS     -> WHICH ROWS of it can that role see
+--
+-- Miss the grants and PostgREST returns a confusing 404 ("relation does not
+-- exist") rather than a permission error. Miss RLS and, once granted, every
+-- row is readable by anyone holding the anon key. Neither failure is loud.
+--
+-- ON "AUTOMATICALLY ENABLE RLS"
+--
+-- This project has it on, and it is implemented as a Postgres EVENT TRIGGER
+-- (`ensure_rls` on ddl_command_end, tagged CREATE TABLE / CREATE TABLE AS /
+-- SELECT INTO) calling public.rls_auto_enable(). Event triggers fire on DDL
+-- from ANY client, so this covers migrations, `db push`, the SQL Editor, and
+-- the MCP connection — not just the Dashboard Table Editor.
+--
+-- Keep the explicit `enable row level security` line below anyway. It is
+-- self-documenting, it survives the trigger being dropped, and it means the
+-- schema file states the security posture rather than depending on a project
+-- setting that is invisible from the repo.
+--
+-- What the trigger does NOT do: create policies, or issue grants. RLS enabled
+-- with no policy denies everything, which is the safe direction — a new table
+-- is inert rather than exposed. Both remaining parts are still your job.
+--
+-- Note: `public.rls_auto_enable()` shows up in Supabase's security advisors as
+-- "Public Can Execute SECURITY DEFINER Function". It is a false positive — the
+-- function returns `event_trigger`, so Postgres refuses any direct call
+-- ("trigger functions can only be called as triggers") and PostgREST cannot
+-- expose it as RPC. It is also hardened with SET search_path TO 'pg_catalog'.
+-- Do not "fix" it by revoking grants; you will just fight the platform.
+--
+-- WORKFLOW
+--
+--   1. Add or edit a real .sql file in this directory.
+--   2. pnpm supabase db diff -f <name>     # generates the migration
+--   3. Open a PR. Merging to main runs supabase-deploy.yml.
+--
+-- Never write a migration by hand against the live database.
+-- ---------------------------------------------------------------------------
+
+
+-- 1. THE TABLE -------------------------------------------------------------
+--
+-- log_date is `date`, not `timestamptz`: "what day did the user eat this on"
+-- is a question about the user's local calendar, not an instant in time. A
+-- meal logged at 00:30 in Kuala Lumpur belongs to that day, and storing an
+-- instant would silently reassign it when read in another timezone.
+
+create table public.food_log (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users (id) on delete cascade,
+  log_date    date not null,
+  kcal        integer not null check (kcal >= 0),
+  created_at  timestamptz not null default now()
+);
+
+-- Index the column pairs you actually filter on. Almost every read in this app
+-- is "this user, this day".
+create index food_log_user_date_idx on public.food_log (user_id, log_date);
+
+
+-- 2. ROW LEVEL SECURITY ----------------------------------------------------
+--
+-- Enable it BEFORE the grants below. A table that is granted but not
+-- RLS-protected is readable by every authenticated user, and briefly having it
+-- that way in a migration is still having it that way in production.
+
+alter table public.food_log enable row level security;
+
+
+-- 3. GRANTS ----------------------------------------------------------------
+--
+-- Only grant `anon` what genuinely must work signed-out. For user-owned data
+-- that is usually nothing at all — delete the anon line rather than granting
+-- select and relying on RLS to claw it back.
+
+-- grant select on public.food_log to anon;
+grant select, insert, update, delete on public.food_log to authenticated;
+grant select, insert, update, delete on public.food_log to service_role;
+
+
+-- 4. POLICIES --------------------------------------------------------------
+--
+-- Separate policies per command are more verbose than `for all`, but they let
+-- you say "a user may insert only rows they own" (with check) distinctly from
+-- "a user may read only rows they own" (using). Combining them into `for all`
+-- makes it easy to omit the with-check half and allow a user to insert rows
+-- attributed to someone else.
+
+create policy "food_log: read own"
+  on public.food_log for select
+  to authenticated
+  using (auth.uid() = user_id);
+
+create policy "food_log: insert own"
+  on public.food_log for insert
+  to authenticated
+  with check (auth.uid() = user_id);
+
+create policy "food_log: update own"
+  on public.food_log for update
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "food_log: delete own"
+  on public.food_log for delete
+  to authenticated
+  using (auth.uid() = user_id);

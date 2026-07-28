@@ -1,0 +1,24 @@
+node_modules
+.env
+.env.local
+.expo
+dist
+.turbo
+
+# Continuous Native Generation: ios/ and android/ are build output from
+# `expo prebuild`, never edited by hand. Anchored to the app dir so a source
+# directory that happens to be named `ios` or `android` is not swallowed.
+/apps/*/ios
+/apps/*/android
+
+# Build artifacts
+*.tsbuildinfo
+coverage
+*.log
+
+# Supabase local dev
+supabase/.branches
+supabase/.temp
+
+# macOS
+.DS_Store

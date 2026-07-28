@@ -1,0 +1,50 @@
+# The free stand-in for preview branches.
+#
+# Real Supabase preview branches need the Pro plan ($0.01344/branch/hour). This
+# job catches most of what they would catch — migrations that do not apply from
+# scratch, and declared schema that was never turned into a migration — using
+# throwaway Postgres on the runner. It costs nothing and needs no secrets,
+# because it never touches the remote project.
+#
+# When you do upgrade to Pro and enable branching, this stays useful: it fails
+# in ~1 minute without provisioning anything, where a branch takes longer and
+# bills by the hour.
+name: Supabase Migrations
+
+on:
+  pull_request:
+    paths: ['supabase/**']
+
+jobs:
+  migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Postgres
+        run: supabase db start
+
+      # Applies every migration in order against an empty database. Catches the
+      # failure mode that only ever shows up on a fresh environment: a migration
+      # that works against your dev database because of state a previous
+      # hand-edit left behind.
+      - name: Migrations apply cleanly from scratch
+        run: supabase db reset --local
+
+      # Enforces the declarative workflow. `db diff` compares supabase/schemas/
+      # against the migrations; if it produces output, someone edited a schema
+      # file and did not run `supabase db diff -f <name>` to capture it. Without
+      # this check that divergence is invisible until deploy.
+      - name: Declared schema is fully captured in migrations
+        run: |
+          supabase db diff -f ci_uncaptured
+          if compgen -G "supabase/migrations/*ci_uncaptured*" > /dev/null; then
+            echo "::error::supabase/schemas/ contains changes with no matching migration."
+            echo "Run: pnpm supabase db diff -f <descriptive_name> and commit the result."
+            cat supabase/migrations/*ci_uncaptured*
+            exit 1
+          fi
+          echo "schemas/ and migrations/ are in sync"

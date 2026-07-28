@@ -1,0 +1,11 @@
+# Phase 0 smoke test: the app launches and renders its first screen.
+# Deliberately shallow — it exists to prove the Maestro harness runs, not to
+# cover behaviour that does not exist yet.
+appId: com.nelsongan.ricecal
+---
+- launchApp:
+    clearState: true
+- assertVisible: 'RiceCal'
+- assertVisible: 'Open diagnostics'
+- tapOn: 'Open diagnostics'
+- assertVisible: 'Diagnostics'

@@ -1,0 +1,41 @@
+# Structural enforcement of the code-only policy.
+#
+# There is no hosted toggle to make the Supabase dashboard read-only on our
+# plan, so instead we detect: any edit made in the Table Editor or SQL Editor
+# shows up as a diff against the committed migrations and turns this job red.
+#
+# This matters MORE than the original plan assumed, because the Supabase MCP
+# server is connected with write access. Anything applied through that
+# connection is, from the database's point of view, indistinguishable from a
+# dashboard edit — it bypasses migrations entirely. This job is the only thing
+# that notices.
+#
+# Deploys themselves are handled by the Supabase GitHub integration, not by a
+# workflow. This job is detection only; it never writes to the project.
+name: Supabase Drift Check
+
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+      - name: Diff remote schema against migrations
+        run: |
+          supabase db diff --linked -f drift
+          if [ -n "$(ls supabase/migrations/*drift* 2>/dev/null)" ]; then
+            echo "::error::Remote schema has drifted from migrations"
+            cat supabase/migrations/*drift*
+            exit 1
+          fi

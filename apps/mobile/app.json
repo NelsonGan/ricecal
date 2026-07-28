@@ -1,0 +1,75 @@
+{
+  "expo": {
+    "name": "RiceCal",
+    "slug": "ricecal",
+    "scheme": "ricecal",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "ios": {
+      "bundleIdentifier": "com.nelsongan.ricecal",
+      "supportsTablet": true,
+      "usesAppleSignIn": true,
+      "entitlements": {
+        "com.apple.developer.healthkit": true
+      },
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "RiceCal reads your step and energy data to estimate your daily calorie budget.",
+        "NSHealthUpdateUsageDescription": "RiceCal writes the meals you log to Apple Health so your nutrition data stays in one place."
+      }
+    },
+    "android": {
+      "package": "com.nelsongan.ricecal",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
+        "android.permission.health.READ_TOTAL_CALORIES_BURNED",
+        "android.permission.health.WRITE_NUTRITION"
+      ],
+      "blockedPermissions": ["com.google.android.gms.permission.AD_ID"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-secure-store",
+      "expo-localization",
+      "expo-image",
+      "expo-apple-authentication",
+      "@react-native-google-signin/google-signin",
+      "expo-notifications",
+      "@sentry/react-native/expo",
+      "@kingstinct/react-native-healthkit",
+      "react-native-health-connect",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "RiceCal uses the camera so you can photograph a meal to log it."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "RiceCal accesses your photos so you can log a meal from a picture you already took."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": { "minSdkVersion": 26 },
+          "ios": { "deploymentTarget": "16.4" }
+        }
+      ]
+    ]
+  }
+}

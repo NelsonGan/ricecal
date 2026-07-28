@@ -1,0 +1,30 @@
+{
+  "name": "ricecal",
+  "private": true,
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "check": "turbo typecheck test && biome check ."
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@sentry/cli",
+      "@shopify/react-native-skia",
+      "unrs-resolver"
+    ]
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.6",
+    "eas-cli": "^21.4.0",
+    "supabase": "^2.110.0",
+    "turbo": "^2.10.7",
+    "typescript": "^6.0.3"
+  }
+}

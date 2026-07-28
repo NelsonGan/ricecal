@@ -1,0 +1,15 @@
+# supabase/schemas — declarative schema, the source of truth for the database.
+#
+# Phase 0 ships this directory with zero tables in it. The pipeline is the
+# deliverable, not the schema.
+#
+# The only supported way to change the database:
+#
+#   1. Edit or add a .sql file in this directory.
+#   2. `pnpm supabase db diff -f <name>` to generate a migration from the diff.
+#   3. Open a PR. Merging to main runs supabase-deploy.yml, which pushes it.
+#
+# Never write a migration by hand against the live database, and never use the
+# Table Editor or SQL Editor on the remote project. A dashboard edit turns
+# supabase-drift.yml red within a day, and breaks `db push` with a sync error
+# even sooner.
