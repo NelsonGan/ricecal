@@ -12,7 +12,13 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
-    "check": "turbo typecheck test && biome check ."
+    "check": "turbo typecheck test && biome check .",
+    "eas": "pnpm --filter @ricecal/mobile exec eas",
+    "eas:credentials": "pnpm --filter @ricecal/mobile exec eas credentials",
+    "expo": "pnpm --filter @ricecal/mobile exec expo",
+    "start": "pnpm --filter @ricecal/mobile exec expo start --dev-client",
+    "build:android": "pnpm --filter @ricecal/mobile exec eas build --profile development --platform android",
+    "build:ios": "pnpm --filter @ricecal/mobile exec eas build --profile development --platform ios"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

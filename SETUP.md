@@ -26,6 +26,28 @@ pnpm install
 pnpm check   # turbo typecheck + test, then a root Biome pass
 ```
 
+### Always run EAS and Expo through the root scripts
+
+`eas.json` and `app.json` live in `apps/mobile/`, and EAS looks in the current
+directory rather than walking up. Running `eas` from the repo root does not
+error usefully — it decides you are starting a *new* project, writes a stub
+`app.json` at the root, and then fails. The stub then shadows the real config
+for anything that searches upward.
+
+Use these instead; they run inside the app package no matter where you are:
+
+```bash
+pnpm eas <any eas command>   # generic passthrough
+pnpm eas:credentials
+pnpm expo <any expo command>
+pnpm start                   # expo start --dev-client
+pnpm build:android           # development profile
+pnpm build:ios               # development profile
+```
+
+For a non-development build, use the passthrough:
+`pnpm eas build --profile production --platform ios`.
+
 ### Container runtime — required before the first schema change
 
 `supabase db diff` provisions a shadow database in Docker, and `supabase start`
