@@ -1,0 +1,42 @@
+#!/bin/sh
+#
+# Refuses a direct push to main. Work goes through a pull request.
+#
+# This is a GUARDRAIL, NOT A CONTROL. It runs on this machine only, and
+# `git push --no-verify` skips it entirely. Real enforcement is a server-side
+# ruleset, which GitHub gates behind Pro for private repositories.
+#
+# Installed by the `prepare` script in the root package.json, which points
+# core.hooksPath at this directory. If it ever stops firing, check:
+#     git config core.hooksPath      # should print .githooks
+#
+# Merging a PR on GitHub does not push, so this never blocks a merge.
+
+PROTECTED_BRANCH="main"
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  case "$remote_ref" in
+    "refs/heads/$PROTECTED_BRANCH")
+      cat >&2 <<EOF
+
+  ✗ Direct push to '$PROTECTED_BRANCH' refused.
+
+    Open a pull request instead:
+
+      git switch -c <branch-name>
+      git push -u origin <branch-name>
+      gh pr create --fill
+
+    CI (ci.yml) and, for supabase/** changes, supabase-migrations.yml run on
+    the PR. Pushing straight to main skips both -- that is exactly how a lint
+    failure reached main earlier.
+
+    To override deliberately: git push --no-verify
+
+EOF
+      exit 1
+      ;;
+  esac
+done
+
+exit 0

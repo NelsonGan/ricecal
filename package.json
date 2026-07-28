@@ -6,6 +6,7 @@
     "node": ">=24"
   },
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks || true",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "lint": "biome check .",
