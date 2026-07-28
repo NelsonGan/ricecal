@@ -1,7 +1,7 @@
 import { APP_NAME, SCHEMA_VERSION } from '@ricecal/shared'
 import { Link } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 
 export default function Home() {
   return (
@@ -13,8 +13,15 @@ export default function Home() {
         schema v{SCHEMA_VERSION} — resolved from @ricecal/shared
       </Text>
 
-      <Link href="/diagnostics" className="mt-4 rounded-lg bg-slate-900 px-5 py-3">
-        <Text className="font-semibold text-white">Open diagnostics</Text>
+      {/* `asChild` matters: expo-router's Link renders a Text, not a View, so
+          background/radius/padding classes on it are silently dropped and the
+          white label lands on the white page — present in the accessibility
+          tree, invisible to a user. Delegating to a Pressable gives a real
+          View to style. */}
+      <Link href="/diagnostics" asChild>
+        <Pressable className="mt-4 rounded-lg bg-slate-900 px-5 py-3">
+          <Text className="font-semibold text-white">Open diagnostics</Text>
+        </Pressable>
       </Link>
 
       <StatusBar style="auto" />
