@@ -290,6 +290,16 @@ Also worth knowing:
 - **Changing `tailwind.config.js` requires `expo start --clear`.** NativeWind
   caches the compiled stylesheet, and a stale cache produces an app with no
   styling at all rather than an error.
+- **Local simulator builds have no entitlements, so SecureStore cannot reach the
+  keychain.** `security find-identity -v -p codesigning` reports 0 valid
+  identities on this machine, and without one Xcode signs ad-hoc and embeds an
+  empty entitlements dictionary — verified, and neither `CODE_SIGNING_ALLOWED=YES`
+  nor passing `DEVELOPMENT_TEAM=A9QF26PBRS` changes it. The visible symptom is
+  `KeyChainException: A required entitlement isn't present` on every Supabase
+  auth read. EAS builds sign properly and are unaffected, and the storage
+  adapter in `src/lib/supabase.ts` now degrades to "signed out" rather than
+  throwing, so this is noise rather than breakage. Installing an Apple
+  development certificate locally is the only way to clear it.
 
 ---
 
