@@ -7,9 +7,16 @@
 #
 #   1. Edit or add a .sql file in this directory.
 #   2. `pnpm supabase db diff -f <name>` to generate a migration from the diff.
-#   3. Open a PR. Merging to main runs supabase-deploy.yml, which pushes it.
+#   3. Open a PR. supabase-migrations.yml verifies that the migration applies
+#      against an empty database AND that this directory produces no further
+#      diff -- i.e. that you actually ran step 2.
+#   4. Merge to main. The Supabase GitHub integration deploys it.
+#
+# Note there is no deploy workflow in .github/workflows; deploys are handled by
+# the GitHub integration configured in the Supabase dashboard.
 #
 # Never write a migration by hand against the live database, and never use the
-# Table Editor or SQL Editor on the remote project. A dashboard edit turns
-# supabase-drift.yml red within a day, and breaks `db push` with a sync error
-# even sooner.
+# Table Editor or SQL Editor on the remote project. The same applies to the
+# Supabase MCP connection, which has write access and bypasses migrations
+# exactly the way a dashboard click does. Any of those turn supabase-drift.yml
+# red within a day, and break `db push` with a sync error even sooner.
