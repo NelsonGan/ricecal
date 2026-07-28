@@ -35,9 +35,13 @@
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
         "android.permission.health.READ_TOTAL_CALORIES_BURNED",
-        "android.permission.health.WRITE_NUTRITION"
+        "android.permission.health.WRITE_NUTRITION",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ],
-      "blockedPermissions": ["com.google.android.gms.permission.AD_ID"]
+      "blockedPermissions": [
+        "com.google.android.gms.permission.AD_ID"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -66,10 +70,21 @@
       [
         "expo-build-properties",
         {
-          "android": { "minSdkVersion": 26 },
-          "ios": { "deploymentTarget": "16.4" }
+          "android": {
+            "minSdkVersion": 26
+          },
+          "ios": {
+            "deploymentTarget": "16.4"
+          }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f32771ad-76f4-47ed-b88b-b342f6b20de2"
+      }
+    },
+    "owner": "nelsong"
   }
 }

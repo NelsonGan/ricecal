@@ -37,3 +37,7 @@ supabase/.temp
 
 # macOS
 .DS_Store
+
+# Editors
+.idea/
+.vscode/
