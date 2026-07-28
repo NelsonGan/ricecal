@@ -19,6 +19,16 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   flush?: boolean
   /** Render children in a plain View instead of a ScrollView. */
   scroll?: boolean
+  /**
+   * Extra points between the keyboard and the content, for the cases where
+   * this view's frame does not start where it appears to.
+   *
+   * 0 is right under a navigator, which lays the screen out below the header
+   * already. Pass `useHeaderHeight()` only if a header overlaps this view —
+   * `insets.top` is never the right answer, and floats the footer a status bar
+   * clear of the keyboard.
+   */
+  keyboardOffset?: number
   className?: string
   contentClassName?: string
 }
@@ -41,12 +51,19 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
  * - `keyboardShouldPersistTaps="handled"` makes the first tap on a button
  *   activate it instead of being eaten dismissing the keyboard. Without it
  *   every form needs two taps to submit.
+ *
+ * The first two look like they should double-count on iOS, and do not: the
+ * KeyboardAvoidingView shrinks the scroll view out from under the keyboard
+ * first, so by the time UIKit measures the overlap for its own inset there is
+ * none left to add. Verified on device — if you change one of them, check the
+ * other still behaves.
  */
 export function Screen({
   children,
   footer,
   flush = false,
   scroll = true,
+  keyboardOffset = 0,
   className,
   contentClassName,
   ...rest
@@ -82,7 +99,7 @@ export function Screen({
     <KeyboardAvoidingView
       className={cn('flex-1 bg-canvas', className)}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={insets.top}
+      keyboardVerticalOffset={keyboardOffset}
     >
       {body}
       {footer ? (
