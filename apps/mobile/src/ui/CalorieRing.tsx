@@ -57,16 +57,18 @@ export function CalorieRing({
   const inset = thickness / 2
   const box = { x: inset, y: inset, width: size - thickness, height: size - thickness }
 
-  const track = Skia.Path.Make()
-  track.addArc(box, 0, 360)
+  // `PathBuilder` rather than `Path.Make()`: the mutable-path API is deprecated
+  // in Skia 2.x and warns on every call. `detach()` over `build()` because the
+  // builder is thrown away immediately either way.
+  const track = Skia.PathBuilder.Make().addArc(box, 0, 360).detach()
 
-  // Rebuilt per frame on the UI thread. Skia paths are cheap to allocate and
-  // this avoids a JS round trip for every degree of sweep.
-  const arc = useDerivedValue(() => {
-    const path = Skia.Path.Make()
-    path.addArc(box, -90, progress.value * 360)
-    return path
-  })
+  // Rebuilt per frame on the UI thread, which is what keeps the fill animation
+  // off the JS thread entirely.
+  const arc = useDerivedValue(() =>
+    Skia.PathBuilder.Make()
+      .addArc(box, -90, progress.value * 360)
+      .detach(),
+  )
 
   const fill = fraction > 1 ? colors.hibiscus : fraction >= 0.9 ? colors.kaya : colors.pandan
   const remaining = Math.max(0, Math.round(goal - value))
