@@ -13,6 +13,13 @@ import { env } from './env'
  * under that today; if a future token grows past it, the write throws rather
  * than silently truncating, which is the failure mode we want.
  */
+/**
+ * Keys whose last read failed, so a keychain that is unavailable for a while
+ * warns once rather than on every `autoRefreshToken` tick. Cleared on the next
+ * successful read, so a later failure is reported again.
+ */
+const readFailures = new Set<string>()
+
 const SecureStoreAdapter = {
   /**
    * Reads never throw.
@@ -28,9 +35,14 @@ const SecureStoreAdapter = {
    */
   getItem: async (key: string) => {
     try {
-      return await SecureStore.getItemAsync(key)
+      const value = await SecureStore.getItemAsync(key)
+      readFailures.delete(key)
+      return value
     } catch (error) {
-      console.warn(`[auth] keychain read failed for "${key}", treating as signed out`, error)
+      if (!readFailures.has(key)) {
+        readFailures.add(key)
+        console.warn(`[auth] keychain read failed for "${key}", treating as signed out`, error)
+      }
       return null
     }
   },
