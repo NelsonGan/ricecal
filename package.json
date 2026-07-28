@@ -17,7 +17,10 @@
     "onlyBuiltDependencies": [
       "@sentry/cli",
       "@shopify/react-native-skia",
-      "unrs-resolver"
+      "dtrace-provider",
+      "esbuild",
+      "unrs-resolver",
+      "workerd"
     ]
   },
   "devDependencies": {
@@ -25,6 +28,7 @@
     "eas-cli": "^21.4.0",
     "supabase": "^2.110.0",
     "turbo": "^2.10.7",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "wrangler": "^4.114.0"
   }
 }
