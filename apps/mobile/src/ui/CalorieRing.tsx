@@ -1,0 +1,99 @@
+import { Canvas, Path, Skia } from '@shopify/react-native-skia'
+import { useEffect } from 'react'
+import { View } from 'react-native'
+import { Easing, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated'
+
+import { motion } from '@/theme/tokens'
+import { useThemeColors } from '@/theme/useTheme'
+import { cn } from './cn'
+import { Text } from './Text'
+
+export type CalorieRingProps = {
+  /** Calories consumed so far. */
+  value: number
+  /** The day's target. */
+  goal: number
+  /** Big number in the middle. Defaults to calories remaining. */
+  centerLabel?: string
+  /** Small caps line under it. */
+  centerCaption?: string
+  size?: number
+  thickness?: number
+  className?: string
+}
+
+/**
+ * The calorie ring.
+ *
+ * Fills clockwise from twelve o'clock, turns kaya at 90% and hibiscus past
+ * 100%. Deliberately never alarm styling — going over is information, not a
+ * failure, and the copy elsewhere says so.
+ *
+ * Drawn with Skia rather than three nested views because the arc has to sweep
+ * a partial angle. The sweep is a Reanimated derived value, so the fill
+ * animation runs on the UI thread without a re-render per frame.
+ */
+export function CalorieRing({
+  value,
+  goal,
+  centerLabel,
+  centerCaption = 'kcal left',
+  size = 196,
+  thickness = 21,
+  className,
+}: CalorieRingProps) {
+  const colors = useThemeColors()
+  const fraction = goal > 0 ? value / goal : 0
+  const swept = Math.min(1, Math.max(0, fraction))
+
+  const progress = useSharedValue(0)
+  useEffect(() => {
+    progress.value = withTiming(swept, {
+      duration: motion.fill,
+      easing: Easing.bezier(0.2, 0.8, 0.2, 1),
+    })
+  }, [swept, progress])
+
+  const inset = thickness / 2
+  const box = { x: inset, y: inset, width: size - thickness, height: size - thickness }
+
+  const track = Skia.Path.Make()
+  track.addArc(box, 0, 360)
+
+  // Rebuilt per frame on the UI thread. Skia paths are cheap to allocate and
+  // this avoids a JS round trip for every degree of sweep.
+  const arc = useDerivedValue(() => {
+    const path = Skia.Path.Make()
+    path.addArc(box, -90, progress.value * 360)
+    return path
+  })
+
+  const fill = fraction > 1 ? colors.hibiscus : fraction >= 0.9 ? colors.kaya : colors.pandan
+  const remaining = Math.max(0, Math.round(goal - value))
+
+  return (
+    <View
+      className={cn('items-center justify-center', className)}
+      style={{ width: size, height: size }}
+    >
+      <Canvas style={{ width: size, height: size }}>
+        <Path path={track} style="stroke" strokeWidth={thickness} color={colors.track} />
+        <Path path={arc} style="stroke" strokeWidth={thickness} color={fill} />
+      </Canvas>
+
+      <View
+        className="absolute items-center justify-center"
+        accessibilityRole="progressbar"
+        accessibilityLabel={`${value} of ${goal} kcal`}
+        accessibilityValue={{ min: 0, max: goal, now: value }}
+      >
+        <Text className="font-display text-[42px] leading-[50px] text-heading">
+          {centerLabel ?? remaining.toLocaleString()}
+        </Text>
+        <Text variant="overline" className="text-muted">
+          {centerCaption}
+        </Text>
+      </View>
+    </View>
+  )
+}

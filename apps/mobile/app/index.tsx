@@ -1,30 +1,41 @@
 import { APP_NAME, SCHEMA_VERSION } from '@ricecal/shared'
-import { Link } from 'expo-router'
+import { useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { Pressable, Text, View } from 'react-native'
+import { View } from 'react-native'
 
+import { useTheme } from '@/theme/useTheme'
+import { Button, Text } from '@/ui'
+
+/**
+ * A launcher, not a screen. Phase 0 has no product surfaces yet; this is the
+ * way into the two things that do exist.
+ *
+ * It is built out of `@/ui` rather than raw classes so that a broken design
+ * system is visible on the very first frame instead of one navigation later.
+ */
 export default function Home() {
+  const router = useRouter()
+  const { isDark } = useTheme()
+
   return (
-    <View className="flex-1 items-center justify-center gap-3 bg-white px-6">
-      {/* If these classes do nothing, the babel jsxImportSource or the
-          tailwind content globs are wrong — NativeWind fails silently. */}
-      <Text className="text-3xl font-bold text-slate-900">{APP_NAME}</Text>
-      <Text className="text-sm text-slate-500">
+    <View className="flex-1 items-center justify-center gap-md bg-canvas px-gutter">
+      <Text variant="title">{APP_NAME}</Text>
+      <Text variant="meta" className="text-center">
         schema v{SCHEMA_VERSION} — resolved from @ricecal/shared
       </Text>
 
-      {/* `asChild` matters: expo-router's Link renders a Text, not a View, so
-          background/radius/padding classes on it are silently dropped and the
-          white label lands on the white page — present in the accessibility
-          tree, invisible to a user. Delegating to a Pressable gives a real
-          View to style. */}
-      <Link href="/diagnostics" asChild>
-        <Pressable className="mt-4 rounded-lg bg-slate-900 px-5 py-3">
-          <Text className="font-semibold text-white">Open diagnostics</Text>
-        </Pressable>
-      </Link>
+      <View className="mt-md w-full gap-3">
+        <Button fullWidth onPress={() => router.push('/gallery')}>
+          Design gallery
+        </Button>
+        <Button variant="neutral" fullWidth onPress={() => router.push('/diagnostics')}>
+          Diagnostics
+        </Button>
+      </View>
 
-      <StatusBar style="auto" />
+      {/* Explicit rather than "auto": the bar has to contrast with the canvas,
+          and the canvas follows our theme, which is not always the OS one. */}
+      <StatusBar style={isDark ? 'light' : 'dark'} />
     </View>
   )
 }

@@ -33,6 +33,9 @@ const PACKAGES_NEEDING_TRANSFORM = [
 module.exports = {
   preset: 'jest-expo',
   setupFiles: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup-after-env.js'],
+  // Wraps the preset's resolver rather than replacing it — see jest.resolver.js.
+  resolver: '<rootDir>/jest.resolver.js',
   // Prefix match, deliberately unanchored at the end: the entry `expo` has to
   // cover `expo-modules-core`, `expo-router`, and every other expo-* package.
   transformIgnorePatterns: [`node_modules/(?!\\.pnpm/)(?!(${PACKAGES_NEEDING_TRANSFORM}))`],
