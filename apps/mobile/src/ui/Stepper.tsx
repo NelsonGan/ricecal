@@ -1,5 +1,6 @@
 import { View } from 'react-native'
 
+import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
 import { Icon } from './Icon'
 import { IconButton } from './IconButton'
@@ -58,6 +59,8 @@ export function Stepper({
   const atMin = value - step < min
   const atMax = value + step > max
 
+  const colors = useThemeColors()
+
   // Re-round after arithmetic: 0.1 + 0.2 is famously not 0.3, and the value
   // shows up on screen.
   const shift = (delta: number) =>
@@ -92,7 +95,10 @@ export function Stepper({
         disabled={disabled || atMax}
         onPress={() => shift(step)}
       >
-        <Icon set="ui" name="plus" size={26} tintColor="#FFFFFF" />
+        {/* Tinted to the role, not to white: the pandan fill brightens in dark
+            mode and takes near-black content, so a hardcoded white plus
+            disappears into it. */}
+        <Icon set="ui" name="plus" size={26} tintColor={colors.onPandan} />
       </IconButton>
     </View>
   )
