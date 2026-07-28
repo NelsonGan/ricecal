@@ -39,9 +39,7 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ],
-      "blockedPermissions": [
-        "com.google.android.gms.permission.AD_ID"
-      ]
+      "blockedPermissions": ["com.google.android.gms.permission.AD_ID"]
     },
     "plugins": [
       "expo-router",
