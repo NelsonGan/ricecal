@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { View } from 'react-native'
 
+import { useThemeColors } from '@/theme/useTheme'
+
 import {
   Badge,
   Button,
@@ -37,6 +39,7 @@ const SAMPLE_ICONS: IconProps[] = [
 const FILTERS = ['Halal', 'Mamak', 'Kopitiam', 'Vegetarian', 'Less sugar']
 
 export function PrimitivesSection() {
+  const colors = useThemeColors()
   const [selected, setSelected] = useState<string[]>(['Halal'])
   const [busy, setBusy] = useState(false)
 
@@ -104,7 +107,7 @@ export function PrimitivesSection() {
           size="lg"
           fullWidth
           className="mt-md"
-          leftIcon={<Icon set="ui" name="plus" size={22} tintColor="#FFFFFF" />}
+          leftIcon={<Icon set="ui" name="plus" size={22} tintColor={colors.onPandan} />}
           onPress={() => {}}
         >
           Get started
@@ -117,7 +120,7 @@ export function PrimitivesSection() {
             <Icon set="ui" name="chevron-left" size={20} />
           </IconButton>
           <IconButton variant="primary" accessibilityLabel="Add" onPress={() => {}}>
-            <Icon set="ui" name="plus" size={26} tintColor="#FFFFFF" />
+            <Icon set="ui" name="plus" size={26} tintColor={colors.onPandan} />
           </IconButton>
           <IconButton variant="subtle" accessibilityLabel="Remove" onPress={() => {}}>
             <Icon set="ui" name="minus" size={26} />
