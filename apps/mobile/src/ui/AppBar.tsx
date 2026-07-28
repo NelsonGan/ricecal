@@ -1,0 +1,48 @@
+import type { ReactNode } from 'react'
+import { View } from 'react-native'
+
+import { cn } from './cn'
+import { Icon } from './Icon'
+import { IconButton } from './IconButton'
+import { Text } from './Text'
+
+export type AppBarProps = {
+  title: string
+  /** Back affordance. Omit on a root screen. */
+  onBack?: () => void
+  /** Trailing controls. Keep to one; two crowds a 340pt phone. */
+  action?: ReactNode
+  className?: string
+}
+
+/**
+ * An in-content header bar.
+ *
+ * A styled View rather than a configured native header: the design puts the
+ * bar on a rounded canvas-coloured plate with squishy 44pt controls, and a
+ * native header cannot do either. Screens using this should set
+ * `headerShown: false` on their Stack.Screen.
+ *
+ * When there is no `action`, an invisible spacer keeps the title optically
+ * centred instead of drifting right.
+ */
+export function AppBar({ title, onBack, action, className }: AppBarProps) {
+  return (
+    <View
+      className={cn('flex-row items-center gap-md rounded-tile bg-canvas p-3', className)}
+      accessibilityRole="header"
+    >
+      {onBack ? (
+        <IconButton size="sm" accessibilityLabel="Go back" onPress={onBack}>
+          <Icon set="ui" name="chevron-left" size={20} />
+        </IconButton>
+      ) : null}
+
+      <Text variant="subtitle" className="flex-1" numberOfLines={1}>
+        {title}
+      </Text>
+
+      {action ?? (onBack ? <View className="w-[44px]" /> : null)}
+    </View>
+  )
+}

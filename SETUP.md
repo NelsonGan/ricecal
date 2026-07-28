@@ -264,6 +264,9 @@ Each of these was a correction forced by what SDK 57 actually ships.
 | `jest` latest | **29.x** | `jest-expo@57` is built against Jest 29. Jest 30 crashes with `clearMocksOnScope is not a function`. |
 | `pnpm turbo typecheck lint test` | **`pnpm check`** | `turbo lint` only sees workspace packages, so `supabase/functions/` would never be linted. Lint is now one root Biome pass. |
 | `.gitignore` had bare `ios` / `android` | **`/apps/*/ios`, `/apps/*/android`** | A bare entry matches a directory at any depth, so a future `src/lib/ios/` would be silently untracked. |
+| `userInterfaceStyle: "light"` | **`"automatic"`** | The design system ships a full dark mode. Pinned to light, Expo writes `UIUserInterfaceStyle: Light` into Info.plist and iOS forces `Appearance` to report light on a device in dark mode. |
+| `react-native-reanimated` alone | **plus `react-native-worklets` 0.10.0** | Reanimated 4 requires it as a direct install; pnpm does not hoist it, so `babel-preset-expo` silently skipped the worklets plugin and no animation would have run. |
+| `@testing-library/react-native` alone | **plus `test-renderer`** | RNTL v14 has it as an unmet peer. Without it `render()` returns a promise with no query methods and every component test fails with the unrelated-sounding "`render` function has not been called". |
 
 Also worth knowing:
 
@@ -279,6 +282,14 @@ Also worth knowing:
   `@shopify/react-native-skia`, and `unrs-resolver` are allowlisted under
   `pnpm.onlyBuiltDependencies`. A new native dep may need adding there; check
   `pnpm ignored-builds`.
+- **`jest.config.js` sets a `resolver`, which REPLACES the preset's.** Naming
+  one in the config does not merge with jest-expo's — it drops React Native's
+  platform-extension resolution, and the symptom is not an error: `render()`
+  succeeds and returns an object with no query methods. `jest.resolver.js`
+  wraps the preset's resolver instead of replacing it.
+- **Changing `tailwind.config.js` requires `expo start --clear`.** NativeWind
+  caches the compiled stylesheet, and a stale cache produces an app with no
+  styling at all rather than an error.
 
 ---
 

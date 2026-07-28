@@ -1,0 +1,98 @@
+import type { ReactNode } from 'react'
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  type ScrollViewProps,
+  View,
+} from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+import { spacing } from '@/theme/tokens'
+import { cn } from './cn'
+
+export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
+  children: ReactNode
+  /** Content pinned below the scroll area — the footer CTA. Never scrolls away. */
+  footer?: ReactNode
+  /** Drop the 20pt screen gutter, for content that bleeds to the edge. */
+  flush?: boolean
+  /** Render children in a plain View instead of a ScrollView. */
+  scroll?: boolean
+  className?: string
+  contentClassName?: string
+}
+
+/**
+ * The screen shell: canvas background, safe-area insets, gutter, and keyboard
+ * handling.
+ *
+ * Keyboard behaviour is the reason this exists rather than each screen wiring
+ * its own ScrollView. Three things have to line up or a focused input ends up
+ * under the keyboard:
+ *
+ * - `automaticallyAdjustKeyboardInsets` (iOS) lets UIKit inset the scroll view
+ *   by the real keyboard frame, which is more accurate than measuring it in JS
+ *   and handles the hardware keyboard and floating iPad keyboard for free.
+ * - `KeyboardAvoidingView` with `padding` carries the footer CTA above the
+ *   keyboard. Android is left on `undefined` because `adjustResize` — which
+ *   Expo sets by default — already resizes the window, and stacking both
+ *   double-counts the inset.
+ * - `keyboardShouldPersistTaps="handled"` makes the first tap on a button
+ *   activate it instead of being eaten dismissing the keyboard. Without it
+ *   every form needs two taps to submit.
+ */
+export function Screen({
+  children,
+  footer,
+  flush = false,
+  scroll = true,
+  className,
+  contentClassName,
+  ...rest
+}: ScreenProps) {
+  const insets = useSafeAreaInsets()
+
+  const body = scroll ? (
+    <ScrollView
+      className={cn('flex-1', contentClassName)}
+      contentContainerStyle={{
+        padding: flush ? 0 : spacing.gutter,
+        paddingBottom: (flush ? 0 : spacing.gutter) + (footer ? 0 : insets.bottom),
+        gap: spacing.stack,
+      }}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+      automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+      showsVerticalScrollIndicator={false}
+      {...rest}
+    >
+      {children}
+    </ScrollView>
+  ) : (
+    <View
+      className={cn('flex-1', !flush && 'p-gutter', contentClassName)}
+      style={{ gap: spacing.stack }}
+    >
+      {children}
+    </View>
+  )
+
+  return (
+    <KeyboardAvoidingView
+      className={cn('flex-1 bg-canvas', className)}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={insets.top}
+    >
+      {body}
+      {footer ? (
+        <View
+          className={cn('gap-md bg-canvas px-gutter pt-md', !scroll && 'border-t border-line')}
+          style={{ paddingBottom: insets.bottom + spacing.md }}
+        >
+          {footer}
+        </View>
+      ) : null}
+    </KeyboardAvoidingView>
+  )
+}
