@@ -1,3 +1,53 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* --- generated from src/theme/tokens.ts; run pnpm theme:gen --- */
+  :root {
+    --color-canvas: 246 248 247;
+    --color-surface: 255 255 255;
+    --color-surface-alt: 240 244 241;
+    --color-inverse: 28 35 33;
+    --color-on-inverse: 255 255 255;
+    --color-inverse-accent: 123 227 172;
+    --color-line: 228 232 229;
+    --color-track: 237 241 238;
+    --color-line-strong: 214 220 216;
+    --color-ink: 28 35 33;
+    --color-heading: 27 58 43;
+    --color-body: 73 84 80;
+    --color-muted: 110 123 116;
+    --color-faint: 154 165 160;
+    --color-disabled: 223 228 225;
+    --color-disabled-slab: 201 209 204;
+    --color-on-disabled: 154 165 160;
+    --color-pandan: 47 191 113;
+    --color-pandan-slab: 27 138 78;
+    --color-pandan-soft: 234 249 240;
+    --color-pandan-soft-line: 207 235 218;
+    --color-pandan-ink: 27 138 78;
+    --color-on-pandan: 255 255 255;
+    --color-hibiscus: 255 77 109;
+    --color-hibiscus-slab: 214 47 78;
+    --color-hibiscus-soft: 255 238 241;
+    --color-hibiscus-soft-line: 247 210 218;
+    --color-hibiscus-ink: 214 47 78;
+    --color-on-hibiscus: 255 255 255;
+    --color-kaya: 255 193 69;
+    --color-kaya-slab: 217 154 31;
+    --color-kaya-soft: 255 243 214;
+    --color-kaya-soft-line: 240 221 174;
+    --color-kaya-ink: 61 43 20;
+    --color-on-kaya: 61 43 20;
+    --color-water: 76 201 240;
+    --color-water-slab: 27 135 168;
+    --color-water-soft: 234 247 252;
+    --color-water-soft-line: 190 230 245;
+    --color-water-ink: 27 135 168;
+    --color-on-water: 255 255 255;
+    --color-teh: 201 139 94;
+    --color-teh-slab: 166 108 67;
+  }
+  /* --- end generated --- */
+}
