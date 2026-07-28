@@ -152,8 +152,29 @@ Nothing below has been done. Each is a browser/credential step.
    Token scoped to that bucket only, stored as Supabase secrets:
    `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`.
    The `healthcheck` function reads exactly these four names.
-4. **Apple Developer** — App ID with Sign in with Apple, Push Notifications,
-   HealthKit. APNs `.p8` uploaded to Expo. App Store Connect record.
+4. **Apple Developer** — ✅ done.
+
+   | Item | Value |
+   | --- | --- |
+   | Bundle ID | `com.nelsongan.ricecal` (internal `3D3YS5HBMU`) |
+   | Capabilities | `APPLE_ID_AUTH` (PRIMARY_APP_CONSENT), `PUSH_NOTIFICATIONS`, `HEALTHKIT`, `IN_APP_PURCHASE` |
+   | Team ID | `A9QF26PBRS` |
+   | App Store Connect app | `6795558595`, SKU `ricecal` |
+   | APNs push key | `C5723554WZ` — EAS-generated, shared with `money2time` |
+
+   Sign in with Apple needs nothing further: the native
+   `expo-apple-authentication` flow authenticates against the bundle ID alone.
+   A Services ID and signing key are only required for the web/Android OAuth
+   flow, which carries a **6-month secret rotation** — deliberately avoided.
+
+   Managed with `asc` (App Store Connect CLI). Two auth surfaces:
+   `asc auth login` (API key, in the keychain) for bundle IDs and capabilities,
+   and `asc web auth login` (Apple ID + 2FA) for app creation, which the public
+   API cannot do.
+
+   **Let EAS generate push credentials.** It reuses the team's existing key
+   automatically. Creating one by hand produced a redundant second key and hit
+   Apple's two-key cap for nothing; it was revoked the same day.
 5. **Google** — three OAuth client IDs (web, iOS, Android), Firebase project for
    FCM + `google-services.json`, Play Console record, Health Connect data type
    declaration.
