@@ -115,12 +115,17 @@ Nothing below has been done. Each is a browser/credential step.
    exists, with `main` as the production branch. That replaces the custom
    deploy workflow (deleted) and needs no GitHub secrets, because the GitHub
    App carries its own auth.
-2. **GitHub** — no remote exists yet; everything below is inert until one does.
+2. **GitHub** — ✅ done. `NelsonGan/ricecal`, private, default branch `main`.
 
-   Deploys go through the Supabase GitHub integration, so the only secrets
-   still needed are for the drift check: `SUPABASE_ACCESS_TOKEN`,
-   `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`. These belong **only** in
-   GitHub secrets — never in a shell profile.
+   All three Actions secrets are set: `SUPABASE_ACCESS_TOKEN`,
+   `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`. Only `supabase-drift.yml`
+   consumes them; deploys go through the Supabase GitHub integration and need
+   no secrets at all.
+
+   Note that the Supabase personal access token is **account-wide** — Supabase
+   has no per-project token scoping — so it can also reach the `MPG`,
+   `MPG Staging`, and `b2b` projects. Revoke and rotate it if this repo's
+   visibility ever changes.
 3. **Cloudflare R2** — bucket + custom domain `img.<yourdomain>` (not `r2.dev`).
    Token scoped to that bucket only, stored as Supabase secrets:
    `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`.

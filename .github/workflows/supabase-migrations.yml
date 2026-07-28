@@ -40,6 +40,16 @@ jobs:
       # this check that divergence is invisible until deploy.
       - name: Declared schema is fully captured in migrations
         run: |
+          # `db diff` provisions a shadow database from schema_paths, and the CLI
+          # treats a glob matching zero files as a hard error:
+          #   no files matched pattern: supabase/schemas/*.sql
+          #   failed to provision the shadow database: exit 1
+          # It does not report "no diff". Phase 0 ships this directory empty, so
+          # the check has to no-op until the first schema file exists.
+          if ! compgen -G "supabase/schemas/*.sql" > /dev/null; then
+            echo "supabase/schemas/ has no .sql files yet — nothing to compare."
+            exit 0
+          fi
           supabase db diff -f ci_uncaptured
           if compgen -G "supabase/migrations/*ci_uncaptured*" > /dev/null; then
             echo "::error::supabase/schemas/ contains changes with no matching migration."
