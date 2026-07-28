@@ -5,6 +5,21 @@ node_modules
 dist
 .turbo
 
+# Signing material and private keys. .secrets/ is ignored wholesale rather than
+# by extension, so a key with an unexpected name cannot slip through. The
+# extension rules below are a second line of defence for files placed elsewhere.
+#
+# Nothing here is recoverable if leaked -- an App Store Connect .p8 is issued
+# once and grants API access to the whole team.
+.secrets/
+*.p8
+*.p12
+*.jks
+*.keystore
+*.mobileprovision
+*.cer
+*.certSigningRequest
+
 # Continuous Native Generation: ios/ and android/ are build output from
 # `expo prebuild`, never edited by hand. Anchored to the app dir so a source
 # directory that happens to be named `ios` or `android` is not swallowed.
