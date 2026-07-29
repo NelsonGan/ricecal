@@ -8,14 +8,13 @@ import {
   dateKey,
   type Meal,
   useDay,
-  useDayBurn,
   useDayLog,
   useLogFood,
   useSelectedDate,
   useTargets,
   useUsualFoods,
 } from '@/data'
-import { type CameraMode, InlineCamera, QuickAction } from '@/features/logging'
+import { InlineCamera, QuickAction } from '@/features/logging'
 import { ItemRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { mealForHour, sumMacros } from '@/lib/nutrition'
@@ -38,17 +37,16 @@ export default function LogSheet() {
   const { selectedDate } = useSelectedDate()
   const day = useDayLog(selectedDate)
   const { data: targets } = useTargets()
-  const burn = useDayBurn(selectedDate)
   const colors = useThemeColors()
   // The viewfinder opens inside this sheet rather than as its own screen, so
   // the day stays visible behind it and nothing has to be dismissed twice.
-  const [camera, setCamera] = useState<CameraMode | null>(null)
+  const [camera, setCamera] = useState(false)
 
   // The meal comes from whichever card was tapped, or from the clock when the
   // FAB was used and there is nothing else to go on.
   const meal: Meal = params.meal ?? mealForHour(new Date().getHours())
   const mealName = t(`common:meal.${meal}`)
-  const left = (targets?.kcal ?? 0) + burn - sumMacros(day.entries).kcal
+  const left = (targets?.kcal ?? 0) - sumMacros(day.entries).kcal
 
   // "What you usually eat at this time", from this user's own history rather
   // than from a column on the shared catalogue.
@@ -98,15 +96,8 @@ export default function LogSheet() {
           label={t('logging:selector.snap')}
           icon={{ set: 'system', name: 'camera' }}
           tone="pandan"
-          selected={camera === 'photo'}
-          onPress={() => setCamera((current) => (current === 'photo' ? null : 'photo'))}
-        />
-        <QuickAction
-          label={t('logging:selector.scan')}
-          icon={{ set: 'system', name: 'barcode' }}
-          tone="kaya"
-          selected={camera === 'barcode'}
-          onPress={() => setCamera((current) => (current === 'barcode' ? null : 'barcode'))}
+          selected={camera}
+          onPress={() => setCamera((open) => !open)}
         />
         <QuickAction
           label={t('logging:selector.say')}
@@ -121,7 +112,7 @@ export default function LogSheet() {
         />
       </View>
 
-      {camera ? <InlineCamera mode={camera} meal={meal} onDone={() => goBack()} /> : null}
+      {camera ? <InlineCamera meal={meal} onDone={() => goBack()} /> : null}
 
       <View className="gap-3 pt-1">
         <Text variant="overline">{t('logging:selector.usual')}</Text>

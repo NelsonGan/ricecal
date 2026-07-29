@@ -52,9 +52,7 @@ export default function WelcomeToPro() {
       </View>
 
       <View className="pt-4">
-        <CheckList
-          items={[t('welcome.perks.log'), t('welcome.perks.database'), t('welcome.perks.sync')]}
-        />
+        <CheckList items={[t('welcome.perks.log'), t('welcome.perks.database')]} />
       </View>
 
       <Text variant="caption" className="pt-2 text-center text-faint">

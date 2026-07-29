@@ -13,7 +13,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { PendingSnapProvider, SelectedDateProvider, SessionProvider } from '@/data'
-import { AchievementWatcher } from '@/features/progress'
 import { initOnlineManager } from '@/lib/online'
 import { persistOptions, queryClient } from '@/lib/query'
 import { initServices } from '@/lib/startup'
@@ -66,9 +65,6 @@ export default function RootLayout() {
                       "saved" confirmation usually fires as the screen that
                       triggered it pops. */}
                   <ToastProvider offset={NAV_BAR_HEIGHT}>
-                    {/* Renders nothing. Watches the derived badges and raises a
-                        toast the moment one is earned, wherever the user is. */}
-                    <AchievementWatcher />
                     <RootStack />
                   </ToastProvider>
                 </PendingSnapProvider>
@@ -105,7 +101,6 @@ function RootStack() {
         options={{ presentation: 'transparentModal', animation: 'fade' }}
       />
       <Stack.Screen name="log/search" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="log/custom" options={{ presentation: 'modal' }} />
       <Stack.Screen name="log/food/[id]" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/index" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/gate" options={{ presentation: 'modal' }} />

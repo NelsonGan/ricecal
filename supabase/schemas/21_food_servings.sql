@@ -47,55 +47,14 @@ create trigger food_servings_set_updated_at
 
 alter table public.food_servings enable row level security;
 
-grant select, insert, update, delete on public.food_servings to authenticated;
+-- Select only, matching `foods`. Portions are catalogue data and arrive with
+-- the dish they belong to, from `service_role`.
+grant select on public.food_servings to authenticated;
 grant select, insert, update, delete on public.food_servings to service_role;
 
--- Visibility follows the dish. Written as an EXISTS against `foods` rather
--- than a denormalised owner column so there is one place that decides who can
--- see a food, and no way for the two to disagree.
+-- Visibility follows the dish, and every dish is shared, so this is `true` for
+-- the same reason the policy on `foods` is.
 create policy "food_servings: read with food"
   on public.food_servings for select
   to authenticated
-  using (
-    exists (
-      select 1 from public.foods f
-      where f.id = food_id
-        and (f.owner_id is null or f.owner_id = (select auth.uid()))
-    )
-  );
-
-create policy "food_servings: write with own food"
-  on public.food_servings for insert
-  to authenticated
-  with check (
-    exists (
-      select 1 from public.foods f
-      where f.id = food_id and f.owner_id = (select auth.uid())
-    )
-  );
-
-create policy "food_servings: update with own food"
-  on public.food_servings for update
-  to authenticated
-  using (
-    exists (
-      select 1 from public.foods f
-      where f.id = food_id and f.owner_id = (select auth.uid())
-    )
-  )
-  with check (
-    exists (
-      select 1 from public.foods f
-      where f.id = food_id and f.owner_id = (select auth.uid())
-    )
-  );
-
-create policy "food_servings: delete with own food"
-  on public.food_servings for delete
-  to authenticated
-  using (
-    exists (
-      select 1 from public.foods f
-      where f.id = food_id and f.owner_id = (select auth.uid())
-    )
-  );
+  using (true);

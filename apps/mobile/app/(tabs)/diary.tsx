@@ -6,7 +6,6 @@ import { View } from 'react-native'
 import {
   dateKey,
   MEALS,
-  useDayBurn,
   useDayLog,
   useNutritionRange,
   usePendingSnaps,
@@ -26,7 +25,6 @@ export default function DiaryScreen() {
   const { selectedDate, setSelectedDate } = useSelectedDate()
   const day = useDayLog(selectedDate)
   const { data: targets } = useTargets()
-  const burn = useDayBurn(selectedDate)
   const setWater = useSetWater(selectedDate)
   const pending = usePendingSnaps()
 
@@ -54,7 +52,7 @@ export default function DiaryScreen() {
   const eaten = sumMacros(day.entries)
   // Same credit the ring on Today applies, so the two screens never disagree
   // about how much of the day is left.
-  const budget = (targets?.kcal ?? 0) + burn
+  const budget = targets?.kcal ?? 0
   const left = budget - eaten.kcal
   const waterGoal = targets?.waterGlasses ?? 8
 

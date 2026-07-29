@@ -12,9 +12,9 @@ const valueTones = {
 } as const
 
 export type ItemRowProps = {
-  /** The dish, the workout, the thing. */
+  /** The dish, the thing. */
   title: string
-  /** "1 plate", "8:20 am", "Mamak · 1 piece", "6:40 am · 34 min · 5.1 km". */
+  /** "1 plate", "8:20 am", "Mamak · 1 piece". */
   detail?: string
   icon: IconRef
   /**
@@ -51,7 +51,7 @@ export type ItemRowProps = {
 
 /**
  * The row that carries almost every list in the app: a dish on Today, a search
- * result, a workout, a top food, a locked entry behind the paywall.
+ * result, a top food, a locked entry behind the paywall.
  *
  * One component rather than six near-copies, because near-copies drift — the
  * tile was 56pt in one place and 48 in another, the gap 12 here and 14 there,

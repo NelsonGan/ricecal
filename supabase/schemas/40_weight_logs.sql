@@ -2,10 +2,13 @@
 -- Body weight over time. The source of truth for "what does this user weigh",
 -- which is why `profiles` has no weight column.
 --
--- One row per user per day: a smart scale that syncs three readings before
--- breakfast should not draw three points on the chart, and the last one of the
--- day is the one a user would recognise as today's weight. A second reading
--- upserts over the first.
+-- One row per user per day: weighing yourself twice before breakfast should not
+-- draw two points on the chart, and the last reading of the day is the one a
+-- user would recognise as today's weight. A second entry upserts over the
+-- first.
+--
+-- Every row is typed by the user. There is no `source` column because there is
+-- only one source — the app syncs nothing from a watch, a phone or a scale.
 -- ---------------------------------------------------------------------------
 
 create table public.weight_logs (
@@ -14,10 +17,8 @@ create table public.weight_logs (
   measured_on   date not null,
 
   weight_kg     numeric(5, 2) not null check (weight_kg between 20 and 400),
-  -- Scales that report it. Null is unknown, never zero.
+  -- Null is unknown, never zero.
   body_fat_pct  numeric(4, 1) check (body_fat_pct between 1 and 75),
-
-  source        public.measurement_source not null default 'manual',
 
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),

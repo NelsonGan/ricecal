@@ -3,9 +3,8 @@ export const paywall = {
     title: 'Start logging with RiceCal Pro',
     perks: {
       unlimited: 'Unlimited meal logging',
-      scanning: 'Photo and barcode scanning',
+      scanning: 'Photo scanning',
       database: 'Local hawker food database',
-      sync: 'Weight and workout sync',
     },
     yearly: 'Yearly',
     yearlyBadge: 'SAVE 45%',
@@ -58,15 +57,6 @@ export const paywall = {
         offline: 'Works offline for saved foods',
       },
     },
-    barcode: {
-      title: 'Barcode scanning is a Pro feature',
-      body: 'Scan any packet and the label reads itself.',
-      perks: {
-        multiItem: 'Packaged food lookup',
-        portion: 'Serving size from the label',
-        offline: 'Works offline for saved foods',
-      },
-    },
     voice: {
       title: 'Voice logging is a Pro feature',
       body: 'Say what you ate and we work out the rest.',
@@ -86,9 +76,8 @@ export const paywall = {
     title: 'You are in. Jom makan.',
     body: 'Trial active for 3 days. Everything is unlocked, nothing to set up.',
     perks: {
-      log: 'Log by photo, barcode or voice',
+      log: 'Log by photo or voice',
       database: 'Full local food database',
-      sync: 'Sync your watch and scale',
     },
     manageNote: 'Manage or cancel any time in Profile, Subscription.',
     start: 'Log my first meal',

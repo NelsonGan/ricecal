@@ -15,16 +15,8 @@
  * 3. **Reads go through hooks, not through a client.** No screen imports
  *    `supabase` directly.
  */
-export {
-  bestStreak,
-  currentStreak,
-  evaluateAchievements,
-  measure,
-} from './achievement-rules'
-export { useAchievementCatalogue, useAchievements, useStreak } from './achievements'
-export { useBurnRange, useDayBurn, useDayRings, useWorkouts } from './activity'
 export { dateKey, today } from './client'
-export { entriesForMeal, useDay, useDayLog, useNutritionRange, useSetWater } from './day'
+export { entriesForMeal, useDay, useDayLog, useNutritionRange, useSetWater, useStreak } from './day'
 export {
   type EntryPatch,
   type LogInput,
@@ -33,9 +25,7 @@ export {
   useUpdateEntry,
 } from './entries'
 export {
-  type FoodDraft,
   type SearchFilter,
-  useCreateFood,
   useFood,
   useFoodSearch,
   useTopFoods,

@@ -60,7 +60,7 @@ export function useLogWeight() {
         await supabase
           .from('weight_logs')
           .upsert(
-            { user_id: userId, measured_on: date, weight_kg: kg, source: 'manual' },
+            { user_id: userId, measured_on: date, weight_kg: kg },
             { onConflict: 'user_id,measured_on' },
           )
           .select('measured_on')

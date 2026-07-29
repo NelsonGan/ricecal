@@ -43,84 +43,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      achievements: {
-        Row: {
-          created_at: string
-          icon_name: string
-          icon_set: Database['public']['Enums']['icon_set']
-          key: string
-          position: number
-          tone: Database['public']['Enums']['badge_tone']
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          icon_name: string
-          icon_set?: Database['public']['Enums']['icon_set']
-          key: string
-          position?: number
-          tone?: Database['public']['Enums']['badge_tone']
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          icon_name?: string
-          icon_set?: Database['public']['Enums']['icon_set']
-          key?: string
-          position?: number
-          tone?: Database['public']['Enums']['badge_tone']
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      daily_activity: {
-        Row: {
-          created_at: string
-          exercise_goal_minutes: number | null
-          exercise_minutes: number
-          log_date: string
-          move_goal_kcal: number | null
-          move_kcal: number
-          source: Database['public']['Enums']['measurement_source']
-          stand_goal_hours: number | null
-          stand_hours: number
-          steps: number
-          synced_at: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          exercise_goal_minutes?: number | null
-          exercise_minutes?: number
-          log_date: string
-          move_goal_kcal?: number | null
-          move_kcal?: number
-          source?: Database['public']['Enums']['measurement_source']
-          stand_goal_hours?: number | null
-          stand_hours?: number
-          steps?: number
-          synced_at?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          exercise_goal_minutes?: number | null
-          exercise_minutes?: number
-          log_date?: string
-          move_goal_kcal?: number | null
-          move_kcal?: number
-          source?: Database['public']['Enums']['measurement_source']
-          stand_goal_hours?: number | null
-          stand_hours?: number
-          steps?: number
-          synced_at?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       daily_goals: {
         Row: {
           carbs_g: number
@@ -130,7 +52,6 @@ export type Database = {
           is_custom: boolean
           kcal: number
           protein_g: number
-          steps: number
           updated_at: string
           user_id: string
           water_glasses: number
@@ -143,7 +64,6 @@ export type Database = {
           is_custom?: boolean
           kcal: number
           protein_g: number
-          steps?: number
           updated_at?: string
           user_id: string
           water_glasses?: number
@@ -156,7 +76,6 @@ export type Database = {
           is_custom?: boolean
           kcal?: number
           protein_g?: number
-          steps?: number
           updated_at?: string
           user_id?: string
           water_glasses?: number
@@ -321,13 +240,11 @@ export type Database = {
           icon_name: string
           icon_set: Database['public']['Enums']['icon_set']
           id: string
-          image_path: string | null
           kcal: number
           name: string
-          owner_id: string | null
           place: Database['public']['Enums']['food_place']
           protein_g: number
-          slug: string | null
+          slug: string
           sodium_mg: number | null
           source: string | null
           sugar_g: number | null
@@ -343,13 +260,11 @@ export type Database = {
           icon_name: string
           icon_set?: Database['public']['Enums']['icon_set']
           id?: string
-          image_path?: string | null
           kcal: number
           name: string
-          owner_id?: string | null
           place?: Database['public']['Enums']['food_place']
           protein_g?: number
-          slug?: string | null
+          slug: string
           sodium_mg?: number | null
           source?: string | null
           sugar_g?: number | null
@@ -365,13 +280,11 @@ export type Database = {
           icon_name?: string
           icon_set?: Database['public']['Enums']['icon_set']
           id?: string
-          image_path?: string | null
           kcal?: number
           name?: string
-          owner_id?: string | null
           place?: Database['public']['Enums']['food_place']
           protein_g?: number
-          slug?: string | null
+          slug?: string
           sodium_mg?: number | null
           source?: string | null
           sugar_g?: number | null
@@ -500,43 +413,9 @@ export type Database = {
         }
         Relationships: []
       }
-      user_achievements: {
-        Row: {
-          achievement_key: string
-          detail: string | null
-          earned_at: string
-          user_id: string
-        }
-        Insert: {
-          achievement_key: string
-          detail?: string | null
-          earned_at?: string
-          user_id: string
-        }
-        Update: {
-          achievement_key?: string
-          detail?: string | null
-          earned_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'user_achievements_achievement_key_fkey'
-            columns: ['achievement_key']
-            isOneToOne: false
-            referencedRelation: 'achievements'
-            referencedColumns: ['key']
-          },
-        ]
-      }
       user_settings: {
         Row: {
           anonymous_food_data: boolean
-          auto_sync: boolean
-          connect_phone_health: boolean
-          connect_running_app: boolean
-          connect_smart_scale: boolean
-          connect_watch: boolean
           created_at: string
           energy: Database['public']['Enums']['energy_unit']
           language: string
@@ -549,15 +428,9 @@ export type Database = {
           units: Database['public']['Enums']['unit_system']
           updated_at: string
           user_id: string
-          wifi_only: boolean
         }
         Insert: {
           anonymous_food_data?: boolean
-          auto_sync?: boolean
-          connect_phone_health?: boolean
-          connect_running_app?: boolean
-          connect_smart_scale?: boolean
-          connect_watch?: boolean
           created_at?: string
           energy?: Database['public']['Enums']['energy_unit']
           language?: string
@@ -570,15 +443,9 @@ export type Database = {
           units?: Database['public']['Enums']['unit_system']
           updated_at?: string
           user_id: string
-          wifi_only?: boolean
         }
         Update: {
           anonymous_food_data?: boolean
-          auto_sync?: boolean
-          connect_phone_health?: boolean
-          connect_running_app?: boolean
-          connect_smart_scale?: boolean
-          connect_watch?: boolean
           created_at?: string
           energy?: Database['public']['Enums']['energy_unit']
           language?: string
@@ -591,7 +458,6 @@ export type Database = {
           units?: Database['public']['Enums']['unit_system']
           updated_at?: string
           user_id?: string
-          wifi_only?: boolean
         }
         Relationships: []
       }
@@ -600,7 +466,6 @@ export type Database = {
           body_fat_pct: number | null
           created_at: string
           measured_on: string
-          source: Database['public']['Enums']['measurement_source']
           updated_at: string
           user_id: string
           weight_kg: number
@@ -609,7 +474,6 @@ export type Database = {
           body_fat_pct?: number | null
           created_at?: string
           measured_on: string
-          source?: Database['public']['Enums']['measurement_source']
           updated_at?: string
           user_id: string
           weight_kg: number
@@ -618,67 +482,9 @@ export type Database = {
           body_fat_pct?: number | null
           created_at?: string
           measured_on?: string
-          source?: Database['public']['Enums']['measurement_source']
           updated_at?: string
           user_id?: string
           weight_kg?: number
-        }
-        Relationships: []
-      }
-      workouts: {
-        Row: {
-          avg_hr: number | null
-          created_at: string
-          distance_km: number | null
-          duration_min: number
-          elevation_m: number | null
-          external_id: string | null
-          id: string
-          kcal: number
-          kind: Database['public']['Enums']['session_kind']
-          log_date: string
-          source: Database['public']['Enums']['measurement_source']
-          split_seconds: number[] | null
-          started_at: string
-          title: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          avg_hr?: number | null
-          created_at?: string
-          distance_km?: number | null
-          duration_min: number
-          elevation_m?: number | null
-          external_id?: string | null
-          id?: string
-          kcal?: number
-          kind?: Database['public']['Enums']['session_kind']
-          log_date?: string
-          source?: Database['public']['Enums']['measurement_source']
-          split_seconds?: number[] | null
-          started_at: string
-          title?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          avg_hr?: number | null
-          created_at?: string
-          distance_km?: number | null
-          duration_min?: number
-          elevation_m?: number | null
-          external_id?: string | null
-          id?: string
-          kcal?: number
-          kind?: Database['public']['Enums']['session_kind']
-          log_date?: string
-          source?: Database['public']['Enums']['measurement_source']
-          split_seconds?: number[] | null
-          started_at?: string
-          title?: string | null
-          updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }
@@ -692,7 +498,6 @@ export type Database = {
           is_custom: boolean | null
           kcal: number | null
           protein_g: number | null
-          steps: number | null
           user_id: string | null
           water_glasses: number | null
         }
@@ -722,10 +527,8 @@ export type Database = {
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
           id: string | null
-          image_path: string | null
           kcal: number | null
           name: string | null
-          owner_id: string | null
           place: Database['public']['Enums']['food_place'] | null
           protein_g: number | null
           serving_label: string | null
@@ -842,7 +645,6 @@ export type Database = {
           is_custom: boolean
           kcal: number
           protein_g: number
-          steps: number
           updated_at: string
           user_id: string
           water_glasses: number
@@ -865,14 +667,11 @@ export type Database = {
     }
     Enums: {
       activity_level: 'sedentary' | 'light' | 'on_feet' | 'very_active'
-      badge_tone: 'pandan' | 'hibiscus' | 'water' | 'kaya'
       energy_unit: 'kcal' | 'kj'
-      entry_source: 'search' | 'quick_add' | 'camera' | 'voice' | 'barcode' | 'import'
+      entry_source: 'search' | 'quick_add' | 'camera' | 'voice' | 'import'
       food_place: 'mamak' | 'kopitiam' | 'hawker' | 'packaged' | 'home'
       icon_set: 'body' | 'dishes' | 'food' | 'system' | 'ui'
       meal: 'breakfast' | 'lunch' | 'dinner' | 'snack'
-      measurement_source: 'manual' | 'healthkit' | 'health_connect' | 'smart_scale' | 'import'
-      session_kind: 'run' | 'badminton' | 'gym' | 'walk' | 'cycle' | 'swim' | 'other'
       sex: 'female' | 'male'
       subscription_plan: 'monthly' | 'yearly'
       subscription_status: 'none' | 'trial' | 'active' | 'expired' | 'billing_retry'
@@ -1007,14 +806,11 @@ export const Constants = {
   public: {
     Enums: {
       activity_level: ['sedentary', 'light', 'on_feet', 'very_active'],
-      badge_tone: ['pandan', 'hibiscus', 'water', 'kaya'],
       energy_unit: ['kcal', 'kj'],
-      entry_source: ['search', 'quick_add', 'camera', 'voice', 'barcode', 'import'],
+      entry_source: ['search', 'quick_add', 'camera', 'voice', 'import'],
       food_place: ['mamak', 'kopitiam', 'hawker', 'packaged', 'home'],
       icon_set: ['body', 'dishes', 'food', 'system', 'ui'],
       meal: ['breakfast', 'lunch', 'dinner', 'snack'],
-      measurement_source: ['manual', 'healthkit', 'health_connect', 'smart_scale', 'import'],
-      session_kind: ['run', 'badminton', 'gym', 'walk', 'cycle', 'swim', 'other'],
       sex: ['female', 'male'],
       subscription_plan: ['monthly', 'yearly'],
       subscription_status: ['none', 'trial', 'active', 'expired', 'billing_retry'],
