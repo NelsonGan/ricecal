@@ -3,6 +3,7 @@ import { View } from 'react-native'
 import { ToggleRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { type Reminders, useAppState, useDispatch } from '@/mock'
+import { useThemeColors } from '@/theme/useTheme'
 import { AppBar, Card, Icon, Screen, Text } from '@/ui'
 
 /** U4 REMINDERS */
@@ -10,6 +11,7 @@ export default function RemindersScreen() {
   const { t } = useTranslation(['profile', 'common'])
   const goBack = useBack('/me')
   const dispatch = useDispatch()
+  const colors = useThemeColors()
   const { reminders, mealTimes } = useAppState((state) => ({
     reminders: state.reminders,
     mealTimes: state.profile.mealTimes,
@@ -70,7 +72,7 @@ export default function RemindersScreen() {
               to: reminders.quietTo,
             })}
           </Text>
-          <Icon set="ui" name="chevron-right" size={16} />
+          <Icon set="ui" name="chevron-right" size={18} tintColor={colors.faint} />
         </View>
         <Text variant="meta">{t('profile:reminders.ramadanNote')}</Text>
       </Card>

@@ -39,11 +39,17 @@ export default function PreviewScreen() {
         icon={{ set: 'system', name: 'lock' }}
       />
 
-      <Card className="items-center">
+      {/* `contentClassName`, not `className`: the latter lands on the box
+          the parent measures, and centring there shrinks the card's surface to
+          its content instead of centring what is inside it. */}
+      <Card contentClassName="items-center">
         <CalorieRing
           value={targets.kcal}
           goal={targets.kcal}
           size={150}
+          // Sample data, not a day at 100%. Without pinning the tone the ring
+          // turns kaya and reads as a warning about food nobody has eaten.
+          tone="pandan"
           centerLabel={targets.kcal.toLocaleString()}
           centerCaption={t('onboarding:viewOnly.sampleDay')}
         />
