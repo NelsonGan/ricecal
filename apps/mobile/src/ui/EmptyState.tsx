@@ -34,7 +34,10 @@ export function EmptyState({ title, description, icon, action, className }: Empt
           {description}
         </Text>
       ) : null}
-      {action}
+      {/* Centred by a row rather than by `items-center` above: every squishy
+          control sets `self-start` on its own box, which beats a parent's
+          `align-items`. Justification is not something the child can override. */}
+      {action ? <View className="flex-row justify-center">{action}</View> : null}
     </View>
   )
 }

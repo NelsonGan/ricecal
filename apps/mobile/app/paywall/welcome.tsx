@@ -3,12 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { CheckList } from '@/features/shared'
+import { useThemeColors } from '@/theme/useTheme'
 import { Button, Icon, Screen, Squish, Text } from '@/ui'
 
 /** W5 WELCOME TO PRO */
 export default function WelcomeToPro() {
   const { t } = useTranslation('paywall')
   const router = useRouter()
+  const colors = useThemeColors()
 
   /**
    * Land on Today, then raise the log sheet over it.
@@ -40,7 +42,7 @@ export default function WelcomeToPro() {
           slabClassName="bg-pandan-slab"
           className="h-24 w-24 items-center justify-center bg-pandan"
         >
-          <Icon set="ui" name="check" size={48} />
+          <Icon set="ui" name="check" size={48} tintColor={colors.onPandan} />
         </Squish>
 
         <Text variant="title" className="text-center">

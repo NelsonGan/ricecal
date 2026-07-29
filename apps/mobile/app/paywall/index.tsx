@@ -6,6 +6,7 @@ import { View } from 'react-native'
 import { CheckList, PlanPicker } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { type Plan, useDispatch } from '@/mock'
+import { useThemeColors } from '@/theme/useTheme'
 import { Button, Icon, IconButton, Screen, Text, useToast } from '@/ui'
 
 const MASCOT = require('../../assets/brand/mascot.png')
@@ -17,6 +18,7 @@ export default function HardPaywall() {
   const goBack = useBack('/today')
   const dispatch = useDispatch()
   const toast = useToast()
+  const colors = useThemeColors()
   const [plan, setPlan] = useState<Plan>('yearly')
 
   const start = () => {
@@ -41,9 +43,12 @@ export default function HardPaywall() {
         </View>
       }
     >
-      <View className="items-end">
+      {/* `justify-end`, not `items-end`: every squishy control sets
+          `self-start` on its own box, which beats a parent's `align-items`.
+          Justification on a row is not something the child can override. */}
+      <View className="flex-row justify-end">
         <IconButton size="sm" accessibilityLabel={t('common:a11y.close')} onPress={() => goBack()}>
-          <Icon set="ui" name="close" size={18} />
+          <Icon set="ui" name="close" size={18} tintColor={colors.muted} />
         </IconButton>
       </View>
 
