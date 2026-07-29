@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
+import { useSettings, useUpdateSettings } from '@/data'
 import { ToggleRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
-import { type Privacy, useAppState, useDispatch } from '@/mock'
 import { useTheme } from '@/theme/useTheme'
 import { AppBar, Card, Screen, SegmentedControl, Text } from '@/ui'
 
@@ -9,16 +9,11 @@ import { AppBar, Card, Screen, SegmentedControl, Text } from '@/ui'
 export default function PreferencesScreen() {
   const { t } = useTranslation(['profile', 'common'])
   const goBack = useBack('/me')
-  const dispatch = useDispatch()
-  // Appearance lives in the theme, not in the profile: one owner, so the toggle
-  // and what is on screen can never disagree.
+  // Appearance lives in the theme, not in `user_settings`: one owner, so the
+  // toggle and what is on screen can never disagree.
   const { preference, setPreference } = useTheme()
-  const { profile, privacy } = useAppState((state) => ({
-    profile: state.profile,
-    privacy: state.privacy,
-  }))
-
-  const setPrivacy = (patch: Partial<Privacy>) => dispatch({ type: 'setPrivacy', patch })
+  const { data: settings } = useSettings()
+  const updateSettings = useUpdateSettings()
 
   return (
     <Screen>
@@ -34,10 +29,10 @@ export default function PreferencesScreen() {
             { value: 'en', label: t('preferences.english') },
             { value: 'ms', label: t('preferences.bahasa') },
           ]}
-          value={profile.language}
+          value={settings?.language ?? 'en'}
           // Only English is bundled, so this records the choice without
           // switching i18next to a locale that has no strings.
-          onChange={(language) => dispatch({ type: 'updateProfile', patch: { language } })}
+          onChange={(language) => updateSettings.mutate({ language })}
           accessibilityLabel={t('preferences.language')}
         />
         <Text variant="meta">{t('preferences.languageNote')}</Text>
@@ -50,8 +45,8 @@ export default function PreferencesScreen() {
             { value: 'metric', label: t('preferences.kg') },
             { value: 'imperial', label: t('preferences.lb') },
           ]}
-          value={profile.units}
-          onChange={(units) => dispatch({ type: 'updateProfile', patch: { units } })}
+          value={settings?.units ?? 'metric'}
+          onChange={(units) => updateSettings.mutate({ units: units as 'metric' | 'imperial' })}
           accessibilityLabel={t('preferences.weight')}
         />
 
@@ -61,8 +56,8 @@ export default function PreferencesScreen() {
             { value: 'kcal', label: t('preferences.kcal') },
             { value: 'kj', label: t('preferences.kj') },
           ]}
-          value={profile.energy}
-          onChange={(energy) => dispatch({ type: 'updateProfile', patch: { energy } })}
+          value={settings?.energy ?? 'kcal'}
+          onChange={(energy) => updateSettings.mutate({ energy: energy as 'kcal' | 'kj' })}
           accessibilityLabel={t('preferences.energy')}
         />
       </Card>
@@ -83,13 +78,13 @@ export default function PreferencesScreen() {
       <Card title={t('preferences.privacy')} contentClassName="gap-0">
         <ToggleRow
           title={t('preferences.shareWithFamily')}
-          value={privacy.shareWithFamily}
-          onValueChange={(shareWithFamily) => setPrivacy({ shareWithFamily })}
+          value={settings?.share_with_family ?? false}
+          onValueChange={(value) => updateSettings.mutate({ share_with_family: value })}
         />
         <ToggleRow
           title={t('preferences.anonymousData')}
-          value={privacy.anonymousFoodData}
-          onValueChange={(anonymousFoodData) => setPrivacy({ anonymousFoodData })}
+          value={settings?.anonymous_food_data ?? false}
+          onValueChange={(value) => updateSettings.mutate({ anonymous_food_data: value })}
           divider={false}
         />
       </Card>

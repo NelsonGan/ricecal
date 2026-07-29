@@ -119,8 +119,27 @@ variables at build time. Set them in EAS rather than hardcoding them.
 
 Nothing below has been done. Each is a browser/credential step.
 
-1. **Supabase** — ✅ done. Project `wgybijmprafqkshmmxdl` ("RiceCal") in
-   `ap-southeast-1` (Singapore), CLI linked, MCP registered.
+1. **Supabase** — ✅ done, and the schema is now **deployed**. Project
+   `wgybijmprafqkshmmxdl` ("RiceCal") in `ap-southeast-1` (Singapore), CLI
+   linked, MCP registered.
+
+   The four migrations are applied to the remote (`supabase db push`): 19
+   relations, the seeded catalogue (28 dishes, 84 servings), 9 badges and both
+   storage buckets. Until the GitHub integration is connected, `db push` is the
+   deploy path.
+
+   **Auth providers still need a dashboard visit.** The project reports
+   `apple: false` and `google: false` — only email is enabled, with
+   confirmations on. The app implements Apple and email properly and hides
+   Google behind its (unprovisioned) client ids, so:
+
+   - **Apple** works as soon as the provider is enabled with
+     `com.nelsongan.ricecal` as the client id. Nothing else is needed — the
+     native flow authenticates against the bundle id.
+   - **Email** works today, but signup returns no session until the user clicks
+     the confirmation link. The sign-in screen says so rather than looking
+     broken.
+   - **Google** stays hidden until `EXPO_PUBLIC_GOOGLE_*_CLIENT_ID` are real.
 
    Created with **"Automatically expose new tables" unchecked** — the Supabase
    default since 2026-05-30. Tables are invisible to the Data API until
@@ -310,12 +329,44 @@ Also worth knowing:
   empty entitlements dictionary — verified, and neither `CODE_SIGNING_ALLOWED=YES`
   nor passing `DEVELOPMENT_TEAM=A9QF26PBRS` changes it. The visible symptom is
   `KeyChainException: A required entitlement isn't present` on every Supabase
-  auth read. EAS builds sign properly and are unaffected, and the storage
-  adapter in `src/lib/supabase.ts` now degrades to "signed out" rather than
-  throwing, so this is noise rather than breakage. Installing an Apple
-  development certificate locally is the only way to clear it.
+  auth read. EAS builds sign properly and are unaffected.
+
+  This reaches further than it first looked, and the app now handles all three
+  faces of it:
+
+  - **Reads** degrade to "signed out" (they always did).
+  - **Writes** fall back to an in-memory session, once, with a warning. Without
+    that, signing in on a simulator cannot work at all — the token is written
+    the instant auth succeeds. The session dies with the process, which is the
+    honest behaviour: nothing was persisted.
+  - **`expo-notifications` fails the same way**, and worse: its permission
+    request can reject *after* the user has tapped Allow, because it stores its
+    server registration in the keychain. `ensureNotificationPermission` asks
+    the OS directly when that happens, so a granted permission is not reported
+    as a refusal. The `ERR_NOTIFICATIONS_KEYCHAIN_ACCESS` line in the log is
+    this, and it is simulator-only.
+
+  Installing an Apple development certificate locally is the only way to clear
+  any of it.
 
 ---
+
+## 5a. Running against local Supabase
+
+The remote project requires an email confirmation click, which makes signing in
+on a simulator awkward. The local stack has confirmations off, so the whole
+flow — signup, onboarding, logging — runs without leaving the machine.
+
+Point `apps/mobile/.env.local` at it and restart Metro with `--clear`, because
+`EXPO_PUBLIC_` values are inlined at build time:
+
+```
+EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54421
+EXPO_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY from `supabase status`>
+```
+
+The simulator reaches `127.0.0.1` on the host directly, so no tunnel is needed.
+Switch back to the project URL to test against the real thing.
 
 ## 6. Verification checklist status
 
@@ -327,8 +378,28 @@ Verified locally:
 - [x] Bundle id, package, entitlements, health usage strings, `minSdkVersion 26`,
       `deploymentTarget 16.4`, AD_ID blocked — all correct in resolved config
 
+Verified in the simulator against a real Supabase (the local stack, §5a) with
+every mock deleted:
+
+- [x] Email signup and sign-in; the router sends a new account to onboarding
+      and a returning one straight to Today
+- [x] `on_auth_user_created` creates the profile, settings and four meal times
+- [x] Onboarding writes the body and the first weigh-in; the database's
+      trigger computes `daily_goals` from them (1,480 kcal / 174 / 81 / 51)
+- [x] Search reads the seeded catalogue; logging writes `food_logs`
+- [x] The day, its macros and the streak come back from views
+      (`food_log_details`, `daily_nutrition`, `logging_streak()`)
+- [x] Data survives a force-quit: signing in again restores the day
+- [x] Badges read the `achievements` catalogue and measure against real logs
+- [x] The notification permission prompt fires on the first reminder switch,
+      not at launch
+
 Needs a dev build (`eas build --profile development`) — blocked on cloud setup:
 
+- [ ] Apple sign-in end to end (needs the provider enabled, §3.1)
+- [ ] A reminder actually firing (see §5 — `expo-notifications` cannot complete
+      its keychain write on an ad-hoc-signed build)
+- [ ] Meal photo upload to the `meal-photos` bucket, which needs a camera
 - [ ] NativeWind `className` actually styles something
 - [ ] expo-router navigates between the two routes
 - [ ] Skia renders a shape / Victory renders a chart

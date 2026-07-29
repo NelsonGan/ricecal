@@ -9,8 +9,17 @@ export const logging = {
     mealHeadingEmpty: '{{meal}}',
     addMeal: 'Add {{meal}}',
     justAdded: 'Just added, tap to edit',
+    /** A snapped plate whose dish is still being worked out. */
+    analysing: 'Reading your plate',
+    analysingHint: 'Counting once it knows what this is',
+    analysisFailedTitle: 'Could not read this one',
+    analysisFailedHint: 'Tap to pick the dish yourself',
     emptyTitle: 'Nothing logged yet',
     emptyBody: 'Tap the green button to snap or search your first dish.',
+    /** No `daily_goals` row yet — onboarding is what computes the first one. */
+    noBudgetTitle: 'No daily budget yet',
+    noBudgetBody: 'Set your target and the ring has something to fill.',
+    noBudgetAction: 'Set my target',
   },
 
   selector: {
@@ -38,6 +47,9 @@ export const logging = {
     shutter: 'Take a photo',
     library: 'Choose from photos',
     flip: 'Flip camera',
+    captured: 'The photo you just took',
+    /** Alt text on a logged entry's photo. */
+    photoOf: 'Photo of {{food}}',
   },
 
   voice: {
@@ -58,10 +70,13 @@ export const logging = {
     clear: 'Clear search',
     filters: {
       all: 'All',
+      mine: 'My foods',
       mamak: 'Mamak',
       kopitiam: 'Kopitiam',
       packaged: 'Packaged',
     },
+    /** Badge on a dish this user created. */
+    yours: 'Yours',
     match: '{{percent}}%',
     /** Where a dish is usually eaten. Shown under its name in a result. */
     place: {
@@ -74,6 +89,32 @@ export const logging = {
     customFood: 'Cannot find it? Add a custom food',
     emptyTitle: 'No dish by that name',
     emptyBody: 'Try a shorter word, or add it as a custom food.',
+  },
+
+  custom: {
+    title: 'Your own dish',
+    intro:
+      'Mum’s curry, your protein shake, the thing the shop down the road makes. Once saved, it is in your search.',
+    name: 'What is it called',
+    namePlaceholder: 'Mum’s chicken curry',
+    nameRequired: 'Give it a name',
+    serving: 'One of them is',
+    servingPlaceholder: '1 bowl',
+    servingHint: 'Half and double portions come free.',
+    servingDefault: '1 serving',
+    macrosLabel: 'PER SERVING',
+    kcalRequired: 'Calories are the one number this needs',
+    placeLabel: 'WHERE IT IS FROM',
+    chooseIcon: 'Pick a picture',
+    uploadPhoto: 'Use a photo',
+    removePhoto: 'Back to the picture',
+    photoAlt: 'The photo of your dish',
+    iconTitle: 'Pick a picture',
+    iconSearch: 'Search pictures',
+    iconEmpty: 'No picture by that name. Try a shorter word, or use a photo.',
+    saveAndAdd: 'Save and add to diary',
+    saveOnly: 'Just save it',
+    saved: '{{name}} saved to your foods',
   },
 
   detail: {

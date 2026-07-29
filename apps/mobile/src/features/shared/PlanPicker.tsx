@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import type { Plan } from '@/mock'
+import type { Plan } from '@/data'
 import { Badge, cn, Squish, Text } from '@/ui'
 
 export type PlanPickerProps = {

@@ -21,6 +21,21 @@ import { env } from './env'
  */
 const readFailures = new Set<string>()
 
+/**
+ * Where a session goes when the keychain refuses it.
+ *
+ * A local simulator build is signed ad-hoc with an empty entitlements
+ * dictionary, so every SecureStore write fails with "a required entitlement
+ * isn't present" — see SETUP.md §5. That is a fact about the build, not a
+ * runtime failure, and it is the build every developer runs: without a
+ * fallback, signing in on a simulator cannot work at all.
+ *
+ * In memory, so it dies with the process. A session that survived a restart
+ * without ever reaching the keychain would be the dangerous version of this.
+ */
+const memoryStore = new Map<string, string>()
+let keychainUnavailable = false
+
 const SecureStoreAdapter = {
   /**
    * Reads never throw.
@@ -35,6 +50,7 @@ const SecureStoreAdapter = {
    * caller: the user signs in again. So report the second.
    */
   getItem: async (key: string) => {
+    if (keychainUnavailable) return memoryStore.get(key) ?? null
     try {
       const value = await SecureStore.getItemAsync(key)
       readFailures.delete(key)
@@ -49,19 +65,53 @@ const SecureStoreAdapter = {
   },
 
   /**
-   * Writes and deletes DO throw. A token that could not be stored means the
-   * next launch silently signs the user out, and a token that could not be
-   * deleted outlives a sign-out — both are things the caller has to know about.
+   * Writes and deletes still fail loudly on a build that has a keychain — a
+   * token that could not be stored means the next launch silently signs the
+   * user out, and one that could not be deleted outlives a sign-out.
+   *
+   * The one case that is not a failure is a build with no keychain at all. It
+   * is detected here, on the first write, because that is the first moment it
+   * can be: a read from an empty keychain and a read from an unreachable one
+   * look identical.
    */
-  setItem: (key: string, value: string) =>
-    SecureStore.setItemAsync(key, value, {
-      // A refresh token has to be readable when Supabase's timer fires, which
-      // can be while the phone is locked. The default (WHEN_UNLOCKED) fails
-      // there; this stays readable from the first unlock after a reboot.
-      keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
-    }),
+  setItem: async (key: string, value: string) => {
+    if (keychainUnavailable) {
+      memoryStore.set(key, value)
+      return
+    }
+    try {
+      await SecureStore.setItemAsync(key, value, {
+        // A refresh token has to be readable when Supabase's timer fires, which
+        // can be while the phone is locked. The default (WHEN_UNLOCKED) fails
+        // there; this stays readable from the first unlock after a reboot.
+        keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
+      })
+    } catch (error) {
+      if (!isMissingEntitlement(error)) throw error
+      keychainUnavailable = true
+      memoryStore.set(key, value)
+      console.warn(
+        '[auth] no keychain in this build, keeping the session in memory only. ' +
+          'It will not survive a restart. See SETUP.md §5.',
+        error,
+      )
+    }
+  },
 
-  removeItem: (key: string) => SecureStore.deleteItemAsync(key),
+  removeItem: async (key: string) => {
+    memoryStore.delete(key)
+    if (keychainUnavailable) return
+    await SecureStore.deleteItemAsync(key)
+  },
+}
+
+/**
+ * The specific failure a build with no entitlements produces. Anything else is
+ * a real problem and is rethrown.
+ */
+function isMissingEntitlement(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return /entitlement/i.test(message)
 }
 
 /**

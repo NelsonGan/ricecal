@@ -46,6 +46,7 @@ export {
   type NavItemProps,
   type NavTab,
 } from './BottomNav'
+export { BrandMark, type BrandMarkProps } from './BrandMark'
 export { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from './Button'
 export { CalorieRing, type CalorieRingProps } from './CalorieRing'
 export { Card, type CardProps, type CardTone } from './Card'

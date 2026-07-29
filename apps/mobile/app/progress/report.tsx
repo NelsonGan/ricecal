@@ -1,10 +1,13 @@
+import { useQuery } from '@tanstack/react-query'
 import { addDays, format, startOfWeek } from 'date-fns'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
+
+import { dateKey, today, useNutritionRange, useTargets, useTopFoods, useUserId } from '@/data'
 import { BarChart } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
-import { dateKey, getFood, sumMacros, useAppState, useStore } from '@/mock'
+import { supabase } from '@/lib/supabase'
 import { AppBar, Badge, Button, Card, Icon, Screen, Text } from '@/ui'
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
@@ -14,21 +17,52 @@ export default function ReportScreen() {
   const { t } = useTranslation(['progress', 'common'])
   const router = useRouter()
   const goBack = useBack('/trends')
-  const { state } = useStore()
-  const targets = useAppState((s) => s.targets)
+  const { data: targets } = useTargets()
+  const userId = useUserId()
 
   const monday = startOfWeek(new Date(), { weekStartsOn: 1 })
-  const week = Array.from({ length: 7 }, (_, index) => {
-    const date = addDays(monday, index)
-    const day = state.days[dateKey(date)]
-    return { date, macros: sumMacros(day?.entries ?? []), entries: day?.entries ?? [] }
+  const from = dateKey(monday)
+  const to = dateKey(addDays(monday, 6))
+
+  const { data: rows = [] } = useNutritionRange(from, to)
+  const byDate = new Map(rows.map((row) => [row.log_date, row]))
+
+  // Water is on `daily_logs`, which the day query reads one day at a time —
+  // seven of those to average a week would be six requests too many.
+  const { data: water = [] } = useQuery({
+    queryKey: ['water-range', userId, from, to],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('daily_logs')
+        .select('log_date, water_glasses')
+        .eq('user_id', userId)
+        .gte('log_date', from)
+        .lte('log_date', to)
+      if (error) throw error
+      return data ?? []
+    },
   })
 
-  const logged = week.filter((day) => day.entries.length > 0)
+  const week = Array.from({ length: 7 }, (_, index) => {
+    const date = addDays(monday, index)
+    const row = byDate.get(dateKey(date))
+    return {
+      date,
+      macros: {
+        kcal: row?.kcal ?? 0,
+        carbs: Number(row?.carbs_g ?? 0),
+        protein: Number(row?.protein_g ?? 0),
+        fat: Number(row?.fat_g ?? 0),
+      },
+      entryCount: row?.entry_count ?? 0,
+    }
+  })
+
+  const logged = week.filter((day) => day.entryCount > 0)
   const average = logged.length
     ? Math.round(logged.reduce((sum, day) => sum + day.macros.kcal, 0) / logged.length)
     : 0
-  const delta = targets.kcal - average
+  const delta = (targets?.kcal ?? 0) - average
 
   const totals = week.reduce(
     (sum, day) => ({
@@ -53,22 +87,18 @@ export default function ReportScreen() {
   }
 
   const best = logged.reduce<(typeof week)[number] | undefined>(
-    (top, day) => (!top || day.entries.length > top.entries.length ? day : top),
+    (top, day) => (!top || day.entryCount > top.entryCount ? day : top),
     undefined,
   )
 
-  const counts = new Map<string, number>()
-  for (const day of week) {
-    for (const entry of day.entries) counts.set(entry.foodId, (counts.get(entry.foodId) ?? 0) + 1)
-  }
-  const [topFoodId, topCount] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0] ?? []
+  // "Most logged" over all time rather than over this week alone: a week is
+  // too few entries for a favourite, and the view already keeps the count.
+  const { data: top = [] } = useTopFoods(1)
+  const topFood = top[0]
 
-  const waterAverage = week.length
-    ? (
-        week.reduce((sum, day) => sum + (state.days[dateKey(day.date)]?.waterGlasses ?? 0), 0) /
-        week.length
-      ).toFixed(1)
-    : '0'
+  const waterAverage = (
+    water.reduce((sum, row) => sum + row.water_glasses, 0) / Math.max(1, week.length)
+  ).toFixed(1)
 
   return (
     <Screen
@@ -115,7 +145,7 @@ export default function ReportScreen() {
             key: dateKey(day.date),
             label: WEEKDAYS[index],
             value: day.macros.kcal,
-            highlight: dateKey(day.date) === state.todayKey,
+            highlight: dateKey(day.date) === today(),
           }))}
           accessibilityLabel={t('progress:report.avgPerDay')}
         />
@@ -166,13 +196,13 @@ export default function ReportScreen() {
               : t('progress:report.noDays')
           }
         />
-        {topFoodId ? (
+        {topFood ? (
           <Highlight
             icon="list-view"
             title={t('progress:report.mostEaten')}
             detail={t('progress:report.mostEatenValue', {
-              food: getFood(topFoodId).name,
-              count: topCount,
+              food: topFood.food.name,
+              count: topFood.timesLogged,
             })}
           />
         ) : null}

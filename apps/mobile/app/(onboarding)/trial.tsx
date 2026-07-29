@@ -3,10 +3,10 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
+import type { Plan } from '@/data'
+import { PurchasesUnavailable, purchasePlan, purchasesAvailable } from '@/data/purchases'
 import { CheckList, PlanPicker } from '@/features/shared'
-import { type Plan, useDispatch } from '@/mock'
-import { Button, Icon, Screen, Text } from '@/ui'
+import { Button, Icon, Screen, Text, useToast } from '@/ui'
 
 const MASCOT = require('../../assets/brand/mascot.png')
 
@@ -14,12 +14,32 @@ const MASCOT = require('../../assets/brand/mascot.png')
 export default function TrialStep() {
   const { t } = useTranslation('onboarding')
   const router = useRouter()
-  const dispatch = useDispatch()
+  const toast = useToast()
   const [plan, setPlan] = useState<Plan>('yearly')
 
-  const start = () => {
-    dispatch({ type: 'setSubscription', status: 'trial', plan })
-    router.replace('/paywall/welcome')
+  /**
+   * The store decides entitlement, not this screen.
+   *
+   * On success RevenueCat's webhook writes `subscriptions` and the app reads
+   * it. Until the SDK key is provisioned there is nothing to buy, and saying
+   * so beats a screen that claims a trial started and then does not have one.
+   */
+  const start = async () => {
+    if (!purchasesAvailable()) {
+      toast.show({ title: t('trial.notConfigured'), tone: 'warning' })
+      router.replace('/preview')
+      return
+    }
+    try {
+      await purchasePlan(plan)
+      router.replace('/paywall/welcome')
+    } catch (error) {
+      if (error instanceof PurchasesUnavailable) return
+      toast.show({
+        title: error instanceof Error ? error.message : t('trial.later'),
+        tone: 'error',
+      })
+    }
   }
 
   return (
@@ -29,14 +49,7 @@ export default function TrialStep() {
           <Button fullWidth onPress={start}>
             {t('trial.start')}
           </Button>
-          <Button
-            variant="ghost"
-            fullWidth
-            onPress={() => {
-              dispatch({ type: 'setSubscription', status: 'none' })
-              router.replace('/preview')
-            }}
-          >
+          <Button variant="ghost" fullWidth onPress={() => router.replace('/preview')}>
             {t('trial.later')}
           </Button>
         </View>

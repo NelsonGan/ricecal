@@ -1,8 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-
+import { type ActivityLevel, useProfile, useUpdateProfile } from '@/data'
 import { ChoiceCard, OnboardingStep } from '@/features/onboarding'
-import { type ActivityLevel, useAppState, useDispatch } from '@/mock'
 import { Text } from '@/ui'
 
 const OPTIONS: ActivityLevel[] = ['sedentary', 'light', 'onFeet', 'veryActive']
@@ -11,8 +10,15 @@ const OPTIONS: ActivityLevel[] = ['sedentary', 'light', 'onFeet', 'veryActive']
 export default function ActivityStep() {
   const { t } = useTranslation(['onboarding', 'common'])
   const router = useRouter()
-  const dispatch = useDispatch()
-  const activity = useAppState((state) => state.profile.activity)
+  const { data: profile } = useProfile()
+  const updateProfile = useUpdateProfile()
+  // The column is snake_case; the copy keys and this screen are not.
+  const activity: ActivityLevel | undefined =
+    profile?.activity_level === 'on_feet'
+      ? 'onFeet'
+      : profile?.activity_level === 'very_active'
+        ? 'veryActive'
+        : profile?.activity_level
 
   return (
     <OnboardingStep
@@ -31,7 +37,7 @@ export default function ActivityStep() {
           title={t(`activity.${option}.title`)}
           description={t(`activity.${option}.subtitle`)}
           selected={activity === option}
-          onPress={() => dispatch({ type: 'updateProfile', patch: { activity: option } })}
+          onPress={() => updateProfile.mutate({ activity: option })}
         />
       ))}
 

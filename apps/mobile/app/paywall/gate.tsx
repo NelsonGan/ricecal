@@ -1,10 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
+import { PurchasesUnavailable, purchasePlan, purchasesAvailable } from '@/data/purchases'
 import { CheckList } from '@/features/shared'
-import { useDispatch } from '@/mock'
-import { Button, Card, Icon, type IconProps, Screen, Squish, Text } from '@/ui'
+import { Button, Card, Icon, type IconProps, Screen, Squish, Text, useToast } from '@/ui'
 
 type Feature = 'photo' | 'barcode' | 'voice'
 
@@ -23,13 +22,27 @@ const HERO: Record<Feature, IconProps> = {
 export default function FeatureGate() {
   const { t } = useTranslation(['paywall', 'common'])
   const router = useRouter()
-  const dispatch = useDispatch()
+  const toast = useToast()
   const params = useLocalSearchParams<{ feature?: Feature }>()
   const feature: Feature = params.feature ?? 'photo'
 
-  const start = () => {
-    dispatch({ type: 'setSubscription', status: 'trial' })
-    router.replace('/paywall/welcome')
+  // Yearly: the gate is the first thing a user sees, and the yearly plan is
+  // the one the design leads with.
+  const start = async () => {
+    if (!purchasesAvailable()) {
+      toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
+      return
+    }
+    try {
+      await purchasePlan('yearly')
+      router.replace('/paywall/welcome')
+    } catch (error) {
+      if (error instanceof PurchasesUnavailable) return
+      toast.show({
+        title: error instanceof Error ? error.message : t('common:action.retry'),
+        tone: 'error',
+      })
+    }
   }
 
   return (

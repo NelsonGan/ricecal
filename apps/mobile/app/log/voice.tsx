@@ -2,17 +2,20 @@ import { useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { useLogFood } from '@/features/logging'
+
+import { type Meal, useLogFood, useSelectedDate } from '@/data'
+import { recogniseDish } from '@/features/logging'
 import { useBack, useDismissTo } from '@/lib/navigation'
-import { getFood, type Meal } from '@/mock'
 import { Button, Icon, Sheet, Spinner, Text } from '@/ui'
 
 /**
  * Voice logging.
  *
  * Not in the screen designs, but the quick selector offers it, and a tile that
- * leads nowhere is worse than a plain one. Same shape as the camera flow: a
- * wait, then a dish from the catalogue.
+ * leads nowhere is worse than a plain one. Same seam as the camera flow: the
+ * "transcription" is `recogniseDish`, which is where a real speech model will
+ * go. Unlike a snap this one waits, because there is no photo to put on a row
+ * in the meantime — a spinner in a sheet is honest about a two-second wait.
  */
 export default function VoiceSheet() {
   const { t } = useTranslation(['logging', 'common'])
@@ -23,17 +26,25 @@ export default function VoiceSheet() {
   const params = useLocalSearchParams<{ meal?: Meal }>()
   const [listening, setListening] = useState(false)
   const logFood = useLogFood()
+  const { selectedDate } = useSelectedDate()
 
   const meal: Meal = params.meal ?? 'breakfast'
 
-  const listen = () => {
+  const listen = async () => {
     setListening(true)
-    setTimeout(() => {
-      logFood({ food: getFood('roti-canai'), meal, quantity: 2 })
-      logFood({ food: getFood('teh-tarik'), meal })
-      setListening(false)
+    try {
+      const heard = await recogniseDish('photo')
+      await logFood.mutateAsync({
+        foodId: heard.foodId,
+        servingId: heard.servingId,
+        meal,
+        logDate: selectedDate,
+        source: 'voice',
+      })
       finish()
-    }, 1600)
+    } finally {
+      setListening(false)
+    }
   }
 
   return (

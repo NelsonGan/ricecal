@@ -2,22 +2,23 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
+import { today, useDayLog, useTargets } from '@/data'
 import { ItemRow, ScreenTitle } from '@/features/shared'
-import { entriesForMeal, entryMacros, getFood, useAppState, useSelectedDay } from '@/mock'
+import { entriesForMeal } from '@/lib/nutrition'
 import { Alert, Button, CalorieRing, Card, Icon, Screen, Text } from '@/ui'
 
 /**
  * 10 VIEW ONLY
  *
- * What a user sees when they decline the trial: the real shape of a day, drawn
- * from the same seed data, with logging locked. Everything is readable, nothing
- * is editable, and the copy says so once rather than on every row.
+ * What a user sees when they decline the trial: their own day, with logging
+ * locked. Everything is readable, nothing is editable, and the copy says so
+ * once rather than on every row.
  */
 export default function PreviewScreen() {
   const { t } = useTranslation(['onboarding', 'common'])
   const router = useRouter()
-  const day = useSelectedDay()
-  const targets = useAppState((state) => state.targets)
+  const day = useDayLog(today())
+  const { data: targets } = useTargets()
 
   const sample = entriesForMeal(day, 'breakfast').slice(0, 2)
 
@@ -44,13 +45,13 @@ export default function PreviewScreen() {
           its content instead of centring what is inside it. */}
       <Card contentClassName="items-center">
         <CalorieRing
-          value={targets.kcal}
-          goal={targets.kcal}
+          value={targets?.kcal ?? 0}
+          goal={targets?.kcal ?? 0}
           size={150}
           // Sample data, not a day at 100%. Without pinning the tone the ring
           // turns kaya and reads as a warning about food nobody has eaten.
           tone="pandan"
-          centerLabel={targets.kcal.toLocaleString()}
+          centerLabel={(targets?.kcal ?? 0).toLocaleString()}
           centerCaption={t('onboarding:viewOnly.sampleDay')}
         />
         <Text variant="meta" className="text-center">
@@ -59,13 +60,12 @@ export default function PreviewScreen() {
       </Card>
 
       {sample.map((entry) => {
-        const food = getFood(entry.foodId)
         return (
           <Card key={entry.id}>
             <ItemRow
-              title={food.name}
-              icon={food.icon}
-              value={entryMacros(entry).kcal}
+              title={entry.foodName}
+              icon={entry.icon}
+              value={entry.macros.kcal}
               unit="kcal"
               detail={t('onboarding:viewOnly.sampleMeal')}
             />

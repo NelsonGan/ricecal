@@ -3,34 +3,42 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { MealCard, ScreenTitle } from '@/features/shared'
 import {
   dateKey,
   MEALS,
-  progressOf,
-  sumMacros,
-  useAppState,
   useDayBurn,
-  useDispatch,
-  useSelectedDay,
-  useStore,
-} from '@/mock'
+  useDayLog,
+  useNutritionRange,
+  usePendingSnaps,
+  useSelectedDate,
+  useSetWater,
+  useTargets,
+} from '@/data'
+import { MealCard, ScreenTitle } from '@/features/shared'
+import { progressOf, sumMacros } from '@/lib/nutrition'
 import { Card, DateStrip, type DateStripDay, ProgressBar, Screen, Text, WaterTracker } from '@/ui'
 
 /** L7 DIARY DAY */
 export default function DiaryScreen() {
   const { t } = useTranslation(['logging', 'common'])
   const router = useRouter()
-  const dispatch = useDispatch()
-  const { state } = useStore()
-  const day = useSelectedDay()
-  const targets = useAppState((app) => app.targets)
-  const burn = useDayBurn(state.selectedDate)
 
-  const selected = parseISO(state.selectedDate)
+  const { selectedDate, setSelectedDate } = useSelectedDate()
+  const day = useDayLog(selectedDate)
+  const { data: targets } = useTargets()
+  const burn = useDayBurn(selectedDate)
+  const setWater = useSetWater(selectedDate)
+  const pending = usePendingSnaps()
+
+  const selected = parseISO(selectedDate)
   // The strip always shows the week the selected day belongs to, so paging to
   // Sunday and back does not scroll the row under the user.
   const monday = startOfWeek(selected, { weekStartsOn: 1 })
+
+  // One query for the visible week rather than seven day queries: the strip
+  // only needs to know which days have something in them.
+  const { data: week } = useNutritionRange(dateKey(monday), dateKey(addDays(monday, 6)))
+  const logged = new Set((week ?? []).flatMap((row) => (row.log_date ? [row.log_date] : [])))
 
   const days: DateStripDay[] = Array.from({ length: 7 }, (_, index) => {
     const date = addDays(monday, index)
@@ -39,15 +47,16 @@ export default function DiaryScreen() {
       key,
       initial: format(date, 'EEEEE'),
       day: date.getDate(),
-      logged: (state.days[key]?.entries.length ?? 0) > 0,
+      logged: logged.has(key),
     }
   })
 
   const eaten = sumMacros(day.entries)
   // Same credit the ring on Today applies, so the two screens never disagree
   // about how much of the day is left.
-  const budget = targets.kcal + burn
+  const budget = (targets?.kcal ?? 0) + burn
   const left = budget - eaten.kcal
+  const waterGoal = targets?.waterGlasses ?? 8
 
   return (
     <Screen>
@@ -56,11 +65,7 @@ export default function DiaryScreen() {
         trailing={<Text variant="caption">{format(selected, 'EEE d MMM')}</Text>}
       />
 
-      <DateStrip
-        days={days}
-        value={state.selectedDate}
-        onChange={(date) => dispatch({ type: 'selectDate', date })}
-      />
+      <DateStrip days={days} value={selectedDate} onChange={setSelectedDate} />
 
       <Card>
         <View className="flex-row items-end justify-between">
@@ -106,6 +111,10 @@ export default function DiaryScreen() {
                 params: { id: entry.foodId, entryId: entry.id },
               })
             }
+            onFixEntry={(entry) => {
+              pending.remove(entry.id)
+              router.push({ pathname: '/log/search', params: { meal: entry.meal } })
+            }}
           />
         )
       })}
@@ -119,13 +128,13 @@ export default function DiaryScreen() {
       <Card
         title={t('logging:diary.water', {
           done: day.waterGlasses,
-          total: targets.waterGlasses,
+          total: waterGoal,
         })}
       >
         <WaterTracker
           filled={day.waterGlasses}
-          goal={targets.waterGlasses}
-          onChange={(glasses) => dispatch({ type: 'setWater', glasses })}
+          goal={waterGoal}
+          onChange={(glasses) => setWater.mutate(glasses)}
           glassLabel={(ordinal, total) => t('logging:diary.glassOf', { ordinal, total })}
         />
       </Card>
