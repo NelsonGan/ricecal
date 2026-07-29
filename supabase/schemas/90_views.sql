@@ -32,13 +32,11 @@
 create view public.food_details with (security_invoker = on) as
 select
   f.id,
-  f.owner_id,
   f.slug,
   f.name,
   f.brand,
   f.icon_set,
   f.icon_name,
-  f.image_path,
   f.place,
   f.kcal,
   f.carbs_g,
@@ -176,7 +174,6 @@ select distinct on (g.user_id)
   g.protein_g,
   g.fat_g,
   g.water_glasses,
-  g.steps,
   g.is_custom
 from public.daily_goals g
 where g.effective_from <= public.local_today(g.user_id)

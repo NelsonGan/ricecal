@@ -3,7 +3,7 @@ export const onboarding = {
     title: 'Every dish, already counted',
     subtitle: 'Nasi lemak, roti canai, cendol. Every local dish already in the book.',
     perks: {
-      track: { title: 'Track every calorie', subtitle: 'Snap, scan or search in seconds' },
+      track: { title: 'Track every calorie', subtitle: 'Snap a photo or search in seconds' },
       habit: { title: 'Build a healthier habit', subtitle: 'Gentle goals, streaks, no shaming' },
       local: { title: 'Made for Malaysia', subtitle: 'Mamak, kopitiam and hawker dishes' },
     },
@@ -43,7 +43,7 @@ export const onboarding = {
     light: { title: 'Lightly active', subtitle: 'Some walking, light chores' },
     onFeet: { title: 'On my feet', subtitle: 'Retail, nursing, site work' },
     veryActive: { title: 'Very active', subtitle: 'Training most days' },
-    note: 'Connect a watch later, we adjust this for you.',
+    note: 'A rough answer is fine. You can change it any time.',
   },
 
   foodStyle: {
@@ -115,9 +115,8 @@ export const onboarding = {
     title: 'Start logging with RiceCal Pro',
     perks: {
       unlimited: 'Unlimited meal logging',
-      scanning: 'Photo and barcode scanning',
+      scanning: 'Photo scanning',
       database: 'Local hawker food database',
-      sync: 'Weight and workout sync',
     },
     yearly: 'Yearly',
     yearlyBadge: 'SAVE 45%',

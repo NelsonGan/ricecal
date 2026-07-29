@@ -34,7 +34,6 @@ create table public.daily_goals (
   protein_g       integer not null check (protein_g >= 0),
   fat_g           integer not null check (fat_g >= 0),
   water_glasses   smallint not null default 8 check (water_glasses between 1 and 30),
-  steps           integer not null default 8000 check (steps between 0 and 100000),
 
   -- True once the user has overridden the computed budget by hand. The
   -- recompute trigger reads exactly this and stops.

@@ -72,7 +72,7 @@ export default function FoodDetail() {
   const [note, setNote] = useState(existing?.note ?? '')
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const { data: heroUrl } = useMealPhotoUrl(existing?.photoPath ?? food?.imagePath)
+  const { data: heroUrl } = useMealPhotoUrl(existing?.photoPath)
 
   if (!food) {
     return (

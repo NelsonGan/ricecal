@@ -25,14 +25,8 @@ export const keys = {
   foodSearch: (userId: string, query: string, place: string) =>
     ['food-search', userId, query, place] as const,
   food: (id: string) => ['food', id] as const,
-  myFoods: (userId: string) => ['my-foods', userId] as const,
   usualFoods: (userId: string, meal: string) => ['usual-foods', userId, meal] as const,
 
   weighIns: (userId: string) => ['weigh-ins', userId] as const,
-  workouts: (userId: string, date: string) => ['workouts', userId, date] as const,
-  activity: (userId: string, date: string) => ['activity', userId, date] as const,
-  weeklyBurn: (userId: string, from: string) => ['weekly-burn', userId, from] as const,
-
-  achievementCatalogue: () => ['achievement-catalogue'] as const,
   photo: (path: string) => ['photo', path] as const,
 } as const

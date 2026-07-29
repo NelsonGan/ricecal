@@ -1,14 +1,18 @@
 -- ---------------------------------------------------------------------------
 -- The dish catalogue.
 --
--- ONE TABLE FOR TWO KINDS OF ROW
+-- ONE SHARED CATALOGUE, READ ONLY TO CLIENTS
 --
--- `owner_id is null` is the shared catalogue everybody sees; `owner_id = <a
--- user>` is a dish that user created. A separate `custom_foods` table would
--- have meant every read that touches food doing a union, every join in
--- `food_logs` choosing between two foreign keys, and the search screen
--- merging two result sets by hand. One table with a nullable owner costs one
--- clause in one policy.
+-- Every row here is visible to every signed-in user, and no client can write
+-- one: there is no insert, update or delete grant for `authenticated` at all,
+-- not merely no policy, so a policy added later by mistake cannot quietly turn
+-- into a write path. Rows arrive from the import loader running as
+-- `service_role`.
+--
+-- Users do not create dishes. A nullable `owner_id` used to carve private rows
+-- out of this table; removing it is what makes `slug` a real identity — every
+-- row has one and it is unique, rather than being null for the half of the
+-- table that belonged to somebody.
 --
 -- MACROS ARE PER BASE SERVING
 --
@@ -28,13 +32,9 @@
 create table public.foods (
   id             uuid primary key default gen_random_uuid(),
 
-  -- Null for the shared catalogue, set for a dish one user created.
-  owner_id       uuid references auth.users (id) on delete cascade,
-
-  -- Stable handle for catalogue rows ('nasi-lemak-ayam'), so the seed migration
-  -- is idempotent and so a fixture can name a dish without knowing its uuid.
-  -- Null on user-created foods, which have no stable identity to name.
-  slug           text check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  -- Stable handle ('nasi-lemak-ayam'), so the import loader is idempotent and
+  -- so a test can name a dish without knowing its uuid.
+  slug           text not null check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
 
   -- Local spelling, unchanged in every language. Dish names are not copy and
   -- never go through i18n.
@@ -43,11 +43,6 @@ create table public.foods (
 
   icon_set       public.icon_set not null default 'dishes',
   icon_name      text not null,
-  -- A photo the user took of their own dish, as a path inside `meal-photos`.
-  -- Null on every catalogue row: the shared dishes are illustrated, and an
-  -- illustration is what a row falls back to when this is empty — which is why
-  -- `icon_name` stays required rather than becoming one of two options.
-  image_path     text,
 
   place          public.food_place not null default 'hawker',
 
@@ -67,19 +62,15 @@ create table public.foods (
   -- False means "a plausible estimate", true means someone checked it. Shown
   -- as a badge, and the flag a future catalogue-review queue sorts on.
   verified       boolean not null default false,
-  -- Where the numbers came from: a citation for catalogue rows, null for a
-  -- dish the user typed in.
+  -- Where the numbers came from. A citation, and the audit trail for an
+  -- imported row whose figures someone later disputes.
   source         text,
 
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now(),
 
-  -- A slug identifies a catalogue row. Two users may both create "Mum's curry"
-  -- and neither gets a slug, so the uniqueness is scoped to the shared rows.
-  constraint foods_owner_has_no_slug check (owner_id is null or slug is null)
+  constraint foods_slug_key unique (slug)
 );
-
-create unique index foods_slug_key on public.foods (slug) where owner_id is null;
 
 -- Trigram search over the name. `gin_trgm_ops` answers both `ILIKE '%tarik%'`
 -- and `similarity(name, 'char kuey teow') > 0.3`, which is what makes the
@@ -87,40 +78,18 @@ create unique index foods_slug_key on public.foods (slug) where owner_id is null
 create index foods_name_trgm_idx
   on public.foods using gin (name extensions.gin_trgm_ops);
 
--- "My custom dishes", and the cascade path when an account is deleted.
-create index foods_owner_idx on public.foods (owner_id) where owner_id is not null;
-
 create trigger foods_set_updated_at
   before update on public.foods
   for each row execute function public.set_updated_at();
 
 alter table public.foods enable row level security;
 
-grant select, insert, update, delete on public.foods to authenticated;
+-- Select only. The absence of the other three grants is the control; see the
+-- header.
+grant select on public.foods to authenticated;
 grant select, insert, update, delete on public.foods to service_role;
 
--- The shared catalogue is readable by every signed-in user; a custom dish is
--- readable only by the user who made it.
-create policy "foods: read catalogue and own"
+create policy "foods: read catalogue"
   on public.foods for select
   to authenticated
-  using (owner_id is null or owner_id = (select auth.uid()));
-
--- `owner_id is not null` in the check is what stops a client inserting a row
--- into the shared catalogue. Catalogue rows come from migrations and from
--- service_role, never from a phone.
-create policy "foods: insert own"
-  on public.foods for insert
-  to authenticated
-  with check (owner_id = (select auth.uid()));
-
-create policy "foods: update own"
-  on public.foods for update
-  to authenticated
-  using (owner_id = (select auth.uid()))
-  with check (owner_id = (select auth.uid()));
-
-create policy "foods: delete own"
-  on public.foods for delete
-  to authenticated
-  using (owner_id = (select auth.uid()));
+  using (true);

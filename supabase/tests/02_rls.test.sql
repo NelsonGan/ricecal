@@ -23,20 +23,28 @@ values
   (:'user_a', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'a@example.test', '{}'::jsonb, '{}'::jsonb, now(), now()),
   (:'user_b', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'b@example.test', '{}'::jsonb, '{}'::jsonb, now(), now());
 
+-- Two catalogue dishes to log against. Nothing seeds `foods` any more, so the
+-- fixture is local to this transaction and rolls back with it.
+insert into public.foods (slug, name, icon_name, kcal, carbs_g, protein_g, fat_g)
+values
+  ('fixture-nasi-lemak', 'Nasi lemak ayam berempah', 'nasi-lemak', 640, 78, 27, 25),
+  ('fixture-roti-canai', 'Roti canai',               'roti-canai', 301, 39,  6, 13);
+
+insert into public.food_servings (food_id, slug, label, factor, is_default)
+select f.id, 'plate', '1 plate', 1, true
+from public.foods f
+where f.slug in ('fixture-nasi-lemak', 'fixture-roti-canai');
+
 -- A logs a plate; B logs one too.
 insert into public.food_logs (user_id, log_date, meal, food_id, serving_id)
 select :'user_a', current_date, 'lunch', f.id, s.id
 from public.foods f join public.food_servings s on s.food_id = f.id and s.is_default
-where f.slug = 'nasi-lemak-ayam';
+where f.slug = 'fixture-nasi-lemak';
 
 insert into public.food_logs (user_id, log_date, meal, food_id, serving_id)
 select :'user_b', current_date, 'lunch', f.id, s.id
 from public.foods f join public.food_servings s on s.food_id = f.id and s.is_default
-where f.slug = 'roti-canai';
-
--- A creates a private dish.
-insert into public.foods (owner_id, name, icon_name, kcal, carbs_g, protein_g, fat_g)
-values (:'user_a', 'Mak''s rendang', 'rendang', 420, 12, 30, 28);
+where f.slug = 'fixture-roti-canai';
 
 insert into public.weight_logs (user_id, measured_on, weight_kg) values (:'user_a', current_date, 68.0);
 insert into public.weight_logs (user_id, measured_on, weight_kg) values (:'user_b', current_date, 74.0);
@@ -66,11 +74,12 @@ select is(
   'a user sees only their own profile'
 );
 
--- 28 catalogue rows plus the one dish this user created.
+-- The catalogue is shared and undivided: there are no per-user rows left for a
+-- policy to hide, so this is simply everything in the table.
 select is(
   (select count(*)::integer from public.foods),
-  29,
-  'a user sees the shared catalogue plus their own dishes'
+  2,
+  'a user sees the whole shared catalogue'
 );
 
 -- The views are `security_invoker`, so the table policies filter them. A view
@@ -95,7 +104,7 @@ select throws_ok(
        select %L, current_date, 'dinner', f.id, s.id
        from public.foods f join public.food_servings s
          on s.food_id = f.id and s.is_default
-       where f.slug = 'teh-tarik'$q$,
+       where f.slug = 'fixture-roti-canai'$q$,
     :'user_b'
   ),
   '42501',
@@ -126,18 +135,23 @@ select throws_ok(
   'a user cannot grant themselves a subscription'
 );
 
+-- The catalogue is read-only to clients for the same reason and by the same
+-- mechanism: no insert GRANT at all, so this is a privilege error rather than a
+-- policy miss. Users do not create dishes, and a policy added later by mistake
+-- could not make them able to.
 select throws_ok(
-  $q$insert into public.achievements (key, icon_name) values ('cheated', 'star')$q$,
+  $q$insert into public.foods (slug, name, icon_name, kcal) values ('fake', 'Fake', 'rice', 1)$q$,
   '42501',
   null,
-  'a user cannot invent a badge'
+  'a user cannot insert into the catalogue'
 );
 
 select throws_ok(
-  $q$insert into public.foods (owner_id, name, icon_name, kcal) values (null, 'Fake', 'rice', 1)$q$,
+  $q$insert into public.food_servings (food_id, slug, label, factor)
+     select f.id, 'huge', 'Enormous', 9 from public.foods f limit 1$q$,
   '42501',
   null,
-  'a user cannot insert into the shared catalogue'
+  'nor invent a portion for a dish in it'
 );
 
 reset role;
@@ -155,17 +169,18 @@ select is(
   'the other user sees only their own log'
 );
 
--- A's private dish must not appear, so B is back to the 28 shared rows.
+-- Both users see the same catalogue. There is nothing user-scoped left in it,
+-- which is the point: one set of rows, one policy, no divergence to test for.
 select is(
   (select count(*)::integer from public.foods),
-  28,
-  'a private dish is invisible to everyone else'
+  2,
+  'the other user sees the same catalogue'
 );
 
 select is(
   (select count(*)::integer from public.food_servings),
-  84,
-  'and so are its portions'
+  2,
+  'and the same portions'
 );
 
 reset role;

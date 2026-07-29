@@ -1,14 +1,4 @@
-import type { Tables } from '@/lib/database.types'
-import type {
-  ActivitySession,
-  Entry,
-  Food,
-  FoodDetailsRow,
-  FoodLogRow,
-  IconRef,
-  Meal,
-  Serving,
-} from './types'
+import type { Entry, Food, FoodDetailsRow, FoodLogRow, IconRef, Meal, Serving } from './types'
 import { fromDbSource } from './types'
 
 /**
@@ -48,7 +38,7 @@ export function toServings(json: FoodDetailsRow['servings']): Serving[] {
 
 export type FoodStats = { timesLogged: number; meals: Meal[] }
 
-export function toFood(row: FoodDetailsRow, userId?: string, stats?: FoodStats | undefined): Food {
+export function toFood(row: FoodDetailsRow, stats?: FoodStats | undefined): Food {
   const servings = toServings(row.servings)
   return {
     id: row.id ?? '',
@@ -66,12 +56,9 @@ export function toFood(row: FoodDetailsRow, userId?: string, stats?: FoodStats |
       protein: Number(row.protein_g ?? 0),
       fat: Number(row.fat_g ?? 0),
     },
-    imagePath: row.image_path ?? undefined,
-    ownerId: row.owner_id,
     verified: row.verified ?? false,
     timesLogged: stats?.timesLogged,
     usualMeals: stats?.meals,
-    custom: Boolean(row.owner_id) && row.owner_id === userId,
   }
 }
 
@@ -100,34 +87,5 @@ export function toEntry(row: FoodLogRow): Entry {
       protein: Number(row.protein_g ?? 0),
       fat: Number(row.fat_g ?? 0),
     },
-  }
-}
-
-/** The illustration for each kind of workout. Presentation, not data. */
-const SESSION_ICONS: Record<string, IconRef> = {
-  run: { set: 'body', name: 'running' } as IconRef,
-  badminton: { set: 'body', name: 'badminton' } as IconRef,
-  gym: { set: 'body', name: 'dumbbell' } as IconRef,
-  walk: { set: 'body', name: 'footprints' } as IconRef,
-  cycle: { set: 'body', name: 'cycling' } as IconRef,
-  swim: { set: 'body', name: 'swimming' } as IconRef,
-  other: { set: 'body', name: 'heart-rate' } as IconRef,
-}
-
-export function toSession(row: Tables<'workouts'>): ActivitySession {
-  return {
-    id: row.id,
-    kind: row.kind,
-    // Falls back to the kind, which the screen translates. A workout synced
-    // from a watch usually names itself; one added by hand often does not.
-    title: row.title ?? row.kind,
-    icon: SESSION_ICONS[row.kind] ?? SESSION_ICONS.other,
-    startedAt: row.started_at,
-    minutes: row.duration_min,
-    kcal: row.kcal,
-    distanceKm: row.distance_km === null ? undefined : Number(row.distance_km),
-    avgHr: row.avg_hr ?? undefined,
-    elevationM: row.elevation_m ?? undefined,
-    splitSeconds: row.split_seconds ?? undefined,
   }
 }

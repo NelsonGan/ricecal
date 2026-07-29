@@ -1,30 +1,18 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useDeferredValue, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Pressable, View } from 'react-native'
+import { View } from 'react-native'
 
 import { type Meal, type SearchFilter, useFoodSearch } from '@/data'
 import { ItemRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
-import {
-  AppBar,
-  Badge,
-  Card,
-  Chip,
-  EmptyState,
-  Icon,
-  Screen,
-  SearchField,
-  Skeleton,
-  Text,
-} from '@/ui'
+import { AppBar, Badge, Card, Chip, EmptyState, Screen, SearchField, Skeleton, Text } from '@/ui'
 
 /**
- * The chips, in order. `mine` is not a place — it is the owner filter,
- * `owner_id = me`. Narrower than `SearchFilter`, which also admits the two
+ * The chips, in order. Narrower than `SearchFilter`, which also admits the two
  * places the design does not offer a chip for.
  */
-const FILTERS = ['all', 'mine', 'mamak', 'kopitiam', 'packaged'] as const
+const FILTERS = ['all', 'mamak', 'kopitiam', 'packaged'] as const
 
 /** L5 SEARCH */
 export default function SearchScreen() {
@@ -42,18 +30,10 @@ export default function SearchScreen() {
 
   const meal = params.meal
 
-  // The database does the filtering: `ilike` on the name, the place, or the
-  // owner. Searching a table the phone does not hold is the whole point of
-  // having moved the catalogue off it.
+  // The database does the filtering: `ilike` on the name, or the place.
+  // Searching a table the phone does not hold is the whole point of having
+  // moved the catalogue off it.
   const { data: results = [], isPending } = useFoodSearch(deferredQuery, filter)
-
-  const openCustom = () =>
-    router.push({
-      // Whatever was typed and not found is the name of the dish about to be
-      // created — retyping it would be the app forgetting on purpose.
-      pathname: '/log/custom',
-      params: { meal, name: query.trim() },
-    })
 
   return (
     <Screen>
@@ -96,20 +76,13 @@ export default function SearchScreen() {
           <ItemRow
             title={food.name}
             icon={food.icon}
-            photoPath={food.imagePath}
             value={food.macros.kcal}
             unit="kcal"
             detail={`${t(`logging:search.place.${food.place}`)} · ${food.servingLabel}`}
-            // A dish of the user's own says so; otherwise the top hit carries a
-            // confidence badge, the way a ranked result set does.
+            // The top hit carries a confidence badge, the way a ranked result
+            // set does. Everything below it is just a match.
             trailing={
-              food.custom ? (
-                <Badge tone="water">
-                  <Text variant="micro" className="text-water-ink">
-                    {t('logging:search.yours')}
-                  </Text>
-                </Badge>
-              ) : index === 0 && deferredQuery.length > 0 ? (
+              index === 0 && deferredQuery.length > 0 ? (
                 <Badge tone="pandan">
                   <Text variant="micro" className="text-pandan-ink">
                     {t('logging:search.match', { percent: 96 })}
@@ -123,18 +96,6 @@ export default function SearchScreen() {
           />
         </Card>
       ))}
-
-      <Pressable
-        onPress={openCustom}
-        className="mb-2 flex-row items-center justify-center gap-2 rounded-tile border-[3px] border-line border-dashed p-3"
-        accessibilityRole="button"
-        accessibilityLabel={t('logging:search.customFood')}
-      >
-        <Icon set="ui" name="plus" size={20} />
-        <Text variant="label" className="text-muted">
-          {t('logging:search.customFood')}
-        </Text>
-      </Pressable>
     </Screen>
   )
 }

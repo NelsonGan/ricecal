@@ -21,8 +21,6 @@ export const profile = {
     settings: 'SETTINGS',
     goals: 'Goals and targets',
     goalsValue: '{{kcal}} kcal',
-    connected: 'Connected apps',
-    connectedValue: '{{count}} active',
     reminders: 'Reminders',
     remindersValue: '{{count}} on',
     units: 'Units and language',
@@ -45,22 +43,7 @@ export const profile = {
     weeklyPace: 'Weekly pace',
     other: 'OTHER',
     waterGoal: 'Water goal',
-    stepGoal: 'Step goal',
     saved: 'Targets saved',
-  },
-
-  connected: {
-    title: 'Connected apps',
-    watch: 'Smartwatch',
-    watchSynced: 'Synced {{minutes}} min ago',
-    phone: 'Phone health app',
-    phoneDetail: 'Steps and workouts',
-    running: 'Running app',
-    scale: 'Smart scale',
-    notConnected: 'Not connected',
-    sync: 'SYNC',
-    autoSync: 'Auto sync every 15 min',
-    wifiOnly: 'Sync on Wi-Fi only',
   },
 
   reminders: {
@@ -131,9 +114,8 @@ export const profile = {
     included: 'INCLUDED',
     perks: {
       unlimited: 'Unlimited logging',
-      scanning: 'Photo and barcode scan',
+      scanning: 'Photo scanning',
       database: 'Local food database',
-      sync: 'Workout and weight sync',
     },
     cancel: 'Cancel subscription',
     cancelTitle: 'Cancel your subscription?',

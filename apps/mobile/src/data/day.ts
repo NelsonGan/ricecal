@@ -147,3 +147,31 @@ export function useNutritionRange(from: string, to: string) {
 export function entriesForMeal(day: DayLog, meal: string): Entry[] {
   return day.entries.filter((entry) => entry.meal === meal)
 }
+
+/**
+ * Consecutive days with at least one entry.
+ *
+ * The gaps-and-islands arithmetic is in `logging_streak()` rather than here,
+ * so the badge on Today and the same number on Me cannot drift apart, and a
+ * future reminder job reads it without a client.
+ *
+ * A run ending yesterday still counts as current — otherwise a 30-day streak
+ * reads as zero every morning until breakfast is logged.
+ */
+export function useStreak(): { current: number; best: number } {
+  const userId = useUserId()
+
+  const { data } = useQuery({
+    queryKey: keys.streak(userId),
+    queryFn: async () => {
+      const rows = unwrap(await supabase.rpc('logging_streak'))
+      const row = Array.isArray(rows) ? rows[0] : rows
+      return {
+        current: row?.current_days ?? 0,
+        best: row?.best_days ?? 0,
+      }
+    },
+  })
+
+  return data ?? { current: 0, best: 0 }
+}

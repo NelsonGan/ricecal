@@ -1,9 +1,7 @@
 export const progress = {
   tabs: {
     weight: 'Weight',
-    activity: 'Activity',
     report: 'Your week',
-    achievements: 'Achievements',
     nutrition: 'Nutrition',
   },
 
@@ -30,39 +28,6 @@ export const progress = {
     saved: 'Weigh in saved',
   },
 
-  activity: {
-    title: 'Activity',
-    noRingsTitle: 'No movement synced',
-    noRingsBody: 'Connect a watch or your phone health app to see your rings here.',
-    burned: '{{count}} kcal',
-    steps: 'STEPS',
-    move: 'Move',
-    moveValue: '{{done}} / {{goal}} kcal',
-    exercise: 'Exercise',
-    exerciseValue: '{{done}} / {{goal}} min',
-    stand: 'Stand',
-    standValue: '{{done}} / {{goal}} hr',
-    today: 'TODAY',
-    weeklyBurn: 'WEEKLY BURN',
-    synced: 'Watch synced {{minutes}} minutes ago',
-    noSessions: 'No sessions today. A walk counts.',
-  },
-
-  session: {
-    distance: 'DISTANCE',
-    time: 'TIME',
-    pace: 'PACE',
-    burned: 'BURNED',
-    avgHr: 'AVG HR',
-    elevation: 'ELEV',
-    splits: 'SPLITS',
-    creditNote: '{{kcal}} kcal added back to today. Budget now {{budget}} kcal.',
-    kcalValue: '{{value}} kcal',
-    bpmValue: '{{value}} bpm',
-    metresValue: '{{value}} m',
-    kmValue: '{{value}} km',
-  },
-
   report: {
     title: 'Your week',
     range: '{{from}} to {{to}}',
@@ -79,46 +44,6 @@ export const progress = {
     mostEatenValue: '{{food}}, {{count}} times',
     water: 'Water',
     waterValue: '{{value}} glasses a day on average',
-  },
-
-  achievements: {
-    title: 'Achievements',
-    streak: '{{count}} day streak',
-    best: 'Best ever: {{count}} days',
-    earned: 'EARNED',
-    locked: 'LOCKED',
-    noneTitle: 'No badges yet',
-    noneBody: 'They come from logging, not from trying. Keep going.',
-    /** What earned a badge, under its name. */
-    detail: {
-      days_one: '{{count}} day',
-      days_other: '{{count}} days',
-      glasses_one: '{{count}} glass',
-      glasses_other: '{{count}} glasses',
-      photos_one: '{{count}} photo',
-      photos_other: '{{count}} photos',
-      km: '{{count}} km',
-      weeks_one: '{{count}} week',
-      weeks_other: '{{count}} weeks',
-    },
-    /** How far off a locked badge is. */
-    progress: '{{value}} of {{goal}}',
-    earnedA11y: 'earned',
-    lockedA11y: 'locked',
-    unlocked: '{{badge}} unlocked',
-    unlockedMore_one: 'And {{count}} more badge',
-    unlockedMore_other: 'And {{count}} more badges',
-    badges: {
-      sevenDays: '7 days',
-      protein: 'Protein',
-      eightGlasses: '8 glasses',
-      photoPro: 'Photo pro',
-      earlyBird: 'Early bird',
-      weekend: 'Weekend',
-      thirtyDays: '30 days',
-      marathon: 'Marathon',
-      perfectWeek: 'Perfect week',
-    },
   },
 
   nutrition: {

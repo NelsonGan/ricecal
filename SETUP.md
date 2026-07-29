@@ -190,6 +190,13 @@ Nothing below has been done. Each is a browser/credential step.
    | App Store Connect app | `6795558595`, SKU `ricecal` |
    | APNs push key | `C5723554WZ` — EAS-generated, shared with `money2time` |
 
+   **`HEALTHKIT` is now stale and has to be turned off by hand.** The app no
+   longer syncs anything from a watch, a phone or a scale, so the entitlement and
+   both `NSHealth*` usage strings are gone from `app.json`. The capability is
+   still enabled on the bundle ID in the Apple Developer portal, and App Review
+   rejects an entitlement the binary never exercises — disable it there before
+   the first submission.
+
    Sign in with Apple needs nothing further: the native
    `expo-apple-authentication` flow authenticates against the bundle ID alone.
    A Services ID and signing key are only required for the web/Android OAuth
@@ -204,8 +211,7 @@ Nothing below has been done. Each is a browser/credential step.
    automatically. Creating one by hand produced a redundant second key and hit
    Apple's two-key cap for nothing; it was revoked the same day.
 5. **Google** — three OAuth client IDs (web, iOS, Android), Firebase project for
-   FCM + `google-services.json`, Play Console record, Health Connect data type
-   declaration.
+   FCM + `google-services.json`, Play Console record.
 6. **RevenueCat** — project, both apps, both SDK keys, Paywalls enabled, one
    placeholder paywall.
 7. **Sentry** — `npx @sentry/wizard@latest -i reactNative`. **Afterwards, diff
@@ -409,7 +415,6 @@ Needs a dev build (`eas build --profile development`) — blocked on cloud setup
 - [ ] **Static query renders after force-quit + airplane mode** ← the one that matters
 - [ ] Apple / Google sign-in sheets appear
 - [ ] Camera, image picker, push token, local notification
-- [ ] HealthKit sheet / Health Connect availability
 - [ ] `Purchases.getOfferings()`, paywall, Sentry error, Mixpanel event
 - [ ] Maestro smoke test
 
@@ -434,6 +439,4 @@ From §13 of the plan, none of these are made yet:
 - Play Console open testing — 12 testers / 14 days on a personal account; that
   clock starts with the Phase 0 dev build, not at launch
 - i18n — English only, or English + BM. Cheap now, painful at 200 strings
-- HealthKit terms — health data cannot be used for advertising or shared with
-  third parties
 - Marketing language — "estimate", never medical claims (App Store 1.4.1)
