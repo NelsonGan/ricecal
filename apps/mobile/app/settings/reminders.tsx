@@ -1,15 +1,14 @@
-import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import { ToggleRow } from '@/features/shared'
+import { useBack } from '@/lib/navigation'
 import { type Reminders, useAppState, useDispatch } from '@/mock'
 import { AppBar, Card, Icon, Screen, Text } from '@/ui'
 
 /** U4 REMINDERS */
 export default function RemindersScreen() {
   const { t } = useTranslation(['profile', 'common'])
-  const router = useRouter()
+  const goBack = useBack('/me')
   const dispatch = useDispatch()
   const { reminders, mealTimes } = useAppState((state) => ({
     reminders: state.reminders,
@@ -23,7 +22,7 @@ export default function RemindersScreen() {
 
   return (
     <Screen>
-      <AppBar title={t('profile:reminders.title')} onBack={() => router.back()} />
+      <AppBar title={t('profile:reminders.title')} onBack={() => goBack()} />
 
       <Card title={t('profile:reminders.meals')}>
         {(['breakfast', 'lunch', 'dinner'] as const).map((meal, index) => (

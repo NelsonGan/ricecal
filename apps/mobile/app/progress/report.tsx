@@ -2,8 +2,8 @@ import { addDays, format, startOfWeek } from 'date-fns'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import { BarChart } from '@/features/shared'
+import { useBack } from '@/lib/navigation'
 import { dateKey, getFood, sumMacros, useAppState, useStore } from '@/mock'
 import { AppBar, Badge, Button, Card, Icon, Screen, Text } from '@/ui'
 
@@ -13,6 +13,7 @@ const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 export default function ReportScreen() {
   const { t } = useTranslation(['progress', 'common'])
   const router = useRouter()
+  const goBack = useBack('/trends')
   const { state } = useStore()
   const targets = useAppState((s) => s.targets)
 
@@ -77,7 +78,7 @@ export default function ReportScreen() {
         </Button>
       }
     >
-      <AppBar title={t('progress:report.title')} onBack={() => router.back()} />
+      <AppBar title={t('progress:report.title')} onBack={() => goBack()} />
 
       <Text variant="caption">
         {t('progress:report.range', {

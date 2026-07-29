@@ -13,13 +13,14 @@ export default function WelcomeToPro() {
   /**
    * Land on Today, then raise the log sheet over it.
    *
-   * Pushing the sheet straight from here would leave it floating over an empty
-   * stack, with nothing behind its scrim — the replace has to land first, which
-   * is what the microtask defers it by.
+   * Two calls rather than one: the sheet is a root-level modal and needs the
+   * day underneath it, or it floats over an empty stack with nothing behind
+   * its scrim. The router queues both actions in order, so the replace lands
+   * first.
    */
   const logFirstMeal = () => {
     router.replace('/today')
-    queueMicrotask(() => router.push('/log'))
+    router.push('/log')
   }
 
   return (

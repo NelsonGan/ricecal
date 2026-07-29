@@ -1,7 +1,6 @@
-import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-
 import { ToggleRow } from '@/features/shared'
+import { useBack } from '@/lib/navigation'
 import { type Privacy, useAppState, useDispatch } from '@/mock'
 import { useTheme } from '@/theme/useTheme'
 import { AppBar, Card, Screen, SegmentedControl, Text } from '@/ui'
@@ -9,7 +8,7 @@ import { AppBar, Card, Screen, SegmentedControl, Text } from '@/ui'
 /** U5 PREFERENCES */
 export default function PreferencesScreen() {
   const { t } = useTranslation('profile')
-  const router = useRouter()
+  const goBack = useBack('/me')
   const dispatch = useDispatch()
   // Appearance lives in the theme, not in the profile: one owner, so the toggle
   // and what is on screen can never disagree.
@@ -23,7 +22,7 @@ export default function PreferencesScreen() {
 
   return (
     <Screen>
-      <AppBar title={t('preferences.title')} onBack={() => router.back()} />
+      <AppBar title={t('preferences.title')} onBack={() => goBack()} />
 
       <Card title={t('preferences.language')}>
         <SegmentedControl

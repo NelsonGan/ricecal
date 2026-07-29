@@ -2,8 +2,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useDeferredValue, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import { FoodRow } from '@/features/shared'
+import { useBack } from '@/lib/navigation'
 import { FOODS, type Meal, type Place } from '@/mock'
 import { AppBar, Badge, Card, Chip, EmptyState, Screen, SearchField, Text } from '@/ui'
 
@@ -14,6 +14,7 @@ const FILTERS: Filter[] = ['all', 'mamak', 'kopitiam', 'packaged']
 export default function SearchScreen() {
   const { t } = useTranslation(['logging', 'common'])
   const router = useRouter()
+  const goBack = useBack('/today')
   const params = useLocalSearchParams<{ meal?: Meal }>()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
@@ -34,7 +35,7 @@ export default function SearchScreen() {
 
   return (
     <Screen>
-      <AppBar title={t('logging:search.title')} onBack={() => router.back()} />
+      <AppBar title={t('logging:search.title')} onBack={() => goBack()} />
 
       <SearchField
         value={query}

@@ -3,8 +3,8 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import { CheckList, PlanPicker } from '@/features/shared'
+import { useBack } from '@/lib/navigation'
 import { type Plan, useDispatch } from '@/mock'
 import { Button, Icon, IconButton, Screen, Text, useToast } from '@/ui'
 
@@ -14,6 +14,7 @@ const MASCOT = require('../../assets/brand/mascot.png')
 export default function HardPaywall() {
   const { t } = useTranslation(['paywall', 'common'])
   const router = useRouter()
+  const goBack = useBack('/today')
   const dispatch = useDispatch()
   const toast = useToast()
   const [plan, setPlan] = useState<Plan>('yearly')
@@ -41,11 +42,7 @@ export default function HardPaywall() {
       }
     >
       <View className="items-end">
-        <IconButton
-          size="sm"
-          accessibilityLabel={t('common:a11y.close')}
-          onPress={() => router.back()}
-        >
+        <IconButton size="sm" accessibilityLabel={t('common:a11y.close')} onPress={() => goBack()}>
           <Icon set="ui" name="close" size={18} />
         </IconButton>
       </View>

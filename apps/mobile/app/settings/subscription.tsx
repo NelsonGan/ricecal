@@ -2,8 +2,8 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import { CheckList } from '@/features/shared'
+import { useBack } from '@/lib/navigation'
 import { progressOf, useAppState, useDispatch } from '@/mock'
 import { AppBar, Button, Card, ConfirmSheet, Icon, ProgressBar, Screen, Text, useToast } from '@/ui'
 
@@ -13,6 +13,7 @@ const TRIAL_DAYS = 3
 export default function SubscriptionScreen() {
   const { t } = useTranslation(['profile', 'paywall', 'common'])
   const router = useRouter()
+  const goBack = useBack('/me')
   const dispatch = useDispatch()
   const toast = useToast()
   const subscription = useAppState((state) => state.subscription)
@@ -45,7 +46,7 @@ export default function SubscriptionScreen() {
         </Button>
       }
     >
-      <AppBar title={t('profile:subscription.title')} onBack={() => router.back()} />
+      <AppBar title={t('profile:subscription.title')} onBack={() => goBack()} />
 
       <Card>
         <View className="flex-row items-center gap-3">
