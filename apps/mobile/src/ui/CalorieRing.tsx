@@ -19,6 +19,12 @@ export type CalorieRingProps = {
   centerCaption?: string
   size?: number
   thickness?: number
+  /**
+   * Pins the fill colour. Without it the ring picks pandan, kaya or hibiscus
+   * from how full it is, which is right for calories and wrong for a ring
+   * measuring anything else.
+   */
+  tone?: 'pandan' | 'kaya' | 'hibiscus' | 'water'
   className?: string
 }
 
@@ -40,6 +46,7 @@ export function CalorieRing({
   centerCaption = 'kcal left',
   size = 196,
   thickness = 21,
+  tone,
   className,
 }: CalorieRingProps) {
   const colors = useThemeColors()
@@ -70,8 +77,18 @@ export function CalorieRing({
       .detach(),
   )
 
-  const fill = fraction > 1 ? colors.hibiscus : fraction >= 0.9 ? colors.kaya : colors.pandan
+  const fill = tone
+    ? colors[tone]
+    : fraction > 1
+      ? colors.hibiscus
+      : fraction >= 0.9
+        ? colors.kaya
+        : colors.pandan
   const remaining = Math.max(0, Math.round(goal - value))
+
+  // The centre number is sized from the ring rather than fixed, so a 110pt ring
+  // in a stat card and a 186pt one on the target screen both read as designed.
+  const labelSize = Math.round(size * 0.22)
 
   return (
     <View
@@ -89,10 +106,17 @@ export function CalorieRing({
         accessibilityLabel={`${value} of ${goal} kcal`}
         accessibilityValue={{ min: 0, max: goal, now: value }}
       >
-        <Text className="font-display text-[42px] leading-[50px] text-heading">
+        <Text
+          className="font-display text-heading"
+          style={{ fontSize: labelSize, lineHeight: Math.round(labelSize * 1.2) }}
+        >
           {centerLabel ?? remaining.toLocaleString()}
         </Text>
-        <Text variant="overline" className="text-muted">
+        <Text
+          variant="overline"
+          className="text-muted"
+          style={{ fontSize: Math.max(10, Math.round(size * 0.065)) }}
+        >
           {centerCaption}
         </Text>
       </View>

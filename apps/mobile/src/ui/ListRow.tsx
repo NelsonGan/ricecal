@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Pressable, View } from 'react-native'
 
+import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
 import { Icon } from './Icon'
 import { Text } from './Text'
@@ -41,6 +42,7 @@ export function ListRow({
   disabled = false,
   className,
 }: ListRowProps) {
+  const colors = useThemeColors()
   const showChevron = chevron ?? (Boolean(onPress) && !trailing)
 
   const content = (
@@ -64,7 +66,11 @@ export function ListRow({
         ) : null}
       </View>
       {trailing}
-      {showChevron ? <Icon set="ui" name="chevron-right" size={20} /> : null}
+      {/* Tinted: the chevron is chrome, and the illustration's own blue is the
+          one colour on the row that means nothing. */}
+      {showChevron ? (
+        <Icon set="ui" name="chevron-right" size={20} tintColor={colors.faint} />
+      ) : null}
     </View>
   )
 

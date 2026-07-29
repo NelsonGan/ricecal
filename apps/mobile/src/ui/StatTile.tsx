@@ -21,9 +21,9 @@ const tones = {
 export type StatTileTone = keyof typeof tones
 
 export type StatTileProps = {
-  /** Caps label above the value: "PACE", "GOAL DATE". */
+  /** Caps label under the value: "PACE", "GOAL DATE". */
   label: string
-  /** The number or short phrase. */
+  /** The number or short phrase. Rendered above the label. */
   value: string
   /** One line of context under it. */
   caption?: string
@@ -58,20 +58,39 @@ export function StatTile({
       // `grow` matters when tiles sit in a row: the slab layer stretches to the
       // tallest sibling, and without this the surface keeps its content height
       // and leaves a bare strip of slab showing underneath.
-      className={cn('grow gap-2 p-lg', palette.fill)}
+      className={cn('grow gap-1.5 px-3 py-4', palette.fill)}
       onPress={onPress}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={`${label}: ${value}`}
       accessibilityHint={caption}
     >
       {icon}
-      <Text variant="overline">{label}</Text>
-      {/* Wraps rather than shrinks. `adjustsFontSizeToFit` looks tidy on one
-          tile and wrong on a row of them: a long value drops to 14px next to a
-          short one still at 24px, and identical tiles stop looking identical.
-          `grow` above already keeps the row's heights equal, so a value on two
-          lines costs nothing. */}
-      <Text className={cn('font-display text-[24px] leading-[30px]', palette.label)}>{value}</Text>
+      {/* Value first, label under: the number is what the eye is looking for,
+          and the label only says what it was.
+
+          One line, shrinking if it has to. Three tiles across a phone leaves
+          about 100pt each, and "1,530" broken after the comma reads as two
+          numbers — worse than the same figure a point or two smaller. The floor
+          keeps the shrink small enough that a row of tiles still looks like a
+          row. */}
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+        className={cn('font-display text-[24px] leading-[30px]', palette.label)}
+      >
+        {value}
+      </Text>
+      {/* Tighter than `overline`: three of these sit side by side on a 393pt
+          screen, and the wider tracking wraps "PROTEIN" onto two lines. */}
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.75}
+        className="font-body-black text-[12px] leading-[15px] tracking-[1.1px] text-faint uppercase"
+      >
+        {label}
+      </Text>
       {caption ? <Text variant="meta">{caption}</Text> : null}
     </Squish>
   )

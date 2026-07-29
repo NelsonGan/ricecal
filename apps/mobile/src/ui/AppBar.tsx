@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { View } from 'react-native'
 
+import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
 import { Icon } from './Icon'
 import { IconButton } from './IconButton'
@@ -27,6 +28,8 @@ export type AppBarProps = {
  * centred instead of drifting right.
  */
 export function AppBar({ title, onBack, action, className }: AppBarProps) {
+  const colors = useThemeColors()
+
   return (
     <View
       className={cn('flex-row items-center gap-md rounded-tile bg-canvas p-3', className)}
@@ -34,7 +37,9 @@ export function AppBar({ title, onBack, action, className }: AppBarProps) {
     >
       {onBack ? (
         <IconButton size="sm" accessibilityLabel="Go back" onPress={onBack}>
-          <Icon set="ui" name="chevron-left" size={20} />
+          {/* Tinted: chrome is monochrome, and the illustration's own palette
+              reads as a stray accent next to a title. */}
+          <Icon set="ui" name="chevron-left" size={20} tintColor={colors.muted} />
         </IconButton>
       ) : null}
 
