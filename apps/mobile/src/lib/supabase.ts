@@ -3,6 +3,7 @@ import 'react-native-url-polyfill/auto'
 import { createClient } from '@supabase/supabase-js'
 import * as SecureStore from 'expo-secure-store'
 
+import type { Database } from './database.types'
 import { env } from './env'
 
 /**
@@ -63,7 +64,12 @@ const SecureStoreAdapter = {
   removeItem: (key: string) => SecureStore.deleteItemAsync(key),
 }
 
-export const supabase = createClient(
+/**
+ * Typed against the generated `Database`, so `.from('food_logs')` knows its own
+ * columns and a misspelled one is a compile error rather than a runtime `null`.
+ * Regenerate with `pnpm db:types` after any migration.
+ */
+export const supabase = createClient<Database>(
   env.EXPO_PUBLIC_SUPABASE_URL,
   env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
   {

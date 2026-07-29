@@ -133,6 +133,15 @@ Nothing below has been done. Each is a browser/credential step.
    `DUMMY_SECRET` is set and `healthcheck` is deployed (the one sanctioned
    laptop deploy — every deploy after this goes through GitHub).
 
+   The schema itself lives in `supabase/schemas/` and is documented in
+   `supabase/README.md` — read that before adding a table.
+
+   **Local ports are 544xx, not the Supabase default 543xx.** The default range
+   is what every project uses, so a machine already running another local stack
+   cannot start this one; the failure reads as a Docker error rather than as
+   two projects wanting port 54322. Studio is on
+   [127.0.0.1:54423](http://127.0.0.1:54423), the database on 54422.
+
    Remaining: connect the **Supabase GitHub integration** once the remote
    exists, with `main` as the production branch. That replaces the custom
    deploy workflow (deleted) and needs no GitHub secrets, because the GitHub
@@ -210,6 +219,7 @@ The workflow spins up throwaway Postgres on the runner and checks two things:
    migration that only works locally because of state a hand-edit left behind
 2. `supabase/schemas/` produces **no diff** against the migrations — catching a
    schema file that was edited without running `db diff -f <name>`
+3. the pgTAP suite passes, including cross-user isolation
 
 That second check is what actually enforces the declarative workflow. Without
 it, schemas and migrations can silently diverge until a deploy fails.
@@ -225,6 +235,10 @@ longer and bills hourly.
 | `ci.yml` | every PR | no |
 | `supabase-migrations.yml` | PRs touching `supabase/**` | no |
 | `supabase-drift.yml` | daily cron + manual | yes |
+
+`supabase-migrations.yml` also runs the pgTAP suite in `supabase/tests/`. The
+RLS half of it is the reason: a missing policy does not raise, it returns other
+people's rows, and nothing else in the pipeline would notice.
 
 Only the drift check needs `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`,
 and `SUPABASE_PROJECT_REF`, because it is the only one that touches the remote

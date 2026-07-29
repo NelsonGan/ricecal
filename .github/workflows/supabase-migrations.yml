@@ -34,6 +34,21 @@ jobs:
       - name: Migrations apply cleanly from scratch
         run: supabase db reset --local
 
+      # pgTAP. The RLS suite is the reason this job exists at all: a missing
+      # policy does not fail, it returns other people's rows, and nothing else
+      # in the pipeline would notice. The tests run as the `authenticated` role
+      # with a forged JWT claim, exactly as PostgREST does.
+      #
+      # Skipped rather than failed when the directory is empty, so the step
+      # does not have to be added and removed as the suite comes and goes.
+      - name: Database tests
+        run: |
+          if ! compgen -G "supabase/tests/*.test.sql" > /dev/null; then
+            echo "supabase/tests/ has no test files yet — nothing to run."
+            exit 0
+          fi
+          supabase test db
+
       # Enforces the declarative workflow. `db diff` compares supabase/schemas/
       # against the migrations; if it produces output, someone edited a schema
       # file and did not run `supabase db diff -f <name>` to capture it. Without
