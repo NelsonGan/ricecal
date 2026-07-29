@@ -13,6 +13,12 @@ export type QuickActionProps = {
   label: string
   icon: IconProps
   tone?: keyof typeof tones
+  /**
+   * Marks the action whose panel is open below. Snap and scan now toggle a
+   * viewfinder inside the sheet rather than pushing a screen, so the square has
+   * an on state where before every tap navigated away.
+   */
+  selected?: boolean
   onPress: () => void
   className?: string
 }
@@ -22,6 +28,7 @@ export function QuickAction({
   label,
   icon,
   tone = 'neutral',
+  selected = false,
   onPress,
   className,
 }: QuickActionProps) {
@@ -29,14 +36,22 @@ export function QuickAction({
 
   return (
     <Squish
-      depth={4}
+      // Pressed flat while its panel is open: the square reads as held down,
+      // which is what "this is the one you are using" looks like in a design
+      // built on raised slabs.
+      depth={selected ? 0 : 4}
       radius={18}
       containerClassName={cn('flex-1', className)}
       slabClassName={colors.slab}
-      className={cn('items-center justify-center gap-2 px-1.5 py-3.5', colors.fill)}
+      className={cn(
+        'items-center justify-center gap-2 px-1.5 py-3.5',
+        colors.fill,
+        selected && 'border-[3px] border-ink',
+      )}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ selected }}
     >
       <Icon {...icon} size={26} />
       <View>

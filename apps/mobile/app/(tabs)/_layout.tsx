@@ -1,7 +1,9 @@
-import { useRouter } from 'expo-router'
+import { Redirect, useRouter } from 'expo-router'
 import { TabList, TabSlot, Tabs, TabTrigger } from 'expo-router/ui'
 import { useTranslation } from 'react-i18next'
 
+import { useSession } from '@/data'
+import { useReminderSync } from '@/features/settings'
 import { NavAction, NavBar, NavItem } from '@/ui'
 
 /**
@@ -17,6 +19,18 @@ import { NavAction, NavBar, NavItem } from '@/ui'
 export default function TabsLayout() {
   const { t } = useTranslation()
   const router = useRouter()
+
+  const { session, loading } = useSession()
+
+  // Here rather than in the root layout: it needs a session, and this is the
+  // first thing that only renders with one. Rewrites the phone's scheduled
+  // reminders whenever the settings behind them change.
+  useReminderSync()
+
+  // The other half of the guard at `/`. Signing out happens from inside these
+  // tabs, so without this the user is left on a screen whose every query has
+  // just started failing.
+  if (!loading && !session) return <Redirect href="/sign-in" />
 
   return (
     <Tabs>

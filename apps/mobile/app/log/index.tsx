@@ -1,22 +1,24 @@
 import { subDays } from 'date-fns'
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, View } from 'react-native'
-import { QuickAction, useLogFood } from '@/features/logging'
-import { ItemRow } from '@/features/shared'
-import { useBack } from '@/lib/navigation'
+
 import {
   dateKey,
-  FOODS,
-  getFood,
   type Meal,
-  mealForHour,
-  sumMacros,
-  useAppState,
+  useDay,
   useDayBurn,
-  useSelectedDay,
-  useStore,
-} from '@/mock'
+  useDayLog,
+  useLogFood,
+  useSelectedDate,
+  useTargets,
+  useUsualFoods,
+} from '@/data'
+import { type CameraMode, InlineCamera, QuickAction } from '@/features/logging'
+import { ItemRow } from '@/features/shared'
+import { useBack } from '@/lib/navigation'
+import { mealForHour, sumMacros } from '@/lib/nutrition'
 import { useThemeColors } from '@/theme/useTheme'
 import { Icon, IconButton, Sheet, Text } from '@/ui'
 
@@ -33,37 +35,45 @@ export default function LogSheet() {
   const goBack = useBack('/today')
   const params = useLocalSearchParams<{ meal?: Meal }>()
   const logFood = useLogFood()
-  const { state } = useStore()
-  const day = useSelectedDay()
-  const targets = useAppState((app) => app.targets)
-  const burn = useDayBurn(state.selectedDate)
+  const { selectedDate } = useSelectedDate()
+  const day = useDayLog(selectedDate)
+  const { data: targets } = useTargets()
+  const burn = useDayBurn(selectedDate)
   const colors = useThemeColors()
+  // The viewfinder opens inside this sheet rather than as its own screen, so
+  // the day stays visible behind it and nothing has to be dismissed twice.
+  const [camera, setCamera] = useState<CameraMode | null>(null)
 
   // The meal comes from whichever card was tapped, or from the clock when the
   // FAB was used and there is nothing else to go on.
   const meal: Meal = params.meal ?? mealForHour(new Date().getHours())
   const mealName = t(`common:meal.${meal}`)
-  const left = targets.kcal + burn - sumMacros(day.entries).kcal
+  const left = (targets?.kcal ?? 0) + burn - sumMacros(day.entries).kcal
 
-  const usual = FOODS.filter((food) => food.usualMeals?.includes(meal) && food.timesLogged)
-    .sort((a, b) => (b.timesLogged ?? 0) - (a.timesLogged ?? 0))
-    .slice(0, 3)
+  // "What you usually eat at this time", from this user's own history rather
+  // than from a column on the shared catalogue.
+  const { data: usual = [] } = useUsualFoods(meal)
 
-  const yesterday = state.days[dateKey(subDays(new Date(), 1))]
-  const yesterdayEntries = yesterday?.entries.filter((entry) => entry.meal === meal) ?? []
+  // Yesterday is a second day query. Cheap, cached, and the only way to offer
+  // "repeat" without keeping every day in memory the way the mock store did.
+  const yesterdayKey = dateKey(subDays(new Date(selectedDate), 1))
+  const { data: yesterday } = useDay(yesterdayKey)
+  const yesterdayEntries = (yesterday?.entries ?? []).filter((entry) => entry.meal === meal)
 
-  const add = (foodId: string) => {
-    logFood({ food: getFood(foodId), meal })
+  const add = (foodId: string, servingId: string) => {
+    logFood.mutate({ foodId, servingId, meal, logDate: selectedDate, source: 'quickAdd' })
     goBack()
   }
 
   const repeatYesterday = () => {
     for (const entry of yesterdayEntries) {
-      logFood({
-        food: getFood(entry.foodId),
-        meal,
-        quantity: entry.quantity,
+      logFood.mutate({
+        foodId: entry.foodId,
         servingId: entry.servingId,
+        quantity: entry.quantity,
+        meal,
+        logDate: selectedDate,
+        source: 'quickAdd',
       })
     }
     goBack()
@@ -88,15 +98,15 @@ export default function LogSheet() {
           label={t('logging:selector.snap')}
           icon={{ set: 'system', name: 'camera' }}
           tone="pandan"
-          onPress={() => router.push({ pathname: '/log/camera', params: { meal, mode: 'photo' } })}
+          selected={camera === 'photo'}
+          onPress={() => setCamera((current) => (current === 'photo' ? null : 'photo'))}
         />
         <QuickAction
           label={t('logging:selector.scan')}
           icon={{ set: 'system', name: 'barcode' }}
           tone="kaya"
-          onPress={() =>
-            router.push({ pathname: '/log/camera', params: { meal, mode: 'barcode' } })
-          }
+          selected={camera === 'barcode'}
+          onPress={() => setCamera((current) => (current === 'barcode' ? null : 'barcode'))}
         />
         <QuickAction
           label={t('logging:selector.say')}
@@ -110,6 +120,8 @@ export default function LogSheet() {
           onPress={() => router.push({ pathname: '/log/search', params: { meal } })}
         />
       </View>
+
+      {camera ? <InlineCamera mode={camera} meal={meal} onDone={() => goBack()} /> : null}
 
       <View className="gap-3 pt-1">
         <Text variant="overline">{t('logging:selector.usual')}</Text>
@@ -127,7 +139,7 @@ export default function LogSheet() {
                 size="sm"
                 variant="primary"
                 accessibilityLabel={t('common:action.add')}
-                onPress={() => add(food.id)}
+                onPress={() => add(food.id, food.servings[0]?.id ?? '')}
               >
                 {/* Tinted to the role: the plus illustration carries its own
                     gold, which on a pandan button reads as a third colour. */}

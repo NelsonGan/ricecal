@@ -3,9 +3,15 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
+import type { Plan } from '@/data'
+import {
+  PurchasesUnavailable,
+  purchasePlan,
+  purchasesAvailable,
+  restorePurchases,
+} from '@/data/purchases'
 import { CheckList, PlanPicker } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
-import { type Plan, useDispatch } from '@/mock'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, Icon, IconButton, Screen, Text, useToast } from '@/ui'
 
@@ -16,14 +22,42 @@ export default function HardPaywall() {
   const { t } = useTranslation(['paywall', 'common'])
   const router = useRouter()
   const goBack = useBack('/today')
-  const dispatch = useDispatch()
   const toast = useToast()
   const colors = useThemeColors()
   const [plan, setPlan] = useState<Plan>('yearly')
 
-  const start = () => {
-    dispatch({ type: 'setSubscription', status: 'trial', plan })
-    router.replace('/paywall/welcome')
+  /**
+   * Starts the store's purchase sheet.
+   *
+   * Nothing is written locally on success: RevenueCat's webhook updates
+   * `subscriptions` and the app reads that — the table has no client write
+   * grant, deliberately. Until the SDK key is provisioned this says so rather
+   * than pretending a trial started.
+   */
+  const start = async () => {
+    if (!purchasesAvailable()) {
+      toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
+      return
+    }
+    try {
+      await purchasePlan(plan)
+      router.replace('/paywall/welcome')
+    } catch (error) {
+      if (error instanceof PurchasesUnavailable) return
+      toast.show({
+        title: error instanceof Error ? error.message : t('common:action.retry'),
+        tone: 'error',
+      })
+    }
+  }
+
+  const restore = async () => {
+    if (!purchasesAvailable()) {
+      toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
+      return
+    }
+    await restorePurchases()
+    toast.show({ title: t('paywall:hard.restored') })
   }
 
   return (
@@ -33,11 +67,7 @@ export default function HardPaywall() {
           <Button fullWidth onPress={start}>
             {t('paywall:hard.start')}
           </Button>
-          <Button
-            variant="ghost"
-            fullWidth
-            onPress={() => toast.show({ title: t('paywall:hard.restored') })}
-          >
+          <Button variant="ghost" fullWidth onPress={restore}>
             {t('paywall:hard.restore')}
           </Button>
         </View>

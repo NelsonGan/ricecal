@@ -38,6 +38,7 @@ select
   f.brand,
   f.icon_set,
   f.icon_name,
+  f.image_path,
   f.place,
   f.kcal,
   f.carbs_g,

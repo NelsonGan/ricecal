@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 
-import { useAppState } from '@/mock'
 import { Button, EmptyState, Screen } from '@/ui'
 
 /**
@@ -14,7 +13,6 @@ import { Button, EmptyState, Screen } from '@/ui'
 export default function NotFound() {
   const { t } = useTranslation('common')
   const router = useRouter()
-  const onboarded = useAppState((state) => state.onboarded)
 
   return (
     <Screen scroll={false} contentClassName="justify-center">
@@ -22,11 +20,7 @@ export default function NotFound() {
         title={t('notFound.title')}
         description={t('notFound.body')}
         icon={{ set: 'ui', name: 'warning' }}
-        action={
-          <Button onPress={() => router.replace(onboarded ? '/today' : '/welcome')}>
-            {t('notFound.action')}
-          </Button>
-        }
+        action={<Button onPress={() => router.replace('/')}>{t('notFound.action')}</Button>}
       />
     </Screen>
   )
