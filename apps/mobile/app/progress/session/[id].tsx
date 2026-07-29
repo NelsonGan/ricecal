@@ -1,15 +1,15 @@
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import { BarChart, StatRow } from '@/features/shared'
+import { useBack } from '@/lib/navigation'
 import { sumMacros, useAppState, useSelectedDay } from '@/mock'
 import { AppBar, Button, Card, Divider, EmptyState, Icon, Screen, Text } from '@/ui'
 
 /** P3 SPORT SESSION */
 export default function SessionScreen() {
   const { t } = useTranslation(['progress', 'common'])
-  const router = useRouter()
+  const goBack = useBack('/trends')
   const params = useLocalSearchParams<{ id: string }>()
   const day = useSelectedDay()
   const { sessions, targets } = useAppState((state) => ({
@@ -22,7 +22,7 @@ export default function SessionScreen() {
   if (!session) {
     return (
       <Screen>
-        <AppBar title={t('progress:tabs.activity')} onBack={() => router.back()} />
+        <AppBar title={t('progress:tabs.activity')} onBack={() => goBack()} />
         <EmptyState
           title={t('progress:activity.noSessions')}
           icon={{ set: 'body', name: 'running-shoe' }}
@@ -42,12 +42,12 @@ export default function SessionScreen() {
   return (
     <Screen
       footer={
-        <Button fullWidth onPress={() => router.back()}>
+        <Button fullWidth onPress={() => goBack()}>
           {t('common:action.done')}
         </Button>
       }
     >
-      <AppBar title={session.title} onBack={() => router.back()} />
+      <AppBar title={session.title} onBack={() => goBack()} />
 
       <View className="h-[140px] items-center justify-center rounded-card border-[3px] border-line bg-track">
         <Icon set="body" name="route-pin" size={96} />

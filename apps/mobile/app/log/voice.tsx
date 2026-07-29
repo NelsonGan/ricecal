@@ -1,9 +1,9 @@
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import { useLogFood } from '@/features/logging'
+import { useBack, useDismissTo } from '@/lib/navigation'
 import { getFood, type Meal } from '@/mock'
 import { Button, Icon, Sheet, Spinner, Text } from '@/ui'
 
@@ -16,7 +16,10 @@ import { Button, Icon, Sheet, Spinner, Text } from '@/ui'
  */
 export default function VoiceSheet() {
   const { t } = useTranslation(['logging', 'common'])
-  const router = useRouter()
+  const goBack = useBack('/today')
+  // Logging can be three modals deep. Finishing returns to the day, not to
+  // the picker the user opened two steps ago.
+  const finish = useDismissTo('/today')
   const params = useLocalSearchParams<{ meal?: Meal }>()
   const [listening, setListening] = useState(false)
   const logFood = useLogFood()
@@ -29,12 +32,12 @@ export default function VoiceSheet() {
       logFood({ food: getFood('roti-canai'), meal, quantity: 2 })
       logFood({ food: getFood('teh-tarik'), meal })
       setListening(false)
-      router.dismissAll()
+      finish()
     }, 1600)
   }
 
   return (
-    <Sheet visible onClose={() => router.back()} title={t('logging:voice.title')}>
+    <Sheet visible onClose={() => goBack()} title={t('logging:voice.title')}>
       <View className="items-center gap-4 py-4">
         {listening ? (
           <Spinner label={t('logging:voice.listening')} />

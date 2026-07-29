@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import { StatRow } from '@/features/shared'
+import { useBack } from '@/lib/navigation'
 import { useAppState } from '@/mock'
 import { Button, Card, Icon, Screen, Text } from '@/ui'
 
@@ -10,6 +10,7 @@ import { Button, Card, Icon, Screen, Text } from '@/ui'
 export default function TrialReminder() {
   const { t } = useTranslation(['paywall', 'common'])
   const router = useRouter()
+  const goBack = useBack('/today')
   const { subscription, streak, weighIns, profile } = useAppState((state) => ({
     subscription: state.subscription,
     streak: state.streak,
@@ -29,7 +30,7 @@ export default function TrialReminder() {
       contentClassName="justify-center"
       footer={
         <View className="gap-1.5">
-          <Button fullWidth onPress={() => router.back()}>
+          <Button fullWidth onPress={() => goBack()}>
             {t('paywall:reminder.keep')}
           </Button>
           <Button

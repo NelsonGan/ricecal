@@ -1,10 +1,10 @@
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import { useLogFood } from '@/features/logging'
 import { MacroBars } from '@/features/shared'
+import { useBack, useDismissTo } from '@/lib/navigation'
 import {
   entryMacros,
   findFood,
@@ -41,7 +41,10 @@ const QUICK_FIXES = ['halfPortion', 'noSambal', 'addEgg', 'extraRice'] as const
  */
 export default function FoodDetail() {
   const { t } = useTranslation(['logging', 'common'])
-  const router = useRouter()
+  const goBack = useBack('/today')
+  // Logging can be three modals deep. Finishing returns to the day, not to
+  // the picker the user opened two steps ago.
+  const finish = useDismissTo('/today')
   const dispatch = useDispatch()
   const toast = useToast()
   const logFood = useLogFood()
@@ -66,7 +69,7 @@ export default function FoodDetail() {
   if (!food) {
     return (
       <Screen>
-        <AppBar title={t('logging:search.emptyTitle')} onBack={() => router.back()} />
+        <AppBar title={t('logging:search.emptyTitle')} onBack={() => goBack()} />
       </Screen>
     )
   }
@@ -89,17 +92,17 @@ export default function FoodDetail() {
         patch: { quantity, servingId, meal, note: note || undefined },
       })
       toast.show({ title: t('logging:detail.fixApplied'), tone: 'success' })
-      router.back()
+      goBack()
       return
     }
     logFood({ food, meal, quantity, servingId, note: note || undefined })
-    router.dismissTo('/today')
+    finish()
   }
 
   const remove = () => {
     if (existing) dispatch({ type: 'removeEntry', id: existing.id })
     setConfirmDelete(false)
-    router.back()
+    goBack()
   }
 
   return (
@@ -112,7 +115,7 @@ export default function FoodDetail() {
         </View>
       }
     >
-      <AppBar title={food.name} onBack={() => router.back()} />
+      <AppBar title={food.name} onBack={() => goBack()} />
 
       <View className="h-[130px] items-center justify-center rounded-card border-[3px] border-line bg-track">
         <Icon {...food.icon} size={100} />

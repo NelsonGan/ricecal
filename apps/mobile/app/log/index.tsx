@@ -2,9 +2,9 @@ import { subDays } from 'date-fns'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { Pressable, View } from 'react-native'
-
 import { QuickAction, useLogFood } from '@/features/logging'
 import { FoodRow } from '@/features/shared'
+import { useBack } from '@/lib/navigation'
 import {
   dateKey,
   FOODS,
@@ -29,6 +29,7 @@ import { Icon, IconButton, Sheet, Text } from '@/ui'
 export default function LogSheet() {
   const { t } = useTranslation(['logging', 'common'])
   const router = useRouter()
+  const goBack = useBack('/today')
   const params = useLocalSearchParams<{ meal?: Meal }>()
   const logFood = useLogFood()
   const { state } = useStore()
@@ -51,7 +52,7 @@ export default function LogSheet() {
 
   const add = (foodId: string) => {
     logFood({ food: getFood(foodId), meal })
-    router.back()
+    goBack()
   }
 
   const repeatYesterday = () => {
@@ -63,11 +64,11 @@ export default function LogSheet() {
         servingId: entry.servingId,
       })
     }
-    router.back()
+    goBack()
   }
 
   return (
-    <Sheet visible onClose={() => router.back()} scrollable>
+    <Sheet visible onClose={() => goBack()} scrollable>
       {/* The heading is rendered here rather than through `title` so the
           remaining count can sit on the same line, right aligned, the way the
           design puts it. */}

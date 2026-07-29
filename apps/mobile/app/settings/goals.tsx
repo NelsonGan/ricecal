@@ -1,8 +1,8 @@
-import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
+import { useBack } from '@/lib/navigation'
 import { computeTargets, type Goal, useAppState, useDispatch } from '@/mock'
 import {
   AppBar,
@@ -21,7 +21,7 @@ const GOALS: Extract<Goal, 'lose' | 'maintain' | 'gain'>[] = ['lose', 'maintain'
 /** U2 GOALS */
 export default function GoalsScreen() {
   const { t } = useTranslation(['profile', 'common'])
-  const router = useRouter()
+  const goBack = useBack('/me')
   const dispatch = useDispatch()
   const toast = useToast()
   const { profile, targets } = useAppState((state) => ({
@@ -60,7 +60,7 @@ export default function GoalsScreen() {
     })
     dispatch({ type: 'updateTargets', patch: { kcal, waterGlasses: water, steps } })
     toast.show({ title: t('profile:goals.saved'), tone: 'success' })
-    router.back()
+    goBack()
   }
 
   return (
@@ -71,7 +71,7 @@ export default function GoalsScreen() {
         </Button>
       }
     >
-      <AppBar title={t('profile:goals.title')} onBack={() => router.back()} />
+      <AppBar title={t('profile:goals.title')} onBack={() => goBack()} />
 
       <Card title={t('profile:goals.dailyCalories')}>
         <View className="flex-row items-baseline justify-between">

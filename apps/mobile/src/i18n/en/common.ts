@@ -61,6 +61,12 @@ export const common = {
     times_other: '{{count}} times',
   },
 
+  notFound: {
+    title: 'That screen has moved',
+    body: 'The link you followed does not point anywhere in this version of the app.',
+    action: 'Go to Today',
+  },
+
   a11y: {
     back: 'Go back',
     close: 'Close',

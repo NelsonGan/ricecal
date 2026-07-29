@@ -1,12 +1,12 @@
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as Device from 'expo-device'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
 import { useLogFood } from '@/features/logging'
+import { useBack, useDismissTo } from '@/lib/navigation'
 import { FOODS, getFood, type Meal } from '@/mock'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, Icon, IconButton, Squish, Text } from '@/ui'
@@ -22,7 +22,10 @@ type Mode = 'photo' | 'barcode'
  */
 export default function CameraScreen() {
   const { t } = useTranslation(['logging', 'common'])
-  const router = useRouter()
+  const goBack = useBack('/today')
+  // Logging can be three modals deep. Finishing returns to the day, not to
+  // the picker the user opened two steps ago.
+  const finish = useDismissTo('/today')
   const insets = useSafeAreaInsets()
   const colors = useThemeColors()
   const params = useLocalSearchParams<{ meal?: Meal; mode?: Mode }>()
@@ -44,7 +47,7 @@ export default function CameraScreen() {
       const guess = mode === 'barcode' ? getFood('instant-noodles') : getFood('nasi-lemak-ayam')
       logFood({ food: guess, meal })
       setAnalysing(false)
-      router.dismissAll()
+      finish()
     }, 1400)
   }
 
@@ -63,7 +66,7 @@ export default function CameraScreen() {
         <Button fullWidth onPress={requestPermission}>
           {t('logging:camera.permissionGrant')}
         </Button>
-        <Button variant="ghost" fullWidth onPress={() => router.back()}>
+        <Button variant="ghost" fullWidth onPress={() => goBack()}>
           {t('common:action.cancel')}
         </Button>
       </View>
@@ -83,7 +86,7 @@ export default function CameraScreen() {
           size="sm"
           variant="ghost"
           accessibilityLabel={t('common:a11y.close')}
-          onPress={() => router.back()}
+          onPress={() => goBack()}
         >
           {/* The chrome on this screen is monochrome: the illustrations carry
               their own palette, which over a camera feed reads as clutter. */}

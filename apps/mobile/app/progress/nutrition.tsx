@@ -1,8 +1,7 @@
 import { subDays } from 'date-fns'
-import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-
 import { FoodRow } from '@/features/shared'
+import { useBack } from '@/lib/navigation'
 import { dateKey, entryMacros, getFood, progressOf, sumMacros, useAppState, useStore } from '@/mock'
 import { AppBar, Card, MacroBar, Screen } from '@/ui'
 
@@ -11,7 +10,7 @@ const WINDOW_DAYS = 30
 /** P6 NUTRITION */
 export default function NutritionScreen() {
   const { t } = useTranslation(['progress', 'common'])
-  const router = useRouter()
+  const goBack = useBack('/trends')
   const { state } = useStore()
   const targets = useAppState((s) => s.targets)
 
@@ -55,7 +54,7 @@ export default function NutritionScreen() {
 
   return (
     <Screen>
-      <AppBar title={t('progress:nutrition.title')} onBack={() => router.back()} />
+      <AppBar title={t('progress:nutrition.title')} onBack={() => goBack()} />
 
       <Card title={t('progress:nutrition.averageDay')}>
         <MacroBar

@@ -1,7 +1,6 @@
-import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-
 import { ToggleRow } from '@/features/shared'
+import { useBack } from '@/lib/navigation'
 import { type Connections, useAppState, useDispatch } from '@/mock'
 import { AppBar, Card, Icon, type IconProps, Screen } from '@/ui'
 
@@ -15,7 +14,7 @@ type Source = {
 /** U3 CONNECTED */
 export default function ConnectedScreen() {
   const { t } = useTranslation('profile')
-  const router = useRouter()
+  const goBack = useBack('/me')
   const dispatch = useDispatch()
   const connections = useAppState((state) => state.connections)
 
@@ -48,7 +47,7 @@ export default function ConnectedScreen() {
 
   return (
     <Screen>
-      <AppBar title={t('connected.title')} onBack={() => router.back()} />
+      <AppBar title={t('connected.title')} onBack={() => goBack()} />
 
       {sources.map((source) => (
         <Card key={source.key}>
