@@ -1,0 +1,165 @@
+import { useRouter } from 'expo-router'
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { View } from 'react-native'
+
+import {
+  appleSignInAvailable,
+  googleSignInAvailable,
+  SignInCancelled,
+  signInWithApple,
+  signInWithEmail,
+  signInWithGoogle,
+  signUpWithEmail,
+} from '@/data/auth'
+import { ProviderButton } from '@/features/auth'
+import { Alert, Button, Divider, Icon, Screen, Text, TextField, useToast } from '@/ui'
+
+type Mode = 'sign-in' | 'sign-up'
+
+/**
+ * The gate. Nothing behind it renders without a session.
+ *
+ * One screen for both directions rather than two: the fields are identical,
+ * the difference is one call, and a user who mistypes an address on a "create
+ * account" screen should not have to find the other one to try again.
+ */
+export default function SignInScreen() {
+  const { t } = useTranslation(['onboarding', 'common'])
+  const router = useRouter()
+  const toast = useToast()
+
+  const [mode, setMode] = useState<Mode>('sign-up')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [notice, setNotice] = useState<string | undefined>()
+
+  const emailError = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)
+    ? undefined
+    : t('onboarding:account.errors.email')
+  const passwordError = password.length >= 8 ? undefined : t('onboarding:account.errors.password')
+  const valid = !emailError && !passwordError
+
+  /** Every provider funnels through here so one failure path serves all three. */
+  const attempt = async (work: () => Promise<void>) => {
+    setBusy(true)
+    setNotice(undefined)
+    try {
+      await work()
+      // No navigation on success: the session changes, and the router's guard
+      // moves the user. Pushing here as well would race it.
+    } catch (error) {
+      if (error instanceof SignInCancelled) return
+      toast.show({
+        title: error instanceof Error ? error.message : t('common:action.retry'),
+        tone: 'error',
+      })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const submitEmail = () => {
+    setSubmitted(true)
+    if (!valid) return
+
+    attempt(async () => {
+      if (mode === 'sign-in') {
+        await signInWithEmail(email, password)
+        return
+      }
+      const result = await signUpWithEmail(email, password)
+      // A project with confirmations on hands back no session. Saying so is
+      // the whole difference between "nothing happened" and "go and click the
+      // link we just sent you".
+      if (result.status === 'check-your-email') {
+        setNotice(t('onboarding:account.checkEmail', { email: result.email }))
+      }
+    })
+  }
+
+  return (
+    <Screen
+      footer={
+        <Button fullWidth onPress={submitEmail} disabled={busy}>
+          {mode === 'sign-up' ? t('onboarding:account.submit') : t('onboarding:account.signInCta')}
+        </Button>
+      }
+    >
+      <View className="items-center gap-3 pt-6 pb-2">
+        <Icon set="food" name="rice-bowl" size={96} />
+        <Text variant="screenTitle" className="text-center">
+          {t('onboarding:account.title')}
+        </Text>
+        <Text variant="meta" className="text-center">
+          {t('onboarding:account.subtitle')}
+        </Text>
+      </View>
+
+      {notice ? <Alert tone="success" title={notice} /> : null}
+
+      {appleSignInAvailable() ? (
+        <ProviderButton provider="apple" onPress={() => attempt(signInWithApple)} disabled={busy} />
+      ) : null}
+
+      {/* Hidden rather than disabled while its client ids are placeholders:
+          a button that cannot succeed is worse than one fewer option. */}
+      {googleSignInAvailable() ? (
+        <ProviderButton
+          provider="google"
+          onPress={() => attempt(signInWithGoogle)}
+          disabled={busy}
+        />
+      ) : null}
+
+      <View className="flex-row items-center gap-3">
+        <Divider className="flex-1" />
+        <Text variant="meta">{t('onboarding:account.or')}</Text>
+        <Divider className="flex-1" />
+      </View>
+
+      <TextField
+        label={t('onboarding:account.email')}
+        value={email}
+        onChangeText={setEmail}
+        placeholder={t('onboarding:account.emailPlaceholder')}
+        autoCapitalize="none"
+        autoComplete="email"
+        keyboardType="email-address"
+        error={submitted ? emailError : undefined}
+        returnKeyType="next"
+      />
+
+      <TextField
+        label={t('onboarding:account.password')}
+        value={password}
+        onChangeText={setPassword}
+        placeholder={t('onboarding:account.passwordPlaceholder')}
+        autoCapitalize="none"
+        autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'}
+        secureTextEntry
+        error={submitted ? passwordError : undefined}
+        returnKeyType="go"
+        onSubmitEditing={submitEmail}
+      />
+
+      <Button
+        variant="ghost"
+        fullWidth
+        onPress={() => {
+          setMode((current) => (current === 'sign-up' ? 'sign-in' : 'sign-up'))
+          setSubmitted(false)
+          setNotice(undefined)
+        }}
+      >
+        {mode === 'sign-up' ? t('onboarding:welcome.signIn') : t('onboarding:account.needAccount')}
+      </Button>
+
+      <Button variant="ghost" fullWidth onPress={() => router.push('/welcome')}>
+        {t('onboarding:account.aboutApp')}
+      </Button>
+    </Screen>
+  )
+}

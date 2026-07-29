@@ -1,40 +1,54 @@
+import { subDays } from 'date-fns'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
+import { dateKey, today, useCurrentWeight, useDayLog, useNutritionRange, useWeighIns } from '@/data'
+import { PurchasesUnavailable, purchasePlan, purchasesAvailable } from '@/data/purchases'
 import { ItemRow, ScreenTitle, StatRow } from '@/features/shared'
-import { entryMacros, getFood, useAppState, useDispatch, useSelectedDay, useStore } from '@/mock'
-import { Button, Card, Icon, Screen, Text } from '@/ui'
+import { Button, Card, Icon, Screen, Text, useToast } from '@/ui'
 
 /** W3 TRIAL ENDED */
 export default function TrialEnded() {
   const { t } = useTranslation(['paywall', 'common'])
   const router = useRouter()
-  const dispatch = useDispatch()
-  const { state } = useStore()
-  const day = useSelectedDay()
-  const { profile, weighIns } = useAppState((s) => ({
-    profile: s.profile,
-    weighIns: s.weighIns,
-  }))
+  const toast = useToast()
+  const date = today()
+  const day = useDayLog(date)
+  const { data: weighIns = [] } = useWeighIns()
+  const current = useCurrentWeight() ?? 0
 
-  const loggedDays = Object.values(state.days).filter((entry) => entry.entries.length > 0)
-  const meals = loggedDays.reduce((total, entry) => total + entry.entries.length, 0)
-  const dropped = Math.max(0, (weighIns[0]?.kg ?? profile.weightKg) - profile.weightKg)
+  // What the trial actually produced, counted from the logs rather than
+  // asserted: the whole point of this screen is that the numbers are theirs.
+  const { data: window = [] } = useNutritionRange(dateKey(subDays(new Date(date), 30)), date)
+  const loggedDays = window.length
+  const meals = window.reduce((total, row) => total + (row.entry_count ?? 0), 0)
+  const dropped = Math.max(0, (weighIns[0]?.kg ?? current) - current)
 
   const locked = day.entries.slice(0, 2)
+
+  const resume = async () => {
+    if (!purchasesAvailable()) {
+      toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
+      return
+    }
+    try {
+      await purchasePlan('yearly')
+      router.replace('/today')
+    } catch (error) {
+      if (error instanceof PurchasesUnavailable) return
+      toast.show({
+        title: error instanceof Error ? error.message : t('common:action.retry'),
+        tone: 'error',
+      })
+    }
+  }
 
   return (
     <Screen
       footer={
         <View className="gap-1.5">
-          <Button
-            fullWidth
-            onPress={() => {
-              dispatch({ type: 'setSubscription', status: 'active' })
-              router.replace('/today')
-            }}
-          >
+          <Button fullWidth onPress={resume}>
             {t('paywall:ended.resume')}
           </Button>
           <Button variant="ghost" fullWidth onPress={() => router.replace('/today')}>
@@ -60,7 +74,7 @@ export default function TrialEnded() {
           <Icon set="system" name="lock" size={46} />
           <View className="min-w-0 flex-1 gap-0.5">
             <Text variant="bodyStrong">{t('paywall:ended.title')}</Text>
-            <Text variant="meta">{t('paywall:ended.body', { days: loggedDays.length })}</Text>
+            <Text variant="meta">{t('paywall:ended.body', { days: loggedDays })}</Text>
           </View>
         </View>
       </Card>
@@ -69,7 +83,7 @@ export default function TrialEnded() {
         <StatRow
           size="md"
           stats={[
-            { key: 'days', label: t('paywall:ended.days'), value: String(loggedDays.length) },
+            { key: 'days', label: t('paywall:ended.days'), value: String(loggedDays) },
             { key: 'meals', label: t('paywall:ended.meals'), value: String(meals) },
             { key: 'kg', label: t('paywall:ended.kgDown'), value: dropped.toFixed(1) },
           ]}
@@ -77,13 +91,12 @@ export default function TrialEnded() {
       </Card>
 
       {locked.map((entry) => {
-        const food = getFood(entry.foodId)
         return (
           <Card key={entry.id}>
             <ItemRow
-              title={food.name}
-              icon={food.icon}
-              value={entryMacros(entry).kcal}
+              title={entry.foodName}
+              icon={entry.icon}
+              value={entry.macros.kcal}
               unit="kcal"
               detail={t('paywall:ended.lockedEntry', { meal: t(`common:meal.${entry.meal}`) })}
             />

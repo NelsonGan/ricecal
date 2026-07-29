@@ -1,76 +1,101 @@
 import { useRouter } from 'expo-router'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { MacroBars, MealCard, ScreenTitle } from '@/features/shared'
 import {
   MEALS,
-  scaleTargets,
-  sumMacros,
-  useAppState,
   useDayBurn,
-  useDispatch,
-  useSelectedDay,
-  useStore,
-} from '@/mock'
-import { Badge, CalorieRing, Card, EmptyState, Icon, Screen, Text, useToast } from '@/ui'
+  useDayLog,
+  usePendingSnaps,
+  useRemoveEntry,
+  useSelectedDate,
+  useStreak,
+  useTargets,
+} from '@/data'
+import { MacroBars, MealCard, ScreenTitle } from '@/features/shared'
+import { scaleTargets, sumMacros } from '@/lib/nutrition'
+import {
+  Badge,
+  Button,
+  CalorieRing,
+  Card,
+  EmptyState,
+  Icon,
+  Screen,
+  Skeleton,
+  Text,
+  useToast,
+} from '@/ui'
 
 /** How long a just-added row stays highlighted. Matches the undo toast. */
 const HIGHLIGHT_MS = 8000
 
 /**
- * L1 TODAY, and L4 once something has just been added.
+ * L1 TODAY.
  *
- * L4 is not a separate screen: it is this one with `lastAdded` set, which
- * highlights the new row and raises the undo toast. Modelling it as state
- * rather than a route is what lets the modal that logged the food simply
- * dismiss back to here.
+ * The screen has three states now that the data is real: no budget yet (a new
+ * account whose onboarding never computed one), loading, and a day. The first
+ * is not an error — `daily_goals` is deliberately empty until onboarding runs,
+ * because a ring drawn against a placeholder is worse than no ring.
  */
 export default function TodayScreen() {
   const { t } = useTranslation(['logging', 'common'])
   const router = useRouter()
-  const dispatch = useDispatch()
   const toast = useToast()
 
-  const day = useSelectedDay()
-  const { state } = useStore()
-  const burned = useDayBurn(state.selectedDate)
-  const { targets, streak, lastAdded } = useAppState((app) => ({
-    targets: app.targets,
-    streak: app.streak,
-    lastAdded: app.lastAdded,
-  }))
+  const { selectedDate } = useSelectedDate()
+  const day = useDayLog(selectedDate)
+  const burned = useDayBurn(selectedDate)
+  const { data: targets, isPending } = useTargets()
+  const streak = useStreak()
+  const removeEntry = useRemoveEntry()
+  const pending = usePendingSnaps()
 
   const eaten = sumMacros(day.entries)
   // Exercise is a credit against the day, so the ring measures the budget the
   // user actually has rather than the one they started with.
-  const dayTargets = scaleTargets(targets, targets.kcal + burned)
-  const budget = dayTargets.kcal
+  const dayTargets = targets ? scaleTargets(targets, targets.kcal + burned) : null
+  const budget = dayTargets?.kcal ?? 0
   const left = budget - eaten.kcal
   const over = left < 0
 
+  // The row that was just added, if it landed in the last few seconds. Derived
+  // rather than stored: with a server there is no "last added" flag to keep,
+  // and the newest entry's timestamp says the same thing.
+  const newest = day.entries.filter((entry) => !entry.status).at(-1)
+  const justAdded =
+    newest && Date.now() - new Date(newest.loggedAt).getTime() < HIGHLIGHT_MS ? newest : undefined
+
+  // Which entry has already been announced. A ref rather than a narrower
+  // dependency list: the toast must fire once per entry, and every other value
+  // the effect reads — the mutation object, `t` — is a new identity on most
+  // renders, so keying on them would replay the confirmation.
+  const announced = useRef<string | undefined>(undefined)
+
   useEffect(() => {
-    if (!lastAdded) return
+    if (!justAdded || announced.current === justAdded.id) return
+    announced.current = justAdded.id
+
     toast.show({
       title: t('logging:added.toast', {
         // Lowercased: the meal name sits mid-sentence here, not as a heading.
-        meal: t(`common:meal.${lastAdded.meal}`).toLowerCase(),
-        kcal: lastAdded.kcal.toLocaleString(),
+        meal: t(`common:meal.${justAdded.meal}`).toLowerCase(),
+        kcal: justAdded.macros.kcal.toLocaleString(),
       }),
       tone: 'success',
       icon: { set: 'ui', name: 'check' },
       action: {
         label: t('common:action.undo'),
-        onPress: () => dispatch({ type: 'removeEntry', id: lastAdded.entryId }),
+        onPress: () =>
+          removeEntry.mutate({
+            id: justAdded.id,
+            logDate: justAdded.logDate,
+            photoPath: justAdded.photoPath,
+          }),
       },
     })
-    // The flag is consumed, not left set: coming back to this tab later should
-    // not replay a confirmation for something logged an hour ago. Held for as
-    // long as the toast, so the highlight and the undo offer end together.
-    const timer = setTimeout(() => dispatch({ type: 'clearLastAdded' }), HIGHLIGHT_MS)
-    return () => clearTimeout(timer)
-  }, [lastAdded, dispatch, t, toast])
+  }, [justAdded, toast, t, removeEntry])
 
   // Snack only earns a card once there is something in it. Four empty cards on
   // a fresh day is a chore list, not a summary.
@@ -93,23 +118,40 @@ export default function TodayScreen() {
       />
 
       <Card>
-        <View className="flex-row items-center gap-4">
-          <CalorieRing
-            value={eaten.kcal}
-            goal={budget}
-            size={132}
-            thickness={16}
-            centerLabel={Math.abs(left).toLocaleString()}
-            centerCaption={over ? t('logging:today.kcalOver') : t('logging:today.kcalLeft')}
-          />
-          <MacroBars eaten={eaten} targets={dayTargets} />
-        </View>
+        {isPending ? (
+          <Skeleton className="h-[132px] w-full" />
+        ) : dayTargets ? (
+          <>
+            <View className="flex-row items-center gap-4">
+              <CalorieRing
+                value={eaten.kcal}
+                goal={budget}
+                size={132}
+                thickness={16}
+                centerLabel={Math.abs(left).toLocaleString()}
+                centerCaption={over ? t('logging:today.kcalOver') : t('logging:today.kcalLeft')}
+              />
+              <MacroBars eaten={eaten} targets={dayTargets} />
+            </View>
 
-        {over ? (
-          <Text variant="meta" className="pt-1">
-            {t('logging:today.overNote')}
-          </Text>
-        ) : null}
+            {over ? (
+              <Text variant="meta" className="pt-1">
+                {t('logging:today.overNote')}
+              </Text>
+            ) : null}
+          </>
+        ) : (
+          <EmptyState
+            title={t('logging:today.noBudgetTitle')}
+            description={t('logging:today.noBudgetBody')}
+            icon={{ set: 'body', name: 'target' }}
+            action={
+              <Button onPress={() => router.push('/settings/goals')}>
+                {t('logging:today.noBudgetAction')}
+              </Button>
+            }
+          />
+        )}
       </Card>
 
       {day.entries.length === 0 ? (
@@ -125,7 +167,7 @@ export default function TodayScreen() {
           key={meal}
           meal={meal}
           day={day}
-          highlightId={lastAdded?.entryId}
+          highlightId={justAdded?.id}
           onAdd={() => router.push({ pathname: '/log', params: { meal } })}
           onPressEntry={(entry) =>
             router.push({
@@ -133,6 +175,13 @@ export default function TodayScreen() {
               params: { id: entry.foodId, entryId: entry.id },
             })
           }
+          // A snap that could not be read is dropped as it is handed over:
+          // leaving it behind would double the meal once search adds the real
+          // dish, and the row has nothing in it worth keeping.
+          onFixEntry={(entry) => {
+            pending.remove(entry.id)
+            router.push({ pathname: '/log/search', params: { meal: entry.meal } })
+          }}
         />
       ))}
     </Screen>

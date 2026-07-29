@@ -1,9 +1,10 @@
 import { useLocalSearchParams } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
+import { today, useDayLog, useTargets, useWorkouts } from '@/data'
 import { BarChart, StatRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
-import { sumMacros, useAppState, useSelectedDay } from '@/mock'
+import { sumMacros } from '@/lib/nutrition'
 import { AppBar, Button, Card, Divider, EmptyState, Icon, Screen, Text } from '@/ui'
 
 /** P3 SPORT SESSION */
@@ -11,11 +12,10 @@ export default function SessionScreen() {
   const { t } = useTranslation(['progress', 'common'])
   const goBack = useBack('/trends')
   const params = useLocalSearchParams<{ id: string }>()
-  const day = useSelectedDay()
-  const { sessions, targets } = useAppState((state) => ({
-    sessions: state.sessions,
-    targets: state.targets,
-  }))
+  const date = today()
+  const day = useDayLog(date)
+  const { data: sessions = [] } = useWorkouts(date)
+  const { data: targets } = useTargets()
 
   const session = sessions.find((entry) => entry.id === params.id)
 
@@ -37,7 +37,7 @@ export default function SessionScreen() {
 
   // A workout is a credit against the day, so the budget it leaves behind is the
   // number worth showing — not the burn on its own.
-  const budget = targets.kcal + session.kcal - sumMacros(day.entries).kcal
+  const budget = (targets?.kcal ?? 0) + session.kcal - sumMacros(day.entries).kcal
 
   const pace = session.distanceKm
     ? formatPace((session.minutes * 60) / session.distanceKm)

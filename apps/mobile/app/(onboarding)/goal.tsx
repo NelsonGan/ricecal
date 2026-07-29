@@ -1,8 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-
+import { type Goal, useProfile, useUpdateProfile } from '@/data'
 import { ChoiceCard, OnboardingStep } from '@/features/onboarding'
-import { type Goal, useAppState, useDispatch } from '@/mock'
 
 const OPTIONS: Goal[] = ['lose', 'maintain', 'gain', 'track']
 
@@ -10,8 +9,9 @@ const OPTIONS: Goal[] = ['lose', 'maintain', 'gain', 'track']
 export default function GoalStep() {
   const { t } = useTranslation(['onboarding', 'common'])
   const router = useRouter()
-  const dispatch = useDispatch()
-  const goal = useAppState((state) => state.profile.goal)
+  const { data: profile } = useProfile()
+  const updateProfile = useUpdateProfile()
+  const goal = profile?.weight_goal
 
   return (
     <OnboardingStep
@@ -32,7 +32,7 @@ export default function GoalStep() {
           selected={goal === option}
           // Recomputing here means the target on step 07 already reflects the
           // choice, without that screen knowing how the number is made.
-          onPress={() => dispatch({ type: 'updateProfile', patch: { goal: option } })}
+          onPress={() => updateProfile.mutate({ goal: option })}
         />
       ))}
     </OnboardingStep>

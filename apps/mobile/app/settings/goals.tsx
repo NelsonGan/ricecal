@@ -2,8 +2,16 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
+import {
+  type Goal,
+  useCurrentWeight,
+  useProfile,
+  useSetTargets,
+  useTargets,
+  useUpdateProfile,
+} from '@/data'
 import { useBack } from '@/lib/navigation'
-import { computeTargets, type Goal, useAppState, useDispatch } from '@/mock'
+import { ageFrom, computeTargets } from '@/lib/nutrition'
 import {
   AppBar,
   Button,
@@ -22,43 +30,73 @@ const GOALS: Extract<Goal, 'lose' | 'maintain' | 'gain'>[] = ['lose', 'maintain'
 export default function GoalsScreen() {
   const { t } = useTranslation(['profile', 'common'])
   const goBack = useBack('/me')
-  const dispatch = useDispatch()
   const toast = useToast()
-  const { profile, targets } = useAppState((state) => ({
-    profile: state.profile,
-    targets: state.targets,
-  }))
+  const { data: profile } = useProfile()
+  const { data: targets } = useTargets()
+  const updateProfile = useUpdateProfile()
+  const setTargets = useSetTargets()
+  const weight = useCurrentWeight() ?? 0
 
   // Edited locally and committed on save, so backing out of the screen does not
-  // silently move the user's budget.
-  const [kcal, setKcal] = useState(targets.kcal)
-  const [goal, setGoal] = useState(profile.goal)
-  const [targetWeight, setTargetWeight] = useState(profile.targetWeightKg)
-  const [water, setWater] = useState(targets.waterGlasses)
-  const [steps, setSteps] = useState(targets.steps)
+  // silently move the user's budget. Seeded once the queries answer.
+  const [kcal, setKcal] = useState<number | undefined>()
+  const [goal, setGoal] = useState<Goal | undefined>()
+  const [targetWeight, setTargetWeight] = useState<number | undefined>()
+  const [water, setWater] = useState<number | undefined>()
+  const [steps, setSteps] = useState<number | undefined>()
 
-  const recommended = computeTargets({ ...profile, goal }).kcal
+  const currentKcal = kcal ?? targets?.kcal ?? 0
+  const currentGoal = goal ?? profile?.weight_goal ?? 'maintain'
+  const currentTargetWeight = targetWeight ?? Number(profile?.target_weight_kg ?? weight)
+  const currentWater = water ?? targets?.waterGlasses ?? 8
+  const currentSteps = steps ?? targets?.steps ?? 8000
+
+  // What the same formula the database runs would suggest for this body and
+  // this goal — shown beside the slider so a hand-set number has a reference.
+  const recommended = profile
+    ? computeTargets({
+        sex: profile.sex ?? 'female',
+        weightKg: weight,
+        heightCm: Number(profile.height_cm ?? 0),
+        age: ageFrom(profile.birth_date),
+        activity:
+          profile.activity_level === 'on_feet'
+            ? 'onFeet'
+            : profile.activity_level === 'very_active'
+              ? 'veryActive'
+              : profile.activity_level,
+        goal: currentGoal,
+      }).kcal
+    : 0
 
   const macros = [
-    { key: 'carbs', label: t('common:macro.carbs'), grams: targets.carbs, dot: 'bg-kaya' },
+    { key: 'carbs', label: t('common:macro.carbs'), grams: targets?.carbs ?? 0, dot: 'bg-kaya' },
     {
       key: 'protein',
       label: t('common:macro.protein'),
-      grams: targets.protein,
+      grams: targets?.protein ?? 0,
       dot: 'bg-hibiscus',
     },
-    { key: 'fat', label: t('common:macro.fat'), grams: targets.fat, dot: 'bg-teh' },
+    { key: 'fat', label: t('common:macro.fat'), grams: targets?.fat ?? 0, dot: 'bg-teh' },
   ]
 
-  const save = () => {
-    // The profile change would normally recompute the budget; the user has just
-    // set it by hand, so it is passed through untouched.
-    dispatch({
-      type: 'updateProfile',
-      patch: { goal, targetWeightKg: targetWeight },
-      recomputeTargets: false,
+  const save = async () => {
+    await updateProfile.mutateAsync({ goal: currentGoal, targetWeightKg: currentTargetWeight })
+    // `is_custom` is the flag the recompute trigger reads and stops on. Setting
+    // it here is what stops tomorrow's weigh-in overwriting a number the user
+    // typed themselves — and it has to be written after the profile, whose own
+    // change would otherwise recompute over the top of it.
+    await setTargets.mutateAsync({
+      kcal: currentKcal,
+      // The macro split follows the calorie total, in the same proportions the
+      // database would have used.
+      carbs: Math.round((currentKcal * 0.47) / 4),
+      protein: Math.round((currentKcal * 0.22) / 4),
+      fat: Math.round((currentKcal * 0.31) / 9),
+      waterGlasses: currentWater,
+      steps: currentSteps,
+      isCustom: true,
     })
-    dispatch({ type: 'updateTargets', patch: { kcal, waterGlasses: water, steps } })
     toast.show({ title: t('profile:goals.saved'), tone: 'success' })
     goBack()
   }
@@ -79,13 +117,13 @@ export default function GoalsScreen() {
 
       <Card title={t('profile:goals.dailyCalories')}>
         <View className="flex-row items-baseline justify-between">
-          <Text variant="title">{kcal.toLocaleString()}</Text>
+          <Text variant="title">{currentKcal.toLocaleString()}</Text>
           <Text variant="caption">
             {t('profile:goals.recommended', { value: recommended.toLocaleString() })}
           </Text>
         </View>
         <Slider
-          value={kcal}
+          value={currentKcal}
           onChange={setKcal}
           min={1200}
           max={3500}
@@ -107,7 +145,9 @@ export default function GoalsScreen() {
             <Text variant="meta">
               {t('profile:goals.macroValue', {
                 grams: macro.grams,
-                percent: Math.round(((macro.grams * (macro.key === 'fat' ? 9 : 4)) / kcal) * 100),
+                percent: Math.round(
+                  ((macro.grams * (macro.key === 'fat' ? 9 : 4)) / (currentKcal || 1)) * 100,
+                ),
               })}
             </Text>
           </View>
@@ -117,8 +157,10 @@ export default function GoalsScreen() {
       <Card title={t('profile:goals.goal')}>
         <SegmentedControl
           options={GOALS.map((option) => ({ value: option, label: t(`profile:goals.${option}`) }))}
-          value={goal === 'track' ? 'maintain' : goal}
-          onChange={setGoal}
+          // "Just tracking" has no slider position of its own; it sits where
+          // maintain does, and picking any option here commits to that goal.
+          value={currentGoal === 'track' ? 'maintain' : currentGoal}
+          onChange={(value) => setGoal(value as Goal)}
           accessibilityLabel={t('profile:goals.goal')}
         />
 
@@ -127,11 +169,11 @@ export default function GoalsScreen() {
             {t('profile:goals.targetWeight')}
           </Text>
           <Text variant="label">
-            {targetWeight.toFixed(1)} {t('common:unit.kg')}
+            {currentTargetWeight.toFixed(1)} {t('common:unit.kg')}
           </Text>
         </View>
         <Slider
-          value={targetWeight}
+          value={currentTargetWeight}
           onChange={setTargetWeight}
           min={40}
           max={120}
@@ -144,7 +186,7 @@ export default function GoalsScreen() {
       <Card title={t('profile:goals.other')}>
         <Text variant="label">{t('profile:goals.waterGoal')}</Text>
         <Stepper
-          value={water}
+          value={currentWater}
           onChange={setWater}
           min={4}
           max={16}
@@ -156,7 +198,7 @@ export default function GoalsScreen() {
 
         <Text variant="label">{t('profile:goals.stepGoal')}</Text>
         <Stepper
-          value={steps}
+          value={currentSteps}
           onChange={setSteps}
           step={500}
           min={2000}

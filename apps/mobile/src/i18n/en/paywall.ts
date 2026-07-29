@@ -18,6 +18,7 @@ export const paywall = {
     smallPrint: 'Free for 3 days, then RM99.90 a year.',
     start: 'Start free trial',
     restore: 'Restore purchase',
+    notConfigured: 'Purchases are not set up in this build yet.',
     restored: 'Nothing to restore on this account',
   },
 

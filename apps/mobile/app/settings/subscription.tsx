@@ -1,39 +1,43 @@
-import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
+import { useSubscription } from '@/data'
+import { openManageSubscriptions } from '@/data/purchases'
 import { CheckList } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
-import { progressOf, useAppState, useDispatch } from '@/mock'
-import { AppBar, Button, Card, ConfirmSheet, Icon, ProgressBar, Screen, Text, useToast } from '@/ui'
+import { progressOf } from '@/lib/nutrition'
+import { AppBar, Button, Card, ConfirmSheet, Icon, ProgressBar, Screen, Text } from '@/ui'
 
 const TRIAL_DAYS = 3
 
 /** U6 SUBSCRIPTION */
 export default function SubscriptionScreen() {
   const { t } = useTranslation(['profile', 'paywall', 'common'])
-  const router = useRouter()
   const goBack = useBack('/me')
-  const dispatch = useDispatch()
-  const toast = useToast()
-  const subscription = useAppState((state) => state.subscription)
+  const { data: subscription } = useSubscription()
   const [confirmCancel, setConfirmCancel] = useState(false)
 
-  const yearly = subscription.plan === 'yearly'
+  const yearly = subscription?.plan === 'yearly'
 
-  const switchPlan = () => {
-    dispatch({
-      type: 'setSubscription',
-      status: subscription.status,
-      plan: yearly ? 'monthly' : 'yearly',
-    })
-    toast.show({ title: t('profile:subscription.switched'), tone: 'success' })
-  }
+  // Whole days left, from the instant the store reported. Not a stored counter:
+  // one would need something to decrement it every midnight.
+  const trialDaysLeft = subscription?.trial_ends_at
+    ? Math.max(
+        0,
+        Math.ceil(
+          (new Date(subscription.trial_ends_at).getTime() - Date.now()) / (24 * 60 * 60 * 1000),
+        ),
+      )
+    : 0
+
+  // Both of these leave the app. The payment relationship is with the store,
+  // and Apple and Google both require cancellation to happen there — the app
+  // could not do it even if it wanted to.
+  const switchPlan = () => openManageSubscriptions()
 
   const cancel = () => {
-    dispatch({ type: 'setSubscription', status: 'expired' })
     setConfirmCancel(false)
-    router.replace('/paywall/ended')
+    openManageSubscriptions()
   }
 
   return (
@@ -58,13 +62,17 @@ export default function SubscriptionScreen() {
           <View className="min-w-0 flex-1 gap-0.5">
             <Text variant="subtitle">{t('profile:subscription.pro')}</Text>
             <Text variant="meta">
-              {t('profile:subscription.trialLeft', { count: subscription.trialDaysLeft })}
+              {subscription?.status === 'trial'
+                ? t('profile:subscription.trialLeft', { count: trialDaysLeft })
+                : subscription?.status === 'active'
+                  ? t('profile:home.proActive')
+                  : t('profile:home.proNone')}
             </Text>
           </View>
         </View>
 
         <ProgressBar
-          value={progressOf(TRIAL_DAYS - subscription.trialDaysLeft, TRIAL_DAYS)}
+          value={progressOf(TRIAL_DAYS - trialDaysLeft, TRIAL_DAYS)}
           tone="kaya"
           height={11}
           accessibilityLabel={t('profile:subscription.title')}
@@ -83,9 +91,11 @@ export default function SubscriptionScreen() {
           label={t('profile:subscription.perMonth')}
           value={t('profile:subscription.perMonthPrice')}
         />
+        {/* The store holds the card, and never tells us anything about it.
+            What it does tell us is which store the purchase came from. */}
         <Row
           label={t('profile:subscription.payment')}
-          value={t('profile:subscription.paymentValue', { last4: subscription.cardLast4 })}
+          value={subscription?.store ?? t('profile:subscription.paymentUnknown')}
         />
       </Card>
 

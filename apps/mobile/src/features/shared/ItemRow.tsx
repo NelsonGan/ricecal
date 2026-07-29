@@ -1,7 +1,9 @@
+import { Image } from 'expo-image'
 import type { ReactNode } from 'react'
-import { Pressable, View } from 'react-native'
+import { ActivityIndicator, Pressable, View } from 'react-native'
 
-import type { IconRef } from '@/mock'
+import type { IconRef } from '@/data'
+import { useMealPhotoUrl } from '@/data'
 import { cn, Icon, Text } from '@/ui'
 
 const valueTones = {
@@ -15,6 +17,19 @@ export type ItemRowProps = {
   /** "1 plate", "8:20 am", "Mamak · 1 piece", "6:40 am · 34 min · 5.1 km". */
   detail?: string
   icon: IconRef
+  /**
+   * A photo to show in place of the illustration, as a local `file://` uri —
+   * a plate that has been snapped but not uploaded yet.
+   */
+  photoUri?: string
+  /**
+   * The same, for a photo already in the bucket. Resolved to a signed URL here
+   * rather than by every caller: the bucket is private, so a stored photo is
+   * always one query away from being renderable, and doing it in the row keeps
+   * that fact in one place. `icon` stays required as the fallback, so a row is
+   * never blank if the object has gone.
+   */
+  photoPath?: string
   /** The number on the right. */
   value: number | string
   /** What the number is in. Omit for a unitless count. */
@@ -23,6 +38,11 @@ export type ItemRowProps = {
   valueTone?: keyof typeof valueTones
   /** Highlights the row — used for the entry that was just added. */
   highlighted?: boolean
+  /**
+   * The row is waiting on something. A spinner replaces the value, and the
+   * photo tile dims — a snapped plate whose dish is still being worked out.
+   */
+  busy?: boolean
   /** Sits after the value. An add button, a match badge. */
   trailing?: ReactNode
   onPress?: () => void
@@ -41,18 +61,44 @@ export function ItemRow({
   title,
   detail,
   icon,
+  photoUri,
+  photoPath,
   value,
   unit,
   valueTone = 'ink',
   highlighted = false,
+  busy = false,
   trailing,
   onPress,
   className,
 }: ItemRowProps) {
+  const { data: signedUrl } = useMealPhotoUrl(photoPath)
+  const photo = photoUri ?? signedUrl
+
   const body = (
     <>
-      <View className="h-[56px] w-[56px] items-center justify-center rounded-tile bg-track">
-        <Icon {...icon} size={40} />
+      <View className="h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-tile bg-track">
+        {photo ? (
+          // The tile is square and a plate photo is not, so it crops rather
+          // than letterboxing — a 4:3 photo in a 1:1 tile with bars reads as a
+          // broken image.
+          <Image
+            source={{ uri: photo }}
+            style={{ flex: 1, width: '100%', opacity: busy ? 0.55 : 1 }}
+            contentFit="cover"
+          />
+        ) : busy ? null : (
+          <Icon {...icon} size={40} />
+        )}
+        {/* Over the photo rather than beside it: the thing being worked on is
+            the picture, and the row has no spare width at this size. With no
+            photo the tile is the spinner alone — an illustration under it
+            would be a dish this row does not yet have. */}
+        {busy ? (
+          <View className="absolute inset-0 items-center justify-center">
+            <ActivityIndicator size="small" />
+          </View>
+        ) : null}
       </View>
 
       <View className="min-w-0 flex-1 gap-0.5">
@@ -66,12 +112,17 @@ export function ItemRow({
         ) : null}
       </View>
 
-      <View className="flex-row items-baseline gap-1">
-        <Text variant="numeric" className={cn('text-[19px] leading-[24px]', valueTones[valueTone])}>
-          {typeof value === 'number' ? value.toLocaleString() : value}
-        </Text>
-        {unit ? <Text variant="caption">{unit}</Text> : null}
-      </View>
+      {busy ? null : (
+        <View className="flex-row items-baseline gap-1">
+          <Text
+            variant="numeric"
+            className={cn('text-[19px] leading-[24px]', valueTones[valueTone])}
+          >
+            {typeof value === 'number' ? value.toLocaleString() : value}
+          </Text>
+          {unit ? <Text variant="caption">{unit}</Text> : null}
+        </View>
+      )}
 
       {trailing}
     </>
@@ -92,7 +143,12 @@ export function ItemRow({
       className={classes}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={[title, unit ? `${value} ${unit}` : String(value), detail]
+      accessibilityState={{ busy }}
+      accessibilityLabel={[
+        title,
+        busy ? undefined : unit ? `${value} ${unit}` : String(value),
+        detail,
+      ]
         .filter(Boolean)
         .join(', ')}
     >

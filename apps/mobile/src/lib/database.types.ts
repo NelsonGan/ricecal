@@ -321,6 +321,7 @@ export type Database = {
           icon_name: string
           icon_set: Database['public']['Enums']['icon_set']
           id: string
+          image_path: string | null
           kcal: number
           name: string
           owner_id: string | null
@@ -342,6 +343,7 @@ export type Database = {
           icon_name: string
           icon_set?: Database['public']['Enums']['icon_set']
           id?: string
+          image_path?: string | null
           kcal: number
           name: string
           owner_id?: string | null
@@ -363,6 +365,7 @@ export type Database = {
           icon_name?: string
           icon_set?: Database['public']['Enums']['icon_set']
           id?: string
+          image_path?: string | null
           kcal?: number
           name?: string
           owner_id?: string | null
@@ -719,6 +722,7 @@ export type Database = {
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
           id: string | null
+          image_path: string | null
           kcal: number | null
           name: string | null
           owner_id: string | null

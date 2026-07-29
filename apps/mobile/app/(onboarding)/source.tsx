@@ -1,8 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-
+import { useProfile, useUpdateProfile } from '@/data'
 import { ChoiceCard, OnboardingStep } from '@/features/onboarding'
-import { useAppState, useDispatch } from '@/mock'
 
 const OPTIONS = ['tiktok', 'instagram', 'friend', 'appStore', 'youtube', 'other'] as const
 
@@ -10,8 +9,9 @@ const OPTIONS = ['tiktok', 'instagram', 'friend', 'appStore', 'youtube', 'other'
 export default function SourceStep() {
   const { t } = useTranslation(['onboarding', 'common'])
   const router = useRouter()
-  const dispatch = useDispatch()
-  const source = useAppState((state) => state.profile.source)
+  const { data: profile } = useProfile()
+  const updateProfile = useUpdateProfile()
+  const source = profile?.referral_source
 
   return (
     <OnboardingStep
@@ -29,7 +29,7 @@ export default function SourceStep() {
           accent="water"
           title={t(`source.${option}`)}
           selected={source === option}
-          onPress={() => dispatch({ type: 'updateProfile', patch: { source: option } })}
+          onPress={() => updateProfile.mutate({ referralSource: option })}
         />
       ))}
     </OnboardingStep>
