@@ -54,7 +54,8 @@ export function StatTile({
     <Squish
       depth={slab.md}
       radius={radius.tile}
-      slabClassName={cn(palette.slab, className)}
+      containerClassName={className}
+      slabClassName={palette.slab}
       // `grow` matters when tiles sit in a row: the slab layer stretches to the
       // tallest sibling, and without this the surface keeps its content height
       // and leaves a bare strip of slab showing underneath.
@@ -83,12 +84,7 @@ export function StatTile({
       </Text>
       {/* Tighter than `overline`: three of these sit side by side on a 393pt
           screen, and the wider tracking wraps "PROTEIN" onto two lines. */}
-      <Text
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.75}
-        className="font-body-black text-[12px] leading-[15px] tracking-[1.1px] text-faint uppercase"
-      >
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} variant="overlineSm">
         {label}
       </Text>
       {caption ? <Text variant="meta">{caption}</Text> : null}

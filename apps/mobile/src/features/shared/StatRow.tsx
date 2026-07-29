@@ -27,9 +27,7 @@ export function StatRow({ stats, size = 'sm', className }: StatRowProps) {
     <View className={cn('flex-row gap-md', className)}>
       {stats.map((stat) => (
         <View key={stat.key} className="min-w-0 flex-1 gap-0.5">
-          <Text className="font-body-black text-[11px] leading-[14px] tracking-[1.2px] uppercase text-faint">
-            {stat.label}
-          </Text>
+          <Text variant="overlineSm">{stat.label}</Text>
           <Text
             className={cn(
               'font-display text-ink',

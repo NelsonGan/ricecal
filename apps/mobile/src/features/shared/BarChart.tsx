@@ -82,7 +82,7 @@ export function BarChart({
               style={{ height: `${Math.max(4, ((bar.value - floor) / span) * 100)}%` }}
             />
           </View>
-          <Text numberOfLines={1} className="font-body-black text-[11px] leading-[13px] text-faint">
+          <Text numberOfLines={1} variant="micro">
             {bar.label}
           </Text>
         </View>

@@ -11,7 +11,7 @@ import {
   type Meal,
 } from '@/mock'
 import { Card, Text } from '@/ui'
-import { FoodRow } from './FoodRow'
+import { ItemRow } from './ItemRow'
 
 export type MealCardProps = {
   meal: Meal
@@ -55,11 +55,12 @@ export function MealCard({
         const food = getFood(entry.foodId)
         const serving = getServing(food, entry.servingId)
         return (
-          <FoodRow
+          <ItemRow
             key={entry.id}
-            name={food.name}
+            title={food.name}
             icon={food.icon}
-            kcal={entryMacros(entry).kcal}
+            value={entryMacros(entry).kcal}
+            unit="kcal"
             detail={
               entry.id === highlightId
                 ? t('logging:today.justAdded')

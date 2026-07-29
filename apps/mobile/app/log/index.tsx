@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { Pressable, View } from 'react-native'
 import { QuickAction, useLogFood } from '@/features/logging'
-import { FoodRow } from '@/features/shared'
+import { ItemRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import {
   dateKey,
@@ -17,6 +17,7 @@ import {
   useSelectedDay,
   useStore,
 } from '@/mock'
+import { useThemeColors } from '@/theme/useTheme'
 import { Icon, IconButton, Sheet, Text } from '@/ui'
 
 /**
@@ -36,6 +37,7 @@ export default function LogSheet() {
   const day = useSelectedDay()
   const targets = useAppState((app) => app.targets)
   const burn = useDayBurn(state.selectedDate)
+  const colors = useThemeColors()
 
   // The meal comes from whichever card was tapped, or from the clock when the
   // FAB was used and there is nothing else to go on.
@@ -113,19 +115,23 @@ export default function LogSheet() {
         <Text variant="overline">{t('logging:selector.usual')}</Text>
 
         {usual.map((food) => (
-          <FoodRow
+          <ItemRow
             key={food.id}
-            name={food.name}
+            title={food.name}
             icon={food.icon}
-            kcal={food.macros.kcal}
+            value={food.macros.kcal}
+            unit="kcal"
             detail={`${food.servingLabel}, ${t('common:count.times', { count: food.timesLogged ?? 0 })}`}
             trailing={
               <IconButton
                 size="sm"
+                variant="primary"
                 accessibilityLabel={t('common:action.add')}
                 onPress={() => add(food.id)}
               >
-                <Icon set="ui" name="plus" size={18} />
+                {/* Tinted to the role: the plus illustration carries its own
+                    gold, which on a pandan button reads as a third colour. */}
+                <Icon set="ui" name="plus" size={18} tintColor={colors.onPandan} />
               </IconButton>
             }
           />

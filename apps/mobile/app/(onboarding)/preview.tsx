@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { FoodRow, ScreenTitle } from '@/features/shared'
+import { ItemRow, ScreenTitle } from '@/features/shared'
 import { entriesForMeal, entryMacros, getFood, useAppState, useSelectedDay } from '@/mock'
 import { Alert, Button, CalorieRing, Card, Icon, Screen, Text } from '@/ui'
 
@@ -56,10 +56,11 @@ export default function PreviewScreen() {
         const food = getFood(entry.foodId)
         return (
           <Card key={entry.id}>
-            <FoodRow
-              name={food.name}
+            <ItemRow
+              title={food.name}
               icon={food.icon}
-              kcal={entryMacros(entry).kcal}
+              value={entryMacros(entry).kcal}
+              unit="kcal"
               detail={t('onboarding:viewOnly.sampleMeal')}
             />
           </Card>

@@ -82,7 +82,8 @@ export function Chip({
     <Squish
       depth={slab.sm}
       radius={radius.full}
-      slabClassName={cn('self-start', raised ? palette.slab : 'bg-transparent', className)}
+      containerClassName={cn('self-start', className)}
+      slabClassName={raised ? palette.slab : 'bg-transparent'}
       className={cn(
         'flex-row items-center gap-1.5 px-[18px] py-2.5',
         fill,

@@ -126,6 +126,7 @@ export default function DiaryScreen() {
           filled={day.waterGlasses}
           goal={targets.waterGlasses}
           onChange={(glasses) => dispatch({ type: 'setWater', glasses })}
+          glassLabel={(ordinal, total) => t('logging:diary.glassOf', { ordinal, total })}
         />
       </Card>
     </Screen>

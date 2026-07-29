@@ -49,7 +49,8 @@ export function SegmentedControl<T extends string>({
             key={option.value}
             depth={SEGMENT_DEPTH}
             radius={radius.sm + 1}
-            slabClassName={cn('flex-1', selected ? 'bg-line-strong' : 'bg-transparent')}
+            containerClassName="flex-1"
+            slabClassName={selected ? 'bg-line-strong' : 'bg-transparent'}
             className={cn('items-center px-1 py-3', selected ? 'bg-surface' : 'bg-transparent')}
             haptics={false}
             onPress={() => onChange(option.value)}

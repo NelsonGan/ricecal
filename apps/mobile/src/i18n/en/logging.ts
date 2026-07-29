@@ -55,6 +55,7 @@ export const logging = {
   search: {
     title: 'Search',
     placeholder: 'Search any dish',
+    clear: 'Clear search',
     filters: {
       all: 'All',
       mamak: 'Mamak',
@@ -104,6 +105,7 @@ export const logging = {
     left: 'LEFT',
     over: 'OVER',
     water: 'WATER · {{done}} OF {{total}} GLASSES',
+    glassOf: 'Glass {{ordinal}} of {{total}}',
     addGlass: 'Add a glass of water',
     removeGlass: 'Remove a glass of water',
     emptyDay: 'Nothing logged on this day.',

@@ -55,7 +55,7 @@ export default function CameraScreen() {
     return (
       <View className="flex-1 items-center justify-center gap-4 bg-inverse p-gutter">
         <Icon set="system" name="camera" size={72} />
-        <Text className="text-center font-display text-[24px] leading-[30px] text-on-inverse">
+        <Text variant="screenTitle" className="text-center text-on-inverse">
           {t('logging:camera.permissionTitle')}
         </Text>
         <Text className="text-center text-on-inverse opacity-70">
@@ -78,7 +78,7 @@ export default function CameraScreen() {
       <View className="flex-row items-center justify-between gap-3 p-4">
         <View className="flex-row items-center gap-2.5">
           <Icon set="system" name={mode === 'barcode' ? 'barcode' : 'camera'} size={24} />
-          <Text className="font-display text-[18px] leading-[24px] text-on-inverse">
+          <Text variant="subtitle" className="text-on-inverse">
             {mode === 'barcode' ? t('logging:camera.barcodeTitle') : t('logging:camera.title')}
           </Text>
         </View>
@@ -115,7 +115,7 @@ export default function CameraScreen() {
           ) : (
             <View className="h-2 w-2 rounded-full bg-pandan" />
           )}
-          <Text className="font-body-black text-[12px] leading-[15px] text-on-inverse">
+          <Text variant="caption" className="text-on-inverse">
             {analysing
               ? t('logging:camera.analysing')
               : mode === 'barcode'

@@ -13,7 +13,7 @@ type Source = {
 
 /** U3 CONNECTED */
 export default function ConnectedScreen() {
-  const { t } = useTranslation('profile')
+  const { t } = useTranslation(['profile', 'common'])
   const goBack = useBack('/me')
   const dispatch = useDispatch()
   const connections = useAppState((state) => state.connections)
@@ -47,7 +47,11 @@ export default function ConnectedScreen() {
 
   return (
     <Screen>
-      <AppBar title={t('connected.title')} onBack={() => goBack()} />
+      <AppBar
+        title={t('connected.title')}
+        onBack={() => goBack()}
+        backLabel={t('common:a11y.back')}
+      />
 
       {sources.map((source) => (
         <Card key={source.key}>
@@ -64,7 +68,7 @@ export default function ConnectedScreen() {
         </Card>
       ))}
 
-      <Card title={t('connected.sync')}>
+      <Card title={t('connected.sync')} contentClassName="gap-0">
         <ToggleRow
           title={t('connected.autoSync')}
           value={connections.autoSync}

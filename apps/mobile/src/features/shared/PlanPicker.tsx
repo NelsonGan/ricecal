@@ -81,7 +81,7 @@ function PlanCard({ selected, onPress, title, badge, detail, price, caption }: P
         </Text>
         {badge ? (
           <Badge tone="pandan" className="bg-pandan">
-            <Text className="font-body-black text-[11px] leading-[13px] text-on-pandan">
+            <Text variant="micro" className="text-on-pandan">
               {badge}
             </Text>
           </Badge>
@@ -90,7 +90,9 @@ function PlanCard({ selected, onPress, title, badge, detail, price, caption }: P
       </View>
 
       <View className="items-end gap-0.5">
-        <Text className="font-display text-[18px] leading-[23px] text-ink">{price}</Text>
+        <Text variant="subtitle" className="text-ink">
+          {price}
+        </Text>
         {caption ? <Text variant="meta">{caption}</Text> : null}
       </View>
     </Squish>

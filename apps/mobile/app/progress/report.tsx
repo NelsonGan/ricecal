@@ -78,7 +78,11 @@ export default function ReportScreen() {
         </Button>
       }
     >
-      <AppBar title={t('progress:report.title')} onBack={() => goBack()} />
+      <AppBar
+        title={t('progress:report.title')}
+        onBack={() => goBack()}
+        backLabel={t('common:a11y.back')}
+      />
 
       <Text variant="caption">
         {t('progress:report.range', {
@@ -91,9 +95,7 @@ export default function ReportScreen() {
         <View className="flex-row items-end justify-between">
           <View>
             <Text variant="overline">{t('progress:report.avgPerDay')}</Text>
-            <Text className="font-display text-[34px] leading-[41px] text-heading">
-              {average.toLocaleString()}
-            </Text>
+            <Text variant="displayMd">{average.toLocaleString()}</Text>
           </View>
           <Badge tone={delta >= 0 ? 'pandan' : 'kaya'}>
             <Text
@@ -146,7 +148,7 @@ export default function ReportScreen() {
           ).map((row) => (
             <View key={row.key} className="flex-1 flex-row items-center gap-2">
               <View className={`h-3 w-3 rounded ${row.dot}`} />
-              <Text className="font-body-black text-[12px] leading-[15px] text-ink">
+              <Text variant="caption" className="text-ink">
                 {t('progress:report.legend', { macro: row.label, percent: row.percent })}
               </Text>
             </View>

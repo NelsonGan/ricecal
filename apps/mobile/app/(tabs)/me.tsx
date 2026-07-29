@@ -96,7 +96,7 @@ export default function MeScreen() {
         />
       </Card>
 
-      <Card title={t('profile:home.settings')}>
+      <Card title={t('profile:home.settings')} contentClassName="gap-0">
         <SettingRow
           icon={{ set: 'body', name: 'target' }}
           title={t('profile:home.goals')}

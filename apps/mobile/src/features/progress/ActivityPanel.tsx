@@ -2,9 +2,9 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { BarChart, formatTime } from '@/features/shared'
+import { BarChart, formatTime, ItemRow } from '@/features/shared'
 import { progressOf, useAppState } from '@/mock'
-import { Badge, CalorieRing, Card, Icon, MacroBar, Text } from '@/ui'
+import { Badge, CalorieRing, Card, MacroBar, Text } from '@/ui'
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
@@ -23,7 +23,7 @@ export function ActivityPanel() {
   return (
     <>
       <Badge tone="hibiscus" className="self-start">
-        <Text className="font-body-black text-[12px] leading-[15px] text-hibiscus-ink">
+        <Text variant="caption" className="text-hibiscus-ink">
           {t('progress:activity.burned', { count: burned })}
         </Text>
       </Badge>
@@ -77,35 +77,24 @@ export function ActivityPanel() {
         ) : null}
 
         {sessions.map((session) => (
-          <View key={session.id} className="flex-row items-center gap-3">
-            <View className="h-[56px] w-[56px] items-center justify-center rounded-tile bg-track">
-              <Icon {...session.icon} size={40} />
-            </View>
-            <View className="min-w-0 flex-1 gap-0.5">
-              <Text
-                variant="bodyStrong"
-                onPress={() => router.push(`/progress/session/${session.id}`)}
-                accessibilityRole="link"
-              >
-                {session.title}
-              </Text>
-              <Text variant="meta">
-                {[
-                  formatTime(session.startedAt),
-                  `${session.minutes} min`,
-                  session.distanceKm ? `${session.distanceKm} km` : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </Text>
-            </View>
-            <View className="flex-row items-baseline gap-1">
-              <Text className="font-display text-[19px] leading-[24px] text-hibiscus-ink">
-                {session.kcal}
-              </Text>
-              <Text variant="caption">{t('common:unit.kcal')}</Text>
-            </View>
-          </View>
+          <ItemRow
+            key={session.id}
+            title={session.title}
+            icon={session.icon}
+            value={session.kcal}
+            unit={t('common:unit.kcal')}
+            // A workout is a debit against the day, and reads in the same
+            // colour the burn badge above it uses.
+            valueTone="hibiscus"
+            detail={[
+              formatTime(session.startedAt),
+              `${session.minutes} min`,
+              session.distanceKm ? `${session.distanceKm} km` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+            onPress={() => router.push(`/progress/session/${session.id}`)}
+          />
         ))}
       </Card>
 

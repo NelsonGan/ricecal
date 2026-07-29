@@ -61,7 +61,8 @@ export function ChoiceCard({
     <Squish
       depth={5}
       radius={22}
-      slabClassName={cn(selected ? tone.slab : 'bg-line', className)}
+      containerClassName={className}
+      slabClassName={selected ? tone.slab : 'bg-line'}
       className={cn(
         'flex-row items-center gap-3.5 border-[3px] p-[18px]',
         selected ? `${tone.border} ${tone.fill}` : 'border-line bg-surface',

@@ -60,9 +60,7 @@ export function WeightPanel() {
           <View className="gap-0.5">
             <Text variant="overline">{t('progress:weight.current')}</Text>
             <View className="flex-row items-baseline gap-1">
-              <Text className="font-display text-[40px] leading-[48px] text-heading">
-                {profile.weightKg.toFixed(1)}
-              </Text>
+              <Text variant="display">{profile.weightKg.toFixed(1)}</Text>
               <Text variant="meta" className="text-[18px]">
                 {t('common:unit.kg')}
               </Text>
@@ -70,7 +68,7 @@ export function WeightPanel() {
           </View>
           <View className="items-end gap-0.5">
             <Text variant="overline">{t('progress:weight.goal')}</Text>
-            <Text className="font-display text-[22px] leading-[28px] text-muted">
+            <Text variant="numeric" className="text-muted">
               {profile.targetWeightKg.toFixed(1)} {t('common:unit.kg')}
             </Text>
           </View>

@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useDeferredValue, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { FoodRow } from '@/features/shared'
+import { ItemRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { FOODS, type Meal, type Place } from '@/mock'
 import { AppBar, Badge, Card, Chip, EmptyState, Screen, SearchField, Text } from '@/ui'
@@ -35,12 +35,17 @@ export default function SearchScreen() {
 
   return (
     <Screen>
-      <AppBar title={t('logging:search.title')} onBack={() => goBack()} />
+      <AppBar
+        title={t('logging:search.title')}
+        onBack={() => goBack()}
+        backLabel={t('common:a11y.back')}
+      />
 
       <SearchField
         value={query}
         onChangeText={setQuery}
         onClear={() => setQuery('')}
+        clearLabel={t('logging:search.clear')}
         placeholder={t('logging:search.placeholder')}
         autoFocus
         returnKeyType="search"
@@ -64,17 +69,18 @@ export default function SearchScreen() {
 
       {results.map((food, index) => (
         <Card key={food.id}>
-          <FoodRow
-            name={food.name}
+          <ItemRow
+            title={food.name}
             icon={food.icon}
-            kcal={food.macros.kcal}
+            value={food.macros.kcal}
+            unit="kcal"
             detail={`${t(`logging:search.place.${food.place}`)} · ${food.servingLabel}`}
             // The top hit carries a confidence badge, the way a ranked result
             // set does. Everything below it is just a match.
             trailing={
               index === 0 && deferredQuery.length > 0 ? (
                 <Badge tone="pandan">
-                  <Text className="font-body-black text-[11px] leading-[13px] text-pandan-ink">
+                  <Text variant="micro" className="text-pandan-ink">
                     {t('logging:search.match', { percent: 96 })}
                   </Text>
                 </Badge>

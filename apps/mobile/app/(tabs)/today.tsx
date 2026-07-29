@@ -85,7 +85,7 @@ export default function TodayScreen() {
         trailing={
           <Badge tone="kaya" className="flex-row items-center gap-1.5">
             <Icon set="body" name="flame-burn" size={18} />
-            <Text className="font-body-black text-[12px] leading-[15px] text-kaya-ink">
+            <Text variant="caption" className="text-kaya-ink">
               {t('common:count.dayStreak', { count: streak.current })}
             </Text>
           </Badge>
