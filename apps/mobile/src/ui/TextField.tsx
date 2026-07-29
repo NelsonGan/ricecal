@@ -13,7 +13,10 @@ export type TextFieldProps = Omit<TextInputProps, 'style' | 'className'> & {
   hint?: string
   leftSlot?: ReactNode
   rightSlot?: ReactNode
+  /** The bordered box. Layout and sizing of the field itself. */
   className?: string
+  /** The `TextInput` inside it — for a field whose value wants display type. */
+  inputClassName?: string
   containerClassName?: string
 }
 
@@ -36,6 +39,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
     leftSlot,
     rightSlot,
     className,
+    inputClassName,
     containerClassName,
     onFocus,
     onBlur,
@@ -65,11 +69,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
 
   // Error outranks focus: a field you are typing into that is invalid should
   // read as invalid, not as merely active.
-  const border = error
-    ? 'border-hibiscus bg-surface'
-    : focused
-      ? 'border-pandan bg-surface'
-      : 'border-line bg-canvas'
+  const border = error ? 'border-hibiscus' : focused ? 'border-pandan' : 'border-line'
 
   return (
     <View className={cn('gap-1.5', containerClassName)}>
@@ -77,7 +77,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
 
       <View
         className={cn(
-          'min-h-[60px] flex-row items-center gap-3 rounded-md border-[3px] px-5',
+          'min-h-[60px] flex-row items-center gap-3 rounded-md border-[3px] bg-surface px-5',
           border,
           !editable && 'opacity-60',
           className,
@@ -89,7 +89,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
           editable={editable}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          className="flex-1 font-body-bold text-[17px] text-ink"
+          className={cn('flex-1 font-body-bold text-[17px] text-ink', inputClassName)}
           placeholderTextColor={colors.faint}
           // The caret defaults to the platform blue, which is the one colour in
           // the app that belongs to no role.

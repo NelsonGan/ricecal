@@ -21,7 +21,10 @@ export type SliderProps = {
   max: number
   /** Snap increment. 0 slides continuously. */
   step?: number
+  /** Shown above the track with the current value. Omit when the section already names it. */
   label?: string
+  /** For a slider whose label is elsewhere on screen. Falls back to `label`. */
+  accessibilityLabel?: string
   /** Formats both the readout and the end captions. */
   format?: (value: number) => string
   disabled?: boolean
@@ -45,6 +48,7 @@ export function Slider({
   max,
   step = 0,
   label,
+  accessibilityLabel,
   format = (n) => n.toLocaleString(),
   disabled = false,
   className,
@@ -107,7 +111,7 @@ export function Slider({
           className="justify-center py-[14px]"
           onLayout={onLayout}
           accessibilityRole="adjustable"
-          accessibilityLabel={label}
+          accessibilityLabel={accessibilityLabel ?? label}
           accessibilityValue={{ min, max, now: value, text: format(value) }}
         >
           <View className="rounded-full bg-track" style={{ height: TRACK_HEIGHT }}>

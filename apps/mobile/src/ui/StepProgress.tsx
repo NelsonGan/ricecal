@@ -3,6 +3,15 @@ import { View } from 'react-native'
 import { cn } from './cn'
 import { Text } from './Text'
 
+const fills = {
+  pandan: 'bg-pandan',
+  kaya: 'bg-kaya',
+  water: 'bg-water',
+  hibiscus: 'bg-hibiscus',
+} as const
+
+export type StepProgressTone = keyof typeof fills
+
 export type StepProgressProps = {
   /** Total steps in the flow. */
   total: number
@@ -10,6 +19,8 @@ export type StepProgressProps = {
   current: number
   /** Line under the bars, e.g. "Step 2 of 4, about a minute left". */
   caption?: string
+  /** Colour of the filled segments. Onboarding rotates this per step. */
+  tone?: StepProgressTone
   className?: string
 }
 
@@ -20,7 +31,13 @@ export type StepProgressProps = {
  * a commitment of unknown length, and four discrete marks answer "how much
  * more" at a glance in a way a 50%-full bar does not.
  */
-export function StepProgress({ total, current, caption, className }: StepProgressProps) {
+export function StepProgress({
+  total,
+  current,
+  caption,
+  tone = 'pandan',
+  className,
+}: StepProgressProps) {
   // Materialised with an id rather than mapped over an index: a step bar is
   // nothing but its position, so the position is the identity, and naming it
   // says so instead of leaving a lint suppression to explain it.
@@ -39,7 +56,7 @@ export function StepProgress({ total, current, caption, className }: StepProgres
         {steps.map((step) => (
           <View
             key={step.id}
-            className={cn('h-2.5 flex-1 rounded-full', step.done ? 'bg-pandan' : 'bg-track')}
+            className={cn('h-2.5 flex-1 rounded-full', step.done ? fills[tone] : 'bg-track')}
           />
         ))}
       </View>

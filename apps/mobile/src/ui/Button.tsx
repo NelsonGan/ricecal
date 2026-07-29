@@ -8,10 +8,13 @@ import { Squish, type SquishProps } from './Squish'
 import { Text } from './Text'
 
 /**
- * Six tones, one rule: never two primaries on a screen. `secondary` and
+ * Seven tones, one rule: never two primaries on a screen. `secondary` and
  * `neutral` are both outlined, and differ only in whether they carry the
  * primary colour — `secondary` is the paired choice next to a primary,
  * `neutral` is the neutral one ("Keep", "Not now").
+ *
+ * `kaya`, `danger` and `water` exist for onboarding, which rotates its accent
+ * per step. Outside that flow the CTA is `primary`.
  */
 const tones = {
   primary: {
@@ -37,6 +40,12 @@ const tones = {
     surface: 'bg-kaya',
     label: 'text-on-kaya',
     spinner: 'onKaya',
+  },
+  water: {
+    slab: 'bg-water-slab',
+    surface: 'bg-water',
+    label: 'text-on-water',
+    spinner: 'onWater',
   },
   neutral: {
     slab: 'bg-line',

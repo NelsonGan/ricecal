@@ -19,6 +19,9 @@ export type StepperProps = {
   format?: (value: number) => string
   disabled?: boolean
   accessibilityLabel?: string
+  /** Screen-reader names for the two buttons. Pass translated copy. */
+  decrementLabel?: string
+  incrementLabel?: string
   className?: string
 }
 
@@ -54,6 +57,8 @@ export function Stepper({
   format = formatPortion,
   disabled = false,
   accessibilityLabel,
+  decrementLabel = 'Decrease',
+  incrementLabel = 'Increase',
   className,
 }: StepperProps) {
   const atMin = value - step < min
@@ -75,11 +80,14 @@ export function Stepper({
     >
       <IconButton
         variant="subtle"
-        accessibilityLabel="Decrease"
+        accessibilityLabel={decrementLabel}
         disabled={disabled || atMin}
         onPress={() => shift(-step)}
       >
-        <Icon set="ui" name="minus" size={26} />
+        {/* Tinted for the same reason as the plus below: the illustration
+            carries its own palette, which on a neutral button reads as a
+            stray colour rather than a control. */}
+        <Icon set="ui" name="minus" size={26} tintColor={colors.muted} />
       </IconButton>
 
       <View className="items-center gap-0.5">
@@ -91,7 +99,7 @@ export function Stepper({
 
       <IconButton
         variant="primary"
-        accessibilityLabel="Increase"
+        accessibilityLabel={incrementLabel}
         disabled={disabled || atMax}
         onPress={() => shift(step)}
       >
