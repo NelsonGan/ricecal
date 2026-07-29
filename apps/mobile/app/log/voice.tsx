@@ -33,7 +33,7 @@ export default function VoiceSheet() {
   const listen = async () => {
     setListening(true)
     try {
-      const heard = await recogniseDish('photo')
+      const heard = await recogniseDish()
       await logFood.mutateAsync({
         foodId: heard.foodId,
         servingId: heard.servingId,

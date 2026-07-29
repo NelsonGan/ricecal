@@ -30,15 +30,6 @@ export default function MeScreen() {
   const weight = useCurrentWeight()
   const [confirmSignOut, setConfirmSignOut] = useState(false)
 
-  const activeConnections = settings
-    ? [
-        settings.connect_watch,
-        settings.connect_phone_health,
-        settings.connect_running_app,
-        settings.connect_smart_scale,
-      ].filter(Boolean).length
-    : 0
-
   const activeReminders =
     (mealTimes ?? []).filter((meal) => meal.reminder_enabled).length +
     (settings
@@ -120,12 +111,6 @@ export default function MeScreen() {
             targets ? t('profile:home.goalsValue', { kcal: targets.kcal.toLocaleString() }) : '—'
           }
           onPress={() => router.push('/settings/goals')}
-        />
-        <SettingRow
-          icon={{ set: 'system', name: 'sync' }}
-          title={t('profile:home.connected')}
-          value={t('profile:home.connectedValue', { count: activeConnections })}
-          onPress={() => router.push('/settings/connected')}
         />
         <SettingRow
           icon={{ set: 'system', name: 'bell' }}

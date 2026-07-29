@@ -26,7 +26,6 @@ export const logging = {
     title: 'Add to {{meal}}',
     remaining: '{{count}} left',
     snap: 'Snap',
-    scan: 'Scan',
     say: 'Say',
     search: 'Search',
     usual: 'USUAL AT THIS TIME',
@@ -36,10 +35,8 @@ export const logging = {
 
   camera: {
     title: 'Snap your plate',
-    barcodeTitle: 'Scan a barcode',
     detected: 'Plate detected, hold steady',
     aiming: 'Point at your plate',
-    barcodeAiming: 'Line the barcode up in the frame',
     analysing: 'Working out what is on the plate',
     permissionTitle: 'Camera access needed',
     permissionBody: 'RiceCal uses the camera to read your plate. Nothing leaves your phone.',
@@ -70,13 +67,11 @@ export const logging = {
     clear: 'Clear search',
     filters: {
       all: 'All',
-      mine: 'My foods',
       mamak: 'Mamak',
       kopitiam: 'Kopitiam',
       packaged: 'Packaged',
     },
     /** Badge on a dish this user created. */
-    yours: 'Yours',
     match: '{{percent}}%',
     /** Where a dish is usually eaten. Shown under its name in a result. */
     place: {
@@ -86,35 +81,8 @@ export const logging = {
       packaged: 'Packaged',
       home: 'Home cooked',
     },
-    customFood: 'Cannot find it? Add a custom food',
     emptyTitle: 'No dish by that name',
-    emptyBody: 'Try a shorter word, or add it as a custom food.',
-  },
-
-  custom: {
-    title: 'Your own dish',
-    intro:
-      'Mum’s curry, your protein shake, the thing the shop down the road makes. Once saved, it is in your search.',
-    name: 'What is it called',
-    namePlaceholder: 'Mum’s chicken curry',
-    nameRequired: 'Give it a name',
-    serving: 'One of them is',
-    servingPlaceholder: '1 bowl',
-    servingHint: 'Half and double portions come free.',
-    servingDefault: '1 serving',
-    macrosLabel: 'PER SERVING',
-    kcalRequired: 'Calories are the one number this needs',
-    placeLabel: 'WHERE IT IS FROM',
-    chooseIcon: 'Pick a picture',
-    uploadPhoto: 'Use a photo',
-    removePhoto: 'Back to the picture',
-    photoAlt: 'The photo of your dish',
-    iconTitle: 'Pick a picture',
-    iconSearch: 'Search pictures',
-    iconEmpty: 'No picture by that name. Try a shorter word, or use a photo.',
-    saveAndAdd: 'Save and add to diary',
-    saveOnly: 'Just save it',
-    saved: '{{name}} saved to your foods',
+    emptyBody: 'Try a shorter word, or fewer of them.',
   },
 
   detail: {

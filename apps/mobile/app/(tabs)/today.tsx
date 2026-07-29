@@ -5,7 +5,6 @@ import { View } from 'react-native'
 
 import {
   MEALS,
-  useDayBurn,
   useDayLog,
   usePendingSnaps,
   useRemoveEntry,
@@ -14,7 +13,7 @@ import {
   useTargets,
 } from '@/data'
 import { MacroBars, MealCard, ScreenTitle } from '@/features/shared'
-import { scaleTargets, sumMacros } from '@/lib/nutrition'
+import { sumMacros } from '@/lib/nutrition'
 import {
   Badge,
   Button,
@@ -46,17 +45,13 @@ export default function TodayScreen() {
 
   const { selectedDate } = useSelectedDate()
   const day = useDayLog(selectedDate)
-  const burned = useDayBurn(selectedDate)
   const { data: targets, isPending } = useTargets()
   const streak = useStreak()
   const removeEntry = useRemoveEntry()
   const pending = usePendingSnaps()
 
   const eaten = sumMacros(day.entries)
-  // Exercise is a credit against the day, so the ring measures the budget the
-  // user actually has rather than the one they started with.
-  const dayTargets = targets ? scaleTargets(targets, targets.kcal + burned) : null
-  const budget = dayTargets?.kcal ?? 0
+  const budget = targets?.kcal ?? 0
   const left = budget - eaten.kcal
   const over = left < 0
 
@@ -120,7 +115,7 @@ export default function TodayScreen() {
       <Card>
         {isPending ? (
           <Skeleton className="h-[132px] w-full" />
-        ) : dayTargets ? (
+        ) : targets ? (
           <>
             <View className="flex-row items-center gap-4">
               <CalorieRing
@@ -131,7 +126,7 @@ export default function TodayScreen() {
                 centerLabel={Math.abs(left).toLocaleString()}
                 centerCaption={over ? t('logging:today.kcalOver') : t('logging:today.kcalLeft')}
               />
-              <MacroBars eaten={eaten} targets={dayTargets} />
+              <MacroBars eaten={eaten} targets={targets} />
             </View>
 
             {over ? (

@@ -19,7 +19,6 @@
     "db:diff": "supabase db diff -f",
     "db:test": "supabase test db",
     "db:types": "node --no-warnings supabase/scripts/gen-types.mjs",
-    "db:seed:catalogue": "node --experimental-strip-types --no-warnings --import ./supabase/scripts/register-ts.mjs supabase/scripts/gen-catalogue-sql.mjs",
     "eas": "pnpm --filter @ricecal/mobile exec eas",
     "eas:credentials": "pnpm --filter @ricecal/mobile exec eas credentials",
     "expo": "pnpm --filter @ricecal/mobile exec expo",

@@ -43,13 +43,11 @@ export default function GoalsScreen() {
   const [goal, setGoal] = useState<Goal | undefined>()
   const [targetWeight, setTargetWeight] = useState<number | undefined>()
   const [water, setWater] = useState<number | undefined>()
-  const [steps, setSteps] = useState<number | undefined>()
 
   const currentKcal = kcal ?? targets?.kcal ?? 0
   const currentGoal = goal ?? profile?.weight_goal ?? 'maintain'
   const currentTargetWeight = targetWeight ?? Number(profile?.target_weight_kg ?? weight)
   const currentWater = water ?? targets?.waterGlasses ?? 8
-  const currentSteps = steps ?? targets?.steps ?? 8000
 
   // What the same formula the database runs would suggest for this body and
   // this goal — shown beside the slider so a hand-set number has a reference.
@@ -94,7 +92,6 @@ export default function GoalsScreen() {
       protein: Math.round((currentKcal * 0.22) / 4),
       fat: Math.round((currentKcal * 0.31) / 9),
       waterGlasses: currentWater,
-      steps: currentSteps,
       isCustom: true,
     })
     toast.show({ title: t('profile:goals.saved'), tone: 'success' })
@@ -194,19 +191,6 @@ export default function GoalsScreen() {
           decrementLabel={t('common:a11y.decrease')}
           incrementLabel={t('common:a11y.increase')}
           format={(value) => t('common:count.glasses', { count: value })}
-        />
-
-        <Text variant="label">{t('profile:goals.stepGoal')}</Text>
-        <Stepper
-          value={currentSteps}
-          onChange={setSteps}
-          step={500}
-          min={2000}
-          max={25000}
-          accessibilityLabel={t('profile:goals.stepGoal')}
-          decrementLabel={t('common:a11y.decrease')}
-          incrementLabel={t('common:a11y.increase')}
-          format={(value) => value.toLocaleString()}
         />
       </Card>
     </Screen>

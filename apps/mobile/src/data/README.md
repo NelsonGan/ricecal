@@ -16,7 +16,7 @@ three rules — the point of them was always that this swap would be cheap.
 | `auth.ts` | Apple, Google and email sign-in |
 | `profile.ts`, `settings.ts`, `goals.ts` | the account |
 | `day.ts`, `entries.ts`, `foods.ts` | logging |
-| `weight.ts`, `activity.ts`, `achievements.ts` | progress |
+| `weight.ts` | progress |
 | `photos.ts`, `snap.ts`, `pending-snaps.tsx` | the camera path |
 | `purchases.ts`, `subscription.ts` | money |
 | `selected-date.tsx` | the one piece of genuine client state |
@@ -32,8 +32,8 @@ and one projection: the budget onboarding previews before there is a row to
 read.
 
 **2. Every mutation is a hook.** `useLogFood`, `useSetWater`, `useLogWeight`,
-`useUpdateProfile`, `useCreateFood` … each owns what it invalidates, so a
-screen never has to know what its write affects.
+`useUpdateProfile` … each owns what it invalidates, so a screen never has to
+know what its write affects.
 
 **3. Reads go through hooks, not through a client.** No screen imports
 `supabase` directly.
@@ -62,12 +62,11 @@ dish yet, so it lives in `pending-snaps.tsx` and `useDayLog` merges it in. That
 is also what makes a failed snap survivable: a refetch cannot delete a photo
 the user is about to fix by hand.
 
-**Badges are derived, not awarded.** `user_achievements` has no client write
-grant — a badge you can grant yourself is not an achievement — and no server
-job writes it yet. So the catalogue (icon, tone, order) is read from
-`achievements` and the rules are measured on the client, over rows from
-Postgres. `achievement-rules.ts` is that arithmetic, kept pure so the job that
-eventually owns it inherits something tested.
+**The catalogue is read-only, and there is exactly one of it.** `foods` has no
+per-user rows and `authenticated` holds `select` and nothing else on it, so
+nothing in this folder writes a dish. `useFoodSearch` filters by name and place
+and never by owner, and `toFood` takes no user — there is no "mine" to compute.
+Rows arrive from an import loader running as `service_role`.
 
 ## What is knowingly still fake
 
@@ -78,8 +77,9 @@ eventually owns it inherits something tested.
 - **The 96% match badge** on the top search hit is a placeholder for a real
   score, and search is `ilike` rather than the trigram index the schema builds:
   reaching `similarity()` from PostgREST needs an RPC.
-- **Workouts and rings** are read but never written. The write path is a
-  HealthKit / Health Connect sync, not a screen, so both are empty until that
-  exists — which is why every consumer handles empty.
+- **The miss.** `recogniseDish` always resolves to a dish. A real one has to be
+  able to say "nothing in the catalogue looks like this", and with no per-user
+  rows there is nowhere for such a plate to land — that case needs a wider
+  catalogue or a "pick it yourself" path, not a private food.
 - **Fibre and sugar** fall back to a proportion of carbohydrate where the
   catalogue rows are still null.

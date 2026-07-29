@@ -94,7 +94,6 @@ export default function NutritionScreen() {
             key={food.id}
             title={food.name}
             icon={food.icon}
-            photoPath={food.imagePath}
             value={food.macros.kcal}
             unit="kcal"
             detail={t('progress:nutrition.timesThisMonth', { count: timesLogged })}

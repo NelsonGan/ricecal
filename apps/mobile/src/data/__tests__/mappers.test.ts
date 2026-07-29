@@ -42,13 +42,11 @@ const logRow = (over: Partial<FoodLogRow> = {}): FoodLogRow =>
 const foodRow = (over: Partial<FoodDetailsRow> = {}): FoodDetailsRow =>
   ({
     id: 'food-1',
-    owner_id: null,
     slug: 'nasi-lemak-ayam',
     name: 'Nasi lemak ayam',
     brand: null,
     icon_set: 'dishes',
     icon_name: 'nasi-lemak',
-    image_path: null,
     place: 'mamak',
     kcal: 640,
     carbs_g: 78,
@@ -118,21 +116,13 @@ describe('toEntry', () => {
 })
 
 describe('toFood', () => {
-  it('marks a dish as the user own dish only when they own it', () => {
-    expect(toFood(foodRow(), 'user-1').custom).toBe(false)
-    expect(toFood(foodRow({ owner_id: 'user-1' }), 'user-1').custom).toBe(true)
-    // Someone else's private dish should never be reachable, but if RLS ever
-    // let one through it is still not "yours".
-    expect(toFood(foodRow({ owner_id: 'user-2' }), 'user-1').custom).toBe(false)
-  })
-
   it('falls back to the first portion when no default is marked', () => {
-    const food = toFood(foodRow({ serving_label: null }), 'user-1')
+    const food = toFood(foodRow({ serving_label: null }))
     expect(food.servingLabel).toBe('1 plate')
   })
 
   it('names a serving even for a dish with none', () => {
-    const food = toFood(foodRow({ serving_label: null, servings: [] }), 'user-1')
+    const food = toFood(foodRow({ serving_label: null, servings: [] }))
     expect(food.servingLabel).toBe('1 serving')
   })
 })

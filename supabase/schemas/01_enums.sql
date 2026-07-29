@@ -44,27 +44,6 @@ create type public.entry_source as enum (
   'quick_add',
   'camera',
   'voice',
-  'barcode',
-  'import'
-);
-
-create type public.session_kind as enum (
-  'run',
-  'badminton',
-  'gym',
-  'walk',
-  'cycle',
-  'swim',
-  'other'
-);
-
--- Where a body measurement or workout came from. `manual` means the user typed
--- it; everything else arrived over a sync and carries an external id.
-create type public.measurement_source as enum (
-  'manual',
-  'healthkit',
-  'health_connect',
-  'smart_scale',
   'import'
 );
 
@@ -81,10 +60,6 @@ create type public.subscription_status as enum (
 );
 
 create type public.subscription_plan as enum ('monthly', 'yearly');
-
--- The colour an achievement badge is drawn in. Presentation, but it belongs
--- with the badge definition rather than in a lookup table in the client.
-create type public.badge_tone as enum ('pandan', 'hibiscus', 'water', 'kaya');
 
 -- The icon sets shipped in src/ui/icons.generated.ts. A catalogue row names an
 -- illustration by (set, name); the set is closed, the name is not, so only the

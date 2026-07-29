@@ -1,20 +1,18 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 
 import { supabase } from '@/lib/supabase'
-import { unwrap, unwrapMaybe, unwrapOne } from './client'
+import { unwrap, unwrapMaybe } from './client'
 import { keys } from './keys'
 import { type FoodStats, toFood } from './mappers'
 import { useUserId } from './session'
-import type { Food, FoodDetailsRow, IconRef, Macros, Meal, Place } from './types'
+import type { Food, FoodDetailsRow, Meal, Place } from './types'
 
 /**
  * The catalogue.
  *
- * `foods` holds two kinds of row on purpose — `owner_id is null` is what
- * everybody sees, `owner_id = me` is a dish I made up — and the RLS policy is
- * what keeps them apart. Nothing here filters by owner except the screens that
- * deliberately want only mine: a search that had to union two tables would be
- * two queries and a client-side merge for something one policy already does.
+ * One kind of row: shared, read-only, the same for every user. Users cannot
+ * create dishes, so nothing here filters by owner and nothing writes — the
+ * client holds `select` on `foods` and nothing else.
  */
 
 const FOOD_COLUMNS = '*'
@@ -51,7 +49,7 @@ async function statsFor(userId: string, foodIds: string[]): Promise<Map<string, 
   )
 }
 
-export type SearchFilter = 'all' | 'mine' | Place
+export type SearchFilter = 'all' | Place
 
 /**
  * Search, by name.
@@ -71,8 +69,7 @@ export function useFoodSearch(query: string, filter: SearchFilter) {
 
       const needle = query.trim()
       if (needle) request = request.ilike('name', `%${needle}%`)
-      if (filter === 'mine') request = request.eq('owner_id', userId)
-      else if (filter !== 'all') request = request.eq('place', filter)
+      if (filter !== 'all') request = request.eq('place', filter)
 
       const rows = unwrap(await request) as FoodDetailsRow[]
       const stats = await statsFor(
@@ -80,20 +77,12 @@ export function useFoodSearch(query: string, filter: SearchFilter) {
         rows.flatMap((row) => (row.id ? [row.id] : [])),
       )
 
-      return (
-        rows
-          .map((row) => toFood(row, userId, row.id ? stats.get(row.id) : undefined))
-          // The user's own dishes first: they went to the trouble of creating
-          // them, and they are what the shared catalogue is missing.
-          .sort((a, b) => Number(Boolean(b.custom)) - Number(Boolean(a.custom)))
-      )
+      return rows.map((row) => toFood(row, row.id ? stats.get(row.id) : undefined))
     },
   })
 }
 
 export function useFood(id: string | undefined) {
-  const userId = useUserId()
-
   return useQuery({
     queryKey: keys.food(id ?? ''),
     enabled: Boolean(id),
@@ -105,7 +94,7 @@ export function useFood(id: string | undefined) {
           .eq('id', id as string)
           .maybeSingle(),
       ) as FoodDetailsRow | null
-      return row ? toFood(row, userId) : null
+      return row ? toFood(row) : null
     },
   })
 }
@@ -146,7 +135,7 @@ export function useUsualFoods(meal: Meal, limit = 3) {
         const row = stat.food_id ? byId.get(stat.food_id) : undefined
         if (!row) return []
         return [
-          toFood(row, userId, {
+          toFood(row, {
             timesLogged: stat.times_logged ?? 0,
             meals: (stat.meals ?? []) as Meal[],
           }),
@@ -188,96 +177,8 @@ export function useTopFoods(limit = 4) {
       return stats.flatMap((stat) => {
         const row = stat.food_id ? byId.get(stat.food_id) : undefined
         if (!row) return []
-        return [{ food: toFood(row, userId), timesLogged: stat.times_logged ?? 0 }]
+        return [{ food: toFood(row), timesLogged: stat.times_logged ?? 0 }]
       })
-    },
-  })
-}
-
-export type FoodDraft = {
-  name: string
-  place: Place
-  /** What one of them is called: "1 bowl". Becomes the default serving. */
-  servingLabel: string
-  macros: Macros
-  icon: IconRef
-  /** A photo of the dish, when the user supplied one instead of an icon. */
-  imagePath?: string
-}
-
-/**
- * Creates a dish this user made up.
- *
- * Two inserts, and they have to be in this order: the food, then its portions.
- * `food_logs` carries a composite foreign key `(food_id, serving_id)`, so a
- * serving is only ever meaningful as part of its own dish.
- *
- * The three portions are the same set a custom dish always gets — what the
- * user named, plus half and double. The named one is `is_default` and factor
- * 1, which is what "the macros are per base serving" means.
- */
-export function useCreateFood() {
-  const userId = useUserId()
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (draft: FoodDraft): Promise<Food> => {
-      const food = unwrapOne(
-        await supabase
-          .from('foods')
-          .insert({
-            owner_id: userId,
-            name: draft.name.trim(),
-            icon_set: draft.icon.set,
-            icon_name: draft.icon.name,
-            image_path: draft.imagePath,
-            place: draft.place,
-            kcal: Math.round(draft.macros.kcal),
-            carbs_g: draft.macros.carbs,
-            protein_g: draft.macros.protein,
-            fat_g: draft.macros.fat,
-          })
-          .select('id')
-          .single(),
-      )
-
-      const label = draft.servingLabel.trim() || '1 serving'
-      // Slugs are stable within a dish, which is what lets an entry written
-      // against one survive the label being renamed.
-      unwrap(
-        await supabase
-          .from('food_servings')
-          .insert([
-            { food_id: food.id, slug: 'base', label, factor: 1, is_default: true, position: 0 },
-            {
-              food_id: food.id,
-              slug: 'half',
-              label: 'Half',
-              factor: 0.5,
-              is_default: false,
-              position: 1,
-            },
-            {
-              food_id: food.id,
-              slug: 'double',
-              label: 'Double',
-              factor: 2,
-              is_default: false,
-              position: 2,
-            },
-          ])
-          .select('id'),
-      )
-
-      const row = unwrapOne(
-        await supabase.from('food_details').select(FOOD_COLUMNS).eq('id', food.id).single(),
-      ) as FoodDetailsRow
-
-      return toFood(row, userId)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['food-search'] })
-      queryClient.invalidateQueries({ queryKey: keys.myFoods(userId) })
     },
   })
 }

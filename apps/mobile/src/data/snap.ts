@@ -15,7 +15,6 @@ export type SnapInput = {
   logDate: string
   /** The plate, if there was a camera to take it with. */
   photoUri?: string
-  source: 'camera' | 'barcode'
 }
 
 /**
@@ -42,7 +41,7 @@ export function useSnapFood() {
   const pending = usePendingSnaps()
 
   return useCallback(
-    ({ meal, logDate, photoUri, source }: SnapInput): string => {
+    ({ meal, logDate, photoUri }: SnapInput): string => {
       // Not a database id: this row does not exist yet. Prefixed so nothing
       // mistakes it for one and tries to update it.
       const id = `snap-${Date.now()}-${Math.round(Math.random() * 1e6)}`
@@ -51,7 +50,7 @@ export function useSnapFood() {
       const work = async () => {
         const [path, recognition] = await Promise.all([
           photoUri ? uploadMealPhoto(userId, photoUri) : Promise.resolve(undefined),
-          recogniseDish(source === 'barcode' ? 'barcode' : 'photo'),
+          recogniseDish(),
         ])
 
         const { error } = await supabase.from('food_logs').insert({
@@ -61,7 +60,7 @@ export function useSnapFood() {
           meal,
           quantity: 1,
           log_date: logDate,
-          source: toDbSource(source),
+          source: toDbSource('camera'),
           photo_path: path,
         })
 

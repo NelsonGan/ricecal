@@ -24,12 +24,9 @@ export type Goal = Enums<'weight_goal'>
 export type Place = Enums<'food_place'>
 export type Units = Enums<'unit_system'>
 export type Energy = Enums<'energy_unit'>
-export type BadgeTone = Enums<'badge_tone'>
-export type SessionKind = Enums<'session_kind'>
 export type IconSet = Enums<'icon_set'>
 export type SubscriptionStatus = Enums<'subscription_status'>
 export type Plan = Enums<'subscription_plan'>
-export type MeasurementSource = Enums<'measurement_source'>
 
 export const MEALS: readonly Meal[] = ['breakfast', 'lunch', 'dinner', 'snack']
 
@@ -42,7 +39,7 @@ export const MEALS: readonly Meal[] = ['breakfast', 'lunch', 'dinner', 'snack']
  * a snake_case key leaking into the copy files or a column named `onFeet`.
  */
 export type ActivityLevel = 'sedentary' | 'light' | 'onFeet' | 'veryActive'
-export type EntrySource = 'search' | 'quickAdd' | 'camera' | 'voice' | 'barcode' | 'import'
+export type EntrySource = 'search' | 'quickAdd' | 'camera' | 'voice' | 'import'
 
 const ACTIVITY_TO_DB: Record<ActivityLevel, Enums<'activity_level'>> = {
   sedentary: 'sedentary',
@@ -106,22 +103,11 @@ export type Food = {
   servingLabel: string
   servings: Serving[]
   macros: Macros
-  /**
-   * A photo of the dish, when the user supplied one instead of choosing an
-   * illustration — a key inside `meal-photos`, never a URL. `icon` is still
-   * set: it is what a row falls back to if the object has gone, and what every
-   * shared catalogue row uses.
-   */
-  imagePath?: string
-  /** Null on the shared catalogue, set on a dish this user created. */
-  ownerId: string | null
   verified: boolean
   /** How often this user has logged it. From `user_food_stats`, when joined. */
   timesLogged?: number
   /** Which meals they usually log it at. Same source. */
   usualMeals?: Meal[]
-  /** True when `ownerId` is the signed-in user. */
-  custom?: boolean
 }
 
 /**
@@ -168,7 +154,6 @@ export type Targets = {
   protein: number
   fat: number
   waterGlasses: number
-  steps: number
   /** True once the user has typed their own budget, which stops the recompute. */
   isCustom: boolean
 }
@@ -176,61 +161,6 @@ export type Targets = {
 export type WeighIn = {
   date: string
   kg: number
-}
-
-export type ActivitySession = {
-  id: string
-  kind: SessionKind
-  title: string
-  icon: IconRef
-  startedAt: string
-  minutes: number
-  kcal: number
-  distanceKm?: number
-  avgHr?: number
-  elevationM?: number
-  splitSeconds?: number[]
-}
-
-export type DayRings = {
-  steps: number
-  moveKcal: number
-  moveGoal: number
-  exerciseMin: number
-  exerciseGoal: number
-  standHours: number
-  standGoal: number
-  /** Minutes since the watch last synced. */
-  syncedMinutesAgo: number
-}
-
-/** Names the copy bundle knows about, and the `key` column of `achievements`. */
-export type AchievementKey =
-  | 'sevenDays'
-  | 'protein'
-  | 'eightGlasses'
-  | 'photoPro'
-  | 'earlyBird'
-  | 'weekend'
-  | 'thirtyDays'
-  | 'marathon'
-  | 'perfectWeek'
-
-export type AchievementUnit = 'days' | 'glasses' | 'photos' | 'km' | 'weeks'
-
-export type AchievementRule = {
-  id: string
-  labelKey: AchievementKey
-  icon: IconRef
-  tone: BadgeTone
-  unit: AchievementUnit
-  goal: number
-}
-
-export type Achievement = AchievementRule & {
-  value: number
-  earned: boolean
-  progress: number
 }
 
 /** A day as the screens read it: its entries and its water. */
