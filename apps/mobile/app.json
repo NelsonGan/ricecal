@@ -48,7 +48,12 @@
       "expo-localization",
       "expo-image",
       "expo-apple-authentication",
-      "@react-native-google-signin/google-signin",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.829952813471-dd59l6cbtpav3ijmdiu69geoqnp9c9q4"
+        }
+      ],
       "expo-notifications",
       "@sentry/react-native/expo",
       "@kingstinct/react-native-healthkit",

@@ -1,15 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { Pressable } from 'react-native'
 
-import {
-  type DayLog,
-  type Entry,
-  entriesForMeal,
-  entryMacros,
-  getFood,
-  getServing,
-  type Meal,
-} from '@/mock'
+import type { DayLog, Entry, Meal } from '@/data'
+import { entriesForMeal, sumMacros } from '@/lib/nutrition'
 import { Card, Text } from '@/ui'
 import { ItemRow } from './ItemRow'
 
@@ -22,6 +15,11 @@ export type MealCardProps = {
   detail?: 'serving' | 'time'
   /** Receives the whole entry: opening its detail needs the food id too. */
   onPressEntry?: (entry: Entry) => void
+  /**
+   * A snap the model could not read. Given a separate handler because the row
+   * has no dish to open — the only thing to do with it is name it by hand.
+   */
+  onFixEntry?: (entry: Entry) => void
   onAdd?: () => void
 }
 
@@ -30,6 +28,10 @@ export type MealCardProps = {
  *
  * The heading carries the meal's total only when there is something to total —
  * "DINNER · 0 KCAL" reads as a failure, "DINNER" reads as not yet.
+ *
+ * Nothing here looks a dish up. `food_log_details` returns each entry with its
+ * name, its illustration and its macros already costed, so a row is one object
+ * and a card is one loop.
  */
 export function MealCard({
   meal,
@@ -37,13 +39,14 @@ export function MealCard({
   highlightId,
   detail = 'serving',
   onPressEntry,
+  onFixEntry,
   onAdd,
 }: MealCardProps) {
   const { t } = useTranslation(['logging', 'common'])
   const entries = entriesForMeal(day, meal)
   const mealName = t(`common:meal.${meal}`)
 
-  const kcal = entries.reduce((total, entry) => total + entryMacros(entry).kcal, 0)
+  const kcal = sumMacros(entries).kcal
 
   const heading = entries.length
     ? t('logging:today.mealHeading', { meal: mealName.toUpperCase(), kcal: kcal.toLocaleString() })
@@ -51,28 +54,16 @@ export function MealCard({
 
   return (
     <Card title={heading}>
-      {entries.map((entry) => {
-        const food = getFood(entry.foodId)
-        const serving = getServing(food, entry.servingId)
-        return (
-          <ItemRow
-            key={entry.id}
-            title={food.name}
-            icon={food.icon}
-            value={entryMacros(entry).kcal}
-            unit="kcal"
-            detail={
-              entry.id === highlightId
-                ? t('logging:today.justAdded')
-                : detail === 'time'
-                  ? formatTime(entry.loggedAt)
-                  : `${entry.quantity > 1 ? `${entry.quantity} × ` : ''}${serving.label}`
-            }
-            highlighted={entry.id === highlightId}
-            onPress={onPressEntry ? () => onPressEntry(entry) : undefined}
-          />
-        )
-      })}
+      {entries.map((entry) => (
+        <EntryRow
+          key={entry.id}
+          entry={entry}
+          detail={detail}
+          highlighted={entry.id === highlightId}
+          onPress={onPressEntry}
+          onFix={onFixEntry}
+        />
+      ))}
 
       {entries.length === 0 && onAdd ? (
         <Pressable
@@ -87,6 +78,66 @@ export function MealCard({
         </Pressable>
       ) : null}
     </Card>
+  )
+}
+
+/**
+ * One logged item.
+ *
+ * Its own component so the photo can be resolved per row — a stored plate needs
+ * a signed URL, which is a query, and a hook cannot run inside a `.map`.
+ */
+function EntryRow({
+  entry,
+  detail,
+  highlighted,
+  onPress,
+  onFix,
+}: {
+  entry: Entry
+  detail: 'serving' | 'time'
+  highlighted: boolean
+  onPress?: (entry: Entry) => void
+  onFix?: (entry: Entry) => void
+}) {
+  const { t } = useTranslation(['logging', 'common'])
+
+  // A snap in flight has no dish yet. It still gets a row — written the moment
+  // the shutter fired — so the day is complete while the model is thinking.
+  if (entry.status) {
+    const analysing = entry.status === 'analysing'
+    return (
+      <ItemRow
+        title={analysing ? t('logging:today.analysing') : t('logging:today.analysisFailedTitle')}
+        icon={{ set: 'system', name: 'camera' }}
+        photoUri={entry.localPhotoUri}
+        busy={analysing}
+        value={analysing ? '' : '—'}
+        detail={
+          analysing ? t('logging:today.analysingHint') : t('logging:today.analysisFailedHint')
+        }
+        onPress={analysing || !onFix ? undefined : () => onFix(entry)}
+      />
+    )
+  }
+
+  return (
+    <ItemRow
+      title={entry.foodName}
+      icon={entry.icon}
+      photoPath={entry.photoPath}
+      value={entry.macros.kcal}
+      unit="kcal"
+      detail={
+        highlighted
+          ? t('logging:today.justAdded')
+          : detail === 'time'
+            ? formatTime(entry.loggedAt)
+            : `${entry.quantity > 1 ? `${entry.quantity} × ` : ''}${entry.servingLabel}`
+      }
+      highlighted={highlighted}
+      onPress={onPress ? () => onPress(entry) : undefined}
+    />
   )
 }
 

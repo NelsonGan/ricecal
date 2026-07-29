@@ -32,6 +32,8 @@ export const progress = {
 
   activity: {
     title: 'Activity',
+    noRingsTitle: 'No movement synced',
+    noRingsBody: 'Connect a watch or your phone health app to see your rings here.',
     burned: '{{count}} kcal',
     steps: 'STEPS',
     move: 'Move',
@@ -85,6 +87,27 @@ export const progress = {
     best: 'Best ever: {{count}} days',
     earned: 'EARNED',
     locked: 'LOCKED',
+    noneTitle: 'No badges yet',
+    noneBody: 'They come from logging, not from trying. Keep going.',
+    /** What earned a badge, under its name. */
+    detail: {
+      days_one: '{{count}} day',
+      days_other: '{{count}} days',
+      glasses_one: '{{count}} glass',
+      glasses_other: '{{count}} glasses',
+      photos_one: '{{count}} photo',
+      photos_other: '{{count}} photos',
+      km: '{{count}} km',
+      weeks_one: '{{count}} week',
+      weeks_other: '{{count}} weeks',
+    },
+    /** How far off a locked badge is. */
+    progress: '{{value}} of {{goal}}',
+    earnedA11y: 'earned',
+    lockedA11y: 'locked',
+    unlocked: '{{badge}} unlocked',
+    unlockedMore_one: 'And {{count}} more badge',
+    unlockedMore_other: 'And {{count}} more badges',
     badges: {
       sevenDays: '7 days',
       protein: 'Protein',

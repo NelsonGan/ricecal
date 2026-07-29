@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Modal, Pressable, ScrollView, View } from 'react-native'
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
@@ -15,6 +15,13 @@ export type SheetProps = {
   footer?: ReactNode
   /** Let the body scroll. Off for short, fixed content. */
   scrollable?: boolean
+  /**
+   * The scrollable body's box. Its only real use is capping the height on a
+   * sheet whose own field raises the keyboard — 440pt of content plus a
+   * keyboard is taller than a phone, and the overflow comes off the top, where
+   * the field the user is typing into lives.
+   */
+  bodyClassName?: string
   children?: ReactNode
   className?: string
 }
@@ -29,6 +36,11 @@ export type SheetProps = {
  * The scrim is a Pressable that closes; the panel is a Pressable that swallows
  * the press. Without the inner one, every tap inside the sheet would bubble to
  * the scrim and dismiss it.
+ *
+ * A sheet with a text field in it rides above the keyboard. A `Modal` is its
+ * own window, so the `Screen` shell's keyboard handling does not reach inside
+ * one: without this the keyboard covers a sheet anchored to the bottom, and
+ * every result the user is typing to find is behind it.
  */
 export function Sheet({
   visible,
@@ -37,6 +49,7 @@ export function Sheet({
   description,
   footer,
   scrollable = true,
+  bodyClassName,
   children,
   className,
 }: SheetProps) {
@@ -44,7 +57,7 @@ export function Sheet({
 
   const body = scrollable ? (
     <ScrollView
-      className="max-h-[440px]"
+      className={cn('max-h-[440px]', bodyClassName)}
       contentContainerStyle={{ gap: spacing.md }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
@@ -68,21 +81,26 @@ export function Sheet({
         accessible={false}
         importantForAccessibility="no"
       >
-        <Pressable
-          className={cn('gap-md rounded-t-card bg-surface px-gutter pt-md', className)}
-          style={{ paddingBottom: insets.bottom + spacing.gutter }}
-          onPress={(event) => event.stopPropagation()}
-          accessibilityViewIsModal
-          accessible={false}
-        >
-          <View className="h-1.5 w-[54px] self-center rounded-full bg-line" />
+        {/* Android is left on `undefined`: `adjustResize` already shrinks the
+            window, and stacking both double-counts the inset — the same
+            reasoning as in `Screen`. */}
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <Pressable
+            className={cn('gap-md rounded-t-card bg-surface px-gutter pt-md', className)}
+            style={{ paddingBottom: insets.bottom + spacing.gutter }}
+            onPress={(event) => event.stopPropagation()}
+            accessibilityViewIsModal
+            accessible={false}
+          >
+            <View className="h-1.5 w-[54px] self-center rounded-full bg-line" />
 
-          {title ? <Text variant="subtitle">{title}</Text> : null}
-          {description ? <Text variant="body">{description}</Text> : null}
+            {title ? <Text variant="subtitle">{title}</Text> : null}
+            {description ? <Text variant="body">{description}</Text> : null}
 
-          {children ? body : null}
-          {footer}
-        </Pressable>
+            {children ? body : null}
+            {footer}
+          </Pressable>
+        </KeyboardAvoidingView>
       </Pressable>
     </Modal>
   )

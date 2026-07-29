@@ -25,6 +25,9 @@ export const onboarding = {
     subtitle: 'Used only to work out your daily budget.',
     height: 'HEIGHT',
     weight: 'WEIGHT',
+    sex: 'SEX',
+    female: 'Female',
+    male: 'Male',
     age: 'AGE',
     ageValue_one: '{{count}} year',
     ageValue_other: '{{count}} years',
@@ -95,6 +98,11 @@ export const onboarding = {
     passwordPlaceholder: 'At least 8 characters',
     terms: 'I agree to the terms and privacy policy.',
     submit: 'Create account',
+    signInCta: 'Sign in',
+    needAccount: 'I need an account',
+    aboutApp: 'What is RiceCal?',
+    /** Shown when the project requires a confirmation click before signing in. */
+    checkEmail: 'Check {{email}} for a confirmation link, then sign in.',
     errors: {
       email: 'That does not look like an email address.',
       password: 'Use at least 8 characters.',
@@ -103,6 +111,7 @@ export const onboarding = {
   },
 
   trial: {
+    notConfigured: 'Purchases are not set up in this build yet.',
     title: 'Start logging with RiceCal Pro',
     perks: {
       unlimited: 'Unlimited meal logging',

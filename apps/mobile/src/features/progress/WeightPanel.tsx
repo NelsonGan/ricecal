@@ -3,26 +3,29 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
+import { useCurrentWeight, useLogWeight, useProfile, useWeighIns } from '@/data'
 import { BarChart, StatRow } from '@/features/shared'
-import { bmi, goalDate, progressOf, useAppState, useDispatch, weeklyPace } from '@/mock'
+import { bmi, goalDate, progressOf, weeklyPace } from '@/lib/nutrition'
 import { Badge, Button, Card, ProgressBar, Sheet, Slider, Text, useToast } from '@/ui'
 
 /** P1 WEIGHT */
 export function WeightPanel() {
   const { t } = useTranslation(['progress', 'common'])
-  const dispatch = useDispatch()
   const toast = useToast()
-  const { profile, weighIns } = useAppState((state) => ({
-    profile: state.profile,
-    weighIns: state.weighIns,
-  }))
+  const { data: profile } = useProfile()
+  const { data: weighIns = [] } = useWeighIns()
+  const logWeight = useLogWeight()
+  const current = useCurrentWeight() ?? 0
 
   const [logging, setLogging] = useState(false)
-  const [draft, setDraft] = useState(profile.weightKg)
+  const [draft, setDraft] = useState(0)
 
-  const started = weighIns[0]?.kg ?? profile.weightKg
-  const change = round1(started - profile.weightKg)
-  const reachedOn = goalDate(profile, new Date())
+  const target = Number(profile?.target_weight_kg ?? 0)
+  const goal = profile?.weight_goal ?? 'track'
+  const started = weighIns[0]?.kg ?? current
+  const change = round1(started - current)
+  const reachedOn = goalDate(goal, current, target, new Date())
+  const bodyMass = bmi(Number(profile?.height_cm ?? 0), current)
 
   // Eight weekly averages. Twelve fit on the canvas but not their labels, and
   // a chart whose last column reads "N..." is worse than a shorter chart.
@@ -34,7 +37,7 @@ export function WeightPanel() {
   }))
 
   const save = () => {
-    dispatch({ type: 'logWeight', kg: round1(draft) })
+    logWeight.mutate({ kg: round1(draft) })
     setLogging(false)
     toast.show({ title: t('progress:weight.saved'), tone: 'success' })
   }
@@ -60,7 +63,7 @@ export function WeightPanel() {
           <View className="gap-0.5">
             <Text variant="overline">{t('progress:weight.current')}</Text>
             <View className="flex-row items-baseline gap-1">
-              <Text variant="display">{profile.weightKg.toFixed(1)}</Text>
+              <Text variant="display">{current.toFixed(1)}</Text>
               <Text variant="meta" className="text-[18px]">
                 {t('common:unit.kg')}
               </Text>
@@ -69,7 +72,7 @@ export function WeightPanel() {
           <View className="items-end gap-0.5">
             <Text variant="overline">{t('progress:weight.goal')}</Text>
             <Text variant="numeric" className="text-muted">
-              {profile.targetWeightKg.toFixed(1)} {t('common:unit.kg')}
+              {target.toFixed(1)} {t('common:unit.kg')}
             </Text>
           </View>
         </View>
@@ -83,10 +86,7 @@ export function WeightPanel() {
         />
 
         <ProgressBar
-          value={progressOf(
-            Math.abs(started - profile.weightKg),
-            Math.abs(started - profile.targetWeightKg),
-          )}
+          value={progressOf(Math.abs(started - current), Math.abs(started - target))}
           height={16}
           accessibilityLabel={t('progress:weight.goal')}
         />
@@ -105,7 +105,7 @@ export function WeightPanel() {
             {
               key: 'pace',
               label: t('progress:weight.pace'),
-              value: t('progress:weight.paceValue', { value: weeklyPace(profile).toFixed(1) }),
+              value: t('progress:weight.paceValue', { value: weeklyPace(goal).toFixed(1) }),
             },
             {
               key: 'date',
@@ -116,12 +116,20 @@ export function WeightPanel() {
         />
       </Card>
 
-      <Card title={t('progress:weight.bmi', { value: bmi(profile).toFixed(1) })}>
-        <BmiBand value={bmi(profile)} />
+      <Card title={t('progress:weight.bmi', { value: bodyMass.toFixed(1) })}>
+        <BmiBand value={bodyMass} />
         <Text variant="meta">{t('progress:weight.bmiNote')}</Text>
       </Card>
 
-      <Button fullWidth onPress={() => setLogging(true)}>
+      <Button
+        fullWidth
+        onPress={() => {
+          // Seeded from the newest reading when the sheet opens, not at mount:
+          // the query may not have answered yet on first render.
+          setDraft(current || 70)
+          setLogging(true)
+        }}
+      >
         {t('progress:weight.log')}
       </Button>
 

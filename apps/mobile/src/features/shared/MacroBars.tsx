@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { type Macros, progressOf, type Targets } from '@/mock'
+import type { Macros, Targets } from '@/data'
+import { progressOf } from '@/lib/nutrition'
 import { cn, MacroBar } from '@/ui'
 
 export type MacroBarsProps = {

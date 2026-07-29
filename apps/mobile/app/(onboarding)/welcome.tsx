@@ -3,7 +3,6 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { useDispatch } from '@/mock'
 import { Button, Icon, type IconProps, Screen, Text } from '@/ui'
 
 const MASCOT = require('../../assets/brand/mascot.png')
@@ -12,7 +11,6 @@ const MASCOT = require('../../assets/brand/mascot.png')
 export default function Welcome() {
   const { t } = useTranslation('onboarding')
   const router = useRouter()
-  const dispatch = useDispatch()
 
   const perks: { key: string; icon: IconProps; title: string; subtitle: string }[] = [
     {
@@ -35,14 +33,8 @@ export default function Welcome() {
     },
   ]
 
-  /**
-   * "I already have an account" skips straight in. There is no auth to run
-   * against, and a sign-in form that cannot fail teaches nothing.
-   */
-  const signIn = () => {
-    dispatch({ type: 'completeOnboarding' })
-    router.replace('/today')
-  }
+  /** "I already have an account" goes to the real sign-in screen. */
+  const signIn = () => router.replace('/sign-in')
 
   return (
     <Screen

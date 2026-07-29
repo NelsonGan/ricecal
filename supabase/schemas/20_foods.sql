@@ -43,6 +43,11 @@ create table public.foods (
 
   icon_set       public.icon_set not null default 'dishes',
   icon_name      text not null,
+  -- A photo the user took of their own dish, as a path inside `meal-photos`.
+  -- Null on every catalogue row: the shared dishes are illustrated, and an
+  -- illustration is what a row falls back to when this is empty — which is why
+  -- `icon_name` stays required rather than becoming one of two options.
+  image_path     text,
 
   place          public.food_place not null default 'hawker',
 
