@@ -182,8 +182,14 @@ export const spacing = {
   xl: 32,
   /** Horizontal padding at the screen edge. */
   gutter: 20,
-  /** Interior padding of a card. */
-  card: 28,
+  /**
+   * Interior padding of a card.
+   *
+   * The screen designs specify 18 on a 340pt frame; this is that, scaled to the
+   * 393pt phones the app actually runs on. Set to 28 the cards read as roomy
+   * panels rather than the compact tiles the designs draw.
+   */
+  card: 20,
   /** Vertical gap between stacked cards. */
   stack: 14,
 } as const

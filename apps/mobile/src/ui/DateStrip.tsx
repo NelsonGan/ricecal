@@ -41,7 +41,8 @@ export function DateStrip({ days, value, onChange, className }: DateStripProps) 
             key={day.key}
             depth={slab.sm}
             radius={radius.sm + 2}
-            slabClassName={cn('flex-1', selected ? 'bg-pandan-slab' : 'bg-transparent')}
+            containerClassName="flex-1"
+            slabClassName={selected ? 'bg-pandan-slab' : 'bg-transparent'}
             className={cn('items-center gap-1 py-2.5', selected ? 'bg-pandan' : 'bg-track')}
             onPress={() => onChange(day.key)}
             accessibilityRole="button"
