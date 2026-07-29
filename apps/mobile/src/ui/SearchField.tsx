@@ -1,12 +1,15 @@
 import { forwardRef } from 'react'
 import { Pressable, type TextInput } from 'react-native'
 
+import { useThemeColors } from '@/theme/useTheme'
 import { Icon } from './Icon'
 import { TextField, type TextFieldProps } from './TextField'
 
 export type SearchFieldProps = Omit<TextFieldProps, 'leftSlot' | 'rightSlot'> & {
   /** Renders a clear affordance whenever there is a value. */
   onClear?: () => void
+  /** Screen-reader name for that affordance. Pass translated copy. */
+  clearLabel?: string
 }
 
 /**
@@ -18,9 +21,11 @@ export type SearchFieldProps = Omit<TextFieldProps, 'leftSlot' | 'rightSlot'> & 
  * "kuey teow" into something else entirely.
  */
 export const SearchField = forwardRef<TextInput, SearchFieldProps>(function SearchField(
-  { onClear, value, placeholder = 'Search food, roti canai', ...rest },
+  { onClear, clearLabel = 'Clear search', value, placeholder, ...rest },
   ref,
 ) {
+  const colors = useThemeColors()
+
   return (
     <TextField
       ref={ref}
@@ -37,9 +42,11 @@ export const SearchField = forwardRef<TextInput, SearchFieldProps>(function Sear
             onPress={onClear}
             hitSlop={12}
             accessibilityRole="button"
-            accessibilityLabel="Clear search"
+            accessibilityLabel={clearLabel}
           >
-            <Icon set="ui" name="close" size={20} />
+            {/* Chrome, so it takes the chrome colour rather than the
+                illustration's own red. */}
+            <Icon set="ui" name="close" size={20} tintColor={colors.faint} />
           </Pressable>
         ) : null
       }

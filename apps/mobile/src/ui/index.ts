@@ -35,7 +35,17 @@ export {
 } from './Avatar'
 // Primitives
 export { Badge, type BadgeProps, type BadgeTone, CountBadge, type CountBadgeProps } from './Badge'
-export { BottomNav, type BottomNavProps, type NavTab } from './BottomNav'
+export {
+  BottomNav,
+  type BottomNavProps,
+  NAV_BAR_HEIGHT,
+  NavAction,
+  type NavActionProps,
+  NavBar,
+  NavItem,
+  type NavItemProps,
+  type NavTab,
+} from './BottomNav'
 export { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from './Button'
 export { CalorieRing, type CalorieRingProps } from './CalorieRing'
 export { Card, type CardProps, type CardTone } from './Card'
@@ -83,7 +93,7 @@ export { Skeleton, type SkeletonProps, SkeletonRow, Spinner, type SpinnerProps }
 export { Slider, type SliderProps } from './Slider'
 export { Squish, type SquishProps } from './Squish'
 export { StatTile, type StatTileProps, type StatTileTone } from './StatTile'
-export { StepProgress, type StepProgressProps } from './StepProgress'
+export { StepProgress, type StepProgressProps, type StepProgressTone } from './StepProgress'
 export { Stepper, type StepperProps } from './Stepper'
 export { Switch, type SwitchProps } from './Switch'
 export { type TabOption, Tabs, type TabsProps } from './Tabs'

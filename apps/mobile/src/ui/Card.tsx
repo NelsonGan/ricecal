@@ -73,10 +73,20 @@ export function Card({
     <Squish
       depth={isDark ? 0 : slab.md}
       radius={radius.card}
-      slabClassName={cn(palette.slab, className)}
+      containerClassName={className}
+      slabClassName={palette.slab}
       className={cn(
         palette.fill,
         isDark && `border ${palette.border}`,
+        // Every card spaces its own children. Without this each caller invents
+        // its own gap or, more often, forgets — and two elements in a card end
+        // up touching on one screen and not on another.
+        //
+        // Tighter than the gap between cards, so the eye groups what is inside
+        // one card before it groups the cards themselves. A list card whose
+        // rows carry their own dividers passes `contentClassName="gap-0"` to
+        // sit flush.
+        'gap-3',
         !flush && 'p-card',
         contentClassName,
       )}
@@ -88,10 +98,7 @@ export function Card({
         // but the header is chrome, not content — without its own padding the
         // title renders hard against the rounded corner and is clipped by it.
         <View
-          className={cn(
-            'mb-md flex-row items-center justify-between gap-3',
-            flush && 'px-card pt-card',
-          )}
+          className={cn('flex-row items-center justify-between gap-3', flush && 'px-card pt-card')}
         >
           {title ? <Text variant="overline">{title}</Text> : null}
           {action}

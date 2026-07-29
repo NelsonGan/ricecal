@@ -54,7 +54,8 @@ export function WeekStrip({ days, onSelectDay, className }: WeekStripProps) {
             <Squish
               depth={slab.sm}
               radius={radius.sm + 2}
-              slabClassName={cn('w-full', palette.slab)}
+              containerClassName="w-full"
+              slabClassName={palette.slab}
               className={cn('aspect-square w-full', palette.fill)}
               onPress={onSelectDay ? () => onSelectDay(day.key) : undefined}
               accessibilityRole={onSelectDay ? 'button' : undefined}
@@ -74,6 +75,8 @@ export type WaterTrackerProps = {
   filled: number
   goal: number
   onChange?: (filled: number) => void
+  /** Names each glass to a screen reader, e.g. "Glass 3 of 8". Pass translated copy. */
+  glassLabel?: (ordinal: number, goal: number) => string
   className?: string
 }
 
@@ -84,7 +87,13 @@ export type WaterTrackerProps = {
  * empties it. That is the interaction the design describes ("tap again to
  * undo") and it means going from 5 to 2 is one tap, not three.
  */
-export function WaterTracker({ filled, goal, onChange, className }: WaterTrackerProps) {
+export function WaterTracker({
+  filled,
+  goal,
+  onChange,
+  glassLabel = (ordinal, total) => `Glass ${ordinal} of ${total}`,
+  className,
+}: WaterTrackerProps) {
   // A glass has no identity beyond its position, so the position becomes its
   // id here rather than being passed as a key at the call site.
   const glasses = Array.from({ length: goal }, (_, index) => ({
@@ -102,7 +111,7 @@ export function WaterTracker({ filled, goal, onChange, className }: WaterTracker
           key={glass.id}
           depth={0}
           radius={12}
-          slabClassName="flex-1"
+          containerClassName="flex-1"
           className={cn(
             'h-[60px]',
             glass.isFilled
@@ -111,7 +120,7 @@ export function WaterTracker({ filled, goal, onChange, className }: WaterTracker
           )}
           onPress={onChange ? () => onChange(glass.next) : undefined}
           accessibilityRole={onChange ? 'button' : undefined}
-          accessibilityLabel={`Glass ${glass.ordinal} of ${goal}`}
+          accessibilityLabel={glassLabel(glass.ordinal, goal)}
           accessibilityState={{ selected: glass.isFilled }}
         />
       ))}

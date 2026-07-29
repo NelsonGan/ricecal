@@ -75,6 +75,10 @@ export function Screen({
       className={cn('flex-1', contentClassName)}
       contentContainerStyle={{
         padding: flush ? 0 : spacing.gutter,
+        // Every route draws its own title bar with `headerShown: false`, so the
+        // status bar is this view's problem. Without the top inset the first
+        // line of every screen sits under the clock.
+        paddingTop: (flush ? 0 : spacing.gutter) + insets.top,
         paddingBottom: (flush ? 0 : spacing.gutter) + (footer ? 0 : insets.bottom),
         gap: spacing.stack,
       }}
@@ -89,7 +93,7 @@ export function Screen({
   ) : (
     <View
       className={cn('flex-1', !flush && 'p-gutter', contentClassName)}
-      style={{ gap: spacing.stack }}
+      style={{ gap: spacing.stack, paddingTop: (flush ? 0 : spacing.gutter) + insets.top }}
     >
       {children}
     </View>
@@ -103,8 +107,11 @@ export function Screen({
     >
       {body}
       {footer ? (
+        // No rule above the footer. The design separates it with space and the
+        // canvas colour alone, and a hairline under a full-width CTA reads as a
+        // seam rather than a divider.
         <View
-          className={cn('gap-md bg-canvas px-gutter pt-md', !scroll && 'border-t border-line')}
+          className="gap-md bg-canvas px-gutter pt-md"
           style={{ paddingBottom: insets.bottom + spacing.md }}
         >
           {footer}

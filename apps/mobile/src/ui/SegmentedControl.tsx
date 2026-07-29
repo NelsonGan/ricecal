@@ -49,16 +49,21 @@ export function SegmentedControl<T extends string>({
             key={option.value}
             depth={SEGMENT_DEPTH}
             radius={radius.sm + 1}
-            slabClassName={cn('flex-1', selected ? 'bg-line-strong' : 'bg-transparent')}
-            className={cn('items-center py-3', selected ? 'bg-surface' : 'bg-transparent')}
+            containerClassName="flex-1"
+            slabClassName={selected ? 'bg-line-strong' : 'bg-transparent'}
+            className={cn('items-center px-1 py-3', selected ? 'bg-surface' : 'bg-transparent')}
             haptics={false}
             onPress={() => onChange(option.value)}
             accessibilityRole="tab"
             accessibilityState={{ selected }}
           >
+            {/* One line, always. Four segments fit across a 393pt screen only
+                at this size, and a wrapped label makes one segment taller than
+                its neighbours. */}
             <Text
+              numberOfLines={1}
               className={cn(
-                'font-display text-[16px] leading-[20px]',
+                'font-display text-[15px] leading-[20px]',
                 selected ? 'text-heading' : 'text-muted',
               )}
             >

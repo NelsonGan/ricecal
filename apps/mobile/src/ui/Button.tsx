@@ -8,10 +8,13 @@ import { Squish, type SquishProps } from './Squish'
 import { Text } from './Text'
 
 /**
- * Six tones, one rule: never two primaries on a screen. `secondary` and
+ * Seven tones, one rule: never two primaries on a screen. `secondary` and
  * `neutral` are both outlined, and differ only in whether they carry the
  * primary colour — `secondary` is the paired choice next to a primary,
  * `neutral` is the neutral one ("Keep", "Not now").
+ *
+ * `kaya`, `danger` and `water` exist for onboarding, which rotates its accent
+ * per step. Outside that flow the CTA is `primary`.
  */
 const tones = {
   primary: {
@@ -37,6 +40,12 @@ const tones = {
     surface: 'bg-kaya',
     label: 'text-on-kaya',
     spinner: 'onKaya',
+  },
+  water: {
+    slab: 'bg-water-slab',
+    surface: 'bg-water',
+    label: 'text-on-water',
+    spinner: 'onWater',
   },
   neutral: {
     slab: 'bg-line',
@@ -120,7 +129,8 @@ export function Button({
     <Squish
       depth={depth}
       radius={metrics.radius}
-      slabClassName={cn('self-start', slabColor, fullWidth && 'w-full self-stretch', className)}
+      containerClassName={cn('self-start', fullWidth && 'w-full self-stretch', className)}
+      slabClassName={slabColor}
       className={cn(
         'flex-row items-center justify-center gap-2',
         metrics.box,

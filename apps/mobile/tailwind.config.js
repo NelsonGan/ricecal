@@ -18,7 +18,7 @@ const spacing = {
   lg: '22px',
   xl: '32px',
   gutter: '20px',
-  card: '28px',
+  card: '20px',
   stack: '14px',
 }
 

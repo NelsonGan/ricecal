@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { View } from 'react-native'
 
+import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
 import { Icon } from './Icon'
 import { IconButton } from './IconButton'
@@ -10,6 +11,8 @@ export type AppBarProps = {
   title: string
   /** Back affordance. Omit on a root screen. */
   onBack?: () => void
+  /** Screen-reader name for the back button. Pass translated copy. */
+  backLabel?: string
   /** Trailing controls. Keep to one; two crowds a 340pt phone. */
   action?: ReactNode
   className?: string
@@ -26,15 +29,19 @@ export type AppBarProps = {
  * When there is no `action`, an invisible spacer keeps the title optically
  * centred instead of drifting right.
  */
-export function AppBar({ title, onBack, action, className }: AppBarProps) {
+export function AppBar({ title, onBack, backLabel = 'Go back', action, className }: AppBarProps) {
+  const colors = useThemeColors()
+
   return (
     <View
       className={cn('flex-row items-center gap-md rounded-tile bg-canvas p-3', className)}
       accessibilityRole="header"
     >
       {onBack ? (
-        <IconButton size="sm" accessibilityLabel="Go back" onPress={onBack}>
-          <Icon set="ui" name="chevron-left" size={20} />
+        <IconButton size="sm" accessibilityLabel={backLabel} onPress={onBack}>
+          {/* Tinted: chrome is monochrome, and the illustration's own palette
+              reads as a stray accent next to a title. */}
+          <Icon set="ui" name="chevron-left" size={20} tintColor={colors.muted} />
         </IconButton>
       ) : null}
 
