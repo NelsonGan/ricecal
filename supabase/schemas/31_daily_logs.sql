@@ -1,10 +1,9 @@
 -- ---------------------------------------------------------------------------
 -- Per-day facts the user records directly, that are not a food entry.
 --
--- Water today; a day note or a mood next. Kept separate from `daily_activity`,
--- which holds the same grain but arrives from a watch: two writers on one row
--- means a background sync and a tap on the water tracker race for the same
--- upsert, and the loser's write disappears. Different sources, different rows.
+-- Water today; a day note or a mood next. One row per user per day, written
+-- only by the user — there is no background sync anywhere in this app, so this
+-- table has a single writer and no upsert to race against.
 --
 -- Nothing references this table. `food_logs` carries its own `log_date`, so
 -- logging a meal never has to create a day first, and a day with no water and

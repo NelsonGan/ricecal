@@ -107,18 +107,17 @@ begin
   -- A new budget applies from now on; yesterday was still measured against
   -- yesterday's target, which is the entire point of the effective_from key.
   --
-  -- Water and steps are carried forward rather than recomputed: they are not
-  -- derived from body stats, and resetting them to the defaults on every
-  -- profile edit would quietly undo a user's own choice.
+  -- Water is carried forward rather than recomputed: it is not derived from
+  -- body stats, and resetting it to the default on every profile edit would
+  -- quietly undo a user's own choice.
   insert into public.daily_goals as g (
     user_id, effective_from, kcal, carbs_g, protein_g, fat_g,
-    water_glasses, steps, is_custom
+    water_glasses, is_custom
   )
   values (
     v_user_id, v_today,
     v_computed.kcal, v_computed.carbs_g, v_computed.protein_g, v_computed.fat_g,
     coalesce(v_current.water_glasses, 8),
-    coalesce(v_current.steps, 8000),
     false
   )
   on conflict (user_id, effective_from) do update

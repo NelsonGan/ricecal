@@ -5,18 +5,17 @@ import { PurchasesUnavailable, purchasePlan, purchasesAvailable } from '@/data/p
 import { CheckList } from '@/features/shared'
 import { Button, Card, Icon, type IconProps, Screen, Squish, Text, useToast } from '@/ui'
 
-type Feature = 'photo' | 'barcode' | 'voice'
+type Feature = 'photo' | 'voice'
 
 const HERO: Record<Feature, IconProps> = {
   photo: { set: 'system', name: 'camera' },
-  barcode: { set: 'system', name: 'barcode' },
   voice: { set: 'system', name: 'microphone' },
 }
 
 /**
  * W4 FEATURE GATE.
  *
- * One screen for three gates: which feature was blocked is a parameter, so a
+ * One screen for both gates: which feature was blocked is a parameter, so a
  * new gated feature is a new entry in the copy bundle rather than a new route.
  */
 export default function FeatureGate() {

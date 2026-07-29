@@ -35,7 +35,6 @@ export function useTargets() {
         protein: row.protein_g ?? 0,
         fat: row.fat_g ?? 0,
         waterGlasses: row.water_glasses ?? 8,
-        steps: row.steps ?? 8000,
         isCustom: row.is_custom ?? false,
       }
     },
@@ -48,7 +47,6 @@ export type GoalsInput = {
   protein: number
   fat: number
   waterGlasses: number
-  steps: number
   /**
    * True when the user typed the numbers. The recompute trigger reads exactly
    * this and stops, so an automatic write must never set it.
@@ -81,7 +79,6 @@ export function useSetTargets() {
               protein_g: Math.round(input.protein),
               fat_g: Math.round(input.fat),
               water_glasses: Math.round(input.waterGlasses),
-              steps: Math.round(input.steps),
               is_custom: input.isCustom,
             },
             { onConflict: 'user_id,effective_from' },

@@ -8,6 +8,10 @@ import { supabase } from '@/lib/supabase'
  * shape is already the shape of that call — async, rejectable, and returning
  * only the two ids an entry needs — so replacing the body is the whole change.
  *
+ * A real one has to answer the miss too: `foods` has no per-user rows, so a
+ * photo that matches nothing in the catalogue has nowhere to land and the
+ * caller has to be told, not handed a guess.
+ *
  * Everything around it is built for the real timing: the row is on screen
  * before this is called, and the user is free to walk away while it runs.
  *
@@ -24,16 +28,16 @@ export type Recognition = {
   servingId: string
 }
 
-/** What a photo "recognises" as, and what a barcode "scans" as. */
-const GUESS_SLUG = { photo: 'nasi-lemak-ayam', barcode: 'instant-noodles' } as const
+/** What a photo "recognises" as. */
+const GUESS_SLUG = 'nasi-lemak-ayam'
 
-export async function recogniseDish(mode: 'photo' | 'barcode'): Promise<Recognition> {
+export async function recogniseDish(): Promise<Recognition> {
   await new Promise((resolve) => setTimeout(resolve, ANALYSE_MS))
 
   const { data, error } = await supabase
     .from('food_details')
     .select('id, default_serving_id, servings')
-    .eq('slug', GUESS_SLUG[mode])
+    .eq('slug', GUESS_SLUG)
     .single()
 
   if (error) throw error

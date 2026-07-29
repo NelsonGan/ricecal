@@ -21,12 +21,16 @@
 --
 -- THE SEAM FOR CALORIE SCANNING
 --
--- A scanned meal has no catalogue row yet, so `food_id` will have to become
--- nullable alongside an inline macro block, or the scan will have to mint an
--- owned `foods` row first. The second is the cheaper change and is why
--- `foods.owner_id` already exists: a scan writes a private food, then a normal
--- entry against it, and nothing here moves. `source = 'camera'` and
--- `photo_path` are already in place for it.
+-- A scan resolves to a catalogue row and then writes an ordinary entry against
+-- it: `source = 'camera'` and `photo_path` are already here for that, and
+-- nothing in this table has to move.
+--
+-- What it cannot do is invent a dish. `foods` has no per-user rows any more, so
+-- a photo that matches nothing in the catalogue has nowhere to land — that case
+-- has to be answered by widening the catalogue or by asking the user to pick,
+-- not by writing a private food. Making `food_id` nullable with an inline macro
+-- block is the other way out, and it costs the property that correcting a dish
+-- corrects every log that used it.
 -- ---------------------------------------------------------------------------
 
 create table public.food_logs (

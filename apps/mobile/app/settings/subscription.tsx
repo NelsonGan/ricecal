@@ -105,7 +105,6 @@ export default function SubscriptionScreen() {
             t('profile:subscription.perks.unlimited'),
             t('profile:subscription.perks.scanning'),
             t('profile:subscription.perks.database'),
-            t('profile:subscription.perks.sync'),
           ]}
         />
       </Card>

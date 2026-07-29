@@ -63,12 +63,7 @@ export default function TrialStep() {
       </View>
 
       <CheckList
-        items={[
-          t('trial.perks.unlimited'),
-          t('trial.perks.scanning'),
-          t('trial.perks.database'),
-          t('trial.perks.sync'),
-        ]}
+        items={[t('trial.perks.unlimited'), t('trial.perks.scanning'), t('trial.perks.database')]}
       />
 
       <PlanPicker value={plan} onChange={setPlan} />

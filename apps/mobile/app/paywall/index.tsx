@@ -94,7 +94,6 @@ export default function HardPaywall() {
           t('paywall:hard.perks.unlimited'),
           t('paywall:hard.perks.scanning'),
           t('paywall:hard.perks.database'),
-          t('paywall:hard.perks.sync'),
         ]}
       />
 

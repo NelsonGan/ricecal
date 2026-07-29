@@ -9,10 +9,7 @@ import { type Meal, useSelectedDate, useSnapFood } from '@/data'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, Icon, IconButton, Squish, Text } from '@/ui'
 
-export type CameraMode = 'photo' | 'barcode'
-
 export type InlineCameraProps = {
-  mode: CameraMode
   meal: Meal
   /** Called as soon as the shot is taken, to dismiss whatever hosts this. */
   onDone: () => void
@@ -31,7 +28,7 @@ export type InlineCameraProps = {
  * the waiting happens on the row itself, where the user can watch it or ignore
  * it. See `useSnapFood`.
  */
-export function InlineCamera({ mode, meal, onDone }: InlineCameraProps) {
+export function InlineCamera({ meal, onDone }: InlineCameraProps) {
   const { t } = useTranslation(['logging', 'common'])
   const colors = useThemeColors()
   const [permission, requestPermission] = useCameraPermissions()
@@ -51,8 +48,8 @@ export function InlineCamera({ mode, meal, onDone }: InlineCameraProps) {
   const hasCamera = Device.isDevice
 
   const snap = useCallback(
-    (photoUri: string | undefined, source: 'camera' | 'barcode') => {
-      snapFood({ meal, photoUri, source, logDate: selectedDate })
+    (photoUri: string | undefined) => {
+      snapFood({ meal, photoUri, logDate: selectedDate })
       onDone()
     },
     [snapFood, meal, onDone, selectedDate],
@@ -67,7 +64,7 @@ export function InlineCamera({ mode, meal, onDone }: InlineCameraProps) {
       ? await camera.current?.takePictureAsync({ quality: 0.6 }).catch(() => undefined)
       : undefined
     setCapturing(false)
-    snap(photo?.uri, 'camera')
+    snap(photo?.uri)
   }
 
   const pickFromLibrary = async () => {
@@ -77,7 +74,7 @@ export function InlineCamera({ mode, meal, onDone }: InlineCameraProps) {
       quality: 0.6,
     })
     if (result.canceled) return
-    snap(result.assets[0]?.uri, 'camera')
+    snap(result.assets[0]?.uri)
   }
 
   if (permission && !permission.granted) {
@@ -106,24 +103,7 @@ export function InlineCamera({ mode, meal, onDone }: InlineCameraProps) {
     <View className="gap-3">
       <View className="h-[230px] items-center justify-center overflow-hidden rounded-tile bg-inverse">
         {hasCamera ? (
-          <CameraView
-            ref={camera}
-            style={{ position: 'absolute', inset: 0 }}
-            facing={facing}
-            barcodeScannerSettings={
-              mode === 'barcode' ? { barcodeTypes: ['ean13', 'ean8', 'upc_a'] } : undefined
-            }
-            // Scanning fires continuously while a code is in frame; the guard
-            // is what stops one barcode logging six rows.
-            onBarcodeScanned={
-              mode === 'barcode' && !capturing
-                ? () => {
-                    setCapturing(true)
-                    snap(undefined, 'barcode')
-                  }
-                : undefined
-            }
-          />
+          <CameraView ref={camera} style={{ position: 'absolute', inset: 0 }} facing={facing} />
         ) : (
           <Icon set="food" name="empty-plate" size={132} />
         )}
@@ -133,7 +113,7 @@ export function InlineCamera({ mode, meal, onDone }: InlineCameraProps) {
         <View className="absolute bottom-3 flex-row items-center gap-2 rounded-tile bg-inverse/80 px-3 py-2">
           <View className="h-2 w-2 rounded-full bg-pandan" />
           <Text variant="micro" className="text-on-inverse">
-            {mode === 'barcode' ? t('logging:camera.barcodeAiming') : t('logging:camera.detected')}
+            {t('logging:camera.detected')}
           </Text>
         </View>
       </View>

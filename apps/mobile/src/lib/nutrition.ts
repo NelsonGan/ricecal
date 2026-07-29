@@ -43,26 +43,6 @@ export function progressOf(done: number, goal: number): number {
 }
 
 /**
- * Macro targets rescaled to a day's actual budget.
- *
- * When exercise adds calories back, those calories have to be eaten as
- * something. Leaving the macro targets at their resting values would show all
- * three bars pegged on any day with a workout, which is the opposite of what
- * the extra budget means.
- */
-export function scaleTargets(targets: Targets, budget: number): Targets {
-  if (targets.kcal <= 0 || budget === targets.kcal) return targets
-  const factor = budget / targets.kcal
-  return {
-    ...targets,
-    kcal: budget,
-    carbs: Math.round(targets.carbs * factor),
-    protein: Math.round(targets.protein * factor),
-    fat: Math.round(targets.fat * factor),
-  }
-}
-
-/**
  * The meal a "log food" tap should default to, from the wall clock. Snack is
  * never guessed: it is what the user picks when none of the three fit.
  */
@@ -155,7 +135,6 @@ export function computeTargets(body: BodyInput): Omit<Targets, 'isCustom'> {
     protein: Math.round((kcal * 0.22) / 4),
     fat: Math.round((kcal * 0.31) / 9),
     waterGlasses: 8,
-    steps: 8000,
   }
 }
 

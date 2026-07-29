@@ -1,30 +1,28 @@
 import { useRouter } from 'expo-router'
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { AchievementsPanel, ActivityPanel, WeightPanel } from '@/features/progress'
+import { WeightPanel } from '@/features/progress'
 import { ScreenTitle } from '@/features/shared'
-import { Icon, IconButton, Screen, Tabs } from '@/ui'
-
-type Panel = 'weight' | 'activity' | 'achievements'
+import { Icon, IconButton, Screen } from '@/ui'
 
 /**
- * The Trends tab: P1 WEIGHT, P2 ACTIVITY and P5 ACHIEVEMENTS.
+ * The Trends tab: P1 WEIGHT.
  *
- * Three designs that each keep the bottom bar, so they are panels of one route
- * rather than three routes. The deeper screens they lead to — the weekly report,
- * nutrition, a single session — are pushed and lose the bar, which is exactly
- * the distinction the design draws.
+ * This used to be three panels behind a `Tabs` control — weight, activity and
+ * achievements. Activity had nothing to show once device sync went, and
+ * achievements went with it, so a tab strip over a single panel would be chrome
+ * around one choice. The deeper screens this leads to — the weekly report,
+ * nutrition — are still pushed and still lose the bottom bar, which is the
+ * distinction the design draws.
  */
 export default function TrendsScreen() {
   const { t } = useTranslation('progress')
   const router = useRouter()
-  const [panel, setPanel] = useState<Panel>('weight')
 
   return (
     <Screen>
       <ScreenTitle
-        title={t(`tabs.${panel}`)}
+        title={t('tabs.weight')}
         trailing={
           <IconButton
             size="sm"
@@ -36,20 +34,7 @@ export default function TrendsScreen() {
         }
       />
 
-      <Tabs
-        options={[
-          { value: 'weight', label: t('tabs.weight') },
-          { value: 'activity', label: t('tabs.activity') },
-          { value: 'achievements', label: t('tabs.achievements') },
-        ]}
-        value={panel}
-        onChange={setPanel}
-        accessibilityLabel={t('tabs.weight')}
-      />
-
-      {panel === 'weight' ? <WeightPanel /> : null}
-      {panel === 'activity' ? <ActivityPanel /> : null}
-      {panel === 'achievements' ? <AchievementsPanel /> : null}
+      <WeightPanel />
     </Screen>
   )
 }
