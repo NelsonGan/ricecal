@@ -43,7 +43,7 @@ export default function WelcomeToPro() {
           <Icon set="ui" name="check" size={48} />
         </Squish>
 
-        <Text className="text-center font-display text-[30px] leading-[36px] text-heading">
+        <Text variant="title" className="text-center">
           {t('welcome.title')}
         </Text>
         <Text className="text-center text-[15px] leading-[23px]">{t('welcome.body')}</Text>

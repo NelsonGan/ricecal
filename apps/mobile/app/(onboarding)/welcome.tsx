@@ -61,7 +61,7 @@ export default function Welcome() {
     >
       <View className="items-center gap-4">
         <Image source={MASCOT} style={{ width: 112, height: 112 }} contentFit="contain" />
-        <Text className="text-center font-display text-[32px] leading-[38px] text-heading">
+        <Text variant="displayMd" className="text-center">
           {t('welcome.title')}
         </Text>
         <Text className="text-center text-[16px] leading-[24px]">{t('welcome.subtitle')}</Text>

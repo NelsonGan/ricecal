@@ -56,7 +56,8 @@ export function Avatar({ name, uri, size = 'md', tone, className }: AvatarProps)
     <Squish
       depth={slab.md}
       radius={metrics.radius}
-      slabClassName={cn('self-start', palette.slab, className)}
+      containerClassName={cn('self-start', className)}
+      slabClassName={palette.slab}
       className={cn('items-center justify-center overflow-hidden', palette.fill)}
       accessibilityLabel={name}
     >

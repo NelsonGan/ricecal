@@ -62,7 +62,7 @@ export default function TargetStep() {
           centerCaption={t('target.perDay')}
         />
 
-        <Text className="text-center font-display text-[26px] leading-[32px] text-heading">
+        <Text variant="screenTitle" className="text-center">
           {t('target.headline', { meals })}
         </Text>
 

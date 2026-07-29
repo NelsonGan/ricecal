@@ -22,9 +22,13 @@ export default function RemindersScreen() {
 
   return (
     <Screen>
-      <AppBar title={t('profile:reminders.title')} onBack={() => goBack()} />
+      <AppBar
+        title={t('profile:reminders.title')}
+        onBack={() => goBack()}
+        backLabel={t('common:a11y.back')}
+      />
 
-      <Card title={t('profile:reminders.meals')}>
+      <Card title={t('profile:reminders.meals')} contentClassName="gap-0">
         {(['breakfast', 'lunch', 'dinner'] as const).map((meal, index) => (
           <ToggleRow
             key={meal}
@@ -39,7 +43,7 @@ export default function RemindersScreen() {
         ))}
       </Card>
 
-      <Card title={t('profile:reminders.habits')}>
+      <Card title={t('profile:reminders.habits')} contentClassName="gap-0">
         <ToggleRow
           title={t('profile:reminders.water')}
           value={reminders.water}

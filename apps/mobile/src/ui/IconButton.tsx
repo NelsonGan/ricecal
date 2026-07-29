@@ -60,7 +60,8 @@ export function IconButton({
     <Squish
       depth={variant === 'ghost' ? 0 : disabled ? slab.sm : metrics.depth}
       radius={metrics.radius}
-      slabClassName={cn('self-start', disabled ? 'bg-disabled-slab' : tone.slab, className)}
+      containerClassName={cn('self-start', className)}
+      slabClassName={disabled ? 'bg-disabled-slab' : tone.slab}
       className={cn(
         'items-center justify-center',
         metrics.box,

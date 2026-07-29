@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { FoodRow, ScreenTitle, StatRow } from '@/features/shared'
+import { ItemRow, ScreenTitle, StatRow } from '@/features/shared'
 import { entryMacros, getFood, useAppState, useDispatch, useSelectedDay, useStore } from '@/mock'
 import { Button, Card, Icon, Screen, Text } from '@/ui'
 
@@ -80,10 +80,11 @@ export default function TrialEnded() {
         const food = getFood(entry.foodId)
         return (
           <Card key={entry.id}>
-            <FoodRow
-              name={food.name}
+            <ItemRow
+              title={food.name}
               icon={food.icon}
-              kcal={entryMacros(entry).kcal}
+              value={entryMacros(entry).kcal}
+              unit="kcal"
               detail={t('paywall:ended.lockedEntry', { meal: t(`common:meal.${entry.meal}`) })}
             />
           </Card>

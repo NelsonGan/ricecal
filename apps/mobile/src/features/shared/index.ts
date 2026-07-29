@@ -8,7 +8,7 @@
  */
 export { type Bar, BarChart, type BarChartProps } from './BarChart'
 export { CheckList, type CheckListProps } from './CheckList'
-export { FoodRow, type FoodRowProps } from './FoodRow'
+export { ItemRow, type ItemRowProps } from './ItemRow'
 export { MacroBars, type MacroBarsProps } from './MacroBars'
 export { formatTime, MealCard, type MealCardProps } from './MealCard'
 export { PlanPicker, type PlanPickerProps } from './PlanPicker'

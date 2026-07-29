@@ -71,13 +71,15 @@ export default function GoalsScreen() {
         </Button>
       }
     >
-      <AppBar title={t('profile:goals.title')} onBack={() => goBack()} />
+      <AppBar
+        title={t('profile:goals.title')}
+        onBack={() => goBack()}
+        backLabel={t('common:a11y.back')}
+      />
 
       <Card title={t('profile:goals.dailyCalories')}>
         <View className="flex-row items-baseline justify-between">
-          <Text className="font-display text-[30px] leading-[36px] text-heading">
-            {kcal.toLocaleString()}
-          </Text>
+          <Text variant="title">{kcal.toLocaleString()}</Text>
           <Text variant="caption">
             {t('profile:goals.recommended', { value: recommended.toLocaleString() })}
           </Text>

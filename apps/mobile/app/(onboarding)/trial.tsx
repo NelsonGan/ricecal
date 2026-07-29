@@ -44,7 +44,7 @@ export default function TrialStep() {
     >
       <View className="items-center gap-2.5">
         <Image source={MASCOT} style={{ width: 72, height: 72 }} contentFit="contain" />
-        <Text className="text-center font-display text-[28px] leading-[34px] text-heading">
+        <Text variant="title" className="text-center">
           {t('trial.title')}
         </Text>
       </View>

@@ -11,6 +11,8 @@ export type AppBarProps = {
   title: string
   /** Back affordance. Omit on a root screen. */
   onBack?: () => void
+  /** Screen-reader name for the back button. Pass translated copy. */
+  backLabel?: string
   /** Trailing controls. Keep to one; two crowds a 340pt phone. */
   action?: ReactNode
   className?: string
@@ -27,7 +29,7 @@ export type AppBarProps = {
  * When there is no `action`, an invisible spacer keeps the title optically
  * centred instead of drifting right.
  */
-export function AppBar({ title, onBack, action, className }: AppBarProps) {
+export function AppBar({ title, onBack, backLabel = 'Go back', action, className }: AppBarProps) {
   const colors = useThemeColors()
 
   return (
@@ -36,7 +38,7 @@ export function AppBar({ title, onBack, action, className }: AppBarProps) {
       accessibilityRole="header"
     >
       {onBack ? (
-        <IconButton size="sm" accessibilityLabel="Go back" onPress={onBack}>
+        <IconButton size="sm" accessibilityLabel={backLabel} onPress={onBack}>
           {/* Tinted: chrome is monochrome, and the illustration's own palette
               reads as a stray accent next to a title. */}
           <Icon set="ui" name="chevron-left" size={20} tintColor={colors.muted} />

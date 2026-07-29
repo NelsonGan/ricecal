@@ -22,10 +22,7 @@ export function ScreenTitle({ title, trailing, className }: ScreenTitleProps) {
       className={cn('flex-row items-center justify-between gap-md pt-1', className)}
       accessibilityRole="header"
     >
-      <Text
-        className="flex-1 font-display text-[26px] leading-[32px] text-heading"
-        numberOfLines={1}
-      >
+      <Text variant="screenTitle" className="flex-1" numberOfLines={1}>
         {title}
       </Text>
       {trailing}

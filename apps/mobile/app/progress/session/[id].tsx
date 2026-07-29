@@ -22,7 +22,11 @@ export default function SessionScreen() {
   if (!session) {
     return (
       <Screen>
-        <AppBar title={t('progress:tabs.activity')} onBack={() => goBack()} />
+        <AppBar
+          title={t('progress:tabs.activity')}
+          onBack={() => goBack()}
+          backLabel={t('common:a11y.back')}
+        />
         <EmptyState
           title={t('progress:activity.noSessions')}
           icon={{ set: 'body', name: 'running-shoe' }}
@@ -47,7 +51,7 @@ export default function SessionScreen() {
         </Button>
       }
     >
-      <AppBar title={session.title} onBack={() => goBack()} />
+      <AppBar title={session.title} onBack={() => goBack()} backLabel={t('common:a11y.back')} />
 
       <View className="h-[140px] items-center justify-center rounded-card border-[3px] border-line bg-track">
         <Icon set="body" name="route-pin" size={96} />

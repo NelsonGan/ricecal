@@ -46,7 +46,11 @@ export default function SubscriptionScreen() {
         </Button>
       }
     >
-      <AppBar title={t('profile:subscription.title')} onBack={() => goBack()} />
+      <AppBar
+        title={t('profile:subscription.title')}
+        onBack={() => goBack()}
+        backLabel={t('common:a11y.back')}
+      />
 
       <Card>
         <View className="flex-row items-center gap-3">

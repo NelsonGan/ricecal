@@ -46,7 +46,7 @@ export default function TrialReminder() {
       <View className="items-center gap-4">
         <Icon set="system" name="clock" size={92} />
 
-        <Text className="text-center font-display text-[28px] leading-[34px] text-heading">
+        <Text variant="title" className="text-center">
           {t('paywall:reminder.title', { count: subscription.trialDaysLeft })}
         </Text>
         <Text className="text-center text-[15px] leading-[23px]">

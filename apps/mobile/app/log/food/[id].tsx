@@ -69,7 +69,11 @@ export default function FoodDetail() {
   if (!food) {
     return (
       <Screen>
-        <AppBar title={t('logging:search.emptyTitle')} onBack={() => goBack()} />
+        <AppBar
+          title={t('logging:search.emptyTitle')}
+          onBack={() => goBack()}
+          backLabel={t('common:a11y.back')}
+        />
       </Screen>
     )
   }
@@ -115,7 +119,7 @@ export default function FoodDetail() {
         </View>
       }
     >
-      <AppBar title={food.name} onBack={() => goBack()} />
+      <AppBar title={food.name} onBack={() => goBack()} backLabel={t('common:a11y.back')} />
 
       <View className="h-[130px] items-center justify-center rounded-card border-[3px] border-line bg-track">
         <Icon {...food.icon} size={100} />
@@ -151,9 +155,7 @@ export default function FoodDetail() {
 
       <Card>
         <View className="flex-row items-baseline justify-between">
-          <Text className="font-display text-[32px] leading-[39px] text-heading">
-            {macros.kcal.toLocaleString()}
-          </Text>
+          <Text variant="displayMd">{macros.kcal.toLocaleString()}</Text>
           <Text variant="overline">{t('logging:detail.total')}</Text>
         </View>
         <MacroBars eaten={macros} targets={targets} />

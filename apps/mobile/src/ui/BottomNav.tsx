@@ -79,12 +79,7 @@ export function NavItem({ label, icon, isFocused = false, href, style, ...rest }
       accessibilityLabel={label}
     >
       <Icon {...icon} size={26} tintColor={isFocused ? undefined : colors.faint} />
-      <Text
-        className={cn(
-          'font-body-black text-[12px] leading-[14px]',
-          isFocused ? 'text-pandan-ink' : 'text-faint',
-        )}
-      >
+      <Text variant="caption" className={isFocused ? 'text-pandan-ink' : 'text-faint'}>
         {label}
       </Text>
     </Pressable>
@@ -109,7 +104,8 @@ export function NavAction({ onPress, label, className }: NavActionProps) {
     <Squish
       depth={slab.lg}
       radius={radius.tile}
-      slabClassName="-mt-[26px] bg-pandan-slab"
+      containerClassName="-mt-[26px]"
+      slabClassName="bg-pandan-slab"
       className={cn('h-[62px] w-[62px] items-center justify-center bg-pandan', className)}
       onPress={onPress}
       accessibilityRole="button"

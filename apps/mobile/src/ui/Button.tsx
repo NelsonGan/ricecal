@@ -129,7 +129,8 @@ export function Button({
     <Squish
       depth={depth}
       radius={metrics.radius}
-      slabClassName={cn('self-start', slabColor, fullWidth && 'w-full self-stretch', className)}
+      containerClassName={cn('self-start', fullWidth && 'w-full self-stretch', className)}
+      slabClassName={slabColor}
       className={cn(
         'flex-row items-center justify-center gap-2',
         metrics.box,

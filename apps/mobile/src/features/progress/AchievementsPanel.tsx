@@ -62,7 +62,8 @@ function BadgeGrid({ badges }: { badges: readonly Achievement[] }) {
             <Squish
               depth={5}
               radius={22}
-              slabClassName={cn('w-full', badge.earned ? tone.slab : 'bg-line-strong')}
+              containerClassName="w-full"
+              slabClassName={badge.earned ? tone.slab : 'bg-line-strong'}
               className={cn(
                 'aspect-square items-center justify-center',
                 badge.earned ? tone.fill : 'bg-track',

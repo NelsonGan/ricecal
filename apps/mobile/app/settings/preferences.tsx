@@ -7,7 +7,7 @@ import { AppBar, Card, Screen, SegmentedControl, Text } from '@/ui'
 
 /** U5 PREFERENCES */
 export default function PreferencesScreen() {
-  const { t } = useTranslation('profile')
+  const { t } = useTranslation(['profile', 'common'])
   const goBack = useBack('/me')
   const dispatch = useDispatch()
   // Appearance lives in the theme, not in the profile: one owner, so the toggle
@@ -22,7 +22,11 @@ export default function PreferencesScreen() {
 
   return (
     <Screen>
-      <AppBar title={t('preferences.title')} onBack={() => goBack()} />
+      <AppBar
+        title={t('preferences.title')}
+        onBack={() => goBack()}
+        backLabel={t('common:a11y.back')}
+      />
 
       <Card title={t('preferences.language')}>
         <SegmentedControl
@@ -76,7 +80,7 @@ export default function PreferencesScreen() {
         />
       </Card>
 
-      <Card title={t('preferences.privacy')}>
+      <Card title={t('preferences.privacy')} contentClassName="gap-0">
         <ToggleRow
           title={t('preferences.shareWithFamily')}
           value={privacy.shareWithFamily}

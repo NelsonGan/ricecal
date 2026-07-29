@@ -80,7 +80,7 @@ export function OnboardingStep({
       <StepProgress total={total} current={step} tone={accent} />
 
       <View className="gap-2 pt-4">
-        <Text className="font-display text-[30px] leading-[36px] text-heading">{title}</Text>
+        <Text variant="title">{title}</Text>
         {subtitle ? <Text className="text-[16px] leading-[24px]">{subtitle}</Text> : null}
       </View>
 

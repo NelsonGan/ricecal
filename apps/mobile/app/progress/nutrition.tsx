@@ -1,6 +1,6 @@
 import { subDays } from 'date-fns'
 import { useTranslation } from 'react-i18next'
-import { FoodRow } from '@/features/shared'
+import { ItemRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { dateKey, entryMacros, getFood, progressOf, sumMacros, useAppState, useStore } from '@/mock'
 import { AppBar, Card, MacroBar, Screen } from '@/ui'
@@ -54,7 +54,11 @@ export default function NutritionScreen() {
 
   return (
     <Screen>
-      <AppBar title={t('progress:nutrition.title')} onBack={() => goBack()} />
+      <AppBar
+        title={t('progress:nutrition.title')}
+        onBack={() => goBack()}
+        backLabel={t('common:a11y.back')}
+      />
 
       <Card title={t('progress:nutrition.averageDay')}>
         <MacroBar
@@ -99,11 +103,11 @@ export default function NutritionScreen() {
         {top.map(([foodId, count]) => {
           const food = getFood(foodId)
           return (
-            <FoodRow
+            <ItemRow
               key={foodId}
-              name={food.name}
+              title={food.name}
               icon={food.icon}
-              kcal={
+              value={
                 entryMacros({
                   id: 'avg',
                   foodId,
@@ -113,6 +117,7 @@ export default function NutritionScreen() {
                   loggedAt: new Date().toISOString(),
                 }).kcal
               }
+              unit="kcal"
               detail={t('progress:nutrition.timesThisMonth', { count })}
             />
           )

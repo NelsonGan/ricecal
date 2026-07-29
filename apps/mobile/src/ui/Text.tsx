@@ -22,10 +22,14 @@ import { cn } from './cn'
 const variants = {
   /** Hero numerals: the calorie count on Today. */
   displayLg: 'font-display text-[52px] leading-[62px] text-heading',
-  /** Section numerals: ring centre, fasting countdown. */
+  /** Section numerals: ring centre, current weight. */
   display: 'font-display text-[40px] leading-[48px] text-heading',
+  /** A hero number inside a card: the day's total, the week's average. */
+  displayMd: 'font-display text-[32px] leading-[39px] text-heading',
   /** Screen titles. Baloo 2 700 — the one place the lighter weight is used. */
   title: 'font-display-bold text-[28px] leading-[34px] text-heading',
+  /** The title of a root screen, and the headline over a hero illustration. */
+  screenTitle: 'font-display text-[26px] leading-[32px] text-heading',
   /** Card and sheet titles. */
   subtitle: 'font-display text-[20px] leading-[26px] text-heading',
   /** In-body headings. Nunito, because it sits above prose. */
@@ -42,6 +46,13 @@ const variants = {
   caption: 'font-body-black text-[13px] leading-[17px] text-muted',
   /** The all-caps section marker above a card's content. */
   overline: 'font-body-black text-[14px] leading-[18px] tracking-[1.7px] uppercase text-faint',
+  /**
+   * The same marker where three sit side by side — a stat row, a tile. The
+   * wider tracking of `overline` wraps "PROTEIN" at that width.
+   */
+  overlineSm: 'font-body-black text-[12px] leading-[15px] tracking-[1.1px] uppercase text-faint',
+  /** Axis labels, chip counts, the smallest type in the system. */
+  micro: 'font-body-black text-[11px] leading-[14px] text-faint',
   /** Inline numerals inside a row — kcal counts, weights. */
   numeric: 'font-display text-[22px] leading-[28px] text-heading',
   /** Control labels. Sentence case, three words at most. */

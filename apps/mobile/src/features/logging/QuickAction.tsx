@@ -31,7 +31,8 @@ export function QuickAction({
     <Squish
       depth={4}
       radius={18}
-      slabClassName={cn('flex-1', colors.slab, className)}
+      containerClassName={cn('flex-1', className)}
+      slabClassName={colors.slab}
       className={cn('items-center justify-center gap-2 px-1.5 py-3.5', colors.fill)}
       onPress={onPress}
       accessibilityRole="button"
@@ -39,7 +40,9 @@ export function QuickAction({
     >
       <Icon {...icon} size={26} />
       <View>
-        <Text className="font-body-black text-[11px] leading-[14px] text-ink">{label}</Text>
+        <Text variant="micro" className="text-ink">
+          {label}
+        </Text>
       </View>
     </Squish>
   )
