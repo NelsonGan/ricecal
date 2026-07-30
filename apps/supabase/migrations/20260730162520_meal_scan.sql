@@ -40,6 +40,13 @@ COMMENT ON FUNCTION public.estimate_food_backlog(integer) IS 'Estimate rows rank
 
 GRANT ALL ON FUNCTION public.estimate_food_backlog(integer) TO service_role;
 
+-- Loads pg_trgm's shared library into this session. Without it, the
+-- SET "pg_trgm.similarity_threshold" clause below fails on hosted Supabase
+-- with "permission denied to set parameter": before the library loads, an
+-- extension GUC is a reserved-prefix placeholder no non-superuser may set;
+-- once loaded it is an ordinary user-settable parameter.
+SELECT extensions.similarity('load', 'pg_trgm');
+
 CREATE OR REPLACE FUNCTION public.search_foods (
   q           text,
   p_place     public.food_place DEFAULT NULL::public.food_place,
