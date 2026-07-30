@@ -67,13 +67,12 @@ export type SheetProps = {
    * same scrim above it, dismissed the same way.
    */
   fullHeight?: boolean
-  /**
-   * The scrollable body's box. Its only real use is capping the height on a
-   * sheet whose own field raises the keyboard — 440pt of content plus a
-   * keyboard is taller than a phone, and the overflow comes off the top, where
-   * the field the user is typing into lives.
-   */
-  bodyClassName?: string
+  // No `bodyClassName`. It existed to cap the body of a sheet whose own field
+  // raises the keyboard, which was the picture picker and nothing else — and the
+  // cap was the wrong answer: a capped sheet is padded up off the bottom edge by
+  // the keyboard, and the strip it leaves behind shows the scrim through the curve
+  // of the keyboard's corners. Those sheets are `fullHeight` now, which keeps the
+  // panel where it is and insets the list instead.
   children?: ReactNode
   className?: string
 }
@@ -142,7 +141,6 @@ export function SheetSurface({
   footer,
   scrollable = true,
   fullHeight = false,
-  bodyClassName,
   children,
   className,
 }: SheetSurfaceProps) {
@@ -228,7 +226,7 @@ export function SheetSurface({
       // Capped by default, and told to fill when the panel is full height —
       // without the second half the list keeps its 440pt and the panel grows a
       // field of empty surface under it.
-      className={cn(fullHeight ? 'flex-1' : 'max-h-[440px]', bodyClassName)}
+      className={fullHeight ? 'flex-1' : 'max-h-[440px]'}
       contentContainerStyle={{ gap: spacing.md }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
