@@ -70,6 +70,7 @@ export function useLogWeight() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: keys.weighIns(userId) })
       queryClient.invalidateQueries({ queryKey: keys.goals(userId) })
+      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
     },
   })
 }
@@ -104,6 +105,7 @@ export function useDeleteWeighIn() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: keys.weighIns(userId) })
       queryClient.invalidateQueries({ queryKey: keys.goals(userId) })
+      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
     },
   })
 }

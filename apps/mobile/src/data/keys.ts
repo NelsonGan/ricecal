@@ -36,5 +36,18 @@ export const keys = {
   recentFoodsAll: (userId: string) => ['recent-foods', userId] as const,
 
   weighIns: (userId: string) => ['weigh-ins', userId] as const,
+
+  /** The chart columns for one range of the Trends screen. */
+  trendSeries: (userId: string, range: string) => ['trends', userId, range, 'series'] as const,
+  /** The same range folded to one row: the metric tiles and the footnotes. */
+  trendSummary: (userId: string, range: string) => ['trends', userId, range, 'summary'] as const,
+  /**
+   * The prefix of both, across all three ranges — which is what the write side
+   * wants. A logged meal, a glass of water and a weigh-in each move a number on
+   * every range, and no mutation is in a position to know which one is on
+   * screen.
+   */
+  trendsAll: (userId: string) => ['trends', userId] as const,
+
   photo: (path: string) => ['photo', path] as const,
 } as const
