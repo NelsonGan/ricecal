@@ -71,6 +71,25 @@ export function WeekStrip({ days, onSelectDay, className }: WeekStripProps) {
   )
 }
 
+/**
+ * Glasses to a row before the tracker wraps.
+ *
+ * The goal goes up to 16, and sixteen glasses sharing one row are 14pt wide — a
+ * row of slivers rather than something to tap. Eight is what the default goal
+ * already showed at full width, so the common case is one row and unchanged.
+ */
+const GLASSES_PER_ROW = 8
+
+/**
+ * A glass, as a share of the row.
+ *
+ * Eight of these plus the seven gaps `justify-between` puts between them come to
+ * the full width, which is the arrangement this had when it could not wrap. Fixed
+ * rather than `flex-1` because a glass has to be the same size on a short second
+ * row as on a full first one.
+ */
+const GLASS_WIDTH = 'w-[10.5%]'
+
 export type WaterTrackerProps = {
   filled: number
   goal: number
@@ -81,7 +100,7 @@ export type WaterTrackerProps = {
 }
 
 /**
- * The glasses-of-water row.
+ * The glasses-of-water grid.
  *
  * Tapping a glass fills up to and including it; tapping the last filled glass
  * empties it. That is the interaction the design describes ("tap again to
@@ -104,14 +123,21 @@ export function WaterTracker({
     next: index === filled - 1 ? index : index + 1,
   }))
 
+  // Blank cells to finish the row, keyed by position for the same reason the
+  // glasses are: a spacer has no identity beyond which column it holds.
+  const fillers = Array.from(
+    { length: (GLASSES_PER_ROW - (goal % GLASSES_PER_ROW)) % GLASSES_PER_ROW },
+    (_, index) => `gap-${index}`,
+  )
+
   return (
-    <View className={cn('flex-row gap-2', className)}>
+    <View className={cn('flex-row flex-wrap justify-between gap-y-2', className)}>
       {glasses.map((glass) => (
         <Squish
           key={glass.id}
           depth={0}
           radius={12}
-          containerClassName="flex-1"
+          containerClassName={GLASS_WIDTH}
           className={cn(
             'h-[60px]',
             glass.isFilled
@@ -123,6 +149,14 @@ export function WaterTracker({
           accessibilityLabel={glassLabel(glass.ordinal, goal)}
           accessibilityState={{ selected: glass.isFilled }}
         />
+      ))}
+
+      {/* `justify-between` sizes the gaps from whatever is on a line, so a goal of
+          twelve would otherwise spread its last four glasses across the full width
+          and line them up with none of the eight above. These draw nothing and only
+          hold columns. */}
+      {fillers.map((id) => (
+        <View key={id} className={GLASS_WIDTH} />
       ))}
     </View>
   )

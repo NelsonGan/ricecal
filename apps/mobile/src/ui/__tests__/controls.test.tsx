@@ -242,6 +242,25 @@ describe('WaterTracker', () => {
     await user.press(screen.getByLabelText('Glass 5 of 8'))
     expect(onChange).toHaveBeenCalledWith(4)
   })
+
+  /**
+   * A goal past one row wraps, and the row is finished with blank cells so the
+   * short second row keeps the columns of the first. Those cells are the thing
+   * worth pinning: they are `View`s among pressables, and a stray one that became
+   * reachable would read to a screen reader as a glass that does nothing.
+   */
+  it('renders every glass of a goal that wraps, and nothing extra', async () => {
+    const onChange = jest.fn()
+    await render(<WaterTracker filled={9} goal={12} onChange={onChange} />)
+
+    expect(screen.getAllByRole('button')).toHaveLength(12)
+    expect(screen.getByLabelText('Glass 12 of 12')).toBeOnTheScreen()
+
+    // The last glass on the short row still fills to its own position rather than
+    // to wherever it sits in the row.
+    await user.press(screen.getByLabelText('Glass 11 of 12'))
+    expect(onChange).toHaveBeenCalledWith(11)
+  })
 })
 
 const flatten = (style: unknown): { lineHeight?: number } =>
