@@ -84,6 +84,7 @@ export default function FoodDetail() {
    */
   const [icon, setIcon] = useState<IconRef | null>()
   const [pickingIcon, setPickingIcon] = useState(false)
+  const [confirmReplacePhoto, setConfirmReplacePhoto] = useState(false)
 
   const { data: heroUrl } = useMealPhotoUrl(existing?.photoPath)
 
@@ -104,9 +105,14 @@ export default function FoodDetail() {
   // An entry logged from a snap is about that plate, not about the catalogue.
   const hero = heroUrl
 
-  // What the tile shows: the unsaved choice if there is one, then the entry's
-  // resolved icon (the view has already preferred its override over the food's),
-  // then the catalogue's.
+  /**
+   * The drawing this tile would show, if it is showing one at all.
+   *
+   * A row carries a photo or an icon, never both, and the view already suppresses
+   * its icon columns while a photo exists — so `existing.icon` is undefined for a
+   * snapped plate. Only an unsaved choice can override that, which is exactly the
+   * swap: pick a drawing and the photo is on its way out.
+   */
   const shownIcon = icon !== undefined ? (icon ?? food.icon) : (existing?.icon ?? food.icon)
 
   // Defaults to the dish's base portion, which is the one its macros describe.
@@ -131,7 +137,7 @@ export default function FoodDetail() {
         servingId: chosen,
         meal,
         note: note || null,
-        ...(icon === undefined ? {} : { icon }),
+        ...(icon === undefined ? {} : { icon, photoPath: existing.photoPath }),
       })
       // `fixApplied` reads "Updated from your note", which belongs to the
       // free-text correction below — it was showing for a plain quantity or
@@ -187,16 +193,25 @@ export default function FoodDetail() {
       />
 
       {/* Pressable only while editing, because the override lives on the entry
-          and a new one does not exist yet. A photo wins over any illustration, so
-          the tile stops offering the picker once there is one. */}
+          and a new one does not exist yet.
+
+          A photo still opens the picker, but by way of a confirmation: choosing a
+          drawing throws the photo of the real plate away, and the row cannot hold
+          both. That is not something to discover after the fact. */}
       <Pressable
         className="h-[130px] items-center justify-center overflow-hidden rounded-card border-[3px] border-line bg-track"
-        disabled={!existing || Boolean(hero)}
-        onPress={() => setPickingIcon(true)}
-        accessibilityRole={existing && !hero ? 'button' : undefined}
-        accessibilityLabel={existing && !hero ? t('logging:detail.choosePicture') : undefined}
+        disabled={!existing}
+        onPress={() => (hero ? setConfirmReplacePhoto(true) : setPickingIcon(true))}
+        accessibilityRole={existing ? 'button' : undefined}
+        accessibilityLabel={
+          existing
+            ? hero
+              ? t('logging:detail.replacePhoto')
+              : t('logging:detail.choosePicture')
+            : undefined
+        }
       >
-        {hero ? (
+        {hero && !icon ? (
           <Image
             source={{ uri: hero }}
             style={{ flex: 1, width: '100%' }}
@@ -214,12 +229,26 @@ export default function FoodDetail() {
       </Pressable>
 
       {existing ? (
-        <IconPicker
-          visible={pickingIcon}
-          onClose={() => setPickingIcon(false)}
-          selected={shownIcon}
-          onSelect={setIcon}
-        />
+        <>
+          <IconPicker
+            visible={pickingIcon}
+            onClose={() => setPickingIcon(false)}
+            selected={shownIcon}
+            onSelect={setIcon}
+          />
+          <ConfirmSheet
+            visible={confirmReplacePhoto}
+            onClose={() => setConfirmReplacePhoto(false)}
+            onConfirm={() => {
+              setConfirmReplacePhoto(false)
+              setPickingIcon(true)
+            }}
+            title={t('logging:detail.replacePhotoTitle')}
+            description={t('logging:detail.replacePhotoBody')}
+            confirmLabel={t('logging:detail.replacePhotoConfirm')}
+            tone="danger"
+          />
+        </>
       ) : null}
 
       <Card>

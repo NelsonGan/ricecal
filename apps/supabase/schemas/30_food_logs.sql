@@ -70,6 +70,13 @@ create table public.food_logs (
   icon_name    text,
   constraint food_logs_icon_complete check ((icon_set is null) = (icon_name is null)),
 
+  -- A photo or an icon, never both. They answer the same question — what was on
+  -- this plate — and a photo of the real thing always wins, so a row holding both
+  -- would carry a drawing nothing would ever render. Enforced here rather than
+  -- left to the screens: the recognition flow and the picker both write these
+  -- columns, and only one of them can be looking at the other's value.
+  constraint food_logs_one_picture check (photo_path is null or icon_set is null),
+
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now(),
 

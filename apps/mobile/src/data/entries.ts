@@ -76,6 +76,14 @@ export type EntryPatch = {
    * to users, and most of the catalogue has no drawing to begin with.
    */
   icon?: IconRef | null
+  /**
+   * The photo currently on this row, so that setting an icon can delete it.
+   *
+   * A row carries a photo or an icon, never both — the picture of the actual
+   * plate and a drawing of the dish are answers to the same question, and a
+   * check constraint refuses to hold both. Read only when `icon` names one.
+   */
+  photoPath?: string
 }
 
 export function useUpdateEntry() {
@@ -83,8 +91,11 @@ export function useUpdateEntry() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, quantity, servingId, meal, note, icon }: EntryPatch) =>
-      unwrapOne(
+    mutationFn: async ({ id, quantity, servingId, meal, note, icon, photoPath }: EntryPatch) => {
+      // An icon replaces the photo, because the row cannot hold both.
+      const replacesPhoto = Boolean(icon) && Boolean(photoPath)
+
+      const row = unwrapOne(
         await supabase
           .from('food_logs')
           .update({
@@ -103,13 +114,25 @@ export function useUpdateEntry() {
             // away the moment the types are regenerated.
             ...((icon === undefined
               ? {}
-              : { icon_set: icon?.set ?? null, icon_name: icon?.name ?? null }) as object),
+              : {
+                  icon_set: icon?.set ?? null,
+                  icon_name: icon?.name ?? null,
+                  ...(replacesPhoto ? { photo_path: null } : {}),
+                }) as object),
           })
           .eq('id', id)
           .eq('user_id', userId)
           .select('id')
           .single(),
-      ),
+      )
+
+      // After the row, not before: an object deleted for a row that then failed
+      // to update leaves an entry pointing at nothing. Same order as
+      // `useRemoveEntry`, for the same reason.
+      if (replacesPhoto && photoPath) await removeMealPhoto(photoPath)
+
+      return row
+    },
     onSuccess: (_row, patch) =>
       queryClient.invalidateQueries({ queryKey: keys.day(userId, patch.logDate) }),
   })

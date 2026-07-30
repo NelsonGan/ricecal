@@ -89,7 +89,7 @@ export {
   type SegmentedOption,
 } from './SegmentedControl'
 export { Select, type SelectOption, type SelectProps } from './Select'
-export { Sheet, type SheetProps } from './Sheet'
+export { Sheet, type SheetProps, SheetSurface, type SheetSurfaceProps } from './Sheet'
 export { Skeleton, type SkeletonProps, SkeletonRow, Spinner, type SpinnerProps } from './Skeleton'
 export { Slider, type SliderProps } from './Slider'
 export { Squish, type SquishProps } from './Squish'

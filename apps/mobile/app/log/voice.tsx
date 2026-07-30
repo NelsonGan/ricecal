@@ -6,7 +6,7 @@ import { View } from 'react-native'
 import { type Meal, useLogFood, useSelectedDate } from '@/data'
 import { recogniseDish } from '@/features/logging'
 import { useBack, useDismissTo } from '@/lib/navigation'
-import { Button, Icon, Sheet, Spinner, Text } from '@/ui'
+import { Button, Icon, SheetSurface, Spinner, Text } from '@/ui'
 
 /**
  * Voice logging.
@@ -16,6 +16,10 @@ import { Button, Icon, Sheet, Spinner, Text } from '@/ui'
  * "transcription" is `recogniseDish`, which is where a real speech model will
  * go. Unlike a snap this one waits, because there is no photo to put on a row
  * in the meantime — a spinner in a sheet is honest about a two-second wait.
+ *
+ * `SheetSurface`, not `Sheet`, for the same reason as the quick selector: this
+ * route is already presented as a transparent modal, and a second window inside
+ * it only adds a delay before the panel appears.
  */
 export default function VoiceSheet() {
   const { t } = useTranslation(['logging', 'common'])
@@ -48,7 +52,7 @@ export default function VoiceSheet() {
   }
 
   return (
-    <Sheet visible onClose={() => goBack()} title={t('logging:voice.title')}>
+    <SheetSurface onClose={() => goBack()} title={t('logging:voice.title')}>
       <View className="items-center gap-4 py-4">
         {listening ? (
           <Spinner label={t('logging:voice.listening')} />
@@ -63,6 +67,6 @@ export default function VoiceSheet() {
       <Button fullWidth onPress={listen} loading={listening}>
         {listening ? t('logging:voice.stop') : t('logging:voice.listening')}
       </Button>
-    </Sheet>
+    </SheetSurface>
   )
 }
