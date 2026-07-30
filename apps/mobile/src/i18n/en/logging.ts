@@ -13,9 +13,11 @@ export const logging = {
     showLeft: 'Show what is left',
     /** Shown when the day is over budget. Never scold. */
     overNote: 'A bit over today, tomorrow is a new count.',
-    mealHeading: '{{meal}} · {{kcal}} KCAL',
-    mealHeadingEmpty: '{{meal}}',
-    addMeal: 'Add {{meal}}',
+    /**
+     * Everything logged today, in one list. It was a heading per meal, and the
+     * meals are not headings any more — see `EntryList` for why.
+     */
+    logHeading: 'EATEN · {{kcal}} KCAL',
     /** A snapped plate whose dish is still being worked out. */
     analysing: 'Reading your plate',
     analysingHint: 'Counting once it knows what this is',

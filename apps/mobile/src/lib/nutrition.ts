@@ -1,4 +1,4 @@
-import type { ActivityLevel, DayLog, Entry, Goal, Macros, Meal, Targets } from '@/data/types'
+import type { ActivityLevel, Entry, Goal, Macros, Meal, Targets } from '@/data/types'
 
 /**
  * Arithmetic the screens share.
@@ -50,15 +50,10 @@ export function sumMacros(entries: readonly Entry[]): Macros {
   }
 }
 
-export function entriesForMeal(day: DayLog, meal: Meal): Entry[] {
-  return day.entries
-    .filter((entry) => entry.meal === meal)
-    .sort((a, b) => a.loggedAt.localeCompare(b.loggedAt))
-}
-
-export function mealKcal(day: DayLog, meal: Meal): number {
-  return sumMacros(entriesForMeal(day, meal)).kcal
-}
+// `entriesForMeal` and `mealKcal` used to live here, for the card-per-meal day.
+// Today is one chronological list now and nothing groups by meal, so both are gone
+// — along with the second copy of `entriesForMeal` in `data/day.ts`, which had
+// drifted to a different sort order than this one.
 
 /** 0 to 1, clamped, for the ring and the bars. */
 export function progressOf(done: number, goal: number): number {
