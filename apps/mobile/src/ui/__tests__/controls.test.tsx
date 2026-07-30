@@ -1,8 +1,11 @@
+import { StyleSheet } from 'react-native'
+
 import { render, screen, userEvent } from '../../test-utils'
 import { CountBadge } from '../Badge'
 import { Button } from '../Button'
 import { Chip } from '../Chip'
 import { cn } from '../cn'
+import { StatTile } from '../StatTile'
 import { Stepper } from '../Stepper'
 import { Switch } from '../Switch'
 import { WaterTracker } from '../WeekStrip'
@@ -172,6 +175,44 @@ describe('WaterTracker', () => {
     await render(<WaterTracker filled={5} goal={8} onChange={onChange} />)
     await user.press(screen.getByLabelText('Glass 5 of 8'))
     expect(onChange).toHaveBeenCalledWith(4)
+  })
+})
+
+const flatten = (style: unknown): { lineHeight?: number } =>
+  (StyleSheet.flatten(style as never) as { lineHeight?: number } | undefined) ?? {}
+
+/**
+ * Appearance is normally left to the gallery route on a device, so this one needs
+ * a reason: `adjustsFontSizeToFit` next to an explicit `lineHeight` is a React
+ * Native bug that shrinks text even when it fits, and it does not fail — it just
+ * renders numbers too small to read, which is how it reached a user. There is
+ * nothing to observe at runtime, so the combination itself is what gets pinned.
+ */
+describe('StatTile', () => {
+  const renderValue = async (value: string) => {
+    await render(<StatTile label="CARBS" value={value} />)
+    return screen.getByText(value)
+  }
+
+  it('does not give the shrinking value a line height to fight', async () => {
+    const node = await renderValue('182g')
+    expect(node.props.adjustsFontSizeToFit).toBe(true)
+    expect(flatten(node.props.style).lineHeight).toBeUndefined()
+  })
+
+  it('keeps the shrink shallow enough to stay legible', async () => {
+    const node = await renderValue('1,530')
+    expect(node.props.minimumFontScale).toBeGreaterThanOrEqual(0.8)
+  })
+
+  it('leaves the label alone, which is what lets it keep its line height', async () => {
+    await render(<StatTile label="PROTEIN" value="104g" />)
+    expect(screen.getByText('PROTEIN').props.adjustsFontSizeToFit).toBeFalsy()
+  })
+
+  it('reads the label and value together to a screen reader', async () => {
+    await render(<StatTile label="CARBS" value="182g" />)
+    expect(screen.getByLabelText('CARBS: 182g')).toBeOnTheScreen()
   })
 })
 

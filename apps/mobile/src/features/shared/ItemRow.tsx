@@ -16,7 +16,14 @@ export type ItemRowProps = {
   title: string
   /** "1 plate", "8:20 am", "Mamak · 1 piece". */
   detail?: string
-  icon: IconRef
+  /**
+   * Optional, because most of the catalogue has no drawing: there are hundreds of
+   * megabytes of imported foods and a few dozen illustrations. With neither an
+   * icon nor a photo the tile stays an empty square, which keeps every row the
+   * same shape and the names in one column — better than the same stand-in plate
+   * beside a thousand different dishes.
+   */
+  icon?: IconRef
   /**
    * A photo to show in place of the illustration, as a local `file://` uri —
    * a plate that has been snapped but not uploaded yet.
@@ -87,7 +94,7 @@ export function ItemRow({
             style={{ flex: 1, width: '100%', opacity: busy ? 0.55 : 1 }}
             contentFit="cover"
           />
-        ) : busy ? null : (
+        ) : busy || !icon ? null : (
           <Icon {...icon} size={40} />
         )}
         {/* Over the photo rather than beside it: the thing being worked on is

@@ -1,5 +1,4 @@
 import * as AppleAuthentication from 'expo-apple-authentication'
-import * as Linking from 'expo-linking'
 import { Platform } from 'react-native'
 
 import { env, isConfigured } from '@/lib/env'
@@ -29,9 +28,29 @@ import { supabase } from '@/lib/supabase'
  * same transaction as the account, so a signed-in user always has rows to read.
  */
 
-/** Where Supabase sends the browser once it has verified a login link. */
+/**
+ * Where Supabase sends the browser once it has verified a login link.
+ *
+ * Built by hand rather than with `Linking.createURL`, which is the obvious choice
+ * and the wrong one. `createURL` appends the Metro dev-server host to the
+ * authority in a development build, so it returns
+ * `ricecal://localhost:8081/auth/callback` on a simulator and
+ * `ricecal:///auth/callback` in a release — a link that reads as broken when it
+ * arrives, and a redirect that has to be allow-listed twice.
+ *
+ * Expo says as much in `createURL`'s own docs: for authorization callbacks, use a
+ * build and provide the scheme. This is a fixed string for the same reason the
+ * allow-list needs one — the URL in the mail must be identical everywhere, since
+ * it is a stranger's mail client that opens it, and nothing there knows which
+ * build sent it.
+ *
+ * `SCHEME` is `app.json`'s `expo.scheme`. Native registers it at build time from
+ * that same value, so the two cannot drift without a rebuild.
+ */
+const SCHEME = 'ricecal'
+
 export function loginLinkRedirect(): string {
-  return Linking.createURL('/auth/callback')
+  return `${SCHEME}://auth/callback`
 }
 
 /**
@@ -91,12 +110,15 @@ export async function completeLoginFromUrl(url: string): Promise<boolean> {
 /**
  * Every parameter in a deep link, from wherever it is hiding.
  *
- * Three places, and all three are real. The query string and the fragment,
- * because which one carries the session depends on the project's flow. And
- * inside a nested `url` parameter, because that is the shape `Linking.createURL`
- * produces under a development client — the real link is wrapped in one pointing
- * at the dev launcher, and without unwrapping it a login link can only be tested
- * in a release build.
+ * The query string and the fragment both, because which one carries the session
+ * depends on the project's flow rather than on anything this code picks: implicit
+ * puts a token pair in the fragment, PKCE a code in the query.
+ *
+ * And one level inside a `url` parameter, because a launcher can hand the app a
+ * wrapper pointing at itself with the real link nested in it — the Expo dev
+ * launcher does exactly that. Our own redirect is a plain `ricecal://` URL and
+ * never arrives wrapped, so this is belt and braces; it costs four lines and
+ * turns "the link silently does nothing" into a working sign-in.
  */
 function paramsIn(url: string, depth = 0): URLSearchParams {
   const merged = new URLSearchParams()

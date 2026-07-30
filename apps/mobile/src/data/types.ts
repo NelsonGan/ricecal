@@ -97,7 +97,8 @@ export type Food = {
   id: string
   name: string
   brand?: string
-  icon: IconRef
+  /** Absent for most of the catalogue: there are far more foods than drawings. */
+  icon?: IconRef
   place: Place
   /** The default serving's name, e.g. "1 plate". */
   servingLabel: string
@@ -138,7 +139,8 @@ export type Entry = {
 
   foodId: string
   foodName: string
-  icon: IconRef
+  /** Absent for most of the catalogue: there are far more foods than drawings. */
+  icon?: IconRef
   place: Place
   servingId: string
   servingLabel: string
