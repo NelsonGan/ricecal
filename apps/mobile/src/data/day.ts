@@ -120,7 +120,13 @@ export function useSetWater(date: string) {
     onError: (_error, _glasses, context) => {
       if (context?.previous) queryClient.setQueryData(keys.day(userId, date), context.previous)
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: keys.day(userId, date) }),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: keys.day(userId, date) })
+      // The water tab counts this glass in its bars, its average and its goal
+      // days. Not optimistic, unlike the tracker itself: nothing on Trends is
+      // under the finger, so it can wait for the row.
+      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+    },
   })
 }
 

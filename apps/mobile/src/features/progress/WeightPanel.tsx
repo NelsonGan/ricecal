@@ -1,198 +1,255 @@
-import { format, isToday, parseISO } from 'date-fns'
-import { useState } from 'react'
+import { differenceInCalendarDays, format, isToday, parseISO } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
   bodyFrom,
+  type TrendBucket,
+  type TrendRange,
+  type TrendSummary,
   today,
-  useCurrentWeight,
-  useDeleteWeighIn,
-  useLogWeight,
   useProfile,
   useWeighIns,
 } from '@/data'
-import { BarChart, StatRow } from '@/features/shared'
-import { bmi, goalDate, progressOf, weeklyPace } from '@/lib/nutrition'
-import {
-  Button,
-  Card,
-  ConfirmSheet,
-  ListRow,
-  ProgressBar,
-  Sheet,
-  Slider,
-  Text,
-  useToast,
-} from '@/ui'
+import { goalDate } from '@/lib/nutrition'
+import { radius } from '@/theme/tokens'
+import { Badge, Button, Card, Divider, EmptyState, Icon, ListRow, Squish, Text } from '@/ui'
+import { bucketLabels, chunk, SPAN_KEY } from './axis'
+import { StatTrio } from './StatTrio'
+import { TrendLine } from './TrendLine'
+import { showChange, showWeight, UNIT_KEY, type WeightUnit } from './units'
 
-/** P1 WEIGHT */
-export function WeightPanel() {
+export type WeightPanelProps = {
+  range: TrendRange
+  buckets: readonly TrendBucket[]
+  summary: TrendSummary | null
+  unit: WeightUnit
+  /** Opens the weigh-in sheet on a given day. The sheet itself is the screen's. */
+  onEdit: (date: string) => void
+}
+
+/** Rows in the list card. Six covers six weeks of weekly weigh-ins. */
+const HISTORY_ROWS = 6
+/** Months to a quarter, for the year view's summary list. */
+const QUARTER = 3
+
+/**
+ * T1 / T5 / T8 — the weight tab.
+ *
+ * The line, then the three figures, then the readings behind them. Only the last
+ * card changes with the range, and it changes because the useful grain does: at
+ * seven days the readings themselves are worth listing and each one is editable,
+ * at thirty days they are too many and the weeks say it better, and over a year
+ * only the quarters are legible at all.
+ *
+ * The chart is a line rather than bars — see `TrendLine` for why — and the card
+ * under it is the one place on this screen that reads the profile, because "3.4
+ * kg to your 65.0 kg goal" is the only sentence here about a target rather than
+ * about what happened.
+ */
+export function WeightPanel({ range, buckets, summary, unit, onEdit }: WeightPanelProps) {
   const { t } = useTranslation(['progress', 'common'])
-  const toast = useToast()
   const { data: profile } = useProfile()
   const { data: weighIns = [] } = useWeighIns()
-  const logWeight = useLogWeight()
-  const deleteWeighIn = useDeleteWeighIn()
-  const current = useCurrentWeight() ?? 0
 
-  /**
-   * Which day the sheet is editing, and null when it is shut.
-   *
-   * A date rather than a boolean, because the same sheet now records today's
-   * reading and corrects a past one — `useLogWeight` upserts on
-   * `(user_id, measured_on)`, so which day it writes to is the only difference
-   * between the two.
-   */
-  const [editing, setEditing] = useState<string | null>(null)
-  const [draft, setDraft] = useState(0)
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const labels = bucketLabels(buckets, range, (index) => t('progress:range.week', { index }))
+  const unitLabel = t(UNIT_KEY[unit])
+
+  if (!summary || summary.weighIns === 0) {
+    return (
+      <Card>
+        <EmptyState
+          title={t('progress:weight.emptyTitle')}
+          description={t('progress:weight.emptyBody')}
+          icon={{ set: 'body', name: 'weighing-scale' }}
+          action={
+            <Button onPress={() => onEdit(today())}>{t('progress:weight.sheetTitle')}</Button>
+          }
+        />
+      </Card>
+    )
+  }
+
+  const current = summary.weightLast
+  /** Signed, oldest to newest. Null with a single reading — one point is not a trend. */
+  const change =
+    summary.weightFirst !== null && current !== null && summary.weighIns > 1
+      ? current - summary.weightFirst
+      : null
 
   const target = Number(profile?.target_weight_kg ?? 0)
-  // The first reading, which is what the progress bar measures from.
-  const started = weighIns[0]?.kg ?? current
-  /**
-   * The pace and the date both come from this, so they describe the same plan as
-   * the budget on Today. Null while the profile is incomplete — there is no
-   * honest pace to quote from a body we do not know.
-   */
-  const body = bodyFrom(profile, current || undefined)
-  const reachedOn = body ? goalDate(body, target, new Date()) : null
-  const bodyMass = bmi(Number(profile?.height_cm ?? 0), current)
+  const body = bodyFrom(profile, current ?? undefined)
+  const reachedOn = body && target > 0 ? goalDate(body, target, new Date()) : null
+  const remaining = target > 0 && current !== null ? Math.abs(current - target) : null
 
-  // Eight readings. Twelve fit on the canvas but not their labels, and a chart
-  // whose last column reads "N..." is worse than a shorter chart. Dated, because
-  // "1, 2, 3 … Now" told the reader the order of the readings and nothing about
-  // when any of them was taken — two months of nothing looked like a steady week.
-  const bars = weighIns.slice(-8).map((entry, index, all) => ({
-    key: entry.date,
-    label:
-      index === all.length - 1 ? t('progress:weight.now') : format(parseISO(entry.date), 'd/M'),
-    value: entry.kg,
-    highlight: index === all.length - 1,
-  }))
-
-  /**
-   * The readings as a list, newest first, each against the one before it.
-   *
-   * The chart shows the shape and the list shows the numbers — including the days
-   * with no reading, by simply not being there, which a chart of evenly spaced
-   * bars cannot say. Ten rows: enough to cover a month of weekly weigh-ins.
-   */
-  const history = weighIns
-    .map((entry, index) => ({
-      ...entry,
-      change: index > 0 ? round1(entry.kg - weighIns[index - 1].kg) : undefined,
-    }))
-    .slice(-10)
-    .reverse()
-
-  const openSheet = (date: string, kg: number) => {
-    // Seeded when the sheet opens, not at mount: the query may not have answered
-    // yet on first render.
-    setDraft(kg || 70)
-    setEditing(date)
-  }
-
-  const save = () => {
-    if (!editing) return
-    logWeight.mutate({ kg: round1(draft), date: editing })
-    setEditing(null)
-    toast.show({ title: t('progress:weight.saved'), tone: 'success' })
-  }
-
-  const remove = () => {
-    if (editing) deleteWeighIn.mutate({ date: editing })
-    setConfirmDelete(false)
-    setEditing(null)
-  }
+  const stats =
+    range === '1y'
+      ? [
+          {
+            key: 'change',
+            label: t('progress:weight.thisYear'),
+            value: changeText(change, unit, unitLabel),
+          },
+          {
+            key: 'low',
+            label: t('progress:weight.lightest'),
+            value: lightest(buckets, unit, unitLabel, t('progress:metric.none')),
+          },
+          {
+            key: 'logged',
+            label: t('progress:weight.monthsLogged'),
+            value: t('progress:ofDays', {
+              done: buckets.filter((bucket) => bucket.weighIns > 0).length,
+              total: buckets.length,
+            }),
+          },
+        ]
+      : [
+          {
+            key: 'change',
+            label: range === '7d' ? t('progress:weight.thisWeek') : t('progress:weight.thisMonth'),
+            value: changeText(change, unit, unitLabel),
+          },
+          {
+            key: 'avg',
+            label: range === '7d' ? t('progress:weight.average7') : t('progress:weight.average30'),
+            value:
+              summary.weightAvg === null
+                ? t('progress:metric.none')
+                : `${showWeight(summary.weightAvg, unit)} ${unitLabel}`,
+          },
+          {
+            key: 'count',
+            label: t('progress:weight.weighIns'),
+            value: t('progress:ofDays', { done: summary.weighIns, total: summary.days }),
+          },
+        ]
 
   return (
     <>
-      {/* No badge over the card. It read "Holding steady" for anybody with one
-          reading — which is everybody on their first day — by comparing the oldest
-          weigh-in with the newest and finding the same row twice. The history list
-          below states the same thing per reading and cannot be wrong about it. */}
       <Card>
-        <View className="flex-row items-end justify-between">
-          <View className="gap-0.5">
-            <Text variant="overline">{t('progress:weight.current')}</Text>
-            <View className="flex-row items-baseline gap-1">
-              <Text variant="display">{current.toFixed(1)}</Text>
-              <Text variant="meta" className="text-[18px]">
-                {t('common:unit.kg')}
-              </Text>
-            </View>
-          </View>
-          <View className="items-end gap-0.5">
-            <Text variant="overline">{t('progress:weight.goal')}</Text>
-            <Text variant="numeric" className="text-muted">
-              {target.toFixed(1)} {t('common:unit.kg')}
+        <View className="flex-row items-end justify-between gap-md">
+          <View className="min-w-0 flex-1 gap-0.5">
+            <Text variant="label" className="text-heading">
+              {t(SPAN_KEY[range])}
+            </Text>
+            <Text variant="meta" numberOfLines={2}>
+              {summary.weightPeak === null || summary.weightPeakOn === null
+                ? t('progress:weight.emptyTitle')
+                : range === '1y'
+                  ? t('progress:weight.peakIn', {
+                      value: showWeight(summary.weightPeak, unit),
+                      unit: unitLabel,
+                      month: format(parseISO(summary.weightPeakOn), 'LLLL'),
+                    })
+                  : t('progress:weight.peakOn', {
+                      value: showWeight(summary.weightPeak, unit),
+                      unit: unitLabel,
+                      date: format(parseISO(summary.weightPeakOn), 'd MMMM'),
+                    })}
             </Text>
           </View>
+
+          {change === null ? null : (
+            <Badge tone={change <= 0 ? 'pandan' : 'kaya'} className="px-3 py-2">
+              <Icon set="body" name={change <= 0 ? 'trend-down' : 'trend-up'} size={17} />
+              <Text
+                variant="caption"
+                className={change <= 0 ? 'text-pandan-ink' : 'text-kaya-ink'}
+                numberOfLines={1}
+              >
+                {t('progress:weight.change', {
+                  value: showWeight(Math.abs(change), unit),
+                  unit: unitLabel,
+                })}
+              </Text>
+            </Badge>
+          )}
         </View>
 
-        <BarChart
-          bars={bars}
-          // Weight never goes near zero, so the bars are scaled to their own
-          // range. From zero every reading looks the same height.
-          scale="range"
-          accessibilityLabel={t('progress:weight.chartNote')}
-        />
-
-        <ProgressBar
-          value={progressOf(Math.abs(started - current), Math.abs(started - target))}
-          height={16}
-          accessibilityLabel={t('progress:weight.goal')}
-        />
-
-        <Text variant="meta">{t('progress:weight.chartNote')}</Text>
-      </Card>
-
-      <Card title={t('progress:weight.thisWeek')}>
-        <StatRow
-          stats={[
-            {
-              key: 'avg',
-              label: t('progress:weight.average'),
-              value: `${average(weighIns.slice(-2).map((entry) => entry.kg)).toFixed(1)} ${t('common:unit.kg')}`,
-            },
-            {
-              key: 'pace',
-              label: t('progress:weight.pace'),
-              value: body
-                ? t('progress:weight.paceValue', { value: Math.abs(weeklyPace(body)).toFixed(2) })
-                : '—',
-            },
-            {
-              key: 'date',
-              label: t('progress:weight.goalDate'),
-              value: reachedOn ? format(reachedOn, 'd MMM') : '—',
-            },
-          ]}
+        <TrendLine
+          points={buckets.map((bucket, index) => ({
+            key: bucket.start,
+            label: labels[index],
+            value: bucket.weight,
+          }))}
+          accessibilityLabel={t('progress:weight.chart', { span: t(SPAN_KEY[range]) })}
         />
       </Card>
 
-      <Card title={t('progress:weight.bmi', { value: bodyMass.toFixed(1) })}>
-        <BmiBand value={bodyMass} />
-        <Text variant="meta">{t('progress:weight.bmiNote')}</Text>
+      <Card>
+        <StatTrio stats={stats} />
+
+        <Divider />
+
+        <View className="flex-row items-center gap-2.5">
+          <Icon set="body" name="target" size={26} />
+          <Text variant="label" className="min-w-0 flex-1">
+            {remaining === null
+              ? t('progress:weight.noTarget')
+              : remaining < 0.1
+                ? t('progress:weight.atGoal')
+                : t('progress:weight.toGoal', {
+                    value: showWeight(remaining, unit),
+                    target: showWeight(target, unit),
+                    unit: unitLabel,
+                  })}
+          </Text>
+          {reachedOn && remaining !== null && remaining >= 0.1 ? (
+            <Text variant="caption">
+              {t('progress:weight.weeksAway', {
+                count: Math.max(1, Math.ceil(differenceInCalendarDays(reachedOn, new Date()) / 7)),
+              })}
+            </Text>
+          ) : null}
+        </View>
       </Card>
 
-      {history.length ? (
-        <Card title={t('progress:weight.history')} contentClassName="gap-0">
-          {history.map((entry, index) => (
+      {range === '7d' ? (
+        <Card
+          title={t('progress:weight.recentTitle')}
+          contentClassName="gap-0"
+          action={
+            // A pill rather than a full-width button under the card. The list is
+            // where somebody notices a reading is missing, so the way to add one
+            // belongs at the top of it.
+            <Squish
+              depth={0}
+              radius={radius.full}
+              slabClassName="bg-transparent"
+              className="min-h-sm flex-row items-center gap-1.5 bg-track px-3"
+              onPress={() => onEdit(today())}
+              accessibilityRole="button"
+              accessibilityLabel={t('progress:weight.sheetTitle')}
+            >
+              <Icon set="body" name="weighing-scale" size={17} />
+              <Text className="font-display text-[15px] leading-[20px] text-pandan-ink">
+                {t('progress:weight.add')}
+              </Text>
+            </Squish>
+          }
+        >
+          {history(weighIns).map((entry, index, all) => (
             <ListRow
               key={entry.date}
-              title={t('progress:weight.reading', { value: entry.kg.toFixed(1) })}
+              leading={
+                <View className="h-10 w-10 items-center justify-center rounded-sm bg-track">
+                  <Icon set="body" name="weighing-scale" size={26} />
+                </View>
+              }
+              title={t('progress:weight.reading', {
+                value: showWeight(entry.kg, unit),
+                unit: unitLabel,
+              })}
               subtitle={
                 isToday(parseISO(entry.date))
                   ? t('progress:weight.readingToday')
-                  : format(parseISO(entry.date), 'EEEE d MMMM')
+                  : format(parseISO(entry.date), 'EEE d MMM')
               }
               // Every row leads to the same sheet, on its own day — which is the
               // only way to correct a reading typed at the wrong scale.
-              onPress={() => openSheet(entry.date, entry.kg)}
-              divider={index < history.length - 1}
+              onPress={() => onEdit(entry.date)}
+              divider={index < all.length - 1}
               trailing={
                 <Text
                   variant="label"
@@ -206,109 +263,125 @@ export function WeightPanel() {
                 >
                   {entry.change === undefined
                     ? t('progress:weight.firstReading')
-                    : t('progress:weight.changeValue', {
-                        value: `${entry.change > 0 ? '+' : ''}${entry.change.toFixed(1)}`,
-                      })}
+                    : showChange(entry.change, unit)}
                 </Text>
               }
             />
           ))}
         </Card>
-      ) : null}
-
-      <Button fullWidth onPress={() => openSheet(today(), current)}>
-        {t('progress:weight.log')}
-      </Button>
-
-      {/* Stood down while the confirmation is up rather than left underneath it.
-          `Sheet` is a native `Modal`, so two of them visible at once is two
-          windows — the order they present in is the platform's business, not
-          this file's, and the one being answered has to be on top. `editing` is
-          untouched, so cancelling brings this straight back. */}
-      <Sheet
-        visible={editing !== null && !confirmDelete}
-        onClose={() => setEditing(null)}
-        title={
-          editing && !isToday(parseISO(editing))
-            ? t('progress:weight.editTitle', { date: format(parseISO(editing), 'd MMMM') })
-            : t('progress:weight.sheetTitle')
-        }
-        description={t('progress:weight.sheetBody')}
-        footer={
-          <View className="gap-2">
-            <Button fullWidth onPress={save}>
-              {t('common:action.save')}
-            </Button>
-            {/* Only for a day that already has a reading. There is nothing to
-                remove from the day the button at the bottom of the panel opens. */}
-            {editing && weighIns.some((entry) => entry.date === editing) ? (
-              <Button
-                variant="ghost"
-                fullWidth
-                labelClassName="text-hibiscus-ink"
-                onPress={() => setConfirmDelete(true)}
-              >
-                {t('progress:weight.remove')}
-              </Button>
-            ) : null}
-          </View>
-        }
-      >
-        <Slider
-          value={draft}
-          onChange={setDraft}
-          min={35}
-          max={160}
-          step={0.1}
-          label={t('progress:weight.current')}
-          accessibilityLabel={t('progress:weight.sheetTitle')}
-          format={(value) => `${value.toFixed(1)} ${t('common:unit.kg')}`}
-        />
-      </Sheet>
-
-      <ConfirmSheet
-        visible={confirmDelete}
-        onClose={() => setConfirmDelete(false)}
-        onConfirm={remove}
-        title={t('progress:weight.removeTitle')}
-        description={t('progress:weight.removeBody')}
-        confirmLabel={t('common:action.delete')}
-        tone="danger"
-      />
+      ) : range === '30d' ? (
+        <Card title={t('progress:weight.weekByWeek')} contentClassName="gap-0">
+          {buckets.map((bucket, index) => (
+            <ListRow
+              key={bucket.start}
+              title={t('progress:range.weekLong', { index: index + 1 })}
+              divider={index < buckets.length - 1}
+              trailing={
+                <SpanValue
+                  value={
+                    bucket.weightAvg === null
+                      ? t('progress:metric.none')
+                      : `${showWeight(bucket.weightAvg, unit)} ${unitLabel}`
+                  }
+                  change={stepChange(buckets, index)}
+                  unit={unit}
+                  label={unitLabel}
+                />
+              }
+            />
+          ))}
+        </Card>
+      ) : (
+        <Card title={t('progress:weight.byQuarter')} contentClassName="gap-0">
+          {chunk(buckets, QUARTER).map((group, index, all) => (
+            <ListRow
+              key={group[0].start}
+              title={t('progress:weight.quarter', {
+                from: format(parseISO(group[0].start), 'LLL'),
+                to: format(parseISO(group[group.length - 1].start), 'LLL'),
+              })}
+              divider={index < all.length - 1}
+              trailing={<SpanValue change={groupChange(group)} unit={unit} label={unitLabel} />}
+            />
+          ))}
+        </Card>
+      )}
     </>
   )
 }
 
-const round1 = (value: number) => Math.round(value * 10) / 10
+/** A value and a signed change side by side, for the two summary lists. */
+function SpanValue({
+  value,
+  change,
+  unit,
+  label,
+}: {
+  value?: string
+  change: number | null
+  unit: WeightUnit
+  label: string
+}) {
+  return (
+    <View className="flex-row items-baseline gap-2.5">
+      {value ? (
+        <Text variant="label" className="text-ink">
+          {value}
+        </Text>
+      ) : null}
+      <Text
+        variant="label"
+        className={
+          change === null ? 'text-faint' : change > 0 ? 'text-kaya-ink' : 'text-pandan-ink'
+        }
+      >
+        {change === null ? '—' : `${showChange(change, unit)} ${label}`}
+      </Text>
+    </View>
+  )
+}
 
-function average(values: number[]) {
-  if (!values.length) return 0
-  return values.reduce((sum, value) => sum + value, 0) / values.length
+/** "−0.5 kg", or a dash where a single reading makes the change undefined. */
+function changeText(change: number | null, unit: WeightUnit, label: string) {
+  return change === null ? '—' : `${showChange(change, unit)} ${label}`
+}
+
+/** The lightest reading in the range, from the buckets' own minima. */
+function lightest(buckets: readonly TrendBucket[], unit: WeightUnit, label: string, none: string) {
+  const values = buckets
+    .map((bucket) => bucket.weightMin)
+    .filter((value): value is number => value !== null)
+  return values.length ? `${showWeight(Math.min(...values), unit)} ${label}` : none
+}
+
+/** One bucket against the one before it. Null where either has no reading. */
+function stepChange(buckets: readonly TrendBucket[], index: number) {
+  const here = buckets[index]?.weightAvg
+  const before = buckets[index - 1]?.weightAvg
+  return here != null && before != null ? here - before : null
+}
+
+/** A quarter's movement: where its last month ended against where its first did. */
+function groupChange(group: readonly TrendBucket[]) {
+  const values = group
+    .map((bucket) => bucket.weight)
+    .filter((value): value is number => value !== null)
+  return values.length > 1 ? values[values.length - 1] - values[0] : null
 }
 
 /**
- * The BMI band with a marker.
+ * The readings as a list, newest first, each against the one before it.
  *
- * Four solid segments rather than a gradient: the bands are categorical, and a
- * smooth ramp would suggest 24.9 and 25.1 differ by a hair rather than by a
- * label. The marker is context, never a score.
+ * The chart shows the shape and the list shows the numbers — including the days
+ * with no reading, by simply not being there, which a chart of evenly spaced
+ * columns cannot say.
  */
-function BmiBand({ value }: { value: number }) {
-  // 15 to 40 covers every position the marker will ever take.
-  const position = Math.min(96, Math.max(0, ((value - 15) / 25) * 100))
-
-  return (
-    <View className="h-[23px] justify-center">
-      <View className="h-[13px] flex-row overflow-hidden rounded-full">
-        <View className="flex-[22] bg-water" />
-        <View className="flex-[33] bg-pandan" />
-        <View className="flex-[25] bg-kaya" />
-        <View className="flex-[20] bg-hibiscus" />
-      </View>
-      <View
-        className="absolute h-[23px] w-[7px] rounded border-2 border-surface bg-inverse"
-        style={{ left: `${position}%` }}
-      />
-    </View>
-  )
+function history(weighIns: readonly { date: string; kg: number }[]) {
+  return weighIns
+    .map((entry, index) => ({
+      ...entry,
+      change: index > 0 ? entry.kg - weighIns[index - 1].kg : undefined,
+    }))
+    .slice(-HISTORY_ROWS)
+    .reverse()
 }
