@@ -7,6 +7,7 @@ import {
   usePendingSnaps,
   useRemoveEntry,
   useSelectedDate,
+  useSetWater,
   useStreak,
   useTargets,
 } from '@/data'
@@ -24,6 +25,7 @@ import {
   Tappable,
   Text,
   useToast,
+  WaterTracker,
 } from '@/ui'
 
 /**
@@ -56,6 +58,7 @@ export default function TodayScreen() {
   const streak = useStreak()
   const removeEntry = useRemoveEntry()
   const pending = usePendingSnaps()
+  const setWater = useSetWater(selectedDate)
   /**
    * Whether the summary is showing the allowance rather than what is left.
    *
@@ -69,6 +72,16 @@ export default function TodayScreen() {
   const budget = targets?.kcal ?? 0
   const left = budget - eaten.kcal
   const over = left < 0
+
+  /**
+   * Eight glasses until told otherwise.
+   *
+   * Unlike the calorie budget this does not wait for onboarding: it is the same
+   * number for every body, `daily_goals` defaults the column to it, and the tracker
+   * is useful on an account that has never described itself. A ring drawn against a
+   * placeholder would be a lie; eight glasses is not a guess about this user.
+   */
+  const waterGoal = targets?.waterGlasses ?? 8
 
   // The row that was just added, if it landed in the last few seconds. Derived
   // rather than stored: with a server there is no "last added" flag to keep,
@@ -176,6 +189,34 @@ export default function TodayScreen() {
             }
           />
         )}
+      </Card>
+
+      {/* Water sits under the ring rather than at the foot of the screen: it is
+          logged all day, a tap at a time, and it is the one thing here that a user
+          reaches for without having eaten anything. Below the entry list it would
+          be under however many rows the day has grown.
+
+          No skeleton while the targets load. The count comes from the day, which
+          is its own query, and the goal falls back to eight — so the row is honest
+          from the first frame instead of being a grey block that becomes the same
+          eight glasses. */}
+      <Card
+        tone="water"
+        title={t('logging:water.title')}
+        action={
+          <Text variant="label" className="text-water-ink">
+            {t('logging:water.count', { filled: day.waterGlasses, goal: waterGoal })}
+          </Text>
+        }
+      >
+        <WaterTracker
+          filled={day.waterGlasses}
+          goal={waterGoal}
+          // `mutate`, not `mutateAsync`: the optimistic update in `useSetWater` is
+          // what fills the glass, and nothing here waits for the row to be written.
+          onChange={(glasses) => setWater.mutate(glasses)}
+          glassLabel={(ordinal, total) => t('logging:water.glass', { ordinal, total })}
+        />
       </Card>
 
       {day.entries.length === 0 ? (

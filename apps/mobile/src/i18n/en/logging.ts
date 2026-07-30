@@ -167,10 +167,25 @@ export const logging = {
     noMatch: 'Nothing matches “{{query}}”.',
   },
 
+  /**
+   * The glasses on Today. Water came back when the diary that used to carry it
+   * went — there was nowhere left to record a glass, and `useSetWater` had been
+   * writing `daily_logs` for a screen nobody could reach.
+   */
+  water: {
+    title: 'Water',
+    /**
+     * Filled against the goal. A slash rather than the word "of", the same way the
+     * ring and the macro bars write a fraction.
+     */
+    count: '{{filled}} / {{goal}}',
+    /**
+     * One glass, to a screen reader. The row is otherwise a run of identical boxes
+     * with nothing to tell a user which one they are on.
+     */
+    glass: 'Glass {{ordinal}} of {{total}}',
+  },
+
   // No `diary` block. The diary screen and its calendar are gone, and this file's
   // rule is that a screen can be deleted without leaving orphans behind in here.
-  //
-  // Water went with it. `WaterTracker` is still in the design system and
-  // `useSetWater` still writes `daily_logs`, but nothing renders either — whatever
-  // brings water back gets to name its own copy.
 } as const
