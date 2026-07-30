@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'
+import { Image } from 'react-native'
 
 import { supabase } from '@/lib/supabase'
 import { keys } from './keys'
@@ -53,6 +54,29 @@ function decodeBase64(input: string): Uint8Array {
 }
 
 /**
+ * Longest edge (px) the stored photo is capped to; never upscales. The one
+ * stored copy is what the diary renders AND what the scan function sends to
+ * the vision model, and image tokens are billed by resolution — so this cap
+ * is the model bill as much as it is the storage bill. Same mechanism as
+ * money2time's receipt downscaler; the cap is lower because a receipt is
+ * dense small text and a plate of food is shapes and colours.
+ */
+const PHOTO_MAX_EDGE = 1024
+/** JPEG quality for the re-encode. File size only — tokens are resolution. */
+const PHOTO_COMPRESS = 0.7
+
+/** The photo's pixel size, or null when it cannot be read. */
+function measureImage(uri: string): Promise<{ width: number; height: number } | null> {
+  return new Promise((resolve) => {
+    Image.getSize(
+      uri,
+      (width, height) => resolve({ width, height }),
+      () => resolve(null),
+    )
+  })
+}
+
+/**
  * Downsizes a photo and uploads it, returning the key to store on the entry.
  *
  * The resize is not an optimisation, it is what makes the upload possible: a
@@ -60,10 +84,28 @@ function decodeBase64(input: string): Uint8Array {
  * anything over 10 MB, so a burst of unshrunk plates would start failing on
  * the third one. JPEG for the same reason the bucket lists HEIC as *allowed*
  * rather than expected — HEIC arriving means this step was skipped.
+ *
+ * The cap is on the LONGER edge, so the aspect ratio is preserved and a
+ * portrait shot costs the same tokens as a landscape one. A photo already
+ * within budget is re-encoded but never upscaled.
  */
 export async function uploadMealPhoto(userId: string, localUri: string): Promise<string> {
-  const image = await manipulateAsync(localUri, [{ resize: { width: 1080 } }], {
-    compress: 0.7,
+  const dims = await measureImage(localUri)
+  const actions =
+    dims === null
+      ? // Unmeasurable: cap by width, which is the pre-cap behaviour and only
+        // over-shoots the budget on a portrait shot.
+        [{ resize: { width: PHOTO_MAX_EDGE } }]
+      : Math.max(dims.width, dims.height) <= PHOTO_MAX_EDGE
+        ? []
+        : [
+            dims.width >= dims.height
+              ? { resize: { width: PHOTO_MAX_EDGE } }
+              : { resize: { height: PHOTO_MAX_EDGE } },
+          ]
+
+  const image = await manipulateAsync(localUri, actions, {
+    compress: PHOTO_COMPRESS,
     format: SaveFormat.JPEG,
     base64: true,
   })

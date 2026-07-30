@@ -21,6 +21,15 @@ export const logging = {
     /** A snapped plate whose dish is still being worked out. */
     analysing: 'Reading your plate',
     analysingHint: 'Counting once it knows what this is',
+    /**
+     * The rotating status line over the scan progress bar. Stages, not facts:
+     * the client cannot see where the scan actually is, so these describe the
+     * cascade truthfully without claiming to track it.
+     */
+    scanningRead: 'Reading your plate…',
+    scanningMatch: 'Finding it in the catalogue…',
+    scanningPortion: 'Sizing up the portion…',
+    scanningCount: 'Counting the calories…',
     analysisFailedTitle: 'Could not read this one',
     analysisFailedHint: 'Tap to pick the dish yourself',
     emptyTitle: 'Nothing logged yet',

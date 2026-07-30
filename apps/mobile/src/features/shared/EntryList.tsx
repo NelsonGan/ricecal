@@ -1,8 +1,12 @@
+import { Image } from 'expo-image'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Animated, Easing, View } from 'react-native'
 
 import type { DayLog, Entry } from '@/data'
 import { sumMacros } from '@/lib/nutrition'
-import { Card } from '@/ui'
+import { useThemeColors } from '@/theme/useTheme'
+import { Card, Icon, Text } from '@/ui'
 import { ItemRow } from './ItemRow'
 
 export type EntryListProps = {
@@ -74,19 +78,18 @@ function EntryRow({
 
   // A snap in flight has no dish yet. It still gets a row — written the moment
   // the shutter fired — so the day is complete while the model is thinking.
-  if (entry.status) {
-    const analysing = entry.status === 'analysing'
+  if (entry.status === 'analysing') {
+    return <AnalysingRow entry={entry} />
+  }
+  if (entry.status === 'failed') {
     return (
       <ItemRow
-        title={analysing ? t('logging:today.analysing') : t('logging:today.analysisFailedTitle')}
+        title={t('logging:today.analysisFailedTitle')}
         icon={{ set: 'system', name: 'camera' }}
         photoUri={entry.localPhotoUri}
-        busy={analysing}
-        value={analysing ? '' : '—'}
-        detail={
-          analysing ? t('logging:today.analysingHint') : t('logging:today.analysisFailedHint')
-        }
-        onPress={analysing || !onFix ? undefined : () => onFix(entry)}
+        value="—"
+        detail={t('logging:today.analysisFailedHint')}
+        onPress={onFix ? () => onFix(entry) : undefined}
       />
     )
   }
@@ -106,6 +109,92 @@ function EntryRow({
       detail={`${formatTime(entry.loggedAt)} · ${portion}`}
       onPress={onPress ? () => onPress(entry) : undefined}
     />
+  )
+}
+
+/** How often the status line changes while a scan runs. */
+const PHRASE_MS = 2600
+
+/**
+ * A snap being scanned: the photo, a line of rotating status text, and a bar
+ * that fills most of the way and waits.
+ *
+ * The progress is honest theatre. The scan is three model calls whose timing
+ * this client cannot observe, so the bar eases toward — never reaches — full:
+ * what it communicates is "working, not stuck", which a static spinner said
+ * too weakly for something that can take ten seconds. The row is replaced
+ * wholesale by the real entry when the scan lands, so the bar never has to
+ * finish; the phrases rotate so the wait reads as stages rather than a hang.
+ */
+function AnalysingRow({ entry }: { entry: Entry }) {
+  const { t } = useTranslation(['logging'])
+  const colors = useThemeColors()
+
+  const phrases = [
+    t('logging:today.scanningRead'),
+    t('logging:today.scanningMatch'),
+    t('logging:today.scanningPortion'),
+    t('logging:today.scanningCount'),
+  ]
+  const [phrase, setPhrase] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setPhrase((current) => current + 1), PHRASE_MS)
+    return () => clearInterval(id)
+  }, [])
+
+  const progress = useRef(new Animated.Value(0)).current
+  useEffect(() => {
+    // Fast at first, asymptotic at the end — the shape every real download
+    // bar has, which is what makes it read as progress.
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: 18000,
+      easing: Easing.out(Easing.cubic),
+      // Width in percent is a layout property, so the native driver cannot
+      // animate it.
+      useNativeDriver: false,
+    }).start()
+  }, [progress])
+  const width = progress.interpolate({ inputRange: [0, 1], outputRange: ['6%', '92%'] })
+
+  const label = phrases[phrase % phrases.length]
+
+  return (
+    <View
+      className="flex-row items-center gap-3 rounded-tile"
+      accessibilityRole="progressbar"
+      accessibilityLabel={label}
+      accessibilityState={{ busy: true }}
+    >
+      {/* Same 56pt tile as ItemRow, so the row sits flush in the list. */}
+      <View className="h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-tile bg-track">
+        {entry.localPhotoUri ? (
+          <Image
+            source={{ uri: entry.localPhotoUri }}
+            style={{ flex: 1, width: '100%', opacity: 0.55 }}
+            contentFit="cover"
+          />
+        ) : (
+          <Icon set="system" name="camera" size={40} />
+        )}
+      </View>
+
+      <View className="min-w-0 flex-1 gap-2">
+        <Text variant="bodyStrong" numberOfLines={1}>
+          {label}
+        </Text>
+        <View className="h-[6px] overflow-hidden rounded-full bg-track">
+          <Animated.View
+            style={{
+              width,
+              height: '100%',
+              borderRadius: 999,
+              backgroundColor: colors.pandan,
+            }}
+          />
+        </View>
+      </View>
+    </View>
   )
 }
 

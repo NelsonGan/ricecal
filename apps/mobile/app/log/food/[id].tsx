@@ -358,7 +358,11 @@ export default function FoodDetail() {
           that discards a picture of the real plate. */}
       <Tappable
         className={cn(
-          'h-[130px] items-center justify-center overflow-hidden rounded-card border-[3px] bg-track',
+          'items-center justify-center overflow-hidden rounded-card border-[3px] bg-track',
+          // Tall enough for the whole plate when a real photo is in the slot —
+          // 130px was sized for an icon and cropped the meal to a letterbox
+          // strip. Icons and the empty state keep the short box.
+          hero && !icon ? 'h-[260px]' : 'h-[130px]',
           // Dashed while there is nothing in it: a solid frame around an empty
           // box reads as a picture that failed to load.
           hero || shownIcon ? 'border-line' : 'border-line border-dashed',
