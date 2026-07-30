@@ -17,8 +17,6 @@ const BAR_PAD_TOP = 8
  * 12 + a 26 icon + a 6 gap + a 17 caption line + 12.
  */
 const PILL_HEIGHT = 73
-/** How far the raised centre tile — 62 points square — rises above the pill. */
-const ACTION_LIFT = 22
 
 /**
  * How much of the bottom of the screen the bar occupies, safe area aside.
@@ -28,7 +26,7 @@ const ACTION_LIFT = 22
  * rather than hand-picked, because it was 96 against a bar that measured 89 and
  * nothing said which was wrong.
  */
-export const NAV_BAR_HEIGHT = BAR_PAD_TOP + ACTION_LIFT + PILL_HEIGHT
+export const NAV_BAR_HEIGHT = BAR_PAD_TOP + PILL_HEIGHT
 
 export type NavTab<T extends string> = {
   value: T
@@ -44,17 +42,17 @@ export type NavTab<T extends string> = {
  * component cannot express. Both paths render the same three pieces, so there
  * is one place to change the bar's look.
  *
- * The pill is painted by a layer of its own rather than being the row's own
- * background, and that is what makes the raised centre action possible. The row
- * is `ACTION_LIFT` taller than the pill and reserves that height at the top, so
- * the tile can sit above the pill's edge while still being INSIDE the row. It
- * has to be: a view drawn outside its parent's frame gets no touches on iOS and
- * is clipped outright on Android, and the FAB used to overhang by 19 of its 62
- * points — a third of the button was decoration.
+ * The centre action does not rise above the pill, and that is the whole shape of
+ * this component. It used to, and the raise cost more than it was worth three
+ * times over. Overhanging the pill, the top third of the button took no touches
+ * on iOS and was clipped outright on Android — a view drawn outside its parent's
+ * frame is decoration. Reserving the height inside the bar instead fixed that and
+ * bought a band of bare canvas the height of the button, sitting between the
+ * screen's content and the pill, which is what it looked like: a grey gap.
  *
- * Reserving the height also stops the tile from floating over the screen's own
- * content. The bar's canvas matches the screen's, so the raise reads the same
- * as it did while no longer overlapping a card that scrolls past under it.
+ * So the pill is the row again, one view, and the button is a tile in it. The tab
+ * column is 73pt tall and the tile is 68 with its slab, so it fits with room to
+ * spare and needs nothing reserved, nothing absolute, and no negative margins.
  */
 export function NavBar({ children, className }: { children: ReactNode; className?: string }) {
   const insets = useSafeAreaInsets()
@@ -65,21 +63,10 @@ export function NavBar({ children, className }: { children: ReactNode; className
       style={{ paddingTop: BAR_PAD_TOP, paddingBottom: insets.bottom || 12 }}
       accessibilityRole="tablist"
     >
-      {/* No padding of its own: Yoga insets an absolute child by its parent's
-          padding, so the pill below would come up short on both sides. */}
-      <View>
-        <View
-          className="rounded-card bg-surface"
-          style={{ position: 'absolute', top: ACTION_LIFT, left: 0, right: 0, bottom: 0 }}
-          pointerEvents="none"
-        />
-        {/* The tabs size this row, and each carries its own vertical padding —
-            the pill's interior padding is theirs, so the pill is exactly the
-            height of a tab column and the reserved strip above it is exactly
-            the lift. */}
-        <View className="flex-row justify-between gap-2 px-4" style={{ paddingTop: ACTION_LIFT }}>
-          {children}
-        </View>
+      {/* The tabs size this row: each carries its own vertical padding, so the
+          pill is exactly the height of a tab column. */}
+      <View className="flex-row items-center justify-between gap-2 rounded-card bg-surface px-4">
+        {children}
       </View>
     </View>
   )
@@ -147,43 +134,37 @@ export type NavActionProps = {
 }
 
 /**
- * The raised centre action.
+ * The centre action: a pandan tile in the bar, between the second tab and the
+ * third.
  *
- * The lift is a negative margin on a `self-start` box, and both halves of that
- * matter. `self-start` because the row's cross-axis alignment decides what a
- * negative margin does: under the `items-center` this used to sit in, centring a
- * margin box that is 26 points shorter than its border box moved the tile up by
- * only 13 — half of what was written — and pushed it out of line with the tabs
- * on the way. Against the start edge the shift is exactly the margin. And a
- * margin rather than a transform because the box has to keep its width, so the
- * two pairs of tabs stay evenly spaced either side of it.
+ * It sits inside the pill like everything else in the row — see `NavBar` for why
+ * it no longer breaks the top edge. Centred by the row's `items-center`, with no
+ * margin of its own to fight it.
  */
 export function NavAction({ onPress, label, className }: NavActionProps) {
   const colors = useThemeColors()
 
   return (
-    <View className="self-start" style={{ marginTop: -ACTION_LIFT }}>
-      <Squish
-        depth={slab.lg}
-        radius={radius.tile}
-        slabClassName="bg-pandan-slab"
-        className={cn('h-[62px] w-[62px] items-center justify-center bg-pandan', className)}
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-      >
-        {/* The app's own plus, drawn the way `Stepper` draws it on a pandan
-            fill — and tinted to the role rather than to white, because the fill
-            brightens in dark mode and takes near-black content.
+    <Squish
+      depth={slab.lg}
+      radius={radius.tile}
+      slabClassName="bg-pandan-slab"
+      className={cn('h-[62px] w-[62px] items-center justify-center bg-pandan', className)}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      {/* The app's own plus, drawn the way `Stepper` draws it on a pandan fill —
+          and tinted to the role rather than to white, because the fill brightens
+          in dark mode and takes near-black content.
 
-            It was a `+` in Baloo 2 until now, which is the one thing a display
-            face cannot be trusted with: the glyph sits on the font's maths axis,
-            above the centre of its line box, so a tile that centred the line
-            centred the wrong thing and the cross rode high in it. An icon is a
-            square, and a square centres. */}
-        <Icon set="ui" name="plus" size={28} tintColor={colors.onPandan} />
-      </Squish>
-    </View>
+          It was a `+` in Baloo 2 until now, which is the one thing a display face
+          cannot be trusted with: the glyph sits on the font's maths axis, above
+          the centre of its line box, so a tile that centred the line centred the
+          wrong thing and the cross rode high in it. An icon is a square, and a
+          square centres. */}
+      <Icon set="ui" name="plus" size={28} tintColor={colors.onPandan} />
+    </Squish>
   )
 }
 

@@ -203,7 +203,12 @@ export function SheetSurface({
             fullHeight && 'flex-1',
             className,
           )}
-          style={[panel, { paddingBottom: insets.bottom + spacing.gutter }]}
+          /* The home indicator's inset OR the gutter, not both added together.
+             Stacked, they left 54pt of blank surface under the last thing in the
+             sheet — invisible under a full-width button, and an obvious band of
+             nothing under anything else, like the picture picker's grid. The
+             indicator's own inset already clears the indicator. */
+          style={[panel, { paddingBottom: Math.max(insets.bottom, spacing.gutter) }]}
           onPress={(event) => event.stopPropagation()}
           accessibilityViewIsModal
           accessible={false}
