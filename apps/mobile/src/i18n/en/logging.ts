@@ -102,6 +102,15 @@ export const logging = {
     increaseServing: 'One more',
     /** The hero tile doubles as the way in to the icon picker when editing. */
     choosePicture: 'Choose a picture for this entry',
+    replacePhoto: 'Replace the photo with a picture',
+    /**
+     * A row holds a photo or a drawing, never both, so picking one discards the
+     * other — and the photo is of the actual plate, which no drawing replaces.
+     */
+    replacePhotoTitle: 'Replace your photo?',
+    replacePhotoBody:
+      'This entry keeps a photo or a picture, not both. Your photo of the real plate goes for good.',
+    replacePhotoConfirm: 'Pick a picture',
   },
 
   /**

@@ -14,6 +14,8 @@ import { Text } from './Text'
  */
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 
+export type SheetSurfaceProps = Omit<SheetProps, 'visible'>
+
 export type SheetProps = {
   visible: boolean
   onClose: () => void
@@ -50,8 +52,40 @@ export type SheetProps = {
  * one: without this the keyboard covers a sheet anchored to the bottom, and
  * every result the user is typing to find is behind it.
  */
-export function Sheet({
-  visible,
+export function Sheet({ visible, ...rest }: SheetProps) {
+  return (
+    /**
+     * `animationType="none"`, not `"slide"`.
+     *
+     * The platform slide animates the modal's whole root — scrim included — so
+     * the dim swept up from the bottom edge with the panel, and for the length
+     * of that transition the top of the screen was undimmed. It read as the
+     * background sliding rather than a sheet rising over a background.
+     *
+     * The scrim now paints at full strength on the first frame, and only the
+     * panel travels, which is what the design shows.
+     */
+    <Modal visible={visible} transparent animationType="none" onRequestClose={rest.onClose}>
+      <SheetSurface {...rest} />
+    </Modal>
+  )
+}
+
+/**
+ * The sheet without a window of its own.
+ *
+ * For a ROUTE that is itself a sheet — the quick selector, the voice sheet —
+ * presented by the navigator as a `transparentModal`. Those already have
+ * everything `Sheet`'s `Modal` provides, and nesting a second window inside them
+ * costs a visible delay: the route transition has to finish before the inner
+ * `Modal` starts presenting, and only then does the panel begin its 220ms slide.
+ * Tapping the log button felt slow for exactly that reason.
+ *
+ * Use `Sheet` for a sheet opening over an ordinary screen. The window is what
+ * puts it above the keyboard and above native pickers, and it is not optional
+ * there.
+ */
+export function SheetSurface({
   onClose,
   title,
   description,
@@ -60,7 +94,7 @@ export function Sheet({
   bodyClassName,
   children,
   className,
-}: SheetProps) {
+}: SheetSurfaceProps) {
   const insets = useSafeAreaInsets()
 
   const body = scrollable ? (
@@ -77,51 +111,38 @@ export function Sheet({
   )
 
   return (
-    /**
-     * `animationType="none"`, not `"slide"`.
-     *
-     * The platform slide animates the modal's whole root — scrim included — so
-     * the dim swept up from the bottom edge with the panel, and for the length
-     * of that transition the top of the screen was undimmed. It read as the
-     * background sliding rather than a sheet rising over a background.
-     *
-     * The scrim now paints at full strength on the first frame, and only the
-     * panel travels, which is what the design shows.
-     */
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      {/* The scrim is deliberately NOT an accessibility element. Giving it a
-          role and a label makes the whole overlay one node, and VoiceOver then
-          reads "Close button" and nothing else — the sheet's own title and
-          buttons never reach the user. Dismissal stays available through the
-          back gesture and `onRequestClose`. */}
-      <Pressable
-        className="flex-1 justify-end bg-black/40"
-        onPress={onClose}
-        accessible={false}
-        importantForAccessibility="no"
-      >
-        {/* Android is left on `undefined`: `adjustResize` already shrinks the
-            window, and stacking both double-counts the inset — the same
-            reasoning as in `Screen`. */}
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <AnimatedPressable
-            entering={SlideInDown.duration(220)}
-            className={cn('gap-md rounded-t-card bg-surface px-gutter pt-md', className)}
-            style={{ paddingBottom: insets.bottom + spacing.gutter }}
-            onPress={(event) => event.stopPropagation()}
-            accessibilityViewIsModal
-            accessible={false}
-          >
-            <View className="h-1.5 w-[54px] self-center rounded-full bg-line" />
+    /* The scrim is deliberately NOT an accessibility element. Giving it a role
+       and a label makes the whole overlay one node, and VoiceOver then reads
+       "Close button" and nothing else — the sheet's own title and buttons never
+       reach the user. Dismissal stays available through the back gesture and
+       `onRequestClose`. */
+    <Pressable
+      className="flex-1 justify-end bg-black/40"
+      onPress={onClose}
+      accessible={false}
+      importantForAccessibility="no"
+    >
+      {/* Android is left on `undefined`: `adjustResize` already shrinks the
+          window, and stacking both double-counts the inset — the same
+          reasoning as in `Screen`. */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <AnimatedPressable
+          entering={SlideInDown.duration(220)}
+          className={cn('gap-md rounded-t-card bg-surface px-gutter pt-md', className)}
+          style={{ paddingBottom: insets.bottom + spacing.gutter }}
+          onPress={(event) => event.stopPropagation()}
+          accessibilityViewIsModal
+          accessible={false}
+        >
+          <View className="h-1.5 w-[54px] self-center rounded-full bg-line" />
 
-            {title ? <Text variant="subtitle">{title}</Text> : null}
-            {description ? <Text variant="body">{description}</Text> : null}
+          {title ? <Text variant="subtitle">{title}</Text> : null}
+          {description ? <Text variant="body">{description}</Text> : null}
 
-            {children ? body : null}
-            {footer}
-          </AnimatedPressable>
-        </KeyboardAvoidingView>
-      </Pressable>
-    </Modal>
+          {children ? body : null}
+          {footer}
+        </AnimatedPressable>
+      </KeyboardAvoidingView>
+    </Pressable>
   )
 }

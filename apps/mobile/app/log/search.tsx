@@ -51,11 +51,13 @@ export default function SearchScreen() {
 
   return (
     <Screen>
+      {/* A chevron, not a cross: this is a full page that pushes, so there is a
+          screen behind it to go back to — the quick selector it was opened
+          from. */}
       <AppBar
         title={t('logging:search.title')}
         onBack={() => goBack()}
-        backLabel={t('common:a11y.close')}
-        leading="dismiss"
+        backLabel={t('common:a11y.back')}
       />
 
       <SearchField

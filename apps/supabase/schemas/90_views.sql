@@ -92,11 +92,18 @@ select
   e.food_id,
   f.name       as food_name,
   f.brand      as food_brand,
-  -- The entry's own choice wins over the food's. Resolved here so no screen has
-  -- to know there are two places an icon can come from, and so a row with
-  -- neither comes back null rather than as a stand-in plate.
-  coalesce(e.icon_set,  f.icon_set)  as icon_set,
-  coalesce(e.icon_name, f.icon_name) as icon_name,
+  -- One picture per row, resolved here so that no screen has to know the order.
+  --
+  -- A photo suppresses both icons outright. The check constraint stops an ENTRY
+  -- holding a photo and an icon, but the food underneath can still carry a
+  -- drawing, and returning it next to a photo would hand every consumer the same
+  -- precedence rule to re-derive — and one of them would get it wrong. What the
+  -- client reads is therefore a photo, or an icon, or neither.
+  --
+  -- Below that the entry's own choice wins over the food's, and a row with
+  -- nothing comes back null rather than as a stand-in plate.
+  case when e.photo_path is null then coalesce(e.icon_set,  f.icon_set)  end as icon_set,
+  case when e.photo_path is null then coalesce(e.icon_name, f.icon_name) end as icon_name,
   f.place,
 
   e.serving_id,

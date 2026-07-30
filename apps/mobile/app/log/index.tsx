@@ -19,7 +19,7 @@ import { ItemRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { mealForHour, sumMacros } from '@/lib/nutrition'
 import { useThemeColors } from '@/theme/useTheme'
-import { Icon, IconButton, Sheet, Text } from '@/ui'
+import { Icon, IconButton, SheetSurface, Text } from '@/ui'
 
 /**
  * L2 QUICK SELECTOR, and L3's backdrop.
@@ -27,6 +27,12 @@ import { Icon, IconButton, Sheet, Text } from '@/ui'
  * Presented as a transparent modal so Today stays visible behind the scrim,
  * which is what the design shows and what makes the sheet feel attached to the
  * day rather than replacing it.
+ *
+ * `SheetSurface`, not `Sheet`: the route IS the sheet, so it already has
+ * everything `Sheet`'s own native `Modal` would provide. Nesting one inside it
+ * meant the route transition had to finish before a second window began
+ * presenting, and only then did the panel start its slide — which is why tapping
+ * the log button felt slow.
  */
 export default function LogSheet() {
   const { t } = useTranslation(['logging', 'common'])
@@ -78,7 +84,7 @@ export default function LogSheet() {
   }
 
   return (
-    <Sheet visible onClose={() => goBack()} scrollable>
+    <SheetSurface onClose={() => goBack()} scrollable>
       {/* The heading is rendered here rather than through `title` so the
           remaining count can sit on the same line, right aligned, the way the
           design puts it. */}
@@ -160,6 +166,6 @@ export default function LogSheet() {
           {t('logging:selector.nothingYesterday')}
         </Text>
       )}
-    </Sheet>
+    </SheetSurface>
   )
 }

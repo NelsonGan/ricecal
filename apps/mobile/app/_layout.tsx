@@ -138,7 +138,12 @@ function RootStack() {
         name="log/voice"
         options={{ presentation: 'transparentModal', animation: 'fade' }}
       />
-      <Stack.Screen name="log/search" options={{ presentation: 'modal' }} />
+      {/* Search pushes. It is a place you go and come back from, not something
+          that comes up over the day: the query survives the trip to a dish and
+          back, the edge swipe returns to it, and its bar carries a chevron. As a
+          modal it also stacked a second presentation on top of the quick
+          selector, which is already one. */}
+      <Stack.Screen name="log/search" />
       <Stack.Screen name="log/food/[id]" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/index" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/gate" options={{ presentation: 'modal' }} />
