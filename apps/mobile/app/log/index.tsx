@@ -148,46 +148,46 @@ export default function LogSheet() {
       {panel === 'camera' ? <InlineCamera meal={meal} onDone={() => goBack()} /> : null}
       {panel === 'search' ? <FoodSearchPanel autoFocus onPick={openFood} /> : null}
 
-      {/* Both of the suggestion blocks are put away while search is open: they
-          are for someone who has not decided yet, and the results under the field
-          are the answer to someone who has. */}
+      {/* Both suggestion blocks are put away while search is open — they are for
+          someone who has not decided yet, and the results under the field are the
+          answer to someone who has — and each one is absent entirely when it has
+          nothing in it. A heading over an empty space and a line saying nothing
+          has been logged are both the sheet taking up room to tell the user it
+          cannot help; the three buttons above already say what to do next. */}
       {panel === 'search' ? null : (
         <>
-          <View className="gap-3 pt-1">
-            <Text variant="overline">{t('logging:selector.recent')}</Text>
+          {recent.length ? (
+            <View className="gap-3 pt-1">
+              <Text variant="overline">{t('logging:selector.recent')}</Text>
 
-            {recent.length === 0 ? (
-              <Text variant="meta">
-                {t('logging:selector.nothingRecent', { meal: mealName.toLowerCase() })}
-              </Text>
-            ) : null}
-
-            {recent.map((food) => (
-              <ItemRow
-                key={food.id}
-                title={food.name}
-                icon={food.icon}
-                value={food.macros.kcal}
-                unit="kcal"
-                // The portion, not a count of how often it has been logged: this
-                // list is ordered by when, and "3 times" answered a question it
-                // is no longer sorted by.
-                detail={food.servingLabel}
-                trailing={
-                  <IconButton
-                    size="sm"
-                    variant="primary"
-                    accessibilityLabel={t('common:action.add')}
-                    onPress={() => add(food.id, food.servings[0]?.id ?? '')}
-                  >
-                    {/* Tinted to the role: the plus illustration carries its own
-                        gold, which on a pandan button reads as a third colour. */}
-                    <Icon set="ui" name="plus" size={18} tintColor={colors.onPandan} />
-                  </IconButton>
-                }
-              />
-            ))}
-          </View>
+              {recent.map((food) => (
+                <ItemRow
+                  key={food.id}
+                  title={food.name}
+                  icon={food.icon}
+                  value={food.macros.kcal}
+                  unit="kcal"
+                  // The portion, not a count of how often it has been logged:
+                  // this list is ordered by when, and "3 times" answered a
+                  // question it is no longer sorted by.
+                  detail={food.servingLabel}
+                  trailing={
+                    <IconButton
+                      size="sm"
+                      variant="primary"
+                      accessibilityLabel={t('common:action.add')}
+                      onPress={() => add(food.id, food.servings[0]?.id ?? '')}
+                    >
+                      {/* Tinted to the role: the plus illustration carries its
+                          own gold, which on a pandan button reads as a third
+                          colour. */}
+                      <Icon set="ui" name="plus" size={18} tintColor={colors.onPandan} />
+                    </IconButton>
+                  }
+                />
+              ))}
+            </View>
+          ) : null}
 
           {yesterdayEntries.length ? (
             <Tappable
@@ -203,11 +203,7 @@ export default function LogSheet() {
                 {t('logging:selector.repeatYesterday')}
               </Text>
             </Tappable>
-          ) : (
-            <Text variant="meta" className="text-center">
-              {t('logging:selector.nothingYesterday')}
-            </Text>
-          )}
+          ) : null}
         </>
       )}
     </SheetSurface>
