@@ -42,8 +42,7 @@ const FALL_MS = 180
 const DISMISS_DISTANCE = 96
 const DISMISS_VELOCITY = 900
 
-/** No window of its own, so neither of the window's two props applies. */
-export type SheetSurfaceProps = Omit<SheetProps, 'visible' | 'onDismissed'>
+export type SheetSurfaceProps = Omit<SheetProps, 'visible'>
 
 export type SheetProps = {
   visible: boolean
@@ -54,19 +53,6 @@ export type SheetProps = {
    * two — a sheet that forgot it would otherwise announce nothing at all.
    */
   closeLabel?: string
-  /**
-   * The window is gone, as opposed to `onClose`, which means "start closing".
-   *
-   * The difference matters for one thing and it is not cosmetic: a native picker —
-   * the camera, the photo library — cannot be presented while this modal is being
-   * dismissed. iOS cancels the presentation, and the promise for it never settles,
-   * so the camera appears to open and shut and whatever spinner was waiting on it
-   * waits forever. Anything that opens a native screen on the way out of a sheet has
-   * to run here.
-   *
-   * iOS only. Android has no equivalent because it has no equivalent problem.
-   */
-  onDismissed?: () => void
   title?: string
   description?: string
   /** Pinned below the scrollable body — the action row. */
@@ -108,7 +94,7 @@ export type SheetProps = {
  * one: without this the keyboard covers a sheet anchored to the bottom, and
  * every result the user is typing to find is behind it.
  */
-export function Sheet({ visible, onDismissed, ...rest }: SheetProps) {
+export function Sheet({ visible, ...rest }: SheetProps) {
   return (
     /**
      * `animationType="none"`, not `"slide"`.
@@ -121,17 +107,7 @@ export function Sheet({ visible, onDismissed, ...rest }: SheetProps) {
      * The scrim now paints at full strength on the first frame, and only the
      * panel travels, which is what the design shows.
      */
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={rest.onClose}
-      /* iOS only, and there is nothing to do about that: `onDismiss` is where the
-         platform says the window is gone. See the prop's own note for why anything
-         cares. On Android the callback never fires and callers fall back to running
-         their follow-up straight after closing, which is safe there. */
-      onDismiss={onDismissed}
-    >
+    <Modal visible={visible} transparent animationType="none" onRequestClose={rest.onClose}>
       {/* A `Modal` is its own window, and on Android gesture-handler's root view
           does not reach into one — the app's root is outside it, so the handle's
           pan would simply never fire. A root of its own inside the window is what

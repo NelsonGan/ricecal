@@ -1,5 +1,5 @@
 export { FoodSearchPanel, type FoodSearchPanelProps } from './FoodSearchPanel'
-export { IconPicker, type IconPickerProps, type PhotoSource } from './IconPicker'
+export { IconPicker, type IconPickerProps } from './IconPicker'
 export { InlineCamera, type InlineCameraProps } from './InlineCamera'
 export { QuickAction, type QuickActionProps } from './QuickAction'
 export { type Recognition, recogniseDish } from './recognise'

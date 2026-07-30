@@ -12,6 +12,7 @@ import {
   useLogFood,
   useRecentFoods,
   useSelectedDate,
+  useSnapFood,
   useTargets,
 } from '@/data'
 import { FoodSearchPanel, InlineCamera, QuickAction } from '@/features/logging'
@@ -40,6 +41,7 @@ export default function LogSheet() {
   const goBack = useBack('/today')
   const params = useLocalSearchParams<{ meal?: Meal }>()
   const logFood = useLogFood()
+  const snapFood = useSnapFood()
   const { selectedDate } = useSelectedDate()
   const day = useDayLog(selectedDate)
   const { data: targets } = useTargets()
@@ -145,7 +147,17 @@ export default function LogSheet() {
         />
       </View>
 
-      {panel === 'camera' ? <InlineCamera meal={meal} onDone={() => goBack()} /> : null}
+      {panel === 'camera' ? (
+        // The shutter does not wait for recognition. It writes the row and closes:
+        // the waiting happens on the row itself, where the user can watch it or
+        // ignore it. See `useSnapFood`.
+        <InlineCamera
+          onCapture={(photoUri) => {
+            snapFood({ meal, photoUri, logDate: selectedDate })
+            goBack()
+          }}
+        />
+      ) : null}
       {panel === 'search' ? <FoodSearchPanel autoFocus onPick={openFood} /> : null}
 
       {/* Both suggestion blocks are put away while search is open — they are for

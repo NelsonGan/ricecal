@@ -1,9 +1,8 @@
 import { Image } from 'expo-image'
-import * as ImagePicker from 'expo-image-picker'
 import { useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, Platform, View } from 'react-native'
+import { ActivityIndicator, View } from 'react-native'
 
 import {
   type IconRef,
@@ -21,7 +20,7 @@ import {
   useUpdateEntry,
   useUserId,
 } from '@/data'
-import { IconPicker, type PhotoSource } from '@/features/logging'
+import { IconPicker } from '@/features/logging'
 import { MacroBars } from '@/features/shared'
 import { useBack, useDismissTo } from '@/lib/navigation'
 import {
@@ -119,8 +118,6 @@ export default function FoodDetail() {
    */
   const [shot, setShot] = useState<{ uri: string; path: string }>()
   const [attaching, setAttaching] = useState(false)
-  /** A photo source waiting for the picker's window to close. See `requestPhoto`. */
-  const [pendingSource, setPendingSource] = useState<PhotoSource>()
   // Collapsed by default. Fibre, sugar and salt are the second question about a
   // dish, and for most of the catalogue the answer is "nobody recorded it".
   const [showNutrients, setShowNutrients] = useState(false)
@@ -192,32 +189,23 @@ export default function FoodDetail() {
   ] as const
 
   /**
-   * Put a photo of the actual plate on this row, from the camera or the library.
+   * Put a photo of the actual plate on this row.
+   *
+   * The uri comes from the picker's own viewfinder, so by the time this runs the shot
+   * has been taken and there is nothing left to present. That is what fixed the
+   * camera which used to open and shut immediately: it was a native picker being
+   * asked to present while this sheet was dismissing, which iOS cancels — leaving a
+   * promise that never settles and a spinner that never stops.
    *
    * An existing entry is written straight away rather than at save: the upload has
    * already happened, so holding the key in state until the save button would mean
    * an object in the bucket that a cancelled edit orphans. A row being composed
    * has nowhere to write to yet, so its key waits for the insert.
-   *
-   * The spinner starts AFTER the picker returns, not before it opens. It belongs to
-   * the upload — which takes a second or two, resizing and encoding several
-   * megabytes — and a spinner covering the launch has nothing to say about it, while
-   * a launch that never returns leaves one turning forever.
    */
-  const attachPhoto = async (source: PhotoSource) => {
+  const attachPhoto = async (uri: string) => {
+    setPickingIcon(false)
+    setAttaching(true)
     try {
-      // Both of these ask for their own permission and report a refusal as a
-      // cancellation, so there is no separate prompt to write here.
-      const result =
-        source === 'camera'
-          ? await ImagePicker.launchCameraAsync({ quality: 0.6 })
-          : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.6 })
-      if (result.canceled) return
-
-      const uri = result.assets[0]?.uri
-      if (!uri) return
-
-      setAttaching(true)
       const path = await uploadMealPhoto(userId, uri)
 
       if (existing) {
@@ -234,35 +222,12 @@ export default function FoodDetail() {
       // The photo IS the picture now, so an unsaved drawing has been answered.
       setIcon(undefined)
     } catch {
-      // A device with no camera, a refused permission, an upload that failed: all of
-      // them end here, and none is worth a screen of its own.
+      // An upload that failed, a bucket that refused it: neither is worth a screen
+      // of its own.
       toast.show({ title: t('logging:detail.photoFailed'), tone: 'error' })
     } finally {
       setAttaching(false)
     }
-  }
-
-  /**
-   * Close the picker first, and open the native one only once it is GONE.
-   *
-   * This is the whole of the bug where the camera opened and shut immediately and
-   * left a spinner turning. `launchCameraAsync` in the same tick as the sheet's
-   * `visible` going false asks iOS to present a controller while it is dismissing
-   * one; iOS cancels the presentation, and the promise never settles — so nothing
-   * after the await ever ran, including the code that would have cleared the
-   * spinner.
-   *
-   * So the source is parked and the sheet's `onDismissed` — the platform saying the
-   * window has actually gone — is what launches. Android has no such conflict and no
-   * such callback, so there it runs immediately.
-   */
-  const requestPhoto = (source: PhotoSource) => {
-    setPickingIcon(false)
-    if (Platform.OS === 'ios') {
-      setPendingSource(source)
-      return
-    }
-    void attachPhoto(source)
   }
 
   /**
@@ -399,13 +364,8 @@ export default function FoodDetail() {
         selected={shownIcon}
         // Held back for the confirmation below when there is a photo to lose.
         onSelect={(next) => (hasPhoto ? setPendingIcon(next) : applyIcon(next))}
-        // The other way to answer the same question, offered above the grid.
-        onPickPhoto={requestPhoto}
-        onDismissed={() => {
-          if (!pendingSource) return
-          setPendingSource(undefined)
-          void attachPhoto(pendingSource)
-        }}
+        // The other way to answer the same question, in the same sheet.
+        onPickPhoto={(uri) => void attachPhoto(uri)}
       />
 
       {/* Fires when a drawing is chosen over a photo, which is the one choice in

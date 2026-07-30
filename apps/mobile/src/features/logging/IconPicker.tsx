@@ -4,6 +4,8 @@ import { View } from 'react-native'
 
 import type { IconRef } from '@/data'
 import { cn, Icon, icons, SearchField, Sheet, Squish, Text } from '@/ui'
+import { InlineCamera } from './InlineCamera'
+import { QuickAction } from './QuickAction'
 
 /**
  * Which sets a dish can be illustrated from.
@@ -36,43 +38,41 @@ export type IconPickerProps = {
   selected?: IconRef
   onSelect: (icon: IconRef) => void
   /**
-   * Offers a photo as the other way to answer this, from either source.
+   * A photo was taken or chosen, as a local `file://` uri.
    *
-   * Optional: a caller with nowhere to put a photo simply does not pass it, and
-   * the sheet is the grid alone. The host owns the capture and the upload — this
-   * sheet knows about drawings, and a photo is a different kind of thing with a
-   * permission prompt, a bucket and a failure mode of its own.
+   * Optional: a caller with nowhere to put a photo simply does not pass it, and the
+   * sheet is the grid alone. The host owns what happens next — the upload, the row,
+   * the failure — because this sheet knows about pictures and that is a different
+   * kind of thing.
    */
-  onPickPhoto?: (source: PhotoSource) => void
-  /** The window has gone, which is when a native picker can safely be opened. */
-  onDismissed?: () => void
+  onPickPhoto?: (photoUri: string) => void
 }
 
-/** Where a photo comes from. */
-export type PhotoSource = 'camera' | 'library'
+/** Which half of the sheet is showing. */
+type Tab = 'search' | 'camera'
 
 /**
- * Picks an illustration for one logged item.
+ * Picks a picture for one logged item: a drawing, or a photo of the plate.
  *
- * It exists because the catalogue cannot be illustrated. There are a few hundred
- * drawings against hundreds of megabytes of imported foods, so most rows have
- * none — and this is the one way to give a plate a picture without photographing
- * it.
+ * The drawings exist because the catalogue cannot be illustrated — a few hundred of
+ * them against hundreds of megabytes of imported foods, so most rows have none — and
+ * a photo is the better answer whenever one is possible.
  *
- * Searchable rather than a plain grid: two hundred choices is more than anyone
- * scrolls through, and the names are the dish names, so typing "mee" narrows to
- * the noodles.
+ * Two ways in, one showing at a time, chosen by the pair of tiles at the top. The
+ * same shape the quick selector uses for snap and search, and for the same reason:
+ * with the two visibly exclusive, nothing has to say so in words. Search comes up
+ * first because it is the answer for most dishes, and it is not remembered between
+ * openings — a sheet that came back on the camera because that is where it was left
+ * opens the wrong way round for the next dish.
+ *
+ * The drawings are searchable rather than a plain grid: two hundred choices is more
+ * than anyone scrolls through, and the names are the dish names, so typing "mee"
+ * narrows to the noodles.
  */
-export function IconPicker({
-  visible,
-  onClose,
-  selected,
-  onSelect,
-  onPickPhoto,
-  onDismissed,
-}: IconPickerProps) {
+export function IconPicker({ visible, onClose, selected, onSelect, onPickPhoto }: IconPickerProps) {
   const { t } = useTranslation(['logging', 'common'])
   const [query, setQuery] = useState('')
+  const [tab, setTab] = useState<Tab>('search')
 
   const matches = useMemo(() => {
     const needle = words(query.trim().toLowerCase())
@@ -91,7 +91,6 @@ export function IconPicker({
       visible={visible}
       onClose={onClose}
       closeLabel={t('common:action.close')}
-      onDismissed={onDismissed}
       title={t('logging:icon.title')}
       // No description. It read "Just for this entry. A photo of the real plate
       // beats any of these" — a caveat about scope nobody asked about, and advice
@@ -107,115 +106,88 @@ export function IconPicker({
       // choice made in this same sheet a moment earlier, and closing it does that
       // already.
     >
-      {/* A photo first, from either source, and the grid under it. A picture of the
-          actual plate is the better answer where one is possible, and the drawings
-          exist because most of the time it is not — so the order says which is which
-          without a line of copy explaining it.
-          Two icons rather than a labelled row: the camera and the album are as
-          recognisable as anything in this app, and a sheet whose first element is a
-          sentence buries the two hundred pictures underneath. */}
       {onPickPhoto ? (
-        <>
-          <View className="flex-row gap-2.5">
-            <PhotoSourceButton
-              icon="camera"
-              label={t('logging:icon.takePhoto')}
-              onPress={() => onPickPhoto('camera')}
-            />
-            <PhotoSourceButton
-              icon="photo"
-              label={t('logging:camera.library')}
-              onPress={() => onPickPhoto('library')}
-            />
-          </View>
-
-          <Text variant="overline">{t('logging:icon.orChoose')}</Text>
-        </>
+        <View className="flex-row gap-2.5">
+          <QuickAction
+            label={t('logging:icon.searchTab')}
+            icon={{ set: 'ui', name: 'search' }}
+            selected={tab === 'search'}
+            onPress={() => setTab('search')}
+          />
+          <QuickAction
+            label={t('logging:icon.cameraTab')}
+            icon={{ set: 'system', name: 'camera' }}
+            tone="pandan"
+            selected={tab === 'camera'}
+            onPress={() => setTab('camera')}
+          />
+        </View>
       ) : null}
 
-      <SearchField
-        value={query}
-        onChangeText={setQuery}
-        onClear={() => setQuery('')}
-        clearLabel={t('logging:search.clear')}
-        placeholder={t('logging:icon.searchPlaceholder')}
-        // A placeholder is not a label: it disappears the moment anything is
-        // typed, and a screen reader announcing "nasi lemak, teh tarik, fish"
-        // describes the examples rather than the field.
-        accessibilityLabel={t('logging:icon.searchLabel')}
-      />
-
-      {matches.length === 0 ? (
-        <Text variant="meta">{t('logging:icon.noMatch', { query: query.trim() })}</Text>
+      {onPickPhoto && tab === 'camera' ? (
+        // The viewfinder the quick selector uses, doing the other thing it can do:
+        // handing the shot back rather than starting an entry from it. A shot with no
+        // uri — which is every simulator — leaves the sheet where it is.
+        <InlineCamera
+          onCapture={(photoUri) => {
+            if (photoUri) onPickPhoto(photoUri)
+          }}
+        />
       ) : (
-        // Five to a row, spanning the full width. Fixed-width tiles with a fixed
-        // gap left a ragged 57pt of nothing down the right-hand side of a phone,
-        // which read as the grid having been cut off.
-        <View className="flex-row flex-wrap justify-between gap-y-2.5">
-          {matches.map((choice) => {
-            const isSelected =
-              selected?.set === choice.icon.set && selected?.name === choice.icon.name
+        <>
+          <SearchField
+            value={query}
+            onChangeText={setQuery}
+            onClear={() => setQuery('')}
+            clearLabel={t('logging:search.clear')}
+            placeholder={t('logging:icon.searchPlaceholder')}
+            // A placeholder is not a label: it disappears the moment anything is
+            // typed, and a screen reader announcing "nasi lemak, teh tarik, fish"
+            // describes the examples rather than the field.
+            accessibilityLabel={t('logging:icon.searchLabel')}
+          />
 
-            return (
-              <Squish
-                key={choice.key}
-                depth={4}
-                radius={18}
-                // The width lives on the container, which is the box the row
-                // measures; the surface fills it. Putting it on the surface
-                // instead leaves the container shrink-wrapped and the row ragged.
-                containerClassName="w-[18.5%]"
-                slabClassName={isSelected ? 'bg-pandan-soft-line' : 'bg-line'}
-                className={cn(
-                  'h-[64px] w-full items-center justify-center border-[3px]',
-                  isSelected ? 'border-pandan bg-pandan-soft' : 'border-line bg-surface',
-                )}
-                onPress={() => choose(choice.icon)}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: isSelected }}
-                // The slug read as words. Without it a screen reader gets nothing
-                // at all: these are images, and the label is the only name they
-                // have.
-                accessibilityLabel={choice.label}
-              >
-                <Icon {...choice.icon} size={40} />
-              </Squish>
-            )
-          })}
-        </View>
+          {matches.length === 0 ? (
+            <Text variant="meta">{t('logging:icon.noMatch', { query: query.trim() })}</Text>
+          ) : (
+            // Five to a row, spanning the full width. Fixed-width tiles with a fixed
+            // gap left a ragged 57pt of nothing down the right-hand side of a phone,
+            // which read as the grid having been cut off.
+            <View className="flex-row flex-wrap justify-between gap-y-2.5">
+              {matches.map((choice) => {
+                const isSelected =
+                  selected?.set === choice.icon.set && selected?.name === choice.icon.name
+
+                return (
+                  <Squish
+                    key={choice.key}
+                    depth={4}
+                    radius={18}
+                    // The width lives on the container, which is the box the row
+                    // measures; the surface fills it. Putting it on the surface
+                    // instead leaves the container shrink-wrapped and the row ragged.
+                    containerClassName="w-[18.5%]"
+                    slabClassName={isSelected ? 'bg-pandan-soft-line' : 'bg-line'}
+                    className={cn(
+                      'h-[64px] w-full items-center justify-center border-[3px]',
+                      isSelected ? 'border-pandan bg-pandan-soft' : 'border-line bg-surface',
+                    )}
+                    onPress={() => choose(choice.icon)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: isSelected }}
+                    // The slug read as words. Without it a screen reader gets nothing
+                    // at all: these are images, and the label is the only name they
+                    // have.
+                    accessibilityLabel={choice.label}
+                  >
+                    <Icon {...choice.icon} size={40} />
+                  </Squish>
+                )
+              })}
+            </View>
+          )}
+        </>
       )}
     </Sheet>
-  )
-}
-
-/**
- * One of the two ways to get a photo, as an icon.
- *
- * Square and side by side, sharing the width. The label is the accessibility name
- * rather than a caption: a screen reader needs to know which is which, and an
- * illustration of a camera does not need to be told it is a camera.
- */
-function PhotoSourceButton({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: 'camera' | 'photo'
-  label: string
-  onPress: () => void
-}) {
-  return (
-    <Squish
-      depth={4}
-      radius={18}
-      containerClassName="flex-1"
-      slabClassName="bg-pandan-soft-line"
-      className="items-center justify-center border-[3px] border-pandan bg-pandan-soft py-3.5"
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      <Icon set="system" name={icon} size={30} />
-    </Squish>
   )
 }
