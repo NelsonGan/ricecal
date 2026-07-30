@@ -141,11 +141,13 @@ select is(
 -- `foods` any more except the catalogue import, and a test may not depend on
 -- whether someone has run that. Fixtures are local to this transaction and roll
 -- back with it, the same way 00_catalogue and 02_rls already do theirs.
-insert into public.foods (slug, name, icon_name, place, kcal, carbs_g, protein_g, fat_g)
+-- `icon_set` alongside `icon_name`: the pair is optional but indivisible, and the
+-- set no longer defaults to `dishes` to supply the missing half.
+insert into public.foods (slug, name, icon_set, icon_name, place, kcal, carbs_g, protein_g, fat_g)
 values
-  ('fixture-nasi-lemak-ayam', 'Nasi lemak ayam', 'nasi-lemak', 'mamak',    640, 78, 27, 25),
-  ('fixture-teh-tarik',       'Teh tarik',       'teh-tarik',  'kopitiam', 135, 21,  3,  4),
-  ('fixture-roti-canai',      'Roti canai',      'roti-canai', 'mamak',    301, 39,  6, 13);
+  ('fixture-nasi-lemak-ayam', 'Nasi lemak ayam', 'dishes', 'nasi-lemak', 'mamak',    640, 78, 27, 25),
+  ('fixture-teh-tarik',       'Teh tarik',       'dishes', 'teh-tarik',  'kopitiam', 135, 21,  3,  4),
+  ('fixture-roti-canai',      'Roti canai',      'dishes', 'roti-canai', 'mamak',    301, 39,  6, 13);
 
 insert into public.food_servings (food_id, slug, label, factor, is_default)
 select f.id, 'plate', '1 plate', 1, true
