@@ -96,5 +96,7 @@ export function pendingAsEntry(snap: PendingSnap): Entry {
     servingLabel: '',
     servingFactor: 1,
     macros: { kcal: 0, carbs: 0, protein: 0, fat: 0 },
+    isEstimate: false,
+    isArchetype: false,
   }
 }

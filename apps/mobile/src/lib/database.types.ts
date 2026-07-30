@@ -112,6 +112,7 @@ export type Database = {
       food_logs: {
         Row: {
           created_at: string
+          display_label: string | null
           food_id: string
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
@@ -122,6 +123,7 @@ export type Database = {
           note: string | null
           photo_path: string | null
           quantity: number
+          scan_id: string | null
           serving_id: string
           source: Database['public']['Enums']['entry_source']
           updated_at: string
@@ -129,6 +131,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          display_label?: string | null
           food_id: string
           icon_name?: string | null
           icon_set?: Database['public']['Enums']['icon_set'] | null
@@ -139,6 +142,7 @@ export type Database = {
           note?: string | null
           photo_path?: string | null
           quantity?: number
+          scan_id?: string | null
           serving_id: string
           source?: Database['public']['Enums']['entry_source']
           updated_at?: string
@@ -146,6 +150,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          display_label?: string | null
           food_id?: string
           icon_name?: string | null
           icon_set?: Database['public']['Enums']['icon_set'] | null
@@ -156,6 +161,7 @@ export type Database = {
           note?: string | null
           photo_path?: string | null
           quantity?: number
+          scan_id?: string | null
           serving_id?: string
           source?: Database['public']['Enums']['entry_source']
           updated_at?: string
@@ -184,6 +190,122 @@ export type Database = {
             referencedColumns: ['food_id', 'id']
           },
         ]
+      }
+      food_scan_items: {
+        Row: {
+          catalogue_kcal: number | null
+          components: Json | null
+          confidence: number | null
+          created_at: string
+          food_log_id: string | null
+          generic_query: string | null
+          id: string
+          item_index: number
+          llm_kcal_high: number | null
+          llm_kcal_low: number | null
+          quantity: number | null
+          resolved_food_id: string | null
+          resolved_tier: number | null
+          scan_id: string
+          scene: string | null
+          serving_hint: string | null
+          specific_query: string | null
+          user_id: string
+        }
+        Insert: {
+          catalogue_kcal?: number | null
+          components?: Json | null
+          confidence?: number | null
+          created_at?: string
+          food_log_id?: string | null
+          generic_query?: string | null
+          id?: string
+          item_index?: number
+          llm_kcal_high?: number | null
+          llm_kcal_low?: number | null
+          quantity?: number | null
+          resolved_food_id?: string | null
+          resolved_tier?: number | null
+          scan_id: string
+          scene?: string | null
+          serving_hint?: string | null
+          specific_query?: string | null
+          user_id: string
+        }
+        Update: {
+          catalogue_kcal?: number | null
+          components?: Json | null
+          confidence?: number | null
+          created_at?: string
+          food_log_id?: string | null
+          generic_query?: string | null
+          id?: string
+          item_index?: number
+          llm_kcal_high?: number | null
+          llm_kcal_low?: number | null
+          quantity?: number | null
+          resolved_food_id?: string | null
+          resolved_tier?: number | null
+          scan_id?: string
+          scene?: string | null
+          serving_hint?: string | null
+          specific_query?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'food_scan_items_food_log_id_fkey'
+            columns: ['food_log_id']
+            isOneToOne: false
+            referencedRelation: 'food_log_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'food_scan_items_food_log_id_fkey'
+            columns: ['food_log_id']
+            isOneToOne: false
+            referencedRelation: 'food_logs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'food_scan_items_resolved_food_id_fkey'
+            columns: ['resolved_food_id']
+            isOneToOne: false
+            referencedRelation: 'food_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'food_scan_items_resolved_food_id_fkey'
+            columns: ['resolved_food_id']
+            isOneToOne: false
+            referencedRelation: 'foods'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      food_scan_misses: {
+        Row: {
+          created_at: string
+          id: string
+          place: Database['public']['Enums']['food_place'] | null
+          query: string
+          scan_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          place?: Database['public']['Enums']['food_place'] | null
+          query: string
+          scan_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          place?: Database['public']['Enums']['food_place'] | null
+          query?: string
+          scan_id?: string | null
+        }
+        Relationships: []
       }
       food_servings: {
         Row: {
@@ -246,6 +368,8 @@ export type Database = {
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
           id: string
+          is_archetype: boolean
+          is_estimate: boolean
           kcal: number
           name: string
           name_norm: string
@@ -269,6 +393,8 @@ export type Database = {
           icon_name?: string | null
           icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
+          is_archetype?: boolean
+          is_estimate?: boolean
           kcal: number
           name: string
           name_norm?: string
@@ -292,6 +418,8 @@ export type Database = {
           icon_name?: string | null
           icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
+          is_archetype?: boolean
+          is_estimate?: boolean
           kcal?: number
           name?: string
           name_norm?: string
@@ -563,9 +691,12 @@ export type Database = {
           food_brand: string | null
           food_id: string | null
           food_name: string | null
+          food_verified: boolean | null
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
           id: string | null
+          is_archetype: boolean | null
+          is_estimate: boolean | null
           kcal: number | null
           log_date: string | null
           logged_at: string | null
@@ -575,6 +706,7 @@ export type Database = {
           place: Database['public']['Enums']['food_place'] | null
           protein_g: number | null
           quantity: number | null
+          scan_id: string | null
           serving_factor: number | null
           serving_id: string | null
           serving_label: string | null
@@ -650,6 +782,16 @@ export type Database = {
         }[]
       }
       current_weight_kg: { Args: { p_user_id?: string }; Returns: number }
+      estimate_food_backlog: {
+        Args: { p_limit?: number }
+        Returns: {
+          food_id: string
+          kcal: number
+          last_used: string
+          log_count: number
+          name: string
+        }[]
+      }
       goals_on: {
         Args: { p_date: string; p_user_id?: string }
         Returns: {
@@ -714,6 +856,7 @@ export type Database = {
       }
       search_normalize: { Args: { txt: string }; Returns: string }
       search_tsquery: { Args: { txt: string }; Returns: unknown }
+      seed_archetype_foods: { Args: never; Returns: undefined }
       trend_days: {
         Args: { p_range: string; p_user_id?: string }
         Returns: {
@@ -784,6 +927,19 @@ export type Database = {
           weight_peak: number
           weight_peak_on: string
         }[]
+      }
+      upsert_estimate_food: {
+        Args: {
+          p_carbs_g: number
+          p_fat_g: number
+          p_fibre_g?: number
+          p_kcal: number
+          p_name: string
+          p_protein_g: number
+          p_sodium_mg?: number
+          p_sugar_g?: number
+        }
+        Returns: string
       }
     }
     Enums: {

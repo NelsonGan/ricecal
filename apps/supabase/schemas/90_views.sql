@@ -67,7 +67,10 @@ left join lateral (
   where s.food_id = f.id
 ) sv on true;
 
-grant select on public.food_details to authenticated;
+-- service_role too: the scan edge function resolves photos through
+-- `search_foods`, which returns rows of this view — and service_role bypasses
+-- RLS, not grants.
+grant select on public.food_details to authenticated, service_role;
 
 
 -- ---------------------------------------------------------------------------
@@ -90,8 +93,17 @@ select
   e.photo_path,
 
   e.food_id,
-  f.name       as food_name,
+  e.scan_id,
+  -- The model's specific name wins over a shared estimate row's generic one.
+  -- A hand-logged entry has no display_label, so this is the food's name for
+  -- every row that predates scanning.
+  coalesce(e.display_label, f.name) as food_name,
   f.brand      as food_brand,
+  -- What the UI badges an entry with: `verified = false` is "an estimate is
+  -- on this row", and the two flags say which kind of guess it was.
+  f.verified   as food_verified,
+  f.is_estimate,
+  f.is_archetype,
   -- One picture per row, resolved here so that no screen has to know the order.
   --
   -- A photo suppresses both icons outright. The check constraint stops an ENTRY
@@ -167,6 +179,11 @@ select
   max(e.logged_at)         as last_logged_at,
   array_agg(distinct e.meal) as meals
 from public.food_logs e
+join public.foods f on f.id = e.food_id
+-- Estimate and archetype rows are excluded for the same reason they are
+-- excluded from search: "usual at this time" is a list to log from, and a
+-- shared guess should not become a habit the app reinforces.
+where not f.is_estimate and not f.is_archetype
 group by e.user_id, e.food_id;
 
 grant select on public.user_food_stats to authenticated;
