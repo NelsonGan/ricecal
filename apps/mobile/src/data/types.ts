@@ -165,8 +165,13 @@ export type Entry = {
   /** Already costed by the view: the dish's macros x factor x quantity. */
   macros: Macros
 
-  /** Groups the rows one photographed plate decomposed into. */
+  /** Set when this entry came from a photo scan. */
   scanId?: string
+  /**
+   * Up to three model-suggested corrections for this plate ("No sambal",
+   * "Half portion"), offered as chips over the fix-by-typing box.
+   */
+  suggestedEdits?: string[]
   /**
    * The numbers on this row are a guess, not a catalogue figure: a tier-4
    * model estimate or a tier-5 archetype fallback. What the UI badges — an

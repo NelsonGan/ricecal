@@ -69,6 +69,15 @@ create table public.food_logs (
   -- free-text correction.
   display_label text check (char_length(display_label) between 1 and 120),
 
+  -- Up to three short corrections the vision model thought likely for this
+  -- plate ("No sambal", "Half portion", "Add a fried egg"), offered as one-tap
+  -- chips over the fix-by-typing box. Suggestions, not state: applying one
+  -- goes through the scan-refine function like any typed instruction.
+  suggested_edits jsonb check (
+    suggested_edits is null
+    or (jsonb_typeof(suggested_edits) = 'array' and jsonb_array_length(suggested_edits) <= 3)
+  ),
+
   -- An illustration the user picked for this row, overriding the food's own.
   --
   -- Here rather than on `foods` because `foods` is shared: the catalogue is
