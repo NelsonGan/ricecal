@@ -70,10 +70,20 @@ describe('toIcon', () => {
     expect(toIcon('dishes', 'laksa')).toEqual({ set: 'dishes', name: 'laksa' })
   })
 
-  it('falls back rather than rendering nothing', () => {
-    // A dish whose illustration was renamed still has to draw a row.
-    expect(toIcon(null, 'laksa')).toEqual({ set: 'food', name: 'empty-plate' })
-    expect(toIcon('dishes', null)).toEqual({ set: 'food', name: 'empty-plate' })
+  /**
+   * This used to hand back an empty plate, and that was the bug. Most of the
+   * catalogue has no drawing — hundreds of megabytes of imported rows against a
+   * few dozen illustrations — so the fallback put the same stand-in beside a
+   * thousand different dishes and dressed "we do not know" up as an answer.
+   */
+  it('says nothing when there is nothing to show', () => {
+    expect(toIcon(null, null)).toBeUndefined()
+  })
+
+  /** Half an icon cannot be resolved, so it is the same as none. */
+  it('refuses a half-set pair', () => {
+    expect(toIcon(null, 'laksa')).toBeUndefined()
+    expect(toIcon('dishes', null)).toBeUndefined()
   })
 })
 

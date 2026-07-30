@@ -1,12 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type { TablesUpdate } from '@/lib/database.types'
+import type { BodyInput } from '@/lib/nutrition'
+import { ageFrom } from '@/lib/nutrition'
 import { supabase } from '@/lib/supabase'
 import { today, unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
 import { useSession, useUserId } from './session'
 import type { ActivityLevel, Goal, Profile, Sex } from './types'
-import { toDbActivity } from './types'
+import { fromDbActivity, toDbActivity } from './types'
 
 /**
  * The signed-in user's profile row.
@@ -111,6 +113,32 @@ export function useUpdateProfile() {
       queryClient.invalidateQueries({ queryKey: keys.goals(userId) })
     },
   })
+}
+
+/**
+ * A stored profile as the nutrition maths wants it.
+ *
+ * Three screens need this and each was building it inline, complete with its own
+ * copy of the activity spelling ternary. Null when the profile is not complete
+ * enough to compute anything: a budget derived from a missing height is a number
+ * with no meaning, and `null` makes the caller say what to show instead.
+ */
+export function bodyFrom(
+  profile: Profile | null | undefined,
+  weightKg: number | undefined,
+  goal?: Goal,
+): BodyInput | null {
+  if (!profile || !weightKg || !profile.sex || !profile.height_cm || !profile.birth_date)
+    return null
+
+  return {
+    sex: profile.sex,
+    weightKg,
+    heightCm: Number(profile.height_cm),
+    age: ageFrom(profile.birth_date),
+    activity: profile.activity_level ? fromDbActivity(profile.activity_level) : 'sedentary',
+    goal: goal ?? profile.weight_goal ?? 'track',
+  }
 }
 
 /** Everything onboarding collected, in the client's own spelling. */

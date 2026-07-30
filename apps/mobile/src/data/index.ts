@@ -41,6 +41,7 @@ export {
 } from './pending-snaps'
 export { removeMealPhoto, uploadMealPhoto, useMealPhotoUrl } from './photos'
 export {
+  bodyFrom,
   type OnboardingAnswers,
   type ProfilePatch,
   useFinishOnboarding,

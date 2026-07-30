@@ -34,16 +34,19 @@ export default function TargetStep() {
   // do not allow. Present so the arithmetic below cannot divide by nothing.
   const weightKg = draft.weightKg ?? 65
   const targetWeightKg = draft.targetWeightKg ?? weightKg
-  const targets = computeTargets({
+  const body = {
     sex: draft.sex ?? 'female',
     weightKg,
     heightCm: draft.heightCm ?? 164,
     age: draft.age ?? 29,
     activity: draft.activity ?? 'light',
     goal: draft.goal ?? 'track',
-  })
+  }
 
-  const reachedOn = goalDate(draft.goal ?? 'track', weightKg, targetWeightKg, new Date())
+  const targets = computeTargets(body)
+  // From the same body as the budget, so the date and the number on the ring
+  // cannot describe different plans.
+  const reachedOn = goalDate(body, targetWeightKg, new Date())
 
   // Roughly 600 kcal a meal is what a Malaysian plate runs to, so the budget
   // divided by that is the honest answer to "how much food is this?".

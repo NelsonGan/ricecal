@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { useCurrentWeight, useLogWeight, useProfile, useWeighIns } from '@/data'
+import { bodyFrom, useCurrentWeight, useLogWeight, useProfile, useWeighIns } from '@/data'
 import { BarChart, StatRow } from '@/features/shared'
 import { bmi, goalDate, progressOf, weeklyPace } from '@/lib/nutrition'
 import { Badge, Button, Card, ProgressBar, Sheet, Slider, Text, useToast } from '@/ui'
@@ -21,10 +21,15 @@ export function WeightPanel() {
   const [draft, setDraft] = useState(0)
 
   const target = Number(profile?.target_weight_kg ?? 0)
-  const goal = profile?.weight_goal ?? 'track'
   const started = weighIns[0]?.kg ?? current
   const change = round1(started - current)
-  const reachedOn = goalDate(goal, current, target, new Date())
+  /**
+   * The pace and the date both come from this, so they describe the same plan as
+   * the budget on Today. Null while the profile is incomplete — there is no
+   * honest pace to quote from a body we do not know.
+   */
+  const body = bodyFrom(profile, current || undefined)
+  const reachedOn = body ? goalDate(body, target, new Date()) : null
   const bodyMass = bmi(Number(profile?.height_cm ?? 0), current)
 
   // Eight weekly averages. Twelve fit on the canvas but not their labels, and
@@ -105,7 +110,9 @@ export function WeightPanel() {
             {
               key: 'pace',
               label: t('progress:weight.pace'),
-              value: t('progress:weight.paceValue', { value: weeklyPace(goal).toFixed(1) }),
+              value: body
+                ? t('progress:weight.paceValue', { value: Math.abs(weeklyPace(body)).toFixed(2) })
+                : '—',
             },
             {
               key: 'date',

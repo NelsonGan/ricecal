@@ -58,31 +58,11 @@ export function bmi(heightCm: number, weightKg: number): number {
   return Math.round((weightKg / (metres * metres)) * 10) / 10
 }
 
-/** kg per week the plan moves, signed toward the target. */
-export function weeklyPace(goal: Goal): number {
-  if (goal === 'lose') return 0.5
-  if (goal === 'gain') return 0.35
-  return 0
-}
-
 /**
- * When the target weight is reached at the current pace, or null when there is
- * nothing to reach — a maintain plan has no finish line, and saying "never"
- * would be both true and unkind.
+ * Standard activity multipliers against BMR. `onFeet` is the usual "moderately
+ * active" 1.55 and `veryActive` the usual 1.725; the published scale has a fifth
+ * step at 1.9 for twice-a-day training, which this app does not ask about.
  */
-export function goalDate(
-  goal: Goal,
-  weightKg: number,
-  targetWeightKg: number,
-  from: Date,
-): Date | null {
-  const pace = weeklyPace(goal)
-  const delta = Math.abs(weightKg - targetWeightKg)
-  if (pace === 0 || delta < 0.1) return null
-  const weeks = Math.ceil(delta / pace)
-  return new Date(from.getTime() + weeks * 7 * 24 * 60 * 60 * 1000)
-}
-
 const ACTIVITY_FACTOR: Record<ActivityLevel, number> = {
   sedentary: 1.2,
   light: 1.375,
@@ -90,13 +70,59 @@ const ACTIVITY_FACTOR: Record<ActivityLevel, number> = {
   veryActive: 1.725,
 }
 
-/** kcal/day added or removed to move about 0.5 kg a week. */
-const GOAL_DELTA: Record<Goal, number> = {
-  lose: -400,
-  maintain: 0,
-  gain: 300,
-  track: 0,
-}
+/** Energy in a kilogram of body tissue. The standard approximation. */
+const KCAL_PER_KG = 7700
+
+/**
+ * How fast each goal aims to move, in kg per week.
+ *
+ * Loss at the gentle end of the 0.5–1 kg/week both the NHS and CDC call safe —
+ * past 1 kg/week a growing share of what goes is lean tissue. Gain at 0.25
+ * kg/week, the lean-gain rate: muscle has a ceiling on how fast it can be built
+ * and anything quicker is mostly fat.
+ */
+const PACE_KG_PER_WEEK: Record<Goal, number> = { lose: -0.5, maintain: 0, gain: 0.25, track: 0 }
+
+/**
+ * The pace, capped as a share of maintenance.
+ *
+ * A flat 550 kcal deficit is a fifth of a large man's day and nearly half a small
+ * woman's. Capping the cut at 20% of maintenance is what stops the same "0.5 kg a
+ * week" being gentle for one body and a crash diet for another; the surplus is
+ * capped tighter still, because overshooting a lean gain just adds fat.
+ */
+const MAX_DEFICIT_SHARE = 0.2
+const MAX_SURPLUS_SHARE = 0.15
+
+/**
+ * Protein from body weight, not from a share of energy.
+ *
+ * 1.6 g/kg is where the meta-analytic evidence stops improving: more spares no
+ * further lean mass, in a deficit or out of one. Deriving it from energy instead
+ * — which this used to do, at 22% — gets the relationship backwards, because it
+ * hands you LESS protein exactly when a deficit makes it matter most.
+ */
+const PROTEIN_G_PER_KG = 1.6
+
+/** Protein's ceiling in the AMDR, so a small body on a floored budget stays inside it. */
+const PROTEIN_MAX_SHARE = 0.35
+
+/**
+ * Fat's share of energy. Inside the AMDR's 20–35%, and at the lower end of it on
+ * purpose: what is left over is carbohydrate, and this is an app for people who
+ * eat rice twice a day.
+ */
+const FAT_SHARE = 0.25
+
+/**
+ * The floor, by sex.
+ *
+ * Below these is the point at which the guidance says medical supervision, and
+ * Mifflin-St Jeor plus a percentage deficit reaches them easily for a small,
+ * older, sedentary body. Two numbers rather than one because the guidance is two
+ * numbers.
+ */
+const FLOOR_KCAL: Record<'female' | 'male', number> = { female: 1200, male: 1500 }
 
 export type BodyInput = {
   sex: 'female' | 'male'
@@ -113,29 +139,92 @@ export function basalRate(body: BodyInput): number {
   return body.sex === 'male' ? base + 5 : base - 161
 }
 
+/** What this body burns in a day before any goal is applied. */
+export function maintenanceRate(body: BodyInput): number {
+  return basalRate(body) * ACTIVITY_FACTOR[body.activity]
+}
+
+/**
+ * The kcal/day added or removed for the goal, capped against maintenance.
+ *
+ * The single source of truth for how fast the plan moves. `weeklyPace` reads the
+ * answer back out rather than keeping its own copy — the two used to be separate
+ * constants that disagreed, so the budget was built for 400 kcal a day while the
+ * goal date was drawn for 0.5 kg a week, which needs 550.
+ */
+export function energyDelta(body: BodyInput): number {
+  const pace = PACE_KG_PER_WEEK[body.goal]
+  if (pace === 0) return 0
+
+  const fromPace = (Math.abs(pace) * KCAL_PER_KG) / 7
+  const share = pace < 0 ? MAX_DEFICIT_SHARE : MAX_SURPLUS_SHARE
+  const capped = Math.min(fromPace, maintenanceRate(body) * share)
+
+  return pace < 0 ? -capped : capped
+}
+
+/** kg per week this plan actually moves, signed toward the target. */
+export function weeklyPace(body: BodyInput): number {
+  return (energyDelta(body) * 7) / KCAL_PER_KG
+}
+
+/**
+ * When the target weight is reached at the current pace, or null when there is
+ * nothing to reach — a maintain plan has no finish line, and saying "never"
+ * would be both true and unkind.
+ */
+export function goalDate(body: BodyInput, targetWeightKg: number, from: Date): Date | null {
+  const pace = Math.abs(weeklyPace(body))
+  const delta = Math.abs(body.weightKg - targetWeightKg)
+  if (pace === 0 || delta < 0.1) return null
+  const weeks = Math.ceil(delta / pace)
+  return new Date(from.getTime() + weeks * 7 * 24 * 60 * 60 * 1000)
+}
+
 /**
  * The daily budget, previewed.
  *
- * The database owns this number — a trigger recomputes `daily_goals` whenever
- * the profile or the newest weigh-in changes, and that is the copy every
- * screen reads. This exists for the one moment there is nothing to read from:
- * the onboarding preview, which shows a budget before the account that would
- * store it exists. Keep the two in step; they are the same arithmetic on
- * purpose.
+ * The database owns this number — a trigger recomputes `daily_goals` whenever the
+ * profile or the newest weigh-in changes, and that is the copy every screen
+ * reads. This exists for the one moment there is nothing to read from: the
+ * onboarding questions, which show a budget before the account that would store
+ * it exists. Keep the two in step; they are the same arithmetic on purpose, and
+ * `compute_targets()` in `02_functions.sql` is the other half.
+ *
+ * Macros are built in a fixed order, because each one constrains the next:
+ * protein from body weight, fat from a share of energy, and carbohydrate from
+ * whatever energy is left. Carbohydrate last is what makes the budget add up
+ * exactly — a three-way percentage split does not, and the rounding error lands
+ * somewhere nobody chose.
  */
 export function computeTargets(body: BodyInput): Omit<Targets, 'isCustom'> {
-  const maintenance = basalRate(body) * ACTIVITY_FACTOR[body.activity]
-  const kcal = Math.round((maintenance + GOAL_DELTA[body.goal]) / 10) * 10
+  const kcal = Math.max(
+    Math.round((maintenanceRate(body) + energyDelta(body)) / 10) * 10,
+    FLOOR_KCAL[body.sex],
+  )
 
-  // A 47/22/31 split by energy: high enough carbs for a rice based diet,
-  // protein at roughly 1.7 g per kg.
-  return {
-    kcal,
-    carbs: Math.round((kcal * 0.47) / 4),
-    protein: Math.round((kcal * 0.22) / 4),
-    fat: Math.round((kcal * 0.31) / 9),
-    waterGlasses: 8,
-  }
+  return { kcal, ...macroSplit(kcal, body.weightKg), waterGlasses: 8 }
+}
+
+/**
+ * How a calorie budget divides into grams.
+ *
+ * Separate from `computeTargets` because it is also what a hand-set budget needs:
+ * the goals screen lets a user drag the calorie total themselves, and its macros
+ * should still follow the same rules rather than a third copy of them — there
+ * were three copies of the old percentage split, and they did not all agree.
+ */
+export function macroSplit(
+  kcal: number,
+  weightKg: number,
+): { carbs: number; protein: number; fat: number } {
+  const protein = Math.round(Math.min(weightKg * PROTEIN_G_PER_KG, (kcal * PROTEIN_MAX_SHARE) / 4))
+  const fat = Math.round((kcal * FAT_SHARE) / 9)
+  // Never negative: protein is capped at 35% of energy and fat takes 25%, so
+  // something is always left — the floor says so rather than relying on it.
+  const carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4))
+
+  return { carbs, protein, fat }
 }
 
 /** Years between a birth date and today. The profile stores the date. */

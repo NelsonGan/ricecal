@@ -175,8 +175,13 @@ export default function FoodDetail() {
             contentFit="cover"
             accessibilityLabel={t('logging:camera.photoOf', { food: food.name })}
           />
-        ) : (
+        ) : food.icon ? (
           <Icon {...food.icon} size={100} />
+        ) : (
+          // Most of the catalogue has no drawing, so this is the ordinary case
+          // rather than a missing asset. The camera is the offer: a photo of the
+          // actual plate beats any illustration of it.
+          <Icon set="system" name="camera" size={72} />
         )}
       </View>
 
