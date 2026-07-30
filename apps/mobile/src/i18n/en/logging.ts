@@ -16,7 +16,6 @@ export const logging = {
     mealHeading: '{{meal}} · {{kcal}} KCAL',
     mealHeadingEmpty: '{{meal}}',
     addMeal: 'Add {{meal}}',
-    justAdded: 'Just added, tap to edit',
     /** A snapped plate whose dish is still being worked out. */
     analysing: 'Reading your plate',
     analysingHint: 'Counting once it knows what this is',
@@ -172,5 +171,10 @@ export const logging = {
     addGlass: 'Add a glass of water',
     removeGlass: 'Remove a glass of water',
     emptyDay: 'Nothing logged on this day.',
+    /** The month and year steppers on the calendar levels. */
+    previousMonth: 'Previous month',
+    nextMonth: 'Next month',
+    previousYear: 'Previous year',
+    nextYear: 'Next year',
   },
 } as const

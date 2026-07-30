@@ -8,8 +8,6 @@ import { ItemRow } from './ItemRow'
 export type MealCardProps = {
   meal: Meal
   day: DayLog
-  /** Highlighted entry id — the one that was just added. */
-  highlightId?: string
   /** What the detail line under each dish says. */
   detail?: 'serving' | 'time'
   /** Receives the whole entry: opening its detail needs the food id too. */
@@ -35,7 +33,6 @@ export type MealCardProps = {
 export function MealCard({
   meal,
   day,
-  highlightId,
   detail = 'serving',
   onPressEntry,
   onFixEntry,
@@ -58,7 +55,6 @@ export function MealCard({
           key={entry.id}
           entry={entry}
           detail={detail}
-          highlighted={entry.id === highlightId}
           onPress={onPressEntry}
           onFix={onFixEntry}
         />
@@ -89,13 +85,11 @@ export function MealCard({
 function EntryRow({
   entry,
   detail,
-  highlighted,
   onPress,
   onFix,
 }: {
   entry: Entry
   detail: 'serving' | 'time'
-  highlighted: boolean
   onPress?: (entry: Entry) => void
   onFix?: (entry: Entry) => void
 }) {
@@ -127,14 +121,15 @@ function EntryRow({
       photoPath={entry.photoPath}
       value={entry.macros.kcal}
       unit="kcal"
+      // Always what the row IS. It used to read "Just added, tap to edit" for a
+      // few seconds after an insert, which replaced the portion — the one fact
+      // worth reading — with an instruction that was true of every row on the
+      // screen.
       detail={
-        highlighted
-          ? t('logging:today.justAdded')
-          : detail === 'time'
-            ? formatTime(entry.loggedAt)
-            : `${entry.quantity > 1 ? `${entry.quantity} × ` : ''}${entry.servingLabel}`
+        detail === 'time'
+          ? formatTime(entry.loggedAt)
+          : `${entry.quantity > 1 ? `${entry.quantity} × ` : ''}${entry.servingLabel}`
       }
-      highlighted={highlighted}
       onPress={onPress ? () => onPress(entry) : undefined}
     />
   )
