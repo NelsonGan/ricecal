@@ -26,7 +26,7 @@
 --
 -- We store the PATH on `profiles.avatar_path` and `food_logs.photo_path`,
 -- never a URL. Signed URLs expire, public URLs embed the project ref, and
--- SETUP.md §3 still has moving images to Cloudflare R2 as an open item. A
+-- Moving images to Cloudflare R2 is still an open item. A
 -- stored path makes that a change of base URL; a stored URL makes it a
 -- migration over every row.
 

@@ -22,6 +22,13 @@ on:
 jobs:
   drift:
     runs-on: ubuntu-latest
+    # The Supabase project lives in apps/supabase, and the CLI resolves
+    # `supabase/config.toml` relative to the working directory. Setting it once
+    # here keeps every `run` step — and the migration globs below — written
+    # exactly as they would be from a project root.
+    defaults:
+      run:
+        working-directory: apps
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}

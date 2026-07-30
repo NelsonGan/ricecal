@@ -49,6 +49,13 @@ where f.slug = 'fixture-roti-canai';
 insert into public.weight_logs (user_id, measured_on, weight_kg) values (:'user_a', current_date, 68.0);
 insert into public.weight_logs (user_id, measured_on, weight_kg) values (:'user_b', current_date, 74.0);
 
+-- How big the catalogue actually is, captured here as the owner and before any
+-- role switch. The assertions below are "a user sees all of it", not "a user
+-- sees two rows": on a database where the catalogue import has been run there
+-- are ~457,000, and a hard-coded 2 fails while saying nothing about RLS.
+select count(*)::integer as catalogue_size from public.foods \gset
+select count(*)::integer as serving_count from public.food_servings \gset
+
 
 -- AS USER A ------------------------------------------------------------------
 
@@ -78,7 +85,7 @@ select is(
 -- policy to hide, so this is simply everything in the table.
 select is(
   (select count(*)::integer from public.foods),
-  2,
+  :catalogue_size,
   'a user sees the whole shared catalogue'
 );
 
@@ -173,13 +180,13 @@ select is(
 -- which is the point: one set of rows, one policy, no divergence to test for.
 select is(
   (select count(*)::integer from public.foods),
-  2,
+  :catalogue_size,
   'the other user sees the same catalogue'
 );
 
 select is(
   (select count(*)::integer from public.food_servings),
-  2,
+  :serving_count,
   'and the same portions'
 );
 

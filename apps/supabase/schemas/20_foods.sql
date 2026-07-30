@@ -66,6 +66,24 @@ create table public.foods (
   -- imported row whose figures someone later disputes.
   source         text,
 
+  -- SEARCH
+  --
+  -- Two columns rather than one because they answer different questions.
+  -- `name_norm` is this row's name, canonicalized, and is what a query is
+  -- compared against for an exact hit or a trigram near-miss — short, so
+  -- similarity stays meaningful. `search_text` is a bag of words: the name plus
+  -- every alias, romanization, translation and category the loader knows, which
+  -- is what full-text matches against. Scoring one long string on similarity
+  -- would dilute it; scoring one short one on full text would lose the aliases.
+  --
+  -- Both are maintained by `foods_set_search`, so no write path can insert a row
+  -- that search cannot see.
+  name_norm      text not null default '',
+  search_text    text not null default '',
+  search_tsv     tsvector generated always as (
+                   to_tsvector('pg_catalog.simple', search_text)
+                 ) stored,
+
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now(),
 
@@ -77,6 +95,39 @@ create table public.foods (
 -- search screen tolerant of spelling rather than exact-prefix only.
 create index foods_name_trgm_idx
   on public.foods using gin (name extensions.gin_trgm_ops);
+
+-- The two indexes `search_foods` actually rides. The trigram one is on the
+-- normalized name and not on `name`, because the query is normalized before it
+-- is compared and matching a folded query against an unfolded column silently
+-- loses every row with an accent or an apostrophe in it.
+--
+-- Partial, and this is the important part. Fuzzy matching exists for names
+-- people spell inconsistently — Malaysian dishes and chain items, where the
+-- romanization is genuinely unsettled. Packaged goods are 97% of the catalogue
+-- and are not spelled approximately by anyone: nobody types a near-miss of
+-- "STOUFFER'S CHICKEN & RICE", they type "stouffer" and full text finds it.
+-- Including them made every short query pay for them — "milk" rechecked 60,934
+-- rows and took 785 ms. Over the curated 15,000 the same query takes 11 ms.
+create index foods_name_norm_trgm_idx
+  on public.foods using gin (name_norm extensions.gin_trgm_ops)
+  where place <> 'packaged';
+
+-- The exact arm's `name_norm = <query>`. A GIN trigram index answers equality
+-- too, so this looks redundant — but only over the rows it covers, and the one
+-- above deliberately covers 3% of the table. Without this the exact arm
+-- sequentially scanned all 463,587 rows on every search, which is the slowest
+-- part of a query whose whole point is to be the fastest.
+create index foods_name_norm_idx on public.foods (name_norm);
+
+create index foods_search_tsv_idx
+  on public.foods using gin (search_tsv);
+
+-- Ordered before `foods_set_updated_at` by name, which is how Postgres breaks
+-- ties between two before-row triggers. Neither touches the other's columns, so
+-- the order is documentation rather than a dependency.
+create trigger foods_set_search
+  before insert or update on public.foods
+  for each row execute function public.foods_set_search();
 
 create trigger foods_set_updated_at
   before update on public.foods
