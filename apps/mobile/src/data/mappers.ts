@@ -34,6 +34,20 @@ export function toIcon(set: string | null, name: string | null): IconRef | undef
   return { set, name } as IconRef
 }
 
+/**
+ * A nullable numeric column as a number, or nothing.
+ *
+ * The rest of this file coalesces to zero, and these three columns are the
+ * exception: `fibre_g`, `sugar_g` and `sodium_mg` are null for most of the
+ * imported catalogue, and null there means nobody recorded it. A zero would put
+ * "0 g of sugar" on a slice of cake.
+ */
+function optionalNumber(value: number | string | null): number | undefined {
+  if (value === null || value === undefined) return undefined
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
 export function toServings(json: FoodDetailsRow['servings']): Serving[] {
   if (!Array.isArray(json)) return []
   return json.flatMap((item) => {
@@ -63,6 +77,11 @@ export function toFood(row: FoodDetailsRow, stats?: FoodStats | undefined): Food
       carbs: Number(row.carbs_g ?? 0),
       protein: Number(row.protein_g ?? 0),
       fat: Number(row.fat_g ?? 0),
+    },
+    extras: {
+      fibre: optionalNumber(row.fibre_g),
+      sugar: optionalNumber(row.sugar_g),
+      sodium: optionalNumber(row.sodium_mg),
     },
     verified: row.verified ?? false,
     timesLogged: stats?.timesLogged,

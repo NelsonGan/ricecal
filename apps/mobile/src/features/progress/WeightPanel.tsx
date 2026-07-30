@@ -1,12 +1,31 @@
-import { format } from 'date-fns'
+import { format, isToday, parseISO } from 'date-fns'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { bodyFrom, useCurrentWeight, useLogWeight, useProfile, useWeighIns } from '@/data'
+import {
+  bodyFrom,
+  today,
+  useCurrentWeight,
+  useDeleteWeighIn,
+  useLogWeight,
+  useProfile,
+  useWeighIns,
+} from '@/data'
 import { BarChart, StatRow } from '@/features/shared'
 import { bmi, goalDate, progressOf, weeklyPace } from '@/lib/nutrition'
-import { Badge, Button, Card, ProgressBar, Sheet, Slider, Text, useToast } from '@/ui'
+import {
+  Badge,
+  Button,
+  Card,
+  ConfirmSheet,
+  ListRow,
+  ProgressBar,
+  Sheet,
+  Slider,
+  Text,
+  useToast,
+} from '@/ui'
 
 /** P1 WEIGHT */
 export function WeightPanel() {
@@ -15,10 +34,20 @@ export function WeightPanel() {
   const { data: profile } = useProfile()
   const { data: weighIns = [] } = useWeighIns()
   const logWeight = useLogWeight()
+  const deleteWeighIn = useDeleteWeighIn()
   const current = useCurrentWeight() ?? 0
 
-  const [logging, setLogging] = useState(false)
+  /**
+   * Which day the sheet is editing, and null when it is shut.
+   *
+   * A date rather than a boolean, because the same sheet now records today's
+   * reading and corrects a past one — `useLogWeight` upserts on
+   * `(user_id, measured_on)`, so which day it writes to is the only difference
+   * between the two.
+   */
+  const [editing, setEditing] = useState<string | null>(null)
   const [draft, setDraft] = useState(0)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const target = Number(profile?.target_weight_kg ?? 0)
   const started = weighIns[0]?.kg ?? current
@@ -32,19 +61,51 @@ export function WeightPanel() {
   const reachedOn = body ? goalDate(body, target, new Date()) : null
   const bodyMass = bmi(Number(profile?.height_cm ?? 0), current)
 
-  // Eight weekly averages. Twelve fit on the canvas but not their labels, and
-  // a chart whose last column reads "N..." is worse than a shorter chart.
+  // Eight readings. Twelve fit on the canvas but not their labels, and a chart
+  // whose last column reads "N..." is worse than a shorter chart. Dated, because
+  // "1, 2, 3 … Now" told the reader the order of the readings and nothing about
+  // when any of them was taken — two months of nothing looked like a steady week.
   const bars = weighIns.slice(-8).map((entry, index, all) => ({
     key: entry.date,
-    label: index === all.length - 1 ? t('progress:weight.now') : String(index + 1),
+    label:
+      index === all.length - 1 ? t('progress:weight.now') : format(parseISO(entry.date), 'd/M'),
     value: entry.kg,
     highlight: index === all.length - 1,
   }))
 
+  /**
+   * The readings as a list, newest first, each against the one before it.
+   *
+   * The chart shows the shape and the list shows the numbers — including the days
+   * with no reading, by simply not being there, which a chart of evenly spaced
+   * bars cannot say. Ten rows: enough to cover a month of weekly weigh-ins.
+   */
+  const history = weighIns
+    .map((entry, index) => ({
+      ...entry,
+      change: index > 0 ? round1(entry.kg - weighIns[index - 1].kg) : undefined,
+    }))
+    .slice(-10)
+    .reverse()
+
+  const openSheet = (date: string, kg: number) => {
+    // Seeded when the sheet opens, not at mount: the query may not have answered
+    // yet on first render.
+    setDraft(kg || 70)
+    setEditing(date)
+  }
+
   const save = () => {
-    logWeight.mutate({ kg: round1(draft) })
-    setLogging(false)
+    if (!editing) return
+    logWeight.mutate({ kg: round1(draft), date: editing })
+    setEditing(null)
     toast.show({ title: t('progress:weight.saved'), tone: 'success' })
+  }
+
+  const remove = () => {
+    if (editing) deleteWeighIn.mutate({ date: editing })
+    setConfirmDelete(false)
+    setEditing(null)
   }
 
   return (
@@ -128,27 +189,75 @@ export function WeightPanel() {
         <Text variant="meta">{t('progress:weight.bmiNote')}</Text>
       </Card>
 
-      <Button
-        fullWidth
-        onPress={() => {
-          // Seeded from the newest reading when the sheet opens, not at mount:
-          // the query may not have answered yet on first render.
-          setDraft(current || 70)
-          setLogging(true)
-        }}
-      >
+      {history.length ? (
+        <Card title={t('progress:weight.history')} contentClassName="gap-0">
+          {history.map((entry, index) => (
+            <ListRow
+              key={entry.date}
+              title={t('progress:weight.reading', { value: entry.kg.toFixed(1) })}
+              subtitle={
+                isToday(parseISO(entry.date))
+                  ? t('progress:weight.readingToday')
+                  : format(parseISO(entry.date), 'EEEE d MMMM')
+              }
+              // Every row leads to the same sheet, on its own day — which is the
+              // only way to correct a reading typed at the wrong scale.
+              onPress={() => openSheet(entry.date, entry.kg)}
+              divider={index < history.length - 1}
+              trailing={
+                <Text
+                  variant="label"
+                  className={
+                    entry.change === undefined
+                      ? 'text-faint'
+                      : entry.change > 0
+                        ? 'text-kaya-ink'
+                        : 'text-pandan-ink'
+                  }
+                >
+                  {entry.change === undefined
+                    ? t('progress:weight.firstReading')
+                    : t('progress:weight.changeValue', {
+                        value: `${entry.change > 0 ? '+' : ''}${entry.change.toFixed(1)}`,
+                      })}
+                </Text>
+              }
+            />
+          ))}
+        </Card>
+      ) : null}
+
+      <Button fullWidth onPress={() => openSheet(today(), current)}>
         {t('progress:weight.log')}
       </Button>
 
       <Sheet
-        visible={logging}
-        onClose={() => setLogging(false)}
-        title={t('progress:weight.sheetTitle')}
+        visible={editing !== null}
+        onClose={() => setEditing(null)}
+        title={
+          editing && !isToday(parseISO(editing))
+            ? t('progress:weight.editTitle', { date: format(parseISO(editing), 'd MMMM') })
+            : t('progress:weight.sheetTitle')
+        }
         description={t('progress:weight.sheetBody')}
         footer={
-          <Button fullWidth onPress={save}>
-            {t('common:action.save')}
-          </Button>
+          <View className="gap-2">
+            <Button fullWidth onPress={save}>
+              {t('common:action.save')}
+            </Button>
+            {/* Only for a day that already has a reading. There is nothing to
+                remove from the day the button at the bottom of the panel opens. */}
+            {editing && weighIns.some((entry) => entry.date === editing) ? (
+              <Button
+                variant="ghost"
+                fullWidth
+                labelClassName="text-hibiscus-ink"
+                onPress={() => setConfirmDelete(true)}
+              >
+                {t('progress:weight.remove')}
+              </Button>
+            ) : null}
+          </View>
         }
       >
         <Slider
@@ -162,6 +271,16 @@ export function WeightPanel() {
           format={(value) => `${value.toFixed(1)} ${t('common:unit.kg')}`}
         />
       </Sheet>
+
+      <ConfirmSheet
+        visible={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={remove}
+        title={t('progress:weight.removeTitle')}
+        description={t('progress:weight.removeBody')}
+        confirmLabel={t('common:action.delete')}
+        tone="danger"
+      />
     </>
   )
 }

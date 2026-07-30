@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { IconRef } from '@/data'
-import { Button, cn, Icon, icons, SearchField, Sheet, Squish, Text } from '@/ui'
+import { cn, Icon, icons, SearchField, Sheet, Squish, Text } from '@/ui'
 
 /**
  * Which sets a dish can be illustrated from.
@@ -34,8 +34,7 @@ export type IconPickerProps = {
   onClose: () => void
   /** What is on the row now, so the current choice reads as chosen. */
   selected?: IconRef
-  /** `null` clears the override and hands the row back to the food's own icon. */
-  onSelect: (icon: IconRef | null) => void
+  onSelect: (icon: IconRef) => void
 }
 
 /**
@@ -60,7 +59,7 @@ export function IconPicker({ visible, onClose, selected, onSelect }: IconPickerP
     return CHOICES.filter((choice) => choice.label.includes(needle))
   }, [query])
 
-  const choose = (icon: IconRef | null) => {
+  const choose = (icon: IconRef) => {
     onSelect(icon)
     setQuery('')
     onClose()
@@ -77,13 +76,11 @@ export function IconPicker({ visible, onClose, selected, onSelect }: IconPickerP
       // keyboard is taller than a phone, and the overflow comes off the top where
       // the search field is.
       bodyClassName="max-h-[420px]"
-      footer={
-        selected ? (
-          <Button variant="ghost" fullWidth onPress={() => choose(null)}>
-            {t('logging:icon.clear')}
-          </Button>
-        ) : null
-      }
+      // No "use no picture" row. Nothing arrives here with a picture it did not
+      // ask for — a dish out of the catalogue has none, and a photo is guarded by
+      // its own confirmation — so the only thing that button could undo is a
+      // choice made in this same sheet a moment earlier, and closing it does that
+      // already.
     >
       <SearchField
         value={query}

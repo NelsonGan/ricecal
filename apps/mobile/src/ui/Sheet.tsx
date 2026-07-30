@@ -42,6 +42,14 @@ export type SheetProps = {
   /** Let the body scroll. Off for short, fixed content. */
   scrollable?: boolean
   /**
+   * Grows the panel to the full height of the screen, less the status bar.
+   *
+   * For a sheet whose content is a list worth scrolling — search results — where
+   * the 440pt cap shows four rows and a keyboard. It stays a sheet: same rise,
+   * same scrim above it, dismissed the same way.
+   */
+  fullHeight?: boolean
+  /**
    * The scrollable body's box. Its only real use is capping the height on a
    * sheet whose own field raises the keyboard — 440pt of content plus a
    * keyboard is taller than a phone, and the overflow comes off the top, where
@@ -107,6 +115,7 @@ export function SheetSurface({
   description,
   footer,
   scrollable = true,
+  fullHeight = false,
   bodyClassName,
   children,
   className,
@@ -138,7 +147,10 @@ export function SheetSurface({
 
   const body = scrollable ? (
     <ScrollView
-      className={cn('max-h-[440px]', bodyClassName)}
+      // Capped by default, and told to fill when the panel is full height —
+      // without the second half the list keeps its 440pt and the panel grows a
+      // field of empty surface under it.
+      className={cn(fullHeight ? 'flex-1' : 'max-h-[440px]', bodyClassName)}
       contentContainerStyle={{ gap: spacing.md }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
@@ -164,9 +176,19 @@ export function SheetSurface({
       {/* Android is left on `undefined`: `adjustResize` already shrinks the
           window, and stacking both double-counts the inset — the same
           reasoning as in `Screen`. */}
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        className={fullHeight ? 'flex-1' : undefined}
+        // The scrim stays visible above the panel. A sheet flush to the top edge
+        // reads as a screen that arrived from the wrong direction.
+        style={fullHeight ? { marginTop: insets.top } : undefined}
+      >
         <AnimatedPressable
-          className={cn('gap-md rounded-t-card bg-surface px-gutter pt-md', className)}
+          className={cn(
+            'gap-md rounded-t-card bg-surface px-gutter pt-md',
+            fullHeight && 'flex-1',
+            className,
+          )}
           style={[panel, { paddingBottom: insets.bottom + spacing.gutter }]}
           onPress={(event) => event.stopPropagation()}
           accessibilityViewIsModal

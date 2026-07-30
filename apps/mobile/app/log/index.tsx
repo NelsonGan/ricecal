@@ -14,7 +14,7 @@ import {
   useTargets,
   useUsualFoods,
 } from '@/data'
-import { InlineCamera, QuickAction } from '@/features/logging'
+import { FoodSearchPanel, InlineCamera, QuickAction } from '@/features/logging'
 import { ItemRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { mealForHour, sumMacros } from '@/lib/nutrition'
@@ -44,9 +44,18 @@ export default function LogSheet() {
   const day = useDayLog(selectedDate)
   const { data: targets } = useTargets()
   const colors = useThemeColors()
-  // The viewfinder opens inside this sheet rather than as its own screen, so
-  // the day stays visible behind it and nothing has to be dismissed twice.
-  const [camera, setCamera] = useState(false)
+  /**
+   * Which of the quick actions has its panel open below the row, if any.
+   *
+   * One value rather than a flag each, because they share the space under the
+   * row: opening the camera has to put search away, and the other way round. The
+   * viewfinder and the search field both live inside this sheet rather than in a
+   * screen of their own, so the day stays visible behind them and nothing has to
+   * be dismissed twice.
+   */
+  const [panel, setPanel] = useState<'camera' | 'search' | null>(null)
+  const toggle = (next: 'camera' | 'search') =>
+    setPanel((current) => (current === next ? null : next))
 
   // The meal comes from whichever card was tapped, or from the clock when the
   // FAB was used and there is nothing else to go on.
@@ -65,16 +74,21 @@ export default function LogSheet() {
   const yesterdayEntries = (yesterday?.entries ?? []).filter((entry) => entry.meal === meal)
 
   /**
-   * Search is a full page, so this sheet has to get out of the way first.
+   * A dish was picked out of the inline search.
    *
    * `replace`, not `push`. This route is a `transparentModal`, and a push from
-   * inside one lands on the stack that lives within that presentation — so search
-   * came up as a modal over the sheet no matter what its own options said, which
-   * is why it still looked like one after being switched to a card. Replacing the
-   * sheet's entry puts search on the stack above Today, where a full page belongs,
-   * and back from it returns to the day rather than to a sheet nobody left open.
+   * inside one lands on the stack that lives WITHIN that presentation — the dish
+   * would come up as a second modal stacked on the sheet, which is the same
+   * mistake search itself used to make. Replacing this entry puts the dish on the
+   * stack above Today, where a page belongs.
+   *
+   * The cost is that back from the dish lands on the day rather than on the
+   * results. That is the right trade for the common path — pick a dish, set the
+   * portion, done — and the alternative was the flash the user saw: the sheet
+   * dismissing before a search screen pushed in behind it.
    */
-  const openSearch = () => router.replace({ pathname: '/log/search', params: { meal } })
+  const openFood = (foodId: string) =>
+    router.replace({ pathname: '/log/food/[id]', params: { id: foodId, meal } })
 
   const add = (foodId: string, servingId: string) => {
     logFood.mutate({ foodId, servingId, meal, logDate: selectedDate, source: 'quickAdd' })
@@ -96,7 +110,10 @@ export default function LogSheet() {
   }
 
   return (
-    <SheetSurface onClose={() => goBack()} scrollable>
+    // Full height while search is open: the results are a list, and four rows
+    // above a keyboard is not one. The sheet is otherwise unchanged, so the
+    // transition is the panel growing rather than a screen arriving.
+    <SheetSurface onClose={() => goBack()} scrollable fullHeight={panel === 'search'}>
       {/* The heading is rendered here rather than through `title` so the
           remaining count can sit on the same line, right aligned, the way the
           design puts it. */}
@@ -114,8 +131,8 @@ export default function LogSheet() {
           label={t('logging:selector.snap')}
           icon={{ set: 'system', name: 'camera' }}
           tone="pandan"
-          selected={camera}
-          onPress={() => setCamera((open) => !open)}
+          selected={panel === 'camera'}
+          onPress={() => toggle('camera')}
         />
         <QuickAction
           label={t('logging:selector.say')}
@@ -126,57 +143,66 @@ export default function LogSheet() {
         <QuickAction
           label={t('logging:selector.search')}
           icon={{ set: 'ui', name: 'search' }}
-          onPress={openSearch}
+          selected={panel === 'search'}
+          onPress={() => toggle('search')}
         />
       </View>
 
-      {camera ? <InlineCamera meal={meal} onDone={() => goBack()} /> : null}
+      {panel === 'camera' ? <InlineCamera meal={meal} onDone={() => goBack()} /> : null}
+      {panel === 'search' ? <FoodSearchPanel autoFocus onPick={openFood} /> : null}
 
-      <View className="gap-3 pt-1">
-        <Text variant="overline">{t('logging:selector.usual')}</Text>
+      {/* Both of the suggestion blocks are put away while search is open: they
+          are for someone who has not decided yet, and the results under the field
+          are the answer to someone who has. */}
+      {panel === 'search' ? null : (
+        <>
+          <View className="gap-3 pt-1">
+            <Text variant="overline">{t('logging:selector.usual')}</Text>
 
-        {usual.map((food) => (
-          <ItemRow
-            key={food.id}
-            title={food.name}
-            icon={food.icon}
-            value={food.macros.kcal}
-            unit="kcal"
-            detail={`${food.servingLabel}, ${t('common:count.times', { count: food.timesLogged ?? 0 })}`}
-            trailing={
-              <IconButton
-                size="sm"
-                variant="primary"
-                accessibilityLabel={t('common:action.add')}
-                onPress={() => add(food.id, food.servings[0]?.id ?? '')}
-              >
-                {/* Tinted to the role: the plus illustration carries its own
-                    gold, which on a pandan button reads as a third colour. */}
-                <Icon set="ui" name="plus" size={18} tintColor={colors.onPandan} />
-              </IconButton>
-            }
-          />
-        ))}
-      </View>
+            {usual.map((food) => (
+              <ItemRow
+                key={food.id}
+                title={food.name}
+                icon={food.icon}
+                value={food.macros.kcal}
+                unit="kcal"
+                detail={`${food.servingLabel}, ${t('common:count.times', { count: food.timesLogged ?? 0 })}`}
+                trailing={
+                  <IconButton
+                    size="sm"
+                    variant="primary"
+                    accessibilityLabel={t('common:action.add')}
+                    onPress={() => add(food.id, food.servings[0]?.id ?? '')}
+                  >
+                    {/* Tinted to the role: the plus illustration carries its own
+                        gold, which on a pandan button reads as a third colour. */}
+                    <Icon set="ui" name="plus" size={18} tintColor={colors.onPandan} />
+                  </IconButton>
+                }
+              />
+            ))}
+          </View>
 
-      {yesterdayEntries.length ? (
-        <Tappable
-          onPress={repeatYesterday}
-          className="flex-row items-center justify-center gap-2 rounded-tile border-[3px] border-line border-dashed p-3"
-          accessibilityRole="button"
-          accessibilityLabel={`${t('logging:selector.repeatYesterday')}, ${
-            sumMacros(yesterdayEntries).kcal
-          } ${t('common:unit.kcal')}`}
-        >
-          <Icon set="ui" name="refresh" size={20} />
-          <Text variant="label" className="text-muted">
-            {t('logging:selector.repeatYesterday')}
-          </Text>
-        </Tappable>
-      ) : (
-        <Text variant="meta" className="text-center">
-          {t('logging:selector.nothingYesterday')}
-        </Text>
+          {yesterdayEntries.length ? (
+            <Tappable
+              onPress={repeatYesterday}
+              className="flex-row items-center justify-center gap-2 rounded-tile border-[3px] border-line border-dashed p-3"
+              accessibilityRole="button"
+              accessibilityLabel={`${t('logging:selector.repeatYesterday')}, ${
+                sumMacros(yesterdayEntries).kcal
+              } ${t('common:unit.kcal')}`}
+            >
+              <Icon set="ui" name="refresh" size={20} />
+              <Text variant="label" className="text-muted">
+                {t('logging:selector.repeatYesterday')}
+              </Text>
+            </Tappable>
+          ) : (
+            <Text variant="meta" className="text-center">
+              {t('logging:selector.nothingYesterday')}
+            </Text>
+          )}
+        </>
       )}
     </SheetSurface>
   )

@@ -54,4 +54,4 @@ export { useMealTimes, useSettings, useUpdateMealTime, useUpdateSettings } from 
 export { useSnapFood } from './snap'
 export { useSubscription } from './subscription'
 export * from './types'
-export { useCurrentWeight, useLogWeight, useWeighIns } from './weight'
+export { useCurrentWeight, useDeleteWeighIn, useLogWeight, useWeighIns } from './weight'
