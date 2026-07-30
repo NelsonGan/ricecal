@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { type TextInput, View } from 'react-native'
 
 import {
   appleSignInAvailable,
@@ -32,9 +32,14 @@ export default function SignInScreen() {
   const [mode, setMode] = useState<Mode>('sign-up')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string | undefined>()
+
+  // So "next" on the password keyboard lands in the confirmation field rather
+  // than dismissing the keyboard and leaving the last field unnoticed.
+  const confirmRef = useRef<TextInput>(null)
 
   // Asked of the OS rather than assumed from the platform, because a local
   // simulator build ships without the entitlement. `undefined` until the answer
@@ -69,7 +74,24 @@ export default function SignInScreen() {
       : password.length === 0
         ? t('onboarding:account.errors.passwordEmpty')
         : undefined
-  const valid = !emailError && !passwordError
+
+  /**
+   * Confirmation is a sign-UP concern only.
+   *
+   * A typo in a password you cannot read is invisible until the next time you
+   * try to sign in — by which point the only way back is a reset mail. Asking
+   * twice is the cheapest place to catch it. On sign-in there is nothing to
+   * catch: the server already knows the answer.
+   */
+  const confirmPasswordError =
+    mode !== 'sign-up'
+      ? undefined
+      : confirmPassword.length === 0
+        ? t('onboarding:account.errors.confirmPasswordEmpty')
+        : confirmPassword !== password
+          ? t('onboarding:account.errors.confirmPasswordMismatch')
+          : undefined
+  const valid = !emailError && !passwordError && !confirmPasswordError
 
   /** Every provider funnels through here so one failure path serves all three. */
   const attempt = async (work: () => Promise<void>) => {
@@ -176,9 +198,25 @@ export default function SignInScreen() {
         autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'}
         secureTextEntry
         error={submitted ? passwordError : undefined}
-        returnKeyType="go"
-        onSubmitEditing={submitEmail}
+        returnKeyType={mode === 'sign-up' ? 'next' : 'go'}
+        onSubmitEditing={mode === 'sign-up' ? () => confirmRef.current?.focus() : submitEmail}
       />
+
+      {mode === 'sign-up' ? (
+        <TextField
+          ref={confirmRef}
+          label={t('onboarding:account.confirmPassword')}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          placeholder={t('onboarding:account.confirmPasswordPlaceholder')}
+          autoCapitalize="none"
+          autoComplete="new-password"
+          secureTextEntry
+          error={submitted ? confirmPasswordError : undefined}
+          returnKeyType="go"
+          onSubmitEditing={submitEmail}
+        />
+      ) : null}
 
       <Button
         variant="ghost"
@@ -187,6 +225,10 @@ export default function SignInScreen() {
           setMode((current) => (current === 'sign-up' ? 'sign-in' : 'sign-up'))
           setSubmitted(false)
           setNotice(undefined)
+          // Not carried across the switch: coming back to sign-up with a stale
+          // value in a field the user cannot read is how a mismatch error
+          // appears against a password they typed correctly.
+          setConfirmPassword('')
         }}
       >
         {mode === 'sign-up' ? t('onboarding:welcome.signIn') : t('onboarding:account.needAccount')}
