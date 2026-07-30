@@ -89,18 +89,29 @@ select is(
 insert into public.weight_logs (user_id, measured_on, weight_kg)
 values (:'user_a', current_date, 68.0);
 
--- Mifflin-St Jeor: 10(68) + 6.25(163) - 5(28) - 161 = 1397.75
--- x 1.375 (light) = 1921.9, - 400 (lose) = 1521.9, to the nearest 10 = 1520.
+-- Mifflin-St Jeor: 10(68) + 6.25(163) - 5(28) - 161 = 1397.75 BMR,
+-- x 1.375 (light) = 1921.9 maintenance.
+--
+-- The cut comes off as a share of maintenance rather than as the flat 400 this
+-- expected until `evidence_based_targets` rewrote the function: 0.5 kg/week over
+-- 7700 kcal/kg asks for 550, a fifth of maintenance allows 384.4, and the
+-- smaller one wins. 1921.9 - 384.4 = 1537.5, to the nearest ten = 1540. The
+-- 1200 floor for a woman is nowhere near it.
 select is(
   (select kcal from public.daily_goals where user_id = :'user_a'),
-  1520,
+  1540,
   'the weigh-in completes the inputs and the budget is computed'
 );
 
+-- Protein from body weight rather than from a share of energy: 68 x 1.6 = 108.8,
+-- which is under the 35%-of-energy ceiling (134.75) that only binds on a small
+-- budget. Fat is a quarter of energy, 1540 x 0.25 / 9 = 42.8. Carbohydrate is
+-- whatever those two leave — (1540 - 436 - 387) / 4 = 179.25 — which is what
+-- makes the three add back up to the budget instead of to a fixed ratio.
 select is(
   (select array[carbs_g, protein_g, fat_g] from public.daily_goals where user_id = :'user_a'),
-  array[179, 84, 52],
-  'macros follow the 47/22/31 split of that budget'
+  array[179, 109, 43],
+  'protein comes from body weight and carbohydrate takes the remainder'
 );
 
 select is(
