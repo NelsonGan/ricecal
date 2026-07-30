@@ -62,6 +62,31 @@ jest.mock('expo-image-manipulator', () => ({
 }))
 
 /**
+ * The camera, in the three modules it takes to have one.
+ *
+ * Reached by anything that renders the picture picker, which now offers the
+ * viewfinder as one of its two halves — so this is not only the snap flow's
+ * problem any more. `expo-camera` throws at import with "Cannot find native module
+ * 'ExpoCamera'", and the other two are what the viewfinder asks about the device
+ * around it.
+ *
+ * `isDevice: false` deliberately: that is the truth here, and it is the branch the
+ * viewfinder takes on a simulator — an illustration instead of a live feed, which
+ * is the only one a test can render.
+ */
+jest.mock('expo-camera', () => ({
+  CameraView: require('react-native').View,
+  useCameraPermissions: () => [{ granted: true, canAskAgain: true }, jest.fn()],
+}))
+
+jest.mock('expo-device', () => ({ isDevice: false }))
+
+jest.mock('expo-image-picker', () => ({
+  launchCameraAsync: jest.fn(async () => ({ canceled: true })),
+  launchImageLibraryAsync: jest.fn(async () => ({ canceled: true })),
+}))
+
+/**
  * MMKV is a Nitro module, so importing it under Jest throws at the TurboModule
  * lookup — "Failed to create a new MMKV instance" is the symptom, but the module
  * is gone long before any instance is asked for.

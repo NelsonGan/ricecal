@@ -79,28 +79,33 @@ it('marks the picture already on the row as chosen', async () => {
 })
 
 /**
- * The two photo sources are icons, so their accessible names are the only thing
- * saying which is which — and they are what a test has to go by too.
+ * The two halves, and which one the sheet opens on.
+ *
+ * Search, because it is the answer for most dishes — and the pictures have to be
+ * there on the first frame rather than one tap away.
  */
-it('offers the camera and the album when the host can take a photo', async () => {
-  const onPickPhoto = jest.fn()
-  await render(
-    <IconPicker visible onClose={onClose} onSelect={onSelect} onPickPhoto={onPickPhoto} />,
-  )
+it('opens on the pictures and switches to the camera', async () => {
+  await render(<IconPicker visible onClose={onClose} onSelect={onSelect} onPickPhoto={jest.fn()} />)
 
-  await user.press(screen.getByLabelText('Take a photo'))
-  expect(onPickPhoto).toHaveBeenCalledWith('camera')
+  expect(screen.getByLabelText('Search')).toBeSelected()
+  expect(screen.getByLabelText('nasi lemak')).toBeOnTheScreen()
 
-  await user.press(screen.getByLabelText('Choose from photos'))
-  expect(onPickPhoto).toHaveBeenCalledWith('library')
+  await user.press(screen.getByLabelText('Camera'))
+
+  // The grid and its field are gone, and the shutter is there instead.
+  expect(screen.queryByLabelText('nasi lemak')).toBeNull()
+  expect(screen.queryByLabelText('Search pictures')).toBeNull()
+  expect(screen.getByLabelText('Take a photo')).toBeOnTheScreen()
 })
 
-/** A host with nowhere to put a photo gets the grid alone. */
-it('offers neither when it cannot', async () => {
+/** A host with nowhere to put a photo gets the grid alone, and no tabs at all. */
+it('offers no camera when the host cannot take one', async () => {
   await open()
 
-  expect(screen.queryByLabelText('Take a photo')).toBeNull()
-  expect(screen.queryByLabelText('Choose from photos')).toBeNull()
+  expect(screen.queryByLabelText('Camera')).toBeNull()
+  expect(screen.queryByLabelText('Search')).toBeNull()
+  // The pictures are still there — they are the sheet's own job.
+  expect(screen.getByLabelText('nasi lemak')).toBeOnTheScreen()
 })
 
 it('says so when the search matches nothing', async () => {

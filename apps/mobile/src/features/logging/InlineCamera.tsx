@@ -1,18 +1,25 @@
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as Device from 'expo-device'
 import * as ImagePicker from 'expo-image-picker'
-import { useCallback, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { type Meal, useSelectedDate, useSnapFood } from '@/data'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, Icon, IconButton, Squish, Text } from '@/ui'
 
 export type InlineCameraProps = {
-  meal: Meal
-  /** Called as soon as the shot is taken, to dismiss whatever hosts this. */
-  onDone: () => void
+  /**
+   * The shot, as a local `file://` uri — and `undefined` from a device that has no
+   * camera, which is every simulator. The host decides what that means: the quick
+   * selector logs a snap with no photo, and the picture picker has nothing to
+   * attach.
+   *
+   * The host owns this because the two want opposite things from the same shutter.
+   * One is starting a new entry from a photo; the other is putting a picture on an
+   * entry that already exists.
+   */
+  onCapture: (photoUri: string | undefined) => void
 }
 
 /**
@@ -24,11 +31,12 @@ export type InlineCameraProps = {
  * two screens. Inline, the day stays visible behind the sheet the whole time,
  * and the shutter is where the finger already is.
  *
- * The shutter does not wait for recognition. It writes the row and closes:
- * the waiting happens on the row itself, where the user can watch it or ignore
- * it. See `useSnapFood`.
+ * The library button presents its picker while this sheet is still up, on purpose.
+ * A native picker cannot be presented while a modal is being DISMISSED — iOS
+ * cancels it and the promise never settles — so the sheet closes after a photo
+ * comes back, never before.
  */
-export function InlineCamera({ meal, onDone }: InlineCameraProps) {
+export function InlineCamera({ onCapture }: InlineCameraProps) {
   const { t } = useTranslation(['logging', 'common'])
   const colors = useThemeColors()
   const [permission, requestPermission] = useCameraPermissions()
@@ -37,23 +45,11 @@ export function InlineCamera({ meal, onDone }: InlineCameraProps) {
   const [capturing, setCapturing] = useState(false)
   const [facing, setFacing] = useState<'back' | 'front'>('back')
   const camera = useRef<CameraView>(null)
-  const snapFood = useSnapFood()
-  // The day being viewed, not today: a plate logged while paging back through
-  // the diary belongs to the day on screen.
-  const { selectedDate } = useSelectedDate()
 
   // A simulator has no camera, so `CameraView` renders black there. Showing the
   // dish illustration instead keeps the sheet reviewable without pretending a
   // feed exists.
   const hasCamera = Device.isDevice
-
-  const snap = useCallback(
-    (photoUri: string | undefined) => {
-      snapFood({ meal, photoUri, logDate: selectedDate })
-      onDone()
-    },
-    [snapFood, meal, onDone, selectedDate],
-  )
 
   const capture = async () => {
     if (capturing) return
@@ -64,7 +60,7 @@ export function InlineCamera({ meal, onDone }: InlineCameraProps) {
       ? await camera.current?.takePictureAsync({ quality: 0.6 }).catch(() => undefined)
       : undefined
     setCapturing(false)
-    snap(photo?.uri)
+    onCapture(photo?.uri)
   }
 
   const pickFromLibrary = async () => {
@@ -74,7 +70,7 @@ export function InlineCamera({ meal, onDone }: InlineCameraProps) {
       quality: 0.6,
     })
     if (result.canceled) return
-    snap(result.assets[0]?.uri)
+    onCapture(result.assets[0]?.uri)
   }
 
   if (permission && !permission.granted) {

@@ -156,12 +156,12 @@ export const logging = {
   icon: {
     title: 'Pick a picture',
     /**
-     * The two photo sources, offered above the grid as the other way to answer
-     * this. Both are icons, so these are what a screen reader gets rather than
-     * captions anybody sees.
+     * The two halves of the sheet, as a pair of tiles at the top — the same shape
+     * the quick selector uses. There is no "or choose a picture" heading between
+     * them any more: with the two visibly exclusive, nothing has to say so.
      */
-    takePhoto: 'Take a photo',
-    orChoose: 'OR CHOOSE A PICTURE',
+    searchTab: 'Search',
+    cameraTab: 'Camera',
     searchLabel: 'Search pictures',
     searchPlaceholder: 'nasi lemak, teh tarik, fish',
     noMatch: 'Nothing matches “{{query}}”.',
