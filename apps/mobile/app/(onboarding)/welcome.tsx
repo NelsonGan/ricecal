@@ -3,16 +3,24 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { useSession } from '@/data'
 import { Button, Icon, type IconProps, Screen, Text } from '@/ui'
 
 const MASCOT = require('../../assets/brand/mascot.png')
 
-/** 01 WELCOME */
+/**
+ * 01 WELCOME
+ *
+ * The first screen anybody sees, and the fork between the two kinds of visitor.
+ *
+ * "Get started" goes straight into the questions — no account, nothing to type,
+ * no reason given for why an email would be needed before a single question has
+ * been answered. The account comes at the end, once the app has shown what it
+ * works out for them. Anyone who already has one takes the second button and
+ * skips the seven screens entirely.
+ */
 export default function Welcome() {
   const { t } = useTranslation('onboarding')
   const router = useRouter()
-  const { session } = useSession()
 
   const perks: { key: string; icon: IconProps; title: string; subtitle: string }[] = [
     {
@@ -35,24 +43,18 @@ export default function Welcome() {
     },
   ]
 
-  /**
-   * The questions cannot start without an account.
-   *
-   * Every step from here writes to `profiles`, and the hooks that do it throw
-   * outright when there is no session rather than failing quietly. This screen
-   * is reached from sign-in's "What is RiceCal?", so no session is the ordinary
-   * case and not a corner one — sending that user to the first question crashes
-   * the screen. A signed-in user who has not finished onboarding is routed
-   * straight to the questions by `app/index.tsx` and only arrives here on
-   * purpose, so both directions stay reachable.
-   */
-  const start = () =>
-    session
-      ? router.push('/goal')
-      : router.replace({ pathname: '/sign-in', params: { mode: 'sign-up' } })
+  /** Straight into the questions. No session needed: the answers are held locally. */
+  const start = () => router.push('/goal')
 
-  /** Both CTAs land on sign-in; the label decides which side of it opens. */
-  const signIn = () => router.replace({ pathname: '/sign-in', params: { mode: 'sign-in' } })
+  /**
+   * Skips the questions.
+   *
+   * `push`, so the edge swipe comes back here — someone who taps this by mistake
+   * has not lost the way in. The mode says which side of that screen to open on,
+   * because "I already have an account" under a "Save your progress" heading
+   * reads as a tap that was ignored.
+   */
+  const signIn = () => router.push({ pathname: '/sign-in', params: { mode: 'sign-in' } })
 
   return (
     <Screen

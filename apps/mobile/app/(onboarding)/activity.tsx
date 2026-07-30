@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-import { type ActivityLevel, fromDbActivity, useProfile, useUpdateProfile } from '@/data'
-import { ChoiceCard, OnboardingStep } from '@/features/onboarding'
+import type { ActivityLevel } from '@/data'
+import { ChoiceCard, OnboardingStep, useOnboardingDraft } from '@/features/onboarding'
 import { Text } from '@/ui'
 
 const OPTIONS: ActivityLevel[] = ['sedentary', 'light', 'onFeet', 'veryActive']
@@ -10,14 +10,9 @@ const OPTIONS: ActivityLevel[] = ['sedentary', 'light', 'onFeet', 'veryActive']
 export default function ActivityStep() {
   const { t } = useTranslation(['onboarding', 'common'])
   const router = useRouter()
-  const { data: profile } = useProfile()
-  const updateProfile = useUpdateProfile()
-  // The column is snake_case; the copy keys and this screen are not. Through
-  // the shared mapper rather than a ternary per spelling, so a fifth activity
-  // level is one entry in `types.ts` instead of a silent fall-through here.
-  const activity: ActivityLevel | undefined = profile?.activity_level
-    ? fromDbActivity(profile.activity_level)
-    : undefined
+  // Held in the client's own spelling. The snake_case the column wants is a
+  // detail of the flush, which is the only thing that talks to the database.
+  const { draft, patch } = useOnboardingDraft()
 
   return (
     <OnboardingStep
@@ -29,7 +24,7 @@ export default function ActivityStep() {
       primaryLabel={t('common:action.continue')}
       // The activity multiplier is the other half of the budget calculation;
       // `compute_targets()` reads it, so it cannot be skipped.
-      primaryDisabled={!activity}
+      primaryDisabled={!draft.activity}
       onPrimary={() => router.push('/food-style')}
     >
       {OPTIONS.map((option) => (
@@ -38,8 +33,8 @@ export default function ActivityStep() {
           accent="hibiscus"
           title={t(`activity.${option}.title`)}
           description={t(`activity.${option}.subtitle`)}
-          selected={activity === option}
-          onPress={() => updateProfile.mutate({ activity: option })}
+          selected={draft.activity === option}
+          onPress={() => patch({ activity: option })}
         />
       ))}
 

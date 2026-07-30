@@ -23,3 +23,33 @@ jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(() => Promise.resolve()),
   ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
 }))
+
+/**
+ * MMKV is a Nitro module, so importing it under Jest throws at the TurboModule
+ * lookup — "Failed to create a new MMKV instance" is the symptom, but the module
+ * is gone long before any instance is asked for.
+ *
+ * A Map is the whole of what the app uses it for: the onboarding draft, and the
+ * query cache persister. Per `id`, so two stores cannot read each other's keys,
+ * and cleared between suites by `jest.resetModules` doing nothing to it — tests
+ * that care about a fresh store clear it themselves.
+ */
+jest.mock('react-native-mmkv', () => {
+  const stores = new Map()
+
+  return {
+    createMMKV: ({ id } = { id: 'default' }) => {
+      if (!stores.has(id)) stores.set(id, new Map())
+      const store = stores.get(id)
+
+      return {
+        set: (key, value) => store.set(key, String(value)),
+        getString: (key) => store.get(key),
+        remove: (key) => store.delete(key),
+        clearAll: () => store.clear(),
+        getAllKeys: () => [...store.keys()],
+        contains: (key) => store.has(key),
+      }
+    },
+  }
+})

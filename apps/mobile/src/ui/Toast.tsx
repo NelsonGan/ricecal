@@ -9,7 +9,7 @@ import {
   useState,
 } from 'react'
 import { Pressable, View } from 'react-native'
-import Animated, { SlideInDown, SlideOutDown } from 'react-native-reanimated'
+import Animated, { SlideInDown, SlideInUp, SlideOutDown, SlideOutUp } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
@@ -18,6 +18,17 @@ import { Icon, type IconProps } from './Icon'
 import { Text } from './Text'
 
 export type ToastTone = 'neutral' | 'success' | 'warning' | 'error'
+
+/**
+ * Which edge a toast comes from.
+ *
+ * Errors default to the top, everything else to the bottom, and the reason is
+ * the keyboard. An error is nearly always the answer to a form submission, so it
+ * arrives with the keyboard up — and the bottom of the screen is precisely where
+ * the keyboard is. A confirmation or an undo comes from tapping a row, where the
+ * bottom is both free and closer to the thumb.
+ */
+export type ToastPlacement = 'top' | 'bottom'
 
 export type ToastOptions = {
   title: string
@@ -28,6 +39,8 @@ export type ToastOptions = {
   icon?: IconProps
   /** Milliseconds on screen. Defaults to 6s, or 8s when there is an action. */
   duration?: number
+  /** Overrides the tone's default edge. Rarely needed. */
+  placement?: ToastPlacement
 }
 
 type Toast = ToastOptions & { id: number }
@@ -107,6 +120,8 @@ export function ToastProvider({ children, offset = 0 }: ToastProviderProps) {
 
   const value = useMemo(() => ({ show, dismiss }), [show, dismiss])
   const palette = tones[toast?.tone ?? 'neutral']
+  const placement = toast?.placement ?? (toast?.tone === 'error' ? 'top' : 'bottom')
+  const fromTop = placement === 'top'
 
   return (
     <ToastContext.Provider value={value}>
@@ -114,16 +129,22 @@ export function ToastProvider({ children, offset = 0 }: ToastProviderProps) {
 
       {toast ? (
         <View
-          className="absolute inset-x-0 bottom-0 px-gutter"
-          style={{ paddingBottom: insets.bottom + spacing.md + offset }}
+          className={cn('absolute inset-x-0 px-gutter', fromTop ? 'top-0' : 'bottom-0')}
+          style={
+            fromTop
+              ? // No `offset` at the top. It exists to clear a tab bar or a footer
+                // CTA, both of which are at the bottom by definition.
+                { paddingTop: insets.top + spacing.md }
+              : { paddingBottom: insets.bottom + spacing.md + offset }
+          }
           pointerEvents="box-none"
         >
           <Animated.View
             // Keyed by id so replacing a toast replays the entrance rather than
             // silently swapping the text of one already on screen.
             key={toast.id}
-            entering={SlideInDown.duration(280)}
-            exiting={SlideOutDown.duration(200)}
+            entering={fromTop ? SlideInUp.duration(280) : SlideInDown.duration(280)}
+            exiting={fromTop ? SlideOutUp.duration(200) : SlideOutDown.duration(200)}
             className={cn('flex-row items-center gap-md rounded-md p-lg', palette.fill)}
             accessibilityRole="alert"
             accessibilityLiveRegion="polite"

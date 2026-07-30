@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type { TablesUpdate } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
-import { unwrapMaybe, unwrapOne } from './client'
+import { today, unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
 import { useSession, useUserId } from './session'
 import type { ActivityLevel, Goal, Profile, Sex } from './types'
@@ -113,27 +113,65 @@ export function useUpdateProfile() {
   })
 }
 
+/** Everything onboarding collected, in the client's own spelling. */
+export type OnboardingAnswers = ProfilePatch & {
+  /** Becomes the first weigh-in. There is no `weight_kg` on `profiles`. */
+  weightKg: number
+}
+
 /**
- * Marks onboarding done.
+ * Writes the whole of onboarding, and marks it done.
  *
- * A timestamp rather than a boolean, and the router reads it: "when" answers
- * questions "whether" cannot, and it is the last write of the flow so a user
- * who quits halfway comes back to where they stopped.
+ * The questions come before the account, so none of them could be saved as they
+ * were answered — this is the one write the flow makes, and it runs the moment a
+ * session exists.
+ *
+ * Ordered, not parallel, and the order is the point:
+ *
+ * 1. **The profile.** `compute_targets()` reads sex, birth date, height, activity
+ *    and goal, so all of them have to be in place before anything asks it to run.
+ * 2. **The weigh-in.** This is what asks. The trigger recomputes `daily_goals`
+ *    from the newest reading, so a budget exists from here on.
+ * 3. **`onboarded_at`.** Last, because it is what the router reads. Setting it
+ *    before the other two means a failure strands the user in the app with no
+ *    budget and no way back to the questions that would produce one.
  */
-export function useCompleteOnboarding() {
+export function useFinishOnboarding() {
   const userId = useUserId()
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async () =>
+    mutationFn: async ({ weightKg, ...patch }: OnboardingAnswers) => {
       unwrapOne(
+        await supabase.from('profiles').update(toRow(patch)).eq('id', userId).select('id').single(),
+      )
+
+      unwrapOne(
+        await supabase
+          .from('weight_logs')
+          .upsert(
+            { user_id: userId, measured_on: today(), weight_kg: weightKg },
+            { onConflict: 'user_id,measured_on' },
+          )
+          .select('measured_on')
+          .single(),
+      )
+
+      return unwrapOne(
         await supabase
           .from('profiles')
           .update({ onboarded_at: new Date().toISOString() })
           .eq('id', userId)
           .select('*')
           .single(),
-      ),
-    onSuccess: (profile: Profile) => queryClient.setQueryData(keys.profile(userId), profile),
+      )
+    },
+    onSuccess: (profile: Profile) => {
+      queryClient.setQueryData(keys.profile(userId), profile)
+      // Both were computed server-side during the writes above, so neither
+      // cache has ever seen them.
+      queryClient.invalidateQueries({ queryKey: keys.goals(userId) })
+      queryClient.invalidateQueries({ queryKey: keys.weighIns(userId) })
+    },
   })
 }

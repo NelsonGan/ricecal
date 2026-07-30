@@ -58,7 +58,6 @@ export const onboarding = {
       lessSugar: 'Less sugar',
       nasiCampur: 'Nasi campur',
     },
-    mealTimes: 'USUAL MEAL TIMES',
   },
 
   source: {
@@ -80,16 +79,22 @@ export const onboarding = {
     fat: 'FAT',
     footnote: 'Goal weight {{weight}} kg by {{date}}. We will nudge, never nag.',
     footnoteMaintain: 'Holding steady at {{weight}} kg. We will nudge, never nag.',
-    noBudgetTitle: 'We could not work out a budget yet',
-    noBudgetBody:
-      'Your answers are saved. Set a target from Me and the ring has something to fill.',
     logFirst: 'Log my first meal',
     explore: 'Explore first',
   },
 
+  saving: {
+    title: 'Saving your answers…',
+    offlineTitle: 'Waiting for a connection',
+    offlineBody:
+      'Your answers are safe on this phone. We will save them the moment you are online.',
+    failedTitle: 'We could not save your answers',
+    failedBody: 'Nothing is lost. Check your connection and try again.',
+  },
+
   account: {
     title: 'Save your progress',
-    subtitle: 'An account keeps your log safe if you change phone.',
+    subtitle: 'Your answers are ready. An account keeps them safe if you change phone.',
     signInTitle: 'Welcome back',
     signInSubtitle: 'Sign in and your diary picks up where it left off.',
     apple: 'Continue with Apple',
@@ -97,24 +102,12 @@ export const onboarding = {
     or: 'OR',
     email: 'EMAIL',
     emailPlaceholder: 'you@email.com',
-    password: 'PASSWORD',
-    passwordPlaceholder: 'At least 8 characters',
-    confirmPassword: 'CONFIRM PASSWORD',
-    confirmPasswordPlaceholder: 'Type it again',
-    terms: 'I agree to the terms and privacy policy.',
-    submit: 'Create account',
-    signInCta: 'Sign in',
-    needAccount: 'I need an account',
-    aboutApp: 'What is RiceCal?',
-    /** Shown when the project requires a confirmation click before signing in. */
-    checkEmail: 'Check {{email}} for a confirmation link, then sign in.',
+    sendLink: 'Email me a link',
+    /** There is no password to type, so the screen has to say what will happen. */
+    linkExplainer: 'No password to remember. We will send a link that signs you in.',
+    linkSent: 'Link sent to {{email}}. Open it on this phone to carry on.',
     errors: {
       email: 'That does not look like an email address.',
-      password: 'Use at least 8 characters.',
-      passwordEmpty: 'Enter your password.',
-      confirmPasswordEmpty: 'Type your password again.',
-      confirmPasswordMismatch: 'Those two passwords do not match.',
-      terms: 'Please accept the terms to carry on.',
     },
   },
 

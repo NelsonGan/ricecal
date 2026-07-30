@@ -1,54 +1,54 @@
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
+import { useLocalSearchParams } from 'expo-router'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { type TextInput, View } from 'react-native'
+import { View } from 'react-native'
 
 import {
   appleSignInAvailable,
   googleSignInAvailable,
   SignInCancelled,
+  sendLoginLink,
   signInWithApple,
-  signInWithEmail,
   signInWithGoogle,
-  signUpWithEmail,
 } from '@/data/auth'
 import { ProviderButton } from '@/features/auth'
 import { Alert, Button, Divider, Icon, Screen, Text, TextField, useToast } from '@/ui'
 
+/** Only what the screen says differs; the email button does the same thing either way. */
 type Mode = 'sign-in' | 'sign-up'
 
 /**
  * The gate. Nothing behind it renders without a session.
  *
- * One screen for both directions rather than two: the fields are identical,
- * the difference is one call, and a user who mistypes an address on a "create
- * account" screen should not have to find the other one to try again.
+ * Three ways in and not one password among them. Apple and Google hand back an
+ * identity token; email gets a link in the post. There is no separate sign-up
+ * call to make either — `sendLoginLink` creates the account when the address is
+ * new — so this screen has one action per provider rather than two, and `mode`
+ * only decides the heading.
+ *
+ * Nothing here explains the app any more. Both ways in pass through welcome or
+ * the seven questions first, so by the time anyone reads this screen the pitch
+ * has been made.
  */
 export default function SignInScreen() {
   const { t } = useTranslation(['onboarding', 'common'])
-  const router = useRouter()
   const toast = useToast()
 
   /**
    * Which side to open on, when the caller knows.
    *
-   * The welcome screen has a button for each direction, and "I already have an
-   * account" landing on a Create account form makes the tap look ignored. Sign
-   * up stays the default: a user arriving from the router has no account yet
-   * more often than not.
+   * Welcome has a button for each direction, and "I already have an account"
+   * under a "Save your progress" heading makes the tap look ignored. Sign-in is
+   * the default, because a bare visit to this route is someone coming back — a
+   * new user reaches it at the end of onboarding, which says so explicitly.
    */
   const params = useLocalSearchParams<{ mode?: Mode }>()
-  const [mode, setMode] = useState<Mode>(params.mode === 'sign-in' ? 'sign-in' : 'sign-up')
+  const mode: Mode = params.mode === 'sign-up' ? 'sign-up' : 'sign-in'
+
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [notice, setNotice] = useState<string | undefined>()
-
-  // So "next" on the password keyboard lands in the confirmation field rather
-  // than dismissing the keyboard and leaving the last field unnoticed.
-  const confirmRef = useRef<TextInput>(null)
+  const [sentTo, setSentTo] = useState<string | undefined>()
 
   // Asked of the OS rather than assumed from the platform, because a local
   // simulator build ships without the entitlement. `undefined` until the answer
@@ -68,48 +68,13 @@ export default function SignInScreen() {
     ? undefined
     : t('onboarding:account.errors.email')
 
-  /**
-   * The length rule belongs to sign-UP only.
-   *
-   * On sign-in the password is whatever the account already has, and refusing
-   * to submit a 6-character one tells a user with a valid old password that
-   * their own password is malformed — while the actual server-side answer
-   * ("wrong password", or "that account does not exist") never gets a chance
-   * to be shown.
-   */
-  const passwordError =
-    mode === 'sign-up' && password.length < 8
-      ? t('onboarding:account.errors.password')
-      : password.length === 0
-        ? t('onboarding:account.errors.passwordEmpty')
-        : undefined
-
-  /**
-   * Confirmation is a sign-UP concern only.
-   *
-   * A typo in a password you cannot read is invisible until the next time you
-   * try to sign in — by which point the only way back is a reset mail. Asking
-   * twice is the cheapest place to catch it. On sign-in there is nothing to
-   * catch: the server already knows the answer.
-   */
-  const confirmPasswordError =
-    mode !== 'sign-up'
-      ? undefined
-      : confirmPassword.length === 0
-        ? t('onboarding:account.errors.confirmPasswordEmpty')
-        : confirmPassword !== password
-          ? t('onboarding:account.errors.confirmPasswordMismatch')
-          : undefined
-  const valid = !emailError && !passwordError && !confirmPasswordError
-
   /** Every provider funnels through here so one failure path serves all three. */
   const attempt = async (work: () => Promise<void>) => {
     setBusy(true)
-    setNotice(undefined)
     try {
       await work()
-      // No navigation on success: the session changes, and the router's guard
-      // moves the user. Pushing here as well would race it.
+      // No navigation on success: the session changes, and the guard in
+      // `_layout` moves the user. Pushing here as well would race it.
     } catch (error) {
       if (error instanceof SignInCancelled) return
       toast.show({
@@ -121,39 +86,31 @@ export default function SignInScreen() {
     }
   }
 
-  const submitEmail = () => {
+  const mailLink = () => {
     setSubmitted(true)
-    if (!valid) return
+    if (emailError) return
 
     attempt(async () => {
-      if (mode === 'sign-in') {
-        await signInWithEmail(email, password)
-        return
-      }
-      const result = await signUpWithEmail(email, password)
-      // A project with confirmations on hands back no session. Saying so is
-      // the whole difference between "nothing happened" and "go and click the
-      // link we just sent you".
-      if (result.status === 'check-your-email') {
-        setNotice(t('onboarding:account.checkEmail', { email: result.email }))
-      }
+      await sendLoginLink(email)
+      // The session arrives through the link, not through this call, so this
+      // screen has to say what happens next or it looks like nothing did.
+      setSentTo(email.trim())
     })
   }
 
   return (
     <Screen
       footer={
-        <Button fullWidth onPress={submitEmail} disabled={busy}>
-          {mode === 'sign-up' ? t('onboarding:account.submit') : t('onboarding:account.signInCta')}
+        <Button fullWidth onPress={mailLink} disabled={busy}>
+          {t('onboarding:account.sendLink')}
         </Button>
       }
     >
       <View className="items-center gap-3 pt-6 pb-2">
         <Icon set="food" name="rice-bowl" size={96} />
         {/* The heading follows the mode. It used to read "Save your progress"
-            in both, so tapping "I already have an account" changed one button
-            label and nothing else — the screen looked like it had ignored the
-            tap. */}
+            in both, so arriving from "I already have an account" showed a
+            screen that had apparently ignored the tap. */}
         <Text variant="screenTitle" className="text-center">
           {mode === 'sign-up' ? t('onboarding:account.title') : t('onboarding:account.signInTitle')}
         </Text>
@@ -164,7 +121,9 @@ export default function SignInScreen() {
         </Text>
       </View>
 
-      {notice ? <Alert tone="success" title={notice} /> : null}
+      {sentTo ? (
+        <Alert tone="success" title={t('onboarding:account.linkSent', { email: sentTo })} />
+      ) : null}
 
       {appleReady ? (
         <ProviderButton provider="apple" onPress={() => attempt(signInWithApple)} disabled={busy} />
@@ -189,63 +148,22 @@ export default function SignInScreen() {
       <TextField
         label={t('onboarding:account.email')}
         value={email}
-        onChangeText={setEmail}
+        onChangeText={(next) => {
+          setEmail(next)
+          // A new address means the last link is not the one being talked about
+          // any more.
+          setSentTo(undefined)
+        }}
         placeholder={t('onboarding:account.emailPlaceholder')}
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
         error={submitted ? emailError : undefined}
-        returnKeyType="next"
+        returnKeyType="go"
+        onSubmitEditing={mailLink}
       />
 
-      <TextField
-        label={t('onboarding:account.password')}
-        value={password}
-        onChangeText={setPassword}
-        placeholder={t('onboarding:account.passwordPlaceholder')}
-        autoCapitalize="none"
-        autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'}
-        secureTextEntry
-        error={submitted ? passwordError : undefined}
-        returnKeyType={mode === 'sign-up' ? 'next' : 'go'}
-        onSubmitEditing={mode === 'sign-up' ? () => confirmRef.current?.focus() : submitEmail}
-      />
-
-      {mode === 'sign-up' ? (
-        <TextField
-          ref={confirmRef}
-          label={t('onboarding:account.confirmPassword')}
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          placeholder={t('onboarding:account.confirmPasswordPlaceholder')}
-          autoCapitalize="none"
-          autoComplete="new-password"
-          secureTextEntry
-          error={submitted ? confirmPasswordError : undefined}
-          returnKeyType="go"
-          onSubmitEditing={submitEmail}
-        />
-      ) : null}
-
-      <Button
-        variant="ghost"
-        fullWidth
-        onPress={() => {
-          setMode((current) => (current === 'sign-up' ? 'sign-in' : 'sign-up'))
-          setSubmitted(false)
-          setNotice(undefined)
-          // Not carried across the switch: coming back to sign-up with a stale
-          // value in a field the user cannot read is how a mismatch error
-          // appears against a password they typed correctly.
-          setConfirmPassword('')
-        }}
-      >
-        {mode === 'sign-up' ? t('onboarding:welcome.signIn') : t('onboarding:account.needAccount')}
-      </Button>
-
-      <Button variant="ghost" fullWidth onPress={() => router.push('/welcome')}>
-        {t('onboarding:account.aboutApp')}
-      </Button>
+      <Text variant="meta">{t('onboarding:account.linkExplainer')}</Text>
     </Screen>
   )
 }
