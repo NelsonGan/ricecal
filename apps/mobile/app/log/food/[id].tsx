@@ -23,6 +23,7 @@ import {
 import { IconPicker } from '@/features/logging'
 import { MacroBars } from '@/features/shared'
 import { useBack, useDismissTo } from '@/lib/navigation'
+import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
   Button,
@@ -32,6 +33,7 @@ import {
   cn,
   Divider,
   Icon,
+  IconButton,
   Screen,
   SegmentedControl,
   Stepper,
@@ -63,6 +65,7 @@ export default function FoodDetail() {
    * presented and then replaces, so either shape ends up on Today.
    */
   const finish = useDismissTo('/today')
+  const colors = useThemeColors()
   const toast = useToast()
   const logFood = useLogFood()
   const updateEntry = useUpdateEntry()
@@ -312,7 +315,38 @@ export default function FoodDetail() {
           from a row on the day, so there is always a screen behind it. `useBack`
           falls back to Today for the one route that arrives with no history —
           a deep link straight to a dish. */}
-      <AppBar title={food.name} onBack={() => goBack()} backLabel={t('common:a11y.back')} />
+      <AppBar
+        title={food.name}
+        onBack={() => goBack()}
+        backLabel={t('common:a11y.back')}
+        /* Delete lives up here rather than in a card at the foot of the screen.
+           It was the last thing on a page that scrolls, so removing a row meant
+           scrolling past every control for editing it first — and it read as one
+           more editing step rather than as the way out.
+
+           Icon only, and the label is the copy the row used to carry, so a screen
+           reader still says "Delete this entry" rather than naming a picture. The
+           press only opens the confirmation, which is what makes a one-tap
+           destructive control in the chrome safe.
+
+           Absent while composing a new entry: there is nothing logged to delete
+           yet, and the slot falls back to the spacer that keeps the title from
+           drifting right. */
+        action={
+          existing ? (
+            <IconButton
+              size="sm"
+              accessibilityLabel={t('logging:detail.deleteEntry')}
+              onPress={() => setConfirmDelete(true)}
+            >
+              {/* Tinted rather than left in the illustration's own palette, the
+                  way the back chevron is — except to hibiscus rather than to
+                  muted, because this one is not neutral chrome. */}
+              <Icon set="ui" name="delete" size={20} tintColor={colors.hibiscusInk} />
+            </IconButton>
+          ) : undefined
+        }
+      />
 
       {/* Always live, including before the entry exists. Most of the catalogue
           has no drawing, so a dish being added from the list arrives blank — and
@@ -516,21 +550,6 @@ export default function FoodDetail() {
           accessibilityLabel={t('logging:detail.mealLabel')}
         />
       </Card>
-
-      {existing ? (
-        <Card>
-          <Button
-            variant="ghost"
-            fullWidth
-            contentClassName="justify-start"
-            leftIcon={<Icon set="ui" name="delete" size={22} />}
-            labelClassName="text-hibiscus-ink"
-            onPress={() => setConfirmDelete(true)}
-          >
-            {t('logging:detail.deleteEntry')}
-          </Button>
-        </Card>
-      ) : null}
 
       <ConfirmSheet
         visible={confirmDelete}
