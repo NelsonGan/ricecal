@@ -1,3 +1,22 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+
+# Babel resolves a preset or plugin named in a config by walking node_modules up
+# from the directory that named it, and the plugins babel-preset-expo pulls in
+# are named from inside the preset. Under pnpm's isolated layout none of that is
+# reachable from apps/mobile: the packages live only in the store, and what made
+# it work locally was Babel's fallback of resolving from @babel/core's own
+# location, which lands in the private .pnpm/node_modules directory. That is a
+# layout detail, not a contract, and on the CI runner it is not there — `eas
+# update` failed to bundle with "Cannot find module 'babel-preset-expo'", then
+# with "Cannot find module '@babel/plugin-transform-react-jsx'" once the preset
+# itself was declared.
+#
+# Hoisting them into the workspace root's node_modules puts them in the one
+# chain every consumer shares, so resolution stops depending on where Babel
+# happens to ask from. Scoped to Babel rather than `node-linker: hoisted`: the
+# rest of the tree resolves correctly through pnpm's normal links, and a
+# repo-wide flat layout would hide real missing dependencies.
+publicHoistPattern:
+  - '*babel*'
