@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect } from 'react'
+import { type ReactNode, useCallback, useEffect } from 'react'
 import {
   KeyboardAvoidingView,
   Modal,
@@ -8,8 +8,10 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native'
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -29,12 +31,28 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 
 /** How long the panel takes to rise. */
 const RISE_MS = 260
+/** And to fall, once a drag has decided it is leaving. Quicker than it arrived. */
+const FALL_MS = 180
+/**
+ * How far down the handle has to be dragged for the release to dismiss.
+ *
+ * Also cleared by a flick: a fast downward release under this distance still
+ * closes, because a short fast drag and a long slow one mean the same thing.
+ */
+const DISMISS_DISTANCE = 96
+const DISMISS_VELOCITY = 900
 
 export type SheetSurfaceProps = Omit<SheetProps, 'visible'>
 
 export type SheetProps = {
   visible: boolean
   onClose: () => void
+  /**
+   * What a screen reader calls the handle, which is a button as well as a drag
+   * target. Defaulted rather than required, the same way `Stepper` defaults its
+   * two — a sheet that forgot it would otherwise announce nothing at all.
+   */
+  closeLabel?: string
   title?: string
   description?: string
   /** Pinned below the scrollable body — the action row. */
@@ -90,7 +108,14 @@ export function Sheet({ visible, ...rest }: SheetProps) {
      * panel travels, which is what the design shows.
      */
     <Modal visible={visible} transparent animationType="none" onRequestClose={rest.onClose}>
-      <SheetSurface {...rest} />
+      {/* A `Modal` is its own window, and on Android gesture-handler's root view
+          does not reach into one — the app's root is outside it, so the handle's
+          pan would simply never fire. A root of its own inside the window is what
+          the library documents for exactly this case. Sheets that are ROUTES do
+          not need it: they are in the app tree, under the root in `_layout`. */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SheetSurface {...rest} />
+      </GestureHandlerRootView>
     </Modal>
   )
 }
@@ -111,6 +136,7 @@ export function Sheet({ visible, ...rest }: SheetProps) {
  */
 export function SheetSurface({
   onClose,
+  closeLabel = 'Close',
   title,
   description,
   footer,
@@ -144,6 +170,43 @@ export function SheetSurface({
   }, [rise])
 
   const panel = useAnimatedStyle(() => ({ transform: [{ translateY: rise.value }] }))
+
+  /**
+   * Drag the handle down to dismiss.
+   *
+   * On the handle rather than on the whole panel, deliberately. Every sheet in
+   * this app has something scrollable or draggable in it — a results list, an icon
+   * grid, a slider — and a pan on the panel competes with all of them: it either
+   * steals the first few points of a scroll or has to be taught to yield, and the
+   * teaching is per-child. The handle is the one part of a sheet whose only job is
+   * to be grabbed, and the gesture is scoped to it.
+   *
+   * It moves the same shared value the entrance animation uses, so a drag picks up
+   * exactly where the rise left off and the two cannot fight.
+   */
+  const dismiss = useCallback(() => {
+    rise.value = withTiming(height, { duration: FALL_MS, easing: Easing.in(Easing.cubic) }, () => {
+      // After the panel is gone, not before: `onClose` unmounts this, and calling
+      // it first would take the surface off screen with no animation at all.
+      runOnJS(onClose)()
+    })
+  }, [rise, height, onClose])
+
+  const dragHandle = Gesture.Pan()
+    .onUpdate((event) => {
+      // Downward only. Dragging up would lift the panel off the bottom of the
+      // screen and show the scrim under it.
+      rise.value = Math.max(0, event.translationY)
+    })
+    .onEnd((event) => {
+      if (event.translationY > DISMISS_DISTANCE || event.velocityY > DISMISS_VELOCITY) {
+        runOnJS(dismiss)()
+        return
+      }
+      // Back where it was. Same curve as the entrance, so a released drag reads
+      // as the sheet settling rather than snapping.
+      rise.value = withTiming(0, { duration: RISE_MS, easing: Easing.out(Easing.cubic) })
+    })
 
   const body = scrollable ? (
     <ScrollView
@@ -213,7 +276,24 @@ export function SheetSurface({
           accessibilityViewIsModal
           accessible={false}
         >
-          <View className="h-1.5 w-[54px] self-center rounded-full bg-line" />
+          {/* The grab area is the row, not the 6pt line: a drag target has to be
+              catchable without aiming, and the padding is what makes it 30pt tall
+              without moving anything below it — `-mt-md` takes back the panel's
+              own top padding, which the row then supplies itself.
+
+              Announced as a button too, so the handle is not a gesture with no
+              keyboard or screen-reader equivalent. Tapping it closes, which is
+              what dragging it does. */}
+          <GestureDetector gesture={dragHandle}>
+            <Pressable
+              className="-mt-md items-center py-md"
+              onPress={dismiss}
+              accessibilityRole="button"
+              accessibilityLabel={closeLabel}
+            >
+              <View className="h-1.5 w-[54px] rounded-full bg-line" />
+            </Pressable>
+          </GestureDetector>
 
           {title ? <Text variant="subtitle">{title}</Text> : null}
           {description ? <Text variant="body">{description}</Text> : null}
