@@ -20,14 +20,20 @@ export const SPAN_KEY = {
  * The labels under a chart's columns.
  *
  * Each range names its columns differently and none of the three is derivable
- * from the others: a day has a weekday initial, a month has a month initial, and
- * a seven-day block counted back from today has no name at all — so it gets a
- * number, which is the one that needs translating and therefore the one passed
+ * from the others: a day gets its weekday, a month gets its number, and a
+ * seven-day block counted back from today has no name at all — so it gets an
+ * index, which is the one that needs translating and therefore the one passed
  * in rather than formatted here.
  *
- * Initials rather than abbreviations because twelve columns across a phone leave
- * about 24pt each. "Aug" fits and "Sep" does not, which is worse than "A" and
- * "S" — an axis where some labels are truncated reads as broken.
+ * Both of the first two used to be single initials, and both were wrong for the
+ * same reason: an initial is not a name. Seven days read "M T W T F S S", where
+ * the three pairs are only told apart by position — so the axis had to be
+ * counted rather than read. Twelve months were worse than ambiguous: "A" is
+ * April and August, "M" is March and May, "J" is January, June and July.
+ *
+ * Three letters fit a seventh of the width comfortably. They do not fit a
+ * twelfth, so months become their number instead — 1 to 12, which nothing else
+ * on the axis can be confused with.
  */
 export function bucketLabels(
   buckets: readonly TrendBucket[],
@@ -35,8 +41,8 @@ export function bucketLabels(
   weekLabel: (index: number) => string,
 ): string[] {
   return buckets.map((bucket, index) => {
-    if (range === '7d') return format(parseISO(bucket.end), 'EEEEE')
-    if (range === '1y') return format(parseISO(bucket.start), 'LLLLL')
+    if (range === '7d') return format(parseISO(bucket.end), 'EEE')
+    if (range === '1y') return format(parseISO(bucket.start), 'M')
     return weekLabel(index + 1)
   })
 }
