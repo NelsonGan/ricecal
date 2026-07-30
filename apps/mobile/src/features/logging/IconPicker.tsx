@@ -32,16 +32,22 @@ const CHOICES: Choice[] = SETS.flatMap((set) =>
   })),
 )
 
+/** Tiles to a row, always — see the note on the grid. */
+const COLUMNS = 5
+
 /**
  * How many tiles are built on the frame the sheet opens.
  *
  * There are 269 of them, and mounting the lot is what made this sheet stick before
  * it moved: a native `Modal` renders nothing at all until it is visible, so every
  * one of those tiles is built on the single frame that also has to start the panel's
- * rise. Thirty is six rows, and the body is capped at 420 points — under six rows'
- * worth — so nothing on screen is missing while the rest arrive a moment later.
+ * rise.
+ *
+ * Eight rows, which is what fills a tall phone now the sheet is full height rather
+ * than capped at 420 points. It has to cover the visible area or the last row or two
+ * pop in a moment after the sheet arrives, which is the thing this was avoiding.
  */
-const FIRST_PAINT = 30
+const FIRST_PAINT = COLUMNS * 8
 
 export type IconPickerProps = {
   visible: boolean
@@ -97,6 +103,21 @@ export function IconPicker({ visible, onClose, selected, onSelect, onPickPhoto }
 
   const shown = settled ? matches : matches.slice(0, FIRST_PAINT)
 
+  /**
+   * The cells that finish the last row.
+   *
+   * They draw nothing and are not reachable — the point is purely that the line has
+   * five things on it, so `justify-between` gives it the same columns as every line
+   * above. Cheaper than sizing the grid ourselves: five exact fifths overflow a line
+   * by a rounding error on some screen widths, and the fifth tile wraps.
+   *
+   * Keyed by position, which is all a spacer has.
+   */
+  const fillers = Array.from(
+    { length: (COLUMNS - (shown.length % COLUMNS)) % COLUMNS },
+    (_, index) => `gap-${index}`,
+  )
+
   const choose = (icon: IconRef) => {
     onSelect(icon)
     setQuery('')
@@ -113,10 +134,21 @@ export function IconPicker({ visible, onClose, selected, onSelect, onPickPhoto }
       // beats any of these" — a caveat about scope nobody asked about, and advice
       // against the thing the sheet is for. The camera is right there instead.
       scrollable
-      // Capped because this sheet raises the keyboard: the full grid plus a
-      // keyboard is taller than a phone, and the overflow comes off the top where
-      // the search field is.
-      bodyClassName="max-h-[420px]"
+      // Full height while the grid is showing, which is how the add menu handles
+      // its own search and is the only arrangement that survives the keyboard.
+      //
+      // A capped sheet sits on the bottom edge and gets out of the keyboard's way
+      // by being padded from underneath — so the panel lifted, and the strip it
+      // left behind showed the scrim through the curve of the keyboard's top
+      // corners. Two dark notches under a white sheet.
+      //
+      // Full height instead: the panel reaches the bottom of the screen and stays
+      // there, and the grid insets its own scroll content so the search field
+      // stays above the keys. Nothing moves, so there is no gap to show through.
+      // The camera tab keeps the capped panel — it raises no keyboard and has one
+      // viewfinder in it, which a full-height sheet would strand in a field of
+      // empty surface.
+      fullHeight={tab === 'search'}
       // No "use no picture" row. Nothing arrives here with a picture it did not
       // ask for — a dish out of the catalogue has none, and a photo is guarded by
       // its own confirmation — so the only thing that button could undo is a
@@ -170,6 +202,12 @@ export function IconPicker({ visible, onClose, selected, onSelect, onPickPhoto }
             // Five to a row, spanning the full width. Fixed-width tiles with a fixed
             // gap left a ragged 57pt of nothing down the right-hand side of a phone,
             // which read as the grid having been cut off.
+            //
+            // `justify-between` spreads a line across that full width, which is what
+            // sizes the gaps — and what made a short last row wrong: four tiles were
+            // spread over the same span as five, so the last row lined up with none
+            // of the columns above it. The blank cells after the map finish the row,
+            // and the tiles go back in their columns.
             <View className="flex-row flex-wrap justify-between gap-y-2.5">
               {shown.map((choice) => {
                 const isSelected =
@@ -201,6 +239,10 @@ export function IconPicker({ visible, onClose, selected, onSelect, onPickPhoto }
                   </Tappable>
                 )
               })}
+
+              {fillers.map((id) => (
+                <View key={id} className="w-[18.5%]" />
+              ))}
             </View>
           )}
         </>

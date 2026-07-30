@@ -16,11 +16,12 @@ import { IconPicker } from '../IconPicker'
  * picture it did not ask for, so the only thing that button could undo was a
  * choice made in this sheet a moment earlier.
  *
- * One thing to know before adding a case here: the grid arrives in two parts. Thirty
- * tiles on the frame the sheet opens and the remaining two hundred and thirty-nine
+ * One thing to know before adding a case here: the grid arrives in two parts. Forty
+ * tiles on the frame the sheet opens and the remaining two hundred and twenty-nine
  * once the thread is free, because building all of them at once is what made this
- * sheet stick before it moved. A tile past the first thirty needs `findBy`, not
- * `getBy` — the last test pins that staging, and it is why.
+ * sheet stick before it moved. A tile past the first forty needs `findBy`, not
+ * `getBy` — the note at the foot of this file says why there is no test for the
+ * split itself.
  */
 
 function Providers({ children }: { children: ReactNode }) {
@@ -121,7 +122,7 @@ it('says so when the search matches nothing', async () => {
   expect(screen.getByText(/Nothing matches/)).toBeOnTheScreen()
 })
 
-// There is no test here for "thirty tiles first". Whether the staged mount has
+// There is no test here for "forty tiles first". Whether the staged mount has
 // already flushed by the time `render` resolves depends on what else is in the
 // queue, so asserting the count either way is a coin toss. `useAfterInteractions`
 // is tested directly instead, which is where the behaviour lives.
