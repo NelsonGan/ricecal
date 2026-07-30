@@ -121,8 +121,13 @@ export const logging = {
     nutrientsUnknown: 'No figures recorded for this dish yet. Its calories and macros are.',
     fixTitle: 'Fix it by typing',
     fixPlaceholder: 'no sambal, and it was half a plate',
-    fixSend: 'Apply correction',
-    fixApplied: 'Updated from your note',
+    /** The apply button and its outcomes, on a scanned entry only. */
+    fixApply: 'Fix it',
+    fixApplied: 'Updated from your correction',
+    fixNotApplied: 'Could not apply that — try rewording it',
+    /** The scanned plate's ingredient breakdown. */
+    plateTitle: 'ON THIS PLATE',
+    plateTotal: 'Plate total',
     /** Saving an edit to an entry already in the diary. */
     updated: 'Entry updated',
     quickFix: {

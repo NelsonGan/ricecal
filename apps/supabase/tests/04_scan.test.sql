@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(15);
+select plan(19);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 
@@ -143,6 +143,55 @@ select is(
   (select count(*)::integer from public.user_food_stats where user_id = :'user_a'),
   0,
   'archetype entries stay out of user_food_stats'
+);
+
+
+-- One plate, many ingredients --------------------------------------------------
+--
+-- A decomposed scan is ONE entry whose macros are the catalogue sum of its
+-- parts; the parts hang off it in food_log_ingredients and ride the parent's
+-- delete. The labelled archetype entry above serves as the parent.
+
+insert into public.food_log_ingredients (food_log_id, food_id, serving_id, quantity, display_label, position)
+select e.id, f.id, s.id, 1, 'crispy chicken', 0
+from public.food_logs e,
+     public.foods f
+join public.food_servings s on s.food_id = f.id and s.is_default
+where e.user_id = :'user_a'
+  and f.id = 'a0000000-0000-4000-8000-000000000000';
+
+select is(
+  (select count(*)::integer from public.food_log_ingredient_details i
+   join public.food_logs e on e.id = i.food_log_id
+   where e.user_id = :'user_a'),
+  1,
+  'an ingredient row appears in the details view'
+);
+
+select is(
+  (select name from public.food_log_ingredient_details i
+   join public.food_logs e on e.id = i.food_log_id
+   where e.user_id = :'user_a'),
+  'crispy chicken',
+  'the ingredient shows its display_label over the food name'
+);
+
+select is(
+  (select i.kcal from public.food_log_ingredient_details i
+   join public.food_logs e on e.id = i.food_log_id
+   where e.user_id = :'user_a'),
+  (select kcal from public.foods where id = 'a0000000-0000-4000-8000-000000000000'),
+  'the ingredient view prices the part from its catalogue row'
+);
+
+delete from public.food_logs where user_id = :'user_a';
+
+-- Scoped to the fixture user: the database under test may hold other data.
+select is(
+  (select count(*)::integer from public.food_log_ingredients i
+   where not exists (select 1 from public.food_logs e where e.id = i.food_log_id)),
+  0,
+  'deleting the entry cascades to its ingredients'
 );
 
 

@@ -34,6 +34,11 @@ create table public.food_scan_items (
   -- entry points at, and `catalogue_kcal` is that row's figure at the time —
   -- the estimate row is expected to be corrected later, and the comparison
   -- only means anything against the number that was actually accepted.
+  -- Set when this row records a fix-by-typing pass rather than a fresh scan:
+  -- the user's instruction, verbatim. The eval question it answers is "what do
+  -- people have to correct", which is the scan accuracy backlog sorted by pain.
+  refine_instruction text check (char_length(refine_instruction) <= 500),
+
   resolved_tier    smallint check (resolved_tier between 1 and 5),
   resolved_food_id uuid references public.foods (id) on delete set null,
   catalogue_kcal   integer,

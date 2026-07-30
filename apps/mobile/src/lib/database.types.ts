@@ -109,6 +109,75 @@ export type Database = {
         }
         Relationships: []
       }
+      food_log_ingredients: {
+        Row: {
+          created_at: string
+          display_label: string | null
+          food_id: string
+          food_log_id: string
+          id: string
+          position: number
+          quantity: number
+          serving_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_label?: string | null
+          food_id: string
+          food_log_id: string
+          id?: string
+          position?: number
+          quantity?: number
+          serving_id: string
+        }
+        Update: {
+          created_at?: string
+          display_label?: string | null
+          food_id?: string
+          food_log_id?: string
+          id?: string
+          position?: number
+          quantity?: number
+          serving_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'food_log_ingredients_food_fkey'
+            columns: ['food_id']
+            isOneToOne: false
+            referencedRelation: 'food_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'food_log_ingredients_food_fkey'
+            columns: ['food_id']
+            isOneToOne: false
+            referencedRelation: 'foods'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'food_log_ingredients_food_log_id_fkey'
+            columns: ['food_log_id']
+            isOneToOne: false
+            referencedRelation: 'food_log_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'food_log_ingredients_food_log_id_fkey'
+            columns: ['food_log_id']
+            isOneToOne: false
+            referencedRelation: 'food_logs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'food_log_ingredients_food_serving_fkey'
+            columns: ['food_id', 'serving_id']
+            isOneToOne: false
+            referencedRelation: 'food_servings'
+            referencedColumns: ['food_id', 'id']
+          },
+        ]
+      }
       food_logs: {
         Row: {
           created_at: string
@@ -126,6 +195,7 @@ export type Database = {
           scan_id: string | null
           serving_id: string
           source: Database['public']['Enums']['entry_source']
+          suggested_edits: Json | null
           updated_at: string
           user_id: string
         }
@@ -145,6 +215,7 @@ export type Database = {
           scan_id?: string | null
           serving_id: string
           source?: Database['public']['Enums']['entry_source']
+          suggested_edits?: Json | null
           updated_at?: string
           user_id: string
         }
@@ -164,6 +235,7 @@ export type Database = {
           scan_id?: string | null
           serving_id?: string
           source?: Database['public']['Enums']['entry_source']
+          suggested_edits?: Json | null
           updated_at?: string
           user_id?: string
         }
@@ -204,6 +276,7 @@ export type Database = {
           llm_kcal_high: number | null
           llm_kcal_low: number | null
           quantity: number | null
+          refine_instruction: string | null
           resolved_food_id: string | null
           resolved_tier: number | null
           scan_id: string
@@ -224,6 +297,7 @@ export type Database = {
           llm_kcal_high?: number | null
           llm_kcal_low?: number | null
           quantity?: number | null
+          refine_instruction?: string | null
           resolved_food_id?: string | null
           resolved_tier?: number | null
           scan_id: string
@@ -244,6 +318,7 @@ export type Database = {
           llm_kcal_high?: number | null
           llm_kcal_low?: number | null
           quantity?: number | null
+          refine_instruction?: string | null
           resolved_food_id?: string | null
           resolved_tier?: number | null
           scan_id?: string
@@ -712,6 +787,7 @@ export type Database = {
           serving_label: string | null
           source: Database['public']['Enums']['entry_source'] | null
           sugar_g: number | null
+          suggested_edits: Json | null
           user_id: string | null
         }
         Relationships: [
@@ -735,6 +811,51 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'food_servings'
             referencedColumns: ['food_id', 'id']
+          },
+        ]
+      }
+      food_log_ingredient_details: {
+        Row: {
+          carbs_g: number | null
+          fat_g: number | null
+          food_id: string | null
+          food_log_id: string | null
+          id: string | null
+          kcal: number | null
+          name: string | null
+          position: number | null
+          protein_g: number | null
+          quantity: number | null
+          serving_label: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'food_log_ingredients_food_fkey'
+            columns: ['food_id']
+            isOneToOne: false
+            referencedRelation: 'food_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'food_log_ingredients_food_fkey'
+            columns: ['food_id']
+            isOneToOne: false
+            referencedRelation: 'foods'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'food_log_ingredients_food_log_id_fkey'
+            columns: ['food_log_id']
+            isOneToOne: false
+            referencedRelation: 'food_log_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'food_log_ingredients_food_log_id_fkey'
+            columns: ['food_log_id']
+            isOneToOne: false
+            referencedRelation: 'food_logs'
+            referencedColumns: ['id']
           },
         ]
       }

@@ -94,6 +94,7 @@ select
 
   e.food_id,
   e.scan_id,
+  e.suggested_edits,
   -- The model's specific name wins over a shared estimate row's generic one.
   -- A hand-logged entry has no display_label, so this is the food's name for
   -- every row that predates scanning.
@@ -133,6 +134,35 @@ join public.foods f         on f.id = e.food_id
 join public.food_servings s on s.id = e.serving_id;
 
 grant select on public.food_log_details to authenticated;
+
+
+-- ---------------------------------------------------------------------------
+-- A scanned plate's ingredients, with the numbers already worked out.
+--
+-- Same arithmetic as food_log_details — the ingredient's catalogue macros x
+-- its portion factor x its quantity — so the breakdown a screen renders under
+-- an entry uses the same rounding as everything else. The parent entry's own
+-- macros stay authoritative; these rows explain them, and the scan function
+-- only writes a breakdown whose sum lands within band of the parent.
+-- ---------------------------------------------------------------------------
+create view public.food_log_ingredient_details with (security_invoker = on) as
+select
+  i.id,
+  i.food_log_id,
+  i.food_id,
+  i.position,
+  coalesce(i.display_label, f.name) as name,
+  i.quantity,
+  s.label      as serving_label,
+  round(f.kcal      * s.factor * i.quantity)::integer    as kcal,
+  round(f.carbs_g   * s.factor * i.quantity, 1)::numeric as carbs_g,
+  round(f.protein_g * s.factor * i.quantity, 1)::numeric as protein_g,
+  round(f.fat_g     * s.factor * i.quantity, 1)::numeric as fat_g
+from public.food_log_ingredients i
+join public.foods f         on f.id = i.food_id
+join public.food_servings s on s.id = i.serving_id;
+
+grant select on public.food_log_ingredient_details to authenticated, service_role;
 
 
 -- ---------------------------------------------------------------------------

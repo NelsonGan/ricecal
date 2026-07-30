@@ -11,9 +11,11 @@ import {
   removeMealPhoto,
   uploadMealPhoto,
   useDayLog,
+  useEntryIngredients,
   useFood,
   useLogFood,
   useMealPhotoUrl,
+  useRefineEntry,
   useRemoveEntry,
   useSelectedDate,
   useTargets,
@@ -43,6 +45,12 @@ import {
   useToast,
 } from '@/ui'
 
+/**
+ * Chips over the note field for a hand-logged entry. A SCANNED entry gets its
+ * chips from the vision model instead — food-specific, carried on the row —
+ * and its box applies the correction through scan-refine rather than saving a
+ * note.
+ */
 const QUICK_FIXES = ['halfPortion', 'noSambal', 'addEgg', 'extraRice'] as const
 
 /**
@@ -86,6 +94,12 @@ export default function FoodDetail() {
   const existing = params.entryId
     ? day.entries.find((entry) => entry.id === params.entryId)
     : undefined
+
+  // The plate's parts, for a scanned entry that decomposed. Everything else
+  // gets an empty list and no section.
+  const { data: ingredients = [] } = useEntryIngredients(existing?.scanId ? existing.id : undefined)
+  const refineEntry = useRefineEntry()
+  const [instruction, setInstruction] = useState('')
 
   const [quantity, setQuantity] = useState(existing?.quantity ?? 1)
   const [servingId, setServingId] = useState(existing?.servingId ?? '')
@@ -502,12 +516,104 @@ export default function FoodDetail() {
         ) : null}
       </Card>
 
+      {/* What the scan decided the plate was made of. Read-only on purpose:
+          the parent entry's macros are the catalogue sum of these rows, so a
+          hand-edited part would break the total silently — corrections go
+          through the fix box below, which recomputes both together. */}
+      {ingredients.length ? (
+        <Card title={t('logging:detail.plateTitle')}>
+          {ingredients.map((ingredient) => (
+            <View key={ingredient.id} className="flex-row items-baseline justify-between gap-3">
+              <Text variant="body" className="min-w-0 flex-1" numberOfLines={1}>
+                {ingredient.name}
+              </Text>
+              <View className="flex-row items-baseline gap-1">
+                <Text variant="numeric">{ingredient.kcal.toLocaleString()}</Text>
+                <Text variant="caption">{t('common:unit.kcal')}</Text>
+              </View>
+            </View>
+          ))}
+          <Divider />
+          <View className="flex-row items-baseline justify-between gap-3">
+            <Text variant="bodyStrong">{t('logging:detail.plateTotal')}</Text>
+            <View className="flex-row items-baseline gap-1">
+              <Text variant="numeric">
+                {ingredients.reduce((sum, item) => sum + item.kcal, 0).toLocaleString()}
+              </Text>
+              <Text variant="caption">{t('common:unit.kcal')}</Text>
+            </View>
+          </View>
+        </Card>
+      ) : null}
+
       {/* Correcting a dish by describing it belongs to an entry that already
           exists: "no sambal" is a fix to something logged, and on the way IN the
-          serving chips and the stepper above say the same thing more precisely.
-          It also credits a note on save, which would be a lie about a row being
-          created for the first time. */}
-      {existing ? (
+          serving chips and the stepper above say the same thing more precisely. */}
+      {existing?.scanId ? (
+        // A scanned entry: the box APPLIES the correction. The chips come from
+        // the vision model — what people most often vary about this exact dish
+        // — and the text goes to scan-refine, which rescales the quantity or
+        // re-resolves the food through the same cascade the scan used.
+        <Card>
+          <View className="flex-row items-center gap-2">
+            <Icon set="system" name="sparkle" size={20} />
+            <Text variant="caption" className="text-pandan-ink">
+              {t('logging:detail.fixTitle')}
+            </Text>
+          </View>
+
+          <TextField
+            value={instruction}
+            onChangeText={setInstruction}
+            placeholder={t('logging:detail.fixPlaceholder')}
+            returnKeyType="done"
+            editable={!refineEntry.isPending}
+          />
+
+          {existing.suggestedEdits?.length ? (
+            <View className="flex-row flex-wrap gap-2">
+              {existing.suggestedEdits.map((edit) => (
+                <Chip
+                  key={edit}
+                  selected={instruction === edit}
+                  onPress={() => setInstruction(edit)}
+                >
+                  {edit}
+                </Chip>
+              ))}
+            </View>
+          ) : null}
+
+          <Button
+            fullWidth
+            loading={refineEntry.isPending}
+            disabled={!instruction.trim() || refineEntry.isPending}
+            onPress={() => {
+              refineEntry.mutate(
+                { entryId: existing.id, instruction: instruction.trim(), logDate: selectedDate },
+                {
+                  onSuccess: (result) => {
+                    if (result.applied) {
+                      // The food behind this screen may have changed identity;
+                      // the day is the only view guaranteed fresh.
+                      toast.show({ title: t('logging:detail.fixApplied') })
+                      finish()
+                    } else {
+                      toast.show({ title: t('logging:detail.fixNotApplied'), tone: 'error' })
+                    }
+                  },
+                  onError: () =>
+                    toast.show({ title: t('logging:detail.fixNotApplied'), tone: 'error' }),
+                },
+              )
+            }}
+          >
+            {t('logging:detail.fixApply')}
+          </Button>
+        </Card>
+      ) : existing ? (
+        // A hand-logged entry keeps the note box: the text is saved on the row,
+        // and the chips are generic fillers.
         <Card>
           <View className="flex-row items-center gap-2">
             <Icon set="system" name="sparkle" size={20} />

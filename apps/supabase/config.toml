@@ -457,6 +457,14 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/scan-meal/deno.json"
 entrypoint = "./functions/scan-meal/index.ts"
+
+# Fix-by-typing: free-text corrections to a scanned entry. Same auth pattern
+# and the same cascade code (functions/_shared) as scan-meal.
+[functions.scan-refine]
+enabled = true
+verify_jwt = false
+import_map = "./functions/scan-refine/deno.json"
+entrypoint = "./functions/scan-refine/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/healthcheck/*.html" ]
