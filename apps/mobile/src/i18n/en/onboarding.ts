@@ -32,8 +32,6 @@ export const onboarding = {
     ageValue_one: '{{count}} year',
     ageValue_other: '{{count}} years',
     targetWeight: 'TARGET WEIGHT',
-    decrease: 'Lower',
-    increase: 'Raise',
   },
 
   activity: {
@@ -82,6 +80,9 @@ export const onboarding = {
     fat: 'FAT',
     footnote: 'Goal weight {{weight}} kg by {{date}}. We will nudge, never nag.',
     footnoteMaintain: 'Holding steady at {{weight}} kg. We will nudge, never nag.',
+    noBudgetTitle: 'We could not work out a budget yet',
+    noBudgetBody:
+      'Your answers are saved. Set a target from Me and the ring has something to fill.',
     logFirst: 'Log my first meal',
     explore: 'Explore first',
   },
@@ -138,10 +139,8 @@ export const onboarding = {
   },
 
   viewOnly: {
-    banner: 'Preview mode, sample data',
-    sampleDay: 'SAMPLE DAY',
-    explainer: 'This is example data so you can see how a full day looks.',
-    sampleMeal: 'Breakfast, sample',
+    banner: 'Preview mode, logging locked',
+    explainer: 'This is your day. Start your free trial to add to it.',
     lockedTitle: 'Logging is locked',
     lockedBody: 'Start your free trial to log your own meals.',
     unlock: 'Start free trial',

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { Button, type ButtonVariant, Screen, StepProgress, type StepProgressTone, Text } from '@/ui'
@@ -57,6 +58,8 @@ export function OnboardingStep({
   secondaryLabel,
   onSecondary,
 }: OnboardingStepProps) {
+  const { t } = useTranslation('common')
+
   return (
     <Screen
       footer={
@@ -77,7 +80,14 @@ export function OnboardingStep({
         </View>
       }
     >
-      <StepProgress total={total} current={step} tone={accent} />
+      {/* Announced rather than shown: the design leaves the marks to speak for
+          themselves, and a screen reader has nothing to go on but a percentage. */}
+      <StepProgress
+        total={total}
+        current={step}
+        tone={accent}
+        accessibilityLabel={t('a11y.step', { current: step, total })}
+      />
 
       <View className="gap-2 pt-4">
         <Text variant="title">{title}</Text>

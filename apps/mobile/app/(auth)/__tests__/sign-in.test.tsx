@@ -17,8 +17,13 @@ import SignInScreen from '../sign-in'
  * the same question twice.
  */
 
+// `mock`-prefixed so the factory may close over it: everything else is out of
+// scope by the time jest hoists the call.
+const mockParams: { mode?: string } = {}
+
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
+  useLocalSearchParams: () => mockParams,
 }))
 
 // Both providers are reported unavailable so the screen renders the email form
@@ -59,6 +64,7 @@ const fill = async (label: string, value: string) => {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  delete mockParams.mode
   // After `clearAllMocks` every implementation is gone, and a mock that returns
   // `undefined` where the screen awaits a promise fails somewhere unrelated.
   auth.appleSignInAvailable.mockResolvedValue(false)
@@ -132,5 +138,25 @@ describe('sign-in', () => {
     await user.press(screen.getByText('Sign in'))
 
     expect(auth.signInWithEmail).toHaveBeenCalledWith('aisyah@example.com', 'nasilemak123')
+  })
+})
+
+/**
+ * The welcome screen has a button for each direction, so it says which one it
+ * meant. Landing "I already have an account" on a Create account form makes the
+ * tap look like it was ignored.
+ */
+describe('the mode parameter', () => {
+  it('opens on the sign-in side when asked for it', async () => {
+    mockParams.mode = 'sign-in'
+    await render(<SignInScreen />)
+
+    expect(screen.getByText('Sign in')).toBeOnTheScreen()
+    expect(screen.queryByLabelText('CONFIRM PASSWORD')).toBeNull()
+  })
+
+  it('still defaults to sign-up', async () => {
+    await render(<SignInScreen />)
+    expect(screen.getByText('Create account')).toBeOnTheScreen()
   })
 })

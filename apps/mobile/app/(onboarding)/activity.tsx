@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-import { type ActivityLevel, useProfile, useUpdateProfile } from '@/data'
+import { type ActivityLevel, fromDbActivity, useProfile, useUpdateProfile } from '@/data'
 import { ChoiceCard, OnboardingStep } from '@/features/onboarding'
 import { Text } from '@/ui'
 
@@ -12,13 +12,12 @@ export default function ActivityStep() {
   const router = useRouter()
   const { data: profile } = useProfile()
   const updateProfile = useUpdateProfile()
-  // The column is snake_case; the copy keys and this screen are not.
-  const activity: ActivityLevel | undefined =
-    profile?.activity_level === 'on_feet'
-      ? 'onFeet'
-      : profile?.activity_level === 'very_active'
-        ? 'veryActive'
-        : profile?.activity_level
+  // The column is snake_case; the copy keys and this screen are not. Through
+  // the shared mapper rather than a ternary per spelling, so a fifth activity
+  // level is one entry in `types.ts` instead of a silent fall-through here.
+  const activity: ActivityLevel | undefined = profile?.activity_level
+    ? fromDbActivity(profile.activity_level)
+    : undefined
 
   return (
     <OnboardingStep
