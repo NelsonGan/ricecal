@@ -17,7 +17,6 @@
  */
 export { dateKey, today } from './client'
 export {
-  entriesForMeal,
   useDay,
   useDayLog,
   useNutritionRange,

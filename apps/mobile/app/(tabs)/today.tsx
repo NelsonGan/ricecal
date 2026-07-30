@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import {
-  MEALS,
   useDayLog,
   usePendingSnaps,
   useRemoveEntry,
@@ -11,7 +10,7 @@ import {
   useStreak,
   useTargets,
 } from '@/data'
-import { MacroBars, MealCard, ScreenTitle } from '@/features/shared'
+import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
 import { sumMacros } from '@/lib/nutrition'
 import {
   Badge,
@@ -108,12 +107,6 @@ export default function TodayScreen() {
     })
   }, [justAdded, toast, t, removeEntry])
 
-  // Snack only earns a card once there is something in it. Four empty cards on
-  // a fresh day is a chore list, not a summary.
-  const meals = MEALS.filter(
-    (meal) => meal !== 'snack' || day.entries.some((entry) => entry.meal === 'snack'),
-  )
-
   return (
     <Screen>
       <ScreenTitle
@@ -193,27 +186,25 @@ export default function TodayScreen() {
         />
       ) : null}
 
-      {meals.map((meal) => (
-        <MealCard
-          key={meal}
-          meal={meal}
-          day={day}
-          onAdd={() => router.push({ pathname: '/log', params: { meal } })}
-          onPressEntry={(entry) =>
-            router.push({
-              pathname: '/log/food/[id]',
-              params: { id: entry.foodId, entryId: entry.id },
-            })
-          }
-          // A snap that could not be read is dropped as it is handed over:
-          // leaving it behind would double the meal once search adds the real
-          // dish, and the row has nothing in it worth keeping.
-          onFixEntry={(entry) => {
-            pending.remove(entry.id)
-            router.push({ pathname: '/log/search', params: { meal: entry.meal } })
-          }}
-        />
-      ))}
+      {/* One list, in the order the day happened. It was a card per meal, and
+          three of the four were usually empty — each still taking a heading and an
+          add button, so two entries filled a screen with furniture. */}
+      <EntryList
+        day={day}
+        onPressEntry={(entry) =>
+          router.push({
+            pathname: '/log/food/[id]',
+            params: { id: entry.foodId, entryId: entry.id },
+          })
+        }
+        // A snap that could not be read is dropped as it is handed over: leaving
+        // it behind would double the meal once search adds the real dish, and the
+        // row has nothing in it worth keeping.
+        onFixEntry={(entry) => {
+          pending.remove(entry.id)
+          router.push({ pathname: '/log/search', params: { meal: entry.meal } })
+        }}
+      />
     </Screen>
   )
 }

@@ -7,7 +7,7 @@ import { keys } from './keys'
 import { toEntry } from './mappers'
 import { pendingAsEntry, usePendingSnaps } from './pending-snaps'
 import { useUserId } from './session'
-import type { DailyNutritionRow, DayLog, Entry, FoodLogRow } from './types'
+import type { DailyNutritionRow, DayLog, FoodLogRow } from './types'
 
 /**
  * One day: what was eaten, and how much water.
@@ -148,11 +148,6 @@ export function useNutritionRange(from: string, to: string) {
           .order('log_date'),
       ) as DailyNutritionRow[],
   })
-}
-
-/** Entries of one meal, oldest first. The order the day happened in. */
-export function entriesForMeal(day: DayLog, meal: string): Entry[] {
-  return day.entries.filter((entry) => entry.meal === meal)
 }
 
 /**
