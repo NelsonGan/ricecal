@@ -21,7 +21,6 @@ export const common = {
 
   nav: {
     today: 'Today',
-    diary: 'Diary',
     trends: 'Trends',
     me: 'Me',
     /** The raised centre button. */

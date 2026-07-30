@@ -165,22 +165,10 @@ export const logging = {
     noMatch: 'Nothing matches “{{query}}”.',
   },
 
-  diary: {
-    title: 'Diary',
-    eaten: 'EATEN',
-    left: 'LEFT',
-    over: 'OVER',
-    water: 'WATER · {{done}} OF {{total}} GLASSES',
-    glassOf: 'Glass {{ordinal}} of {{total}}',
-    addGlass: 'Add a glass of water',
-    removeGlass: 'Remove a glass of water',
-    emptyDay: 'Nothing logged on this day.',
-    /** The floating button back to today, shown only on some other day. */
-    today: 'Today',
-    /** The month and year steppers on the calendar levels. */
-    previousMonth: 'Previous month',
-    nextMonth: 'Next month',
-    previousYear: 'Previous year',
-    nextYear: 'Next year',
-  },
+  // No `diary` block. The diary screen and its calendar are gone, and this file's
+  // rule is that a screen can be deleted without leaving orphans behind in here.
+  //
+  // Water went with it. `WaterTracker` is still in the design system and
+  // `useSetWater` still writes `daily_logs`, but nothing renders either — whatever
+  // brings water back gets to name its own copy.
 } as const
