@@ -16,7 +16,15 @@
  *    `supabase` directly.
  */
 export { dateKey, today } from './client'
-export { entriesForMeal, useDay, useDayLog, useNutritionRange, useSetWater, useStreak } from './day'
+export {
+  entriesForMeal,
+  useDay,
+  useDayLog,
+  useNutritionRange,
+  usePrefetchDays,
+  useSetWater,
+  useStreak,
+} from './day'
 export {
   type EntryPatch,
   type LogInput,
