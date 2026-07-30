@@ -21,7 +21,6 @@ export {
   useDay,
   useDayLog,
   useNutritionRange,
-  usePrefetchDays,
   useSetWater,
   useStreak,
 } from './day'

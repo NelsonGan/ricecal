@@ -25,11 +25,16 @@ export type DateStripProps = {
 }
 
 /**
- * A week of days across the top of a diary screen.
+ * A week of days, as a row of tappable cells.
  *
  * "Fully logged" is a dot rather than a colour change, so the selected day and
  * a logged day remain independently readable — a day can be both, and colour
  * alone cannot say so.
+ *
+ * No screen renders this at the moment. It was the diary's week strip, and the
+ * diary is gone; it stays because the next screen that needs to pick a day out of a
+ * week should not build a fourth one, and because the gallery is where it can still
+ * be seen.
  */
 export function DateStrip({ days, value, onChange, className }: DateStripProps) {
   return (
