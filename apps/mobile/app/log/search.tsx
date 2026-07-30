@@ -51,9 +51,8 @@ export default function SearchScreen() {
 
   return (
     <Screen>
-      {/* A chevron, not a cross: this is a full page that pushes, so there is a
-          screen behind it to go back to — the quick selector it was opened
-          from. */}
+      {/* A chevron, not a cross: this is a full page, and the quick selector it
+          replaced on the way in is gone, so back lands on the day. */}
       <AppBar
         title={t('logging:search.title')}
         onBack={() => goBack()}
@@ -73,11 +72,11 @@ export default function SearchScreen() {
       {loading ? (
         <View className="gap-3" accessibilityRole="progressbar">
           {SKELETON_ROWS.map((id) => (
-            // Shaped like the row it replaces — icon, two lines of text, a
-            // trailing number — so the list does not jump when results land.
+            // Shaped like the row it replaces — two lines of text and a
+            // trailing number, no tile — so the list does not jump when the
+            // results land.
             <Card key={id}>
               <View className="flex-row items-center gap-3">
-                <Skeleton className="h-11 w-11 rounded-tile" />
                 <View className="flex-1 gap-2">
                   <Skeleton className="h-4 w-2/3" />
                   <Skeleton className="h-3 w-2/5" />
@@ -102,7 +101,11 @@ export default function SearchScreen() {
           <Card key={food.id}>
             <ItemRow
               title={food.name}
-              icon={food.icon}
+              // Text only. The catalogue is hundreds of megabytes of imported
+              // rows and a few dozen drawings, so a picture here is the exception
+              // by a wide margin — and a column of mostly-empty tiles indents
+              // every dish name for the sake of the rare one that has art.
+              textOnly
               value={food.macros.kcal}
               unit="kcal"
               detail={`${t(`logging:search.place.${food.place}`)} · ${food.servingLabel}`}

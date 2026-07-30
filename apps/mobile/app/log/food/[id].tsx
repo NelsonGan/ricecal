@@ -47,8 +47,15 @@ const QUICK_FIXES = ['halfPortion', 'noSambal', 'addEgg', 'extraRice'] as const
 export default function FoodDetail() {
   const { t } = useTranslation(['logging', 'common'])
   const goBack = useBack('/today')
-  // Logging can be three modals deep. Finishing returns to the day, not to
-  // the picker the user opened two steps ago.
+  /**
+   * Adding a dish ends the whole flow, so it unwinds to the day rather than
+   * stepping back one screen.
+   *
+   * Still `useDismissTo` even though this screen is a page now: the quick
+   * selector it came through is a transparent modal, and popping one screen would
+   * land on the search page the user is finished with. It dismisses what is
+   * presented and then replaces, so either shape ends up on Today.
+   */
   const finish = useDismissTo('/today')
   const toast = useToast()
   const logFood = useLogFood()
@@ -94,8 +101,7 @@ export default function FoodDetail() {
         <AppBar
           title={isPending ? '' : t('logging:search.emptyTitle')}
           onBack={() => goBack()}
-          backLabel={t('common:a11y.close')}
-          leading="dismiss"
+          backLabel={t('common:a11y.back')}
         />
       </Screen>
     )
@@ -182,15 +188,11 @@ export default function FoodDetail() {
         </View>
       }
     >
-      {/* A cross, not a chevron: this arrives as a modal over whatever
-          opened it — search, the diary, a quick-add — so there is no single
-          screen "up" from here. */}
-      <AppBar
-        title={food.name}
-        onBack={() => goBack()}
-        backLabel={t('common:a11y.close')}
-        leading="dismiss"
-      />
+      {/* A chevron, not a cross: this is a full page now, pushed from search or
+          from a row on the day, so there is always a screen behind it. `useBack`
+          falls back to Today for the one route that arrives with no history —
+          a deep link straight to a dish. */}
+      <AppBar title={food.name} onBack={() => goBack()} backLabel={t('common:a11y.back')} />
 
       {/* Pressable only while editing, because the override lives on the entry
           and a new one does not exist yet.
