@@ -75,6 +75,9 @@ export function useLogFood() {
       // The quick selector's suggestions are "the last few dishes at this meal",
       // and this is one of them now.
       queryClient.invalidateQueries({ queryKey: keys.recentFoodsAll(userId) })
+      // A meal moves this day's column, the range average and "days under goal"
+      // on every one of the three ranges — hence the prefix rather than one key.
+      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
     },
   })
 }
@@ -181,8 +184,11 @@ export function useUpdateEntry() {
 
       return row
     },
-    onSuccess: (_row, patch) =>
-      queryClient.invalidateQueries({ queryKey: keys.day(userId, patch.logDate) }),
+    onSuccess: (_row, patch) => {
+      queryClient.invalidateQueries({ queryKey: keys.day(userId, patch.logDate) })
+      // A corrected portion is a different day total, which is a different bar.
+      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+    },
   })
 }
 
@@ -224,6 +230,7 @@ export function useRemoveEntry() {
       queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
       // Undoing the last thing logged has to take it back out of "last logged".
       queryClient.invalidateQueries({ queryKey: keys.recentFoodsAll(userId) })
+      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
     },
   })
 }

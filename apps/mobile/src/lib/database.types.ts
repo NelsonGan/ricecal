@@ -708,6 +708,76 @@ export type Database = {
       }
       search_normalize: { Args: { txt: string }; Returns: string }
       search_tsquery: { Args: { txt: string }; Returns: unknown }
+      trend_days: {
+        Args: { p_range: string; p_user_id?: string }
+        Returns: {
+          at: string
+          bucket: string
+          carbs_g: number
+          entry_count: number
+          fat_g: number
+          goal_kcal: number
+          goal_water: number
+          kcal: number
+          protein_g: number
+          water_glasses: number
+          weight_kg: number
+        }[]
+      }
+      trend_series: {
+        Args: { p_range: string; p_user_id?: string }
+        Returns: {
+          bucket_end: string
+          bucket_start: string
+          carbs_g_avg: number
+          days: number
+          days_logged: number
+          days_under_goal: number
+          fat_g_avg: number
+          kcal_avg: number
+          kcal_goal: number
+          protein_g_avg: number
+          water_avg: number
+          water_best: number
+          water_goal: number
+          water_goal_days: number
+          water_habit_days: number
+          water_logged_days: number
+          water_total: number
+          weigh_ins: number
+          weight_avg: number
+          weight_last: number
+          weight_min: number
+        }[]
+      }
+      trend_summary: {
+        Args: { p_range: string; p_user_id?: string }
+        Returns: {
+          carbs_g_avg: number
+          days: number
+          days_logged: number
+          days_under_goal: number
+          fat_g_avg: number
+          from_date: string
+          kcal_avg: number
+          kcal_goal: number
+          protein_g_avg: number
+          to_date: string
+          water_avg: number
+          water_best: number
+          water_goal: number
+          water_goal_days: number
+          water_habit_days: number
+          water_logged_days: number
+          water_total: number
+          weigh_ins: number
+          weight_avg: number
+          weight_first: number
+          weight_last: number
+          weight_peak: number
+          weight_peak_on: string
+        }[]
+      }
     }
     Enums: {
       activity_level: 'sedentary' | 'light' | 'on_feet' | 'very_active'
