@@ -163,12 +163,27 @@ jobs:
           clean="${clean//\`/}"
           echo "text=${clean}" >> "$GITHUB_OUTPUT"
 
+      # `--environment` is not optional here, and its absence is quiet.
+      #
+      # EXPO_PUBLIC_ values are inlined into the bundle by Babel at export time,
+      # so they are decided by what this step's process can see — the device and
+      # the native build have no say. There is no .env.local on a runner, and
+      # `eas update` pulls the server-side EAS variables only when told which
+      # environment to read; unlike `eas build` it has no profile to take
+      # `environment` from. Without the flag the export succeeds with all eight
+      # keys undefined, and the app throws src/lib/env.ts's "Missing environment
+      # variables" on launch, pointing at a .env.local that only exists locally.
+      #
+      # `development` rather than `preview` because the QR is scanned by a
+      # development build, whose native side was built with that same
+      # environment — the Google iOS client id reaches Info.plist as a URL
+      # scheme, so JS pointing at another project would half-work.
       - name: Publish PR update
         id: preview
         uses: expo/expo-github-action/preview@v8
         with:
           working-directory: apps/mobile
-          command: eas update --branch pr-${{ github.event.number }} --message "${{ steps.message.outputs.text }}"
+          command: eas update --branch pr-${{ github.event.number }} --message "${{ steps.message.outputs.text }}" --environment development
           comment: false
 
       - name: Comment QR code and link
