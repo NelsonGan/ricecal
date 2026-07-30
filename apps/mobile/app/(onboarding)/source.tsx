@@ -21,6 +21,7 @@ export default function SourceStep() {
       title={t('source.title')}
       subtitle={t('source.subtitle')}
       primaryLabel={t('common:action.continue')}
+      primaryDisabled={!source}
       onPrimary={() => router.push('/target')}
     >
       {OPTIONS.map((option) => (

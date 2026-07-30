@@ -22,8 +22,7 @@ export const keys = {
   nutrition: (userId: string, from: string, to: string) => ['nutrition', userId, from, to] as const,
   streak: (userId: string) => ['streak', userId] as const,
 
-  foodSearch: (userId: string, query: string, place: string) =>
-    ['food-search', userId, query, place] as const,
+  foodSearch: (userId: string, query: string) => ['food-search', userId, query] as const,
   food: (id: string) => ['food', id] as const,
   usualFoods: (userId: string, meal: string) => ['usual-foods', userId, meal] as const,
 

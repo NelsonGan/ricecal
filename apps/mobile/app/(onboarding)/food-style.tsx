@@ -43,6 +43,8 @@ export default function FoodStyleStep() {
       title={t('foodStyle.title')}
       subtitle={t('foodStyle.subtitle')}
       primaryLabel={t('common:action.continue')}
+      // Multi-select, so the gate is "at least one" rather than "exactly one".
+      primaryDisabled={foodStyles.length === 0}
       onPrimary={() => router.push('/source')}
     >
       {/* Multi-select, so these are checkboxes wearing chips rather than

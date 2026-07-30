@@ -25,7 +25,6 @@ export {
   useUpdateEntry,
 } from './entries'
 export {
-  type SearchFilter,
   useFood,
   useFoodSearch,
   useTopFoods,

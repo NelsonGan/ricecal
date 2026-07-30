@@ -29,21 +29,38 @@ export type BadgeProps = ViewProps & {
 }
 
 /**
- * A static status pill: "On track", "96% match", "Active".
+ * A static status pill: "On track", "1 day streak", "Active".
  *
  * Not pressable by design. If it needs to respond to a tap it is a `Chip`, and
  * the difference matters — a pill that looks tappable and is not is worse than
  * either.
+ *
+ * Only *text* children get wrapped in `Text`. Wrapping unconditionally is what
+ * misaligned the flame on the streak pill: an `<Image>` nested inside a `<Text>`
+ * is laid out by the text engine as an inline attachment, sitting on the
+ * baseline rather than centred against the label, and no amount of `items-center`
+ * on the row could move it. It also read as `￼0 day streak` to VoiceOver — the
+ * object-replacement character the attachment leaves in the string.
  */
 export function Badge({ children, tone = 'pandan', className, ...rest }: BadgeProps) {
+  const isText = typeof children === 'string' || typeof children === 'number'
+
   return (
     <View
-      className={cn('self-start rounded-full px-[18px] py-2.5', tones[tone], className)}
+      className={cn(
+        'flex-row items-center gap-1.5 self-start rounded-full px-[18px] py-2.5',
+        tones[tone],
+        className,
+      )}
       {...rest}
     >
-      <Text className={cn('font-body-black text-[15px] leading-[18px]', labels[tone])}>
-        {children}
-      </Text>
+      {isText ? (
+        <Text className={cn('font-body-black text-[15px] leading-[18px]', labels[tone])}>
+          {children}
+        </Text>
+      ) : (
+        children
+      )}
     </View>
   )
 }

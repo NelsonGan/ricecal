@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -36,10 +36,39 @@ export default function SignInScreen() {
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string | undefined>()
 
+  // Asked of the OS rather than assumed from the platform, because a local
+  // simulator build ships without the entitlement. `undefined` until the answer
+  // arrives, so the button does not appear and then vanish.
+  const [appleReady, setAppleReady] = useState<boolean | undefined>()
+  useEffect(() => {
+    let cancelled = false
+    appleSignInAvailable().then((ready) => {
+      if (!cancelled) setAppleReady(ready)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const emailError = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)
     ? undefined
     : t('onboarding:account.errors.email')
-  const passwordError = password.length >= 8 ? undefined : t('onboarding:account.errors.password')
+
+  /**
+   * The length rule belongs to sign-UP only.
+   *
+   * On sign-in the password is whatever the account already has, and refusing
+   * to submit a 6-character one tells a user with a valid old password that
+   * their own password is malformed — while the actual server-side answer
+   * ("wrong password", or "that account does not exist") never gets a chance
+   * to be shown.
+   */
+  const passwordError =
+    mode === 'sign-up' && password.length < 8
+      ? t('onboarding:account.errors.password')
+      : password.length === 0
+        ? t('onboarding:account.errors.passwordEmpty')
+        : undefined
   const valid = !emailError && !passwordError
 
   /** Every provider funnels through here so one failure path serves all three. */
@@ -90,17 +119,23 @@ export default function SignInScreen() {
     >
       <View className="items-center gap-3 pt-6 pb-2">
         <Icon set="food" name="rice-bowl" size={96} />
+        {/* The heading follows the mode. It used to read "Save your progress"
+            in both, so tapping "I already have an account" changed one button
+            label and nothing else — the screen looked like it had ignored the
+            tap. */}
         <Text variant="screenTitle" className="text-center">
-          {t('onboarding:account.title')}
+          {mode === 'sign-up' ? t('onboarding:account.title') : t('onboarding:account.signInTitle')}
         </Text>
         <Text variant="meta" className="text-center">
-          {t('onboarding:account.subtitle')}
+          {mode === 'sign-up'
+            ? t('onboarding:account.subtitle')
+            : t('onboarding:account.signInSubtitle')}
         </Text>
       </View>
 
       {notice ? <Alert tone="success" title={notice} /> : null}
 
-      {appleSignInAvailable() ? (
+      {appleReady ? (
         <ProviderButton provider="apple" onPress={() => attempt(signInWithApple)} disabled={busy} />
       ) : null}
 
