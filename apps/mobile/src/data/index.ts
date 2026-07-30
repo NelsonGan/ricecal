@@ -40,7 +40,13 @@ export {
   usePendingSnaps,
 } from './pending-snaps'
 export { removeMealPhoto, uploadMealPhoto, useMealPhotoUrl } from './photos'
-export { type ProfilePatch, useCompleteOnboarding, useProfile, useUpdateProfile } from './profile'
+export {
+  type OnboardingAnswers,
+  type ProfilePatch,
+  useFinishOnboarding,
+  useProfile,
+  useUpdateProfile,
+} from './profile'
 export { SelectedDateProvider, useSelectedDate } from './selected-date'
 export { SessionProvider, useSession, useUserId } from './session'
 export { useMealTimes, useSettings, useUpdateMealTime, useUpdateSettings } from './settings'

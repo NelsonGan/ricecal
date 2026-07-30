@@ -14,6 +14,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { PendingSnapProvider, SelectedDateProvider, SessionProvider } from '@/data'
+import { LoginLinkHandler } from '@/features/auth'
+import { OnboardingDraftProvider } from '@/features/onboarding'
 import { initOnlineManager } from '@/lib/online'
 import { persistOptions, queryClient } from '@/lib/query'
 import { initServices } from '@/lib/startup'
@@ -61,14 +63,23 @@ export default Sentry.wrap(function RootLayout() {
                   known yet. Both are the client's own state: nothing to fetch,
                   nothing to invalidate. */}
               <SelectedDateProvider>
-                <PendingSnapProvider>
-                  {/* Outside the navigator so a toast survives navigation — a
-                      "saved" confirmation usually fires as the screen that
-                      triggered it pops. */}
-                  <ToastProvider offset={NAV_BAR_HEIGHT}>
-                    <RootStack />
-                  </ToastProvider>
-                </PendingSnapProvider>
+                {/* Above the navigator because the index route reads it to
+                    decide where a launch belongs, and the questions are answered
+                    before there is an account to write them to. Backed by MMKV,
+                    so it survives the app being killed mid-flow. */}
+                <OnboardingDraftProvider>
+                  <PendingSnapProvider>
+                    {/* Outside the navigator so a toast survives navigation — a
+                        "saved" confirmation usually fires as the screen that
+                        triggered it pops. */}
+                    <ToastProvider offset={NAV_BAR_HEIGHT}>
+                      {/* Under the toast because its one job on failure is to
+                          say the link had expired. Renders nothing. */}
+                      <LoginLinkHandler />
+                      <RootStack />
+                    </ToastProvider>
+                  </PendingSnapProvider>
+                </OnboardingDraftProvider>
               </SelectedDateProvider>
             </SessionProvider>
           </PersistQueryClientProvider>

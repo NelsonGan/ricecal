@@ -3,53 +3,67 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { useCompleteOnboarding, useCurrentWeight, useProfile, useTargets } from '@/data'
-import { goalDate } from '@/lib/nutrition'
-import { Button, CalorieRing, EmptyState, Screen, Skeleton, StatTile, Text, useToast } from '@/ui'
+import { useSession } from '@/data'
+import { useOnboardingDraft } from '@/features/onboarding'
+import { computeTargets, goalDate } from '@/lib/nutrition'
+import { Button, CalorieRing, Screen, StatTile, Text } from '@/ui'
 
-/** 07 YOUR TARGET */
+/**
+ * 07 YOUR TARGET
+ *
+ * The budget, worked out on the phone.
+ *
+ * Everywhere else in the app this number comes from `current_daily_goals`,
+ * computed by a trigger and read back — but there is no row to read here, because
+ * there is no account yet. `computeTargets` is the same arithmetic as
+ * `compute_targets()` and exists for exactly this screen; the database's copy
+ * takes over the moment the answers are flushed, and the two are kept in step on
+ * purpose.
+ *
+ * Nothing on this screen waits for the network, which is the point of showing it
+ * before asking for an email: the user sees what they get before being asked for
+ * anything.
+ */
 export default function TargetStep() {
   const { t } = useTranslation(['onboarding', 'common'])
   const router = useRouter()
-  const toast = useToast()
-  const { data: profile } = useProfile()
-  // Computed by the database the moment the body and the first weigh-in are
-  // both in, which happened two screens ago — this screen only reads it. The
-  // read is a fresh one, because writing either of those invalidated it, so
-  // `isPending` here is the ordinary first frame rather than a rare one.
-  const { data: targets, isPending } = useTargets()
-  const completeOnboarding = useCompleteOnboarding()
-  const current = useCurrentWeight() ?? 0
+  const { draft, patch } = useOnboardingDraft()
+  const { session } = useSession()
 
-  const reachedOn = goalDate(
-    profile?.weight_goal ?? 'track',
-    current,
-    Number(profile?.target_weight_kg ?? current),
-    new Date(),
-  )
+  // Defaults that only matter if a screen was skipped, which the Continue gates
+  // do not allow. Present so the arithmetic below cannot divide by nothing.
+  const weightKg = draft.weightKg ?? 65
+  const targetWeightKg = draft.targetWeightKg ?? weightKg
+  const targets = computeTargets({
+    sex: draft.sex ?? 'female',
+    weightKg,
+    heightCm: draft.heightCm ?? 164,
+    age: draft.age ?? 29,
+    activity: draft.activity ?? 'light',
+    goal: draft.goal ?? 'track',
+  })
+
+  const reachedOn = goalDate(draft.goal ?? 'track', weightKg, targetWeightKg, new Date())
 
   // Roughly 600 kcal a meal is what a Malaysian plate runs to, so the budget
   // divided by that is the honest answer to "how much food is this?".
-  const meals = Math.max(2, Math.round((targets?.kcal ?? 0) / 600))
+  const meals = Math.max(2, Math.round(targets.kcal / 600))
 
   /**
-   * The last write of the flow, and the one the router reads.
+   * Records which way out was chosen, then asks for the account.
    *
-   * Awaited before navigating: `onboarded_at` is what stops `app/index.tsx`
-   * sending the user back to the first question, so a failure that goes
-   * unmentioned means the whole flow starts again on the next launch with
-   * nothing to explain it. Both exits go through here for that reason.
+   * The choice is made here but cannot be acted on until there is somewhere to
+   * write the answers, and the account step sits in between — so it goes in the
+   * draft and `finish` reads it back. A user who already has a session (signed
+   * in, then answered the questions) skips straight to the flush.
    */
-  const finish = async (destination: string) => {
-    try {
-      await completeOnboarding.mutateAsync()
-      router.replace(destination)
-    } catch (error) {
-      toast.show({
-        title: error instanceof Error ? error.message : t('common:action.retry'),
-        tone: 'error',
-      })
+  const proceed = (exit: 'today' | 'preview') => {
+    patch({ exit })
+    if (session) {
+      router.replace('/finish')
+      return
     }
+    router.push({ pathname: '/sign-in', params: { mode: 'sign-up' } })
   }
 
   return (
@@ -58,94 +72,58 @@ export default function TargetStep() {
       contentClassName="justify-center"
       footer={
         <View className="gap-1.5">
-          <Button
-            fullWidth
-            // A second tap while the first write is in flight completes
-            // onboarding twice and races two `replace` calls.
-            disabled={completeOnboarding.isPending}
-            onPress={() => finish('/today')}
-          >
+          <Button fullWidth onPress={() => proceed('today')}>
             {t('target.logFirst')}
           </Button>
-          <Button
-            variant="ghost"
-            fullWidth
-            disabled={completeOnboarding.isPending}
-            onPress={() => finish('/preview')}
-          >
+          <Button variant="ghost" fullWidth onPress={() => proceed('preview')}>
             {t('target.explore')}
           </Button>
         </View>
       }
     >
-      {isPending ? (
-        // Placeholders rather than zeroes. The ring, the headline and the three
-        // tiles are all the same number, so rendering before it arrives says
-        // "0 KCAL A DAY, about 2 meals" in full confidence and then corrects
-        // itself a beat later.
-        <View className="items-center gap-5">
-          <Skeleton className="h-[186px] w-[186px]" />
-          <Skeleton className="h-8 w-4/5" />
-          <View className="w-full flex-row gap-2.5">
-            <Skeleton className="h-[76px] flex-1" rounded={false} />
-            <Skeleton className="h-[76px] flex-1" rounded={false} />
-            <Skeleton className="h-[76px] flex-1" rounded={false} />
-          </View>
-        </View>
-      ) : targets ? (
-        <View className="items-center gap-5">
-          <CalorieRing
-            value={targets.kcal}
-            goal={targets.kcal}
-            size={186}
-            // A full ring here is the plan, not a day gone over, so the automatic
-            // "you are at 100%" kaya would say the wrong thing.
-            tone="pandan"
-            centerLabel={targets.kcal.toLocaleString()}
-            centerCaption={t('target.perDay')}
-          />
-
-          <Text variant="screenTitle" className="text-center">
-            {t('target.headline', { meals })}
-          </Text>
-
-          <View className="w-full flex-row gap-2.5">
-            <StatTile
-              className="flex-1"
-              label={t('target.carbs')}
-              value={t('common:unit.grams', { value: targets.carbs })}
-            />
-            <StatTile
-              className="flex-1"
-              label={t('target.protein')}
-              value={t('common:unit.grams', { value: targets.protein })}
-            />
-            <StatTile
-              className="flex-1"
-              label={t('target.fat')}
-              value={t('common:unit.grams', { value: targets.fat })}
-            />
-          </View>
-
-          <Text className="text-center text-[15px] leading-[23px]">
-            {reachedOn
-              ? t('target.footnote', {
-                  weight: Number(profile?.target_weight_kg ?? 0).toFixed(1),
-                  date: format(reachedOn, 'd MMMM'),
-                })
-              : t('target.footnoteMaintain', { weight: current.toFixed(1) })}
-          </Text>
-        </View>
-      ) : (
-        // `current_daily_goals` is empty, so the trigger could not compute a
-        // budget. The answers are saved and the app still works, so this says as
-        // much and leaves both exits below reachable.
-        <EmptyState
-          title={t('target.noBudgetTitle')}
-          description={t('target.noBudgetBody')}
-          icon={{ set: 'body', name: 'target' }}
+      <View className="items-center gap-5">
+        <CalorieRing
+          value={targets.kcal}
+          goal={targets.kcal}
+          size={186}
+          // A full ring here is the plan, not a day gone over, so the automatic
+          // "you are at 100%" kaya would say the wrong thing.
+          tone="pandan"
+          centerLabel={targets.kcal.toLocaleString()}
+          centerCaption={t('target.perDay')}
         />
-      )}
+
+        <Text variant="screenTitle" className="text-center">
+          {t('target.headline', { meals })}
+        </Text>
+
+        <View className="w-full flex-row gap-2.5">
+          <StatTile
+            className="flex-1"
+            label={t('target.carbs')}
+            value={t('common:unit.grams', { value: targets.carbs })}
+          />
+          <StatTile
+            className="flex-1"
+            label={t('target.protein')}
+            value={t('common:unit.grams', { value: targets.protein })}
+          />
+          <StatTile
+            className="flex-1"
+            label={t('target.fat')}
+            value={t('common:unit.grams', { value: targets.fat })}
+          />
+        </View>
+
+        <Text className="text-center text-[15px] leading-[23px]">
+          {reachedOn
+            ? t('target.footnote', {
+                weight: targetWeightKg.toFixed(1),
+                date: format(reachedOn, 'd MMMM'),
+              })
+            : t('target.footnoteMaintain', { weight: weightKg.toFixed(1) })}
+        </Text>
+      </View>
     </Screen>
   )
 }

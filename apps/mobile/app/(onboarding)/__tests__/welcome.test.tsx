@@ -7,25 +7,20 @@ import { ThemeProvider } from '@/theme/ThemeProvider'
 import Welcome from '../welcome'
 
 /**
- * Why this suite exists: "Get started" used to walk an anonymous visitor into
- * the questions, and the questions cannot be answered without an account.
+ * The fork at the top of the flow.
  *
- * This screen is reached from sign-in's "What is RiceCal?", so no session is the
- * ordinary case here. Every step past it writes to `profiles` through hooks that
- * call `useUserId`, which throws outright when there is none — so the old
- * `push('/goal')` was not a failed write, it was a crashed screen.
+ * "Get started" goes into the questions with no account and no session, which is
+ * the change worth pinning: it used to send an anonymous visitor to a screen whose
+ * every hook called `useUserId`, and that throws rather than failing quietly.
+ * "I already have an account" skips the questions and says which side of the
+ * account screen to open on.
  */
 
 const mockPush = jest.fn()
-const mockReplace = jest.fn()
 
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: mockPush, replace: mockReplace, back: jest.fn() }),
+  useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn() }),
 }))
-
-jest.mock('@/data', () => ({ useSession: jest.fn() }))
-
-const data = jest.mocked(require('@/data') as typeof import('@/data'))
 
 function Providers({ children }: { children: ReactNode }) {
   return (
@@ -43,49 +38,23 @@ function Providers({ children }: { children: ReactNode }) {
 const render = (ui: ReactElement) => rntlRender(ui, { wrapper: Providers })
 const user = userEvent.setup()
 
-const signedIn = (yes: boolean) => {
-  data.useSession.mockReturnValue({
-    session: yes ? ({ user: { id: 'u1' } } as never) : null,
-    userId: yes ? 'u1' : null,
-    loading: false,
-  })
-}
-
 beforeEach(() => {
   jest.clearAllMocks()
-  signedIn(false)
 })
 
-describe('with no session', () => {
-  it('sends "Get started" to sign-up rather than into the questions', async () => {
-    await render(<Welcome />)
-    await user.press(screen.getByText('Get started'))
+it('starts the questions without asking for an account', async () => {
+  await render(<Welcome />)
+  await user.press(screen.getByText('Get started'))
 
-    expect(mockPush).not.toHaveBeenCalled()
-    expect(mockReplace).toHaveBeenCalledWith({
-      pathname: '/sign-in',
-      params: { mode: 'sign-up' },
-    })
-  })
-
-  /** The label promises the sign-in side of that screen, so it has to ask for it. */
-  it('opens sign-in on its sign-in side', async () => {
-    await render(<Welcome />)
-    await user.press(screen.getByText('I already have an account'))
-
-    expect(mockReplace).toHaveBeenCalledWith({
-      pathname: '/sign-in',
-      params: { mode: 'sign-in' },
-    })
-  })
+  expect(mockPush).toHaveBeenCalledWith('/goal')
 })
 
-describe('with a session', () => {
-  it('starts the questions', async () => {
-    signedIn(true)
-    await render(<Welcome />)
-    await user.press(screen.getByText('Get started'))
+it('sends a returning user to the sign-in side of the account screen', async () => {
+  await render(<Welcome />)
+  await user.press(screen.getByText('I already have an account'))
 
-    expect(mockPush).toHaveBeenCalledWith('/goal')
+  expect(mockPush).toHaveBeenCalledWith({
+    pathname: '/sign-in',
+    params: { mode: 'sign-in' },
   })
 })

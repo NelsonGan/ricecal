@@ -100,7 +100,13 @@ export { Switch, type SwitchProps } from './Switch'
 export { type TabOption, Tabs, type TabsProps } from './Tabs'
 export { Text, type TextProps, type TextVariant } from './Text'
 export { TextField, type TextFieldProps } from './TextField'
-export { type ToastOptions, ToastProvider, type ToastTone, useToast } from './Toast'
+export {
+  type ToastOptions,
+  type ToastPlacement,
+  ToastProvider,
+  type ToastTone,
+  useToast,
+} from './Toast'
 export {
   type DayStatus,
   WaterTracker,

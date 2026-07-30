@@ -1,45 +1,117 @@
 import * as AppleAuthentication from 'expo-apple-authentication'
+import * as Linking from 'expo-linking'
 import { Platform } from 'react-native'
 
 import { env, isConfigured } from '@/lib/env'
 import { supabase } from '@/lib/supabase'
 
 /**
- * Signing in.
+ * Signing in. There are no passwords anywhere in here.
  *
- * Three providers, in the order they matter on a phone:
+ * Three ways in, in the order they matter on a phone:
  *
  * - **Apple** is the native flow. It authenticates against the bundle id
  *   alone, which is why no Services ID or six-monthly key rotation is needed;
  *   the identity token goes straight to Supabase, which verifies it against
  *   Apple's keys.
- * - **Email** is the fallback that always works and the only one that works on
- *   Android today.
  * - **Google** is written but gated: its client ids are still placeholders, so
  *   the button is hidden rather than offered and broken.
+ * - **Email** sends a link. Nothing to choose, nothing to remember, nothing to
+ *   reset, and no second field to mistype — the failure mode a password has on
+ *   a phone keyboard is a support ticket, and the recovery flow for it is
+ *   another email anyway. So the email IS the credential.
+ *
+ * One consequence worth naming: there is no sign-up call. `signInWithOtp` with
+ * `shouldCreateUser` makes the account when the address is new and signs in when
+ * it is not, so the two directions differ only in what the screen says.
  *
  * None of these create the profile — `on_auth_user_created` does, inside the
  * same transaction as the account, so a signed-in user always has rows to read.
  */
 
-export type SignUpResult =
-  | { status: 'signed-in' }
-  /** The project requires a confirmation click before a session exists. */
-  | { status: 'check-your-email'; email: string }
-
-export async function signUpWithEmail(email: string, password: string): Promise<SignUpResult> {
-  const { data, error } = await supabase.auth.signUp({ email: email.trim(), password })
-  if (error) throw error
-
-  // A signup with confirmations on returns a user and no session. That is not
-  // a failure, and treating it as one is how an app ends up telling people
-  // their correct password is wrong.
-  return data.session ? { status: 'signed-in' } : { status: 'check-your-email', email }
+/** Where Supabase sends the browser once it has verified a login link. */
+export function loginLinkRedirect(): string {
+  return Linking.createURL('/auth/callback')
 }
 
-export async function signInWithEmail(email: string, password: string): Promise<void> {
-  const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+/**
+ * Mails a login link, creating the account if the address is new.
+ *
+ * The project's redirect allow-list has to contain the app's scheme or Supabase
+ * refuses the `emailRedirectTo` and falls back to `site_url`, which on a phone is
+ * a web address nobody can act on.
+ */
+export async function sendLoginLink(email: string): Promise<void> {
+  const { error } = await supabase.auth.signInWithOtp({
+    email: email.trim(),
+    options: { shouldCreateUser: true, emailRedirectTo: loginLinkRedirect() },
+  })
   if (error) throw error
+}
+
+/**
+ * Turns a login link back into a session.
+ *
+ * The link in the mail goes to Supabase, which verifies the token and redirects
+ * to the app's own scheme with the result on the end of it. Where exactly depends
+ * on the flow the project is on, and that is a project setting rather than
+ * something this code picks: implicit puts a pair of tokens in the fragment,
+ * PKCE puts one code in the query string. Both are read.
+ *
+ * Returns false for a link carrying no session at all, because every other deep
+ * link into the app arrives here too.
+ */
+export async function completeLoginFromUrl(url: string): Promise<boolean> {
+  const params = paramsIn(url)
+
+  // Supabase reports an expired or already-used link this way rather than by
+  // refusing the redirect, so it has to be read before the tokens.
+  const failure = params.get('error_description') ?? params.get('error')
+  if (failure) throw new Error(failure.replace(/\+/g, ' '))
+
+  const accessToken = params.get('access_token')
+  const refreshToken = params.get('refresh_token')
+  if (accessToken && refreshToken) {
+    const { error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    })
+    if (error) throw error
+    return true
+  }
+
+  const code = params.get('code')
+  if (!code) return false
+
+  const { error } = await supabase.auth.exchangeCodeForSession(code)
+  if (error) throw error
+  return true
+}
+
+/**
+ * Every parameter in a deep link, from wherever it is hiding.
+ *
+ * Three places, and all three are real. The query string and the fragment,
+ * because which one carries the session depends on the project's flow. And
+ * inside a nested `url` parameter, because that is the shape `Linking.createURL`
+ * produces under a development client — the real link is wrapped in one pointing
+ * at the dev launcher, and without unwrapping it a login link can only be tested
+ * in a release build.
+ */
+function paramsIn(url: string, depth = 0): URLSearchParams {
+  const merged = new URLSearchParams()
+  const [beforeFragment = '', fragment = ''] = url.split('#')
+
+  for (const part of [beforeFragment.split('?')[1] ?? '', fragment]) {
+    for (const [key, value] of new URLSearchParams(part)) merged.set(key, value)
+  }
+
+  const nested = merged.get('url')
+  if (nested && depth === 0) {
+    for (const [key, value] of paramsIn(nested, depth + 1)) merged.set(key, value)
+  }
+
+  return merged
 }
 
 /**
@@ -171,13 +243,5 @@ export async function signInWithGoogle(): Promise<void> {
 
 export async function signOut(): Promise<void> {
   const { error } = await supabase.auth.signOut()
-  if (error) throw error
-}
-
-/** Sends a password reset mail. The link opens the app through the scheme. */
-export async function sendPasswordReset(email: string): Promise<void> {
-  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-    redirectTo: 'ricecal://reset-password',
-  })
   if (error) throw error
 }
