@@ -116,6 +116,15 @@ alter table public.foods drop constraint if exists foods_owner_has_no_slug;
 drop index if exists public.foods_slug_key;
 drop index if exists public.foods_owner_idx;
 
+-- The `food_servings` policies scope a portion by the owner of its dish, so they
+-- read `foods.owner_id`, and Postgres refuses to drop a column a policy depends
+-- on. They come down here rather than in section 6 with the rest of that table;
+-- section 6 recreates the one that survives.
+drop policy if exists "food_servings: read with food"       on public.food_servings;
+drop policy if exists "food_servings: write with own food"  on public.food_servings;
+drop policy if exists "food_servings: update with own food" on public.food_servings;
+drop policy if exists "food_servings: delete with own food" on public.food_servings;
+
 alter table public.foods drop column if exists owner_id;
 
 -- `image_path` was the photo a user attached to a dish they invented. Catalogue
@@ -130,11 +139,9 @@ alter table public.foods add constraint foods_slug_key unique (slug);
 
 
 -- 6. FOOD SERVINGS ------------------------------------------------------------
-
-drop policy if exists "food_servings: read with food"       on public.food_servings;
-drop policy if exists "food_servings: write with own food"  on public.food_servings;
-drop policy if exists "food_servings: update with own food" on public.food_servings;
-drop policy if exists "food_servings: delete with own food" on public.food_servings;
+--
+-- The policies were already dropped in section 5, because the column they read
+-- had to go before them.
 
 revoke insert, update, delete on public.food_servings from authenticated;
 

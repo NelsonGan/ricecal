@@ -55,7 +55,7 @@
       }
     },
     {
-      "includes": ["supabase/functions/**"],
+      "includes": ["apps/supabase/functions/**"],
       "linter": {
         "rules": {
           "suspicious": {
