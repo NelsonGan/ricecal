@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
 import { supabase } from '@/lib/supabase'
@@ -18,35 +18,61 @@ import type { DailyNutritionRow, DayLog, Entry, FoodLogRow } from './types'
  * each row are the dish's, times the portion, times how many — so nothing here
  * multiplies anything.
  */
+async function fetchDay(userId: string, date: string): Promise<DayLog> {
+  const [entries, water] = await Promise.all([
+    supabase
+      .from('food_log_details')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('log_date', date)
+      .order('logged_at'),
+    supabase
+      .from('daily_logs')
+      .select('water_glasses')
+      .eq('user_id', userId)
+      .eq('log_date', date)
+      .maybeSingle(),
+  ])
+
+  return {
+    date,
+    entries: (unwrap(entries) as FoodLogRow[]).map(toEntry),
+    // No row means no water logged, not an error: `daily_logs` is written
+    // the first time someone taps a glass.
+    waterGlasses: unwrapMaybe(water)?.water_glasses ?? 0,
+  }
+}
+
 export function useDay(date: string) {
   const userId = useUserId()
 
   return useQuery({
     queryKey: keys.day(userId, date),
-    queryFn: async (): Promise<DayLog> => {
-      const [entries, water] = await Promise.all([
-        supabase
-          .from('food_log_details')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('log_date', date)
-          .order('logged_at'),
-        supabase
-          .from('daily_logs')
-          .select('water_glasses')
-          .eq('user_id', userId)
-          .eq('log_date', date)
-          .maybeSingle(),
-      ])
+    queryFn: () => fetchDay(userId, date),
+  })
+}
 
-      return {
-        date,
-        entries: (unwrap(entries) as FoodLogRow[]).map(toEntry),
-        // No row means no water logged, not an error: `daily_logs` is written
-        // the first time someone taps a glass.
-        waterGlasses: unwrapMaybe(water)?.water_glasses ?? 0,
-      }
-    },
+/**
+ * Fetches days nothing is rendering yet.
+ *
+ * For the diary's pager, which mounts the day either side of the one on screen so
+ * a swipe has somewhere to go — and then needs the day either side of THOSE, or a
+ * second swipe arrives before its data does and the page is briefly a plausible
+ * empty day rather than the right one.
+ *
+ * `useQueries` rather than `prefetchQuery` in an effect: the number of dates is
+ * fixed by the caller, so the hook count is stable, and this way the fetches follow
+ * the same cache, the same `staleTime` and the same retry policy as the ones that
+ * are being displayed. Nothing reads the results.
+ */
+export function usePrefetchDays(dates: readonly string[]) {
+  const userId = useUserId()
+
+  useQueries({
+    queries: dates.map((date) => ({
+      queryKey: keys.day(userId, date),
+      queryFn: () => fetchDay(userId, date),
+    })),
   })
 }
 

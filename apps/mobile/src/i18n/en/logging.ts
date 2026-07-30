@@ -171,6 +171,8 @@ export const logging = {
     addGlass: 'Add a glass of water',
     removeGlass: 'Remove a glass of water',
     emptyDay: 'Nothing logged on this day.',
+    /** The floating button back to today, shown only on some other day. */
+    today: 'Today',
     /** The month and year steppers on the calendar levels. */
     previousMonth: 'Previous month',
     nextMonth: 'Next month',

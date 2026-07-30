@@ -1,5 +1,6 @@
 import { View } from 'react-native'
 
+import { useThemeColors } from '@/theme/useTheme'
 import { Icon, IconButton, Tappable, Text } from '@/ui'
 
 export type CalendarHeaderProps = {
@@ -30,6 +31,19 @@ export type CalendarHeaderProps = {
  * Which leaves the title on the right, quietly, where it reads as a label for what
  * is below rather than as the name of a screen. At the outermost level there is no
  * way out, so the title takes the corner and the weight that goes with it.
+ *
+ * Three details make the chevron sit with its label rather than beside it:
+ *
+ * - It is TINTED. The `ui` set is flat colour illustrations, not a glyph font, so an
+ *   untinted chevron is a blue mark next to a dark title — the one colour in that
+ *   corner that means nothing. Every other chevron in the app is tinted for the same
+ *   reason; this one was not.
+ * - It hangs half in the gutter. The label is what the eye lines up against the
+ *   content below, and a chevron indented to the same 20 points pushes the label
+ *   26 further in.
+ * - It is nudged up a point. Flexbox centres its box against the title's LINE box,
+ *   which sits lower than the letters do; a point of lift puts the mark against the
+ *   cap height, where it looks level.
  */
 export function CalendarHeader({
   parent,
@@ -40,18 +54,25 @@ export function CalendarHeader({
   previousLabel,
   nextLabel,
 }: CalendarHeaderProps) {
+  const colors = useThemeColors()
   const canZoomOut = Boolean(parent && onZoomOut)
 
   return (
     <View className="flex-row items-center gap-2 px-gutter pb-md">
       {canZoomOut ? (
         <Tappable
-          className="min-w-0 shrink flex-row items-center gap-1"
+          className="-ml-2.5 min-w-0 shrink flex-row items-center"
           onPress={onZoomOut}
           accessibilityRole="button"
           accessibilityLabel={parent}
         >
-          <Icon set="ui" name="chevron-left" size={22} />
+          <Icon
+            set="ui"
+            name="chevron-left"
+            size={26}
+            tintColor={colors.heading}
+            style={{ marginTop: -1 }}
+          />
           <Text variant="screenTitle" numberOfLines={1} className="min-w-0 shrink">
             {parent}
           </Text>
@@ -69,10 +90,10 @@ export function CalendarHeader({
       {onPrevious && onNext ? (
         <View className="flex-row items-center gap-1.5">
           <IconButton size="sm" accessibilityLabel={previousLabel ?? ''} onPress={onPrevious}>
-            <Icon set="ui" name="chevron-left" size={18} />
+            <Icon set="ui" name="chevron-left" size={18} tintColor={colors.muted} />
           </IconButton>
           <IconButton size="sm" accessibilityLabel={nextLabel ?? ''} onPress={onNext}>
-            <Icon set="ui" name="chevron-right" size={18} />
+            <Icon set="ui" name="chevron-right" size={18} tintColor={colors.muted} />
           </IconButton>
         </View>
       ) : null}
