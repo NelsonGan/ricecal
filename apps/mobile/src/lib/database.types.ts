@@ -113,6 +113,8 @@ export type Database = {
         Row: {
           created_at: string
           food_id: string
+          icon_name: string | null
+          icon_set: Database['public']['Enums']['icon_set'] | null
           id: string
           log_date: string
           logged_at: string
@@ -128,6 +130,8 @@ export type Database = {
         Insert: {
           created_at?: string
           food_id: string
+          icon_name?: string | null
+          icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
           log_date?: string
           logged_at?: string
@@ -143,6 +147,8 @@ export type Database = {
         Update: {
           created_at?: string
           food_id?: string
+          icon_name?: string | null
+          icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
           log_date?: string
           logged_at?: string
@@ -237,8 +243,8 @@ export type Database = {
           created_at: string
           fat_g: number
           fibre_g: number | null
-          icon_name: string
-          icon_set: Database['public']['Enums']['icon_set']
+          icon_name: string | null
+          icon_set: Database['public']['Enums']['icon_set'] | null
           id: string
           kcal: number
           name: string
@@ -260,8 +266,8 @@ export type Database = {
           created_at?: string
           fat_g?: number
           fibre_g?: number | null
-          icon_name: string
-          icon_set?: Database['public']['Enums']['icon_set']
+          icon_name?: string | null
+          icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
           kcal: number
           name: string
@@ -283,8 +289,8 @@ export type Database = {
           created_at?: string
           fat_g?: number
           fibre_g?: number | null
-          icon_name?: string
-          icon_set?: Database['public']['Enums']['icon_set']
+          icon_name?: string | null
+          icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
           kcal?: number
           name?: string

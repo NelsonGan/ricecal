@@ -1,35 +1,12 @@
--- Trends: the arithmetic behind three tabs and three ranges.
---
--- The tables already hold everything the new Trends screen draws. What they did
--- not hold was a way to READ it: water lives in `daily_logs` and food in
--- `daily_nutrition`, so nothing could answer "how much of each, per day, for the
--- last thirty days" in one request — and there was no range query over water at
--- all. Weight was reachable, but only as a flat list of readings.
---
--- So this migration adds no columns. It adds the three readers the screen needs,
--- and it puts the bucketing in the database for the reason every other total in
--- this schema is a view: a weekly average computed in the client is a weekly
--- average the reminder job cannot reuse, and two of them will disagree.
---
--- The ranges are named rather than passed as dates, because what "the last
--- thirty days" means depends on the user's timezone and `local_today()` is the
--- only thing that knows it. A client computing `today - 29` in device time gets
--- the wrong window for anybody travelling.
+-- Migration unit 1: schema_changes
+-- Transaction mode: transactional
+-- Boundary reason: default
 
+SET check_function_bodies = false;
 
--- One row per calendar day in the range, whether anything was logged or not.
---
--- The absent day is the point. `daily_nutrition` has no row for a day with no
--- food and `daily_logs` has none for a day with no water, but "5 of 7 days under
--- goal" and "2 of 7 days at goal" are both counts over SEVEN — so the days have
--- to be generated and the facts joined onto them, not the other way round.
---
--- The goal is joined per day rather than taken once, because `daily_goals` is
--- effective-dated: a budget tightened on Thursday must not redraw Monday, which
--- is the same rule `goals_on()` exists for.
-create or replace function public.trend_days (
+CREATE FUNCTION public.trend_days (
   p_range   text,
-  p_user_id uuid default auth.uid()
+  p_user_id uuid DEFAULT auth.uid()
 )
   RETURNS TABLE (
     at            date,
@@ -104,18 +81,13 @@ create or replace function public.trend_days (
   ) g on true;
 $function$;
 
-COMMENT ON FUNCTION public.trend_days(text, uuid) IS 'One row per calendar day in a named trend range (7d, 30d, 1y), with that day''s food totals, water, effective goals and weigh-in. Days with nothing logged are present and empty, because every "N of 30" on the Trends screen counts over the range rather than over the rows.';
+COMMENT ON FUNCTION public.trend_days(text,uuid) IS 'One row per calendar day in a named trend range (7d, 30d, 1y), with that day''s food totals, water, effective goals and weigh-in. Days with nothing logged are present and empty, because every "N of 30" on the Trends screen counts over the range rather than over the rows.';
 
+GRANT ALL ON FUNCTION public.trend_days(text, uuid) TO authenticated;
 
--- The same days, folded into the buckets one chart draws: a day, a seven-day
--- block, or a month.
---
--- One row per column of the chart, carrying all three tabs' numbers. Three
--- separate readers would be three round trips for one screen, and the tab switch
--- is instant only if the data for all three is already in hand.
-create or replace function public.trend_series (
+CREATE FUNCTION public.trend_series (
   p_range   text,
-  p_user_id uuid default auth.uid()
+  p_user_id uuid DEFAULT auth.uid()
 )
   RETURNS TABLE (
     bucket_start      date,
@@ -132,6 +104,7 @@ create or replace function public.trend_series (
     water_total       integer,
     water_best        integer,
     water_goal_days   integer,
+    water_habit_days  integer,
     water_logged_days integer,
     water_goal        integer,
     weight_avg        numeric,
@@ -147,8 +120,8 @@ create or replace function public.trend_series (
     d.bucket,
     max(d.at),
     count(*)::integer,
-    -- Averaged over the days that HAVE food, not over the range. A week with two
-    -- days logged averaged over seven reads as a starvation week.
+    -- Averaged over the days that HAVE food, not over the range. A week with
+    -- two days logged averaged over seven reads as a starvation week.
     round(avg(d.kcal)      filter (where d.entry_count > 0), 0),
     round(avg(d.carbs_g)   filter (where d.entry_count > 0), 1),
     round(avg(d.protein_g) filter (where d.entry_count > 0), 1),
@@ -165,6 +138,14 @@ create or replace function public.trend_series (
     sum(d.water_glasses)::integer,
     max(d.water_glasses)::integer,
     (count(*) filter (where d.water_glasses >= coalesce(d.goal_water, 8)))::integer,
+    -- Three quarters of that day's own goal, rounded up: eight becomes six,
+    -- twelve becomes nine. Counted per DAY and therefore here rather than in
+    -- the client, which on the thirty-day range only has weekly buckets and
+    -- could ask no better question than "did the whole WEEK average above the
+    -- line" — which answers 0 of 30 for a month containing several full days.
+    (count(*) filter (
+      where d.water_glasses >= ceil(coalesce(d.goal_water, 8) * 0.75)
+    ))::integer,
     (count(*) filter (where d.water_glasses > 0))::integer,
     (array_agg(coalesce(d.goal_water, 8) order by d.at desc))[1],
     round(avg(d.weight_kg), 1),
@@ -179,18 +160,13 @@ create or replace function public.trend_series (
   order by d.bucket;
 $function$;
 
-COMMENT ON FUNCTION public.trend_series(text, uuid) IS 'One row per column of a Trends chart — a day for 7d, a seven-day block for 30d, a calendar month for 1y — carrying the calorie, water and weight numbers for all three tabs so a tab switch needs no second request.';
+COMMENT ON FUNCTION public.trend_series(text,uuid) IS 'One row per column of a Trends chart — a day for 7d, a seven-day block for 30d, a calendar month for 1y — carrying the calorie, water and weight numbers for all three tabs so a tab switch needs no second request.';
 
+GRANT ALL ON FUNCTION public.trend_series(text, uuid) TO authenticated;
 
--- The whole range as one row: the three header cards, and the footnotes under
--- each chart.
---
--- Not derivable from `trend_series` without weighting every bucket by its logged
--- days, which is arithmetic the screens are not allowed to do — and would get
--- wrong on the 30d range, whose oldest block is two days rather than seven.
-create or replace function public.trend_summary (
+CREATE FUNCTION public.trend_summary (
   p_range   text,
-  p_user_id uuid default auth.uid()
+  p_user_id uuid DEFAULT auth.uid()
 )
   RETURNS TABLE (
     from_date         date,
@@ -207,6 +183,7 @@ create or replace function public.trend_summary (
     water_total       integer,
     water_best        integer,
     water_goal_days   integer,
+    water_habit_days  integer,
     water_logged_days integer,
     water_goal        integer,
     weight_first      numeric,
@@ -237,6 +214,9 @@ create or replace function public.trend_summary (
     sum(d.water_glasses)::integer,
     max(d.water_glasses)::integer,
     (count(*) filter (where d.water_glasses >= coalesce(d.goal_water, 8)))::integer,
+    (count(*) filter (
+      where d.water_glasses >= ceil(coalesce(d.goal_water, 8) * 0.75)
+    ))::integer,
     (count(*) filter (where d.water_glasses > 0))::integer,
     (array_agg(coalesce(d.goal_water, 8) order by d.at desc))[1],
     (array_agg(d.weight_kg order by d.at)      filter (where d.weight_kg is not null))[1],
@@ -251,13 +231,6 @@ create or replace function public.trend_summary (
   from public.trend_days(p_range, p_user_id) d;
 $function$;
 
-COMMENT ON FUNCTION public.trend_summary(text, uuid) IS 'A named trend range as one row: the three metric-tab headline figures plus the per-chart footnotes. Separate from trend_series() because a range average has to weight each bucket by its logged days, and the 30d range''s oldest block is shorter than the rest.';
+COMMENT ON FUNCTION public.trend_summary(text,uuid) IS 'A named trend range as one row: the three metric-tab headline figures plus the per-chart footnotes. Separate from trend_series() because a range average has to weight each bucket by its logged days, and the 30d range''s oldest block is shorter than the rest.';
 
-
--- SECURITY INVOKER, which is the default and is load-bearing here: every table
--- these read is under RLS, so passing somebody else's id returns nothing rather
--- than their year. The `p_user_id` parameter exists for a future server-side job
--- with the service role, not for the client.
-grant execute on function public.trend_days(text, uuid)    to authenticated;
-grant execute on function public.trend_series(text, uuid)  to authenticated;
-grant execute on function public.trend_summary(text, uuid) to authenticated;
+GRANT ALL ON FUNCTION public.trend_summary(text, uuid) TO authenticated;
