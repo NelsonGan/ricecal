@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useRef } from 'react'
+import { type ReactNode, useCallback, useLayoutEffect, useRef } from 'react'
 import {
   KeyboardAvoidingView,
   Modal,
@@ -165,7 +165,11 @@ export function SheetSurface({
    */
   const rise = useSharedValue(height)
 
-  useEffect(() => {
+  // A LAYOUT effect, not a passive one: passive effects flush after the frame is
+  // painted, so the first frame every sheet showed was the panel parked offscreen
+  // with the animation not yet started. This runs in the same commit, so the panel is
+  // already travelling on the frame it first appears.
+  useLayoutEffect(() => {
     rise.value = withTiming(0, { duration: RISE_MS, easing: Easing.out(Easing.cubic) })
   }, [rise])
 
