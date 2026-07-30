@@ -74,6 +74,10 @@ async function chatJSON(messages: unknown[], maxTokens = 1200): Promise<unknown>
     headers: {
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
+      // OpenRouter app attribution: names the app on openrouter.ai rankings
+      // and in the activity dashboard.
+      'HTTP-Referer': 'https://ricecal.app',
+      'X-Title': 'RiceCal',
     },
     body: JSON.stringify({
       model: DEFAULT_MODEL,
@@ -81,6 +85,12 @@ async function chatJSON(messages: unknown[], maxTokens = 1200): Promise<unknown>
       max_tokens: maxTokens,
       temperature: 0.2,
       response_format: { type: 'json_object' },
+      // Off, not merely low. qwen3.7-flash reasons by default and burned
+      // 20-30s per call thinking about JSON echoes; three sequential calls
+      // put a scan past the iOS client's 60s request timeout, so the app
+      // reported failure while the entries landed anyway. Models without a
+      // reasoning mode ignore this field.
+      reasoning: { enabled: false },
     }),
   })
 

@@ -79,7 +79,11 @@ function json(body: unknown, status = 200): Response {
 const withinBand = (kcal: number, low: number, high: number): boolean =>
   high > 0 && kcal >= low * (1 - BAND_SLACK) && kcal <= high * (1 + BAND_SLACK)
 
-const clampQuantity = (q: number): number => Math.round(Math.min(3.0, Math.max(0.5, q)) * 100) / 100
+// Quarter steps, not two decimals. The rescale ratio is one rough estimate
+// divided by another, so "1.08 servings" is precision the data does not have —
+// it reads as hallucination on the row. Quarters match how people actually
+// talk about portions, and anything near 1 IS 1.
+const clampQuantity = (q: number): number => Math.round(Math.min(3.0, Math.max(0.5, q)) * 4) / 4
 
 /**
  * Requirement 14: skip retrieval when a query normalizes to nothing usable.
