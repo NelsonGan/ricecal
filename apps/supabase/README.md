@@ -4,13 +4,13 @@ The schema behind RiceCal. Read this before adding a table.
 
 ## The workflow
 
-`supabase/schemas/*.sql` is the source of truth. You edit those files; you do
+`apps/supabase/schemas/*.sql` is the source of truth. You edit those files; you do
 not write migrations by hand and you do not touch the dashboard.
 
 ```bash
 pnpm db:start                 # local stack (ports 544xx, not the 543xx default)
-# edit supabase/schemas/*.sql
-pnpm db:diff add_water_goal    # generates supabase/migrations/<ts>_add_water_goal.sql
+# edit apps/supabase/schemas/*.sql
+pnpm db:diff add_water_goal    # generates apps/supabase/migrations/<ts>_add_water_goal.sql
 pnpm db:reset                 # applies every migration to an empty database
 pnpm db:test                  # pgTAP
 pnpm db:types                 # regenerates the TypeScript Database type
@@ -30,6 +30,23 @@ Nothing seeds the catalogue. `foods` and `food_servings` are empty on a fresh
 database and fill from the import loader running as `service_role`, which is
 deliberately not a migration: a multi-gigabyte `COPY` in the migration chain
 makes `db:reset` and CI unusable. Migrations own structure; the loader owns rows.
+
+That loader is `scripts/import-catalogue.sql`. It reads two CSVs written by the
+sibling `ricecal-food-database` project, whose `scripts/export_for_ricecal.sql`
+converts that database's per-100 g rows into the per-base-serving shape `foods`
+uses:
+
+```bash
+# in ../ricecal-food-database, against its own local stack
+psql "$SOURCE_DB_URL" -f scripts/export_for_ricecal.sql   # -> /tmp/xfer_*.csv
+# here
+psql "$DB_URL" -v ON_ERROR_STOP=1 -f apps/supabase/scripts/import-catalogue.sql
+```
+
+457,014 dishes, 478,236 portions. Every test in `apps/supabase/tests` passes both on
+an empty catalogue and on a loaded one — assertions about the catalogue are
+written against its actual size rather than a fixture count, because a developer
+who has run the import has half a million rows in that table.
 
 The `auth` schema is **not** in that list. The diff tracks triggers on
 `auth.users` perfectly well, and putting `on_auth_user_created` in a migration
@@ -59,7 +76,7 @@ Plus `goals_on(date)` and `logging_streak()`.
 ## Conventions
 
 Every table gets the same four-part unit — table, `enable row level security`,
-grants, policies. `supabase/schemas/_template.sql.example` is the canonical
+grants, policies. `apps/supabase/schemas/_template.sql.example` is the canonical
 copy and explains why grants and RLS are both required (this project was
 created with "automatically expose new tables" off).
 
@@ -133,7 +150,7 @@ that a photo matching no catalogue row has nowhere to land — see the scanning
 seam below.
 
 **Images are stored as paths, never URLs.** `avatar_path` and `photo_path` hold
-a key inside a bucket. Moving to Cloudflare R2 (still open, SETUP.md §3) is then
+a key inside a bucket. Moving to Cloudflare R2 (still open) is then
 a change of base URL rather than a migration over every row.
 
 ## Seams left open
@@ -157,7 +174,7 @@ get filled in rather than rewritten.
 
 ## Tests
 
-`supabase/tests/*.test.sql`, pgTAP, run with `pnpm db:test` and in CI. Each file
+`apps/supabase/tests/*.test.sql`, pgTAP, run with `pnpm db:test` and in CI. Each file
 is one transaction that is rolled back, including `create extension pgtap`, so
 running the suite leaves nothing behind and pgTAP never reaches production.
 

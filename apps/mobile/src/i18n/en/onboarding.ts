@@ -89,6 +89,8 @@ export const onboarding = {
   account: {
     title: 'Save your progress',
     subtitle: 'An account keeps your log safe if you change phone.',
+    signInTitle: 'Welcome back',
+    signInSubtitle: 'Sign in and your diary picks up where it left off.',
     apple: 'Continue with Apple',
     google: 'Continue with Google',
     or: 'OR',
@@ -106,6 +108,7 @@ export const onboarding = {
     errors: {
       email: 'That does not look like an email address.',
       password: 'Use at least 8 characters.',
+      passwordEmpty: 'Enter your password.',
       terms: 'Please accept the terms to carry on.',
     },
   },

@@ -13,11 +13,18 @@ name: Supabase Migrations
 
 on:
   pull_request:
-    paths: ['supabase/**']
+    paths: ['apps/supabase/**']
 
 jobs:
   migrations:
     runs-on: ubuntu-latest
+    # The Supabase project lives in apps/supabase, and the CLI resolves
+    # `supabase/config.toml` relative to the working directory. Setting it once
+    # here keeps every `run` step — and the globs below — written exactly as
+    # they would be from a project root.
+    defaults:
+      run:
+        working-directory: apps
     steps:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1

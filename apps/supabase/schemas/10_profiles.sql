@@ -26,7 +26,7 @@ create table public.profiles (
 
   display_name      text not null default '' check (char_length(display_name) <= 60),
   -- A path inside the `avatars` bucket, never a URL. Storing the path is what
-  -- keeps a move to another object store (R2, per SETUP.md §3) a change of
+  -- keeps a move to another object store (R2, still open) a change of
   -- base URL rather than a data migration over every row.
   avatar_path       text,
 

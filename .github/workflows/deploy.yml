@@ -1,0 +1,409 @@
+name: CI / CD
+
+# Adapted from the money2time workflow of the same name. Three paths, one file:
+#
+# - **push to main** → production build for both platforms, then submit.
+# - **pull_request** → `eas update` onto a per-PR branch, with a QR comment.
+# - **workflow_dispatch** → one platform, any profile; `development` takes the
+#   cloud dev-client path instead of the store one.
+#
+# Differences from money2time, all forced by this repo rather than chosen:
+#
+# - pnpm workspace, so every EAS step runs in `apps/mobile` (that is where
+#   `eas.json` and `app.json` live, and the CLI reads the current directory
+#   rather than walking up; run it from the root and it writes a stub app.json
+#   there and fails).
+# - No Worker preview job. money2time points each PR's bundle at a per-branch
+#   Cloudflare Worker; RiceCal's backend is Supabase and there is nothing
+#   per-branch to deploy.
+# - No `APP_VARIANT` on the update step. money2time gates `expo-updates` off for
+#   store builds and so has to force it on when publishing; here updates are on
+#   for every profile.
+
+run-name: >-
+  ${{ github.event_name == 'pull_request' && format('PR Preview · #{0}', github.event.number)
+   || github.event_name == 'workflow_dispatch' && format('Manual · {0}/{1}', github.event.inputs.platform, github.event.inputs.profile)
+   || github.ref == 'refs/heads/main' && 'Production Release'
+   || format('Branch · {0}', github.ref_name) }}
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform
+        type: choice
+        required: true
+        default: ios
+        options:
+          - ios
+          - android
+      profile:
+        description: EAS profile
+        type: choice
+        default: production
+        options:
+          - production
+          - preview
+          - development
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # This job was `ci.yml`, folded in so `pnpm check` runs once per PR rather than
+  # twice. Everything downstream needs it anyway, and a separate workflow could
+  # not be a `needs:` of one.
+  #
+  # PRs are the intended path. The push trigger above is a backstop: direct
+  # pushes to main are refused by .githooks/pre-push, but that hook is local-only
+  # and `--no-verify` skips it, so main is still verified if something gets
+  # through.
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # One command, unlike money2time's check-then-test: `pnpm check` here is
+      # already turbo typecheck + test followed by a root Biome pass. Lint is a
+      # root-level pass rather than a turbo task so it also covers
+      # apps/supabase/functions, which is not a workspace package.
+      - run: pnpm check
+
+  preview-pending:
+    name: PR Preview · Pending comment
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Flag preview comment as pending
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commit = context.payload.pull_request.head.sha.slice(0, 7);
+            const marker = '<!-- eas-update-preview -->';
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+            // Keep the previously published QR/link in place and only flip the
+            // status row, so the old build stays scannable meanwhile but is
+            // clearly marked as not this commit.
+            const pendingStatus = `| **Status** | ⏳ Building \`${commit}\`… — the QR below is still the previous build |`;
+            const statusRe = /\| \*\*Status\*\* \|[^\n]*\|/;
+            if (existing && statusRe.test(existing.body)) {
+              const body = existing.body.replace(statusRe, pendingStatus);
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              const body = [
+                marker,
+                '## 📱 Preview this update',
+                '',
+                `⏳ **Building the first preview** for commit \`${commit}\`… This comment updates automatically with a QR code and link the moment it is ready.`,
+              ].join('\n');
+              if (existing) {
+                await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+              } else {
+                await github.rest.issues.createComment({ owner, repo, issue_number, body });
+              }
+            }
+
+  pr-update:
+    name: PR Preview · EAS Update
+    needs: test
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # `eas.json` asks for >= 21.4.0 and the repo pins eas-cli in
+      # devDependencies; this installs the CLI globally and handles auth. The
+      # floor in eas.json is what keeps `latest` from silently going backwards.
+      - name: Set up EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build update message
+        id: message
+        env:
+          # Through an env var, never inlined: a PR title is attacker-controlled
+          # text and this string reaches a shell.
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          # Cosmetic message. Strip double quotes and backticks so a title like
+          # Add "X" step does not break the preview action's argv parsing.
+          clean="${PR_TITLE//\"/}"
+          clean="${clean//\`/}"
+          echo "text=${clean}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish PR update
+        id: preview
+        uses: expo/expo-github-action/preview@v8
+        with:
+          working-directory: apps/mobile
+          command: eas update --branch pr-${{ github.event.number }} --message "${{ steps.message.outputs.text }}"
+          comment: false
+
+      - name: Comment QR code and link
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const link = `${{ steps.preview.outputs.link }}`;
+            const qr = `${{ steps.preview.outputs.qr }}`;
+            const branch = `${{ steps.preview.outputs.branchName }}`;
+            const runtime = `${{ steps.preview.outputs.runtimeVersion }}`;
+            const commit = context.payload.pull_request.head.sha.slice(0, 7);
+            const publishedAt = new Date().toLocaleString('en-US', {
+              timeZone: 'Asia/Kuala_Lumpur',
+              dateStyle: 'medium',
+              timeStyle: 'short',
+            }) + ' GMT+8';
+            const marker = '<!-- eas-update-preview -->';
+            const body = [
+              marker,
+              '## 📱 Preview this update',
+              '',
+              'Your changes are published to a preview branch — open them on your device in one tap.',
+              '',
+              '<table>',
+              '<tr>',
+              `<td width="260" align="center"><a href="${link}"><img src="${qr}" width="220" alt="EAS Update QR code" /></a><br/><sub>Scan or tap to open with your dev build</sub></td>`,
+              '<td valign="middle">',
+              '',
+              '| | |',
+              '| --- | --- |',
+              '| **Status** | ✅ Up to date |',
+              `| **Branch** | \`${branch}\` |`,
+              `| **Runtime** | \`${runtime}\` |`,
+              `| **Commit** | \`${commit}\` |`,
+              `| **Published** | ${publishedAt} |`,
+              '',
+              '</td>',
+              '</tr>',
+              '</table>',
+            ].join('\n');
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+
+  plan:
+    name: Production · Plan
+    needs: test
+    if: >-
+      github.event_name == 'push'
+      || (github.event_name == 'workflow_dispatch' && github.event.inputs.profile != 'development')
+    runs-on: ubuntu-latest
+    outputs:
+      include: ${{ steps.matrix.outputs.include }}
+    steps:
+      - name: Resolve build matrix
+        id: matrix
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo 'include=[{"platform":"ios","label":"iOS","os":"macos-15","profile":"production"},{"platform":"android","label":"Android","os":"ubuntu-latest","profile":"production"}]' >> "$GITHUB_OUTPUT"
+          else
+            if [ "${{ inputs.platform }}" = "ios" ]; then
+              os="macos-15"
+              label="iOS"
+            else
+              os="ubuntu-latest"
+              label="Android"
+            fi
+            echo "include=[{\"platform\":\"${{ inputs.platform }}\",\"label\":\"$label\",\"os\":\"$os\",\"profile\":\"${{ inputs.profile }}\"}]" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    name: Production · App (${{ matrix.label }} · ${{ matrix.profile }})
+    needs: plan
+    strategy:
+      # One platform failing should not cancel the other's 40-minute build.
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.include) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      # No SENTRY_AUTH_TOKEN here on purpose.
+      #
+      # The Sentry Expo plugin adds an "Upload Debug Symbols to Sentry" phase and
+      # a sourcemap upload inside "Bundle React Native code and images"; org and
+      # project come from app.json, the token cannot. It lives in the EAS
+      # `production` environment instead of a GitHub secret — the same place
+      # money2time keeps it, and the reason its workflow never mentions it. EAS
+      # injects that environment into `--local` builds too, so one store serves
+      # both cloud and runner builds and there is no second copy to rotate.
+      #
+      # CocoaPods 1.17 dies in `Pod::Config#installation_root` with
+      # "Unicode Normalization not appropriate for ASCII-8BIT" when the locale is
+      # unset, and a local EAS build runs `pod install`. It surfaces as a generic
+      # "something went wrong running pod install", which reads like a dependency
+      # problem and is not one. Same fix as the `ios` script in package.json.
+      LANG: en_US.UTF-8
+    steps:
+      - name: Verify branch
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "Deploy can only run on main (got ${{ github.ref }})."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        if: matrix.platform == 'ios'
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Set up Java
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Cache eas-build-local
+        uses: actions/cache@v4
+        with:
+          path: ~/.eas-build-local
+          key: ${{ runner.os }}-eas-build-local-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-eas-build-local-
+
+      - name: Cache CocoaPods
+        if: matrix.platform == 'ios'
+        uses: actions/cache@v4
+        with:
+          path: apps/mobile/ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('apps/mobile/ios/Podfile.lock') }}
+          restore-keys: ${{ runner.os }}-pods-
+
+      - name: Cache Gradle
+        if: matrix.platform == 'android'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('apps/mobile/android/**/*.gradle*', 'apps/mobile/android/**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Resolve output path
+        id: output
+        shell: bash
+        run: |
+          if [ "${{ matrix.platform }}" = "ios" ]; then
+            ext=ipa
+          elif [ "${{ matrix.profile }}" = "production" ]; then
+            ext=aab
+          else
+            ext=apk
+          fi
+          echo "file=./build/ricecal-${{ matrix.platform }}-${{ matrix.profile }}.$ext" >> "$GITHUB_OUTPUT"
+
+      # `--local` builds on the runner rather than queueing on EAS: no wait for a
+      # shared queue, and no per-build charge. The trade is that the runner has to
+      # carry the whole native toolchain, which is what the caches above are for.
+      - name: Build app
+        working-directory: apps/mobile
+        run: |
+          mkdir -p build
+          eas build \
+            --platform ${{ matrix.platform }} \
+            --profile ${{ matrix.profile }} \
+            --local \
+            --non-interactive \
+            --output=${{ steps.output.outputs.file }}
+
+      - name: Submit build
+        working-directory: apps/mobile
+        run: |
+          eas submit \
+            --platform ${{ matrix.platform }} \
+            --profile ${{ matrix.profile }} \
+            --path ${{ steps.output.outputs.file }} \
+            --non-interactive
+
+  dev-build:
+    name: Dev · Build (${{ github.event.inputs.platform }})
+    needs: test
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.profile == 'development'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Set up EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # Cloud, not `--local`, and `--no-wait`: a dev client is a one-off artefact
+      # someone installs by hand, so there is nothing to gain from holding a
+      # runner open for it. The build page link is in the step output.
+      - name: Start cloud dev-client build
+        working-directory: apps/mobile
+        run: |
+          eas build \
+            --platform ${{ github.event.inputs.platform }} \
+            --profile ${{ github.event.inputs.profile }} \
+            --non-interactive \
+            --no-wait

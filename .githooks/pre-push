@@ -27,9 +27,10 @@ while read -r _local_ref _local_sha remote_ref _remote_sha; do
       git push -u origin <branch-name>
       gh pr create --fill
 
-    CI (ci.yml) and, for supabase/** changes, supabase-migrations.yml run on
-    the PR. Pushing straight to main skips both -- that is exactly how a lint
-    failure reached main earlier.
+    CI (deploy.yml) and, for apps/supabase/** changes, supabase-migrations.yml
+    run on the PR. Pushing straight to main skips both -- that is exactly how a
+    lint failure reached main earlier. Worse now: a push to main is also what
+    triggers the production build and store submit.
 
     To override deliberately: git push --no-verify
 

@@ -11,8 +11,17 @@
 
 import { execFileSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
-const OUT = 'apps/mobile/src/lib/database.types.ts'
+// Anchored to this file rather than to the working directory. The Supabase
+// project moved from the repo root to apps/, and a script that resolves its
+// paths from `cwd` only works when it is launched from exactly one place —
+// which is not obvious from the outside and fails as a wrong-looking `supabase`
+// error rather than a path error.
+const REPO_ROOT = fileURLToPath(new URL('../../..', import.meta.url))
+const WORKDIR = fileURLToPath(new URL('../..', import.meta.url))
+
+const OUT = `${REPO_ROOT}apps/mobile/src/lib/database.types.ts`
 
 const BANNER = `/**
  * GENERATED FILE — do not edit.
@@ -31,10 +40,21 @@ const BANNER = `/**
 
 `
 
-const generated = execFileSync('supabase', ['gen', 'types', 'typescript', '--local'], {
-  encoding: 'utf8',
-  maxBuffer: 32 * 1024 * 1024,
-})
+const generated = execFileSync(
+  'supabase',
+  ['gen', 'types', 'typescript', '--local', '--workdir', WORKDIR],
+  {
+    encoding: 'utf8',
+    maxBuffer: 32 * 1024 * 1024,
+  },
+)
 
 writeFileSync(OUT, BANNER + generated)
+
+// `supabase gen types` formats to its own taste, not this repo's. Without this
+// the file lands unformatted and `biome check .` fails the build on a file
+// nobody edited. The committed copy was tidied by hand once, which works right
+// up until the next regeneration.
+execFileSync('npx', ['biome', 'format', '--write', OUT], { stdio: 'inherit' })
+
 process.stdout.write(`${OUT} regenerated (${generated.split('\n').length} lines)\n`)

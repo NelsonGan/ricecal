@@ -17,20 +17,34 @@ import { NavAction, NavBar, NavItem } from '@/ui'
  * why `NavBar` takes them as direct children.
  */
 export default function TabsLayout() {
+  const { session, loading } = useSession()
+
+  // The other half of the guard at `/`. Signing out happens from inside these
+  // tabs, so without this the user is left on a screen whose every query has
+  // just started failing.
+  //
+  // The guard has to come BEFORE anything that reads the session, which is why
+  // the tab bar itself is a separate component. `useReminderSync` reaches
+  // `useUserId`, and that throws by design when there is no session — a rule
+  // hooks made impossible to honour here, since the call could not be skipped
+  // ahead of this early return. The visible failure was a red
+  // "useUserId called with no session" screen, and a blank one after dismissing
+  // it, whenever the session went away while the tabs were mounted: signing
+  // out, a token that failed to persist, or a Fast Refresh in development.
+  if (loading) return null
+  if (!session) return <Redirect href="/sign-in" />
+
+  return <SignedInTabs />
+}
+
+function SignedInTabs() {
   const { t } = useTranslation()
   const router = useRouter()
-
-  const { session, loading } = useSession()
 
   // Here rather than in the root layout: it needs a session, and this is the
   // first thing that only renders with one. Rewrites the phone's scheduled
   // reminders whenever the settings behind them change.
   useReminderSync()
-
-  // The other half of the guard at `/`. Signing out happens from inside these
-  // tabs, so without this the user is left on a screen whose every query has
-  // just started failing.
-  if (!loading && !session) return <Redirect href="/sign-in" />
 
   return (
     <Tabs>

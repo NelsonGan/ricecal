@@ -103,7 +103,10 @@ export default function TodayScreen() {
       <ScreenTitle
         title={t('logging:today.title')}
         trailing={
-          <Badge tone="kaya" className="flex-row items-center gap-1.5">
+          // Badge lays a non-text child out as a row and centres it, so the
+          // flame sits against the middle of the label rather than its
+          // baseline.
+          <Badge tone="kaya">
             <Icon set="body" name="flame-burn" size={18} />
             <Text variant="caption" className="text-kaya-ink">
               {t('common:count.dayStreak', { count: streak.current })}
