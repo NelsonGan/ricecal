@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { useFoodSearch } from '@/data'
+import { ItemRow } from '@/features/shared'
 import { useDebouncedValue } from '@/lib/use-debounce'
 import { Card, EmptyState, SearchField, Skeleton } from '@/ui'
-import { ItemRow } from '../shared'
 
 /**
  * Placeholder rows shown while a search is in flight.

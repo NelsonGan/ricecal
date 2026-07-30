@@ -90,14 +90,17 @@ export function useDeleteWeighIn() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ date }: { date: string }) => {
-      const { error } = await supabase
-        .from('weight_logs')
-        .delete()
-        .eq('user_id', userId)
-        .eq('measured_on', date)
-      if (error) throw error
-    },
+    mutationFn: async ({ date }: { date: string }) =>
+      unwrap(
+        await supabase
+          .from('weight_logs')
+          .delete()
+          .eq('user_id', userId)
+          .eq('measured_on', date)
+          // Selected so this goes through `unwrap` like every other write here,
+          // rather than growing its own error handling.
+          .select('measured_on'),
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: keys.weighIns(userId) })
       queryClient.invalidateQueries({ queryKey: keys.goals(userId) })

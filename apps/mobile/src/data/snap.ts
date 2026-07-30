@@ -75,7 +75,7 @@ export function useSnapFood() {
           pending.remove(id)
           queryClient.invalidateQueries({ queryKey: keys.day(userId, logDate) })
           queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
-          queryClient.invalidateQueries({ queryKey: keys.usualFoods(userId, meal) })
+          queryClient.invalidateQueries({ queryKey: keys.recentFoodsAll(userId) })
         })
         // The row stays, with its photo, and says it could not be read. Losing
         // both because a request timed out would make the user take the

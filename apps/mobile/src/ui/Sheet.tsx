@@ -154,6 +154,9 @@ export function SheetSurface({
       contentContainerStyle={{ gap: spacing.md }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
+      // How a full-height sheet gets out of the keyboard's way: the LIST insets,
+      // rather than the panel shrinking. See the note on the wrapper below.
+      automaticallyAdjustKeyboardInsets={fullHeight}
     >
       {children}
     </ScrollView>
@@ -175,13 +178,24 @@ export function SheetSurface({
     >
       {/* Android is left on `undefined`: `adjustResize` already shrinks the
           window, and stacking both double-counts the inset — the same
-          reasoning as in `Screen`. */}
+          reasoning as in `Screen`.
+          A full-height sheet gets no behaviour on either platform. `padding` pads
+          the panel's OUTSIDE, so the panel stopped where the keyboard began and
+          the strip behind it — including the curve at the keyboard's top corners —
+          showed the scrim rather than the sheet. A sheet that reaches the bottom
+          of the screen has to keep reaching it; the ScrollView above insets its
+          own content instead, so the field stays above the keys and the surface
+          runs the whole way down. */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className={fullHeight ? 'flex-1' : undefined}
-        // The scrim stays visible above the panel. A sheet flush to the top edge
-        // reads as a screen that arrived from the wrong direction.
-        style={fullHeight ? { marginTop: insets.top } : undefined}
+        behavior={!fullHeight && Platform.OS === 'ios' ? 'padding' : undefined}
+        // Styled rather than classed, unlike everything else here: this is the one
+        // element in the file that is not a plain RN view, and whether NativeWind
+        // reaches it is not worth depending on for the layout that decides whether
+        // the panel has any height at all.
+        //
+        // The margin keeps the scrim visible above a full-height panel. Flush to
+        // the top edge it reads as a screen that arrived from the wrong direction.
+        style={fullHeight ? { flex: 1, marginTop: insets.top } : undefined}
       >
         <AnimatedPressable
           className={cn(

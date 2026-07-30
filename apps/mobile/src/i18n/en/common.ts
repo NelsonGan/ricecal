@@ -46,7 +46,7 @@ export const common = {
     kcalUpper: 'KCAL',
     grams: '{{value}}g',
     /** Eaten against the day's allowance, on a macro bar that has been toggled. */
-    gramsOfGoal: '{{value}} / {{goal}}g',
+    gramsOfGoal: '{{value}}/{{goal}}g',
     kg: 'kg',
     cm: 'cm',
     /** Screen-reader expansion. "182 g" reads better than "182g". */

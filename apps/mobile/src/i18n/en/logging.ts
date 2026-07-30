@@ -3,8 +3,12 @@ export const logging = {
     title: 'Today',
     kcalLeft: 'KCAL LEFT',
     kcalOver: 'KCAL OVER',
-    /** The same ring, tapped: eaten so far against the day's allowance. */
-    kcalOfGoal: 'OF {{goal}} KCAL',
+    /**
+     * The same ring, tapped: eaten so far against the day's allowance. The big
+     * number above it is what has been eaten, so this is the second half of a
+     * fraction — a slash rather than the word "of", matching the macro bars.
+     */
+    kcalOfGoal: '/{{goal}} KCAL',
     showGoals: 'Show the day’s allowance',
     showLeft: 'Show what is left',
     /** Shown when the day is over budget. Never scold. */
@@ -30,9 +34,10 @@ export const logging = {
     title: 'Add to {{meal}}',
     remaining: '{{count}} left',
     snap: 'Snap',
-    say: 'Say',
     search: 'Search',
-    usual: 'USUAL AT THIS TIME',
+    /** The last few dishes logged at this meal, newest first. */
+    recent: 'LAST LOGGED',
+    nothingRecent: 'Nothing logged for {{meal}} yet.',
     repeatYesterday: 'Repeat yesterday',
     nothingYesterday: 'Nothing logged yesterday',
   },

@@ -10,9 +10,9 @@ import {
   useDay,
   useDayLog,
   useLogFood,
+  useRecentFoods,
   useSelectedDate,
   useTargets,
-  useUsualFoods,
 } from '@/data'
 import { FoodSearchPanel, InlineCamera, QuickAction } from '@/features/logging'
 import { ItemRow } from '@/features/shared'
@@ -63,9 +63,10 @@ export default function LogSheet() {
   const mealName = t(`common:meal.${meal}`)
   const left = (targets?.kcal ?? 0) - sumMacros(day.entries).kcal
 
-  // "What you usually eat at this time", from this user's own history rather
-  // than from a column on the shared catalogue.
-  const { data: usual = [] } = useUsualFoods(meal)
+  // The last three dishes logged at this meal, newest first. Recency rather than
+  // frequency: what someone had for breakfast this week is a better guess at
+  // what is on the plate than what they have had most often since installing.
+  const { data: recent = [] } = useRecentFoods(meal)
 
   // Yesterday is a second day query. Cheap, cached, and the only way to offer
   // "repeat" without keeping every day in memory the way the mock store did.
@@ -134,12 +135,8 @@ export default function LogSheet() {
           selected={panel === 'camera'}
           onPress={() => toggle('camera')}
         />
-        <QuickAction
-          label={t('logging:selector.say')}
-          icon={{ set: 'system', name: 'microphone' }}
-          tone="hibiscus"
-          onPress={() => router.push({ pathname: '/log/voice', params: { meal } })}
-        />
+        {/* No "Say". Dictation is off until it does something — `log/voice` is
+            still routable, and nothing points at it. */}
         <QuickAction
           label={t('logging:selector.search')}
           icon={{ set: 'ui', name: 'search' }}
@@ -157,16 +154,25 @@ export default function LogSheet() {
       {panel === 'search' ? null : (
         <>
           <View className="gap-3 pt-1">
-            <Text variant="overline">{t('logging:selector.usual')}</Text>
+            <Text variant="overline">{t('logging:selector.recent')}</Text>
 
-            {usual.map((food) => (
+            {recent.length === 0 ? (
+              <Text variant="meta">
+                {t('logging:selector.nothingRecent', { meal: mealName.toLowerCase() })}
+              </Text>
+            ) : null}
+
+            {recent.map((food) => (
               <ItemRow
                 key={food.id}
                 title={food.name}
                 icon={food.icon}
                 value={food.macros.kcal}
                 unit="kcal"
-                detail={`${food.servingLabel}, ${t('common:count.times', { count: food.timesLogged ?? 0 })}`}
+                // The portion, not a count of how often it has been logged: this
+                // list is ordered by when, and "3 times" answered a question it
+                // is no longer sorted by.
+                detail={food.servingLabel}
                 trailing={
                   <IconButton
                     size="sm"
