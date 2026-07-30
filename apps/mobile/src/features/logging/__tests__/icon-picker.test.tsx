@@ -7,13 +7,14 @@ import { ThemeProvider } from '@/theme/ThemeProvider'
 import { IconPicker } from '../IconPicker'
 
 /**
- * The picker exists because the catalogue cannot be illustrated, so the two
- * behaviours worth pinning are the ones that make it usable at that scale:
- * searching by dish name, and being able to choose nothing at all.
+ * The picker exists because the catalogue cannot be illustrated: a few hundred
+ * drawings against hundreds of megabytes of imported foods. So what is worth
+ * pinning is what makes it usable at that scale — searching by dish name — and
+ * that it hands back the tagged pair `Icon` takes rather than two loose props.
  *
- * "Nothing" is a distinct answer from "unchanged". The screen sends `null` to
- * clear an override and hands the row back to whatever the food carries; sending
- * `undefined` would leave the old picture in place.
+ * There is no "use no picture" row any more. Nothing arrives here carrying a
+ * picture it did not ask for, so the only thing that button could undo was a
+ * choice made in this sheet a moment earlier.
  */
 
 function Providers({ children }: { children: ReactNode }) {
@@ -67,17 +68,14 @@ it('hands back the pair, not two loose props', async () => {
   expect(onClose).toHaveBeenCalled()
 })
 
-/** `null`, not `undefined`: one clears the override, the other changes nothing. */
-it('clears with null when there is something to clear', async () => {
+it('marks the picture already on the row as chosen', async () => {
   await open({ set: 'dishes', name: 'nasi-lemak' })
-  await user.press(screen.getByText('Use no picture'))
 
-  expect(onSelect).toHaveBeenCalledWith(null)
-})
-
-it('offers nothing to clear when nothing is set', async () => {
-  await open()
-  expect(screen.queryByText('Use no picture')).toBeNull()
+  // `toBeSelected`, not `toHaveAccessibilityState` — RNTL v14 dropped the
+  // whole-object matcher, and calling it fails as "not a function" rather than as
+  // a bad assertion.
+  expect(screen.getByLabelText('nasi lemak')).toBeSelected()
+  expect(screen.getByLabelText('roti canai')).not.toBeSelected()
 })
 
 it('says so when the search matches nothing', async () => {

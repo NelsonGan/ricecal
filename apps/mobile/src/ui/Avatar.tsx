@@ -2,7 +2,9 @@ import { Image } from 'expo-image'
 import { View } from 'react-native'
 
 import { radius as radiusScale, slab } from '@/theme/tokens'
+import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
+import { Icon } from './Icon'
 import { Squish } from './Squish'
 import { Text } from './Text'
 
@@ -14,18 +16,31 @@ const sizes = {
 
 const tones = ['pandan', 'kaya', 'water', 'hibiscus'] as const
 const fills = {
-  pandan: { fill: 'bg-pandan', slab: 'bg-pandan-slab', label: 'text-on-pandan' },
-  kaya: { fill: 'bg-kaya', slab: 'bg-kaya-slab', label: 'text-on-kaya' },
-  water: { fill: 'bg-water', slab: 'bg-water-slab', label: 'text-on-water' },
-  hibiscus: { fill: 'bg-hibiscus', slab: 'bg-hibiscus-slab', label: 'text-on-hibiscus' },
+  pandan: { fill: 'bg-pandan', slab: 'bg-pandan-slab', label: 'text-on-pandan', on: 'onPandan' },
+  kaya: { fill: 'bg-kaya', slab: 'bg-kaya-slab', label: 'text-on-kaya', on: 'onKaya' },
+  water: { fill: 'bg-water', slab: 'bg-water-slab', label: 'text-on-water', on: 'onWater' },
+  hibiscus: {
+    fill: 'bg-hibiscus',
+    slab: 'bg-hibiscus-slab',
+    label: 'text-on-hibiscus',
+    on: 'onHibiscus',
+  },
 } as const
 
 export type AvatarSize = keyof typeof sizes
 export type AvatarTone = (typeof tones)[number]
 
 export type AvatarProps = {
-  /** Full name. The initial is derived from it; also used as the a11y label. */
+  /**
+   * Full name, or empty for an account that has not given one. The initial and
+   * the tone are derived from it, and it is the a11y label unless one is passed.
+   */
   name: string
+  /**
+   * What a screen reader says. Pass it when `name` is empty — "—" is what the
+   * layout shows in that case and not something worth reading out.
+   */
+  accessibilityLabel?: string
   /** Remote or local image. Falls back to the initial while loading or on error. */
   uri?: string | null
   size?: AvatarSize
@@ -46,11 +61,31 @@ function toneFor(name: string): AvatarTone {
   return tones[Math.abs(hash) % tones.length]
 }
 
-/** Rounded-square avatar with an initial fallback. */
-export function Avatar({ name, uri, size = 'md', tone, className }: AvatarProps) {
+/**
+ * Whether this name is a name, or a placeholder standing in for one.
+ *
+ * Nobody is asked for a name any more — signing in is a link in an email — so
+ * `display_name` is empty for most accounts, and the screens pass an em dash
+ * where a name would go. An avatar reading "—" or "?" looks like a rendering
+ * fault; the stock figure below looks like an account with no picture yet, which
+ * is what it is.
+ */
+const isRealName = (name: string) => /\p{L}/u.test(name)
+
+/** Rounded-square avatar with a stock figure behind the initial. */
+export function Avatar({
+  name,
+  accessibilityLabel,
+  uri,
+  size = 'md',
+  tone,
+  className,
+}: AvatarProps) {
   const metrics = sizes[size]
   const palette = fills[tone ?? toneFor(name)]
-  const initial = name.trim().charAt(0).toUpperCase() || '?'
+  const colors = useThemeColors()
+  const named = isRealName(name)
+  const initial = name.trim().charAt(0).toUpperCase()
 
   return (
     <Squish
@@ -59,7 +94,7 @@ export function Avatar({ name, uri, size = 'md', tone, className }: AvatarProps)
       containerClassName={cn('self-start', className)}
       slabClassName={palette.slab}
       className={cn('items-center justify-center overflow-hidden', palette.fill)}
-      accessibilityLabel={name}
+      accessibilityLabel={accessibilityLabel ?? name}
     >
       <View
         style={{ width: metrics.box, height: metrics.box }}
@@ -71,8 +106,18 @@ export function Avatar({ name, uri, size = 'md', tone, className }: AvatarProps)
             style={{ width: metrics.box, height: metrics.box }}
             contentFit="cover"
           />
-        ) : (
+        ) : named ? (
           <Text className={cn('font-display', metrics.font, palette.label)}>{initial}</Text>
+        ) : (
+          // Flattened to the tile's own foreground colour, so it reads as a
+          // silhouette rather than as the teal-and-cream drawing it is in a list
+          // of settings icons.
+          <Icon
+            set="ui"
+            name="profile"
+            size={Math.round(metrics.box * 0.62)}
+            tintColor={colors[palette.on]}
+          />
         )}
       </View>
     </Squish>

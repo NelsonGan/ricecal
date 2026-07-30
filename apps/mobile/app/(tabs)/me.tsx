@@ -58,7 +58,14 @@ export default function MeScreen() {
 
       <Card>
         <View className="flex-row items-center gap-3">
-          <Avatar name={profile?.display_name || '—'} size="md" tone="pandan" />
+          {/* Empty rather than an em dash: with no name the avatar draws a stock
+              figure, and "—" would have been read out as the account's name. */}
+          <Avatar
+            name={profile?.display_name ?? ''}
+            accessibilityLabel={profile?.display_name || t('profile:home.noName')}
+            size="md"
+            tone="pandan"
+          />
           <View className="min-w-0 flex-1 gap-0.5">
             <Text variant="subtitle">{profile?.display_name || t('profile:home.noName')}</Text>
             <Text variant="meta">

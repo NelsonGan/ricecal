@@ -26,6 +26,8 @@ import {
   Card,
   Chip,
   ConfirmSheet,
+  cn,
+  Divider,
   Icon,
   Screen,
   SegmentedControl,
@@ -82,17 +84,18 @@ export default function FoodDetail() {
   const [note, setNote] = useState(existing?.note ?? '')
   const [confirmDelete, setConfirmDelete] = useState(false)
   /**
-   * The illustration, only once the user has touched it.
+   * The illustration, only once the user has picked one.
    *
-   * `undefined` is untouched and `null` is "no picture", which are different
-   * writes: the first sends nothing, the second clears the override and hands the
-   * row back to whatever the food carries. Seeding this from `existing.icon`
-   * would instead write the food's own icon onto the entry as an override the
-   * first time anything else was saved.
+   * `undefined` means untouched, which sends no icon at all. Seeding it from
+   * `existing.icon` would instead write the food's own drawing onto the entry as
+   * an override the first time anything else was saved.
    */
-  const [icon, setIcon] = useState<IconRef | null>()
+  const [icon, setIcon] = useState<IconRef>()
   const [pickingIcon, setPickingIcon] = useState(false)
   const [confirmReplacePhoto, setConfirmReplacePhoto] = useState(false)
+  // Collapsed by default. Fibre, sugar and salt are the second question about a
+  // dish, and for most of the catalogue the answer is "nobody recorded it".
+  const [showNutrients, setShowNutrients] = useState(false)
 
   const { data: heroUrl } = useMealPhotoUrl(existing?.photoPath)
 
@@ -120,7 +123,7 @@ export default function FoodDetail() {
    * snapped plate. Only an unsaved choice can override that, which is exactly the
    * swap: pick a drawing and the photo is on its way out.
    */
-  const shownIcon = icon !== undefined ? (icon ?? food.icon) : (existing?.icon ?? food.icon)
+  const shownIcon = icon ?? existing?.icon ?? food.icon
 
   // Defaults to the dish's base portion, which is the one its macros describe.
   const chosen = servingId || food.servings[0]?.id || ''
@@ -134,6 +137,31 @@ export default function FoodDetail() {
     protein: Math.round(food.macros.protein * factor),
     fat: Math.round(food.macros.fat * factor),
   }
+
+  /**
+   * The same scaling for the nutrients that are not part of the budget.
+   *
+   * `undefined` survives it: these columns are null for most of the imported
+   * catalogue, and null means nobody recorded the number rather than zero of it.
+   * One decimal, because a tenth of a gram of fibre is the resolution the
+   * database stores.
+   */
+  const scale = (value: number | undefined, dp = 1) =>
+    value === undefined ? undefined : Math.round(value * factor * 10 ** dp) / 10 ** dp
+
+  const grams = (value: number | undefined) =>
+    value === undefined ? undefined : t('common:unit.grams', { value })
+
+  const sodium = scale(food.extras.sodium, 0)
+  const extras = [
+    { key: 'fibre', label: t('logging:detail.fibre'), value: grams(scale(food.extras.fibre)) },
+    { key: 'sugar', label: t('logging:detail.sugar'), value: grams(scale(food.extras.sugar)) },
+    {
+      key: 'sodium',
+      label: t('logging:detail.sodium'),
+      value: sodium === undefined ? undefined : t('logging:detail.milligrams', { value: sodium }),
+    },
+  ] as const
 
   const save = () => {
     if (existing) {
@@ -165,7 +193,7 @@ export default function FoodDetail() {
       logDate: selectedDate,
       // Only what was actually chosen. `shownIcon` would write the food's own
       // drawing onto the row as an override, which is not an override at all.
-      icon: icon ?? undefined,
+      icon,
     })
     finish()
   }
@@ -206,7 +234,12 @@ export default function FoodDetail() {
           drawing throws the photo of the real plate away, and the row cannot hold
           both. That is not something to discover after the fact. */}
       <Tappable
-        className="h-[130px] items-center justify-center overflow-hidden rounded-card border-[3px] border-line bg-track"
+        className={cn(
+          'h-[130px] items-center justify-center overflow-hidden rounded-card border-[3px] bg-track',
+          // Dashed while there is nothing in it: a solid frame around an empty
+          // box reads as a picture that failed to load.
+          hero || shownIcon ? 'border-line' : 'border-line border-dashed',
+        )}
         onPress={() => (hero ? setConfirmReplacePhoto(true) : setPickingIcon(true))}
         accessibilityRole="button"
         accessibilityLabel={
@@ -223,10 +256,11 @@ export default function FoodDetail() {
         ) : shownIcon ? (
           <Icon {...shownIcon} size={100} />
         ) : (
-          // Most of the catalogue has no drawing, so this is the ordinary case
-          // rather than a missing asset. The camera is the offer: a photo of the
-          // actual plate beats any illustration of it.
-          <Icon set="system" name="camera" size={72} />
+          // Empty, and only a line of copy to say what the box is for. There was
+          // a camera illustration here, and at a glance in a list of dishes that
+          // read as this dish's picture — which is exactly what a row with no
+          // picture must not have.
+          <Text variant="meta">{t('logging:detail.addPicture')}</Text>
         )}
       </Tappable>
 
@@ -257,9 +291,16 @@ export default function FoodDetail() {
         <Stepper
           value={quantity}
           onChange={setQuantity}
-          min={1}
+          // Half a plate is an ordinary portion and used to be unreachable here:
+          // the steps were whole servings, so "half" could only be had by picking
+          // a serving that happened to be one. `Stepper` renders 1.5 as "1½".
+          min={0.5}
           max={20}
-          step={1}
+          step={0.5}
+          // And for the amounts halves cannot express — 0.3 of a tub — the number
+          // itself is a field.
+          editable
+          editLabel={t('logging:detail.typeServings')}
           accessibilityLabel={t('logging:detail.servings')}
           decrementLabel={t('common:a11y.decrease')}
           incrementLabel={t('common:a11y.increase')}
@@ -287,6 +328,43 @@ export default function FoodDetail() {
           <Text variant="overline">{t('logging:detail.total')}</Text>
         </View>
         {targets ? <MacroBars eaten={macros} targets={targets} /> : null}
+
+        <Divider />
+
+        {/* Collapsed, and shown for every dish including the ones with nothing to
+            report. Hiding the row when the columns are null would leave the
+            question unanswered — "does this app not know, or does this dish have
+            no sugar in it" — and the answer is worth one line of copy. */}
+        <Tappable
+          className="flex-row items-center justify-between"
+          onPress={() => setShowNutrients((open) => !open)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: showNutrients }}
+          accessibilityLabel={t('logging:detail.moreNutrients')}
+        >
+          <Text variant="label">{t('logging:detail.moreNutrients')}</Text>
+          <Icon set="ui" name={showNutrients ? 'chevron-up' : 'chevron-down'} size={20} />
+        </Tappable>
+
+        {showNutrients ? (
+          <View className="gap-2">
+            {extras.map((row) => (
+              <View key={row.key} className="flex-row items-baseline justify-between gap-3">
+                <Text variant="body">{row.label}</Text>
+                <Text variant="label" className={row.value ? undefined : 'text-faint'}>
+                  {/* An em dash rather than "0 g". Null in these columns means
+                      nobody recorded the number, and zero is a claim. */}
+                  {row.value ?? '—'}
+                </Text>
+              </View>
+            ))}
+            <Text variant="meta">
+              {extras.every((row) => row.value === undefined)
+                ? t('logging:detail.nutrientsUnknown')
+                : t('logging:detail.nutrientsNote')}
+            </Text>
+          </View>
+        ) : null}
       </Card>
 
       {/* Correcting a dish by describing it belongs to an entry that already

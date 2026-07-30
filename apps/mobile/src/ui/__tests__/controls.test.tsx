@@ -110,20 +110,57 @@ describe('CountBadge', () => {
   })
 })
 
+/**
+ * The value is a `TextInput` in both states, so it is a display value rather than
+ * text — `getByText` finds nothing here, which reads as the number not having
+ * rendered at all.
+ */
 describe('Stepper', () => {
   it('formats halves as vulgar fractions', async () => {
     await render(<Stepper value={1.5} onChange={() => {}} unit="plates" />)
-    expect(screen.getByText('1½')).toBeTruthy()
+    expect(screen.getByDisplayValue('1½')).toBeTruthy()
   })
 
   it('formats a bare half without a leading zero', async () => {
     await render(<Stepper value={0.5} onChange={() => {}} />)
-    expect(screen.getByText('½')).toBeTruthy()
+    expect(screen.getByDisplayValue('½')).toBeTruthy()
   })
 
   it('falls back to a number for values that are not clean quarters', async () => {
     await render(<Stepper value={1.3} onChange={() => {}} />)
-    expect(screen.getByText('1.3')).toBeTruthy()
+    expect(screen.getByDisplayValue('1.3')).toBeTruthy()
+  })
+
+  /**
+   * The steps cannot reach every amount — 0.35 of a tub is not a multiple of a
+   * half — so the number itself is a field when a caller opts in. Typing appends
+   * to what is there, and `user.type` ends in a blur, which is what commits.
+   */
+  it('takes an exact amount typed into it', async () => {
+    const onChange = jest.fn()
+    await render(<Stepper value={1} onChange={onChange} editable editLabel="Type the amount" />)
+
+    await user.type(screen.getByLabelText('Type the amount'), '.5')
+
+    expect(onChange).toHaveBeenLastCalledWith(1.5)
+  })
+
+  it('clamps what was typed rather than accepting it', async () => {
+    const onChange = jest.fn()
+    await render(
+      <Stepper value={1} max={10} onChange={onChange} editable editLabel="Type the amount" />,
+    )
+
+    // Appended to the 1 already there, so this is 19 against a ceiling of 10.
+    await user.type(screen.getByLabelText('Type the amount'), '9')
+
+    expect(onChange).toHaveBeenLastCalledWith(10)
+  })
+
+  /** Without `editable` the number is not a control, and must not announce as one. */
+  it('is not typeable unless asked', async () => {
+    await render(<Stepper value={1} onChange={() => {}} />)
+    expect(screen.queryByLabelText('Type the amount')).toBeNull()
   })
 
   it('stops at the floor', async () => {

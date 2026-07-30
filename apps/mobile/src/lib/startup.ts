@@ -1,7 +1,6 @@
 import * as Sentry from '@sentry/react-native'
 import { Mixpanel } from 'mixpanel-react-native'
 import { Platform } from 'react-native'
-import Purchases from 'react-native-purchases'
 
 import { env, isConfigured } from './env'
 
@@ -17,6 +16,12 @@ import { env, isConfigured } from './env'
 export let mixpanel: Mixpanel | null = null
 
 const skipped: string[] = []
+
+/**
+ * Turned off in code rather than for want of a key, so the dev log does not
+ * blame `.env.local` for something a comment did.
+ */
+const disabled: string[] = ['RevenueCat']
 
 export function initSentry() {
   if (!isConfigured(env.EXPO_PUBLIC_SENTRY_DSN)) {
@@ -41,24 +46,43 @@ export async function initMixpanel() {
   mixpanel = instance
 }
 
-export function initPurchases() {
+/**
+ * RevenueCat, and why it is not called.
+ *
+ * The key gate below was never the problem: `Purchases.configure` was already
+ * skipped on a placeholder key. The IMPORT was. `react-native-purchases` reaches
+ * for its native module at module scope, so merely pulling this file in threw on
+ * a build that has no RevenueCat pod — which is every build until the account is
+ * provisioned — and it threw from app start, before anything had rendered.
+ *
+ * So the import is dynamic and the call below is commented out rather than
+ * merely gated. `purchases.ts` already imports the SDK lazily at the point of
+ * sale for the same reason and says so; this is the last place that did it
+ * eagerly. Uncomment the line in `initServices` once the keys are real — nothing
+ * else here needs to change.
+ */
+export async function initPurchases() {
   const apiKey = Platform.OS === 'ios' ? env.EXPO_PUBLIC_RC_IOS_KEY : env.EXPO_PUBLIC_RC_ANDROID_KEY
   if (!isConfigured(apiKey)) {
     skipped.push('RevenueCat')
     return
   }
+  const Purchases = (await import('react-native-purchases')).default
   Purchases.configure({ apiKey })
 }
 
 /** Call once, as early as possible in the root layout. */
 export async function initServices() {
   initSentry()
-  initPurchases()
+  // await initPurchases()
   await initMixpanel()
 
   if (__DEV__ && skipped.length > 0) {
     console.log(
       `[startup] not initialised (key still ${'REPLACE_ME'} in .env.local): ${skipped.join(', ')}`,
     )
+  }
+  if (__DEV__ && disabled.length > 0) {
+    console.log(`[startup] switched off in src/lib/startup.ts: ${disabled.join(', ')}`)
   }
 }

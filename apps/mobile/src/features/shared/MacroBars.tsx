@@ -8,6 +8,14 @@ import { cn, MacroBar } from '@/ui'
 export type MacroBarsProps = {
   eaten: Macros
   targets: Pick<Targets, 'carbs' | 'protein' | 'fat'>
+  /**
+   * Reads "120 / 203g" instead of "120g".
+   *
+   * The bar has always shown the share of the day's allowance and never what the
+   * allowance is, which leaves the one number people want — how much protein am I
+   * meant to be getting — nowhere on the screen.
+   */
+  showGoal?: boolean
   className?: string
 }
 
@@ -18,7 +26,7 @@ export type MacroBarsProps = {
  * Today, on a food's detail and in the weekly report, and a reader learns the
  * colour once.
  */
-export function MacroBars({ eaten, targets, className }: MacroBarsProps) {
+export function MacroBars({ eaten, targets, showGoal = false, className }: MacroBarsProps) {
   const { t } = useTranslation()
 
   const rows = [
@@ -45,7 +53,11 @@ export function MacroBars({ eaten, targets, className }: MacroBarsProps) {
         <MacroBar
           key={row.key}
           label={row.label}
-          amount={t('unit.grams', { value: row.grams })}
+          amount={
+            showGoal
+              ? t('unit.gramsOfGoal', { value: row.grams, goal: Math.round(row.goal) })
+              : t('unit.grams', { value: row.grams })
+          }
           value={progressOf(row.grams, row.goal)}
           tone={row.tone}
         />

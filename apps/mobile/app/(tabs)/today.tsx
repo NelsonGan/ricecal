@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
 
 import {
   MEALS,
@@ -23,6 +22,7 @@ import {
   Icon,
   Screen,
   Skeleton,
+  Tappable,
   Text,
   useToast,
 } from '@/ui'
@@ -49,6 +49,14 @@ export default function TodayScreen() {
   const streak = useStreak()
   const removeEntry = useRemoveEntry()
   const pending = usePendingSnaps()
+  /**
+   * Whether the summary is showing the allowance rather than what is left.
+   *
+   * Not persisted. It is a glance, not a preference — and a setting that survived
+   * a relaunch would need somewhere to be changed other than by tapping the thing
+   * it changes.
+   */
+  const [showGoals, setShowGoals] = useState(false)
 
   const eaten = sumMacros(day.entries)
   const budget = targets?.kcal ?? 0
@@ -120,17 +128,34 @@ export default function TodayScreen() {
           <Skeleton className="h-[132px] w-full" />
         ) : targets ? (
           <>
-            <View className="flex-row items-center gap-4">
+            {/* Tapping the summary swaps every number in it from "what is left"
+                to "what of the allowance is used". Both readings answer a real
+                question and neither fits beside the other at this size, so they
+                share the space rather than the card growing a second row. */}
+            <Tappable
+              className="flex-row items-center gap-4"
+              onPress={() => setShowGoals((open) => !open)}
+              accessibilityRole="button"
+              accessibilityLabel={
+                showGoals ? t('logging:today.showLeft') : t('logging:today.showGoals')
+              }
+            >
               <CalorieRing
                 value={eaten.kcal}
                 goal={budget}
                 size={132}
                 thickness={16}
-                centerLabel={Math.abs(left).toLocaleString()}
-                centerCaption={over ? t('logging:today.kcalOver') : t('logging:today.kcalLeft')}
+                centerLabel={(showGoals ? eaten.kcal : Math.abs(left)).toLocaleString()}
+                centerCaption={
+                  showGoals
+                    ? t('logging:today.kcalOfGoal', { goal: budget.toLocaleString() })
+                    : over
+                      ? t('logging:today.kcalOver')
+                      : t('logging:today.kcalLeft')
+                }
               />
-              <MacroBars eaten={eaten} targets={targets} />
-            </View>
+              <MacroBars eaten={eaten} targets={targets} showGoal={showGoals} />
+            </Tappable>
 
             {over ? (
               <Text variant="meta" className="pt-1">

@@ -3,6 +3,10 @@ export const logging = {
     title: 'Today',
     kcalLeft: 'KCAL LEFT',
     kcalOver: 'KCAL OVER',
+    /** The same ring, tapped: eaten so far against the day's allowance. */
+    kcalOfGoal: 'OF {{goal}} KCAL',
+    showGoals: 'Show the day’s allowance',
+    showLeft: 'Show what is left',
     /** Shown when the day is over budget. Never scold. */
     overNote: 'A bit over today, tomorrow is a new count.',
     mealHeading: '{{meal}} · {{kcal}} KCAL',
@@ -77,7 +81,19 @@ export const logging = {
 
   detail: {
     servings: 'Servings',
+    /** The number in the stepper doubles as a field for an exact amount. */
+    typeServings: 'Type the exact amount',
     total: 'KCAL TOTAL',
+    /** The collapsed row that opens fibre, sugar and salt. */
+    moreNutrients: 'More nutrients',
+    fibre: 'Fibre',
+    sugar: 'Sugar',
+    sodium: 'Salt (sodium)',
+    milligrams: '{{value}}mg',
+    /** Under the list, when at least one number is known. */
+    nutrientsNote: 'For the portion above. A dash means the dish has no figure recorded.',
+    /** And when none of them is. */
+    nutrientsUnknown: 'No figures recorded for this dish yet. Its calories and macros are.',
     fixTitle: 'Fix it by typing',
     fixPlaceholder: 'no sambal, and it was half a plate',
     fixSend: 'Apply correction',
@@ -100,6 +116,8 @@ export const logging = {
     increaseServing: 'One more',
     /** The hero tile doubles as the way in to the icon picker when editing. */
     choosePicture: 'Choose a picture for this entry',
+    /** Inside the empty tile. The only thing in it — see the comment there. */
+    addPicture: 'Tap to add a picture',
     replacePhoto: 'Replace the photo with a picture',
     /**
      * A row holds a photo or a drawing, never both, so picking one discards the
@@ -123,7 +141,6 @@ export const logging = {
     searchLabel: 'Search pictures',
     searchPlaceholder: 'nasi lemak, teh tarik, fish',
     noMatch: 'Nothing matches “{{query}}”.',
-    clear: 'Use no picture',
   },
 
   diary: {
