@@ -32,7 +32,11 @@ const PACKAGES_NEEDING_TRANSFORM = [
 /** @type {import('jest').Config} */
 module.exports = {
   preset: 'jest-expo',
-  setupFiles: ['<rootDir>/jest.setup.js'],
+  // Skia's own setup, first: the module installs JSI bindings at import time and
+  // throws "Native Skia Module failed to correctly install JSI Bindings" without
+  // it. Anything reaching `src/ui`'s barrel pulls in BrandMark, and therefore
+  // Skia, whether the test renders a chart or not.
+  setupFiles: ['@shopify/react-native-skia/jestSetup.js', '<rootDir>/jest.setup.js'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup-after-env.js'],
   // Wraps the preset's resolver rather than replacing it — see jest.resolver.js.
   resolver: '<rootDir>/jest.resolver.js',
