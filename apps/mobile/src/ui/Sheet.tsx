@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect } from 'react'
+import { type ReactNode, useCallback, useEffect, useRef } from 'react'
 import {
   KeyboardAvoidingView,
   Modal,
@@ -184,7 +184,18 @@ export function SheetSurface({
    * It moves the same shared value the entrance animation uses, so a drag picks up
    * exactly where the rise left off and the two cannot fight.
    */
+  /**
+   * Once, whatever asks. A tap on the handle and a drag that lets go past the
+   * threshold can both arrive, and `onClose` is `router.back()` for a sheet that
+   * is a route — called twice it pops the screen UNDERNEATH, which on a tab bar is
+   * a different tab. The ref rather than state because this must be true on the
+   * same tick, not after a render.
+   */
+  const closing = useRef(false)
+
   const dismiss = useCallback(() => {
+    if (closing.current) return
+    closing.current = true
     rise.value = withTiming(height, { duration: FALL_MS, easing: Easing.in(Easing.cubic) }, () => {
       // After the panel is gone, not before: `onClose` unmounts this, and calling
       // it first would take the surface off screen with no animation at all.

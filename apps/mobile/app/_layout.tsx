@@ -150,14 +150,21 @@ function RootStack() {
           finished answering. */}
       <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
       {/* The quick selector sits over Today, so the screen behind it stays
-          visible and the sheet keeps its own scrim. */}
+          visible and the sheet keeps its own scrim.
+
+          `gestureEnabled: false` on both, and it is not cosmetic. A modal
+          presentation gets a native pull-down dismissal, and these sheets have a
+          drag handle of their own now — so a downward swipe ran both. The native
+          one popped the route; the handle's `onClose` then called `back()` on a
+          stack that had already unwound, which popped the TAB underneath and
+          landed the user on a different tab. One dismissal, from the handle. */}
       <Stack.Screen
         name="log/index"
-        options={{ presentation: 'transparentModal', animation: 'fade' }}
+        options={{ presentation: 'transparentModal', animation: 'fade', gestureEnabled: false }}
       />
       <Stack.Screen
         name="log/voice"
-        options={{ presentation: 'transparentModal', animation: 'fade' }}
+        options={{ presentation: 'transparentModal', animation: 'fade', gestureEnabled: false }}
       />
       {/* Search pushes. It is a place you go and come back from, not something
           that comes up over the day: the query survives the trip to a dish and

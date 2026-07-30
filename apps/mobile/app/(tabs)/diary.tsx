@@ -1,141 +1,274 @@
-import { addDays, format, parseISO, startOfWeek } from 'date-fns'
+import {
+  addMonths,
+  addYears,
+  endOfMonth,
+  endOfYear,
+  format,
+  parseISO,
+  startOfMonth,
+  startOfYear,
+} from 'date-fns'
 import { useRouter } from 'expo-router'
+import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
+import { dateKey, type Entry, today as todayKey, useNutritionRange, useSelectedDate } from '@/data'
 import {
-  dateKey,
-  MEALS,
-  useDayLog,
-  useNutritionRange,
-  usePendingSnaps,
-  useSelectedDate,
-  useSetWater,
-  useTargets,
-} from '@/data'
-import { MealCard, ScreenTitle } from '@/features/shared'
-import { progressOf, sumMacros } from '@/lib/nutrition'
-import { Card, DateStrip, type DateStripDay, ProgressBar, Screen, Text, WaterTracker } from '@/ui'
+  CalendarHeader,
+  CENTRE_ORIGIN,
+  DayPager,
+  MonthGrid,
+  type Origin,
+  YearGrid,
+  ZoomLayer,
+} from '@/features/diary'
+import { NAV_BAR_HEIGHT, Screen } from '@/ui'
 
-/** L7 DIARY DAY */
+/** The three levels, outermost last. */
+type Level = 'day' | 'month' | 'year'
+
+/**
+ * L7 DIARY, at three zoom levels.
+ *
+ * A day, the month it belongs to, and the year — the same three Apple's calendar
+ * has, and for the same reason: a diary is read one day at a time and navigated one
+ * month at a time, and neither of those is the same job. The day swipes sideways
+ * because that is how you read consecutive days; the month and the year are reached
+ * by zooming out, because they are where you are, not somewhere else.
+ *
+ * How the zoom is built is in `ZoomLayer`, and the short version is that both levels
+ * animate in the same direction at once, pivoted on the cell that was tapped, so it
+ * reads as travel rather than as a crossfade. What this screen owns is the state
+ * machine: which level is showing, which level is on its way out, and where the
+ * zoom is anchored.
+ *
+ * `cursor` is separate from the selected day on purpose. Paging through months to
+ * see what August looked like must not move which day the diary is showing — only
+ * tapping a date does that, which is also the tap that zooms back in.
+ */
 export default function DiaryScreen() {
   const { t } = useTranslation(['logging', 'common'])
   const router = useRouter()
-
   const { selectedDate, setSelectedDate } = useSelectedDate()
-  const day = useDayLog(selectedDate)
-  const { data: targets } = useTargets()
-  const setWater = useSetWater(selectedDate)
-  const pending = usePendingSnaps()
+
+  const [level, setLevel] = useState<Level>('day')
+  /** The month and year being browsed. Follows the selected day on the way out. */
+  const [cursor, setCursor] = useState(() => parseISO(selectedDate))
+  /** Where the current level's entrance is anchored. */
+  const [origin, setOrigin] = useState<Origin>(CENTRE_ORIGIN)
+  /** Which way the last zoom went, so both layers travel together. */
+  const [direction, setDirection] = useState<'in' | 'out'>('in')
+  /** The level on its way out, mounted only for the length of the animation. */
+  const [leaving, setLeaving] = useState<Level | null>(null)
+
+  /**
+   * The level as of now, for the arriving layer's completion callback to check
+   * itself against.
+   *
+   * A zoom that starts while another is still running unmounts the layer in
+   * flight, but its timing callback has already been scheduled and still fires.
+   * Left ungated it clears `leaving` for the transition that is now running, and
+   * the level being left behind vanishes instead of receding.
+   */
+  const levelNow = useRef<Level>('day')
+  levelNow.current = level
+
+  const zoom = useCallback((next: Level, to: 'in' | 'out', at: Origin) => {
+    setDirection(to)
+    setOrigin(at)
+    setLeaving(levelBefore(next, to))
+    setLevel(next)
+  }, [])
+
+  const openDay = (key: string, at: Origin) => {
+    setSelectedDate(key)
+    setCursor(parseISO(key))
+    zoom('day', 'in', at)
+  }
+
+  const openMonth = (monthIndex: number, at: Origin) => {
+    setCursor((current) => new Date(current.getFullYear(), monthIndex, 1))
+    zoom('month', 'in', at)
+  }
+
+  const onPressEntry = (entry: Entry) =>
+    router.push({
+      pathname: '/log/food/[id]',
+      params: { id: entry.foodId, entryId: entry.id },
+    })
+
+  const onFixEntry = (entry: Entry) =>
+    router.push({ pathname: '/log/search', params: { meal: entry.meal } })
 
   const selected = parseISO(selectedDate)
-  // The strip always shows the week the selected day belongs to, so paging to
-  // Sunday and back does not scroll the row under the user.
-  const monday = startOfWeek(selected, { weekStartsOn: 1 })
 
-  // One query for the visible week rather than seven day queries: the strip
-  // only needs to know which days have something in them.
-  const { data: week } = useNutritionRange(dateKey(monday), dateKey(addDays(monday, 6)))
-  const logged = new Set((week ?? []).flatMap((row) => (row.log_date ? [row.log_date] : [])))
+  const header =
+    level === 'day' ? (
+      <CalendarHeader
+        parent={format(selected, 'MMMM yyyy')}
+        onZoomOut={() => {
+          // The month that opens is the one the day belongs to, whatever was being
+          // browsed before.
+          //
+          // Anchored on the middle rather than on that day's cell, which would be
+          // the truer pivot: the month has not been laid out at the moment the
+          // animation starts, so where its cell for the 12th will end up is not yet
+          // known. Zooming OUT from the centre still reads correctly — everything
+          // recedes — and it is the direction where the anchor matters least.
+          setCursor(selected)
+          zoom('month', 'out', CENTRE_ORIGIN)
+        }}
+        title={format(selected, 'EEE d MMM')}
+      />
+    ) : level === 'month' ? (
+      <CalendarHeader
+        parent={format(cursor, 'yyyy')}
+        onZoomOut={() => zoom('year', 'out', CENTRE_ORIGIN)}
+        title={format(cursor, 'MMMM')}
+        onPrevious={() => setCursor((current) => addMonths(current, -1))}
+        onNext={() => setCursor((current) => addMonths(current, 1))}
+        previousLabel={t('logging:diary.previousMonth')}
+        nextLabel={t('logging:diary.nextMonth')}
+      />
+    ) : (
+      <CalendarHeader
+        title={format(cursor, 'yyyy')}
+        onPrevious={() => setCursor((current) => addYears(current, -1))}
+        onNext={() => setCursor((current) => addYears(current, 1))}
+        previousLabel={t('logging:diary.previousYear')}
+        nextLabel={t('logging:diary.nextYear')}
+      />
+    )
 
-  const days: DateStripDay[] = Array.from({ length: 7 }, (_, index) => {
-    const date = addDays(monday, index)
-    const key = dateKey(date)
-    return {
-      key,
-      initial: format(date, 'EEEEE'),
-      day: date.getDate(),
-      logged: logged.has(key),
+  const body = (which: Level) => {
+    if (which === 'day') {
+      return (
+        <DayPager
+          date={selectedDate}
+          onDateChange={setSelectedDate}
+          onPressEntry={onPressEntry}
+          onFixEntry={onFixEntry}
+          bottomInset={NAV_BAR_HEIGHT}
+        />
+      )
     }
-  })
-
-  const eaten = sumMacros(day.entries)
-  // Same credit the ring on Today applies, so the two screens never disagree
-  // about how much of the day is left.
-  const budget = targets?.kcal ?? 0
-  const left = budget - eaten.kcal
-  const waterGoal = targets?.waterGlasses ?? 8
+    if (which === 'month') {
+      return <MonthView cursor={cursor} selected={selectedDate} onPickDay={openDay} />
+    }
+    return <YearView cursor={cursor} selected={selectedDate} onPickMonth={openMonth} />
+  }
 
   return (
-    <Screen>
-      <ScreenTitle
-        title={t('logging:diary.title')}
-        trailing={<Text variant="caption">{format(selected, 'EEE d MMM')}</Text>}
-      />
+    // No scroll of its own: each level scrolls or does not on its own terms, and a
+    // zoom that moved the page under a scroll offset would land somewhere nobody
+    // asked for.
+    <Screen scroll={false} flush>
+      {header}
 
-      <DateStrip days={days} value={selectedDate} onChange={setSelectedDate} />
+      <View className="flex-1">
+        <ZoomLayer
+          // Keyed by level, so arriving at one always mounts a fresh layer and
+          // therefore always plays the entrance. Without the key React would reuse
+          // the view and the zoom would happen once.
+          key={level}
+          part="arriving"
+          direction={direction}
+          origin={origin}
+          // `level` here is this layer's own, captured when it was rendered. A
+          // callback that fires after the next zoom has begun sees a different one
+          // in the ref and leaves that transition alone.
+          onFinished={() => {
+            if (levelNow.current === level) setLeaving(null)
+          }}
+        >
+          {body(level)}
+        </ZoomLayer>
 
-      <Card>
-        <View className="flex-row items-end justify-between">
-          <View>
-            <Text variant="overline">{t('logging:diary.eaten')}</Text>
-            <Text className="font-display text-[28px] leading-[34px] text-heading">
-              {eaten.kcal.toLocaleString()}
-            </Text>
-          </View>
-          <View className="items-end">
-            <Text variant="overline">
-              {left < 0 ? t('logging:diary.over') : t('logging:diary.left')}
-            </Text>
-            <View className="flex-row items-baseline gap-1">
-              <Text className="font-display text-[28px] leading-[34px] text-pandan-ink">
-                {Math.abs(left).toLocaleString()}
-              </Text>
-              <Text variant="caption">{t('common:unit.kcal')}</Text>
-            </View>
-          </View>
-        </View>
-
-        <ProgressBar
-          value={progressOf(eaten.kcal, budget)}
-          height={16}
-          tone={left < 0 ? 'kaya' : 'pandan'}
-          accessibilityLabel={t('logging:diary.eaten')}
-        />
-      </Card>
-
-      {MEALS.map((meal) => {
-        const hasEntries = day.entries.some((entry) => entry.meal === meal)
-        if (!hasEntries) return null
-        return (
-          <MealCard
-            key={meal}
-            meal={meal}
-            day={day}
-            detail="time"
-            onPressEntry={(entry) =>
-              router.push({
-                pathname: '/log/food/[id]',
-                params: { id: entry.foodId, entryId: entry.id },
-              })
-            }
-            onFixEntry={(entry) => {
-              pending.remove(entry.id)
-              router.push({ pathname: '/log/search', params: { meal: entry.meal } })
-            }}
-          />
-        )
-      })}
-
-      {day.entries.length === 0 ? (
-        <Card>
-          <Text variant="meta">{t('logging:diary.emptyDay')}</Text>
-        </Card>
-      ) : null}
-
-      <Card
-        title={t('logging:diary.water', {
-          done: day.waterGlasses,
-          total: waterGoal,
-        })}
-      >
-        <WaterTracker
-          filled={day.waterGlasses}
-          goal={waterGoal}
-          onChange={(glasses) => setWater.mutate(glasses)}
-          glassLabel={(ordinal, total) => t('logging:diary.glassOf', { ordinal, total })}
-        />
-      </Card>
+        {leaving ? (
+          <ZoomLayer
+            key={`leaving-${leaving}`}
+            part="leaving"
+            direction={direction}
+            origin={origin}
+          >
+            {body(leaving)}
+          </ZoomLayer>
+        ) : null}
+      </View>
     </Screen>
+  )
+}
+
+/** Which level a zoom in the given direction came FROM. */
+function levelBefore(next: Level, direction: 'in' | 'out'): Level {
+  const order: Level[] = ['day', 'month', 'year']
+  const index = order.indexOf(next)
+  return order[direction === 'in' ? index + 1 : index - 1] ?? next
+}
+
+/**
+ * One month of the calendar, with the days that have something in them marked.
+ *
+ * Its own component so the month's query mounts with the view and unmounts with it:
+ * the year level has no use for thirty-one days of totals, and the day level reads
+ * them one at a time.
+ */
+function MonthView({
+  cursor,
+  selected,
+  onPickDay,
+}: {
+  cursor: Date
+  selected: string
+  onPickDay: (key: string, origin: Origin) => void
+}) {
+  const { data: rows = [] } = useNutritionRange(
+    dateKey(startOfMonth(cursor)),
+    dateKey(endOfMonth(cursor)),
+  )
+  const logged = new Set(rows.flatMap((row) => (row.log_date ? [row.log_date] : [])))
+
+  return (
+    <View className="px-gutter">
+      <MonthGrid
+        month={cursor}
+        selected={selected}
+        logged={logged}
+        today={todayKey()}
+        onPick={onPickDay}
+      />
+    </View>
+  )
+}
+
+/** A year of miniature months. One query for the whole thing — 365 rows at most. */
+function YearView({
+  cursor,
+  selected,
+  onPickMonth,
+}: {
+  cursor: Date
+  selected: string
+  onPickMonth: (monthIndex: number, origin: Origin) => void
+}) {
+  const { data: rows = [] } = useNutritionRange(
+    dateKey(startOfYear(cursor)),
+    dateKey(endOfYear(cursor)),
+  )
+  const logged = new Set(rows.flatMap((row) => (row.log_date ? [row.log_date] : [])))
+  const selectedDay = parseISO(selected)
+
+  return (
+    <View className="px-gutter">
+      <YearGrid
+        year={cursor.getFullYear()}
+        logged={logged}
+        selectedMonth={
+          selectedDay.getFullYear() === cursor.getFullYear() ? selectedDay.getMonth() : undefined
+        }
+        onPick={onPickMonth}
+      />
+    </View>
   )
 }

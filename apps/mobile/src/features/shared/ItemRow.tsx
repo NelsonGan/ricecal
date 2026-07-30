@@ -52,8 +52,6 @@ export type ItemRowProps = {
   unit?: string
   /** Calories burned read in hibiscus; everything else in ink. */
   valueTone?: keyof typeof valueTones
-  /** Highlights the row — used for the entry that was just added. */
-  highlighted?: boolean
   /**
    * The row is waiting on something. A spinner replaces the value, and the
    * photo tile dims — a snapped plate whose dish is still being worked out.
@@ -82,7 +80,6 @@ export function ItemRow({
   value,
   unit,
   valueTone = 'ink',
-  highlighted = false,
   busy = false,
   textOnly = false,
   trailing,
@@ -149,11 +146,7 @@ export function ItemRow({
     </>
   )
 
-  const classes = cn(
-    'flex-row items-center gap-3 rounded-tile',
-    highlighted && 'bg-pandan-soft p-2.5',
-    className,
-  )
+  const classes = cn('flex-row items-center gap-3 rounded-tile', className)
 
   if (!onPress) {
     return <View className={classes}>{body}</View>

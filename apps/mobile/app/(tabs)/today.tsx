@@ -27,8 +27,16 @@ import {
   useToast,
 } from '@/ui'
 
-/** How long a just-added row stays highlighted. Matches the undo toast. */
-const HIGHLIGHT_MS = 8000
+/**
+ * How recent an entry has to be for the undo toast to be about it.
+ *
+ * The row itself is no longer marked. It used to say "Just added, tap to edit"
+ * for this long, which took the portion off the one row worth reading and put an
+ * instruction there that was true of every row on the screen. What survives is
+ * the toast, which is where an undo belongs — it is offered once, in passing, and
+ * does not change what the diary says.
+ */
+const ANNOUNCE_MS = 8000
 
 /**
  * L1 TODAY.
@@ -68,7 +76,7 @@ export default function TodayScreen() {
   // and the newest entry's timestamp says the same thing.
   const newest = day.entries.filter((entry) => !entry.status).at(-1)
   const justAdded =
-    newest && Date.now() - new Date(newest.loggedAt).getTime() < HIGHLIGHT_MS ? newest : undefined
+    newest && Date.now() - new Date(newest.loggedAt).getTime() < ANNOUNCE_MS ? newest : undefined
 
   // Which entry has already been announced. A ref rather than a narrower
   // dependency list: the toast must fire once per entry, and every other value
@@ -190,7 +198,6 @@ export default function TodayScreen() {
           key={meal}
           meal={meal}
           day={day}
-          highlightId={justAdded?.id}
           onAdd={() => router.push({ pathname: '/log', params: { meal } })}
           onPressEntry={(entry) =>
             router.push({
