@@ -32,6 +32,18 @@ ALTER TABLE public.food_logs
 ALTER TABLE public.food_logs
   ADD CONSTRAINT food_logs_one_picture CHECK (photo_path IS NULL OR icon_set IS NULL);
 
+-- `daily_nutrition` comes down first and goes back up at the bottom, unchanged.
+--
+-- It selects `from food_log_details`, so Postgres refuses to drop that view while
+-- this one stands: "cannot drop view food_log_details because other objects depend
+-- on it". Dependents first is the same order `20260729120000_simplify_scope.sql`
+-- takes them down in, and for the same reason.
+--
+-- By hand rather than with CASCADE. A cascade would drop whatever happens to
+-- depend on the view on the day it runs, which is a different set on a database
+-- that has drifted — and it drops silently, so a view that went missing would not
+-- be noticed until something asked for it.
+DROP VIEW public.daily_nutrition;
 DROP VIEW public.food_log_details;
 
 CREATE VIEW public.food_log_details WITH (security_invoker=on) AS SELECT e.id,
@@ -67,3 +79,27 @@ CREATE VIEW public.food_log_details WITH (security_invoker=on) AS SELECT e.id,
 -- ambient grants for `anon` and `service_role`, and re-granting them here would
 -- read as anon having been given something deliberately.
 GRANT SELECT ON TABLE public.food_log_details TO authenticated;
+
+-- And `daily_nutrition` back, selecting exactly what `schemas/90_views.sql`
+-- declares. Nothing about a day's totals changes here — it only had to come down
+-- to let the view underneath it be replaced. The wording differs from the schema
+-- file (upper case, and the parentheses a generated diff adds) and that is fine:
+-- `db diff` compares two live catalogues rather than two files, so what has to
+-- match is the view Postgres stores, not the text that produced it.
+--
+-- Its grant goes back too: dropping a view takes its privileges with it, so
+-- without this line `authenticated` loses a view it had before this migration and
+-- every day-total request starts coming back empty.
+CREATE VIEW public.daily_nutrition WITH (security_invoker=on) AS SELECT d.user_id,
+    d.log_date,
+    (sum(d.kcal))::integer AS kcal,
+    (sum(d.carbs_g))::numeric AS carbs_g,
+    (sum(d.protein_g))::numeric AS protein_g,
+    (sum(d.fat_g))::numeric AS fat_g,
+    (sum(d.fibre_g))::numeric AS fibre_g,
+    (sum(d.sugar_g))::numeric AS sugar_g,
+    (count(*))::integer AS entry_count
+   FROM public.food_log_details d
+  GROUP BY d.user_id, d.log_date;
+
+GRANT SELECT ON TABLE public.daily_nutrition TO authenticated;
