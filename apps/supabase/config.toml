@@ -174,7 +174,20 @@ site_url = "http://127.0.0.1:3000"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://127.0.0.1:3000"]
+#
+# The two `ricecal` entries are what make the email login link work. Supabase
+# checks `emailRedirectTo` against this list and silently falls back to `site_url`
+# when it does not match — so without them the link in the mail opens a web
+# address instead of the app, which on a phone is a dead end rather than an error.
+#
+# `exp+ricecal` is the development client's scheme. It is a separate entry because
+# a dev build's deep links do not use the app's own scheme, so a list with only
+# the release scheme cannot be tested without a release build.
+additional_redirect_urls = [
+  "https://127.0.0.1:3000",
+  "ricecal://**",
+  "exp+ricecal://**",
+]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.

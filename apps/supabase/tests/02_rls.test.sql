@@ -25,10 +25,12 @@ values
 
 -- Two catalogue dishes to log against. Nothing seeds `foods` any more, so the
 -- fixture is local to this transaction and rolls back with it.
-insert into public.foods (slug, name, icon_name, kcal, carbs_g, protein_g, fat_g)
+-- `icon_set` alongside `icon_name`: the pair is optional but indivisible, and the
+-- set no longer defaults to `dishes` to supply the missing half.
+insert into public.foods (slug, name, icon_set, icon_name, kcal, carbs_g, protein_g, fat_g)
 values
-  ('fixture-nasi-lemak', 'Nasi lemak ayam berempah', 'nasi-lemak', 640, 78, 27, 25),
-  ('fixture-roti-canai', 'Roti canai',               'roti-canai', 301, 39,  6, 13);
+  ('fixture-nasi-lemak', 'Nasi lemak ayam berempah', 'dishes', 'nasi-lemak', 640, 78, 27, 25),
+  ('fixture-roti-canai', 'Roti canai',               'dishes', 'roti-canai', 301, 39,  6, 13);
 
 insert into public.food_servings (food_id, slug, label, factor, is_default)
 select f.id, 'plate', '1 plate', 1, true
@@ -147,7 +149,7 @@ select throws_ok(
 -- policy miss. Users do not create dishes, and a policy added later by mistake
 -- could not make them able to.
 select throws_ok(
-  $q$insert into public.foods (slug, name, icon_name, kcal) values ('fake', 'Fake', 'rice', 1)$q$,
+  $q$insert into public.foods (slug, name, kcal) values ('fake', 'Fake', 1)$q$,
   '42501',
   null,
   'a user cannot insert into the catalogue'

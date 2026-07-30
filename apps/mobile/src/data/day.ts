@@ -7,46 +7,48 @@ import { keys } from './keys'
 import { toEntry } from './mappers'
 import { pendingAsEntry, usePendingSnaps } from './pending-snaps'
 import { useUserId } from './session'
-import type { DailyNutritionRow, DayLog, Entry, FoodLogRow } from './types'
+import type { DailyNutritionRow, DayLog, FoodLogRow } from './types'
 
 /**
  * One day: what was eaten, and how much water.
  *
- * Two tables in one query rather than two hooks, because every screen that
- * wants one wants the other, and a day that renders its meals before its water
- * flickers. `food_log_details` has already done the arithmetic — the macros on
- * each row are the dish's, times the portion, times how many — so nothing here
- * multiplies anything.
+ * Two tables in one request rather than two, because every screen that wants one
+ * wants the other, and a day that renders its meals before its water flickers.
+ * `food_log_details` has already done the arithmetic — the macros on each row are
+ * the dish's, times the portion, times how many — so nothing here multiplies
+ * anything.
  */
+async function fetchDay(userId: string, date: string): Promise<DayLog> {
+  const [entries, water] = await Promise.all([
+    supabase
+      .from('food_log_details')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('log_date', date)
+      .order('logged_at'),
+    supabase
+      .from('daily_logs')
+      .select('water_glasses')
+      .eq('user_id', userId)
+      .eq('log_date', date)
+      .maybeSingle(),
+  ])
+
+  return {
+    date,
+    entries: (unwrap(entries) as FoodLogRow[]).map(toEntry),
+    // No row means no water logged, not an error: `daily_logs` is written
+    // the first time someone taps a glass.
+    waterGlasses: unwrapMaybe(water)?.water_glasses ?? 0,
+  }
+}
+
 export function useDay(date: string) {
   const userId = useUserId()
 
   return useQuery({
     queryKey: keys.day(userId, date),
-    queryFn: async (): Promise<DayLog> => {
-      const [entries, water] = await Promise.all([
-        supabase
-          .from('food_log_details')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('log_date', date)
-          .order('logged_at'),
-        supabase
-          .from('daily_logs')
-          .select('water_glasses')
-          .eq('user_id', userId)
-          .eq('log_date', date)
-          .maybeSingle(),
-      ])
-
-      return {
-        date,
-        entries: (unwrap(entries) as FoodLogRow[]).map(toEntry),
-        // No row means no water logged, not an error: `daily_logs` is written
-        // the first time someone taps a glass.
-        waterGlasses: unwrapMaybe(water)?.water_glasses ?? 0,
-      }
-    },
+    queryFn: () => fetchDay(userId, date),
   })
 }
 
@@ -75,6 +77,11 @@ export function useDayLog(date: string): DayLog {
     }
   }, [data, snaps, date])
 }
+
+// `usePrefetchDays` used to live here too, warming the days either side of the
+// diary's pager so a swipe never landed on one that was still loading. The pager
+// went with the diary; `fetchDay` above stays factored out, which is all a future
+// one would need to bring it back.
 
 /**
  * Sets the water count for a day.
@@ -141,11 +148,6 @@ export function useNutritionRange(from: string, to: string) {
           .order('log_date'),
       ) as DailyNutritionRow[],
   })
-}
-
-/** Entries of one meal, oldest first. The order the day happened in. */
-export function entriesForMeal(day: DayLog, meal: string): Entry[] {
-  return day.entries.filter((entry) => entry.meal === meal)
 }
 
 /**

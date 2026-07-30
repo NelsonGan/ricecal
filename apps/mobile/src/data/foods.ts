@@ -112,85 +112,63 @@ export function useFood(id: string | undefined) {
 }
 
 /**
- * What this user usually eats at this time of day.
+ * The last few dishes this user logged at this meal, newest first.
  *
- * Ordered by how often they have logged it, which is a fact about them and not
- * about the dish — the reason `times_logged` is a view over their own entries
- * rather than a column on the shared catalogue.
+ * Recency rather than frequency, which is what `useUsualFoods` did: "what I had
+ * for breakfast lately" is a much better guess at what is on the plate now than
+ * "what I have had for breakfast most often since I installed this", and it
+ * responds the same week rather than after a dozen repeats.
+ *
+ * Deduplicated here rather than in SQL. `distinct on (food_id)` needs the ordering
+ * to lead with `food_id`, so getting the three most RECENT distinct dishes out of
+ * Postgres means a subquery or a window — against a window of rows this small it
+ * is cheaper to read the last thirty entries and walk them.
  */
-export function useUsualFoods(meal: Meal, limit = 3) {
+export function useRecentFoods(meal: Meal, limit = 3) {
   const userId = useUserId()
 
   return useQuery({
-    queryKey: keys.usualFoods(userId, meal),
+    queryKey: keys.recentFoods(userId, meal, limit),
     queryFn: async (): Promise<Food[]> => {
-      const stats = unwrap(
+      const rows = unwrap(
         await supabase
-          .from('user_food_stats')
-          .select('food_id, times_logged, meals')
+          .from('food_log_details')
+          .select('food_id, logged_at')
           .eq('user_id', userId)
-          .contains('meals', [meal])
-          .order('times_logged', { ascending: false })
-          .limit(limit),
+          .eq('meal', meal)
+          .order('logged_at', { ascending: false })
+          // Enough history to find `limit` different dishes through a run of
+          // repeats, and few enough to stay one index scan.
+          .limit(30),
       )
 
-      const ids = stats.flatMap((row) => (row.food_id ? [row.food_id] : []))
+      const ids: string[] = []
+      for (const row of rows) {
+        if (row.food_id && !ids.includes(row.food_id)) ids.push(row.food_id)
+        if (ids.length === limit) break
+      }
       if (ids.length === 0) return []
 
-      const rows = unwrap(
+      const foods = unwrap(
         await supabase.from('food_details').select(FOOD_COLUMNS).in('id', ids),
       ) as FoodDetailsRow[]
 
-      const byId = new Map(rows.map((row) => [row.id, row]))
-      // Ordered by the stats query, not by whatever order the ids came back in.
-      return stats.flatMap((stat) => {
-        const row = stat.food_id ? byId.get(stat.food_id) : undefined
-        if (!row) return []
-        return [
-          toFood(row, {
-            timesLogged: stat.times_logged ?? 0,
-            meals: (stat.meals ?? []) as Meal[],
-          }),
-        ]
+      const byId = new Map(foods.map((row) => [row.id, row]))
+      // Ordered by when they were last eaten, not by whatever order the ids came
+      // back in.
+      return ids.flatMap((id) => {
+        const row = byId.get(id)
+        return row ? [toFood(row)] : []
       })
     },
   })
 }
 
-/**
- * The dishes this user logs most, all meals.
- *
- * Same view as `useUsualFoods` without the meal filter — "what I eat" rather
- * than "what I eat at this hour".
- */
-export function useTopFoods(limit = 4) {
-  const userId = useUserId()
-
-  return useQuery({
-    queryKey: ['top-foods', userId, limit],
-    queryFn: async (): Promise<Array<{ food: Food; timesLogged: number }>> => {
-      const stats = unwrap(
-        await supabase
-          .from('user_food_stats')
-          .select('food_id, times_logged, meals')
-          .eq('user_id', userId)
-          .order('times_logged', { ascending: false })
-          .limit(limit),
-      )
-
-      const ids = stats.flatMap((row) => (row.food_id ? [row.food_id] : []))
-      if (ids.length === 0) return []
-
-      const rows = unwrap(
-        await supabase.from('food_details').select(FOOD_COLUMNS).in('id', ids),
-      ) as FoodDetailsRow[]
-      const byId = new Map(rows.map((row) => [row.id, row]))
-
-      return stats.flatMap((stat) => {
-        const row = stat.food_id ? byId.get(stat.food_id) : undefined
-        if (!row) return []
-        return [{ food: toFood(row), timesLogged: stat.times_logged ?? 0 }]
-      })
-    },
-  })
-}
+// Two hooks used to live here and neither has a screen any more.
+//
+// `useTopFoods` read `user_food_stats` by frequency for the nutrition screen's
+// "top foods", and `useUsualFoods` was its per-meal twin for the quick selector.
+// The selector asks for the last few dishes instead — see `useRecentFoods` — and
+// the nutrition screen is gone. `user_food_stats` is still there, and a future
+// screen that wants "what I eat most" can have this back out of the history
+// rather than inheriting a hook nothing calls.

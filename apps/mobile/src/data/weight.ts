@@ -43,12 +43,13 @@ export function useCurrentWeight(): number | undefined {
 }
 
 /**
- * Records a weigh-in.
+ * Records a weigh-in, on any day.
  *
  * Keyed on `(user_id, measured_on)`, so weighing twice in one morning corrects
- * the day rather than adding a second point to the chart. Writing it also
- * recomputes the budget in the database, which is why the targets are
- * invalidated here.
+ * the day rather than adding a second point to the chart — and passing a past
+ * date corrects that day instead, which is what makes the history editable.
+ * Writing it also recomputes the budget in the database, which is why the targets
+ * are invalidated here.
  */
 export function useLogWeight() {
   const userId = useUserId()
@@ -65,6 +66,40 @@ export function useLogWeight() {
           )
           .select('measured_on')
           .single(),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: keys.weighIns(userId) })
+      queryClient.invalidateQueries({ queryKey: keys.goals(userId) })
+    },
+  })
+}
+
+/**
+ * Removes one day's reading.
+ *
+ * A weigh-in typed at the wrong scale — 165 lb into a kilogram field — is worth
+ * more than a wrong number on a chart: the newest row is what the budget is
+ * recomputed from, so it moves the day's calories too. Correcting the day covers
+ * most of it, and this covers a day that should never have had a reading at all.
+ *
+ * Invalidates the targets for the same reason `useLogWeight` does: deleting the
+ * newest row makes the one before it current.
+ */
+export function useDeleteWeighIn() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ date }: { date: string }) =>
+      unwrap(
+        await supabase
+          .from('weight_logs')
+          .delete()
+          .eq('user_id', userId)
+          .eq('measured_on', date)
+          // Selected so this goes through `unwrap` like every other write here,
+          // rather than growing its own error handling.
+          .select('measured_on'),
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: keys.weighIns(userId) })

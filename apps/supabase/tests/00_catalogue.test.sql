@@ -19,7 +19,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(10);
+select plan(12);
 
 
 -- Shape ---------------------------------------------------------------------
@@ -31,8 +31,13 @@ select has_view('public', 'food_details', 'food_details exists');
 
 -- Fixture --------------------------------------------------------------------
 
-insert into public.foods (slug, name, icon_name, place, kcal, carbs_g, protein_g, fat_g)
-values ('fixture-nasi-lemak', 'Nasi lemak ayam berempah', 'nasi-lemak', 'mamak', 640, 78, 27, 25);
+-- Both icon columns, not just the name. They are optional now but they travel
+-- together — `foods_icon_complete` rejects half a pair — and `icon_set` no longer
+-- defaults to `dishes` to fill the gap, because a default is what made every
+-- imported row claim a drawing it did not have. A curated dish like this one is
+-- exactly the kind that does have one, so the fixture carries both.
+insert into public.foods (slug, name, icon_set, icon_name, place, kcal, carbs_g, protein_g, fat_g)
+values ('fixture-nasi-lemak', 'Nasi lemak ayam berempah', 'dishes', 'nasi-lemak', 'mamak', 640, 78, 27, 25);
 
 insert into public.food_servings (food_id, slug, label, factor, is_default, position)
 select f.id, v.slug, v.label, v.factor, v.is_default, v.position
@@ -90,20 +95,65 @@ select is(
 -- identity rather than a handle half the table lacked. Both of these used to be
 -- legal.
 
+-- No icon on either of these, and that matters for the second one.
+--
+-- They used to pass `icon_name` alone because `icon_set` defaulted to `dishes`
+-- and the column was `not null`. With the default gone that is half a pair, which
+-- `foods_icon_complete` rejects as 23514 — so the duplicate-slug probe stopped
+-- reaching the unique index at all and was asserting the wrong constraint. The
+-- no-slug one still saw 23502 only because Postgres evaluates NOT NULL before
+-- CHECK, which is luck rather than intent.
+--
+-- Neither test is about pictures, and a row with no drawing is the ordinary case
+-- now, so they simply do not mention one.
 select throws_ok(
-  $q$insert into public.foods (name, icon_name, kcal) values ('No slug', 'rice', 100)$q$,
+  $q$insert into public.foods (name, kcal) values ('No slug', 100)$q$,
   '23502',
   null,
   'a dish without a slug is rejected'
 );
 
 select throws_ok(
-  $q$insert into public.foods (slug, name, icon_name, kcal)
-     values ('fixture-nasi-lemak', 'Duplicate', 'rice', 100)$q$,
+  $q$insert into public.foods (slug, name, kcal)
+     values ('fixture-nasi-lemak', 'Duplicate', 100)$q$,
   '23505',
   null,
   'two dishes cannot share a slug'
 );
+
+
+-- An icon is optional, and indivisible ---------------------------------------
+--
+-- Both halves of this went untested when the columns became nullable, and the
+-- pair is the kind of invariant that fails quietly: a set with no name renders
+-- blank and a name with no set cannot be resolved to a file at all, so what
+-- reaches the screen is a missing picture rather than an error anyone sees.
+
+select throws_ok(
+  $q$insert into public.foods (slug, name, icon_name, kcal)
+     values ('fixture-half-icon', 'Half an icon', 'rice', 100)$q$,
+  '23514',
+  null,
+  'a name without a set is rejected'
+);
+
+-- And the case the whole change was for: most of the catalogue is imported rows
+-- with no drawing, and they have to be insertable without one.
+select lives_ok(
+  $q$insert into public.foods (slug, name, kcal, carbs_g, protein_g, fat_g)
+     values ('fixture-no-icon', 'Nothing to illustrate it', 100, 1, 1, 1)$q$,
+  'a dish with no icon at all is accepted'
+);
+
+-- The row this just left behind gets a default portion like any other dish. The
+-- catalogue-wide assertions above are `count(*)` over the whole table — "every
+-- dish has a default portion" among them — and they only pass today because they
+-- run before this point in the file. A fixture that is legal on its own terms
+-- does not care where they run.
+insert into public.food_servings (food_id, slug, label, factor, is_default, position)
+select f.id, 'serving', '1 serving', 1.0, true, 0
+from public.foods f
+where f.slug = 'fixture-no-icon';
 
 
 -- The view does the arithmetic the screens used to do -----------------------

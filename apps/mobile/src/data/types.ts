@@ -85,6 +85,20 @@ export type Macros = {
   fat: number
 }
 
+/**
+ * The nutrients beyond the four that drive the budget.
+ *
+ * Every one is optional and absent means UNKNOWN, never zero. Most of the
+ * catalogue is imported and carries none of them, and "0 g of fibre" is a claim
+ * about a dish rather than a gap in a spreadsheet.
+ */
+export type ExtraNutrients = {
+  fibre?: number
+  sugar?: number
+  /** Milligrams, unlike everything else here. */
+  sodium?: number
+}
+
 export type Serving = {
   id: string
   /** "1 plate", "Half", "100g". Data, not copy. */
@@ -97,12 +111,15 @@ export type Food = {
   id: string
   name: string
   brand?: string
-  icon: IconRef
+  /** Absent for most of the catalogue: there are far more foods than drawings. */
+  icon?: IconRef
   place: Place
   /** The default serving's name, e.g. "1 plate". */
   servingLabel: string
   servings: Serving[]
   macros: Macros
+  /** Per base serving, like `macros`. Scaled by the portion at the point of use. */
+  extras: ExtraNutrients
   verified: boolean
   /** How often this user has logged it. From `user_food_stats`, when joined. */
   timesLogged?: number
@@ -138,7 +155,8 @@ export type Entry = {
 
   foodId: string
   foodName: string
-  icon: IconRef
+  /** Absent for most of the catalogue: there are far more foods than drawings. */
+  icon?: IconRef
   place: Place
   servingId: string
   servingLabel: string

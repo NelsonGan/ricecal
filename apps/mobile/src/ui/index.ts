@@ -89,7 +89,7 @@ export {
   type SegmentedOption,
 } from './SegmentedControl'
 export { Select, type SelectOption, type SelectProps } from './Select'
-export { Sheet, type SheetProps } from './Sheet'
+export { Sheet, type SheetProps, SheetSurface, type SheetSurfaceProps } from './Sheet'
 export { Skeleton, type SkeletonProps, SkeletonRow, Spinner, type SpinnerProps } from './Skeleton'
 export { Slider, type SliderProps } from './Slider'
 export { Squish, type SquishProps } from './Squish'
@@ -98,9 +98,16 @@ export { StepProgress, type StepProgressProps, type StepProgressTone } from './S
 export { Stepper, type StepperProps } from './Stepper'
 export { Switch, type SwitchProps } from './Switch'
 export { type TabOption, Tabs, type TabsProps } from './Tabs'
+export { Tappable, type TappableProps } from './Tappable'
 export { Text, type TextProps, type TextVariant } from './Text'
 export { TextField, type TextFieldProps } from './TextField'
-export { type ToastOptions, ToastProvider, type ToastTone, useToast } from './Toast'
+export {
+  type ToastOptions,
+  type ToastPlacement,
+  ToastProvider,
+  type ToastTone,
+  useToast,
+} from './Toast'
 export {
   type DayStatus,
   WaterTracker,

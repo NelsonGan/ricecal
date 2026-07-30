@@ -92,9 +92,6 @@ export const profile = {
     light: 'Light',
     dark: 'Dark',
     auto: 'Auto',
-    privacy: 'PRIVACY',
-    shareWithFamily: 'Share with family',
-    anonymousData: 'Anonymous food data',
   },
 
   subscription: {

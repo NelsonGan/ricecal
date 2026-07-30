@@ -8,17 +8,21 @@ import { ToastProvider } from '@/ui'
 import SignInScreen from '../sign-in'
 
 /**
- * The confirmation field is the only reason this suite exists.
+ * There are no passwords here any more, and this suite is what says so.
  *
- * A mistyped password on sign-UP is invisible — both fields are masked, the
- * signup succeeds, and the user discovers it on the next launch with no way
- * back but a reset mail. So the two behaviours worth pinning are that a
- * mismatch never reaches the network, and that sign-IN is not made to answer
- * the same question twice.
+ * The behaviours worth pinning after that change: nothing is mailed to an address
+ * that cannot receive it, the screen says the link is on its way (the session
+ * arrives through the link, so without that the tap looks like it did nothing),
+ * and the heading follows the direction the caller asked for.
  */
+
+// `mock`-prefixed so the factories below may close over them: everything else is
+// out of scope by the time jest hoists the calls.
+const mockParams: { mode?: string } = {}
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
+  useLocalSearchParams: () => mockParams,
 }))
 
 // Both providers are reported unavailable so the screen renders the email form
@@ -27,9 +31,8 @@ jest.mock('@/data/auth', () => ({
   appleSignInAvailable: jest.fn(),
   googleSignInAvailable: jest.fn(),
   signInWithApple: jest.fn(),
-  signInWithEmail: jest.fn(),
   signInWithGoogle: jest.fn(),
-  signUpWithEmail: jest.fn(),
+  sendLoginLink: jest.fn(),
   SignInCancelled: class SignInCancelled extends Error {},
 }))
 
@@ -57,80 +60,97 @@ const fill = async (label: string, value: string) => {
   await user.type(screen.getByLabelText(label), value)
 }
 
+const submit = async () => {
+  await user.press(screen.getByText('Email me a link'))
+}
+
 beforeEach(() => {
   jest.clearAllMocks()
-  // After `clearAllMocks` every implementation is gone, and a mock that returns
+  delete mockParams.mode
+  // After `clearAllMocks` every implementation is gone, and a mock returning
   // `undefined` where the screen awaits a promise fails somewhere unrelated.
   auth.appleSignInAvailable.mockResolvedValue(false)
   auth.googleSignInAvailable.mockReturnValue(false)
-  auth.signInWithEmail.mockResolvedValue(undefined)
-  auth.signUpWithEmail.mockResolvedValue({ status: 'signed-in' })
+  auth.sendLoginLink.mockResolvedValue(undefined)
 })
 
-describe('sign-up', () => {
-  it('asks for the password twice', async () => {
-    await render(<SignInScreen />)
-    expect(screen.getByLabelText('CONFIRM PASSWORD')).toBeOnTheScreen()
-  })
-
-  it('refuses to submit when the two passwords differ', async () => {
+describe('the login link', () => {
+  it('asks for nothing but an address', async () => {
     await render(<SignInScreen />)
 
-    await fill('EMAIL', 'aisyah@example.com')
-    await fill('PASSWORD', 'nasilemak123')
-    await fill('CONFIRM PASSWORD', 'nasilemak124')
-    await user.press(screen.getByText('Create account'))
-
-    expect(auth.signUpWithEmail).not.toHaveBeenCalled()
-    expect(screen.getByText('Those two passwords do not match.')).toBeOnTheScreen()
-  })
-
-  it('refuses to submit when the confirmation is left empty', async () => {
-    await render(<SignInScreen />)
-
-    await fill('EMAIL', 'aisyah@example.com')
-    await fill('PASSWORD', 'nasilemak123')
-    await user.press(screen.getByText('Create account'))
-
-    expect(auth.signUpWithEmail).not.toHaveBeenCalled()
-    expect(screen.getByText('Type your password again.')).toBeOnTheScreen()
-  })
-
-  it('signs up when they match', async () => {
-    await render(<SignInScreen />)
-
-    await fill('EMAIL', 'aisyah@example.com')
-    await fill('PASSWORD', 'nasilemak123')
-    await fill('CONFIRM PASSWORD', 'nasilemak123')
-    await user.press(screen.getByText('Create account'))
-
-    expect(auth.signUpWithEmail).toHaveBeenCalledWith('aisyah@example.com', 'nasilemak123')
-  })
-})
-
-describe('sign-in', () => {
-  const switchToSignIn = async () => {
-    await user.press(screen.getByText('I already have an account'))
-  }
-
-  it('does not ask for a confirmation', async () => {
-    await render(<SignInScreen />)
-    await switchToSignIn()
+    expect(screen.getByLabelText('EMAIL')).toBeOnTheScreen()
+    expect(screen.queryByLabelText('PASSWORD')).toBeNull()
     expect(screen.queryByLabelText('CONFIRM PASSWORD')).toBeNull()
   })
 
-  /**
-   * The regression this guards: gating `valid` on a confirmation that is no
-   * longer on screen would make sign-in unreachable.
-   */
-  it('signs in with only the one password', async () => {
+  it('sends one', async () => {
     await render(<SignInScreen />)
 
     await fill('EMAIL', 'aisyah@example.com')
-    await fill('PASSWORD', 'nasilemak123')
-    await switchToSignIn()
-    await user.press(screen.getByText('Sign in'))
+    await submit()
 
-    expect(auth.signInWithEmail).toHaveBeenCalledWith('aisyah@example.com', 'nasilemak123')
+    expect(auth.sendLoginLink).toHaveBeenCalledWith('aisyah@example.com')
+  })
+
+  /**
+   * The session arrives through the link rather than through the call, so a
+   * screen that looks unchanged after a successful send reads as a dead button.
+   */
+  it('says where it went', async () => {
+    await render(<SignInScreen />)
+
+    await fill('EMAIL', 'aisyah@example.com')
+    await submit()
+
+    expect(await screen.findByText(/aisyah@example.com/)).toBeOnTheScreen()
+  })
+
+  it('stops talking about the last link once the address changes', async () => {
+    await render(<SignInScreen />)
+
+    await fill('EMAIL', 'aisyah@example.com')
+    await submit()
+    expect(await screen.findByText(/aisyah@example.com/)).toBeOnTheScreen()
+
+    await fill('EMAIL', '.my')
+    expect(screen.queryByText(/Link sent/)).toBeNull()
+  })
+
+  it('refuses an address that cannot receive it', async () => {
+    await render(<SignInScreen />)
+
+    await fill('EMAIL', 'aisyah@')
+    await submit()
+
+    expect(auth.sendLoginLink).not.toHaveBeenCalled()
+    expect(screen.getByText('That does not look like an email address.')).toBeOnTheScreen()
+  })
+
+  it('reports a failure to send', async () => {
+    auth.sendLoginLink.mockRejectedValue(new Error('Email rate limit exceeded'))
+    await render(<SignInScreen />)
+
+    await fill('EMAIL', 'aisyah@example.com')
+    await submit()
+
+    expect(await screen.findByText('Email rate limit exceeded')).toBeOnTheScreen()
+  })
+})
+
+/**
+ * Welcome has a button for each direction, so it says which one it meant.
+ * "I already have an account" under a "Save your progress" heading reads as a tap
+ * that was ignored.
+ */
+describe('the mode parameter', () => {
+  it('greets a returning user by default', async () => {
+    await render(<SignInScreen />)
+    expect(screen.getByText('Welcome back')).toBeOnTheScreen()
+  })
+
+  it('talks about saving progress at the end of onboarding', async () => {
+    mockParams.mode = 'sign-up'
+    await render(<SignInScreen />)
+    expect(screen.getByText('Save your progress')).toBeOnTheScreen()
   })
 })

@@ -7,7 +7,17 @@ import { Button, Icon, type IconProps, Screen, Text } from '@/ui'
 
 const MASCOT = require('../../assets/brand/mascot.png')
 
-/** 01 WELCOME */
+/**
+ * 01 WELCOME
+ *
+ * The first screen anybody sees, and the fork between the two kinds of visitor.
+ *
+ * "Get started" goes straight into the questions — no account, nothing to type,
+ * no reason given for why an email would be needed before a single question has
+ * been answered. The account comes at the end, once the app has shown what it
+ * works out for them. Anyone who already has one takes the second button and
+ * skips the seven screens entirely.
+ */
 export default function Welcome() {
   const { t } = useTranslation('onboarding')
   const router = useRouter()
@@ -33,8 +43,18 @@ export default function Welcome() {
     },
   ]
 
-  /** "I already have an account" goes to the real sign-in screen. */
-  const signIn = () => router.replace('/sign-in')
+  /** Straight into the questions. No session needed: the answers are held locally. */
+  const start = () => router.push('/goal')
+
+  /**
+   * Skips the questions.
+   *
+   * `push`, so the edge swipe comes back here — someone who taps this by mistake
+   * has not lost the way in. The mode says which side of that screen to open on,
+   * because "I already have an account" under a "Save your progress" heading
+   * reads as a tap that was ignored.
+   */
+  const signIn = () => router.push({ pathname: '/sign-in', params: { mode: 'sign-in' } })
 
   return (
     <Screen
@@ -42,7 +62,7 @@ export default function Welcome() {
       contentClassName="justify-center"
       footer={
         <View className="gap-1.5">
-          <Button fullWidth onPress={() => router.push('/goal')}>
+          <Button fullWidth onPress={start}>
             {t('welcome.start')}
           </Button>
           <Button variant="ghost" fullWidth onPress={signIn}>

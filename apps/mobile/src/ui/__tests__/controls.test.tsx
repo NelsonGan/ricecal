@@ -1,8 +1,13 @@
+import { impactAsync } from 'expo-haptics'
+import { StyleSheet } from 'react-native'
+
 import { render, screen, userEvent } from '../../test-utils'
 import { CountBadge } from '../Badge'
+import { NavItem } from '../BottomNav'
 import { Button } from '../Button'
 import { Chip } from '../Chip'
 import { cn } from '../cn'
+import { StatTile } from '../StatTile'
 import { Stepper } from '../Stepper'
 import { Switch } from '../Switch'
 import { WaterTracker } from '../WeekStrip'
@@ -121,6 +126,70 @@ describe('Stepper', () => {
     expect(screen.getByText('1.3')).toBeTruthy()
   })
 
+  /**
+   * `editable` swaps the label for a field, which is a different node — text
+   * against a display value. Worth pinning, because the plain stepper is in four
+   * other screens and none of them should become a text input.
+   */
+  it('renders the value as a label unless it is editable', async () => {
+    await render(<Stepper value={2} onChange={() => {}} />)
+
+    expect(screen.getByText('2')).toBeTruthy()
+    expect(screen.queryByDisplayValue('2')).toBeNull()
+  })
+
+  it('renders the value as a field when it is editable', async () => {
+    await render(<Stepper value={2} onChange={() => {}} editable editLabel="Type the amount" />)
+
+    expect(screen.getByDisplayValue('2')).toBeTruthy()
+  })
+
+  /**
+   * The steps cannot reach every amount — 0.35 of a tub is not a multiple of a
+   * half — so the number itself is a field when a caller opts in. Focus empties
+   * it, so what is typed IS the value, and `user.type` ends in a blur, which is
+   * what commits.
+   */
+  it('takes an exact amount typed into it', async () => {
+    const onChange = jest.fn()
+    await render(<Stepper value={1} onChange={onChange} editable editLabel="Type the amount" />)
+
+    await user.type(screen.getByLabelText('Type the amount'), '0.35')
+
+    expect(onChange).toHaveBeenLastCalledWith(0.35)
+  })
+
+  it('clamps what was typed rather than accepting it', async () => {
+    const onChange = jest.fn()
+    await render(
+      <Stepper value={1} max={10} onChange={onChange} editable editLabel="Type the amount" />,
+    )
+
+    await user.type(screen.getByLabelText('Type the amount'), '99')
+
+    expect(onChange).toHaveBeenLastCalledWith(10)
+  })
+
+  /** A mistyped amount deleted back to nothing must not read as zero. */
+  it('keeps the value it had when the field is left empty', async () => {
+    const onChange = jest.fn()
+    await render(
+      <Stepper value={2} min={0.5} onChange={onChange} editable editLabel="Type the amount" />,
+    )
+
+    const field = screen.getByLabelText('Type the amount')
+    // Focus empties the field; leaving without typing commits nothing.
+    await user.type(field, '')
+
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  /** Without `editable` the number is not a control, and must not announce as one. */
+  it('is not typeable unless asked', async () => {
+    await render(<Stepper value={1} onChange={() => {}} />)
+    expect(screen.queryByLabelText('Type the amount')).toBeNull()
+  })
+
   it('stops at the floor', async () => {
     const onChange = jest.fn()
     await render(<Stepper value={0} min={0} onChange={onChange} />)
@@ -173,6 +242,101 @@ describe('WaterTracker', () => {
     await user.press(screen.getByLabelText('Glass 5 of 8'))
     expect(onChange).toHaveBeenCalledWith(4)
   })
+
+  /**
+   * A goal past one row wraps, and the row is finished with blank cells so the
+   * short second row keeps the columns of the first. Those cells are the thing
+   * worth pinning: they are `View`s among pressables, and a stray one that became
+   * reachable would read to a screen reader as a glass that does nothing.
+   */
+  it('renders every glass of a goal that wraps, and nothing extra', async () => {
+    const onChange = jest.fn()
+    await render(<WaterTracker filled={9} goal={12} onChange={onChange} />)
+
+    expect(screen.getAllByRole('button')).toHaveLength(12)
+    expect(screen.getByLabelText('Glass 12 of 12')).toBeOnTheScreen()
+
+    // The last glass on the short row still fills to its own position rather than
+    // to wherever it sits in the row.
+    await user.press(screen.getByLabelText('Glass 11 of 12'))
+    expect(onChange).toHaveBeenCalledWith(11)
+  })
+})
+
+const flatten = (style: unknown): { lineHeight?: number } =>
+  (StyleSheet.flatten(style as never) as { lineHeight?: number } | undefined) ?? {}
+
+/**
+ * Appearance is normally left to the gallery route on a device, so this one needs
+ * a reason: `adjustsFontSizeToFit` next to an explicit `lineHeight` is a React
+ * Native bug that shrinks text even when it fits, and it does not fail — it just
+ * renders numbers too small to read, which is how it reached a user. There is
+ * nothing to observe at runtime, so the combination itself is what gets pinned.
+ */
+describe('StatTile', () => {
+  const renderValue = async (value: string) => {
+    await render(<StatTile label="CARBS" value={value} />)
+    return screen.getByText(value)
+  }
+
+  it('does not give the shrinking value a line height to fight', async () => {
+    const node = await renderValue('182g')
+    expect(node.props.adjustsFontSizeToFit).toBe(true)
+    expect(flatten(node.props.style).lineHeight).toBeUndefined()
+  })
+
+  it('keeps the shrink shallow enough to stay legible', async () => {
+    const node = await renderValue('1,530')
+    expect(node.props.minimumFontScale).toBeGreaterThanOrEqual(0.8)
+  })
+
+  it('leaves the label alone, which is what lets it keep its line height', async () => {
+    await render(<StatTile label="PROTEIN" value="104g" />)
+    expect(screen.getByText('PROTEIN').props.adjustsFontSizeToFit).toBeFalsy()
+  })
+
+  it('reads the label and value together to a screen reader', async () => {
+    await render(<StatTile label="CARBS" value="182g" />)
+    expect(screen.getByLabelText('CARBS: 182g')).toBeOnTheScreen()
+  })
+})
+
+/**
+ * The tab bar is the one place in the app that renders a plain `Pressable`
+ * rather than a `Squish`, so both of the things `Squish` gives every other
+ * control — the haptic and the inactive treatment — had to be added by hand here,
+ * and neither fails loudly when it regresses.
+ */
+describe('NavItem', () => {
+  const tab = { label: 'Today', icon: { set: 'ui', name: 'home' } } as const
+
+  it('answers a tap in the hand', async () => {
+    await render(<NavItem {...tab} />)
+    await user.press(screen.getByRole('tab'))
+    // On press IN, like `Squish`: feedback that waits for the release lands
+    // after the screen has already changed.
+    expect(impactAsync).toHaveBeenCalled()
+  })
+
+  it('still tells the caller about the press', async () => {
+    const onPress = jest.fn()
+    await render(<NavItem {...tab} onPress={onPress} />)
+    await user.press(screen.getByRole('tab'))
+    expect(onPress).toHaveBeenCalledTimes(1)
+  })
+
+  it('says which tab is the active one', async () => {
+    await render(<NavItem {...tab} isFocused />)
+    expect(screen.getByRole('tab')).toBeSelected()
+  })
+
+  /**
+   * The inactive tint is NOT asserted here, deliberately. It reaches the icon
+   * through `style`, and RNTL v14 dropped the type queries that could find a
+   * decorative image inside the row — an icon with no accessibility label is
+   * hidden from every query the library still has, which is correct of it. The
+   * reasoning lives in `NavItem` instead; verify it in the gallery on a device.
+   */
 })
 
 describe('cn', () => {

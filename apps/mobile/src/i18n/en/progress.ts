@@ -1,20 +1,25 @@
 export const progress = {
   tabs: {
     weight: 'Weight',
-    report: 'Your week',
-    nutrition: 'Nutrition',
   },
 
   weight: {
     title: 'Weight',
-    down: '{{value}} kg down',
-    up: '{{value}} kg up',
-    steady: 'Holding steady',
     current: 'CURRENT',
     goal: 'GOAL',
-    chartNote: 'Weekly averages, so one heavy weekend never looks like failure.',
+    chartNote: 'Your last readings. One heavy weekend is not a trend.',
     now: 'Now',
-    week: 'W{{n}}',
+    /** The dated list under the chart. */
+    history: 'HISTORY',
+    reading: '{{value}} kg',
+    readingToday: 'Today',
+    changeValue: '{{value}} kg',
+    firstReading: 'First',
+    editTitle: 'Weigh in on {{date}}',
+    remove: 'Remove this reading',
+    removeTitle: 'Remove this reading?',
+    removeBody:
+      'The chart loses this day. If it was your latest, your budget goes back to the one before it.',
     thisWeek: 'THIS WEEK',
     average: '7 DAY AVG',
     pace: 'PACE',
@@ -28,34 +33,7 @@ export const progress = {
     saved: 'Weigh in saved',
   },
 
-  report: {
-    title: 'Your week',
-    range: '{{from}} to {{to}}',
-    avgPerDay: 'AVG PER DAY',
-    underGoal: '{{count}} under goal',
-    overGoal: '{{count}} over goal',
-    macroSplit: 'MACRO SPLIT',
-    legend: '{{macro}} {{percent}}%',
-    highlights: 'HIGHLIGHTS',
-    bestDay: 'Best day',
-    bestDayValue: '{{day}}, all meals logged',
-    noDays: 'Nothing logged this week yet',
-    mostEaten: 'Most eaten',
-    mostEatenValue: '{{food}}, {{count}} times',
-    water: 'Water',
-    waterValue: '{{value}} glasses a day on average',
-  },
-
-  nutrition: {
-    title: 'Nutrition',
-    range: 'Last 30 days',
-    averageDay: 'AVERAGE DAY',
-    calories: 'Calories',
-    caloriesValue: '{{value}} kcal',
-    fibre: 'Fibre',
-    sugar: 'Sugar',
-    gramsValue: '{{value}} g',
-    topFoods: 'TOP FOODS',
-    timesThisMonth: '{{count}} times this month',
-  },
+  // No `report` or `nutrition` block. Both screens are gone and their copy went
+  // with them — this file's rule is that a screen can be deleted without leaving
+  // orphans behind in here.
 } as const
