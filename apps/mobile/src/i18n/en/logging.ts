@@ -100,6 +100,23 @@ export const logging = {
     addToDiary: 'Add to diary',
     decreaseServing: 'One less',
     increaseServing: 'One more',
+    /** The hero tile doubles as the way in to the icon picker when editing. */
+    choosePicture: 'Choose a picture for this entry',
+  },
+
+  /**
+   * Picking an illustration for one logged item.
+   *
+   * Needed because the catalogue cannot be illustrated: a few hundred drawings
+   * against hundreds of megabytes of imported foods, so most rows have none.
+   */
+  icon: {
+    title: 'Pick a picture',
+    description: 'Just for this entry. A photo of the real plate beats any of these.',
+    searchLabel: 'Search pictures',
+    searchPlaceholder: 'nasi lemak, teh tarik, fish',
+    noMatch: 'Nothing matches “{{query}}”.',
+    clear: 'Use no picture',
   },
 
   diary: {
