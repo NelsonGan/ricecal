@@ -5,6 +5,9 @@ import type { Macros, Targets } from '@/data'
 import { progressOf } from '@/lib/nutrition'
 import { cn, MacroBar } from '@/ui'
 
+/** One decimal, which is the resolution the database stores grams at. */
+const round1 = (value: number) => Math.round(value * 10) / 10
+
 export type MacroBarsProps = {
   eaten: Macros
   targets: Pick<Targets, 'carbs' | 'protein' | 'fat'>
@@ -53,10 +56,13 @@ export function MacroBars({ eaten, targets, showGoal = false, className }: Macro
         <MacroBar
           key={row.key}
           label={row.label}
+          // Rounded here as well as by whoever summed them. This is the component
+          // that turns a number into a string, and a caller handing it a float
+          // must not be able to put "75.60000000000001g" on the screen.
           amount={
             showGoal
-              ? t('unit.gramsOfGoal', { value: row.grams, goal: Math.round(row.goal) })
-              : t('unit.grams', { value: row.grams })
+              ? t('unit.gramsOfGoal', { value: round1(row.grams), goal: Math.round(row.goal) })
+              : t('unit.grams', { value: round1(row.grams) })
           }
           value={progressOf(row.grams, row.goal)}
           tone={row.tone}

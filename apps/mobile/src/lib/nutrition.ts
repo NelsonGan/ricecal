@@ -13,17 +13,41 @@ import type { ActivityLevel, DayLog, Entry, Goal, Macros, Meal, Targets } from '
 
 export const ZERO_MACROS: Macros = { kcal: 0, carbs: 0, protein: 0, fat: 0 }
 
-/** Adds up entries that already carry their own costed macros. */
+/**
+ * One decimal place, and no float droppings.
+ *
+ * Grams come out of Postgres as `numeric(6,1)`, so every value going IN has one
+ * decimal at most — but 24.3 + 51.3 is 75.60000000000001 in binary floating
+ * point, and that is a string the moment anything interpolates it. "75.6g" is
+ * what the screen is meant to say.
+ */
+const round1 = (value: number) => Math.round(value * 10) / 10
+
+/**
+ * Adds up entries that already carry their own costed macros.
+ *
+ * Rounded as it goes out rather than by each of the six places that render the
+ * result. Nothing is lost: the inputs are one-decimal numbers, so this only
+ * discards the error the addition introduced.
+ */
 export function sumMacros(entries: readonly Entry[]): Macros {
-  return entries.reduce<Macros>(
-    (total, entry) => ({
-      kcal: total.kcal + entry.macros.kcal,
-      carbs: total.carbs + entry.macros.carbs,
-      protein: total.protein + entry.macros.protein,
-      fat: total.fat + entry.macros.fat,
+  const total = entries.reduce<Macros>(
+    (sum, entry) => ({
+      kcal: sum.kcal + entry.macros.kcal,
+      carbs: sum.carbs + entry.macros.carbs,
+      protein: sum.protein + entry.macros.protein,
+      fat: sum.fat + entry.macros.fat,
     }),
     ZERO_MACROS,
   )
+
+  return {
+    // Calories are integers per entry and stay integers.
+    kcal: Math.round(total.kcal),
+    carbs: round1(total.carbs),
+    protein: round1(total.protein),
+    fat: round1(total.fat),
+  }
 }
 
 export function entriesForMeal(day: DayLog, meal: Meal): Entry[] {

@@ -84,6 +84,14 @@ export const logging = {
     },
     emptyTitle: 'No dish by that name',
     emptyBody: 'Try a shorter word, or fewer of them.',
+    /**
+     * A search that could not run is not a search that found nothing, so these
+     * two do not borrow the copy above.
+     */
+    offlineTitle: 'No connection',
+    offlineBody: 'The dish list lives on the server. This will run as soon as you are back online.',
+    errorTitle: 'Could not search',
+    errorBody: 'Something went wrong looking that up. Try again in a moment.',
   },
 
   detail: {

@@ -43,17 +43,42 @@ export function FoodSearchPanel({ onPick, autoFocus = false }: FoodSearchPanelPr
   // fuses an exact, a full-text and a trigram match. Searching a table the
   // phone does not hold is the whole point of having moved the catalogue off
   // it — there are ~460,000 rows in it now.
-  const { data: results = [], isPending } = useFoodSearch(debouncedQuery)
+  const { data, isFetching, isPaused, isError } = useFoodSearch(debouncedQuery)
+  const results = data ?? []
 
   // Before the first keystroke there is nothing to say. The empty state reads
   // "No dish by that name", which is only true once a name has been typed.
   const searched = debouncedQuery.trim().length > 0
 
   // Typing again should not leave the previous dishes on screen looking like
-  // answers to the new query. `isPending` alone misses this: the debounced
-  // query has not changed yet, so the old result set is still "fresh".
+  // answers to the new query: the debounced query has not caught up, so the old
+  // result set is still "fresh" as far as react-query is concerned.
   const settling = query.trim() !== debouncedQuery.trim()
-  const loading = query.trim().length > 0 && (settling || (searched && isPending))
+
+  /**
+   * Exactly one of five things is on screen, and this decides which.
+   *
+   * The skeletons are gated on `isFetching`, not on the `isPending` that was here
+   * before. `isPending` means "this key has no data", which is also true of a
+   * query that is not fetching at all — one paused by `networkMode: 'offlineFirst'`
+   * with no connection, which is how a search with no results showed skeletons
+   * that never resolved into anything. `isFetching` is about a request being in
+   * flight, so it cannot get stuck; and `data === undefined` keeps them up only
+   * until THIS query has an answer, including an answer of none.
+   *
+   * Paused and errored say so rather than borrowing "no dish by that name". A
+   * search that could not run is not a search that found nothing.
+   */
+  const state =
+    query.trim().length > 0 && (settling || (isFetching && data === undefined))
+      ? 'loading'
+      : isPaused
+        ? 'offline'
+        : isError
+          ? 'error'
+          : searched && results.length === 0
+            ? 'empty'
+            : 'results'
 
   return (
     <View className="gap-3">
@@ -67,7 +92,7 @@ export function FoodSearchPanel({ onPick, autoFocus = false }: FoodSearchPanelPr
         returnKeyType="search"
       />
 
-      {loading ? (
+      {state === 'loading' ? (
         <View className="gap-3" accessibilityRole="progressbar">
           {SKELETON_ROWS.map((id) => (
             // Shaped like the row it replaces — two lines of text and a
@@ -86,7 +111,23 @@ export function FoodSearchPanel({ onPick, autoFocus = false }: FoodSearchPanelPr
         </View>
       ) : null}
 
-      {!loading && searched && results.length === 0 ? (
+      {state === 'offline' ? (
+        <EmptyState
+          title={t('logging:search.offlineTitle')}
+          description={t('logging:search.offlineBody')}
+          icon={{ set: 'ui', name: 'offline' }}
+        />
+      ) : null}
+
+      {state === 'error' ? (
+        <EmptyState
+          title={t('logging:search.errorTitle')}
+          description={t('logging:search.errorBody')}
+          icon={{ set: 'ui', name: 'warning' }}
+        />
+      ) : null}
+
+      {state === 'empty' ? (
         <EmptyState
           title={t('logging:search.emptyTitle')}
           description={t('logging:search.emptyBody')}
@@ -94,7 +135,7 @@ export function FoodSearchPanel({ onPick, autoFocus = false }: FoodSearchPanelPr
         />
       ) : null}
 
-      {!loading &&
+      {state === 'results' &&
         results.map((food) => (
           <Card key={food.id}>
             <ItemRow
