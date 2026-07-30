@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { IconRef } from '@/data'
-import { cn, Icon, icons, SearchField, Sheet, Squish, Text } from '@/ui'
+import { useAfterInteractions } from '@/lib/use-after-interactions'
+import { cn, Icon, icons, SearchField, Sheet, Tappable, Text } from '@/ui'
 import { InlineCamera } from './InlineCamera'
 import { QuickAction } from './QuickAction'
 
@@ -30,6 +31,17 @@ const CHOICES: Choice[] = SETS.flatMap((set) =>
     icon: { set, name } as IconRef,
   })),
 )
+
+/**
+ * How many tiles are built on the frame the sheet opens.
+ *
+ * There are 269 of them, and mounting the lot is what made this sheet stick before
+ * it moved: a native `Modal` renders nothing at all until it is visible, so every
+ * one of those tiles is built on the single frame that also has to start the panel's
+ * rise. Thirty is six rows, and the body is capped at 420 points — under six rows'
+ * worth — so nothing on screen is missing while the rest arrive a moment later.
+ */
+const FIRST_PAINT = 30
 
 export type IconPickerProps = {
   visible: boolean
@@ -73,12 +85,17 @@ export function IconPicker({ visible, onClose, selected, onSelect, onPickPhoto }
   const { t } = useTranslation(['logging', 'common'])
   const [query, setQuery] = useState('')
   const [tab, setTab] = useState<Tab>('search')
+  // The rest of the grid, once the sheet has finished arriving. Reset every time it
+  // opens, which is what the `visible` argument is for.
+  const settled = useAfterInteractions(visible)
 
   const matches = useMemo(() => {
     const needle = words(query.trim().toLowerCase())
     if (!needle) return CHOICES
     return CHOICES.filter((choice) => choice.label.includes(needle))
   }, [query])
+
+  const shown = settled ? matches : matches.slice(0, FIRST_PAINT)
 
   const choose = (icon: IconRef) => {
     onSelect(icon)
@@ -154,22 +171,22 @@ export function IconPicker({ visible, onClose, selected, onSelect, onPickPhoto }
             // gap left a ragged 57pt of nothing down the right-hand side of a phone,
             // which read as the grid having been cut off.
             <View className="flex-row flex-wrap justify-between gap-y-2.5">
-              {matches.map((choice) => {
+              {shown.map((choice) => {
                 const isSelected =
                   selected?.set === choice.icon.set && selected?.name === choice.icon.name
 
                 return (
-                  <Squish
+                  /* `Tappable` rather than `Squish`, which is the one place in the
+                     app that opts out of the squish — and the reason is the count.
+                     Every `Squish` carries two shared values and two animated
+                     styles; across this grid that is a thousand reanimated hooks
+                     registered on both threads for a press nobody sees, since
+                     choosing a tile closes the sheet on the same frame. The haptic
+                     is the feedback here. */
+                  <Tappable
                     key={choice.key}
-                    depth={4}
-                    radius={18}
-                    // The width lives on the container, which is the box the row
-                    // measures; the surface fills it. Putting it on the surface
-                    // instead leaves the container shrink-wrapped and the row ragged.
-                    containerClassName="w-[18.5%]"
-                    slabClassName={isSelected ? 'bg-pandan-soft-line' : 'bg-line'}
                     className={cn(
-                      'h-[64px] w-full items-center justify-center border-[3px]',
+                      'h-[64px] w-[18.5%] items-center justify-center rounded-[18px] border-[3px]',
                       isSelected ? 'border-pandan bg-pandan-soft' : 'border-line bg-surface',
                     )}
                     onPress={() => choose(choice.icon)}
@@ -181,7 +198,7 @@ export function IconPicker({ visible, onClose, selected, onSelect, onPickPhoto }
                     accessibilityLabel={choice.label}
                   >
                     <Icon {...choice.icon} size={40} />
-                  </Squish>
+                  </Tappable>
                 )
               })}
             </View>
