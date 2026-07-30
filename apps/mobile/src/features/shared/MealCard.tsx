@@ -1,9 +1,8 @@
 import { useTranslation } from 'react-i18next'
-import { Pressable } from 'react-native'
 
 import type { DayLog, Entry, Meal } from '@/data'
 import { entriesForMeal, sumMacros } from '@/lib/nutrition'
-import { Card, Text } from '@/ui'
+import { Card, Tappable, Text } from '@/ui'
 import { ItemRow } from './ItemRow'
 
 export type MealCardProps = {
@@ -66,7 +65,7 @@ export function MealCard({
       ))}
 
       {entries.length === 0 && onAdd ? (
-        <Pressable
+        <Tappable
           onPress={onAdd}
           className="items-center justify-center rounded-tile border-[3px] border-line border-dashed p-3"
           accessibilityRole="button"
@@ -75,7 +74,7 @@ export function MealCard({
           <Text variant="label" className="text-muted">
             + {t('logging:today.addMeal', { meal: mealName.toLowerCase() })}
           </Text>
-        </Pressable>
+        </Tappable>
       ) : null}
     </Card>
   )

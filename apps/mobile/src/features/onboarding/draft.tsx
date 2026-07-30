@@ -1,4 +1,13 @@
-import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react'
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { createMMKV } from 'react-native-mmkv'
 
 import type { ActivityLevel, Goal, Sex } from '@/data'
@@ -96,7 +105,21 @@ type DraftValue = {
 
 const DraftContext = createContext<DraftValue | null>(null)
 
-export function OnboardingDraftProvider({ children }: { children: ReactNode }) {
+export type OnboardingDraftProviderProps = {
+  children: ReactNode
+  /**
+   * Who is signed in, passed in rather than read from the session here.
+   *
+   * This module stays clear of the data layer on purpose: importing it pulls in
+   * the Supabase client, which builds itself at import time and cannot be
+   * constructed in a test environment at all. A single `string | null` is the
+   * whole of what this needs, and the app layout is already inside the session
+   * provider.
+   */
+  userId: string | null
+}
+
+export function OnboardingDraftProvider({ children, userId }: OnboardingDraftProviderProps) {
   const [draft, setDraft] = useState<OnboardingDraft>(read)
 
   const patch = useCallback((next: OnboardingDraft) => {
@@ -111,6 +134,26 @@ export function OnboardingDraftProvider({ children }: { children: ReactNode }) {
     storage.remove(KEY)
     setDraft({})
   }, [])
+
+  /**
+   * Signing out empties the draft.
+   *
+   * Two things go wrong without it, and the second is the serious one. A draft
+   * outlives the account it was flushed for, so a relaunch after signing out
+   * found a complete set of answers and treated the user as mid-onboarding. And
+   * worse: the next person to sign in on this phone who had not finished
+   * onboarding would have had THOSE answers flushed onto their profile — someone
+   * else's height, weight and goal, silently.
+   *
+   * On the transition only. A launch with no session has never had one, and there
+   * is nothing to clear; a first render must not wipe answers being collected
+   * before the account exists, which is the entire point of the draft.
+   */
+  const lastUserId = useRef(userId)
+  useEffect(() => {
+    if (lastUserId.current && !userId) clear()
+    lastUserId.current = userId
+  }, [userId, clear])
 
   const value = useMemo(() => ({ draft, patch, clear }), [draft, patch, clear])
 

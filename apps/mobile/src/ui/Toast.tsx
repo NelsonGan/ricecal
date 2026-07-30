@@ -8,13 +8,14 @@ import {
   useRef,
   useState,
 } from 'react'
-import { Pressable, View } from 'react-native'
+import { View } from 'react-native'
 import Animated, { SlideInDown, SlideInUp, SlideOutDown, SlideOutUp } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
 import { cn } from './cn'
 import { Icon, type IconProps } from './Icon'
+import { Tappable } from './Tappable'
 import { Text } from './Text'
 
 export type ToastTone = 'neutral' | 'success' | 'warning' | 'error'
@@ -163,7 +164,7 @@ export function ToastProvider({ children, offset = 0 }: ToastProviderProps) {
             </View>
 
             {toast.action ? (
-              <Pressable
+              <Tappable
                 onPress={() => {
                   toast.action?.onPress()
                   dismiss()
@@ -174,7 +175,7 @@ export function ToastProvider({ children, offset = 0 }: ToastProviderProps) {
                 <Text className="font-display text-[16px] leading-[20px] text-inverse-accent">
                   {toast.action.label}
                 </Text>
-              </Pressable>
+              </Tappable>
             ) : null}
           </Animated.View>
         </View>

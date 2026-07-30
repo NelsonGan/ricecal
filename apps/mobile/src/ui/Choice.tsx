@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react'
-import { Pressable, View } from 'react-native'
+import { View } from 'react-native'
 
 import { cn } from './cn'
 import { Squish } from './Squish'
+import { Tappable } from './Tappable'
 import { Text } from './Text'
 
 type BaseProps = {
@@ -33,7 +34,7 @@ function ChoiceRow({
   children,
 }: BaseProps & { role: 'checkbox' | 'radio' }) {
   return (
-    <Pressable
+    <Tappable
       onPress={() => onChange(!checked)}
       disabled={disabled}
       className={cn(
@@ -57,7 +58,7 @@ function ChoiceRow({
           {description ? <Text variant="meta">{description}</Text> : null}
         </View>
       ) : null}
-    </Pressable>
+    </Tappable>
   )
 }
 

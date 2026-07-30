@@ -100,7 +100,10 @@ export function IconPicker({ visible, onClose, selected, onSelect }: IconPickerP
       {matches.length === 0 ? (
         <Text variant="meta">{t('logging:icon.noMatch', { query: query.trim() })}</Text>
       ) : (
-        <View className="flex-row flex-wrap gap-2.5">
+        // Five to a row, spanning the full width. Fixed-width tiles with a fixed
+        // gap left a ragged 57pt of nothing down the right-hand side of a phone,
+        // which read as the grid having been cut off.
+        <View className="flex-row flex-wrap justify-between gap-y-2.5">
           {matches.map((choice) => {
             const isSelected =
               selected?.set === choice.icon.set && selected?.name === choice.icon.name
@@ -110,9 +113,13 @@ export function IconPicker({ visible, onClose, selected, onSelect }: IconPickerP
                 key={choice.key}
                 depth={4}
                 radius={18}
+                // The width lives on the container, which is the box the row
+                // measures; the surface fills it. Putting it on the surface
+                // instead leaves the container shrink-wrapped and the row ragged.
+                containerClassName="w-[18.5%]"
                 slabClassName={isSelected ? 'bg-pandan-soft-line' : 'bg-line'}
                 className={cn(
-                  'h-[64px] w-[64px] items-center justify-center border-[3px]',
+                  'h-[64px] w-full items-center justify-center border-[3px]',
                   isSelected ? 'border-pandan bg-pandan-soft' : 'border-line bg-surface',
                 )}
                 onPress={() => choose(choice.icon)}

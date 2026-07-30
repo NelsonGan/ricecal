@@ -25,6 +25,15 @@ export type LogInput = {
   note?: string
   source?: EntrySource
   photoPath?: string
+  /**
+   * An illustration for this row, when the user picked one before adding.
+   *
+   * Most of the catalogue has no drawing, so a dish added from the list arrives
+   * blank and the pre-add screen is where one gets chosen. Mutually exclusive
+   * with `photoPath` — a check constraint refuses both — but nothing sends the
+   * two together: a snap has a photo and no picker, a manual add is the reverse.
+   */
+  icon?: IconRef
   /** The day it counts towards. Defaults to the day being viewed. */
   logDate: string
 }
@@ -48,6 +57,13 @@ export function useLogFood() {
             source: toDbSource(input.source ?? 'search'),
             photo_path: input.photoPath,
             log_date: input.logDate,
+            // Cast for the same reason as in `useUpdateEntry`:
+            // `database.types.ts` is generated from a running local stack and
+            // does not know these columns until `pnpm db:types` runs against the
+            // migration that adds them.
+            ...((input.icon
+              ? { icon_set: input.icon.set, icon_name: input.icon.name }
+              : {}) as object),
           })
           .select('id')
           .single(),

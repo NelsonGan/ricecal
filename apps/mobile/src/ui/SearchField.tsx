@@ -1,8 +1,9 @@
 import { forwardRef } from 'react'
-import { Pressable, type TextInput } from 'react-native'
+import type { TextInput } from 'react-native'
 
 import { useThemeColors } from '@/theme/useTheme'
 import { Icon } from './Icon'
+import { Tappable } from './Tappable'
 import { TextField, type TextFieldProps } from './TextField'
 
 export type SearchFieldProps = Omit<TextFieldProps, 'leftSlot' | 'rightSlot'> & {
@@ -38,7 +39,7 @@ export const SearchField = forwardRef<TextInput, SearchFieldProps>(function Sear
       leftSlot={<Icon set="ui" name="search" size={22} />}
       rightSlot={
         value && onClear ? (
-          <Pressable
+          <Tappable
             onPress={onClear}
             hitSlop={12}
             accessibilityRole="button"
@@ -47,7 +48,7 @@ export const SearchField = forwardRef<TextInput, SearchFieldProps>(function Sear
             {/* Chrome, so it takes the chrome colour rather than the
                 illustration's own red. */}
             <Icon set="ui" name="close" size={20} tintColor={colors.faint} />
-          </Pressable>
+          </Tappable>
         ) : null
       }
       {...rest}

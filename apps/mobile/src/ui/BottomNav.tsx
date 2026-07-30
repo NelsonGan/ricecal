@@ -1,6 +1,5 @@
-import { ImpactFeedbackStyle, impactAsync } from 'expo-haptics'
 import type { ReactNode, Ref } from 'react'
-import { Pressable, type PressableProps, View } from 'react-native'
+import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { radius, slab } from '@/theme/tokens'
@@ -8,6 +7,7 @@ import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
 import { Icon, type IconProps } from './Icon'
 import { Squish } from './Squish'
+import { Tappable, type TappableProps } from './Tappable'
 import { Text } from './Text'
 
 /**
@@ -48,7 +48,7 @@ export function NavBar({ children, className }: { children: ReactNode; className
   )
 }
 
-export type NavItemProps = Omit<PressableProps, 'children' | 'style'> & {
+export type NavItemProps = Omit<TappableProps, 'children' | 'style'> & {
   label: string
   icon: IconProps
   /**
@@ -68,47 +68,25 @@ export type NavItemProps = Omit<PressableProps, 'children' | 'style'> & {
 }
 
 /** One tab in the bar. Sized to fill its share of the row. */
-export function NavItem({
-  label,
-  icon,
-  isFocused = false,
-  href,
-  style,
-  onPressIn,
-  ...rest
-}: NavItemProps) {
+export function NavItem({ label, icon, isFocused = false, href, style, ...rest }: NavItemProps) {
   const colors = useThemeColors()
 
   return (
-    <Pressable
+    // `Tappable`, so a tab answers a tap in the hand like every other control.
+    // As a plain `Pressable` it was the only tap in the app that moved the whole
+    // screen and felt like nothing.
+    <Tappable
       {...rest}
-      onPressIn={(event) => {
-        /**
-         * A tab was the one thing in the bar with no physical answer.
-         *
-         * Every squishy control already does this through `Squish`; a tab is a
-         * plain `Pressable`, so it was the only tap in the app that moved the
-         * whole screen and felt like nothing. Same weight and same timing as
-         * `Squish` — Light, on press IN, because feedback that waits for the
-         * release arrives after the screen has already changed.
-         *
-         * Fire and forget: haptics are unavailable on a simulator and on a phone
-         * with system feedback turned off, and neither is a reason to fail a
-         * navigation.
-         */
-        void impactAsync(ImpactFeedbackStyle.Light).catch(() => {})
-        onPressIn?.(event)
-      }}
       className="min-w-0 flex-1 items-center gap-1.5 py-1"
       accessibilityRole="tab"
       accessibilityState={{ selected: isFocused }}
       accessibilityLabel={label}
     >
       {/* An inactive tab is grey, and the tint goes through `style` rather than
-          through `tintColor`.
-          `expo-image` documents both, but only the style reliably reaches the
-          view here — sizing arrives the same way and demonstrably works, while
-          the prop left these illustrations in full colour when unfocused. */}
+          through `tintColor`. `expo-image` documents both, but only the style
+          reliably reaches the view here — sizing arrives the same way and
+          demonstrably works, while the prop left these illustrations in full
+          colour when unfocused. */}
       <Icon
         {...icon}
         size={26}
@@ -118,7 +96,7 @@ export function NavItem({
       <Text variant="caption" className={isFocused ? 'text-pandan-ink' : 'text-faint'}>
         {label}
       </Text>
-    </Pressable>
+    </Tappable>
   )
 }
 

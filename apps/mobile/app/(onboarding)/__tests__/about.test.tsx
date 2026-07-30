@@ -58,7 +58,8 @@ function Providers({ children }: { children: ReactNode }) {
       }}
     >
       <ThemeProvider>
-        <OnboardingDraftProvider>
+        {/* No session: these answers are collected before the account exists. */}
+        <OnboardingDraftProvider userId={null}>
           {children}
           <DraftProbe />
         </OnboardingDraftProvider>

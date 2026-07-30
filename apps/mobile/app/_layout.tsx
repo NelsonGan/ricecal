@@ -9,11 +9,11 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { useFonts } from 'expo-font'
 import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
-import { useEffect } from 'react'
+import { type ReactNode, useEffect } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
-import { PendingSnapProvider, SelectedDateProvider, SessionProvider } from '@/data'
+import { PendingSnapProvider, SelectedDateProvider, SessionProvider, useSession } from '@/data'
 import { LoginLinkHandler } from '@/features/auth'
 import { OnboardingDraftProvider } from '@/features/onboarding'
 import { initOnlineManager } from '@/lib/online'
@@ -67,7 +67,7 @@ export default Sentry.wrap(function RootLayout() {
                     decide where a launch belongs, and the questions are answered
                     before there is an account to write them to. Backed by MMKV,
                     so it survives the app being killed mid-flow. */}
-                <OnboardingDraftProvider>
+                <OnboardingDraftScope>
                   <PendingSnapProvider>
                     {/* Outside the navigator so a toast survives navigation — a
                         "saved" confirmation usually fires as the screen that
@@ -79,7 +79,7 @@ export default Sentry.wrap(function RootLayout() {
                       <RootStack />
                     </ToastProvider>
                   </PendingSnapProvider>
-                </OnboardingDraftProvider>
+                </OnboardingDraftScope>
               </SelectedDateProvider>
             </SessionProvider>
           </PersistQueryClientProvider>
@@ -90,20 +90,35 @@ export default Sentry.wrap(function RootLayout() {
 })
 
 /**
+ * Hands the draft provider the signed-in user, and nothing else.
+ *
+ * A component of its own because `RootLayout` sits ABOVE `SessionProvider` and so
+ * cannot read the session, while the draft module deliberately does not import
+ * the data layer — pulling it in would build the Supabase client at import time,
+ * which no test environment can do. One `string | null` crossing the boundary is
+ * all either side needs.
+ */
+function OnboardingDraftScope({ children }: { children: ReactNode }) {
+  const { userId } = useSession()
+
+  return <OnboardingDraftProvider userId={userId}>{children}</OnboardingDraftProvider>
+}
+
+/**
  * Every screen draws its own title bar, so the native header is off everywhere.
  *
  * Presentation is declared here rather than per screen because it is a property
- * of how a route enters the app, not of what the route renders — the same food
- * detail is a modal from search and a push from the diary.
+ * of how a route enters the app, not of what the route renders.
  *
  * Two shapes, and the difference is deliberate:
  *
  * - **Full pages push.** Settings, the progress reports and the gallery slide in
  *   from the right, keep the screen behind them on the stack, and pop with the
  *   edge swipe. They carry a chevron in their own `AppBar`.
- * - **Modals present.** Search, a dish, the paywalls come up over the app and
- *   are dismissed rather than navigated back from — a cross in the `AppBar`,
- *   plus the native pull-down.
+ * - **Modals present.** The quick selector, the voice sheet and the paywalls come
+ *   up over the app and are dismissed rather than navigated back from — a cross in
+ *   the `AppBar`, plus the native pull-down. Search and the dish used to be here
+ *   and are pages now: both are somewhere you go, work, and come back from.
  *
  * `animation` is left at the platform default rather than forced to
  * `slide_from_right`: setting it globally also reaches the `presentation: modal`

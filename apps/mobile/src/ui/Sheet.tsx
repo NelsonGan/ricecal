@@ -1,6 +1,19 @@
-import type { ReactNode } from 'react'
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native'
-import Animated, { SlideInDown } from 'react-native-reanimated'
+import { type ReactNode, useEffect } from 'react'
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  useWindowDimensions,
+  View,
+} from 'react-native'
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
@@ -9,10 +22,13 @@ import { Text } from './Text'
 
 /**
  * The panel is a Pressable so a tap inside it can swallow the event before it
- * reaches the dismissing scrim, and animated so it can enter on its own while
- * the scrim stays put.
+ * reaches the dismissing scrim, and animated so it can rise on its own while the
+ * scrim stays exactly where it is.
  */
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
+
+/** How long the panel takes to rise. */
+const RISE_MS = 260
 
 export type SheetSurfaceProps = Omit<SheetProps, 'visible'>
 
@@ -96,6 +112,29 @@ export function SheetSurface({
   className,
 }: SheetSurfaceProps) {
   const insets = useSafeAreaInsets()
+  const { height } = useWindowDimensions()
+
+  /**
+   * The panel rises; the scrim does not.
+   *
+   * Driven by a shared value rather than by reanimated's `entering`, and that is
+   * the whole point. A layout animation on a view that mounts with its window —
+   * which is what `Sheet` does, since `Modal` is its own window — is routinely
+   * dropped, so the panel simply appeared. This starts from an explicit offscreen
+   * offset on the first frame and animates to zero in an effect, which runs after
+   * mount and therefore always runs.
+   *
+   * Offset by the window height rather than by the panel's own: the panel has not
+   * been measured on the frame that has to start offscreen, and a guess that is
+   * too small shows a band of surface before the animation begins.
+   */
+  const rise = useSharedValue(height)
+
+  useEffect(() => {
+    rise.value = withTiming(0, { duration: RISE_MS, easing: Easing.out(Easing.cubic) })
+  }, [rise])
+
+  const panel = useAnimatedStyle(() => ({ transform: [{ translateY: rise.value }] }))
 
   const body = scrollable ? (
     <ScrollView
@@ -127,9 +166,8 @@ export function SheetSurface({
           reasoning as in `Screen`. */}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <AnimatedPressable
-          entering={SlideInDown.duration(220)}
           className={cn('gap-md rounded-t-card bg-surface px-gutter pt-md', className)}
-          style={{ paddingBottom: insets.bottom + spacing.gutter }}
+          style={[panel, { paddingBottom: insets.bottom + spacing.gutter }]}
           onPress={(event) => event.stopPropagation()}
           accessibilityViewIsModal
           accessible={false}

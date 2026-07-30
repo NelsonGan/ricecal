@@ -1,10 +1,10 @@
 import { Image } from 'expo-image'
 import type { ReactNode } from 'react'
-import { ActivityIndicator, Pressable, View } from 'react-native'
+import { ActivityIndicator, View } from 'react-native'
 
 import type { IconRef } from '@/data'
 import { useMealPhotoUrl } from '@/data'
-import { cn, Icon, Text } from '@/ui'
+import { cn, Icon, Tappable, Text } from '@/ui'
 
 const valueTones = {
   ink: 'text-ink',
@@ -160,7 +160,7 @@ export function ItemRow({
   }
 
   return (
-    <Pressable
+    <Tappable
       className={classes}
       onPress={onPress}
       accessibilityRole="button"
@@ -174,6 +174,6 @@ export function ItemRow({
         .join(', ')}
     >
       {body}
-    </Pressable>
+    </Tappable>
   )
 }

@@ -4,6 +4,7 @@ export {
   isComplete,
   type OnboardingDraft,
   OnboardingDraftProvider,
+  type OnboardingDraftProviderProps,
   useOnboardingDraft,
 } from './draft'
 export { type Accent, OnboardingStep, type OnboardingStepProps } from './OnboardingStep'

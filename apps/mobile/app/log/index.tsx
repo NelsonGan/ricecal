@@ -2,7 +2,7 @@ import { subDays } from 'date-fns'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Pressable, View } from 'react-native'
+import { View } from 'react-native'
 
 import {
   dateKey,
@@ -19,7 +19,7 @@ import { ItemRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { mealForHour, sumMacros } from '@/lib/nutrition'
 import { useThemeColors } from '@/theme/useTheme'
-import { Icon, IconButton, SheetSurface, Text } from '@/ui'
+import { Icon, IconButton, SheetSurface, Tappable, Text } from '@/ui'
 
 /**
  * L2 QUICK SELECTOR, and L3's backdrop.
@@ -160,7 +160,7 @@ export default function LogSheet() {
       </View>
 
       {yesterdayEntries.length ? (
-        <Pressable
+        <Tappable
           onPress={repeatYesterday}
           className="flex-row items-center justify-center gap-2 rounded-tile border-[3px] border-line border-dashed p-3"
           accessibilityRole="button"
@@ -172,7 +172,7 @@ export default function LogSheet() {
           <Text variant="label" className="text-muted">
             {t('logging:selector.repeatYesterday')}
           </Text>
-        </Pressable>
+        </Tappable>
       ) : (
         <Text variant="meta" className="text-center">
           {t('logging:selector.nothingYesterday')}
