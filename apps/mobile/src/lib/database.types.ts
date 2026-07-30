@@ -778,6 +778,7 @@ export type Database = {
           water_total: number
           weigh_ins: number
           weight_avg: number
+          weight_before: number
           weight_first: number
           weight_last: number
           weight_peak: number

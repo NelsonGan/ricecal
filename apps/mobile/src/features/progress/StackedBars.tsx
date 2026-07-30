@@ -90,7 +90,12 @@ export function StackedBars({
                 </View>
               )}
             </View>
-            <Text numberOfLines={1} variant="micro">
+            {/* Fixed height whether or not this column has a label. The year
+                view labels every other month, and a zero-height empty string
+                would give those columns more room for their bar than their
+                neighbours — the tops would no longer be comparable, which is
+                the one thing a bar chart is for. */}
+            <Text numberOfLines={1} variant="micro" className="h-[14px]">
               {bar.label}
             </Text>
           </View>

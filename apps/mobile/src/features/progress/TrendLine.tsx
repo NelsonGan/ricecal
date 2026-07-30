@@ -14,6 +14,15 @@ export type TrendPoint = {
 
 export type TrendLineProps = {
   points: readonly TrendPoint[]
+  /**
+   * The last reading from BEFORE the range, which the line starts from.
+   *
+   * Without it a week that opens on an unweighed day begins partway across, and
+   * the empty stretch reads as broken rather than as a week that started where
+   * the previous one left off. Null only when there is genuinely no earlier
+   * weigh-in — see the fallback below for what happens then.
+   */
+  carryFrom?: number | null
   height?: number
   accessibilityLabel?: string
   className?: string
@@ -49,7 +58,13 @@ const LAST_DOT = 5
  * changes. No animation, deliberately — a line that draws itself in on every tab
  * switch is a line nobody can compare against the one before it.
  */
-export function TrendLine({ points, height = 128, accessibilityLabel, className }: TrendLineProps) {
+export function TrendLine({
+  points,
+  carryFrom,
+  height = 128,
+  accessibilityLabel,
+  className,
+}: TrendLineProps) {
   // Measured rather than assumed: the card's padding is a token and this sits
   // inside a `Screen` gutter, so the only honest width is the one laid out.
   const [width, setWidth] = useState(0)
@@ -74,10 +89,16 @@ export function TrendLine({ points, height = 128, accessibilityLabel, className 
   const usable = height - top * 2
 
   // Carried forward, so an unweighed day sits level with the last reading
-  // instead of on a line drawn through it. Leading columns stay empty: there is
-  // nothing behind the first weigh-in to hold, so the line starts where the
-  // measurements do rather than running flat out of the left edge.
-  let carried: number | null = null
+  // instead of on a line drawn through it.
+  //
+  // The seed is what makes the line start at the left edge rather than at the
+  // first reading inside the range. It is the newest weigh-in from BEFORE the
+  // window when there is one; failing that — a brand new account whose first
+  // ever reading is mid-week — the first reading in the range is carried
+  // BACKWARDS instead. Both are the same assumption the forward fill makes,
+  // pointed the other way, and either beats a chart that starts halfway across
+  // and looks like it failed to load.
+  let carried: number | null = carryFrom ?? values[0] ?? null
   const held = points.map((point) => {
     if (point.value !== null) carried = point.value
     return { point, value: carried, measured: point.value !== null }
@@ -173,7 +194,7 @@ export function TrendLine({ points, height = 128, accessibilityLabel, className 
       <View className="flex-row">
         {points.map((point) => (
           <View key={point.key} className="min-w-0 flex-1 items-center">
-            <Text numberOfLines={1} variant="micro">
+            <Text numberOfLines={1} variant="micro" className="h-[14px]">
               {point.label}
             </Text>
           </View>

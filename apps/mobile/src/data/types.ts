@@ -267,6 +267,11 @@ export type TrendSummary = {
   waterLoggedDays: number
   waterGoal: number
 
+  /**
+   * The newest reading from before the range, which the chart's line starts
+   * from. Null only when there is genuinely no earlier weigh-in.
+   */
+  weightBefore: number | null
   /** The oldest and newest readings in the range, which is what the change is. */
   weightFirst: number | null
   weightLast: number | null

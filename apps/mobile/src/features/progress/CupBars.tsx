@@ -75,10 +75,12 @@ export function CupBars({ bars, goal, height = 104, accessibilityLabel, classNam
               />
             ))}
           </View>
+          {/* Fixed height whether or not this column has a label — see the note
+              in `StackedBars`. */}
           <Text
             numberOfLines={1}
             variant="micro"
-            className={bar.reached ? 'text-water-ink' : undefined}
+            className={cn('h-[14px]', bar.reached && 'text-water-ink')}
           >
             {bar.label}
           </Text>

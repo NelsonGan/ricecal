@@ -238,6 +238,7 @@ returns table (
   water_habit_days  integer,
   water_logged_days integer,
   water_goal        integer,
+  weight_before     numeric,
   weight_first      numeric,
   weight_last       numeric,
   weight_avg        numeric,
@@ -271,6 +272,16 @@ as $$
     ))::integer,
     (count(*) filter (where d.water_glasses > 0))::integer,
     (array_agg(coalesce(d.goal_water, 8) order by d.at desc))[1],
+    -- The newest reading from BEFORE the range, which is where the chart's line
+    -- starts. Without it a range that opens on an unweighed day has nothing to
+    -- carry forward and the line begins partway across, reading as missing data
+    -- rather than as a week that started where the last one left off. Null only
+    -- when there is genuinely no earlier weigh-in.
+    (select w.weight_kg
+       from public.weight_logs w
+      where w.user_id = p_user_id and w.measured_on < min(d.at)
+      order by w.measured_on desc
+      limit 1),
     (array_agg(d.weight_kg order by d.at)      filter (where d.weight_kg is not null))[1],
     (array_agg(d.weight_kg order by d.at desc) filter (where d.weight_kg is not null))[1],
     round(avg(d.weight_kg), 1),
