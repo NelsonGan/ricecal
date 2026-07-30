@@ -8,7 +8,7 @@ import { cn, Text } from '@/ui'
 export type TrendPoint = {
   key: string
   label: string
-  /** Null where the range has a column but no reading. The line spans it. */
+  /** Null where the range has a column but nobody weighed in. Held, not spanned. */
   value: number | null
 }
 
@@ -33,9 +33,16 @@ const LAST_DOT = 5
  * problem but not the reading problem — the eye reads a row of bars as a set of
  * amounts and a line as a direction, and direction is the entire question.
  *
- * Gaps are spanned rather than broken. A week with two weigh-ins is the normal
- * case, not a fault, and a dashed segment for every unweighed day would make the
- * chart mostly punctuation. The dots say where the readings actually were.
+ * A day with no weigh-in HOLDS the last reading rather than being interpolated
+ * across. Nobody weighs themselves daily, so most columns are empty, and the two
+ * ways of filling them say different things: a straight line between Monday and
+ * Friday claims to know Wednesday, which it does not. Carrying Monday forward
+ * claims only that nothing was recorded in between, which is exactly what
+ * happened — the line goes flat and then steps when the scale is next used.
+ *
+ * The dots stay on the real readings. They are what tells the held stretches
+ * apart from the measured ones, and without them a step chart looks like a
+ * measurement that stopped moving.
  *
  * Skia because the alternative is a hundred absolutely-positioned Views; the
  * canvas is one node and the path is rebuilt only when the width or the data
@@ -66,9 +73,19 @@ export function TrendLine({ points, height = 128, accessibilityLabel, className 
   const top = STROKE + LAST_DOT
   const usable = height - top * 2
 
-  const plotted = points
-    .map((point, index) => ({
-      point,
+  // Carried forward, so an unweighed day sits level with the last reading
+  // instead of on a line drawn through it. Leading columns stay empty: there is
+  // nothing behind the first weigh-in to hold, so the line starts where the
+  // measurements do rather than running flat out of the left edge.
+  let carried: number | null = null
+  const held = points.map((point) => {
+    if (point.value !== null) carried = point.value
+    return { point, value: carried, measured: point.value !== null }
+  })
+
+  const plotted = held
+    .map((entry, index) => ({
+      ...entry,
       // The CENTRE of this point's column, which is where its label sits: the
       // axis below is a flex row of equal columns, so anything else puts the
       // first and last dots off their own labels — by about a third of a column
@@ -78,9 +95,18 @@ export function TrendLine({ points, height = 128, accessibilityLabel, className 
       // the range, not the readings, so two weigh-ins a fortnight apart must not
       // end up side by side.
       x: (width * (index + 0.5)) / points.length,
-      y: point.value === null ? null : top + (1 - (point.value - floor) / span) * usable,
+      y: entry.value === null ? null : top + (1 - (entry.value - floor) / span) * usable,
     }))
-    .filter((entry): entry is { point: TrendPoint; x: number; y: number } => entry.y !== null)
+    .filter(
+      (
+        entry,
+      ): entry is { point: TrendPoint; value: number; measured: boolean; x: number; y: number } =>
+        entry.y !== null,
+    )
+
+  // Only the days somebody actually stood on the scale. The held stretches carry
+  // the line; they are not readings and must not be drawn as if they were.
+  const measured = plotted.filter((entry) => entry.measured)
 
   const line =
     width > 0 && plotted.length > 1
@@ -126,7 +152,7 @@ export function TrendLine({ points, height = 128, accessibilityLabel, className 
                 color={colors.pandan}
               />
             ) : null}
-            {plotted.map((entry, index) => (
+            {measured.map((entry, index) => (
               <Circle
                 key={entry.point.key}
                 cx={entry.x}
@@ -134,8 +160,8 @@ export function TrendLine({ points, height = 128, accessibilityLabel, className 
                 // The newest reading is the one the card's headline quotes, so
                 // it is the one the eye should find without counting from
                 // either end.
-                r={index === plotted.length - 1 ? LAST_DOT : DOT}
-                color={index === plotted.length - 1 ? colors.pandanSlab : colors.pandan}
+                r={index === measured.length - 1 ? LAST_DOT : DOT}
+                color={index === measured.length - 1 ? colors.pandanSlab : colors.pandan}
               />
             ))}
           </>
