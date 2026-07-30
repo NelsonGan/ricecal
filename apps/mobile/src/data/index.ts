@@ -27,8 +27,8 @@ export {
 export {
   useFood,
   useFoodSearch,
+  useRecentFoods,
   useTopFoods,
-  useUsualFoods,
 } from './foods'
 export { type GoalsInput, useSetTargets, useTargets } from './goals'
 export { keys } from './keys'

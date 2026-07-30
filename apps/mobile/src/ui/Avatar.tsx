@@ -41,8 +41,18 @@ export type AvatarProps = {
    * layout shows in that case and not something worth reading out.
    */
   accessibilityLabel?: string
-  /** Remote or local image. Falls back to the initial while loading or on error. */
+  /** Remote or local image. Falls back to `fallback` while loading or on error. */
   uri?: string | null
+  /**
+   * What to draw with no picture: a stock figure, or the name's first letter.
+   *
+   * The figure is the default because the app's own user is the common case and
+   * has no name to take a letter from — nobody is asked for one, since signing in
+   * is a link in an email. `initial` is for a row of NAMED people, where the
+   * letters are what tell them apart and the same silhouette four times over
+   * tells you nothing.
+   */
+  fallback?: 'figure' | 'initial'
   size?: AvatarSize
   /** Pin the colour. By default it is derived from the name, so it is stable. */
   tone?: AvatarTone
@@ -62,21 +72,24 @@ function toneFor(name: string): AvatarTone {
 }
 
 /**
- * Whether this name is a name, or a placeholder standing in for one.
+ * Whether there is a letter here worth showing, or only padding.
  *
- * Nobody is asked for a name any more — signing in is a link in an email — so
- * `display_name` is empty for most accounts, and the screens pass an em dash
- * where a name would go. An avatar reading "—" or "?" looks like a rendering
- * fault; the stock figure below looks like an account with no picture yet, which
- * is what it is.
+ * Deliberately NOT `/\p{L}/u`. Unicode property escapes are a Hermes support
+ * question, and a regexp literal Hermes cannot parse throws where it is defined —
+ * at module scope, in a design-system file every screen imports, which is a blank
+ * app rather than a bad avatar. This asks the same question the other way round:
+ * is there anything here that is not whitespace or a placeholder mark. Which also
+ * keeps it right for a name in a script with no case, or no letters this file
+ * could name.
  */
-const isRealName = (name: string) => /\p{L}/u.test(name)
+const isRealName = (name: string) => /[^\s\-–—_.·?]/.test(name)
 
-/** Rounded-square avatar with a stock figure behind the initial. */
+/** Rounded-square avatar: a picture, a stock figure, or an initial. */
 export function Avatar({
   name,
   accessibilityLabel,
   uri,
+  fallback = 'figure',
   size = 'md',
   tone,
   className,
@@ -84,7 +97,8 @@ export function Avatar({
   const metrics = sizes[size]
   const palette = fills[tone ?? toneFor(name)]
   const colors = useThemeColors()
-  const named = isRealName(name)
+  // A letter is only ever shown where one was asked for AND there is one to show.
+  const showInitial = fallback === 'initial' && isRealName(name)
   const initial = name.trim().charAt(0).toUpperCase()
 
   return (
@@ -106,7 +120,7 @@ export function Avatar({
             style={{ width: metrics.box, height: metrics.box }}
             contentFit="cover"
           />
-        ) : named ? (
+        ) : showInitial ? (
           <Text className={cn('font-display', metrics.font, palette.label)}>{initial}</Text>
         ) : (
           // Flattened to the tile's own foreground colour, so it reads as a
@@ -145,7 +159,9 @@ export function AvatarGroup({ names, max = 3, size = 'sm', className }: AvatarGr
     >
       {shown.map((name, index) => (
         <View key={name} style={index > 0 ? { marginLeft: -10 } : undefined}>
-          <Avatar name={name} size={size} />
+          {/* Letters here, not silhouettes: these are named people, and the
+              initial is the only thing telling one tile from the next. */}
+          <Avatar name={name} fallback="initial" size={size} />
         </View>
       ))}
       {overflow > 0 ? (

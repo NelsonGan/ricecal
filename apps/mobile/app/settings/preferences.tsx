@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next'
 import { useSettings, useUpdateSettings } from '@/data'
-import { ToggleRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { useTheme } from '@/theme/useTheme'
 import { AppBar, Card, Screen, SegmentedControl, Text } from '@/ui'
@@ -75,19 +74,12 @@ export default function PreferencesScreen() {
         />
       </Card>
 
-      <Card title={t('preferences.privacy')} contentClassName="gap-0">
-        <ToggleRow
-          title={t('preferences.shareWithFamily')}
-          value={settings?.share_with_family ?? false}
-          onValueChange={(value) => updateSettings.mutate({ share_with_family: value })}
-        />
-        <ToggleRow
-          title={t('preferences.anonymousData')}
-          value={settings?.anonymous_food_data ?? false}
-          onValueChange={(value) => updateSettings.mutate({ anonymous_food_data: value })}
-          divider={false}
-        />
-      </Card>
+      {/* No privacy card. "Share with family" and "Anonymous food data" were both
+          switches over features that do not exist — there is nobody to share a
+          diary with, and nothing collects anonymised food data — so each one was a
+          promise the app cannot keep either way it is set. The columns stay in
+          `user_settings`; dropping them is a migration, and a switch nobody can
+          see cannot mislead anybody. */}
     </Screen>
   )
 }

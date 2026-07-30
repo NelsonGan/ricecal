@@ -72,7 +72,9 @@ export function useLogFood() {
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
       // A first entry can start a streak, and both feed the badges.
       queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.usualFoods(userId, input.meal) })
+      // The quick selector's suggestions are "the last few dishes at this meal",
+      // and this is one of them now.
+      queryClient.invalidateQueries({ queryKey: keys.recentFoodsAll(userId) })
     },
   })
 }
@@ -190,6 +192,8 @@ export function useRemoveEntry() {
     onSettled: (_data, _error, { logDate }) => {
       queryClient.invalidateQueries({ queryKey: keys.day(userId, logDate) })
       queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
+      // Undoing the last thing logged has to take it back out of "last logged".
+      queryClient.invalidateQueries({ queryKey: keys.recentFoodsAll(userId) })
     },
   })
 }

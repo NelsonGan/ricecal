@@ -9,7 +9,7 @@ export type MacroBarsProps = {
   eaten: Macros
   targets: Pick<Targets, 'carbs' | 'protein' | 'fat'>
   /**
-   * Reads "120 / 203g" instead of "120g".
+   * Reads "120/203g" instead of "120g".
    *
    * The bar has always shown the share of the day's allowance and never what the
    * allowance is, which leaves the one number people want — how much protein am I

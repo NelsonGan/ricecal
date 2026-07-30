@@ -15,7 +15,6 @@ import {
 import { BarChart, StatRow } from '@/features/shared'
 import { bmi, goalDate, progressOf, weeklyPace } from '@/lib/nutrition'
 import {
-  Badge,
   Button,
   Card,
   ConfirmSheet,
@@ -50,8 +49,8 @@ export function WeightPanel() {
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const target = Number(profile?.target_weight_kg ?? 0)
+  // The first reading, which is what the progress bar measures from.
   const started = weighIns[0]?.kg ?? current
-  const change = round1(started - current)
   /**
    * The pace and the date both come from this, so they describe the same plan as
    * the budget on Today. Null while the profile is incomplete — there is no
@@ -110,20 +109,10 @@ export function WeightPanel() {
 
   return (
     <>
-      <Badge tone={change >= 0 ? 'pandan' : 'kaya'} className="self-start">
-        <Text
-          className={`font-body-black text-[12px] leading-[15px] ${
-            change >= 0 ? 'text-pandan-ink' : 'text-kaya-ink'
-          }`}
-        >
-          {change === 0
-            ? t('progress:weight.steady')
-            : change > 0
-              ? t('progress:weight.down', { value: change.toFixed(1) })
-              : t('progress:weight.up', { value: Math.abs(change).toFixed(1) })}
-        </Text>
-      </Badge>
-
+      {/* No badge over the card. It read "Holding steady" for anybody with one
+          reading — which is everybody on their first day — by comparing the oldest
+          weigh-in with the newest and finding the same row twice. The history list
+          below states the same thing per reading and cannot be wrong about it. */}
       <Card>
         <View className="flex-row items-end justify-between">
           <View className="gap-0.5">
@@ -231,8 +220,13 @@ export function WeightPanel() {
         {t('progress:weight.log')}
       </Button>
 
+      {/* Stood down while the confirmation is up rather than left underneath it.
+          `Sheet` is a native `Modal`, so two of them visible at once is two
+          windows — the order they present in is the platform's business, not
+          this file's, and the one being answered has to be on top. `editing` is
+          untouched, so cancelling brings this straight back. */}
       <Sheet
-        visible={editing !== null}
+        visible={editing !== null && !confirmDelete}
         onClose={() => setEditing(null)}
         title={
           editing && !isToday(parseISO(editing))

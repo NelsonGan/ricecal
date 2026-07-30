@@ -1,15 +1,11 @@
 export const progress = {
   tabs: {
     weight: 'Weight',
-    report: 'Your week',
     nutrition: 'Nutrition',
   },
 
   weight: {
     title: 'Weight',
-    down: '{{value}} kg down',
-    up: '{{value}} kg up',
-    steady: 'Holding steady',
     current: 'CURRENT',
     goal: 'GOAL',
     chartNote: 'Your last readings. One heavy weekend is not a trend.',
@@ -25,7 +21,6 @@ export const progress = {
     removeTitle: 'Remove this reading?',
     removeBody:
       'The chart loses this day. If it was your latest, your budget goes back to the one before it.',
-    week: 'W{{n}}',
     thisWeek: 'THIS WEEK',
     average: '7 DAY AVG',
     pace: 'PACE',
@@ -39,23 +34,9 @@ export const progress = {
     saved: 'Weigh in saved',
   },
 
-  report: {
-    title: 'Your week',
-    range: '{{from}} to {{to}}',
-    avgPerDay: 'AVG PER DAY',
-    underGoal: '{{count}} under goal',
-    overGoal: '{{count}} over goal',
-    macroSplit: 'MACRO SPLIT',
-    legend: '{{macro}} {{percent}}%',
-    highlights: 'HIGHLIGHTS',
-    bestDay: 'Best day',
-    bestDayValue: '{{day}}, all meals logged',
-    noDays: 'Nothing logged this week yet',
-    mostEaten: 'Most eaten',
-    mostEatenValue: '{{food}}, {{count}} times',
-    water: 'Water',
-    waterValue: '{{value}} glasses a day on average',
-  },
+  // No `report` block. The weekly report screen is gone, and its copy went with
+  // it — this file's rule is that a screen can be deleted without leaving orphans
+  // behind in here.
 
   nutrition: {
     title: 'Nutrition',

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { TextInput, View } from 'react-native'
+import { Platform, TextInput, View } from 'react-native'
 
 import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
@@ -37,6 +37,9 @@ export type StepperProps = {
 }
 
 const VULGAR: Record<string, string> = { '0.25': '¼', '0.5': '½', '0.75': '¾' }
+
+/** The same correction `Text` applies, for the one input that carries display type. */
+const androidTightening = Platform.OS === 'android' ? { includeFontPadding: false } : null
 
 /**
  * Renders 1.5 as "1½".
@@ -96,9 +99,20 @@ export function Stepper({
   // shows up on screen.
   const shift = (delta: number) => onChange(clamp(value + delta))
 
-  // Plain digits, not "1½": the glyph is for reading, and it is not a number
-  // anybody can edit.
-  const startEditing = () => setTyped(String(Number(value.toFixed(2))))
+  /**
+   * Focus empties the field, and the old value becomes its placeholder.
+   *
+   * Not "seed it with the current number and select it all", which is the obvious
+   * thing and is not deterministic: the text has to change on focus either way —
+   * "1½" is not editable digits — and where the caret and the selection end up
+   * after a programmatic change on the same frame as the focus is the platform's
+   * business. Append on one, replace on the other, and no way to tell from here.
+   *
+   * Empty means whatever is typed IS the value, on every platform. Typing over
+   * the whole number is also what someone reaching for this wants: the ± buttons
+   * are how you nudge, and this is how you say 0.35.
+   */
+  const startEditing = () => setTyped('')
 
   const commit = () => {
     // A comma is the decimal separator on a good part of the world's keyboards,
@@ -132,36 +146,55 @@ export function Stepper({
       </IconButton>
 
       <View className="items-center gap-0.5">
-        {/* One `TextInput` in both states rather than a `Text` that swaps for a
-            field on tap. The swap put a different view in the middle of the row
-            depending on whether it was focused, and the two do not measure the
-            same — the whole control shifted by a couple of points as the keyboard
-            came up. This way the number is the field, and focus is the only thing
-            that changes.
-            The dashed rule is what says it can be typed into; it turns solid
-            pandan while it is. A hint line would say it louder and cost a row of
-            height in a control that is already three deep. */}
-        <TextInput
-          value={typed ?? format(value)}
-          editable={editable && !disabled}
-          onFocus={startEditing}
-          onChangeText={setTyped}
-          // Committed on blur as well as on submit: the decimal pad has no return
-          // key on iOS, so tapping away is the ordinary way out of it.
-          onBlur={commit}
-          onSubmitEditing={commit}
-          keyboardType="decimal-pad"
-          returnKeyType="done"
-          selectTextOnFocus
-          className={cn(
-            'min-w-[92px] px-2 text-center font-display text-[34px] text-heading',
-            editable && 'border-b-2',
-            typed === null ? 'border-line border-dashed' : 'border-pandan',
-          )}
-          cursorColor={colors.pandan}
-          selectionColor={colors.pandan}
-          accessibilityLabel={editable ? editLabel : undefined}
-        />
+        {/* A field only where a caller asked for one. Every other stepper in the
+            app keeps the `Text` it had: a `TextInput` with `editable={false}` is
+            not a drop-in for a label — it announces as a text field, it carries
+            the platform's own input metrics, and on Android it draws an underline
+            of its own.
+
+            Where it IS a field it is a field in both states rather than a `Text`
+            that swaps for one on tap. The swap put a different view in the middle
+            of the row depending on focus, and the two do not measure the same, so
+            the whole control shifted by a couple of points as the keyboard came
+            up. The dashed rule is what says it can be typed into, and it turns
+            solid pandan while it is; a hint line would say it louder and cost a
+            row of height in a control that is already three deep. */}
+        {editable ? (
+          <TextInput
+            value={typed ?? format(value)}
+            editable={!disabled}
+            onFocus={startEditing}
+            onChangeText={setTyped}
+            // Committed on blur as well as on submit: the decimal pad has no
+            // return key on iOS, so tapping away is the ordinary way out of it.
+            onBlur={commit}
+            onSubmitEditing={commit}
+            keyboardType="decimal-pad"
+            returnKeyType="done"
+            // What the field held before it was emptied, so the number does not
+            // vanish out from under the person about to retype it.
+            placeholder={typed === '' ? format(value) : undefined}
+            placeholderTextColor={colors.faint}
+            // Android draws a Material underline under a bare TextInput, which
+            // would sit under the rule this control draws for itself.
+            underlineColorAndroid="transparent"
+            className={cn(
+              'min-w-[92px] border-b-2 px-2 text-center font-display text-[34px] text-heading',
+              typed === null ? 'border-line border-dashed' : 'border-pandan',
+            )}
+            // Android reserves room for ascenders this glyph does not use, which
+            // pushes a big Baloo numeral off centre — the same correction `Text`
+            // makes for every display-sized number in the app.
+            style={androidTightening}
+            cursorColor={colors.pandan}
+            selectionColor={colors.pandan}
+            accessibilityLabel={editLabel}
+          />
+        ) : (
+          <Text className="font-display text-[34px] leading-[41px] text-heading">
+            {format(value)}
+          </Text>
+        )}
         {unit ? <Text variant="caption">{unit}</Text> : null}
       </View>
 

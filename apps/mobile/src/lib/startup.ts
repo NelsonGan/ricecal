@@ -58,8 +58,9 @@ export async function initMixpanel() {
  * So the import is dynamic and the call below is commented out rather than
  * merely gated. `purchases.ts` already imports the SDK lazily at the point of
  * sale for the same reason and says so; this is the last place that did it
- * eagerly. Uncomment the line in `initServices` once the keys are real — nothing
- * else here needs to change.
+ * eagerly. To bring it back once the keys are real: uncomment the call in
+ * `initServices` and drop 'RevenueCat' from `disabled` above, or the dev log will
+ * keep reporting it as switched off.
  */
 export async function initPurchases() {
   const apiKey = Platform.OS === 'ios' ? env.EXPO_PUBLIC_RC_IOS_KEY : env.EXPO_PUBLIC_RC_ANDROID_KEY

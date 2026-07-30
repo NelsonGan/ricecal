@@ -110,39 +110,53 @@ describe('CountBadge', () => {
   })
 })
 
-/**
- * The value is a `TextInput` in both states, so it is a display value rather than
- * text — `getByText` finds nothing here, which reads as the number not having
- * rendered at all.
- */
 describe('Stepper', () => {
   it('formats halves as vulgar fractions', async () => {
     await render(<Stepper value={1.5} onChange={() => {}} unit="plates" />)
-    expect(screen.getByDisplayValue('1½')).toBeTruthy()
+    expect(screen.getByText('1½')).toBeTruthy()
   })
 
   it('formats a bare half without a leading zero', async () => {
     await render(<Stepper value={0.5} onChange={() => {}} />)
-    expect(screen.getByDisplayValue('½')).toBeTruthy()
+    expect(screen.getByText('½')).toBeTruthy()
   })
 
   it('falls back to a number for values that are not clean quarters', async () => {
     await render(<Stepper value={1.3} onChange={() => {}} />)
-    expect(screen.getByDisplayValue('1.3')).toBeTruthy()
+    expect(screen.getByText('1.3')).toBeTruthy()
+  })
+
+  /**
+   * `editable` swaps the label for a field, which is a different node — text
+   * against a display value. Worth pinning, because the plain stepper is in four
+   * other screens and none of them should become a text input.
+   */
+  it('renders the value as a label unless it is editable', async () => {
+    await render(<Stepper value={2} onChange={() => {}} />)
+
+    expect(screen.getByText('2')).toBeTruthy()
+    expect(screen.queryByDisplayValue('2')).toBeNull()
+  })
+
+  it('renders the value as a field when it is editable', async () => {
+    await render(<Stepper value={2} onChange={() => {}} editable editLabel="Type the amount" />)
+
+    expect(screen.getByDisplayValue('2')).toBeTruthy()
   })
 
   /**
    * The steps cannot reach every amount — 0.35 of a tub is not a multiple of a
-   * half — so the number itself is a field when a caller opts in. Typing appends
-   * to what is there, and `user.type` ends in a blur, which is what commits.
+   * half — so the number itself is a field when a caller opts in. Focus empties
+   * it, so what is typed IS the value, and `user.type` ends in a blur, which is
+   * what commits.
    */
   it('takes an exact amount typed into it', async () => {
     const onChange = jest.fn()
     await render(<Stepper value={1} onChange={onChange} editable editLabel="Type the amount" />)
 
-    await user.type(screen.getByLabelText('Type the amount'), '.5')
+    await user.type(screen.getByLabelText('Type the amount'), '0.35')
 
-    expect(onChange).toHaveBeenLastCalledWith(1.5)
+    expect(onChange).toHaveBeenLastCalledWith(0.35)
   })
 
   it('clamps what was typed rather than accepting it', async () => {
@@ -151,10 +165,23 @@ describe('Stepper', () => {
       <Stepper value={1} max={10} onChange={onChange} editable editLabel="Type the amount" />,
     )
 
-    // Appended to the 1 already there, so this is 19 against a ceiling of 10.
-    await user.type(screen.getByLabelText('Type the amount'), '9')
+    await user.type(screen.getByLabelText('Type the amount'), '99')
 
     expect(onChange).toHaveBeenLastCalledWith(10)
+  })
+
+  /** A mistyped amount deleted back to nothing must not read as zero. */
+  it('keeps the value it had when the field is left empty', async () => {
+    const onChange = jest.fn()
+    await render(
+      <Stepper value={2} min={0.5} onChange={onChange} editable editLabel="Type the amount" />,
+    )
+
+    const field = screen.getByLabelText('Type the amount')
+    // Focus empties the field; leaving without typing commits nothing.
+    await user.type(field, '')
+
+    expect(onChange).not.toHaveBeenCalled()
   })
 
   /** Without `editable` the number is not a control, and must not announce as one. */

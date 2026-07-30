@@ -24,7 +24,16 @@ export const keys = {
 
   foodSearch: (userId: string, query: string) => ['food-search', userId, query] as const,
   food: (id: string) => ['food', id] as const,
-  usualFoods: (userId: string, meal: string) => ['usual-foods', userId, meal] as const,
+  /** The last few dishes logged at one meal. */
+  recentFoods: (userId: string, meal: string, limit: number) =>
+    ['recent-foods', userId, meal, limit] as const,
+  /**
+   * The prefix of every one of the above, which is what the write side wants:
+   * adding or removing an entry changes this list, and neither mutation is in a
+   * position to know which `limit` a screen asked for — or, on a delete, which
+   * meal the row was in.
+   */
+  recentFoodsAll: (userId: string) => ['recent-foods', userId] as const,
 
   weighIns: (userId: string) => ['weigh-ins', userId] as const,
   photo: (path: string) => ['photo', path] as const,
