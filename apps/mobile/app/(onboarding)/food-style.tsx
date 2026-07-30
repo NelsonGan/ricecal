@@ -28,6 +28,13 @@ export default function FoodStyleStep() {
   // show — the reminders screen is where they are changed.
   const { data: mealTimes = [] } = useMealTimes()
 
+  // Snack is left out: it is the slot with no usual time, which is the whole
+  // reason it exists.
+  const usualTimes = mealTimes
+    .filter((slot) => slot.meal !== 'snack')
+    .map((slot) => formatTime(slot.at))
+    .join(', ')
+
   const toggle = (tag: string) => {
     const next = foodStyles.includes(tag)
       ? foodStyles.filter((existing) => existing !== tag)
@@ -64,16 +71,16 @@ export default function FoodStyleStep() {
         ))}
       </View>
 
-      <Card title={t('foodStyle.mealTimes')}>
-        <View className="flex-row items-center justify-between">
+      {/* Only once there are times to show. The query is seeded with the account
+          but still has to arrive, and a titled card with an empty line in it
+          reads as something that failed rather than something still loading. */}
+      {usualTimes ? (
+        <Card title={t('foodStyle.mealTimes')}>
           <Text variant="bodyStrong" className="text-[16px]">
-            {mealTimes
-              .filter((slot) => slot.meal !== 'snack')
-              .map((slot) => formatTime(slot.at))
-              .join(', ')}
+            {usualTimes}
           </Text>
-        </View>
-      </Card>
+        </Card>
+      ) : null}
     </OnboardingStep>
   )
 }

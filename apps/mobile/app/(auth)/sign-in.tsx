@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { type TextInput, View } from 'react-native'
@@ -29,7 +29,16 @@ export default function SignInScreen() {
   const router = useRouter()
   const toast = useToast()
 
-  const [mode, setMode] = useState<Mode>('sign-up')
+  /**
+   * Which side to open on, when the caller knows.
+   *
+   * The welcome screen has a button for each direction, and "I already have an
+   * account" landing on a Create account form makes the tap look ignored. Sign
+   * up stays the default: a user arriving from the router has no account yet
+   * more often than not.
+   */
+  const params = useLocalSearchParams<{ mode?: Mode }>()
+  const [mode, setMode] = useState<Mode>(params.mode === 'sign-in' ? 'sign-in' : 'sign-up')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')

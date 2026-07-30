@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
+import { useSession } from '@/data'
 import { Button, Icon, type IconProps, Screen, Text } from '@/ui'
 
 const MASCOT = require('../../assets/brand/mascot.png')
@@ -11,6 +12,7 @@ const MASCOT = require('../../assets/brand/mascot.png')
 export default function Welcome() {
   const { t } = useTranslation('onboarding')
   const router = useRouter()
+  const { session } = useSession()
 
   const perks: { key: string; icon: IconProps; title: string; subtitle: string }[] = [
     {
@@ -33,8 +35,24 @@ export default function Welcome() {
     },
   ]
 
-  /** "I already have an account" goes to the real sign-in screen. */
-  const signIn = () => router.replace('/sign-in')
+  /**
+   * The questions cannot start without an account.
+   *
+   * Every step from here writes to `profiles`, and the hooks that do it throw
+   * outright when there is no session rather than failing quietly. This screen
+   * is reached from sign-in's "What is RiceCal?", so no session is the ordinary
+   * case and not a corner one — sending that user to the first question crashes
+   * the screen. A signed-in user who has not finished onboarding is routed
+   * straight to the questions by `app/index.tsx` and only arrives here on
+   * purpose, so both directions stay reachable.
+   */
+  const start = () =>
+    session
+      ? router.push('/goal')
+      : router.replace({ pathname: '/sign-in', params: { mode: 'sign-up' } })
+
+  /** Both CTAs land on sign-in; the label decides which side of it opens. */
+  const signIn = () => router.replace({ pathname: '/sign-in', params: { mode: 'sign-in' } })
 
   return (
     <Screen
@@ -42,7 +60,7 @@ export default function Welcome() {
       contentClassName="justify-center"
       footer={
         <View className="gap-1.5">
-          <Button fullWidth onPress={() => router.push('/goal')}>
+          <Button fullWidth onPress={start}>
             {t('welcome.start')}
           </Button>
           <Button variant="ghost" fullWidth onPress={signIn}>

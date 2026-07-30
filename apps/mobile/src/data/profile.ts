@@ -81,6 +81,31 @@ export function useUpdateProfile() {
       unwrapOne(
         await supabase.from('profiles').update(toRow(patch)).eq('id', userId).select('*').single(),
       ),
+    /**
+     * The patch lands in the cache before the request leaves.
+     *
+     * Two things need it. The onboarding steps read their own selected state
+     * back out of the profile, so without this a tap on a choice card shows
+     * nothing at all until the round trip finishes. And a patch computed from
+     * the current value — the food style chips, which toggle against
+     * `food_styles` — reads the previous answer from exactly this cache: two
+     * quick taps that both start from the server's copy means the second
+     * silently drops the first.
+     */
+    onMutate: async (patch: ProfilePatch) => {
+      const key = keys.profile(userId)
+      // A fetch already in flight would resolve after this and put the old row
+      // back, which looks like the tap undoing itself.
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<Profile>(key)
+      if (previous) queryClient.setQueryData<Profile>(key, { ...previous, ...toRow(patch) })
+      return { previous }
+    },
+    onError: (_error, _patch, context) => {
+      // Back to what the server last said, so a screen never goes on claiming
+      // an answer that was never stored.
+      if (context?.previous) queryClient.setQueryData(keys.profile(userId), context.previous)
+    },
     onSuccess: (profile: Profile) => {
       queryClient.setQueryData(keys.profile(userId), profile)
       queryClient.invalidateQueries({ queryKey: keys.goals(userId) })

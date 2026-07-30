@@ -73,5 +73,7 @@ export const common = {
     more: 'More options',
     decrease: 'Decrease',
     increase: 'Increase',
+    /** The onboarding progress bar, which shows its position without words. */
+    step: 'Step {{current}} of {{total}}',
   },
 } as const

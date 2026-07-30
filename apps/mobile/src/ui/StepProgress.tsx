@@ -19,6 +19,11 @@ export type StepProgressProps = {
   current: number
   /** Line under the bars, e.g. "Step 2 of 4, about a minute left". */
   caption?: string
+  /**
+   * What the bars are counting, for a screen reader. Without it the row is a
+   * bare percentage, since the marks carry their meaning visually.
+   */
+  accessibilityLabel?: string
   /** Colour of the filled segments. Onboarding rotates this per step. */
   tone?: StepProgressTone
   className?: string
@@ -35,6 +40,7 @@ export function StepProgress({
   total,
   current,
   caption,
+  accessibilityLabel,
   tone = 'pandan',
   className,
 }: StepProgressProps) {
@@ -50,6 +56,7 @@ export function StepProgress({
     <View
       className={cn('gap-2', className)}
       accessibilityRole="progressbar"
+      accessibilityLabel={accessibilityLabel}
       accessibilityValue={{ min: 0, max: total, now: current, text: caption }}
     >
       <View className="flex-row gap-2">
