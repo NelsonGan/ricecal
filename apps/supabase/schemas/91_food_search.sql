@@ -50,11 +50,15 @@ as $$
   ),
   -- Each arm is capped before fusion, not after. A post-filter would let two
   -- hundred irrelevant candidates crowd out the handful that survive it.
+  -- Every arm skips estimate and archetype rows. They are catalogue rows so
+  -- that `food_logs.food_id` can reference them, not so that search can offer
+  -- a guess next to a curated dish.
   exact as (
     select f.id, 1 as rank
     from public.foods f, params p
     where p.qn <> ''
       and f.name_norm = p.qn
+      and not f.is_estimate and not f.is_archetype
       and (p_place is null or f.place = p_place)
     limit 200
   ),
@@ -70,6 +74,7 @@ as $$
       from public.foods f, params p
       where p.tsq is not null
         and f.search_tsv @@ p.tsq
+        and not f.is_estimate and not f.is_archetype
         and (p_place is null or f.place = p_place)
       order by ts_rank_cd(f.search_tsv, p.tsq) desc, f.verified desc, f.id
       limit 200
@@ -92,6 +97,7 @@ as $$
       where p.qn <> ''
         and f.place <> 'packaged'
         and f.name_norm operator(extensions.%) p.qn
+        and not f.is_estimate and not f.is_archetype
         and (p_place is null or f.place = p_place)
       order by extensions.similarity(f.name_norm, p.qn) desc, f.verified desc, f.id
       limit 200

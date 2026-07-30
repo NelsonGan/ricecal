@@ -164,6 +164,16 @@ export type Entry = {
 
   /** Already costed by the view: the dish's macros x factor x quantity. */
   macros: Macros
+
+  /** Groups the rows one photographed plate decomposed into. */
+  scanId?: string
+  /**
+   * The numbers on this row are a guess, not a catalogue figure: a tier-4
+   * model estimate or a tier-5 archetype fallback. What the UI badges — an
+   * estimate has to be obvious and easy to correct.
+   */
+  isEstimate: boolean
+  isArchetype: boolean
 }
 
 export type Targets = {

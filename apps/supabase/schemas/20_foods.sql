@@ -69,6 +69,21 @@ create table public.foods (
   -- False means "a plausible estimate", true means someone checked it. Shown
   -- as a badge, and the flag a future catalogue-review queue sorts on.
   verified       boolean not null default false,
+
+  -- Rows the scan cascade wrote from model knowledge (tier 4). Real catalogue
+  -- rows in every mechanical sense — entries reference them, views join them —
+  -- but excluded from `search_foods` and `user_food_stats`, because a guess
+  -- must not surface as if someone had curated it. Deduped on `name_norm` (see
+  -- the partial unique index below) so the same dish estimated twice shares one
+  -- row: the number stays stable across users, stays correctable in one place,
+  -- and the reference count becomes a ranking of what to curate next.
+  is_estimate    boolean not null default false,
+
+  -- The ~60 seeded generic fallbacks the scan cascade lands on when everything
+  -- else fails ("fried rice", "noodle soup", terminal "mixed meal"). Resolved
+  -- by classification over the fixed list, never by search, so also excluded
+  -- from `search_foods`.
+  is_archetype   boolean not null default false,
   -- Where the numbers came from. A citation, and the audit trail for an
   -- imported row whose figures someone later disputes.
   source         text,
@@ -128,6 +143,14 @@ create index foods_name_norm_idx on public.foods (name_norm);
 
 create index foods_search_tsv_idx
   on public.foods using gin (search_tsv);
+
+-- The dedup rule for tier-4 estimates, as a constraint rather than a
+-- read-then-write in the edge function: two users scanning "kolo mee special"
+-- concurrently race, and only a unique index turns that race into one row. The
+-- function upserts on it. Partial, so the real catalogue — where distinct
+-- brands legitimately share a normalized name — is untouched.
+create unique index foods_estimate_name_norm_idx
+  on public.foods (name_norm) where is_estimate;
 
 -- Ordered before `foods_set_updated_at` by name, which is how Postgres breaks
 -- ties between two before-row triggers. Neither touches the other's columns, so

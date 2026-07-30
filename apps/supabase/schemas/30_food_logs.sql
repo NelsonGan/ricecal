@@ -56,6 +56,19 @@ create table public.food_logs (
   -- exists; see the seam note above.
   photo_path   text,
 
+  -- Groups the entries one photographed plate decomposed into. A scan that
+  -- resolves to components writes N rows sharing one value; a single-dish scan
+  -- writes one row that still carries it, so "what did this photo become" is
+  -- answerable either way. Null for anything not born from a scan.
+  scan_id      uuid,
+
+  -- The model's specific name for the plate, kept when the entry points at a
+  -- shared estimate or archetype row whose own name is generic ("Fried rice,
+  -- estimated"). `food_log_details` reads coalesce(display_label, foods.name),
+  -- so a null costs nothing. Deliberately not `note`, which is the user's own
+  -- free-text correction.
+  display_label text check (char_length(display_label) between 1 and 120),
+
   -- An illustration the user picked for this row, overriding the food's own.
   --
   -- Here rather than on `foods` because `foods` is shared: the catalogue is
@@ -104,6 +117,10 @@ create index food_logs_user_food_idx on public.food_logs (user_id, food_id);
 -- `on delete restrict` above needs this to avoid a sequential scan of every
 -- entry whenever a catalogue row is touched.
 create index food_logs_serving_idx on public.food_logs (serving_id);
+
+-- Backs the estimate-backlog report: "which estimate rows are referenced most"
+-- is a count over this column.
+create index food_logs_scan_idx on public.food_logs (scan_id) where scan_id is not null;
 
 create trigger food_logs_set_updated_at
   before update on public.food_logs

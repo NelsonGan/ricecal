@@ -447,6 +447,16 @@ import_map = "./functions/healthcheck/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
 entrypoint = "./functions/healthcheck/index.ts"
+
+# The photo-scan cascade. verify_jwt = false for the same reason as
+# healthcheck: the function inspects the Authorization header itself. Secrets
+# it reads: OPENROUTER_API_KEY (absent locally, which switches it into mock
+# mode), optional OPENROUTER_MODEL and MOCK_AI.
+[functions.scan-meal]
+enabled = true
+verify_jwt = false
+import_map = "./functions/scan-meal/deno.json"
+entrypoint = "./functions/scan-meal/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/healthcheck/*.html" ]

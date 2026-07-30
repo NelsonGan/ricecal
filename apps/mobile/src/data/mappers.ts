@@ -114,5 +114,9 @@ export function toEntry(row: FoodLogRow): Entry {
       protein: Number(row.protein_g ?? 0),
       fat: Number(row.fat_g ?? 0),
     },
+
+    scanId: row.scan_id ?? undefined,
+    isEstimate: row.is_estimate ?? false,
+    isArchetype: row.is_archetype ?? false,
   }
 }
