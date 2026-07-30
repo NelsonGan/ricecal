@@ -31,9 +31,15 @@ export const SPAN_KEY = {
  * counted rather than read. Twelve months were worse than ambiguous: "A" is
  * April and August, "M" is March and May, "J" is January, June and July.
  *
- * Three letters fit a seventh of the width comfortably. They do not fit a
- * twelfth, so months become their number instead — 1 to 12, which nothing else
- * on the axis can be confused with.
+ * Three letters fit a seventh of the width comfortably and a twelfth not at
+ * all, so the year labels every OTHER month rather than shortening the name
+ * further. A named month every eight weeks still tells you where you are; "8"
+ * for August makes you convert before it does.
+ *
+ * The interval counts BACK from the newest bucket, so the month on the right is
+ * always labelled. That is the one people orient by — it is the month the
+ * headline figures describe — and anchoring at the left would drop it half the
+ * time depending on where the year happens to start.
  */
 export function bucketLabels(
   buckets: readonly TrendBucket[],
@@ -42,10 +48,16 @@ export function bucketLabels(
 ): string[] {
   return buckets.map((bucket, index) => {
     if (range === '7d') return format(parseISO(bucket.end), 'EEE')
-    if (range === '1y') return format(parseISO(bucket.start), 'M')
+    if (range === '1y') {
+      const fromEnd = buckets.length - 1 - index
+      return fromEnd % MONTH_LABEL_EVERY === 0 ? format(parseISO(bucket.start), 'LLL') : ''
+    }
     return weekLabel(index + 1)
   })
 }
+
+/** Label every other month. Twelve names do not fit; six do, with room to spare. */
+const MONTH_LABEL_EVERY = 2
 
 /**
  * Splits a series into fixed-size groups, oldest first.

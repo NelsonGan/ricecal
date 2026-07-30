@@ -173,6 +173,9 @@ export function WeightPanel({ range, buckets, summary, unit, onEdit }: WeightPan
             label: labels[index],
             value: bucket.weight,
           }))}
+          // Where the line starts. Without it a range opening on an unweighed
+          // day begins partway across the card.
+          carryFrom={summary.weightBefore}
           accessibilityLabel={t('progress:weight.chart', { span: t(SPAN_KEY[range]) })}
         />
       </Card>

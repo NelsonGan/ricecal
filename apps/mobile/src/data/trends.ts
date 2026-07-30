@@ -81,6 +81,7 @@ function toSummary(row: SummaryRow): TrendSummary {
     waterLoggedDays: orZero(row.water_logged_days),
     waterGoal: orZero(row.water_goal),
 
+    weightBefore: num(row.weight_before),
     weightFirst: num(row.weight_first),
     weightLast: num(row.weight_last),
     weightAvg: num(row.weight_avg),
