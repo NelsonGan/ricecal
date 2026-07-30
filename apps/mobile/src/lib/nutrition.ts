@@ -246,6 +246,31 @@ export function macroSplit(
   return { carbs, protein, fat }
 }
 
+/** Calories in a gram of each macro. Atwater factors, as every label rounds them. */
+const KCAL_PER_G = { carbs: 4, protein: 4, fat: 9 } as const
+
+/**
+ * What share of the energy each macro is, as three fractions summing to one.
+ *
+ * A stacked calorie bar has to be stacked by CALORIES. 61 g of fat is a sixth of
+ * the grams on a plate and very nearly a third of its energy, so a bar segmented
+ * by grams contradicts the percentages printed under it — which is the version
+ * that was on screen first, and read as a rendering bug rather than a unit one.
+ *
+ * All three come back zero for a day with no macros recorded, which is not the
+ * same as an even split: the caller draws that column as a stub, because there
+ * is nothing to divide.
+ */
+export function energyShare(macros: { carbs: number; protein: number; fat: number }) {
+  const carbs = macros.carbs * KCAL_PER_G.carbs
+  const protein = macros.protein * KCAL_PER_G.protein
+  const fat = macros.fat * KCAL_PER_G.fat
+  const total = carbs + protein + fat
+
+  if (total <= 0) return { carbs: 0, protein: 0, fat: 0 }
+  return { carbs: carbs / total, protein: protein / total, fat: fat / total }
+}
+
 /** Years between a birth date and today. The profile stores the date. */
 export function ageFrom(birthDate: string | null): number {
   if (!birthDate) return 0

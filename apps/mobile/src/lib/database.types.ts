@@ -113,6 +113,8 @@ export type Database = {
         Row: {
           created_at: string
           food_id: string
+          icon_name: string | null
+          icon_set: Database['public']['Enums']['icon_set'] | null
           id: string
           log_date: string
           logged_at: string
@@ -128,6 +130,8 @@ export type Database = {
         Insert: {
           created_at?: string
           food_id: string
+          icon_name?: string | null
+          icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
           log_date?: string
           logged_at?: string
@@ -143,6 +147,8 @@ export type Database = {
         Update: {
           created_at?: string
           food_id?: string
+          icon_name?: string | null
+          icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
           log_date?: string
           logged_at?: string
@@ -237,8 +243,8 @@ export type Database = {
           created_at: string
           fat_g: number
           fibre_g: number | null
-          icon_name: string
-          icon_set: Database['public']['Enums']['icon_set']
+          icon_name: string | null
+          icon_set: Database['public']['Enums']['icon_set'] | null
           id: string
           kcal: number
           name: string
@@ -260,8 +266,8 @@ export type Database = {
           created_at?: string
           fat_g?: number
           fibre_g?: number | null
-          icon_name: string
-          icon_set?: Database['public']['Enums']['icon_set']
+          icon_name?: string | null
+          icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
           kcal: number
           name: string
@@ -283,8 +289,8 @@ export type Database = {
           created_at?: string
           fat_g?: number
           fibre_g?: number | null
-          icon_name?: string
-          icon_set?: Database['public']['Enums']['icon_set']
+          icon_name?: string | null
+          icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
           kcal?: number
           name?: string
@@ -708,6 +714,77 @@ export type Database = {
       }
       search_normalize: { Args: { txt: string }; Returns: string }
       search_tsquery: { Args: { txt: string }; Returns: unknown }
+      trend_days: {
+        Args: { p_range: string; p_user_id?: string }
+        Returns: {
+          at: string
+          bucket: string
+          carbs_g: number
+          entry_count: number
+          fat_g: number
+          goal_kcal: number
+          goal_water: number
+          kcal: number
+          protein_g: number
+          water_glasses: number
+          weight_kg: number
+        }[]
+      }
+      trend_series: {
+        Args: { p_range: string; p_user_id?: string }
+        Returns: {
+          bucket_end: string
+          bucket_start: string
+          carbs_g_avg: number
+          days: number
+          days_logged: number
+          days_under_goal: number
+          fat_g_avg: number
+          kcal_avg: number
+          kcal_goal: number
+          protein_g_avg: number
+          water_avg: number
+          water_best: number
+          water_goal: number
+          water_goal_days: number
+          water_habit_days: number
+          water_logged_days: number
+          water_total: number
+          weigh_ins: number
+          weight_avg: number
+          weight_last: number
+          weight_min: number
+        }[]
+      }
+      trend_summary: {
+        Args: { p_range: string; p_user_id?: string }
+        Returns: {
+          carbs_g_avg: number
+          days: number
+          days_logged: number
+          days_under_goal: number
+          fat_g_avg: number
+          from_date: string
+          kcal_avg: number
+          kcal_goal: number
+          protein_g_avg: number
+          to_date: string
+          water_avg: number
+          water_best: number
+          water_goal: number
+          water_goal_days: number
+          water_habit_days: number
+          water_logged_days: number
+          water_total: number
+          weigh_ins: number
+          weight_avg: number
+          weight_before: number
+          weight_first: number
+          weight_last: number
+          weight_peak: number
+          weight_peak_on: string
+        }[]
+      }
     }
     Enums: {
       activity_level: 'sedentary' | 'light' | 'on_feet' | 'very_active'

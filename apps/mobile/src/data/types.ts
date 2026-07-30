@@ -181,6 +181,107 @@ export type WeighIn = {
   kg: number
 }
 
+/**
+ * The three windows the range switch on Trends offers.
+ *
+ * Named rather than expressed as a pair of dates, because what "the last thirty
+ * days" means depends on the user's timezone and only `local_today()` knows it.
+ * These strings go to the server verbatim.
+ */
+export type TrendRange = '7d' | '30d' | '1y'
+
+export const TREND_RANGES = ['7d', '30d', '1y'] as const satisfies readonly TrendRange[]
+
+/**
+ * One column of a Trends chart: a day, a seven-day block, or a calendar month.
+ *
+ * Carries all three tabs' numbers, because the tabs are three readings of one
+ * range and switching between them must not go back to the server.
+ *
+ * Null and zero are not interchangeable here. A null `kcal` is a bucket with
+ * nothing logged in it, which a chart draws as a gap; a zero `water` is a real
+ * measurement of a day nobody drank on. The mappers in `trends.ts` are where
+ * that distinction is made, and it is the only thing they exist for.
+ */
+export type TrendBucket = {
+  /** First day covered. The bucket's identity, and what it sorts by. */
+  start: string
+  /** Last day covered, which is where the axis label comes from. */
+  end: string
+  /** Calendar days in it. Under seven for the oldest block of a 30-day range. */
+  days: number
+
+  /** Averaged over the days WITH food, not over the bucket. Null when none had. */
+  kcal: number | null
+  carbs: number | null
+  protein: number | null
+  fat: number | null
+  daysLogged: number
+  /** The budget in force on the bucket's last day. */
+  kcalGoal: number | null
+  daysUnderGoal: number
+
+  /** Cups a day, averaged across the whole bucket. */
+  water: number
+  waterTotal: number
+  waterBest: number
+  waterGoalDays: number
+  /**
+   * Days that cleared three quarters of the goal — the habit card's line.
+   *
+   * Counted in the database rather than here, because on a thirty-day range a
+   * bucket is a WEEK: the client can only ask whether the week averaged above
+   * the line, which answers "0 of 30" for a month containing several full days.
+   */
+  waterHabitDays: number
+  waterLoggedDays: number
+  waterGoal: number
+
+  /** The newest reading in the bucket — where the line lands. Null if none. */
+  weight: number | null
+  weightAvg: number | null
+  weightMin: number | null
+  weighIns: number
+}
+
+/** A whole range as one row: the three metric tiles, and each chart's footnote. */
+export type TrendSummary = {
+  from: string
+  to: string
+  days: number
+
+  kcal: number | null
+  carbs: number | null
+  protein: number | null
+  fat: number | null
+  daysLogged: number
+  kcalGoal: number | null
+  daysUnderGoal: number
+
+  water: number
+  waterTotal: number
+  waterBest: number
+  waterGoalDays: number
+  /** Days that cleared three quarters of the goal. See `TrendBucket`. */
+  waterHabitDays: number
+  waterLoggedDays: number
+  waterGoal: number
+
+  /**
+   * The newest reading from before the range, which the chart's line starts
+   * from. Null only when there is genuinely no earlier weigh-in.
+   */
+  weightBefore: number | null
+  /** The oldest and newest readings in the range, which is what the change is. */
+  weightFirst: number | null
+  weightLast: number | null
+  weightAvg: number | null
+  /** The heaviest reading and the day of it, which the chart's subtitle names. */
+  weightPeak: number | null
+  weightPeakOn: string | null
+  weighIns: number
+}
+
 /** A day as the screens read it: its entries and its water. */
 export type DayLog = {
   date: string
