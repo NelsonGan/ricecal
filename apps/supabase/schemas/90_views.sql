@@ -92,8 +92,11 @@ select
   e.food_id,
   f.name       as food_name,
   f.brand      as food_brand,
-  f.icon_set,
-  f.icon_name,
+  -- The entry's own choice wins over the food's. Resolved here so no screen has
+  -- to know there are two places an icon can come from, and so a row with
+  -- neither comes back null rather than as a stand-in plate.
+  coalesce(e.icon_set,  f.icon_set)  as icon_set,
+  coalesce(e.icon_name, f.icon_name) as icon_name,
   f.place,
 
   e.serving_id,

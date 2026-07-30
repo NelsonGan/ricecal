@@ -2,9 +2,10 @@ import { Image } from 'expo-image'
 import { useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
 import {
+  type IconRef,
   MEALS,
   type Meal,
   useDayLog,
@@ -16,6 +17,7 @@ import {
   useTargets,
   useUpdateEntry,
 } from '@/data'
+import { IconPicker } from '@/features/logging'
 import { MacroBars } from '@/features/shared'
 import { useBack, useDismissTo } from '@/lib/navigation'
 import {
@@ -71,6 +73,17 @@ export default function FoodDetail() {
   const [meal, setMeal] = useState<Meal>(existing?.meal ?? params.meal ?? 'breakfast')
   const [note, setNote] = useState(existing?.note ?? '')
   const [confirmDelete, setConfirmDelete] = useState(false)
+  /**
+   * The illustration, only once the user has touched it.
+   *
+   * `undefined` is untouched and `null` is "no picture", which are different
+   * writes: the first sends nothing, the second clears the override and hands the
+   * row back to whatever the food carries. Seeding this from `existing.icon`
+   * would instead write the food's own icon onto the entry as an override the
+   * first time anything else was saved.
+   */
+  const [icon, setIcon] = useState<IconRef | null>()
+  const [pickingIcon, setPickingIcon] = useState(false)
 
   const { data: heroUrl } = useMealPhotoUrl(existing?.photoPath)
 
@@ -90,6 +103,11 @@ export default function FoodDetail() {
   // The photo of this plate if there is one, otherwise the dish's own picture.
   // An entry logged from a snap is about that plate, not about the catalogue.
   const hero = heroUrl
+
+  // What the tile shows: the unsaved choice if there is one, then the entry's
+  // resolved icon (the view has already preferred its override over the food's),
+  // then the catalogue's.
+  const shownIcon = icon !== undefined ? (icon ?? food.icon) : (existing?.icon ?? food.icon)
 
   // Defaults to the dish's base portion, which is the one its macros describe.
   const chosen = servingId || food.servings[0]?.id || ''
@@ -113,6 +131,7 @@ export default function FoodDetail() {
         servingId: chosen,
         meal,
         note: note || null,
+        ...(icon === undefined ? {} : { icon }),
       })
       // `fixApplied` reads "Updated from your note", which belongs to the
       // free-text correction below — it was showing for a plain quantity or
@@ -167,7 +186,16 @@ export default function FoodDetail() {
         leading="dismiss"
       />
 
-      <View className="h-[130px] items-center justify-center overflow-hidden rounded-card border-[3px] border-line bg-track">
+      {/* Pressable only while editing, because the override lives on the entry
+          and a new one does not exist yet. A photo wins over any illustration, so
+          the tile stops offering the picker once there is one. */}
+      <Pressable
+        className="h-[130px] items-center justify-center overflow-hidden rounded-card border-[3px] border-line bg-track"
+        disabled={!existing || Boolean(hero)}
+        onPress={() => setPickingIcon(true)}
+        accessibilityRole={existing && !hero ? 'button' : undefined}
+        accessibilityLabel={existing && !hero ? t('logging:detail.choosePicture') : undefined}
+      >
         {hero ? (
           <Image
             source={{ uri: hero }}
@@ -175,15 +203,24 @@ export default function FoodDetail() {
             contentFit="cover"
             accessibilityLabel={t('logging:camera.photoOf', { food: food.name })}
           />
-        ) : food.icon ? (
-          <Icon {...food.icon} size={100} />
+        ) : shownIcon ? (
+          <Icon {...shownIcon} size={100} />
         ) : (
           // Most of the catalogue has no drawing, so this is the ordinary case
           // rather than a missing asset. The camera is the offer: a photo of the
           // actual plate beats any illustration of it.
           <Icon set="system" name="camera" size={72} />
         )}
-      </View>
+      </Pressable>
+
+      {existing ? (
+        <IconPicker
+          visible={pickingIcon}
+          onClose={() => setPickingIcon(false)}
+          selected={shownIcon}
+          onSelect={setIcon}
+        />
+      ) : null}
 
       <Card>
         <Stepper

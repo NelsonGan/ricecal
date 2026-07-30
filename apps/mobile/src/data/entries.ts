@@ -5,7 +5,7 @@ import { unwrap, unwrapOne } from './client'
 import { keys } from './keys'
 import { removeMealPhoto } from './photos'
 import { useUserId } from './session'
-import type { DayLog, EntrySource, Meal } from './types'
+import type { DayLog, EntrySource, IconRef, Meal } from './types'
 import { toDbSource } from './types'
 
 /**
@@ -68,6 +68,14 @@ export type EntryPatch = {
   servingId?: string
   meal?: Meal
   note?: string | null
+  /**
+   * An illustration for this row, overriding whatever the food carries. `null`
+   * clears it and falls back to the food's own.
+   *
+   * On the entry rather than on the food because `foods` is shared and read-only
+   * to users, and most of the catalogue has no drawing to begin with.
+   */
+  icon?: IconRef | null
 }
 
 export function useUpdateEntry() {
@@ -75,7 +83,7 @@ export function useUpdateEntry() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, quantity, servingId, meal, note }: EntryPatch) =>
+    mutationFn: async ({ id, quantity, servingId, meal, note, icon }: EntryPatch) =>
       unwrapOne(
         await supabase
           .from('food_logs')
@@ -84,6 +92,18 @@ export function useUpdateEntry() {
             ...(servingId === undefined ? {} : { serving_id: servingId }),
             ...(meal === undefined ? {} : { meal }),
             ...(note === undefined ? {} : { note }),
+            // Both columns together: a check constraint refuses half an icon,
+            // and `null` is how the row goes back to the food's own.
+            //
+            // Cast because `database.types.ts` is generated from a running local
+            // stack and does not know these two columns until someone runs
+            // `pnpm db:reset && pnpm db:types` against the migration that adds
+            // them. Deliberately the narrowest possible seam — reads need no cast,
+            // since the view already types both columns nullable — and it goes
+            // away the moment the types are regenerated.
+            ...((icon === undefined
+              ? {}
+              : { icon_set: icon?.set ?? null, icon_name: icon?.name ?? null }) as object),
           })
           .eq('id', id)
           .eq('user_id', userId)

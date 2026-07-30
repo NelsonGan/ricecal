@@ -56,6 +56,20 @@ create table public.food_logs (
   -- exists; see the seam note above.
   photo_path   text,
 
+  -- An illustration the user picked for this row, overriding the food's own.
+  --
+  -- Here rather than on `foods` because `foods` is shared: the catalogue is
+  -- read-only to users, and most of it has no drawing at all — there are hundreds
+  -- of megabytes of imported rows against a few dozen illustrations. This is the
+  -- one place a user can say what a plate looked like without a photo of it.
+  --
+  -- Per entry, so it is deliberately not remembered for the next log of the same
+  -- dish. Both columns or neither, for the same reason as on `foods`: half an
+  -- icon cannot be resolved.
+  icon_set     public.icon_set,
+  icon_name    text,
+  constraint food_logs_icon_complete check ((icon_set is null) = (icon_name is null)),
+
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now(),
 
