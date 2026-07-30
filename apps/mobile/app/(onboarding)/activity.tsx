@@ -28,6 +28,9 @@ export default function ActivityStep() {
       title={t('activity.title')}
       subtitle={t('activity.subtitle')}
       primaryLabel={t('common:action.continue')}
+      // The activity multiplier is the other half of the budget calculation;
+      // `compute_targets()` reads it, so it cannot be skipped.
+      primaryDisabled={!activity}
       onPrimary={() => router.push('/food-style')}
     >
       {OPTIONS.map((option) => (

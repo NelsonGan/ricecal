@@ -1,6 +1,9 @@
 node_modules
 .env
-.env.local
+# Trailing glob on purpose: .env.local.cloud-backup and
+# .env.local.localstack-backup hold real keys, and a bare `.env.local` does not
+# match them.
+.env.local*
 .expo
 dist
 .turbo
@@ -32,8 +35,8 @@ coverage
 *.log
 
 # Supabase local dev
-supabase/.branches
-supabase/.temp
+apps/supabase/.branches
+apps/supabase/.temp
 
 # macOS
 .DS_Store

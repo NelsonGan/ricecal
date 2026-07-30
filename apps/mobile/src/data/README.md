@@ -64,7 +64,7 @@ the user is about to fix by hand.
 
 **The catalogue is read-only, and there is exactly one of it.** `foods` has no
 per-user rows and `authenticated` holds `select` and nothing else on it, so
-nothing in this folder writes a dish. `useFoodSearch` filters by name and place
+nothing in this folder writes a dish. `useFoodSearch` ranks by name through the `search_foods` RPC
 and never by owner, and `toFood` takes no user — there is no "mine" to compute.
 Rows arrive from an import loader running as `service_role`.
 

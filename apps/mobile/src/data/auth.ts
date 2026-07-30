@@ -42,9 +42,31 @@ export async function signInWithEmail(email: string, password: string): Promise<
   if (error) throw error
 }
 
-/** Apple's own sheet is only on iOS, and only on a real signing capability. */
-export function appleSignInAvailable(): boolean {
-  return Platform.OS === 'ios'
+/**
+ * Whether this build can actually complete an Apple sign-in.
+ *
+ * `Platform.OS === 'ios'` was not enough, and the gap is not hypothetical: a
+ * local simulator build (`pnpm ios`, APP_VARIANT=simulator) deliberately drops
+ * the `com.apple.developer.applesignin` entitlement so it can compile without a
+ * signing identity — see apps/mobile/app.config.ts. On that build the button
+ * rendered, and tapping it failed inside Apple's own sheet with an error the
+ * user could do nothing about.
+ *
+ * `isAvailableAsync` answers the OS-capability half. The entitlement half only
+ * surfaces when the request is made, which is why `signInWithApple` also
+ * translates that failure instead of letting the native message through.
+ */
+export async function appleSignInAvailable(): Promise<boolean> {
+  if (Platform.OS !== 'ios') return false
+  return AppleAuthentication.isAvailableAsync()
+}
+
+/** Thrown when the build has no Apple Sign-In entitlement to use. */
+export class AppleSignInUnavailable extends Error {
+  constructor() {
+    super('Apple sign-in is not available in this build. Use email instead.')
+    this.name = 'AppleSignInUnavailable'
+  }
 }
 
 export class SignInCancelled extends Error {
@@ -95,8 +117,16 @@ export async function signInWithApple(): Promise<void> {
   } catch (error) {
     // The user closing the sheet is not an error to report; every other
     // failure is.
-    if ((error as { code?: string }).code === 'ERR_REQUEST_CANCELED') {
+    const code = (error as { code?: string }).code
+    if (code === 'ERR_REQUEST_CANCELED') {
       throw new SignInCancelled()
+    }
+    // A build with no entitlement fails here rather than at `isAvailableAsync`,
+    // with a message written for a developer ("The operation couldn't be
+    // completed. com.apple.AuthenticationServices.AuthorizationError 1000").
+    // Say the useful thing instead: use email.
+    if (code === 'ERR_REQUEST_UNKNOWN' || code === 'ERR_APPLE_AUTHENTICATION_UNAVAILABLE') {
+      throw new AppleSignInUnavailable()
     }
     throw error
   }

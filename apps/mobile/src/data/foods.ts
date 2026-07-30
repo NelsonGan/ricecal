@@ -5,7 +5,7 @@ import { unwrap, unwrapMaybe } from './client'
 import { keys } from './keys'
 import { type FoodStats, toFood } from './mappers'
 import { useUserId } from './session'
-import type { Food, FoodDetailsRow, Meal, Place } from './types'
+import type { Food, FoodDetailsRow, Meal } from './types'
 
 /**
  * The catalogue.
@@ -49,29 +49,41 @@ async function statsFor(userId: string, foodIds: string[]): Promise<Map<string, 
   )
 }
 
-export type SearchFilter = 'all' | Place
-
 /**
  * Search, by name.
  *
- * `ilike` rather than the trigram index the schema builds, because the index
- * answers `similarity()` and that needs an RPC to reach from PostgREST. This
- * is the honest v1: substring matching over a 28-dish catalogue is instant,
- * and the 96% badge beside the top hit is still a placeholder for a real score.
+ * The `search_foods` RPC rather than `ilike`, because the catalogue is ~460,000
+ * rows and substring matching cannot rank. `ilike '%kopi%'` matches "Kopi O" and
+ * "Non-Dairy Coffee Whitener" equally well, so the fifty rows PostgREST returns
+ * first are the fifty the user sees. The RPC fuses an exact, a full-text and a
+ * trigram arm, which is also what makes "char kway teow" and "teh tarek" find
+ * anything at all — see apps/supabase/schemas/91_food_search.sql.
+ *
+ * An empty query returns nothing rather than the first fifty rows of the
+ * catalogue. Fifty arbitrary dishes out of half a million is not a browse, and
+ * the field is focused on mount, so the user is typing anyway.
+ *
+ * No place filter. The screen used to offer All / Mamak / Kopitiam / Packaged
+ * chips, but `place` describes where a dish is *typically* eaten, not what the
+ * user is looking for — filtering a ranked result set by it mostly hid the
+ * right answer. The RPC still accepts `p_place`; nothing passes it.
  */
-export function useFoodSearch(query: string, filter: SearchFilter) {
+export function useFoodSearch(query: string) {
   const userId = useUserId()
 
   return useQuery({
-    queryKey: keys.foodSearch(userId, query, filter),
+    queryKey: keys.foodSearch(userId, query),
     queryFn: async (): Promise<Food[]> => {
-      let request = supabase.from('food_details').select(FOOD_COLUMNS).limit(50)
-
       const needle = query.trim()
-      if (needle) request = request.ilike('name', `%${needle}%`)
-      if (filter !== 'all') request = request.eq('place', filter)
+      if (!needle) return []
 
-      const rows = unwrap(await request) as FoodDetailsRow[]
+      const rows = unwrap(
+        await supabase.rpc('search_foods', {
+          q: needle,
+          match_limit: 50,
+        }),
+      ) as FoodDetailsRow[]
+
       const stats = await statsFor(
         userId,
         rows.flatMap((row) => (row.id ? [row.id] : [])),

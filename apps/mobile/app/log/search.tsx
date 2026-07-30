@@ -1,18 +1,22 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useDeferredValue, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { type Meal, type SearchFilter, useFoodSearch } from '@/data'
+import { type Meal, useFoodSearch } from '@/data'
 import { ItemRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
-import { AppBar, Badge, Card, Chip, EmptyState, Screen, SearchField, Skeleton, Text } from '@/ui'
+import { useDebouncedValue } from '@/lib/use-debounce'
+import { AppBar, Card, EmptyState, Screen, SearchField, Skeleton } from '@/ui'
 
 /**
- * The chips, in order. Narrower than `SearchFilter`, which also admits the two
- * places the design does not offer a chip for.
+ * Placeholder rows shown while a search is in flight.
+ *
+ * Fixed identities rather than `Array.from(...)` with an index key: these never
+ * reorder, and a stable key is what stops React reusing a skeleton row as a
+ * result row when the data lands.
  */
-const FILTERS = ['all', 'mamak', 'kopitiam', 'packaged'] as const
+const SKELETON_ROWS = ['s1', 's2', 's3', 's4', 's5', 's6'] as const
 
 /** L5 SEARCH */
 export default function SearchScreen() {
@@ -21,26 +25,37 @@ export default function SearchScreen() {
   const goBack = useBack('/today')
   const params = useLocalSearchParams<{ meal?: Meal }>()
   const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<SearchFilter>('all')
 
-  // The field renders `query` on every keystroke; the list filters on a
-  // deferred copy. Filtering inline makes the input wait for the list to
-  // re-render, which on a fast typist drops and reorders characters.
-  const deferredQuery = useDeferredValue(query)
+  // The field renders `query` on every keystroke; the catalogue is only asked
+  // once typing pauses. See `useDebouncedValue` for why this is a debounce
+  // rather than the `useDeferredValue` that was here before.
+  const debouncedQuery = useDebouncedValue(query)
 
   const meal = params.meal
 
-  // The database does the filtering: `ilike` on the name, or the place.
-  // Searching a table the phone does not hold is the whole point of having
-  // moved the catalogue off it.
-  const { data: results = [], isPending } = useFoodSearch(deferredQuery, filter)
+  // The database does the ranking, not just the filtering: `search_foods`
+  // fuses an exact, a full-text and a trigram match. Searching a table the
+  // phone does not hold is the whole point of having moved the catalogue off
+  // it — there are ~460,000 rows in it now.
+  const { data: results = [], isPending } = useFoodSearch(debouncedQuery)
+
+  // Before the first keystroke there is nothing to say. The empty state reads
+  // "No dish by that name", which is only true once a name has been typed.
+  const searched = debouncedQuery.trim().length > 0
+
+  // Typing again should not leave the previous dishes on screen looking like
+  // answers to the new query. `isPending` alone misses this: the debounced
+  // query has not changed yet, so the old result set is still "fresh".
+  const settling = query.trim() !== debouncedQuery.trim()
+  const loading = query.trim().length > 0 && (settling || (searched && isPending))
 
   return (
     <Screen>
       <AppBar
         title={t('logging:search.title')}
         onBack={() => goBack()}
-        backLabel={t('common:a11y.back')}
+        backLabel={t('common:a11y.close')}
+        leading="dismiss"
       />
 
       <SearchField
@@ -53,17 +68,26 @@ export default function SearchScreen() {
         returnKeyType="search"
       />
 
-      <View className="flex-row flex-wrap gap-2">
-        {FILTERS.map((option) => (
-          <Chip key={option} selected={filter === option} onPress={() => setFilter(option)}>
-            {t(`logging:search.filters.${option}`)}
-          </Chip>
-        ))}
-      </View>
+      {loading ? (
+        <View className="gap-3" accessibilityRole="progressbar">
+          {SKELETON_ROWS.map((id) => (
+            // Shaped like the row it replaces — icon, two lines of text, a
+            // trailing number — so the list does not jump when results land.
+            <Card key={id}>
+              <View className="flex-row items-center gap-3">
+                <Skeleton className="h-11 w-11 rounded-tile" />
+                <View className="flex-1 gap-2">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-2/5" />
+                </View>
+                <Skeleton className="h-6 w-12" />
+              </View>
+            </Card>
+          ))}
+        </View>
+      ) : null}
 
-      {isPending ? <Skeleton className="h-[76px] w-full" /> : null}
-
-      {!isPending && results.length === 0 ? (
+      {!loading && searched && results.length === 0 ? (
         <EmptyState
           title={t('logging:search.emptyTitle')}
           description={t('logging:search.emptyBody')}
@@ -71,31 +95,21 @@ export default function SearchScreen() {
         />
       ) : null}
 
-      {results.map((food, index) => (
-        <Card key={food.id}>
-          <ItemRow
-            title={food.name}
-            icon={food.icon}
-            value={food.macros.kcal}
-            unit="kcal"
-            detail={`${t(`logging:search.place.${food.place}`)} · ${food.servingLabel}`}
-            // The top hit carries a confidence badge, the way a ranked result
-            // set does. Everything below it is just a match.
-            trailing={
-              index === 0 && deferredQuery.length > 0 ? (
-                <Badge tone="pandan">
-                  <Text variant="micro" className="text-pandan-ink">
-                    {t('logging:search.match', { percent: 96 })}
-                  </Text>
-                </Badge>
-              ) : undefined
-            }
-            onPress={() =>
-              router.push({ pathname: '/log/food/[id]', params: { id: food.id, meal } })
-            }
-          />
-        </Card>
-      ))}
+      {!loading &&
+        results.map((food) => (
+          <Card key={food.id}>
+            <ItemRow
+              title={food.name}
+              icon={food.icon}
+              value={food.macros.kcal}
+              unit="kcal"
+              detail={`${t(`logging:search.place.${food.place}`)} · ${food.servingLabel}`}
+              onPress={() =>
+                router.push({ pathname: '/log/food/[id]', params: { id: food.id, meal } })
+              }
+            />
+          </Card>
+        ))}
     </Screen>
   )
 }

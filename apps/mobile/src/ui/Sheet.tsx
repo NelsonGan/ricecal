@@ -1,10 +1,18 @@
 import type { ReactNode } from 'react'
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native'
+import Animated, { SlideInDown } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
 import { cn } from './cn'
 import { Text } from './Text'
+
+/**
+ * The panel is a Pressable so a tap inside it can swallow the event before it
+ * reaches the dismissing scrim, and animated so it can enter on its own while
+ * the scrim stays put.
+ */
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 
 export type SheetProps = {
   visible: boolean
@@ -69,7 +77,18 @@ export function Sheet({
   )
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    /**
+     * `animationType="none"`, not `"slide"`.
+     *
+     * The platform slide animates the modal's whole root — scrim included — so
+     * the dim swept up from the bottom edge with the panel, and for the length
+     * of that transition the top of the screen was undimmed. It read as the
+     * background sliding rather than a sheet rising over a background.
+     *
+     * The scrim now paints at full strength on the first frame, and only the
+     * panel travels, which is what the design shows.
+     */
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       {/* The scrim is deliberately NOT an accessibility element. Giving it a
           role and a label makes the whole overlay one node, and VoiceOver then
           reads "Close button" and nothing else — the sheet's own title and
@@ -85,7 +104,8 @@ export function Sheet({
             window, and stacking both double-counts the inset — the same
             reasoning as in `Screen`. */}
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <Pressable
+          <AnimatedPressable
+            entering={SlideInDown.duration(220)}
             className={cn('gap-md rounded-t-card bg-surface px-gutter pt-md', className)}
             style={{ paddingBottom: insets.bottom + spacing.gutter }}
             onPress={(event) => event.stopPropagation()}
@@ -99,7 +119,7 @@ export function Sheet({
 
             {children ? body : null}
             {footer}
-          </Pressable>
+          </AnimatedPressable>
         </KeyboardAvoidingView>
       </Pressable>
     </Modal>
