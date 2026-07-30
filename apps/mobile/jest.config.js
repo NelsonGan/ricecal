@@ -36,7 +36,15 @@ module.exports = {
   // throws "Native Skia Module failed to correctly install JSI Bindings" without
   // it. Anything reaching `src/ui`'s barrel pulls in BrandMark, and therefore
   // Skia, whether the test renders a chart or not.
-  setupFiles: ['@shopify/react-native-skia/jestSetup.js', '<rootDir>/jest.setup.js'],
+  // Gesture-handler's own setup for the same reason as Skia's: it installs its
+  // native module at import time and throws "install is not a function" without
+  // it. Reached by anything that renders a `Sheet` — the handle is a pan gesture
+  // now — or a `Slider`.
+  setupFiles: [
+    '@shopify/react-native-skia/jestSetup.js',
+    'react-native-gesture-handler/jestSetup.js',
+    '<rootDir>/jest.setup.js',
+  ],
   setupFilesAfterEnv: ['<rootDir>/jest.setup-after-env.js'],
   // Wraps the preset's resolver rather than replacing it — see jest.resolver.js.
   resolver: '<rootDir>/jest.resolver.js',
