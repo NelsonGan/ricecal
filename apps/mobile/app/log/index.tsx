@@ -64,6 +64,18 @@ export default function LogSheet() {
   const { data: yesterday } = useDay(yesterdayKey)
   const yesterdayEntries = (yesterday?.entries ?? []).filter((entry) => entry.meal === meal)
 
+  /**
+   * Search is a full page, so this sheet has to get out of the way first.
+   *
+   * `replace`, not `push`. This route is a `transparentModal`, and a push from
+   * inside one lands on the stack that lives within that presentation — so search
+   * came up as a modal over the sheet no matter what its own options said, which
+   * is why it still looked like one after being switched to a card. Replacing the
+   * sheet's entry puts search on the stack above Today, where a full page belongs,
+   * and back from it returns to the day rather than to a sheet nobody left open.
+   */
+  const openSearch = () => router.replace({ pathname: '/log/search', params: { meal } })
+
   const add = (foodId: string, servingId: string) => {
     logFood.mutate({ foodId, servingId, meal, logDate: selectedDate, source: 'quickAdd' })
     goBack()
@@ -114,7 +126,7 @@ export default function LogSheet() {
         <QuickAction
           label={t('logging:selector.search')}
           icon={{ set: 'ui', name: 'search' }}
-          onPress={() => router.push({ pathname: '/log/search', params: { meal } })}
+          onPress={openSearch}
         />
       </View>
 

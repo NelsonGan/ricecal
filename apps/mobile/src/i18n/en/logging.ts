@@ -35,8 +35,6 @@ export const logging = {
 
   camera: {
     title: 'Snap your plate',
-    detected: 'Plate detected, hold steady',
-    aiming: 'Point at your plate',
     analysing: 'Working out what is on the plate',
     permissionTitle: 'Camera access needed',
     permissionBody: 'RiceCal uses the camera to read your plate. Nothing leaves your phone.',

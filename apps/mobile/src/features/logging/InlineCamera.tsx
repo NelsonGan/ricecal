@@ -109,13 +109,6 @@ export function InlineCamera({ meal, onDone }: InlineCameraProps) {
         )}
 
         <Framing />
-
-        <View className="absolute bottom-3 flex-row items-center gap-2 rounded-tile bg-inverse/80 px-3 py-2">
-          <View className="h-2 w-2 rounded-full bg-pandan" />
-          <Text variant="micro" className="text-on-inverse">
-            {t('logging:camera.detected')}
-          </Text>
-        </View>
       </View>
 
       <View className="flex-row items-center justify-between gap-3">

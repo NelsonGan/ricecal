@@ -144,7 +144,11 @@ function RootStack() {
           modal it also stacked a second presentation on top of the quick
           selector, which is already one. */}
       <Stack.Screen name="log/search" />
-      <Stack.Screen name="log/food/[id]" options={{ presentation: 'modal' }} />
+      {/* The dish pushes. It is where a portion is chosen and an entry edited —
+          several controls, a note field, a delete — which is a page of work
+          rather than something glanced at over the day, and it is reached from
+          search, which is now a page too. */}
+      <Stack.Screen name="log/food/[id]" />
       <Stack.Screen name="paywall/index" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/gate" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/welcome" options={{ presentation: 'fullScreenModal' }} />

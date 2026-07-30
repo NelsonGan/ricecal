@@ -1,7 +1,9 @@
+import { impactAsync } from 'expo-haptics'
 import { StyleSheet } from 'react-native'
 
 import { render, screen, userEvent } from '../../test-utils'
 import { CountBadge } from '../Badge'
+import { NavItem } from '../BottomNav'
 import { Button } from '../Button'
 import { Chip } from '../Chip'
 import { cn } from '../cn'
@@ -214,6 +216,44 @@ describe('StatTile', () => {
     await render(<StatTile label="CARBS" value="182g" />)
     expect(screen.getByLabelText('CARBS: 182g')).toBeOnTheScreen()
   })
+})
+
+/**
+ * The tab bar is the one place in the app that renders a plain `Pressable`
+ * rather than a `Squish`, so both of the things `Squish` gives every other
+ * control — the haptic and the inactive treatment — had to be added by hand here,
+ * and neither fails loudly when it regresses.
+ */
+describe('NavItem', () => {
+  const tab = { label: 'Today', icon: { set: 'ui', name: 'home' } } as const
+
+  it('answers a tap in the hand', async () => {
+    await render(<NavItem {...tab} />)
+    await user.press(screen.getByRole('tab'))
+    // On press IN, like `Squish`: feedback that waits for the release lands
+    // after the screen has already changed.
+    expect(impactAsync).toHaveBeenCalled()
+  })
+
+  it('still tells the caller about the press', async () => {
+    const onPress = jest.fn()
+    await render(<NavItem {...tab} onPress={onPress} />)
+    await user.press(screen.getByRole('tab'))
+    expect(onPress).toHaveBeenCalledTimes(1)
+  })
+
+  it('says which tab is the active one', async () => {
+    await render(<NavItem {...tab} isFocused />)
+    expect(screen.getByRole('tab')).toBeSelected()
+  })
+
+  /**
+   * The inactive tint is NOT asserted here, deliberately. It reaches the icon
+   * through `style`, and RNTL v14 dropped the type queries that could find a
+   * decorative image inside the row — an icon with no accessibility label is
+   * hidden from every query the library still has, which is correct of it. The
+   * reasoning lives in `NavItem` instead; verify it in the gallery on a device.
+   */
 })
 
 describe('cn', () => {
