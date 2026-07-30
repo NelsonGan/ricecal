@@ -1,7 +1,6 @@
 export const progress = {
   tabs: {
     weight: 'Weight',
-    nutrition: 'Nutrition',
   },
 
   weight: {
@@ -34,20 +33,7 @@ export const progress = {
     saved: 'Weigh in saved',
   },
 
-  // No `report` block. The weekly report screen is gone, and its copy went with
-  // it — this file's rule is that a screen can be deleted without leaving orphans
-  // behind in here.
-
-  nutrition: {
-    title: 'Nutrition',
-    range: 'Last 30 days',
-    averageDay: 'AVERAGE DAY',
-    calories: 'Calories',
-    caloriesValue: '{{value}} kcal',
-    fibre: 'Fibre',
-    sugar: 'Sugar',
-    gramsValue: '{{value}} g',
-    topFoods: 'TOP FOODS',
-    timesThisMonth: '{{count}} times this month',
-  },
+  // No `report` or `nutrition` block. Both screens are gone and their copy went
+  // with them — this file's rule is that a screen can be deleted without leaving
+  // orphans behind in here.
 } as const

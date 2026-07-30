@@ -95,13 +95,19 @@ export type EntryPatch = {
    */
   icon?: IconRef | null
   /**
-   * The photo currently on this row, so that setting an icon can delete it.
+   * A photo for this row, already uploaded — the key `uploadMealPhoto` returned.
    *
-   * A row carries a photo or an icon, never both — the picture of the actual
-   * plate and a drawing of the dish are answers to the same question, and a
-   * check constraint refuses to hold both. Read only when `icon` names one.
+   * A row carries a photo or an icon, never both: the picture of the actual plate
+   * and a drawing of the dish are answers to the same question, and a check
+   * constraint refuses to hold both. So this clears the icon columns in the same
+   * statement, and `icon` clears this one.
    */
   photoPath?: string
+  /**
+   * What is on the row NOW, so that whichever of the two above replaces it can
+   * delete the object it leaves behind. Nothing else reads it.
+   */
+  currentPhotoPath?: string
 }
 
 export function useUpdateEntry() {
@@ -109,9 +115,25 @@ export function useUpdateEntry() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, quantity, servingId, meal, note, icon, photoPath }: EntryPatch) => {
-      // An icon replaces the photo, because the row cannot hold both.
-      const replacesPhoto = Boolean(icon) && Boolean(photoPath)
+    mutationFn: async ({
+      id,
+      quantity,
+      servingId,
+      meal,
+      note,
+      icon,
+      photoPath,
+      currentPhotoPath,
+    }: EntryPatch) => {
+      /**
+       * The old object is orphaned when either kind of picture arrives to take
+       * its place: an icon, or a newer photo. `photoPath !== currentPhotoPath`
+       * because a patch that carries the same key it already has is not a
+       * replacement, and deleting that object would blank the row.
+       */
+      const replacesPhoto =
+        Boolean(currentPhotoPath) &&
+        (Boolean(icon) || (Boolean(photoPath) && photoPath !== currentPhotoPath))
 
       const row = unwrapOne(
         await supabase
@@ -137,6 +159,14 @@ export function useUpdateEntry() {
                   icon_name: icon?.name ?? null,
                   ...(replacesPhoto ? { photo_path: null } : {}),
                 }) as object),
+            // A photo and an icon cannot be on the row together, so this nulls the
+            // icon columns in the same statement rather than trusting the caller
+            // to have sent `icon: null` alongside. Written after the block above,
+            // so a patch carrying both — which nothing sends — resolves to the
+            // photo rather than to a constraint violation.
+            ...((photoPath === undefined
+              ? {}
+              : { photo_path: photoPath, icon_set: null, icon_name: null }) as object),
           })
           .eq('id', id)
           .eq('user_id', userId)
@@ -147,7 +177,7 @@ export function useUpdateEntry() {
       // After the row, not before: an object deleted for a row that then failed
       // to update leaves an entry pointing at nothing. Same order as
       // `useRemoveEntry`, for the same reason.
-      if (replacesPhoto && photoPath) await removeMealPhoto(photoPath)
+      if (replacesPhoto && currentPhotoPath) await removeMealPhoto(currentPhotoPath)
 
       return row
     },

@@ -1,13 +1,16 @@
 import { Image } from 'expo-image'
+import * as ImagePicker from 'expo-image-picker'
 import { useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { ActivityIndicator, View } from 'react-native'
 
 import {
   type IconRef,
   MEALS,
   type Meal,
+  removeMealPhoto,
+  uploadMealPhoto,
   useDayLog,
   useFood,
   useLogFood,
@@ -16,6 +19,7 @@ import {
   useSelectedDate,
   useTargets,
   useUpdateEntry,
+  useUserId,
 } from '@/data'
 import { IconPicker } from '@/features/logging'
 import { MacroBars } from '@/features/shared'
@@ -66,6 +70,9 @@ export default function FoodDetail() {
   const removeEntry = useRemoveEntry()
   const { data: targets } = useTargets()
   const { selectedDate } = useSelectedDate()
+  // For the upload's object key, which the bucket's insert policy checks against
+  // `auth.uid()` — a file written under anyone else's folder is refused.
+  const userId = useUserId()
 
   const params = useLocalSearchParams<{ id: string; entryId?: string; meal?: Meal }>()
   const { data: food, isPending } = useFood(params.id)
@@ -92,7 +99,26 @@ export default function FoodDetail() {
    */
   const [icon, setIcon] = useState<IconRef>()
   const [pickingIcon, setPickingIcon] = useState(false)
-  const [confirmReplacePhoto, setConfirmReplacePhoto] = useState(false)
+  /**
+   * A drawing chosen while a photo is on the row, waiting on the confirmation.
+   *
+   * The warning used to sit on the way IN to the picker — tap a tile with a photo
+   * in it and answer a question before seeing the choices. That was the only way
+   * in when the only thing the picker offered was drawings. It offers the camera
+   * now, so most trips through it are not destructive at all, and the question
+   * belongs where the destructive answer is given.
+   */
+  const [pendingIcon, setPendingIcon] = useState<IconRef>()
+  /**
+   * A photo taken here, before there is a row to hang it on.
+   *
+   * Two fields because they are needed at different moments: the local uri is
+   * what the tile shows the instant the shot is taken, and the bucket key is what
+   * the insert carries. An entry that already exists skips both — its photo is
+   * written straight to the row, and the day query brings it back.
+   */
+  const [shot, setShot] = useState<{ uri: string; path: string }>()
+  const [attaching, setAttaching] = useState(false)
   // Collapsed by default. Fibre, sugar and salt are the second question about a
   // dish, and for most of the catalogue the answer is "nobody recorded it".
   const [showNutrients, setShowNutrients] = useState(false)
@@ -111,9 +137,9 @@ export default function FoodDetail() {
     )
   }
 
-  // The photo of this plate if there is one, otherwise the dish's own picture.
-  // An entry logged from a snap is about that plate, not about the catalogue.
-  const hero = heroUrl
+  // A shot taken on this screen wins over the stored one: it is the newer answer,
+  // and on the add screen it is the only one there is.
+  const hero = shot?.uri ?? heroUrl
 
   /**
    * The drawing this tile would show, if it is showing one at all.
@@ -163,6 +189,73 @@ export default function FoodDetail() {
     },
   ] as const
 
+  /**
+   * Take a photo of the actual plate, from inside the picture picker.
+   *
+   * The camera roll is not offered here. This is the sheet for "what should this
+   * row look like", and a picture from the library is a picture of some other
+   * meal — the snap flow on the quick selector is where a photo already on the
+   * phone belongs, because there it is what the dish is recognised FROM.
+   *
+   * An existing entry is written straight away rather than at save: the upload has
+   * already happened, so holding the key in state until the save button would mean
+   * an object in the bucket that a cancelled edit orphans. A row being composed
+   * has nowhere to write to yet, so its key waits for the insert.
+   */
+  const takePhoto = async () => {
+    setPickingIcon(false)
+    setAttaching(true)
+    try {
+      // `launchCameraAsync` asks for permission itself and returns cancelled if it
+      // is refused, so there is no separate prompt to write here.
+      const result = await ImagePicker.launchCameraAsync({ quality: 0.6 })
+      if (result.canceled) return
+
+      const uri = result.assets[0]?.uri
+      if (!uri) return
+
+      const path = await uploadMealPhoto(userId, uri)
+
+      if (existing) {
+        updateEntry.mutate({
+          id: existing.id,
+          logDate: existing.logDate,
+          photoPath: path,
+          currentPhotoPath: existing.photoPath,
+        })
+      }
+      // Shown either way: for an existing row it is what the tile draws until the
+      // day query comes back with a signed URL for the same photo.
+      setShot({ uri, path })
+      // The photo IS the picture now, so an unsaved drawing has been answered.
+      setIcon(undefined)
+    } catch {
+      // A simulator with no camera, a refused permission, an upload that failed:
+      // all of them end here, and none of them is worth a screen of its own.
+      toast.show({ title: t('logging:detail.photoFailed'), tone: 'error' })
+    } finally {
+      setAttaching(false)
+    }
+  }
+
+  /**
+   * A drawing wins the slot, so whatever photo was in it has to go.
+   *
+   * The upload has already happened by the time this runs, so a shot taken on the
+   * add screen and then overruled here is an object nothing points at — deleted on
+   * the spot. An existing row's photo is left alone: it is still what the row
+   * shows, and `save` deletes it when the icon is actually written.
+   */
+  const applyIcon = (next: IconRef) => {
+    setIcon(next)
+    if (!shot) return
+    const orphan = shot.path
+    setShot(undefined)
+    if (!existing) void removeMealPhoto(orphan).catch(() => {})
+  }
+
+  const hasPhoto = Boolean(shot ?? existing?.photoPath)
+
   const save = () => {
     if (existing) {
       updateEntry.mutate({
@@ -172,7 +265,7 @@ export default function FoodDetail() {
         servingId: chosen,
         meal,
         note: note || null,
-        ...(icon === undefined ? {} : { icon, photoPath: existing.photoPath }),
+        ...(icon === undefined ? {} : { icon, currentPhotoPath: existing.photoPath }),
       })
       // `fixApplied` reads "Updated from your note", which belongs to the
       // free-text correction below — it was showing for a plain quantity or
@@ -194,6 +287,9 @@ export default function FoodDetail() {
       // Only what was actually chosen. `shownIcon` would write the food's own
       // drawing onto the row as an override, which is not an override at all.
       icon,
+      // And a photo taken while composing this row, which the picker offers as
+      // the alternative to a drawing. Never both: taking one clears the other.
+      photoPath: shot?.path,
     })
     finish()
   }
@@ -230,9 +326,10 @@ export default function FoodDetail() {
           has no drawing, so a dish being added from the list arrives blank — and
           picking one then is the natural moment, not after saving and coming back.
 
-          A photo opens the picker too, but by way of a confirmation: choosing a
-          drawing throws the photo of the real plate away, and the row cannot hold
-          both. That is not something to discover after the fact. */}
+          Straight into the picker whether or not there is a photo. Replacing one
+          photo with another is not something to warn about, and the picker's first
+          offer is the camera; the warning is on the drawing, which is the answer
+          that discards a picture of the real plate. */}
       <Tappable
         className={cn(
           'h-[130px] items-center justify-center overflow-hidden rounded-card border-[3px] bg-track',
@@ -240,13 +337,18 @@ export default function FoodDetail() {
           // box reads as a picture that failed to load.
           hero || shownIcon ? 'border-line' : 'border-line border-dashed',
         )}
-        onPress={() => (hero ? setConfirmReplacePhoto(true) : setPickingIcon(true))}
+        onPress={() => setPickingIcon(true)}
         accessibilityRole="button"
         accessibilityLabel={
           hero ? t('logging:detail.replacePhoto') : t('logging:detail.choosePicture')
         }
       >
-        {hero && !icon ? (
+        {attaching ? (
+          // The upload resizes and encodes a 3–6MB frame before it sends it, so
+          // this is a second or two on a real photo — long enough that a tile which
+          // did not change would read as the camera having done nothing.
+          <ActivityIndicator />
+        ) : hero && !icon ? (
           <Image
             source={{ uri: hero }}
             style={{ flex: 1, width: '100%' }}
@@ -268,24 +370,27 @@ export default function FoodDetail() {
         visible={pickingIcon}
         onClose={() => setPickingIcon(false)}
         selected={shownIcon}
-        onSelect={setIcon}
+        // Held back for the confirmation below when there is a photo to lose.
+        onSelect={(next) => (hasPhoto ? setPendingIcon(next) : applyIcon(next))}
+        // The other way to answer the same question, offered above the grid.
+        onTakePhoto={takePhoto}
       />
 
-      {/* Only an existing entry can have a photo to lose. */}
-      {existing ? (
-        <ConfirmSheet
-          visible={confirmReplacePhoto}
-          onClose={() => setConfirmReplacePhoto(false)}
-          onConfirm={() => {
-            setConfirmReplacePhoto(false)
-            setPickingIcon(true)
-          }}
-          title={t('logging:detail.replacePhotoTitle')}
-          description={t('logging:detail.replacePhotoBody')}
-          confirmLabel={t('logging:detail.replacePhotoConfirm')}
-          tone="danger"
-        />
-      ) : null}
+      {/* Fires when a drawing is chosen over a photo, which is the one choice in
+          this flow that throws something away. A photo replacing a photo does not
+          come through here. */}
+      <ConfirmSheet
+        visible={pendingIcon !== undefined}
+        onClose={() => setPendingIcon(undefined)}
+        onConfirm={() => {
+          if (pendingIcon) applyIcon(pendingIcon)
+          setPendingIcon(undefined)
+        }}
+        title={t('logging:detail.replacePhotoTitle')}
+        description={t('logging:detail.replacePhotoBody')}
+        confirmLabel={t('logging:detail.replacePhotoConfirm')}
+        tone="danger"
+      />
 
       <Card>
         <Stepper

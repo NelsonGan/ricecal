@@ -164,43 +164,11 @@ export function useRecentFoods(meal: Meal, limit = 3) {
   })
 }
 
-/**
- * The dishes this user logs most, all meals.
- *
- * By frequency out of `user_food_stats`, which is what the nutrition screen's
- * "top foods" means. There used to be a per-meal twin of this — `useUsualFoods`,
- * for the quick selector — and it is gone: the selector asks for the last few
- * dishes instead, and two suggestion queries with different orderings is how one
- * of them ends up quietly wrong.
- */
-export function useTopFoods(limit = 4) {
-  const userId = useUserId()
-
-  return useQuery({
-    queryKey: ['top-foods', userId, limit],
-    queryFn: async (): Promise<Array<{ food: Food; timesLogged: number }>> => {
-      const stats = unwrap(
-        await supabase
-          .from('user_food_stats')
-          .select('food_id, times_logged, meals')
-          .eq('user_id', userId)
-          .order('times_logged', { ascending: false })
-          .limit(limit),
-      )
-
-      const ids = stats.flatMap((row) => (row.food_id ? [row.food_id] : []))
-      if (ids.length === 0) return []
-
-      const rows = unwrap(
-        await supabase.from('food_details').select(FOOD_COLUMNS).in('id', ids),
-      ) as FoodDetailsRow[]
-      const byId = new Map(rows.map((row) => [row.id, row]))
-
-      return stats.flatMap((stat) => {
-        const row = stat.food_id ? byId.get(stat.food_id) : undefined
-        if (!row) return []
-        return [{ food: toFood(row), timesLogged: stat.times_logged ?? 0 }]
-      })
-    },
-  })
-}
+// Two hooks used to live here and neither has a screen any more.
+//
+// `useTopFoods` read `user_food_stats` by frequency for the nutrition screen's
+// "top foods", and `useUsualFoods` was its per-meal twin for the quick selector.
+// The selector asks for the last few dishes instead — see `useRecentFoods` — and
+// the nutrition screen is gone. `user_food_stats` is still there, and a future
+// screen that wants "what I eat most" can have this back out of the history
+// rather than inheriting a hook nothing calls.

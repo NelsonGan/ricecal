@@ -10,23 +10,19 @@ import { Squish } from './Squish'
 import { Tappable, type TappableProps } from './Tappable'
 import { Text } from './Text'
 
-/** Clearance between the pill and whatever is on screen above the bar. */
-const BAR_PAD_TOP = 8
 /**
- * Height of the pill: the tab column, which supplies its own interior padding.
- * 12 + a 26 icon + a 6 gap + a 17 caption line + 12.
- */
-const PILL_HEIGHT = 73
-
-/**
- * How much of the bottom of the screen the bar occupies, safe area aside.
+ * How much of the bottom of the screen the bar occupies, safe area aside: the
+ * pill, and nothing else.
  *
- * Exported so a floating element — the toast — can clear it without measuring,
- * which would otherwise mean a layout pass before it could animate in. Summed
- * rather than hand-picked, because it was 96 against a bar that measured 89 and
- * nothing said which was wrong.
+ * The tab column supplies the height — 12 + a 26 icon + a 6 gap + a 17 caption
+ * line + 12 — and there is no padding above it. There was 8pt, and on a canvas
+ * background that is a grey stripe between the screen's content and the bar;
+ * whatever spacing the last card wants is the screen's business, not the bar's.
+ *
+ * Exported so a floating element — the toast — can clear the bar without
+ * measuring, which would otherwise mean a layout pass before it could animate in.
  */
-export const NAV_BAR_HEIGHT = BAR_PAD_TOP + PILL_HEIGHT
+export const NAV_BAR_HEIGHT = 73
 
 export type NavTab<T extends string> = {
   value: T
@@ -60,7 +56,7 @@ export function NavBar({ children, className }: { children: ReactNode; className
   return (
     <View
       className={cn('bg-canvas px-gutter', className)}
-      style={{ paddingTop: BAR_PAD_TOP, paddingBottom: insets.bottom || 12 }}
+      style={{ paddingBottom: insets.bottom || 12 }}
       accessibilityRole="tablist"
     >
       {/* The tabs size this row: each carries its own vertical padding, so the

@@ -133,6 +133,8 @@ export const logging = {
     choosePicture: 'Choose a picture for this entry',
     /** Inside the empty tile. The only thing in it — see the comment there. */
     addPicture: 'Tap to add a picture',
+    /** Covers no camera, a refused permission and a failed upload alike. */
+    photoFailed: 'Could not save that photo',
     replacePhoto: 'Replace the photo with a picture',
     /**
      * A row holds a photo or a drawing, never both, so picking one discards the
@@ -152,7 +154,9 @@ export const logging = {
    */
   icon: {
     title: 'Pick a picture',
-    description: 'Just for this entry. A photo of the real plate beats any of these.',
+    /** The camera, offered above the grid as the other way to answer this. */
+    takePhoto: 'Take a photo',
+    orChoose: 'OR CHOOSE A PICTURE',
     searchLabel: 'Search pictures',
     searchPlaceholder: 'nasi lemak, teh tarik, fish',
     noMatch: 'Nothing matches “{{query}}”.',
