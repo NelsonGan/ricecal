@@ -13,6 +13,16 @@ export type AppBarProps = {
   onBack?: () => void
   /** Screen-reader name for the back button. Pass translated copy. */
   backLabel?: string
+  /**
+   * Which affordance the leading control is.
+   *
+   * `back` (a chevron) means "up one level, the previous screen is still
+   * behind this one". `dismiss` (a cross) means "close this, and the thing
+   * underneath is where you were". A modal is the second kind: it slides up
+   * over the app rather than continuing a path through it, and a chevron there
+   * promises a hierarchy the screen does not have.
+   */
+  leading?: 'back' | 'dismiss'
   /** Trailing controls. Keep to one; two crowds a 340pt phone. */
   action?: ReactNode
   className?: string
@@ -29,7 +39,14 @@ export type AppBarProps = {
  * When there is no `action`, an invisible spacer keeps the title optically
  * centred instead of drifting right.
  */
-export function AppBar({ title, onBack, backLabel = 'Go back', action, className }: AppBarProps) {
+export function AppBar({
+  title,
+  onBack,
+  backLabel = 'Go back',
+  leading = 'back',
+  action,
+  className,
+}: AppBarProps) {
   const colors = useThemeColors()
 
   return (
@@ -41,7 +58,12 @@ export function AppBar({ title, onBack, backLabel = 'Go back', action, className
         <IconButton size="sm" accessibilityLabel={backLabel} onPress={onBack}>
           {/* Tinted: chrome is monochrome, and the illustration's own palette
               reads as a stray accent next to a title. */}
-          <Icon set="ui" name="chevron-left" size={20} tintColor={colors.muted} />
+          <Icon
+            set="ui"
+            name={leading === 'dismiss' ? 'close' : 'chevron-left'}
+            size={20}
+            tintColor={colors.muted}
+          />
         </IconButton>
       ) : null}
 

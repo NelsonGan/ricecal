@@ -26,7 +26,8 @@ const readFailures = new Set<string>()
  *
  * A local simulator build is signed ad-hoc with an empty entitlements
  * dictionary, so every SecureStore write fails with "a required entitlement
- * isn't present" — see SETUP.md §5. That is a fact about the build, not a
+ * isn't present" — an ad-hoc-signed local build embeds an empty entitlements
+ * dictionary, so the keychain is unreachable. That is a fact about the build, not a
  * runtime failure, and it is the build every developer runs: without a
  * fallback, signing in on a simulator cannot work at all.
  *
@@ -92,7 +93,7 @@ const SecureStoreAdapter = {
       memoryStore.set(key, value)
       console.warn(
         '[auth] no keychain in this build, keeping the session in memory only. ' +
-          'It will not survive a restart. See SETUP.md §5.',
+          'It will not survive a restart: this build cannot reach the keychain.',
         error,
       )
     }

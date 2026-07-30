@@ -13,7 +13,10 @@
     "ios": {
       "bundleIdentifier": "com.nelsongan.ricecal",
       "supportsTablet": true,
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.nelsongan.ricecal",
@@ -41,7 +44,14 @@
         }
       ],
       "expo-notifications",
-      "@sentry/react-native/expo",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "ricecal-mobile",
+          "organization": "nelsons-project"
+        }
+      ],
       [
         "expo-camera",
         {
@@ -72,6 +82,9 @@
         "projectId": "f32771ad-76f4-47ed-b88b-b342f6b20de2"
       }
     },
-    "owner": "nelsong"
+    "owner": "nelsong",
+    "updates": {
+      "url": "https://u.expo.dev/f32771ad-76f4-47ed-b88b-b342f6b20de2"
+    }
   }
 }

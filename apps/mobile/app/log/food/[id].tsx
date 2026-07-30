@@ -80,7 +80,8 @@ export default function FoodDetail() {
         <AppBar
           title={isPending ? '' : t('logging:search.emptyTitle')}
           onBack={() => goBack()}
-          backLabel={t('common:a11y.back')}
+          backLabel={t('common:a11y.close')}
+          leading="dismiss"
         />
       </Screen>
     )
@@ -113,7 +114,13 @@ export default function FoodDetail() {
         meal,
         note: note || null,
       })
-      toast.show({ title: t('logging:detail.fixApplied'), tone: 'success' })
+      // `fixApplied` reads "Updated from your note", which belongs to the
+      // free-text correction below — it was showing for a plain quantity or
+      // serving change too, crediting a note the user never wrote.
+      toast.show({
+        title: note ? t('logging:detail.fixApplied') : t('logging:detail.updated'),
+        tone: 'success',
+      })
       goBack()
       return
     }
@@ -150,7 +157,15 @@ export default function FoodDetail() {
         </View>
       }
     >
-      <AppBar title={food.name} onBack={() => goBack()} backLabel={t('common:a11y.back')} />
+      {/* A cross, not a chevron: this arrives as a modal over whatever
+          opened it — search, the diary, a quick-add — so there is no single
+          screen "up" from here. */}
+      <AppBar
+        title={food.name}
+        onBack={() => goBack()}
+        backLabel={t('common:a11y.close')}
+        leading="dismiss"
+      />
 
       <View className="h-[130px] items-center justify-center overflow-hidden rounded-card border-[3px] border-line bg-track">
         {hero ? (

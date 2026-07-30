@@ -21,6 +21,9 @@ export default function GoalStep() {
       title={t('goal.title')}
       subtitle={t('goal.subtitle')}
       primaryLabel={t('common:action.continue')}
+      // Nothing to continue to until a goal exists: the budget the whole flow
+      // is computing branches on it, and skipping past leaves it null.
+      primaryDisabled={!goal}
       onPrimary={() => router.push('/about')}
     >
       {OPTIONS.map((option) => (

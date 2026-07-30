@@ -136,17 +136,33 @@ select is(
 
 -- 4. LOGGING -----------------------------------------------------------------
 
+-- The dishes to log against. These used to come from a seed migration, which
+-- `simplify_scope` deleted along with user-created foods -- nothing populates
+-- `foods` any more except the catalogue import, and a test may not depend on
+-- whether someone has run that. Fixtures are local to this transaction and roll
+-- back with it, the same way 00_catalogue and 02_rls already do theirs.
+insert into public.foods (slug, name, icon_name, place, kcal, carbs_g, protein_g, fat_g)
+values
+  ('fixture-nasi-lemak-ayam', 'Nasi lemak ayam', 'nasi-lemak', 'mamak',    640, 78, 27, 25),
+  ('fixture-teh-tarik',       'Teh tarik',       'teh-tarik',  'kopitiam', 135, 21,  3,  4),
+  ('fixture-roti-canai',      'Roti canai',      'roti-canai', 'mamak',    301, 39,  6, 13);
+
+insert into public.food_servings (food_id, slug, label, factor, is_default)
+select f.id, 'plate', '1 plate', 1, true
+from public.foods f
+where f.slug in ('fixture-nasi-lemak-ayam', 'fixture-teh-tarik', 'fixture-roti-canai');
+
 insert into public.food_logs (user_id, log_date, meal, food_id, serving_id, quantity)
 select :'user_a', current_date, 'breakfast', f.id, s.id, 1
 from public.foods f
 join public.food_servings s on s.food_id = f.id and s.is_default
-where f.slug = 'nasi-lemak-ayam';
+where f.slug = 'fixture-nasi-lemak-ayam';
 
 insert into public.food_logs (user_id, log_date, meal, food_id, serving_id, quantity)
 select :'user_a', current_date, 'breakfast', f.id, s.id, 2
 from public.foods f
 join public.food_servings s on s.food_id = f.id and s.is_default
-where f.slug = 'teh-tarik';
+where f.slug = 'fixture-teh-tarik';
 
 -- 640 for the plate, 2 x 135 for the teh tarik.
 select is(
@@ -161,10 +177,10 @@ select throws_ok(
   format(
     $q$insert into public.food_logs (user_id, log_date, meal, food_id, serving_id)
        values (%L, current_date, 'lunch',
-         (select id from public.foods where slug = 'nasi-lemak-ayam'),
+         (select id from public.foods where slug = 'fixture-nasi-lemak-ayam'),
          (select s.id from public.food_servings s
             join public.foods f on f.id = s.food_id
-           where f.slug = 'teh-tarik' and s.is_default))$q$,
+           where f.slug = 'fixture-teh-tarik' and s.is_default))$q$,
     :'user_a'
   ),
   '23503',
@@ -179,7 +195,7 @@ insert into public.food_logs (user_id, log_date, meal, food_id, serving_id)
 select :'user_a', current_date - 1, 'dinner', f.id, s.id
 from public.foods f
 join public.food_servings s on s.food_id = f.id and s.is_default
-where f.slug = 'roti-canai';
+where f.slug = 'fixture-roti-canai';
 
 select is(
   (select current_days from public.logging_streak(:'user_a')),

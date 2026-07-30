@@ -4,6 +4,7 @@ import '../global.css'
 // renders a raw key on the first frame.
 import '@/i18n'
 
+import * as Sentry from '@sentry/react-native'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { useFonts } from 'expo-font'
 import { Stack } from 'expo-router'
@@ -29,7 +30,7 @@ initOnlineManager()
 // impossible to miss on the large display numerals.
 SplashScreen.preventAutoHideAsync()
 
-export default function RootLayout() {
+export default Sentry.wrap(function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(fontMap)
 
   useEffect(() => {
@@ -75,7 +76,7 @@ export default function RootLayout() {
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )
-}
+})
 
 /**
  * Every screen draws its own title bar, so the native header is off everywhere.
@@ -83,10 +84,36 @@ export default function RootLayout() {
  * Presentation is declared here rather than per screen because it is a property
  * of how a route enters the app, not of what the route renders — the same food
  * detail is a modal from search and a push from the diary.
+ *
+ * Two shapes, and the difference is deliberate:
+ *
+ * - **Full pages push.** Settings, the progress reports and the gallery slide in
+ *   from the right, keep the screen behind them on the stack, and pop with the
+ *   edge swipe. They carry a chevron in their own `AppBar`.
+ * - **Modals present.** Search, a dish, the paywalls come up over the app and
+ *   are dismissed rather than navigated back from — a cross in the `AppBar`,
+ *   plus the native pull-down.
+ *
+ * `animation` is left at the platform default rather than forced to
+ * `slide_from_right`: setting it globally also reaches the `presentation: modal`
+ * screens below, which then slide in sideways instead of rising, and the cross
+ * in their bar stops matching how they arrived.
  */
 function RootStack() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        // Explicit rather than relying on the default. The interactive pop is
+        // the only back affordance a user reaches for without looking, and a
+        // future screen that sets its own options should have to opt out of it
+        // on purpose.
+        gestureEnabled: true,
+        // Edge-only, matching UIKit. A full-width drag competes with the
+        // horizontal scrollers on Trends and the week strip on Today.
+        fullScreenGestureEnabled: false,
+      }}
+    >
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(onboarding)" />
       <Stack.Screen name="(tabs)" />

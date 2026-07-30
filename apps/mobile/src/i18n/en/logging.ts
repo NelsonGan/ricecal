@@ -65,14 +65,6 @@ export const logging = {
     title: 'Search',
     placeholder: 'Search any dish',
     clear: 'Clear search',
-    filters: {
-      all: 'All',
-      mamak: 'Mamak',
-      kopitiam: 'Kopitiam',
-      packaged: 'Packaged',
-    },
-    /** Badge on a dish this user created. */
-    match: '{{percent}}%',
     /** Where a dish is usually eaten. Shown under its name in a result. */
     place: {
       mamak: 'Mamak',
@@ -92,6 +84,8 @@ export const logging = {
     fixPlaceholder: 'no sambal, and it was half a plate',
     fixSend: 'Apply correction',
     fixApplied: 'Updated from your note',
+    /** Saving an edit to an entry already in the diary. */
+    updated: 'Entry updated',
     quickFix: {
       halfPortion: 'Half portion',
       noSambal: 'No sambal',

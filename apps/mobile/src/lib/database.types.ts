@@ -242,8 +242,11 @@ export type Database = {
           id: string
           kcal: number
           name: string
+          name_norm: string
           place: Database['public']['Enums']['food_place']
           protein_g: number
+          search_text: string
+          search_tsv: unknown
           slug: string
           sodium_mg: number | null
           source: string | null
@@ -262,8 +265,11 @@ export type Database = {
           id?: string
           kcal: number
           name: string
+          name_norm?: string
           place?: Database['public']['Enums']['food_place']
           protein_g?: number
+          search_text?: string
+          search_tsv?: unknown
           slug: string
           sodium_mg?: number | null
           source?: string | null
@@ -282,8 +288,11 @@ export type Database = {
           id?: string
           kcal?: number
           name?: string
+          name_norm?: string
           place?: Database['public']['Enums']['food_place']
           protein_g?: number
+          search_text?: string
+          search_tsv?: unknown
           slug?: string
           sodium_mg?: number | null
           source?: string | null
@@ -664,6 +673,41 @@ export type Database = {
           current_days: number
         }[]
       }
+      search_foods: {
+        Args: {
+          match_limit?: number
+          p_place?: Database['public']['Enums']['food_place']
+          q: string
+        }
+        Returns: {
+          brand: string | null
+          carbs_g: number | null
+          default_serving_id: string | null
+          fat_g: number | null
+          fibre_g: number | null
+          icon_name: string | null
+          icon_set: Database['public']['Enums']['icon_set'] | null
+          id: string | null
+          kcal: number | null
+          name: string | null
+          place: Database['public']['Enums']['food_place'] | null
+          protein_g: number | null
+          serving_label: string | null
+          servings: Json | null
+          slug: string | null
+          sodium_mg: number | null
+          sugar_g: number | null
+          verified: boolean | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'food_details'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      search_normalize: { Args: { txt: string }; Returns: string }
+      search_tsquery: { Args: { txt: string }; Returns: unknown }
     }
     Enums: {
       activity_level: 'sedentary' | 'light' | 'on_feet' | 'very_active'
