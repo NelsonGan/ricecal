@@ -1,6 +1,5 @@
-import * as Haptics from 'expo-haptics'
 import { type ReactNode, useCallback } from 'react'
-import { Pressable, type PressableProps, View } from 'react-native'
+import { type PressableProps, View } from 'react-native'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -10,6 +9,7 @@ import Animated, {
 
 import { motion, radius as radiusScale, slab } from '@/theme/tokens'
 import { cn } from './cn'
+import { Tappable } from './Tappable'
 
 export type SquishProps = Omit<PressableProps, 'children' | 'style'> & {
   /** Height of the slab under the surface. 0 renders flat but keeps the layers. */
@@ -91,15 +91,14 @@ export function Squish({
   // behind it, so both the Pressable and the animation are opt-in.
   const interactive = !disabled && Boolean(onPress ?? onLongPress)
 
+  // The haptic itself belongs to `Tappable`, which every pressable in the app
+  // shares. What is left here is the half that is `Squish`'s own: the sink.
   const handlePressIn = useCallback<NonNullable<PressableProps['onPressIn']>>(
     (event) => {
       offset.value = withTiming(depth, { duration: motion.pressIn })
-      // Never let a haptics failure take down a tap. It is unavailable on
-      // simulators and on devices with the setting off.
-      if (haptics) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
       onPressIn?.(event)
     },
-    [depth, haptics, offset, onPressIn],
+    [depth, offset, onPressIn],
   )
 
   const handlePressOut = useCallback<NonNullable<PressableProps['onPressOut']>>(
@@ -159,10 +158,11 @@ export function Squish({
   }
 
   return (
-    <Pressable
+    <Tappable
       className={outer}
       style={box}
       disabled={disabled}
+      haptics={haptics}
       onPress={onPress}
       onLongPress={onLongPress}
       onPressIn={handlePressIn}
@@ -170,6 +170,6 @@ export function Squish({
       {...rest}
     >
       {layers}
-    </Pressable>
+    </Tappable>
   )
 }

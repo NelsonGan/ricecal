@@ -98,6 +98,7 @@ export { StepProgress, type StepProgressProps, type StepProgressTone } from './S
 export { Stepper, type StepperProps } from './Stepper'
 export { Switch, type SwitchProps } from './Switch'
 export { type TabOption, Tabs, type TabsProps } from './Tabs'
+export { Tappable, type TappableProps } from './Tappable'
 export { Text, type TextProps, type TextVariant } from './Text'
 export { TextField, type TextFieldProps } from './TextField'
 export {

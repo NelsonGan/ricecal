@@ -2,7 +2,7 @@ import { Image } from 'expo-image'
 import { useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Pressable, View } from 'react-native'
+import { View } from 'react-native'
 
 import {
   type IconRef,
@@ -30,6 +30,7 @@ import {
   Screen,
   SegmentedControl,
   Stepper,
+  Tappable,
   Text,
   TextField,
   useToast,
@@ -162,6 +163,9 @@ export default function FoodDetail() {
       quantity,
       note: note || undefined,
       logDate: selectedDate,
+      // Only what was actually chosen. `shownIcon` would write the food's own
+      // drawing onto the row as an override, which is not an override at all.
+      icon: icon ?? undefined,
     })
     finish()
   }
@@ -183,7 +187,7 @@ export default function FoodDetail() {
       footer={
         <View>
           <Button fullWidth onPress={save}>
-            {existing ? t('common:action.save') : t('logging:detail.addToDiary')}
+            {existing ? t('common:action.save') : t('common:action.add')}
           </Button>
         </View>
       }
@@ -194,23 +198,19 @@ export default function FoodDetail() {
           a deep link straight to a dish. */}
       <AppBar title={food.name} onBack={() => goBack()} backLabel={t('common:a11y.back')} />
 
-      {/* Pressable only while editing, because the override lives on the entry
-          and a new one does not exist yet.
+      {/* Always live, including before the entry exists. Most of the catalogue
+          has no drawing, so a dish being added from the list arrives blank — and
+          picking one then is the natural moment, not after saving and coming back.
 
-          A photo still opens the picker, but by way of a confirmation: choosing a
+          A photo opens the picker too, but by way of a confirmation: choosing a
           drawing throws the photo of the real plate away, and the row cannot hold
           both. That is not something to discover after the fact. */}
-      <Pressable
+      <Tappable
         className="h-[130px] items-center justify-center overflow-hidden rounded-card border-[3px] border-line bg-track"
-        disabled={!existing}
         onPress={() => (hero ? setConfirmReplacePhoto(true) : setPickingIcon(true))}
-        accessibilityRole={existing ? 'button' : undefined}
+        accessibilityRole="button"
         accessibilityLabel={
-          existing
-            ? hero
-              ? t('logging:detail.replacePhoto')
-              : t('logging:detail.choosePicture')
-            : undefined
+          hero ? t('logging:detail.replacePhoto') : t('logging:detail.choosePicture')
         }
       >
         {hero && !icon ? (
@@ -228,29 +228,29 @@ export default function FoodDetail() {
           // actual plate beats any illustration of it.
           <Icon set="system" name="camera" size={72} />
         )}
-      </Pressable>
+      </Tappable>
 
+      <IconPicker
+        visible={pickingIcon}
+        onClose={() => setPickingIcon(false)}
+        selected={shownIcon}
+        onSelect={setIcon}
+      />
+
+      {/* Only an existing entry can have a photo to lose. */}
       {existing ? (
-        <>
-          <IconPicker
-            visible={pickingIcon}
-            onClose={() => setPickingIcon(false)}
-            selected={shownIcon}
-            onSelect={setIcon}
-          />
-          <ConfirmSheet
-            visible={confirmReplacePhoto}
-            onClose={() => setConfirmReplacePhoto(false)}
-            onConfirm={() => {
-              setConfirmReplacePhoto(false)
-              setPickingIcon(true)
-            }}
-            title={t('logging:detail.replacePhotoTitle')}
-            description={t('logging:detail.replacePhotoBody')}
-            confirmLabel={t('logging:detail.replacePhotoConfirm')}
-            tone="danger"
-          />
-        </>
+        <ConfirmSheet
+          visible={confirmReplacePhoto}
+          onClose={() => setConfirmReplacePhoto(false)}
+          onConfirm={() => {
+            setConfirmReplacePhoto(false)
+            setPickingIcon(true)
+          }}
+          title={t('logging:detail.replacePhotoTitle')}
+          description={t('logging:detail.replacePhotoBody')}
+          confirmLabel={t('logging:detail.replacePhotoConfirm')}
+          tone="danger"
+        />
       ) : null}
 
       <Card>
@@ -289,42 +289,49 @@ export default function FoodDetail() {
         {targets ? <MacroBars eaten={macros} targets={targets} /> : null}
       </Card>
 
-      <Card>
-        <View className="flex-row items-center gap-2">
-          <Icon set="system" name="sparkle" size={20} />
-          <Text variant="caption" className="text-pandan-ink">
-            {t('logging:detail.fixTitle')}
-          </Text>
-        </View>
+      {/* Correcting a dish by describing it belongs to an entry that already
+          exists: "no sambal" is a fix to something logged, and on the way IN the
+          serving chips and the stepper above say the same thing more precisely.
+          It also credits a note on save, which would be a lie about a row being
+          created for the first time. */}
+      {existing ? (
+        <Card>
+          <View className="flex-row items-center gap-2">
+            <Icon set="system" name="sparkle" size={20} />
+            <Text variant="caption" className="text-pandan-ink">
+              {t('logging:detail.fixTitle')}
+            </Text>
+          </View>
 
-        <TextField
-          value={note}
-          onChangeText={setNote}
-          placeholder={t('logging:detail.fixPlaceholder')}
-          returnKeyType="done"
-        />
+          <TextField
+            value={note}
+            onChangeText={setNote}
+            placeholder={t('logging:detail.fixPlaceholder')}
+            returnKeyType="done"
+          />
 
-        <View className="flex-row flex-wrap gap-2">
-          {QUICK_FIXES.map((fix) => (
-            <Chip
-              key={fix}
-              selected={note === t(`logging:detail.quickFix.${fix}`)}
-              onPress={() => {
-                const label = t(`logging:detail.quickFix.${fix}`)
-                setNote(label)
-                // "Half portion" is not just a note, it is a serving. Applying
-                // it silently as text would leave the calories wrong.
-                if (fix === 'halfPortion') {
-                  const half = food.servings.find((option) => option.factor === 0.5)
-                  if (half) setServingId(half.id)
-                }
-              }}
-            >
-              {t(`logging:detail.quickFix.${fix}`)}
-            </Chip>
-          ))}
-        </View>
-      </Card>
+          <View className="flex-row flex-wrap gap-2">
+            {QUICK_FIXES.map((fix) => (
+              <Chip
+                key={fix}
+                selected={note === t(`logging:detail.quickFix.${fix}`)}
+                onPress={() => {
+                  const label = t(`logging:detail.quickFix.${fix}`)
+                  setNote(label)
+                  // "Half portion" is not just a note, it is a serving. Applying
+                  // it silently as text would leave the calories wrong.
+                  if (fix === 'halfPortion') {
+                    const half = food.servings.find((option) => option.factor === 0.5)
+                    if (half) setServingId(half.id)
+                  }
+                }}
+              >
+                {t(`logging:detail.quickFix.${fix}`)}
+              </Chip>
+            ))}
+          </View>
+        </Card>
+      ) : null}
 
       <Card title={t('logging:detail.mealLabel')}>
         <SegmentedControl

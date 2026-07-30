@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Pressable, View } from 'react-native'
+import { View } from 'react-native'
 
 import { cn } from './cn'
 import { Icon } from './Icon'
 import { Sheet } from './Sheet'
+import { Tappable } from './Tappable'
 import { Text } from './Text'
 
 export type SelectOption<T extends string> = {
@@ -47,7 +48,7 @@ export function Select<T extends string>({
     <View className={cn('gap-1.5', className)}>
       {label ? <Text variant="label">{label}</Text> : null}
 
-      <Pressable
+      <Tappable
         onPress={() => setOpen(true)}
         disabled={disabled}
         className={cn(
@@ -67,14 +68,14 @@ export function Select<T extends string>({
           {selected?.label ?? placeholder}
         </Text>
         <Icon set="ui" name="chevron-down" size={20} />
-      </Pressable>
+      </Tappable>
 
       <Sheet visible={open} onClose={() => setOpen(false)} title={label}>
         <View>
           {options.map((option, index) => {
             const isSelected = option.value === value
             return (
-              <Pressable
+              <Tappable
                 key={option.value}
                 onPress={() => {
                   onChange(option.value)
@@ -97,7 +98,7 @@ export function Select<T extends string>({
                   {option.description ? <Text variant="meta">{option.description}</Text> : null}
                 </View>
                 {isSelected ? <Icon set="ui" name="check" size={22} /> : null}
-              </Pressable>
+              </Tappable>
             )
           })}
         </View>

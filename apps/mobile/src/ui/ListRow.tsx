@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
-import { Pressable, View } from 'react-native'
+import { View } from 'react-native'
 
 import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
 import { Icon } from './Icon'
+import { Tappable } from './Tappable'
 import { Text } from './Text'
 
 export type ListRowProps = {
@@ -77,7 +78,7 @@ export function ListRow({
   if (!onPress) return content
 
   return (
-    <Pressable
+    <Tappable
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
@@ -86,6 +87,6 @@ export function ListRow({
       accessibilityState={{ disabled }}
     >
       {content}
-    </Pressable>
+    </Tappable>
   )
 }
