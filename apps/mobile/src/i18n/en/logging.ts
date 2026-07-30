@@ -35,11 +35,13 @@ export const logging = {
     remaining: '{{count}} left',
     snap: 'Snap',
     search: 'Search',
-    /** The last few dishes logged at this meal, newest first. */
+    /**
+     * The last few dishes logged at this meal, newest first. No empty-state copy
+     * for this or for the repeat button: each block is simply absent when it has
+     * nothing in it, rather than saying so.
+     */
     recent: 'LAST LOGGED',
-    nothingRecent: 'Nothing logged for {{meal}} yet.',
     repeatYesterday: 'Repeat yesterday',
-    nothingYesterday: 'Nothing logged yesterday',
   },
 
   camera: {
