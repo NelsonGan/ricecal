@@ -78,6 +78,31 @@ it('marks the picture already on the row as chosen', async () => {
   expect(screen.getByLabelText('roti canai')).not.toBeSelected()
 })
 
+/**
+ * The two photo sources are icons, so their accessible names are the only thing
+ * saying which is which — and they are what a test has to go by too.
+ */
+it('offers the camera and the album when the host can take a photo', async () => {
+  const onPickPhoto = jest.fn()
+  await render(
+    <IconPicker visible onClose={onClose} onSelect={onSelect} onPickPhoto={onPickPhoto} />,
+  )
+
+  await user.press(screen.getByLabelText('Take a photo'))
+  expect(onPickPhoto).toHaveBeenCalledWith('camera')
+
+  await user.press(screen.getByLabelText('Choose from photos'))
+  expect(onPickPhoto).toHaveBeenCalledWith('library')
+})
+
+/** A host with nowhere to put a photo gets the grid alone. */
+it('offers neither when it cannot', async () => {
+  await open()
+
+  expect(screen.queryByLabelText('Take a photo')).toBeNull()
+  expect(screen.queryByLabelText('Choose from photos')).toBeNull()
+})
+
 it('says so when the search matches nothing', async () => {
   await open()
   await user.type(screen.getByLabelText('Search pictures'), 'pizza crust')

@@ -153,7 +153,11 @@ export const logging = {
    */
   icon: {
     title: 'Pick a picture',
-    /** The camera, offered above the grid as the other way to answer this. */
+    /**
+     * The two photo sources, offered above the grid as the other way to answer
+     * this. Both are icons, so these are what a screen reader gets rather than
+     * captions anybody sees.
+     */
     takePhoto: 'Take a photo',
     orChoose: 'OR CHOOSE A PICTURE',
     searchLabel: 'Search pictures',
