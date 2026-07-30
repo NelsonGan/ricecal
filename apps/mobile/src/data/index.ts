@@ -24,12 +24,7 @@ export {
   useRemoveEntry,
   useUpdateEntry,
 } from './entries'
-export {
-  useFood,
-  useFoodSearch,
-  useRecentFoods,
-  useTopFoods,
-} from './foods'
+export { useFood, useFoodSearch, useRecentFoods } from './foods'
 export { type GoalsInput, useSetTargets, useTargets } from './goals'
 export { keys } from './keys'
 export { toEntry, toFood, toIcon } from './mappers'

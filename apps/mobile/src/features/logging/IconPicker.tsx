@@ -35,6 +35,15 @@ export type IconPickerProps = {
   /** What is on the row now, so the current choice reads as chosen. */
   selected?: IconRef
   onSelect: (icon: IconRef) => void
+  /**
+   * Offers the camera as the other way to answer this.
+   *
+   * Optional: a caller with nowhere to put a photo simply does not pass it, and
+   * the sheet is the grid alone. The host owns the capture and the upload — this
+   * sheet knows about drawings, and a photo is a different kind of thing with a
+   * permission prompt, a bucket and a failure mode of its own.
+   */
+  onTakePhoto?: () => void
 }
 
 /**
@@ -49,7 +58,7 @@ export type IconPickerProps = {
  * scrolls through, and the names are the dish names, so typing "mee" narrows to
  * the noodles.
  */
-export function IconPicker({ visible, onClose, selected, onSelect }: IconPickerProps) {
+export function IconPicker({ visible, onClose, selected, onSelect, onTakePhoto }: IconPickerProps) {
   const { t } = useTranslation(['logging', 'common'])
   const [query, setQuery] = useState('')
 
@@ -69,8 +78,11 @@ export function IconPicker({ visible, onClose, selected, onSelect }: IconPickerP
     <Sheet
       visible={visible}
       onClose={onClose}
+      closeLabel={t('common:action.close')}
       title={t('logging:icon.title')}
-      description={t('logging:icon.description')}
+      // No description. It read "Just for this entry. A photo of the real plate
+      // beats any of these" — a caveat about scope nobody asked about, and advice
+      // against the thing the sheet is for. The camera is right there instead.
       scrollable
       // Capped because this sheet raises the keyboard: the full grid plus a
       // keyboard is taller than a phone, and the overflow comes off the top where
@@ -82,6 +94,31 @@ export function IconPicker({ visible, onClose, selected, onSelect }: IconPickerP
       // choice made in this same sheet a moment earlier, and closing it does that
       // already.
     >
+      {/* The camera first, and the grid under it. A photo of the actual plate is
+          the better answer where one is possible, and the drawings exist because
+          most of the time it is not — so the order says which is which without a
+          line of copy explaining it. */}
+      {onTakePhoto ? (
+        <>
+          <Squish
+            depth={4}
+            radius={18}
+            slabClassName="bg-pandan-soft-line"
+            className="flex-row items-center gap-3 border-[3px] border-pandan bg-pandan-soft px-4 py-3.5"
+            onPress={onTakePhoto}
+            accessibilityRole="button"
+            accessibilityLabel={t('logging:icon.takePhoto')}
+          >
+            <Icon set="system" name="camera" size={28} />
+            <Text variant="bodyStrong" className="flex-1">
+              {t('logging:icon.takePhoto')}
+            </Text>
+          </Squish>
+
+          <Text variant="overline">{t('logging:icon.orChoose')}</Text>
+        </>
+      ) : null}
+
       <SearchField
         value={query}
         onChangeText={setQuery}

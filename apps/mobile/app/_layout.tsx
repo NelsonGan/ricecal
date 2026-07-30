@@ -142,7 +142,13 @@ function RootStack() {
     >
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(onboarding)" />
-      <Stack.Screen name="(tabs)" />
+      {/* The one screen with no back gesture. Everything else in this stack is
+          somewhere you went and can leave; the tabs are where the app IS. Onboarding
+          replaces its own route on the way out, but "replace" only unwinds what it
+          replaced — the seven screens before it are still behind this one, and an
+          edge swipe on Today walked back into the questions somebody had just
+          finished answering. */}
+      <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
       {/* The quick selector sits over Today, so the screen behind it stays
           visible and the sheet keeps its own scrim. */}
       <Stack.Screen
