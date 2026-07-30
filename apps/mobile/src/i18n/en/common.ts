@@ -21,7 +21,6 @@ export const common = {
 
   nav: {
     today: 'Today',
-    diary: 'Diary',
     trends: 'Trends',
     me: 'Me',
     /** The raised centre button. */
@@ -45,6 +44,8 @@ export const common = {
     kcal: 'kcal',
     kcalUpper: 'KCAL',
     grams: '{{value}}g',
+    /** Eaten against the day's allowance, on a macro bar that has been toggled. */
+    gramsOfGoal: '{{value}}/{{goal}}g',
     kg: 'kg',
     cm: 'cm',
     /** Screen-reader expansion. "182 g" reads better than "182g". */
@@ -73,5 +74,7 @@ export const common = {
     more: 'More options',
     decrease: 'Decrease',
     increase: 'Increase',
+    /** The onboarding progress bar, which shows its position without words. */
+    step: 'Step {{current}} of {{total}}',
   },
 } as const

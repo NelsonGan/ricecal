@@ -2,7 +2,9 @@ import { Image } from 'expo-image'
 import { View } from 'react-native'
 
 import { radius as radiusScale, slab } from '@/theme/tokens'
+import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
+import { Icon } from './Icon'
 import { Squish } from './Squish'
 import { Text } from './Text'
 
@@ -14,20 +16,43 @@ const sizes = {
 
 const tones = ['pandan', 'kaya', 'water', 'hibiscus'] as const
 const fills = {
-  pandan: { fill: 'bg-pandan', slab: 'bg-pandan-slab', label: 'text-on-pandan' },
-  kaya: { fill: 'bg-kaya', slab: 'bg-kaya-slab', label: 'text-on-kaya' },
-  water: { fill: 'bg-water', slab: 'bg-water-slab', label: 'text-on-water' },
-  hibiscus: { fill: 'bg-hibiscus', slab: 'bg-hibiscus-slab', label: 'text-on-hibiscus' },
+  pandan: { fill: 'bg-pandan', slab: 'bg-pandan-slab', label: 'text-on-pandan', on: 'onPandan' },
+  kaya: { fill: 'bg-kaya', slab: 'bg-kaya-slab', label: 'text-on-kaya', on: 'onKaya' },
+  water: { fill: 'bg-water', slab: 'bg-water-slab', label: 'text-on-water', on: 'onWater' },
+  hibiscus: {
+    fill: 'bg-hibiscus',
+    slab: 'bg-hibiscus-slab',
+    label: 'text-on-hibiscus',
+    on: 'onHibiscus',
+  },
 } as const
 
 export type AvatarSize = keyof typeof sizes
 export type AvatarTone = (typeof tones)[number]
 
 export type AvatarProps = {
-  /** Full name. The initial is derived from it; also used as the a11y label. */
+  /**
+   * Full name, or empty for an account that has not given one. The initial and
+   * the tone are derived from it, and it is the a11y label unless one is passed.
+   */
   name: string
-  /** Remote or local image. Falls back to the initial while loading or on error. */
+  /**
+   * What a screen reader says. Pass it when `name` is empty — "—" is what the
+   * layout shows in that case and not something worth reading out.
+   */
+  accessibilityLabel?: string
+  /** Remote or local image. Falls back to `fallback` while loading or on error. */
   uri?: string | null
+  /**
+   * What to draw with no picture: a stock figure, or the name's first letter.
+   *
+   * The figure is the default because the app's own user is the common case and
+   * has no name to take a letter from — nobody is asked for one, since signing in
+   * is a link in an email. `initial` is for a row of NAMED people, where the
+   * letters are what tell them apart and the same silhouette four times over
+   * tells you nothing.
+   */
+  fallback?: 'figure' | 'initial'
   size?: AvatarSize
   /** Pin the colour. By default it is derived from the name, so it is stable. */
   tone?: AvatarTone
@@ -46,11 +71,35 @@ function toneFor(name: string): AvatarTone {
   return tones[Math.abs(hash) % tones.length]
 }
 
-/** Rounded-square avatar with an initial fallback. */
-export function Avatar({ name, uri, size = 'md', tone, className }: AvatarProps) {
+/**
+ * Whether there is a letter here worth showing, or only padding.
+ *
+ * Deliberately NOT `/\p{L}/u`. Unicode property escapes are a Hermes support
+ * question, and a regexp literal Hermes cannot parse throws where it is defined —
+ * at module scope, in a design-system file every screen imports, which is a blank
+ * app rather than a bad avatar. This asks the same question the other way round:
+ * is there anything here that is not whitespace or a placeholder mark. Which also
+ * keeps it right for a name in a script with no case, or no letters this file
+ * could name.
+ */
+const isRealName = (name: string) => /[^\s\-–—_.·?]/.test(name)
+
+/** Rounded-square avatar: a picture, a stock figure, or an initial. */
+export function Avatar({
+  name,
+  accessibilityLabel,
+  uri,
+  fallback = 'figure',
+  size = 'md',
+  tone,
+  className,
+}: AvatarProps) {
   const metrics = sizes[size]
   const palette = fills[tone ?? toneFor(name)]
-  const initial = name.trim().charAt(0).toUpperCase() || '?'
+  const colors = useThemeColors()
+  // A letter is only ever shown where one was asked for AND there is one to show.
+  const showInitial = fallback === 'initial' && isRealName(name)
+  const initial = name.trim().charAt(0).toUpperCase()
 
   return (
     <Squish
@@ -59,7 +108,7 @@ export function Avatar({ name, uri, size = 'md', tone, className }: AvatarProps)
       containerClassName={cn('self-start', className)}
       slabClassName={palette.slab}
       className={cn('items-center justify-center overflow-hidden', palette.fill)}
-      accessibilityLabel={name}
+      accessibilityLabel={accessibilityLabel ?? name}
     >
       <View
         style={{ width: metrics.box, height: metrics.box }}
@@ -71,8 +120,18 @@ export function Avatar({ name, uri, size = 'md', tone, className }: AvatarProps)
             style={{ width: metrics.box, height: metrics.box }}
             contentFit="cover"
           />
-        ) : (
+        ) : showInitial ? (
           <Text className={cn('font-display', metrics.font, palette.label)}>{initial}</Text>
+        ) : (
+          // Flattened to the tile's own foreground colour, so it reads as a
+          // silhouette rather than as the teal-and-cream drawing it is in a list
+          // of settings icons.
+          <Icon
+            set="ui"
+            name="profile"
+            size={Math.round(metrics.box * 0.62)}
+            tintColor={colors[palette.on]}
+          />
         )}
       </View>
     </Squish>
@@ -100,7 +159,9 @@ export function AvatarGroup({ names, max = 3, size = 'sm', className }: AvatarGr
     >
       {shown.map((name, index) => (
         <View key={name} style={index > 0 ? { marginLeft: -10 } : undefined}>
-          <Avatar name={name} size={size} />
+          {/* Letters here, not silhouettes: these are named people, and the
+              initial is the only thing telling one tile from the next. */}
+          <Avatar name={name} fallback="initial" size={size} />
         </View>
       ))}
       {overflow > 0 ? (

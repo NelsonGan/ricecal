@@ -3,60 +3,71 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import {
-  type ProfilePatch,
-  type Sex,
-  useCurrentWeight,
-  useLogWeight,
-  useProfile,
-  useUpdateProfile,
-} from '@/data'
-import { OnboardingStep } from '@/features/onboarding'
-import { ageFrom, birthDateFromAge } from '@/lib/nutrition'
+import type { Sex } from '@/data'
+import { OnboardingStep, useOnboardingDraft } from '@/features/onboarding'
 import { Card, SegmentedControl, Slider, Stepper, Text, TextField } from '@/ui'
+
+/**
+ * The bounds each control answers within.
+ *
+ * Height and weight keep a mistyped field from producing a negative calorie
+ * budget. The target range is narrower than the weight one because it is
+ * dragged rather than typed, and 170 kg of travel under a thumb is not a
+ * control anybody can aim.
+ */
+const HEIGHT = { min: 120, max: 220 }
+const WEIGHT = { min: 30, max: 200 }
+const TARGET = { min: 40, max: 120 }
+
+/** Plausible rather than empty: every control here needs somewhere to start. */
+const FALLBACK = { heightCm: 164, weightKg: 65, age: 29, sex: 'female' as Sex }
 
 /** 03 ABOUT YOU */
 export default function AboutStep() {
   const { t } = useTranslation(['onboarding', 'common'])
   const router = useRouter()
-  const { data: profile } = useProfile()
-  const updateProfile = useUpdateProfile()
-  const logWeight = useLogWeight()
-  const storedWeight = useCurrentWeight()
-
-  const patch = (next: ProfilePatch) => updateProfile.mutate(next)
-
-  // Defaults that are plausible rather than empty: this screen is a set of
-  // sliders and steppers, and every one of them needs somewhere to start.
-  const heightCm = Number(profile?.height_cm ?? 164)
-  const weightKg = storedWeight ?? 65
-  const age = ageFrom(profile?.birth_date ?? null) || 29
-  const targetWeightKg = Number(profile?.target_weight_kg ?? weightKg)
-  const sex: Sex = profile?.sex ?? 'female'
-
-  // The two numeric fields keep their raw text while focused. Clamping on every
-  // keystroke would turn a half-typed "1" into "120" under the user's cursor.
-  const [height, setHeight] = useState(String(heightCm))
-  const [weight, setWeight] = useState(String(weightKg))
-
-  const commitHeight = () => {
-    const value = clamp(Number(height) || heightCm, 120, 220)
-    setHeight(String(value))
-    patch({ heightCm: value })
-  }
+  const { draft, patch } = useOnboardingDraft()
 
   /**
-   * Weight is a weigh-in, not a profile column.
+   * The two numeric fields keep their raw text while being edited.
    *
-   * There is no `weight_kg` on `profiles` at all: current weight is the newest
-   * row in `weight_logs`, so onboarding's answer becomes the first reading —
-   * which also gives the weight chart a starting point for free, and is what
-   * lets the database compute the calorie budget.
+   * Absent until touched, so the stored answer shows through until then.
+   * Clamping on every keystroke would turn a half-typed "1" into "120" under
+   * the user's cursor, which is why these are strings and not numbers.
    */
-  const commitWeight = () => {
-    const value = clamp(Number(weight) || weightKg, 30, 200)
-    setWeight(String(value))
-    logWeight.mutate({ kg: value })
+  const [typed, setTyped] = useState<{ height?: string; weight?: string }>({})
+
+  const savedHeightCm = draft.heightCm ?? FALLBACK.heightCm
+  const savedWeightKg = draft.weightKg ?? FALLBACK.weightKg
+
+  const heightText = typed.height ?? String(savedHeightCm)
+  const weightText = typed.weight ?? String(savedWeightKg)
+  const sex: Sex = draft.sex ?? FALLBACK.sex
+  const age = draft.age ?? FALLBACK.age
+
+  // What the two fields mean once read as numbers. An empty or unparseable
+  // field falls back to the stored answer rather than becoming 0, which would
+  // clamp to the minimum the moment the user cleared it to retype.
+  const heightCm = clamp(Number(heightText) || savedHeightCm, HEIGHT)
+  const weightKg = clamp(Number(weightText) || savedWeightKg, WEIGHT)
+  // Defaults to standing still. Clamped into the slider's own range so the
+  // thumb and the readout beside it cannot disagree.
+  const targetWeightKg = draft.targetWeightKg ?? clamp(weightKg, TARGET)
+
+  /**
+   * Commits everything the screen is SHOWING, not only what was touched.
+   *
+   * The controls display sensible defaults nobody chose, and leaving those
+   * unrecorded means `sex` or the birth date is missing at the flush — the
+   * database's budget trigger reads exactly those and gives up quietly, so the
+   * target screen would have no number and nothing to explain it.
+   *
+   * Reading the fields here rather than trusting a blur is what covers the user
+   * who taps Continue straight from the keyboard, which never fires one.
+   */
+  const save = () => {
+    patch({ heightCm, weightKg, sex, age, targetWeightKg })
+    router.push('/activity')
   }
 
   return (
@@ -67,29 +78,18 @@ export default function AboutStep() {
       title={t('about.title')}
       subtitle={t('about.subtitle')}
       primaryLabel={t('common:action.continue')}
-      onPrimary={() => {
-        // Commit everything the screen is SHOWING, not only what was touched.
-        //
-        // Two reasons. A user who taps Continue straight from the keyboard
-        // never fires onBlur, so the fields need flushing. And the sliders and
-        // steppers display sensible defaults that were never written — leaving
-        // those unsaved means `sex` or `birth_date` stays null, and the
-        // database's budget trigger reads exactly those and gives up quietly:
-        // the target screen then shows 0 kcal with nothing to explain it.
-        commitHeight()
-        commitWeight()
-        patch({ sex, birthDate: birthDateFromAge(age), targetWeightKg })
-        router.push('/activity')
-      }}
+      onPrimary={save}
     >
       <View className="flex-row gap-3">
         <TextField
           containerClassName="flex-1"
           label={t('about.height')}
           keyboardType="number-pad"
-          value={height}
-          onChangeText={setHeight}
-          onBlur={commitHeight}
+          value={heightText}
+          onChangeText={(height) => setTyped((current) => ({ ...current, height }))}
+          // Blur is where the clamp becomes visible: "show me what you
+          // understood". Continue re-reads the field either way.
+          onBlur={() => setTyped((current) => ({ ...current, height: String(heightCm) }))}
           inputClassName="font-display text-[26px]"
           rightSlot={<Text variant="caption">{t('common:unit.cm')}</Text>}
         />
@@ -97,9 +97,9 @@ export default function AboutStep() {
           containerClassName="flex-1"
           label={t('about.weight')}
           keyboardType="decimal-pad"
-          value={weight}
-          onChangeText={setWeight}
-          onBlur={commitWeight}
+          value={weightText}
+          onChangeText={(weight) => setTyped((current) => ({ ...current, weight }))}
+          onBlur={() => setTyped((current) => ({ ...current, weight: String(weightKg) }))}
           inputClassName="font-display text-[26px]"
           rightSlot={<Text variant="caption">{t('common:unit.kg')}</Text>}
         />
@@ -123,9 +123,7 @@ export default function AboutStep() {
       <Card title={t('about.age')}>
         <Stepper
           value={age}
-          // Stored as a birth date: an integer age is wrong within a year of
-          // being written and nothing would ever correct it.
-          onChange={(next) => patch({ birthDate: birthDateFromAge(next) })}
+          onChange={(next) => patch({ age: next })}
           min={13}
           max={100}
           accessibilityLabel={t('about.age')}
@@ -146,9 +144,12 @@ export default function AboutStep() {
       >
         <Slider
           value={targetWeightKg}
+          // `Slider` reports every frame of a drag, which is why this writes to
+          // the draft and not to the network: the same handler against a profile
+          // update was a request, and a budget recompute, per frame.
           onChange={(next) => patch({ targetWeightKg: next })}
-          min={40}
-          max={120}
+          min={TARGET.min}
+          max={TARGET.max}
           step={0.5}
           // The card already says TARGET WEIGHT; a second label under it would
           // be the same words twice.
@@ -160,7 +161,6 @@ export default function AboutStep() {
   )
 }
 
-/** Keeps a mistyped height from producing a negative calorie budget. */
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value))
+function clamp(value: number, bounds: { min: number; max: number }) {
+  return Math.min(bounds.max, Math.max(bounds.min, value))
 }

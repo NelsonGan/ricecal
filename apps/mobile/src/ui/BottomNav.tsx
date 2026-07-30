@@ -1,5 +1,5 @@
 import type { ReactNode, Ref } from 'react'
-import { Pressable, type PressableProps, View } from 'react-native'
+import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { radius, slab } from '@/theme/tokens'
@@ -7,15 +7,22 @@ import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
 import { Icon, type IconProps } from './Icon'
 import { Squish } from './Squish'
+import { Tappable, type TappableProps } from './Tappable'
 import { Text } from './Text'
 
 /**
- * How much of the bottom of the screen the bar occupies, safe area aside.
+ * How much of the bottom of the screen the bar occupies, safe area aside: the
+ * pill, and nothing else.
  *
- * Exported so a floating element — the toast — can clear it without measuring,
- * which would otherwise mean a layout pass before it could animate in.
+ * The tab column supplies the height — 12 + a 26 icon + a 6 gap + a 17 caption
+ * line + 12 — and there is no padding above it. There was 8pt, and on a canvas
+ * background that is a grey stripe between the screen's content and the bar;
+ * whatever spacing the last card wants is the screen's business, not the bar's.
+ *
+ * Exported so a floating element — the toast — can clear the bar without
+ * measuring, which would otherwise mean a layout pass before it could animate in.
  */
-export const NAV_BAR_HEIGHT = 96
+export const NAV_BAR_HEIGHT = 73
 
 export type NavTab<T extends string> = {
   value: T
@@ -30,24 +37,38 @@ export type NavTab<T extends string> = {
  * interleave its own trigger components with the FAB, which a fully controlled
  * component cannot express. Both paths render the same three pieces, so there
  * is one place to change the bar's look.
+ *
+ * The centre action does not rise above the pill, and that is the whole shape of
+ * this component. It used to, and the raise cost more than it was worth three
+ * times over. Overhanging the pill, the top third of the button took no touches
+ * on iOS and was clipped outright on Android — a view drawn outside its parent's
+ * frame is decoration. Reserving the height inside the bar instead fixed that and
+ * bought a band of bare canvas the height of the button, sitting between the
+ * screen's content and the pill, which is what it looked like: a grey gap.
+ *
+ * So the pill is the row again, one view, and the button is a tile in it. The tab
+ * column is 73pt tall and the tile is 68 with its slab, so it fits with room to
+ * spare and needs nothing reserved, nothing absolute, and no negative margins.
  */
 export function NavBar({ children, className }: { children: ReactNode; className?: string }) {
   const insets = useSafeAreaInsets()
 
   return (
     <View
-      className={cn('bg-canvas px-gutter pt-2', className)}
+      className={cn('bg-canvas px-gutter', className)}
       style={{ paddingBottom: insets.bottom || 12 }}
       accessibilityRole="tablist"
     >
-      <View className="flex-row items-center justify-between gap-2 rounded-card bg-surface px-4 py-3">
+      {/* The tabs size this row: each carries its own vertical padding, so the
+          pill is exactly the height of a tab column. */}
+      <View className="flex-row items-center justify-between gap-2 rounded-card bg-surface px-4">
         {children}
       </View>
     </View>
   )
 }
 
-export type NavItemProps = Omit<PressableProps, 'children' | 'style'> & {
+export type NavItemProps = Omit<TappableProps, 'children' | 'style'> & {
   label: string
   icon: IconProps
   /**
@@ -71,18 +92,34 @@ export function NavItem({ label, icon, isFocused = false, href, style, ...rest }
   const colors = useThemeColors()
 
   return (
-    <Pressable
+    // `Tappable`, so a tab answers a tap in the hand like every other control.
+    // As a plain `Pressable` it was the only tap in the app that moved the whole
+    // screen and felt like nothing.
+    <Tappable
       {...rest}
-      className="min-w-0 flex-1 items-center gap-1.5 py-1"
+      // `py-3` is the pill's interior padding, living on the tab rather than on
+      // the row: it is what gives the pill its height, and it makes the whole
+      // depth of the bar tappable instead of just the icon and its label.
+      className="min-w-0 flex-1 items-center gap-1.5 py-3"
       accessibilityRole="tab"
       accessibilityState={{ selected: isFocused }}
       accessibilityLabel={label}
     >
-      <Icon {...icon} size={26} tintColor={isFocused ? undefined : colors.faint} />
+      {/* An inactive tab is grey, and the tint goes through `style` rather than
+          through `tintColor`. `expo-image` documents both, but only the style
+          reliably reaches the view here — sizing arrives the same way and
+          demonstrably works, while the prop left these illustrations in full
+          colour when unfocused. */}
+      <Icon
+        {...icon}
+        size={26}
+        style={isFocused ? undefined : { tintColor: colors.faint }}
+        tintColor={isFocused ? undefined : colors.faint}
+      />
       <Text variant="caption" className={isFocused ? 'text-pandan-ink' : 'text-faint'}>
         {label}
       </Text>
-    </Pressable>
+    </Tappable>
   )
 }
 
@@ -93,25 +130,36 @@ export type NavActionProps = {
 }
 
 /**
- * The raised centre action.
+ * The centre action: a pandan tile in the bar, between the second tab and the
+ * third.
  *
- * The negative margin lifts it above the bar's top edge, which only shows
- * because `NavBar` sets no overflow clipping. This is the one element in the
- * system allowed to break a container edge.
+ * It sits inside the pill like everything else in the row — see `NavBar` for why
+ * it no longer breaks the top edge. Centred by the row's `items-center`, with no
+ * margin of its own to fight it.
  */
 export function NavAction({ onPress, label, className }: NavActionProps) {
+  const colors = useThemeColors()
+
   return (
     <Squish
       depth={slab.lg}
       radius={radius.tile}
-      containerClassName="-mt-[26px]"
       slabClassName="bg-pandan-slab"
       className={cn('h-[62px] w-[62px] items-center justify-center bg-pandan', className)}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <Text className="font-display text-[32px] leading-[38px] text-on-pandan">+</Text>
+      {/* The app's own plus, drawn the way `Stepper` draws it on a pandan fill —
+          and tinted to the role rather than to white, because the fill brightens
+          in dark mode and takes near-black content.
+
+          It was a `+` in Baloo 2 until now, which is the one thing a display face
+          cannot be trusted with: the glyph sits on the font's maths axis, above
+          the centre of its line box, so a tile that centred the line centred the
+          wrong thing and the cross rode high in it. An icon is a square, and a
+          square centres. */}
+      <Icon set="ui" name="plus" size={28} tintColor={colors.onPandan} />
     </Squish>
   )
 }

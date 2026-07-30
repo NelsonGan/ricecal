@@ -8,9 +8,9 @@
  */
 export { type Bar, BarChart, type BarChartProps } from './BarChart'
 export { CheckList, type CheckListProps } from './CheckList'
+export { EntryList, type EntryListProps, formatTime } from './EntryList'
 export { ItemRow, type ItemRowProps } from './ItemRow'
 export { MacroBars, type MacroBarsProps } from './MacroBars'
-export { formatTime, MealCard, type MealCardProps } from './MealCard'
 export { PlanPicker, type PlanPickerProps } from './PlanPicker'
 export { ScreenTitle, type ScreenTitleProps } from './ScreenTitle'
 export { SettingRow, type SettingRowProps, ToggleRow, type ToggleRowProps } from './SettingRow'

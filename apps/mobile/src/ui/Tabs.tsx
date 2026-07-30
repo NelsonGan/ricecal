@@ -1,6 +1,7 @@
-import { Pressable, ScrollView, View } from 'react-native'
+import { ScrollView, View } from 'react-native'
 
 import { cn } from './cn'
+import { Tappable } from './Tappable'
 import { Text } from './Text'
 
 export type TabOption<T extends string> = {
@@ -41,7 +42,7 @@ export function Tabs<T extends string>({
   const strip = options.map((option) => {
     const selected = option.value === value
     return (
-      <Pressable
+      <Tappable
         key={option.value}
         onPress={() => onChange(option.value)}
         className={cn(
@@ -59,7 +60,7 @@ export function Tabs<T extends string>({
         >
           {option.label}
         </Text>
-      </Pressable>
+      </Tappable>
     )
   })
 

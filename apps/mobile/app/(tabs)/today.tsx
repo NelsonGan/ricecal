@@ -1,18 +1,17 @@
 import { useRouter } from 'expo-router'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
 
 import {
-  MEALS,
   useDayLog,
   usePendingSnaps,
   useRemoveEntry,
   useSelectedDate,
+  useSetWater,
   useStreak,
   useTargets,
 } from '@/data'
-import { MacroBars, MealCard, ScreenTitle } from '@/features/shared'
+import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
 import { sumMacros } from '@/lib/nutrition'
 import {
   Badge,
@@ -23,12 +22,22 @@ import {
   Icon,
   Screen,
   Skeleton,
+  Tappable,
   Text,
   useToast,
+  WaterTracker,
 } from '@/ui'
 
-/** How long a just-added row stays highlighted. Matches the undo toast. */
-const HIGHLIGHT_MS = 8000
+/**
+ * How recent an entry has to be for the undo toast to be about it.
+ *
+ * The row itself is no longer marked. It used to say "Just added, tap to edit"
+ * for this long, which took the portion off the one row worth reading and put an
+ * instruction there that was true of every row on the screen. What survives is
+ * the toast, which is where an undo belongs — it is offered once, in passing, and
+ * does not change what the diary says.
+ */
+const ANNOUNCE_MS = 8000
 
 /**
  * L1 TODAY.
@@ -49,18 +58,37 @@ export default function TodayScreen() {
   const streak = useStreak()
   const removeEntry = useRemoveEntry()
   const pending = usePendingSnaps()
+  const setWater = useSetWater(selectedDate)
+  /**
+   * Whether the summary is showing the allowance rather than what is left.
+   *
+   * Not persisted. It is a glance, not a preference — and a setting that survived
+   * a relaunch would need somewhere to be changed other than by tapping the thing
+   * it changes.
+   */
+  const [showGoals, setShowGoals] = useState(false)
 
   const eaten = sumMacros(day.entries)
   const budget = targets?.kcal ?? 0
   const left = budget - eaten.kcal
   const over = left < 0
 
+  /**
+   * Eight glasses until told otherwise.
+   *
+   * Unlike the calorie budget this does not wait for onboarding: it is the same
+   * number for every body, `daily_goals` defaults the column to it, and the tracker
+   * is useful on an account that has never described itself. A ring drawn against a
+   * placeholder would be a lie; eight glasses is not a guess about this user.
+   */
+  const waterGoal = targets?.waterGlasses ?? 8
+
   // The row that was just added, if it landed in the last few seconds. Derived
   // rather than stored: with a server there is no "last added" flag to keep,
   // and the newest entry's timestamp says the same thing.
   const newest = day.entries.filter((entry) => !entry.status).at(-1)
   const justAdded =
-    newest && Date.now() - new Date(newest.loggedAt).getTime() < HIGHLIGHT_MS ? newest : undefined
+    newest && Date.now() - new Date(newest.loggedAt).getTime() < ANNOUNCE_MS ? newest : undefined
 
   // Which entry has already been announced. A ref rather than a narrower
   // dependency list: the toast must fire once per entry, and every other value
@@ -92,12 +120,6 @@ export default function TodayScreen() {
     })
   }, [justAdded, toast, t, removeEntry])
 
-  // Snack only earns a card once there is something in it. Four empty cards on
-  // a fresh day is a chore list, not a summary.
-  const meals = MEALS.filter(
-    (meal) => meal !== 'snack' || day.entries.some((entry) => entry.meal === 'snack'),
-  )
-
   return (
     <Screen>
       <ScreenTitle
@@ -120,17 +142,34 @@ export default function TodayScreen() {
           <Skeleton className="h-[132px] w-full" />
         ) : targets ? (
           <>
-            <View className="flex-row items-center gap-4">
+            {/* Tapping the summary swaps every number in it from "what is left"
+                to "what of the allowance is used". Both readings answer a real
+                question and neither fits beside the other at this size, so they
+                share the space rather than the card growing a second row. */}
+            <Tappable
+              className="flex-row items-center gap-4"
+              onPress={() => setShowGoals((open) => !open)}
+              accessibilityRole="button"
+              accessibilityLabel={
+                showGoals ? t('logging:today.showLeft') : t('logging:today.showGoals')
+              }
+            >
               <CalorieRing
                 value={eaten.kcal}
                 goal={budget}
                 size={132}
                 thickness={16}
-                centerLabel={Math.abs(left).toLocaleString()}
-                centerCaption={over ? t('logging:today.kcalOver') : t('logging:today.kcalLeft')}
+                centerLabel={(showGoals ? eaten.kcal : Math.abs(left)).toLocaleString()}
+                centerCaption={
+                  showGoals
+                    ? t('logging:today.kcalOfGoal', { goal: budget.toLocaleString() })
+                    : over
+                      ? t('logging:today.kcalOver')
+                      : t('logging:today.kcalLeft')
+                }
               />
-              <MacroBars eaten={eaten} targets={targets} />
-            </View>
+              <MacroBars eaten={eaten} targets={targets} showGoal={showGoals} />
+            </Tappable>
 
             {over ? (
               <Text variant="meta" className="pt-1">
@@ -152,6 +191,34 @@ export default function TodayScreen() {
         )}
       </Card>
 
+      {/* Water sits under the ring rather than at the foot of the screen: it is
+          logged all day, a tap at a time, and it is the one thing here that a user
+          reaches for without having eaten anything. Below the entry list it would
+          be under however many rows the day has grown.
+
+          No skeleton while the targets load. The count comes from the day, which
+          is its own query, and the goal falls back to eight — so the row is honest
+          from the first frame instead of being a grey block that becomes the same
+          eight glasses. */}
+      <Card
+        tone="water"
+        title={t('logging:water.title')}
+        action={
+          <Text variant="label" className="text-water-ink">
+            {t('logging:water.count', { filled: day.waterGlasses, goal: waterGoal })}
+          </Text>
+        }
+      >
+        <WaterTracker
+          filled={day.waterGlasses}
+          goal={waterGoal}
+          // `mutate`, not `mutateAsync`: the optimistic update in `useSetWater` is
+          // what fills the glass, and nothing here waits for the row to be written.
+          onChange={(glasses) => setWater.mutate(glasses)}
+          glassLabel={(ordinal, total) => t('logging:water.glass', { ordinal, total })}
+        />
+      </Card>
+
       {day.entries.length === 0 ? (
         <EmptyState
           title={t('logging:today.emptyTitle')}
@@ -160,28 +227,25 @@ export default function TodayScreen() {
         />
       ) : null}
 
-      {meals.map((meal) => (
-        <MealCard
-          key={meal}
-          meal={meal}
-          day={day}
-          highlightId={justAdded?.id}
-          onAdd={() => router.push({ pathname: '/log', params: { meal } })}
-          onPressEntry={(entry) =>
-            router.push({
-              pathname: '/log/food/[id]',
-              params: { id: entry.foodId, entryId: entry.id },
-            })
-          }
-          // A snap that could not be read is dropped as it is handed over:
-          // leaving it behind would double the meal once search adds the real
-          // dish, and the row has nothing in it worth keeping.
-          onFixEntry={(entry) => {
-            pending.remove(entry.id)
-            router.push({ pathname: '/log/search', params: { meal: entry.meal } })
-          }}
-        />
-      ))}
+      {/* One list, in the order the day happened. It was a card per meal, and
+          three of the four were usually empty — each still taking a heading and an
+          add button, so two entries filled a screen with furniture. */}
+      <EntryList
+        day={day}
+        onPressEntry={(entry) =>
+          router.push({
+            pathname: '/log/food/[id]',
+            params: { id: entry.foodId, entryId: entry.id },
+          })
+        }
+        // A snap that could not be read is dropped as it is handed over: leaving
+        // it behind would double the meal once search adds the real dish, and the
+        // row has nothing in it worth keeping.
+        onFixEntry={(entry) => {
+          pending.remove(entry.id)
+          router.push({ pathname: '/log/search', params: { meal: entry.meal } })
+        }}
+      />
     </Screen>
   )
 }

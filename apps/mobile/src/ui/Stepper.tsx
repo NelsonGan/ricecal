@@ -1,4 +1,5 @@
-import { View } from 'react-native'
+import { useState } from 'react'
+import { Platform, TextInput, View } from 'react-native'
 
 import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
@@ -17,6 +18,16 @@ export type StepperProps = {
   unit?: string
   /** Override how the value reads. Defaults to a fraction-aware format. */
   format?: (value: number) => string
+  /**
+   * Lets the number itself be tapped and typed into.
+   *
+   * For a quantity the steps cannot express: 0.5 covers half a plate and 1.5
+   * covers one and a half, but 0.3 of a tub of yoghurt takes six taps to reach
+   * and 0.35 cannot be reached at all. The steps stay the fast path.
+   */
+  editable?: boolean
+  /** Screen-reader name for the number when it can be typed into. */
+  editLabel?: string
   disabled?: boolean
   accessibilityLabel?: string
   /** Screen-reader names for the two buttons. Pass translated copy. */
@@ -26,6 +37,9 @@ export type StepperProps = {
 }
 
 const VULGAR: Record<string, string> = { '0.25': '¼', '0.5': '½', '0.75': '¾' }
+
+/** The same correction `Text` applies, for the one input that carries display type. */
+const androidTightening = Platform.OS === 'android' ? { includeFontPadding: false } : null
 
 /**
  * Renders 1.5 as "1½".
@@ -55,6 +69,8 @@ export function Stepper({
   max = Number.POSITIVE_INFINITY,
   unit,
   format = formatPortion,
+  editable = false,
+  editLabel,
   disabled = false,
   accessibilityLabel,
   decrementLabel = 'Decrease',
@@ -66,10 +82,49 @@ export function Stepper({
 
   const colors = useThemeColors()
 
+  /**
+   * What is in the field while it is being typed into, and `null` when it is
+   * not.
+   *
+   * The keystrokes cannot go straight to `onChange`: "1." is not a number and
+   * "0" may be below `min`, so clamping each one would fight the typing —
+   * deleting the last digit of "12" would snap the field back to the minimum
+   * before the next one could be typed. It is parsed once, on the way out.
+   */
+  const [typed, setTyped] = useState<string | null>(null)
+
+  const clamp = (next: number) => Number(Math.min(max, Math.max(min, next)).toFixed(4))
+
   // Re-round after arithmetic: 0.1 + 0.2 is famously not 0.3, and the value
   // shows up on screen.
-  const shift = (delta: number) =>
-    onChange(Number(Math.min(max, Math.max(min, value + delta)).toFixed(4)))
+  const shift = (delta: number) => onChange(clamp(value + delta))
+
+  /**
+   * Focus empties the field, and the old value becomes its placeholder.
+   *
+   * Not "seed it with the current number and select it all", which is the obvious
+   * thing and is not deterministic: the text has to change on focus either way —
+   * "1½" is not editable digits — and where the caret and the selection end up
+   * after a programmatic change on the same frame as the focus is the platform's
+   * business. Append on one, replace on the other, and no way to tell from here.
+   *
+   * Empty means whatever is typed IS the value, on every platform. Typing over
+   * the whole number is also what someone reaching for this wants: the ± buttons
+   * are how you nudge, and this is how you say 0.35.
+   */
+  const startEditing = () => setTyped('')
+
+  const commit = () => {
+    // A comma is the decimal separator on a good part of the world's keyboards,
+    // and `Number(',5')` is NaN.
+    const raw = (typed ?? '').replace(',', '.').trim()
+    const parsed = Number(raw)
+    setTyped(null)
+    // An empty or unparseable field keeps the value it had rather than falling to
+    // `min` — `Number('')` is 0, so the empty case has to be caught by hand.
+    if (!raw || !Number.isFinite(parsed)) return
+    onChange(clamp(parsed))
+  }
 
   return (
     <View
@@ -91,9 +146,55 @@ export function Stepper({
       </IconButton>
 
       <View className="items-center gap-0.5">
-        <Text className="font-display text-[34px] leading-[41px] text-heading">
-          {format(value)}
-        </Text>
+        {/* A field only where a caller asked for one. Every other stepper in the
+            app keeps the `Text` it had: a `TextInput` with `editable={false}` is
+            not a drop-in for a label — it announces as a text field, it carries
+            the platform's own input metrics, and on Android it draws an underline
+            of its own.
+
+            Where it IS a field it is a field in both states rather than a `Text`
+            that swaps for one on tap. The swap put a different view in the middle
+            of the row depending on focus, and the two do not measure the same, so
+            the whole control shifted by a couple of points as the keyboard came
+            up. The dashed rule is what says it can be typed into, and it turns
+            solid pandan while it is; a hint line would say it louder and cost a
+            row of height in a control that is already three deep. */}
+        {editable ? (
+          <TextInput
+            value={typed ?? format(value)}
+            editable={!disabled}
+            onFocus={startEditing}
+            onChangeText={setTyped}
+            // Committed on blur as well as on submit: the decimal pad has no
+            // return key on iOS, so tapping away is the ordinary way out of it.
+            onBlur={commit}
+            onSubmitEditing={commit}
+            keyboardType="decimal-pad"
+            returnKeyType="done"
+            // What the field held before it was emptied, so the number does not
+            // vanish out from under the person about to retype it.
+            placeholder={typed === '' ? format(value) : undefined}
+            placeholderTextColor={colors.faint}
+            // Android draws a Material underline under a bare TextInput, which
+            // would sit under the rule this control draws for itself.
+            underlineColorAndroid="transparent"
+            className={cn(
+              'min-w-[92px] border-b-2 px-2 text-center font-display text-[34px] text-heading',
+              typed === null ? 'border-line border-dashed' : 'border-pandan',
+            )}
+            // Android reserves room for ascenders this glyph does not use, which
+            // pushes a big Baloo numeral off centre — the same correction `Text`
+            // makes for every display-sized number in the app.
+            style={androidTightening}
+            cursorColor={colors.pandan}
+            selectionColor={colors.pandan}
+            accessibilityLabel={editLabel}
+          />
+        ) : (
+          <Text className="font-display text-[34px] leading-[41px] text-heading">
+            {format(value)}
+          </Text>
+        )}
         {unit ? <Text variant="caption">{unit}</Text> : null}
       </View>
 

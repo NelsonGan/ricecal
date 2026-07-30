@@ -134,7 +134,10 @@ export function DataSection() {
 
       <Card title="Profile">
         <View className="flex-row items-center gap-md">
+          {/* Both fallbacks, side by side: the stock figure the app's own profile
+              shows, and the initial a named person gets. */}
           <Avatar name="Aisyah R." size="lg" />
+          <Avatar name="Aisyah R." fallback="initial" size="lg" />
           <View className="flex-1 gap-0.5">
             <Text variant="subtitle">Aisyah R.</Text>
             <Text variant="meta">Member since March, 12 day streak</Text>

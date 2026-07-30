@@ -82,6 +82,14 @@ create temp table stage_servings (
 \copy stage_foods    from '/tmp/xfer_foods.csv'    with (format csv, header true)
 \copy stage_servings from '/tmp/xfer_servings.csv' with (format csv, header true)
 
+-- An icon column that arrived as `""` is not an icon. COPY reads an unquoted
+-- empty CSV field as NULL but a quoted one as the empty string, which no exporter
+-- controls reliably — and `('' , '')` passes both-or-neither while writing a
+-- lookup that resolves to no drawing at all: a blank square on the row.
+update stage_foods
+   set icon_set  = nullif(btrim(icon_set), ''),
+       icon_name = nullif(btrim(icon_name), '');
+
 
 -- ---------------------------------------------------------------------------
 -- Validate before writing
@@ -91,9 +99,18 @@ do $$
 declare n bigint;
 begin
   select count(*) into n from stage_foods
-   where id is null or slug is null or name is null or icon_name is null
+   where id is null or slug is null or name is null
       or place is null or kcal is null;
   if n > 0 then raise exception '% rows missing a required value', n; end if;
+
+  -- An icon is NOT a required value, and demanding one here is what put the same
+  -- drawing on a thousand different dishes: the columns went nullable when
+  -- `foods_icon_complete` replaced `icon_name not null`, but this check did not,
+  -- so an exporter with nothing to name had to name something anyway. Both
+  -- together or neither is the only rule.
+  select count(*) into n from stage_foods
+   where (icon_set is null) <> (icon_name is null);
+  if n > 0 then raise exception '% rows with half an icon', n; end if;
 
   select count(*) into n from stage_foods
    where slug !~ '^[a-z0-9]+(-[a-z0-9]+)*$';

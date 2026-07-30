@@ -147,5 +147,11 @@ function positionToValue(x: number, width: number, min: number, max: number, ste
   if (width <= 0) return min
   const raw = min + (Math.min(width, Math.max(0, x)) / width) * (max - min)
   if (step <= 0) return raw
-  return Math.min(max, Math.max(min, Math.round(raw / step) * step))
+  const snapped = Math.round(raw / step) * step
+  // Snapping in floating point is where "75.60000000000001" comes from: 756 * 0.1
+  // is not 75.6. Six decimals is finer than any step this app uses — 1, 0.5, 0.1 —
+  // so this only removes the error the multiplication introduced, and it leaves
+  // the value safe to print, store and compare.
+  const clean = Math.round(snapped * 1e6) / 1e6
+  return Math.min(max, Math.max(min, clean))
 }

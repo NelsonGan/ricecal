@@ -71,20 +71,34 @@ export function StatTile({
 
           One line, shrinking if it has to. Three tiles across a phone leaves
           about 100pt each, and "1,530" broken after the comma reads as two
-          numbers — worse than the same figure a point or two smaller. The floor
-          keeps the shrink small enough that a row of tiles still looks like a
-          row. */}
+          numbers — worse than the same figure a point or two smaller.
+
+          NO `leading-` here, and that is load-bearing. `adjustsFontSizeToFit`
+          alongside an explicit lineHeight is a long-standing React Native bug:
+          it shrinks the text even when there is room, worst when the layout hands
+          it a fractional height — which is exactly what `flex-1` across a row of
+          three on a 393pt screen produces. The symptom was the macro grams on the
+          onboarding target screen rendering too small to read. Line height
+          derives from the font size instead, which is what the shrink needs in
+          order to compute anything sensible.
+
+          The floor is high enough that even a misbehaving shrink stays legible. */}
       <Text
         numberOfLines={1}
         adjustsFontSizeToFit
-        minimumFontScale={0.7}
-        className={cn('font-display text-[24px] leading-[30px]', palette.label)}
+        minimumFontScale={0.8}
+        className={cn('font-display text-[24px]', palette.label)}
       >
         {value}
       </Text>
       {/* Tighter than `overline`: three of these sit side by side on a 393pt
-          screen, and the wider tracking wraps "PROTEIN" onto two lines. */}
-      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} variant="overlineSm">
+          screen, and the wider tracking wraps "PROTEIN" onto two lines.
+
+          No auto-shrink, for the reason above — `overlineSm` carries its own
+          lineHeight and a variant is not the place to unpick it. These labels are
+          a fixed set of short words ("CARBS", "PROTEIN", "GOAL DATE") that fit at
+          12px, and `numberOfLines` keeps the longest of them on one line. */}
+      <Text numberOfLines={1} variant="overlineSm">
         {label}
       </Text>
       {caption ? <Text variant="meta">{caption}</Text> : null}

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
+  bodyFrom,
   type Goal,
   useCurrentWeight,
   useProfile,
@@ -11,7 +12,7 @@ import {
   useUpdateProfile,
 } from '@/data'
 import { useBack } from '@/lib/navigation'
-import { ageFrom, computeTargets } from '@/lib/nutrition'
+import { computeTargets, macroSplit } from '@/lib/nutrition'
 import {
   AppBar,
   Button,
@@ -51,21 +52,10 @@ export default function GoalsScreen() {
 
   // What the same formula the database runs would suggest for this body and
   // this goal — shown beside the slider so a hand-set number has a reference.
-  const recommended = profile
-    ? computeTargets({
-        sex: profile.sex ?? 'female',
-        weightKg: weight,
-        heightCm: Number(profile.height_cm ?? 0),
-        age: ageFrom(profile.birth_date),
-        activity:
-          profile.activity_level === 'on_feet'
-            ? 'onFeet'
-            : profile.activity_level === 'very_active'
-              ? 'veryActive'
-              : profile.activity_level,
-        goal: currentGoal,
-      }).kcal
-    : 0
+  // Against the goal being edited rather than the stored one, so the reference
+  // moves as the goal does.
+  const body = bodyFrom(profile, weight, currentGoal)
+  const recommended = body ? computeTargets(body).kcal : 0
 
   const macros = [
     { key: 'carbs', label: t('common:macro.carbs'), grams: targets?.carbs ?? 0, dot: 'bg-kaya' },
@@ -86,11 +76,10 @@ export default function GoalsScreen() {
     // change would otherwise recompute over the top of it.
     await setTargets.mutateAsync({
       kcal: currentKcal,
-      // The macro split follows the calorie total, in the same proportions the
-      // database would have used.
-      carbs: Math.round((currentKcal * 0.47) / 4),
-      protein: Math.round((currentKcal * 0.22) / 4),
-      fat: Math.round((currentKcal * 0.31) / 9),
+      // Through the same splitter the automatic budget uses, so a hand-set
+      // calorie total still gets protein from body weight rather than from a
+      // share of energy.
+      ...macroSplit(currentKcal, weight),
       waterGlasses: currentWater,
       isCustom: true,
     })

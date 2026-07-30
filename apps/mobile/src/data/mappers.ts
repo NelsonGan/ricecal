@@ -15,15 +15,37 @@ import { fromDbSource } from './types'
  */
 
 /**
- * The illustration for a row that has one.
+ * The illustration for a row that has one, and `undefined` for a row that does
+ * not.
  *
- * The cast is the seam between a text column and a closed union. A dish
- * inserted with a name no icon set has renders blank rather than crashing,
- * which is why the fallback exists at all.
+ * Undefined rather than a stand-in plate, which is what this used to return. The
+ * catalogue is far too large to illustrate — hundreds of megabytes of imported
+ * rows against a few dozen drawings — so most foods genuinely have no icon, and
+ * handing every one of them the same empty plate dressed that fact up as an
+ * answer. A row with nothing to show should show nothing, and the curated local
+ * dishes that DO have a drawing keep it.
+ *
+ * The cast is the seam between a text column and a closed union. A dish inserted
+ * with a name no icon set has renders blank rather than crashing, which is the
+ * other reason this is not just a spread.
  */
-export function toIcon(set: string | null, name: string | null): IconRef {
-  if (!set || !name) return { set: 'food', name: 'empty-plate' } as IconRef
+export function toIcon(set: string | null, name: string | null): IconRef | undefined {
+  if (!set || !name) return undefined
   return { set, name } as IconRef
+}
+
+/**
+ * A nullable numeric column as a number, or nothing.
+ *
+ * The rest of this file coalesces to zero, and these three columns are the
+ * exception: `fibre_g`, `sugar_g` and `sodium_mg` are null for most of the
+ * imported catalogue, and null there means nobody recorded it. A zero would put
+ * "0 g of sugar" on a slice of cake.
+ */
+function optionalNumber(value: number | string | null): number | undefined {
+  if (value === null || value === undefined) return undefined
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : undefined
 }
 
 export function toServings(json: FoodDetailsRow['servings']): Serving[] {
@@ -55,6 +77,11 @@ export function toFood(row: FoodDetailsRow, stats?: FoodStats | undefined): Food
       carbs: Number(row.carbs_g ?? 0),
       protein: Number(row.protein_g ?? 0),
       fat: Number(row.fat_g ?? 0),
+    },
+    extras: {
+      fibre: optionalNumber(row.fibre_g),
+      sugar: optionalNumber(row.sugar_g),
+      sodium: optionalNumber(row.sodium_mg),
     },
     verified: row.verified ?? false,
     timesLogged: stats?.timesLogged,

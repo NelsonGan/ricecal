@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Pressable, type PressableProps, View } from 'react-native'
+import { View } from 'react-native'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -9,6 +9,7 @@ import Animated, {
 
 import { motion } from '@/theme/tokens'
 import { cn } from './cn'
+import { Tappable, type TappableProps } from './Tappable'
 
 const TRACK_WIDTH = 76
 const TRACK_HEIGHT = 42
@@ -16,7 +17,7 @@ const KNOB = 34
 const PADDING = 4
 const TRAVEL = TRACK_WIDTH - KNOB - PADDING * 2
 
-export type SwitchProps = Omit<PressableProps, 'onPress' | 'children'> & {
+export type SwitchProps = Omit<TappableProps, 'onPress' | 'children'> & {
   value: boolean
   onValueChange: (value: boolean) => void
   /** Read out by a screen reader; the switch itself has no visible text. */
@@ -55,7 +56,7 @@ export function Switch({
   const knobStyle = useAnimatedStyle(() => ({ transform: [{ translateX: offset.value }] }))
 
   return (
-    <Pressable
+    <Tappable
       onPress={() => onValueChange(!value)}
       disabled={disabled}
       hitSlop={8}
@@ -74,6 +75,6 @@ export function Switch({
           style={[{ width: KNOB, height: KNOB }, knobStyle]}
         />
       </View>
-    </Pressable>
+    </Tappable>
   )
 }

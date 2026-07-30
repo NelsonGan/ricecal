@@ -1,12 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type { TablesUpdate } from '@/lib/database.types'
+import type { BodyInput } from '@/lib/nutrition'
+import { ageFrom } from '@/lib/nutrition'
 import { supabase } from '@/lib/supabase'
-import { unwrapMaybe, unwrapOne } from './client'
+import { today, unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
 import { useSession, useUserId } from './session'
 import type { ActivityLevel, Goal, Profile, Sex } from './types'
-import { toDbActivity } from './types'
+import { fromDbActivity, toDbActivity } from './types'
 
 /**
  * The signed-in user's profile row.
@@ -81,6 +83,31 @@ export function useUpdateProfile() {
       unwrapOne(
         await supabase.from('profiles').update(toRow(patch)).eq('id', userId).select('*').single(),
       ),
+    /**
+     * The patch lands in the cache before the request leaves.
+     *
+     * Two things need it. The onboarding steps read their own selected state
+     * back out of the profile, so without this a tap on a choice card shows
+     * nothing at all until the round trip finishes. And a patch computed from
+     * the current value — the food style chips, which toggle against
+     * `food_styles` — reads the previous answer from exactly this cache: two
+     * quick taps that both start from the server's copy means the second
+     * silently drops the first.
+     */
+    onMutate: async (patch: ProfilePatch) => {
+      const key = keys.profile(userId)
+      // A fetch already in flight would resolve after this and put the old row
+      // back, which looks like the tap undoing itself.
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<Profile>(key)
+      if (previous) queryClient.setQueryData<Profile>(key, { ...previous, ...toRow(patch) })
+      return { previous }
+    },
+    onError: (_error, _patch, context) => {
+      // Back to what the server last said, so a screen never goes on claiming
+      // an answer that was never stored.
+      if (context?.previous) queryClient.setQueryData(keys.profile(userId), context.previous)
+    },
     onSuccess: (profile: Profile) => {
       queryClient.setQueryData(keys.profile(userId), profile)
       queryClient.invalidateQueries({ queryKey: keys.goals(userId) })
@@ -89,26 +116,90 @@ export function useUpdateProfile() {
 }
 
 /**
- * Marks onboarding done.
+ * A stored profile as the nutrition maths wants it.
  *
- * A timestamp rather than a boolean, and the router reads it: "when" answers
- * questions "whether" cannot, and it is the last write of the flow so a user
- * who quits halfway comes back to where they stopped.
+ * Three screens need this and each was building it inline, complete with its own
+ * copy of the activity spelling ternary. Null when the profile is not complete
+ * enough to compute anything: a budget derived from a missing height is a number
+ * with no meaning, and `null` makes the caller say what to show instead.
  */
-export function useCompleteOnboarding() {
+export function bodyFrom(
+  profile: Profile | null | undefined,
+  weightKg: number | undefined,
+  goal?: Goal,
+): BodyInput | null {
+  if (!profile || !weightKg || !profile.sex || !profile.height_cm || !profile.birth_date)
+    return null
+
+  return {
+    sex: profile.sex,
+    weightKg,
+    heightCm: Number(profile.height_cm),
+    age: ageFrom(profile.birth_date),
+    activity: profile.activity_level ? fromDbActivity(profile.activity_level) : 'sedentary',
+    goal: goal ?? profile.weight_goal ?? 'track',
+  }
+}
+
+/** Everything onboarding collected, in the client's own spelling. */
+export type OnboardingAnswers = ProfilePatch & {
+  /** Becomes the first weigh-in. There is no `weight_kg` on `profiles`. */
+  weightKg: number
+}
+
+/**
+ * Writes the whole of onboarding, and marks it done.
+ *
+ * The questions come before the account, so none of them could be saved as they
+ * were answered — this is the one write the flow makes, and it runs the moment a
+ * session exists.
+ *
+ * Ordered, not parallel, and the order is the point:
+ *
+ * 1. **The profile.** `compute_targets()` reads sex, birth date, height, activity
+ *    and goal, so all of them have to be in place before anything asks it to run.
+ * 2. **The weigh-in.** This is what asks. The trigger recomputes `daily_goals`
+ *    from the newest reading, so a budget exists from here on.
+ * 3. **`onboarded_at`.** Last, because it is what the router reads. Setting it
+ *    before the other two means a failure strands the user in the app with no
+ *    budget and no way back to the questions that would produce one.
+ */
+export function useFinishOnboarding() {
   const userId = useUserId()
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async () =>
+    mutationFn: async ({ weightKg, ...patch }: OnboardingAnswers) => {
       unwrapOne(
+        await supabase.from('profiles').update(toRow(patch)).eq('id', userId).select('id').single(),
+      )
+
+      unwrapOne(
+        await supabase
+          .from('weight_logs')
+          .upsert(
+            { user_id: userId, measured_on: today(), weight_kg: weightKg },
+            { onConflict: 'user_id,measured_on' },
+          )
+          .select('measured_on')
+          .single(),
+      )
+
+      return unwrapOne(
         await supabase
           .from('profiles')
           .update({ onboarded_at: new Date().toISOString() })
           .eq('id', userId)
           .select('*')
           .single(),
-      ),
-    onSuccess: (profile: Profile) => queryClient.setQueryData(keys.profile(userId), profile),
+      )
+    },
+    onSuccess: (profile: Profile) => {
+      queryClient.setQueryData(keys.profile(userId), profile)
+      // Both were computed server-side during the writes above, so neither
+      // cache has ever seen them.
+      queryClient.invalidateQueries({ queryKey: keys.goals(userId) })
+      queryClient.invalidateQueries({ queryKey: keys.weighIns(userId) })
+    },
   })
 }

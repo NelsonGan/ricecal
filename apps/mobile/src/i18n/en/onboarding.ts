@@ -14,7 +14,13 @@ export const onboarding = {
   goal: {
     title: 'What are you here for?',
     subtitle: 'You can change this any time.',
-    lose: { title: 'Lose weight', subtitle: 'Gentle deficit, about 0.5 kg a week' },
+    /**
+     * No longer promises a rate. The deficit is capped as a share of what the
+     * body burns, so 0.5 kg a week is what a larger body gets and a smaller one
+     * moves slower on purpose — the date on the target screen is the honest
+     * answer, and it is worked out from that body.
+     */
+    lose: { title: 'Lose weight', subtitle: 'A gentle, steady deficit' },
     maintain: { title: 'Maintain', subtitle: 'Stay where you are' },
     gain: { title: 'Gain weight', subtitle: 'Slow, steady increase' },
     track: { title: 'Just tracking', subtitle: 'No goal, only awareness' },
@@ -32,8 +38,6 @@ export const onboarding = {
     ageValue_one: '{{count}} year',
     ageValue_other: '{{count}} years',
     targetWeight: 'TARGET WEIGHT',
-    decrease: 'Lower',
-    increase: 'Raise',
   },
 
   activity: {
@@ -60,7 +64,6 @@ export const onboarding = {
       lessSugar: 'Less sugar',
       nasiCampur: 'Nasi campur',
     },
-    mealTimes: 'USUAL MEAL TIMES',
   },
 
   source: {
@@ -86,9 +89,18 @@ export const onboarding = {
     explore: 'Explore first',
   },
 
+  saving: {
+    title: 'Saving your answers…',
+    offlineTitle: 'Waiting for a connection',
+    offlineBody:
+      'Your answers are safe on this phone. We will save them the moment you are online.',
+    failedTitle: 'We could not save your answers',
+    failedBody: 'Nothing is lost. Check your connection and try again.',
+  },
+
   account: {
     title: 'Save your progress',
-    subtitle: 'An account keeps your log safe if you change phone.',
+    subtitle: 'Your answers are ready. An account keeps them safe if you change phone.',
     signInTitle: 'Welcome back',
     signInSubtitle: 'Sign in and your diary picks up where it left off.',
     apple: 'Continue with Apple',
@@ -96,24 +108,12 @@ export const onboarding = {
     or: 'OR',
     email: 'EMAIL',
     emailPlaceholder: 'you@email.com',
-    password: 'PASSWORD',
-    passwordPlaceholder: 'At least 8 characters',
-    confirmPassword: 'CONFIRM PASSWORD',
-    confirmPasswordPlaceholder: 'Type it again',
-    terms: 'I agree to the terms and privacy policy.',
-    submit: 'Create account',
-    signInCta: 'Sign in',
-    needAccount: 'I need an account',
-    aboutApp: 'What is RiceCal?',
-    /** Shown when the project requires a confirmation click before signing in. */
-    checkEmail: 'Check {{email}} for a confirmation link, then sign in.',
+    sendLink: 'Email me a link',
+    /** There is no password to type, so the screen has to say what will happen. */
+    linkExplainer: 'No password to remember. We will send a link that signs you in.',
+    linkSent: 'Link sent to {{email}}. Open it on this phone to carry on.',
     errors: {
       email: 'That does not look like an email address.',
-      password: 'Use at least 8 characters.',
-      passwordEmpty: 'Enter your password.',
-      confirmPasswordEmpty: 'Type your password again.',
-      confirmPasswordMismatch: 'Those two passwords do not match.',
-      terms: 'Please accept the terms to carry on.',
     },
   },
 
@@ -138,10 +138,8 @@ export const onboarding = {
   },
 
   viewOnly: {
-    banner: 'Preview mode, sample data',
-    sampleDay: 'SAMPLE DAY',
-    explainer: 'This is example data so you can see how a full day looks.',
-    sampleMeal: 'Breakfast, sample',
+    banner: 'Preview mode, logging locked',
+    explainer: 'This is your day. Start your free trial to add to it.',
     lockedTitle: 'Logging is locked',
     lockedBody: 'Start your free trial to log your own meals.',
     unlock: 'Start free trial',

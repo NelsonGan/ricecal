@@ -41,8 +41,15 @@ create table public.foods (
   name           text not null check (char_length(trim(name)) between 1 and 120),
   brand          text,
 
-  icon_set       public.icon_set not null default 'dishes',
-  icon_name      text not null,
+  -- Nullable, and both together or neither: an icon is a curated drawing and
+  -- most foods do not have one. The catalogue runs to hundreds of megabytes of
+  -- imported rows against a few dozen illustrations, so `not null` here forced
+  -- every import to name a drawing it did not have — and what the app then
+  -- showed was one stand-in plate beside a thousand different dishes, which
+  -- looks like data and is not. A row with no icon renders none.
+  icon_set       public.icon_set,
+  icon_name      text,
+  constraint foods_icon_complete check ((icon_set is null) = (icon_name is null)),
 
   place          public.food_place not null default 'hawker',
 

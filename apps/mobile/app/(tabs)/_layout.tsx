@@ -1,20 +1,23 @@
 import { Redirect, useRouter } from 'expo-router'
 import { TabList, TabSlot, Tabs, TabTrigger } from 'expo-router/ui'
 import { useTranslation } from 'react-i18next'
+import { View } from 'react-native'
 
 import { useSession } from '@/data'
 import { useReminderSync } from '@/features/settings'
 import { NavAction, NavBar, NavItem } from '@/ui'
 
 /**
- * The four tabs and the raised centre action.
+ * Three tabs, a held-open gap, and the raised centre action.
  *
  * Built on the headless `expo-router/ui` tabs rather than a styled navigator,
  * because the FAB is not a tab: it opens a modal and must sit between the
- * second and third triggers without being one itself.
+ * second and third slots without being one itself.
  *
  * `TabList asChild` unwraps exactly one layer to find its triggers, which is
- * why `NavBar` takes them as direct children.
+ * why `NavBar` takes them as direct children — and why a non-trigger among them,
+ * the action or the spacer, is fine: it looks for triggers rather than insisting
+ * every child is one.
  */
 export default function TabsLayout() {
   const { session, loading } = useSession()
@@ -54,9 +57,13 @@ function SignedInTabs() {
           <TabTrigger name="today" href="/today" asChild>
             <NavItem label={t('nav.today')} icon={{ set: 'ui', name: 'home' }} />
           </TabTrigger>
-          <TabTrigger name="diary" href="/diary" asChild>
-            <NavItem label={t('nav.diary')} icon={{ set: 'ui', name: 'diary' }} />
-          </TabTrigger>
+
+          {/* The diary's slot, held open and empty.
+              It is a spacer rather than nothing at all because the raised action is
+              centred by having the same number of tabs either side of it; with three
+              tabs it sits a sixth of the bar off to one side. Whatever goes here
+              next inherits the space. */}
+          <View className="min-w-0 flex-1" />
 
           <NavAction onPress={() => router.push('/log')} label={t('nav.log')} />
 

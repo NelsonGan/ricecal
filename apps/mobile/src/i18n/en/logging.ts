@@ -3,12 +3,21 @@ export const logging = {
     title: 'Today',
     kcalLeft: 'KCAL LEFT',
     kcalOver: 'KCAL OVER',
+    /**
+     * The same ring, tapped: eaten so far against the day's allowance. The big
+     * number above it is what has been eaten, so this is the second half of a
+     * fraction — a slash rather than the word "of", matching the macro bars.
+     */
+    kcalOfGoal: '/{{goal}} KCAL',
+    showGoals: 'Show the day’s allowance',
+    showLeft: 'Show what is left',
     /** Shown when the day is over budget. Never scold. */
     overNote: 'A bit over today, tomorrow is a new count.',
-    mealHeading: '{{meal}} · {{kcal}} KCAL',
-    mealHeadingEmpty: '{{meal}}',
-    addMeal: 'Add {{meal}}',
-    justAdded: 'Just added, tap to edit',
+    /**
+     * Everything logged today, in one list. It was a heading per meal, and the
+     * meals are not headings any more — see `EntryList` for why.
+     */
+    logHeading: 'EATEN · {{kcal}} KCAL',
     /** A snapped plate whose dish is still being worked out. */
     analysing: 'Reading your plate',
     analysingHint: 'Counting once it knows what this is',
@@ -26,17 +35,18 @@ export const logging = {
     title: 'Add to {{meal}}',
     remaining: '{{count}} left',
     snap: 'Snap',
-    say: 'Say',
     search: 'Search',
-    usual: 'USUAL AT THIS TIME',
+    /**
+     * The last few dishes logged at this meal, newest first. No empty-state copy
+     * for this or for the repeat button: each block is simply absent when it has
+     * nothing in it, rather than saying so.
+     */
+    recent: 'LAST LOGGED',
     repeatYesterday: 'Repeat yesterday',
-    nothingYesterday: 'Nothing logged yesterday',
   },
 
   camera: {
     title: 'Snap your plate',
-    detected: 'Plate detected, hold steady',
-    aiming: 'Point at your plate',
     analysing: 'Working out what is on the plate',
     permissionTitle: 'Camera access needed',
     permissionBody: 'RiceCal uses the camera to read your plate. Nothing leaves your phone.',
@@ -75,11 +85,31 @@ export const logging = {
     },
     emptyTitle: 'No dish by that name',
     emptyBody: 'Try a shorter word, or fewer of them.',
+    /**
+     * A search that could not run is not a search that found nothing, so these
+     * two do not borrow the copy above.
+     */
+    offlineTitle: 'No connection',
+    offlineBody: 'The dish list lives on the server. This will run as soon as you are back online.',
+    errorTitle: 'Could not search',
+    errorBody: 'Something went wrong looking that up. Try again in a moment.',
   },
 
   detail: {
     servings: 'Servings',
+    /** The number in the stepper doubles as a field for an exact amount. */
+    typeServings: 'Type the exact amount',
     total: 'KCAL TOTAL',
+    /** The collapsed row that opens fibre, sugar and salt. */
+    moreNutrients: 'More nutrients',
+    fibre: 'Fibre',
+    sugar: 'Sugar',
+    sodium: 'Salt (sodium)',
+    milligrams: '{{value}}mg',
+    /** Under the list, when at least one number is known. */
+    nutrientsNote: 'For the portion above. A dash means the dish has no figure recorded.',
+    /** And when none of them is. */
+    nutrientsUnknown: 'No figures recorded for this dish yet. Its calories and macros are.',
     fixTitle: 'Fix it by typing',
     fixPlaceholder: 'no sambal, and it was half a plate',
     fixSend: 'Apply correction',
@@ -100,17 +130,62 @@ export const logging = {
     addToDiary: 'Add to diary',
     decreaseServing: 'One less',
     increaseServing: 'One more',
+    /** The hero tile doubles as the way in to the icon picker when editing. */
+    choosePicture: 'Choose a picture for this entry',
+    /** Inside the empty tile. The only thing in it — see the comment there. */
+    addPicture: 'Tap to add a picture',
+    /** Covers no camera, a refused permission and a failed upload alike. */
+    photoFailed: 'Could not save that photo',
+    replacePhoto: 'Replace the photo with a picture',
+    /**
+     * A row holds a photo or a drawing, never both, so picking one discards the
+     * other — and the photo is of the actual plate, which no drawing replaces.
+     */
+    replacePhotoTitle: 'Replace your photo?',
+    replacePhotoBody:
+      'This entry keeps a photo or a picture, not both. Your photo of the real plate goes for good.',
+    replacePhotoConfirm: 'Pick a picture',
   },
 
-  diary: {
-    title: 'Diary',
-    eaten: 'EATEN',
-    left: 'LEFT',
-    over: 'OVER',
-    water: 'WATER · {{done}} OF {{total}} GLASSES',
-    glassOf: 'Glass {{ordinal}} of {{total}}',
-    addGlass: 'Add a glass of water',
-    removeGlass: 'Remove a glass of water',
-    emptyDay: 'Nothing logged on this day.',
+  /**
+   * Picking an illustration for one logged item.
+   *
+   * Needed because the catalogue cannot be illustrated: a few hundred drawings
+   * against hundreds of megabytes of imported foods, so most rows have none.
+   */
+  icon: {
+    title: 'Pick a picture',
+    /**
+     * The two halves of the sheet, as a pair of tiles at the top — the same shape
+     * the quick selector uses. There is no "or choose a picture" heading between
+     * them any more: with the two visibly exclusive, nothing has to say so.
+     */
+    searchTab: 'Search',
+    cameraTab: 'Camera',
+    searchLabel: 'Search pictures',
+    searchPlaceholder: 'nasi lemak, teh tarik, fish',
+    noMatch: 'Nothing matches “{{query}}”.',
   },
+
+  /**
+   * The glasses on Today. Water came back when the diary that used to carry it
+   * went — there was nowhere left to record a glass, and `useSetWater` had been
+   * writing `daily_logs` for a screen nobody could reach.
+   */
+  water: {
+    title: 'Water',
+    /**
+     * Filled against the goal. A slash rather than the word "of", the same way the
+     * ring and the macro bars write a fraction.
+     */
+    count: '{{filled}} / {{goal}}',
+    /**
+     * One glass, to a screen reader. The row is otherwise a run of identical boxes
+     * with nothing to tell a user which one they are on.
+     */
+    glass: 'Glass {{ordinal}} of {{total}}',
+  },
+
+  // No `diary` block. The diary screen and its calendar are gone, and this file's
+  // rule is that a screen can be deleted without leaving orphans behind in here.
 } as const

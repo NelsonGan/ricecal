@@ -16,7 +16,13 @@
  *    `supabase` directly.
  */
 export { dateKey, today } from './client'
-export { entriesForMeal, useDay, useDayLog, useNutritionRange, useSetWater, useStreak } from './day'
+export {
+  useDay,
+  useDayLog,
+  useNutritionRange,
+  useSetWater,
+  useStreak,
+} from './day'
 export {
   type EntryPatch,
   type LogInput,
@@ -24,12 +30,7 @@ export {
   useRemoveEntry,
   useUpdateEntry,
 } from './entries'
-export {
-  useFood,
-  useFoodSearch,
-  useTopFoods,
-  useUsualFoods,
-} from './foods'
+export { useFood, useFoodSearch, useRecentFoods } from './foods'
 export { type GoalsInput, useSetTargets, useTargets } from './goals'
 export { keys } from './keys'
 export { toEntry, toFood, toIcon } from './mappers'
@@ -40,11 +41,18 @@ export {
   usePendingSnaps,
 } from './pending-snaps'
 export { removeMealPhoto, uploadMealPhoto, useMealPhotoUrl } from './photos'
-export { type ProfilePatch, useCompleteOnboarding, useProfile, useUpdateProfile } from './profile'
+export {
+  bodyFrom,
+  type OnboardingAnswers,
+  type ProfilePatch,
+  useFinishOnboarding,
+  useProfile,
+  useUpdateProfile,
+} from './profile'
 export { SelectedDateProvider, useSelectedDate } from './selected-date'
 export { SessionProvider, useSession, useUserId } from './session'
 export { useMealTimes, useSettings, useUpdateMealTime, useUpdateSettings } from './settings'
 export { useSnapFood } from './snap'
 export { useSubscription } from './subscription'
 export * from './types'
-export { useCurrentWeight, useLogWeight, useWeighIns } from './weight'
+export { useCurrentWeight, useDeleteWeighIn, useLogWeight, useWeighIns } from './weight'

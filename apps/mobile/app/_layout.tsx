@@ -9,11 +9,13 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { useFonts } from 'expo-font'
 import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
-import { useEffect } from 'react'
+import { type ReactNode, useEffect } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
-import { PendingSnapProvider, SelectedDateProvider, SessionProvider } from '@/data'
+import { PendingSnapProvider, SelectedDateProvider, SessionProvider, useSession } from '@/data'
+import { LoginLinkHandler } from '@/features/auth'
+import { OnboardingDraftProvider } from '@/features/onboarding'
 import { initOnlineManager } from '@/lib/online'
 import { persistOptions, queryClient } from '@/lib/query'
 import { initServices } from '@/lib/startup'
@@ -61,14 +63,23 @@ export default Sentry.wrap(function RootLayout() {
                   known yet. Both are the client's own state: nothing to fetch,
                   nothing to invalidate. */}
               <SelectedDateProvider>
-                <PendingSnapProvider>
-                  {/* Outside the navigator so a toast survives navigation — a
-                      "saved" confirmation usually fires as the screen that
-                      triggered it pops. */}
-                  <ToastProvider offset={NAV_BAR_HEIGHT}>
-                    <RootStack />
-                  </ToastProvider>
-                </PendingSnapProvider>
+                {/* Above the navigator because the index route reads it to
+                    decide where a launch belongs, and the questions are answered
+                    before there is an account to write them to. Backed by MMKV,
+                    so it survives the app being killed mid-flow. */}
+                <OnboardingDraftScope>
+                  <PendingSnapProvider>
+                    {/* Outside the navigator so a toast survives navigation — a
+                        "saved" confirmation usually fires as the screen that
+                        triggered it pops. */}
+                    <ToastProvider offset={NAV_BAR_HEIGHT}>
+                      {/* Under the toast because its one job on failure is to
+                          say the link had expired. Renders nothing. */}
+                      <LoginLinkHandler />
+                      <RootStack />
+                    </ToastProvider>
+                  </PendingSnapProvider>
+                </OnboardingDraftScope>
               </SelectedDateProvider>
             </SessionProvider>
           </PersistQueryClientProvider>
@@ -79,20 +90,35 @@ export default Sentry.wrap(function RootLayout() {
 })
 
 /**
+ * Hands the draft provider the signed-in user, and nothing else.
+ *
+ * A component of its own because `RootLayout` sits ABOVE `SessionProvider` and so
+ * cannot read the session, while the draft module deliberately does not import
+ * the data layer — pulling it in would build the Supabase client at import time,
+ * which no test environment can do. One `string | null` crossing the boundary is
+ * all either side needs.
+ */
+function OnboardingDraftScope({ children }: { children: ReactNode }) {
+  const { userId } = useSession()
+
+  return <OnboardingDraftProvider userId={userId}>{children}</OnboardingDraftProvider>
+}
+
+/**
  * Every screen draws its own title bar, so the native header is off everywhere.
  *
  * Presentation is declared here rather than per screen because it is a property
- * of how a route enters the app, not of what the route renders — the same food
- * detail is a modal from search and a push from the diary.
+ * of how a route enters the app, not of what the route renders.
  *
  * Two shapes, and the difference is deliberate:
  *
  * - **Full pages push.** Settings, the progress reports and the gallery slide in
  *   from the right, keep the screen behind them on the stack, and pop with the
  *   edge swipe. They carry a chevron in their own `AppBar`.
- * - **Modals present.** Search, a dish, the paywalls come up over the app and
- *   are dismissed rather than navigated back from — a cross in the `AppBar`,
- *   plus the native pull-down.
+ * - **Modals present.** The quick selector, the voice sheet and the paywalls come
+ *   up over the app and are dismissed rather than navigated back from — a cross in
+ *   the `AppBar`, plus the native pull-down. Search and the dish used to be here
+ *   and are pages now: both are somewhere you go, work, and come back from.
  *
  * `animation` is left at the platform default rather than forced to
  * `slide_from_right`: setting it globally also reaches the `presentation: modal`
@@ -116,19 +142,41 @@ function RootStack() {
     >
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(onboarding)" />
-      <Stack.Screen name="(tabs)" />
+      {/* The one screen with no back gesture. Everything else in this stack is
+          somewhere you went and can leave; the tabs are where the app IS. Onboarding
+          replaces its own route on the way out, but "replace" only unwinds what it
+          replaced — the seven screens before it are still behind this one, and an
+          edge swipe on Today walked back into the questions somebody had just
+          finished answering. */}
+      <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
       {/* The quick selector sits over Today, so the screen behind it stays
-          visible and the sheet keeps its own scrim. */}
+          visible and the sheet keeps its own scrim.
+
+          `gestureEnabled: false` on both, and it is not cosmetic. A modal
+          presentation gets a native pull-down dismissal, and these sheets have a
+          drag handle of their own now — so a downward swipe ran both. The native
+          one popped the route; the handle's `onClose` then called `back()` on a
+          stack that had already unwound, which popped the TAB underneath and
+          landed the user on a different tab. One dismissal, from the handle. */}
       <Stack.Screen
         name="log/index"
-        options={{ presentation: 'transparentModal', animation: 'fade' }}
+        options={{ presentation: 'transparentModal', animation: 'fade', gestureEnabled: false }}
       />
       <Stack.Screen
         name="log/voice"
-        options={{ presentation: 'transparentModal', animation: 'fade' }}
+        options={{ presentation: 'transparentModal', animation: 'fade', gestureEnabled: false }}
       />
-      <Stack.Screen name="log/search" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="log/food/[id]" options={{ presentation: 'modal' }} />
+      {/* Search pushes. It is a place you go and come back from, not something
+          that comes up over the day: the query survives the trip to a dish and
+          back, the edge swipe returns to it, and its bar carries a chevron. As a
+          modal it also stacked a second presentation on top of the quick
+          selector, which is already one. */}
+      <Stack.Screen name="log/search" />
+      {/* The dish pushes. It is where a portion is chosen and an entry edited —
+          several controls, a note field, a delete — which is a page of work
+          rather than something glanced at over the day, and it is reached from
+          search, which is now a page too. */}
+      <Stack.Screen name="log/food/[id]" />
       <Stack.Screen name="paywall/index" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/gate" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/welcome" options={{ presentation: 'fullScreenModal' }} />

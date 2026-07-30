@@ -12,8 +12,13 @@ import { useEffect, useState } from 'react'
  *
  * Debouncing moves the decision earlier: no query exists until the typing
  * pauses, so there is nothing to race.
+ *
+ * 140ms is under the gap between two keystrokes of ordinary typing, so a burst
+ * still collapses into one request, and it is short enough that a pause between
+ * words does not read as the list having stopped working. 300 was safe and felt
+ * like waiting.
  */
-export function useDebouncedValue<T>(value: T, delay = 300): T {
+export function useDebouncedValue<T>(value: T, delay = 140): T {
   const [debounced, setDebounced] = useState(value)
 
   useEffect(() => {

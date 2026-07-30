@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-import { type Goal, useProfile, useUpdateProfile } from '@/data'
-import { ChoiceCard, OnboardingStep } from '@/features/onboarding'
+import type { Goal } from '@/data'
+import { ChoiceCard, OnboardingStep, useOnboardingDraft } from '@/features/onboarding'
 
 const OPTIONS: Goal[] = ['lose', 'maintain', 'gain', 'track']
 
@@ -9,9 +9,10 @@ const OPTIONS: Goal[] = ['lose', 'maintain', 'gain', 'track']
 export default function GoalStep() {
   const { t } = useTranslation(['onboarding', 'common'])
   const router = useRouter()
-  const { data: profile } = useProfile()
-  const updateProfile = useUpdateProfile()
-  const goal = profile?.weight_goal
+  // The draft, not the profile. There is no account until the end of the flow,
+  // and the hooks that write a profile throw without a session. It is also
+  // instant, so the radio fills in on the same frame as the tap.
+  const { draft, patch } = useOnboardingDraft()
 
   return (
     <OnboardingStep
@@ -22,8 +23,8 @@ export default function GoalStep() {
       subtitle={t('goal.subtitle')}
       primaryLabel={t('common:action.continue')}
       // Nothing to continue to until a goal exists: the budget the whole flow
-      // is computing branches on it, and skipping past leaves it null.
-      primaryDisabled={!goal}
+      // is computing branches on it, and skipping past leaves it unset.
+      primaryDisabled={!draft.goal}
       onPrimary={() => router.push('/about')}
     >
       {OPTIONS.map((option) => (
@@ -32,10 +33,8 @@ export default function GoalStep() {
           accent="kaya"
           title={t(`goal.${option}.title`)}
           description={t(`goal.${option}.subtitle`)}
-          selected={goal === option}
-          // Recomputing here means the target on step 07 already reflects the
-          // choice, without that screen knowing how the number is made.
-          onPress={() => updateProfile.mutate({ goal: option })}
+          selected={draft.goal === option}
+          onPress={() => patch({ goal: option })}
         />
       ))}
     </OnboardingStep>

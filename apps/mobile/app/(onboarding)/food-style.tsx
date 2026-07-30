@@ -1,9 +1,8 @@
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { useMealTimes, useProfile, useUpdateProfile } from '@/data'
-import { OnboardingStep } from '@/features/onboarding'
-import { Card, Chip, Text } from '@/ui'
+import { OnboardingStep, useOnboardingDraft } from '@/features/onboarding'
+import { Chip } from '@/ui'
 
 const TAGS = [
   'halal',
@@ -17,22 +16,34 @@ const TAGS = [
   'nasiCampur',
 ] as const
 
-/** 05 FOOD STYLE */
+/**
+ * 05 FOOD STYLE
+ *
+ * No meal times here any more. They are seeded alongside the account by the
+ * signup trigger, and the account does not exist until the end of the flow — so
+ * this screen used to render a titled card with nothing in it, and the query
+ * behind it threw for want of a session. The reminders screen is where they are
+ * set, and it is reachable the moment there is an account to set them on.
+ */
 export default function FoodStyleStep() {
   const { t } = useTranslation(['onboarding', 'common'])
   const router = useRouter()
-  const { data: profile } = useProfile()
-  const updateProfile = useUpdateProfile()
-  const foodStyles = profile?.food_styles ?? []
-  // Seeded with the account by the signup trigger, so there is always a set to
-  // show — the reminders screen is where they are changed.
-  const { data: mealTimes = [] } = useMealTimes()
+  const { draft, patch } = useOnboardingDraft()
+  const foodStyles = draft.foodStyles ?? []
 
+  /**
+   * Reads the current list and writes the new one.
+   *
+   * Sound here only because the draft is synchronous: computing "the list plus
+   * one" against a value that a round trip has not returned yet is how a fast
+   * second tap silently drops the first.
+   */
   const toggle = (tag: string) => {
-    const next = foodStyles.includes(tag)
-      ? foodStyles.filter((existing) => existing !== tag)
-      : [...foodStyles, tag]
-    updateProfile.mutate({ foodStyles: next })
+    patch({
+      foodStyles: foodStyles.includes(tag)
+        ? foodStyles.filter((existing) => existing !== tag)
+        : [...foodStyles, tag],
+    })
   }
 
   return (
@@ -63,26 +74,6 @@ export default function FoodStyleStep() {
           </Chip>
         ))}
       </View>
-
-      <Card title={t('foodStyle.mealTimes')}>
-        <View className="flex-row items-center justify-between">
-          <Text variant="bodyStrong" className="text-[16px]">
-            {mealTimes
-              .filter((slot) => slot.meal !== 'snack')
-              .map((slot) => formatTime(slot.at))
-              .join(', ')}
-          </Text>
-        </View>
-      </Card>
     </OnboardingStep>
   )
-}
-
-/** "08:00:00" → "8:00 am". Postgres `time` carries seconds nobody wants to read. */
-function formatTime(at: string): string {
-  const [rawHour = '0', minute = '00'] = at.split(':')
-  const hour = Number(rawHour)
-  const suffix = hour < 12 ? 'am' : 'pm'
-  const twelve = hour % 12 === 0 ? 12 : hour % 12
-  return `${twelve}:${minute} ${suffix}`
 }
