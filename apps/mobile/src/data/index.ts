@@ -49,6 +49,7 @@ export {
   useProfile,
   useUpdateProfile,
 } from './profile'
+export { RefiningProvider, useRefiningEntries } from './refining'
 export {
   type EntryIngredient,
   useEntryIngredients,

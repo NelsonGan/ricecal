@@ -610,7 +610,6 @@ export default function FoodDetail() {
             onChangeText={setInstruction}
             placeholder={t('logging:detail.fixPlaceholder')}
             returnKeyType="done"
-            editable={!refineEntry.isPending}
           />
 
           {existing.suggestedEdits?.length ? (
@@ -629,26 +628,18 @@ export default function FoodDetail() {
 
           <Button
             fullWidth
-            loading={refineEntry.isPending}
-            disabled={!instruction.trim() || refineEntry.isPending}
+            disabled={!instruction.trim()}
+            // Fire and leave. The correction runs for several seconds on the
+            // server, and this screen describes the entry's OLD identity the
+            // whole time — so the wait belongs on Today, where the row shows
+            // the work and then becomes its corrected self.
             onPress={() => {
-              refineEntry.mutate(
-                { entryId: existing.id, instruction: instruction.trim(), logDate: selectedDate },
-                {
-                  onSuccess: (result) => {
-                    if (result.applied) {
-                      // The food behind this screen may have changed identity;
-                      // the day is the only view guaranteed fresh.
-                      toast.show({ title: t('logging:detail.fixApplied') })
-                      finish()
-                    } else {
-                      toast.show({ title: t('logging:detail.fixNotApplied'), tone: 'error' })
-                    }
-                  },
-                  onError: () =>
-                    toast.show({ title: t('logging:detail.fixNotApplied'), tone: 'error' }),
-                },
-              )
+              refineEntry({
+                entryId: existing.id,
+                instruction: instruction.trim(),
+                logDate: selectedDate,
+              })
+              finish()
             }}
           >
             {t('logging:detail.fixApply')}
