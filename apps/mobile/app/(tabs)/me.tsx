@@ -119,6 +119,19 @@ export default function MeScreen() {
           }
           onPress={() => router.push('/settings/goals')}
         />
+        {/* Above the reminders rather than below them: the times set here are
+            the hours a reminder fires at, so this is the row that decides what
+            the next one means.
+
+            No value beside it. The other rows summarise themselves in a word —
+            a budget, a count, a pair of units — and four meal times do not fit
+            in that space; naming only breakfast would be picking one at
+            random. */}
+        <SettingRow
+          icon={{ set: 'system', name: 'clock' }}
+          title={t('profile:home.personalisation')}
+          onPress={() => router.push('/settings/personalisation')}
+        />
         <SettingRow
           icon={{ set: 'system', name: 'bell' }}
           title={t('profile:home.reminders')}

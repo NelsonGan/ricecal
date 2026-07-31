@@ -55,7 +55,12 @@ export const profile = {
   personalisation: {
     title: 'Personalisation',
     mealsTitle: 'MEAL TIMES',
-    mealsNote: 'Used for reminders, and for what the app assumes you are logging.',
+    /**
+     * What these times are for, now that they are only for one thing. They
+     * used to decide what the app assumed you were logging as well — that
+     * went with the `meal` column on an entry.
+     */
+    mealsNote: 'These are the times your reminders go off.',
     editMeal: 'Change when {{meal}} is',
     hour: 'Hour',
     minute: 'Minute',
