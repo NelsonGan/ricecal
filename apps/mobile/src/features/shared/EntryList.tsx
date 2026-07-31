@@ -44,12 +44,12 @@ export type EntryListProps = {
  * more than it explained. Three of them were usually empty and each empty one still
  * took a heading and an add button, so a day with two entries in it filled a screen
  * with furniture. A chronological list says the same thing in the order it happened,
- * and the meal is still on every entry: it drives the reminders, it decides what the
- * quick selector suggests, and it is editable on the dish.
+ * and an entry no longer carries a meal at all: the column is gone, and meal TIMES
+ * survive only where they mean something, as the hours a reminder fires.
  *
- * Which is why the detail line carries the time. It is the only thing left saying
- * where in the day a row belongs, and it is the more useful half of what the meal
- * headings were doing.
+ * Which is why the detail line carries the time. It is the only thing saying where
+ * in the day a row belongs, and it is the more useful half of what the meal headings
+ * were doing.
  *
  * Nothing here looks a dish up. `food_log_details` returns each entry with its name,
  * its illustration and its macros already costed, so a row is one object and the

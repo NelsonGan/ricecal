@@ -1,12 +1,11 @@
 import { subDays } from 'date-fns'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
   dateKey,
-  type Meal,
   useDay,
   useDayLog,
   useLogFood,

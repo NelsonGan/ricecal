@@ -151,27 +151,29 @@ export const logging = {
     /** The scanned plate's ingredient breakdown. */
     plateTitle: 'INGREDIENTS',
     plateTotal: 'Total',
-    /** How many of an ingredient are on the plate. Absent at one. */
+    /**
+     * How many of an ingredient are on the plate. Shown at one as well: a
+     * count that appears only above one reads as a badge on the busy rows
+     * rather than as the amount every row has.
+     */
     times: '× {{amount}}',
-    /** One ingredient's own macros, under its name. */
-    macroLine: 'C {{carbs}} · P {{protein}} · F {{fat}}',
     /** The per-ingredient portion steppers, and the one that empties a row. */
     lessOf: 'Less {{name}}',
     moreOf: 'More {{name}}',
     removeOf: 'Remove {{name}}',
     /**
      * Typing a number in by hand, for the dish the app got close but not right
-     * — off a packet, off a recipe, off the kitchen scale. Each figure is
-     * edited where it is read, so these are labels for the control rather than
-     * headings for a form.
+     * — off a packet, off a recipe, off the kitchen scale.
+     *
+     * Each figure is edited where it is read: the number becomes a field in
+     * place, so this labels a control rather than heading a form. The three
+     * macros need no label of their own — the bar beside each one already
+     * carries its name.
      */
     editKcal: 'Edit the calories',
     /** Renaming one logged entry, which does not rename the dish. */
     nameField: 'What to call this',
     numbersReset: 'Use the app’s figures',
-    carbsField: 'Carbs (g)',
-    proteinField: 'Protein (g)',
-    fatField: 'Fat (g)',
     /**
      * Stands in for a serving label the catalogue import left unusable — a
      * measurement ("1 medium paper (8-5/8\" dia)") or a code ("383 GRM").

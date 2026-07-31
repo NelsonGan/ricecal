@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications'
-import { Platform } from 'react-native'
+import { AppState, Platform } from 'react-native'
 
 import type { MealTime, Settings } from '@/data/types'
 import { parseTime } from './quiet-hours'
@@ -36,12 +36,27 @@ export type ReminderCopy = {
 }
 
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
+  handleNotification: async (notification) => {
+    /**
+     * A scan notice is never shown to someone who is looking at the scan.
+     *
+     * It is booked at the shutter for a fixed delay (see `scheduleScanNotice`)
+     * because a suspended app cannot post anything when the answer arrives. A
+     * scan slower than that delay therefore fires it while the user is
+     * watching the row still spin — a banner saying the plate is counted, over
+     * a plate that is not counted yet. The row in front of them is the better
+     * answer, so the banner steps aside.
+     */
+    const scan = notification.request.content.data?.kind === 'scan'
+    const watching = scan && AppState.currentState === 'active'
+
+    return {
+      shouldShowBanner: !watching,
+      shouldShowList: !watching,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }
+  },
 })
 
 /**

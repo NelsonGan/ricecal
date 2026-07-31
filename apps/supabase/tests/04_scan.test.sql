@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(36);
+select plan(39);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 
@@ -338,6 +338,34 @@ select is(
   'and the entry portion is left alone'
 );
 
+-- A typed figure still wins over the parts.
+--
+-- The three sources are ordered override, then parts, then the portion — and
+-- the middle one is the newest, so this is the pair most able to drift. Someone
+-- who reads a packet and types the real number has said something the app must
+-- not talk over with its own arithmetic.
+reset role;
+
+update public.food_logs set override_kcal = 410 where user_id = :'user_a';
+
+select is(
+  (select kcal from public.food_log_details where user_id = :'user_a'),
+  410,
+  'a typed figure outranks the sum of the parts'
+);
+
+update public.food_logs set override_kcal = null where user_id = :'user_a';
+
+select is(
+  (select kcal from public.food_log_details where user_id = :'user_a'),
+  300,
+  'and clearing it hands the total back to the parts'
+);
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', :'user_a', 'role', 'authenticated')::text, true);
+set local role authenticated;
+
 -- Off the plate entirely, which is a different answer from "a quarter of it".
 select lives_ok(
   format('select public.remove_ingredient(%L::uuid)', :'ing_id'),
@@ -348,6 +376,17 @@ select is(
   (select count(*)::integer from public.food_log_ingredients where id = :'ing_id'),
   0,
   'the ingredient is gone'
+);
+
+-- An entry whose last part has gone is an entry with no breakdown, which is
+-- what a dish the scan could not decompose looks like: the lateral join finds
+-- nothing, the coalesce falls through, and the parent row prices its own
+-- portion again. Reading a plate of nothing as zero calories is the failure
+-- this guards against.
+select is(
+  (select kcal from public.food_log_details where user_id = :'user_a'),
+  (select kcal from public.foods where id = 'a0000000-0000-4000-8000-000000000000'),
+  'the last part removed falls back to the entry''s own portion'
 );
 
 reset role;

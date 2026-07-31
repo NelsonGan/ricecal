@@ -81,13 +81,19 @@ export function useDayLog(date: string): DayLog {
      * snap, arriving by another route.
      */
     const claimed = new Set<string>()
-    const landed = (snap: (typeof mine)[number]) =>
-      base.entries.some((entry) => {
+    const landed = (snap: (typeof mine)[number]) => {
+      // Parsed, not compared as text. Postgres stamps microseconds and an
+      // offset ("...:00.123456+00:00") where `toISOString` writes milliseconds
+      // and a Z, so the two strings sort against each other by punctuation
+      // once their seconds agree.
+      const shutter = Date.parse(snap.loggedAt)
+      return base.entries.some((entry) => {
         if (entry.source !== 'camera' || claimed.has(entry.id)) return false
-        if (entry.loggedAt < snap.loggedAt) return false
+        if (Date.parse(entry.loggedAt) < shutter) return false
         claimed.add(entry.id)
         return true
       })
+    }
 
     const waiting = mine.filter((snap) => snap.status !== 'analysing' || !landed(snap))
     if (waiting.length === 0) return base

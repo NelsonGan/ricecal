@@ -19,10 +19,10 @@
 // entry the user can edit piece by piece, and every path through here either
 // keeps it, edits it, or replaces it with a new one.
 //
-// The entry keeps its identity — id, photo, scan_id, meal, date — so the
-// diary row updates in place rather than being replaced. Applied or not, the
-// answer after validation is HTTP 200: `applied: false` with a reason is a
-// result, not an error.
+// The entry keeps its identity — id, photo, scan_id, date — so the diary row
+// updates in place rather than being replaced. Applied or not, the answer
+// after validation is HTTP 200: `applied: false` with a reason is a result,
+// not an error.
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
@@ -457,13 +457,7 @@ Deno.serve(async (req: Request) => {
       const scanId = entry.scan_id ?? crypto.randomUUID()
       const item = interpretation.item
       const resolved =
-        (await resolveItem(
-          db,
-          scanId,
-          item.components.length >= 2 ? 'composite' : 'single',
-          item,
-          mock,
-        )) ?? (await resolveByArchetype(db, item, mock))
+        (await resolveItem(db, scanId, item, mock)) ?? (await resolveByArchetype(db, item, mock))
 
       const { error } = await db
         .from('food_logs')

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -68,24 +68,27 @@ export default function PersonalisationScreen() {
       />
 
       <Card title={t('profile:personalisation.mealsTitle')} contentClassName="gap-0">
+        {/* A rule between rows, not around them: the card draws its own edges,
+            so a divider above the first row or below the last would be a second
+            line against the border. */}
         {MEALS.map((meal, index) => (
-          <Tappable
-            key={meal}
-            className="min-h-[56px] flex-row items-center justify-between gap-3"
-            onPress={() => open(meal)}
-            accessibilityRole="button"
-            accessibilityLabel={t('profile:personalisation.editMeal', {
-              meal: t(`common:meal.${meal}`),
-            })}
-          >
-            <Text variant="body">{t(`common:meal.${meal}`)}</Text>
-            <Text variant="label" className="text-pandan-ink">
-              {formatTime(timeFor(meal))}
-            </Text>
-          </Tappable>
-        )).flatMap((row, index) =>
-          index === 0 ? [row] : [<Divider key={`divider-${MEALS[index]}`} />, row],
-        )}
+          <Fragment key={meal}>
+            {index === 0 ? null : <Divider />}
+            <Tappable
+              className="min-h-[56px] flex-row items-center justify-between gap-3"
+              onPress={() => open(meal)}
+              accessibilityRole="button"
+              accessibilityLabel={t('profile:personalisation.editMeal', {
+                meal: t(`common:meal.${meal}`),
+              })}
+            >
+              <Text variant="body">{t(`common:meal.${meal}`)}</Text>
+              <Text variant="label" className="text-pandan-ink">
+                {formatTime(timeFor(meal))}
+              </Text>
+            </Tappable>
+          </Fragment>
+        ))}
       </Card>
 
       <Text variant="meta" className="px-1">

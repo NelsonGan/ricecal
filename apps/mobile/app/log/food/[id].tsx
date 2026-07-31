@@ -26,6 +26,7 @@ import {
 import { IconPicker } from '@/features/logging'
 import { MacroBars } from '@/features/shared'
 import { useBack, useDismissTo } from '@/lib/navigation'
+import { entryTotals } from '@/lib/nutrition'
 import { servingUnit, titleCase } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
 import {
@@ -109,7 +110,13 @@ export default function FoodDetail() {
 
   // The plate's parts, for a scanned entry that decomposed. Everything else
   // gets an empty list and no section.
-  const { data: ingredients = [] } = useEntryIngredients(existing?.scanId ? existing.id : undefined)
+  //
+  // `isLoading` rather than `isPending`: a disabled query is pending forever,
+  // and every hand-logged entry disables this one. What is being asked is "is
+  // there a request out for this plate's parts right now".
+  const { data: ingredients = [], isLoading: partsLoading } = useEntryIngredients(
+    existing?.scanId ? existing.id : undefined,
+  )
   const refineEntry = useRefineEntry()
   const updateIngredient = useUpdateIngredient()
   const removeIngredient = useRemoveIngredient()
@@ -119,6 +126,18 @@ export default function FoodDetail() {
   const [servingId, setServingId] = useState(existing?.servingId ?? '')
   const [note, setNote] = useState(existing?.note ?? '')
   const [confirmDelete, setConfirmDelete] = useState(false)
+  /**
+   * Which entry the controls above were filled in from.
+   *
+   * They are seeded in `useState`, which runs once — and on the way in from a
+   * notification, or a cold start on a deep link, the day query has not
+   * answered yet, so `existing` is undefined for the first render or two. The
+   * screen used to keep those initial values for the rest of its life: a
+   * two-portion entry editing as one, a typed correction the reset link could
+   * not see. Seeding again the first time the row actually arrives is the fix,
+   * and the id is what stops it happening a second time over a live edit.
+   */
+  const seededFrom = useRef<string | undefined>(undefined)
   /**
    * The illustration, only once the user has picked one.
    *
@@ -154,18 +173,12 @@ export default function FoodDetail() {
   /**
    * Figures typed by hand, as strings while they are being typed.
    *
-   * Seeded EMPTY rather than from the entry: a field showing the app's own
-   * number cannot tell the user whether it is their figure or the app's, and
-   * blank is the honest reading of "nothing overridden". What is on the row
-   * shows through as the placeholder.
+   * An empty field is "nothing overridden here", not "zero" — what the app
+   * worked out shows through as the placeholder, and a field pre-filled with
+   * the app's own number could not tell the user whose number it was.
    */
   const [typed, setTyped] = useState<{ kcal: string; carbs: string; protein: string; fat: string }>(
-    {
-      kcal: existing?.overrides?.kcal?.toString() ?? '',
-      carbs: existing?.overrides?.carbs?.toString() ?? '',
-      protein: existing?.overrides?.protein?.toString() ?? '',
-      fat: existing?.overrides?.fat?.toString() ?? '',
-    },
+    { kcal: '', carbs: '', protein: '', fat: '' },
   )
   /**
    * Which figure is being typed, if any.
@@ -249,6 +262,22 @@ export default function FoodDetail() {
   flushRef.current = flush
   useEffect(() => () => flushRef.current(), [])
 
+  // The controls, filled in from the row the first time it is actually here.
+  // See `seededFrom` for why once is not the same as at mount.
+  useEffect(() => {
+    if (!existing || seededFrom.current === existing.id) return
+    seededFrom.current = existing.id
+    setQuantity(existing.quantity)
+    setServingId(existing.servingId)
+    setNote(existing.note ?? '')
+    setTyped({
+      kcal: existing.overrides?.kcal?.toString() ?? '',
+      carbs: existing.overrides?.carbs?.toString() ?? '',
+      protein: existing.overrides?.protein?.toString() ?? '',
+      fat: existing.overrides?.fat?.toString() ?? '',
+    })
+  }, [existing])
+
   if (!food) {
     return (
       <Screen>
@@ -279,14 +308,47 @@ export default function FoodDetail() {
   const chosen = servingId || food.servings[0]?.id || ''
   const serving = food.servings.find((option) => option.id === chosen) ?? food.servings[0]
   const factor = (serving?.factor ?? 1) * quantity
-  // The view does this arithmetic for saved entries; this is the same sum for
-  // a portion that has not been saved yet, so the preview and the row agree.
-  const macros = {
+  // What this much of the catalogue row costs. The same arithmetic the view
+  // does for a saved entry, so the preview while composing and the row that
+  // results from it agree.
+  const computed = {
     kcal: Math.round(food.macros.kcal * factor),
     carbs: Math.round(food.macros.carbs * factor),
     protein: Math.round(food.macros.protein * factor),
     fat: Math.round(food.macros.fat * factor),
   }
+
+  /**
+   * What this entry actually counts as.
+   *
+   * `entryTotals` is the client's copy of the `coalesce` in
+   * `food_log_details`: typed, then parts, then portion. Read from here rather
+   * than from the saved row so that every edit on this screen shows
+   * immediately — a figure still inside the debounce, a portion stepped a
+   * moment ago, an ingredient the optimistic update has already moved.
+   * Recomputing only the third form, which is what this screen used to do,
+   * meant a typed 500 kcal snapped back to the app's 594 the instant the field
+   * closed, and a decomposed plate read differently here than on Today.
+   *
+   * While a scanned plate's parts are still on their way, the row's own figure
+   * stands in. It is the same three-source answer, worked out by the view — so
+   * the number is right from the first frame rather than being the parent's
+   * portion for as long as the query takes and then jumping.
+   */
+  const macros = existing
+    ? partsLoading
+      ? existing.macros
+      : entryTotals({
+          typed: {
+            kcal: figure(typed.kcal) ?? undefined,
+            carbs: figure(typed.carbs) ?? undefined,
+            protein: figure(typed.protein) ?? undefined,
+            fat: figure(typed.fat) ?? undefined,
+          },
+          parts: ingredients,
+          portion: computed,
+        })
+    : computed
 
   /**
    * The same scaling for the nutrients that are not part of the budget.
@@ -397,8 +459,23 @@ export default function FoodDetail() {
   const applyFix = () => {
     const text = instruction.trim()
     if (!existing || !text) return
-    refineEntry({ entryId: existing.id, instruction: text, logDate: selectedDate })
+    refineEntry({
+      entryId: existing.id,
+      instruction: text,
+      logDate: selectedDate,
+      // Said out loud, from wherever the user has got to by then — the toast
+      // provider sits above the navigator, and this screen is gone a frame
+      // after the send. A row that worked and then changed nothing is
+      // otherwise indistinguishable from a correction that did not matter.
+      onNotApplied: () => toast.show({ title: t('logging:detail.fixNotApplied'), tone: 'warning' }),
+    })
     finish()
+  }
+
+  const commitName = () => {
+    setRenaming(false)
+    const next = name.trim().slice(0, 120)
+    if (next && next !== existing?.foodName) queue({ name: next })
   }
 
   const remove = () => {
@@ -485,18 +562,18 @@ export default function FoodDetail() {
 
       {renaming ? (
         <Card>
+          {/* Committed on the way out, whichever way out that is. Everything
+              else on this screen saves as it is changed, and a name that only
+              counted if the return key was pressed was the one control where
+              tapping elsewhere threw the edit away. */}
           <TextField
             label={t('logging:detail.nameField')}
             value={name}
             onChangeText={setName}
             autoFocus
             returnKeyType="done"
-            onBlur={() => setRenaming(false)}
-            onSubmitEditing={() => {
-              setRenaming(false)
-              const next = name.trim().slice(0, 120)
-              if (next && next !== existing?.foodName) queue({ name: next })
-            }}
+            onBlur={commitName}
+            onSubmitEditing={commitName}
           />
         </Card>
       ) : null}
@@ -575,48 +652,57 @@ export default function FoodDetail() {
         tone="danger"
       />
 
-      <Card>
-        <Stepper
-          value={quantity}
-          onChange={(next) => {
-            setQuantity(next)
-            queue({ quantity: next })
-          }}
-          // Half a plate is an ordinary portion and used to be unreachable here:
-          // the steps were whole servings, so "half" could only be had by picking
-          // a serving that happened to be one. `Stepper` renders 1.5 as "1½".
-          min={0.5}
-          max={20}
-          step={0.5}
-          // And for the amounts halves cannot express — 0.3 of a tub — the number
-          // itself is a field.
-          editable
-          editLabel={t('logging:detail.typeServings')}
-          accessibilityLabel={t('logging:detail.servings')}
-          decrementLabel={t('common:a11y.decrease')}
-          incrementLabel={t('common:a11y.increase')}
-          // The unit is the serving the user picked below, not a generic
-          // "pieces" — a plate and a piece are different amounts of food.
-          // Cleaned of the count and the import's measurement detail, which
-          // the number to its left is already saying.
-          unit={servingUnit(serving.label) ?? t('logging:detail.servingWord')}
-        />
+      {/* Absent for a plate the scan broke down. An entry with a breakdown IS
+          its breakdown — `food_log_details` reads the sum of the parts and
+          never the parent's portion — so this stepper moved a number on screen
+          and nothing in the diary. The ingredient list below is where that
+          plate's amounts are edited, one part at a time, which is the whole
+          reason the breakdown exists. */}
+      {ingredients.length ? null : (
+        <Card>
+          <Stepper
+            value={quantity}
+            onChange={(next) => {
+              setQuantity(next)
+              queue({ quantity: next })
+            }}
+            // Half a plate is an ordinary portion and used to be unreachable
+            // here: the steps were whole servings, so "half" could only be had
+            // by picking a serving that happened to be one. `Stepper` renders
+            // 1.5 as "1½".
+            min={0.5}
+            max={20}
+            step={0.5}
+            // And for the amounts halves cannot express — 0.3 of a tub — the
+            // number itself is a field.
+            editable
+            editLabel={t('logging:detail.typeServings')}
+            accessibilityLabel={t('logging:detail.servings')}
+            decrementLabel={t('common:a11y.decrease')}
+            incrementLabel={t('common:a11y.increase')}
+            // The unit is the serving the user picked below, not a generic
+            // "pieces" — a plate and a piece are different amounts of food.
+            // Cleaned of the count and the import's measurement detail, which
+            // the number to its left is already saying.
+            unit={servingUnit(serving.label) ?? t('logging:detail.servingWord')}
+          />
 
-        <View className="flex-row flex-wrap gap-2">
-          {food.servings.map((option) => (
-            <Chip
-              key={option.id}
-              selected={option.id === chosen}
-              onPress={() => {
-                setServingId(option.id)
-                queue({ servingId: option.id })
-              }}
-            >
-              {option.label}
-            </Chip>
-          ))}
-        </View>
-      </Card>
+          <View className="flex-row flex-wrap gap-2">
+            {food.servings.map((option) => (
+              <Chip
+                key={option.id}
+                selected={option.id === chosen}
+                onPress={() => {
+                  setServingId(option.id)
+                  queue({ servingId: option.id })
+                }}
+              >
+                {option.label}
+              </Chip>
+            ))}
+          </View>
+        </Card>
+      )}
 
       <Card>
         {/* Centred rather than on a shared baseline: while the number is a
@@ -949,11 +1035,19 @@ export default function FoodDetail() {
                 onPress={() => {
                   const label = t(`logging:detail.quickFix.${fix}`)
                   setNote(label)
+                  // Queued, not just shown. The note box saves on blur, and a
+                  // chip is tapped without ever putting a caret in the box —
+                  // so while there was a save button underneath these worked,
+                  // and the moment it went they became decoration.
+                  queue({ note: label })
                   // "Half portion" is not just a note, it is a serving. Applying
                   // it silently as text would leave the calories wrong.
                   if (fix === 'halfPortion') {
                     const half = food.servings.find((option) => option.factor === 0.5)
-                    if (half) setServingId(half.id)
+                    if (half) {
+                      setServingId(half.id)
+                      queue({ servingId: half.id })
+                    }
                   }
                 }}
               >

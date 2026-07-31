@@ -22,6 +22,16 @@ export const keys = {
   nutrition: (userId: string, from: string, to: string) => ['nutrition', userId, from, to] as const,
   streak: (userId: string) => ['streak', userId] as const,
 
+  /**
+   * The parts of one scanned plate.
+   *
+   * Keyed by entry rather than by user: an ingredient list is only ever asked
+   * for from the screen editing that one entry, and every write to it — a
+   * portion, a removal, a correction applied on the server — has the id in
+   * hand.
+   */
+  entryIngredients: (entryId: string) => ['entry-ingredients', entryId] as const,
+
   foodSearch: (userId: string, query: string) => ['food-search', userId, query] as const,
   food: (id: string) => ['food', id] as const,
   /** The last few dishes logged at one meal. */
