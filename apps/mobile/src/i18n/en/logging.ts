@@ -128,6 +128,9 @@ export const logging = {
     /** The scanned plate's ingredient breakdown. */
     plateTitle: 'ON THIS PLATE',
     plateTotal: 'Plate total',
+    /** The per-ingredient portion steppers. */
+    lessOf: 'Less {{name}}',
+    moreOf: 'More {{name}}',
     /** Saving an edit to an entry already in the diary. */
     updated: 'Entry updated',
     quickFix: {

@@ -236,12 +236,17 @@ export async function analysePhoto(
           '"items": [{"name": string, "specific_query": string, "generic_query": string, ' +
           '"components": string[], "serving_hint": string|null, "kcal_low": number, ' +
           '"kcal_high": number, "confidence": number, "suggested_edits": string[]}]}. ' +
-          'One item per distinct dish or drink (max 6). "specific_query" is the local dish name ' +
-          'as eaten ("char kuey teow"), "generic_query" a broader fallback ("fried noodles"). ' +
-          '"components" lists the visible parts of a composite plate (rice, protein, sides) as ' +
+          'The photo is ONE logged meal: return ONE item named for the whole of it ' +
+          '("Korean fried chicken with rice and sides"), with every distinct part — main, ' +
+          'rice, sides, banchan, a drink on the tray — listed in "components". Only return ' +
+          'more than one item when the photo unambiguously shows separate meals (e.g. two ' +
+          "people's plates; max 6). " +
+          '"specific_query" is the local dish name as eaten ("char kuey teow"), ' +
+          '"generic_query" a broader fallback ("fried noodles"). ' +
+          '"components" lists the visible parts of a composite meal (rice, protein, sides) as ' +
           'plain searchable names, one entry PER PORTION — two chicken wings are two "chicken ' +
           'wing" entries; empty for a single homogeneous dish. "scene" is "composite" whenever ' +
-          'distinct components are visible on one plate. "serving_hint" is the visible portion ' +
+          'the meal has distinct visible parts. "serving_hint" is the visible portion ' +
           'as a person would say it ("1 plate", "1 bowl", "large plate"). kcal_low/high bound ' +
           'the calories of the portion actually visible — anchor on the portion size, not the ' +
           'dish average. confidence is 0-1 for the identification. ' +
@@ -262,6 +267,38 @@ export async function analysePhoto(
     1600,
   )
   return shapeVision(raw)
+}
+
+/**
+ * One photo, one entry — enforced in code, not just asked of the model.
+ *
+ * The vision prompt says everything eaten together is ONE item, but a model
+ * that splits a tray anyway used to put four rows in the diary for one meal.
+ * This fold makes the invariant structural: however many items come back,
+ * they collapse into a single composite item — every part (sides, drinks,
+ * all of it) becomes a component, the kcal bounds sum, and the largest item
+ * names the meal. The parts stay visible as the entry's ingredient breakdown.
+ */
+export function foldMealItems(vision: Vision): Vision {
+  const items = vision.items
+  if (items.length <= 1) return vision
+
+  const primary = items.reduce((a, b) => (b.kcal_high > a.kcal_high ? b : a))
+  const rest = items.filter((item) => item !== primary)
+  const merged: VisionItem = {
+    name: `${primary.name} with ${rest.map((r) => r.name.toLowerCase()).join(', ')}`.slice(0, 120),
+    specific_query: primary.specific_query,
+    generic_query: primary.generic_query,
+    // Each part is a component under its own full name, so the breakdown
+    // resolves each one to its own catalogue row.
+    components: items.map((item) => item.name).slice(0, 8),
+    serving_hint: '1 meal',
+    kcal_low: items.reduce((sum, item) => sum + item.kcal_low, 0),
+    kcal_high: items.reduce((sum, item) => sum + item.kcal_high, 0),
+    confidence: Math.min(...items.map((item) => item.confidence)),
+    suggested_edits: primary.suggested_edits,
+  }
+  return { scene: 'composite', items: [merged] }
 }
 
 export type Candidate = {

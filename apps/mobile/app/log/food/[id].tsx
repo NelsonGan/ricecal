@@ -20,6 +20,7 @@ import {
   useSelectedDate,
   useTargets,
   useUpdateEntry,
+  useUpdateIngredient,
   useUserId,
 } from '@/data'
 import { IconPicker } from '@/features/logging'
@@ -99,6 +100,7 @@ export default function FoodDetail() {
   // gets an empty list and no section.
   const { data: ingredients = [] } = useEntryIngredients(existing?.scanId ? existing.id : undefined)
   const refineEntry = useRefineEntry()
+  const updateIngredient = useUpdateIngredient()
   const [instruction, setInstruction] = useState('')
 
   const [quantity, setQuantity] = useState(existing?.quantity ?? 1)
@@ -516,23 +518,64 @@ export default function FoodDetail() {
         ) : null}
       </Card>
 
-      {/* What the scan decided the plate was made of. Read-only on purpose:
-          the parent entry's macros are the catalogue sum of these rows, so a
-          hand-edited part would break the total silently — corrections go
-          through the fix box below, which recomputes both together. */}
+      {/* What the scan decided the plate was made of, each part with its own
+          portion stepper. Edits go through set_ingredient_quantity, which
+          recomputes the entry's quantity in the same transaction — so the
+          plate total always equals the sum of parts, and the shared parent
+          row's macros are never touched. */}
       {ingredients.length ? (
         <Card title={t('logging:detail.plateTitle')}>
-          {ingredients.map((ingredient) => (
-            <View key={ingredient.id} className="flex-row items-baseline justify-between gap-3">
-              <Text variant="body" className="min-w-0 flex-1" numberOfLines={1}>
-                {ingredient.name}
-              </Text>
-              <View className="flex-row items-baseline gap-1">
-                <Text variant="numeric">{ingredient.kcal.toLocaleString()}</Text>
-                <Text variant="caption">{t('common:unit.kcal')}</Text>
+          {ingredients.map((ingredient) => {
+            // Quarter steps, matching how portions are spoken. The database
+            // recomputes the entry's own quantity in the same transaction, so
+            // the plate total follows every tap.
+            const step = (direction: 1 | -1) => {
+              const next = Math.min(10, Math.max(0.25, ingredient.quantity + direction * 0.25))
+              if (next === ingredient.quantity) return
+              updateIngredient.mutate({
+                ingredientId: ingredient.id,
+                quantity: next,
+                entryId: existing?.id ?? '',
+                logDate: selectedDate,
+              })
+            }
+            return (
+              <View key={ingredient.id} className="flex-row items-center justify-between gap-3">
+                <View className="min-w-0 flex-1">
+                  <Text variant="body" numberOfLines={1}>
+                    {ingredient.name}
+                  </Text>
+                  {ingredient.quantity !== 1 ? (
+                    <Text variant="meta">{`${ingredient.quantity} × ${ingredient.servingLabel}`}</Text>
+                  ) : null}
+                </View>
+                <View className="flex-row items-center gap-2">
+                  <View className="w-[72px] flex-row items-baseline justify-end gap-1">
+                    <Text variant="numeric">{ingredient.kcal.toLocaleString()}</Text>
+                    <Text variant="caption">{t('common:unit.kcal')}</Text>
+                  </View>
+                  <IconButton
+                    size="sm"
+                    variant="neutral"
+                    accessibilityLabel={t('logging:detail.lessOf', { name: ingredient.name })}
+                    disabled={updateIngredient.isPending || ingredient.quantity <= 0.25}
+                    onPress={() => step(-1)}
+                  >
+                    <Icon set="ui" name="minus" size={16} tintColor={colors.ink} />
+                  </IconButton>
+                  <IconButton
+                    size="sm"
+                    variant="neutral"
+                    accessibilityLabel={t('logging:detail.moreOf', { name: ingredient.name })}
+                    disabled={updateIngredient.isPending || ingredient.quantity >= 10}
+                    onPress={() => step(1)}
+                  >
+                    <Icon set="ui" name="plus" size={16} tintColor={colors.ink} />
+                  </IconButton>
+                </View>
               </View>
-            </View>
-          ))}
+            )
+          })}
           <Divider />
           <View className="flex-row items-baseline justify-between gap-3">
             <Text variant="bodyStrong">{t('logging:detail.plateTotal')}</Text>

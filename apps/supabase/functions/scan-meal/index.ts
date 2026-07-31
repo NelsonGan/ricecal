@@ -18,6 +18,7 @@ import {
 } from '../_shared/cascade.ts'
 import {
   analysePhoto,
+  foldMealItems,
   type MockSteer,
   mockActive,
   type Vision,
@@ -94,7 +95,9 @@ Deno.serve(async (req: Request) => {
         }
         photoBase64 = btoa(binary)
       }
-      vision = await analysePhoto(photoBase64, mock)
+      // One meal, one entry: if the model split the tray into per-side items,
+      // fold them back into a single composite plate. Drinks stay separate.
+      vision = foldMealItems(await analysePhoto(photoBase64, mock))
     } catch {
       vision = null
     }

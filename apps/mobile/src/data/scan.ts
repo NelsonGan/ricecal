@@ -39,6 +39,36 @@ export function useEntryIngredients(entryId: string | undefined) {
   })
 }
 
+/**
+ * Set one ingredient's portion. The database function recomputes the parent
+ * entry's quantity in the same transaction, so the plate total and the parts
+ * can never disagree — which is why this is an RPC and not a table update.
+ */
+export function useUpdateIngredient() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: {
+      ingredientId: string
+      quantity: number
+      entryId: string
+      logDate: string
+    }) => {
+      const { error } = await supabase.rpc('set_ingredient_quantity', {
+        p_ingredient_id: input.ingredientId,
+        p_quantity: input.quantity,
+      })
+      if (error) throw error
+    },
+    onSuccess: (_data, input) => {
+      queryClient.invalidateQueries({ queryKey: ['entry-ingredients', input.entryId] })
+      queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
+      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+    },
+  })
+}
+
 type RefineResponse = {
   ok: boolean
   applied?: boolean

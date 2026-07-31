@@ -978,6 +978,10 @@ export type Database = {
       search_normalize: { Args: { txt: string }; Returns: string }
       search_tsquery: { Args: { txt: string }; Returns: unknown }
       seed_archetype_foods: { Args: never; Returns: undefined }
+      set_ingredient_quantity: {
+        Args: { p_ingredient_id: string; p_quantity: number }
+        Returns: undefined
+      }
       trend_days: {
         Args: { p_range: string; p_user_id?: string }
         Returns: {
