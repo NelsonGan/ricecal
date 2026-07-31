@@ -61,6 +61,23 @@ export type Resolved = {
   ingredients?: Ingredient[]
 }
 
+/**
+ * Whatever was thrown, as one readable line. Half of what reaches a catch here
+ * is a PostgREST error — a plain object, which `String()` renders as
+ * "[object Object]" and a trace then carries all the way to a bug report.
+ */
+export const describe = (error: unknown): string => {
+  if (error instanceof Error) return error.message
+  if (error && typeof error === 'object') {
+    const { message, code, details, hint } = error as Record<string, unknown>
+    if (message || code) {
+      return [code, message, details, hint].filter(Boolean).join(' | ')
+    }
+    return JSON.stringify(error)
+  }
+  return String(error)
+}
+
 export const withinBand = (kcal: number, low: number, high: number): boolean =>
   high > 0 && kcal >= low * (1 - BAND_SLACK) && kcal <= high * (1 + BAND_SLACK)
 
@@ -108,9 +125,33 @@ type SearchRow = {
   serving_label: string | null
 }
 
-/** search_foods via RPC, shaped to what the cascade needs. */
-async function search(db: SupabaseClient, q: string, limit: number): Promise<SearchRow[]> {
-  const { data, error } = await db.rpc('search_foods', { q, match_limit: limit })
+/**
+ * search_foods via RPC, shaped to what the cascade needs.
+ *
+ * Two modes, and the default is the strict one. Forgiving matching — fuzzy
+ * names, any-term full text — is built for a person typing, and it costs over
+ * a second per call (nine on a cold cache) because a loose query matches tens
+ * of thousands of rows. A plate with five components makes five calls, which
+ * used to trip the 8s statement timeout: the component stage threw, the plate
+ * lost its breakdown, and the tier below rescaled one photo into two servings.
+ * Strict matching answers the same question in ~40ms, and every query on this
+ * path was written by a model that spells.
+ *
+ * The dish tier is the one that reaches for `forgiving`, and only after strict
+ * has come back empty — there its recall is worth the second, and the verifier
+ * call downstream is there to throw out what the looser net drags in.
+ */
+async function search(
+  db: SupabaseClient,
+  q: string,
+  limit: number,
+  mode: 'strict' | 'forgiving' = 'strict',
+): Promise<SearchRow[]> {
+  const { data, error } = await db.rpc('search_foods', {
+    q,
+    match_limit: limit,
+    p_fuzzy: mode === 'forgiving',
+  })
   if (error) throw error
   return ((data ?? []) as SearchRow[]).filter(
     (r) => r.id && r.default_serving_id && r.kcal !== null,
@@ -155,10 +196,26 @@ async function resolveByComponents(
     Math.round(Math.min(3, Math.max(0.25, q)) * 4) / 4
 
   const parts: Array<{ food: FoodRow; quantity: number; label: string; kcal: number }> = []
+
+  // One part's search failing is not the plate's problem: it means no
+  // catalogue answer for that part, which the model's own figures below
+  // already know how to price. A throw here used to take the whole stage with
+  // it — the plate lost its breakdown and fell to a tier that rescaled it.
+  //
+  // One at a time, deliberately. Fired together, five of these contend for a
+  // small instance and four of the five time out; run in turn each gets the
+  // whole box and the strict mode answers in tens of milliseconds.
   for (const component of item.components) {
     const q = usable(component.name)
     if (!q) continue
-    const rows = await search(db, q, 5)
+    const rows = await search(db, q, 5).catch((error) => {
+      // PostgREST hands back a plain object, which `String()` renders as
+      // "[object Object]" — the least useful thing a trace can say.
+      const message = `[cascade] components: search "${q}" failed: ${describe(error)}`
+      console.error(message)
+      trace?.push(message)
+      return [] as SearchRow[]
+    })
 
     // First relevance-ranked hit that is portion-plausible for this part.
     const fit =
@@ -343,7 +400,13 @@ async function resolveByDish(
   let candidates: SearchRow[] = []
   const missed: string[] = []
   for (const q of queries) {
+    // Strict first, which is nearly free and, for a dish the catalogue holds
+    // under that name, enough. The forgiving pass is the fallback rather than
+    // the default: "nasi lemak ayam goreng" needs every-term matching relaxed
+    // to reach "PappaRich Nasi Lemak Ayam Rendang", and that is worth a second
+    // once per scan — but not five times over, once per ingredient.
     candidates = await search(db, q, 5)
+    if (!candidates.length) candidates = await search(db, q, 5, 'forgiving')
     if (candidates.length) break
     missed.push(q)
   }
@@ -370,11 +433,19 @@ async function resolveByDish(
   }
 
   // Right identity, wrong amount — adjust `quantity`, never the macros.
-  if (item.confidence >= 0.5 && chosen.kcal > 0) {
+  //
+  // Only within touching distance of one portion, though. One photo is one
+  // plate, and past about half a portion either way the honest reading is not
+  // "two of these" but "the catalogue row is not the size of this dish" — a
+  // 1,275 kcal tray became `2 × Korean Fried Chicken` on a row where the user
+  // could plainly see one. Beyond the band this declines and tier 4 prices the
+  // plate at its own size, at one portion.
+  const ratio = chosen.kcal > 0 ? llmMid / chosen.kcal : 0
+  if (item.confidence >= 0.5 && ratio >= 0.5 && ratio <= 1.5) {
     return {
       tier: 3,
       food: asFood(chosen),
-      quantity: clampQuantity(llmMid / chosen.kcal),
+      quantity: clampQuantity(ratio),
       displayLabel: label,
     }
   }
@@ -516,7 +587,7 @@ export async function resolveItem(
   trace?: string[],
 ): Promise<Resolved | null> {
   const note = (stage: string, error: unknown) => {
-    const message = `[cascade] ${stage}: ${error instanceof Error ? error.message : String(error)}`
+    const message = `[cascade] ${stage}: ${describe(error)}`
     console.error(message)
     trace?.push(message)
   }

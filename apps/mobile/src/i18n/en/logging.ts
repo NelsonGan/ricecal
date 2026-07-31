@@ -124,16 +124,26 @@ export const logging = {
     nutrientsUnknown: 'No figures recorded for this dish yet. Its calories and macros are.',
     fixTitle: 'Fix it by typing',
     fixPlaceholder: 'no sambal, and it was half a plate',
-    /** The apply button and its outcomes, on a scanned entry only. */
-    fixApply: 'Fix it',
+    /**
+     * The send button inside the field, on a scanned entry only. Icon-only, so
+     * this is what a screen reader announces.
+     */
+    fixSend: 'Send this correction',
     fixApplied: 'Updated from your correction',
     fixNotApplied: 'Could not apply that — try rewording it',
     /** The scanned plate's ingredient breakdown. */
     plateTitle: 'ON THIS PLATE',
     plateTotal: 'Plate total',
+    /** How many of an ingredient are on the plate. Absent at one. */
+    times: '× {{amount}}',
     /** The per-ingredient portion steppers. */
     lessOf: 'Less {{name}}',
     moreOf: 'More {{name}}',
+    /**
+     * Stands in for a serving label the catalogue import left unusable — a
+     * measurement ("1 medium paper (8-5/8\" dia)") or a code ("383 GRM").
+     */
+    servingWord: 'serving',
     /** Saving an edit to an entry already in the diary. */
     updated: 'Entry updated',
     quickFix: {

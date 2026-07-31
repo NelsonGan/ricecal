@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(22);
+select plan(29);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 
@@ -75,12 +75,78 @@ select is(
 );
 
 
--- One estimate per dish, however it is spelt -----------------------------------
+-- The cascade's search mode ----------------------------------------------------
+--
+-- `p_fuzzy => false` is what the edge function passes. It exists because the
+-- trigram arm costs over a second per call and a plate with five components
+-- makes five calls back to back — enough to trip the statement timeout, which
+-- surfaced as a missing ingredient breakdown. The trade has to hold in both
+-- directions: no fuzzy matching for the cascade, all of it for a human typing.
+
+insert into public.foods (slug, name, place, kcal, carbs_g, protein_g, fat_g)
+values ('fixture-zzznasilemak', 'Zzznasilemak', 'hawker', 500, 60, 20, 18);
+
+insert into public.food_servings (food_id, slug, label, factor, is_default, position)
+select f.id, 'plate', '1 plate', 1.0, true, 0
+from public.foods f where f.slug = 'fixture-zzznasilemak';
+
+select is(
+  (select count(*)::integer from public.search_foods('zzznasilemk')),
+  1,
+  'the trigram arm still reaches a misspelling'
+);
+
+select is(
+  (select count(*)::integer from public.search_foods(q => 'zzznasilemk', p_fuzzy => false)),
+  0,
+  'p_fuzzy => false drops the trigram arm'
+);
+
+select is(
+  (select count(*)::integer from public.search_foods(q => 'zzznasilemak', p_fuzzy => false)),
+  1,
+  'a correctly spelled query still answers with the fuzzy arm off'
+);
+
+-- The other half of the flag: full text ORs its terms for a human narrating a
+-- meal, and ANDs them for the cascade. ORed, one shared word drags in tens of
+-- thousands of rows to rank, which is where the seconds went.
+select is(
+  (select count(*)::integer from public.search_foods('zzznasilemak with rendang')),
+  1,
+  'a forgiving search matches on one of its terms'
+);
+
+select is(
+  (select count(*)::integer
+   from public.search_foods(q => 'zzznasilemak with rendang', p_fuzzy => false)),
+  0,
+  'a strict search requires every term'
+);
+
+
+-- One estimate per dish per size, however it is spelt --------------------------
 
 select is(
   public.upsert_estimate_food('Zzz Test Estimate Dish', 500, 60, 20, 18),
-  public.upsert_estimate_food('  ZZZ test, estimate dish!  ', 700, 80, 30, 25),
+  public.upsert_estimate_food('  ZZZ test, estimate dish!  ', 510, 61, 20, 18),
   'estimates dedup on the normalized name — spelling and casing collapse to one row'
+);
+
+-- A plate of a different size is a different row. Reusing the 500 kcal row for
+-- a 700 kcal photo would either log 200 kcal short or push `quantity` to 1.5 —
+-- and one photo is one portion.
+select isnt(
+  public.upsert_estimate_food('Zzz Test Estimate Dish', 500, 60, 20, 18),
+  public.upsert_estimate_food('Zzz Test Estimate Dish', 700, 80, 30, 25),
+  'an estimate sized differently gets its own row'
+);
+
+select is(
+  (select kcal from public.foods where is_estimate
+   and name_norm = public.search_normalize('Zzz Test Estimate Dish (700 kcal)')),
+  700,
+  'the size-tagged row carries the size it was asked for'
 );
 
 -- And the reused row keeps its original figures: a later scan's opinion must

@@ -26,6 +26,7 @@ import {
 import { IconPicker } from '@/features/logging'
 import { MacroBars } from '@/features/shared'
 import { useBack, useDismissTo } from '@/lib/navigation'
+import { servingUnit } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
@@ -305,6 +306,17 @@ export default function FoodDetail() {
     finish()
   }
 
+  /**
+   * Send the typed correction and leave. Nothing is awaited here on purpose —
+   * see the field it belongs to, below.
+   */
+  const applyFix = () => {
+    const text = instruction.trim()
+    if (!existing || !text) return
+    refineEntry({ entryId: existing.id, instruction: text, logDate: selectedDate })
+    finish()
+  }
+
   const remove = () => {
     if (existing) {
       removeEntry.mutate({
@@ -332,7 +344,12 @@ export default function FoodDetail() {
           falls back to Today for the one route that arrives with no history —
           a deep link straight to a dish. */}
       <AppBar
-        title={food.name}
+        /* The name the row wears, which for a scanned plate is the model's
+           ("Korean fried chicken with rice and sides") rather than the matched
+           catalogue row's ("MEAL KIT, KOREAN FRIED CHICKEN WITH SWEET
+           GOCHUJANG SAUCE"). Everything else on this screen is the catalogue
+           row's; the title is what the user just tapped. */
+        title={existing?.foodName ?? food.name}
         onBack={() => goBack()}
         backLabel={t('common:a11y.back')}
         /* Delete lives up here rather than in a card at the foot of the screen.
@@ -457,7 +474,9 @@ export default function FoodDetail() {
           incrementLabel={t('common:a11y.increase')}
           // The unit is the serving the user picked below, not a generic
           // "pieces" — a plate and a piece are different amounts of food.
-          unit={serving.label}
+          // Cleaned of the count and the import's measurement detail, which
+          // the number to its left is already saying.
+          unit={servingUnit(serving.label) ?? t('logging:detail.servingWord')}
         />
 
         <View className="flex-row flex-wrap gap-2">
@@ -545,8 +564,16 @@ export default function FoodDetail() {
                   <Text variant="body" numberOfLines={1}>
                     {ingredient.name}
                   </Text>
+                  {/* The multiplier alone. The catalogue's own serving label
+                      belongs to whatever row the part matched — "1 medium
+                      paper (8-5/8" dia)" for a spoon of rice — and printing it
+                      here described the import rather than the plate. How many
+                      of it there are is the only part of that the user is
+                      changing, and the calories beside it say the rest. */}
                   {ingredient.quantity !== 1 ? (
-                    <Text variant="meta">{`${ingredient.quantity} × ${ingredient.servingLabel}`}</Text>
+                    <Text variant="meta">
+                      {t('logging:detail.times', { amount: ingredient.quantity })}
+                    </Text>
                   ) : null}
                 </View>
                 <View className="flex-row items-center gap-2">
@@ -554,11 +581,16 @@ export default function FoodDetail() {
                     <Text variant="numeric">{ingredient.kcal.toLocaleString()}</Text>
                     <Text variant="caption">{t('common:unit.kcal')}</Text>
                   </View>
+                  {/* Only the range disables them. Disabling every button on
+                      every row while a write was in flight made one tap blink
+                      the whole card grey and back — and there was nothing to
+                      wait for: the list updates optimistically, and the
+                      database clamps the range it accepts anyway. */}
                   <IconButton
                     size="sm"
                     variant="neutral"
                     accessibilityLabel={t('logging:detail.lessOf', { name: ingredient.name })}
-                    disabled={updateIngredient.isPending || ingredient.quantity <= 0.25}
+                    disabled={ingredient.quantity <= 0.25}
                     onPress={() => step(-1)}
                   >
                     <Icon set="ui" name="minus" size={16} tintColor={colors.ink} />
@@ -567,7 +599,7 @@ export default function FoodDetail() {
                     size="sm"
                     variant="neutral"
                     accessibilityLabel={t('logging:detail.moreOf', { name: ingredient.name })}
-                    disabled={updateIngredient.isPending || ingredient.quantity >= 10}
+                    disabled={ingredient.quantity >= 10}
                     onPress={() => step(1)}
                   >
                     <Icon set="ui" name="plus" size={16} tintColor={colors.ink} />
@@ -605,11 +637,34 @@ export default function FoodDetail() {
             </Text>
           </View>
 
+          {/* A message box, not a form: the send button lives in the field and
+              the keyboard's return key does the same thing. The correction runs
+              for several seconds on the server and this screen describes the
+              entry's OLD identity the whole time — so it fires and leaves, and
+              the wait happens on Today where the row shows the work and then
+              becomes its corrected self. */}
           <TextField
             value={instruction}
             onChangeText={setInstruction}
             placeholder={t('logging:detail.fixPlaceholder')}
-            returnKeyType="done"
+            returnKeyType="send"
+            onSubmitEditing={applyFix}
+            // Less room on the right than the field's own padding: the button
+            // is the edge now, and five points of gutter past it reads as a
+            // control that missed its corner.
+            className="pr-2"
+            rightSlot={
+              <IconButton
+                size="sm"
+                variant="primary"
+                className="self-center"
+                accessibilityLabel={t('logging:detail.fixSend')}
+                disabled={!instruction.trim()}
+                onPress={applyFix}
+              >
+                <Icon set="ui" name="arrow-up" size={20} tintColor={colors.onPandan} />
+              </IconButton>
+            }
           />
 
           {existing.suggestedEdits?.length ? (
@@ -625,25 +680,6 @@ export default function FoodDetail() {
               ))}
             </View>
           ) : null}
-
-          <Button
-            fullWidth
-            disabled={!instruction.trim()}
-            // Fire and leave. The correction runs for several seconds on the
-            // server, and this screen describes the entry's OLD identity the
-            // whole time — so the wait belongs on Today, where the row shows
-            // the work and then becomes its corrected self.
-            onPress={() => {
-              refineEntry({
-                entryId: existing.id,
-                instruction: instruction.trim(),
-                logDate: selectedDate,
-              })
-              finish()
-            }}
-          >
-            {t('logging:detail.fixApply')}
-          </Button>
         </Card>
       ) : existing ? (
         // A hand-logged entry keeps the note box: the text is saved on the row,

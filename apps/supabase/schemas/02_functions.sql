@@ -103,6 +103,43 @@ comment on function public.search_tsquery is
   'query holds no usable term.';
 
 
+-- The same query, ANDed.
+--
+-- ORing terms is right for a person narrating their lunch and wrong for a
+-- machine naming an ingredient, where it is also ruinously expensive: "steamed
+-- white rice" ORed matches 19,751 rows, and ranking them means pulling 14,463
+-- heap blocks — 118ms warm and over nine seconds cold, which on a plate with
+-- five components was enough to hit the statement timeout and lose the whole
+-- ingredient breakdown. ANDed the same query matches 11 rows in 12 blocks and
+-- runs in 44ms, and the rows it returns are the ones that are actually about
+-- steamed white rice.
+--
+-- Same tokens and same stopwords as its OR twin, so the two agree about what
+-- the query even is. Null when nothing usable is left.
+create or replace function public.search_tsquery_all(txt text)
+returns tsquery
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select to_tsquery('pg_catalog.simple', string_agg(quote_literal(tok), ' & '))
+  from unnest(string_to_array(public.search_normalize(txt), ' ')) as tok
+  where tok <> ''
+    and length(tok) >= 2
+    and tok <> all (array[
+      'a','an','the','of','with','and','or','in','on','at','to','for','some',
+      'this','that','it','is','are','plus','served','side','plate','bowl','cup',
+      'glass','serving','portion','piece','pieces','order','dish','meal','food'
+    ]);
+$$;
+
+comment on function public.search_tsquery_all is
+  'AND-semantics tsquery over the same terms as search_tsquery. Every term has '
+  'to appear: precise, and cheap enough for a caller making one query per '
+  'ingredient. Null when the query holds no usable term.';
+
+
 -- Keeps the two search columns on `foods` in step with the row.
 --
 -- `name_norm` is always derived. `search_text` is not: the catalogue loader
