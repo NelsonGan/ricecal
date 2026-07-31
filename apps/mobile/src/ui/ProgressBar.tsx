@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { View } from 'react-native'
+import { TextInput, View } from 'react-native'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -8,6 +8,7 @@ import Animated, {
 } from 'react-native-reanimated'
 
 import { motion } from '@/theme/tokens'
+import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
 import { Tappable } from './Tappable'
 import { Text } from './Text'
@@ -84,6 +85,18 @@ export type MacroBarProps = {
   onPressAmount?: () => void
   /** What a screen reader says about that control, if not "<label> <amount>". */
   amountLabel?: string
+  /**
+   * Puts a caret in the amount instead of a number.
+   *
+   * The field IS the amount — same face, same size, same place, no box around
+   * it — so the row does not change shape when it becomes editable and nothing
+   * new appears anywhere else on the card. `editingValue` is what is typed so
+   * far, empty meaning "still the figure shown".
+   */
+  editing?: boolean
+  editingValue?: string
+  onChangeAmount?: (value: string) => void
+  onDoneAmount?: () => void
   className?: string
 }
 
@@ -101,13 +114,39 @@ export function MacroBar({
   tone = 'kaya',
   onPressAmount,
   amountLabel,
+  editing = false,
+  editingValue = '',
+  onChangeAmount,
+  onDoneAmount,
   className,
 }: MacroBarProps) {
+  const colors = useThemeColors()
+
   return (
     <View className={cn('flex-1 gap-2', className)}>
-      <View className="flex-row justify-between">
+      <View className="flex-row items-center justify-between">
         <Text variant="label">{label}</Text>
-        {onPressAmount ? (
+        {editing ? (
+          // Typed in place. The input carries the same class list as the text
+          // it replaces, so the only thing that changes on the row is that
+          // there is a caret in it.
+          <TextInput
+            value={editingValue}
+            onChangeText={onChangeAmount}
+            onBlur={onDoneAmount}
+            onSubmitEditing={onDoneAmount}
+            placeholder={amount}
+            placeholderTextColor={colors.faint}
+            keyboardType="decimal-pad"
+            returnKeyType="done"
+            autoFocus
+            selectTextOnFocus
+            accessibilityLabel={amountLabel ?? label}
+            className="min-w-[64px] text-right font-body-black text-[15px] leading-[20px] text-ink"
+            cursorColor={colors.pandan}
+            selectionColor={colors.pandan}
+          />
+        ) : onPressAmount ? (
           // The number itself is the control. A macro that can be corrected
           // should be corrected where it is read, not in a second form
           // underneath repeating all four figures back.
@@ -115,9 +154,8 @@ export function MacroBar({
             onPress={onPressAmount}
             accessibilityRole="button"
             accessibilityLabel={amountLabel ?? `${label} ${amount}`}
-            className="rounded-sm border-[2px] border-line border-dashed px-2"
           >
-            <Text variant="label" className="text-ink">
+            <Text variant="label" className="text-muted">
               {amount}
             </Text>
           </Tappable>

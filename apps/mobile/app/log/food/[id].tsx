@@ -2,7 +2,7 @@ import { Image } from 'expo-image'
 import { useLocalSearchParams } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, ScrollView, View } from 'react-native'
+import { ActivityIndicator, ScrollView, TextInput, View } from 'react-native'
 
 import {
   type EntryPatch,
@@ -627,12 +627,10 @@ export default function FoodDetail() {
               not right is corrected here, on the figure being read, rather
               than in a form underneath that repeats all four of them. */}
           {editing === 'kcal' ? (
-            // Sized to the number, not to the card. A full-width field for
-            // four digits pushed the caption off the row and made a tap on a
-            // total look like a form had opened.
-            <TextField
-              containerClassName="w-[130px]"
-              className="min-h-[44px] px-3"
+            // The number's own face and place, with a caret in it. A bordered
+            // field here made a tap on the total look like a form had opened
+            // over the card.
+            <TextInput
               value={typed.kcal}
               onChangeText={(value) => setTyped((current) => ({ ...current, kcal: value }))}
               onBlur={() => {
@@ -644,17 +642,21 @@ export default function FoodDetail() {
                 queue({ overrides: { kcal: figure(typed.kcal) } })
               }}
               placeholder={String(macros.kcal)}
+              placeholderTextColor={colors.faint}
               keyboardType="number-pad"
-              inputClassName="font-display text-[28px] leading-[34px] text-heading"
-              autoFocus
               returnKeyType="done"
+              autoFocus
+              selectTextOnFocus
+              accessibilityLabel={t('logging:detail.editKcal')}
+              className="min-w-[120px] font-display text-[32px] leading-[39px] text-heading"
+              cursorColor={colors.pandan}
+              selectionColor={colors.pandan}
             />
           ) : (
             <Tappable
               onPress={existing ? () => setEditing('kcal') : undefined}
               accessibilityRole={existing ? 'button' : undefined}
               accessibilityLabel={existing ? t('logging:detail.editKcal') : undefined}
-              className={existing ? 'rounded-sm border-[2px] border-line border-dashed px-2' : ''}
             >
               <Text variant="displayMd">{macros.kcal.toLocaleString()}</Text>
             </Tappable>
@@ -662,36 +664,24 @@ export default function FoodDetail() {
           <Text variant="overline">{t('logging:detail.total')}</Text>
         </View>
 
-        {/* The same for the three macros: the amount beside each bar is the
-            control. `editing` holds at most one at a time, so the row being
-            typed swaps for a field and the other two stay legible. */}
-        {editing === 'carbs' || editing === 'protein' || editing === 'fat' ? (
-          <TextField
-            containerClassName="w-[130px] self-end"
-            className="min-h-[44px] px-3"
-            label={t(`logging:detail.${editing}Field`)}
-            value={typed[editing]}
-            onChangeText={(value) => setTyped((current) => ({ ...current, [editing]: value }))}
-            onBlur={() => {
-              setEditing(null)
-              queue({ overrides: { [editing]: figure(typed[editing]) } })
-            }}
-            onSubmitEditing={() => {
-              setEditing(null)
-              queue({ overrides: { [editing]: figure(typed[editing]) } })
-            }}
-            placeholder={String(macros[editing])}
-            keyboardType="decimal-pad"
-            autoFocus
-            returnKeyType="done"
-          />
-        ) : null}
-
         {targets ? (
           <MacroBars
             eaten={macros}
             targets={targets}
             onEdit={existing ? (macro) => setEditing(macro) : undefined}
+            editing={editing === 'kcal' ? null : editing}
+            editingValue={editing && editing !== 'kcal' ? typed[editing] : ''}
+            onChangeAmount={(value) =>
+              setTyped((current) =>
+                editing && editing !== 'kcal' ? { ...current, [editing]: value } : current,
+              )
+            }
+            onDoneAmount={() => {
+              if (editing && editing !== 'kcal') {
+                queue({ overrides: { [editing]: figure(typed[editing]) } })
+              }
+              setEditing(null)
+            }}
           />
         ) : null}
 
@@ -801,20 +791,12 @@ export default function FoodDetail() {
                       here described the import rather than the plate. How many
                       of it there are is the only part of that the user is
                       changing, and the calories beside it say the rest. */}
-                  {/* The count and its own macros, always. The plate's totals
-                      are a sum of these, and a row that showed only calories
-                      left the user to guess which part the carbs came from —
-                      while hiding "× 1" made a single portion look like a
-                      different kind of row from two of something. */}
+                  {/* The count, and only the count. Its macros were under
+                      here for a while and made every row two lines of small
+                      figures — the plate's totals are the sum of them and are
+                      already on the card above. */}
                   <Text variant="meta">
-                    {`${t('logging:detail.times', { amount: ingredient.quantity })} · ${t(
-                      'logging:detail.macroLine',
-                      {
-                        carbs: ingredient.carbs,
-                        protein: ingredient.protein,
-                        fat: ingredient.fat,
-                      },
-                    )}`}
+                    {t('logging:detail.times', { amount: ingredient.quantity })}
                   </Text>
                 </View>
                 <View className="flex-row items-center gap-2">
@@ -919,10 +901,14 @@ export default function FoodDetail() {
             // One line that scrolls, rather than wrapping to two. Three chips
             // of unpredictable length were rearranging the card's height as
             // the model's suggestions changed.
+            // Bled past the card's own padding on both sides, so a chip that
+            // runs off the screen is cut by the screen rather than stopping
+            // short of it behind a strip of white.
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerClassName="flex-row gap-2 pr-4"
+              className="-mx-card"
+              contentContainerClassName="flex-row gap-2 px-card"
             >
               {existing.suggestedEdits.map((edit) => (
                 <Chip
