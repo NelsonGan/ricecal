@@ -74,15 +74,27 @@ grant select, insert, delete on public.food_scan_misses to service_role;
 
 
 -- ---------------------------------------------------------------------------
--- Tier 4's write path: one estimate row per normalized name, made here rather
--- than in the edge function because the dedup rule IS `search_normalize`, and
--- reimplementing that in TypeScript would fork the definition. `on conflict`
--- over the partial unique index turns two users estimating the same dish
--- concurrently into one shared row instead of a race.
+-- Tier 4's write path: one estimate row per normalized name AND size, made
+-- here rather than in the edge function because the dedup rule IS
+-- `search_normalize`, and reimplementing that in TypeScript would fork the
+-- definition. `on conflict` over the partial unique index turns two users
+-- estimating the same dish concurrently into one shared row instead of a race.
 --
 -- Existing macros are NOT updated on conflict: the row may have been corrected
 -- by a curator since it was first written, and a later scan's opinion must not
 -- undo that. What it gets is reused, which is the point.
+--
+-- SIZE IS PART OF THE IDENTITY.
+--
+-- Dedup on the name alone made "nasi lemak" one row, and a 366 kcal row is not
+-- the plate a 780 kcal photo is of. The entry then had two ways to be wrong:
+-- log the reused figure and be 400 kcal light, or absorb the difference into
+-- `quantity` and tell the user they ate two plates when they photographed one.
+-- Both were happening. So a request whose calories are not the size of the row
+-- that bears the name gets its OWN row, named with the size it is for, and the
+-- entry above it stays at one portion — which is what one photo of one plate
+-- means. The suffix is only ever seen in the curation backlog: a scanned entry
+-- wears the model's `display_label`.
 -- ---------------------------------------------------------------------------
 create or replace function public.upsert_estimate_food(
   p_name      text,
@@ -99,15 +111,31 @@ language plpgsql
 set search_path = ''
 as $$
 declare
+  v_name text := left(trim(p_name), 120);
   v_norm text := public.search_normalize(p_name);
+  -- Half a bucket: inside this the reused figure and the requested one round
+  -- to the same 50 kcal, so the entry above can stay at exactly one portion.
+  v_slack integer := greatest(25, round(p_kcal * 0.05));
   v_id   uuid;
+  v_kcal integer;
 begin
   if v_norm = '' then
     raise exception 'estimate name normalizes to nothing usable';
   end if;
 
-  select f.id into v_id from public.foods f
+  select f.id, f.kcal into v_id, v_kcal from public.foods f
   where f.is_estimate and f.name_norm = v_norm;
+
+  -- The row that owns this name is for a different-sized plate. Move to a
+  -- size-tagged name, rounded to 50 kcal so that the same plate photographed
+  -- twice lands on one row rather than on two a few calories apart.
+  if v_id is not null and abs(v_kcal - p_kcal) > v_slack then
+    v_name := left(v_name, 108) || ' (' || (greatest(1, round(p_kcal / 50.0)) * 50) || ' kcal)';
+    v_norm := public.search_normalize(v_name);
+
+    select f.id, f.kcal into v_id, v_kcal from public.foods f
+    where f.is_estimate and f.name_norm = v_norm;
+  end if;
 
   if v_id is null then
     insert into public.foods
@@ -115,7 +143,7 @@ begin
        sodium_mg, verified, is_estimate, source)
     values
       ('estimate-' || replace(v_norm, ' ', '-'),
-       left(trim(p_name), 120), 'home',
+       v_name, 'home',
        p_kcal, p_carbs_g, p_protein_g, p_fat_g, p_fibre_g, p_sugar_g,
        p_sodium_mg, false, true, 'llm estimate')
     on conflict (name_norm) where is_estimate do nothing
@@ -140,8 +168,8 @@ end;
 $$;
 
 comment on function public.upsert_estimate_food is
-  'Reuse-or-create a tier-4 estimate row, deduped on the normalized name. '
-  'Returns the food id. service_role only.';
+  'Reuse-or-create an estimate row, deduped on the normalized name AND the '
+  'portion size it is for. Returns the food id. service_role only.';
 
 revoke execute on function public.upsert_estimate_food from public, anon, authenticated;
 grant execute on function public.upsert_estimate_food to service_role;

@@ -28,7 +28,19 @@
 create or replace function public.search_foods(
   q            text,
   p_place      public.food_place default null,
-  match_limit  integer           default 50
+  match_limit  integer           default 50,
+  -- Forgiving matching, which is two things: the trigram arm, and OR-semantics
+  -- full text. Both exist for a person — one for the typo, one for the four
+  -- words of narration around the dish name — and both are expensive, because
+  -- a loose query matches tens of thousands of rows and ranking them means
+  -- reading the heap. A plate with five components ran five such queries back
+  -- to back and blew the 8s statement timeout, which surfaced as a lost
+  -- ingredient breakdown and a portion rescaled off the wrong tier.
+  --
+  -- `false` is the machine's mode: every term must appear, no fuzzy names.
+  -- Two orders of magnitude cheaper, and it answers a query written by a model
+  -- that spells — which is what the scan cascade sends.
+  p_fuzzy      boolean           default true
 )
 returns setof public.food_details
 language sql
@@ -46,7 +58,12 @@ as $$
   -- times for "milk", turning a 76 ms scan into a 525 ms one. Computing both
   -- forms of the query exactly once is the whole job of this CTE.
   with params as materialized (
-    select public.search_normalize(q) as qn, public.search_tsquery(q) as tsq
+    select
+      public.search_normalize(q) as qn,
+      case
+        when p_fuzzy then public.search_tsquery(q)
+        else public.search_tsquery_all(q)
+      end as tsq
   ),
   -- Each arm is capped before fusion, not after. A post-filter would let two
   -- hundred irrelevant candidates crowd out the handful that survive it.
@@ -94,7 +111,8 @@ as $$
     from (
       select f.id
       from public.foods f, params p
-      where p.qn <> ''
+      where p_fuzzy
+        and p.qn <> ''
         and f.place <> 'packaged'
         and f.name_norm operator(extensions.%) p.qn
         and not f.is_estimate and not f.is_archetype
@@ -128,7 +146,9 @@ comment on function public.search_foods is
   'Fuzzy, multilingual food search over the catalogue. Fuses exact, full-text '
   'and trigram arms with Reciprocal Rank Fusion. Returns `food_details` rows in '
   'relevance order; an empty or all-stopword query returns nothing, which the '
-  'client reads as "browse instead".';
+  'client reads as "browse instead". `p_fuzzy => false` drops the trigram arm '
+  'and requires every term to match: two orders of magnitude faster, for '
+  'callers whose queries are machine-written and therefore correctly spelled.';
 
 -- `security invoker` by default, so the caller's RLS on `foods` still applies —
 -- the function widens what can be asked, not what can be seen.

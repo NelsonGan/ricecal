@@ -11,6 +11,7 @@ import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
 
 import {
+  describe,
   resolveByArchetype,
   resolveItem,
   type WrittenEntry,
@@ -104,7 +105,7 @@ Deno.serve(async (req: Request) => {
       // fold them back into a single composite plate. Drinks stay separate.
       vision = foldMealItems(await analysePhoto(photoBase64, mock))
     } catch (error) {
-      const message = `[vision] ${error instanceof Error ? error.message : String(error)}`
+      const message = `[vision] ${describe(error)}`
       console.error(message)
       trace.push(message)
       vision = null

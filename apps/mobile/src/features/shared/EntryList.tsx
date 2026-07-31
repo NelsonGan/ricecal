@@ -6,6 +6,7 @@ import { Animated, Easing, View } from 'react-native'
 import type { DayLog, Entry } from '@/data'
 import { useMealPhotoUrl, useRefiningEntries } from '@/data'
 import { sumMacros } from '@/lib/nutrition'
+import { portionLabel } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
 import { Card, Icon, Text } from '@/ui'
 import { ItemRow } from './ItemRow'
@@ -103,7 +104,9 @@ function EntryRow({
     )
   }
 
-  const portion = `${entry.quantity > 1 ? `${entry.quantity} × ` : ''}${entry.servingLabel}`
+  // Cleaned, because the label is whatever the catalogue import carried: half
+  // of them are measurements rather than portions. See `servingUnit`.
+  const portion = portionLabel(entry.quantity, entry.servingLabel, t('logging:detail.servingWord'))
 
   return (
     <ItemRow
@@ -122,7 +125,18 @@ function EntryRow({
 }
 
 /** How often the status line changes while a scan runs. */
-const PHRASE_MS = 2600
+const PHRASE_MS = 4200
+
+/**
+ * How long the bar takes to reach its ceiling.
+ *
+ * Paced for the slow end of a real scan, not the fast end. A photo is a vision
+ * call, a handful of catalogue searches and often a second model call — twenty
+ * seconds is ordinary and thirty happens. At eighteen seconds the bar was
+ * parked at the ceiling for the half of the wait that felt longest, which is
+ * the one thing a progress bar must not do.
+ */
+const FILL_MS = 45000
 
 /**
  * A snap being scanned: the photo, a line of rotating status text, and a bar
@@ -162,8 +176,10 @@ function AnalysingRow({ entry, mode = 'scan' }: { entry: Entry; mode?: 'scan' | 
     // bar has, which is what makes it read as progress.
     Animated.timing(progress, {
       toValue: 1,
-      duration: 18000,
-      easing: Easing.out(Easing.cubic),
+      duration: FILL_MS,
+      // Quadratic rather than cubic: cubic spent its first second covering a
+      // third of the bar and then crawled, which reads as a stall.
+      easing: Easing.out(Easing.quad),
       // Width in percent is a layout property, so the native driver cannot
       // animate it.
       useNativeDriver: false,

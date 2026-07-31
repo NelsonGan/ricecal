@@ -945,6 +945,7 @@ export type Database = {
       search_foods: {
         Args: {
           match_limit?: number
+          p_fuzzy?: boolean
           p_place?: Database['public']['Enums']['food_place']
           q: string
         }
