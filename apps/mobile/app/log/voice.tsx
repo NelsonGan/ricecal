@@ -41,7 +41,6 @@ export default function VoiceSheet() {
       await logFood.mutateAsync({
         foodId: heard.foodId,
         servingId: heard.servingId,
-        meal,
         logDate: selectedDate,
         source: 'voice',
       })

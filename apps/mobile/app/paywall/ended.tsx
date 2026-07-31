@@ -98,7 +98,7 @@ export default function TrialEnded() {
               icon={entry.icon}
               value={entry.macros.kcal}
               unit="kcal"
-              detail={t('paywall:ended.lockedEntry', { meal: t(`common:meal.${entry.meal}`) })}
+              detail={t('paywall:ended.lockedEntry', { meal: '' })}
             />
           </Card>
         )

@@ -165,14 +165,14 @@ select f.id, 'plate', '1 plate', 1, true
 from public.foods f
 where f.slug in ('fixture-nasi-lemak-ayam', 'fixture-teh-tarik', 'fixture-roti-canai');
 
-insert into public.food_logs (user_id, log_date, meal, food_id, serving_id, quantity)
-select :'user_a', current_date, 'breakfast', f.id, s.id, 1
+insert into public.food_logs (user_id, log_date, food_id, serving_id, quantity)
+select :'user_a', current_date,  f.id, s.id, 1
 from public.foods f
 join public.food_servings s on s.food_id = f.id and s.is_default
 where f.slug = 'fixture-nasi-lemak-ayam';
 
-insert into public.food_logs (user_id, log_date, meal, food_id, serving_id, quantity)
-select :'user_a', current_date, 'breakfast', f.id, s.id, 2
+insert into public.food_logs (user_id, log_date, food_id, serving_id, quantity)
+select :'user_a', current_date,  f.id, s.id, 2
 from public.foods f
 join public.food_servings s on s.food_id = f.id and s.is_default
 where f.slug = 'fixture-teh-tarik';
@@ -188,8 +188,8 @@ select is(
 -- being measured in cups of teh tarik.
 select throws_ok(
   format(
-    $q$insert into public.food_logs (user_id, log_date, meal, food_id, serving_id)
-       values (%L, current_date, 'lunch',
+    $q$insert into public.food_logs (user_id, log_date, food_id, serving_id)
+       values (%L, current_date,
          (select id from public.foods where slug = 'fixture-nasi-lemak-ayam'),
          (select s.id from public.food_servings s
             join public.foods f on f.id = s.food_id
@@ -204,8 +204,8 @@ select throws_ok(
 
 -- 5. STREAK ------------------------------------------------------------------
 
-insert into public.food_logs (user_id, log_date, meal, food_id, serving_id)
-select :'user_a', current_date - 1, 'dinner', f.id, s.id
+insert into public.food_logs (user_id, log_date, food_id, serving_id)
+select :'user_a', current_date - 1, f.id, s.id
 from public.foods f
 join public.food_servings s on s.food_id = f.id and s.is_default
 where f.slug = 'fixture-roti-canai';

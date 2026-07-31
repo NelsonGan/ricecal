@@ -11,7 +11,7 @@ import {
 import { AppState } from 'react-native'
 import { createMMKV } from 'react-native-mmkv'
 
-import type { Entry, Meal } from './types'
+import type { Entry } from './types'
 
 /**
  * Snaps that have no row yet.
@@ -40,7 +40,6 @@ import type { Entry, Meal } from './types'
 
 export type PendingSnap = {
   id: string
-  meal: Meal
   logDate: string
   /** Local `file://` uri. There is no stored key until the upload finishes. */
   photoUri?: string
@@ -205,7 +204,6 @@ export function usePendingSnaps(): PendingValue {
 export function pendingAsEntry(snap: PendingSnap): Entry {
   return {
     id: snap.id,
-    meal: snap.meal,
     quantity: 1,
     loggedAt: snap.loggedAt,
     logDate: snap.logDate,

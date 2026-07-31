@@ -62,7 +62,7 @@ export const logging = {
   },
 
   selector: {
-    title: 'Add to {{meal}}',
+    title: 'Log a dish',
     remaining: '{{count}} left',
     snap: 'Snap',
     search: 'Search',
@@ -97,8 +97,8 @@ export const logging = {
   },
 
   added: {
-    toast: 'Added to {{meal}}, {{kcal}} kcal',
-    removedToast: 'Removed from {{meal}}',
+    toast: 'Added, {{kcal}} kcal',
+    removedToast: 'Removed from today',
   },
 
   search: {
@@ -147,7 +147,6 @@ export const logging = {
      * this is what a screen reader announces.
      */
     fixSend: 'Send this correction',
-    fixApplied: 'Updated from your correction',
     fixNotApplied: 'Could not apply that — try rewording it',
     /** The scanned plate's ingredient breakdown. */
     plateTitle: 'INGREDIENTS',
@@ -167,6 +166,8 @@ export const logging = {
      * headings for a form.
      */
     editKcal: 'Edit the calories',
+    /** Renaming one logged entry, which does not rename the dish. */
+    nameField: 'What to call this',
     numbersReset: 'Use the app’s figures',
     carbsField: 'Carbs (g)',
     proteinField: 'Protein (g)',
@@ -176,15 +177,12 @@ export const logging = {
      * measurement ("1 medium paper (8-5/8\" dia)") or a code ("383 GRM").
      */
     servingWord: 'serving',
-    /** Saving an edit to an entry already in the diary. */
-    updated: 'Entry updated',
     quickFix: {
       halfPortion: 'Half portion',
       noSambal: 'No sambal',
       addEgg: 'Add an egg',
       extraRice: 'Extra rice',
     },
-    mealLabel: 'MEAL',
     editByHand: 'Edit the details by hand',
     deleteEntry: 'Delete this entry',
     deleteTitle: 'Delete this entry?',

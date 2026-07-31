@@ -902,7 +902,6 @@ export async function writeEntry(
   db: SupabaseClient,
   input: {
     userId: string
-    meal: string
     logDate: string
     scanId: string
     resolved: Resolved
@@ -917,7 +916,6 @@ export async function writeEntry(
       user_id: input.userId,
       food_id: resolved.food.id,
       serving_id: resolved.food.serving_id,
-      meal: input.meal,
       log_date: input.logDate,
       quantity: resolved.quantity,
       source: 'camera',

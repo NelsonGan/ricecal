@@ -101,11 +101,7 @@ export default function TodayScreen() {
     announced.current = justAdded.id
 
     toast.show({
-      title: t('logging:added.toast', {
-        // Lowercased: the meal name sits mid-sentence here, not as a heading.
-        meal: t(`common:meal.${justAdded.meal}`).toLowerCase(),
-        kcal: justAdded.macros.kcal.toLocaleString(),
-      }),
+      title: t('logging:added.toast', { kcal: justAdded.macros.kcal.toLocaleString() }),
       tone: 'success',
       icon: { set: 'ui', name: 'check' },
       action: {
@@ -243,7 +239,7 @@ export default function TodayScreen() {
         // row has nothing in it worth keeping.
         onFixEntry={(entry) => {
           pending.remove(entry.id)
-          router.push({ pathname: '/log/search', params: { meal: entry.meal } })
+          router.push({ pathname: '/log/search' })
         }}
         // Nothing was logged for a photo with no food in it, so there is no
         // entry to delete — dismissing drops the row the shutter put there.
@@ -257,9 +253,7 @@ export default function TodayScreen() {
             logDate: entry.logDate,
             photoPath: entry.photoPath,
           })
-          toast.show({
-            title: t('logging:added.removedToast', { meal: t(`common:meal.${entry.meal}`) }),
-          })
+          toast.show({ title: t('logging:added.removedToast') })
         }}
       />
     </Screen>
