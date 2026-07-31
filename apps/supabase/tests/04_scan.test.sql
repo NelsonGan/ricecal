@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(19);
+select plan(22);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 
@@ -183,6 +183,38 @@ select is(
   (select kcal from public.foods where id = 'a0000000-0000-4000-8000-000000000000'),
   'the ingredient view prices the part from its catalogue row'
 );
+
+-- The one client write on a breakdown: an ingredient's portion, through the
+-- owner-checked function that recomputes the parent in the same transaction.
+select i.id as ing_id
+from public.food_log_ingredients i
+join public.food_logs e on e.id = i.food_log_id
+where e.user_id = :'user_a'
+limit 1 \gset
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', :'user_a', 'role', 'authenticated')::text, true);
+set local role authenticated;
+
+select lives_ok(
+  format('select public.set_ingredient_quantity(%L::uuid, 0.5)', :'ing_id'),
+  'the owner can change an ingredient portion'
+);
+
+select is(
+  (select quantity from public.food_log_ingredients where id = :'ing_id'),
+  0.50,
+  'the ingredient carries the new portion'
+);
+
+-- Parent 600 kcal x 1; the halved 600 kcal ingredient sums to 300 → 0.5.
+select is(
+  (select quantity from public.food_logs where user_id = :'user_a'),
+  0.50,
+  'the parent entry quantity recomputes to the sum of parts'
+);
+
+reset role;
 
 delete from public.food_logs where user_id = :'user_a';
 

@@ -67,3 +67,76 @@ create policy "food_log_ingredients: read own"
       where e.id = food_log_id and e.user_id = (select auth.uid())
     )
   );
+
+
+-- ---------------------------------------------------------------------------
+-- The one ingredient edit a client may make: its portion.
+--
+-- A direct UPDATE grant would let an ingredient list drift from the parent
+-- entry's total silently. This function is the write path instead: it sets
+-- the part's quantity and in the same transaction recomputes the parent
+-- entry's `quantity` so that parent × quantity equals the new sum of parts —
+-- the shared parent row's macros are never touched (it is deduped across
+-- users), the AMOUNT moves, which is rule 12 all the way down.
+--
+-- SECURITY DEFINER because clients have no update grant on the table at all;
+-- ownership is checked against auth.uid() explicitly, so it widens what can
+-- be done, not whose rows it can be done to.
+-- ---------------------------------------------------------------------------
+create or replace function public.set_ingredient_quantity(
+  p_ingredient_id uuid,
+  p_quantity      numeric
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_log_id  uuid;
+  v_user_id uuid;
+  v_sum     numeric;
+  v_base    numeric;
+begin
+  select i.food_log_id, e.user_id into v_log_id, v_user_id
+  from public.food_log_ingredients i
+  join public.food_logs e on e.id = i.food_log_id
+  where i.id = p_ingredient_id;
+
+  if v_log_id is null or v_user_id is distinct from auth.uid() then
+    raise exception 'ingredient not found';
+  end if;
+  if p_quantity is null or p_quantity < 0.25 or p_quantity > 20 then
+    raise exception 'quantity out of range';
+  end if;
+
+  update public.food_log_ingredients
+  set quantity = p_quantity
+  where id = p_ingredient_id;
+
+  select sum(f.kcal * s.factor * i.quantity) into v_sum
+  from public.food_log_ingredients i
+  join public.foods f         on f.id = i.food_id
+  join public.food_servings s on s.id = i.serving_id
+  where i.food_log_id = v_log_id;
+
+  select f.kcal * s.factor into v_base
+  from public.food_logs e
+  join public.foods f         on f.id = e.food_id
+  join public.food_servings s on s.id = e.serving_id
+  where e.id = v_log_id;
+
+  if coalesce(v_base, 0) > 0 and coalesce(v_sum, 0) > 0 then
+    update public.food_logs
+    set quantity = greatest(0.01, least(100, round(v_sum / v_base, 2)))
+    where id = v_log_id;
+  end if;
+end;
+$$;
+
+comment on function public.set_ingredient_quantity is
+  'Set one scanned ingredient''s portion and recompute the parent entry''s '
+  'quantity so the diary total equals the sum of parts. Owner-checked.';
+
+revoke execute on function public.set_ingredient_quantity from public, anon;
+grant execute on function public.set_ingredient_quantity to authenticated, service_role;
