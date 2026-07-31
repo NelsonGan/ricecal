@@ -150,13 +150,25 @@ export const logging = {
     fixApplied: 'Updated from your correction',
     fixNotApplied: 'Could not apply that — try rewording it',
     /** The scanned plate's ingredient breakdown. */
-    plateTitle: 'ON THIS PLATE',
-    plateTotal: 'Plate total',
+    plateTitle: 'INGREDIENTS',
+    plateTotal: 'Total',
     /** How many of an ingredient are on the plate. Absent at one. */
     times: '× {{amount}}',
-    /** The per-ingredient portion steppers. */
+    /** The per-ingredient portion steppers, and the one that empties a row. */
     lessOf: 'Less {{name}}',
     moreOf: 'More {{name}}',
+    removeOf: 'Remove {{name}}',
+    /**
+     * Typing the numbers in by hand, for the dish the app got close but not
+     * right — off a packet, off a recipe, off the kitchen scale.
+     */
+    numbersTitle: 'THE NUMBERS',
+    numbersNote: 'Type over anything the app got wrong. Blank means use the app’s figure.',
+    numbersReset: 'Use the app’s figures',
+    kcalField: 'Calories',
+    carbsField: 'Carbs (g)',
+    proteinField: 'Protein (g)',
+    fatField: 'Fat (g)',
     /**
      * Stands in for a serving label the catalogue import left unusable — a
      * measurement ("1 medium paper (8-5/8\" dia)") or a code ("383 GRM").

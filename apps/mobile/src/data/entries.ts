@@ -111,6 +111,17 @@ export type EntryPatch = {
    * delete the object it leaves behind. Nothing else reads it.
    */
   currentPhotoPath?: string
+  /**
+   * Figures the user typed for THIS entry, each overriding what the catalogue
+   * computes. `null` clears one and goes back to the computed number; omitting
+   * a field leaves whatever is stored alone.
+   */
+  overrides?: {
+    kcal?: number | null
+    carbs?: number | null
+    protein?: number | null
+    fat?: number | null
+  }
 }
 
 export function useUpdateEntry() {
@@ -127,6 +138,7 @@ export function useUpdateEntry() {
       icon,
       photoPath,
       currentPhotoPath,
+      overrides,
     }: EntryPatch) => {
       /**
        * The old object is orphaned when either kind of picture arrives to take
@@ -170,6 +182,19 @@ export function useUpdateEntry() {
             ...((photoPath === undefined
               ? {}
               : { photo_path: photoPath, icon_set: null, icon_name: null }) as object),
+            // Typed figures, same cast and same reason as the icon columns
+            // above: generated types do not know a column until the migration
+            // that adds it has been reset into the local stack.
+            ...((overrides === undefined
+              ? {}
+              : {
+                  ...(overrides.kcal === undefined ? {} : { override_kcal: overrides.kcal }),
+                  ...(overrides.carbs === undefined ? {} : { override_carbs_g: overrides.carbs }),
+                  ...(overrides.protein === undefined
+                    ? {}
+                    : { override_protein_g: overrides.protein }),
+                  ...(overrides.fat === undefined ? {} : { override_fat_g: overrides.fat }),
+                }) as object),
           })
           .eq('id', id)
           .eq('user_id', userId)

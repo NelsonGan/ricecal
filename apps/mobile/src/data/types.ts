@@ -156,6 +156,11 @@ export type Entry = {
    * A local `file://` uri, set only while a snap is in flight — before the
    * upload finishes there is no key to show, and the row still wants a picture.
    */
+  /**
+   * Figures the user typed for this entry, per field. Present only where they
+   * typed one — the macros above already carry the result of applying them.
+   */
+  overrides?: { kcal?: number; carbs?: number; protein?: number; fat?: number }
   localPhotoUri?: string
   status?: EntryStatus
   /** Restored from storage: still working, but past the point of a progress bar. */

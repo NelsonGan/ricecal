@@ -103,6 +103,49 @@ export function useUpdateIngredient() {
   })
 }
 
+/**
+ * Take one ingredient off a scanned plate.
+ *
+ * Its own mutation rather than "set the quantity to zero": the database
+ * function deletes the row and recomputes the parent from what is left, and a
+ * portion of zero is not a portion.
+ */
+export function useRemoveIngredient() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: { ingredientId: string; entryId: string; logDate: string }) => {
+      const { error } = await supabase.rpc('remove_ingredient', {
+        p_ingredient_id: input.ingredientId,
+      })
+      if (error) throw error
+    },
+    onMutate: async (input) => {
+      const key = ['entry-ingredients', input.entryId]
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<EntryIngredient[]>(key)
+      if (previous) {
+        queryClient.setQueryData(
+          key,
+          previous.filter((ingredient) => ingredient.id !== input.ingredientId),
+        )
+      }
+      return { previous }
+    },
+    onError: (_error, input, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['entry-ingredients', input.entryId], context.previous)
+      }
+    },
+    onSettled: (_data, _error, input) => {
+      queryClient.invalidateQueries({ queryKey: ['entry-ingredients', input.entryId] })
+      queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
+      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+    },
+  })
+}
+
 type RefineResponse = {
   ok: boolean
   applied?: boolean

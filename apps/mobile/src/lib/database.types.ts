@@ -190,6 +190,10 @@ export type Database = {
           logged_at: string
           meal: Database['public']['Enums']['meal']
           note: string | null
+          override_carbs_g: number | null
+          override_fat_g: number | null
+          override_kcal: number | null
+          override_protein_g: number | null
           photo_path: string | null
           quantity: number
           scan_id: string | null
@@ -210,6 +214,10 @@ export type Database = {
           logged_at?: string
           meal: Database['public']['Enums']['meal']
           note?: string | null
+          override_carbs_g?: number | null
+          override_fat_g?: number | null
+          override_kcal?: number | null
+          override_protein_g?: number | null
           photo_path?: string | null
           quantity?: number
           scan_id?: string | null
@@ -230,6 +238,10 @@ export type Database = {
           logged_at?: string
           meal?: Database['public']['Enums']['meal']
           note?: string | null
+          override_carbs_g?: number | null
+          override_fat_g?: number | null
+          override_kcal?: number | null
+          override_protein_g?: number | null
           photo_path?: string | null
           quantity?: number
           scan_id?: string | null
@@ -777,6 +789,10 @@ export type Database = {
           logged_at: string | null
           meal: Database['public']['Enums']['meal'] | null
           note: string | null
+          override_carbs_g: number | null
+          override_fat_g: number | null
+          override_kcal: number | null
+          override_protein_g: number | null
           photo_path: string | null
           place: Database['public']['Enums']['food_place'] | null
           protein_g: number | null
@@ -942,6 +958,10 @@ export type Database = {
           current_days: number
         }[]
       }
+      remove_ingredient: {
+        Args: { p_ingredient_id: string }
+        Returns: undefined
+      }
       search_foods: {
         Args: {
           match_limit?: number
@@ -978,6 +998,7 @@ export type Database = {
       }
       search_normalize: { Args: { txt: string }; Returns: string }
       search_tsquery: { Args: { txt: string }; Returns: unknown }
+      search_tsquery_all: { Args: { txt: string }; Returns: unknown }
       seed_archetype_foods: { Args: never; Returns: undefined }
       set_ingredient_quantity: {
         Args: { p_ingredient_id: string; p_quantity: number }
