@@ -142,11 +142,14 @@ export default function MeScreen() {
         />
       </Card>
 
-      <Card>
-        <Button variant="ghost" fullWidth onPress={() => setConfirmSignOut(true)}>
+      {/* Small and centred rather than a full-width control at the foot of the
+          screen. Signing out is the least likely thing anyone came here to do,
+          and at button size it read as the page's main action. */}
+      <View className="items-center">
+        <Button variant="ghost" size="sm" onPress={() => setConfirmSignOut(true)}>
           {t('profile:home.signOut')}
         </Button>
-      </Card>
+      </View>
 
       {/* Confirmed, because signing out of an app whose data lives on a server
           is not destructive but very much feels like it. */}

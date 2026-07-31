@@ -159,6 +159,15 @@ export default function FoodDetail() {
       fat: existing?.overrides?.fat?.toString() ?? '',
     },
   )
+  /**
+   * Which figure is being typed, if any.
+   *
+   * One at a time and in place: the number on screen becomes a field when it
+   * is tapped and goes back to being a number when the keyboard closes. A
+   * second card repeating all four figures was the other way to offer this,
+   * and it asked the user to read the same numbers twice to change one.
+   */
+  const [editing, setEditing] = useState<'kcal' | 'carbs' | 'protein' | 'fat' | null>(null)
 
   const { data: heroUrl } = useMealPhotoUrl(existing?.photoPath)
 
@@ -528,10 +537,71 @@ export default function FoodDetail() {
 
       <Card>
         <View className="flex-row items-baseline justify-between">
-          <Text variant="displayMd">{macros.kcal.toLocaleString()}</Text>
+          {/* Tap the number to type your own. An entry the app got close but
+              not right is corrected here, on the figure being read, rather
+              than in a form underneath that repeats all four of them. */}
+          {editing === 'kcal' ? (
+            <TextField
+              containerClassName="flex-1"
+              value={typed.kcal}
+              onChangeText={(value) => setTyped((current) => ({ ...current, kcal: value }))}
+              onBlur={() => setEditing(null)}
+              onSubmitEditing={() => setEditing(null)}
+              placeholder={String(macros.kcal)}
+              keyboardType="number-pad"
+              inputClassName="font-display text-[32px] leading-[39px] text-heading"
+              autoFocus
+              returnKeyType="done"
+            />
+          ) : (
+            <Tappable
+              onPress={existing ? () => setEditing('kcal') : undefined}
+              accessibilityRole={existing ? 'button' : undefined}
+              accessibilityLabel={existing ? t('logging:detail.editKcal') : undefined}
+              className={existing ? 'rounded-sm border-[2px] border-line border-dashed px-2' : ''}
+            >
+              <Text variant="displayMd">{macros.kcal.toLocaleString()}</Text>
+            </Tappable>
+          )}
           <Text variant="overline">{t('logging:detail.total')}</Text>
         </View>
-        {targets ? <MacroBars eaten={macros} targets={targets} /> : null}
+
+        {/* The same for the three macros: the amount beside each bar is the
+            control. `editing` holds at most one at a time, so the row being
+            typed swaps for a field and the other two stay legible. */}
+        {editing === 'carbs' || editing === 'protein' || editing === 'fat' ? (
+          <TextField
+            label={t(`logging:detail.${editing}Field`)}
+            value={typed[editing]}
+            onChangeText={(value) => setTyped((current) => ({ ...current, [editing]: value }))}
+            onBlur={() => setEditing(null)}
+            onSubmitEditing={() => setEditing(null)}
+            placeholder={String(macros[editing])}
+            keyboardType="decimal-pad"
+            autoFocus
+            returnKeyType="done"
+          />
+        ) : null}
+
+        {targets ? (
+          <MacroBars
+            eaten={macros}
+            targets={targets}
+            onEdit={existing ? (macro) => setEditing(macro) : undefined}
+          />
+        ) : null}
+
+        {existing && (typed.kcal || typed.carbs || typed.protein || typed.fat) ? (
+          <Tappable
+            onPress={() => setTyped({ kcal: '', carbs: '', protein: '', fat: '' })}
+            accessibilityRole="button"
+            accessibilityLabel={t('logging:detail.numbersReset')}
+          >
+            <Text variant="meta" className="text-pandan-ink">
+              {t('logging:detail.numbersReset')}
+            </Text>
+          </Tappable>
+        ) : null}
 
         <Divider />
 
@@ -570,66 +640,6 @@ export default function FoodDetail() {
           </View>
         ) : null}
       </Card>
-
-      {/* The numbers, typed. Only for an entry that exists: on the way IN the
-          portion and the serving say the same thing more precisely, and there
-          is nothing yet to attach a correction to.
-
-          Each field stands alone and blank means "use the app's figure", so
-          the placeholder is what the app currently says — a field seeded with
-          that number could not tell the user whose number it was. */}
-      {existing ? (
-        <Card title={t('logging:detail.numbersTitle')}>
-          <View className="flex-row gap-3">
-            <TextField
-              containerClassName="flex-1"
-              label={t('logging:detail.kcalField')}
-              value={typed.kcal}
-              onChangeText={(value) => setTyped((current) => ({ ...current, kcal: value }))}
-              placeholder={String(macros.kcal)}
-              keyboardType="number-pad"
-            />
-            <TextField
-              containerClassName="flex-1"
-              label={t('logging:detail.carbsField')}
-              value={typed.carbs}
-              onChangeText={(value) => setTyped((current) => ({ ...current, carbs: value }))}
-              placeholder={String(macros.carbs)}
-              keyboardType="decimal-pad"
-            />
-          </View>
-          <View className="flex-row gap-3">
-            <TextField
-              containerClassName="flex-1"
-              label={t('logging:detail.proteinField')}
-              value={typed.protein}
-              onChangeText={(value) => setTyped((current) => ({ ...current, protein: value }))}
-              placeholder={String(macros.protein)}
-              keyboardType="decimal-pad"
-            />
-            <TextField
-              containerClassName="flex-1"
-              label={t('logging:detail.fatField')}
-              value={typed.fat}
-              onChangeText={(value) => setTyped((current) => ({ ...current, fat: value }))}
-              placeholder={String(macros.fat)}
-              keyboardType="decimal-pad"
-            />
-          </View>
-          <Text variant="meta">{t('logging:detail.numbersNote')}</Text>
-          {typed.kcal || typed.carbs || typed.protein || typed.fat ? (
-            <Tappable
-              onPress={() => setTyped({ kcal: '', carbs: '', protein: '', fat: '' })}
-              accessibilityRole="button"
-              accessibilityLabel={t('logging:detail.numbersReset')}
-            >
-              <Text variant="label" className="text-pandan-ink">
-                {t('logging:detail.numbersReset')}
-              </Text>
-            </Tappable>
-          ) : null}
-        </Card>
-      ) : null}
 
       {/* What the scan decided the plate was made of, each part with its own
           portion stepper. Edits go through set_ingredient_quantity, which
@@ -682,11 +692,23 @@ export default function FoodDetail() {
                       here described the import rather than the plate. How many
                       of it there are is the only part of that the user is
                       changing, and the calories beside it say the rest. */}
-                  {ingredient.quantity !== 1 ? (
-                    <Text variant="meta">
-                      {t('logging:detail.times', { amount: ingredient.quantity })}
-                    </Text>
-                  ) : null}
+                  {/* Its own macros, because the plate's totals are a sum of
+                      these — a row that showed only calories left the user to
+                      guess which part the carbs came from. */}
+                  <Text variant="meta">
+                    {[
+                      ingredient.quantity === 1
+                        ? null
+                        : t('logging:detail.times', { amount: ingredient.quantity }),
+                      t('logging:detail.macroLine', {
+                        carbs: ingredient.carbs,
+                        protein: ingredient.protein,
+                        fat: ingredient.fat,
+                      }),
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </Text>
                 </View>
                 <View className="flex-row items-center gap-2">
                   <View className="w-[72px] flex-row items-baseline justify-end gap-1">

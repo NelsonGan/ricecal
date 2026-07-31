@@ -17,6 +17,10 @@ export type EntryIngredient = {
   quantity: number
   servingLabel: string
   kcal: number
+  /** Its own macros, which are what the entry's totals are summed from. */
+  carbs: number
+  protein: number
+  fat: number
 }
 
 export function useEntryIngredients(entryId: string | undefined) {
@@ -26,7 +30,7 @@ export function useEntryIngredients(entryId: string | undefined) {
     queryFn: async (): Promise<EntryIngredient[]> => {
       const { data, error } = await supabase
         .from('food_log_ingredient_details')
-        .select('id, name, quantity, serving_label, kcal, position')
+        .select('id, name, quantity, serving_label, kcal, carbs_g, protein_g, fat_g, position')
         .eq('food_log_id', entryId as string)
         .order('position')
       if (error) throw error
@@ -36,6 +40,9 @@ export function useEntryIngredients(entryId: string | undefined) {
         quantity: Number(row.quantity ?? 1),
         servingLabel: row.serving_label ?? '',
         kcal: row.kcal ?? 0,
+        carbs: Number(row.carbs_g ?? 0),
+        protein: Number(row.protein_g ?? 0),
+        fat: Number(row.fat_g ?? 0),
       }))
     },
   })
@@ -77,13 +84,22 @@ export function useUpdateIngredient() {
           key,
           previous.map((ingredient) =>
             ingredient.id === input.ingredientId
-              ? {
-                  ...ingredient,
-                  quantity: input.quantity,
-                  kcal: Math.round(
-                    (ingredient.kcal / Math.max(0.01, ingredient.quantity)) * input.quantity,
-                  ),
-                }
+              ? (() => {
+                  // Everything on the row scales with the portion, not just
+                  // the calories: the totals above are a sum of these, so a
+                  // patch that moved only kcal would show a plate whose macros
+                  // disagreed with it until the refetch landed.
+                  const factor = input.quantity / Math.max(0.01, ingredient.quantity)
+                  const scale = (value: number) => Math.round(value * factor * 10) / 10
+                  return {
+                    ...ingredient,
+                    quantity: input.quantity,
+                    kcal: Math.round(ingredient.kcal * factor),
+                    carbs: scale(ingredient.carbs),
+                    protein: scale(ingredient.protein),
+                    fat: scale(ingredient.fat),
+                  }
+                })()
               : ingredient,
           ),
         )

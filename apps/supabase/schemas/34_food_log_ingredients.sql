@@ -72,12 +72,13 @@ create policy "food_log_ingredients: read own"
 -- ---------------------------------------------------------------------------
 -- The one ingredient edit a client may make: its portion.
 --
--- A direct UPDATE grant would let an ingredient list drift from the parent
--- entry's total silently. This function is the write path instead: it sets
--- the part's quantity and in the same transaction recomputes the parent
--- entry's `quantity` so that parent × quantity equals the new sum of parts —
--- the shared parent row's macros are never touched (it is deduped across
--- users), the AMOUNT moves, which is rule 12 all the way down.
+-- A direct UPDATE grant would let anything be written into a list the totals
+-- are read from. This function is the write path instead, and all it does is
+-- set the portion: `food_log_details` sums the parts, so the entry's calories
+-- and macros follow from this row changing and nothing else has to be
+-- rewritten. It used to also rescale the parent entry's `quantity` to keep the
+-- total in step — which moved all four macros together, so doubling the rice
+-- put fat on the plate.
 --
 -- SECURITY DEFINER because clients have no update grant on the table at all;
 -- ownership is checked against auth.uid() explicitly, so it widens what can
@@ -95,8 +96,6 @@ as $$
 declare
   v_log_id  uuid;
   v_user_id uuid;
-  v_sum     numeric;
-  v_base    numeric;
 begin
   select i.food_log_id, e.user_id into v_log_id, v_user_id
   from public.food_log_ingredients i
@@ -113,30 +112,13 @@ begin
   update public.food_log_ingredients
   set quantity = p_quantity
   where id = p_ingredient_id;
-
-  select sum(f.kcal * s.factor * i.quantity) into v_sum
-  from public.food_log_ingredients i
-  join public.foods f         on f.id = i.food_id
-  join public.food_servings s on s.id = i.serving_id
-  where i.food_log_id = v_log_id;
-
-  select f.kcal * s.factor into v_base
-  from public.food_logs e
-  join public.foods f         on f.id = e.food_id
-  join public.food_servings s on s.id = e.serving_id
-  where e.id = v_log_id;
-
-  if coalesce(v_base, 0) > 0 and coalesce(v_sum, 0) > 0 then
-    update public.food_logs
-    set quantity = greatest(0.01, least(100, round(v_sum / v_base, 2)))
-    where id = v_log_id;
-  end if;
 end;
 $$;
 
 comment on function public.set_ingredient_quantity is
-  'Set one scanned ingredient''s portion and recompute the parent entry''s '
-  'quantity so the diary total equals the sum of parts. Owner-checked.';
+  'Set one scanned ingredient''s portion. The entry''s totals follow from the '
+  'sum of its parts in food_log_details, so nothing else has to be written. '
+  'Owner-checked.';
 
 revoke execute on function public.set_ingredient_quantity from public, anon;
 grant execute on function public.set_ingredient_quantity to authenticated, service_role;
@@ -147,13 +129,13 @@ grant execute on function public.set_ingredient_quantity to authenticated, servi
 --
 -- A quarter of a thing is the smallest portion the stepper can express, and it
 -- is not the same answer as "there was no sambal on mine" — which is the
--- correction people actually want to make. Deleting recomputes the parent the
--- same way a resize does, so the diary total follows the parts down.
+-- correction people actually want to make. The totals follow the same way a
+-- resize does: by being a sum of what is left.
 --
 -- The last ingredient can go too. What is left is an entry with no breakdown,
--- which is exactly what a dish the scan could not decompose looks like; the
--- parent keeps whatever it was priced at, because with nothing left to sum
--- there is nothing to recompute it from.
+-- which is exactly what a dish the scan could not decompose looks like — and
+-- its numbers fall back to the parent row at its own portion, because
+-- `food_log_details` only reads the parts when there are parts.
 -- ---------------------------------------------------------------------------
 create or replace function public.remove_ingredient(p_ingredient_id uuid)
 returns void
@@ -164,8 +146,6 @@ as $$
 declare
   v_log_id  uuid;
   v_user_id uuid;
-  v_sum     numeric;
-  v_base    numeric;
 begin
   select i.food_log_id, e.user_id into v_log_id, v_user_id
   from public.food_log_ingredients i
@@ -177,30 +157,12 @@ begin
   end if;
 
   delete from public.food_log_ingredients where id = p_ingredient_id;
-
-  select sum(f.kcal * s.factor * i.quantity) into v_sum
-  from public.food_log_ingredients i
-  join public.foods f         on f.id = i.food_id
-  join public.food_servings s on s.id = i.serving_id
-  where i.food_log_id = v_log_id;
-
-  select f.kcal * s.factor into v_base
-  from public.food_logs e
-  join public.foods f         on f.id = e.food_id
-  join public.food_servings s on s.id = e.serving_id
-  where e.id = v_log_id;
-
-  if coalesce(v_base, 0) > 0 and coalesce(v_sum, 0) > 0 then
-    update public.food_logs
-    set quantity = greatest(0.01, least(100, round(v_sum / v_base, 2)))
-    where id = v_log_id;
-  end if;
 end;
 $$;
 
 comment on function public.remove_ingredient is
-  'Take one ingredient off a scanned plate and recompute the parent entry''s '
-  'quantity from what is left. Owner-checked.';
+  'Take one ingredient off a scanned plate. The entry''s totals follow from '
+  'what is left. Owner-checked.';
 
 revoke execute on function public.remove_ingredient from public, anon;
 grant execute on function public.remove_ingredient to authenticated, service_role;

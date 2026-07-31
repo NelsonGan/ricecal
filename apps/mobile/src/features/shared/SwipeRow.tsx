@@ -135,13 +135,17 @@ export function SwipeRow({ children, onDelete, deleteLabel, onPress }: SwipeRowP
         </View>
       </GestureDetector>
 
+      {/* Square-edged and full-bleed, clipped by the row's own corners: a
+          rounded pill floating in the gap read as a button that had come
+          loose from the row it belongs to. What the eye should see is the row
+          sliding to uncover something underneath it. */}
       <Animated.View
         style={action}
         pointerEvents={open ? 'auto' : 'none'}
-        className="absolute top-0 right-0 bottom-0 w-[96px]"
+        className="absolute top-0 right-0 bottom-0 w-[96px] overflow-hidden"
       >
         <Tappable
-          className="h-full w-full items-center justify-center gap-1 rounded-tile bg-hibiscus"
+          className="h-full w-full items-center justify-center gap-1 bg-hibiscus"
           accessibilityRole="button"
           accessibilityLabel={deleteLabel}
           onPress={() => {
