@@ -25,7 +25,7 @@
 // not an error.
 
 import '@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 import {
   clampQuantity,
@@ -40,6 +40,58 @@ type RefineRequest = {
   food_log_id: string
   instruction: string
   mock?: MockSteer
+}
+
+/**
+ * How much of a part a reduction has to account for before it takes the whole
+ * thing off the plate.
+ *
+ * "No sambal" is a removal, and the model prices it at roughly what the sambal
+ * costs — so most of the part. Well short of that the user asked for less of
+ * something, not for none of it, and the difference matters because there is
+ * no undo on an ingredient.
+ */
+const REMOVES_THE_PART = 0.6
+
+/**
+ * The entry this function reasons over: the row, the dish behind it, the
+ * portion it is measured in, and the parts hanging off it. Exactly the select
+ * below, named — see the note there for why it is declared rather than
+ * inferred.
+ */
+type RefineEntry = {
+  id: string
+  user_id: string
+  quantity: number
+  scan_id: string | null
+  display_label: string | null
+  food_id: string
+  serving_id: string
+  foods: {
+    name: string
+    kcal: number
+    carbs_g: number | null
+    protein_g: number | null
+    fat_g: number | null
+  }
+  food_servings: { label: string; factor: number }
+  food_log_ingredients: Array<{
+    id: string
+    quantity: number
+    display_label: string | null
+    foods: { name: string }
+  }>
+}
+
+/** One row of `food_log_ingredient_details`, as this function reads it. */
+type PartRow = {
+  name: string | null
+  quantity: number | string | null
+  kcal: number | null
+  carbs_g: number | string | null
+  protein_g: number | string | null
+  fat_g: number | string | null
+  position: number | null
 }
 
 function json(body: unknown, status = 200): Response {
@@ -58,7 +110,7 @@ function json(body: unknown, status = 200): Response {
  * total follow, instead of changing the total and having to bin the list.
  */
 async function rebuildFromParts(
-  db: ReturnType<typeof createClient>,
+  db: SupabaseClient,
   entryId: string,
   name: string,
 ): Promise<{
@@ -67,11 +119,15 @@ async function rebuildFromParts(
   kcal: number
   ingredients: Array<{ name: string; kcal: number; quantity: number }>
 } | null> {
-  const { data: rows } = await db
+  const { data } = await db
     .from('food_log_ingredient_details')
     .select('name, quantity, kcal, carbs_g, protein_g, fat_g, position')
     .eq('food_log_id', entryId)
     .order('position')
+
+  // Named for the same reason the entry above is: an untyped client hands back
+  // a row it cannot describe, and every field read off it is unchecked.
+  const rows = data as PartRow[] | null
   if (!rows?.length) return null
 
   const sum = rows.reduce(
@@ -173,7 +229,16 @@ Deno.serve(async (req: Request) => {
   // The entry, with enough context for the interpreter. service_role reads it,
   // so ownership is checked explicitly — this function must not be a way to
   // edit someone else's diary.
-  const { data: entry } = await db
+  //
+  // The shape is declared rather than inferred. `createClient` here carries no
+  // `Database` generic, so supabase-js parses the select string on its own and
+  // gives up on the embedded relations — every field of the result then comes
+  // back as an error union, and reading `entry.id` off it is a type error the
+  // deployment does not run. Casting each relation separately, which is what
+  // this did, bought silence for three of them and left the other forty
+  // unchecked. One name for the row is the honest version, and it is also the
+  // documentation for what this function needs from the diary.
+  const { data } = await db
     .from('food_logs')
     .select(
       'id, user_id, quantity, scan_id, display_label, food_id, serving_id, ' +
@@ -182,25 +247,17 @@ Deno.serve(async (req: Request) => {
     )
     .eq('id', body.food_log_id)
     .single()
+
+  const entry = data as RefineEntry | null
   if (!entry || entry.user_id !== userId) {
     return json({ ok: false, error: 'entry not found' }, 404)
   }
 
-  const food = entry.foods as unknown as {
-    name: string
-    kcal: number
-    carbs_g: number | null
-    protein_g: number | null
-    fat_g: number | null
-  }
-  const serving = entry.food_servings as unknown as { label: string; factor: number }
-  const parts = entry.food_log_ingredients as unknown as Array<{
-    id: string
-    quantity: number
-    display_label: string | null
-    foods: { name: string }
-  }>
-  const partName = (part: (typeof parts)[number]) => part.display_label ?? part.foods.name
+  const food = entry.foods
+  const serving = entry.food_servings
+  const parts = entry.food_log_ingredients
+  const partName = (part: RefineEntry['food_log_ingredients'][number]) =>
+    part.display_label ?? part.foods.name
   const ingredientNames = parts.map(partName)
 
   try {
@@ -271,7 +328,16 @@ Deno.serve(async (req: Request) => {
           }))
         : undefined
 
-      if (match && interpretation.count) {
+      if (match && interpretation.total) {
+        // The user said how many there ARE. "Only 3 skewers" sets that part to
+        // three and leaves the rest of the plate alone — read as a change it
+        // would be nine, and read as a portion of the whole dish (which is
+        // where it used to land) it halved the lontong nobody mentioned.
+        await db
+          .from('food_log_ingredients')
+          .update({ quantity: refineQuantity(interpretation.total) })
+          .eq('id', match.id)
+      } else if (match && interpretation.count) {
         // The user counted them out. "Two more skewers" is two more skewers,
         // not the model's calorie estimate for two skewers divided by what one
         // costs — that arithmetic turned seven into ten.
@@ -300,7 +366,31 @@ Deno.serve(async (req: Request) => {
           .update({ quantity: refineQuantity(Number(match.quantity) + extra) })
           .eq('id', match.id)
       } else if (interpretation.kcal_delta < 0 && match) {
-        await db.from('food_log_ingredients').delete().eq('id', match.id)
+        // Less of something, with no number given. How much less decides
+        // whether the part goes or shrinks.
+        //
+        // It used to always go, which is right for "no sambal" — a fifty
+        // calorie delta against a sixty calorie part IS the whole part — and
+        // destructive for anything else. A correction the interpreter read as
+        // a small reduction took a 384 kcal row of satay off the plate
+        // outright, and there is no undo on an ingredient.
+        const { data: row } = await db
+          .from('food_log_ingredient_details')
+          .select('kcal, quantity')
+          .eq('id', match.id)
+          .single()
+        const partKcal = Number(row?.kcal ?? 0)
+        const removed = Math.abs(interpretation.kcal_delta)
+
+        if (partKcal <= 0 || removed >= partKcal * REMOVES_THE_PART) {
+          await db.from('food_log_ingredients').delete().eq('id', match.id)
+        } else {
+          const left = Number(row?.quantity ?? 1) * (1 - removed / partKcal)
+          await db
+            .from('food_log_ingredients')
+            .update({ quantity: refineQuantity(Math.max(0.25, left)) })
+            .eq('id', match.id)
+        }
       } else if (interpretation.kcal_delta < 0 && parts.length > 1) {
         // Something was removed and no part answers to the name. Take it off
         // the plate as a whole rather than pretending the list still adds up:

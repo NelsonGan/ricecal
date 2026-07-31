@@ -164,6 +164,17 @@ export type Interpretation =
        * the correction is not about a number of things.
        */
       count: number | null
+      /**
+       * How many of that part there are, when the user states an amount rather
+       * than a change. "Only three skewers" is 3.
+       *
+       * Distinct from `count` because the two cannot be told apart after the
+       * fact and mean opposite things on a plate of six: as a change, three
+       * skewers is nine. Without it "only 3 skewers" had nowhere sensible to
+       * go and came back as `quantity` 0.5 — which halved the plate, so the
+       * lontong nobody mentioned was halved along with the satay.
+       */
+      total: number | null
     }
   | { action: 'redescribe'; item: VisionItem }
   | { action: 'none'; reason: string }
@@ -722,6 +733,7 @@ function shapeInterpretation(raw: unknown): Interpretation {
       .trim()
       .slice(0, 120)
     const count = Number(o.count)
+    const total = Number(o.total)
     if (Number.isFinite(delta) && delta !== 0 && Math.abs(delta) <= 2000 && name) {
       return {
         action: 'adjust',
@@ -730,6 +742,9 @@ function shapeInterpretation(raw: unknown): Interpretation {
         part: part || null,
         count:
           Number.isFinite(count) && count !== 0 && Math.abs(count) <= 20 ? Math.round(count) : null,
+        // Zero is not a total: "no sambal" is a removal, which the negative
+        // delta already says, and a part set to none is a part deleted.
+        total: Number.isFinite(total) && total > 0 && total <= 20 ? Math.round(total) : null,
       }
     }
     return { action: 'none', reason: 'unusable adjustment' }
@@ -760,19 +775,36 @@ export async function interpretInstruction(
     // become factors, add/remove words become small deltas, anything else
     // re-describes the dish with the instruction folded into the name.
     const text = instruction.toLowerCase()
-    if (/\bhalf\b/.test(text)) return { action: 'quantity', factor: 0.5 }
-    if (/\bdouble\b|\btwo\b|\b2\b/.test(text)) return { action: 'quantity', factor: 2 }
+    // A named part with a number in front of it: "only 3 skewers". Checked
+    // BEFORE the portion words, because "only 2 skewers" contains "2" and
+    // reading it as the plate rescales everything else on it too.
+    const named = context.ingredients.find((ingredient) =>
+      text.includes(ingredient.toLowerCase().split(' ')[0]),
+    )
+    const stated = Number(text.match(/\b(?:only|just)\s+(\d+)\b/)?.[1] ?? 0)
+    if (!named) {
+      if (/\bhalf\b/.test(text)) return { action: 'quantity', factor: 0.5 }
+      if (/\bdouble\b|\btwo\b|\b2\b/.test(text)) return { action: 'quantity', factor: 2 }
+    }
+    if (named && stated > 0) {
+      return {
+        action: 'adjust',
+        kcal_delta: -60,
+        name: `${context.name}, ${instruction}`.slice(0, 120),
+        part: named,
+        count: null,
+        total: stated,
+      }
+    }
     if (/\bno\b|\bwithout\b|\bremove\b/.test(text)) {
       return {
         action: 'adjust',
         kcal_delta: -60,
         name: `${context.name}, ${instruction}`.slice(0, 120),
         // The part named in the text, if the entry has one by that name.
-        part:
-          context.ingredients.find((ingredient) =>
-            text.includes(ingredient.toLowerCase().split(' ')[0]),
-          ) ?? null,
+        part: named ?? null,
         count: null,
+        total: null,
       }
     }
     if (/\badd\b|\bextra\b|\bwith\b/.test(text)) {
@@ -782,6 +814,7 @@ export async function interpretInstruction(
         name: `${context.name}, ${instruction}`.slice(0, 120),
         part: instruction.replace(/\b(add|extra|with|an|a)\b/gi, '').trim() || null,
         count: Number(text.match(/\b(\d+)\b/)?.[1] ?? 0) || null,
+        total: null,
       }
     }
     const name = `${context.name}, ${instruction}`.slice(0, 120)
@@ -814,22 +847,27 @@ export async function interpretInstruction(
         content:
           'A user is correcting one logged food entry by typing. Decide what the correction ' +
           'means. Respond with JSON only, one of:\n' +
-          '{"action":"quantity","factor":number} — ONLY the amount changed. `factor` is ' +
-          'relative to the amount CURRENTLY logged, which the user is looking at: "half ' +
-          'portion" or "I only ate half" -> 0.5 whatever the current quantity is; "I had two ' +
-          'of these" means two total, so with current quantity Q return 2/Q.\n' +
+          '{"action":"quantity","factor":number} — the amount of the WHOLE dish changed and ' +
+          'nothing else did: "half portion", "I only ate half of it", "I had two of these". ' +
+          '`factor` is relative to the amount CURRENTLY logged, which the user is looking ' +
+          'at: "half" -> 0.5 whatever the current quantity is; "I had two of these" means ' +
+          'two total, so with current quantity Q return 2/Q. If the text names one of the ' +
+          'Ingredients listed below, this is NOT the answer — use adjust, or the parts ' +
+          'nobody mentioned get rescaled too.\n' +
           '{"action":"adjust","kcal_delta":number,"name":string,"part":string|null,' +
-          '"count":number|null} — the ' +
+          '"count":number|null,"total":number|null} — the ' +
           'SAME dish with a part added, removed or resized: "no sambal", "add a fried egg", ' +
           '"extra rice". `kcal_delta` is the calorie change for that part alone (negative ' +
           'for removals — "no sambal" is about -50, "add an egg" about +75), `name` the ' +
           'corrected dish name (e.g. "Nasi Lemak, no sambal"). `part` names the ingredient ' +
           'involved: for a removal copy the matching name from the Ingredients list below ' +
           'EXACTLY, for an addition name the thing being added ("fried egg"), and use null ' +
-          'only when the change is about the whole dish. `count` is how many of that part ' +
-          'were added or taken away when the user says a number — "two more skewers" is 2, ' +
-          '"one less egg" is -1 — and null when no number was given. This is the answer for ' +
-          'ANY add/remove/swap of a component that leaves the dish recognisably itself.\n' +
+          'only when the change is about the whole dish. Then say how many, in whichever of ' +
+          'the two ways the user did: `count` for a CHANGE ("two more skewers" is 2, "one ' +
+          'less egg" is -1), `total` for an AMOUNT ("only 3 skewers", "there were 3 eggs" ' +
+          'are both 3). Never both, and null for each when no number was given. This is the ' +
+          'answer for ANY add/remove/resize of a component that leaves the dish ' +
+          'recognisably itself.\n' +
           '{"action":"redescribe","item":{"name":string,"specific_query":string,' +
           '"generic_query":string,"components":[{"name":string,"count":number,' +
           '"kcal":number,"carbs_g":number|null,"protein_g":number|null,' +
