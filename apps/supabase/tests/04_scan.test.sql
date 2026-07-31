@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(29);
+select plan(35);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 
@@ -168,6 +168,12 @@ select is(
 );
 
 
+-- Taking an ingredient off the plate --------------------------------------------
+
+-- Asserted at the end of the ingredient block below, where there is a plate to
+-- take something off; see `remove_ingredient` there.
+
+
 -- display_label changes the name, never the numbers ---------------------------
 
 -- A scanned entry pointing at the terminal archetype, wearing the model's
@@ -210,6 +216,49 @@ select is(
   0,
   'archetype entries stay out of user_food_stats'
 );
+
+
+-- Numbers the user typed --------------------------------------------------------
+--
+-- An override is per entry and per field: it wins over the computed figure,
+-- and the fields it does not carry stay the catalogue's. Everything that sums
+-- a day reads `food_log_details`, so this is the only place it has to hold.
+
+update public.food_logs
+set override_kcal = 275, override_protein_g = 31.5
+where user_id = :'user_a';
+
+select is(
+  (select kcal from public.food_log_details where user_id = :'user_a'),
+  275,
+  'a typed calorie figure wins over the computed one'
+);
+
+select is(
+  (select protein_g from public.food_log_details where user_id = :'user_a'),
+  31.5::numeric,
+  'and so does a typed macro'
+);
+
+select is(
+  (select carbs_g from public.food_log_details where user_id = :'user_a'),
+  (select round(f.carbs_g * s.factor * e.quantity, 1)
+   from public.food_logs e
+   join public.foods f on f.id = e.food_id
+   join public.food_servings s on s.id = e.serving_id
+   where e.user_id = :'user_a'),
+  'a field left alone still comes from the catalogue'
+);
+
+select is(
+  (select kcal from public.daily_nutrition where user_id = :'user_a' and log_date = current_date),
+  275,
+  'the day total follows the override'
+);
+
+update public.food_logs
+set override_kcal = null, override_protein_g = null
+where user_id = :'user_a';
 
 
 -- One plate, many ingredients --------------------------------------------------
@@ -278,6 +327,18 @@ select is(
   (select quantity from public.food_logs where user_id = :'user_a'),
   0.50,
   'the parent entry quantity recomputes to the sum of parts'
+);
+
+-- Off the plate entirely, which is a different answer from "a quarter of it".
+select lives_ok(
+  format('select public.remove_ingredient(%L::uuid)', :'ing_id'),
+  'the owner can take an ingredient off the plate'
+);
+
+select is(
+  (select count(*)::integer from public.food_log_ingredients where id = :'ing_id'),
+  0,
+  'the ingredient is gone'
 );
 
 reset role;

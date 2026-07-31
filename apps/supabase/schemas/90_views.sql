@@ -123,10 +123,25 @@ select
   s.label      as serving_label,
   s.factor     as serving_factor,
 
-  round(f.kcal      * s.factor * e.quantity)::integer      as kcal,
-  round(f.carbs_g   * s.factor * e.quantity, 1)::numeric   as carbs_g,
-  round(f.protein_g * s.factor * e.quantity, 1)::numeric   as protein_g,
-  round(f.fat_g     * s.factor * e.quantity, 1)::numeric   as fat_g,
+  -- The raw overrides as well as the coalesced figures below. The screen that
+  -- edits them has to show WHICH of the four the user typed — a field seeded
+  -- with the app's own number cannot say whose number it is, and a form that
+  -- cannot tell would clear an override the moment it was saved again.
+  e.override_kcal,
+  e.override_carbs_g,
+  e.override_protein_g,
+  e.override_fat_g,
+
+  -- A typed figure wins over the computed one, per field. Null is the normal
+  -- case and costs nothing; see the override columns on `food_logs` for why
+  -- they live on the entry rather than on the shared dish.
+  coalesce(e.override_kcal, round(f.kcal * s.factor * e.quantity)::integer)   as kcal,
+  coalesce(e.override_carbs_g,
+           round(f.carbs_g   * s.factor * e.quantity, 1))::numeric            as carbs_g,
+  coalesce(e.override_protein_g,
+           round(f.protein_g * s.factor * e.quantity, 1))::numeric            as protein_g,
+  coalesce(e.override_fat_g,
+           round(f.fat_g     * s.factor * e.quantity, 1))::numeric            as fat_g,
   round(f.fibre_g   * s.factor * e.quantity, 1)::numeric   as fibre_g,
   round(f.sugar_g   * s.factor * e.quantity, 1)::numeric   as sugar_g
 from public.food_logs e

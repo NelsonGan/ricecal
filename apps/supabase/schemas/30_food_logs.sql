@@ -78,6 +78,25 @@ create table public.food_logs (
     or (jsonb_typeof(suggested_edits) = 'array' and jsonb_array_length(suggested_edits) <= 3)
   ),
 
+  -- The numbers, when the user has typed their own.
+  --
+  -- Everything else on an entry describes WHICH food and HOW MUCH, and the
+  -- calories follow from the catalogue row. That breaks down for the case this
+  -- exists for: a dish the app got close but not right, where the person
+  -- eating it knows the answer — off a packet, off a recipe, off the kitchen
+  -- scale. Rescaling the portion to reach the right calorie total would lie
+  -- about the portion, and correcting the shared `foods` row would change the
+  -- number for everyone who ever logged it.
+  --
+  -- Null means "the catalogue is right", which is almost every row. Each field
+  -- stands alone: someone who fixes only the protein keeps the catalogue's
+  -- carbs. `food_log_details` coalesces them over the computed figures, so
+  -- every total in the app follows without knowing this exists.
+  override_kcal      integer check (override_kcal between 0 and 20000),
+  override_carbs_g   numeric(7, 1) check (override_carbs_g between 0 and 2000),
+  override_protein_g numeric(7, 1) check (override_protein_g between 0 and 2000),
+  override_fat_g     numeric(7, 1) check (override_fat_g between 0 and 2000),
+
   -- An illustration the user picked for this row, overriding the food's own.
   --
   -- Here rather than on `foods` because `foods` is shared: the catalogue is

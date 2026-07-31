@@ -17,6 +17,7 @@ import {
   useMealPhotoUrl,
   useRefineEntry,
   useRemoveEntry,
+  useRemoveIngredient,
   useSelectedDate,
   useTargets,
   useUpdateEntry,
@@ -102,6 +103,7 @@ export default function FoodDetail() {
   const { data: ingredients = [] } = useEntryIngredients(existing?.scanId ? existing.id : undefined)
   const refineEntry = useRefineEntry()
   const updateIngredient = useUpdateIngredient()
+  const removeIngredient = useRemoveIngredient()
   const [instruction, setInstruction] = useState('')
 
   const [quantity, setQuantity] = useState(existing?.quantity ?? 1)
@@ -141,6 +143,22 @@ export default function FoodDetail() {
   // Collapsed by default. Fibre, sugar and salt are the second question about a
   // dish, and for most of the catalogue the answer is "nobody recorded it".
   const [showNutrients, setShowNutrients] = useState(false)
+  /**
+   * Figures typed by hand, as strings while they are being typed.
+   *
+   * Seeded EMPTY rather than from the entry: a field showing the app's own
+   * number cannot tell the user whether it is their figure or the app's, and
+   * blank is the honest reading of "nothing overridden". What is on the row
+   * shows through as the placeholder.
+   */
+  const [typed, setTyped] = useState<{ kcal: string; carbs: string; protein: string; fat: string }>(
+    {
+      kcal: existing?.overrides?.kcal?.toString() ?? '',
+      carbs: existing?.overrides?.carbs?.toString() ?? '',
+      protein: existing?.overrides?.protein?.toString() ?? '',
+      fat: existing?.overrides?.fat?.toString() ?? '',
+    },
+  )
 
   const { data: heroUrl } = useMealPhotoUrl(existing?.photoPath)
 
@@ -270,6 +288,16 @@ export default function FoodDetail() {
 
   const save = () => {
     if (existing) {
+      // A blank field clears the override rather than leaving the last one
+      // stored: blank is what "use the app's figure" looks like on screen, and
+      // it has to mean that when saved too.
+      const figure = (value: string) => {
+        const trimmed = value.trim()
+        if (!trimmed) return null
+        const parsed = Number(trimmed)
+        return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
+      }
+
       updateEntry.mutate({
         id: existing.id,
         logDate: existing.logDate,
@@ -277,6 +305,12 @@ export default function FoodDetail() {
         servingId: chosen,
         meal,
         note: note || null,
+        overrides: {
+          kcal: figure(typed.kcal),
+          carbs: figure(typed.carbs),
+          protein: figure(typed.protein),
+          fat: figure(typed.fat),
+        },
         ...(icon === undefined ? {} : { icon, currentPhotoPath: existing.photoPath }),
       })
       // `fixApplied` reads "Updated from your note", which belongs to the
@@ -537,6 +571,66 @@ export default function FoodDetail() {
         ) : null}
       </Card>
 
+      {/* The numbers, typed. Only for an entry that exists: on the way IN the
+          portion and the serving say the same thing more precisely, and there
+          is nothing yet to attach a correction to.
+
+          Each field stands alone and blank means "use the app's figure", so
+          the placeholder is what the app currently says — a field seeded with
+          that number could not tell the user whose number it was. */}
+      {existing ? (
+        <Card title={t('logging:detail.numbersTitle')}>
+          <View className="flex-row gap-3">
+            <TextField
+              containerClassName="flex-1"
+              label={t('logging:detail.kcalField')}
+              value={typed.kcal}
+              onChangeText={(value) => setTyped((current) => ({ ...current, kcal: value }))}
+              placeholder={String(macros.kcal)}
+              keyboardType="number-pad"
+            />
+            <TextField
+              containerClassName="flex-1"
+              label={t('logging:detail.carbsField')}
+              value={typed.carbs}
+              onChangeText={(value) => setTyped((current) => ({ ...current, carbs: value }))}
+              placeholder={String(macros.carbs)}
+              keyboardType="decimal-pad"
+            />
+          </View>
+          <View className="flex-row gap-3">
+            <TextField
+              containerClassName="flex-1"
+              label={t('logging:detail.proteinField')}
+              value={typed.protein}
+              onChangeText={(value) => setTyped((current) => ({ ...current, protein: value }))}
+              placeholder={String(macros.protein)}
+              keyboardType="decimal-pad"
+            />
+            <TextField
+              containerClassName="flex-1"
+              label={t('logging:detail.fatField')}
+              value={typed.fat}
+              onChangeText={(value) => setTyped((current) => ({ ...current, fat: value }))}
+              placeholder={String(macros.fat)}
+              keyboardType="decimal-pad"
+            />
+          </View>
+          <Text variant="meta">{t('logging:detail.numbersNote')}</Text>
+          {typed.kcal || typed.carbs || typed.protein || typed.fat ? (
+            <Tappable
+              onPress={() => setTyped({ kcal: '', carbs: '', protein: '', fat: '' })}
+              accessibilityRole="button"
+              accessibilityLabel={t('logging:detail.numbersReset')}
+            >
+              <Text variant="label" className="text-pandan-ink">
+                {t('logging:detail.numbersReset')}
+              </Text>
+            </Tappable>
+          ) : null}
+        </Card>
+      ) : null}
+
       {/* What the scan decided the plate was made of, each part with its own
           portion stepper. Edits go through set_ingredient_quantity, which
           recomputes the entry's quantity in the same transaction — so the
@@ -553,7 +647,20 @@ export default function FoodDetail() {
             // back to a whole number.
             const size =
               Number.isInteger(ingredient.quantity) && ingredient.quantity >= 1 ? 1 : 0.25
+            // At the smallest portion the minus takes the whole thing off the
+            // plate. A quarter of a thing and "there wasn't any" are different
+            // answers, and only one of them was reachable — the stepper simply
+            // stopped, with nothing to say the row could go.
+            const atFloor = ingredient.quantity <= 0.25
             const step = (direction: 1 | -1) => {
+              if (direction === -1 && atFloor) {
+                removeIngredient.mutate({
+                  ingredientId: ingredient.id,
+                  entryId: existing?.id ?? '',
+                  logDate: selectedDate,
+                })
+                return
+              }
               const next = Math.min(10, Math.max(0.25, ingredient.quantity + direction * size))
               if (next === ingredient.quantity) return
               updateIngredient.mutate({
@@ -594,11 +701,18 @@ export default function FoodDetail() {
                   <IconButton
                     size="sm"
                     variant="neutral"
-                    accessibilityLabel={t('logging:detail.lessOf', { name: ingredient.name })}
-                    disabled={ingredient.quantity <= 0.25}
+                    accessibilityLabel={t(
+                      atFloor ? 'logging:detail.removeOf' : 'logging:detail.lessOf',
+                      { name: ingredient.name },
+                    )}
                     onPress={() => step(-1)}
                   >
-                    <Icon set="ui" name="minus" size={16} tintColor={colors.ink} />
+                    <Icon
+                      set="ui"
+                      name={atFloor ? 'delete' : 'minus'}
+                      size={16}
+                      tintColor={atFloor ? colors.hibiscusInk : colors.ink}
+                    />
                   </IconButton>
                   <IconButton
                     size="sm"

@@ -54,6 +54,7 @@ export {
   type EntryIngredient,
   useEntryIngredients,
   useRefineEntry,
+  useRemoveIngredient,
   useUpdateIngredient,
 } from './scan'
 export { SelectedDateProvider, useSelectedDate } from './selected-date'

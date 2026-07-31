@@ -115,6 +115,25 @@ export function toEntry(row: FoodLogRow): Entry {
       fat: Number(row.fat_g ?? 0),
     },
 
+    // Only the fields that were actually typed. The macros above are what to
+    // SHOW; these are what the editor needs to know it must not clear.
+    // Only the fields that were actually typed. The macros above are what to
+    // SHOW; these are what the editor needs to know it must not clear.
+    overrides: {
+      ...(row.override_kcal === null || row.override_kcal === undefined
+        ? {}
+        : { kcal: Number(row.override_kcal) }),
+      ...(row.override_carbs_g === null || row.override_carbs_g === undefined
+        ? {}
+        : { carbs: Number(row.override_carbs_g) }),
+      ...(row.override_protein_g === null || row.override_protein_g === undefined
+        ? {}
+        : { protein: Number(row.override_protein_g) }),
+      ...(row.override_fat_g === null || row.override_fat_g === undefined
+        ? {}
+        : { fat: Number(row.override_fat_g) }),
+    },
+
     scanId: row.scan_id ?? undefined,
     suggestedEdits: Array.isArray(row.suggested_edits)
       ? row.suggested_edits.filter((edit): edit is string => typeof edit === 'string')

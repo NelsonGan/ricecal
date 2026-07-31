@@ -70,9 +70,35 @@ export type VisionItem = {
   suggested_edits: string[]
 }
 
+/**
+ * A nutrition panel read straight off the packet.
+ *
+ * Photographing the label instead of the food is a deliberate act — the person
+ * is telling the app "the answer is printed here". So this path does not go
+ * near the catalogue or the estimator: the numbers ARE the label's, and the
+ * only judgement left is how many servings were eaten, which defaults to one
+ * and is a stepper away from any other answer.
+ */
+export type NutritionLabel = {
+  /** What the packet is, as printed: "Milo Activ-Go", "Jacob's Cream Crackers". */
+  name: string
+  /** Per SERVING, as the panel states it. */
+  kcal: number
+  carbs_g: number
+  protein_g: number
+  fat_g: number
+  fibre_g: number | null
+  sugar_g: number | null
+  sodium_mg: number | null
+  /** "1 sachet (33g)", "100 ml" — the panel's own words for one serving. */
+  serving: string | null
+}
+
 export type Vision = {
   scene: Scene
   items: VisionItem[]
+  /** Set when the photo is a nutrition panel rather than food. */
+  label?: NutritionLabel
   /**
    * The photo has nothing edible in it.
    *
@@ -243,6 +269,35 @@ function shapeVision(raw: unknown): Vision {
   // Taken at its word and returned before anything else is read: the rest of
   // the shape is about a meal, and there isn't one.
   if (o.no_food === true) return { scene: 'unclear', items: [], noFood: true }
+
+  // A nutrition panel. Everything below this line is about guessing what food
+  // is in a photo, and a label is the one case where nothing has to be
+  // guessed — so it short-circuits the whole shape.
+  const raw_label = (o.nutrition_label ?? null) as Record<string, unknown> | null
+  if (raw_label && Number(raw_label.kcal) > 0) {
+    const opt = (v: unknown): number | null => {
+      const n = Number(v)
+      return v === null || v === undefined || !Number.isFinite(n) ? null : Math.max(0, n)
+    }
+    return {
+      scene: 'packaged',
+      items: [],
+      label: {
+        name: String(raw_label.name ?? 'Packaged food')
+          .trim()
+          .slice(0, 120),
+        kcal: Math.round(clampNumber(raw_label.kcal, 0, 20000, 0)),
+        carbs_g: clampNumber(raw_label.carbs_g, 0, 2000, 0),
+        protein_g: clampNumber(raw_label.protein_g, 0, 2000, 0),
+        fat_g: clampNumber(raw_label.fat_g, 0, 2000, 0),
+        fibre_g: opt(raw_label.fibre_g),
+        sugar_g: opt(raw_label.sugar_g),
+        sodium_mg:
+          opt(raw_label.sodium_mg) === null ? null : Math.round(Number(raw_label.sodium_mg)),
+        serving: raw_label.serving ? String(raw_label.serving).slice(0, 80) : null,
+      },
+    }
+  }
   const items = (Array.isArray(o.items) ? o.items : []).slice(0, 6).flatMap((it) => {
     const i = (it ?? {}) as Record<string, unknown>
     const name = String(i.name ?? '').trim()
@@ -364,6 +419,16 @@ export async function analysePhoto(
           'If the photo has nothing edible in it — a person, a room, a screen, an empty ' +
           'plate — answer {"no_food": true} and nothing else. A blurred or half-guessable ' +
           'meal is still a meal; say no_food only when there is no food. ' +
+          // A label is not a thing to identify, it is a thing to read.
+          'If the photo shows a NUTRITION FACTS panel or ingredients label, answer ' +
+          '{"nutrition_label": {"name": string, "kcal": number, "carbs_g": number, ' +
+          '"protein_g": number, "fat_g": number, "fibre_g": number|null, ' +
+          '"sugar_g": number|null, "sodium_mg": number|null, "serving": string|null}} and ' +
+          'nothing else. Copy the figures for ONE SERVING exactly as printed — do not ' +
+          'convert, round or estimate, and do not use the per-100g column when a per-serving ' +
+          'column is there. "serving" is the panel\'s own words for one serving ' +
+          '("1 sachet (33g)"), "name" the product as printed on the pack. If the panel is ' +
+          'only readable per 100g, use those figures and say so in "serving". ' +
           'Otherwise respond with JSON only, matching: ' +
           '{"scene": "single|composite|packaged|unclear", ' +
           '"items": [{"name": string, "specific_query": string, "generic_query": string, ' +

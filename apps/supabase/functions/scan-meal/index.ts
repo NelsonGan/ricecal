@@ -13,6 +13,7 @@ import { createClient } from '@supabase/supabase-js'
 import {
   describe,
   resolveByArchetype,
+  resolveByLabel,
   resolveItem,
   type WrittenEntry,
   writeEntry,
@@ -109,6 +110,45 @@ Deno.serve(async (req: Request) => {
       console.error(message)
       trace.push(message)
       vision = null
+    }
+
+    // A photographed nutrition panel: the numbers are printed in the picture,
+    // so nothing here has to be guessed and nothing below this line runs.
+    if (vision?.label) {
+      const resolved = await resolveByLabel(db, vision.label)
+      if (resolved) {
+        const entry = await writeEntry(db, {
+          userId,
+          meal,
+          logDate,
+          scanId,
+          resolved,
+          photoPath,
+          suggestedEdits: [],
+        })
+        await db.from('food_scan_items').insert({
+          user_id: userId,
+          scan_id: scanId,
+          item_index: 0,
+          scene: 'packaged',
+          specific_query: vision.label.name,
+          serving_hint: vision.label.serving,
+          resolved_tier: 1,
+          resolved_food_id: resolved.food.id,
+          catalogue_kcal: resolved.food.kcal,
+          quantity: resolved.quantity,
+          food_log_id: entry.id,
+        })
+        return json({
+          ok: true,
+          scanId,
+          label: true,
+          entries: [entry],
+          breakdown: false,
+          ...(wantDebug ? { trace } : {}),
+        })
+      }
+      trace.push('[label] could not create a row for the panel')
     }
 
     // Nothing edible in the photo. No entry, no archetype floor, no calories —

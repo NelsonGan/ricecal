@@ -140,3 +140,67 @@ comment on function public.set_ingredient_quantity is
 
 revoke execute on function public.set_ingredient_quantity from public, anon;
 grant execute on function public.set_ingredient_quantity to authenticated, service_role;
+
+
+-- ---------------------------------------------------------------------------
+-- Taking something off the plate entirely.
+--
+-- A quarter of a thing is the smallest portion the stepper can express, and it
+-- is not the same answer as "there was no sambal on mine" — which is the
+-- correction people actually want to make. Deleting recomputes the parent the
+-- same way a resize does, so the diary total follows the parts down.
+--
+-- The last ingredient can go too. What is left is an entry with no breakdown,
+-- which is exactly what a dish the scan could not decompose looks like; the
+-- parent keeps whatever it was priced at, because with nothing left to sum
+-- there is nothing to recompute it from.
+-- ---------------------------------------------------------------------------
+create or replace function public.remove_ingredient(p_ingredient_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_log_id  uuid;
+  v_user_id uuid;
+  v_sum     numeric;
+  v_base    numeric;
+begin
+  select i.food_log_id, e.user_id into v_log_id, v_user_id
+  from public.food_log_ingredients i
+  join public.food_logs e on e.id = i.food_log_id
+  where i.id = p_ingredient_id;
+
+  if v_log_id is null or v_user_id is distinct from auth.uid() then
+    raise exception 'ingredient not found';
+  end if;
+
+  delete from public.food_log_ingredients where id = p_ingredient_id;
+
+  select sum(f.kcal * s.factor * i.quantity) into v_sum
+  from public.food_log_ingredients i
+  join public.foods f         on f.id = i.food_id
+  join public.food_servings s on s.id = i.serving_id
+  where i.food_log_id = v_log_id;
+
+  select f.kcal * s.factor into v_base
+  from public.food_logs e
+  join public.foods f         on f.id = e.food_id
+  join public.food_servings s on s.id = e.serving_id
+  where e.id = v_log_id;
+
+  if coalesce(v_base, 0) > 0 and coalesce(v_sum, 0) > 0 then
+    update public.food_logs
+    set quantity = greatest(0.01, least(100, round(v_sum / v_base, 2)))
+    where id = v_log_id;
+  end if;
+end;
+$$;
+
+comment on function public.remove_ingredient is
+  'Take one ingredient off a scanned plate and recompute the parent entry''s '
+  'quantity from what is left. Owner-checked.';
+
+revoke execute on function public.remove_ingredient from public, anon;
+grant execute on function public.remove_ingredient to authenticated, service_role;

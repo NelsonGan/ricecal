@@ -25,6 +25,7 @@ import {
   estimateNutrition,
   type MockSteer,
   type Nutrition,
+  type NutritionLabel,
   pickCandidate,
   type Vision,
   type VisionItem,
@@ -192,7 +193,17 @@ const servingUnitCount = (label: string | null): number => {
  */
 async function estimateRow(
   db: SupabaseClient,
-  input: { name: string; kcal: number; carbs: number; protein: number; fat: number },
+  input: {
+    name: string
+    kcal: number
+    carbs: number
+    protein: number
+    fat: number
+    /** Only a photographed panel knows these; a guess leaves them null. */
+    fibre?: number | null
+    sugar?: number | null
+    sodium?: number | null
+  },
 ): Promise<FoodRow | null> {
   const { data: id } = await db.rpc('upsert_estimate_food', {
     p_name: input.name,
@@ -200,9 +211,9 @@ async function estimateRow(
     p_carbs_g: input.carbs,
     p_protein_g: input.protein,
     p_fat_g: input.fat,
-    p_fibre_g: null,
-    p_sugar_g: null,
-    p_sodium_mg: null,
+    p_fibre_g: input.fibre ?? null,
+    p_sugar_g: input.sugar ?? null,
+    p_sodium_mg: input.sodium ?? null,
   })
   if (!id) return null
 
@@ -651,6 +662,48 @@ async function resolveByDish(
     }
   }
   return null
+}
+
+/**
+ * A photographed nutrition panel, taken at its word.
+ *
+ * No search, no verifier, no estimate. The whole cascade below exists to work
+ * out numbers nobody wrote down, and here somebody did — the manufacturer,
+ * on the packet, in the photo. Reading them and then "checking" them against a
+ * catalogue guess would be the app overruling the only measured figure in the
+ * room.
+ *
+ * It still lands in a `foods` row like everything else, because that is what an
+ * entry can point at, and the row is shared and deduped by name and size: two
+ * people photographing the same packet get the same row, and the next scan of
+ * it needs no model call at all.
+ */
+export async function resolveByLabel(
+  db: SupabaseClient,
+  label: NutritionLabel,
+): Promise<Resolved | null> {
+  // "Nutrition Facts" is the heading, not the food. A panel photographed off a
+  // real packet usually carries the product name; a close-up of the panel
+  // alone does not, and the row should not be called after the table.
+  const heading = /^(nutrition|nutritional)\s*(facts|information|panel)?$/i
+  const name = heading.test(label.name.trim()) ? 'Packaged food' : label.name
+
+  const food = await estimateRow(db, {
+    name,
+    kcal: label.kcal,
+    carbs: Math.round(label.carbs_g * 10) / 10,
+    protein: Math.round(label.protein_g * 10) / 10,
+    fat: Math.round(label.fat_g * 10) / 10,
+    // The reason somebody photographs a panel rather than the food: these are
+    // printed there and nowhere else the app can reach.
+    fibre: label.fibre_g,
+    sugar: label.sugar_g,
+    sodium: label.sodium_mg,
+  })
+  if (!food) return null
+  // One serving, as the panel defines a serving. Somebody who ate two of them
+  // says so with the stepper — which is now counting the packet's own unit.
+  return { tier: 1, food, quantity: 1, displayLabel: name }
 }
 
 /** Tier 4: validated model nutrition into a shared, deduped estimate row. */
