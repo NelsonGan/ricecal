@@ -117,7 +117,10 @@ export default function TodayScreen() {
   }, [justAdded, toast, t, removeEntry])
 
   return (
-    <Screen>
+    // The one screen with swipeable rows on it, and the one that needs
+    // gesture-handler's scroll view for them to work. Nothing here takes
+    // typing, which is what makes that trade free — see `gestureScroll`.
+    <Screen gestureScroll>
       <ScreenTitle
         title={t('logging:today.title')}
         trailing={
