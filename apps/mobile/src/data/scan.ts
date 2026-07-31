@@ -25,7 +25,7 @@ export type EntryIngredient = {
 
 export function useEntryIngredients(entryId: string | undefined) {
   return useQuery({
-    queryKey: ['entry-ingredients', entryId ?? ''],
+    queryKey: keys.entryIngredients(entryId ?? ''),
     enabled: Boolean(entryId),
     queryFn: async (): Promise<EntryIngredient[]> => {
       const { data, error } = await supabase
@@ -76,7 +76,7 @@ export function useUpdateIngredient() {
       if (error) throw error
     },
     onMutate: async (input) => {
-      const key = ['entry-ingredients', input.entryId]
+      const key = keys.entryIngredients(input.entryId)
       await queryClient.cancelQueries({ queryKey: key })
       const previous = queryClient.getQueryData<EntryIngredient[]>(key)
       if (previous) {
@@ -108,11 +108,11 @@ export function useUpdateIngredient() {
     },
     onError: (_error, input, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(['entry-ingredients', input.entryId], context.previous)
+        queryClient.setQueryData(keys.entryIngredients(input.entryId), context.previous)
       }
     },
     onSettled: (_data, _error, input) => {
-      queryClient.invalidateQueries({ queryKey: ['entry-ingredients', input.entryId] })
+      queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) })
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
     },
@@ -138,7 +138,7 @@ export function useRemoveIngredient() {
       if (error) throw error
     },
     onMutate: async (input) => {
-      const key = ['entry-ingredients', input.entryId]
+      const key = keys.entryIngredients(input.entryId)
       await queryClient.cancelQueries({ queryKey: key })
       const previous = queryClient.getQueryData<EntryIngredient[]>(key)
       if (previous) {
@@ -151,11 +151,11 @@ export function useRemoveIngredient() {
     },
     onError: (_error, input, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(['entry-ingredients', input.entryId], context.previous)
+        queryClient.setQueryData(keys.entryIngredients(input.entryId), context.previous)
       }
     },
     onSettled: (_data, _error, input) => {
-      queryClient.invalidateQueries({ queryKey: ['entry-ingredients', input.entryId] })
+      queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) })
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
     },
@@ -178,8 +178,14 @@ type RefineResponse = {
  * navigates back to Today the moment the correction is sent, and a mutation
  * tied to the detail screen would die with it. The entry's id goes into the
  * refining set so its row on Today shows the work; when the server answers,
- * the day refetches into the corrected entry and the id comes back out —
- * applied or not, the row simply shows whatever is true now.
+ * the day refetches into the corrected entry and the id comes back out.
+ *
+ * A correction the server DECLINES is the one outcome the row cannot express.
+ * The function answers 200 with `applied: false` for text it could not read as
+ * a food correction, and the entry then comes back looking exactly as it did —
+ * so without `onNotApplied` the user watched a row work for ten seconds and
+ * change nothing, with no way to tell that from a correction that had simply
+ * made no difference.
  */
 export function useRefineEntry() {
   const userId = useUserId()
@@ -187,7 +193,13 @@ export function useRefineEntry() {
   const refining = useRefiningEntries()
 
   return useCallback(
-    (input: { entryId: string; instruction: string; logDate: string }) => {
+    (input: {
+      entryId: string
+      instruction: string
+      logDate: string
+      /** Called when the server understood the request and applied nothing. */
+      onNotApplied?: () => void
+    }) => {
       refining.add(input.entryId)
 
       const work = async () => {
@@ -200,15 +212,21 @@ export function useRefineEntry() {
         // from "reworking" to its corrected self with no stale frame between.
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) }),
-          queryClient.invalidateQueries({ queryKey: ['entry-ingredients', input.entryId] }),
+          queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) }),
         ])
         queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+        return data
       }
 
       work()
+        .then((data) => {
+          if (data.applied === false) input.onNotApplied?.()
+        })
         .catch(() => {
           // The entry is untouched on the server; showing it as it was IS the
-          // honest failure state.
+          // honest failure state. Not announced, because a network failure is
+          // not the app declining to understand — the row is unchanged and the
+          // same words can simply be sent again.
         })
         .finally(() => refining.remove(input.entryId))
     },

@@ -1,9 +1,8 @@
-import { useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { type Meal, useLogFood, useSelectedDate } from '@/data'
+import { useLogFood, useSelectedDate } from '@/data'
 import { recogniseDish } from '@/features/logging'
 import { useBack, useDismissTo } from '@/lib/navigation'
 import { Button, Icon, SheetSurface, Spinner, Text } from '@/ui'
@@ -27,12 +26,9 @@ export default function VoiceSheet() {
   // Logging can be three modals deep. Finishing returns to the day, not to
   // the picker the user opened two steps ago.
   const finish = useDismissTo('/today')
-  const params = useLocalSearchParams<{ meal?: Meal }>()
   const [listening, setListening] = useState(false)
   const logFood = useLogFood()
   const { selectedDate } = useSelectedDate()
-
-  const meal: Meal = params.meal ?? 'breakfast'
 
   const listen = async () => {
     setListening(true)

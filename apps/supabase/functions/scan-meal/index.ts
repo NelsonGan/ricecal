@@ -160,7 +160,7 @@ Deno.serve(async (req: Request) => {
 
     for (const [index, item] of items.entries()) {
       const resolved = item
-        ? ((await resolveItem(db, scanId, scene, item, mock, trace)) ??
+        ? ((await resolveItem(db, scanId, item, mock, trace)) ??
           (await resolveByArchetype(db, item, mock)))
         : await resolveByArchetype(db, null, mock)
 

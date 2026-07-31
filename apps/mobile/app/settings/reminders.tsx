@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Linking, View } from 'react-native'
+import { Linking } from 'react-native'
 import { type Meal, useMealTimes, useSettings, useUpdateMealTime, useUpdateSettings } from '@/data'
 import { ToggleRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { ensureNotificationPermission } from '@/lib/notifications'
-import { useThemeColors } from '@/theme/useTheme'
-import { Alert, AppBar, Card, Icon, Screen, Text, useToast } from '@/ui'
+import { Alert, AppBar, Card, Screen, Text, useToast } from '@/ui'
 
 const REMINDER_MEALS: Meal[] = ['breakfast', 'lunch', 'dinner']
 
@@ -14,7 +13,6 @@ const REMINDER_MEALS: Meal[] = ['breakfast', 'lunch', 'dinner']
 export default function RemindersScreen() {
   const { t } = useTranslation(['profile', 'common'])
   const goBack = useBack('/me')
-  const colors = useThemeColors()
   const toast = useToast()
 
   const { data: settings } = useSettings()

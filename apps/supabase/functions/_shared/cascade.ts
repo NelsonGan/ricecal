@@ -27,7 +27,6 @@ import {
   type Nutrition,
   type NutritionLabel,
   pickCandidate,
-  type Vision,
   type VisionItem,
 } from './llm.ts'
 
@@ -831,11 +830,18 @@ export async function resolveByArchetype(
  * the dish-level match, then the estimate. Returns null when only the
  * archetype floor is left; each stage guards itself so one stage's crash
  * cannot skip the ones below it.
+ *
+ * Nothing here reads the model's `scene` label. Whether a plate has parts is
+ * decided by whether it LISTED parts: a banana leaf of satay came back as
+ * "single" with three components on it — seven skewers, two ketupat, a heap of
+ * shallots — and the label sent it to a one-row catalogue match for 365 kcal
+ * against the 525 its own parts add up to. The list is the evidence; `scene`
+ * was the model's summary of it, and it is recorded on the eval row rather
+ * than acted on.
  */
 export async function resolveItem(
   db: SupabaseClient,
   scanId: string,
-  scene: Vision['scene'],
   item: VisionItem,
   mock: MockSteer | undefined,
   trace?: string[],
@@ -846,12 +852,6 @@ export async function resolveItem(
     trace?.push(message)
   }
 
-  // Whether the plate has parts is decided by whether the model LISTED parts,
-  // not by what it called the scene. A banana leaf of satay came back as
-  // "single" with three components on it — seven skewers, two ketupat, a heap
-  // of shallots — and the scene label sent it to a one-row catalogue match for
-  // 365 kcal against the 525 its own parts add up to. The list is the evidence;
-  // `scene` is the model's summary of it.
   let resolved: Resolved | null = null
   if (item.components.length >= 2) {
     resolved = await resolveByComponents(db, scanId, item, trace).catch((error) => {
@@ -936,7 +936,13 @@ export async function writeEntry(
     servingId: resolved.food.serving_id,
     name: resolved.displayLabel ?? resolved.food.name,
     quantity: resolved.quantity,
-    kcal: Math.round(resolved.food.kcal * resolved.quantity),
+    // The parts when there are parts, exactly as `food_log_details` reads it.
+    // The parent row is a reused estimate that may be priced a little either
+    // way, so quoting it here put a number in the "your plate is counted"
+    // notification that the diary row underneath did not show.
+    kcal: ingredients.length
+      ? ingredients.reduce((sum, part) => sum + part.kcal, 0)
+      : Math.round(resolved.food.kcal * resolved.quantity),
     tier: resolved.tier,
     isEstimate: resolved.food.is_estimate,
     isArchetype: resolved.food.is_archetype,

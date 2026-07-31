@@ -5,7 +5,7 @@ import { unwrap, unwrapOne } from './client'
 import { keys } from './keys'
 import { removeMealPhoto } from './photos'
 import { useUserId } from './session'
-import type { DayLog, EntrySource, IconRef, Meal } from './types'
+import type { DayLog, EntrySource, IconRef } from './types'
 import { toDbSource } from './types'
 
 /**

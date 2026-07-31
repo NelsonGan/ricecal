@@ -1,4 +1,4 @@
-import type { Entry, Food, FoodDetailsRow, FoodLogRow, IconRef, Meal, Serving } from './types'
+import type { Entry, Food, FoodDetailsRow, FoodLogRow, IconRef, Serving } from './types'
 import { fromDbSource } from './types'
 
 /**
@@ -113,8 +113,6 @@ export function toEntry(row: FoodLogRow): Entry {
       fat: Number(row.fat_g ?? 0),
     },
 
-    // Only the fields that were actually typed. The macros above are what to
-    // SHOW; these are what the editor needs to know it must not clear.
     // Only the fields that were actually typed. The macros above are what to
     // SHOW; these are what the editor needs to know it must not clear.
     overrides: {

@@ -514,10 +514,9 @@ export function foldMealItems(vision: Vision): Vision {
     generic_query: primary.generic_query,
     // One meal, whatever it was made of.
     count: 1,
-    // Each part is a component under its own full name, so the breakdown
-    // resolves each one to its own catalogue row.
-    // Each folded item becomes a component priced by its own band's middle,
-    // so the breakdown resolver has a size for every part.
+    // Each folded item becomes a component under its own full name, priced by
+    // the middle of its own band — so the breakdown resolver has both a name
+    // to search and a size to accept a match at, for every part.
     components: items
       .map((item) => ({
         name: item.name,
