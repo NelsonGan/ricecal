@@ -39,12 +39,12 @@ where f.slug in ('fixture-nasi-lemak', 'fixture-roti-canai');
 
 -- A logs a plate; B logs one too.
 insert into public.food_logs (user_id, log_date, food_id, serving_id)
-select :'user_a', current_date,  f.id, s.id
+select :'user_a', current_date, f.id, s.id
 from public.foods f join public.food_servings s on s.food_id = f.id and s.is_default
 where f.slug = 'fixture-nasi-lemak';
 
 insert into public.food_logs (user_id, log_date, food_id, serving_id)
-select :'user_b', current_date,  f.id, s.id
+select :'user_b', current_date, f.id, s.id
 from public.foods f join public.food_servings s on s.food_id = f.id and s.is_default
 where f.slug = 'fixture-roti-canai';
 
