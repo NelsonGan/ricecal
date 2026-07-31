@@ -14,10 +14,8 @@ import { keys } from './keys'
 import { usePendingSnaps } from './pending-snaps'
 import { uploadMealPhoto } from './photos'
 import { useUserId } from './session'
-import type { Meal } from './types'
 
 export type SnapInput = {
-  meal: Meal
   logDate: string
   /** The plate, if there was a camera to take it with. */
   photoUri?: string
@@ -46,15 +44,10 @@ type ScanResponse = {
  * happen (offline, signed out), which is exactly when the pending row should
  * stay on screen as failed.
  */
-async function scanMeal(input: {
-  photoPath?: string
-  meal: Meal
-  logDate: string
-}): Promise<ScanResponse> {
+async function scanMeal(input: { photoPath?: string; logDate: string }): Promise<ScanResponse> {
   const { data, error } = await supabase.functions.invoke<ScanResponse>('scan-meal', {
     body: {
       photo_path: input.photoPath,
-      meal: input.meal,
       log_date: input.logDate,
     },
   })
@@ -88,11 +81,11 @@ export function useSnapFood() {
   const pending = usePendingSnaps()
 
   return useCallback(
-    ({ meal, logDate, photoUri }: SnapInput): string => {
+    ({ logDate, photoUri }: SnapInput): string => {
       // Not a database id: this row does not exist yet. Prefixed so nothing
       // mistakes it for one and tries to update it.
       const id = `snap-${Date.now()}-${Math.round(Math.random() * 1e6)}`
-      pending.add({ id, meal, logDate, photoUri })
+      pending.add({ id, logDate, photoUri })
 
       // Asked here rather than on launch, and effectively once: the OS shows
       // its dialog while a permission is undetermined and `ensure` declines to
@@ -120,7 +113,7 @@ export function useSnapFood() {
 
       const work = async () => {
         const path = photoUri ? await uploadMealPhoto(userId, photoUri) : undefined
-        return scanMeal({ photoPath: path, meal, logDate })
+        return scanMeal({ photoPath: path, logDate })
       }
 
       work()

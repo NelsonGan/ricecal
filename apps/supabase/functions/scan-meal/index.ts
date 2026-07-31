@@ -27,12 +27,8 @@ import {
   type VisionItem,
 } from '../_shared/llm.ts'
 
-type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'
-const MEALS: Meal[] = ['breakfast', 'lunch', 'dinner', 'snack']
-
 type ScanRequest = {
   photo_path?: string
-  meal: Meal
   log_date: string
   mock?: MockSteer
 }
@@ -65,9 +61,8 @@ Deno.serve(async (req: Request) => {
   } catch {
     return json({ ok: false, error: 'body is not JSON' }, 400)
   }
-  const meal = MEALS.includes(body.meal) ? body.meal : null
   const logDate = /^\d{4}-\d{2}-\d{2}$/.test(body.log_date ?? '') ? body.log_date : null
-  if (!meal || !logDate) return json({ ok: false, error: 'meal and log_date are required' }, 400)
+  if (!logDate) return json({ ok: false, error: 'log_date is required' }, 400)
 
   const photoPath = typeof body.photo_path === 'string' ? body.photo_path : null
   // Steering is a test affordance; outside mock mode it is ignored entirely.
@@ -119,7 +114,6 @@ Deno.serve(async (req: Request) => {
       if (resolved) {
         const entry = await writeEntry(db, {
           userId,
-          meal,
           logDate,
           scanId,
           resolved,
@@ -172,7 +166,6 @@ Deno.serve(async (req: Request) => {
 
       const entry = await writeEntry(db, {
         userId,
-        meal,
         logDate,
         scanId,
         resolved,

@@ -123,8 +123,6 @@ export type Food = {
   verified: boolean
   /** How often this user has logged it. From `user_food_stats`, when joined. */
   timesLogged?: number
-  /** Which meals they usually log it at. Same source. */
-  usualMeals?: Meal[]
 }
 
 /**
@@ -143,7 +141,6 @@ export type EntryStatus = 'analysing' | 'failed' | 'nofood'
 
 export type Entry = {
   id: string
-  meal: Meal
   quantity: number
   /** ISO instant. Orders the rows inside a meal. */
   loggedAt: string

@@ -127,15 +127,6 @@ export default function RemindersScreen() {
           divider={false}
         />
       </Card>
-
-      {/* Quiet hours are gone. The card showed a window that could not be
-          edited and silently dropped any reminder set inside it — so a
-          reminder at 22:30 simply never arrived, with the reason two screens
-          away and unchangeable. A reminder the user set is a reminder the user
-          wants; the way to not get one at 22:30 is to not set one. */}
-      <Card>
-        <Text variant="meta">{t('profile:reminders.ramadanNote')}</Text>
-      </Card>
     </Screen>
   )
 }

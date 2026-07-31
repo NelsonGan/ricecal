@@ -188,7 +188,6 @@ export type Database = {
           id: string
           log_date: string
           logged_at: string
-          meal: Database['public']['Enums']['meal']
           note: string | null
           override_carbs_g: number | null
           override_fat_g: number | null
@@ -212,7 +211,6 @@ export type Database = {
           id?: string
           log_date?: string
           logged_at?: string
-          meal: Database['public']['Enums']['meal']
           note?: string | null
           override_carbs_g?: number | null
           override_fat_g?: number | null
@@ -236,7 +234,6 @@ export type Database = {
           id?: string
           log_date?: string
           logged_at?: string
-          meal?: Database['public']['Enums']['meal']
           note?: string | null
           override_carbs_g?: number | null
           override_fat_g?: number | null
@@ -787,7 +784,6 @@ export type Database = {
           kcal: number | null
           log_date: string | null
           logged_at: string | null
-          meal: Database['public']['Enums']['meal'] | null
           note: string | null
           override_carbs_g: number | null
           override_fat_g: number | null
@@ -879,7 +875,6 @@ export type Database = {
         Row: {
           food_id: string | null
           last_logged_at: string | null
-          meals: Database['public']['Enums']['meal'][] | null
           times_logged: number | null
           user_id: string | null
         }

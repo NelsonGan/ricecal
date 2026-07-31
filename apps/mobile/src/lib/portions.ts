@@ -59,3 +59,16 @@ export function portionLabel(quantity: number, raw: string | null | undefined, f
   const unit = servingUnit(raw) ?? fallback
   return quantity === 1 ? unit : `${quantity} × ${unit}`
 }
+
+/**
+ * "boiled egg" → "Boiled Egg".
+ *
+ * Ingredient names come from a vision model writing lower-case notes to
+ * itself, and they end up as list items next to catalogue names that are
+ * capitalised — so a plate read as "Boiled Egg, white rice, sambal", three
+ * things of the same kind typeset as if they were not. Words that are already
+ * capitalised or all-caps are left alone, so "Nasi Lemak" and "KFC" survive.
+ */
+export function titleCase(value: string): string {
+  return value.replace(/\b[a-z][a-z']*/g, (word) => word[0].toUpperCase() + word.slice(1))
+}

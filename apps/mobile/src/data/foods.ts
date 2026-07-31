@@ -5,7 +5,7 @@ import { unwrap, unwrapMaybe } from './client'
 import { keys } from './keys'
 import { type FoodStats, toFood } from './mappers'
 import { useUserId } from './session'
-import type { Food, FoodDetailsRow, Meal } from './types'
+import type { Food, FoodDetailsRow } from './types'
 
 /**
  * The catalogue.
@@ -30,21 +30,14 @@ async function statsFor(userId: string, foodIds: string[]): Promise<Map<string, 
   const rows = unwrap(
     await supabase
       .from('user_food_stats')
-      .select('food_id, times_logged, meals')
+      .select('food_id, times_logged')
       .eq('user_id', userId)
       .in('food_id', foodIds),
   )
 
   return new Map(
     rows.flatMap((row) =>
-      row.food_id
-        ? [
-            [
-              row.food_id,
-              { timesLogged: row.times_logged ?? 0, meals: (row.meals ?? []) as Meal[] },
-            ] as const,
-          ]
-        : [],
+      row.food_id ? [[row.food_id, { timesLogged: row.times_logged ?? 0 }] as const] : [],
     ),
   )
 }
@@ -124,18 +117,17 @@ export function useFood(id: string | undefined) {
  * Postgres means a subquery or a window — against a window of rows this small it
  * is cheaper to read the last thirty entries and walk them.
  */
-export function useRecentFoods(meal: Meal, limit = 3) {
+export function useRecentFoods(limit = 3) {
   const userId = useUserId()
 
   return useQuery({
-    queryKey: keys.recentFoods(userId, meal, limit),
+    queryKey: keys.recentFoods(userId, limit),
     queryFn: async (): Promise<Food[]> => {
       const rows = unwrap(
         await supabase
           .from('food_log_details')
           .select('food_id, logged_at')
           .eq('user_id', userId)
-          .eq('meal', meal)
           .order('logged_at', { ascending: false })
           // Enough history to find `limit` different dishes through a run of
           // repeats, and few enough to stay one index scan.

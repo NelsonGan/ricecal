@@ -114,7 +114,6 @@ select
   e.id,
   e.user_id,
   e.log_date,
-  e.meal,
   e.quantity,
   e.logged_at,
   e.note,
@@ -246,8 +245,7 @@ select
   e.user_id,
   e.food_id,
   count(*)::integer        as times_logged,
-  max(e.logged_at)         as last_logged_at,
-  array_agg(distinct e.meal) as meals
+  max(e.logged_at)         as last_logged_at
 from public.food_logs e
 join public.foods f on f.id = e.food_id
 -- Estimate and archetype rows are excluded for the same reason they are

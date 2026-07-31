@@ -40,7 +40,11 @@ create table public.food_logs (
   -- Defaulted from the user's own timezone so a write that omits it lands on
   -- the right day rather than on the server's UTC day.
   log_date     date not null default public.local_today(),
-  meal         public.meal not null,
+  -- No `meal`. A logged plate used to carry breakfast/lunch/dinner/snack, and
+  -- it earned nothing: the diary is one chronological list, the time on each
+  -- row says where in the day it belongs, and every write had to pick a value
+  -- for a field nobody read back. Meal TIMES survive on `meal_times`, where
+  -- they mean something — the hours a reminder fires.
 
   food_id      uuid not null,
   serving_id   uuid not null,

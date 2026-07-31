@@ -1,4 +1,4 @@
-import type { ActivityLevel, Entry, Goal, Macros, Meal, Targets } from '@/data/types'
+import type { ActivityLevel, Entry, Goal, Macros, Targets } from '@/data/types'
 
 /**
  * Arithmetic the screens share.
@@ -50,7 +50,8 @@ export function sumMacros(entries: readonly Entry[]): Macros {
   }
 }
 
-// `entriesForMeal` and `mealKcal` used to live here, for the card-per-meal day.
+// `entriesForMeal`, `mealKcal` and `mealForHour` used to live here, for the
+// card-per-meal day and the selector that guessed which meal you were logging.
 // Today is one chronological list now and nothing groups by meal, so both are gone
 // — along with the second copy of `entriesForMeal` in `data/day.ts`, which had
 // drifted to a different sort order than this one.
@@ -59,16 +60,6 @@ export function sumMacros(entries: readonly Entry[]): Macros {
 export function progressOf(done: number, goal: number): number {
   if (goal <= 0) return 0
   return Math.min(1, Math.max(0, done / goal))
-}
-
-/**
- * The meal a "log food" tap should default to, from the wall clock. Snack is
- * never guessed: it is what the user picks when none of the three fit.
- */
-export function mealForHour(hour: number): Meal {
-  if (hour < 11) return 'breakfast'
-  if (hour < 16) return 'lunch'
-  return 'dinner'
 }
 
 export function bmi(heightCm: number, weightKg: number): number {

@@ -1,13 +1,12 @@
 import { Image } from 'expo-image'
 import { useLocalSearchParams } from 'expo-router'
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, View } from 'react-native'
+import { ActivityIndicator, ScrollView, View } from 'react-native'
 
 import {
+  type EntryPatch,
   type IconRef,
-  MEALS,
-  type Meal,
   removeMealPhoto,
   uploadMealPhoto,
   useDayLog,
@@ -27,7 +26,7 @@ import {
 import { IconPicker } from '@/features/logging'
 import { MacroBars } from '@/features/shared'
 import { useBack, useDismissTo } from '@/lib/navigation'
-import { servingUnit } from '@/lib/portions'
+import { servingUnit, titleCase } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
@@ -40,7 +39,6 @@ import {
   Icon,
   IconButton,
   Screen,
-  SegmentedControl,
   Stepper,
   Tappable,
   Text,
@@ -55,6 +53,17 @@ import {
  * note.
  */
 const QUICK_FIXES = ['halfPortion', 'noSambal', 'addEgg', 'extraRice'] as const
+
+/**
+ * How long an edit waits before it is written.
+ *
+ * The stepper is the reason there is a delay at all: four taps on plus is one
+ * intention, and without this it was four round trips. Short enough that
+ * nobody notices it, long enough to collect a burst — and every path off this
+ * screen flushes what is pending, so the number is about batching rather than
+ * about whether the edit survives.
+ */
+const SAVE_DEBOUNCE_MS = 600
 
 /**
  * L6 FOOD DETAIL, in both of its jobs.
@@ -87,7 +96,7 @@ export default function FoodDetail() {
   // `auth.uid()` — a file written under anyone else's folder is refused.
   const userId = useUserId()
 
-  const params = useLocalSearchParams<{ id: string; entryId?: string; meal?: Meal }>()
+  const params = useLocalSearchParams<{ id: string; entryId?: string }>()
   const { data: food, isPending } = useFood(params.id)
 
   // The entry being edited, if this screen was opened from a row. It is on the
@@ -108,7 +117,6 @@ export default function FoodDetail() {
 
   const [quantity, setQuantity] = useState(existing?.quantity ?? 1)
   const [servingId, setServingId] = useState(existing?.servingId ?? '')
-  const [meal, setMeal] = useState<Meal>(existing?.meal ?? params.meal ?? 'breakfast')
   const [note, setNote] = useState(existing?.note ?? '')
   const [confirmDelete, setConfirmDelete] = useState(false)
   /**
@@ -168,8 +176,78 @@ export default function FoodDetail() {
    * and it asked the user to read the same numbers twice to change one.
    */
   const [editing, setEditing] = useState<'kcal' | 'carbs' | 'protein' | 'fat' | null>(null)
+  /** The title, while it is being retyped. */
+  const [renaming, setRenaming] = useState(false)
+  const [name, setName] = useState('')
 
   const { data: heroUrl } = useMealPhotoUrl(existing?.photoPath)
+
+  /**
+   * Everything an existing entry can change, written as it changes.
+   *
+   * There is no save button any more. The screen edits one row that already
+   * exists, and every control on it — the stepper, the serving, a typed figure,
+   * the name — was already an unambiguous instruction; asking for a second
+   * confirmation of an instruction is how an edit gets lost by backing out.
+   *
+   * Debounced, because the stepper is a button people press four times in a
+   * row and each press would otherwise be a round trip. Long enough to collect
+   * a burst, short enough that leaving the screen never outruns it — and the
+   * pending write is flushed on the way out regardless.
+   */
+  const figure = (value: string) => {
+    const trimmed = value.trim()
+    if (!trimmed) return null
+    const parsed = Number(trimmed)
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
+  }
+
+  const pendingPatch = useRef<EntryPatch | null>(null)
+  const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const flush = useCallback(() => {
+    if (flushTimer.current) {
+      clearTimeout(flushTimer.current)
+      flushTimer.current = null
+    }
+    const patch = pendingPatch.current
+    pendingPatch.current = null
+    if (patch) updateEntry.mutate(patch)
+  }, [updateEntry])
+
+  const queue = useCallback(
+    (patch: Omit<EntryPatch, 'id' | 'logDate'>) => {
+      if (!existing) return
+      const held = pendingPatch.current
+      pendingPatch.current = {
+        ...(held ?? { id: existing.id, logDate: existing.logDate }),
+        ...patch,
+        // Merged rather than replaced. Each field is queued on its own blur,
+        // and a plain spread would drop the calories the moment the carbs were
+        // typed inside the same debounce window.
+        ...(held?.overrides || patch.overrides
+          ? { overrides: { ...held?.overrides, ...patch.overrides } }
+          : {}),
+        id: existing.id,
+        logDate: existing.logDate,
+      }
+      if (flushTimer.current) clearTimeout(flushTimer.current)
+      flushTimer.current = setTimeout(flush, SAVE_DEBOUNCE_MS)
+    },
+    [existing, flush],
+  )
+
+  /**
+   * Flushed once, on the way out.
+   *
+   * Through a ref rather than by depending on `flush`: react-query hands back
+   * a new mutation object whenever its state changes, so an effect keyed on
+   * that identity tears down and re-runs mid-edit — and its teardown IS the
+   * flush, which turned the debounce into a write per keystroke.
+   */
+  const flushRef = useRef(flush)
+  flushRef.current = flush
+  useEffect(() => () => flushRef.current(), [])
 
   if (!food) {
     return (
@@ -295,47 +373,10 @@ export default function FoodDetail() {
 
   const hasPhoto = Boolean(shot ?? existing?.photoPath)
 
-  const save = () => {
-    if (existing) {
-      // A blank field clears the override rather than leaving the last one
-      // stored: blank is what "use the app's figure" looks like on screen, and
-      // it has to mean that when saved too.
-      const figure = (value: string) => {
-        const trimmed = value.trim()
-        if (!trimmed) return null
-        const parsed = Number(trimmed)
-        return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
-      }
-
-      updateEntry.mutate({
-        id: existing.id,
-        logDate: existing.logDate,
-        quantity,
-        servingId: chosen,
-        meal,
-        note: note || null,
-        overrides: {
-          kcal: figure(typed.kcal),
-          carbs: figure(typed.carbs),
-          protein: figure(typed.protein),
-          fat: figure(typed.fat),
-        },
-        ...(icon === undefined ? {} : { icon, currentPhotoPath: existing.photoPath }),
-      })
-      // `fixApplied` reads "Updated from your note", which belongs to the
-      // free-text correction below — it was showing for a plain quantity or
-      // serving change too, crediting a note the user never wrote.
-      toast.show({
-        title: note ? t('logging:detail.fixApplied') : t('logging:detail.updated'),
-        tone: 'success',
-      })
-      goBack()
-      return
-    }
+  const addToDiary = () => {
     logFood.mutate({
       foodId: food.id,
       servingId: chosen,
-      meal,
       quantity,
       note: note || undefined,
       logDate: selectedDate,
@@ -374,12 +415,17 @@ export default function FoodDetail() {
 
   return (
     <Screen
+      // Only while composing. An entry that already exists saves as it is
+      // edited, so a button at the foot of it would be a second answer to a
+      // question the screen has already asked.
       footer={
-        <View>
-          <Button fullWidth onPress={save}>
-            {existing ? t('common:action.save') : t('common:action.add')}
-          </Button>
-        </View>
+        existing ? undefined : (
+          <View>
+            <Button fullWidth onPress={addToDiary}>
+              {t('common:action.add')}
+            </Button>
+          </View>
+        )
       }
     >
       {/* A chevron, not a cross: this is a full page now, pushed from search or
@@ -393,6 +439,19 @@ export default function FoodDetail() {
            GOCHUJANG SAUCE"). Everything else on this screen is the catalogue
            row's; the title is what the user just tapped. */
         title={existing?.foodName ?? food.name}
+        // Tapping the title renames THIS entry — the model's guess at a dish
+        // is right about the food and wrong about the words often enough that
+        // correcting it should not require re-describing the meal. It writes
+        // `display_label`, so the catalogue row underneath is untouched and
+        // every other log of the same dish keeps its own name.
+        onPressTitle={
+          existing
+            ? () => {
+                setRenaming(true)
+                setName(existing.foodName)
+              }
+            : undefined
+        }
         onBack={() => goBack()}
         backLabel={t('common:a11y.back')}
         /* Delete lives up here rather than in a card at the foot of the screen.
@@ -423,6 +482,24 @@ export default function FoodDetail() {
           ) : undefined
         }
       />
+
+      {renaming ? (
+        <Card>
+          <TextField
+            label={t('logging:detail.nameField')}
+            value={name}
+            onChangeText={setName}
+            autoFocus
+            returnKeyType="done"
+            onBlur={() => setRenaming(false)}
+            onSubmitEditing={() => {
+              setRenaming(false)
+              const next = name.trim().slice(0, 120)
+              if (next && next !== existing?.foodName) queue({ name: next })
+            }}
+          />
+        </Card>
+      ) : null}
 
       {/* Always live, including before the entry exists. Most of the catalogue
           has no drawing, so a dish being added from the list arrives blank — and
@@ -501,7 +578,10 @@ export default function FoodDetail() {
       <Card>
         <Stepper
           value={quantity}
-          onChange={setQuantity}
+          onChange={(next) => {
+            setQuantity(next)
+            queue({ quantity: next })
+          }}
           // Half a plate is an ordinary portion and used to be unreachable here:
           // the steps were whole servings, so "half" could only be had by picking
           // a serving that happened to be one. `Stepper` renders 1.5 as "1½".
@@ -527,7 +607,10 @@ export default function FoodDetail() {
             <Chip
               key={option.id}
               selected={option.id === chosen}
-              onPress={() => setServingId(option.id)}
+              onPress={() => {
+                setServingId(option.id)
+                queue({ servingId: option.id })
+              }}
             >
               {option.label}
             </Chip>
@@ -536,20 +619,33 @@ export default function FoodDetail() {
       </Card>
 
       <Card>
-        <View className="flex-row items-baseline justify-between">
+        {/* Centred rather than on a shared baseline: while the number is a
+            field it is a box, and a box aligned by its text baseline sits
+            visibly low against the caption beside it. */}
+        <View className="flex-row items-center justify-between">
           {/* Tap the number to type your own. An entry the app got close but
               not right is corrected here, on the figure being read, rather
               than in a form underneath that repeats all four of them. */}
           {editing === 'kcal' ? (
+            // Sized to the number, not to the card. A full-width field for
+            // four digits pushed the caption off the row and made a tap on a
+            // total look like a form had opened.
             <TextField
-              containerClassName="flex-1"
+              containerClassName="w-[130px]"
+              className="min-h-[44px] px-3"
               value={typed.kcal}
               onChangeText={(value) => setTyped((current) => ({ ...current, kcal: value }))}
-              onBlur={() => setEditing(null)}
-              onSubmitEditing={() => setEditing(null)}
+              onBlur={() => {
+                setEditing(null)
+                queue({ overrides: { kcal: figure(typed.kcal) } })
+              }}
+              onSubmitEditing={() => {
+                setEditing(null)
+                queue({ overrides: { kcal: figure(typed.kcal) } })
+              }}
               placeholder={String(macros.kcal)}
               keyboardType="number-pad"
-              inputClassName="font-display text-[32px] leading-[39px] text-heading"
+              inputClassName="font-display text-[28px] leading-[34px] text-heading"
               autoFocus
               returnKeyType="done"
             />
@@ -571,11 +667,19 @@ export default function FoodDetail() {
             typed swaps for a field and the other two stay legible. */}
         {editing === 'carbs' || editing === 'protein' || editing === 'fat' ? (
           <TextField
+            containerClassName="w-[130px] self-end"
+            className="min-h-[44px] px-3"
             label={t(`logging:detail.${editing}Field`)}
             value={typed[editing]}
             onChangeText={(value) => setTyped((current) => ({ ...current, [editing]: value }))}
-            onBlur={() => setEditing(null)}
-            onSubmitEditing={() => setEditing(null)}
+            onBlur={() => {
+              setEditing(null)
+              queue({ overrides: { [editing]: figure(typed[editing]) } })
+            }}
+            onSubmitEditing={() => {
+              setEditing(null)
+              queue({ overrides: { [editing]: figure(typed[editing]) } })
+            }}
             placeholder={String(macros[editing])}
             keyboardType="decimal-pad"
             autoFocus
@@ -593,7 +697,10 @@ export default function FoodDetail() {
 
         {existing && (typed.kcal || typed.carbs || typed.protein || typed.fat) ? (
           <Tappable
-            onPress={() => setTyped({ kcal: '', carbs: '', protein: '', fat: '' })}
+            onPress={() => {
+              setTyped({ kcal: '', carbs: '', protein: '', fat: '' })
+              queue({ overrides: { kcal: null, carbs: null, protein: null, fat: null } })
+            }}
             accessibilityRole="button"
             accessibilityLabel={t('logging:detail.numbersReset')}
           >
@@ -605,20 +712,22 @@ export default function FoodDetail() {
 
         <Divider />
 
-        {/* Collapsed, and shown for every dish including the ones with nothing to
-            report. Hiding the row when the columns are null would leave the
-            question unanswered — "does this app not know, or does this dish have
-            no sugar in it" — and the answer is worth one line of copy. */}
-        <Tappable
-          className="flex-row items-center justify-between"
-          onPress={() => setShowNutrients((open) => !open)}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: showNutrients }}
-          accessibilityLabel={t('logging:detail.moreNutrients')}
-        >
-          <Text variant="label">{t('logging:detail.moreNutrients')}</Text>
-          <Icon set="ui" name={showNutrients ? 'chevron-up' : 'chevron-down'} size={20} />
-        </Tappable>
+        {/* Only when there is something under it. This used to be shown for
+            every dish so that "nobody recorded it" was still an answer — but
+            most of the catalogue has none of these columns, so most rows grew
+            a control that opened three dashes. */}
+        {extras.some((row) => row.value !== undefined) ? (
+          <Tappable
+            className="flex-row items-center justify-between"
+            onPress={() => setShowNutrients((open) => !open)}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showNutrients }}
+            accessibilityLabel={t('logging:detail.moreNutrients')}
+          >
+            <Text variant="label">{t('logging:detail.moreNutrients')}</Text>
+            <Icon set="ui" name={showNutrients ? 'chevron-up' : 'chevron-down'} size={20} />
+          </Tappable>
+        ) : null}
 
         {showNutrients ? (
           <View className="gap-2">
@@ -684,7 +793,7 @@ export default function FoodDetail() {
               <View key={ingredient.id} className="flex-row items-center justify-between gap-3">
                 <View className="min-w-0 flex-1">
                   <Text variant="body" numberOfLines={1}>
-                    {ingredient.name}
+                    {titleCase(ingredient.name)}
                   </Text>
                   {/* The multiplier alone. The catalogue's own serving label
                       belongs to whatever row the part matched — "1 medium
@@ -692,22 +801,20 @@ export default function FoodDetail() {
                       here described the import rather than the plate. How many
                       of it there are is the only part of that the user is
                       changing, and the calories beside it say the rest. */}
-                  {/* Its own macros, because the plate's totals are a sum of
-                      these — a row that showed only calories left the user to
-                      guess which part the carbs came from. */}
+                  {/* The count and its own macros, always. The plate's totals
+                      are a sum of these, and a row that showed only calories
+                      left the user to guess which part the carbs came from —
+                      while hiding "× 1" made a single portion look like a
+                      different kind of row from two of something. */}
                   <Text variant="meta">
-                    {[
-                      ingredient.quantity === 1
-                        ? null
-                        : t('logging:detail.times', { amount: ingredient.quantity }),
-                      t('logging:detail.macroLine', {
+                    {`${t('logging:detail.times', { amount: ingredient.quantity })} · ${t(
+                      'logging:detail.macroLine',
+                      {
                         carbs: ingredient.carbs,
                         protein: ingredient.protein,
                         fat: ingredient.fat,
-                      }),
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
+                      },
+                    )}`}
                   </Text>
                 </View>
                 <View className="flex-row items-center gap-2">
@@ -809,7 +916,14 @@ export default function FoodDetail() {
           />
 
           {existing.suggestedEdits?.length ? (
-            <View className="flex-row flex-wrap gap-2">
+            // One line that scrolls, rather than wrapping to two. Three chips
+            // of unpredictable length were rearranging the card's height as
+            // the model's suggestions changed.
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerClassName="flex-row gap-2 pr-4"
+            >
               {existing.suggestedEdits.map((edit) => (
                 <Chip
                   key={edit}
@@ -819,7 +933,7 @@ export default function FoodDetail() {
                   {edit}
                 </Chip>
               ))}
-            </View>
+            </ScrollView>
           ) : null}
         </Card>
       ) : existing ? (
@@ -836,6 +950,7 @@ export default function FoodDetail() {
           <TextField
             value={note}
             onChangeText={setNote}
+            onBlur={() => queue({ note: note || null })}
             placeholder={t('logging:detail.fixPlaceholder')}
             returnKeyType="done"
           />
@@ -862,15 +977,6 @@ export default function FoodDetail() {
           </View>
         </Card>
       ) : null}
-
-      <Card title={t('logging:detail.mealLabel')}>
-        <SegmentedControl
-          options={MEALS.map((option) => ({ value: option, label: t(`common:meal.${option}`) }))}
-          value={meal}
-          onChange={setMeal}
-          accessibilityLabel={t('logging:detail.mealLabel')}
-        />
-      </Card>
 
       <ConfirmSheet
         visible={confirmDelete}

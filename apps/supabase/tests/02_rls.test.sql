@@ -38,13 +38,13 @@ from public.foods f
 where f.slug in ('fixture-nasi-lemak', 'fixture-roti-canai');
 
 -- A logs a plate; B logs one too.
-insert into public.food_logs (user_id, log_date, meal, food_id, serving_id)
-select :'user_a', current_date, 'lunch', f.id, s.id
+insert into public.food_logs (user_id, log_date, food_id, serving_id)
+select :'user_a', current_date,  f.id, s.id
 from public.foods f join public.food_servings s on s.food_id = f.id and s.is_default
 where f.slug = 'fixture-nasi-lemak';
 
-insert into public.food_logs (user_id, log_date, meal, food_id, serving_id)
-select :'user_b', current_date, 'lunch', f.id, s.id
+insert into public.food_logs (user_id, log_date, food_id, serving_id)
+select :'user_b', current_date,  f.id, s.id
 from public.foods f join public.food_servings s on s.food_id = f.id and s.is_default
 where f.slug = 'fixture-roti-canai';
 
@@ -109,8 +109,8 @@ select is(
 -- of each policy exists to stop.
 select throws_ok(
   format(
-    $q$insert into public.food_logs (user_id, log_date, meal, food_id, serving_id)
-       select %L, current_date, 'dinner', f.id, s.id
+    $q$insert into public.food_logs (user_id, log_date, food_id, serving_id)
+       select %L, current_date, f.id, s.id
        from public.foods f join public.food_servings s
          on s.food_id = f.id and s.is_default
        where f.slug = 'fixture-roti-canai'$q$,

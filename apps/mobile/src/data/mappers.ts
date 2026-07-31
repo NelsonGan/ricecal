@@ -58,7 +58,7 @@ export function toServings(json: FoodDetailsRow['servings']): Serving[] {
   })
 }
 
-export type FoodStats = { timesLogged: number; meals: Meal[] }
+export type FoodStats = { timesLogged: number }
 
 export function toFood(row: FoodDetailsRow, stats?: FoodStats | undefined): Food {
   const servings = toServings(row.servings)
@@ -85,14 +85,12 @@ export function toFood(row: FoodDetailsRow, stats?: FoodStats | undefined): Food
     },
     verified: row.verified ?? false,
     timesLogged: stats?.timesLogged,
-    usualMeals: stats?.meals,
   }
 }
 
 export function toEntry(row: FoodLogRow): Entry {
   return {
     id: row.id ?? '',
-    meal: row.meal ?? 'snack',
     quantity: Number(row.quantity ?? 1),
     loggedAt: row.logged_at ?? new Date(0).toISOString(),
     logDate: row.log_date ?? '',

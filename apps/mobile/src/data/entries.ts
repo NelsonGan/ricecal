@@ -20,7 +20,6 @@ import { toDbSource } from './types'
 export type LogInput = {
   foodId: string
   servingId: string
-  meal: Meal
   quantity?: number
   note?: string
   source?: EntrySource
@@ -51,7 +50,6 @@ export function useLogFood() {
             user_id: userId,
             food_id: input.foodId,
             serving_id: input.servingId,
-            meal: input.meal,
             quantity: input.quantity ?? 1,
             note: input.note,
             source: toDbSource(input.source ?? 'search'),
@@ -87,8 +85,13 @@ export type EntryPatch = {
   logDate: string
   quantity?: number
   servingId?: string
-  meal?: Meal
   note?: string | null
+  /**
+   * What THIS entry is called. Written to `display_label`, which sits over the
+   * catalogue row's own name — so renaming a plate never renames the dish for
+   * anyone else who logged it.
+   */
+  name?: string
   /**
    * An illustration for this row, overriding whatever the food carries. `null`
    * clears it and falls back to the food's own.
@@ -133,8 +136,8 @@ export function useUpdateEntry() {
       id,
       quantity,
       servingId,
-      meal,
       note,
+      name,
       icon,
       photoPath,
       currentPhotoPath,
@@ -156,8 +159,8 @@ export function useUpdateEntry() {
           .update({
             ...(quantity === undefined ? {} : { quantity }),
             ...(servingId === undefined ? {} : { serving_id: servingId }),
-            ...(meal === undefined ? {} : { meal }),
             ...(note === undefined ? {} : { note }),
+            ...(name === undefined ? {} : { display_label: name }),
             // Both columns together: a check constraint refuses half an icon,
             // and `null` is how the row goes back to the food's own.
             //
