@@ -27,6 +27,8 @@ export type SnapInput = {
 type ScanResponse = {
   ok: boolean
   scanId?: string
+  /** False when the photo had nothing edible in it. No entry was written. */
+  food?: boolean
   entries?: Array<{ id: string; foodId: string; tier: number; name: string; kcal: number }>
   error?: string
 }
@@ -123,6 +125,14 @@ export function useSnapFood() {
 
       work()
         .then((result) => {
+          // Nothing edible in the photo: no entry exists to refetch into, so
+          // the row stays and says so. Dismissing it is the user's answer.
+          if (result.food === false) {
+            void booked.then(() => cancelScanNotice(notice))
+            pending.noFood(id)
+            return
+          }
+
           // Still awake, so the booked notice is not needed as it stands: in
           // front, the row on Today has already turned into the dish; behind,
           // this can say which dish it was instead of guessing.

@@ -245,6 +245,9 @@ export default function TodayScreen() {
           pending.remove(entry.id)
           router.push({ pathname: '/log/search', params: { meal: entry.meal } })
         }}
+        // Nothing was logged for a photo with no food in it, so there is no
+        // entry to delete — dismissing drops the row the shutter put there.
+        onDismissEntry={(entry) => pending.remove(entry.id)}
         // Swipe left, tap the bin. A wrong scan is the common case and it took
         // two screens to undo; this is the shortcut, and the detail screen's
         // delete is still there for anyone who wants to look first.

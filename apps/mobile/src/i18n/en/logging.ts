@@ -43,6 +43,14 @@ export const logging = {
     scanDoneBodyPlain: 'Tap to see what was on it.',
     /** On the panel behind a row being swiped away, and to a screen reader. */
     deleteEntry: 'Delete',
+    /**
+     * The photo had nothing edible in it. Nothing was logged — the row is
+     * there to say so and to be dismissed, which is why the copy is not an
+     * apology and not an error.
+     */
+    noFoodTitle: 'No food in this photo',
+    noFoodHint: 'Nothing was added to your day.',
+    noFoodDismiss: 'Dismiss',
     analysisFailedTitle: 'Could not read this one',
     analysisFailedHint: 'Tap to pick the dish yourself',
     emptyTitle: 'Nothing logged yet',

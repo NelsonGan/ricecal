@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
 
 import type { MealTime, Settings } from '@/data/types'
-import { isQuiet, parseTime } from './quiet-hours'
+import { parseTime } from './quiet-hours'
 
 /**
  * Local reminders.
@@ -125,15 +125,12 @@ export async function rescheduleReminders(
 
   if (!(await notificationsAllowed())) return
 
-  const quiet = (time: { hour: number; minute: number }) =>
-    isQuiet(time, settings.quiet_from, settings.quiet_to)
-
+  // No quiet-hours filter. It silently dropped reminders the user had asked
+  // for — a meal at 22:30 was scheduled, skipped, and never explained — and
+  // the window it checked against was not editable anywhere in the app.
   for (const meal of mealTimes) {
     if (!meal.reminder_enabled) continue
     const time = parseTime(meal.at)
-    // A meal inside quiet hours is not rescheduled to a different time — the
-    // user chose when they eat. It is simply not announced.
-    if (quiet(time)) continue
 
     await Notifications.scheduleNotificationAsync({
       content: {
@@ -147,7 +144,7 @@ export async function rescheduleReminders(
 
   // Water is the one reminder with no time of its own. Mid-afternoon is when
   // a day's drinking is behind and can still be caught up.
-  if (settings.notify_water && !quiet({ hour: 15, minute: 0 })) {
+  if (settings.notify_water) {
     await Notifications.scheduleNotificationAsync({
       content: { title: copy.waterTitle, body: copy.waterBody, data: { kind: 'water' } },
       trigger: dailyTrigger(15, 0),
@@ -155,7 +152,7 @@ export async function rescheduleReminders(
   }
 
   // First thing, because that is the reading the weight chart is drawn from.
-  if (settings.notify_weigh_in && !quiet({ hour: 7, minute: 30 })) {
+  if (settings.notify_weigh_in) {
     await Notifications.scheduleNotificationAsync({
       content: { title: copy.weighInTitle, body: copy.weighInBody, data: { kind: 'weigh-in' } },
       trigger: dailyTrigger(7, 30),

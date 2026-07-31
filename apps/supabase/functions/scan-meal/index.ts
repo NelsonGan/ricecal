@@ -111,6 +111,13 @@ Deno.serve(async (req: Request) => {
       vision = null
     }
 
+    // Nothing edible in the photo. No entry, no archetype floor, no calories —
+    // the floor exists to keep a MEAL from being lost, and this is not a meal.
+    // The client keeps its row and says so, with a way to dismiss it.
+    if (vision?.noFood) {
+      return json({ ok: true, scanId, food: false, entries: [], ...(wantDebug ? { trace } : {}) })
+    }
+
     const items: Array<VisionItem | null> = vision?.items ?? [null]
     const scene = vision?.scene ?? 'unclear'
 
