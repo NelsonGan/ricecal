@@ -17,6 +17,11 @@ export type MacroBarsProps = {
    * reading of something already decided.
    */
   onEdit?: (macro: 'carbs' | 'protein' | 'fat') => void
+  /** Which row is being typed into, and what has been typed so far. */
+  editing?: 'carbs' | 'protein' | 'fat' | null
+  editingValue?: string
+  onChangeAmount?: (value: string) => void
+  onDoneAmount?: () => void
   /**
    * Reads "120/203g" instead of "120g".
    *
@@ -35,7 +40,17 @@ export type MacroBarsProps = {
  * Today, on a food's detail and in the weekly report, and a reader learns the
  * colour once.
  */
-export function MacroBars({ eaten, targets, showGoal = false, onEdit, className }: MacroBarsProps) {
+export function MacroBars({
+  eaten,
+  targets,
+  showGoal = false,
+  onEdit,
+  editing = null,
+  editingValue = '',
+  onChangeAmount,
+  onDoneAmount,
+  className,
+}: MacroBarsProps) {
   const { t } = useTranslation()
 
   const rows = [
@@ -73,6 +88,10 @@ export function MacroBars({ eaten, targets, showGoal = false, onEdit, className 
           value={progressOf(row.grams, row.goal)}
           tone={row.tone}
           onPressAmount={onEdit ? () => onEdit(row.key) : undefined}
+          editing={editing === row.key}
+          editingValue={editingValue}
+          onChangeAmount={onChangeAmount}
+          onDoneAmount={onDoneAmount}
         />
       ))}
     </View>
