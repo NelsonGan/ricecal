@@ -10,6 +10,7 @@ import { portionLabel } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
 import { Card, Icon, Text } from '@/ui'
 import { ItemRow } from './ItemRow'
+import { SwipeRow } from './SwipeRow'
 
 export type EntryListProps = {
   day: DayLog
@@ -20,6 +21,8 @@ export type EntryListProps = {
    * has no dish to open — the only thing to do with it is name it by hand.
    */
   onFixEntry?: (entry: Entry) => void
+  /** Swiping a row left reveals this. Rows are not swipeable without it. */
+  onDeleteEntry?: (entry: Entry) => void
 }
 
 /**
@@ -40,7 +43,7 @@ export type EntryListProps = {
  * its illustration and its macros already costed, so a row is one object and the
  * list is one loop.
  */
-export function EntryList({ day, onPressEntry, onFixEntry }: EntryListProps) {
+export function EntryList({ day, onPressEntry, onFixEntry, onDeleteEntry }: EntryListProps) {
   const { t } = useTranslation(['logging', 'common'])
 
   // Newest first. The day used to read in the order it happened, which put the
@@ -57,7 +60,13 @@ export function EntryList({ day, onPressEntry, onFixEntry }: EntryListProps) {
       })}
     >
       {entries.map((entry) => (
-        <EntryRow key={entry.id} entry={entry} onPress={onPressEntry} onFix={onFixEntry} />
+        <EntryRow
+          key={entry.id}
+          entry={entry}
+          onPress={onPressEntry}
+          onFix={onFixEntry}
+          onDelete={onDeleteEntry}
+        />
       ))}
     </Card>
   )
@@ -73,10 +82,12 @@ function EntryRow({
   entry,
   onPress,
   onFix,
+  onDelete,
 }: {
   entry: Entry
   onPress?: (entry: Entry) => void
   onFix?: (entry: Entry) => void
+  onDelete?: (entry: Entry) => void
 }) {
   const { t } = useTranslation(['logging', 'common'])
 
@@ -110,7 +121,7 @@ function EntryRow({
   // of them are measurements rather than portions. See `servingUnit`.
   const portion = portionLabel(entry.quantity, entry.servingLabel, t('logging:detail.servingWord'))
 
-  return (
+  const row = (open?: () => void) => (
     <ItemRow
       title={entry.foodName}
       icon={entry.icon}
@@ -121,8 +132,24 @@ function EntryRow({
       // not — the time is where in the day this was, the portion is what the
       // calories are for.
       detail={`${formatTime(entry.loggedAt)} · ${portion}`}
-      onPress={onPress ? () => onPress(entry) : undefined}
+      onPress={open}
     />
+  )
+
+  // Swiping is the shortcut, not the only way: the detail screen still has a
+  // delete, which is where a screen reader user (and anyone who wants to look
+  // before removing) goes.
+  // A swipeable row hands its tap to `SwipeRow` and renders as a plain view,
+  // so one gesture decides between the press and the drag — see the note there.
+  if (!onDelete) return row(onPress ? () => onPress(entry) : undefined)
+  return (
+    <SwipeRow
+      onDelete={() => onDelete(entry)}
+      onPress={onPress ? () => onPress(entry) : undefined}
+      deleteLabel={t('logging:today.deleteEntry')}
+    >
+      {row()}
+    </SwipeRow>
   )
 }
 

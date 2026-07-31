@@ -41,6 +41,8 @@ export const logging = {
     scanDoneTitle: 'Your plate is counted',
     scanDoneBody: '{{food}} · {{kcal}} kcal',
     scanDoneBodyPlain: 'Tap to see what was on it.',
+    /** On the panel behind a row being swiped away, and to a screen reader. */
+    deleteEntry: 'Delete',
     analysisFailedTitle: 'Could not read this one',
     analysisFailedHint: 'Tap to pick the dish yourself',
     emptyTitle: 'Nothing logged yet',

@@ -1,11 +1,15 @@
 import type { ReactNode } from 'react'
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  type ScrollViewProps,
-  View,
-} from 'react-native'
+import { KeyboardAvoidingView, Platform, type ScrollViewProps, View } from 'react-native'
+/**
+ * Gesture-handler's ScrollView, not React Native's.
+ *
+ * They render the same thing; the difference is that this one's pan is a
+ * gesture-handler recognizer, so a handler INSIDE it — the swipe-to-delete on
+ * a diary row — can be arbitrated against the scroll rather than silently
+ * losing to it. With the platform ScrollView the row's gesture never
+ * activated at all: no drag, no error, nothing to debug.
+ */
+import { ScrollView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
