@@ -76,6 +76,11 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   )
   const scanId = crypto.randomUUID()
+  // Stage failures, readable two ways: always in the function logs, and in
+  // the response when the caller asks (`debug: true`) — nothing secret is in
+  // here, and "which tier failed and why" is exactly what a bug report needs.
+  const trace: string[] = []
+  const wantDebug = (body as { debug?: boolean }).debug === true
 
   try {
     // -- Vision. A failure here — network, model, no photo — skips straight
@@ -98,7 +103,10 @@ Deno.serve(async (req: Request) => {
       // One meal, one entry: if the model split the tray into per-side items,
       // fold them back into a single composite plate. Drinks stay separate.
       vision = foldMealItems(await analysePhoto(photoBase64, mock))
-    } catch {
+    } catch (error) {
+      const message = `[vision] ${error instanceof Error ? error.message : String(error)}`
+      console.error(message)
+      trace.push(message)
       vision = null
     }
 
@@ -110,7 +118,7 @@ Deno.serve(async (req: Request) => {
 
     for (const [index, item] of items.entries()) {
       const resolved = item
-        ? ((await resolveItem(db, scanId, scene, item, mock)) ??
+        ? ((await resolveItem(db, scanId, scene, item, mock, trace)) ??
           (await resolveByArchetype(db, item, mock)))
         : await resolveByArchetype(db, null, mock)
 
@@ -154,6 +162,7 @@ Deno.serve(async (req: Request) => {
       scanId,
       entries: written,
       breakdown: written.some((entry) => entry.ingredients.length > 0),
+      ...(wantDebug ? { trace } : {}),
     })
   } catch (error) {
     // Even the cascade's floor failed (database down, terminal row missing).

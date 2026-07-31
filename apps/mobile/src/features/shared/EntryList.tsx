@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Animated, Easing, View } from 'react-native'
 
 import type { DayLog, Entry } from '@/data'
+import { useMealPhotoUrl, useRefiningEntries } from '@/data'
 import { sumMacros } from '@/lib/nutrition'
 import { useThemeColors } from '@/theme/useTheme'
 import { Card, Icon, Text } from '@/ui'
@@ -76,6 +77,14 @@ function EntryRow({
 }) {
   const { t } = useTranslation(['logging', 'common'])
 
+  // A fix-by-typing correction in flight: the entry exists but is being
+  // reworked on the server, so its row shows the work instead of stale
+  // numbers. Checked before everything else — a refining row is not tappable.
+  const refining = useRefiningEntries()
+  if (refining.ids.includes(entry.id)) {
+    return <AnalysingRow entry={entry} mode="refine" />
+  }
+
   // A snap in flight has no dish yet. It still gets a row — written the moment
   // the shutter fired — so the day is complete while the model is thinking.
   if (entry.status === 'analysing') {
@@ -126,16 +135,21 @@ const PHRASE_MS = 2600
  * wholesale by the real entry when the scan lands, so the bar never has to
  * finish; the phrases rotate so the wait reads as stages rather than a hang.
  */
-function AnalysingRow({ entry }: { entry: Entry }) {
+function AnalysingRow({ entry, mode = 'scan' }: { entry: Entry; mode?: 'scan' | 'refine' }) {
   const { t } = useTranslation(['logging'])
   const colors = useThemeColors()
+  // A refining entry's photo is already in the bucket, not on disk.
+  const { data: signedUrl } = useMealPhotoUrl(entry.photoPath)
 
-  const phrases = [
-    t('logging:today.scanningRead'),
-    t('logging:today.scanningMatch'),
-    t('logging:today.scanningPortion'),
-    t('logging:today.scanningCount'),
-  ]
+  const phrases =
+    mode === 'refine'
+      ? [t('logging:today.refiningApply'), t('logging:today.refiningCount')]
+      : [
+          t('logging:today.scanningRead'),
+          t('logging:today.scanningMatch'),
+          t('logging:today.scanningPortion'),
+          t('logging:today.scanningCount'),
+        ]
   const [phrase, setPhrase] = useState(0)
   useEffect(() => {
     const id = setInterval(() => setPhrase((current) => current + 1), PHRASE_MS)
@@ -168,9 +182,9 @@ function AnalysingRow({ entry }: { entry: Entry }) {
     >
       {/* Same 56pt tile as ItemRow, so the row sits flush in the list. */}
       <View className="h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-tile bg-track">
-        {entry.localPhotoUri ? (
+        {entry.localPhotoUri || signedUrl ? (
           <Image
-            source={{ uri: entry.localPhotoUri }}
+            source={{ uri: entry.localPhotoUri ?? signedUrl }}
             style={{ flex: 1, width: '100%', opacity: 0.55 }}
             contentFit="cover"
           />

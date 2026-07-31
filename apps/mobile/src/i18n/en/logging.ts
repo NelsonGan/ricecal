@@ -30,6 +30,9 @@ export const logging = {
     scanningMatch: 'Finding it in the catalogue…',
     scanningPortion: 'Sizing up the portion…',
     scanningCount: 'Counting the calories…',
+    /** The same bar while a fix-by-typing correction is applied to a row. */
+    refiningApply: 'Applying your fix…',
+    refiningCount: 'Recounting the calories…',
     analysisFailedTitle: 'Could not read this one',
     analysisFailedHint: 'Tap to pick the dish yourself',
     emptyTitle: 'Nothing logged yet',

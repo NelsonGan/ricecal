@@ -15,12 +15,29 @@
 
 export type Scene = 'single' | 'composite' | 'packaged' | 'unclear'
 
+/**
+ * One visible part of a composite plate, with the model's own sizing.
+ *
+ * The kcal figure is what makes component resolution work at all: catalogue
+ * search ranks by NAME, so "white rice" can top-rank rice flour at 578 kcal.
+ * The model's per-portion estimate gives each part a band to match within —
+ * and when nothing in the catalogue fits, it prices the fallback estimate
+ * row, so a breakdown never dies because one side dish was unsearchable.
+ */
+export type VisionComponent = {
+  name: string
+  kcal: number
+  carbs_g: number | null
+  protein_g: number | null
+  fat_g: number | null
+}
+
 export type VisionItem = {
   /** The model's specific name for the plate — what display_label carries. */
   name: string
   specific_query: string
   generic_query: string
-  components: string[]
+  components: VisionComponent[]
   serving_hint: string | null
   kcal_low: number
   kcal_high: number
@@ -174,8 +191,32 @@ function shapeVision(raw: unknown): Vision {
         specific_query: String(i.specific_query ?? name).trim(),
         generic_query: String(i.generic_query ?? '').trim(),
         components: (Array.isArray(i.components) ? i.components : [])
-          .map((c) => String(c).trim())
-          .filter(Boolean)
+          .flatMap((c): VisionComponent[] => {
+            // Bare strings still parse (older mocks, stubborn models); they
+            // carry no sizing, which the resolver treats as "top hit, as-is".
+            if (typeof c === 'string') {
+              const name = c.trim()
+              return name ? [{ name, kcal: 0, carbs_g: null, protein_g: null, fat_g: null }] : []
+            }
+            const o = (c ?? {}) as Record<string, unknown>
+            const name = String(o.name ?? '').trim()
+            if (!name) return []
+            const optional = (v: unknown): number | null => {
+              const n = Number(v)
+              return v !== null && v !== undefined && Number.isFinite(n) && n >= 0
+                ? Math.min(n, 9999)
+                : null
+            }
+            return [
+              {
+                name: name.slice(0, 120),
+                kcal: Math.round(clampNumber(o.kcal, 0, 10000, 0)),
+                carbs_g: optional(o.carbs_g),
+                protein_g: optional(o.protein_g),
+                fat_g: optional(o.fat_g),
+              },
+            ]
+          })
           .slice(0, 8),
         serving_hint: i.serving_hint ? String(i.serving_hint).slice(0, 80) : null,
         kcal_low: low,
@@ -213,7 +254,12 @@ export async function analysePhoto(
           name: 'Nasi lemak with fried chicken',
           specific_query: 'nasi lemak ayam goreng',
           generic_query: 'nasi lemak',
-          components: ['coconut rice', 'fried chicken', 'sambal', 'boiled egg'],
+          components: [
+            { name: 'coconut rice', kcal: 340, carbs_g: 55, protein_g: 6, fat_g: 11 },
+            { name: 'fried chicken', kcal: 250, carbs_g: 8, protein_g: 20, fat_g: 15 },
+            { name: 'sambal', kcal: 60, carbs_g: 6, protein_g: 1, fat_g: 4 },
+            { name: 'boiled egg', kcal: 70, carbs_g: 1, protein_g: 6, fat_g: 5 },
+          ],
           serving_hint: '1 plate',
           kcal_low: 550,
           kcal_high: 780,
@@ -234,8 +280,10 @@ export async function analysePhoto(
           'You identify food in photos for a Malaysian calorie-tracking app. ' +
           'Respond with JSON only, matching: {"scene": "single|composite|packaged|unclear", ' +
           '"items": [{"name": string, "specific_query": string, "generic_query": string, ' +
-          '"components": string[], "serving_hint": string|null, "kcal_low": number, ' +
-          '"kcal_high": number, "confidence": number, "suggested_edits": string[]}]}. ' +
+          '"components": [{"name": string, "kcal": number, "carbs_g": number|null, ' +
+          '"protein_g": number|null, "fat_g": number|null}], "serving_hint": string|null, ' +
+          '"kcal_low": number, "kcal_high": number, "confidence": number, ' +
+          '"suggested_edits": string[]}]}. ' +
           'The photo is ONE logged meal: return ONE item named for the whole of it ' +
           '("Korean fried chicken with rice and sides"), with every distinct part — main, ' +
           'rice, sides, banchan, a drink on the tray — listed in "components". Only return ' +
@@ -243,16 +291,20 @@ export async function analysePhoto(
           "people's plates; max 6). " +
           '"specific_query" is the local dish name as eaten ("char kuey teow"), ' +
           '"generic_query" a broader fallback ("fried noodles"). ' +
-          '"components" lists the visible parts of a composite meal (rice, protein, sides) as ' +
-          'plain searchable names, one entry PER PORTION — two chicken wings are two "chicken ' +
-          'wing" entries; empty for a single homogeneous dish. "scene" is "composite" whenever ' +
-          'the meal has distinct visible parts. "serving_hint" is the visible portion ' +
+          'Each component is one visible part of a composite meal: a plain searchable "name" ' +
+          '(rice, protein, side), its estimated "kcal" for the PORTION VISIBLE, and its macro ' +
+          'grams (null when unsure — never guess 0). One component PER PORTION — two chicken ' +
+          'wings are two "chicken wing" components. Empty for a single homogeneous dish. ' +
+          'Component kcal should sum to roughly the item kcal range. ' +
+          '"scene" is "composite" whenever the meal has distinct visible parts. ' +
+          '"serving_hint" is the visible portion ' +
           'as a person would say it ("1 plate", "1 bowl", "large plate"). kcal_low/high bound ' +
           'the calories of the portion actually visible — anchor on the portion size, not the ' +
           'dish average. confidence is 0-1 for the identification. ' +
           '"suggested_edits" is up to 3 SHORT likely corrections for this exact dish, phrased as ' +
           'a user would type them (e.g. "No sambal", "Half portion", "Extra rice") — pick what ' +
-          'people most often vary about this food. Do NOT return protein/carb/fat numbers.',
+          'people most often vary about this food. The ITEM carries no macro fields — only ' +
+          'components do.',
       },
       {
         role: 'user',
@@ -291,7 +343,17 @@ export function foldMealItems(vision: Vision): Vision {
     generic_query: primary.generic_query,
     // Each part is a component under its own full name, so the breakdown
     // resolves each one to its own catalogue row.
-    components: items.map((item) => item.name).slice(0, 8),
+    // Each folded item becomes a component priced by its own band's middle,
+    // so the breakdown resolver has a size for every part.
+    components: items
+      .map((item) => ({
+        name: item.name,
+        kcal: Math.round((item.kcal_low + item.kcal_high) / 2),
+        carbs_g: null,
+        protein_g: null,
+        fat_g: null,
+      }))
+      .slice(0, 8),
     serving_hint: '1 meal',
     kcal_low: items.reduce((sum, item) => sum + item.kcal_low, 0),
     kcal_high: items.reduce((sum, item) => sum + item.kcal_high, 0),
@@ -442,7 +504,9 @@ export async function estimateNutrition(
           `${item.name}, portion: ${item.serving_hint ?? '1 serving'}.` +
           // The visible parts pin the estimate to the actual plate — "nasi
           // campur" alone could be anything; its component list is the meal.
-          (item.components.length ? ` Contains: ${item.components.join(', ')}.` : '') +
+          (item.components.length
+            ? ` Contains: ${item.components.map((c) => c.name).join(', ')}.`
+            : '') +
           ` Expected around ${item.kcal_low}-${item.kcal_high} kcal.`,
       },
     ],
@@ -559,7 +623,9 @@ export async function interpretInstruction(
           '(e.g. "Nasi Lemak, no sambal"). This is the answer for ANY add/remove/swap of a ' +
           'component that leaves the dish recognisably itself.\n' +
           '{"action":"redescribe","item":{"name":string,"specific_query":string,' +
-          '"generic_query":string,"components":string[],"serving_hint":string|null,' +
+          '"generic_query":string,"components":[{"name":string,"kcal":number,' +
+          '"carbs_g":number|null,"protein_g":number|null,"fat_g":number|null}],' +
+          '"serving_hint":string|null,' +
           '"kcal_low":number,"kcal_high":number,"confidence":number,"suggested_edits":[]}} — ' +
           'the dish IDENTITY was wrong ("it was rendang not curry", "this is laksa"). ' +
           'Describe the correct dish as eaten and bound its calories tightly.\n' +

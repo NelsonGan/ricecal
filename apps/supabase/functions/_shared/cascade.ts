@@ -135,45 +135,135 @@ async function recordMisses(db: SupabaseClient, scanId: string, queries: string[
 /**
  * Tier 2: the plate as its parts, folded into ONE entry.
  *
- * Every named component must resolve, the component sum must land inside the
- * model's kcal band, and the parent estimate row's own figure must sit within
- * band of the sum (a deduped row may carry an earlier plate's number — the
- * quantity absorbs small drift, and large drift drops the breakdown rather
- * than showing parts that do not add up to the total).
+ * Each component carries the vision model's own portion estimate, which does
+ * two jobs. Against the catalogue it is the acceptance band — search ranks by
+ * NAME, so "white rice" can top-rank rice flour at 578 kcal, and the first
+ * relevance-ordered hit whose figure sits within ±50% of the estimate is the
+ * one taken, with the residue absorbed into the ingredient's quantity. And
+ * when no hit fits, the estimate PRICES a fallback `is_estimate` row for that
+ * component — so one unsearchable side dish no longer kills the breakdown.
  */
 async function resolveByComponents(
   db: SupabaseClient,
   scanId: string,
   item: VisionItem,
+  trace?: string[],
 ): Promise<Resolved | null> {
   if (item.components.length < 2) return null
 
-  const parts: Array<{ row: SearchRow; label: string }> = []
+  const snapIngredientQty = (q: number): number =>
+    Math.round(Math.min(3, Math.max(0.25, q)) * 4) / 4
+
+  const parts: Array<{ food: FoodRow; quantity: number; label: string; kcal: number }> = []
   for (const component of item.components) {
-    const q = usable(component)
+    const q = usable(component.name)
     if (!q) continue
     const rows = await search(db, q, 5)
-    if (!rows.length) {
-      await recordMisses(db, scanId, [q])
-      return null
-    }
-    parts.push({ row: rows[0], label: component.slice(0, 120) })
-  }
-  if (parts.length < 2) return null
 
-  const sum = {
-    kcal: 0,
-    carbs: 0,
-    protein: 0,
-    fat: 0,
+    // First relevance-ranked hit that is portion-plausible for this part.
+    const fit =
+      component.kcal > 0
+        ? rows.find((row) => row.kcal >= component.kcal * 0.5 && row.kcal <= component.kcal * 1.5)
+        : rows[0]
+
+    if (fit) {
+      const quantity =
+        component.kcal > 0 && fit.kcal > 0 ? snapIngredientQty(component.kcal / fit.kcal) : 1
+      parts.push({
+        food: asFood(fit),
+        quantity,
+        label: component.name.slice(0, 120),
+        kcal: fit.kcal * quantity,
+      })
+      continue
+    }
+
+    if (!rows.length) await recordMisses(db, scanId, [q])
+
+    // No catalogue answer at this size: the model's own figures become a
+    // shared estimate row for the component. Macros are the model's when it
+    // gave them, else an Atwater-consistent default split; either way the
+    // ingredient exists and the breakdown survives.
+    if (component.kcal <= 0) continue
+    const macros =
+      component.carbs_g !== null || component.protein_g !== null || component.fat_g !== null
+        ? {
+            carbs: Number(component.carbs_g ?? 0),
+            protein: Number(component.protein_g ?? 0),
+            fat: Number(component.fat_g ?? 0),
+          }
+        : {
+            carbs: Math.round((component.kcal * 0.5) / 4),
+            protein: Math.round((component.kcal * 0.2) / 4),
+            fat: Math.round((component.kcal * 0.3) / 9),
+          }
+    const { data: estimateId } = await db.rpc('upsert_estimate_food', {
+      p_name: component.name,
+      p_kcal: component.kcal,
+      p_carbs_g: macros.carbs,
+      p_protein_g: macros.protein,
+      p_fat_g: macros.fat,
+      p_fibre_g: null,
+      p_sugar_g: null,
+      p_sodium_mg: null,
+    })
+    if (!estimateId) continue
+    const [{ data: estimateFood }, { data: estimateServing }] = await Promise.all([
+      db
+        .from('foods')
+        .select('id, name, kcal')
+        .eq('id', estimateId as string)
+        .single(),
+      db
+        .from('food_servings')
+        .select('id')
+        .eq('food_id', estimateId as string)
+        .eq('is_default', true)
+        .single(),
+    ])
+    if (!estimateFood || !estimateServing) continue
+    // A deduped row may carry an earlier estimate; quantity absorbs the drift.
+    const quantity =
+      estimateFood.kcal > 0 ? snapIngredientQty(component.kcal / estimateFood.kcal) : 1
+    parts.push({
+      food: {
+        ...estimateFood,
+        is_estimate: true,
+        is_archetype: false,
+        serving_id: estimateServing.id,
+      },
+      quantity,
+      label: component.name.slice(0, 120),
+      kcal: estimateFood.kcal * quantity,
+    })
   }
+  if (parts.length < 2) {
+    const message = `[cascade] components: only ${parts.length} of ${item.components.length} parts resolved`
+    console.error(message)
+    trace?.push(message)
+    return null
+  }
+
+  const sum = { kcal: 0, carbs: 0, protein: 0, fat: 0 }
   for (const part of parts) {
-    sum.kcal += part.row.kcal
-    sum.carbs += Number(part.row.carbs_g ?? 0)
-    sum.protein += Number(part.row.protein_g ?? 0)
-    sum.fat += Number(part.row.fat_g ?? 0)
+    sum.kcal += part.kcal
   }
-  if (!withinBand(sum.kcal, item.kcal_low, item.kcal_high)) return null
+  // Macros summed from the resolved rows at their quantities, fetched in one
+  // read so the parent's split matches the parts exactly.
+  const { data: macroRows } = await db
+    .from('foods')
+    .select('id, carbs_g, protein_g, fat_g')
+    .in(
+      'id',
+      parts.map((part) => part.food.id),
+    )
+  for (const part of parts) {
+    const row = (macroRows ?? []).find((m) => m.id === part.food.id)
+    sum.carbs += Number(row?.carbs_g ?? 0) * part.quantity
+    sum.protein += Number(row?.protein_g ?? 0) * part.quantity
+    sum.fat += Number(row?.fat_g ?? 0) * part.quantity
+  }
+  if (sum.kcal <= 0) return null
 
   // The parent: a shared estimate row for the whole plate, priced by the
   // catalogue sum — never by the model. Deduped on the normalized name, so
@@ -188,7 +278,12 @@ async function resolveByComponents(
     p_sugar_g: null,
     p_sodium_mg: null,
   })
-  if (error || !parentId) return null
+  if (error || !parentId) {
+    const message = `[cascade] components: parent upsert failed: ${error?.message ?? 'no id'}`
+    console.error(message)
+    trace?.push(message)
+    return null
+  }
 
   const [{ data: parent }, { data: serving }] = await Promise.all([
     db
@@ -214,10 +309,10 @@ async function resolveByComponents(
   const ingredients: Ingredient[] | undefined =
     Math.abs(settled - sum.kcal) / sum.kcal <= BAND_SLACK
       ? parts.map((part) => ({
-          food: asFood(part.row),
-          quantity: 1,
+          food: part.food,
+          quantity: part.quantity,
           displayLabel:
-            part.label.toLowerCase() === part.row.name.toLowerCase() ? null : part.label,
+            part.label.toLowerCase() === part.food.name.toLowerCase() ? null : part.label,
         }))
       : undefined
 
@@ -262,9 +357,16 @@ async function resolveByDish(
   }
   if (!chosen) return null
 
+  // The model's name for the plate, worn over the matched row. The numbers
+  // stay the catalogue's; the LABEL is the model's, because imported row
+  // names are written for databases, not diaries — "MEAL KIT, KOREAN FRIED
+  // CHICKEN WITH SWEET GOCHUJANG SAUCE" is the right macros wearing the
+  // wrong name. Skipped when the two already read the same.
+  const label = usable(item.name) === usable(chosen.name) ? null : item.name.slice(0, 120)
+
   if (withinBand(chosen.kcal, item.kcal_low, item.kcal_high)) {
     // The catalogue row as-is. Never rescaled, never blended.
-    return { tier: 1, food: asFood(chosen), quantity: 1, displayLabel: null }
+    return { tier: 1, food: asFood(chosen), quantity: 1, displayLabel: label }
   }
 
   // Right identity, wrong amount — adjust `quantity`, never the macros.
@@ -273,7 +375,7 @@ async function resolveByDish(
       tier: 3,
       food: asFood(chosen),
       quantity: clampQuantity(llmMid / chosen.kcal),
-      displayLabel: null,
+      displayLabel: label,
     }
   }
   return null
@@ -411,13 +513,33 @@ export async function resolveItem(
   scene: Vision['scene'],
   item: VisionItem,
   mock: MockSteer | undefined,
+  trace?: string[],
 ): Promise<Resolved | null> {
+  const note = (stage: string, error: unknown) => {
+    const message = `[cascade] ${stage}: ${error instanceof Error ? error.message : String(error)}`
+    console.error(message)
+    trace?.push(message)
+  }
+
   let resolved: Resolved | null = null
   if (scene === 'composite') {
-    resolved = await resolveByComponents(db, scanId, item).catch(() => null)
+    resolved = await resolveByComponents(db, scanId, item, trace).catch((error) => {
+      note('components stage threw', error)
+      return null
+    })
   }
-  resolved = resolved ?? (await resolveByDish(db, scanId, item, mock).catch(() => null))
-  resolved = resolved ?? (await resolveByEstimate(db, item, mock).catch(() => null))
+  resolved =
+    resolved ??
+    (await resolveByDish(db, scanId, item, mock).catch((error) => {
+      note('dish stage threw', error)
+      return null
+    }))
+  resolved =
+    resolved ??
+    (await resolveByEstimate(db, item, mock).catch((error) => {
+      note('estimate stage threw', error)
+      return null
+    }))
   return resolved
 }
 

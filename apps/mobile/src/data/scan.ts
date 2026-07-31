@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useCallback } from 'react'
 
 import { supabase } from '@/lib/supabase'
 import { keys } from './keys'
+import { useRefiningEntries } from './refining'
 import { useUserId } from './session'
 
 /**
@@ -43,6 +45,11 @@ export function useEntryIngredients(entryId: string | undefined) {
  * Set one ingredient's portion. The database function recomputes the parent
  * entry's quantity in the same transaction, so the plate total and the parts
  * can never disagree — which is why this is an RPC and not a table update.
+ *
+ * Optimistic on the ingredient list: the row's numbers move under the finger,
+ * and the server's answer reconciles quietly afterwards. The day totals are
+ * only invalidated once the write settles, so tapping a stepper does not
+ * ripple a refetch through the whole screen mid-gesture.
  */
 export function useUpdateIngredient() {
   const userId = useUserId()
@@ -61,7 +68,34 @@ export function useUpdateIngredient() {
       })
       if (error) throw error
     },
-    onSuccess: (_data, input) => {
+    onMutate: async (input) => {
+      const key = ['entry-ingredients', input.entryId]
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<EntryIngredient[]>(key)
+      if (previous) {
+        queryClient.setQueryData(
+          key,
+          previous.map((ingredient) =>
+            ingredient.id === input.ingredientId
+              ? {
+                  ...ingredient,
+                  quantity: input.quantity,
+                  kcal: Math.round(
+                    (ingredient.kcal / Math.max(0.01, ingredient.quantity)) * input.quantity,
+                  ),
+                }
+              : ingredient,
+          ),
+        )
+      }
+      return { previous }
+    },
+    onError: (_error, input, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['entry-ingredients', input.entryId], context.previous)
+      }
+    },
+    onSettled: (_data, _error, input) => {
       queryClient.invalidateQueries({ queryKey: ['entry-ingredients', input.entryId] })
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
@@ -81,27 +115,44 @@ type RefineResponse = {
  * interprets it against the entry's current state and either rescales the
  * quantity, re-resolves the food through the scan cascade, or declines.
  *
- * `applied: false` resolves rather than rejects — "that wasn't a food
- * correction" is an answer to show the user, not a failure to retry.
+ * Fire-and-forget, like `useSnapFood` and for the same reason: the caller
+ * navigates back to Today the moment the correction is sent, and a mutation
+ * tied to the detail screen would die with it. The entry's id goes into the
+ * refining set so its row on Today shows the work; when the server answers,
+ * the day refetches into the corrected entry and the id comes back out —
+ * applied or not, the row simply shows whatever is true now.
  */
 export function useRefineEntry() {
   const userId = useUserId()
   const queryClient = useQueryClient()
+  const refining = useRefiningEntries()
 
-  return useMutation({
-    mutationFn: async (input: { entryId: string; instruction: string; logDate: string }) => {
-      const { data, error } = await supabase.functions.invoke<RefineResponse>('scan-refine', {
-        body: { food_log_id: input.entryId, instruction: input.instruction },
-      })
-      if (error) throw error
-      if (!data?.ok) throw new Error(data?.error ?? 'refine failed')
-      return { applied: Boolean(data.applied), reason: data.reason }
+  return useCallback(
+    (input: { entryId: string; instruction: string; logDate: string }) => {
+      refining.add(input.entryId)
+
+      const work = async () => {
+        const { data, error } = await supabase.functions.invoke<RefineResponse>('scan-refine', {
+          body: { food_log_id: input.entryId, instruction: input.instruction },
+        })
+        if (error) throw error
+        if (!data?.ok) throw new Error(data?.error ?? 'refine failed')
+        // Refetch BEFORE the loading state lifts, so the row goes straight
+        // from "reworking" to its corrected self with no stale frame between.
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) }),
+          queryClient.invalidateQueries({ queryKey: ['entry-ingredients', input.entryId] }),
+        ])
+        queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+      }
+
+      work()
+        .catch(() => {
+          // The entry is untouched on the server; showing it as it was IS the
+          // honest failure state.
+        })
+        .finally(() => refining.remove(input.entryId))
     },
-    onSuccess: (result, input) => {
-      if (!result.applied) return
-      queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
-      queryClient.invalidateQueries({ queryKey: ['entry-ingredients', input.entryId] })
-      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
-    },
-  })
+    [queryClient, refining, userId],
+  )
 }
