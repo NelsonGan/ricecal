@@ -177,6 +177,75 @@ export async function rescheduleReminders(
   }
 }
 
+/**
+ * "Your plate is counted" — for the scan the user walked away from.
+ *
+ * SCHEDULED AT THE SHUTTER, NOT AT THE ANSWER.
+ *
+ * A scan takes fifteen to thirty seconds, which is long enough to lock the
+ * phone and put it in a pocket — and iOS suspends the app well before that,
+ * so the code that runs when the answer arrives is code that may never run.
+ * Posting from there produced nothing at all. What the system does honour
+ * while an app is suspended is a notification that was already scheduled, so
+ * this one is booked the moment the shutter fires and cancelled if the app is
+ * still awake when the plate lands. The user is told either by the row in
+ * front of them or by this, never by both.
+ *
+ * Which is also why the copy is generic: at booking time nobody knows what
+ * the dish is. `announceScan` replaces it with the name when the app is alive
+ * to say so.
+ *
+ * Best-effort throughout: a notification that cannot be posted must never take
+ * a scan down with it.
+ */
+const SCAN_NOTICE_DELAY_S = 25
+
+export async function scheduleScanNotice(title: string, body: string): Promise<string | null> {
+  try {
+    if (!(await notificationsAllowed())) {
+      // Said out loud, because the alternative is a feature that silently
+      // does nothing and a bug report with no thread to pull.
+      console.warn('[notifications] a scan started, but notifications are not permitted')
+      return null
+    }
+    await ensureChannel()
+    return await Notifications.scheduleNotificationAsync({
+      content: { title, body, data: { kind: 'scan' } },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: SCAN_NOTICE_DELAY_S,
+        channelId: CHANNEL,
+      },
+    })
+  } catch (error) {
+    console.warn('[notifications] could not book the scan notice', error)
+    return null
+  }
+}
+
+export async function cancelScanNotice(id: string | null): Promise<void> {
+  if (!id) return
+  try {
+    await Notifications.cancelScheduledNotificationAsync(id)
+  } catch {
+    // Already delivered, most likely. Nothing to undo and nothing to say.
+  }
+}
+
+/** The named version, for when the app is awake but not in front. */
+export async function announceScan(title: string, body: string): Promise<void> {
+  try {
+    if (!(await notificationsAllowed())) return
+    await ensureChannel()
+    await Notifications.scheduleNotificationAsync({
+      content: { title, body, data: { kind: 'scan' } },
+      trigger: null,
+    })
+  } catch (error) {
+    console.warn('[notifications] could not announce the finished scan', error)
+  }
+}
+
 /** What is actually queued. Used by the reminders screen to show the count. */
 export async function scheduledCount(): Promise<number> {
   return (await Notifications.getAllScheduledNotificationsAsync()).length

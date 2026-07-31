@@ -33,6 +33,14 @@ export const logging = {
     /** The same bar while a fix-by-typing correction is applied to a row. */
     refiningApply: 'Applying your fix…',
     refiningCount: 'Recounting the calories…',
+    /**
+     * The notification, posted only when the scan lands while the app is in
+     * the background — a plate takes half a minute to read and nobody should
+     * have to watch it.
+     */
+    scanDoneTitle: 'Your plate is counted',
+    scanDoneBody: '{{food}} · {{kcal}} kcal',
+    scanDoneBodyPlain: 'Tap to see what was on it.',
     analysisFailedTitle: 'Could not read this one',
     analysisFailedHint: 'Tap to pick the dish yourself',
     emptyTitle: 'Nothing logged yet',

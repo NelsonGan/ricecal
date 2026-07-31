@@ -545,11 +545,16 @@ export default function FoodDetail() {
       {ingredients.length ? (
         <Card title={t('logging:detail.plateTitle')}>
           {ingredients.map((ingredient) => {
-            // Quarter steps, matching how portions are spoken. The database
-            // recomputes the entry's own quantity in the same transaction, so
-            // the plate total follows every tap.
+            // Whole steps for a counted part, quarters for a measured one.
+            // Eight satay skewers step to seven, not to 7.75 — the row says
+            // "× 8" because the scan counted eight of them, and a quarter of a
+            // skewer is not a thing anyone put on a plate. A part already
+            // sitting at a fraction keeps quarter steps so it can be walked
+            // back to a whole number.
+            const size =
+              Number.isInteger(ingredient.quantity) && ingredient.quantity >= 1 ? 1 : 0.25
             const step = (direction: 1 | -1) => {
-              const next = Math.min(10, Math.max(0.25, ingredient.quantity + direction * 0.25))
+              const next = Math.min(10, Math.max(0.25, ingredient.quantity + direction * size))
               if (next === ingredient.quantity) return
               updateIngredient.mutate({
                 ingredientId: ingredient.id,

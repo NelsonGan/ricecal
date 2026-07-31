@@ -4,11 +4,20 @@
 // — the interpreter turns the instruction plus the entry's current state into
 // one of three decisions:
 //
-//   quantity    only the amount changed: rescale the entry's quantity
+//   quantity    only the amount changed: rescale the entry's quantity, and
+//               every ingredient under it by the same factor
+//   adjust      one part of the same dish changed: on a plate with a
+//               breakdown that part is dropped or added and the entry is
+//               re-priced from what is left; on one without, the delta lands
+//               on the entry's own figure
 //   redescribe  the food changed: describe the corrected dish and re-run the
 //               SAME cascade a fresh scan uses (catalogue first, estimate,
 //               archetype floor), then repoint the entry and its ingredients
 //   none        the text is not a food correction: nothing changes
+//
+// A correction never silently loses the breakdown. It is the only part of an
+// entry the user can edit piece by piece, and every path through here either
+// keeps it, edits it, or replaces it with a new one.
 //
 // The entry keeps its identity — id, photo, scan_id, meal, date — so the
 // diary row updates in place rather than being replaced. Applied or not, the
@@ -19,6 +28,7 @@ import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
 
 import {
+  clampQuantity,
   refineQuantity,
   resolveByArchetype,
   resolveItem,
@@ -37,6 +47,97 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { 'Content-Type': 'application/json' },
   })
+}
+
+/**
+ * Re-price an entry from the ingredients currently under it.
+ *
+ * The same rule tier 2 writes a decomposed plate with: the parent is a shared
+ * estimate row whose figures ARE the sum of the parts, at one portion. Running
+ * it again after an edit is what lets a correction change the list and have the
+ * total follow, instead of changing the total and having to bin the list.
+ */
+async function rebuildFromParts(
+  db: ReturnType<typeof createClient>,
+  entryId: string,
+  name: string,
+): Promise<{
+  foodId: string
+  quantity: number
+  kcal: number
+  ingredients: Array<{ name: string; kcal: number; quantity: number }>
+} | null> {
+  const { data: rows } = await db
+    .from('food_log_ingredient_details')
+    .select('name, quantity, kcal, carbs_g, protein_g, fat_g, position')
+    .eq('food_log_id', entryId)
+    .order('position')
+  if (!rows?.length) return null
+
+  const sum = rows.reduce(
+    (total, row) => ({
+      kcal: total.kcal + (row.kcal ?? 0),
+      carbs: total.carbs + Number(row.carbs_g ?? 0),
+      protein: total.protein + Number(row.protein_g ?? 0),
+      fat: total.fat + Number(row.fat_g ?? 0),
+    }),
+    { kcal: 0, carbs: 0, protein: 0, fat: 0 },
+  )
+  if (sum.kcal <= 0) return null
+
+  const round1 = (value: number) => Math.round(value * 10) / 10
+  const { data: parentId, error } = await db.rpc('upsert_estimate_food', {
+    p_name: name,
+    p_kcal: Math.round(sum.kcal),
+    p_carbs_g: round1(sum.carbs),
+    p_protein_g: round1(sum.protein),
+    p_fat_g: round1(sum.fat),
+    p_fibre_g: null,
+    p_sugar_g: null,
+    p_sodium_mg: null,
+  })
+  if (error || !parentId) return null
+
+  const [{ data: parent }, { data: serving }] = await Promise.all([
+    db
+      .from('foods')
+      .select('id, kcal')
+      .eq('id', parentId as string)
+      .single(),
+    db
+      .from('food_servings')
+      .select('id')
+      .eq('food_id', parentId as string)
+      .eq('is_default', true)
+      .single(),
+  ])
+  if (!parent || !serving) return null
+
+  // One plate, one portion — the size-aware dedup means the row that comes
+  // back is priced for this plate, so this is 1 unless something drifted.
+  const quantity = parent.kcal > 0 ? clampQuantity(sum.kcal / parent.kcal) : 1
+
+  const { error: updateError } = await db
+    .from('food_logs')
+    .update({
+      food_id: parent.id,
+      serving_id: serving.id,
+      quantity,
+      display_label: name,
+    })
+    .eq('id', entryId)
+  if (updateError) return null
+
+  return {
+    foodId: parent.id,
+    quantity,
+    kcal: Math.round(parent.kcal * quantity),
+    ingredients: rows.map((row) => ({
+      name: row.name ?? '',
+      kcal: row.kcal ?? 0,
+      quantity: Number(row.quantity ?? 1),
+    })),
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -77,7 +178,7 @@ Deno.serve(async (req: Request) => {
     .select(
       'id, user_id, quantity, scan_id, display_label, food_id, serving_id, ' +
         'foods(name, kcal, carbs_g, protein_g, fat_g), food_servings(label, factor), ' +
-        'food_log_ingredients(display_label, foods(name))',
+        'food_log_ingredients(id, quantity, display_label, foods(name))',
     )
     .eq('id', body.food_log_id)
     .single()
@@ -93,12 +194,14 @@ Deno.serve(async (req: Request) => {
     fat_g: number | null
   }
   const serving = entry.food_servings as unknown as { label: string; factor: number }
-  const ingredientNames = (
-    entry.food_log_ingredients as unknown as Array<{
-      display_label: string | null
-      foods: { name: string }
-    }>
-  ).map((ingredient) => ingredient.display_label ?? ingredient.foods.name)
+  const parts = entry.food_log_ingredients as unknown as Array<{
+    id: string
+    quantity: number
+    display_label: string | null
+    foods: { name: string }
+  }>
+  const partName = (part: (typeof parts)[number]) => part.display_label ?? part.foods.name
+  const ingredientNames = parts.map(partName)
 
   try {
     const interpretation = await interpretInstruction(
@@ -130,8 +233,120 @@ Deno.serve(async (req: Request) => {
       const quantity = refineQuantity(Number(entry.quantity) * interpretation.factor)
       const { error } = await db.from('food_logs').update({ quantity }).eq('id', entry.id)
       if (error) throw error
+
+      // Half the plate is half of everything on it. The parts move with the
+      // whole, because a breakdown that still describes a full plate under an
+      // entry counting half of one is worse than no breakdown at all — and
+      // deleting it, which is what used to happen to every correction, threw
+      // away the only thing on the screen the user can edit part by part.
+      const applied = Math.max(0.01, quantity / Math.max(0.01, Number(entry.quantity)))
+      for (const part of parts) {
+        await db
+          .from('food_log_ingredients')
+          .update({ quantity: refineQuantity(Number(part.quantity) * applied) })
+          .eq('id', part.id)
+      }
+
       await recordRefine(null, entry.food_id, quantity)
       return json({ ok: true, applied: true, action: 'quantity', quantity })
+    }
+
+    if (interpretation.action === 'adjust' && parts.length) {
+      // A plate that has a breakdown is CORRECTED THROUGH IT. "No sambal"
+      // means one row leaves the list and the plate is what is left; "add a
+      // fried egg" means one row joins it. Then the entry is re-priced from
+      // the sum of its parts, exactly the way tier 2 built it in the first
+      // place, so the total and the list can never drift apart.
+      //
+      // The old path could only add the delta to the entry's own figure, and
+      // then had to delete the breakdown to stop it contradicting the total.
+      // That is the bug this replaces: one correction and the plate forgot
+      // what was on it.
+      const wanted = interpretation.part?.toLowerCase().trim() ?? ''
+      const match = wanted
+        ? (parts.find((part) => partName(part).toLowerCase() === wanted) ??
+          parts.find((part) => {
+            const name = partName(part).toLowerCase()
+            return name.includes(wanted) || wanted.includes(name)
+          }))
+        : undefined
+
+      if (interpretation.kcal_delta < 0 && match) {
+        await db.from('food_log_ingredients').delete().eq('id', match.id)
+      } else if (interpretation.kcal_delta < 0 && parts.length > 1) {
+        // Something was removed and no part answers to the name. Take it off
+        // the plate as a whole rather than pretending the list still adds up:
+        // the largest part shrinks by the delta, which is where a removed
+        // portion most likely came from.
+        const { data: rows } = await db
+          .from('food_log_ingredient_details')
+          .select('id, kcal, quantity')
+          .eq('food_log_id', entry.id)
+          .order('kcal', { ascending: false })
+          .limit(1)
+        const biggest = rows?.[0]
+        if (biggest && biggest.kcal > 0) {
+          const perUnit = biggest.kcal / Math.max(0.01, Number(biggest.quantity))
+          const next = refineQuantity(
+            Math.max(0.25, (biggest.kcal + interpretation.kcal_delta) / Math.max(1, perUnit)),
+          )
+          await db.from('food_log_ingredients').update({ quantity: next }).eq('id', biggest.id)
+        }
+      } else if (interpretation.kcal_delta > 0) {
+        // An addition: its own row, priced by the model's delta for that one
+        // thing, with an Atwater-consistent split so the parent's macros stay
+        // internally honest.
+        const added = interpretation.part ?? instruction
+        const kcal = Math.round(interpretation.kcal_delta)
+        const { data: addedId } = await db.rpc('upsert_estimate_food', {
+          p_name: added,
+          p_kcal: kcal,
+          p_carbs_g: Math.round((kcal * 0.5) / 4),
+          p_protein_g: Math.round((kcal * 0.2) / 4),
+          p_fat_g: Math.round((kcal * 0.3) / 9),
+          p_fibre_g: null,
+          p_sugar_g: null,
+          p_sodium_mg: null,
+        })
+        const { data: addedServing } = addedId
+          ? await db
+              .from('food_servings')
+              .select('id')
+              .eq('food_id', addedId as string)
+              .eq('is_default', true)
+              .single()
+          : { data: null }
+        if (addedId && addedServing) {
+          await db.from('food_log_ingredients').insert({
+            food_log_id: entry.id,
+            food_id: addedId as string,
+            serving_id: addedServing.id,
+            quantity: 1,
+            display_label: added.slice(0, 120),
+            position: parts.length,
+          })
+        }
+      }
+
+      const rebuilt = await rebuildFromParts(db, entry.id, interpretation.name)
+      if (!rebuilt) throw new Error('could not re-price the plate')
+
+      await recordRefine(2, rebuilt.foodId, rebuilt.quantity)
+      return json({
+        ok: true,
+        applied: true,
+        action: 'adjust',
+        entry: {
+          id: entry.id,
+          foodId: rebuilt.foodId,
+          name: interpretation.name,
+          quantity: rebuilt.quantity,
+          kcal: rebuilt.kcal,
+          isEstimate: true,
+          isArchetype: false,
+          ingredients: rebuilt.ingredients,
+        },
+      })
     }
 
     if (interpretation.action === 'adjust') {

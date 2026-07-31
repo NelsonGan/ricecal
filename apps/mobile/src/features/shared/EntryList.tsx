@@ -43,9 +43,11 @@ export type EntryListProps = {
 export function EntryList({ day, onPressEntry, onFixEntry }: EntryListProps) {
   const { t } = useTranslation(['logging', 'common'])
 
-  // Oldest first, which is the order the day happened in. Pending snaps are
-  // already merged in by time upstream.
-  const entries = [...day.entries].sort((a, b) => a.loggedAt.localeCompare(b.loggedAt))
+  // Newest first. The day used to read in the order it happened, which put the
+  // meal just logged at the bottom of a growing list — and the thing a user
+  // looks at right after logging is the thing they just logged. By evening it
+  // was a scroll away, under breakfast.
+  const entries = [...day.entries].sort((a, b) => b.loggedAt.localeCompare(a.loggedAt))
   if (entries.length === 0) return null
 
   return (
