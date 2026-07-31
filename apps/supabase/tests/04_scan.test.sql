@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(35);
+select plan(36);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 
@@ -322,11 +322,20 @@ select is(
   'the ingredient carries the new portion'
 );
 
--- Parent 600 kcal x 1; the halved 600 kcal ingredient sums to 300 → 0.5.
+-- The entry's numbers ARE its parts: the one 600 kcal ingredient at half a
+-- portion makes the plate 300, and the entry's own `quantity` never moves —
+-- rescaling it would have dragged every macro along in lockstep, which is how
+-- adding rice used to add fat.
+select is(
+  (select kcal from public.food_log_details where user_id = :'user_a'),
+  300,
+  'the entry total is the sum of its parts'
+);
+
 select is(
   (select quantity from public.food_logs where user_id = :'user_a'),
-  0.50,
-  'the parent entry quantity recomputes to the sum of parts'
+  1.00,
+  'and the entry portion is left alone'
 );
 
 -- Off the plate entirely, which is a different answer from "a quarter of it".

@@ -12,6 +12,12 @@ export type MacroBarsProps = {
   eaten: Macros
   targets: Pick<Targets, 'carbs' | 'protein' | 'fat'>
   /**
+   * Makes each amount tappable, for the one screen where these figures are
+   * editable — the entry a user is correcting. Everywhere else they are a
+   * reading of something already decided.
+   */
+  onEdit?: (macro: 'carbs' | 'protein' | 'fat') => void
+  /**
    * Reads "120/203g" instead of "120g".
    *
    * The bar has always shown the share of the day's allowance and never what the
@@ -29,7 +35,7 @@ export type MacroBarsProps = {
  * Today, on a food's detail and in the weekly report, and a reader learns the
  * colour once.
  */
-export function MacroBars({ eaten, targets, showGoal = false, className }: MacroBarsProps) {
+export function MacroBars({ eaten, targets, showGoal = false, onEdit, className }: MacroBarsProps) {
   const { t } = useTranslation()
 
   const rows = [
@@ -66,6 +72,7 @@ export function MacroBars({ eaten, targets, showGoal = false, className }: Macro
           }
           value={progressOf(row.grams, row.goal)}
           tone={row.tone}
+          onPressAmount={onEdit ? () => onEdit(row.key) : undefined}
         />
       ))}
     </View>

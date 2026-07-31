@@ -154,18 +154,20 @@ export const logging = {
     plateTotal: 'Total',
     /** How many of an ingredient are on the plate. Absent at one. */
     times: '× {{amount}}',
+    /** One ingredient's own macros, under its name. */
+    macroLine: 'C {{carbs}} · P {{protein}} · F {{fat}}',
     /** The per-ingredient portion steppers, and the one that empties a row. */
     lessOf: 'Less {{name}}',
     moreOf: 'More {{name}}',
     removeOf: 'Remove {{name}}',
     /**
-     * Typing the numbers in by hand, for the dish the app got close but not
-     * right — off a packet, off a recipe, off the kitchen scale.
+     * Typing a number in by hand, for the dish the app got close but not right
+     * — off a packet, off a recipe, off the kitchen scale. Each figure is
+     * edited where it is read, so these are labels for the control rather than
+     * headings for a form.
      */
-    numbersTitle: 'THE NUMBERS',
-    numbersNote: 'Type over anything the app got wrong. Blank means use the app’s figure.',
+    editKcal: 'Edit the calories',
     numbersReset: 'Use the app’s figures',
-    kcalField: 'Calories',
     carbsField: 'Carbs (g)',
     proteinField: 'Protein (g)',
     fatField: 'Fat (g)',

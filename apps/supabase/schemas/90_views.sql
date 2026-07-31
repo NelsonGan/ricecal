@@ -74,6 +74,35 @@ grant select on public.food_details to authenticated, service_role;
 
 
 -- ---------------------------------------------------------------------------
+-- A scanned plate's ingredients, with the numbers already worked out.
+--
+-- Same arithmetic as food_log_details — the ingredient's catalogue macros x
+-- its portion factor x its quantity — so the breakdown a screen renders under
+-- an entry uses the same rounding as everything else. The parent entry's own
+-- macros stay authoritative; these rows explain them, and the scan function
+-- only writes a breakdown whose sum lands within band of the parent.
+-- ---------------------------------------------------------------------------
+create view public.food_log_ingredient_details with (security_invoker = on) as
+select
+  i.id,
+  i.food_log_id,
+  i.food_id,
+  i.position,
+  coalesce(i.display_label, f.name) as name,
+  i.quantity,
+  s.label      as serving_label,
+  round(f.kcal      * s.factor * i.quantity)::integer    as kcal,
+  round(f.carbs_g   * s.factor * i.quantity, 1)::numeric as carbs_g,
+  round(f.protein_g * s.factor * i.quantity, 1)::numeric as protein_g,
+  round(f.fat_g     * s.factor * i.quantity, 1)::numeric as fat_g
+from public.food_log_ingredients i
+join public.foods f         on f.id = i.food_id
+join public.food_servings s on s.id = i.serving_id;
+
+grant select on public.food_log_ingredient_details to authenticated, service_role;
+
+
+-- ---------------------------------------------------------------------------
 -- One logged item, with the numbers already worked out.
 --
 -- macros = the dish's per-base-serving values x the portion's factor x how
@@ -132,52 +161,48 @@ select
   e.override_protein_g,
   e.override_fat_g,
 
-  -- A typed figure wins over the computed one, per field. Null is the normal
-  -- case and costs nothing; see the override columns on `food_logs` for why
-  -- they live on the entry rather than on the shared dish.
-  coalesce(e.override_kcal, round(f.kcal * s.factor * e.quantity)::integer)   as kcal,
-  coalesce(e.override_carbs_g,
+  -- Three sources, in order: what the user typed, what the parts add up to,
+  -- what the dish costs at this portion.
+  --
+  -- THE PARTS COME SECOND FOR A REASON. An entry with a breakdown IS its
+  -- breakdown: doubling the rice on a plate should move the carbs and leave
+  -- the fat alone, and scaling one parent row by one quantity cannot express
+  -- that — it moves all four macros in lockstep, so editing an ingredient
+  -- changed the calories and nothing else. Summing the parts is the only
+  -- reading under which the list on screen and the total above it are the
+  -- same claim.
+  --
+  -- An entry with no ingredients — most of them — falls straight through to
+  -- the third form, which is what this always did.
+  coalesce(e.override_kcal, parts.kcal, round(f.kcal * s.factor * e.quantity)::integer)
+    as kcal,
+  coalesce(e.override_carbs_g, parts.carbs_g,
            round(f.carbs_g   * s.factor * e.quantity, 1))::numeric            as carbs_g,
-  coalesce(e.override_protein_g,
+  coalesce(e.override_protein_g, parts.protein_g,
            round(f.protein_g * s.factor * e.quantity, 1))::numeric            as protein_g,
-  coalesce(e.override_fat_g,
+  coalesce(e.override_fat_g, parts.fat_g,
            round(f.fat_g     * s.factor * e.quantity, 1))::numeric            as fat_g,
   round(f.fibre_g   * s.factor * e.quantity, 1)::numeric   as fibre_g,
   round(f.sugar_g   * s.factor * e.quantity, 1)::numeric   as sugar_g
 from public.food_logs e
 join public.foods f         on f.id = e.food_id
-join public.food_servings s on s.id = e.serving_id;
+join public.food_servings s on s.id = e.serving_id
+-- Null for an entry with no ingredients, which is what makes the coalesce
+-- above fall through rather than reading a plate of nothing as zero calories.
+left join lateral (
+  select
+    round(sum(i.kcal))::integer  as kcal,
+    round(sum(i.carbs_g), 1)     as carbs_g,
+    round(sum(i.protein_g), 1)   as protein_g,
+    round(sum(i.fat_g), 1)       as fat_g
+  from public.food_log_ingredient_details i
+  where i.food_log_id = e.id
+  having count(*) > 0
+) parts on true;
 
 grant select on public.food_log_details to authenticated;
 
 
--- ---------------------------------------------------------------------------
--- A scanned plate's ingredients, with the numbers already worked out.
---
--- Same arithmetic as food_log_details — the ingredient's catalogue macros x
--- its portion factor x its quantity — so the breakdown a screen renders under
--- an entry uses the same rounding as everything else. The parent entry's own
--- macros stay authoritative; these rows explain them, and the scan function
--- only writes a breakdown whose sum lands within band of the parent.
--- ---------------------------------------------------------------------------
-create view public.food_log_ingredient_details with (security_invoker = on) as
-select
-  i.id,
-  i.food_log_id,
-  i.food_id,
-  i.position,
-  coalesce(i.display_label, f.name) as name,
-  i.quantity,
-  s.label      as serving_label,
-  round(f.kcal      * s.factor * i.quantity)::integer    as kcal,
-  round(f.carbs_g   * s.factor * i.quantity, 1)::numeric as carbs_g,
-  round(f.protein_g * s.factor * i.quantity, 1)::numeric as protein_g,
-  round(f.fat_g     * s.factor * i.quantity, 1)::numeric as fat_g
-from public.food_log_ingredients i
-join public.foods f         on f.id = i.food_id
-join public.food_servings s on s.id = i.serving_id;
-
-grant select on public.food_log_ingredient_details to authenticated, service_role;
 
 
 -- ---------------------------------------------------------------------------

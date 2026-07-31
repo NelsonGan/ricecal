@@ -9,6 +9,7 @@ import Animated, {
 
 import { motion } from '@/theme/tokens'
 import { cn } from './cn'
+import { Tappable } from './Tappable'
 import { Text } from './Text'
 
 const fills = {
@@ -79,6 +80,10 @@ export type MacroBarProps = {
   amount: string
   value: number
   tone?: ProgressTone
+  /** Makes the amount tappable — for a figure the user is allowed to correct. */
+  onPressAmount?: () => void
+  /** What a screen reader says about that control, if not "<label> <amount>". */
+  amountLabel?: string
   className?: string
 }
 
@@ -89,14 +94,38 @@ export type MacroBarProps = {
  * across the app, so callers pass the tone rather than the component guessing
  * from the label.
  */
-export function MacroBar({ label, amount, value, tone = 'kaya', className }: MacroBarProps) {
+export function MacroBar({
+  label,
+  amount,
+  value,
+  tone = 'kaya',
+  onPressAmount,
+  amountLabel,
+  className,
+}: MacroBarProps) {
   return (
     <View className={cn('flex-1 gap-2', className)}>
       <View className="flex-row justify-between">
         <Text variant="label">{label}</Text>
-        <Text variant="label" className="text-muted">
-          {amount}
-        </Text>
+        {onPressAmount ? (
+          // The number itself is the control. A macro that can be corrected
+          // should be corrected where it is read, not in a second form
+          // underneath repeating all four figures back.
+          <Tappable
+            onPress={onPressAmount}
+            accessibilityRole="button"
+            accessibilityLabel={amountLabel ?? `${label} ${amount}`}
+            className="rounded-sm border-[2px] border-line border-dashed px-2"
+          >
+            <Text variant="label" className="text-ink">
+              {amount}
+            </Text>
+          </Tappable>
+        ) : (
+          <Text variant="label" className="text-muted">
+            {amount}
+          </Text>
+        )}
       </View>
       <ProgressBar
         value={value}
