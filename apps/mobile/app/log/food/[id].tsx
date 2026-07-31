@@ -196,6 +196,20 @@ export default function FoodDetail() {
   const { data: heroUrl } = useMealPhotoUrl(existing?.photoPath)
 
   /**
+   * A typed figure as a number, and `null` for a field holding nothing.
+   *
+   * Null is the answer the write side wants: it clears the override and hands
+   * the figure back to the catalogue. An empty field and an unreadable one
+   * mean the same thing here — the user has not given a number.
+   */
+  const figure = (value: string) => {
+    const trimmed = value.trim()
+    if (!trimmed) return null
+    const parsed = Number(trimmed)
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
+  }
+
+  /**
    * Everything an existing entry can change, written as it changes.
    *
    * There is no save button any more. The screen edits one row that already
@@ -208,13 +222,6 @@ export default function FoodDetail() {
    * a burst, short enough that leaving the screen never outruns it — and the
    * pending write is flushed on the way out regardless.
    */
-  const figure = (value: string) => {
-    const trimmed = value.trim()
-    if (!trimmed) return null
-    const parsed = Number(trimmed)
-    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
-  }
-
   const pendingPatch = useRef<EntryPatch | null>(null)
   const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 

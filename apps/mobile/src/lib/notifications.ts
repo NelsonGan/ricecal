@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications'
 import { AppState, Platform } from 'react-native'
 
 import type { MealTime, Settings } from '@/data/types'
-import { parseTime } from './quiet-hours'
+import { parseTime } from './meal-times'
 
 /**
  * Local reminders.
