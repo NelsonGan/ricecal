@@ -167,6 +167,60 @@ const asFood = (r: SearchRow): FoodRow => ({
   serving_id: r.default_serving_id as string,
 })
 
+/**
+ * How many of the thing one serving of a catalogue row holds.
+ *
+ * "10 sticks" is ten satay; "1 cup" and "100 g" are one serving of something
+ * measured, not ten of it, so only countable units are read this way. Getting
+ * this wrong in the other direction would divide a row's calories by a hundred.
+ */
+const COUNTABLE =
+  /^(\d+(?:\.\d+)?)\s*(sticks?|skewers?|pieces?|pcs|slices?|wings?|balls?|eggs?|rolls?|cubes?|nuggets?|dumplings?|prawns?|drumsticks?|fillets?|cakes?|puffs?|buns?)\b/i
+
+const servingUnitCount = (label: string | null): number => {
+  const match = (label ?? '').trim().match(COUNTABLE)
+  const count = match ? Number(match[1]) : 1
+  return Number.isFinite(count) && count >= 1 && count <= 50 ? count : 1
+}
+
+/**
+ * Reuse-or-create a shared estimate row and hand back what an entry needs to
+ * point at it. Used for a part the catalogue cannot answer at all, and for one
+ * it answers only in tens.
+ */
+async function estimateRow(
+  db: SupabaseClient,
+  input: { name: string; kcal: number; carbs: number; protein: number; fat: number },
+): Promise<FoodRow | null> {
+  const { data: id } = await db.rpc('upsert_estimate_food', {
+    p_name: input.name,
+    p_kcal: Math.round(input.kcal),
+    p_carbs_g: input.carbs,
+    p_protein_g: input.protein,
+    p_fat_g: input.fat,
+    p_fibre_g: null,
+    p_sugar_g: null,
+    p_sodium_mg: null,
+  })
+  if (!id) return null
+
+  const [{ data: food }, { data: serving }] = await Promise.all([
+    db
+      .from('foods')
+      .select('id, name, kcal')
+      .eq('id', id as string)
+      .single(),
+    db
+      .from('food_servings')
+      .select('id')
+      .eq('food_id', id as string)
+      .eq('is_default', true)
+      .single(),
+  ])
+  if (!food || !serving) return null
+  return { ...food, is_estimate: true, is_archetype: false, serving_id: serving.id }
+}
+
 async function recordMisses(db: SupabaseClient, scanId: string, queries: string[]) {
   if (queries.length) {
     await db.from('food_scan_misses').insert(queries.map((q) => ({ scan_id: scanId, query: q })))
@@ -183,6 +237,11 @@ async function recordMisses(db: SupabaseClient, scanId: string, queries: string[
  * one taken, with the residue absorbed into the ingredient's quantity. And
  * when no hit fits, the estimate PRICES a fallback `is_estimate` row for that
  * component — so one unsearchable side dish no longer kills the breakdown.
+ *
+ * Everything here is per SINGLE unit, with the count carried in the
+ * ingredient's quantity. Two wings are a 125 kcal row at quantity 2, not a 250
+ * kcal row at quantity 1: the second shape is the same calories and a useless
+ * stepper, because the smallest edit it can express is both wings at once.
  */
 async function resolveByComponents(
   db: SupabaseClient,
@@ -191,9 +250,6 @@ async function resolveByComponents(
   trace?: string[],
 ): Promise<Resolved | null> {
   if (item.components.length < 2) return null
-
-  const snapIngredientQty = (q: number): number =>
-    Math.round(Math.min(3, Math.max(0.25, q)) * 4) / 4
 
   const parts: Array<{ food: FoodRow; quantity: number; label: string; kcal: number }> = []
 
@@ -208,31 +264,99 @@ async function resolveByComponents(
   for (const component of item.components) {
     const q = usable(component.name)
     if (!q) continue
-    const rows = await search(db, q, 5).catch((error) => {
-      // PostgREST hands back a plain object, which `String()` renders as
-      // "[object Object]" — the least useful thing a trace can say.
-      const message = `[cascade] components: search "${q}" failed: ${describe(error)}`
-      console.error(message)
-      trace?.push(message)
-      return [] as SearchRow[]
-    })
+    const look = (mode: 'strict' | 'forgiving') =>
+      search(db, q, 5, mode).catch((error) => {
+        // PostgREST hands back a plain object, which `String()` renders as
+        // "[object Object]" — the least useful thing a trace can say.
+        const message = `[cascade] components: ${mode} search "${q}" failed: ${describe(error)}`
+        console.error(message)
+        trace?.push(message)
+        return [] as SearchRow[]
+      })
 
-    // First relevance-ranked hit that is portion-plausible for this part.
+    // Strict first, then the slow net if it caught nothing. A part is named
+    // the way it sits on the plate — "satay skewer", "kerabu (blue rice)" —
+    // and the catalogue names it "Satay, chicken", so requiring every term
+    // misses rows that exist. Missing one means pricing that part from the
+    // model's own guess, which for satay was double what a stick weighs in at.
+    let rows = await look('strict')
+    if (!rows.length) rows = await look('forgiving')
+
+    // The row whose ONE unit is closest in size to the model's one unit.
+    //
+    // Not the first row inside a band, which is what this was: catalogue
+    // servings are whatever the source recorded, and "Chicken Satay (Satay
+    // Ayam)" is 365 kcal for TEN STICKS. Against a model saying 85 for one
+    // stick that row looked absurd and was skipped, so eight sticks got priced
+    // from the model's own guess at more than double what a stick weighs in
+    // at. Divided by its serving's unit count it is 36 kcal a stick, which is
+    // the number that should have been competing.
     const fit =
       component.kcal > 0
-        ? rows.find((row) => row.kcal >= component.kcal * 0.5 && row.kcal <= component.kcal * 1.5)
-        : rows[0]
+        ? rows
+            .map((row) => {
+              const units = servingUnitCount(row.serving_label)
+              return { row, units, perUnit: row.kcal / units }
+            })
+            // A quarter to double, which is deliberately lopsided. The model's
+            // per-unit guesses are unstable upwards — the same satay stick
+            // came back at 35, then 85, then 145 kcal on three runs — and a
+            // symmetric band around an inflated guess excludes the catalogue
+            // rows that would have corrected it. Letting a much smaller row
+            // through costs little, because the closest match still wins.
+            .filter(
+              (candidate) =>
+                candidate.perUnit >= component.kcal * 0.25 &&
+                candidate.perUnit <= component.kcal * 2,
+            )
+            // Closest in log space, so half-sized and double-sized rows lose
+            // to one that is nearly right in either direction.
+            .sort(
+              (a, b) =>
+                Math.abs(Math.log(a.perUnit / component.kcal)) -
+                Math.abs(Math.log(b.perUnit / component.kcal)),
+            )[0]
+        : rows[0] && { row: rows[0], units: 1, perUnit: rows[0].kcal }
 
-    if (fit) {
-      const quantity =
-        component.kcal > 0 && fit.kcal > 0 ? snapIngredientQty(component.kcal / fit.kcal) : 1
+    if (fit && fit.units === 1) {
+      // A row that IS one of the thing. The quantity is the count and nothing
+      // else: the row's own figure is what one of them costs, and rescaling it
+      // to chase the model's guess is how a single scoop of rice ended up
+      // logged as "0.75 ×" — a fraction nobody can act on and no evidence
+      // supports. Where the two disagree the catalogue wins, silently.
       parts.push({
-        food: asFood(fit),
-        quantity,
+        food: asFood(fit.row),
+        quantity: component.count,
         label: component.name.slice(0, 120),
-        kcal: fit.kcal * quantity,
+        kcal: fit.row.kcal * component.count,
       })
       continue
+    }
+
+    if (fit) {
+      // A row that is ten of the thing. Pointing at it would put "0.8" on a
+      // plate of eight skewers, so the ingredient gets a per-unit row of its
+      // own — priced by DIVIDING the catalogue figure, never by asking the
+      // model again — and the quantity is the count the user can see.
+      const perUnit = Math.max(1, Math.round(fit.perUnit))
+      const share = (value: number | null) =>
+        value === null ? 0 : Math.round((Number(value) / fit.units) * 10) / 10
+      const unitRow = await estimateRow(db, {
+        name: component.name,
+        kcal: perUnit,
+        carbs: share(fit.row.carbs_g),
+        protein: share(fit.row.protein_g),
+        fat: share(fit.row.fat_g),
+      })
+      if (unitRow) {
+        parts.push({
+          food: unitRow,
+          quantity: component.count,
+          label: component.name.slice(0, 120),
+          kcal: unitRow.kcal * component.count,
+        })
+        continue
+      }
     }
 
     if (!rows.length) await recordMisses(db, scanId, [q])
@@ -254,44 +378,22 @@ async function resolveByComponents(
             protein: Math.round((component.kcal * 0.2) / 4),
             fat: Math.round((component.kcal * 0.3) / 9),
           }
-    const { data: estimateId } = await db.rpc('upsert_estimate_food', {
-      p_name: component.name,
-      p_kcal: component.kcal,
-      p_carbs_g: macros.carbs,
-      p_protein_g: macros.protein,
-      p_fat_g: macros.fat,
-      p_fibre_g: null,
-      p_sugar_g: null,
-      p_sodium_mg: null,
+    const guess = await estimateRow(db, {
+      name: component.name,
+      kcal: component.kcal,
+      carbs: macros.carbs,
+      protein: macros.protein,
+      fat: macros.fat,
     })
-    if (!estimateId) continue
-    const [{ data: estimateFood }, { data: estimateServing }] = await Promise.all([
-      db
-        .from('foods')
-        .select('id, name, kcal')
-        .eq('id', estimateId as string)
-        .single(),
-      db
-        .from('food_servings')
-        .select('id')
-        .eq('food_id', estimateId as string)
-        .eq('is_default', true)
-        .single(),
-    ])
-    if (!estimateFood || !estimateServing) continue
-    // A deduped row may carry an earlier estimate; quantity absorbs the drift.
-    const quantity =
-      estimateFood.kcal > 0 ? snapIngredientQty(component.kcal / estimateFood.kcal) : 1
+    if (!guess) continue
+    // Priced for ONE, so the count is the quantity here too. The size-aware
+    // dedup is what makes that safe: a row that came back priced for a
+    // different-sized version of this part would not have been reused.
     parts.push({
-      food: {
-        ...estimateFood,
-        is_estimate: true,
-        is_archetype: false,
-        serving_id: estimateServing.id,
-      },
-      quantity,
+      food: guess,
+      quantity: component.count,
       label: component.name.slice(0, 120),
-      kcal: estimateFood.kcal * quantity,
+      kcal: guess.kcal * component.count,
     })
   }
   if (parts.length < 2) {
@@ -572,11 +674,11 @@ export async function resolveByArchetype(
 }
 
 /**
- * The full cascade for one item. Composite plates try decomposition FIRST —
- * a plate of visible parts is better explained than approximated — then the
- * dish-level match, then the estimate. Returns null when only the archetype
- * floor is left; each stage guards itself so one stage's crash cannot skip
- * the ones below it.
+ * The full cascade for one item. A plate with visible parts tries
+ * decomposition FIRST — parts are better explained than approximated — then
+ * the dish-level match, then the estimate. Returns null when only the
+ * archetype floor is left; each stage guards itself so one stage's crash
+ * cannot skip the ones below it.
  */
 export async function resolveItem(
   db: SupabaseClient,
@@ -592,8 +694,14 @@ export async function resolveItem(
     trace?.push(message)
   }
 
+  // Whether the plate has parts is decided by whether the model LISTED parts,
+  // not by what it called the scene. A banana leaf of satay came back as
+  // "single" with three components on it — seven skewers, two ketupat, a heap
+  // of shallots — and the scene label sent it to a one-row catalogue match for
+  // 365 kcal against the 525 its own parts add up to. The list is the evidence;
+  // `scene` is the model's summary of it.
   let resolved: Resolved | null = null
-  if (scene === 'composite') {
+  if (item.components.length >= 2) {
     resolved = await resolveByComponents(db, scanId, item, trace).catch((error) => {
       note('components stage threw', error)
       return null
@@ -620,6 +728,8 @@ export type WrittenEntry = {
   servingId: string
   name: string
   quantity: number
+  /** What the row will show. The client announces it from the background. */
+  kcal: number
   tier: number
   isEstimate: boolean
   isArchetype: boolean
@@ -667,6 +777,7 @@ export async function writeEntry(
     servingId: resolved.food.serving_id,
     name: resolved.displayLabel ?? resolved.food.name,
     quantity: resolved.quantity,
+    kcal: Math.round(resolved.food.kcal * resolved.quantity),
     tier: resolved.tier,
     isEstimate: resolved.food.is_estimate,
     isArchetype: resolved.food.is_archetype,

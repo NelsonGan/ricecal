@@ -23,9 +23,18 @@ export type Scene = 'single' | 'composite' | 'packaged' | 'unclear'
  * The model's per-portion estimate gives each part a band to match within —
  * and when nothing in the catalogue fits, it prices the fallback estimate
  * row, so a breakdown never dies because one side dish was unsearchable.
+ *
+ * `kcal` is for ONE of the thing and `count` says how many are on the plate,
+ * which is the only shape that makes the breakdown editable. Two chicken wings
+ * folded into a single 180 kcal "chicken wings" row leaves the user a stepper
+ * that moves in units of two wings; as "chicken wing, 90 kcal, ×2" the minus
+ * button means what it looks like it means.
  */
 export type VisionComponent = {
   name: string
+  /** How many of this part are visible. Whole numbers; 1 unless repeated. */
+  count: number
+  /** Calories for ONE of them, never the total for `count` of them. */
   kcal: number
   carbs_g: number | null
   protein_g: number | null
@@ -90,7 +99,19 @@ export type MockSteer = {
  */
 export type Interpretation =
   | { action: 'quantity'; factor: number }
-  | { action: 'adjust'; kcal_delta: number; name: string }
+  | {
+      action: 'adjust'
+      kcal_delta: number
+      name: string
+      /**
+       * The part the correction is about — an existing ingredient to drop, or
+       * the name of one to add. Null when the change is about the dish as a
+       * whole. Without it an adjustment could only be applied to the plate's
+       * total, which meant throwing the breakdown away to keep the arithmetic
+       * honest; with it the breakdown IS how the adjustment is applied.
+       */
+      part: string | null
+    }
   | { action: 'redescribe'; item: VisionItem }
   | { action: 'none'; reason: string }
 
@@ -150,7 +171,19 @@ async function chatJSON(messages: unknown[], maxTokens = 1200): Promise<unknown>
       })
     }
     const body = await res.json()
-    const text: string = body?.choices?.[0]?.message?.content ?? ''
+    const choice = body?.choices?.[0]
+    const text: string = choice?.message?.content ?? ''
+    // An empty body is a provider hiccup, not an answer — and JSON.parse('')
+    // throws "Unexpected end of JSON input", which reads like a bad model
+    // rather than no model at all. Retryable, and it says why.
+    if (!text.trim()) {
+      throw Object.assign(
+        new Error(
+          `OpenRouter returned no content (finish_reason: ${choice?.finish_reason ?? 'none'})`,
+        ),
+        { retryable: true },
+      )
+    }
     // Some models fence JSON in markdown despite response_format.
     const clean = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '')
     return JSON.parse(clean)
@@ -196,7 +229,9 @@ function shapeVision(raw: unknown): Vision {
             // carry no sizing, which the resolver treats as "top hit, as-is".
             if (typeof c === 'string') {
               const name = c.trim()
-              return name ? [{ name, kcal: 0, carbs_g: null, protein_g: null, fat_g: null }] : []
+              return name
+                ? [{ name, count: 1, kcal: 0, carbs_g: null, protein_g: null, fat_g: null }]
+                : []
             }
             const o = (c ?? {}) as Record<string, unknown>
             const name = String(o.name ?? '').trim()
@@ -210,6 +245,9 @@ function shapeVision(raw: unknown): Vision {
             return [
               {
                 name: name.slice(0, 120),
+                // Whole units. A model that answers 1.5 means one and a bit,
+                // which is what the kcal figure is for.
+                count: Math.round(clampNumber(o.count, 1, 12, 1)),
                 kcal: Math.round(clampNumber(o.kcal, 0, 10000, 0)),
                 carbs_g: optional(o.carbs_g),
                 protein_g: optional(o.protein_g),
@@ -255,10 +293,18 @@ export async function analysePhoto(
           specific_query: 'nasi lemak ayam goreng',
           generic_query: 'nasi lemak',
           components: [
-            { name: 'coconut rice', kcal: 340, carbs_g: 55, protein_g: 6, fat_g: 11 },
-            { name: 'fried chicken', kcal: 250, carbs_g: 8, protein_g: 20, fat_g: 15 },
-            { name: 'sambal', kcal: 60, carbs_g: 6, protein_g: 1, fat_g: 4 },
-            { name: 'boiled egg', kcal: 70, carbs_g: 1, protein_g: 6, fat_g: 5 },
+            { name: 'coconut rice', count: 1, kcal: 340, carbs_g: 55, protein_g: 6, fat_g: 11 },
+            // Two of them, priced one at a time — the shape the breakdown edits in.
+            {
+              name: 'fried chicken wing',
+              count: 2,
+              kcal: 125,
+              carbs_g: 4,
+              protein_g: 10,
+              fat_g: 8,
+            },
+            { name: 'sambal', count: 1, kcal: 60, carbs_g: 6, protein_g: 1, fat_g: 4 },
+            { name: 'boiled egg', count: 1, kcal: 70, carbs_g: 1, protein_g: 6, fat_g: 5 },
           ],
           serving_hint: '1 plate',
           kcal_low: 550,
@@ -280,8 +326,9 @@ export async function analysePhoto(
           'You identify food in photos for a Malaysian calorie-tracking app. ' +
           'Respond with JSON only, matching: {"scene": "single|composite|packaged|unclear", ' +
           '"items": [{"name": string, "specific_query": string, "generic_query": string, ' +
-          '"components": [{"name": string, "kcal": number, "carbs_g": number|null, ' +
-          '"protein_g": number|null, "fat_g": number|null}], "serving_hint": string|null, ' +
+          '"components": [{"name": string, "count": number, "kcal": number, ' +
+          '"carbs_g": number|null, "protein_g": number|null, "fat_g": number|null}], ' +
+          '"serving_hint": string|null, ' +
           '"kcal_low": number, "kcal_high": number, "confidence": number, ' +
           '"suggested_edits": string[]}]}. ' +
           'The photo is ONE logged meal: return ONE item named for the whole of it ' +
@@ -292,15 +339,22 @@ export async function analysePhoto(
           '"specific_query" is the local dish name as eaten ("char kuey teow"), ' +
           '"generic_query" a broader fallback ("fried noodles"). ' +
           'Each component is one visible part of a composite meal: a plain searchable "name" ' +
-          '(rice, protein, side), its estimated "kcal" for the PORTION VISIBLE, and its macro ' +
-          'grams (null when unsure — never guess 0). One component PER PORTION — two chicken ' +
-          'wings are two "chicken wing" components. Empty for a single homogeneous dish. ' +
-          'Component kcal should sum to roughly the item kcal range. ' +
+          '(rice, protein, side), a "count" of how many are visible, the "kcal" of ONE of ' +
+          'them, and the macro grams of ONE of them (null when unsure — never guess 0). ' +
+          'kcal is ALWAYS per single unit: two chicken wings are ONE component named ' +
+          '"chicken wing" with count 2 and the calories of a single wing — never one ' +
+          'component holding both. count is 1 for anything not repeated, including a scoop ' +
+          'of rice or a ladle of curry. Empty components for a single homogeneous dish. ' +
+          'List a component for EVERYTHING edible in the photo, including a drink. ' +
           '"scene" is "composite" whenever the meal has distinct visible parts. ' +
           '"serving_hint" is the visible portion ' +
-          'as a person would say it ("1 plate", "1 bowl", "large plate"). kcal_low/high bound ' +
-          'the calories of the portion actually visible — anchor on the portion size, not the ' +
-          'dish average. confidence is 0-1 for the identification. ' +
+          'as a person would say it ("1 plate", "1 bowl", "large plate"). ' +
+          'kcal_low/high bound the calories of everything visible and MUST bracket the sum ' +
+          'of (kcal x count) over the components — count the skewers and the pieces before ' +
+          'you answer, and anchor on the portion in the photo, not the dish average. ' +
+          '"name" is what a local menu would print for this plate — the common name people ' +
+          'order it by, not a description of its colour. confidence is 0-1 for the ' +
+          'identification. ' +
           '"suggested_edits" is up to 3 SHORT likely corrections for this exact dish, phrased as ' +
           'a user would type them (e.g. "No sambal", "Half portion", "Extra rice") — pick what ' +
           'people most often vary about this food. The ITEM carries no macro fields — only ' +
@@ -314,9 +368,11 @@ export async function analysePhoto(
         ],
       },
     ],
-    // Headroom for six items with all fields: a response truncated mid-JSON
-    // fails to parse, and a parse failure costs the whole vision tier.
-    1600,
+    // Headroom for a full plate with all fields: a response truncated mid-JSON
+    // fails to parse, and a parse failure costs the whole vision tier — a
+    // chicken rice with six components ran out at 1600 and landed on the
+    // archetype floor as "Mixed meal".
+    2400,
   )
   return shapeVision(raw)
 }
@@ -348,6 +404,7 @@ export function foldMealItems(vision: Vision): Vision {
     components: items
       .map((item) => ({
         name: item.name,
+        count: 1,
         kcal: Math.round((item.kcal_low + item.kcal_high) / 2),
         carbs_g: null,
         protein_g: null,
@@ -505,7 +562,9 @@ export async function estimateNutrition(
           // The visible parts pin the estimate to the actual plate — "nasi
           // campur" alone could be anything; its component list is the meal.
           (item.components.length
-            ? ` Contains: ${item.components.map((c) => c.name).join(', ')}.`
+            ? ` Contains: ${item.components
+                .map((c) => (c.count > 1 ? `${c.count} × ${c.name}` : c.name))
+                .join(', ')}.`
             : '') +
           ` Expected around ${item.kcal_low}-${item.kcal_high} kcal.`,
       },
@@ -536,8 +595,11 @@ function shapeInterpretation(raw: unknown): Interpretation {
     const name = String(o.name ?? '')
       .trim()
       .slice(0, 120)
+    const part = String(o.part ?? '')
+      .trim()
+      .slice(0, 120)
     if (Number.isFinite(delta) && delta !== 0 && Math.abs(delta) <= 2000 && name) {
-      return { action: 'adjust', kcal_delta: Math.round(delta), name }
+      return { action: 'adjust', kcal_delta: Math.round(delta), name, part: part || null }
     }
     return { action: 'none', reason: 'unusable adjustment' }
   }
@@ -574,6 +636,11 @@ export async function interpretInstruction(
         action: 'adjust',
         kcal_delta: -60,
         name: `${context.name}, ${instruction}`.slice(0, 120),
+        // The part named in the text, if the entry has one by that name.
+        part:
+          context.ingredients.find((ingredient) =>
+            text.includes(ingredient.toLowerCase().split(' ')[0]),
+          ) ?? null,
       }
     }
     if (/\badd\b|\bextra\b|\bwith\b/.test(text)) {
@@ -581,6 +648,7 @@ export async function interpretInstruction(
         action: 'adjust',
         kcal_delta: 80,
         name: `${context.name}, ${instruction}`.slice(0, 120),
+        part: instruction.replace(/\b(add|extra|with|an|a)\b/gi, '').trim() || null,
       }
     }
     const name = `${context.name}, ${instruction}`.slice(0, 120)
@@ -616,16 +684,19 @@ export async function interpretInstruction(
           'relative to the amount CURRENTLY logged, which the user is looking at: "half ' +
           'portion" or "I only ate half" -> 0.5 whatever the current quantity is; "I had two ' +
           'of these" means two total, so with current quantity Q return 2/Q.\n' +
-          '{"action":"adjust","kcal_delta":number,"name":string} — the SAME dish with a part ' +
-          'added, removed or resized: "no sambal", "add a fried egg", "extra rice". ' +
-          '`kcal_delta` is the calorie change for that part alone (negative for removals — ' +
-          '"no sambal" is about -50, "add an egg" about +75), `name` the corrected dish name ' +
-          '(e.g. "Nasi Lemak, no sambal"). This is the answer for ANY add/remove/swap of a ' +
-          'component that leaves the dish recognisably itself.\n' +
+          '{"action":"adjust","kcal_delta":number,"name":string,"part":string|null} — the ' +
+          'SAME dish with a part added, removed or resized: "no sambal", "add a fried egg", ' +
+          '"extra rice". `kcal_delta` is the calorie change for that part alone (negative ' +
+          'for removals — "no sambal" is about -50, "add an egg" about +75), `name` the ' +
+          'corrected dish name (e.g. "Nasi Lemak, no sambal"). `part` names the ingredient ' +
+          'involved: for a removal copy the matching name from the Ingredients list below ' +
+          'EXACTLY, for an addition name the thing being added ("fried egg"), and use null ' +
+          'only when the change is about the whole dish. This is the answer for ANY ' +
+          'add/remove/swap of a component that leaves the dish recognisably itself.\n' +
           '{"action":"redescribe","item":{"name":string,"specific_query":string,' +
-          '"generic_query":string,"components":[{"name":string,"kcal":number,' +
-          '"carbs_g":number|null,"protein_g":number|null,"fat_g":number|null}],' +
-          '"serving_hint":string|null,' +
+          '"generic_query":string,"components":[{"name":string,"count":number,' +
+          '"kcal":number,"carbs_g":number|null,"protein_g":number|null,' +
+          '"fat_g":number|null}],"serving_hint":string|null,' +
           '"kcal_low":number,"kcal_high":number,"confidence":number,"suggested_edits":[]}} — ' +
           'the dish IDENTITY was wrong ("it was rendang not curry", "this is laksa"). ' +
           'Describe the correct dish as eaten and bound its calories tightly.\n' +

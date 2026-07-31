@@ -113,9 +113,13 @@ as $$
 declare
   v_name text := left(trim(p_name), 120);
   v_norm text := public.search_normalize(p_name);
+  -- The bucket a size-tagged name rounds to, scaled to what is being priced:
+  -- 50 kcal is a rounding error on a plate and most of a satay stick, and a
+  -- flat step meant a 64 kcal skewer reusing an 85 kcal row.
+  v_step  integer := case when p_kcal < 200 then 10 when p_kcal < 500 then 25 else 50 end;
   -- Half a bucket: inside this the reused figure and the requested one round
-  -- to the same 50 kcal, so the entry above can stay at exactly one portion.
-  v_slack integer := greatest(25, round(p_kcal * 0.05));
+  -- to the same tag, so the entry above can stay at exactly one portion.
+  v_slack integer := greatest(5, v_step / 2);
   v_id   uuid;
   v_kcal integer;
 begin
@@ -127,10 +131,11 @@ begin
   where f.is_estimate and f.name_norm = v_norm;
 
   -- The row that owns this name is for a different-sized plate. Move to a
-  -- size-tagged name, rounded to 50 kcal so that the same plate photographed
-  -- twice lands on one row rather than on two a few calories apart.
+  -- size-tagged name, rounded to the bucket so that the same plate
+  -- photographed twice lands on one row rather than two a few calories apart.
   if v_id is not null and abs(v_kcal - p_kcal) > v_slack then
-    v_name := left(v_name, 108) || ' (' || (greatest(1, round(p_kcal / 50.0)) * 50) || ' kcal)';
+    v_name := left(v_name, 108) || ' (' ||
+              (greatest(1, round(p_kcal::numeric / v_step)) * v_step) || ' kcal)';
     v_norm := public.search_normalize(v_name);
 
     select f.id, f.kcal into v_id, v_kcal from public.foods f

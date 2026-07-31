@@ -1,4 +1,14 @@
-import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
+import { AppState } from 'react-native'
 
 import type { Entry, Meal } from './types'
 
@@ -41,6 +51,7 @@ const PendingContext = createContext<PendingValue | null>(null)
 
 export function PendingSnapProvider({ children }: { children: ReactNode }) {
   const [snaps, setSnaps] = useState<PendingSnap[]>([])
+  const queryClient = useQueryClient()
 
   const add = useCallback((snap: Omit<PendingSnap, 'status' | 'loggedAt'>) => {
     setSnaps((current) => [
@@ -58,6 +69,36 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
   const remove = useCallback((id: string) => {
     setSnaps((current) => current.filter((snap) => snap.id !== id))
   }, [])
+
+  /**
+   * Clear out snaps the app slept through.
+   *
+   * iOS suspends an app within seconds of it going to the background, and a
+   * scan takes twenty. The request that was in flight never settles — not as
+   * success, not as failure — so the row that was waiting on it waits forever,
+   * and on the server the entry it was waiting for landed minutes ago. On the
+   * way back in, anything older than the longest a scan can take is assumed to
+   * have finished without us and the day is asked again.
+   *
+   * The window is generous on purpose: dropping a snap that is still genuinely
+   * running would take its photo with it.
+   */
+  useEffect(() => {
+    const listener = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return
+      const cutoff = Date.now() - 90_000
+      setSnaps((current) => {
+        const kept = current.filter(
+          (snap) => snap.status === 'failed' || Date.parse(snap.loggedAt) > cutoff,
+        )
+        if (kept.length !== current.length) {
+          queryClient.invalidateQueries({ queryKey: ['day'] })
+        }
+        return kept
+      })
+    })
+    return () => listener.remove()
+  }, [queryClient])
 
   const value = useMemo(() => ({ snaps, add, fail, remove }), [snaps, add, fail, remove])
 

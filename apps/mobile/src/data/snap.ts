@@ -1,6 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
+import { AppState } from 'react-native'
 
+import i18n from '@/i18n'
+import {
+  announceScan,
+  cancelScanNotice,
+  ensureNotificationPermission,
+  scheduleScanNotice,
+} from '@/lib/notifications'
 import { supabase } from '@/lib/supabase'
 import { keys } from './keys'
 import { usePendingSnaps } from './pending-snaps'
@@ -19,7 +27,7 @@ export type SnapInput = {
 type ScanResponse = {
   ok: boolean
   scanId?: string
-  entries?: Array<{ id: string; foodId: string; tier: number }>
+  entries?: Array<{ id: string; foodId: string; tier: number; name: string; kcal: number }>
   error?: string
 }
 
@@ -84,13 +92,54 @@ export function useSnapFood() {
       const id = `snap-${Date.now()}-${Math.round(Math.random() * 1e6)}`
       pending.add({ id, meal, logDate, photoUri })
 
+      // Asked here rather than on launch, and effectively once: the OS shows
+      // its dialog while a permission is undetermined and `ensure` declines to
+      // ask again after a refusal. This is the moment it makes sense — the
+      // user has just started something that takes half a minute, which is the
+      // reason the notification exists.
+      //
+      // The notice is BOOKED here for the same reason: by the time the answer
+      // comes back the app may be suspended, and a suspended app cannot post
+      // anything. See `scheduleScanNotice`.
+      let notice: string | null = null
+      const booked = ensureNotificationPermission()
+        .catch(() => false)
+        .then(() =>
+          scheduleScanNotice(
+            i18n.t('logging:today.scanDoneTitle'),
+            i18n.t('logging:today.scanDoneBodyPlain'),
+          ),
+        )
+        .then((id) => {
+          notice = id
+          return id
+        })
+        .catch(() => null)
+
       const work = async () => {
         const path = photoUri ? await uploadMealPhoto(userId, photoUri) : undefined
-        await scanMeal({ photoPath: path, meal, logDate })
+        return scanMeal({ photoPath: path, meal, logDate })
       }
 
       work()
-        .then(() => {
+        .then((result) => {
+          // Still awake, so the booked notice is not needed as it stands: in
+          // front, the row on Today has already turned into the dish; behind,
+          // this can say which dish it was instead of guessing.
+          void booked.then(() => cancelScanNotice(notice))
+          if (AppState.currentState !== 'active') {
+            const entry = result.entries?.[0]
+            void announceScan(
+              i18n.t('logging:today.scanDoneTitle'),
+              entry
+                ? i18n.t('logging:today.scanDoneBody', {
+                    food: entry.name,
+                    kcal: entry.kcal.toLocaleString(),
+                  })
+                : i18n.t('logging:today.scanDoneBodyPlain'),
+            )
+          }
+
           // The real rows are in the database now, so the placeholder goes and
           // the day refetches into them. Removing first avoids one frame with
           // both on screen.
@@ -100,10 +149,17 @@ export function useSnapFood() {
           queryClient.invalidateQueries({ queryKey: keys.recentFoodsAll(userId) })
           queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
         })
+        // A failed scan has nothing to announce, so the booked notice goes
+        // too — the row on Today says what happened, and a banner claiming
+        // the plate was counted would be a lie the user acts on.
+        //
         // The row stays, with its photo, and says it could not be read. Losing
         // both because a request timed out would make the user take the
         // picture again for nothing.
-        .catch(() => pending.fail(id))
+        .catch(() => {
+          void booked.then(() => cancelScanNotice(notice))
+          pending.fail(id)
+        })
 
       return id
     },

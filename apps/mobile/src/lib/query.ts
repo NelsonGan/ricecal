@@ -1,7 +1,18 @@
 import { SCHEMA_VERSION } from '@ricecal/shared'
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
-import { QueryClient } from '@tanstack/react-query'
+import { focusManager, QueryClient } from '@tanstack/react-query'
+import { AppState } from 'react-native'
 import { createMMKV } from 'react-native-mmkv'
+
+/**
+ * "Focused" on a phone means the app is in front.
+ *
+ * React Query's own definition is a browser one — `window.focus` — which never
+ * fires here, so refetch-on-focus quietly did nothing and coming back to the
+ * app showed whatever was cached when it was last open. A scan that finished
+ * while the phone was in a pocket landed in the database and not on Today.
+ */
+AppState.addEventListener('change', (state) => focusManager.setFocused(state === 'active'))
 
 const storage = createMMKV({ id: 'ricecal-query-cache' })
 
