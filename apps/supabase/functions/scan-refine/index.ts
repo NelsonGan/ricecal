@@ -271,7 +271,35 @@ Deno.serve(async (req: Request) => {
           }))
         : undefined
 
-      if (interpretation.kcal_delta < 0 && match) {
+      if (match && interpretation.count) {
+        // The user counted them out. "Two more skewers" is two more skewers,
+        // not the model's calorie estimate for two skewers divided by what one
+        // costs — that arithmetic turned seven into ten.
+        const next = Number(match.quantity) + interpretation.count
+        if (next <= 0) {
+          await db.from('food_log_ingredients').delete().eq('id', match.id)
+        } else {
+          await db
+            .from('food_log_ingredients')
+            .update({ quantity: refineQuantity(next) })
+            .eq('id', match.id)
+        }
+      } else if (interpretation.kcal_delta > 0 && match) {
+        // More of something already on the plate, with no number given. Adding
+        // a SECOND satay row would leave the user with two steppers for one
+        // thing and a list that reads like the scan saw double.
+        const { data: rows } = await db
+          .from('food_log_ingredient_details')
+          .select('kcal, quantity')
+          .eq('id', match.id)
+          .single()
+        const perUnit = rows?.kcal ? rows.kcal / Math.max(0.01, Number(rows.quantity)) : 0
+        const extra = perUnit > 0 ? Math.max(1, Math.round(interpretation.kcal_delta / perUnit)) : 1
+        await db
+          .from('food_log_ingredients')
+          .update({ quantity: refineQuantity(Number(match.quantity) + extra) })
+          .eq('id', match.id)
+      } else if (interpretation.kcal_delta < 0 && match) {
         await db.from('food_log_ingredients').delete().eq('id', match.id)
       } else if (interpretation.kcal_delta < 0 && parts.length > 1) {
         // Something was removed and no part answers to the name. Take it off

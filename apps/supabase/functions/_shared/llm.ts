@@ -111,6 +111,14 @@ export type Interpretation =
        * honest; with it the breakdown IS how the adjustment is applied.
        */
       part: string | null
+      /**
+       * How many of that part were added or taken away, when the user counted
+       * them out loud. "Two more skewers" is 2, and applying it as calories
+       * instead turned seven skewers into ten — the model's estimate for two
+       * skewers divided by what one costs does not come back as two. Null when
+       * the correction is not about a number of things.
+       */
+      count: number | null
     }
   | { action: 'redescribe'; item: VisionItem }
   | { action: 'none'; reason: string }
@@ -598,8 +606,16 @@ function shapeInterpretation(raw: unknown): Interpretation {
     const part = String(o.part ?? '')
       .trim()
       .slice(0, 120)
+    const count = Number(o.count)
     if (Number.isFinite(delta) && delta !== 0 && Math.abs(delta) <= 2000 && name) {
-      return { action: 'adjust', kcal_delta: Math.round(delta), name, part: part || null }
+      return {
+        action: 'adjust',
+        kcal_delta: Math.round(delta),
+        name,
+        part: part || null,
+        count:
+          Number.isFinite(count) && count !== 0 && Math.abs(count) <= 20 ? Math.round(count) : null,
+      }
     }
     return { action: 'none', reason: 'unusable adjustment' }
   }
@@ -641,6 +657,7 @@ export async function interpretInstruction(
           context.ingredients.find((ingredient) =>
             text.includes(ingredient.toLowerCase().split(' ')[0]),
           ) ?? null,
+        count: null,
       }
     }
     if (/\badd\b|\bextra\b|\bwith\b/.test(text)) {
@@ -649,6 +666,7 @@ export async function interpretInstruction(
         kcal_delta: 80,
         name: `${context.name}, ${instruction}`.slice(0, 120),
         part: instruction.replace(/\b(add|extra|with|an|a)\b/gi, '').trim() || null,
+        count: Number(text.match(/\b(\d+)\b/)?.[1] ?? 0) || null,
       }
     }
     const name = `${context.name}, ${instruction}`.slice(0, 120)
@@ -684,15 +702,18 @@ export async function interpretInstruction(
           'relative to the amount CURRENTLY logged, which the user is looking at: "half ' +
           'portion" or "I only ate half" -> 0.5 whatever the current quantity is; "I had two ' +
           'of these" means two total, so with current quantity Q return 2/Q.\n' +
-          '{"action":"adjust","kcal_delta":number,"name":string,"part":string|null} — the ' +
+          '{"action":"adjust","kcal_delta":number,"name":string,"part":string|null,' +
+          '"count":number|null} — the ' +
           'SAME dish with a part added, removed or resized: "no sambal", "add a fried egg", ' +
           '"extra rice". `kcal_delta` is the calorie change for that part alone (negative ' +
           'for removals — "no sambal" is about -50, "add an egg" about +75), `name` the ' +
           'corrected dish name (e.g. "Nasi Lemak, no sambal"). `part` names the ingredient ' +
           'involved: for a removal copy the matching name from the Ingredients list below ' +
           'EXACTLY, for an addition name the thing being added ("fried egg"), and use null ' +
-          'only when the change is about the whole dish. This is the answer for ANY ' +
-          'add/remove/swap of a component that leaves the dish recognisably itself.\n' +
+          'only when the change is about the whole dish. `count` is how many of that part ' +
+          'were added or taken away when the user says a number — "two more skewers" is 2, ' +
+          '"one less egg" is -1 — and null when no number was given. This is the answer for ' +
+          'ANY add/remove/swap of a component that leaves the dish recognisably itself.\n' +
           '{"action":"redescribe","item":{"name":string,"specific_query":string,' +
           '"generic_query":string,"components":[{"name":string,"count":number,' +
           '"kcal":number,"carbs_g":number|null,"protein_g":number|null,' +
