@@ -73,6 +73,15 @@ export type VisionItem = {
 export type Vision = {
   scene: Scene
   items: VisionItem[]
+  /**
+   * The photo has nothing edible in it.
+   *
+   * Distinct from "unclear": a blurred plate is still a meal and gets the
+   * archetype floor, but a photo of a cat is not a meal and must not become
+   * 600 kcal in someone's diary. The scan answers "no food" and writes
+   * nothing; the row on Today says so and can be dismissed.
+   */
+  noFood?: boolean
 }
 
 export type Nutrition = {
@@ -231,6 +240,9 @@ function shapeVision(raw: unknown): Vision {
   const scene: Scene = ['single', 'composite', 'packaged', 'unclear'].includes(o.scene as string)
     ? (o.scene as Scene)
     : 'unclear'
+  // Taken at its word and returned before anything else is read: the rest of
+  // the shape is about a meal, and there isn't one.
+  if (o.no_food === true) return { scene: 'unclear', items: [], noFood: true }
   const items = (Array.isArray(o.items) ? o.items : []).slice(0, 6).flatMap((it) => {
     const i = (it ?? {}) as Record<string, unknown>
     const name = String(i.name ?? '').trim()
@@ -349,7 +361,11 @@ export async function analysePhoto(
         role: 'system',
         content:
           'You identify food in photos for a Malaysian calorie-tracking app. ' +
-          'Respond with JSON only, matching: {"scene": "single|composite|packaged|unclear", ' +
+          'If the photo has nothing edible in it — a person, a room, a screen, an empty ' +
+          'plate — answer {"no_food": true} and nothing else. A blurred or half-guessable ' +
+          'meal is still a meal; say no_food only when there is no food. ' +
+          'Otherwise respond with JSON only, matching: ' +
+          '{"scene": "single|composite|packaged|unclear", ' +
           '"items": [{"name": string, "specific_query": string, "generic_query": string, ' +
           '"count": number, "components": [{"name": string, "count": number, "kcal": number, ' +
           '"carbs_g": number|null, "protein_g": number|null, "fat_g": number|null}], ' +
@@ -368,6 +384,11 @@ export async function analysePhoto(
           '— leave "components" empty for those. Several DIFFERENT foods are components: ' +
           'rice, the protein, each side, a drink with calories in it. Water, ice and an ' +
           'empty glass are not food and are never listed. ' +
+          // The breakdown is editable per part, so a guessed part is a control
+          // over a number nobody measured.
+          'Only list components you can SEE as separate things on the plate. A curry, a ' +
+          'fried rice, a soup, a sandwich, anything cooked or mixed together is ONE food — ' +
+          'leave components empty rather than guessing what went into it. ' +
           'A component carries a plain searchable "name", a "count" of how many are visible, ' +
           'and the "kcal" and macro grams of ONE of them (null when unsure — never guess 0). ' +
           'Two chicken wings are one component with count 2 priced for a single wing. ' +

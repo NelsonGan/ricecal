@@ -1,14 +1,21 @@
 import { Image } from 'expo-image'
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Animated, Easing, View } from 'react-native'
+import Reanimated, {
+  Easing as ReanimatedEasing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated'
 
 import type { DayLog, Entry } from '@/data'
 import { useMealPhotoUrl, useRefiningEntries } from '@/data'
 import { sumMacros } from '@/lib/nutrition'
 import { portionLabel } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
-import { Card, Icon, Text } from '@/ui'
+import { Card, Icon, IconButton, Text } from '@/ui'
 import { ItemRow } from './ItemRow'
 import { SwipeRow } from './SwipeRow'
 
@@ -23,6 +30,11 @@ export type EntryListProps = {
   onFixEntry?: (entry: Entry) => void
   /** Swiping a row left reveals this. Rows are not swipeable without it. */
   onDeleteEntry?: (entry: Entry) => void
+  /**
+   * A snap the scan found no food in. Nothing was logged, so there is nothing
+   * to delete — the row is dismissed and goes.
+   */
+  onDismissEntry?: (entry: Entry) => void
 }
 
 /**
@@ -43,7 +55,13 @@ export type EntryListProps = {
  * its illustration and its macros already costed, so a row is one object and the
  * list is one loop.
  */
-export function EntryList({ day, onPressEntry, onFixEntry, onDeleteEntry }: EntryListProps) {
+export function EntryList({
+  day,
+  onPressEntry,
+  onFixEntry,
+  onDeleteEntry,
+  onDismissEntry,
+}: EntryListProps) {
   const { t } = useTranslation(['logging', 'common'])
 
   // Newest first. The day used to read in the order it happened, which put the
@@ -66,6 +84,7 @@ export function EntryList({ day, onPressEntry, onFixEntry, onDeleteEntry }: Entr
           onPress={onPressEntry}
           onFix={onFixEntry}
           onDelete={onDeleteEntry}
+          onDismiss={onDismissEntry}
         />
       ))}
     </Card>
@@ -83,11 +102,13 @@ function EntryRow({
   onPress,
   onFix,
   onDelete,
+  onDismiss,
 }: {
   entry: Entry
   onPress?: (entry: Entry) => void
   onFix?: (entry: Entry) => void
   onDelete?: (entry: Entry) => void
+  onDismiss?: (entry: Entry) => void
 }) {
   const { t } = useTranslation(['logging', 'common'])
 
@@ -102,7 +123,30 @@ function EntryRow({
   // A snap in flight has no dish yet. It still gets a row — written the moment
   // the shutter fired — so the day is complete while the model is thinking.
   if (entry.status === 'analysing') {
-    return <AnalysingRow entry={entry} />
+    // A row read back from storage is still working, but its progress bar
+    // would be starting over for a scan that began before the app did.
+    return <AnalysingRow entry={entry} mode={entry.restored ? 'resumed' : 'scan'} />
+  }
+  if (entry.status === 'nofood') {
+    return (
+      <ItemRow
+        title={t('logging:today.noFoodTitle')}
+        icon={{ set: 'system', name: 'camera' }}
+        photoUri={entry.localPhotoUri}
+        value=""
+        detail={t('logging:today.noFoodHint')}
+        trailing={
+          <IconButton
+            size="sm"
+            variant="neutral"
+            accessibilityLabel={t('logging:today.noFoodDismiss')}
+            onPress={() => onDismiss?.(entry)}
+          >
+            <Icon set="ui" name="close" size={16} />
+          </IconButton>
+        }
+      />
+    )
   }
   if (entry.status === 'failed') {
     return (
@@ -178,7 +222,13 @@ const FILL_MS = 45000
  * wholesale by the real entry when the scan lands, so the bar never has to
  * finish; the phrases rotate so the wait reads as stages rather than a hang.
  */
-function AnalysingRow({ entry, mode = 'scan' }: { entry: Entry; mode?: 'scan' | 'refine' }) {
+function AnalysingRow({
+  entry,
+  mode = 'scan',
+}: {
+  entry: Entry
+  mode?: 'scan' | 'refine' | 'resumed'
+}) {
   const { t } = useTranslation(['logging'])
   const colors = useThemeColors()
   // A refining entry's photo is already in the bucket, not on disk.
@@ -187,12 +237,14 @@ function AnalysingRow({ entry, mode = 'scan' }: { entry: Entry; mode?: 'scan' | 
   const phrases =
     mode === 'refine'
       ? [t('logging:today.refiningApply'), t('logging:today.refiningCount')]
-      : [
-          t('logging:today.scanningRead'),
-          t('logging:today.scanningMatch'),
-          t('logging:today.scanningPortion'),
-          t('logging:today.scanningCount'),
-        ]
+      : mode === 'resumed'
+        ? [t('logging:today.analysing')]
+        : [
+            t('logging:today.scanningRead'),
+            t('logging:today.scanningMatch'),
+            t('logging:today.scanningPortion'),
+            t('logging:today.scanningCount'),
+          ]
   const [phrase, setPhrase] = useState(0)
   useEffect(() => {
     const id = setInterval(() => setPhrase((current) => current + 1), PHRASE_MS)
@@ -239,22 +291,55 @@ function AnalysingRow({ entry, mode = 'scan' }: { entry: Entry; mode?: 'scan' | 
       </View>
 
       <View className="min-w-0 flex-1 gap-2">
-        <Text variant="bodyStrong" numberOfLines={1}>
-          {label}
-        </Text>
-        <View className="h-[6px] overflow-hidden rounded-full bg-track">
-          <Animated.View
-            style={{
-              width,
-              height: '100%',
-              borderRadius: 999,
-              backgroundColor: colors.pandan,
-            }}
-          />
-        </View>
+        {/* Shimmering rather than merely swapping. The line changes every few
+            seconds and a hard cut between two sentences reads as a glitch; a
+            slow breath through it says the same thing as "still working" that
+            the bar underneath does, in the one place the eye already is. */}
+        <Shimmer>
+          <Text variant="bodyStrong" numberOfLines={1}>
+            {label}
+          </Text>
+        </Shimmer>
+        {/* A resumed row has no bar. The bar is timed from the shutter, and
+            this scan started before the app did — restarting it at zero would
+            be a progress indicator that is certainly wrong. */}
+        {mode === 'resumed' ? null : (
+          <View className="h-[6px] overflow-hidden rounded-full bg-track">
+            <Animated.View
+              style={{
+                width,
+                height: '100%',
+                borderRadius: 999,
+                backgroundColor: colors.pandan,
+              }}
+            />
+          </View>
+        )}
       </View>
     </View>
   )
+}
+
+/**
+ * A slow pulse over whatever is inside it.
+ *
+ * Reanimated rather than the `Animated` above it because this repeats forever
+ * and belongs on the UI thread — the bar next to it is a one-shot and can
+ * afford the bridge. Opacity rather than a gradient sweep, for the same reason
+ * `Skeleton` uses opacity: a sweep needs a mask per element, and this is one
+ * line of text.
+ */
+function Shimmer({ children }: { children: ReactNode }) {
+  const pulse = useSharedValue(1)
+  useEffect(() => {
+    pulse.value = withRepeat(
+      withTiming(0.45, { duration: 1100, easing: ReanimatedEasing.inOut(ReanimatedEasing.quad) }),
+      -1,
+      true,
+    )
+  }, [pulse])
+  const style = useAnimatedStyle(() => ({ opacity: pulse.value }))
+  return <Reanimated.View style={style}>{children}</Reanimated.View>
 }
 
 /** "8:20 am". Locale-independent on purpose: the mock data is Malaysian. */

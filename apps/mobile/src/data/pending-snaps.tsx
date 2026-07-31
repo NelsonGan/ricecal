@@ -44,14 +44,29 @@ export type PendingSnap = {
   logDate: string
   /** Local `file://` uri. There is no stored key until the upload finishes. */
   photoUri?: string
-  status: 'analysing' | 'failed'
+  /**
+   * `nofood` is the scan answering that the photo has nothing edible in it.
+   * It is a state of the row rather than an entry, because no entry was
+   * written: the user dismisses it and the row goes.
+   */
+  status: 'analysing' | 'failed' | 'nofood'
   loggedAt: string
+  /**
+   * Read back from storage rather than started in this session.
+   *
+   * The row still says it is working, but it does not get the progress bar:
+   * the bar is theatre timed from the shutter, and restarting it at zero for a
+   * scan that began two minutes ago would be theatre about a lie.
+   */
+  restored?: boolean
 }
 
 type PendingValue = {
   snaps: PendingSnap[]
   add: (snap: Omit<PendingSnap, 'status' | 'loggedAt'>) => void
   fail: (id: string) => void
+  /** The scan came back with "there is no food in this photo". */
+  noFood: (id: string) => void
   remove: (id: string) => void
 }
 
@@ -78,9 +93,9 @@ function readStored(): PendingSnap[] {
     if (!Array.isArray(parsed)) return []
     // Only what is still worth showing. A restore is also a sweep: the app was
     // away, and away is where scans finish.
-    return (parsed as PendingSnap[]).filter(
-      (snap) => snap?.id && Date.parse(snap.loggedAt) > Date.now() - STALE_MS,
-    )
+    return (parsed as PendingSnap[])
+      .filter((snap) => snap?.id && Date.parse(snap.loggedAt) > Date.now() - STALE_MS)
+      .map((snap) => ({ ...snap, restored: true }))
   } catch {
     return []
   }
@@ -113,6 +128,12 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
     )
   }, [])
 
+  const noFood = useCallback((id: string) => {
+    setSnaps((current) =>
+      current.map((snap) => (snap.id === id ? { ...snap, status: 'nofood' } : snap)),
+    )
+  }, [])
+
   const remove = useCallback((id: string) => {
     setSnaps((current) => current.filter((snap) => snap.id !== id))
   }, [])
@@ -134,8 +155,10 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
     const sweep = () => {
       const cutoff = Date.now() - STALE_MS
       setSnaps((current) => {
+        // A row waiting on the user — failed, or "no food here" — is not
+        // stale; it is unanswered, and sweeping it would answer for them.
         const kept = current.filter(
-          (snap) => snap.status === 'failed' || Date.parse(snap.loggedAt) > cutoff,
+          (snap) => snap.status !== 'analysing' || Date.parse(snap.loggedAt) > cutoff,
         )
         if (kept.length !== current.length) {
           queryClient.invalidateQueries({ queryKey: ['day'] })
@@ -158,7 +181,10 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
     }
   }, [queryClient])
 
-  const value = useMemo(() => ({ snaps, add, fail, remove }), [snaps, add, fail, remove])
+  const value = useMemo(
+    () => ({ snaps, add, fail, noFood, remove }),
+    [snaps, add, fail, noFood, remove],
+  )
 
   return <PendingContext.Provider value={value}>{children}</PendingContext.Provider>
 }
@@ -186,6 +212,7 @@ export function pendingAsEntry(snap: PendingSnap): Entry {
     source: 'camera',
     localPhotoUri: snap.photoUri,
     status: snap.status,
+    restored: snap.restored,
 
     foodId: '',
     foodName: '',

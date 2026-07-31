@@ -133,7 +133,13 @@ export type Food = {
  * Only ever set on a row that exists in the client's cache and not yet in the
  * database — an optimistic snap. Nothing in Postgres carries it.
  */
-export type EntryStatus = 'analysing' | 'failed'
+/**
+ * A row that is not yet an entry.
+ *
+ * `nofood` is the scan reporting that the photo had nothing edible in it — no
+ * entry was written, and the row waits to be dismissed rather than counted.
+ */
+export type EntryStatus = 'analysing' | 'failed' | 'nofood'
 
 export type Entry = {
   id: string
@@ -152,6 +158,8 @@ export type Entry = {
    */
   localPhotoUri?: string
   status?: EntryStatus
+  /** Restored from storage: still working, but past the point of a progress bar. */
+  restored?: boolean
 
   foodId: string
   foodName: string

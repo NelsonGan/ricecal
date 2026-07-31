@@ -69,9 +69,32 @@ export function useDayLog(date: string): DayLog {
     const mine = snaps.filter((snap) => snap.logDate === date)
     if (mine.length === 0) return base
 
+    /**
+     * A snap whose scan has already landed is dropped here rather than waited
+     * for.
+     *
+     * The client removes its own pending row when the request resolves, but
+     * the day can refetch before that — on focus, or when a notification
+     * brings the app forward — and for a second or two the meal appeared
+     * twice: once as the spinner, once as itself. The scan writes a camera
+     * entry stamped after the shutter, so an unclaimed one of those IS this
+     * snap, arriving by another route.
+     */
+    const claimed = new Set<string>()
+    const landed = (snap: (typeof mine)[number]) =>
+      base.entries.some((entry) => {
+        if (entry.source !== 'camera' || claimed.has(entry.id)) return false
+        if (entry.loggedAt < snap.loggedAt) return false
+        claimed.add(entry.id)
+        return true
+      })
+
+    const waiting = mine.filter((snap) => snap.status !== 'analysing' || !landed(snap))
+    if (waiting.length === 0) return base
+
     return {
       ...base,
-      entries: [...base.entries, ...mine.map(pendingAsEntry)].sort((a, b) =>
+      entries: [...base.entries, ...waiting.map(pendingAsEntry)].sort((a, b) =>
         a.loggedAt.localeCompare(b.loggedAt),
       ),
     }

@@ -1,25 +1,28 @@
 import * as Haptics from 'expo-haptics'
-import { type ReactNode, useCallback } from 'react'
+import { type ReactNode, useCallback, useState } from 'react'
 import { View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated'
 
 import { useThemeColors } from '@/theme/useTheme'
-import { Icon, Text } from '@/ui'
+import { Icon, Tappable, Text } from '@/ui'
 
-/** How far the row has to travel before letting go removes it. */
-const COMMIT = 140
+/** Width of the revealed button, and how far the row parks open. */
+const ACTION_W = 96
+/** Past half of it, letting go opens; short of it, the row closes again. */
+const OPEN_AT = ACTION_W / 2
+/** How long the row takes to settle either way. */
+const SETTLE_MS = 180
 
 export type SwipeRowProps = {
   children: ReactNode
   onDelete: () => void
-  /** Named on the panel behind the row, and to a screen reader. */
+  /** On the revealed button, and read out by a screen reader. */
   deleteLabel: string
   /**
    * The row's own tap, handled HERE rather than by a `Pressable` inside the
@@ -32,26 +35,39 @@ export type SwipeRowProps = {
 }
 
 /**
- * A row that is deleted by pushing it off the left of the screen.
+ * A row that slides left to reveal one button: delete.
  *
- * Not a drawer with a button parked in it. That shape needs the revealed
- * button to sit above the row it came out from, the row to stop taking touches
- * over it, and a second gesture to close it again — three moving parts, and in
- * this tree the button ended up unreachable whichever way round they went.
- * Pushing the row out is one gesture with one threshold: past it the meal goes
- * and the toast says so, short of it the row springs back.
+ * The swipe never deletes by itself. It uncovers the control and stops there,
+ * and the delete happens when that button is pressed — a gesture that removes
+ * a meal on release is a gesture that removes a meal by accident, and there is
+ * no undo behind it.
  *
- * So what is behind the row is not a control — it is the reason, in hibiscus,
- * so the direction reads as destructive before the finger commits.
+ * Settling is a timed slide rather than a spring. A row that bounces past its
+ * stop and back reads as slack in the interface, and this one has a button
+ * parked at a fixed offset: overshooting it means the button moves after the
+ * finger has left.
  *
  * Two things had to be true before any of this worked, and neither announced
  * itself: the scrolling ancestor has to be gesture-handler's `ScrollView`, or
  * this pan never activates at all; and the detector's own child has to be a
  * plain view rather than an animated one, or the gesture attaches to nothing.
+ * The revealed button is drawn AFTER the row for the same family of reason —
+ * the row's box keeps its full width while its contents slide, so a button
+ * underneath it is visible and unpressable.
  */
 export function SwipeRow({ children, onDelete, deleteLabel, onPress }: SwipeRowProps) {
   const colors = useThemeColors()
   const offset = useSharedValue(0)
+  const parked = useSharedValue(false)
+  // Plain state, because what depends on it is `pointerEvents`: while closed
+  // the button sits transparent over the end of the row, and an invisible
+  // control still takes touches — including the start of the next swipe.
+  const [open, setOpen] = useState(false)
+
+  const settle = useCallback((toOpen: boolean) => {
+    setOpen(toOpen)
+    if (toOpen) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+  }, [])
 
   const remove = useCallback(() => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
@@ -69,24 +85,31 @@ export function SwipeRow({ children, onDelete, deleteLabel, onPress }: SwipeRowP
     // row with no gesture at all.
     .activeOffsetX([-16, 16])
     .failOffsetY([-12, 12])
-    // Leftward only. There is nothing on the other side, and rubber-banding
-    // into empty space suggests there is.
     .onUpdate((event) => {
-      offset.value = Math.min(0, event.translationX)
+      const base = parked.value ? -ACTION_W : 0
+      // Never further than the button is wide, and never rightward past
+      // closed: there is nothing on either side of those, and moving into
+      // empty space suggests there is.
+      offset.value = Math.max(-ACTION_W, Math.min(0, base + event.translationX))
     })
     .onEnd((event) => {
-      // Distance OR speed. A deliberate push across counts, and so does a
-      // quick flick — asking for both is how a gesture ends up feeling stiff.
-      if (-offset.value >= COMMIT || event.velocityX < -900) {
-        offset.value = withTiming(-600, { duration: 200 }, () => runOnJS(remove)())
-        return
-      }
-      offset.value = withSpring(0, { damping: 20, stiffness: 220 })
+      const willOpen = -offset.value >= OPEN_AT || event.velocityX < -700
+      parked.value = willOpen
+      runOnJS(settle)(willOpen)
+      offset.value = withTiming(willOpen ? -ACTION_W : 0, { duration: SETTLE_MS })
     })
 
+  // A tap on an open row closes it rather than opening the dish behind it,
+  // which is what every list with a parked action does.
   const tap = Gesture.Tap()
     .maxDuration(500)
     .onEnd(() => {
+      if (parked.value) {
+        parked.value = false
+        runOnJS(settle)(false)
+        offset.value = withTiming(0, { duration: SETTLE_MS })
+        return
+      }
       if (onPress) runOnJS(press)()
     })
 
@@ -100,30 +123,39 @@ export function SwipeRow({ children, onDelete, deleteLabel, onPress }: SwipeRowP
     transform: [{ translateX: offset.value }],
     backgroundColor: colors.surface,
   }))
-  // The panel behind grows more certain as the row travels, reaching full
-  // strength exactly where letting go would delete.
-  const behind = useAnimatedStyle(() => ({
-    opacity: Math.min(1, -offset.value / COMMIT),
+  const action = useAnimatedStyle(() => ({
+    opacity: Math.min(1, -offset.value / (ACTION_W * 0.5)),
   }))
 
   return (
     <View className="overflow-hidden rounded-tile">
-      <Animated.View
-        style={behind}
-        pointerEvents="none"
-        className="absolute inset-0 flex-row items-center justify-end gap-2 rounded-tile bg-hibiscus pr-5"
-      >
-        <Text variant="label" style={{ color: colors.onHibiscus }}>
-          {deleteLabel}
-        </Text>
-        <Icon set="ui" name="delete" size={22} tintColor={colors.onHibiscus} />
-      </Animated.View>
-
       <GestureDetector gesture={gesture}>
         <View collapsable={false}>
           <Animated.View style={sliding}>{children}</Animated.View>
         </View>
       </GestureDetector>
+
+      <Animated.View
+        style={action}
+        pointerEvents={open ? 'auto' : 'none'}
+        className="absolute top-0 right-0 bottom-0 w-[96px]"
+      >
+        <Tappable
+          className="h-full w-full items-center justify-center gap-1 rounded-tile bg-hibiscus"
+          accessibilityRole="button"
+          accessibilityLabel={deleteLabel}
+          onPress={() => {
+            setOpen(false)
+            parked.value = false
+            offset.value = withTiming(-600, { duration: 200 }, () => runOnJS(remove)())
+          }}
+        >
+          <Icon set="ui" name="delete" size={20} tintColor={colors.onHibiscus} />
+          <Text variant="caption" style={{ color: colors.onHibiscus }}>
+            {deleteLabel}
+          </Text>
+        </Tappable>
+      </Animated.View>
     </View>
   )
 }

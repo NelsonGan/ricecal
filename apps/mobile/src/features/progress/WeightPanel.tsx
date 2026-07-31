@@ -226,7 +226,11 @@ export function WeightPanel({ range, buckets, summary, unit, onEdit }: WeightPan
               accessibilityLabel={t('progress:weight.sheetTitle')}
             >
               <Icon set="body" name="weighing-scale" size={17} />
-              <Text className="font-display text-[15px] leading-[20px] text-pandan-ink">
+              {/* `label` rather than the display face at 15px. Baloo carries
+                  ascender space this string does not use, so centring the two
+                  boxes left the word sitting visibly below the icon beside it;
+                  the body face is metrically what every other pill here uses. */}
+              <Text variant="label" className="text-pandan-ink">
                 {t('progress:weight.add')}
               </Text>
             </Squish>
