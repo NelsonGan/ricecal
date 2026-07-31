@@ -681,11 +681,16 @@ export async function resolveByLabel(
   db: SupabaseClient,
   label: NutritionLabel,
 ): Promise<Resolved | null> {
-  // "Nutrition Facts" is the heading, not the food. A panel photographed off a
-  // real packet usually carries the product name; a close-up of the panel
-  // alone does not, and the row should not be called after the table.
-  const heading = /^(nutrition|nutritional)\s*(facts|information|panel)?$/i
-  const name = heading.test(label.name.trim()) ? 'Packaged food' : label.name
+  // A close-up of the panel alone has no product name in it, and the row must
+  // not be called after the table or after the model's way of shrugging. Two
+  // shapes to catch: the heading copied out as if it were the food
+  // ("Nutrition Facts"), and a stand-in for not knowing ("Unidentified Food
+  // Product", which is what a real scan came back with). The prompt asks for
+  // null in that case; this is the belt to its braces, because there are
+  // endless ways to write "I could not read it" and only one null.
+  const unnamed =
+    /^(nutrition|nutritional)\s*(facts|information|panel)?$|\b(unidentified|unknown|unnamed|generic)\b/i
+  const name = unnamed.test(label.name.trim()) ? 'Packaged food' : label.name
 
   const food = await estimateRow(db, {
     name,

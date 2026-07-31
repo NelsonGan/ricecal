@@ -294,9 +294,13 @@ function shapeVision(raw: unknown): Vision {
       scene: 'packaged',
       items: [],
       label: {
-        name: String(raw_label.name ?? 'Packaged food')
-          .trim()
-          .slice(0, 120),
+        // `??` alone would let an empty string through, and "" is what a model
+        // gives when it half-follows the instruction to answer null.
+        name:
+          String(raw_label.name ?? '')
+            .trim()
+            .slice(0, 120)
+            .trim() || 'Packaged food',
         kcal: Math.round(clampNumber(raw_label.kcal, 0, 20000, 0)),
         carbs_g: clampNumber(raw_label.carbs_g, 0, 2000, 0),
         protein_g: clampNumber(raw_label.protein_g, 0, 2000, 0),
@@ -432,14 +436,16 @@ export async function analysePhoto(
           'meal is still a meal; say no_food only when there is no food. ' +
           // A label is not a thing to identify, it is a thing to read.
           'If the photo shows a NUTRITION FACTS panel or ingredients label, answer ' +
-          '{"nutrition_label": {"name": string, "kcal": number, "carbs_g": number, ' +
+          '{"nutrition_label": {"name": string|null, "kcal": number, "carbs_g": number, ' +
           '"protein_g": number, "fat_g": number, "fibre_g": number|null, ' +
           '"sugar_g": number|null, "sodium_mg": number|null, "serving": string|null}} and ' +
           'nothing else. Copy the figures for ONE SERVING exactly as printed — do not ' +
           'convert, round or estimate, and do not use the per-100g column when a per-serving ' +
           'column is there. "serving" is the panel\'s own words for one serving ' +
-          '("1 sachet (33g)"), "name" the product as printed on the pack. If the panel is ' +
-          'only readable per 100g, use those figures and say so in "serving". ' +
+          '("1 sachet (33g)"). "name" is the product as printed on the pack, and null when ' +
+          'the pack name is not in the photo — a close-up of the panel usually is not. ' +
+          'Never invent a stand-in like "Unidentified Food Product"; null is the answer. ' +
+          'If the panel is only readable per 100g, use those figures and say so in "serving". ' +
           'Otherwise respond with JSON only, matching: ' +
           '{"scene": "single|composite|packaged|unclear", ' +
           '"items": [{"name": string, "specific_query": string, "generic_query": string, ' +
