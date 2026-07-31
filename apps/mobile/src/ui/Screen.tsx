@@ -1,19 +1,31 @@
+import { cssInterop } from 'nativewind'
 import type { ReactNode } from 'react'
-import { KeyboardAvoidingView, Platform, type ScrollViewProps, View } from 'react-native'
-/**
- * Gesture-handler's ScrollView, not React Native's.
- *
- * They render the same thing; the difference is that this one's pan is a
- * gesture-handler recognizer, so a handler INSIDE it — the swipe-to-delete on
- * a diary row — can be arbitrated against the scroll rather than silently
- * losing to it. With the platform ScrollView the row's gesture never
- * activated at all: no drag, no error, nothing to debug.
- */
-import { ScrollView } from 'react-native-gesture-handler'
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  type ScrollViewProps,
+  View,
+} from 'react-native'
+import { ScrollView as RawGestureScrollView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
 import { cn } from './cn'
+
+/**
+ * Gesture-handler's ScrollView, taught `className`.
+ *
+ * NativeWind converts className to style for the components it ships support
+ * for, which are React Native's own. A third-party component takes `className`
+ * as an ordinary prop and drops it — no warning, no error, an element with
+ * none of the styling it was asked for. Without this registration the scroll
+ * view below loses its `flex-1`.
+ */
+const GestureScrollView = cssInterop(RawGestureScrollView, {
+  className: 'style',
+  contentContainerClassName: 'contentContainerStyle',
+})
 
 export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   children: ReactNode
@@ -23,6 +35,24 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   flush?: boolean
   /** Render children in a plain View instead of a ScrollView. */
   scroll?: boolean
+  /**
+   * Scroll with gesture-handler's ScrollView instead of the platform one, for
+   * a screen whose rows carry pan gestures of their own.
+   *
+   * The swipe-to-delete on a diary row needs it: inside the platform
+   * ScrollView its pan never activates at all — no drag, no error, nothing to
+   * debug — because the two are arbitrating through different systems. Inside
+   * this one they negotiate, and the row slides.
+   *
+   * Off by default because it costs the keyboard. The gesture ScrollView does
+   * not cooperate with `automaticallyAdjustKeyboardInsets` and the
+   * KeyboardAvoidingView around it: with a keyboard up it compresses its
+   * content to the remaining space rather than letting it scroll, which on the
+   * entry screen squeezed three macro rows into a ten-point band with their
+   * labels squashed out of existence. So a screen opts in, and the screens
+   * that opt in are the ones with no text field on them.
+   */
+  gestureScroll?: boolean
   /**
    * Extra points between the keyboard and the content, for the cases where
    * this view's frame does not start where it appears to.
@@ -67,15 +97,17 @@ export function Screen({
   footer,
   flush = false,
   scroll = true,
+  gestureScroll = false,
   keyboardOffset = 0,
   className,
   contentClassName,
   ...rest
 }: ScreenProps) {
   const insets = useSafeAreaInsets()
+  const Scroller = gestureScroll ? GestureScrollView : ScrollView
 
   const body = scroll ? (
-    <ScrollView
+    <Scroller
       className={cn('flex-1', contentClassName)}
       contentContainerStyle={{
         padding: flush ? 0 : spacing.gutter,
@@ -93,7 +125,7 @@ export function Screen({
       {...rest}
     >
       {children}
-    </ScrollView>
+    </Scroller>
   ) : (
     <View
       className={cn('flex-1', !flush && 'p-gutter', contentClassName)}
