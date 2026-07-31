@@ -166,13 +166,13 @@ from public.foods f
 where f.slug in ('fixture-nasi-lemak-ayam', 'fixture-teh-tarik', 'fixture-roti-canai');
 
 insert into public.food_logs (user_id, log_date, food_id, serving_id, quantity)
-select :'user_a', current_date,  f.id, s.id, 1
+select :'user_a', current_date, f.id, s.id, 1
 from public.foods f
 join public.food_servings s on s.food_id = f.id and s.is_default
 where f.slug = 'fixture-nasi-lemak-ayam';
 
 insert into public.food_logs (user_id, log_date, food_id, serving_id, quantity)
-select :'user_a', current_date,  f.id, s.id, 2
+select :'user_a', current_date, f.id, s.id, 2
 from public.foods f
 join public.food_servings s on s.food_id = f.id and s.is_default
 where f.slug = 'fixture-teh-tarik';

@@ -179,7 +179,7 @@ select is(
 -- A scanned entry pointing at the terminal archetype, wearing the model's
 -- specific name.
 insert into public.food_logs (user_id, log_date, food_id, serving_id, quantity, source, scan_id, display_label)
-select :'user_a', current_date,  f.id, s.id, 1, 'camera',
+select :'user_a', current_date, f.id, s.id, 1, 'camera',
        'e0000000-0000-4000-8000-000000000001', 'Nasi campur with rendang'
 from public.foods f
 join public.food_servings s on s.food_id = f.id and s.is_default
