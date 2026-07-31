@@ -33,7 +33,12 @@ import {
 /** The terminal archetype. Seeded with this exact id by seed_archetype_foods(). */
 export const TERMINAL_ARCHETYPE_ID = 'a0000000-0000-4000-8000-000000000000'
 
-/** "Within ~25%": a catalogue figure against the model's low..high band. */
+/**
+ * "Within ~25%". Used for the one comparison that is still worth making
+ * against the model's band: whether a decomposed plate's parts add up to the
+ * entry above them. A breakdown that does not sum to the total is worse than
+ * no breakdown, so that check stays strict.
+ */
 const BAND_SLACK = 0.25
 
 export type FoodRow = {
@@ -77,9 +82,6 @@ export const describe = (error: unknown): string => {
   }
   return String(error)
 }
-
-export const withinBand = (kcal: number, low: number, high: number): boolean =>
-  high > 0 && kcal >= low * (1 - BAND_SLACK) && kcal <= high * (1 + BAND_SLACK)
 
 // Quarter steps, not two decimals. The rescale ratio is one rough estimate
 // divided by another, so "1.08 servings" is precision the data does not have —
@@ -279,8 +281,12 @@ async function resolveByComponents(
     // and the catalogue names it "Satay, chicken", so requiring every term
     // misses rows that exist. Missing one means pricing that part from the
     // model's own guess, which for satay was double what a stick weighs in at.
+    //
+    // Not for a long phrase, though: "soft drink medium cup" has no catalogue
+    // answer under any matching rule, and the fuzzy arm spends seconds (and
+    // sometimes the whole statement timeout) proving it.
     let rows = await look('strict')
-    if (!rows.length) rows = await look('forgiving')
+    if (!rows.length && q.split(' ').length <= 3) rows = await look('forgiving')
 
     // The row whose ONE unit is closest in size to the model's one unit.
     //
@@ -484,6 +490,96 @@ async function resolveByComponents(
   }
 }
 
+/**
+ * Three durian are three, not "1 cup".
+ *
+ * When the photo is several of ONE countable thing, the entry's portion is the
+ * count and the food it points at has to be priced for one of them. Otherwise
+ * the row says "1 cup" over three seeds — wrong, and unfixable with the
+ * stepper beside it, because that stepper counts cups.
+ *
+ * The catalogue is rarely per-unit for these ("Durian, raw — 1 cup"), so the
+ * same trick the breakdown uses applies here: divide a row that holds many
+ * units, or price one unit from the model when nothing fits, and put the count
+ * in `quantity` where the user can edit it.
+ */
+async function resolveByCount(
+  db: SupabaseClient,
+  scanId: string,
+  item: VisionItem,
+  trace?: string[],
+): Promise<Resolved | null> {
+  if (item.count < 2) return null
+  const perUnit = Math.round((item.kcal_low + item.kcal_high) / 2 / item.count)
+  if (perUnit <= 0) return null
+
+  // The local name first, then the generic one: "har gow" is in no catalogue
+  // this app ships with, and "shrimp dumplings" is — at 230 kcal for six,
+  // which is what three of them should be priced from.
+  const tried = new Set<string>()
+  const queries = [item.specific_query, item.name, item.generic_query]
+    .map(usable)
+    .filter((q) => q && !tried.has(q) && tried.add(q))
+  if (!queries.length) return null
+
+  let rows: SearchRow[] = []
+  let q = queries[0]
+  for (const candidate of queries) {
+    q = candidate
+    rows = await search(db, candidate, 5, 'strict').catch(() => [] as SearchRow[])
+    if (!rows.length) {
+      rows = await search(db, candidate, 5, 'forgiving').catch(() => [] as SearchRow[])
+    }
+    if (rows.length) break
+  }
+
+  const fit = rows
+    .map((row) => {
+      const units = servingUnitCount(row.serving_label)
+      return { row, units, perUnit: row.kcal / units }
+    })
+    .filter((c) => c.perUnit >= perUnit * 0.25 && c.perUnit <= perUnit * 2)
+    .sort(
+      (a, b) => Math.abs(Math.log(a.perUnit / perUnit)) - Math.abs(Math.log(b.perUnit / perUnit)),
+    )[0]
+
+  if (fit?.units === 1) {
+    return {
+      tier: 1,
+      food: asFood(fit.row),
+      quantity: item.count,
+      displayLabel: usable(item.name) === usable(fit.row.name) ? null : item.name.slice(0, 120),
+    }
+  }
+
+  // Either a row measured in cups, or nothing usable. Both end in a row priced
+  // for one — from the catalogue when there is one, from the model when not.
+  const share = (value: number | null, units: number) =>
+    value === null ? 0 : Math.round((Number(value) / units) * 10) / 10
+  const unitRow = fit
+    ? await estimateRow(db, {
+        name: item.name,
+        kcal: Math.max(1, Math.round(fit.perUnit)),
+        carbs: share(fit.row.carbs_g, fit.units),
+        protein: share(fit.row.protein_g, fit.units),
+        fat: share(fit.row.fat_g, fit.units),
+      })
+    : await estimateRow(db, {
+        name: item.name,
+        kcal: perUnit,
+        carbs: Math.round((perUnit * 0.5) / 4),
+        protein: Math.round((perUnit * 0.2) / 4),
+        fat: Math.round((perUnit * 0.3) / 9),
+      })
+  if (!unitRow) {
+    trace?.push(`[cascade] count: no per-unit row for "${item.name}"`)
+    return null
+  }
+  if (!rows.length) await recordMisses(db, scanId, [q])
+
+  return { tier: fit ? 3 : 4, food: unitRow, quantity: item.count, displayLabel: item.name }
+}
+
 /** Tiers 1 and 3: the dish-level catalogue match. */
 async function resolveByDish(
   db: SupabaseClient,
@@ -529,21 +625,24 @@ async function resolveByDish(
   // wrong name. Skipped when the two already read the same.
   const label = usable(item.name) === usable(chosen.name) ? null : item.name.slice(0, 120)
 
-  if (withinBand(chosen.kcal, item.kcal_low, item.kcal_high)) {
-    // The catalogue row as-is. Never rescaled, never blended.
+  // A row the verifier says IS this dish, at one portion.
+  //
+  // The gate here used to be the model's calorie range, and that had it
+  // backwards: identity is what a vision model is good at and calories are
+  // what it is worst at. A plate of apple slices came back "400-500 kcal", so
+  // every sensible apple row in the catalogue looked wrong and the cascade
+  // fell through to the model's own figure — the bad number rejecting the good
+  // one. Within a factor of two and a half either way the row is simply taken.
+  const ratio = chosen.kcal > 0 ? llmMid / chosen.kcal : 1
+  if (ratio >= 0.5 && ratio <= 2.5) {
     return { tier: 1, food: asFood(chosen), quantity: 1, displayLabel: label }
   }
 
-  // Right identity, wrong amount — adjust `quantity`, never the macros.
-  //
-  // Only within touching distance of one portion, though. One photo is one
-  // plate, and past about half a portion either way the honest reading is not
-  // "two of these" but "the catalogue row is not the size of this dish" — a
-  // 1,275 kcal tray became `2 × Korean Fried Chicken` on a row where the user
-  // could plainly see one. Beyond the band this declines and tier 4 prices the
-  // plate at its own size, at one portion.
-  const ratio = chosen.kcal > 0 ? llmMid / chosen.kcal : 0
-  if (item.confidence >= 0.5 && ratio >= 0.5 && ratio <= 1.5) {
+  // Further out, the row is a different SIZE of the right thing — a per-piece
+  // row against a plateful, or a whole cake against a slice — which is what
+  // quantity is for. Still bounded: one photo is one plate, and `clampQuantity`
+  // will not claim more than three of anything.
+  if (item.confidence >= 0.5) {
     return {
       tier: 3,
       food: asFood(chosen),
@@ -704,6 +803,15 @@ export async function resolveItem(
   if (item.components.length >= 2) {
     resolved = await resolveByComponents(db, scanId, item, trace).catch((error) => {
       note('components stage threw', error)
+      return null
+    })
+  }
+  // Several of one thing: the count belongs in the portion, not in a breakdown
+  // of a plate that has no parts. Only reached when decomposition declined,
+  // which is the case for three durian and not for a tray of fried chicken.
+  if (!resolved && item.count >= 2) {
+    resolved = await resolveByCount(db, scanId, item, trace).catch((error) => {
+      note('count stage threw', error)
       return null
     })
   }

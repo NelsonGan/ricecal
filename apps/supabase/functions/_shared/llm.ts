@@ -46,6 +46,16 @@ export type VisionItem = {
   name: string
   specific_query: string
   generic_query: string
+  /**
+   * How many whole units of THIS dish are on the table, when the dish is a
+   * countable thing rather than a plate of something: three durian seeds, two
+   * roti canai, six dumplings. 1 for a bowl of laksa.
+   *
+   * It becomes the entry's own portion, which is the only reading that makes
+   * sense of the row: three durian logged as "1 cup" is both wrong and
+   * unfixable by the stepper next to it, because the stepper counts cups.
+   */
+  count: number
   components: VisionComponent[]
   serving_hint: string | null
   kcal_low: number
@@ -231,6 +241,7 @@ function shapeVision(raw: unknown): Vision {
         name: name.slice(0, 120),
         specific_query: String(i.specific_query ?? name).trim(),
         generic_query: String(i.generic_query ?? '').trim(),
+        count: Math.round(clampNumber(i.count, 1, 20, 1)),
         components: (Array.isArray(i.components) ? i.components : [])
           .flatMap((c): VisionComponent[] => {
             // Bare strings still parse (older mocks, stubborn models); they
@@ -250,6 +261,11 @@ function shapeVision(raw: unknown): Vision {
                 ? Math.min(n, 9999)
                 : null
             }
+            // A glass of water is not part of a meal's calories, and listing
+            // it made a durian into "Durian with water" — two components, so
+            // the plate was decomposed instead of counted, and one of its
+            // parts was a search for the word "water".
+            if (Number(o.kcal) === 0) return []
             return [
               {
                 name: name.slice(0, 120),
@@ -300,6 +316,7 @@ export async function analysePhoto(
           name: 'Nasi lemak with fried chicken',
           specific_query: 'nasi lemak ayam goreng',
           generic_query: 'nasi lemak',
+          count: 1,
           components: [
             { name: 'coconut rice', count: 1, kcal: 340, carbs_g: 55, protein_g: 6, fat_g: 11 },
             // Two of them, priced one at a time — the shape the breakdown edits in.
@@ -334,39 +351,43 @@ export async function analysePhoto(
           'You identify food in photos for a Malaysian calorie-tracking app. ' +
           'Respond with JSON only, matching: {"scene": "single|composite|packaged|unclear", ' +
           '"items": [{"name": string, "specific_query": string, "generic_query": string, ' +
-          '"components": [{"name": string, "count": number, "kcal": number, ' +
+          '"count": number, "components": [{"name": string, "count": number, "kcal": number, ' +
           '"carbs_g": number|null, "protein_g": number|null, "fat_g": number|null}], ' +
           '"serving_hint": string|null, ' +
           '"kcal_low": number, "kcal_high": number, "confidence": number, ' +
           '"suggested_edits": string[]}]}. ' +
-          'The photo is ONE logged meal: return ONE item named for the whole of it ' +
-          '("Korean fried chicken with rice and sides"), with every distinct part — main, ' +
-          'rice, sides, banchan, a drink on the tray — listed in "components". Only return ' +
-          'more than one item when the photo unambiguously shows separate meals (e.g. two ' +
-          "people's plates; max 6). " +
+          // ONE MEAL. Anything else is a diary with four rows for one lunch.
+          'The photo is ONE logged meal. Return ONE item, named as a local menu would print ' +
+          'it ("Korean fried chicken with rice and sides"). Only return more than one item ' +
+          "when the photo unambiguously shows separate meals — two people's plates. " +
           '"specific_query" is the local dish name as eaten ("char kuey teow"), ' +
           '"generic_query" a broader fallback ("fried noodles"). ' +
-          'Each component is one visible part of a composite meal: a plain searchable "name" ' +
-          '(rice, protein, side), a "count" of how many are visible, the "kcal" of ONE of ' +
-          'them, and the macro grams of ONE of them (null when unsure — never guess 0). ' +
-          'kcal is ALWAYS per single unit: two chicken wings are ONE component named ' +
-          '"chicken wing" with count 2 and the calories of a single wing — never one ' +
-          'component holding both. count is 1 for anything not repeated, including a scoop ' +
-          'of rice or a ladle of curry. Empty components for a single homogeneous dish. ' +
-          'List a component for EVERYTHING edible in the photo, including a drink. ' +
-          '"scene" is "composite" whenever the meal has distinct visible parts. ' +
-          '"serving_hint" is the visible portion ' +
-          'as a person would say it ("1 plate", "1 bowl", "large plate"). ' +
-          'kcal_low/high bound the calories of everything visible and MUST bracket the sum ' +
-          'of (kcal x count) over the components — count the skewers and the pieces before ' +
-          'you answer, and anchor on the portion in the photo, not the dish average. ' +
-          '"name" is what a local menu would print for this plate — the common name people ' +
-          'order it by, not a description of its colour. confidence is 0-1 for the ' +
-          'identification. ' +
-          '"suggested_edits" is up to 3 SHORT likely corrections for this exact dish, phrased as ' +
-          'a user would type them (e.g. "No sambal", "Half portion", "Extra rice") — pick what ' +
-          'people most often vary about this food. The ITEM carries no macro fields — only ' +
-          'components do.',
+          // COUNT vs COMPONENTS. The two ways a meal can have more than one
+          // thing in it, and the shapes the app can actually edit.
+          'Many of ONE food is the item\'s own "count": 3 durian seeds, 6 dumplings, 2 eggs ' +
+          '— leave "components" empty for those. Several DIFFERENT foods are components: ' +
+          'rice, the protein, each side, a drink with calories in it. Water, ice and an ' +
+          'empty glass are not food and are never listed. ' +
+          'A component carries a plain searchable "name", a "count" of how many are visible, ' +
+          'and the "kcal" and macro grams of ONE of them (null when unsure — never guess 0). ' +
+          'Two chicken wings are one component with count 2 priced for a single wing. ' +
+          // The two counting mistakes seen in testing, both worth a sentence:
+          // cut pieces read as several things, and a piece priced as a portion.
+          'Count whole units, not cut pieces: an egg sliced in half is one egg, an apple in ' +
+          'slices is one apple. And keep a piece the size of a piece — dumpling or satay ' +
+          'stick 40-60 kcal, potato wedge 30-45, prawn 10-20, apple slice 10-15, chicken ' +
+          'wing 80-100, boiled egg 70-80, slice of bread 70-90; a single-patty fast-food ' +
+          'burger 250-350, a double or Big Mac 550-800, medium fries 300-350, a can of soft ' +
+          'drink 140. Those are ranges to reason from, not answers to copy. ' +
+          // The remaining fields, one line each.
+          '"scene" is "composite" when the meal has distinct visible parts. "serving_hint" ' +
+          'is the portion as a person would say it ("1 plate", "1 bowl"). kcal_low/high ' +
+          'bound everything visible: they must equal the count times one unit for a counted ' +
+          'item, and bracket the sum of (kcal x count) over the components for a plate. ' +
+          'Anchor on the portion in the photo, not the dish average. "confidence" is 0-1 for ' +
+          'the identification. "suggested_edits" is up to 3 short corrections a user of THIS ' +
+          'dish would plausibly type ("No sambal", "Half portion", "Extra rice"). ' +
+          'The item carries no macro fields — only components do.',
       },
       {
         role: 'user',
@@ -405,6 +426,8 @@ export function foldMealItems(vision: Vision): Vision {
     name: `${primary.name} with ${rest.map((r) => r.name.toLowerCase()).join(', ')}`.slice(0, 120),
     specific_query: primary.specific_query,
     generic_query: primary.generic_query,
+    // One meal, whatever it was made of.
+    count: 1,
     // Each part is a component under its own full name, so the breakdown
     // resolves each one to its own catalogue row.
     // Each folded item becomes a component priced by its own band's middle,
@@ -566,15 +589,22 @@ export async function estimateNutrition(
       {
         role: 'user',
         content:
-          `${item.name}, portion: ${item.serving_hint ?? '1 serving'}.` +
+          `${item.count > 1 ? `${item.count} × ` : ''}${item.name}` +
+          `, portion: ${item.serving_hint ?? '1 serving'}.` +
           // The visible parts pin the estimate to the actual plate — "nasi
           // campur" alone could be anything; its component list is the meal.
+          //
+          // What is NOT passed is the vision call's own calorie range, and
+          // that is the whole point of this being a second call. Anchored with
+          // "expected around 400-500 kcal" the model answered 450 for a plate
+          // of apple slices; asked the same question without the anchor it
+          // answered 120, which is what nine slices of apple cost. A second
+          // opinion that has been told the first opinion is not one.
           (item.components.length
             ? ` Contains: ${item.components
                 .map((c) => (c.count > 1 ? `${c.count} × ${c.name}` : c.name))
                 .join(', ')}.`
-            : '') +
-          ` Expected around ${item.kcal_low}-${item.kcal_high} kcal.`,
+            : ''),
       },
     ],
     300,
@@ -679,6 +709,7 @@ export async function interpretInstruction(
             name,
             specific_query: name,
             generic_query: context.name,
+            count: 1,
             components: [],
             serving_hint: context.servingLabel,
             kcal_low: Math.round(context.kcal * 0.6),
