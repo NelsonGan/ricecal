@@ -1,6 +1,11 @@
 import { SCHEMA_VERSION } from '@ricecal/shared'
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
-import { focusManager, QueryClient } from '@tanstack/react-query'
+import {
+  defaultShouldDehydrateQuery,
+  focusManager,
+  type Query,
+  QueryClient,
+} from '@tanstack/react-query'
 import { AppState } from 'react-native'
 import { createMMKV } from 'react-native-mmkv'
 
@@ -67,4 +72,25 @@ export const persistOptions = {
    * rather than rehydrating an old shape into new code.
    */
   buster: SCHEMA_VERSION,
+  dehydrateOptions: {
+    /**
+     * Everything except the signed photo URLs.
+     *
+     * Those are credentials with an expiry measured in the hour, and this
+     * cache survives for a week — so writing them to disk stores a growing
+     * pile of strings that are wrong by the time anything reads them. With
+     * `offlineFirst` a rehydrated dead URL is even served before the refetch
+     * that would replace it, which renders as a plate that failed to load.
+     *
+     * It costs nothing to leave them out: a signed URL is one request, and
+     * the tile that wants it asks as it mounts. Cheap to redo, dangerous to
+     * keep — the same test every persisted cache entry should pass.
+     *
+     * Composed with the library's own predicate rather than replacing it.
+     * Supplying this option overrides the default outright, and the default is
+     * what keeps a failed or half-finished query off the disk.
+     */
+    shouldDehydrateQuery: (query: Query) =>
+      query.queryKey[0] !== 'photo' && defaultShouldDehydrateQuery(query),
+  },
 }

@@ -126,16 +126,13 @@ export type Food = {
 }
 
 /**
- * Where an entry is in the recognition round trip.
+ * Where an entry is in the recognition round trip — a row that is not yet an
+ * entry.
  *
- * Only ever set on a row that exists in the client's cache and not yet in the
- * database — an optimistic snap. Nothing in Postgres carries it.
- */
-/**
- * A row that is not yet an entry.
- *
- * `nofood` is the scan reporting that the photo had nothing edible in it — no
- * entry was written, and the row waits to be dismissed rather than counted.
+ * Only ever set on a row that exists in the client's cache and not in the
+ * database; nothing in Postgres carries it. `nofood` is the scan reporting
+ * that the photo had nothing edible in it, so no entry was written at all and
+ * the row waits to be dismissed rather than counted.
  */
 export type EntryStatus = 'analysing' | 'failed' | 'nofood'
 
@@ -153,12 +150,12 @@ export type Entry = {
    * A local `file://` uri, set only while a snap is in flight — before the
    * upload finishes there is no key to show, and the row still wants a picture.
    */
+  localPhotoUri?: string
   /**
    * Figures the user typed for this entry, per field. Present only where they
    * typed one — the macros above already carry the result of applying them.
    */
   overrides?: { kcal?: number; carbs?: number; protein?: number; fat?: number }
-  localPhotoUri?: string
   status?: EntryStatus
   /** Restored from storage: still working, but past the point of a progress bar. */
   restored?: boolean
