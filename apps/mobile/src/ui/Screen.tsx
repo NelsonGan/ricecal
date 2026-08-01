@@ -44,13 +44,15 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    * debug — because the two are arbitrating through different systems. Inside
    * this one they negotiate, and the row slides.
    *
-   * Off by default because it costs the keyboard. The gesture ScrollView does
-   * not cooperate with `automaticallyAdjustKeyboardInsets` and the
-   * KeyboardAvoidingView around it: with a keyboard up it compresses its
-   * content to the remaining space rather than letting it scroll, which on the
-   * entry screen squeezed three macro rows into a ten-point band with their
-   * labels squashed out of existence. So a screen opts in, and the screens
-   * that opt in are the ones with no text field on them.
+   * Off by default, and only Today asks for it — the only screen that renders
+   * a swipeable row.
+   *
+   * It was briefly on everywhere, and the entry screen's macro rows collapsed
+   * under a keyboard. That turned out to be `MacroBars` carrying its own
+   * `flex-1` into a column, which is fixed at the source; how much this scroll
+   * view contributed is not something the evidence separates, since swapping
+   * it back also made the symptom go. Left scoped because the narrow thing is
+   * the safe thing and nothing else needs it.
    */
   gestureScroll?: boolean
   /**

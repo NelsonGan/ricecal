@@ -68,10 +68,11 @@ export function DataSection() {
           </Text>
         </Text>
         <ProgressBar value={0.68} className="my-md" />
+        {/* Three across, so each asks for its third of the row. */}
         <View className="flex-row gap-md">
-          <MacroBar label="Carbs" amount="182g" value={0.74} tone="kaya" />
-          <MacroBar label="Protein" amount="61g" value={0.52} tone="hibiscus" />
-          <MacroBar label="Fat" amount="44g" value={0.63} tone="teh" />
+          <MacroBar className="flex-1" label="Carbs" amount="182g" value={0.74} tone="kaya" />
+          <MacroBar className="flex-1" label="Protein" amount="61g" value={0.52} tone="hibiscus" />
+          <MacroBar className="flex-1" label="Fat" amount="44g" value={0.63} tone="teh" />
         </View>
       </Card>
 

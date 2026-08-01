@@ -106,6 +106,13 @@ export type MacroBarProps = {
  * Carbs are kaya, protein hibiscus, fat teh tarik. Those pairings are fixed
  * across the app, so callers pass the tone rather than the component guessing
  * from the label.
+ *
+ * No `flex-1` of its own. It used to carry one, which reads as "share the
+ * space" and only means that in a row — three bars side by side. Stacked in a
+ * column it means "take the leftover HEIGHT, starting from nothing", and a
+ * column whose height is constrained then squeezes every bar to a few points
+ * with its labels squashed out. A caller laying these out in a row asks for
+ * `flex-1`; one stacking them says nothing and gets content height.
  */
 export function MacroBar({
   label,
@@ -123,7 +130,7 @@ export function MacroBar({
   const colors = useThemeColors()
 
   return (
-    <View className={cn('flex-1 gap-2', className)}>
+    <View className={cn('gap-2', className)}>
       <View className="flex-row items-center justify-between">
         <Text variant="label">{label}</Text>
         {editing ? (
@@ -142,7 +149,13 @@ export function MacroBar({
             autoFocus
             selectTextOnFocus
             accessibilityLabel={amountLabel ?? label}
-            className="min-w-[64px] text-right font-body-black text-[15px] leading-[20px] text-ink"
+            // No `leading-*`, and no padding. A native text field crops to its
+            // line box where `Text` lets a tall glyph overflow, so a line
+            // shorter than the font wants slices the type — which is what it
+            // did to the calorie figure at display size. Less pronounced at
+            // 15pt, and the same mistake.
+            className="min-w-[64px] text-right font-body-black text-[15px] text-ink"
+            style={{ paddingVertical: 0, paddingHorizontal: 0 }}
             cursorColor={colors.pandan}
             selectionColor={colors.pandan}
           />

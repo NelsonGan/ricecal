@@ -167,7 +167,9 @@ export default function TodayScreen() {
                       : t('logging:today.kcalLeft')
                 }
               />
-              <MacroBars eaten={eaten} targets={targets} showGoal={showGoals} />
+              {/* Sharing the row with the ring, so it asks for the space the
+                  ring leaves. Stacked callers do not. */}
+              <MacroBars className="flex-1" eaten={eaten} targets={targets} showGoal={showGoals} />
             </Tappable>
 
             {over ? (
