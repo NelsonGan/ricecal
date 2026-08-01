@@ -19,6 +19,7 @@ export const profile = {
     metric: 'Metric',
     imperial: 'Imperial',
     settings: 'SETTINGS',
+    personalisation: 'Personalisation',
     goals: 'Goals and targets',
     goalsValue: '{{kcal}} kcal',
     reminders: 'Reminders',
@@ -46,6 +47,26 @@ export const profile = {
     saved: 'Targets saved',
   },
 
+  /**
+   * Settings / personalisation. Meal times live here rather than on the
+   * reminders screen because they are a fact about the person — when they eat
+   * — that the reminders happen to read.
+   */
+  personalisation: {
+    title: 'Personalisation',
+    mealsTitle: 'MEAL TIMES',
+    /**
+     * What these times are for, now that they are only for one thing. They
+     * used to decide what the app assumed you were logging as well — that
+     * went with the `meal` column on an entry.
+     */
+    mealsNote: 'These are the times your reminders go off.',
+    editMeal: 'Change when {{meal}} is',
+    hour: 'Hour',
+    minute: 'Minute',
+    preview: 'Reminds at {{time}}',
+  },
+
   reminders: {
     title: 'Reminders',
     meals: 'MEALS',
@@ -54,13 +75,10 @@ export const profile = {
     water: 'Water every 2 hours',
     weighIn: 'Weigh in on Monday',
     weeklyReport: 'Weekly report',
-    quietHours: 'QUIET HOURS',
-    quietRange: '{{from}} to {{to}}',
     denied: 'Reminders need notification permission.',
     blockedTitle: 'Notifications are off',
     blockedBody: 'Turn them on in Settings and these switches will work.',
     openSettings: 'Open Settings',
-    quietNote: 'Nothing is sent inside these hours.',
     /** Copy for the notifications themselves, not for the screen. */
     push: {
       mealTitle: 'Time for {{meal}}',
@@ -72,7 +90,6 @@ export const profile = {
       weeklyTitle: 'Your week in food',
       weeklyBody: 'Seven days of logging, in one screen.',
     },
-    ramadanNote: 'During Ramadan, reminders follow sahur and iftar times.',
   },
 
   preferences: {

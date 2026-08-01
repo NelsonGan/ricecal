@@ -123,21 +123,21 @@ export type Food = {
   verified: boolean
   /** How often this user has logged it. From `user_food_stats`, when joined. */
   timesLogged?: number
-  /** Which meals they usually log it at. Same source. */
-  usualMeals?: Meal[]
 }
 
 /**
- * Where an entry is in the recognition round trip.
+ * Where an entry is in the recognition round trip — a row that is not yet an
+ * entry.
  *
- * Only ever set on a row that exists in the client's cache and not yet in the
- * database — an optimistic snap. Nothing in Postgres carries it.
+ * Only ever set on a row that exists in the client's cache and not in the
+ * database; nothing in Postgres carries it. `nofood` is the scan reporting
+ * that the photo had nothing edible in it, so no entry was written at all and
+ * the row waits to be dismissed rather than counted.
  */
-export type EntryStatus = 'analysing' | 'failed'
+export type EntryStatus = 'analysing' | 'failed' | 'nofood'
 
 export type Entry = {
   id: string
-  meal: Meal
   quantity: number
   /** ISO instant. Orders the rows inside a meal. */
   loggedAt: string
@@ -151,7 +151,14 @@ export type Entry = {
    * upload finishes there is no key to show, and the row still wants a picture.
    */
   localPhotoUri?: string
+  /**
+   * Figures the user typed for this entry, per field. Present only where they
+   * typed one — the macros above already carry the result of applying them.
+   */
+  overrides?: { kcal?: number; carbs?: number; protein?: number; fat?: number }
   status?: EntryStatus
+  /** Restored from storage: still working, but past the point of a progress bar. */
+  restored?: boolean
 
   foodId: string
   foodName: string
@@ -164,6 +171,21 @@ export type Entry = {
 
   /** Already costed by the view: the dish's macros x factor x quantity. */
   macros: Macros
+
+  /** Set when this entry came from a photo scan. */
+  scanId?: string
+  /**
+   * Up to three model-suggested corrections for this plate ("No sambal",
+   * "Half portion"), offered as chips over the fix-by-typing box.
+   */
+  suggestedEdits?: string[]
+  /**
+   * The numbers on this row are a guess, not a catalogue figure: a tier-4
+   * model estimate or a tier-5 archetype fallback. What the UI badges — an
+   * estimate has to be obvious and easy to correct.
+   */
+  isEstimate: boolean
+  isArchetype: boolean
 }
 
 export type Targets = {

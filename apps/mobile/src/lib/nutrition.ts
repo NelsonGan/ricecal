@@ -1,4 +1,4 @@
-import type { ActivityLevel, Entry, Goal, Macros, Meal, Targets } from '@/data/types'
+import type { ActivityLevel, Entry, Goal, Macros, Targets } from '@/data/types'
 
 /**
  * Arithmetic the screens share.
@@ -50,7 +50,62 @@ export function sumMacros(entries: readonly Entry[]): Macros {
   }
 }
 
-// `entriesForMeal` and `mealKcal` used to live here, for the card-per-meal day.
+/**
+ * What ONE entry counts as, from the three sources that decide it.
+ *
+ * The same rule, in the same order, as the `coalesce` in `food_log_details`:
+ * what the user typed, what the parts add up to, what the dish costs at this
+ * portion. It is written twice because the two answer at different moments —
+ * the view answers for the diary, this answers for the screen editing the
+ * entry, where a figure inside the save debounce and an ingredient the
+ * optimistic update has already moved are both true and neither has reached
+ * the database.
+ *
+ * Field by field, like the view: someone who corrects only the protein keeps
+ * the catalogue's carbs. An entry with no parts and nothing typed falls
+ * straight through to `portion`, which is almost every entry there is.
+ */
+export function entryTotals(input: {
+  /** Figures the user typed. A field left out is one they did not touch. */
+  typed?: Partial<Macros>
+  /** The plate's parts, when the scan broke it down. Empty is "it did not". */
+  parts?: readonly Macros[]
+  /** The dish at this portion — the catalogue's answer, and the fallback. */
+  portion: Macros
+}): Macros {
+  const parts = input.parts?.length ? sumMacroList(input.parts) : undefined
+  const typed = input.typed ?? {}
+  const pick = (field: keyof Macros) => typed[field] ?? parts?.[field] ?? input.portion[field]
+
+  return {
+    kcal: pick('kcal'),
+    carbs: pick('carbs'),
+    protein: pick('protein'),
+    fat: pick('fat'),
+  }
+}
+
+/** `sumMacros` for anything carrying macros directly rather than on `.macros`. */
+function sumMacroList(items: readonly Macros[]): Macros {
+  const total = items.reduce<Macros>(
+    (sum, item) => ({
+      kcal: sum.kcal + item.kcal,
+      carbs: sum.carbs + item.carbs,
+      protein: sum.protein + item.protein,
+      fat: sum.fat + item.fat,
+    }),
+    ZERO_MACROS,
+  )
+  return {
+    kcal: Math.round(total.kcal),
+    carbs: round1(total.carbs),
+    protein: round1(total.protein),
+    fat: round1(total.fat),
+  }
+}
+
+// `entriesForMeal`, `mealKcal` and `mealForHour` used to live here, for the
+// card-per-meal day and the selector that guessed which meal you were logging.
 // Today is one chronological list now and nothing groups by meal, so both are gone
 // — along with the second copy of `entriesForMeal` in `data/day.ts`, which had
 // drifted to a different sort order than this one.
@@ -59,16 +114,6 @@ export function sumMacros(entries: readonly Entry[]): Macros {
 export function progressOf(done: number, goal: number): number {
   if (goal <= 0) return 0
   return Math.min(1, Math.max(0, done / goal))
-}
-
-/**
- * The meal a "log food" tap should default to, from the wall clock. Snack is
- * never guessed: it is what the user picks when none of the three fit.
- */
-export function mealForHour(hour: number): Meal {
-  if (hour < 11) return 'breakfast'
-  if (hour < 16) return 'lunch'
-  return 'dinner'
 }
 
 export function bmi(heightCm: number, weightKg: number): number {

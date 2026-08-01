@@ -5,6 +5,7 @@ import { View } from 'react-native'
 import { today, useDayLog, useTargets } from '@/data'
 import { ItemRow, ScreenTitle } from '@/features/shared'
 import { sumMacros } from '@/lib/nutrition'
+import { portionLabel } from '@/lib/portions'
 import { Alert, Button, CalorieRing, Card, Icon, Screen, Text } from '@/ui'
 
 /** Enough to show the shape of a day without turning this into the diary. */
@@ -84,7 +85,11 @@ export default function PreviewScreen() {
             unit="kcal"
             // The serving, the same detail line the diary shows. It used to read
             // "Breakfast, sample" on rows that are the user's own food.
-            detail={`${entry.quantity > 1 ? `${entry.quantity} × ` : ''}${entry.servingLabel}`}
+            detail={portionLabel(
+              entry.quantity,
+              entry.servingLabel,
+              t('logging:detail.servingWord'),
+            )}
           />
         </Card>
       ))}

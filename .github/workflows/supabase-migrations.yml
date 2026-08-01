@@ -80,3 +80,35 @@ jobs:
             exit 1
           fi
           echo "schemas/ and migrations/ are in sync"
+
+  # The edge functions are TypeScript that nothing else in this repo checks.
+  # They live outside the pnpm workspace and Supabase deploys them by bundling,
+  # not by compiling — so a type error ships, and only shows up as a scan that
+  # answers wrong at runtime. `deno check` is the compiler the deployment does
+  # not run.
+  functions:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/supabase/functions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # One entrypoint per function, each with its own import map — which is
+      # what teaches Deno that `@supabase/supabase-js` is a dependency rather
+      # than a bare specifier. `_shared` is checked through both of them.
+      #
+      # `--no-lock` because a lockfile left in a function directory is one the
+      # Supabase bundler picks up: writing them once took the deployed script
+      # from 738 kB to 1.8 MB, which is cold-start time on every scan.
+      - name: Typecheck the edge functions
+        run: |
+          for fn in */; do
+            name="${fn%/}"
+            [ -f "$name/deno.json" ] || continue
+            echo "== $name"
+            deno check --no-lock --config "$name/deno.json" "$name/index.ts"
+          done

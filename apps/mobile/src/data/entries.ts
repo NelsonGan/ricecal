@@ -5,7 +5,7 @@ import { unwrap, unwrapOne } from './client'
 import { keys } from './keys'
 import { removeMealPhoto } from './photos'
 import { useUserId } from './session'
-import type { DayLog, EntrySource, IconRef, Meal } from './types'
+import type { DayLog, EntrySource, IconRef } from './types'
 import { toDbSource } from './types'
 
 /**
@@ -20,7 +20,6 @@ import { toDbSource } from './types'
 export type LogInput = {
   foodId: string
   servingId: string
-  meal: Meal
   quantity?: number
   note?: string
   source?: EntrySource
@@ -51,7 +50,6 @@ export function useLogFood() {
             user_id: userId,
             food_id: input.foodId,
             serving_id: input.servingId,
-            meal: input.meal,
             quantity: input.quantity ?? 1,
             note: input.note,
             source: toDbSource(input.source ?? 'search'),
@@ -87,8 +85,13 @@ export type EntryPatch = {
   logDate: string
   quantity?: number
   servingId?: string
-  meal?: Meal
   note?: string | null
+  /**
+   * What THIS entry is called. Written to `display_label`, which sits over the
+   * catalogue row's own name — so renaming a plate never renames the dish for
+   * anyone else who logged it.
+   */
+  name?: string
   /**
    * An illustration for this row, overriding whatever the food carries. `null`
    * clears it and falls back to the food's own.
@@ -111,6 +114,17 @@ export type EntryPatch = {
    * delete the object it leaves behind. Nothing else reads it.
    */
   currentPhotoPath?: string
+  /**
+   * Figures the user typed for THIS entry, each overriding what the catalogue
+   * computes. `null` clears one and goes back to the computed number; omitting
+   * a field leaves whatever is stored alone.
+   */
+  overrides?: {
+    kcal?: number | null
+    carbs?: number | null
+    protein?: number | null
+    fat?: number | null
+  }
 }
 
 export function useUpdateEntry() {
@@ -122,11 +136,12 @@ export function useUpdateEntry() {
       id,
       quantity,
       servingId,
-      meal,
       note,
+      name,
       icon,
       photoPath,
       currentPhotoPath,
+      overrides,
     }: EntryPatch) => {
       /**
        * The old object is orphaned when either kind of picture arrives to take
@@ -144,8 +159,8 @@ export function useUpdateEntry() {
           .update({
             ...(quantity === undefined ? {} : { quantity }),
             ...(servingId === undefined ? {} : { serving_id: servingId }),
-            ...(meal === undefined ? {} : { meal }),
             ...(note === undefined ? {} : { note }),
+            ...(name === undefined ? {} : { display_label: name }),
             // Both columns together: a check constraint refuses half an icon,
             // and `null` is how the row goes back to the food's own.
             //
@@ -170,6 +185,19 @@ export function useUpdateEntry() {
             ...((photoPath === undefined
               ? {}
               : { photo_path: photoPath, icon_set: null, icon_name: null }) as object),
+            // Typed figures, same cast and same reason as the icon columns
+            // above: generated types do not know a column until the migration
+            // that adds it has been reset into the local stack.
+            ...((overrides === undefined
+              ? {}
+              : {
+                  ...(overrides.kcal === undefined ? {} : { override_kcal: overrides.kcal }),
+                  ...(overrides.carbs === undefined ? {} : { override_carbs_g: overrides.carbs }),
+                  ...(overrides.protein === undefined
+                    ? {}
+                    : { override_protein_g: overrides.protein }),
+                  ...(overrides.fat === undefined ? {} : { override_fat_g: overrides.fat }),
+                }) as object),
           })
           .eq('id', id)
           .eq('user_id', userId)

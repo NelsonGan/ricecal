@@ -119,6 +119,19 @@ export default function MeScreen() {
           }
           onPress={() => router.push('/settings/goals')}
         />
+        {/* Above the reminders rather than below them: the times set here are
+            the hours a reminder fires at, so this is the row that decides what
+            the next one means.
+
+            No value beside it. The other rows summarise themselves in a word —
+            a budget, a count, a pair of units — and four meal times do not fit
+            in that space; naming only breakfast would be picking one at
+            random. */}
+        <SettingRow
+          icon={{ set: 'system', name: 'clock' }}
+          title={t('profile:home.personalisation')}
+          onPress={() => router.push('/settings/personalisation')}
+        />
         <SettingRow
           icon={{ set: 'system', name: 'bell' }}
           title={t('profile:home.reminders')}
@@ -142,11 +155,14 @@ export default function MeScreen() {
         />
       </Card>
 
-      <Card>
-        <Button variant="ghost" fullWidth onPress={() => setConfirmSignOut(true)}>
+      {/* Small and centred rather than a full-width control at the foot of the
+          screen. Signing out is the least likely thing anyone came here to do,
+          and at button size it read as the page's main action. */}
+      <View className="items-center">
+        <Button variant="ghost" size="sm" onPress={() => setConfirmSignOut(true)}>
           {t('profile:home.signOut')}
         </Button>
-      </Card>
+      </View>
 
       {/* Confirmed, because signing out of an app whose data lives on a server
           is not destructive but very much feels like it. */}

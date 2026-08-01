@@ -90,19 +90,17 @@ export default function TrialEnded() {
         />
       </Card>
 
-      {locked.map((entry) => {
-        return (
-          <Card key={entry.id}>
-            <ItemRow
-              title={entry.foodName}
-              icon={entry.icon}
-              value={entry.macros.kcal}
-              unit="kcal"
-              detail={t('paywall:ended.lockedEntry', { meal: t(`common:meal.${entry.meal}`) })}
-            />
-          </Card>
-        )
-      })}
+      {locked.map((entry) => (
+        <Card key={entry.id}>
+          <ItemRow
+            title={entry.foodName}
+            icon={entry.icon}
+            value={entry.macros.kcal}
+            unit="kcal"
+            detail={t('paywall:ended.lockedEntry')}
+          />
+        </Card>
+      ))}
     </Screen>
   )
 }

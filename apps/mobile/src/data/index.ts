@@ -49,6 +49,14 @@ export {
   useProfile,
   useUpdateProfile,
 } from './profile'
+export { RefiningProvider, useRefiningEntries } from './refining'
+export {
+  type EntryIngredient,
+  useEntryIngredients,
+  useRefineEntry,
+  useRemoveIngredient,
+  useUpdateIngredient,
+} from './scan'
 export { SelectedDateProvider, useSelectedDate } from './selected-date'
 export { SessionProvider, useSession, useUserId } from './session'
 export { useMealTimes, useSettings, useUpdateMealTime, useUpdateSettings } from './settings'

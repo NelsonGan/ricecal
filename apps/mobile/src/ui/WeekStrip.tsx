@@ -80,16 +80,6 @@ export function WeekStrip({ days, onSelectDay, className }: WeekStripProps) {
  */
 const GLASSES_PER_ROW = 8
 
-/**
- * A glass, as a share of the row.
- *
- * Eight of these plus the seven gaps `justify-between` puts between them come to
- * the full width, which is the arrangement this had when it could not wrap. Fixed
- * rather than `flex-1` because a glass has to be the same size on a short second
- * row as on a full first one.
- */
-const GLASS_WIDTH = 'w-[10.5%]'
-
 export type WaterTrackerProps = {
   filled: number
   goal: number
@@ -113,50 +103,56 @@ export function WaterTracker({
   glassLabel = (ordinal, total) => `Glass ${ordinal} of ${total}`,
   className,
 }: WaterTrackerProps) {
-  // A glass has no identity beyond its position, so the position becomes its
-  // id here rather than being passed as a key at the call site.
-  const glasses = Array.from({ length: goal }, (_, index) => ({
-    id: `glass-${index}`,
-    ordinal: index + 1,
-    isFilled: index < filled,
-    /** Tapping the last filled glass empties it; any other fills up to it. */
-    next: index === filled - 1 ? index : index + 1,
-  }))
-
-  // Blank cells to finish the row, keyed by position for the same reason the
-  // glasses are: a spacer has no identity beyond which column it holds.
-  const fillers = Array.from(
-    { length: (GLASSES_PER_ROW - (goal % GLASSES_PER_ROW)) % GLASSES_PER_ROW },
-    (_, index) => `gap-${index}`,
+  // Chunked into rows here rather than left to `flex-wrap`, which decided the
+  // wrap point from whatever happened to fit: a goal of sixteen came out as
+  // nine glasses and then seven, in two rows whose columns lined up with
+  // nothing. Every row now holds the same number of columns, and a short last
+  // row keeps them — the leftover glasses sit under the ones above rather than
+  // being spread across the width.
+  const rows = Array.from({ length: Math.ceil(goal / GLASSES_PER_ROW) }, (_, row) =>
+    Array.from({ length: GLASSES_PER_ROW }, (_, column) => {
+      const index = row * GLASSES_PER_ROW + column
+      if (index >= goal) return { id: `pad-${row}-${column}`, pad: true as const }
+      return {
+        id: `glass-${index}`,
+        pad: false as const,
+        ordinal: index + 1,
+        isFilled: index < filled,
+        /** Tapping the last filled glass empties it; any other fills up to it. */
+        next: index === filled - 1 ? index : index + 1,
+      }
+    }),
   )
 
   return (
-    <View className={cn('flex-row flex-wrap justify-between gap-y-2', className)}>
-      {glasses.map((glass) => (
-        <Squish
-          key={glass.id}
-          depth={0}
-          radius={12}
-          containerClassName={GLASS_WIDTH}
-          className={cn(
-            'h-[60px]',
-            glass.isFilled
-              ? 'bg-water'
-              : 'border-[3px] border-dashed border-water-soft-line bg-water-soft',
+    <View className={cn('gap-2', className)}>
+      {rows.map((row) => (
+        <View key={row[0].id} className="flex-row items-center gap-2">
+          {row.map((cell) =>
+            cell.pad ? (
+              // Holds a column so the row above and the row below line up. A
+              // spacer draws nothing and is invisible to a screen reader.
+              <View key={cell.id} className="flex-1" />
+            ) : (
+              <Squish
+                key={cell.id}
+                depth={0}
+                radius={12}
+                containerClassName="flex-1"
+                className={cn(
+                  'h-[60px]',
+                  cell.isFilled
+                    ? 'bg-water'
+                    : 'border-[3px] border-dashed border-water-soft-line bg-water-soft',
+                )}
+                onPress={onChange ? () => onChange(cell.next) : undefined}
+                accessibilityRole={onChange ? 'button' : undefined}
+                accessibilityLabel={glassLabel(cell.ordinal, goal)}
+                accessibilityState={{ selected: cell.isFilled }}
+              />
+            ),
           )}
-          onPress={onChange ? () => onChange(glass.next) : undefined}
-          accessibilityRole={onChange ? 'button' : undefined}
-          accessibilityLabel={glassLabel(glass.ordinal, goal)}
-          accessibilityState={{ selected: glass.isFilled }}
-        />
-      ))}
-
-      {/* `justify-between` sizes the gaps from whatever is on a line, so a goal of
-          twelve would otherwise spread its last four glasses across the full width
-          and line them up with none of the eight above. These draw nothing and only
-          hold columns. */}
-      {fillers.map((id) => (
-        <View key={id} className={GLASS_WIDTH} />
+        </View>
       ))}
     </View>
   )

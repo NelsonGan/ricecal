@@ -13,7 +13,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(15);
+select plan(17);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -38,13 +38,13 @@ from public.foods f
 where f.slug in ('fixture-nasi-lemak', 'fixture-roti-canai');
 
 -- A logs a plate; B logs one too.
-insert into public.food_logs (user_id, log_date, meal, food_id, serving_id)
-select :'user_a', current_date, 'lunch', f.id, s.id
+insert into public.food_logs (user_id, log_date, food_id, serving_id)
+select :'user_a', current_date, f.id, s.id
 from public.foods f join public.food_servings s on s.food_id = f.id and s.is_default
 where f.slug = 'fixture-nasi-lemak';
 
-insert into public.food_logs (user_id, log_date, meal, food_id, serving_id)
-select :'user_b', current_date, 'lunch', f.id, s.id
+insert into public.food_logs (user_id, log_date, food_id, serving_id)
+select :'user_b', current_date, f.id, s.id
 from public.foods f join public.food_servings s on s.food_id = f.id and s.is_default
 where f.slug = 'fixture-roti-canai';
 
@@ -109,8 +109,8 @@ select is(
 -- of each policy exists to stop.
 select throws_ok(
   format(
-    $q$insert into public.food_logs (user_id, log_date, meal, food_id, serving_id)
-       select %L, current_date, 'dinner', f.id, s.id
+    $q$insert into public.food_logs (user_id, log_date, food_id, serving_id)
+       select %L, current_date, f.id, s.id
        from public.foods f join public.food_servings s
          on s.food_id = f.id and s.is_default
        where f.slug = 'fixture-roti-canai'$q$,
@@ -200,6 +200,44 @@ select is(
   (select display_name from public.profiles where id = :'user_b'),
   'b',
   'and the row it aimed at is genuinely unchanged'
+);
+
+
+-- Functions the client may not call at all ------------------------------------
+--
+-- Postgres grants EXECUTE to PUBLIC on a newly created function, and `anon`
+-- inherits from PUBLIC. Every schema file that declares one of these revokes
+-- that, and for a while none of those revokes reached a migration — so the
+-- database allowed what the source said it forbade, and only a second lock
+-- (no grant on `foods`) was stopping anyone.
+--
+-- Asserted here because it is invisible: the app works either way, and the
+-- functions do not fail until someone widens a table grant somewhere else.
+
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.proname in ('upsert_estimate_food', 'estimate_food_backlog',
+                       'seed_archetype_foods', 'set_ingredient_quantity',
+                       'remove_ingredient')
+     and pg_catalog.has_function_privilege('public', p.oid, 'EXECUTE')),
+  0,
+  'the scan write functions are not executable by PUBLIC'
+);
+
+-- And the two the client legitimately calls still are. Revoking is only right
+-- if the ingredient steppers keep working.
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.proname in ('set_ingredient_quantity', 'remove_ingredient')
+     and pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE')),
+  2,
+  'but a signed-in user can still edit the parts of their own plate'
 );
 
 
