@@ -12,6 +12,17 @@ export type MacroBarsProps = {
   eaten: Macros
   targets: Pick<Targets, 'carbs' | 'protein' | 'fat'>
   /**
+   * Makes each amount tappable, for the one screen where these figures are
+   * editable — the entry a user is correcting. Everywhere else they are a
+   * reading of something already decided.
+   */
+  onEdit?: (macro: 'carbs' | 'protein' | 'fat') => void
+  /** Which row is being typed into, and what has been typed so far. */
+  editing?: 'carbs' | 'protein' | 'fat' | null
+  editingValue?: string
+  onChangeAmount?: (value: string) => void
+  onDoneAmount?: () => void
+  /**
    * Reads "120/203g" instead of "120g".
    *
    * The bar has always shown the share of the day's allowance and never what the
@@ -28,8 +39,24 @@ export type MacroBarsProps = {
  * Always in that order and always in those colours: the same triple appears on
  * Today, on a food's detail and in the weekly report, and a reader learns the
  * colour once.
+ *
+ * Like `MacroBar`, it carries no `flex-1`. On Today it sits beside the ring
+ * and shares a row, so that screen asks for one; inside the entry card it is
+ * stacked, where `flex-1` means "take the leftover height from a basis of
+ * nothing" — and a card whose height is bounded, which is what a keyboard
+ * does, then collapsed all three bars into a band with their labels gone.
  */
-export function MacroBars({ eaten, targets, showGoal = false, className }: MacroBarsProps) {
+export function MacroBars({
+  eaten,
+  targets,
+  showGoal = false,
+  onEdit,
+  editing = null,
+  editingValue = '',
+  onChangeAmount,
+  onDoneAmount,
+  className,
+}: MacroBarsProps) {
   const { t } = useTranslation()
 
   const rows = [
@@ -51,7 +78,7 @@ export function MacroBars({ eaten, targets, showGoal = false, className }: Macro
   ] as const
 
   return (
-    <View className={cn('flex-1 gap-2.5', className)}>
+    <View className={cn('gap-2.5', className)}>
       {rows.map((row) => (
         <MacroBar
           key={row.key}
@@ -66,6 +93,11 @@ export function MacroBars({ eaten, targets, showGoal = false, className }: Macro
           }
           value={progressOf(row.grams, row.goal)}
           tone={row.tone}
+          onPressAmount={onEdit ? () => onEdit(row.key) : undefined}
+          editing={editing === row.key}
+          editingValue={editingValue}
+          onChangeAmount={onChangeAmount}
+          onDoneAmount={onDoneAmount}
         />
       ))}
     </View>

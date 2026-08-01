@@ -42,7 +42,12 @@ export const paywall = {
     days: 'DAYS',
     meals: 'MEALS',
     kgDown: 'KG DOWN',
-    lockedEntry: '{{meal}}, locked',
+    /**
+     * The detail line on an entry the trial has put out of reach. It used to
+     * name the meal — "Lunch, locked" — and an entry has no meal any more; the
+     * interpolation left behind rendered as ", locked".
+     */
+    lockedEntry: 'Locked',
     resume: 'Continue with Pro',
     browse: 'Keep browsing free',
   },

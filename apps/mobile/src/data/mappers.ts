@@ -1,4 +1,4 @@
-import type { Entry, Food, FoodDetailsRow, FoodLogRow, IconRef, Meal, Serving } from './types'
+import type { Entry, Food, FoodDetailsRow, FoodLogRow, IconRef, Serving } from './types'
 import { fromDbSource } from './types'
 
 /**
@@ -58,7 +58,7 @@ export function toServings(json: FoodDetailsRow['servings']): Serving[] {
   })
 }
 
-export type FoodStats = { timesLogged: number; meals: Meal[] }
+export type FoodStats = { timesLogged: number }
 
 export function toFood(row: FoodDetailsRow, stats?: FoodStats | undefined): Food {
   const servings = toServings(row.servings)
@@ -85,14 +85,12 @@ export function toFood(row: FoodDetailsRow, stats?: FoodStats | undefined): Food
     },
     verified: row.verified ?? false,
     timesLogged: stats?.timesLogged,
-    usualMeals: stats?.meals,
   }
 }
 
 export function toEntry(row: FoodLogRow): Entry {
   return {
     id: row.id ?? '',
-    meal: row.meal ?? 'snack',
     quantity: Number(row.quantity ?? 1),
     loggedAt: row.logged_at ?? new Date(0).toISOString(),
     logDate: row.log_date ?? '',
@@ -114,5 +112,29 @@ export function toEntry(row: FoodLogRow): Entry {
       protein: Number(row.protein_g ?? 0),
       fat: Number(row.fat_g ?? 0),
     },
+
+    // Only the fields that were actually typed. The macros above are what to
+    // SHOW; these are what the editor needs to know it must not clear.
+    overrides: {
+      ...(row.override_kcal === null || row.override_kcal === undefined
+        ? {}
+        : { kcal: Number(row.override_kcal) }),
+      ...(row.override_carbs_g === null || row.override_carbs_g === undefined
+        ? {}
+        : { carbs: Number(row.override_carbs_g) }),
+      ...(row.override_protein_g === null || row.override_protein_g === undefined
+        ? {}
+        : { protein: Number(row.override_protein_g) }),
+      ...(row.override_fat_g === null || row.override_fat_g === undefined
+        ? {}
+        : { fat: Number(row.override_fat_g) }),
+    },
+
+    scanId: row.scan_id ?? undefined,
+    suggestedEdits: Array.isArray(row.suggested_edits)
+      ? row.suggested_edits.filter((edit): edit is string => typeof edit === 'string')
+      : undefined,
+    isEstimate: row.is_estimate ?? false,
+    isArchetype: row.is_archetype ?? false,
   }
 }

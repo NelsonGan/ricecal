@@ -1,3 +1,4 @@
+import { cssInterop } from 'nativewind'
 import type { ReactNode } from 'react'
 import {
   KeyboardAvoidingView,
@@ -6,10 +7,25 @@ import {
   type ScrollViewProps,
   View,
 } from 'react-native'
+import { ScrollView as RawGestureScrollView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
 import { cn } from './cn'
+
+/**
+ * Gesture-handler's ScrollView, taught `className`.
+ *
+ * NativeWind converts className to style for the components it ships support
+ * for, which are React Native's own. A third-party component takes `className`
+ * as an ordinary prop and drops it — no warning, no error, an element with
+ * none of the styling it was asked for. Without this registration the scroll
+ * view below loses its `flex-1`.
+ */
+const GestureScrollView = cssInterop(RawGestureScrollView, {
+  className: 'style',
+  contentContainerClassName: 'contentContainerStyle',
+})
 
 export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   children: ReactNode
@@ -19,6 +35,26 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   flush?: boolean
   /** Render children in a plain View instead of a ScrollView. */
   scroll?: boolean
+  /**
+   * Scroll with gesture-handler's ScrollView instead of the platform one, for
+   * a screen whose rows carry pan gestures of their own.
+   *
+   * The swipe-to-delete on a diary row needs it: inside the platform
+   * ScrollView its pan never activates at all — no drag, no error, nothing to
+   * debug — because the two are arbitrating through different systems. Inside
+   * this one they negotiate, and the row slides.
+   *
+   * Off by default, and only Today asks for it — the only screen that renders
+   * a swipeable row.
+   *
+   * It was briefly on everywhere, and the entry screen's macro rows collapsed
+   * under a keyboard. That turned out to be `MacroBars` carrying its own
+   * `flex-1` into a column, which is fixed at the source; how much this scroll
+   * view contributed is not something the evidence separates, since swapping
+   * it back also made the symptom go. Left scoped because the narrow thing is
+   * the safe thing and nothing else needs it.
+   */
+  gestureScroll?: boolean
   /**
    * Extra points between the keyboard and the content, for the cases where
    * this view's frame does not start where it appears to.
@@ -63,15 +99,17 @@ export function Screen({
   footer,
   flush = false,
   scroll = true,
+  gestureScroll = false,
   keyboardOffset = 0,
   className,
   contentClassName,
   ...rest
 }: ScreenProps) {
   const insets = useSafeAreaInsets()
+  const Scroller = gestureScroll ? GestureScrollView : ScrollView
 
   const body = scroll ? (
-    <ScrollView
+    <Scroller
       className={cn('flex-1', contentClassName)}
       contentContainerStyle={{
         padding: flush ? 0 : spacing.gutter,
@@ -89,7 +127,7 @@ export function Screen({
       {...rest}
     >
       {children}
-    </ScrollView>
+    </Scroller>
   ) : (
     <View
       className={cn('flex-1', !flush && 'p-gutter', contentClassName)}

@@ -13,7 +13,13 @@ import { type ReactNode, useEffect } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
-import { PendingSnapProvider, SelectedDateProvider, SessionProvider, useSession } from '@/data'
+import {
+  PendingSnapProvider,
+  RefiningProvider,
+  SelectedDateProvider,
+  SessionProvider,
+  useSession,
+} from '@/data'
 import { LoginLinkHandler } from '@/features/auth'
 import { OnboardingDraftProvider } from '@/features/onboarding'
 import { initOnlineManager } from '@/lib/online'
@@ -69,15 +75,20 @@ export default Sentry.wrap(function RootLayout() {
                     so it survives the app being killed mid-flow. */}
                 <OnboardingDraftScope>
                   <PendingSnapProvider>
-                    {/* Outside the navigator so a toast survives navigation — a
-                        "saved" confirmation usually fires as the screen that
-                        triggered it pops. */}
-                    <ToastProvider offset={NAV_BAR_HEIGHT}>
-                      {/* Under the toast because its one job on failure is to
-                          say the link had expired. Renders nothing. */}
-                      <LoginLinkHandler />
-                      <RootStack />
-                    </ToastProvider>
+                    {/* Entries with a fix-by-typing correction in flight —
+                        same shape as pending snaps: the work outlives the
+                        screen that started it. */}
+                    <RefiningProvider>
+                      {/* Outside the navigator so a toast survives navigation — a
+                          "saved" confirmation usually fires as the screen that
+                          triggered it pops. */}
+                      <ToastProvider offset={NAV_BAR_HEIGHT}>
+                        {/* Under the toast because its one job on failure is to
+                            say the link had expired. Renders nothing. */}
+                        <LoginLinkHandler />
+                        <RootStack />
+                      </ToastProvider>
+                    </RefiningProvider>
                   </PendingSnapProvider>
                 </OnboardingDraftScope>
               </SelectedDateProvider>

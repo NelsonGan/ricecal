@@ -1,12 +1,11 @@
 import { subDays } from 'date-fns'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
   dateKey,
-  type Meal,
   useDay,
   useDayLog,
   useLogFood,
@@ -18,7 +17,7 @@ import {
 import { FoodSearchPanel, InlineCamera, QuickAction } from '@/features/logging'
 import { ItemRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
-import { mealForHour, sumMacros } from '@/lib/nutrition'
+import { sumMacros } from '@/lib/nutrition'
 import { useThemeColors } from '@/theme/useTheme'
 import { Icon, IconButton, SheetSurface, Tappable, Text } from '@/ui'
 
@@ -39,7 +38,6 @@ export default function LogSheet() {
   const { t } = useTranslation(['logging', 'common'])
   const router = useRouter()
   const goBack = useBack('/today')
-  const params = useLocalSearchParams<{ meal?: Meal }>()
   const logFood = useLogFood()
   const snapFood = useSnapFood()
   const { selectedDate } = useSelectedDate()
@@ -59,22 +57,18 @@ export default function LogSheet() {
   const toggle = (next: 'camera' | 'search') =>
     setPanel((current) => (current === next ? null : next))
 
-  // The meal comes from whichever card was tapped, or from the clock when the
-  // FAB was used and there is nothing else to go on.
-  const meal: Meal = params.meal ?? mealForHour(new Date().getHours())
-  const mealName = t(`common:meal.${meal}`)
   const left = (targets?.kcal ?? 0) - sumMacros(day.entries).kcal
 
   // The last three dishes logged at this meal, newest first. Recency rather than
   // frequency: what someone had for breakfast this week is a better guess at
   // what is on the plate than what they have had most often since installing.
-  const { data: recent = [] } = useRecentFoods(meal)
+  const { data: recent = [] } = useRecentFoods()
 
   // Yesterday is a second day query. Cheap, cached, and the only way to offer
   // "repeat" without keeping every day in memory the way the mock store did.
   const yesterdayKey = dateKey(subDays(new Date(selectedDate), 1))
   const { data: yesterday } = useDay(yesterdayKey)
-  const yesterdayEntries = (yesterday?.entries ?? []).filter((entry) => entry.meal === meal)
+  const yesterdayEntries = yesterday?.entries ?? []
 
   /**
    * A dish was picked out of the inline search.
@@ -91,10 +85,10 @@ export default function LogSheet() {
    * dismissing before a search screen pushed in behind it.
    */
   const openFood = (foodId: string) =>
-    router.replace({ pathname: '/log/food/[id]', params: { id: foodId, meal } })
+    router.replace({ pathname: '/log/food/[id]', params: { id: foodId } })
 
   const add = (foodId: string, servingId: string) => {
-    logFood.mutate({ foodId, servingId, meal, logDate: selectedDate, source: 'quickAdd' })
+    logFood.mutate({ foodId, servingId, logDate: selectedDate, source: 'quickAdd' })
     goBack()
   }
 
@@ -104,7 +98,6 @@ export default function LogSheet() {
         foodId: entry.foodId,
         servingId: entry.servingId,
         quantity: entry.quantity,
-        meal,
         logDate: selectedDate,
         source: 'quickAdd',
       })
@@ -122,7 +115,7 @@ export default function LogSheet() {
           design puts it. */}
       <View className="flex-row items-center justify-between gap-3">
         <Text variant="subtitle" className="flex-1" numberOfLines={1}>
-          {t('logging:selector.title', { meal: mealName.toLowerCase() })}
+          {t('logging:selector.title')}
         </Text>
         <Text variant="caption">
           {t('logging:selector.remaining', { count: Math.max(0, left) })}
@@ -153,7 +146,7 @@ export default function LogSheet() {
         // ignore it. See `useSnapFood`.
         <InlineCamera
           onCapture={(photoUri) => {
-            snapFood({ meal, photoUri, logDate: selectedDate })
+            snapFood({ photoUri, logDate: selectedDate })
             goBack()
           }}
         />

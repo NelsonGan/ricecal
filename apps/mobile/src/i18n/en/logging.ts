@@ -21,6 +21,36 @@ export const logging = {
     /** A snapped plate whose dish is still being worked out. */
     analysing: 'Reading your plate',
     analysingHint: 'Counting once it knows what this is',
+    /**
+     * The rotating status line over the scan progress bar. Stages, not facts:
+     * the client cannot see where the scan actually is, so these describe the
+     * cascade truthfully without claiming to track it.
+     */
+    scanningRead: 'Reading your plate…',
+    scanningMatch: 'Finding it in the catalogue…',
+    scanningPortion: 'Sizing up the portion…',
+    scanningCount: 'Counting the calories…',
+    /** The same bar while a fix-by-typing correction is applied to a row. */
+    refiningApply: 'Applying your fix…',
+    refiningCount: 'Recounting the calories…',
+    /**
+     * The notification, posted only when the scan lands while the app is in
+     * the background — a plate takes half a minute to read and nobody should
+     * have to watch it.
+     */
+    scanDoneTitle: 'Your plate is counted',
+    scanDoneBody: '{{food}} · {{kcal}} kcal',
+    scanDoneBodyPlain: 'Tap to see what was on it.',
+    /** On the panel behind a row being swiped away, and to a screen reader. */
+    deleteEntry: 'Delete',
+    /**
+     * The photo had nothing edible in it. Nothing was logged — the row is
+     * there to say so and to be dismissed, which is why the copy is not an
+     * apology and not an error.
+     */
+    noFoodTitle: 'No food in this photo',
+    noFoodHint: 'Nothing was added to your day.',
+    noFoodDismiss: 'Dismiss',
     analysisFailedTitle: 'Could not read this one',
     analysisFailedHint: 'Tap to pick the dish yourself',
     emptyTitle: 'Nothing logged yet',
@@ -32,7 +62,7 @@ export const logging = {
   },
 
   selector: {
-    title: 'Add to {{meal}}',
+    title: 'Log a dish',
     remaining: '{{count}} left',
     snap: 'Snap',
     search: 'Search',
@@ -67,8 +97,8 @@ export const logging = {
   },
 
   added: {
-    toast: 'Added to {{meal}}, {{kcal}} kcal',
-    removedToast: 'Removed from {{meal}}',
+    toast: 'Added, {{kcal}} kcal',
+    removedToast: 'Removed from today',
   },
 
   search: {
@@ -112,17 +142,49 @@ export const logging = {
     nutrientsUnknown: 'No figures recorded for this dish yet. Its calories and macros are.',
     fixTitle: 'Fix it by typing',
     fixPlaceholder: 'no sambal, and it was half a plate',
-    fixSend: 'Apply correction',
-    fixApplied: 'Updated from your note',
-    /** Saving an edit to an entry already in the diary. */
-    updated: 'Entry updated',
+    /**
+     * The send button inside the field, on a scanned entry only. Icon-only, so
+     * this is what a screen reader announces.
+     */
+    fixSend: 'Send this correction',
+    fixNotApplied: 'Could not apply that — try rewording it',
+    /** The scanned plate's ingredient breakdown. */
+    plateTitle: 'INGREDIENTS',
+    plateTotal: 'Total',
+    /**
+     * How many of an ingredient are on the plate. Shown at one as well: a
+     * count that appears only above one reads as a badge on the busy rows
+     * rather than as the amount every row has.
+     */
+    times: '× {{amount}}',
+    /** The per-ingredient portion steppers, and the one that empties a row. */
+    lessOf: 'Less {{name}}',
+    moreOf: 'More {{name}}',
+    removeOf: 'Remove {{name}}',
+    /**
+     * Typing a number in by hand, for the dish the app got close but not right
+     * — off a packet, off a recipe, off the kitchen scale.
+     *
+     * Each figure is edited where it is read: the number becomes a field in
+     * place, so this labels a control rather than heading a form. The three
+     * macros need no label of their own — the bar beside each one already
+     * carries its name.
+     */
+    editKcal: 'Edit the calories',
+    /** Renaming one logged entry, which does not rename the dish. */
+    nameField: 'What to call this',
+    numbersReset: 'Use the app’s figures',
+    /**
+     * Stands in for a serving label the catalogue import left unusable — a
+     * measurement ("1 medium paper (8-5/8\" dia)") or a code ("383 GRM").
+     */
+    servingWord: 'serving',
     quickFix: {
       halfPortion: 'Half portion',
       noSambal: 'No sambal',
       addEgg: 'Add an egg',
       extraRice: 'Extra rice',
     },
-    mealLabel: 'MEAL',
     editByHand: 'Edit the details by hand',
     deleteEntry: 'Delete this entry',
     deleteTitle: 'Delete this entry?',

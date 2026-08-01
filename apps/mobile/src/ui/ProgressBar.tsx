@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { View } from 'react-native'
+import { TextInput, View } from 'react-native'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -8,7 +8,9 @@ import Animated, {
 } from 'react-native-reanimated'
 
 import { motion } from '@/theme/tokens'
+import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
+import { Tappable } from './Tappable'
 import { Text } from './Text'
 
 const fills = {
@@ -79,6 +81,22 @@ export type MacroBarProps = {
   amount: string
   value: number
   tone?: ProgressTone
+  /** Makes the amount tappable — for a figure the user is allowed to correct. */
+  onPressAmount?: () => void
+  /** What a screen reader says about that control, if not "<label> <amount>". */
+  amountLabel?: string
+  /**
+   * Puts a caret in the amount instead of a number.
+   *
+   * The field IS the amount — same face, same size, same place, no box around
+   * it — so the row does not change shape when it becomes editable and nothing
+   * new appears anywhere else on the card. `editingValue` is what is typed so
+   * far, empty meaning "still the figure shown".
+   */
+  editing?: boolean
+  editingValue?: string
+  onChangeAmount?: (value: string) => void
+  onDoneAmount?: () => void
   className?: string
 }
 
@@ -88,15 +106,77 @@ export type MacroBarProps = {
  * Carbs are kaya, protein hibiscus, fat teh tarik. Those pairings are fixed
  * across the app, so callers pass the tone rather than the component guessing
  * from the label.
+ *
+ * No `flex-1` of its own. It used to carry one, which reads as "share the
+ * space" and only means that in a row — three bars side by side. Stacked in a
+ * column it means "take the leftover HEIGHT, starting from nothing", and a
+ * column whose height is constrained then squeezes every bar to a few points
+ * with its labels squashed out. A caller laying these out in a row asks for
+ * `flex-1`; one stacking them says nothing and gets content height.
  */
-export function MacroBar({ label, amount, value, tone = 'kaya', className }: MacroBarProps) {
+export function MacroBar({
+  label,
+  amount,
+  value,
+  tone = 'kaya',
+  onPressAmount,
+  amountLabel,
+  editing = false,
+  editingValue = '',
+  onChangeAmount,
+  onDoneAmount,
+  className,
+}: MacroBarProps) {
+  const colors = useThemeColors()
+
   return (
-    <View className={cn('flex-1 gap-2', className)}>
-      <View className="flex-row justify-between">
+    <View className={cn('gap-2', className)}>
+      <View className="flex-row items-center justify-between">
         <Text variant="label">{label}</Text>
-        <Text variant="label" className="text-muted">
-          {amount}
-        </Text>
+        {editing ? (
+          // Typed in place. The input carries the same class list as the text
+          // it replaces, so the only thing that changes on the row is that
+          // there is a caret in it.
+          <TextInput
+            value={editingValue}
+            onChangeText={onChangeAmount}
+            onBlur={onDoneAmount}
+            onSubmitEditing={onDoneAmount}
+            placeholder={amount}
+            placeholderTextColor={colors.faint}
+            keyboardType="decimal-pad"
+            returnKeyType="done"
+            autoFocus
+            selectTextOnFocus
+            accessibilityLabel={amountLabel ?? label}
+            // No `leading-*`, and no padding. A native text field crops to its
+            // line box where `Text` lets a tall glyph overflow, so a line
+            // shorter than the font wants slices the type — which is what it
+            // did to the calorie figure at display size. Less pronounced at
+            // 15pt, and the same mistake.
+            className="min-w-[64px] text-right font-body-black text-[15px] text-ink"
+            style={{ paddingVertical: 0, paddingHorizontal: 0 }}
+            cursorColor={colors.pandan}
+            selectionColor={colors.pandan}
+          />
+        ) : onPressAmount ? (
+          // The number itself is the control. A macro that can be corrected
+          // should be corrected where it is read, not in a second form
+          // underneath repeating all four figures back.
+          <Tappable
+            onPress={onPressAmount}
+            accessibilityRole="button"
+            accessibilityLabel={amountLabel ?? `${label} ${amount}`}
+          >
+            <Text variant="label" className="text-muted">
+              {amount}
+            </Text>
+          </Tappable>
+        ) : (
+          <Text variant="label" className="text-muted">
+            {amount}
+          </Text>
+        )}
       </View>
       <ProgressBar
         value={value}

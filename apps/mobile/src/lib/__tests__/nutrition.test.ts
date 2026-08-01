@@ -6,6 +6,7 @@ import {
   basalRate,
   computeTargets,
   energyDelta,
+  entryTotals,
   goalDate,
   macroSplit,
   maintenanceRate,
@@ -221,4 +222,57 @@ describe('the database copy', () => {
       expect(body).not.toContain(fragment)
     },
   )
+})
+
+/**
+ * What one entry counts as.
+ *
+ * This arithmetic exists twice as well — here and in the `coalesce` inside
+ * `food_log_details` — because the view answers for the diary and this answers
+ * for the screen editing the entry, where an edit that has not reached the
+ * database yet is still the truth on screen. The two disagreeing is a bug the
+ * user sees as "the number changed when I went back".
+ */
+describe('entryTotals', () => {
+  const portion = { kcal: 600, carbs: 70, protein: 25, fat: 22 }
+
+  it('falls through to the portion when there is nothing else', () => {
+    expect(entryTotals({ portion })).toEqual(portion)
+  })
+
+  it('sums the parts over the portion', () => {
+    const parts = [
+      { kcal: 340, carbs: 55, protein: 6, fat: 11 },
+      { kcal: 254, carbs: 4, protein: 20, fat: 16 },
+    ]
+    expect(entryTotals({ parts, portion })).toEqual({
+      kcal: 594,
+      carbs: 59,
+      protein: 26,
+      fat: 27,
+    })
+  })
+
+  it('takes a typed figure over both', () => {
+    const parts = [{ kcal: 340, carbs: 55, protein: 6, fat: 11 }]
+    expect(entryTotals({ typed: { kcal: 410 }, parts, portion }).kcal).toBe(410)
+  })
+
+  // Field by field, like the view: correcting the protein must not hand the
+  // carbs back to the catalogue when the plate has a breakdown.
+  it('leaves the fields nobody typed to the next source down', () => {
+    const parts = [{ kcal: 340, carbs: 55, protein: 6, fat: 11 }]
+    expect(entryTotals({ typed: { protein: 31.5 }, parts, portion })).toEqual({
+      kcal: 340,
+      carbs: 55,
+      protein: 31.5,
+      fat: 11,
+    })
+  })
+
+  // An empty list is a dish the scan could not decompose, not a plate of
+  // nothing — reading it as zero calories is the dangerous direction.
+  it('treats no parts as no breakdown rather than as zero', () => {
+    expect(entryTotals({ parts: [], portion })).toEqual(portion)
+  })
 })

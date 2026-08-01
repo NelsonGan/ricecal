@@ -101,11 +101,7 @@ export default function TodayScreen() {
     announced.current = justAdded.id
 
     toast.show({
-      title: t('logging:added.toast', {
-        // Lowercased: the meal name sits mid-sentence here, not as a heading.
-        meal: t(`common:meal.${justAdded.meal}`).toLowerCase(),
-        kcal: justAdded.macros.kcal.toLocaleString(),
-      }),
+      title: t('logging:added.toast', { kcal: justAdded.macros.kcal.toLocaleString() }),
       tone: 'success',
       icon: { set: 'ui', name: 'check' },
       action: {
@@ -121,7 +117,10 @@ export default function TodayScreen() {
   }, [justAdded, toast, t, removeEntry])
 
   return (
-    <Screen>
+    // The one screen with swipeable rows on it, and the one that needs
+    // gesture-handler's scroll view for them to work. Nothing here takes
+    // typing, which is what makes that trade free — see `gestureScroll`.
+    <Screen gestureScroll>
       <ScreenTitle
         title={t('logging:today.title')}
         trailing={
@@ -168,7 +167,9 @@ export default function TodayScreen() {
                       : t('logging:today.kcalLeft')
                 }
               />
-              <MacroBars eaten={eaten} targets={targets} showGoal={showGoals} />
+              {/* Sharing the row with the ring, so it asks for the space the
+                  ring leaves. Stacked callers do not. */}
+              <MacroBars className="flex-1" eaten={eaten} targets={targets} showGoal={showGoals} />
             </Tappable>
 
             {over ? (
@@ -243,7 +244,21 @@ export default function TodayScreen() {
         // row has nothing in it worth keeping.
         onFixEntry={(entry) => {
           pending.remove(entry.id)
-          router.push({ pathname: '/log/search', params: { meal: entry.meal } })
+          router.push({ pathname: '/log/search' })
+        }}
+        // Nothing was logged for a photo with no food in it, so there is no
+        // entry to delete — dismissing drops the row the shutter put there.
+        onDismissEntry={(entry) => pending.remove(entry.id)}
+        // Swipe left, tap the bin. A wrong scan is the common case and it took
+        // two screens to undo; this is the shortcut, and the detail screen's
+        // delete is still there for anyone who wants to look first.
+        onDeleteEntry={(entry) => {
+          removeEntry.mutate({
+            id: entry.id,
+            logDate: entry.logDate,
+            photoPath: entry.photoPath,
+          })
+          toast.show({ title: t('logging:added.removedToast') })
         }}
       />
     </Screen>

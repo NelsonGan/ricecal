@@ -67,7 +67,39 @@ left join lateral (
   where s.food_id = f.id
 ) sv on true;
 
-grant select on public.food_details to authenticated;
+-- service_role too: the scan edge function resolves photos through
+-- `search_foods`, which returns rows of this view — and service_role bypasses
+-- RLS, not grants.
+grant select on public.food_details to authenticated, service_role;
+
+
+-- ---------------------------------------------------------------------------
+-- A scanned plate's ingredients, with the numbers already worked out.
+--
+-- Same arithmetic as food_log_details — the ingredient's catalogue macros x
+-- its portion factor x its quantity — so the breakdown a screen renders under
+-- an entry uses the same rounding as everything else. The parent entry's own
+-- macros stay authoritative; these rows explain them, and the scan function
+-- only writes a breakdown whose sum lands within band of the parent.
+-- ---------------------------------------------------------------------------
+create view public.food_log_ingredient_details with (security_invoker = on) as
+select
+  i.id,
+  i.food_log_id,
+  i.food_id,
+  i.position,
+  coalesce(i.display_label, f.name) as name,
+  i.quantity,
+  s.label      as serving_label,
+  round(f.kcal      * s.factor * i.quantity)::integer    as kcal,
+  round(f.carbs_g   * s.factor * i.quantity, 1)::numeric as carbs_g,
+  round(f.protein_g * s.factor * i.quantity, 1)::numeric as protein_g,
+  round(f.fat_g     * s.factor * i.quantity, 1)::numeric as fat_g
+from public.food_log_ingredients i
+join public.foods f         on f.id = i.food_id
+join public.food_servings s on s.id = i.serving_id;
+
+grant select on public.food_log_ingredient_details to authenticated, service_role;
 
 
 -- ---------------------------------------------------------------------------
@@ -82,7 +114,6 @@ select
   e.id,
   e.user_id,
   e.log_date,
-  e.meal,
   e.quantity,
   e.logged_at,
   e.note,
@@ -90,8 +121,18 @@ select
   e.photo_path,
 
   e.food_id,
-  f.name       as food_name,
+  e.scan_id,
+  e.suggested_edits,
+  -- The model's specific name wins over a shared estimate row's generic one.
+  -- A hand-logged entry has no display_label, so this is the food's name for
+  -- every row that predates scanning.
+  coalesce(e.display_label, f.name) as food_name,
   f.brand      as food_brand,
+  -- What the UI badges an entry with: `verified = false` is "an estimate is
+  -- on this row", and the two flags say which kind of guess it was.
+  f.verified   as food_verified,
+  f.is_estimate,
+  f.is_archetype,
   -- One picture per row, resolved here so that no screen has to know the order.
   --
   -- A photo suppresses both icons outright. The check constraint stops an ENTRY
@@ -110,17 +151,57 @@ select
   s.label      as serving_label,
   s.factor     as serving_factor,
 
-  round(f.kcal      * s.factor * e.quantity)::integer      as kcal,
-  round(f.carbs_g   * s.factor * e.quantity, 1)::numeric   as carbs_g,
-  round(f.protein_g * s.factor * e.quantity, 1)::numeric   as protein_g,
-  round(f.fat_g     * s.factor * e.quantity, 1)::numeric   as fat_g,
+  -- The raw overrides as well as the coalesced figures below. The screen that
+  -- edits them has to show WHICH of the four the user typed — a field seeded
+  -- with the app's own number cannot say whose number it is, and a form that
+  -- cannot tell would clear an override the moment it was saved again.
+  e.override_kcal,
+  e.override_carbs_g,
+  e.override_protein_g,
+  e.override_fat_g,
+
+  -- Three sources, in order: what the user typed, what the parts add up to,
+  -- what the dish costs at this portion.
+  --
+  -- THE PARTS COME SECOND FOR A REASON. An entry with a breakdown IS its
+  -- breakdown: doubling the rice on a plate should move the carbs and leave
+  -- the fat alone, and scaling one parent row by one quantity cannot express
+  -- that — it moves all four macros in lockstep, so editing an ingredient
+  -- changed the calories and nothing else. Summing the parts is the only
+  -- reading under which the list on screen and the total above it are the
+  -- same claim.
+  --
+  -- An entry with no ingredients — most of them — falls straight through to
+  -- the third form, which is what this always did.
+  coalesce(e.override_kcal, parts.kcal, round(f.kcal * s.factor * e.quantity)::integer)
+    as kcal,
+  coalesce(e.override_carbs_g, parts.carbs_g,
+           round(f.carbs_g   * s.factor * e.quantity, 1))::numeric            as carbs_g,
+  coalesce(e.override_protein_g, parts.protein_g,
+           round(f.protein_g * s.factor * e.quantity, 1))::numeric            as protein_g,
+  coalesce(e.override_fat_g, parts.fat_g,
+           round(f.fat_g     * s.factor * e.quantity, 1))::numeric            as fat_g,
   round(f.fibre_g   * s.factor * e.quantity, 1)::numeric   as fibre_g,
   round(f.sugar_g   * s.factor * e.quantity, 1)::numeric   as sugar_g
 from public.food_logs e
 join public.foods f         on f.id = e.food_id
-join public.food_servings s on s.id = e.serving_id;
+join public.food_servings s on s.id = e.serving_id
+-- Null for an entry with no ingredients, which is what makes the coalesce
+-- above fall through rather than reading a plate of nothing as zero calories.
+left join lateral (
+  select
+    round(sum(i.kcal))::integer  as kcal,
+    round(sum(i.carbs_g), 1)     as carbs_g,
+    round(sum(i.protein_g), 1)   as protein_g,
+    round(sum(i.fat_g), 1)       as fat_g
+  from public.food_log_ingredient_details i
+  where i.food_log_id = e.id
+  having count(*) > 0
+) parts on true;
 
 grant select on public.food_log_details to authenticated;
+
+
 
 
 -- ---------------------------------------------------------------------------
@@ -164,9 +245,13 @@ select
   e.user_id,
   e.food_id,
   count(*)::integer        as times_logged,
-  max(e.logged_at)         as last_logged_at,
-  array_agg(distinct e.meal) as meals
+  max(e.logged_at)         as last_logged_at
 from public.food_logs e
+join public.foods f on f.id = e.food_id
+-- Estimate and archetype rows are excluded for the same reason they are
+-- excluded from search: "usual at this time" is a list to log from, and a
+-- shared guess should not become a habit the app reinforces.
+where not f.is_estimate and not f.is_archetype
 group by e.user_id, e.food_id;
 
 grant select on public.user_food_stats to authenticated;

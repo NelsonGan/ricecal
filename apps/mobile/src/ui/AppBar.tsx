@@ -5,6 +5,7 @@ import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
 import { Icon } from './Icon'
 import { IconButton } from './IconButton'
+import { Tappable } from './Tappable'
 import { Text } from './Text'
 
 export type AppBarProps = {
@@ -25,6 +26,12 @@ export type AppBarProps = {
   leading?: 'back' | 'dismiss'
   /** Trailing controls. Keep to one; two crowds a 340pt phone. */
   action?: ReactNode
+  /**
+   * Makes the title tappable, for a screen whose title is a thing the user
+   * owns — the name of one logged entry. Absent everywhere else, where the
+   * title says which screen this is and is not anybody's to change.
+   */
+  onPressTitle?: () => void
   className?: string
 }
 
@@ -45,6 +52,7 @@ export function AppBar({
   backLabel = 'Go back',
   leading = 'back',
   action,
+  onPressTitle,
   className,
 }: AppBarProps) {
   const colors = useThemeColors()
@@ -67,9 +75,17 @@ export function AppBar({
         </IconButton>
       ) : null}
 
-      <Text variant="subtitle" className="flex-1" numberOfLines={1}>
-        {title}
-      </Text>
+      {onPressTitle ? (
+        <Tappable className="flex-1" onPress={onPressTitle} accessibilityRole="button">
+          <Text variant="subtitle" numberOfLines={1}>
+            {title}
+          </Text>
+        </Tappable>
+      ) : (
+        <Text variant="subtitle" className="flex-1" numberOfLines={1}>
+          {title}
+        </Text>
+      )}
 
       {action ?? (onBack ? <View className="w-[44px]" /> : null)}
     </View>

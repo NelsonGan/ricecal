@@ -40,7 +40,11 @@ create table public.food_logs (
   -- Defaulted from the user's own timezone so a write that omits it lands on
   -- the right day rather than on the server's UTC day.
   log_date     date not null default public.local_today(),
-  meal         public.meal not null,
+  -- No `meal`. A logged plate used to carry breakfast/lunch/dinner/snack, and
+  -- it earned nothing: the diary is one chronological list, the time on each
+  -- row says where in the day it belongs, and every write had to pick a value
+  -- for a field nobody read back. Meal TIMES survive on `meal_times`, where
+  -- they mean something — the hours a reminder fires.
 
   food_id      uuid not null,
   serving_id   uuid not null,
@@ -55,6 +59,47 @@ create table public.food_logs (
   -- Path inside the private `meal-photos` bucket. Null until the scanning flow
   -- exists; see the seam note above.
   photo_path   text,
+
+  -- Groups the entries one photographed plate decomposed into. A scan that
+  -- resolves to components writes N rows sharing one value; a single-dish scan
+  -- writes one row that still carries it, so "what did this photo become" is
+  -- answerable either way. Null for anything not born from a scan.
+  scan_id      uuid,
+
+  -- The model's specific name for the plate, kept when the entry points at a
+  -- shared estimate or archetype row whose own name is generic ("Fried rice,
+  -- estimated"). `food_log_details` reads coalesce(display_label, foods.name),
+  -- so a null costs nothing. Deliberately not `note`, which is the user's own
+  -- free-text correction.
+  display_label text check (char_length(display_label) between 1 and 120),
+
+  -- Up to three short corrections the vision model thought likely for this
+  -- plate ("No sambal", "Half portion", "Add a fried egg"), offered as one-tap
+  -- chips over the fix-by-typing box. Suggestions, not state: applying one
+  -- goes through the scan-refine function like any typed instruction.
+  suggested_edits jsonb check (
+    suggested_edits is null
+    or (jsonb_typeof(suggested_edits) = 'array' and jsonb_array_length(suggested_edits) <= 3)
+  ),
+
+  -- The numbers, when the user has typed their own.
+  --
+  -- Everything else on an entry describes WHICH food and HOW MUCH, and the
+  -- calories follow from the catalogue row. That breaks down for the case this
+  -- exists for: a dish the app got close but not right, where the person
+  -- eating it knows the answer — off a packet, off a recipe, off the kitchen
+  -- scale. Rescaling the portion to reach the right calorie total would lie
+  -- about the portion, and correcting the shared `foods` row would change the
+  -- number for everyone who ever logged it.
+  --
+  -- Null means "the catalogue is right", which is almost every row. Each field
+  -- stands alone: someone who fixes only the protein keeps the catalogue's
+  -- carbs. `food_log_details` coalesces them over the computed figures, so
+  -- every total in the app follows without knowing this exists.
+  override_kcal      integer check (override_kcal between 0 and 20000),
+  override_carbs_g   numeric(7, 1) check (override_carbs_g between 0 and 2000),
+  override_protein_g numeric(7, 1) check (override_protein_g between 0 and 2000),
+  override_fat_g     numeric(7, 1) check (override_fat_g between 0 and 2000),
 
   -- An illustration the user picked for this row, overriding the food's own.
   --
@@ -104,6 +149,10 @@ create index food_logs_user_food_idx on public.food_logs (user_id, food_id);
 -- `on delete restrict` above needs this to avoid a sequential scan of every
 -- entry whenever a catalogue row is touched.
 create index food_logs_serving_idx on public.food_logs (serving_id);
+
+-- Backs the estimate-backlog report: "which estimate rows are referenced most"
+-- is a count over this column.
+create index food_logs_scan_idx on public.food_logs (scan_id) where scan_id is not null;
 
 create trigger food_logs_set_updated_at
   before update on public.food_logs
