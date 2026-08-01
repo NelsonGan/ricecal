@@ -714,8 +714,13 @@ export default function FoodDetail() {
       <Card>
         {/* Centred rather than on a shared baseline: while the number is a
             field it is a box, and a box aligned by its text baseline sits
-            visibly low against the caption beside it. */}
-        <View className="flex-row items-center justify-between">
+            visibly low against the caption beside it.
+
+            The height is pinned so the two states are the same size. A
+            `TextInput` needs more room than the `Text` it stands in for — see
+            the field below — and without this the card grew by a few points
+            the moment the number was tapped. */}
+        <View className="min-h-[44px] flex-row items-center justify-between">
           {/* Tap the number to type your own. An entry the app got close but
               not right is corrected here, on the figure being read, rather
               than in a form underneath that repeats all four of them. */}
@@ -741,7 +746,19 @@ export default function FoodDetail() {
               autoFocus
               selectTextOnFocus
               accessibilityLabel={t('logging:detail.editKcal')}
-              className="min-w-[120px] font-display text-[32px] leading-[39px] text-heading"
+              /* No `leading-*` here, unlike the `Text` this replaces.
+                 `displayMd` sets a 39pt line on a 32pt Baloo ExtraBold, which
+                 `Text` renders happily because it never clips — a glyph taller
+                 than its line box simply overflows it. A `TextInput` is a
+                 native field that crops to its line box instead, so the same
+                 39 sliced the tops off the digits and left the caret hanging
+                 below them. Letting the font choose its own line box is the
+                 fix; the row's pinned height is what keeps the two states the
+                 same size. */
+              className="min-w-[120px] font-display text-[32px] text-heading"
+              /* And the padding UIKit gives a text field by default, which is
+                 space the `Text` does not take. */
+              style={{ paddingVertical: 0, paddingHorizontal: 0 }}
               cursorColor={colors.pandan}
               selectionColor={colors.pandan}
             />

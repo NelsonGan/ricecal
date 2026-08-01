@@ -39,6 +39,12 @@ export type MacroBarsProps = {
  * Always in that order and always in those colours: the same triple appears on
  * Today, on a food's detail and in the weekly report, and a reader learns the
  * colour once.
+ *
+ * Like `MacroBar`, it carries no `flex-1`. On Today it sits beside the ring
+ * and shares a row, so that screen asks for one; inside the entry card it is
+ * stacked, where `flex-1` means "take the leftover height from a basis of
+ * nothing" — and a card whose height is bounded, which is what a keyboard
+ * does, then collapsed all three bars into a band with their labels gone.
  */
 export function MacroBars({
   eaten,
@@ -72,7 +78,7 @@ export function MacroBars({
   ] as const
 
   return (
-    <View className={cn('flex-1 gap-2.5', className)}>
+    <View className={cn('gap-2.5', className)}>
       {rows.map((row) => (
         <MacroBar
           key={row.key}
