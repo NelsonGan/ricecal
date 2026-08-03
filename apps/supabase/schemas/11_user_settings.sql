@@ -39,6 +39,20 @@ create table public.user_settings (
   quiet_from             time not null default '22:00',
   quiet_to               time not null default '07:00',
 
+  -- Activity ----------------------------------------------------------------
+  -- The one movement goal nobody's watch supplies. Apple's Move, Exercise and
+  -- Stand goals are set on the watch and arrive per day on `activity_days`; a
+  -- step goal is not a HealthKit concept at all and Health Connect has no goals
+  -- of any kind, so this is the app's own number and the same one on both
+  -- platforms. 8,000 rather than the folk 10,000, which comes from a 1960s
+  -- Japanese pedometer's brand name.
+  step_goal              integer not null default 8000 check (step_goal between 1000 and 50000),
+  -- Whether burned calories extend the day's budget. On by default once a
+  -- provider is connected, because a user who linked their watch did it for
+  -- this. Off is for somebody who wants the movement charts without the budget
+  -- moving under them — the number is still shown, it just stops being spent.
+  activity_extends_budget boolean not null default true,
+
   -- Privacy -----------------------------------------------------------------
   share_with_family      boolean not null default false,
   -- Consent to contribute logged dishes to the catalogue in aggregate. Off by

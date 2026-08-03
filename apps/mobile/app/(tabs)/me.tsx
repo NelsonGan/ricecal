@@ -18,7 +18,7 @@ import { Avatar, Button, Card, ConfirmSheet, Icon, ListRow, Screen, StatTile, Te
 
 /** U1 PROFILE */
 export default function MeScreen() {
-  const { t } = useTranslation(['profile', 'common'])
+  const { t } = useTranslation(['profile', 'activity', 'common'])
   const router = useRouter()
 
   const { data: profile } = useProfile()
@@ -131,6 +131,15 @@ export default function MeScreen() {
           icon={{ set: 'system', name: 'clock' }}
           title={t('profile:home.personalisation')}
           onPress={() => router.push('/settings/personalisation')}
+        />
+        {/* Under personalisation and above reminders: it is a thing about this
+            body rather than a notification preference, and the row it sits next
+            to — meal times — is the other place the app is told about a daily
+            rhythm. */}
+        <SettingRow
+          icon={{ set: 'system', name: 'watch' }}
+          title={t('activity:settings.title')}
+          onPress={() => router.push('/settings/health')}
         />
         <SettingRow
           icon={{ set: 'system', name: 'bell' }}

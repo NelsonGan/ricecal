@@ -76,6 +76,11 @@ export function useLogFood() {
       // A meal moves this day's column, the range average and "days under goal"
       // on every one of the three ranges — hence the prefix rather than one key.
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+      // Movement is measured against what was eaten: the balance chart, the
+      // "eaten" average and the deficit sentence all read `daily_nutrition`
+      // through `activity_summary`. Without this a meal logged today left
+      // the Activity tab still saying "Not enough logged".
+      queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
     },
   })
 }
@@ -216,6 +221,7 @@ export function useUpdateEntry() {
       queryClient.invalidateQueries({ queryKey: keys.day(userId, patch.logDate) })
       // A corrected portion is a different day total, which is a different bar.
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+      queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
     },
   })
 }
@@ -259,6 +265,7 @@ export function useRemoveEntry() {
       // Undoing the last thing logged has to take it back out of "last logged".
       queryClient.invalidateQueries({ queryKey: keys.recentFoodsAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+      queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
     },
   })
 }

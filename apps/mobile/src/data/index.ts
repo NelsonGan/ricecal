@@ -15,6 +15,25 @@
  * 3. **Reads go through hooks, not through a client.** No screen imports
  *    `supabase` directly.
  */
+export {
+  type ActivityBucket,
+  type ActivityDay,
+  type ActivityHour,
+  type ActivitySession,
+  type ActivitySummary,
+  daysAgo,
+  type HealthConnection,
+  providerFor,
+  useActivityDay,
+  useActivityHours,
+  useActivitySeries,
+  useActivitySession,
+  useActivitySessions,
+  useActivitySummary,
+  useClearDemoActivity,
+  useDisconnectHealth,
+  useHealthConnection,
+} from './activity'
 export { dateKey, today } from './client'
 export {
   useDay,
@@ -32,6 +51,13 @@ export {
 } from './entries'
 export { useFood, useFoodSearch, useRecentFoods } from './foods'
 export { type GoalsInput, useSetTargets, useTargets } from './goals'
+export {
+  type ConnectResult,
+  type SyncProgress,
+  useConnectHealth,
+  useHealthAutoSync,
+  useSyncHealth,
+} from './health-sync'
 export { keys } from './keys'
 export { toEntry, toFood, toIcon } from './mappers'
 export {
