@@ -86,7 +86,7 @@ export {
 export { SelectedDateProvider, useSelectedDate } from './selected-date'
 export { SessionProvider, useSession, useUserId } from './session'
 export { useMealTimes, useSettings, useUpdateMealTime, useUpdateSettings } from './settings'
-export { useSnapFood } from './snap'
+export { type DescribeInput, useDescribeFood, useSnapFood } from './snap'
 export { useSubscription } from './subscription'
 export { useTrendSeries, useTrendSummary } from './trends'
 export * from './types'

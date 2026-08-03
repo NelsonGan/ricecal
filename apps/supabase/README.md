@@ -198,3 +198,22 @@ running the suite leaves nothing behind and pgTAP never reaches production.
 with a forged `request.jwt.claims`, which is what PostgREST does on every
 request. Running RLS tests as `postgres` proves nothing: the table owner
 bypasses RLS and every query passes.
+
+### The prompts
+
+`pnpm eval:prompts` (Deno, `scripts/eval-prompts.ts`) grades the two model
+calls that decide something the cascade below them cannot check: what a typed
+meal names and how much of it there was, and whether a correction is a portion
+change, a part change or a different dish. Both are a paragraph of English, and
+both used to be edited on the strength of whichever example was on screen.
+
+The cases assert the SHAPE of the answer — which action, how many components,
+whether the count matched, whether the calorie band brackets something sane —
+never an exact number, because the model is sampled and the cascade is what
+turns a band into calories. Run it a few times over (`eval:prompts refine 3`)
+after touching a prompt: one pass proves less than it looks.
+
+It needs `OPENROUTER_API_KEY`, which normally lives only in the project's
+function secrets. `EVAL_ENDPOINT` + `EVAL_TOKEN` point it at anything that
+proxies `{system, user, max_tokens}` to a chat completion, for a machine that
+has no key of its own.

@@ -90,9 +90,19 @@ export const describe = (error: unknown): string => {
 export const clampQuantity = (q: number): number =>
   Math.round(Math.min(3.0, Math.max(0.5, q)) * 4) / 4
 
-/** Refine edits rescale an existing quantity, so the range is wider. */
+/**
+ * The same clamp for a fix-by-typing edit: wider, and in twentieths.
+ *
+ * `clampQuantity` rounds a SCAN to quarters because its ratio is one rough
+ * estimate divided by another, and "1.08 servings" is precision the evidence
+ * does not have. A refine factor is not that number. It comes from what the
+ * person typed, and the one instruction that needs a fine step is the one they
+ * are most specific about: "this was more like 400 calories" against a 365 kcal
+ * entry is a factor of 1.096, which quarters round back to exactly where it
+ * started — the correction ran, said it applied, and changed nothing.
+ */
 export const refineQuantity = (q: number): number =>
-  Math.round(Math.min(10, Math.max(0.25, q)) * 4) / 4
+  Math.round(Math.min(10, Math.max(0.25, q)) * 20) / 20
 
 /**
  * Requirement 14: skip retrieval when a query normalizes to nothing usable.
@@ -912,6 +922,13 @@ export async function writeEntry(
     resolved: Resolved
     photoPath: string | null
     suggestedEdits: string[]
+    /**
+     * How the meal was described. A photographed plate and a typed one run the
+     * identical cascade and land in the identical row shape, so this column is
+     * the only place the difference survives — and "what fraction of logs come
+     * from the camera" is the question `entry_source` exists to answer.
+     */
+    source: 'camera' | 'text'
   },
 ): Promise<WrittenEntry> {
   const { resolved } = input
@@ -923,7 +940,7 @@ export async function writeEntry(
       serving_id: resolved.food.serving_id,
       log_date: input.logDate,
       quantity: resolved.quantity,
-      source: 'camera',
+      source: input.source,
       photo_path: input.photoPath,
       scan_id: input.scanId,
       display_label: resolved.displayLabel,

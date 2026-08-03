@@ -31,6 +31,14 @@ export const logging = {
     analysing: 'Reading your plate',
     analysingHint: 'Counting once it knows what this is',
     /**
+     * The same row for a meal that was TYPED rather than photographed. It says
+     * "reading" too, because the same cascade is doing the same work — but
+     * there is no plate on screen to read, so the words are what the row shows
+     * while it waits, and the title has to name that instead.
+     */
+    describing: 'Reading what you wrote',
+    describingRead: 'Reading what you wrote…',
+    /**
      * The rotating status line over the scan progress bar. Stages, not facts:
      * the client cannot see where the scan actually is, so these describe the
      * cascade truthfully without claiming to track it.
@@ -48,6 +56,8 @@ export const logging = {
      * have to watch it.
      */
     scanDoneTitle: 'Your plate is counted',
+    /** The same banner for a meal that was typed: there was no plate. */
+    describeDoneTitle: 'Your meal is counted',
     scanDoneBody: '{{food}} · {{kcal}} kcal',
     scanDoneBodyPlain: 'Tap to see what was on it.',
     /** On the panel behind a row being swiped away, and to a screen reader. */
@@ -58,6 +68,8 @@ export const logging = {
      * apology and not an error.
      */
     noFoodTitle: 'No food in this photo',
+    /** The same outcome for a typed meal: the words named nothing edible. */
+    noFoodTypedTitle: 'No food in what you wrote',
     noFoodHint: 'Nothing was added to your day.',
     noFoodDismiss: 'Dismiss',
     analysisFailedTitle: 'Could not read this one',
@@ -74,6 +86,7 @@ export const logging = {
     title: 'Log a dish',
     remaining: '{{count}} left',
     snap: 'Snap',
+    describe: 'Describe',
     search: 'Search',
     /**
      * The last few dishes logged at this meal, newest first. No empty-state copy
@@ -82,6 +95,17 @@ export const logging = {
      */
     recent: 'LAST LOGGED',
     repeatYesterday: 'Repeat yesterday',
+  },
+
+  /**
+   * Typing the meal instead of photographing it. The examples in the
+   * placeholder are doing real work: they tell the user that a whole meal with
+   * its sides belongs in ONE box, which is not obvious from an empty field.
+   */
+  describe: {
+    placeholder: 'Nasi lemak with fried chicken and a teh tarik',
+    hint: 'Say what you ate, sides and drinks included. Amounts help — "2 roti canai", "half a plate".',
+    send: 'Log this meal',
   },
 
   camera: {

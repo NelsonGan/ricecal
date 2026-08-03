@@ -42,6 +42,19 @@ uploads a photo and calls an edge function, which does everything else and
 writes the entry itself as `service_role` — it has to, because some tiers
 create catalogue rows and no client may do that.
 
+A meal can also be TYPED — "nasi lemak with fried chicken and a teh tarik" —
+and that is the same endpoint and the same cascade. Only the first model call
+differs: `describeMeal` instead of `analysePhoto`, both answering in the same
+`Vision` shape. The difference between them is who the authority is. A photo
+has one witness and it is the model, so everything it says is inference the
+catalogue then checks. A sentence was written by the person who ate the meal,
+so what it states — the dish, the number of them, the size, a calorie figure —
+is the answer, and the model's job is only to name it searchably and price the
+portion it was told about. `source` on the row is the only place the two part
+company. The shared parts of both prompts are shared CONSTANTS in `llm.ts`;
+the size anchors in them were expensive to derive and a second prompt with its
+own copy would have relearned them wrong.
+
 **Client** — `apps/mobile/src/data/snap.ts`
 
 1. The shutter puts a *pending snap* on the day immediately
@@ -87,9 +100,29 @@ never nutrients. Then, in order:
 
 **Correcting it** — `scan-refine/index.ts`
 
-Free text against a logged entry becomes one of: rescale the quantity, adjust a
-part, re-describe the dish and re-run the same cascade, or decline. A
+Free text against a logged entry becomes one of: decline, rescale the quantity,
+adjust a part, or re-describe the dish and re-run the same cascade. A
 correction never silently loses the breakdown.
+
+Those four are a LADDER, ordered by how much of the entry survives them, and
+the interpreter's prompt is written as one — stop at the first that fits.
+Offered as a flat menu it reached for `redescribe` whenever it was unsure,
+which is the one answer that throws away everything the user has already
+accepted: "this was more like 500 calories" re-guessed a dish nobody said was
+wrong, and "it was rendang chicken not fried chicken" binned the rice, the
+sambal and the egg to fix one side. A correction that comes back as a
+different meal is the failure this feature has to avoid.
+
+Two consequences worth knowing. A part that turned out to be a different food
+is a SWAP — one row out, one row in, the rest untouched — and it is priced by
+asking what the new food costs, never by asking how it differs from the old
+one: as a delta the model put rendang chicken 172 kcal below fried chicken.
+And the interpreter is shown each part's count and calories, because "I left
+half the rice" cannot be answered by a model that has only been told the word
+"rice".
+
+`pnpm eval:prompts` grades both this prompt and the typed-meal one against
+~45 written-down cases. It imports the prompts rather than copying them.
 
 ## How movement extends the budget
 

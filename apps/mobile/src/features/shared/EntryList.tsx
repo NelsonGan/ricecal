@@ -125,13 +125,22 @@ function EntryRow({
   if (entry.status === 'analysing') {
     // A row read back from storage is still working, but its progress bar
     // would be starting over for a scan that began before the app did.
-    return <AnalysingRow entry={entry} mode={entry.restored ? 'resumed' : 'scan'} />
+    return (
+      <AnalysingRow
+        entry={entry}
+        mode={entry.restored ? 'resumed' : entry.source === 'text' ? 'describe' : 'scan'}
+      />
+    )
   }
   if (entry.status === 'nofood') {
     return (
       <ItemRow
-        title={t('logging:today.noFoodTitle')}
-        icon={{ set: 'system', name: 'camera' }}
+        title={
+          entry.source === 'text'
+            ? t('logging:today.noFoodTypedTitle')
+            : t('logging:today.noFoodTitle')
+        }
+        icon={{ set: 'system', name: entry.source === 'text' ? 'sparkle' : 'camera' }}
         photoUri={entry.localPhotoUri}
         value=""
         detail={t('logging:today.noFoodHint')}
@@ -152,10 +161,12 @@ function EntryRow({
     return (
       <ItemRow
         title={t('logging:today.analysisFailedTitle')}
-        icon={{ set: 'system', name: 'camera' }}
+        icon={{ set: 'system', name: entry.source === 'text' ? 'sparkle' : 'camera' }}
         photoUri={entry.localPhotoUri}
         value="—"
-        detail={t('logging:today.analysisFailedHint')}
+        // A failed typed meal still has the sentence on it, which is the one
+        // thing worth showing: it is what the user would have to type again.
+        detail={entry.foodName || t('logging:today.analysisFailedHint')}
         onPress={onFix ? () => onFix(entry) : undefined}
       />
     )
@@ -227,7 +238,7 @@ function AnalysingRow({
   mode = 'scan',
 }: {
   entry: Entry
-  mode?: 'scan' | 'refine' | 'resumed'
+  mode?: 'scan' | 'refine' | 'resumed' | 'describe'
 }) {
   const { t } = useTranslation(['logging'])
   const colors = useThemeColors()
@@ -239,12 +250,21 @@ function AnalysingRow({
       ? [t('logging:today.refiningApply'), t('logging:today.refiningCount')]
       : mode === 'resumed'
         ? [t('logging:today.analysing')]
-        : [
-            t('logging:today.scanningRead'),
-            t('logging:today.scanningMatch'),
-            t('logging:today.scanningPortion'),
-            t('logging:today.scanningCount'),
-          ]
+        : mode === 'describe'
+          ? [
+              // The same cascade, so the same three stages after the first —
+              // only the reading is of words rather than of a photograph.
+              t('logging:today.describingRead'),
+              t('logging:today.scanningMatch'),
+              t('logging:today.scanningPortion'),
+              t('logging:today.scanningCount'),
+            ]
+          : [
+              t('logging:today.scanningRead'),
+              t('logging:today.scanningMatch'),
+              t('logging:today.scanningPortion'),
+              t('logging:today.scanningCount'),
+            ]
   const [phrase, setPhrase] = useState(0)
   useEffect(() => {
     const id = setInterval(() => setPhrase((current) => current + 1), PHRASE_MS)
@@ -286,7 +306,7 @@ function AnalysingRow({
             contentFit="cover"
           />
         ) : (
-          <Icon set="system" name="camera" size={40} />
+          <Icon set="system" name={mode === 'describe' ? 'sparkle' : 'camera'} size={40} />
         )}
       </View>
 

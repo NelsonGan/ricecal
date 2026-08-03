@@ -76,9 +76,14 @@ export function useDayLog(date: string): DayLog {
      * The client removes its own pending row when the request resolves, but
      * the day can refetch before that — on focus, or when a notification
      * brings the app forward — and for a second or two the meal appeared
-     * twice: once as the spinner, once as itself. The scan writes a camera
-     * entry stamped after the shutter, so an unclaimed one of those IS this
-     * snap, arriving by another route.
+     * twice: once as the spinner, once as itself. Recognition writes an entry
+     * stamped after the shutter (or after the send), so an unclaimed one of
+     * those IS this snap, arriving by another route.
+     *
+     * Matched on the SOURCE the pending row would become, not on `camera`
+     * alone: a typed meal writes `text`, and a pending row that cannot
+     * recognise its own arrival sits there until the stale sweep drops it —
+     * ninety seconds of a spinner over a meal already on the day.
      */
     const claimed = new Set<string>()
     const landed = (snap: (typeof mine)[number]) => {
@@ -87,8 +92,9 @@ export function useDayLog(date: string): DayLog {
       // and a Z, so the two strings sort against each other by punctuation
       // once their seconds agree.
       const shutter = Date.parse(snap.loggedAt)
+      const wrote = snap.text ? 'text' : 'camera'
       return base.entries.some((entry) => {
-        if (entry.source !== 'camera' || claimed.has(entry.id)) return false
+        if (entry.source !== wrote || claimed.has(entry.id)) return false
         if (Date.parse(entry.loggedAt) < shutter) return false
         claimed.add(entry.id)
         return true

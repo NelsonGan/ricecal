@@ -411,6 +411,7 @@ export type Database = {
           components: Json | null
           confidence: number | null
           created_at: string
+          described_text: string | null
           food_log_id: string | null
           generic_query: string | null
           id: string
@@ -432,6 +433,7 @@ export type Database = {
           components?: Json | null
           confidence?: number | null
           created_at?: string
+          described_text?: string | null
           food_log_id?: string | null
           generic_query?: string | null
           id?: string
@@ -453,6 +455,7 @@ export type Database = {
           components?: Json | null
           confidence?: number | null
           created_at?: string
+          described_text?: string | null
           food_log_id?: string | null
           generic_query?: string | null
           id?: string
@@ -1342,7 +1345,7 @@ export type Database = {
     Enums: {
       activity_level: 'sedentary' | 'light' | 'on_feet' | 'very_active'
       energy_unit: 'kcal' | 'kj'
-      entry_source: 'search' | 'quick_add' | 'camera' | 'voice' | 'import'
+      entry_source: 'search' | 'quick_add' | 'camera' | 'voice' | 'import' | 'text'
       food_place: 'mamak' | 'kopitiam' | 'hawker' | 'packaged' | 'home'
       health_provider: 'apple_health' | 'health_connect' | 'demo'
       icon_set: 'body' | 'dishes' | 'food' | 'system' | 'ui'
@@ -1479,7 +1482,7 @@ export const Constants = {
     Enums: {
       activity_level: ['sedentary', 'light', 'on_feet', 'very_active'],
       energy_unit: ['kcal', 'kj'],
-      entry_source: ['search', 'quick_add', 'camera', 'voice', 'import'],
+      entry_source: ['search', 'quick_add', 'camera', 'voice', 'import', 'text'],
       food_place: ['mamak', 'kopitiam', 'hawker', 'packaged', 'home'],
       health_provider: ['apple_health', 'health_connect', 'demo'],
       icon_set: ['body', 'dishes', 'food', 'system', 'ui'],

@@ -55,7 +55,7 @@
       }
     },
     {
-      "includes": ["apps/supabase/functions/**"],
+      "includes": ["apps/supabase/functions/**", "apps/supabase/scripts/eval-prompts.ts"],
       "linter": {
         "rules": {
           "suspicious": {

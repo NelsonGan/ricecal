@@ -39,7 +39,7 @@ export const MEALS: readonly Meal[] = ['breakfast', 'lunch', 'dinner', 'snack']
  * a snake_case key leaking into the copy files or a column named `onFeet`.
  */
 export type ActivityLevel = 'sedentary' | 'light' | 'onFeet' | 'veryActive'
-export type EntrySource = 'search' | 'quickAdd' | 'camera' | 'voice' | 'import'
+export type EntrySource = 'search' | 'quickAdd' | 'camera' | 'voice' | 'import' | 'text'
 
 const ACTIVITY_TO_DB: Record<ActivityLevel, Enums<'activity_level'>> = {
   sedentary: 'sedentary',
