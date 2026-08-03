@@ -114,6 +114,21 @@ export type AccessResult = {
   permissions: string[]
 }
 
+/**
+ * What a read needs to know beyond the dates.
+ *
+ * `age` is here rather than inside the providers because it is a fact about the
+ * USER and the providers only know about the store. It is what turns a heart
+ * rate into a zone: the bands are fractions of an estimated maximum, and that
+ * maximum is a function of age (see `hrZones.ts`). Null when the profile has no
+ * birth date, which `estimatedMaxHr` has its own documented fallback for —
+ * every caller falls back the same way rather than each inventing a number.
+ */
+export type ReadOptions = {
+  withHours: boolean
+  age: number | null
+}
+
 export interface HealthProvider {
   readonly id: ProviderId
 
@@ -132,5 +147,5 @@ export interface HealthProvider {
    * expensive read — 24 buckets a day against a store that answers slowly — and
    * only the last month of it is ever drawn. A year-long backfill passes false.
    */
-  read(from: LocalDate, to: LocalDate, options: { withHours: boolean }): Promise<HealthReading>
+  read(from: LocalDate, to: LocalDate, options: ReadOptions): Promise<HealthReading>
 }

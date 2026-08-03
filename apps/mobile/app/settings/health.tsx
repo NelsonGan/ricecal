@@ -12,7 +12,7 @@ import {
   useSyncHealth,
   useUpdateSettings,
 } from '@/data'
-import { syncedAgo } from '@/features/activity'
+import { count, syncedAgo } from '@/features/activity'
 import { ToggleRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import {
@@ -117,15 +117,23 @@ function HealthSettingsScreen() {
             <View className="gap-4">
               <View className="flex-row items-center gap-md">
                 <Icon set="system" name="watch" size={36} />
+                {/* The watch AND the freshness, not one or the other.
+                    These shared a line, so learning the device name cost you
+                    the only place the app said when it last read anything —
+                    and the two answer different questions ("what is this
+                    connected to" and "is what I am looking at current"). It
+                    went unnoticed because `deviceName` was never populated on
+                    iOS at all; now that it is, the line has to hold both. */}
                 <View className="min-w-0 flex-1">
-                  <Text variant="bodyStrong">{t(`activity:provider.${provider}`)}</Text>
+                  <Text variant="bodyStrong">
+                    {connection.data?.deviceName ?? t(`activity:provider.${provider}`)}
+                  </Text>
                   <Text variant="meta">
-                    {connection.data?.deviceName ??
-                      t('activity:settings.lastSynced', {
-                        when: t(`activity:today.${synced.key}`, {
-                          count: synced.count,
-                        }).toLowerCase(),
-                      })}
+                    {t('activity:settings.lastSynced', {
+                      when: t(`activity:today.${synced.key}`, {
+                        count: synced.count,
+                      }).toLowerCase(),
+                    })}
                   </Text>
                 </View>
                 <Badge tone="pandan">
@@ -184,7 +192,15 @@ function HealthSettingsScreen() {
         <Card>
           <View className="gap-3">
             <Text variant="body">{t('activity:connect.body')}</Text>
-            <Button fullWidth onPress={() => router.push('/activity')}>
+            {/* `/(tabs)/activity`, NOT `/activity`.
+                Two route files are named `activity` — this tab and the
+                onboarding question about how active your day is — and a route
+                GROUP contributes no path segment, so both are `/activity` and
+                expo-router picks one. It picked onboarding. Tapping this button
+                after disconnecting dropped the user into "How active is your
+                day?", progress bar and all, with no way back to the screen they
+                had asked for. */}
+            <Button fullWidth onPress={() => router.push('/(tabs)/activity')}>
               {t('activity:title')}
             </Button>
           </View>
@@ -212,6 +228,12 @@ function HealthSettingsScreen() {
               min={1000}
               max={30000}
               step={500}
+              // Separated, like the same number everywhere else it appears —
+              // "Goal 8,000 steps" on the steps screen is this figure. The
+              // default format is fraction-aware for portions and left this one
+              // reading "8000". Display only: this stepper is not `editable`,
+              // so no separator ever reaches the parser.
+              format={count}
               accessibilityLabel={t('activity:settings.stepGoal')}
             />
           </View>

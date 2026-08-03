@@ -35,7 +35,7 @@ import { AppBar, Card, EmptyState, Screen, SegmentedControl, Skeleton, Text } fr
  */
 export default function BalanceScreen() {
   const { t } = useTranslation(['activity', 'progress', 'common'])
-  const goBack = useBack('/activity')
+  const goBack = useBack('/(tabs)/activity')
 
   const [range, setRange] = useState<TrendRange>('7d')
   const series = useActivitySeries(range)
@@ -75,7 +75,11 @@ export default function BalanceScreen() {
    * up to the range's whole burn by construction. The bar is then exactly
    * proportional and the rows are exactly what it is proportional to.
    *
-   * The card's heading names the range, so a total is what it reads as.
+   * WHICH MAKES THE HEADING LOAD-BEARING. A total is only readable next to the
+   * window it is a total OF, and this card's heading did not name one — so
+   * "Resting 48,775 kcal" sat on the 30-day view with nothing to divide it by.
+   * `SPLIT_KEY` puts the range in the heading, which is where the rest of this
+   * comment always claimed it was.
    */
   const restingTotal = summary.data?.restingKcalTotal ?? 0
   const workoutsTotal = summary.data?.sessionKcal ?? 0
@@ -123,8 +127,9 @@ export default function BalanceScreen() {
         // control, and the two together do not fit a 393pt phone — one of them
         // ellipsises whatever the split. The row on the Activity tab that opens
         // this screen is called "Balance", so the short form is also the one
-        // that matches how the user got here. "Energy balance" survives as the
-        // card heading below, where there is room for it.
+        // that matches how the user got here. The longer form was kept as a
+        // spare string for a card heading it never reached, and has been
+        // deleted rather than left looking like it was in use somewhere.
         title={t('activity:today.balanceRow')}
         onBack={goBack}
         backLabel={t('common:action.back')}
@@ -189,8 +194,8 @@ export default function BalanceScreen() {
           </View>
         </Card>
       ) : (
-        <Card title={t('activity:balance.splitTitle')}>
-          <SplitBar parts={parts} accessibilityLabel={t('activity:balance.splitTitle')} />
+        <Card title={t(SPLIT_KEY[range])}>
+          <SplitBar parts={parts} accessibilityLabel={t(SPLIT_KEY[range])} />
         </Card>
       )}
 
@@ -208,4 +213,17 @@ const RANGE_KEY = {
   '7d': 'progress:range.7d',
   '30d': 'progress:range.30d',
   '1y': 'progress:range.1y',
+} as const satisfies Record<TrendRange, string>
+
+/**
+ * The split card's heading, per range.
+ *
+ * A map rather than an assembled `activity:balance.splitTitle${range}` — see
+ * `PATTERN_KEY` on the steps screen for the same reasoning: an assembled key
+ * type-checks and then renders itself after a rename.
+ */
+const SPLIT_KEY = {
+  '7d': 'activity:balance.splitTitle7d',
+  '30d': 'activity:balance.splitTitle30d',
+  '1y': 'activity:balance.splitTitle1y',
 } as const satisfies Record<TrendRange, string>
