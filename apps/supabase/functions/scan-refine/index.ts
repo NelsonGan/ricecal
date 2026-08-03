@@ -13,7 +13,14 @@
 //   quantity    only the amount changed: rescale the entry's quantity, and
 //               every ingredient under it by the same factor. A calorie total
 //               for the whole dish lands here too — "more like 500 calories"
-//               is a different amount of this food, not a different food
+//               is a different amount of this food, not a different food.
+//               NOT `override_kcal`, which would hit the figure exactly:
+//               the override sits above the parts in `food_log_details`, so
+//               an entry with a breakdown would show the typed number while
+//               its own ingredient list added to something else. Rescaling
+//               keeps the two in lockstep and pays for it in granularity —
+//               twentieths of a portion, so a figure within about 5% of where
+//               the entry already is rounds back to no change at all
 //   adjust      one part of the same meal was added, removed, resized or
 //               SWAPPED: on a plate with a breakdown that part is edited in
 //               place and the entry is re-priced from what is left; on one
