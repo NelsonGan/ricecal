@@ -24,6 +24,14 @@ export const profile = {
     goalsValue: '{{kcal}} kcal',
     reminders: 'Reminders',
     remindersValue: '{{count}} on',
+    /**
+     * Beside the health-sync row when nothing is connected.
+     *
+     * The connected case reuses `activity:provider.*`, which already names each
+     * store — this is only the absence, and "Not connected" is the one thing
+     * that row has to be able to say without being opened.
+     */
+    healthOff: 'Not connected',
     units: 'Units and language',
     unitsValue: '{{units}}, {{language}}',
     help: 'Help centre',

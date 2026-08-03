@@ -97,12 +97,21 @@ export const activity = {
     standUnit: '/ {{goal}} hr',
     stepsUnit: '/ {{goal}}',
     /**
+     * The reference when the store sets no goal — which on Apple is always, and
+     * used to leave three tiles drawing an empty track for the life of the app.
+     *
+     * Reads in the same grammar as the goal units above, and drops the quantity
+     * for the same reason `stepsUnit` does: the tile is a third of a phone wide
+     * and the label above it already says what is being counted.
+     */
+    avgUnit: '/ {{value}} avg',
+    /**
      * The provider has no opinion on this measurement — an em dash, never a
      * zero. Only the nullable tiles can show it: active energy and steps are
      * `not null` columns, so a zero there is a real measurement.
      */
     none: '—',
-    /** No goal from the watch, so the tile is a figure without a target. */
+    /** Neither a goal nor a history to average: a connection minutes old. */
     noGoal: 'kcal',
     noGoalMinutes: 'min',
     noGoalHours: 'hr',
@@ -118,13 +127,24 @@ export const activity = {
     budgetOff: 'Movement is not extending your budget. Turn it on in Activity settings.',
 
     todayTitle: 'TODAY',
-    seeAll: 'All',
+    /**
+     * The second section, and the reason there is one.
+     *
+     * Balance and History are seven-day figures and sat under "TODAY", where the
+     * balance read as this morning's. A heading each is cheaper than a
+     * qualifier on every row.
+     */
+    weekTitle: 'THIS WEEK',
     stepsRow: 'Steps',
     stepsRowValue: '{{steps}} today',
     balanceRow: 'Balance',
-    balanceDeficit: '{{value}} deficit',
-    balanceSurplus: '{{value}} surplus',
+    balanceDeficit: '{{value}} deficit a day',
+    balanceSurplus: '{{value}} surplus a day',
     balanceUnknown: 'Not enough logged',
+    /** What History has to say without opening it. */
+    historyRowValue_one: '{{count}} workout · {{time}}',
+    historyRowValue_other: '{{count}} workouts · {{time}}',
+    historyNone: 'No workouts yet',
 
     noSessionsTitle: 'No workouts today',
     noSessionsBody: 'A walk counts. Anything your watch records shows up here.',
@@ -141,8 +161,13 @@ export const activity = {
     storeEmpty:
       'This health store is connected but has no data in it — which is what a simulator looks like. Generated data will fill these screens in.',
 
-    /** Android, where the third ring has nothing behind it. */
-    noStandNote: '{{source}} does not report stand hours, so we show steps instead.',
+    /**
+     * Android, where the third ring has nothing behind it.
+     *
+     * Generic only. There was a `{{source}}` variant naming the writing app and
+     * nothing ever rendered it — Health Connect names the app that wrote a
+     * SESSION, not the one that failed to write a record type nobody has.
+     */
     noStandNoteGeneric: 'Your health app does not report stand hours, so we show steps instead.',
   },
 
@@ -150,6 +175,14 @@ export const activity = {
     distance: 'DISTANCE',
     time: 'TIME',
     pace: 'PACE',
+    /**
+     * Its own heading, not PACE.
+     *
+     * A speed rises as you go faster and a pace falls, so the two read in
+     * opposite directions; "PACE 24.1 km/h" made a cyclist work out which they
+     * had been given.
+     */
+    speed: 'SPEED',
     paceUnit: '{{value}} /km',
     speedUnit: '{{value}} km/h',
     avgHr: 'AVG HR',
@@ -169,6 +202,19 @@ export const activity = {
       '{{source}} sends one average per session. Connect a watch that writes per minute samples for zones and splits.',
     zonesNoneBodyGeneric:
       'This session came with one average rather than a reading a minute, so there is nothing to band.',
+
+    /**
+     * No pulse data AT ALL, which is a different sentence from the three above.
+     *
+     * Those describe a session that arrived with one average; this one arrived
+     * with none, and saying "session average only" over it described a figure
+     * the screen was not showing and the store had never sent. A phone-logged
+     * walk and a treadmill entered by hand both land here.
+     */
+    noHeartRate: 'No heart rate recorded',
+    noHeartRateBody: '{{source}} logged this session without heart rate. A watch would add it.',
+    noHeartRateBodyGeneric:
+      'Nothing recorded a pulse for this session — a phone can time a workout but cannot take one.',
 
     counted: "Already counted in today's budget",
     from: 'From {{source}}',
@@ -195,7 +241,6 @@ export const activity = {
     noHours: 'No hourly breakdown for this day.',
 
     weekTitle: 'THIS WEEK',
-    monthTitle: 'THIS MONTH',
     dailyAvg: 'DAILY AVG',
     goalDays: 'GOAL DAYS',
     best: 'BEST',
@@ -207,14 +252,18 @@ export const activity = {
      * quiet — and the design's "weekends drop by half" is a claim this screen
      * cannot check. Naming the shape without naming the days is the version
      * that is always true of the chart above it.
+     *
+     * It does not say "week" either, any more. `weekShape` compares a daily best
+     * against a daily average, so it is range-agnostic arithmetic — but the copy
+     * was not, and the range switch above it left "Your week is even" sitting
+     * under twelve months of columns.
      */
-    weekendNote: 'A few days carry your week. A short walk on the quiet ones would even it out.',
-    steadyNote: 'Your week is even. Whatever you are doing, it is a habit now.',
+    weekendNote: 'A few days carry the total. A short walk on the quiet ones would even it out.',
+    steadyNote: 'Your days are even. Whatever you are doing, it is a habit now.',
     shortNote: 'Not enough days yet to see a pattern.',
   },
 
   balance: {
-    title: 'Energy balance',
     chartTitle: 'In versus out',
     chartBody: 'Eaten against total burn',
     deficit: '{{value}} deficit',
@@ -223,7 +272,17 @@ export const activity = {
     eatenLegend: 'Eaten',
     burnedLegend: 'Burned',
 
-    splitTitle: 'WHERE THE BURN COMES FROM',
+    /**
+     * The heading names the RANGE, because the figures under it are range
+     * totals.
+     *
+     * It did not, and the numbers were unreadable for it: "Resting 48,775 kcal"
+     * on the 30-day view is either a month's resting burn or a claim that the
+     * user is a furnace, and nothing on the card said which.
+     */
+    splitTitle7d: 'WHERE THE BURN CAME FROM · 7 DAYS',
+    splitTitle30d: 'WHERE THE BURN CAME FROM · 30 DAYS',
+    splitTitle1y: 'WHERE THE BURN CAME FROM · 12 MONTHS',
     resting: 'Resting',
     restingBody: 'Just being alive',
     workouts: 'Workouts',
@@ -239,8 +298,17 @@ export const activity = {
      */
     partial: 'Based on {{days}} of {{total}} days that had both a meal log and a resting figure.',
     noRestingTitle: 'No resting energy',
+    /**
+     * What is missing and what it costs, and nothing more.
+     *
+     * This used to promise that "the balance uses the estimate from your profile
+     * instead". There is no such fallback: `activity_summary` filters the
+     * balance to days that HAVE a resting figure, so with none at all the
+     * headline is null and the chart's burn columns are stubs. Describing a
+     * substitution that does not happen is worse than describing the gap.
+     */
     noRestingBody:
-      'Your health app does not report what your body burns at rest, so the balance uses the estimate from your profile instead.',
+      'Your health app does not report what your body burns at rest, so there is no daily balance to draw. Steps, workouts and active energy are unaffected.',
     empty: 'Log a few meals with your watch on and this fills in.',
   },
 
@@ -264,7 +332,15 @@ export const activity = {
     syncing: 'Syncing…',
     extendBudget: 'Movement extends my budget',
     extendBudgetBody: 'Burned calories are added to the day, never subtracted from what you ate.',
-    stepGoal: 'Daily step goal',
+    /**
+     * "Step goal", not "Daily step goal".
+     *
+     * It shares a row with a stepper, and separating the number ("8,000" rather
+     * than "8000") took the one character that pushed the label from two wrapped
+     * lines to three. The row sits under a movement toggle on a health-sync
+     * screen, so "daily" was carrying no weight the context did not already.
+     */
+    stepGoal: 'Step goal',
     disconnect: 'Disconnect',
     disconnectBody: 'Stops syncing. Everything already read stays in your history.',
     disconnectConfirm: 'Stop syncing?',
@@ -315,12 +391,15 @@ export const activity = {
     other: 'Workout',
   },
 
-  /** Units and short formats used across the tab. */
+  /**
+   * Units used across the tab.
+   *
+   * One, now. There were five; `km`, `steps`, `minutes` and `hoursMinutes` were
+   * never rendered, because the formats they duplicate live in
+   * `features/activity/format.ts` where the decision about when NOT to show a
+   * figure lives with them.
+   */
   unit: {
     kcal: '{{value}} kcal',
-    km: '{{value}} km',
-    steps: '{{value}} steps',
-    minutes: '{{value}} min',
-    hoursMinutes: '{{hours}}h {{minutes}}m',
   },
 } as const
