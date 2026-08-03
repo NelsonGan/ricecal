@@ -1,5 +1,12 @@
-// The photo-scan endpoint. The cascade itself lives in _shared/cascade.ts,
-// shared with scan-refine — this file is auth, the vision call, and the loop.
+// The meal-recognition endpoint: a photographed plate, or a typed one.
+//
+// The cascade itself lives in _shared/cascade.ts, shared with scan-refine —
+// this file is auth, the first model call, and the loop. Which model call is
+// the only difference between the two inputs: a photo goes to `analysePhoto`
+// and a sentence to `describeMeal`, both answer in the same `Vision` shape,
+// and from there the catalogue search, the verifier, the estimate and the
+// archetype floor are line-for-line the same. Text is not a lesser path with
+// its own arithmetic; it is the same pipeline asked a question in words.
 //
 // Once the caller is authenticated and the body parses, this function does not
 // return an HTTP error: any failure in tiers 1-4 falls to the archetype floor,
@@ -20,6 +27,7 @@ import {
 } from '../_shared/cascade.ts'
 import {
   analysePhoto,
+  describeMeal,
   foldMealItems,
   type MockSteer,
   mockActive,
@@ -29,6 +37,12 @@ import {
 
 type ScanRequest = {
   photo_path?: string
+  /**
+   * The meal in words, for a log that had no camera in it. Only read when
+   * there is no `photo_path`: a request carrying both has a picture of the
+   * food, and a picture is the better evidence of what is on the plate.
+   */
+  text?: string
   log_date: string
   mock?: MockSteer
 }
@@ -65,6 +79,9 @@ Deno.serve(async (req: Request) => {
   if (!logDate) return json({ ok: false, error: 'log_date is required' }, 400)
 
   const photoPath = typeof body.photo_path === 'string' ? body.photo_path : null
+  // Same ceiling as a refine instruction. A meal takes a sentence to describe;
+  // anything past this is prose, and the model charges by the token for it.
+  const description = photoPath ? '' : (body.text ?? '').trim().slice(0, 500)
   // Steering is a test affordance; outside mock mode it is ignored entirely.
   const mock = mockActive() ? body.mock : undefined
 
@@ -73,33 +90,39 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   )
   const scanId = crypto.randomUUID()
+  const source = description ? 'text' : 'camera'
   // Stage failures, readable two ways: always in the function logs, and in
   // the response when the caller asks (`debug: true`) — nothing secret is in
   // here, and "which tier failed and why" is exactly what a bug report needs.
   const trace: string[] = []
   const wantDebug = (body as { debug?: boolean }).debug === true
 
+  /** Read the photo out of the bucket, as base64 for the vision call. */
+  const fetchPhoto = async (path: string): Promise<string> => {
+    const { data: blob, error: downloadError } = await db.storage.from('meal-photos').download(path)
+    if (downloadError || !blob) throw downloadError ?? new Error('photo missing')
+    const bytes = new Uint8Array(await blob.arrayBuffer())
+    let binary = ''
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+    }
+    return btoa(binary)
+  }
+
   try {
-    // -- Vision. A failure here — network, model, no photo — skips straight
-    // to the archetype floor with no item context: the terminal row.
+    // -- The first model call. A failure here — network, model, no photo —
+    // skips straight to the archetype floor with no item context: the
+    // terminal row.
+    //
+    // One meal, one entry, whichever way it was described: if the model split
+    // the tray into per-side items, `foldMealItems` puts them back into a
+    // single composite plate with the parts as its breakdown.
     let vision: Vision | null = null
     try {
-      let photoBase64: string | null = null
-      if (photoPath && !mockActive()) {
-        const { data: blob, error: downloadError } = await db.storage
-          .from('meal-photos')
-          .download(photoPath)
-        if (downloadError || !blob) throw downloadError ?? new Error('photo missing')
-        const bytes = new Uint8Array(await blob.arrayBuffer())
-        let binary = ''
-        for (let i = 0; i < bytes.length; i += 0x8000) {
-          binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
-        }
-        photoBase64 = btoa(binary)
-      }
-      // One meal, one entry: if the model split the tray into per-side items,
-      // fold them back into a single composite plate. Drinks stay separate.
-      vision = foldMealItems(await analysePhoto(photoBase64, mock))
+      const photoBase64 = photoPath && !mockActive() ? await fetchPhoto(photoPath) : null
+      vision = foldMealItems(
+        description ? await describeMeal(description, mock) : await analysePhoto(photoBase64, mock),
+      )
     } catch (error) {
       const message = `[vision] ${describe(error)}`
       console.error(message)
@@ -119,6 +142,7 @@ Deno.serve(async (req: Request) => {
           resolved,
           photoPath,
           suggestedEdits: [],
+          source,
         })
         await db.from('food_scan_items').insert({
           user_id: userId,
@@ -173,6 +197,7 @@ Deno.serve(async (req: Request) => {
         // plate N times in the diary.
         photoPath: firstEntry ? photoPath : null,
         suggestedEdits: item?.suggested_edits ?? [],
+        source,
       })
       firstEntry = false
       written.push(entry)
@@ -182,6 +207,10 @@ Deno.serve(async (req: Request) => {
         user_id: userId,
         scan_id: scanId,
         item_index: index,
+        // What the user typed, when they typed it. The model's queries below
+        // are its reading of this sentence, and "which phrasings does it read
+        // badly" is only answerable with both halves on the row.
+        described_text: description || null,
         scene,
         specific_query: item?.specific_query ?? null,
         generic_query: item?.generic_query ?? null,
