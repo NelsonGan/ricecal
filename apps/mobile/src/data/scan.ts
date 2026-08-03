@@ -115,6 +115,11 @@ export function useUpdateIngredient() {
       queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) })
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+      // Movement is measured against what was eaten: the balance chart, the
+      // "eaten" average and the deficit sentence all read `daily_nutrition`
+      // through `activity_summary`. Without this a meal logged today left
+      // the Activity tab still saying "Not enough logged".
+      queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
     },
   })
 }
@@ -158,6 +163,7 @@ export function useRemoveIngredient() {
       queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) })
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+      queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
     },
   })
 }
@@ -215,6 +221,7 @@ export function useRefineEntry() {
           queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) }),
         ])
         queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+        queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
         return data
       }
 

@@ -64,14 +64,30 @@ auth.users
        ├── subscriptions ──── read-only mirror of RevenueCat
        ├── food_logs ──────── what was eaten          → foods, food_servings
        ├── daily_logs ─────── water and a day note
-       └── weight_logs ────── the source of truth for current weight
+       ├── weight_logs ────── the source of truth for current weight
+       └── health_connections  which health store, and how far back it has read
+            ├── activity_days ───── one day of movement, keyed by local date
+            ├── activity_sessions  one workout, keyed by the store's own id
+            └── activity_hours ──── steps by local hour, last month only
 
 foods ──── food_servings      the shared catalogue, read-only to clients
 ```
 
 Read shapes are views, all `security_invoker`: `food_details`,
 `food_log_details`, `daily_nutrition`, `user_food_stats`, `current_daily_goals`.
-Plus `goals_on(date)` and `logging_streak()`.
+Plus `goals_on(date)` and `logging_streak()`, and the two range families —
+`trend_days` / `trend_series` / `trend_summary` for the diary, and
+`activity_days_range` / `activity_series` / `activity_summary` for movement.
+
+**The activity tables are the one thing `authenticated` writes in bulk**, and
+they are the only tables in this schema with a background writer. Nothing about
+them needs a server: the data is already on the user's phone, behind a
+permission granted to the app, so there is no secret to hold and nothing for an
+edge function to authenticate against. What makes that safe to repeat is the
+keys — a day by its date, an hour by its hour, a session by the health store's
+own identifier — so the phone re-reading the last seven days on every foreground
+converges instead of doubling. See the app's `data/health-sync.ts` for why it
+re-reads a window rather than tracking a cursor.
 
 ## Conventions
 

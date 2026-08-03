@@ -74,7 +74,16 @@
             "deploymentTarget": "16.4"
           }
         }
-      ]
+      ],
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "RiceCal reads your steps, workouts and calories burned so your movement can extend each day's calorie budget.",
+          "NSHealthUpdateUsageDescription": "RiceCal never writes to Apple Health. It only reads your activity.",
+          "background": false
+        }
+      ],
+      "react-native-health-connect"
     ],
     "extra": {
       "router": {},
