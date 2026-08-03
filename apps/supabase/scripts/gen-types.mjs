@@ -40,9 +40,25 @@ const BANNER = `/**
 
 `
 
+/**
+ * Against the linked project instead of the local stack.
+ *
+ *   SUPABASE_PROJECT_ID=<ref> pnpm db:types
+ *
+ * Local is still the default and still the right answer while a migration is
+ * being written — it is the copy the migration was proved against. This exists
+ * for the other case: a schema change applied straight to the remote project,
+ * where regenerating from local would emit types for a database that does not
+ * have the columns yet. It needs `supabase login`; without a token the CLI
+ * blocks on an invisible prompt rather than failing.
+ */
+const projectId = process.env.SUPABASE_PROJECT_ID
+
 const generated = execFileSync(
   'supabase',
-  ['gen', 'types', 'typescript', '--local', '--workdir', WORKDIR],
+  projectId
+    ? ['gen', 'types', 'typescript', '--project-id', projectId]
+    : ['gen', 'types', 'typescript', '--local', '--workdir', WORKDIR],
   {
     encoding: 'utf8',
     maxBuffer: 32 * 1024 * 1024,

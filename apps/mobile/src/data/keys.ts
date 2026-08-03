@@ -18,6 +18,15 @@ export const keys = {
   subscription: (userId: string) => ['subscription', userId] as const,
 
   day: (userId: string, date: string) => ['day', userId, date] as const,
+  /**
+   * Every day of this account.
+   *
+   * The prefix exists for the health sync, which is the one writer that changes
+   * a figure on a day it cannot name: a watch backfilling Tuesday moves
+   * Tuesday's budget, and the pass that wrote it has a window rather than a
+   * date on screen.
+   */
+  dayAll: (userId: string) => ['day', userId] as const,
   /** Totals for a date range, for the charts and the weekly report. */
   nutrition: (userId: string, from: string, to: string) => ['nutrition', userId, from, to] as const,
   streak: (userId: string) => ['streak', userId] as const,
@@ -57,6 +66,31 @@ export const keys = {
    * screen.
    */
   trendsAll: (userId: string) => ['trends', userId] as const,
+
+  /**
+   * Movement. The same series/summary pair as Trends, plus the two lists the
+   * Activity tab needs — a day's sessions, and a day's hours.
+   *
+   * `activitySessions` takes a nullable date because one query serves both the
+   * day's list and the whole history; the null is part of the key so the two
+   * cannot overwrite each other.
+   */
+  activityDay: (userId: string, date: string) => ['activity', userId, 'day', date] as const,
+  activityHours: (userId: string, date: string) => ['activity', userId, 'hours', date] as const,
+  activitySessions: (userId: string, date: string | null) =>
+    ['activity', userId, 'sessions', date ?? 'all'] as const,
+  activitySeries: (userId: string, range: string) => ['activity', userId, range, 'series'] as const,
+  activitySummary: (userId: string, range: string) =>
+    ['activity', userId, range, 'summary'] as const,
+  /**
+   * The prefix of all of the above. What the sync invalidates: one pass moves
+   * a day, a chart column, a summary tile and possibly a session list, and it
+   * is in no position to know which range or which date is on screen.
+   */
+  activityAll: (userId: string) => ['activity', userId] as const,
+  /** Keyed by session rather than by user: only ever asked for by id. */
+  activitySession: (id: string) => ['activity-session', id] as const,
+  healthConnection: (userId: string) => ['health-connection', userId] as const,
 
   photo: (path: string) => ['photo', path] as const,
 } as const

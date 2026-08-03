@@ -21,10 +21,22 @@ export const common = {
 
   nav: {
     today: 'Today',
+    activity: 'Activity',
     trends: 'Trends',
     me: 'Me',
     /** The raised centre button. */
     log: 'Log food',
+  },
+
+  /**
+   * Named days, for lists that mix recent and not-so-recent rows.
+   *
+   * Only the two everybody thinks of by name. Anything older is a weekday or a
+   * date, decided by the list — "3 days ago" is a phrase people have to convert.
+   */
+  date: {
+    today: 'Today',
+    yesterday: 'Yesterday',
   },
 
   meal: {
