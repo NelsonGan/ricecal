@@ -16,33 +16,166 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: '14.5'
   }
   public: {
     Tables: {
+      activity_days: {
+        Row: {
+          active_kcal: number
+          created_at: string
+          distance_m: number | null
+          exercise_goal_min: number | null
+          exercise_minutes: number | null
+          flights: number | null
+          log_date: string
+          move_goal_kcal: number | null
+          provider: Database['public']['Enums']['health_provider']
+          resting_kcal: number | null
+          stand_goal_hr: number | null
+          stand_hours: number | null
+          steps: number
+          synced_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_kcal?: number
+          created_at?: string
+          distance_m?: number | null
+          exercise_goal_min?: number | null
+          exercise_minutes?: number | null
+          flights?: number | null
+          log_date: string
+          move_goal_kcal?: number | null
+          provider: Database['public']['Enums']['health_provider']
+          resting_kcal?: number | null
+          stand_goal_hr?: number | null
+          stand_hours?: number | null
+          steps?: number
+          synced_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_kcal?: number
+          created_at?: string
+          distance_m?: number | null
+          exercise_goal_min?: number | null
+          exercise_minutes?: number | null
+          flights?: number | null
+          log_date?: string
+          move_goal_kcal?: number | null
+          provider?: Database['public']['Enums']['health_provider']
+          resting_kcal?: number | null
+          stand_goal_hr?: number | null
+          stand_hours?: number | null
+          steps?: number
+          synced_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      activity_hours: {
+        Row: {
+          active_kcal: number
+          created_at: string
+          distance_m: number | null
+          hour: number
+          log_date: string
+          steps: number
+          user_id: string
+        }
+        Insert: {
+          active_kcal?: number
+          created_at?: string
+          distance_m?: number | null
+          hour: number
+          log_date: string
+          steps?: number
+          user_id: string
+        }
+        Update: {
+          active_kcal?: number
+          created_at?: string
+          distance_m?: number | null
+          hour?: number
+          log_date?: string
+          steps?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      activity_sessions: {
+        Row: {
+          active_kcal: number
+          avg_hr: number | null
+          created_at: string
+          distance_m: number | null
+          duration_s: number
+          elevation_m: number | null
+          ended_at: string
+          external_id: string
+          hr_zones: Json | null
+          id: string
+          kind: string
+          kind_label: string | null
+          log_date: string
+          max_hr: number | null
+          provider: Database['public']['Enums']['health_provider']
+          source_name: string | null
+          started_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_kcal?: number
+          avg_hr?: number | null
+          created_at?: string
+          distance_m?: number | null
+          duration_s: number
+          elevation_m?: number | null
+          ended_at: string
+          external_id: string
+          hr_zones?: Json | null
+          id?: string
+          kind: string
+          kind_label?: string | null
+          log_date: string
+          max_hr?: number | null
+          provider: Database['public']['Enums']['health_provider']
+          source_name?: string | null
+          started_at: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_kcal?: number
+          avg_hr?: number | null
+          created_at?: string
+          distance_m?: number | null
+          duration_s?: number
+          elevation_m?: number | null
+          ended_at?: string
+          external_id?: string
+          hr_zones?: Json | null
+          id?: string
+          kind?: string
+          kind_label?: string | null
+          log_date?: string
+          max_hr?: number | null
+          provider?: Database['public']['Enums']['health_provider']
+          source_name?: string | null
+          started_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_goals: {
         Row: {
           carbs_g: number
@@ -520,6 +653,42 @@ export type Database = {
         }
         Relationships: []
       }
+      health_connections: {
+        Row: {
+          backfilled_from: string | null
+          connected: boolean
+          created_at: string
+          device_name: string | null
+          last_synced_at: string | null
+          permissions: string[]
+          provider: Database['public']['Enums']['health_provider']
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          backfilled_from?: string | null
+          connected?: boolean
+          created_at?: string
+          device_name?: string | null
+          last_synced_at?: string | null
+          permissions?: string[]
+          provider: Database['public']['Enums']['health_provider']
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          backfilled_from?: string | null
+          connected?: boolean
+          created_at?: string
+          device_name?: string | null
+          last_synced_at?: string | null
+          permissions?: string[]
+          provider?: Database['public']['Enums']['health_provider']
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       meal_times: {
         Row: {
           at: string
@@ -642,6 +811,7 @@ export type Database = {
       }
       user_settings: {
         Row: {
+          activity_extends_budget: boolean
           anonymous_food_data: boolean
           created_at: string
           energy: Database['public']['Enums']['energy_unit']
@@ -652,11 +822,13 @@ export type Database = {
           quiet_from: string
           quiet_to: string
           share_with_family: boolean
+          step_goal: number
           units: Database['public']['Enums']['unit_system']
           updated_at: string
           user_id: string
         }
         Insert: {
+          activity_extends_budget?: boolean
           anonymous_food_data?: boolean
           created_at?: string
           energy?: Database['public']['Enums']['energy_unit']
@@ -667,11 +839,13 @@ export type Database = {
           quiet_from?: string
           quiet_to?: string
           share_with_family?: boolean
+          step_goal?: number
           units?: Database['public']['Enums']['unit_system']
           updated_at?: string
           user_id: string
         }
         Update: {
+          activity_extends_budget?: boolean
           anonymous_food_data?: boolean
           created_at?: string
           energy?: Database['public']['Enums']['energy_unit']
@@ -682,6 +856,7 @@ export type Database = {
           quiet_from?: string
           quiet_to?: string
           share_with_family?: boolean
+          step_goal?: number
           units?: Database['public']['Enums']['unit_system']
           updated_at?: string
           user_id?: string
@@ -897,6 +1072,86 @@ export type Database = {
       }
     }
     Functions: {
+      activity_days_range: {
+        Args: { p_range: string; p_user_id?: string }
+        Returns: {
+          active_kcal: number
+          at: string
+          bucket: string
+          distance_m: number
+          eaten_kcal: number
+          exercise_goal_min: number
+          exercise_minutes: number
+          goal_kcal: number
+          has_data: boolean
+          move_goal_kcal: number
+          resting_kcal: number
+          session_kcal: number
+          session_seconds: number
+          sessions: number
+          stand_goal_hr: number
+          stand_hours: number
+          step_goal: number
+          steps: number
+        }[]
+      }
+      activity_series: {
+        Args: { p_range: string; p_user_id?: string }
+        Returns: {
+          active_days: number
+          active_kcal_avg: number
+          active_kcal_total: number
+          balance_avg: number
+          bucket_end: string
+          bucket_start: string
+          burn_avg: number
+          days: number
+          distance_total_m: number
+          eaten_avg: number
+          exercise_min_avg: number
+          resting_kcal_avg: number
+          session_kcal: number
+          session_minutes: number
+          sessions: number
+          stand_hours_avg: number
+          step_goal: number
+          step_goal_days: number
+          steps_avg: number
+          steps_best: number
+          steps_total: number
+        }[]
+      }
+      activity_summary: {
+        Args: { p_range: string; p_user_id?: string }
+        Returns: {
+          active_days: number
+          active_kcal_avg: number
+          active_kcal_total: number
+          balance_avg: number
+          balance_days: number
+          burn_avg: number
+          days: number
+          distance_total_m: number
+          eaten_avg: number
+          eaten_total: number
+          exercise_min_avg: number
+          exercise_min_total: number
+          from_date: string
+          resting_kcal_avg: number
+          resting_kcal_total: number
+          session_kcal: number
+          session_minutes: number
+          sessions: number
+          stand_hours_avg: number
+          step_goal: number
+          step_goal_days: number
+          steps_avg: number
+          steps_best: number
+          steps_total: number
+          to_date: string
+          walking_kcal: number
+        }[]
+      }
       compute_targets: {
         Args: {
           p_activity: Database['public']['Enums']['activity_level']
@@ -1089,6 +1344,7 @@ export type Database = {
       energy_unit: 'kcal' | 'kj'
       entry_source: 'search' | 'quick_add' | 'camera' | 'voice' | 'import'
       food_place: 'mamak' | 'kopitiam' | 'hawker' | 'packaged' | 'home'
+      health_provider: 'apple_health' | 'health_connect' | 'demo'
       icon_set: 'body' | 'dishes' | 'food' | 'system' | 'ui'
       meal: 'breakfast' | 'lunch' | 'dinner' | 'snack'
       sex: 'female' | 'male'
@@ -1219,15 +1475,13 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       activity_level: ['sedentary', 'light', 'on_feet', 'very_active'],
       energy_unit: ['kcal', 'kj'],
       entry_source: ['search', 'quick_add', 'camera', 'voice', 'import'],
       food_place: ['mamak', 'kopitiam', 'hawker', 'packaged', 'home'],
+      health_provider: ['apple_health', 'health_connect', 'demo'],
       icon_set: ['body', 'dishes', 'food', 'system', 'ui'],
       meal: ['breakfast', 'lunch', 'dinner', 'snack'],
       sex: ['female', 'male'],

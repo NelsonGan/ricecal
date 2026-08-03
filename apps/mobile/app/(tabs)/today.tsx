@@ -3,10 +3,12 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import {
+  useActivityDay,
   useDayLog,
   usePendingSnaps,
   useRemoveEntry,
   useSelectedDate,
+  useSettings,
   useSetWater,
   useStreak,
   useTargets,
@@ -59,6 +61,10 @@ export default function TodayScreen() {
   const removeEntry = useRemoveEntry()
   const pending = usePendingSnaps()
   const setWater = useSetWater(selectedDate)
+  // The day's movement, if a health store is connected. Null on every account
+  // that has not connected one, which is what keeps `burned` at zero below.
+  const { data: activity } = useActivityDay(selectedDate)
+  const { data: settings } = useSettings()
   /**
    * Whether the summary is showing the allowance rather than what is left.
    *
@@ -69,7 +75,21 @@ export default function TodayScreen() {
   const [showGoals, setShowGoals] = useState(false)
 
   const eaten = sumMacros(day.entries)
-  const budget = targets?.kcal ?? 0
+
+  /**
+   * Movement extends the budget; it never shrinks what was eaten.
+   *
+   * `activeKcal` and not the day's total burn — the goal is already a
+   * Mifflin-St Jeor figure containing basal metabolism, so adding resting
+   * energy would credit a user for being alive twice. The same rule, and the
+   * same reasoning, as `BudgetStrip` on the Activity tab; that screen shows the
+   * arithmetic and this one shows its result.
+   *
+   * Zero on an account with no health connection, so the ring is exactly what
+   * it was before any of this existed.
+   */
+  const burned = settings?.activity_extends_budget === false ? 0 : (activity?.activeKcal ?? 0)
+  const budget = (targets?.kcal ?? 0) + burned
   const left = budget - eaten.kcal
   const over = left < 0
 
@@ -171,6 +191,17 @@ export default function TodayScreen() {
                   ring leaves. Stacked callers do not. */}
               <MacroBars className="flex-1" eaten={eaten} targets={targets} showGoal={showGoals} />
             </Tappable>
+
+            {/* Where the extra came from.
+                Without this line the goal simply reads higher than the one set
+                in Settings, and the first thought is that the app has changed
+                it. Only shown when there IS movement credited, so an account
+                with no health store sees the screen it always saw. */}
+            {burned > 0 ? (
+              <Text variant="meta" className="pt-1 text-pandan-ink">
+                {t('logging:today.burnedNote', { kcal: burned.toLocaleString() })}
+              </Text>
+            ) : null}
 
             {over ? (
               <Text variant="meta" className="pt-1">

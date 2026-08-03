@@ -151,6 +151,11 @@ export function useSnapFood() {
           queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
           queryClient.invalidateQueries({ queryKey: keys.recentFoodsAll(userId) })
           queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+          // Movement is measured against what was eaten: the balance chart, the
+          // "eaten" average and the deficit sentence all read `daily_nutrition`
+          // through `activity_summary`. Without this a meal logged today left
+          // the Activity tab still saying "Not enough logged".
+          queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
         })
         // A failed scan has nothing to announce, so the booked notice goes
         // too — the row on Today says what happened, and a banner claiming

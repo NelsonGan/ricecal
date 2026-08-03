@@ -14,6 +14,15 @@ export const logging = {
     /** Shown when the day is over budget. Never scold. */
     overNote: 'A bit over today, tomorrow is a new count.',
     /**
+     * Under the ring when a health store credited movement.
+     *
+     * Present so the goal reading higher than the one in Settings is explained
+     * where it is noticed. "+360 from moving" and not "360 burned": the plus
+     * sign is the whole message, and this feature's one invariant is that
+     * movement adds.
+     */
+    burnedNote: '+{{kcal}} from moving today',
+    /**
      * Everything logged today, in one list. It was a heading per meal, and the
      * meals are not headings any more — see `EntryList` for why.
      */

@@ -65,3 +65,11 @@ create type public.subscription_plan as enum ('monthly', 'yearly');
 -- illustration by (set, name); the set is closed, the name is not, so only the
 -- set is an enum.
 create type public.icon_set as enum ('body', 'dishes', 'food', 'system', 'ui');
+
+-- Where movement data came from. Genuinely closed: there are two health stores
+-- on two platforms, and everything else — Garmin, Strava, Fitbit, Samsung
+-- Health — reaches us by writing into one of them rather than by being a third
+-- provider. `demo` is the seeded provider the simulator and the design gallery
+-- run on, and it is a value rather than a flag so a demo row can be found and
+-- deleted by the same query that would disconnect a real one.
+create type public.health_provider as enum ('apple_health', 'health_connect', 'demo');

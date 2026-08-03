@@ -91,6 +91,38 @@ Free text against a logged entry becomes one of: rescale the quantity, adjust a
 part, re-describe the dish and re-run the same cascade, or decline. A
 correction never silently loses the breakdown.
 
+## How movement extends the budget
+
+Apple Health on iOS, Health Connect on Android. Both are on-device stores, so
+the phone is the reader and Postgres is the record — a figure that only exists
+on one handset cannot take part in a budget computed in the database, a chart
+computed in the database, or a report job with no client to ask.
+
+**Reading** — `apps/mobile/src/lib/health/` (and its README, which is the
+authority on what each store actually gives you, and on what Android is missing)
+
+Three providers behind one interface: `apple.ts`, `androidHealth.ts`, and
+`demo.ts` — generated, deterministic, dev-only, and a `health_provider` enum
+value rather than a flag so every query and delete treats it like a real one.
+Both native libraries are `require`d lazily; a top-level import of a Nitro
+module throws on a dev client built before the dependency landed, and the
+symptom is a white screen rather than a broken tab.
+
+**Syncing** — `apps/mobile/src/data/health-sync.ts`
+
+A year-deep backfill on connect, then the last SEVEN DAYS re-read on every
+foreground. Not a cursor, and that is the decision the file is shaped around:
+health data arrives late and arrives edited — a watch out of range writes
+Tuesday on Wednesday, Strava back-dates an upload, Apple recomputes a day when a
+second source appears. "Everything since the last sync" misses all three
+permanently. Every key in the schema exists to make that repetition free.
+
+**Storing** — `apps/supabase/schemas/41_activity.sql`, read side in `93_activity.sql`
+
+`activity_days` keyed by date, `activity_hours` by date and hour,
+`activity_sessions` by the STORE'S OWN id — which is the only one that needed
+thinking about, since two badminton games can start in the same minute.
+
 ## Invariants
 
 Break these and the feature is wrong in ways tests may not catch.
@@ -108,6 +140,17 @@ Break these and the feature is wrong in ways tests may not catch.
 - **Only edge functions write the catalogue**, as `service_role`.
 - **Adjust the amount, never the macros**, when a row is the right dish at the
   wrong size.
+- **Burned calories extend the budget; they never shrink what was eaten.** The
+  arithmetic is `goal + active - eaten`, written as an addition on screen. Every
+  app in this category has at some point shipped the subtraction, and it turns a
+  diary into a scoreboard people play by eating less.
+- **Only ACTIVE energy reaches the budget.** The goal is already Mifflin-St Jeor
+  with an activity multiplier, so adding the store's resting figure would credit
+  a user ~1,500 kcal for being alive twice. Resting is stored beside it, and is
+  read only by the burn breakdown.
+- **Null is not zero in `activity_days`.** Health Connect has no stand hours at
+  all and often no resting energy; a confident zero there is a claim about the
+  user rather than about the provider.
 - **The OpenRouter key never reaches the client.**
 - No embeddings.
 
@@ -128,6 +171,12 @@ Break these and the feature is wrong in ways tests may not catch.
 - **A `TextInput` crops to its line box where `Text` does not.** Copying a text
   variant's `leading-*` onto an input slices tall glyphs. Let the font choose
   its line box and pin the row's height instead.
+- **A current iOS simulator has a Health store with nothing in it.** It is
+  widely documented as having no Health app; that stopped being true. iOS 26
+  reports `isHealthDataAvailable()` as true and shows the real permission sheet,
+  then reads a year and returns nothing — which looks like a broken feature
+  rather than an empty device. The Activity tab offers generated data once a
+  connected store turns out to have no days in it.
 - **Mock AI** is on whenever `OPENROUTER_API_KEY` is unset (or `MOCK_AI=true`),
   so a local stack scans with no config and production can never mock
   silently. Requests may steer it via `body.mock`, honoured in mock mode only.
