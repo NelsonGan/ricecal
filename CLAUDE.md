@@ -177,6 +177,15 @@ Break these and the feature is wrong in ways tests may not catch.
   then reads a year and returns nothing — which looks like a broken feature
   rather than an empty device. The Activity tab offers generated data once a
   connected store turns out to have no days in it.
+- **A new iOS entitlement needs the capability enabled on the App ID**, or EAS
+  fails in fastlane with "Provisioning profile doesn't include the … entitlement".
+  A config plugin writes the entitlement into `RiceCal.entitlements`; nothing
+  writes it to Apple. The App ID is `com.nelsongan.ricecal` (`3D3YS5HBMU`), and
+  `asc bundle-ids capabilities list --bundle 3D3YS5HBMU` shows what it actually
+  has — HealthKit was missing and the build could not have passed until it was
+  added. Enabling a capability also flips every existing profile to INVALID,
+  which is the good case: EAS regenerates an invalid profile on the next build,
+  where it would happily reuse a merely-stale one.
 - **Mock AI** is on whenever `OPENROUTER_API_KEY` is unset (or `MOCK_AI=true`),
   so a local stack scans with no config and production can never mock
   silently. Requests may steer it via `body.mock`, honoured in mock mode only.
