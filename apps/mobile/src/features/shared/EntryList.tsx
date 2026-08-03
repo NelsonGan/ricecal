@@ -320,6 +320,15 @@ function AnalysingRow({
             {label}
           </Text>
         </Shimmer>
+        {/* What the user typed, while it is being read. A snapped plate has
+            its photograph in the tile to the left and needs no caption; a
+            typed one has nothing on the row at all until the dish lands, and
+            a spinner over an empty line reads as the app having lost it. */}
+        {mode === 'describe' && entry.foodName ? (
+          <Text variant="meta" numberOfLines={1}>
+            {entry.foodName}
+          </Text>
+        ) : null}
         {/* A resumed row has no bar. The bar is timed from the shutter, and
             this scan started before the app did — restarting it at zero would
             be a progress indicator that is certainly wrong. */}
