@@ -67,7 +67,13 @@ export default function AboutStep() {
    */
   const save = () => {
     patch({ heightCm, weightKg, sex, age, targetWeightKg })
-    router.push('/activity')
+    // Group-qualified, because `activity` is a route name this app uses TWICE —
+    // here and as the tab. Route groups add no path segment, so a bare
+    // `/activity` is ambiguous and expo-router resolves it to whichever it
+    // resolves it to. It happened to land here, which meant the tab's callers
+    // were the broken ones; naming the group on both sides is what stops the
+    // next reshuffle silently swapping which.
+    router.push('/(onboarding)/activity')
   }
 
   return (

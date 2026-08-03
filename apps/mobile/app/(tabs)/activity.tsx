@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { RefreshControl, View } from 'react-native'
 import {
   today as todayKey,
   useActivityDay,
@@ -18,6 +18,7 @@ import {
   BudgetStrip,
   ConnectPanel,
   count,
+  duration,
   type RingStat,
   RingTrio,
   SessionRow,
@@ -26,6 +27,7 @@ import {
 import { ScreenTitle } from '@/features/shared'
 import { type Availability, canOfferDemo, offeredProviders, type ProviderId } from '@/lib/health'
 import { sumMacros } from '@/lib/nutrition'
+import { useThemeColors } from '@/theme/useTheme'
 import { Badge, Button, Card, EmptyState, Icon, ListRow, Screen, Skeleton, Text } from '@/ui'
 
 /**
@@ -45,13 +47,36 @@ import { Badge, Button, Card, EmptyState, Icon, ListRow, Screen, Skeleton, Text 
  *
  * WHAT THE THIRD TILE IS
  *
- * Stand hours on Apple, steps on Android — decided here, because this is the
- * screen that knows both what the provider is and what the day actually holds.
- * `RingTrio` never learns which platform it is on.
+ * Stand hours where the store reports them, steps where it never will — decided
+ * here, because this is the screen that knows what the provider is. `RingTrio`
+ * never learns which platform it is on.
+ *
+ * It is keyed on the PROVIDER and not on today's value. Keying it on
+ * `standHours != null` looked equivalent and is not: Apple has plenty of days
+ * with no stand figure, and every day has no stand figure at 7am. The tile
+ * therefore changed from Steps to Stand partway through a morning, and back
+ * again on a day the watch was off — a column of the same layout measuring
+ * something different each time you looked. A provider that reports stand hours
+ * owns that tile whether or not it has an answer today; the em dash is what it
+ * says when it does not.
+ *
+ * WHAT THE BARS ARE MEASURED AGAINST
+ *
+ * A provider's own ring goal when it gives one, and the user's 7-day average
+ * when it does not. The second case is not an edge: HealthKit's ring goals live
+ * on `HKActivitySummary`, which our library does not bind, so on iOS there is
+ * NEVER a goal and all three tiles used to draw an empty grey track for the
+ * lifetime of the app. An empty track next to a number reads as "you are at
+ * zero", which was wrong every time.
+ *
+ * The average is honest — the user's own recent days, already computed by
+ * `activity_summary` for the tiles further down — and it makes the bar answer
+ * the question the tile is actually asked: is today a normal day?
  */
 export default function ActivityScreen() {
   const { t } = useTranslation(['activity', 'common'])
   const router = useRouter()
+  const colors = useThemeColors()
 
   const date = todayKey()
 
@@ -65,7 +90,10 @@ export default function ActivityScreen() {
   const { data: settings } = useSettings()
   const food = useDayLog(date)
 
-  useHealthAutoSync(provider)
+  // `syncNow` forces a pass past the throttle, which is exactly what a deliberate
+  // pull means: the automatic one already ran on mount and on the last
+  // foreground, so an unforced call would spin and do nothing.
+  const { syncNow, isSyncing } = useHealthAutoSync(provider)
 
   // What the platform will allow, asked once on mount. State rather than a
   // query because it is a question about this device, not about this account —
@@ -128,15 +156,57 @@ export default function ActivityScreen() {
   const synced = syncedAgo(connection.data?.lastSyncedAt ?? null)
   const eaten = sumMacros(food.entries).kcal
 
+  /**
+   * A tile's reference figure: the store's goal, else the user's own average.
+   *
+   * Returned as a pair so the caller writes the unit and the bar from one
+   * decision — they were two conditionals over the same question before, and the
+   * bar could disagree with the line above it.
+   */
+  const against = (
+    value: number | null,
+    goal: number | null,
+    average: number | null,
+    unitKey: 'moveUnit' | 'exerciseUnit' | 'standUnit',
+    bareUnitKey: 'noGoal' | 'noGoalMinutes' | 'noGoalHours',
+  ): Pick<RingStat, 'unit' | 'progress'> => {
+    if (goal) {
+      return {
+        unit: t(`activity:today.${unitKey}`, { goal: count(goal) }),
+        progress: value == null ? null : value / goal,
+      }
+    }
+
+    // "/ 326 avg" rather than "kcal · avg 326". The tile is a third of a phone
+    // wide and its own comment records what happens to a long unit there — the
+    // steps tile already drops the word "steps" to fit "/ 8k". A slash and a
+    // reference is the grammar this row reads in, and the label above supplies
+    // the quantity.
+    if (average != null && average > 0) {
+      return {
+        unit: t('activity:today.avgUnit', { value: count(average) }),
+        progress: value == null ? null : value / average,
+      }
+    }
+
+    // Neither. A connection made minutes ago, with no history to average and no
+    // goal to draw — the one case where a bare unit and an empty track are the
+    // honest answer rather than an oversight.
+    return { unit: t(`activity:today.${bareUnitKey}`), progress: null }
+  }
+
   const stats: RingStat[] = [
     {
       key: 'move',
       label: t('activity:today.move'),
       value: count(activity?.activeKcal ?? 0),
-      unit: activity?.moveGoalKcal
-        ? t('activity:today.moveUnit', { goal: count(activity.moveGoalKcal) })
-        : t('activity:today.noGoal'),
-      progress: activity?.moveGoalKcal ? (activity.activeKcal ?? 0) / activity.moveGoalKcal : null,
+      ...against(
+        activity?.activeKcal ?? 0,
+        activity?.moveGoalKcal ?? null,
+        summary.data?.activeKcal ?? null,
+        'moveUnit',
+        'noGoal',
+      ),
       tone: 'hibiscus',
       icon: { set: 'body', name: 'flame-burn' },
     },
@@ -156,30 +226,20 @@ export default function ActivityScreen() {
         activity?.exerciseMinutes == null
           ? t('activity:today.none')
           : count(activity.exerciseMinutes),
-      unit: activity?.exerciseGoalMin
-        ? t('activity:today.exerciseUnit', { goal: activity.exerciseGoalMin })
-        : t('activity:today.noGoalMinutes'),
-      progress: activity?.exerciseGoalMin
-        ? (activity.exerciseMinutes ?? 0) / activity.exerciseGoalMin
-        : null,
+      ...against(
+        activity?.exerciseMinutes ?? null,
+        activity?.exerciseGoalMin ?? null,
+        summary.data?.exerciseMinutes ?? null,
+        'exerciseUnit',
+        'noGoalMinutes',
+      ),
       tone: 'pandan',
       icon: { set: 'body', name: 'stopwatch' },
     },
-    // The tile that differs by platform. Stand hours where the store reports
-    // them; steps where it never will, which is every Android phone.
-    activity?.standHours != null
+    // The tile that differs by platform. Health Connect has no stand-hour record
+    // type at all, so on Android this is steps; everywhere else it is stand.
+    provider === 'health_connect'
       ? {
-          key: 'stand',
-          label: t('activity:today.stand'),
-          value: count(activity.standHours),
-          unit: activity.standGoalHr
-            ? t('activity:today.standUnit', { goal: activity.standGoalHr })
-            : t('activity:today.noGoalHours'),
-          progress: activity.standGoalHr ? activity.standHours / activity.standGoalHr : null,
-          tone: 'water',
-          icon: { set: 'body', name: 'stairs' },
-        }
-      : {
           key: 'steps',
           label: t('activity:today.stepsRing'),
           value: count(activity?.steps ?? 0),
@@ -193,13 +253,42 @@ export default function ActivityScreen() {
           progress: summary.data?.stepGoal ? (activity?.steps ?? 0) / summary.data.stepGoal : null,
           tone: 'water',
           icon: { set: 'body', name: 'footprints' },
+        }
+      : {
+          key: 'stand',
+          label: t('activity:today.stand'),
+          value:
+            activity?.standHours == null ? t('activity:today.none') : count(activity.standHours),
+          ...against(
+            activity?.standHours ?? null,
+            activity?.standGoalHr ?? null,
+            summary.data?.standHours ?? null,
+            'standUnit',
+            'noGoalHours',
+          ),
+          tone: 'water',
+          icon: { set: 'body', name: 'stairs' },
         },
   ]
 
   const balance = summary.data?.balance ?? null
+  const weekSessions = summary.data?.sessions ?? 0
 
   return (
-    <Screen>
+    <Screen
+      /**
+       * The pull the freshness badge implies.
+       *
+       * `useSyncHealth` has documented a pull-to-refresh on this screen since it
+       * was written and there was never one, which left `useHealthAutoSync`'s
+       * return value unused by anybody. A stamp reading "13 min ago" is an
+       * invitation to pull, and on a screen whose whole subject is a number that
+       * arrives from somewhere else it is the gesture people try first.
+       */
+      refreshControl={
+        <RefreshControl refreshing={isSyncing} onRefresh={syncNow} tintColor={colors.muted} />
+      }
+    >
       <ScreenTitle
         title={t('activity:title')}
         trailing={
@@ -222,10 +311,10 @@ export default function ActivityScreen() {
         <RingTrio stats={stats} />
       )}
 
-      {/* The third tile said "Steps" rather than "Stand", so say why. Only when
-          a provider that could have reported it did not — a day the watch was
-          simply off is not the same claim. */}
-      {activity && activity.standHours == null && provider === 'health_connect' ? (
+      {/* The third tile says "Steps" rather than "Stand", so say why. Only on
+          the provider that will never report one — an Apple day with the watch
+          on the charger shows a dash in a Stand tile, which explains itself. */}
+      {provider === 'health_connect' ? (
         <Text variant="meta">{t('activity:today.noStandNoteGeneric')}</Text>
       ) : null}
 
@@ -238,6 +327,20 @@ export default function ActivityScreen() {
         />
       </Card>
 
+      {/**
+       * TWO CARDS, BECAUSE THERE ARE TWO TIMEFRAMES.
+       *
+       * These were one card headed "TODAY" holding four kinds of row, of which
+       * only two were about today. The Balance row printed a SEVEN-DAY average
+       * directly under that heading — "257 deficit", with nothing to say it was
+       * not this morning's — and History's subtitle was the word "sessions",
+       * lowercased from a caps heading and carrying no figure at all.
+       *
+       * Splitting them costs one more card and makes both headings true, which
+       * is also what finally gives the History row something to say: the same
+       * `activity_summary` the screen already has is where its count and its
+       * time come from.
+       */}
       <Card title={t('activity:today.todayTitle')} flush>
         <View className="px-7">
           <ListRow
@@ -245,25 +348,7 @@ export default function ActivityScreen() {
             subtitle={t('activity:today.stepsRowValue', { steps: count(activity?.steps ?? 0) })}
             leading={<Icon set="body" name="footprints" size={32} />}
             onPress={() => router.push('/activity/steps')}
-          />
-          <ListRow
-            title={t('activity:today.balanceRow')}
-            subtitle={
-              balance == null
-                ? t('activity:today.balanceUnknown')
-                : balance < 0
-                  ? t('activity:today.balanceDeficit', { value: count(Math.abs(balance)) })
-                  : t('activity:today.balanceSurplus', { value: count(balance) })
-            }
-            leading={<Icon set="body" name="pulse-wave" size={32} />}
-            onPress={() => router.push('/activity/balance')}
-          />
-          <ListRow
-            title={t('activity:history.title')}
-            subtitle={t('activity:history.sessions').toLowerCase()}
-            leading={<Icon set="system" name="calendar" size={32} />}
-            onPress={() => router.push('/activity/history')}
-            divider={sessions.data ? sessions.data.length > 0 : false}
+            divider={(sessions.data?.length ?? 0) > 0}
           />
 
           {sessions.data?.map((session, index) => (
@@ -289,6 +374,37 @@ export default function ActivityScreen() {
           icon={{ set: 'body', name: 'running-shoe' }}
         />
       ) : null}
+
+      <Card title={t('activity:today.weekTitle')} flush>
+        <View className="px-7">
+          <ListRow
+            title={t('activity:today.balanceRow')}
+            subtitle={
+              balance == null
+                ? t('activity:today.balanceUnknown')
+                : balance < 0
+                  ? t('activity:today.balanceDeficit', { value: count(Math.abs(balance)) })
+                  : t('activity:today.balanceSurplus', { value: count(balance) })
+            }
+            leading={<Icon set="body" name="pulse-wave" size={32} />}
+            onPress={() => router.push('/activity/balance')}
+          />
+          <ListRow
+            title={t('activity:history.title')}
+            subtitle={
+              weekSessions === 0
+                ? t('activity:today.historyNone')
+                : t('activity:today.historyRowValue', {
+                    count: weekSessions,
+                    time: duration((summary.data?.sessionMinutes ?? 0) * 60),
+                  })
+            }
+            leading={<Icon set="system" name="calendar" size={32} />}
+            onPress={() => router.push('/activity/history')}
+            divider={false}
+          />
+        </View>
+      </Card>
 
       {/* A connected store that has never had anything in it.
           This is the simulator: an iOS 26 simulator reports HealthKit as

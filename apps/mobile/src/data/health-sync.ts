@@ -4,6 +4,7 @@ import { AppState } from 'react-native'
 
 import type { HealthProvider, HealthReading, ProviderId } from '@/lib/health'
 import { providerFor } from '@/lib/health'
+import { ageFrom } from '@/lib/nutrition'
 import { supabase } from '@/lib/supabase'
 import { daysAgo } from './activity'
 import { dateKey } from './client'
@@ -196,12 +197,43 @@ async function persist(
 }
 
 /**
+ * The user's age in years, or null when the profile has no birth date.
+ *
+ * Read here rather than inside a provider because it is a fact about the person
+ * and the providers only know about the store. It is what bands a heart rate:
+ * the zones are fractions of an estimated maximum, and that maximum is a
+ * function of age. Without it every session was banded against a 40-year-old —
+ * which for a 29-year-old puts the Peak threshold seven beats too low and turns
+ * a steady run into twenty minutes of Peak.
+ *
+ * NOT `ageFrom` alone: that returns 0 for a missing birth date, and 0 through
+ * the Tanaka formula is a maximum of 208, which would band nothing as hard at
+ * all. Null is the answer `estimatedMaxHr` documents a fallback for.
+ */
+async function ageOf(userId: string): Promise<number | null> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('birth_date')
+    .eq('id', userId)
+    .maybeSingle()
+
+  return data?.birth_date ? ageFrom(data.birth_date) : null
+}
+
+/**
  * Read a range from a provider and write it, a chunk at a time.
  *
  * Returns the number of days actually written, which is what the connect screen
  * reports and — more usefully — what tells a caller whether a granted-looking
  * permission produced anything. On iOS that is the only way to know: HealthKit
  * will not say whether a read was denied.
+ *
+ * It also returns whatever hardware named itself along the way. That used to be
+ * thrown away and re-fetched by a second `read` immediately afterwards, purely
+ * because this function discarded it — and the extra read only covered the
+ * CONNECT path, so an account that connected before a watch was paired never
+ * learned its name at all. Carrying it out of the loop costs nothing and lets
+ * every sync keep it current.
  */
 export async function syncRange(
   userId: string,
@@ -209,7 +241,12 @@ export async function syncRange(
   from: string,
   to: string,
   onProgress?: (progress: SyncProgress) => void,
-): Promise<number> {
+): Promise<{ days: number; deviceName: string | null }> {
+  // Once for the whole range rather than once per chunk. It cannot change
+  // between two chunks of the same sync, and a year-long backfill is thirteen
+  // of them.
+  const age = await ageOf(userId)
+
   const chunks: Array<{ from: string; to: string }> = []
   const cursor = new Date(`${from}T00:00:00`)
   const last = new Date(`${to}T00:00:00`)
@@ -225,13 +262,18 @@ export async function syncRange(
   const hourlyFrom = daysAgo(HOURLY_DAYS)
   let written = 0
   let done = 0
+  // Overwritten as the loop advances rather than kept at the first hit. Chunks
+  // run oldest to newest, so the last one to name a device is the most recent —
+  // which is the watch the user is actually wearing, not the one they replaced
+  // in March.
+  let deviceName: string | null = null
   const total = chunks.length
 
   for (const chunk of chunks) {
     // Only recent chunks pay for the hourly read. A year of it is 8,760 rows
     // per user to answer a question only ever asked about this month.
     const withHours = chunk.to >= hourlyFrom
-    const reading = await provider.read(chunk.from, chunk.to, { withHours })
+    const reading = await provider.read(chunk.from, chunk.to, { withHours, age })
     // The hour window is the CHUNK, not the retention window. A provider hands
     // back hours for everything it was asked to read, so this is the range the
     // delete has to cover for the replace to be idempotent — see `persist`.
@@ -241,11 +283,12 @@ export async function syncRange(
       withHours,
     })
     written += reading.days.length
+    if (reading.deviceName) deviceName = reading.deviceName
     done += 1
     onProgress?.({ done, total })
   }
 
-  return written
+  return { days: written, deviceName }
 }
 
 async function noteSync(
@@ -312,13 +355,12 @@ export function useConnectHealth() {
       // the user on the connect screen with a full database behind it.
       await noteSync(userId, id, { permissions: access.permissions })
 
-      const days = await syncRange(userId, provider, from, to, onProgress)
-
       // The device name comes out of the reading rather than the API, because
       // neither store has a "what watch is this" call — it is whatever named
-      // itself on a sample.
-      const probe = await provider.read(daysAgo(2), to, { withHours: false })
-      await noteSync(userId, id, { deviceName: probe.deviceName, backfilledFrom: from })
+      // itself on a sample. The backfill has already seen every one of them, so
+      // it is carried out of there rather than re-read.
+      const { days, deviceName } = await syncRange(userId, provider, from, to, onProgress)
+      await noteSync(userId, id, { deviceName, backfilledFrom: from })
 
       return { granted: true, days }
     },
@@ -353,9 +395,14 @@ export function useSyncHealth() {
       const from = daysAgo(WINDOW_DAYS - 1)
       const to = dateKey(new Date())
 
-      const written = await syncRange(userId, provider, from, to)
-      await noteSync(userId, id, {})
-      return written
+      // The device name is refreshed on every pass, not only on connect. An
+      // account that connected before a watch was paired would otherwise never
+      // learn its name — the settings screen would say "Apple Health" and never
+      // "Apple Watch" — because the only write was on a connect that had
+      // already happened.
+      const { days, deviceName } = await syncRange(userId, provider, from, to)
+      await noteSync(userId, id, { deviceName })
+      return days
     },
 
     onSuccess: () => {

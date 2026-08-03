@@ -208,7 +208,7 @@ export const appleHealth: HealthProvider = {
     return { granted: true, permissions: APPLE_READ_TYPES }
   },
 
-  async read(from, to, { withHours }): Promise<HealthReading> {
+  async read(from, to, { withHours, age }): Promise<HealthReading> {
     const hk = load()
     if (!hk) return { days: [], workouts: [], hours: [], deviceName: null }
 
@@ -248,9 +248,10 @@ export const appleHealth: HealthProvider = {
         standHours: stand == null ? null : Math.min(24, Math.round(stand / 60)),
         flights: null,
         // Ring goals live on `HKActivitySummary`, which this library does not
-        // bind. Null rather than a guess: the Activity screen falls back to the
-        // app's own defaults and says so, which beats drawing a ring against a
-        // target Apple never set.
+        // bind, so on iOS these are ALWAYS null — not merely sometimes. Null
+        // rather than a guess, because a target Apple never set is not a target;
+        // the Activity tab compares the tile against the user's own recent
+        // average instead, which is a real figure it already has.
         moveGoalKcal: null,
         exerciseGoalMin: null,
         standGoalHr: null,
@@ -258,7 +259,7 @@ export const appleHealth: HealthProvider = {
     }
 
     const [workouts, hours] = await Promise.all([
-      readWorkouts(hk, from, to),
+      readWorkouts(hk, from, to, age),
       withHours ? readHours(hk, from, to) : Promise.resolve<HourReading[]>([]),
     ])
 
@@ -266,7 +267,14 @@ export const appleHealth: HealthProvider = {
       days,
       workouts,
       hours,
-      deviceName: workouts.find((w) => w.sourceName)?.sourceName ?? null,
+      // The most recently named piece of hardware, falling back to whichever app
+      // wrote the session. `queryWorkoutSamples` is asked for descending order,
+      // so the first hit is the newest — a user who has since changed watches
+      // sees the one they are wearing.
+      deviceName:
+        workouts.find((w) => w.deviceName)?.deviceName ??
+        workouts.find((w) => w.sourceName)?.sourceName ??
+        null,
     }
   },
 }
@@ -275,7 +283,8 @@ async function readWorkouts(
   hk: HealthKitModule,
   from: LocalDate,
   to: LocalDate,
-): Promise<WorkoutReading[]> {
+  age: number | null,
+): Promise<Array<WorkoutReading & { deviceName: string | null }>> {
   const samples = await hk.queryWorkoutSamples({
     filter: { date: { startDate: startOf(from), endDate: endOf(to) } },
     // Every workout in the window. A cap here would silently truncate a
@@ -284,7 +293,7 @@ async function readWorkouts(
     ascending: false,
   })
 
-  const readings: WorkoutReading[] = []
+  const readings: Array<WorkoutReading & { deviceName: string | null }> = []
 
   for (const sample of samples) {
     const started = new Date(sample.startDate)
@@ -299,7 +308,7 @@ async function readWorkouts(
      * exists: a four-minute "workout" is a mis-tap or a stretch, and zone bands
      * over it are noise drawn at the same size as a marathon's.
      */
-    const hr = durationS >= 5 * 60 ? await readHeartRate(hk, sample) : null
+    const hr = durationS >= 5 * 60 ? await readHeartRate(hk, sample, age) : null
 
     readings.push({
       externalId: sample.uuid,
@@ -315,17 +324,51 @@ async function readWorkouts(
       maxHr: hr?.max ?? null,
       elevationM: null,
       hrZones: hr?.zones ?? null,
-      sourceName: null,
+      ...names(sample),
     })
   }
 
   return readings
 }
 
+/**
+ * Who recorded this session, and on what.
+ *
+ * Both were `null` here until this was written, and the null was load-bearing in
+ * the wrong direction: `deviceName` on the connection is derived from these, so
+ * the health-settings screen could never name a watch, and the two strings that
+ * name a source — "From Strava", and the sentence explaining why a session has
+ * no heart-rate zones — were unreachable on iOS however the data arrived.
+ *
+ * `source` is the APP that wrote the sample ("Strava", "Fitness") and `device`
+ * is the hardware it came off ("Apple Watch"). They answer different questions,
+ * so both are kept: the workout screen credits the app, and the settings screen
+ * names the watch.
+ *
+ * Wrapped because these are Nitro hybrid objects reached through a proxy. A
+ * sample written by an app that has since been deleted, or by an older build,
+ * can leave either side absent — and a workout whose provenance we cannot read
+ * is still a workout, so it must not fail the sync around it.
+ */
+function names(sample: {
+  sourceRevision?: { source?: { name?: string } }
+  device?: { name?: string }
+}): { sourceName: string | null; deviceName: string | null } {
+  try {
+    return {
+      sourceName: sample.sourceRevision?.source?.name ?? null,
+      deviceName: sample.device?.name ?? null,
+    }
+  } catch {
+    return { sourceName: null, deviceName: null }
+  }
+}
+
 async function readHeartRate(
   hk: HealthKitModule,
   // biome-ignore lint/suspicious/noExplicitAny: WorkoutProxy is only typed on iOS
   workout: any,
+  age: number | null,
 ): Promise<{ avg: number; max: number; zones: ReturnType<typeof hrZonesFromSamples> } | null> {
   try {
     const samples = await hk.queryQuantitySamples(
@@ -349,7 +392,7 @@ async function readHeartRate(
     return {
       avg: Math.round(beats.reduce((sum, b) => sum + b.bpm, 0) / beats.length),
       max: Math.round(Math.max(...beats.map((b) => b.bpm))),
-      zones: hrZonesFromSamples(beats),
+      zones: hrZonesFromSamples(beats, age),
     }
   } catch {
     // A workout with no heart rate is ordinary — a phone-only walk, a session

@@ -91,7 +91,9 @@ it('records every answer on screen, including the ones never touched', async () 
   expect(saved()).toEqual(
     expect.objectContaining({ heightCm: 164, weightKg: 65, sex: 'female', age: 29 }),
   )
-  expect(mockPush).toHaveBeenCalledWith('/activity')
+  // Group-qualified: `activity` names two routes in this app, and a bare
+  // `/activity` resolved to whichever expo-router picked.
+  expect(mockPush).toHaveBeenCalledWith('/(onboarding)/activity')
 })
 
 it('shows the answers already given rather than the defaults', async () => {
