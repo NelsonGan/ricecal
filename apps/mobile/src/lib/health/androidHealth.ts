@@ -192,7 +192,7 @@ export const healthConnect: HealthProvider = {
     return { granted: names.length > 0, permissions: names }
   },
 
-  async read(from, to, { withHours }): Promise<HealthReading> {
+  async read(from, to, { withHours, age }): Promise<HealthReading> {
     const hc = load()
     if (!hc) return { days: [], workouts: [], hours: [], deviceName: null }
 
@@ -249,7 +249,7 @@ export const healthConnect: HealthProvider = {
     }
 
     const [workouts, hours] = await Promise.all([
-      readWorkouts(hc, from, to),
+      readWorkouts(hc, from, to, age),
       withHours ? readHours(hc, from, to) : Promise.resolve<HourReading[]>([]),
     ])
 
@@ -266,6 +266,7 @@ async function readWorkouts(
   hc: ConnectModule,
   from: LocalDate,
   to: LocalDate,
+  age: number | null,
 ): Promise<WorkoutReading[]> {
   let sessions: Awaited<ReturnType<typeof hc.readRecords<'ExerciseSession'>>>['records']
   try {
@@ -287,7 +288,7 @@ async function readWorkouts(
 
     const [energyBurned, hr] = await Promise.all([
       sessionEnergy(hc, session.startTime, session.endTime),
-      readHeartRate(hc, session.startTime, session.endTime),
+      readHeartRate(hc, session.startTime, session.endTime, age),
     ])
 
     readings.push({
@@ -347,6 +348,7 @@ async function readHeartRate(
   hc: ConnectModule,
   startTime: string,
   endTime: string,
+  age: number | null,
 ): Promise<{ avg: number; max: number; zones: ReturnType<typeof hrZonesFromSamples> } | null> {
   try {
     const page = await hc.readRecords('HeartRate', {
@@ -368,7 +370,7 @@ async function readHeartRate(
       // Null when a writer sent one average for the session: ten samples is the
       // floor `hrZonesFromSamples` applies, and banding a single number would
       // draw one bar and call it a breakdown.
-      zones: hrZonesFromSamples(beats),
+      zones: hrZonesFromSamples(beats, age),
     }
   } catch {
     return null

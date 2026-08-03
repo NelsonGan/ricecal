@@ -45,6 +45,7 @@ export {
   asWorkoutKind,
   showsDistance,
   showsPace,
+  showsSpeed,
   WORKOUT_KIND_KEY,
   WORKOUT_KINDS,
   type WorkoutKind,

@@ -1,5 +1,5 @@
 import { demoHealth } from '../demo'
-import { hrZonesFromSamples } from '../hrZones'
+import { estimatedMaxHr, hrZonesFromSamples } from '../hrZones'
 import { asWorkoutKind, fromAppleWorkoutType, fromConnectExerciseType } from '../kinds'
 
 /**
@@ -21,8 +21,8 @@ describe('the demo provider', () => {
    * visibly failed to do.
    */
   it('returns identical data when the same range is read twice', async () => {
-    const first = await demoHealth.read('2026-03-01', '2026-03-07', { withHours: true })
-    const second = await demoHealth.read('2026-03-01', '2026-03-07', { withHours: true })
+    const first = await demoHealth.read('2026-03-01', '2026-03-07', { withHours: true, age: null })
+    const second = await demoHealth.read('2026-03-01', '2026-03-07', { withHours: true, age: null })
 
     expect(second).toEqual(first)
   })
@@ -37,8 +37,11 @@ describe('the demo provider', () => {
    * date through different ranges.
    */
   it('generates a day from its date, not from its position in the range', async () => {
-    const narrow = await demoHealth.read('2026-03-05', '2026-03-05', { withHours: false })
-    const wide = await demoHealth.read('2026-02-01', '2026-03-20', { withHours: false })
+    const narrow = await demoHealth.read('2026-03-05', '2026-03-05', {
+      withHours: false,
+      age: null,
+    })
+    const wide = await demoHealth.read('2026-02-01', '2026-03-20', { withHours: false, age: null })
 
     const fromWide = wide.days.find((day) => day.date === '2026-03-05')
     expect(narrow.days).toHaveLength(1)
@@ -47,8 +50,11 @@ describe('the demo provider', () => {
 
   /** Workout ids are what the upsert deduplicates on, so they must be stable too. */
   it('gives a workout the same external id however it was read', async () => {
-    const narrow = await demoHealth.read('2026-03-05', '2026-03-05', { withHours: false })
-    const wide = await demoHealth.read('2026-02-01', '2026-03-20', { withHours: false })
+    const narrow = await demoHealth.read('2026-03-05', '2026-03-05', {
+      withHours: false,
+      age: null,
+    })
+    const wide = await demoHealth.read('2026-02-01', '2026-03-20', { withHours: false, age: null })
 
     const ids = (workouts: { externalId: string; date: string }[]) =>
       workouts.filter((w) => w.date === '2026-03-05').map((w) => w.externalId)
@@ -59,6 +65,7 @@ describe('the demo provider', () => {
   it('never reports walking energy the day total cannot account for', async () => {
     const { days, workouts } = await demoHealth.read('2026-01-01', '2026-03-31', {
       withHours: false,
+      age: null,
     })
 
     for (const day of days) {
@@ -74,7 +81,10 @@ describe('the demo provider', () => {
   })
 
   it('keeps every generated figure inside the column checks the schema declares', async () => {
-    const { days, hours } = await demoHealth.read('2026-01-01', '2026-01-31', { withHours: true })
+    const { days, hours } = await demoHealth.read('2026-01-01', '2026-01-31', {
+      withHours: true,
+      age: null,
+    })
 
     for (const day of days) {
       expect(day.activeKcal).toBeGreaterThanOrEqual(0)
@@ -122,6 +132,46 @@ describe('heart rate zones', () => {
     const zones = hrZonesFromSamples(samples(Array(20).fill(140)), 40)
     expect(zones?.hard).toBeGreaterThan(0)
     expect(zones?.easy).toBe(0)
+  })
+
+  /**
+   * The bands move with the user, which is the whole reason `read` carries an
+   * age at all.
+   *
+   * Nothing passed one for a long time — `hrZonesFromSamples(beats)` in both
+   * providers, with only these tests ever supplying the argument — so every
+   * session on every account was banded against a 40-year-old. 156 bpm is 83% of
+   * a 29-year-old's estimated maximum (188) and 87% of a 40-year-old's (180),
+   * and the Hard / Peak boundary sits at 85%: the same run came back "mostly
+   * Peak" for a user who was working hard, but not that hard.
+   */
+  it('bands the same session differently for different ages', () => {
+    const beats = samples(Array(20).fill(156))
+
+    expect(hrZonesFromSamples(beats, 29)?.hard).toBeGreaterThan(0)
+    expect(hrZonesFromSamples(beats, 29)?.peak).toBe(0)
+
+    expect(hrZonesFromSamples(beats, 40)?.peak).toBeGreaterThan(0)
+    expect(hrZonesFromSamples(beats, 40)?.hard).toBe(0)
+  })
+
+  /**
+   * A missing birth date is null, NEVER zero.
+   *
+   * `ageFrom` returns 0 for a profile with no birth date, and 0 through Tanaka
+   * is a maximum of 208 — a ceiling nobody reaches, so every band would collapse
+   * into Easy and a genuinely hard session would report no effort at all.
+   * `health-sync` converts the absent date to null for this reason; this pins
+   * the difference the two produce.
+   */
+  it('treats an unknown age as unknown rather than as zero', () => {
+    expect(estimatedMaxHr(null)).toBe(estimatedMaxHr(40))
+    expect(estimatedMaxHr(0)).toBe(208)
+
+    const beats = samples(Array(20).fill(160))
+    expect(hrZonesFromSamples(beats, null)?.peak).toBeGreaterThan(0)
+    // The trap: banded against 208, a 160 bpm effort reads as merely steady.
+    expect(hrZonesFromSamples(beats, 0)?.peak).toBe(0)
   })
 
   /**

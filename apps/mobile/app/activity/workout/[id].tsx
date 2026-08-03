@@ -11,6 +11,7 @@ import {
   pace,
   showsDistance,
   showsPace,
+  showsSpeed,
   speed,
   workoutIcon,
   workoutKindKey,
@@ -36,7 +37,7 @@ import { AppBar, Card, EmptyState, Icon, Screen, Skeleton, Text } from '@/ui'
  */
 export default function WorkoutScreen() {
   const { t } = useTranslation(['activity', 'common'])
-  const goBack = useBack('/activity')
+  const goBack = useBack('/(tabs)/activity')
   const { id } = useLocalSearchParams<{ id: string }>()
 
   const { data: session, isPending } = useActivitySession(id)
@@ -68,9 +69,24 @@ export default function WorkoutScreen() {
     )
   }
 
+  /**
+   * All three read the same `distanceM`, so all three are gated on the same
+   * question first: does this kind have a distance worth showing at all?
+   *
+   * `kmh` was not, and the omission was visible on the screen. A badminton game
+   * and a basketball game both carry a distance in the store — the watch counted
+   * a few hundred metres of shuffling — and `showsDistance` exists precisely to
+   * keep that figure off the screen. Computing a speed from it anyway put
+   * "PACE 2.0 km/h" on a basketball session: the same number the app had just
+   * decided was meaningless, divided by time and given a label.
+   *
+   * So: distance for the kinds that travel, a pace for the ones done on foot, a
+   * speed for the rest of the ones that travel, and nothing at all for a sport
+   * played inside a court.
+   */
   const far = showsDistance(session.kind) ? distance(session.distanceM) : null
   const perKm = showsPace(session.kind) ? pace(session.durationS, session.distanceM) : null
-  const kmh = !showsPace(session.kind) ? speed(session.durationS, session.distanceM) : null
+  const kmh = showsSpeed(session.kind) ? speed(session.durationS, session.distanceM) : null
 
   // Assembled rather than a fixed three, because a badminton game has no
   // distance and a treadmill run has no speed worth printing. A tile row that
@@ -87,7 +103,11 @@ export default function WorkoutScreen() {
   } else if (kmh) {
     stats.push({
       key: 'speed',
-      label: t('activity:workout.pace'),
+      // Its own label. A speed under a tile headed PACE is a unit contradicting
+      // its heading — pace counts up as you slow down and speed counts down,
+      // and a cyclist reading "PACE 24.1 km/h" has to work out which they were
+      // given.
+      label: t('activity:workout.speed'),
       value: t('activity:workout.speedUnit', { value: kmh }),
     })
   }
@@ -174,13 +194,34 @@ export default function WorkoutScreen() {
               ))}
             </View>
           </View>
-        ) : (
+        ) : session.avgHr ? (
+          // There IS a reading, just one of them. The copy names the writing app
+          // where we know it, because the fix — record with something that
+          // writes a sample a minute — only makes sense once you know which app
+          // to replace.
           <View className="gap-1">
             <Text variant="bodyStrong">{t('activity:workout.zonesNone')}</Text>
             <Text variant="meta">
               {session.sourceName
                 ? t('activity:workout.zonesNoneBody', { source: session.sourceName })
                 : t('activity:workout.zonesNoneBodyGeneric')}
+            </Text>
+          </View>
+        ) : (
+          /**
+           * No heart rate at all — not "one average". The screen used to say
+           * "Session average only, no zones" here, which described an average it
+           * was not showing and the store had never sent: this branch is a phone
+           * -logged session, or a treadmill entered by hand, and it has no pulse
+           * data of any kind. The rest of the screen agrees — there is no AVG HR
+           * tile below, because there is no average.
+           */
+          <View className="gap-1">
+            <Text variant="bodyStrong">{t('activity:workout.noHeartRate')}</Text>
+            <Text variant="meta">
+              {session.sourceName
+                ? t('activity:workout.noHeartRateBody', { source: session.sourceName })
+                : t('activity:workout.noHeartRateBodyGeneric')}
             </Text>
           </View>
         )}

@@ -43,7 +43,7 @@ import { AppBar, Card, ProgressBar, Screen, SegmentedControl, Skeleton, Text } f
  */
 export default function StepsScreen() {
   const { t } = useTranslation(['activity', 'progress', 'common'])
-  const goBack = useBack('/activity')
+  const goBack = useBack('/(tabs)/activity')
 
   const [range, setRange] = useState<TrendRange>('7d')
   const date = todayKey()
@@ -61,10 +61,32 @@ export default function StepsScreen() {
   const detailed = hasHourlyShape(hourly)
   const busiest = detailed ? busiestHour(hourly) : null
 
+  /**
+   * The chart is drawn in STEPS PER DAY, not steps per bucket.
+   *
+   * A bucket is one day on 7d, so there the two are the same number and nothing
+   * below changes. They diverge everywhere else, and the totals were wrong in a
+   * way that looked like data: on 30d the oldest column is whatever is left over
+   * after the seven-day blocks — two days, 10,940 steps — drawn against 7-day
+   * blocks of around 48,000, so it rendered as a 20% stub. Its per-day average
+   * was 5,470 against their 6,900. The reader sees a collapse; the chart is
+   * showing them the width of a bucket.
+   *
+   * The 1y view has it worse, because the newest column is the CURRENT month:
+   * on the 3rd it is a nub beside eleven full months, which reads as "you have
+   * stopped walking" on a day the user walked 8,260 steps.
+   *
+   * Averages are also what the stat row under the chart already reports, and
+   * what `BalanceBars` has always drawn. This was the one chart in the feature
+   * comparing sums of unequal things.
+   */
+  const perDay = (bucket: { steps: number | null; stepsTotal: number; days: number }) =>
+    bucket.steps ?? (bucket.days > 0 ? bucket.stepsTotal / bucket.days : 0)
+
   // Hoisted out of the column loop below: it is a property of the series, not
   // of a bucket, and recomputing it per column made the chart O(n²) in its own
   // width for no reason.
-  const stepsPeak = Math.max(...(series.data ?? []).map((bucket) => bucket.stepsTotal), 1)
+  const stepsPeak = Math.max(...(series.data ?? []).map(perDay), 1)
 
   const stats: Stat[] = [
     {
@@ -176,7 +198,18 @@ export default function StepsScreen() {
                 colour rules have nothing in common but a rectangle. */}
             <View className="flex-row items-end gap-1.5" style={{ height: 130 }}>
               {series.data.map((bucket, index) => {
-                const met = bucket.stepGoalDays > 0
+                const average = perDay(bucket)
+                /**
+                 * "Did this bucket average the goal", not "did any day in it".
+                 *
+                 * `stepGoalDays > 0` is the second reading, and over a seven-day
+                 * block it means one good Saturday paints the whole week blue —
+                 * four of five columns filled while the stat row beside them
+                 * said "GOAL DAYS 8 of 30". Against the average the colour means
+                 * the same thing at every range, and on 7d — where a bucket IS a
+                 * day — it is exactly the old rule.
+                 */
+                const met = goal > 0 && average >= goal
                 return (
                   <View key={bucket.start} className="h-full min-w-0 flex-1 items-center gap-1.5">
                     <View className="w-full flex-1 justify-end">
@@ -185,7 +218,7 @@ export default function StepsScreen() {
                           met ? 'w-full rounded-lg bg-water' : 'w-full rounded-lg bg-track'
                         }
                         style={{
-                          height: `${Math.max(4, (bucket.stepsTotal / stepsPeak) * 100)}%`,
+                          height: `${Math.max(4, (average / stepsPeak) * 100)}%`,
                         }}
                       />
                     </View>

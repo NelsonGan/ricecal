@@ -19,7 +19,7 @@ import { AppBar, Card, EmptyState, Screen, Skeleton } from '@/ui'
  */
 export default function HistoryScreen() {
   const { t } = useTranslation(['activity', 'common'])
-  const goBack = useBack('/activity')
+  const goBack = useBack('/(tabs)/activity')
   const router = useRouter()
 
   const sessions = useActivitySessions(null)
@@ -39,7 +39,10 @@ export default function HistoryScreen() {
     {
       key: 'burned',
       label: t('activity:history.burned'),
-      value: count(summary.data?.sessionKcal ?? 0),
+      // With its unit. The two tiles beside it carry theirs — "6" is a count and
+      // "4h 48m" says what it is — and this one read as a bare "1,420" next to a
+      // column of session rows that each say "kcal" under their number.
+      value: t('activity:unit.kcal', { value: count(summary.data?.sessionKcal ?? 0) }),
     },
   ]
 

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import {
   useCurrentWeight,
+  useHealthConnection,
   useMealTimes,
   useProfile,
   useSettings,
@@ -28,6 +29,7 @@ export default function MeScreen() {
   const { data: mealTimes } = useMealTimes()
   const streak = useStreak()
   const weight = useCurrentWeight()
+  const health = useHealthConnection()
   const [confirmSignOut, setConfirmSignOut] = useState(false)
 
   const activeReminders =
@@ -136,9 +138,18 @@ export default function MeScreen() {
             body rather than a notification preference, and the row it sits next
             to — meal times — is the other place the app is told about a daily
             rhythm. */}
+        {/* With a value, like every row around it. This one had none, on the
+            screen where the answer — is anything connected at all? — is the
+            whole reason to open it. The other rows summarise themselves in a
+            word and so can this: the store's name, or that there isn't one. */}
         <SettingRow
           icon={{ set: 'system', name: 'watch' }}
           title={t('activity:settings.title')}
+          value={
+            health.data?.connected
+              ? t(`activity:provider.${health.data.provider}`)
+              : t('profile:home.healthOff')
+          }
           onPress={() => router.push('/settings/health')}
         />
         <SettingRow
