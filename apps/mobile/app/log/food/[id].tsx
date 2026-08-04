@@ -144,8 +144,13 @@ export default function FoodDetail() {
    * two-portion entry editing as one, a typed correction the reset link could
    * not see. Seeding again the first time the row actually arrives is the fix,
    * and the id is what stops it happening a second time over a live edit.
+   *
+   * State rather than a ref, because the change detection below READS it during
+   * render: `existing` lands a render before the seeding effect runs, and
+   * comparing the untouched defaults against the row it has not been filled in
+   * from yet makes every field look edited.
    */
-  const seededFrom = useRef<string | undefined>(undefined)
+  const [seededId, setSeededId] = useState<string>()
   /**
    * The illustration, only once the user has picked one.
    *
@@ -170,11 +175,22 @@ export default function FoodDetail() {
    *
    * Two fields because they are needed at different moments: the local uri is
    * what the tile shows the instant the shot is taken, and the bucket key is what
-   * Save carries. The upload cannot wait for the button — it is what turns a
-   * 4MB frame into a key — so leaving without saving has to delete the object it
-   * left behind, which is what the discard below does.
+   * Save carries.
    */
   const [shot, setShot] = useState<{ uri: string; path: string }>()
+  /**
+   * The same key again, as a ref, for as long as no row points at it.
+   *
+   * The upload cannot wait for the button — it is what turns a 4MB frame into a
+   * key — so between the shutter and Save the object is real and referenced by
+   * nothing. EVERY way off this screen that is not Save or Add has to take it
+   * with it: backing out, the swipe, a drawing chosen over it, a deep link
+   * replacing the route. An unmount effect is the only place that catches all
+   * of them, and an effect cannot read state it was not told about — hence the
+   * ref beside the state rather than a `shot` dependency, which would fire the
+   * cleanup on every shot rather than on the last one.
+   */
+  const orphanShot = useRef<string | undefined>(undefined)
   const [attaching, setAttaching] = useState(false)
   // Collapsed by default. Fibre, sugar and salt are the second question about a
   // dish, and for most of the catalogue the answer is "nobody recorded it".
@@ -267,21 +283,29 @@ export default function FoodDetail() {
    * Computed rather than tracked, so a value edited back to what it was is not
    * a change — which is what makes the Save button an honest answer to "is
    * there anything here to save".
+   *
+   * All of it waits on `seeded`. Until the effect below has filled the controls
+   * in from the row, they hold their defaults — one portion, no note — and
+   * against a real entry every one of those reads as an edit the user did not
+   * make. The Save button flashed enabled for a frame on the way in from a
+   * notification for exactly this reason.
    */
-  const nameChange = name.trim() && name.trim() !== existing?.foodName ? name.trim() : undefined
-  const noteChange = existing && note !== (existing.note ?? '') ? note || null : undefined
+  const seeded = Boolean(existing) && seededId === existing?.id
+  const nameChange =
+    seeded && name.trim() && name.trim() !== existing?.foodName ? name.trim() : undefined
+  const noteChange = seeded && note !== (existing?.note ?? '') ? note || null : undefined
   // Only on an entry with no breakdown. An entry with one IS its breakdown, so
   // the stepper is not on screen and the parts above are what moves.
   const quantityChange =
-    existing && !parts.length && quantity !== existing.quantity ? quantity : undefined
+    seeded && !parts.length && quantity !== existing?.quantity ? quantity : undefined
   const servingChange =
-    existing && !parts.length && servingId && servingId !== existing.servingId
+    seeded && !parts.length && servingId && servingId !== existing?.servingId
       ? servingId
       : undefined
   // All four together or none: `typed` holds the user's answer for every
   // figure, and an empty field is the deliberate "use the app's number".
   const overridesChange =
-    existing && FIGURES.some((key) => figure(typed[key]) !== (existing.overrides?.[key] ?? null))
+    seeded && FIGURES.some((key) => figure(typed[key]) !== (existing?.overrides?.[key] ?? null))
       ? {
           kcal: figure(typed.kcal),
           carbs: figure(typed.carbs),
@@ -290,25 +314,25 @@ export default function FoodDetail() {
         }
       : undefined
   // A row carries a photo or a drawing, never both, and each of the two
-  // controls clears the other — so at most one of these is ever set.
-  const pictureChange = shot ? { photoPath: shot.path } : icon ? { icon } : undefined
+  // controls clears the other — so at most one of these is ever set. Not gated
+  // on `seeded`: a picture is not seeded from anything, it is only ever chosen.
+  const pictureChange = existing && (shot ? { photoPath: shot.path } : icon ? { icon } : undefined)
 
   const dirty = Boolean(
-    existing &&
-      (nameChange ||
-        noteChange !== undefined ||
-        quantityChange !== undefined ||
-        servingChange ||
-        overridesChange ||
-        pictureChange ||
-        partChanges.length),
+    nameChange ||
+      noteChange !== undefined ||
+      quantityChange !== undefined ||
+      servingChange ||
+      overridesChange ||
+      pictureChange ||
+      (seeded && partChanges.length),
   )
 
   // The controls, filled in from the row the first time it is actually here.
   // See `seededFrom` for why once is not the same as at mount.
   useEffect(() => {
-    if (!existing || seededFrom.current === existing.id) return
-    seededFrom.current = existing.id
+    if (!existing || seededId === existing.id) return
+    setSeededId(existing.id)
     setQuantity(existing.quantity)
     setServingId(existing.servingId)
     setNote(existing.note ?? '')
@@ -320,7 +344,15 @@ export default function FoodDetail() {
       protein: existing.overrides?.protein?.toString() ?? '',
       fat: existing.overrides?.fat?.toString() ?? '',
     })
-  }, [existing])
+  }, [existing, seededId])
+
+  // The uploaded-but-unreferenced photo, on every exit at once. See `orphanShot`.
+  useEffect(
+    () => () => {
+      if (orphanShot.current) void removeMealPhoto(orphanShot.current).catch(() => {})
+    },
+    [],
+  )
 
   /**
    * The two ways off this screen that are not the chevron.
@@ -457,7 +489,9 @@ export default function FoodDetail() {
     setAttaching(true)
     try {
       const path = await uploadMealPhoto(userId, uri)
-      if (shot) void removeMealPhoto(shot.path).catch(() => {})
+      // A shot this one replaces never reached a row either.
+      if (orphanShot.current) void removeMealPhoto(orphanShot.current).catch(() => {})
+      orphanShot.current = path
       setShot({ uri, path })
       // The photo IS the picture now, so an unsaved drawing has been answered.
       setIcon(undefined)
@@ -481,9 +515,9 @@ export default function FoodDetail() {
   const applyIcon = (next: IconRef) => {
     setIcon(next)
     if (!shot) return
-    const orphan = shot.path
     setShot(undefined)
-    void removeMealPhoto(orphan).catch(() => {})
+    if (orphanShot.current) void removeMealPhoto(orphanShot.current).catch(() => {})
+    orphanShot.current = undefined
   }
 
   const hasPhoto = Boolean(shot ?? existing?.photoPath)
@@ -502,6 +536,9 @@ export default function FoodDetail() {
       // the alternative to a drawing. Never both: taking one clears the other.
       photoPath: shot?.path,
     })
+    // The insert carries it now, so it is not an orphan for the unmount effect
+    // to sweep up on the way out.
+    orphanShot.current = undefined
     finish()
   }
 
@@ -550,6 +587,10 @@ export default function FoodDetail() {
     // Two keys is the empty patch: an update with nothing in it is a round trip
     // that invalidates the day for no reason.
     if (Object.keys(patch).length > 2) await updateEntry.mutateAsync(patch)
+    // The row points at the photo now. Cleared only after the write, so a patch
+    // that threw leaves the object for the unmount sweep rather than deleting
+    // one the user is about to try saving again.
+    if (patch.photoPath) orphanShot.current = undefined
   }
 
   const save = async () => {
@@ -574,8 +615,8 @@ export default function FoodDetail() {
 
   const discard = () => {
     setConfirmDiscard(false)
-    // The shot was uploaded when it was taken and no row ever pointed at it.
-    if (shot) void removeMealPhoto(shot.path).catch(() => {})
+    // A staged photo needs no handling here: it is still in `orphanShot`, and
+    // the unmount sweep takes it whichever way this screen goes.
     goBack()
   }
 

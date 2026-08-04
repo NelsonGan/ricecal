@@ -36,9 +36,9 @@ export type FixSheetProps = {
  * screen behind. Sitting in a card among the staged controls it read as one
  * more field waiting for the same button.
  *
- * It also wants the keyboard the instant it opens, which is the other reason it
- * is a sheet: the field is the only thing in it, so there is nothing to scroll
- * past and nowhere else for a first tap to go.
+ * It also wants the keyboard the instant it opens and nothing else competing
+ * for the first tap, which a sheet gives and a card three cards down a
+ * scrolling page does not.
  */
 export function FixSheet({
   visible,
