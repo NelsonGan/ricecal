@@ -4,6 +4,14 @@
 --
 -- Declarative source: apps/supabase/schemas/02_functions.sql and 95_import_foods.sql
 
+comment on function public.search_normalize is
+  'Lowercase, accent-folded form of a name or a query, with every run of '
+  'non-alphanumerics collapsed to one space. Apostrophes SPLIT rather than '
+  'elide: "McDonald''s" normalizes to "mcdonald s", not "mcdonalds". Both ends '
+  'of every comparison go through here, so the split is harmless — but anything '
+  'building a search_text or a slug outside the database has to split too, or '
+  'it writes a token the query form can never produce.';
+
 -- The rule itself is a function rather than the trigger's own arithmetic,
 -- because `import_foods` has to apply it BEFORE inserting: it dedupes a payload
 -- against `foods.name_norm`, and a second copy of this expression would
