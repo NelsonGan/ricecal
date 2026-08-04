@@ -27,6 +27,7 @@ import {
   Icon,
   Screen,
   Skeleton,
+  SkeletonRow,
   Tappable,
   Text,
   useToast,
@@ -68,15 +69,43 @@ export default function TodayScreen() {
 
   const { selectedDate, todayKey } = useSelectedDate()
   const day = useDayLog(selectedDate)
-  const { data: targets, isPending } = useTargets()
+  const { data: targets, isPending: targetsPending } = useTargets()
   const streak = useStreak()
   const removeEntry = useRemoveEntry()
   const pending = usePendingSnaps()
   const setWater = useSetWater(selectedDate)
   // The day's movement, if a health store is connected. Null on every account
   // that has not connected one, which is what keeps `burned` at zero below.
-  const { data: activity } = useActivityDay(selectedDate)
-  const { data: settings } = useSettings()
+  const { data: activity, isPending: activityPending } = useActivityDay(selectedDate)
+  const { data: settings, isPending: settingsPending } = useSettings()
+
+  /**
+   * EVERYTHING UNDER THE STRIP WAITS TOGETHER.
+   *
+   * Two of these queries are keyed by the selected date, so picking a day puts
+   * them both back to "no data" — and every value below reads through a
+   * fallback that turns that into a confident statement about the new day. The
+   * ring drew the full budget as remaining, the tracker drew eight empty
+   * glasses, and the list drew "Nothing logged yet", all for as long as the
+   * requests were out. A day someone ate three meals on announced itself as a
+   * day they had skipped.
+   *
+   * The gate is the whole region rather than a flag per card, because these are
+   * one sentence about one day: staggering them would reveal the ring's answer
+   * over an empty list, which is the same disagreement in slow motion. Days
+   * already in the cache — the persisted ones, and any week the user is paging
+   * back and forth over — are never pending, so this costs a placeholder only
+   * on a day genuinely being fetched for the first time.
+   *
+   * `settings` is in here for a narrower reason: it holds
+   * `activity_extends_budget`, which decides whether the day's movement counts
+   * toward the ring at all. Missing, it defaults to counting — so an account
+   * that turned it off saw the larger budget first and watched the ring
+   * tighten. The strip's dots are drawn against that same sum and gate on the
+   * same query, because the ring and the dot under it describe one day and must
+   * not disagree about it.
+   */
+  const loading = day.isPending || targetsPending || activityPending || settingsPending
   /**
    * Whether the summary is showing the allowance rather than what is left.
    *
@@ -171,15 +200,20 @@ export default function TodayScreen() {
       <ScreenTitle
         title={title}
         trailing={
-          // Badge lays a non-text child out as a row and centres it, so the
-          // flame sits against the middle of the label rather than its
-          // baseline.
-          <Badge tone="kaya">
-            <Icon set="body" name="flame-burn" size={18} />
-            <Text variant="caption" className="text-kaya-ink">
-              {t('common:count.dayStreak', { count: streak.current })}
-            </Text>
-          </Badge>
+          // Nothing at all until the count is known: "0 day streak" is a
+          // sentence about the user, and it is the wrong one on every account
+          // that has a streak.
+          streak.isPending ? undefined : (
+            // Badge lays a non-text child out as a row and centres it, so the
+            // flame sits against the middle of the label rather than its
+            // baseline.
+            <Badge tone="kaya">
+              <Icon set="body" name="flame-burn" size={18} />
+              <Text variant="caption" className="text-kaya-ink">
+                {t('common:count.dayStreak', { count: streak.current })}
+              </Text>
+            </Badge>
+          )
         }
       />
 
@@ -189,7 +223,7 @@ export default function TodayScreen() {
       <WeekPicker />
 
       <Card>
-        {isPending ? (
+        {loading ? (
           <Skeleton className="h-[132px] w-full" />
         ) : targets ? (
           <>
@@ -262,22 +296,26 @@ export default function TodayScreen() {
           reaches for without having eaten anything. Below the entry list it would
           be under however many rows the day has grown.
 
-          No skeleton while the targets load. The count comes from the day, which
-          is its own query, and the goal falls back to eight — so the row is honest
-          from the first frame instead of being a grey block that becomes the same
-          eight glasses. */}
+          The GOAL is known before the day is — it falls back to eight, which is
+          not a guess about this user — so the grid keeps its size throughout and
+          only the fill waits. That is why the placeholder is inside the tracker
+          rather than a block over the card: the row never changes height, and
+          the count beside the heading is simply absent until there is one. */}
       <Card
         tone="water"
         title={t('logging:water.title')}
         action={
-          <Text variant="label" className="text-water-ink">
-            {t('logging:water.count', { filled: day.waterGlasses, goal: waterGoal })}
-          </Text>
+          loading ? undefined : (
+            <Text variant="label" className="text-water-ink">
+              {t('logging:water.count', { filled: day.waterGlasses, goal: waterGoal })}
+            </Text>
+          )
         }
       >
         <WaterTracker
           filled={day.waterGlasses}
           goal={waterGoal}
+          loading={loading}
           // `mutate`, not `mutateAsync`: the optimistic update in `useSetWater` is
           // what fills the glass, and nothing here waits for the row to be written.
           onChange={(glasses) => setWater.mutate(glasses)}
@@ -285,47 +323,55 @@ export default function TodayScreen() {
         />
       </Card>
 
-      {day.entries.length === 0 ? (
+      {/* Two rows of placeholder rather than one, because one reads as a card
+          with a single meal in it and the point of the block is that nobody yet
+          knows how many there are. */}
+      {loading ? (
+        <Card>
+          <SkeletonRow />
+          <SkeletonRow />
+        </Card>
+      ) : day.entries.length === 0 ? (
         <EmptyState
           title={t('logging:today.emptyTitle')}
           description={t('logging:today.emptyBody')}
           icon={{ set: 'food', name: 'empty-plate' }}
         />
-      ) : null}
-
-      {/* One list, in the order the day happened. It was a card per meal, and
-          three of the four were usually empty — each still taking a heading and an
-          add button, so two entries filled a screen with furniture. */}
-      <EntryList
-        day={day}
-        onPressEntry={(entry) =>
-          router.push({
-            pathname: '/log/food/[id]',
-            params: { id: entry.foodId, entryId: entry.id },
-          })
-        }
-        // A snap that could not be read is dropped as it is handed over: leaving
-        // it behind would double the meal once search adds the real dish, and the
-        // row has nothing in it worth keeping.
-        onFixEntry={(entry) => {
-          pending.remove(entry.id)
-          router.push({ pathname: '/log/search' })
-        }}
-        // Nothing was logged for a photo with no food in it, so there is no
-        // entry to delete — dismissing drops the row the shutter put there.
-        onDismissEntry={(entry) => pending.remove(entry.id)}
-        // Swipe left, tap the bin. A wrong scan is the common case and it took
-        // two screens to undo; this is the shortcut, and the detail screen's
-        // delete is still there for anyone who wants to look first.
-        onDeleteEntry={(entry) => {
-          removeEntry.mutate({
-            id: entry.id,
-            logDate: entry.logDate,
-            photoPath: entry.photoPath,
-          })
-          toast.show({ title: t('logging:added.removedToast') })
-        }}
-      />
+      ) : (
+        /* One list, in the order the day happened. It was a card per meal, and
+           three of the four were usually empty — each still taking a heading and
+           an add button, so two entries filled a screen with furniture. */
+        <EntryList
+          day={day}
+          onPressEntry={(entry) =>
+            router.push({
+              pathname: '/log/food/[id]',
+              params: { id: entry.foodId, entryId: entry.id },
+            })
+          }
+          // A snap that could not be read is dropped as it is handed over:
+          // leaving it behind would double the meal once search adds the real
+          // dish, and the row has nothing in it worth keeping.
+          onFixEntry={(entry) => {
+            pending.remove(entry.id)
+            router.push({ pathname: '/log/search' })
+          }}
+          // Nothing was logged for a photo with no food in it, so there is no
+          // entry to delete — dismissing drops the row the shutter put there.
+          onDismissEntry={(entry) => pending.remove(entry.id)}
+          // Swipe left, tap the bin. A wrong scan is the common case and it took
+          // two screens to undo; this is the shortcut, and the detail screen's
+          // delete is still there for anyone who wants to look first.
+          onDeleteEntry={(entry) => {
+            removeEntry.mutate({
+              id: entry.id,
+              logDate: entry.logDate,
+              photoPath: entry.photoPath,
+            })
+            toast.show({ title: t('logging:added.removedToast') })
+          }}
+        />
+      )}
     </Screen>
   )
 }

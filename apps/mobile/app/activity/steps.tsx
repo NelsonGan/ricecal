@@ -11,6 +11,7 @@ import {
   useActivityHours,
   useActivitySeries,
   useActivitySummary,
+  useSettings,
 } from '@/data'
 import {
   busiestHour,
@@ -52,10 +53,24 @@ export default function StepsScreen() {
   const hours = useActivityHours(date)
   const series = useActivitySeries(range)
   const summary = useActivitySummary(range)
+  const { data: settings, isPending: settingsPending } = useSettings()
 
-  const goal = summary.data?.stepGoal ?? 8000
+  /**
+   * The goal is the user's, not the range's.
+   *
+   * It used to be read off `activity_summary`, which carries the step goal of
+   * the newest day in the window — the same number at every range, but behind a
+   * query keyed by one. So switching the control in the app bar took the figure
+   * back to "no data", the `?? 8000` default filled in for it, and the top card
+   * — the half of the screen this control is documented NOT to govern —
+   * flickered its target, its over/under line and its progress bar on the way
+   * past. `user_settings` is where the number actually lives and it is not
+   * keyed by anything the user can change from here.
+   */
+  const goal = settings?.step_goal ?? 8000
   const steps = day.data?.steps ?? 0
   const difference = steps - goal
+  const todayLoading = day.isPending || settingsPending
 
   const hourly = hours.data ?? []
   const detailed = hasHourlyShape(hourly)
@@ -128,34 +143,47 @@ export default function StepsScreen() {
 
       <Card>
         <View className="gap-4">
-          <View className="flex-row items-end justify-between gap-md">
-            <View className="min-w-0 flex-1">
-              <Text variant="overline">{t('activity:steps.todaySoFar')}</Text>
-              <Text variant="display" numberOfLines={1}>
-                {count(steps)}
-              </Text>
-              <Text variant="meta">
-                {t('activity:steps.unit', {
-                  distance: distance(day.data?.distanceM ?? null) ?? '—',
-                })}
-              </Text>
-            </View>
-            <View className="items-end">
-              <Text variant="meta">{t('activity:steps.goalLine', { goal: count(goal) })}</Text>
-              <Text variant="label" className={difference >= 0 ? 'text-pandan-ink' : 'text-muted'}>
-                {difference >= 0
-                  ? t('activity:steps.over', { value: count(difference) })
-                  : t('activity:steps.under', { value: count(-difference) })}
-              </Text>
-            </View>
-          </View>
+          {/* The count, the target and the bar are one statement — "8,260 of
+              8,000, 260 over" — so they arrive together or not at all. Split,
+              the card read "0 steps, 8,000 under" for as long as the day was
+              out, which is a worse answer than none. */}
+          {todayLoading ? (
+            <Skeleton className="h-[96px] w-full" />
+          ) : (
+            <>
+              <View className="flex-row items-end justify-between gap-md">
+                <View className="min-w-0 flex-1">
+                  <Text variant="overline">{t('activity:steps.todaySoFar')}</Text>
+                  <Text variant="display" numberOfLines={1}>
+                    {count(steps)}
+                  </Text>
+                  <Text variant="meta">
+                    {t('activity:steps.unit', {
+                      distance: distance(day.data?.distanceM ?? null) ?? '—',
+                    })}
+                  </Text>
+                </View>
+                <View className="items-end">
+                  <Text variant="meta">{t('activity:steps.goalLine', { goal: count(goal) })}</Text>
+                  <Text
+                    variant="label"
+                    className={difference >= 0 ? 'text-pandan-ink' : 'text-muted'}
+                  >
+                    {difference >= 0
+                      ? t('activity:steps.over', { value: count(difference) })
+                      : t('activity:steps.under', { value: count(-difference) })}
+                  </Text>
+                </View>
+              </View>
 
-          <ProgressBar
-            value={goal > 0 ? steps / goal : 0}
-            tone="water"
-            height={14}
-            accessibilityLabel={t('activity:steps.goalLine', { goal: count(goal) })}
-          />
+              <ProgressBar
+                value={goal > 0 ? steps / goal : 0}
+                tone="water"
+                height={14}
+                accessibilityLabel={t('activity:steps.goalLine', { goal: count(goal) })}
+              />
+            </>
+          )}
 
           {hours.isPending ? (
             <Skeleton className="h-[120px] w-full" />
@@ -188,7 +216,12 @@ export default function StepsScreen() {
       </Card>
 
       <Card title={range === '7d' ? t('activity:steps.weekTitle') : t(SPAN_KEY[range])}>
-        {series.isPending || !series.data ? (
+        {/* The summary as well as the series: the stat row and the sentence
+            under the chart are read off it, and waiting on the series alone let
+            them render as "—", "0 of 0" and the no-pattern-here note beside a
+            chart that had already drawn the week. Same failure, and same fix, as
+            the Trends panels. */}
+        {series.isPending || summary.isPending || !series.data ? (
           <Skeleton className="h-[130px] w-full" />
         ) : (
           <View className="gap-4">
