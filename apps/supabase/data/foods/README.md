@@ -57,6 +57,12 @@ in the words a person would use — "1 plate", "1 bowl", "3 pieces", "1 glass
 (250 ml)". This is the decision the whole catalogue is built around
 (`schemas/20_foods.sql`): nobody weighs a roti canai.
 
+**A serving label is 40 characters.** `food_servings.label` is checked, so a
+descriptive one is refused rather than truncated — one round lost 21 rows of 65
+to this before noticing. "1 whole fish (600 g), to share" fits; the explanation
+of who shares it does not. Put the qualification in `aliases` or in an
+`extra_servings` entry instead.
+
 **The calories have to match the macros.** The loader recomputes
 `4·carbs + 4·protein + 9·fat` and refuses any row more than 25% away from its
 own stated `kcal` — the same margin the scan cascade holds its own guesses to.
