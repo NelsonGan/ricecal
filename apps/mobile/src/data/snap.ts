@@ -21,11 +21,17 @@ export type SnapInput = {
   photoUri?: string
 }
 
+export type DescribeInput = {
+  logDate: string
+  /** The meal in the user's own words. */
+  text: string
+}
+
 /** What the scan-meal edge function answers with. */
 type ScanResponse = {
   ok: boolean
   scanId?: string
-  /** False when the photo had nothing edible in it. No entry was written. */
+  /** False when the evidence had nothing edible in it. No entry was written. */
   food?: boolean
   entries?: Array<{ id: string; foodId: string; tier: number; name: string; kcal: number }>
   error?: string
@@ -44,10 +50,15 @@ type ScanResponse = {
  * happen (offline, signed out), which is exactly when the pending row should
  * stay on screen as failed.
  */
-async function scanMeal(input: { photoPath?: string; logDate: string }): Promise<ScanResponse> {
+async function scanMeal(input: {
+  photoPath?: string
+  text?: string
+  logDate: string
+}): Promise<ScanResponse> {
   const { data, error } = await supabase.functions.invoke<ScanResponse>('scan-meal', {
     body: {
       photo_path: input.photoPath,
+      text: input.text,
       log_date: input.logDate,
     },
   })
@@ -75,17 +86,28 @@ async function scanMeal(input: { photoPath?: string; logDate: string }): Promise
  * later by design, and a snap that stopped because the user navigated away
  * would be the app losing their food.
  */
-export function useSnapFood() {
+function useRecogniseMeal() {
   const userId = useUserId()
   const queryClient = useQueryClient()
   const pending = usePendingSnaps()
 
   return useCallback(
-    ({ logDate, photoUri }: SnapInput): string => {
+    ({
+      logDate,
+      photoUri,
+      text,
+    }: {
+      logDate: string
+      photoUri?: string
+      text?: string
+    }): string => {
       // Not a database id: this row does not exist yet. Prefixed so nothing
       // mistakes it for one and tries to update it.
       const id = `snap-${Date.now()}-${Math.round(Math.random() * 1e6)}`
-      pending.add({ id, logDate, photoUri })
+      pending.add({ id, logDate, photoUri, text })
+      // A typed meal has no picture, so the banner and the row talk about the
+      // words instead of the plate. Same work underneath, different noun.
+      const doneTitle = text ? 'logging:today.describeDoneTitle' : 'logging:today.scanDoneTitle'
 
       // Asked here rather than on launch, and effectively once: the OS shows
       // its dialog while a permission is undetermined and `ensure` declines to
@@ -100,10 +122,7 @@ export function useSnapFood() {
       const booked = ensureNotificationPermission()
         .catch(() => false)
         .then(() =>
-          scheduleScanNotice(
-            i18n.t('logging:today.scanDoneTitle'),
-            i18n.t('logging:today.scanDoneBodyPlain'),
-          ),
+          scheduleScanNotice(i18n.t(doneTitle), i18n.t('logging:today.scanDoneBodyPlain')),
         )
         .then((id) => {
           notice = id
@@ -113,7 +132,7 @@ export function useSnapFood() {
 
       const work = async () => {
         const path = photoUri ? await uploadMealPhoto(userId, photoUri) : undefined
-        return scanMeal({ photoPath: path, logDate })
+        return scanMeal({ photoPath: path, text, logDate })
       }
 
       work()
@@ -133,7 +152,7 @@ export function useSnapFood() {
           if (AppState.currentState !== 'active') {
             const entry = result.entries?.[0]
             void announceScan(
-              i18n.t('logging:today.scanDoneTitle'),
+              i18n.t(doneTitle),
               entry
                 ? i18n.t('logging:today.scanDoneBody', {
                     food: entry.name,
@@ -151,6 +170,7 @@ export function useSnapFood() {
           queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
           queryClient.invalidateQueries({ queryKey: keys.recentFoodsAll(userId) })
           queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+          queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
           // Movement is measured against what was eaten: the balance chart, the
           // "eaten" average and the deficit sentence all read `daily_nutrition`
           // through `activity_summary`. Without this a meal logged today left
@@ -172,5 +192,28 @@ export function useSnapFood() {
       return id
     },
     [pending, queryClient, userId],
+  )
+}
+
+/** The camera path. */
+export function useSnapFood() {
+  const recognise = useRecogniseMeal()
+  return useCallback((input: SnapInput) => recognise(input), [recognise])
+}
+
+/**
+ * The typing path: the same recognition, described in words.
+ *
+ * Optimistic for the same reason and in the same way — the row goes on the day
+ * with the sentence on it, the sheet closes, and the cascade runs behind it.
+ * There is nothing to upload, so the wait is one model call shorter, but it is
+ * still long enough that holding the user on a spinner would make typing the
+ * slow way to log a meal.
+ */
+export function useDescribeFood() {
+  const recognise = useRecogniseMeal()
+  return useCallback(
+    ({ logDate, text }: DescribeInput) => recognise({ logDate, text: text.trim().slice(0, 500) }),
+    [recognise],
   )
 }

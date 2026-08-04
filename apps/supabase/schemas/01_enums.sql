@@ -39,12 +39,16 @@ create type public.food_place as enum (
 -- How an entry got created. Not shown anywhere today; it is the column that
 -- makes "what fraction of logs come from the camera" answerable once the
 -- scanning flow exists, and backfilling it later would be guesswork.
+-- `text` is a meal typed in words rather than photographed. It runs the same
+-- recognition cascade the camera does and lands in the same row shape, so this
+-- column is the only place the difference survives.
 create type public.entry_source as enum (
   'search',
   'quick_add',
   'camera',
   'voice',
-  'import'
+  'import',
+  'text'
 );
 
 create type public.unit_system as enum ('metric', 'imperial');

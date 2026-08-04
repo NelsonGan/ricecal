@@ -62,7 +62,12 @@ export {
 } from './Choice'
 export { ConfirmSheet, type ConfirmSheetProps } from './ConfirmSheet'
 export { cn } from './cn'
-export { DateStrip, type DateStripDay, type DateStripProps } from './DateStrip'
+export {
+  DateStrip,
+  type DateStripDay,
+  type DateStripMark,
+  type DateStripProps,
+} from './DateStrip'
 export { Divider, type DividerProps } from './Divider'
 export { EmptyState, type EmptyStateProps } from './EmptyState'
 export { Icon, type IconProps, type IconSet, icons } from './Icon'

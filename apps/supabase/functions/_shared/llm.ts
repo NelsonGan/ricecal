@@ -1,4 +1,4 @@
-// The three model calls the scan cascade makes, and their mocks.
+// The model calls the scan cascade makes, and their mocks.
 //
 // Every function here has the same contract: return a parsed, shape-checked
 // value or throw. The cascade in index.ts treats any throw as "this tier
@@ -156,6 +156,33 @@ export type Interpretation =
        * honest; with it the breakdown IS how the adjustment is applied.
        */
       part: string | null
+      /**
+       * The part `part` takes the place of, when one thing on the plate turned
+       * out to be a different thing.
+       *
+       * "It was rendang chicken not fried chicken" is one correction to one
+       * side of a four-part plate, and without somewhere to put it the
+       * interpreter had to call the whole meal misidentified — which
+       * re-resolved the rice, the sambal and the egg nobody had mentioned, and
+       * came back a different plate. With it the swap is what it looks like:
+       * one row out, one row in, and the entry re-priced from the parts.
+       *
+       * Null for every other kind of adjustment, including additions and
+       * removals — those are the presence of a part changing, not its identity.
+       */
+      replaces: string | null
+      /**
+       * What the NEW food costs, at the count the part it replaces is logged
+       * at. Only meaningful alongside `replaces`; null everywhere else.
+       *
+       * A swap is the one adjustment where the delta is the wrong question to
+       * ask. "It was rendang chicken not fried chicken" against a 247 kcal
+       * fried chicken came back as a delta of -172 — the model's arithmetic
+       * putting rendang at 75 kcal. Asked instead what rendang chicken costs,
+       * the same model answers 280, which is right. So the swap is priced
+       * absolutely and the delta is only a fallback for when this is missing.
+       */
+      part_kcal: number | null
       /**
        * How many of that part were added or taken away, when the user counted
        * them out loud. "Two more skewers" is 2, and applying it as calories
@@ -377,6 +404,134 @@ function shapeVision(raw: unknown): Vision {
   return { scene, items }
 }
 
+// ---------------------------------------------------------------------------
+// The prompt a meal is described to the cascade in.
+//
+// Two entry points answer in the same shape — a photograph and a typed
+// sentence — and everything downstream of them is the same code, so the rules
+// about that shape have to be the same words. They were not: the size anchors
+// below were derived from a fortnight of watching the photo path price a satay
+// stick at three different numbers, and a text prompt written separately would
+// have had to learn all of it again, wrong, in its own time.
+//
+// What is NOT shared is the framing, because the two calls have different
+// authorities. A photo has one witness and it is the model. A sentence was
+// written by the person who ate the meal.
+// ---------------------------------------------------------------------------
+
+const ITEM_SCHEMA =
+  '{"scene": "single|composite|packaged|unclear", ' +
+  '"items": [{"name": string, "specific_query": string, "generic_query": string, ' +
+  '"count": number, "components": [{"name": string, "count": number, "kcal": number, ' +
+  '"carbs_g": number|null, "protein_g": number|null, "fat_g": number|null}], ' +
+  '"serving_hint": string|null, ' +
+  '"kcal_low": number, "kcal_high": number, "confidence": number, ' +
+  '"suggested_edits": string[]}]}. '
+
+const QUERY_FIELDS =
+  '"specific_query" is the local dish name as eaten ("char kuey teow"), ' +
+  '"generic_query" a broader fallback ("fried noodles"). '
+
+// The two ways a meal can have more than one thing in it, and the shapes the
+// app can actually edit.
+const COUNT_VS_COMPONENTS =
+  'Many of ONE food is the item\'s own "count": 3 durian seeds, 6 dumplings, 2 eggs ' +
+  '— leave "components" empty for those. Several DIFFERENT foods are components: ' +
+  'rice, the protein, each side, a drink with calories in it. Water, ice and an ' +
+  'empty glass are not food and are never listed. '
+
+// The breakdown is editable per part, so each part is a control over a number.
+const COMPONENT_FIELDS =
+  'A component carries a plain searchable "name", a "count" of how many there are, ' +
+  'and the "kcal" and macro grams of ONE of them (null when unsure — never guess 0). ' +
+  'Two chicken wings are one component with count 2 priced for a single wing. ' +
+  // A list of one is the dish wearing a second name, and the app then shows a
+  // breakdown with a single row in it that adds up to the row above it.
+  'Never return exactly ONE component: one component IS the dish, so leave ' +
+  '"components" empty. Two or none. ' +
+  'A component name is the food alone ("coconut rice") — not the dish it came from, ' +
+  'and never a parenthesised recipe. '
+
+// The two counting mistakes seen in testing, both worth a sentence: cut pieces
+// read as several things, and a piece priced as a portion.
+const SIZE_ANCHORS =
+  'Count whole units, not cut pieces: an egg sliced in half is one egg, an apple in ' +
+  'slices is one apple. And keep a piece the size of a piece — dumpling or satay ' +
+  'stick 40-60 kcal, potato wedge 30-45, prawn 10-20, apple slice 10-15, chicken ' +
+  'wing 80-100, boiled egg 70-80, slice of bread 70-90; a single-patty fast-food ' +
+  'burger 250-350, a double or Big Mac 550-800, medium fries 300-350, a can of soft ' +
+  'drink 140. Those are ranges to reason from, not answers to copy. '
+
+const TRAILING_FIELDS =
+  '"scene" is "composite" when the meal has distinct parts. "serving_hint" ' +
+  'is the portion as a person would say it ("1 plate", "1 bowl"). ' +
+  // The band is arithmetic over the answer already given, and asking for it as
+  // a judgement got a plate of two roti and a dhal bounded at 380-380 while
+  // its own components added to 640.
+  'kcal_low and kcal_high bound the WHOLE meal, and they are the LAST thing you ' +
+  'work out — arithmetic over the answer you have already given, not a second ' +
+  'opinion beside it. Add up (kcal x count) over every component you listed, or ' +
+  'multiply one unit by "count" for a counted item, and put that total between the ' +
+  'two bounds: parts of 340 + 2x125 + 60 mean a total of 650, so bounds like ' +
+  '550-750 and never 380-380. They are a range — kcal_low is always smaller than ' +
+  'kcal_high, never equal to it, even when you are sure of the figure. ' +
+  // The components are what the app actually prices the meal from, so a
+  // disagreement between them and the bounds is a mispriced PART. Told only to
+  // derive the bounds, the model kept a nasi kandar whose four parts added to
+  // 405 and bounded it at 650-850 — the bounds were right and the plate was
+  // logged from the parts.
+  'If that total does not look like the meal you were told about, the COMPONENT ' +
+  'figures are what to correct — each one is a real portion of that food and the ' +
+  'app prices the meal from them, so a plate that should be 700 kcal cannot be ' +
+  'made of parts adding to 400. ' +
+  '"confidence" is 0-1 for the identification. "suggested_edits" is 2 or 3 short ' +
+  'corrections a user of THIS dish would plausibly type ("No sambal", "Half ' +
+  'portion", "Extra rice") — an empty list is not an answer, and they are what the ' +
+  'app offers as one-tap fixes. ' +
+  'The item carries no macro fields — only components do.'
+
+/**
+ * The photo prompt.
+ *
+ * Exported, along with the other two below, because the eval harness in
+ * `apps/supabase/scripts` sends these exact strings to the model — a harness
+ * carrying its own copy is a harness that grades a prompt nobody ships.
+ */
+export const ANALYSE_PHOTO_PROMPT =
+  'You identify food in photos for a Malaysian calorie-tracking app. ' +
+  'If the photo has nothing edible in it — a person, a room, a screen, an empty ' +
+  'plate — answer {"no_food": true} and nothing else. A blurred or half-guessable ' +
+  'meal is still a meal; say no_food only when there is no food. ' +
+  // A label is not a thing to identify, it is a thing to read.
+  'If the photo shows a NUTRITION FACTS panel or ingredients label, answer ' +
+  '{"nutrition_label": {"name": string|null, "kcal": number, "carbs_g": number, ' +
+  '"protein_g": number, "fat_g": number, "fibre_g": number|null, ' +
+  '"sugar_g": number|null, "sodium_mg": number|null, "serving": string|null}} and ' +
+  'nothing else. Copy the figures for ONE SERVING exactly as printed — do not ' +
+  'convert, round or estimate, and do not use the per-100g column when a per-serving ' +
+  'column is there. "serving" is the panel\'s own words for one serving ' +
+  '("1 sachet (33g)"). "name" is the product as printed on the pack, and null when ' +
+  'the pack name is not in the photo — a close-up of the panel usually is not. ' +
+  'Never invent a stand-in like "Unidentified Food Product"; null is the answer. ' +
+  'If the panel is only readable per 100g, use those figures and say so in "serving". ' +
+  'Otherwise respond with JSON only, matching: ' +
+  ITEM_SCHEMA +
+  // ONE MEAL. Anything else is a diary with four rows for one lunch.
+  'The photo is ONE logged meal. Return ONE item, named as a local menu would print ' +
+  'it ("Korean fried chicken with rice and sides"). Only return more than one item ' +
+  "when the photo unambiguously shows separate meals — two people's plates. " +
+  QUERY_FIELDS +
+  COUNT_VS_COMPONENTS +
+  // Only what is on the plate: a guessed part is a control over a number
+  // nobody measured.
+  'Only list components you can SEE as separate things on the plate. A curry, a ' +
+  'fried rice, a soup, a sandwich, anything cooked or mixed together is ONE food — ' +
+  'leave components empty rather than guessing what went into it. ' +
+  COMPONENT_FIELDS +
+  SIZE_ANCHORS +
+  'Anchor on the portion in the photo, not the dish average. ' +
+  TRAILING_FIELDS
+
 /**
  * The vision call. Deliberately returns queries and a kcal RANGE, never
  * per-nutrient values — identity comes from the model, numbers come from the
@@ -427,71 +582,7 @@ export async function analysePhoto(
 
   const raw = await chatJSON(
     [
-      {
-        role: 'system',
-        content:
-          'You identify food in photos for a Malaysian calorie-tracking app. ' +
-          'If the photo has nothing edible in it — a person, a room, a screen, an empty ' +
-          'plate — answer {"no_food": true} and nothing else. A blurred or half-guessable ' +
-          'meal is still a meal; say no_food only when there is no food. ' +
-          // A label is not a thing to identify, it is a thing to read.
-          'If the photo shows a NUTRITION FACTS panel or ingredients label, answer ' +
-          '{"nutrition_label": {"name": string|null, "kcal": number, "carbs_g": number, ' +
-          '"protein_g": number, "fat_g": number, "fibre_g": number|null, ' +
-          '"sugar_g": number|null, "sodium_mg": number|null, "serving": string|null}} and ' +
-          'nothing else. Copy the figures for ONE SERVING exactly as printed — do not ' +
-          'convert, round or estimate, and do not use the per-100g column when a per-serving ' +
-          'column is there. "serving" is the panel\'s own words for one serving ' +
-          '("1 sachet (33g)"). "name" is the product as printed on the pack, and null when ' +
-          'the pack name is not in the photo — a close-up of the panel usually is not. ' +
-          'Never invent a stand-in like "Unidentified Food Product"; null is the answer. ' +
-          'If the panel is only readable per 100g, use those figures and say so in "serving". ' +
-          'Otherwise respond with JSON only, matching: ' +
-          '{"scene": "single|composite|packaged|unclear", ' +
-          '"items": [{"name": string, "specific_query": string, "generic_query": string, ' +
-          '"count": number, "components": [{"name": string, "count": number, "kcal": number, ' +
-          '"carbs_g": number|null, "protein_g": number|null, "fat_g": number|null}], ' +
-          '"serving_hint": string|null, ' +
-          '"kcal_low": number, "kcal_high": number, "confidence": number, ' +
-          '"suggested_edits": string[]}]}. ' +
-          // ONE MEAL. Anything else is a diary with four rows for one lunch.
-          'The photo is ONE logged meal. Return ONE item, named as a local menu would print ' +
-          'it ("Korean fried chicken with rice and sides"). Only return more than one item ' +
-          "when the photo unambiguously shows separate meals — two people's plates. " +
-          '"specific_query" is the local dish name as eaten ("char kuey teow"), ' +
-          '"generic_query" a broader fallback ("fried noodles"). ' +
-          // COUNT vs COMPONENTS. The two ways a meal can have more than one
-          // thing in it, and the shapes the app can actually edit.
-          'Many of ONE food is the item\'s own "count": 3 durian seeds, 6 dumplings, 2 eggs ' +
-          '— leave "components" empty for those. Several DIFFERENT foods are components: ' +
-          'rice, the protein, each side, a drink with calories in it. Water, ice and an ' +
-          'empty glass are not food and are never listed. ' +
-          // The breakdown is editable per part, so a guessed part is a control
-          // over a number nobody measured.
-          'Only list components you can SEE as separate things on the plate. A curry, a ' +
-          'fried rice, a soup, a sandwich, anything cooked or mixed together is ONE food — ' +
-          'leave components empty rather than guessing what went into it. ' +
-          'A component carries a plain searchable "name", a "count" of how many are visible, ' +
-          'and the "kcal" and macro grams of ONE of them (null when unsure — never guess 0). ' +
-          'Two chicken wings are one component with count 2 priced for a single wing. ' +
-          // The two counting mistakes seen in testing, both worth a sentence:
-          // cut pieces read as several things, and a piece priced as a portion.
-          'Count whole units, not cut pieces: an egg sliced in half is one egg, an apple in ' +
-          'slices is one apple. And keep a piece the size of a piece — dumpling or satay ' +
-          'stick 40-60 kcal, potato wedge 30-45, prawn 10-20, apple slice 10-15, chicken ' +
-          'wing 80-100, boiled egg 70-80, slice of bread 70-90; a single-patty fast-food ' +
-          'burger 250-350, a double or Big Mac 550-800, medium fries 300-350, a can of soft ' +
-          'drink 140. Those are ranges to reason from, not answers to copy. ' +
-          // The remaining fields, one line each.
-          '"scene" is "composite" when the meal has distinct visible parts. "serving_hint" ' +
-          'is the portion as a person would say it ("1 plate", "1 bowl"). kcal_low/high ' +
-          'bound everything visible: they must equal the count times one unit for a counted ' +
-          'item, and bracket the sum of (kcal x count) over the components for a plate. ' +
-          'Anchor on the portion in the photo, not the dish average. "confidence" is 0-1 for ' +
-          'the identification. "suggested_edits" is up to 3 short corrections a user of THIS ' +
-          'dish would plausibly type ("No sambal", "Half portion", "Extra rice"). ' +
-          'The item carries no macro fields — only components do.',
-      },
+      { role: 'system', content: ANALYSE_PHOTO_PROMPT },
       {
         role: 'user',
         content: [
@@ -504,6 +595,115 @@ export async function analysePhoto(
     // fails to parse, and a parse failure costs the whole vision tier — a
     // chicken rice with six components ran out at 1600 and landed on the
     // archetype floor as "Mixed meal".
+    2400,
+  )
+  return shapeVision(raw)
+}
+
+/** The text prompt. Exported for the eval harness, like the photo one. */
+export const DESCRIBE_MEAL_PROMPT =
+  'You turn a typed meal description into structured data for a Malaysian ' +
+  'calorie-tracking app. The text was written by the person who ate the meal, so ' +
+  'what it says is the answer rather than a hypothesis: never add a food it does ' +
+  'not mention, never drop one it does, and never overrule an amount, a size or a ' +
+  'calorie figure it states. What it leaves out is yours to fill in — an unstated ' +
+  'portion is one ordinary serving as a Malaysian stall or home kitchen serves it. ' +
+  'If the text names no food that was eaten — a greeting, a question, a note to ' +
+  'self — answer {"no_food": true} and nothing else. ' +
+  'Otherwise respond with JSON only, matching: ' +
+  ITEM_SCHEMA +
+  // ONE MEAL, for the same reason the photo path folds its items: the diary
+  // gets one row per thing logged, and this is one thing logged.
+  'The text is ONE logged meal however many dishes it names. Return ONE item, ' +
+  'named the way the person would read it back ("Nasi lemak with fried chicken and ' +
+  'teh tarik"). The name is the FOOD and never the portion: "half a plate of char ' +
+  'kuey teow" is named "Char kuey teow" with the half in "serving_hint" and in the ' +
+  'calorie bounds. ' +
+  QUERY_FIELDS +
+  COUNT_VS_COMPONENTS +
+  // The mirror of the photo prompt's "only what you can see": there, parts
+  // must be visible; here, they must have been TYPED. Left looser than this,
+  // the model answered "nasi lemak" with five components — rice, anchovies,
+  // peanuts, cucumber, sambal — none of which the person mentioned and every
+  // one of which becomes a row they can edit and a search the catalogue runs.
+  'A component is a food the person LISTED. What joins two of them is their ' +
+  'writing: "and", "with", a comma, a number. Nothing else splits. ' +
+  'A dish name covers everything that normally comes with that dish: "nasi lemak" ' +
+  'is ONE food however many things arrive on the plate, "chicken rice" is not rice ' +
+  'plus chicken, "big mac" is not bun plus patty plus sauce. Naming the parts of a ' +
+  'dish the person named as a whole invents a breakdown they did not type. ' +
+  'So "nasi lemak" has no components, "nasi lemak with an extra egg and a milo ais" ' +
+  'has three, and "200g grilled chicken breast" has none. ' +
+  COMPONENT_FIELDS +
+  SIZE_ANCHORS +
+  // The three ways a sentence pins a portion down, in the order they override
+  // each other.
+  'Size words are about the portion and never about the dish: "small", "large", ' +
+  '"half a plate", "just a bit" move kcal_low/high and "serving_hint", not the ' +
+  'name. A stated weight or volume ("200g chicken breast", "500ml milo") is exact ' +
+  '— price that amount and say it in "serving_hint". A stated calorie figure ("a ' +
+  '250 kcal protein bar", "roughly 700 calories") is the answer: put it between ' +
+  'bounds a few percent either side of it (700 becomes 660-740) and do not ' +
+  'reconsider the figure itself. ' +
+  '"confidence" is how precisely the words pin the food down — a named dish is ' +
+  'high, "some rice and chicken" is low. Low is an honest answer, not a failure; ' +
+  'the app has a cheaper way to price a vague meal and needs to be told when. ' +
+  TRAILING_FIELDS
+
+/** The one line of context the text call gets. Exported with the prompt. */
+export const describeUserMessage = (text: string): string => `The person typed: "${text}"`
+
+/**
+ * The text call: a typed meal, in the shape the photo call answers in.
+ *
+ * Everything after this returns is the same code the camera path runs — the
+ * catalogue search, the verifier, the estimate, the archetype floor — because
+ * "what did they eat" is the same question however it was asked. Only the
+ * asking differs, and it differs in who the authority is.
+ *
+ * A photo has one witness and it is the model: what is on the plate and how
+ * much of it are both inferences, and the whole cascade below exists to check
+ * them against a catalogue. A sentence was written by the person who ate the
+ * meal. What it states — the dish, the number of them, the size — is not
+ * evidence to weigh; it is the answer, and the model's job is to name it in
+ * terms the catalogue can be searched with and to price the portion it was
+ * told about. The prompt says so twice because a model asked to identify food
+ * will otherwise reach for the average version of the dish it recognises,
+ * which is how "half a plate of nasi lemak" comes back as a full one.
+ */
+export async function describeMeal(text: string, mock: MockSteer | undefined): Promise<Vision> {
+  if (mockActive()) {
+    if (mock?.fail === 'vision' || mock?.fail === 'all') throw new Error('mocked describe failure')
+    if (mock?.vision) return shapeVision(mock.vision)
+    // Enough of an answer to walk the flow offline: the text names the dish,
+    // a leading number becomes the count, and the band is a plain serving.
+    const trimmed = text.trim()
+    const count = Math.min(12, Math.max(1, Number(trimmed.match(/^(\d+)\b/)?.[1] ?? 1)))
+    const name = trimmed.replace(/^\d+\s*/, '').slice(0, 120) || 'Mixed meal'
+    return shapeVision({
+      scene: 'single',
+      items: [
+        {
+          name,
+          specific_query: name,
+          generic_query: name.split(' ').slice(-1)[0],
+          count,
+          components: [],
+          serving_hint: '1 serving',
+          kcal_low: 400 * count,
+          kcal_high: 600 * count,
+          confidence: 0.7,
+          suggested_edits: ['Half portion', 'Add a fried egg', 'No rice'],
+        },
+      ],
+    })
+  }
+
+  const raw = await chatJSON(
+    [
+      { role: 'system', content: DESCRIBE_MEAL_PROMPT },
+      { role: 'user', content: describeUserMessage(text) },
+    ],
     2400,
   )
   return shapeVision(raw)
@@ -720,7 +920,18 @@ export type RefineContext = {
   kcal: number
   quantity: number
   servingLabel: string | null
-  ingredients: string[]
+  /**
+   * The breakdown, with its numbers.
+   *
+   * Names alone were not enough, and the failures all had the same shape: the
+   * model was asked for a calorie delta for a part whose size it had not been
+   * told. "I left half the rice" against a list reading `coconut rice, fried
+   * chicken wing, sambal, boiled egg` can only be answered from what rice
+   * costs in general, so it came back -150 for a 340 kcal portion and -150 for
+   * a 90 kcal one. `kcal` here is what the part costs AT ITS CURRENT QUANTITY,
+   * which is the figure a fraction of it has to be taken from.
+   */
+  ingredients: Array<{ name: string; quantity: number; kcal: number }>
 }
 
 function shapeInterpretation(raw: unknown): Interpretation {
@@ -738,14 +949,26 @@ function shapeInterpretation(raw: unknown): Interpretation {
     const part = String(o.part ?? '')
       .trim()
       .slice(0, 120)
+    const replaces = String(o.replaces ?? '')
+      .trim()
+      .slice(0, 120)
     const count = Number(o.count)
     const total = Number(o.total)
-    if (Number.isFinite(delta) && delta !== 0 && Math.abs(delta) <= 2000 && name) {
+    const partKcal = Number(o.part_kcal)
+    // A swap is the one adjustment that may cost nothing: chicken for chicken
+    // of a different kind can come out even, and the plate still has to change.
+    const swapping = Boolean(part && replaces && replaces.toLowerCase() !== part.toLowerCase())
+    if (Number.isFinite(delta) && (delta !== 0 || swapping) && Math.abs(delta) <= 2000 && name) {
       return {
         action: 'adjust',
         kcal_delta: Math.round(delta),
         name,
         part: part || null,
+        replaces: swapping ? replaces : null,
+        part_kcal:
+          swapping && Number.isFinite(partKcal) && partKcal > 0 && partKcal <= 5000
+            ? Math.round(partKcal)
+            : null,
         count:
           Number.isFinite(count) && count !== 0 && Math.abs(count) <= 20 ? Math.round(count) : null,
         // Zero is not a total: "no sambal" is a removal, which the negative
@@ -761,6 +984,109 @@ function shapeInterpretation(raw: unknown): Interpretation {
   }
   return { action: 'none', reason: String(o.reason ?? 'not understood') }
 }
+
+/**
+ * The fix-by-typing prompt. Exported for the eval harness.
+ *
+ * Written as a LADDER rather than as four options, and that is the whole
+ * design. Offered as a menu, the model reached for `redescribe` whenever it
+ * was unsure — and `redescribe` is the one answer that discards everything the
+ * user has already accepted about the entry. Two of the corrections people
+ * actually type went that way in testing: "this was more like 500 calories",
+ * which re-guessed a dish nobody had said was wrong, and "it was rendang
+ * chicken not fried chicken", which threw away the rice, the sambal and the
+ * egg in order to fix one side. Both come back as a different meal from the
+ * one being corrected, which is the one thing a correction must not do.
+ *
+ * So the rungs are ordered by how much of the entry survives them, the model
+ * is told to stop at the first that fits, and the bottom rung is described by
+ * its cost as much as by its meaning.
+ */
+export const INTERPRET_INSTRUCTION_PROMPT =
+  'A user is correcting ONE logged food entry by typing. Decide what the correction ' +
+  'means and respond with JSON only.\n\n' +
+  'Work down this list and STOP at the first case that fits. The order is not a ' +
+  'preference: each step keeps more of the entry than the one below it, and everything ' +
+  'about the entry except the thing just typed is something the user has already ' +
+  'accepted.\n\n' +
+  '1. {"action":"none","reason":string} — the text is not a correction to this food, or ' +
+  'it has no calorie consequence: "extra spicy", "more chilli", "no ice", "it was tasty", ' +
+  '"remind me to buy milk". Flavour, temperature and cooking style are not calories.\n\n' +
+  '2. {"action":"quantity","factor":number} — the amount of the WHOLE entry changed and ' +
+  'nothing else did. `factor` multiplies the amount CURRENTLY logged, which is the ' +
+  'number the user is looking at.\n' +
+  '   - "half portion", "I only ate half of it" -> 0.5.\n' +
+  '   - "I had two of these" means two IN TOTAL: with current quantity Q, return 2/Q.\n' +
+  '   - A calorie total for the whole dish is an AMOUNT, not a different dish: "this was ' +
+  'more like 500 calories" against an entry of 780 kcal is 500/780 = 0.64. Disagreeing ' +
+  'with the number is never a reason to re-identify the food.\n' +
+  '   - Not this when the text names one of the Ingredients listed below: rescaling the ' +
+  'entry rescales the parts nobody mentioned too.\n\n' +
+  '3. {"action":"adjust","kcal_delta":number,"name":string,"part":string|null,' +
+  '"replaces":string|null,"part_kcal":number|null,"count":number|null,' +
+  '"total":number|null} — the same meal with ' +
+  'ONE part added, removed, resized or swapped. This is the answer for nearly every real ' +
+  'correction.\n' +
+  '   - `part`: the food the correction is about. For a removal or a resize, copy the ' +
+  'name from the Ingredients list EXACTLY. For an addition or a swap, it is the name of ' +
+  'the food coming IN ("fried egg", "rendang chicken") and NOT the one being corrected. ' +
+  'Null only when no part answers to the change and it is about the dish as a whole.\n' +
+  '   - A SWAP is one part turning out to be a different food, and it needs three ' +
+  'fields together: `replaces` is the listed ingredient that was wrong, copied exactly; ' +
+  '`part` is what it actually was; `part_kcal` is what THAT food costs at the count the ' +
+  'listed one is logged at. The two names are never the same string — if you would ' +
+  'write the same text in both, this is not a swap. Against a listed "Fried chicken ' +
+  '(thigh) x 1 = 247 kcal", "it was rendang chicken not fried chicken" is replaces ' +
+  '"Fried chicken (thigh)", part "rendang chicken", part_kcal 280. Give the food\'s own ' +
+  'cost there, not a difference — arithmetic against the old figure is where this goes ' +
+  'wrong. `replaces` and `part_kcal` are null for every other kind of adjustment.\n' +
+  '   - `kcal_delta`: the calorie change for THAT PART ALONE and never for the meal — ' +
+  'negative for a removal, positive for an addition, and for a swap the new food minus ' +
+  'the old one (`part_kcal` is what actually gets used there). The ' +
+  'Ingredients list gives what each part costs at its current count, so half of a 340 ' +
+  'kcal rice is -170 and dropping a 60 kcal sambal is -60. An addition nobody sized is ' +
+  'about +75 for an egg, +130 for a sweet drink.\n' +
+  '   - `count` / `total`: how many, in whichever way the user said it. `count` is a ' +
+  'CHANGE ("two more skewers" is 2, "one less egg" is -1). `total` is an AMOUNT ("only 3 ' +
+  'skewers", "there were 3 eggs", "only 1 chicken wing" are 3, 3 and 1). "only N" is ' +
+  'always `total` N — do not subtract your way to it. Never both, and null for each when ' +
+  'the user gave no number.\n' +
+  '   - `name`: the corrected dish name, still recognisably this meal — "Nasi lemak, no ' +
+  'sambal", "Nasi lemak with rendang chicken". Not a new dish.\n' +
+  '   Less of an INGREDIENT is an adjustment even when the words sound like taste: ' +
+  '"less sugar", "kurang manis", "no santan", "no oil", "skip the gravy" all take ' +
+  'calories out and belong here — about -60 for the sugar in a sweet drink, -100 for ' +
+  'the santan in a bowl of laksa. Only a change with nothing to subtract ("extra ' +
+  'spicy", "more chilli") is case 1.\n\n' +
+  '4. {"action":"redescribe","item":{"name":string,"specific_query":string,' +
+  '"generic_query":string,"count":number,"components":[{"name":string,"count":number,' +
+  '"kcal":number,"carbs_g":number|null,"protein_g":number|null,' +
+  '"fat_g":number|null}],"serving_hint":string|null,' +
+  '"kcal_low":number,"kcal_high":number,"confidence":number,"suggested_edits":[]}} — ' +
+  'the dish IDENTITY was wrong: what is logged is not the food that was eaten. "it was ' +
+  'actually hokkien mee", "this is nasi kandar not nasi lemak".\n' +
+  '   This is the expensive answer and the last one. It DISCARDS the breakdown and ' +
+  're-prices the meal from nothing, so every part the user did not mention is guessed ' +
+  'again and may come back different. Choose it only when no version of the current ' +
+  'entry is the right food. A wrong amount, a wrong side, a wrong number of something ' +
+  'and a wrong calorie figure are all corrections to THIS entry, not new dishes. ' +
+  'Describe the correct dish as eaten and bound its calories tightly.'
+
+/**
+ * The entry state, as the interpreter is shown it. Exported with the prompt.
+ *
+ * Each part carries its count and what it costs at that count, so a delta for
+ * "half the rice" can be arithmetic rather than recall.
+ */
+export const refineUserMessage = (context: RefineContext, instruction: string): string =>
+  `Current entry: ${context.name} — ${context.kcal} kcal, quantity ${context.quantity}` +
+  `${context.servingLabel ? ` × ${context.servingLabel}` : ''}` +
+  (context.ingredients.length
+    ? `\nIngredients (name × count = kcal):\n${context.ingredients
+        .map((part) => `- ${part.name} × ${part.quantity} = ${Math.round(part.kcal)} kcal`)
+        .join('\n')}`
+    : '\nThis entry has no ingredient breakdown.') +
+  `\n\nUser typed: "${instruction}"`
 
 /**
  * The fix-by-typing interpreter: entry state + free text in, one of three
@@ -785,8 +1111,8 @@ export async function interpretInstruction(
     // BEFORE the portion words, because "only 2 skewers" contains "2" and
     // reading it as the plate rescales everything else on it too.
     const named = context.ingredients.find((ingredient) =>
-      text.includes(ingredient.toLowerCase().split(' ')[0]),
-    )
+      text.includes(ingredient.name.toLowerCase().split(' ')[0]),
+    )?.name
     const stated = Number(text.match(/\b(?:only|just)\s+(\d+)\b/)?.[1] ?? 0)
     if (!named) {
       if (/\bhalf\b/.test(text)) return { action: 'quantity', factor: 0.5 }
@@ -798,6 +1124,8 @@ export async function interpretInstruction(
         kcal_delta: -60,
         name: `${context.name}, ${instruction}`.slice(0, 120),
         part: named,
+        replaces: null,
+        part_kcal: null,
         count: null,
         total: stated,
       }
@@ -809,6 +1137,8 @@ export async function interpretInstruction(
         name: `${context.name}, ${instruction}`.slice(0, 120),
         // The part named in the text, if the entry has one by that name.
         part: named ?? null,
+        replaces: null,
+        part_kcal: null,
         count: null,
         total: null,
       }
@@ -819,6 +1149,8 @@ export async function interpretInstruction(
         kcal_delta: 80,
         name: `${context.name}, ${instruction}`.slice(0, 120),
         part: instruction.replace(/\b(add|extra|with|an|a)\b/gi, '').trim() || null,
+        replaces: null,
+        part_kcal: null,
         count: Number(text.match(/\b(\d+)\b/)?.[1] ?? 0) || null,
         total: null,
       }
@@ -848,50 +1180,8 @@ export async function interpretInstruction(
 
   const raw = await chatJSON(
     [
-      {
-        role: 'system',
-        content:
-          'A user is correcting one logged food entry by typing. Decide what the correction ' +
-          'means. Respond with JSON only, one of:\n' +
-          '{"action":"quantity","factor":number} — the amount of the WHOLE dish changed and ' +
-          'nothing else did: "half portion", "I only ate half of it", "I had two of these". ' +
-          '`factor` is relative to the amount CURRENTLY logged, which the user is looking ' +
-          'at: "half" -> 0.5 whatever the current quantity is; "I had two of these" means ' +
-          'two total, so with current quantity Q return 2/Q. If the text names one of the ' +
-          'Ingredients listed below, this is NOT the answer — use adjust, or the parts ' +
-          'nobody mentioned get rescaled too.\n' +
-          '{"action":"adjust","kcal_delta":number,"name":string,"part":string|null,' +
-          '"count":number|null,"total":number|null} — the ' +
-          'SAME dish with a part added, removed or resized: "no sambal", "add a fried egg", ' +
-          '"extra rice". `kcal_delta` is the calorie change for that part alone (negative ' +
-          'for removals — "no sambal" is about -50, "add an egg" about +75), `name` the ' +
-          'corrected dish name (e.g. "Nasi Lemak, no sambal"). `part` names the ingredient ' +
-          'involved: for a removal copy the matching name from the Ingredients list below ' +
-          'EXACTLY, for an addition name the thing being added ("fried egg"), and use null ' +
-          'only when the change is about the whole dish. Then say how many, in whichever of ' +
-          'the two ways the user did: `count` for a CHANGE ("two more skewers" is 2, "one ' +
-          'less egg" is -1), `total` for an AMOUNT ("only 3 skewers", "there were 3 eggs" ' +
-          'are both 3). Never both, and null for each when no number was given. This is the ' +
-          'answer for ANY add/remove/resize of a component that leaves the dish ' +
-          'recognisably itself.\n' +
-          '{"action":"redescribe","item":{"name":string,"specific_query":string,' +
-          '"generic_query":string,"components":[{"name":string,"count":number,' +
-          '"kcal":number,"carbs_g":number|null,"protein_g":number|null,' +
-          '"fat_g":number|null}],"serving_hint":string|null,' +
-          '"kcal_low":number,"kcal_high":number,"confidence":number,"suggested_edits":[]}} — ' +
-          'the dish IDENTITY was wrong ("it was rendang not curry", "this is laksa"). ' +
-          'Describe the correct dish as eaten and bound its calories tightly.\n' +
-          '{"action":"none","reason":string} — the text is not a food correction.\n' +
-          'Never re-guess the whole plate for a small change: prefer adjust over redescribe.',
-      },
-      {
-        role: 'user',
-        content:
-          `Current entry: ${context.name} — ${context.kcal} kcal, quantity ${context.quantity}` +
-          `${context.servingLabel ? ` × ${context.servingLabel}` : ''}` +
-          (context.ingredients.length ? `\nIngredients: ${context.ingredients.join(', ')}` : '') +
-          `\n\nUser typed: "${instruction}"`,
-      },
+      { role: 'system', content: INTERPRET_INSTRUCTION_PROMPT },
+      { role: 'user', content: refineUserMessage(context, instruction) },
     ],
     600,
   )

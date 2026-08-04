@@ -44,6 +44,14 @@ export type PendingSnap = {
   /** Local `file://` uri. There is no stored key until the upload finishes. */
   photoUri?: string
   /**
+   * The meal as the user typed it, when they typed it instead of photographing
+   * it. The row is the same row for the same reason — there is no `food_id`
+   * yet — but a typed meal has no picture to stand in for it, so the words do:
+   * "Nasi lemak with fried chicken" reads as the meal being counted, where an
+   * empty row with a spinner reads as the app having lost it.
+   */
+  text?: string
+  /**
    * `nofood` is the scan answering that the photo has nothing edible in it.
    * It is a state of the row rather than an entry, because no entry was
    * written: the user dismisses it and the row goes.
@@ -207,14 +215,19 @@ export function pendingAsEntry(snap: PendingSnap): Entry {
     quantity: 1,
     loggedAt: snap.loggedAt,
     logDate: snap.logDate,
-    source: 'camera',
+    // Which of the two ways this meal was logged, so the row can say the right
+    // thing about it and `useDayLog` can tell it apart from the real entry
+    // when that arrives.
+    source: snap.text ? 'text' : 'camera',
     localPhotoUri: snap.photoUri,
     status: snap.status,
     restored: snap.restored,
 
     foodId: '',
-    foodName: '',
-    icon: { set: 'system', name: 'camera' } as Entry['icon'],
+    // A typed meal wears its own words until the cascade names it. A snapped
+    // one has the photograph, and a name here would be a guess.
+    foodName: snap.text ?? '',
+    icon: { set: 'system', name: snap.text ? 'sparkle' : 'camera' } as Entry['icon'],
     place: 'home',
     servingId: '',
     servingLabel: '',

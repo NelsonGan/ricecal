@@ -1,8 +1,10 @@
+import { format, parseISO, subDays } from 'date-fns'
 import { useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import {
+  dateKey,
   useActivityDay,
   useDayLog,
   usePendingSnaps,
@@ -13,6 +15,7 @@ import {
   useStreak,
   useTargets,
 } from '@/data'
+import { WeekPicker } from '@/features/logging'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
 import { sumMacros } from '@/lib/nutrition'
 import {
@@ -42,6 +45,15 @@ import {
 const ANNOUNCE_MS = 8000
 
 /**
+ * The day before a given one, as `yyyy-MM-dd`.
+ *
+ * Off `todayKey` rather than off the clock: that key is fixed at mount so a
+ * session that crosses midnight keeps its footing, and `isYesterday()` would
+ * quietly disagree with it at 00:00.
+ */
+const yesterday = (key: string) => dateKey(subDays(parseISO(key), 1))
+
+/**
  * L1 TODAY.
  *
  * The screen has three states now that the data is real: no budget yet (a new
@@ -54,7 +66,7 @@ export default function TodayScreen() {
   const router = useRouter()
   const toast = useToast()
 
-  const { selectedDate } = useSelectedDate()
+  const { selectedDate, todayKey } = useSelectedDate()
   const day = useDayLog(selectedDate)
   const { data: targets, isPending } = useTargets()
   const streak = useStreak()
@@ -75,6 +87,21 @@ export default function TodayScreen() {
   const [showGoals, setShowGoals] = useState(false)
 
   const eaten = sumMacros(day.entries)
+
+  /**
+   * Whether the screen is showing the day it is named after.
+   *
+   * The strip can put any earlier day on this screen, and three pieces of copy
+   * here are written in the present tense. A heading that still says "Today"
+   * over last Tuesday's meals is the one way this feature can actively mislead
+   * — the rest is a matter of tense.
+   */
+  const isToday = selectedDate === todayKey
+  const title = isToday
+    ? t('logging:today.title')
+    : selectedDate === yesterday(todayKey)
+      ? t('common:date.yesterday')
+      : format(parseISO(selectedDate), 'EEE d MMM')
 
   /**
    * Movement extends the budget; it never shrinks what was eaten.
@@ -142,7 +169,7 @@ export default function TodayScreen() {
     // typing, which is what makes that trade free — see `gestureScroll`.
     <Screen gestureScroll>
       <ScreenTitle
-        title={t('logging:today.title')}
+        title={title}
         trailing={
           // Badge lays a non-text child out as a row and centres it, so the
           // flame sits against the middle of the label rather than its
@@ -155,6 +182,11 @@ export default function TodayScreen() {
           </Badge>
         }
       />
+
+      {/* The week, above everything it explains. A day is picked here and the
+          whole screen below follows it — the ring, the water, the entries and
+          anything logged while it is selected. */}
+      <WeekPicker />
 
       <Card>
         {isPending ? (
@@ -199,13 +231,15 @@ export default function TodayScreen() {
                 with no health store sees the screen it always saw. */}
             {burned > 0 ? (
               <Text variant="meta" className="pt-1 text-pandan-ink">
-                {t('logging:today.burnedNote', { kcal: burned.toLocaleString() })}
+                {t(isToday ? 'logging:today.burnedNote' : 'logging:today.burnedNoteOn', {
+                  kcal: burned.toLocaleString(),
+                })}
               </Text>
             ) : null}
 
             {over ? (
               <Text variant="meta" className="pt-1">
-                {t('logging:today.overNote')}
+                {t(isToday ? 'logging:today.overNote' : 'logging:today.overNoteOn')}
               </Text>
             ) : null}
           </>
