@@ -64,17 +64,6 @@ export type SheetProps = {
   closeLabel?: string
   title?: string
   description?: string
-  /**
-   * A title with something in it — an icon beside the words, a count on the
-   * right. Rendered where `title` is, so it is PINNED above the scrollable
-   * body rather than being the first thing in it.
-   *
-   * That is the whole reason it exists. A full-height sheet with a field in it
-   * scrolls itself to reveal the first responder the moment the keyboard opens,
-   * which slides a heading laid out inside the body up under the handle and
-   * crops it. Use `title` when the words are all there is.
-   */
-  header?: ReactNode
   /** Pinned below the scrollable body — the action row. */
   footer?: ReactNode
   /** Let the body scroll. Off for short, fixed content. */
@@ -164,7 +153,6 @@ export function SheetSurface({
   closeLabel = 'Close',
   title,
   description,
-  header,
   footer,
   scrollable = true,
   fullHeight = false,
@@ -335,7 +323,7 @@ export function SheetSurface({
             </Pressable>
           </GestureDetector>
 
-          {header ?? (title ? <Text variant="subtitle">{title}</Text> : null)}
+          {title ? <Text variant="subtitle">{title}</Text> : null}
           {description ? <Text variant="body">{description}</Text> : null}
 
           {children ? body : null}

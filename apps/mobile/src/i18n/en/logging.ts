@@ -202,16 +202,13 @@ export const logging = {
     nutrientsUnknown: 'No figures recorded for this dish yet. Its calories and macros are.',
     fixTitle: 'Fix it by typing',
     fixPlaceholder: 'no sambal, and it was half a plate',
-    /** The sparkle button in the footer, which opens the sheet above. */
-    fixAction: 'Fix it',
-    /** Its submit, on a scanned entry: the correction goes to the server. */
-    fixSend: 'Send this correction',
     /**
-     * The same sheet on a HAND-LOGGED entry, where the text is a note on the
-     * row rather than a correction to interpret. Nothing is sent — it is staged
-     * like every other control on the screen, and Save writes it.
+     * The sparkle button in the footer, and the sheet's own submit. The same
+     * two words twice on purpose: the sheet is that button's second half, not a
+     * new question, and "Send this correction" invited the user to wonder what
+     * else they might have been sending.
      */
-    fixNoteDone: 'Keep this note',
+    fixAction: 'Fix it',
     fixNotApplied: 'Could not apply that — try rewording it',
     /** The scanned plate's ingredient breakdown. */
     plateTitle: 'INGREDIENTS',
@@ -244,6 +241,12 @@ export const logging = {
      * measurement ("1 medium paper (8-5/8\" dia)") or a code ("383 GRM").
      */
     servingWord: 'serving',
+    /**
+     * The fallback chips, for an entry the model suggested nothing for. They go
+     * into the fix box as text and are read by `scan-refine` like anything else
+     * typed there, so each one has to be a sentence a model can act on rather
+     * than a label the client understands.
+     */
     quickFix: {
       halfPortion: 'Half portion',
       noSambal: 'No sambal',
