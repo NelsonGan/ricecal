@@ -12,11 +12,7 @@
       "brand": "Gardenia",
       "fibre_g": 0.9,
       "sodium_mg": 320,
-      "aliases": [
-        "roti sandwich gardenia",
-        "gardenia white bread",
-        "roti putih"
-      ],
+      "aliases": ["roti sandwich gardenia", "gardenia white bread", "roti putih"],
       "icon": "food/bread-loaf",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true,
@@ -43,10 +39,7 @@
       "fibre_g": 3.4,
       "sugar_g": 3.7,
       "sodium_mg": 269,
-      "aliases": [
-        "roti gandum penuh breakthru",
-        "gardenia breakthru"
-      ],
+      "aliases": ["roti gandum penuh breakthru", "gardenia breakthru"],
       "icon": "food/wholemeal-bread",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true,
@@ -69,10 +62,7 @@
       "fibre_g": 0.6,
       "sugar_g": 5.4,
       "sodium_mg": 199,
-      "aliases": [
-        "roti hotdog gardenia",
-        "hot dog bun"
-      ],
+      "aliases": ["roti hotdog gardenia", "hot dog bun"],
       "icon": "food/bun",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -89,10 +79,7 @@
       "fibre_g": 0.8,
       "sugar_g": 5.1,
       "sodium_mg": 212,
-      "aliases": [
-        "puazz sambal",
-        "roti sambal gardenia"
-      ],
+      "aliases": ["puazz sambal", "roti sambal gardenia"],
       "icon": "food/bun",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -107,10 +94,7 @@
       "fat_g": 10.8,
       "brand": "Gardenia",
       "sugar_g": 8.5,
-      "aliases": [
-        "gardenia durian bun",
-        "quick bites"
-      ],
+      "aliases": ["gardenia durian bun", "quick bites"],
       "icon": "food/bun",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -124,10 +108,7 @@
       "protein_g": 2.1,
       "fat_g": 6.7,
       "brand": "Gardenia",
-      "aliases": [
-        "twiggies coklat",
-        "gardenia chocolate roll"
-      ],
+      "aliases": ["twiggies coklat", "gardenia chocolate roll"],
       "icon": "food/swiss-roll",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -143,10 +124,7 @@
       "brand": "Gardenia",
       "fibre_g": 0.4,
       "sodium_mg": 176,
-      "aliases": [
-        "twiggies cream dream",
-        "twiggies vanila"
-      ],
+      "aliases": ["twiggies cream dream", "twiggies vanila"],
       "icon": "food/swiss-roll",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -163,10 +141,7 @@
       "fibre_g": 0.7,
       "sugar_g": 9.0,
       "sodium_mg": 224,
-      "aliases": [
-        "toastem butterscotch",
-        "gardenia toastem"
-      ],
+      "aliases": ["toastem butterscotch", "gardenia toastem"],
       "icon": "food/toast",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -182,10 +157,7 @@
       "brand": "Gardenia",
       "fibre_g": 1.3,
       "sodium_mg": 169,
-      "aliases": [
-        "gardenia waffle coklat",
-        "waffle gardenia"
-      ],
+      "aliases": ["gardenia waffle coklat", "waffle gardenia"],
       "icon": "food/waffle",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -200,10 +172,7 @@
       "fat_g": 9.0,
       "brand": "Gardenia",
       "sodium_mg": 140,
-      "aliases": [
-        "gardenia waffle",
-        "waffle asli"
-      ],
+      "aliases": ["gardenia waffle", "waffle asli"],
       "icon": "food/waffle",
       "source": "openfoodfacts_panel_converted_from_100g",
       "verified": true
@@ -220,9 +189,7 @@
       "fibre_g": 2,
       "sugar_g": 11,
       "sodium_mg": 316,
-      "aliases": [
-        "gardenia choc chip bread"
-      ],
+      "aliases": ["gardenia choc chip bread"],
       "icon": "food/bread-loaf",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -236,10 +203,7 @@
       "protein_g": 2.4,
       "fat_g": 6.4,
       "brand": "Gardenia",
-      "aliases": [
-        "gardenia squiggles",
-        "squiggles coklat"
-      ],
+      "aliases": ["gardenia squiggles", "squiggles coklat"],
       "icon": "food/swiss-roll",
       "source": "model_estimate",
       "verified": false
@@ -253,10 +217,7 @@
       "protein_g": 3.5,
       "fat_g": 8.8,
       "brand": "Gardenia",
-      "aliases": [
-        "gardenia bonjour",
-        "bonjour vanilla"
-      ],
+      "aliases": ["gardenia bonjour", "bonjour vanilla"],
       "icon": "food/swiss-roll",
       "source": "model_estimate",
       "verified": false
@@ -270,10 +231,7 @@
       "protein_g": 7.0,
       "fat_g": 2.4,
       "brand": "Massimo",
-      "aliases": [
-        "massimo white bread",
-        "roti massimo"
-      ],
+      "aliases": ["massimo white bread", "roti massimo"],
       "icon": "food/bread-loaf",
       "source": "openfoodfacts_panel",
       "verified": true,
@@ -300,10 +258,7 @@
       "fibre_g": 5.3,
       "sugar_g": 1.7,
       "sodium_mg": 252,
-      "aliases": [
-        "massimo wholemeal",
-        "roti gandum massimo"
-      ],
+      "aliases": ["massimo wholemeal", "roti gandum massimo"],
       "icon": "food/wholemeal-bread",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true,
@@ -326,10 +281,7 @@
       "fibre_g": 4.1,
       "sugar_g": 2.7,
       "sodium_mg": 189,
-      "aliases": [
-        "massimo multigrain",
-        "roti bijirin massimo"
-      ],
+      "aliases": ["massimo multigrain", "roti bijirin massimo"],
       "icon": "food/wholemeal-bread",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -345,10 +297,7 @@
       "brand": "Massimo",
       "sugar_g": 4.4,
       "sodium_mg": 351,
-      "aliases": [
-        "massimo divino",
-        "roti sambal udang massimo"
-      ],
+      "aliases": ["massimo divino", "roti sambal udang massimo"],
       "icon": "food/bun",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -364,10 +313,7 @@
       "brand": "Sunshine",
       "fibre_g": 4.9,
       "sugar_g": 3.0,
-      "aliases": [
-        "sunshine oat bread",
-        "roti oat sunshine"
-      ],
+      "aliases": ["sunshine oat bread", "roti oat sunshine"],
       "icon": "food/wholemeal-bread",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true,
@@ -390,10 +336,7 @@
       "fibre_g": 1.5,
       "sugar_g": 7.9,
       "sodium_mg": 245,
-      "aliases": [
-        "sunshine brioche",
-        "roti brioche"
-      ],
+      "aliases": ["sunshine brioche", "roti brioche"],
       "icon": "food/bread-loaf",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -407,10 +350,7 @@
       "protein_g": 4.3,
       "fat_g": 6.7,
       "brand": "Sunshine",
-      "aliases": [
-        "sunshine cream cheese bun",
-        "roti keju sunshine"
-      ],
+      "aliases": ["sunshine cream cheese bun", "roti keju sunshine"],
       "icon": "food/bun",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -427,9 +367,7 @@
       "fibre_g": 4.3,
       "sugar_g": 3.9,
       "sodium_mg": 251,
-      "aliases": [
-        "sunshine canadian sprout"
-      ],
+      "aliases": ["sunshine canadian sprout"],
       "icon": "food/wholemeal-bread",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -445,9 +383,7 @@
       "brand": "Sunshine",
       "fibre_g": 4.0,
       "sodium_mg": 212,
-      "aliases": [
-        "sunshine walnut bread"
-      ],
+      "aliases": ["sunshine walnut bread"],
       "icon": "food/wholemeal-bread",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -461,11 +397,7 @@
       "protein_g": 5.4,
       "fat_g": 2.0,
       "brand": "High 5",
-      "aliases": [
-        "high five bread",
-        "roti high 5",
-        "high 5 gold"
-      ],
+      "aliases": ["high five bread", "roti high 5", "high 5 gold"],
       "icon": "food/bread-loaf",
       "source": "model_estimate",
       "verified": false
@@ -480,10 +412,7 @@
       "fat_g": 2.2,
       "brand": "High 5",
       "fibre_g": 3.5,
-      "aliases": [
-        "high five wholemeal",
-        "roti gandum high 5"
-      ],
+      "aliases": ["high five wholemeal", "roti gandum high 5"],
       "icon": "food/wholemeal-bread",
       "source": "model_estimate",
       "verified": false
@@ -499,10 +428,7 @@
       "brand": "Julie's",
       "sugar_g": 5,
       "sodium_mg": 90,
-      "aliases": [
-        "julies cheese sandwich",
-        "biskut keju julie"
-      ],
+      "aliases": ["julies cheese sandwich", "biskut keju julie"],
       "icon": "food/crackers",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -516,10 +442,7 @@
       "protein_g": 2.6,
       "fat_g": 7.2,
       "brand": "Julie's",
-      "aliases": [
-        "julies peanut butter",
-        "biskut kacang julie"
-      ],
+      "aliases": ["julies peanut butter", "biskut kacang julie"],
       "icon": "food/crackers",
       "source": "model_estimate",
       "verified": false
@@ -533,10 +456,7 @@
       "protein_g": 2.1,
       "fat_g": 5.3,
       "brand": "Julie's",
-      "aliases": [
-        "julies cheese cracker",
-        "biskut keju"
-      ],
+      "aliases": ["julies cheese cracker", "biskut keju"],
       "icon": "food/crackers",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -553,10 +473,7 @@
       "fibre_g": 0.7,
       "sugar_g": 10.5,
       "sodium_mg": 25,
-      "aliases": [
-        "kuih kapit julie",
-        "love letter biscuit"
-      ],
+      "aliases": ["kuih kapit julie", "love letter biscuit"],
       "icon": "food/love-letter",
       "source": "openfoodfacts_my_barcode_panel_converted_from_100g",
       "verified": true
@@ -572,10 +489,7 @@
       "brand": "Julie's",
       "fibre_g": 0.6,
       "sugar_g": 5,
-      "aliases": [
-        "lemond chocolate",
-        "julies lemond hazelnut"
-      ],
+      "aliases": ["lemond chocolate", "julies lemond hazelnut"],
       "icon": "food/biscuit-stack",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -591,10 +505,7 @@
       "brand": "Julie's",
       "sugar_g": 3,
       "sodium_mg": 90,
-      "aliases": [
-        "lemond cheese",
-        "julies lemond cheddar"
-      ],
+      "aliases": ["lemond cheese", "julies lemond cheddar"],
       "icon": "food/biscuit-stack",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -611,10 +522,7 @@
       "fibre_g": 0.3,
       "sugar_g": 3.4,
       "sodium_mg": 96,
-      "aliases": [
-        "lemond lemon puff",
-        "biskut lemon julie"
-      ],
+      "aliases": ["lemond lemon puff", "biskut lemon julie"],
       "icon": "food/biscuit-stack",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -631,10 +539,7 @@
       "fibre_g": 1.8,
       "sugar_g": 1,
       "sodium_mg": 128,
-      "aliases": [
-        "julies golden cracker",
-        "biskut julie emas"
-      ],
+      "aliases": ["julies golden cracker", "biskut julie emas"],
       "icon": "food/crackers",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -651,10 +556,7 @@
       "fibre_g": 0.7,
       "sugar_g": 2.1,
       "sodium_mg": 162,
-      "aliases": [
-        "julies butter cracker",
-        "biskut mentega"
-      ],
+      "aliases": ["julies butter cracker", "biskut mentega"],
       "icon": "food/crackers",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -671,10 +573,7 @@
       "fibre_g": 1,
       "sugar_g": 5,
       "sodium_mg": 40,
-      "aliases": [
-        "julies oat 25",
-        "biskut oat julie"
-      ],
+      "aliases": ["julies oat 25", "biskut oat julie"],
       "icon": "food/oats",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -691,10 +590,7 @@
       "fibre_g": 1.4,
       "sugar_g": 5.1,
       "sodium_mg": 62,
-      "aliases": [
-        "oat krunch strawberi",
-        "munchys oat krunch"
-      ],
+      "aliases": ["oat krunch strawberi", "munchys oat krunch"],
       "icon": "food/oats",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -711,10 +607,7 @@
       "fibre_g": 1.3,
       "sugar_g": 6.7,
       "sodium_mg": 59,
-      "aliases": [
-        "oat krunch coklat",
-        "oat krunch chocolate"
-      ],
+      "aliases": ["oat krunch coklat", "oat krunch chocolate"],
       "icon": "food/oats",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -731,10 +624,7 @@
       "fibre_g": 1.0,
       "sugar_g": 8.3,
       "sodium_mg": 110,
-      "aliases": [
-        "oat krunch breakfast",
-        "oat krunch kranberi"
-      ],
+      "aliases": ["oat krunch breakfast", "oat krunch kranberi"],
       "icon": "food/oats",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -751,10 +641,7 @@
       "fibre_g": 1,
       "sugar_g": 1,
       "sodium_mg": 85,
-      "aliases": [
-        "oat krunch cheese",
-        "oat krunch keju"
-      ],
+      "aliases": ["oat krunch cheese", "oat krunch keju"],
       "icon": "food/oats",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -771,11 +658,7 @@
       "fibre_g": 1.1,
       "sugar_g": 9.8,
       "sodium_mg": 99,
-      "aliases": [
-        "lexus biscuit",
-        "biskut lexus",
-        "munchys lexus"
-      ],
+      "aliases": ["lexus biscuit", "biskut lexus", "munchys lexus"],
       "icon": "food/crackers",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -792,10 +675,7 @@
       "fibre_g": 0.9,
       "sugar_g": 3.7,
       "sodium_mg": 107,
-      "aliases": [
-        "munchys crackers plus",
-        "biskut munchy"
-      ],
+      "aliases": ["munchys crackers plus", "biskut munchy"],
       "icon": "food/crackers",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -812,10 +692,7 @@
       "fibre_g": 0.6,
       "sugar_g": 6.4,
       "sodium_mg": 57,
-      "aliases": [
-        "creamo strawberry",
-        "cream o biskut"
-      ],
+      "aliases": ["creamo strawberry", "cream o biskut"],
       "icon": "food/biscuit-stack",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -829,10 +706,7 @@
       "protein_g": 1.2,
       "fat_g": 4.9,
       "brand": "Munchy's",
-      "aliases": [
-        "captain munch",
-        "munchys wafer"
-      ],
+      "aliases": ["captain munch", "munchys wafer"],
       "icon": "food/biscuit-stack",
       "source": "model_estimate",
       "verified": false
@@ -848,11 +722,7 @@
       "brand": "Mamee",
       "sugar_g": 0.9,
       "sodium_mg": 322,
-      "aliases": [
-        "mamee monster bbq",
-        "mi mamee",
-        "monster snek"
-      ],
+      "aliases": ["mamee monster bbq", "mi mamee", "monster snek"],
       "icon": "food/instant-noodles",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -868,10 +738,7 @@
       "brand": "Mamee",
       "sugar_g": 0.5,
       "sodium_mg": 344,
-      "aliases": [
-        "mamee monster ayam",
-        "monster chicken"
-      ],
+      "aliases": ["mamee monster ayam", "monster chicken"],
       "icon": "food/instant-noodles",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -888,10 +755,7 @@
       "fibre_g": 3.4,
       "sugar_g": 2.3,
       "sodium_mg": 1700,
-      "aliases": [
-        "mamee chef kari laksa",
-        "mamee curry laksa"
-      ],
+      "aliases": ["mamee chef kari laksa", "mamee curry laksa"],
       "icon": "food/instant-noodles",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -908,9 +772,7 @@
       "fibre_g": 4.4,
       "sugar_g": 2.3,
       "sodium_mg": 1470,
-      "aliases": [
-        "mamee chef laksa sarawak"
-      ],
+      "aliases": ["mamee chef laksa sarawak"],
       "icon": "food/instant-noodles",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -926,10 +788,7 @@
       "brand": "Mamee",
       "sugar_g": 2.0,
       "sodium_mg": 1850,
-      "aliases": [
-        "mamee chef tomyam",
-        "mamee tom yum"
-      ],
+      "aliases": ["mamee chef tomyam", "mamee tom yum"],
       "icon": "food/instant-noodles",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -946,10 +805,7 @@
       "fibre_g": 2.8,
       "sugar_g": 7.3,
       "sodium_mg": 946,
-      "aliases": [
-        "ghost pepper noodles",
-        "mi ghost pepper"
-      ],
+      "aliases": ["ghost pepper noodles", "mi ghost pepper"],
       "icon": "food/instant-noodles",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -966,10 +822,7 @@
       "fibre_g": 1.0,
       "sugar_g": 4.5,
       "sodium_mg": 583,
-      "aliases": [
-        "mamee cruncheez",
-        "cruncheez keju"
-      ],
+      "aliases": ["mamee cruncheez", "cruncheez keju"],
       "icon": "food/takeaway-packet",
       "source": "openfoodfacts_panel_converted_from_100g",
       "verified": true
@@ -984,10 +837,7 @@
       "fat_g": 6.8,
       "brand": "Mamee",
       "sodium_mg": 230,
-      "aliases": [
-        "double decker snek",
-        "cheese ring mamee"
-      ],
+      "aliases": ["double decker snek", "cheese ring mamee"],
       "icon": "food/takeaway-packet",
       "source": "model_estimate",
       "verified": false
@@ -1004,10 +854,7 @@
       "fibre_g": 1.3,
       "sugar_g": 0.8,
       "sodium_mg": 171,
-      "aliases": [
-        "mister potato asli",
-        "mr potato original"
-      ],
+      "aliases": ["mister potato asli", "mr potato original"],
       "icon": "food/potato",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -1024,10 +871,7 @@
       "fibre_g": 0.7,
       "sugar_g": 0.8,
       "sodium_mg": 101,
-      "aliases": [
-        "mister potato bbq",
-        "mr potato barbeque"
-      ],
+      "aliases": ["mister potato bbq", "mr potato barbeque"],
       "icon": "food/potato",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -1042,10 +886,7 @@
       "fat_g": 6.5,
       "brand": "Mister Potato",
       "fibre_g": 0.9,
-      "aliases": [
-        "mister potato pedas",
-        "mr potato hot spicy"
-      ],
+      "aliases": ["mister potato pedas", "mr potato hot spicy"],
       "icon": "food/potato",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -1062,9 +903,7 @@
       "fibre_g": 1.7,
       "sugar_g": 1.1,
       "sodium_mg": 192,
-      "aliases": [
-        "mister potato sour cream"
-      ],
+      "aliases": ["mister potato sour cream"],
       "icon": "food/potato",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1081,9 +920,7 @@
       "fibre_g": 1.9,
       "sugar_g": 2.2,
       "sodium_mg": 104,
-      "aliases": [
-        "mister potato keledek"
-      ],
+      "aliases": ["mister potato keledek"],
       "icon": "food/sweet-potato",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1100,10 +937,7 @@
       "fibre_g": 0.2,
       "sugar_g": 0.8,
       "sodium_mg": 165,
-      "aliases": [
-        "twisties keju",
-        "twisties cheddar"
-      ],
+      "aliases": ["twisties keju", "twisties cheddar"],
       "icon": "food/takeaway-packet",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1120,10 +954,7 @@
       "fibre_g": 0.8,
       "sugar_g": 0.4,
       "sodium_mg": 89,
-      "aliases": [
-        "chipster asli",
-        "twisties chipster"
-      ],
+      "aliases": ["chipster asli", "twisties chipster"],
       "icon": "food/potato",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1139,9 +970,7 @@
       "brand": "Twisties",
       "sugar_g": 0.6,
       "sodium_mg": 109,
-      "aliases": [
-        "chipster pedas"
-      ],
+      "aliases": ["chipster pedas"],
       "icon": "food/potato",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1156,9 +985,7 @@
       "fat_g": 6,
       "brand": "Twisties",
       "sodium_mg": 89,
-      "aliases": [
-        "chipster sour cream"
-      ],
+      "aliases": ["chipster sour cream"],
       "icon": "food/potato",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1173,10 +1000,7 @@
       "fat_g": 6,
       "brand": "Twisties",
       "sodium_mg": 136,
-      "aliases": [
-        "chipster bbq",
-        "chipster barbeque"
-      ],
+      "aliases": ["chipster bbq", "chipster barbeque"],
       "icon": "food/potato",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1191,10 +1015,7 @@
       "fat_g": 4.6,
       "brand": "Twisties",
       "sodium_mg": 372,
-      "aliases": [
-        "twisties yo ayam",
-        "twisties chicken"
-      ],
+      "aliases": ["twisties yo ayam", "twisties chicken"],
       "icon": "food/takeaway-packet",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1211,11 +1032,7 @@
       "fibre_g": 1,
       "sugar_g": 3,
       "sodium_mg": 170,
-      "aliases": [
-        "hup seng biskut",
-        "cap ping pong cream cracker",
-        "biskut kering hup seng"
-      ],
+      "aliases": ["hup seng biskut", "cap ping pong cream cracker", "biskut kering hup seng"],
       "icon": "food/crackers",
       "source": "openfoodfacts_panel",
       "verified": true,
@@ -1235,10 +1052,7 @@
       "protein_g": 2.2,
       "fat_g": 3.0,
       "brand": "Hup Seng",
-      "aliases": [
-        "biskut marie ping pong",
-        "cap ping pong marie"
-      ],
+      "aliases": ["biskut marie ping pong", "cap ping pong marie"],
       "icon": "food/biscuit-stack",
       "source": "model_estimate",
       "verified": false
@@ -1253,10 +1067,7 @@
       "fat_g": 4.4,
       "brand": "Jack 'n Jill",
       "sodium_mg": 130,
-      "aliases": [
-        "roller coaster bbq",
-        "potato rings"
-      ],
+      "aliases": ["roller coaster bbq", "potato rings"],
       "icon": "food/potato",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -1272,10 +1083,7 @@
       "brand": "Jack 'n Jill",
       "sugar_g": 0.7,
       "sodium_mg": 81,
-      "aliases": [
-        "calbee chilli",
-        "calbee pedas"
-      ],
+      "aliases": ["calbee chilli", "calbee pedas"],
       "icon": "food/potato",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -1291,9 +1099,7 @@
       "brand": "Jack 'n Jill",
       "sugar_g": 1,
       "sodium_mg": 240,
-      "aliases": [
-        "piattos keju"
-      ],
+      "aliases": ["piattos keju"],
       "icon": "food/potato",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1309,11 +1115,7 @@
       "brand": "Yeo's",
       "sugar_g": 12,
       "sodium_mg": 5,
-      "aliases": [
-        "yeos soya",
-        "susu soya yeos",
-        "豆奶"
-      ],
+      "aliases": ["yeos soya", "susu soya yeos", "豆奶"],
       "icon": "food/drink-bag",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1330,10 +1132,7 @@
       "fibre_g": 1.5,
       "sugar_g": 18.6,
       "sodium_mg": 49,
-      "aliases": [
-        "yeos immuno",
-        "soya immuno"
-      ],
+      "aliases": ["yeos immuno", "soya immuno"],
       "icon": "food/soda-bottle",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -1349,11 +1148,7 @@
       "brand": "Yeo's",
       "sugar_g": 12.5,
       "sodium_mg": 5,
-      "aliases": [
-        "teh krisan yeos",
-        "chrysanthemum drink",
-        "菊花茶"
-      ],
+      "aliases": ["teh krisan yeos", "chrysanthemum drink", "菊花茶"],
       "icon": "food/drink-bag",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1369,11 +1164,7 @@
       "brand": "Yeo's",
       "sugar_g": 19,
       "sodium_mg": 4,
-      "aliases": [
-        "minuman kundur",
-        "winter melon tea",
-        "冬瓜茶"
-      ],
+      "aliases": ["minuman kundur", "winter melon tea", "冬瓜茶"],
       "icon": "food/soda-bottle",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1389,11 +1180,7 @@
       "brand": "Yeo's",
       "sugar_g": 14.7,
       "sodium_mg": 30,
-      "aliases": [
-        "cincau yeos",
-        "minuman cincau",
-        "仙草"
-      ],
+      "aliases": ["cincau yeos", "minuman cincau", "仙草"],
       "icon": "food/drink-bag",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1409,10 +1196,7 @@
       "brand": "Yeo's",
       "sugar_g": 8.8,
       "sodium_mg": 100,
-      "aliases": [
-        "air kelapa yeos",
-        "coconut juice"
-      ],
+      "aliases": ["air kelapa yeos", "coconut juice"],
       "icon": "food/coconut-water",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1428,10 +1212,7 @@
       "brand": "Yeo's",
       "sugar_g": 12.5,
       "sodium_mg": 128,
-      "aliases": [
-        "h2o yeos",
-        "yeos isotonic"
-      ],
+      "aliases": ["h2o yeos", "yeos isotonic"],
       "icon": "food/water-bottle",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1447,10 +1228,7 @@
       "brand": "Yeo's",
       "sugar_g": 12.3,
       "sodium_mg": 20,
-      "aliases": [
-        "teh hijau yeos",
-        "green tea drink"
-      ],
+      "aliases": ["teh hijau yeos", "green tea drink"],
       "icon": "food/drink-bag",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -1466,10 +1244,7 @@
       "brand": "Yeo's",
       "sugar_g": 30.8,
       "sodium_mg": 13,
-      "aliases": [
-        "barli limau yeos",
-        "barley water"
-      ],
+      "aliases": ["barli limau yeos", "barley water"],
       "icon": "food/drink-bag",
       "source": "openfoodfacts_panel_converted_from_100g",
       "verified": true
@@ -1484,11 +1259,7 @@
       "fat_g": 0,
       "brand": "Yeo's",
       "sugar_g": 13,
-      "aliases": [
-        "minuman pear salji",
-        "snow pear tea",
-        "雪梨水"
-      ],
+      "aliases": ["minuman pear salji", "snow pear tea", "雪梨水"],
       "icon": "food/drink-bag",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1504,10 +1275,7 @@
       "brand": "Yeo's",
       "sugar_g": 1.0,
       "sodium_mg": 295,
-      "aliases": [
-        "kari ayam yeos",
-        "canned curry chicken"
-      ],
+      "aliases": ["kari ayam yeos", "canned curry chicken"],
       "icon": "food/food-container",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -1523,10 +1291,7 @@
       "brand": "Yeo's",
       "sugar_g": 2.2,
       "sodium_mg": 136,
-      "aliases": [
-        "kuah kacang yeos",
-        "peanut sauce"
-      ],
+      "aliases": ["kuah kacang yeos", "peanut sauce"],
       "icon": "food/sambal-jar",
       "source": "openfoodfacts_panel_converted_from_100g",
       "verified": true
@@ -1542,9 +1307,7 @@
       "brand": "Yeo's",
       "sugar_g": 8.3,
       "sodium_mg": 320,
-      "aliases": [
-        "sos cili manis yeos"
-      ],
+      "aliases": ["sos cili manis yeos"],
       "icon": "food/sambal-jar",
       "source": "openfoodfacts_panel_converted_from_100g",
       "verified": true
@@ -1560,10 +1323,7 @@
       "brand": "Yeo's",
       "sugar_g": 2.6,
       "sodium_mg": 720,
-      "aliases": [
-        "pes rendang yeos",
-        "rendang spice paste"
-      ],
+      "aliases": ["pes rendang yeos", "rendang spice paste"],
       "icon": "food/sambal-jar",
       "source": "openfoodfacts_panel_converted_from_100g",
       "verified": true
@@ -1577,10 +1337,7 @@
       "protein_g": 0.8,
       "fat_g": 3.0,
       "brand": "Yeo's",
-      "aliases": [
-        "pes nasi goreng yeos",
-        "fried rice paste"
-      ],
+      "aliases": ["pes nasi goreng yeos", "fried rice paste"],
       "icon": "food/sambal-jar",
       "source": "openfoodfacts_panel_converted_from_100g",
       "verified": true
@@ -1595,11 +1352,7 @@
       "fat_g": 2.5,
       "brand": "Marigold",
       "sodium_mg": 138,
-      "aliases": [
-        "hl milk",
-        "susu hl",
-        "marigold hl"
-      ],
+      "aliases": ["hl milk", "susu hl", "marigold hl"],
       "icon": "food/milk-carton",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1614,11 +1367,7 @@
       "fat_g": 2.0,
       "brand": "Marigold",
       "sodium_mg": 122,
-      "aliases": [
-        "hl coklat",
-        "hl milk chocolate",
-        "susu coklat hl"
-      ],
+      "aliases": ["hl coklat", "hl milk chocolate", "susu coklat hl"],
       "icon": "food/milk-carton",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -1634,10 +1383,7 @@
       "brand": "Marigold",
       "sugar_g": 9.8,
       "sodium_mg": 70,
-      "aliases": [
-        "marigold fresh milk",
-        "susu segar marigold"
-      ],
+      "aliases": ["marigold fresh milk", "susu segar marigold"],
       "icon": "food/milk-carton",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1653,10 +1399,7 @@
       "brand": "Marigold",
       "sugar_g": 18.8,
       "sodium_mg": 110,
-      "aliases": [
-        "marigold chocolate milk",
-        "susu coklat marigold"
-      ],
+      "aliases": ["marigold chocolate milk", "susu coklat marigold"],
       "icon": "food/milk-carton",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -1673,10 +1416,7 @@
       "fibre_g": 0.5,
       "sugar_g": 23.3,
       "sodium_mg": 75,
-      "aliases": [
-        "peel fresh oren",
-        "jus oren marigold"
-      ],
+      "aliases": ["peel fresh oren", "jus oren marigold"],
       "icon": "food/orange-juice",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1693,10 +1433,7 @@
       "fibre_g": 0.8,
       "sugar_g": 24.5,
       "sodium_mg": 68,
-      "aliases": [
-        "peel fresh jambu",
-        "guava juice"
-      ],
+      "aliases": ["peel fresh jambu", "guava juice"],
       "icon": "food/orange-juice",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1711,10 +1448,7 @@
       "fat_g": 0,
       "brand": "Marigold",
       "sodium_mg": 20,
-      "aliases": [
-        "peel fresh limau",
-        "lime juice marigold"
-      ],
+      "aliases": ["peel fresh limau", "lime juice marigold"],
       "icon": "food/lime-juice",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1730,10 +1464,7 @@
       "brand": "Marigold",
       "sugar_g": 11.3,
       "sodium_mg": 75,
-      "aliases": [
-        "peel fresh less sugar",
-        "peel fresh kurang manis"
-      ],
+      "aliases": ["peel fresh less sugar", "peel fresh kurang manis"],
       "icon": "food/orange-juice",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1749,10 +1480,7 @@
       "brand": "Marigold",
       "sugar_g": 23.5,
       "sodium_mg": 125,
-      "aliases": [
-        "marigold mangga",
-        "mango drink marigold"
-      ],
+      "aliases": ["marigold mangga", "mango drink marigold"],
       "icon": "food/drink-bag",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -1769,10 +1497,7 @@
       "fibre_g": 0.3,
       "sugar_g": 17.8,
       "sodium_mg": 78,
-      "aliases": [
-        "marigold yogurt peach",
-        "yogurt pic"
-      ],
+      "aliases": ["marigold yogurt peach", "yogurt pic"],
       "icon": "food/yogurt",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1789,9 +1514,7 @@
       "fibre_g": 0.8,
       "sugar_g": 19.9,
       "sodium_mg": 85,
-      "aliases": [
-        "marigold yogurt strawberi"
-      ],
+      "aliases": ["marigold yogurt strawberi"],
       "icon": "food/yogurt",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1807,9 +1530,7 @@
       "brand": "Marigold",
       "sugar_g": 7.6,
       "sodium_mg": 59,
-      "aliases": [
-        "marigold greek yogurt"
-      ],
+      "aliases": ["marigold greek yogurt"],
       "icon": "food/yogurt",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1825,10 +1546,7 @@
       "brand": "Marigold",
       "sugar_g": 11.8,
       "sodium_mg": 28,
-      "aliases": [
-        "susu pekat marigold",
-        "krimer manis"
-      ],
+      "aliases": ["susu pekat marigold", "krimer manis"],
       "icon": "food/condensed-milk",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -1844,10 +1562,7 @@
       "brand": "Dutch Lady",
       "sugar_g": 20.7,
       "sodium_mg": 174,
-      "aliases": [
-        "dutch lady coklat",
-        "susu coklat dutch lady"
-      ],
+      "aliases": ["dutch lady coklat", "susu coklat dutch lady"],
       "icon": "food/milk-carton",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -1863,10 +1578,7 @@
       "brand": "Dutch Lady",
       "sugar_g": 13.4,
       "sodium_mg": 84,
-      "aliases": [
-        "dutch lady strawberi",
-        "susu strawberry"
-      ],
+      "aliases": ["dutch lady strawberi", "susu strawberry"],
       "icon": "food/milk-carton",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -1882,10 +1594,7 @@
       "brand": "Dutch Lady",
       "sugar_g": 16.5,
       "sodium_mg": 130,
-      "aliases": [
-        "dutch lady bandung",
-        "susu bandung"
-      ],
+      "aliases": ["dutch lady bandung", "susu bandung"],
       "icon": "food/bandung",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -1900,10 +1609,7 @@
       "fat_g": 3.0,
       "brand": "Dutch Lady",
       "sodium_mg": 95,
-      "aliases": [
-        "dutch lady low fat",
-        "susu rendah lemak dutch lady"
-      ],
+      "aliases": ["dutch lady low fat", "susu rendah lemak dutch lady"],
       "icon": "food/milk-carton",
       "source": "openfoodfacts_my_barcode_panel_converted_from_100g",
       "verified": true
@@ -1919,10 +1625,7 @@
       "brand": "Dutch Lady",
       "sugar_g": 9.4,
       "sodium_mg": 96,
-      "aliases": [
-        "dutch lady full cream",
-        "susu penuh krim"
-      ],
+      "aliases": ["dutch lady full cream", "susu penuh krim"],
       "icon": "food/milk-carton",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1938,10 +1641,7 @@
       "brand": "Dutch Lady",
       "sugar_g": 10,
       "sodium_mg": 12,
-      "aliases": [
-        "susu pekat manis dutch lady",
-        "krimer dutch lady"
-      ],
+      "aliases": ["susu pekat manis dutch lady", "krimer dutch lady"],
       "icon": "food/condensed-milk",
       "source": "openfoodfacts_panel_converted_from_100g",
       "verified": true
@@ -1957,10 +1657,7 @@
       "brand": "Farm Fresh",
       "sugar_g": 4.3,
       "sodium_mg": 86,
-      "aliases": [
-        "susu segar farm fresh",
-        "farm fresh full cream"
-      ],
+      "aliases": ["susu segar farm fresh", "farm fresh full cream"],
       "icon": "food/milk-carton",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -1975,10 +1672,7 @@
       "fat_g": 3.8,
       "brand": "Farm Fresh",
       "sugar_g": 12.5,
-      "aliases": [
-        "farm fresh skinny",
-        "susu rendah lemak farm fresh"
-      ],
+      "aliases": ["farm fresh skinny", "susu rendah lemak farm fresh"],
       "icon": "food/milk-carton",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -1993,9 +1687,7 @@
       "fat_g": 3.8,
       "brand": "Farm Fresh",
       "sugar_g": 10.8,
-      "aliases": [
-        "farm fresh lactose free"
-      ],
+      "aliases": ["farm fresh lactose free"],
       "icon": "food/milk-carton",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -2011,10 +1703,7 @@
       "brand": "Farm Fresh",
       "sugar_g": 13,
       "sodium_mg": 49,
-      "aliases": [
-        "farm fresh pisang",
-        "susu pisang"
-      ],
+      "aliases": ["farm fresh pisang", "susu pisang"],
       "icon": "food/milk-carton",
       "source": "openfoodfacts_my_barcode_panel_converted_from_100g",
       "verified": true
@@ -2030,10 +1719,7 @@
       "brand": "Farm Fresh",
       "sugar_g": 11.6,
       "sodium_mg": 27,
-      "aliases": [
-        "cream hauz",
-        "farm fresh cream"
-      ],
+      "aliases": ["cream hauz", "farm fresh cream"],
       "icon": "food/milk-carton",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -2049,10 +1735,7 @@
       "brand": "Farm Fresh",
       "sugar_g": 5,
       "sodium_mg": 121,
-      "aliases": [
-        "farm fresh yogurt",
-        "yogurt asli"
-      ],
+      "aliases": ["farm fresh yogurt", "yogurt asli"],
       "icon": "food/yogurt",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -2068,9 +1751,7 @@
       "brand": "Farm Fresh",
       "sugar_g": 7,
       "sodium_mg": 25,
-      "aliases": [
-        "farm fresh greek yogurt"
-      ],
+      "aliases": ["farm fresh greek yogurt"],
       "icon": "food/yogurt",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -2086,10 +1767,7 @@
       "brand": "Farm Fresh",
       "sugar_g": 18.8,
       "sodium_mg": 45,
-      "aliases": [
-        "farm fresh yogurt drink",
-        "minuman yogurt"
-      ],
+      "aliases": ["farm fresh yogurt drink", "minuman yogurt"],
       "icon": "food/yogurt",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -2104,10 +1782,7 @@
       "fat_g": 5.6,
       "brand": "Farm Fresh",
       "sugar_g": 18,
-      "aliases": [
-        "susu kurma farm fresh",
-        "date milk"
-      ],
+      "aliases": ["susu kurma farm fresh", "date milk"],
       "icon": "food/milk-carton",
       "source": "model_estimate",
       "verified": false
@@ -2122,10 +1797,7 @@
       "fat_g": 4.2,
       "brand": "Farm Fresh",
       "sugar_g": 15,
-      "aliases": [
-        "farm fresh coffee milk",
-        "kopi susu farm fresh"
-      ],
+      "aliases": ["farm fresh coffee milk", "kopi susu farm fresh"],
       "icon": "food/coffee",
       "source": "model_estimate",
       "verified": false
@@ -2141,11 +1813,7 @@
       "brand": "Yakult",
       "fibre_g": 1.2,
       "sugar_g": 6.8,
-      "aliases": [
-        "yakult",
-        "minuman susu kultur",
-        "养乐多"
-      ],
+      "aliases": ["yakult", "minuman susu kultur", "养乐多"],
       "icon": "food/yogurt",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true,
@@ -2168,10 +1836,7 @@
       "fibre_g": 1.4,
       "sugar_g": 5,
       "sodium_mg": 12,
-      "aliases": [
-        "yakult light",
-        "yakult ace"
-      ],
+      "aliases": ["yakult light", "yakult ace"],
       "icon": "food/yogurt",
       "source": "openfoodfacts_my_barcode_panel",
       "verified": true
@@ -2186,10 +1851,7 @@
       "fat_g": 0.1,
       "brand": "Vitagen",
       "sugar_g": 17,
-      "aliases": [
-        "vitagen original",
-        "minuman kultur vitagen"
-      ],
+      "aliases": ["vitagen original", "minuman kultur vitagen"],
       "icon": "food/yogurt",
       "source": "model_estimate",
       "verified": false
@@ -2204,10 +1866,7 @@
       "fat_g": 0.1,
       "brand": "Vitagen",
       "sugar_g": 9,
-      "aliases": [
-        "vitagen less sugar",
-        "vitagen kurang gula"
-      ],
+      "aliases": ["vitagen less sugar", "vitagen kurang gula"],
       "icon": "food/yogurt",
       "source": "model_estimate",
       "verified": false
@@ -2223,10 +1882,7 @@
       "brand": "Kickapoo",
       "sugar_g": 35.8,
       "sodium_mg": 30,
-      "aliases": [
-        "kickapoo",
-        "minuman kickapoo"
-      ],
+      "aliases": ["kickapoo", "minuman kickapoo"],
       "icon": "food/canned-drink",
       "source": "model_estimate",
       "verified": false
@@ -2243,10 +1899,7 @@
       "fibre_g": 0.6,
       "sugar_g": 7.1,
       "sodium_mg": 300,
-      "aliases": [
-        "brahims masak merah",
-        "pes masak merah"
-      ],
+      "aliases": ["brahims masak merah", "pes masak merah"],
       "icon": "food/sambal-jar",
       "source": "openfoodfacts_panel",
       "verified": true
@@ -2261,10 +1914,7 @@
       "fat_g": 20.0,
       "brand": "Brahim's",
       "sodium_mg": 980,
-      "aliases": [
-        "brahims rendang",
-        "beef rendang ready meal"
-      ],
+      "aliases": ["brahims rendang", "beef rendang ready meal"],
       "icon": "dishes/rendang",
       "source": "model_estimate",
       "verified": false
@@ -2279,10 +1929,7 @@
       "fat_g": 18.0,
       "brand": "Brahim's",
       "sodium_mg": 940,
-      "aliases": [
-        "brahims chicken curry",
-        "kari ayam sedia"
-      ],
+      "aliases": ["brahims chicken curry", "kari ayam sedia"],
       "icon": "food/food-container",
       "source": "model_estimate",
       "verified": false
@@ -2297,9 +1944,7 @@
       "fat_g": 16.0,
       "brand": "Brahim's",
       "sodium_mg": 900,
-      "aliases": [
-        "brahims briyani"
-      ],
+      "aliases": ["brahims briyani"],
       "icon": "dishes/nasi-briyani",
       "source": "model_estimate",
       "verified": false
@@ -2314,10 +1959,7 @@
       "fat_g": 8.5,
       "brand": "Ramly",
       "sodium_mg": 430,
-      "aliases": [
-        "ramly beef patty",
-        "daging burger ramly"
-      ],
+      "aliases": ["ramly beef patty", "daging burger ramly"],
       "icon": "dishes/ramly-burger",
       "source": "model_estimate",
       "verified": false
@@ -2332,10 +1974,7 @@
       "fat_g": 6.5,
       "brand": "Ramly",
       "sodium_mg": 420,
-      "aliases": [
-        "ramly chicken patty",
-        "patty ayam ramly"
-      ],
+      "aliases": ["ramly chicken patty", "patty ayam ramly"],
       "icon": "dishes/ramly-burger",
       "source": "model_estimate",
       "verified": false
@@ -2350,9 +1989,7 @@
       "fat_g": 8.0,
       "brand": "Ramly",
       "sodium_mg": 460,
-      "aliases": [
-        "burger udang ramly"
-      ],
+      "aliases": ["burger udang ramly"],
       "icon": "food/prawn",
       "source": "model_estimate",
       "verified": false
@@ -2367,10 +2004,7 @@
       "fat_g": 7.0,
       "brand": "Ramly",
       "sodium_mg": 380,
-      "aliases": [
-        "sosej ramly",
-        "ramly hotdog"
-      ],
+      "aliases": ["sosej ramly", "ramly hotdog"],
       "icon": "food/sausage",
       "source": "model_estimate",
       "verified": false
@@ -2385,10 +2019,7 @@
       "fat_g": 9.0,
       "brand": "Figo",
       "sodium_mg": 420,
-      "aliases": [
-        "figo nugget",
-        "nugget ayam figo"
-      ],
+      "aliases": ["figo nugget", "nugget ayam figo"],
       "icon": "food/chicken-nugget",
       "source": "model_estimate",
       "verified": false
@@ -2403,10 +2034,7 @@
       "fat_g": 5.0,
       "brand": "Figo",
       "sodium_mg": 390,
-      "aliases": [
-        "tofu ikan figo",
-        "fish tofu frozen"
-      ],
+      "aliases": ["tofu ikan figo", "fish tofu frozen"],
       "icon": "food/tofu",
       "source": "model_estimate",
       "verified": false
@@ -2420,10 +2048,7 @@
       "protein_g": 0,
       "fat_g": 14,
       "brand": "Life",
-      "aliases": [
-        "minyak masak life",
-        "palm cooking oil"
-      ],
+      "aliases": ["minyak masak life", "palm cooking oil"],
       "icon": "food/cooking-oil",
       "source": "model_estimate",
       "verified": false
@@ -2438,10 +2063,7 @@
       "fat_g": 1.8,
       "brand": "Babas",
       "sodium_mg": 45,
-      "aliases": [
-        "serbuk kari daging babas",
-        "babas curry powder"
-      ],
+      "aliases": ["serbuk kari daging babas", "babas curry powder"],
       "icon": "food/sambal-jar",
       "source": "model_estimate",
       "verified": false
@@ -2456,9 +2078,7 @@
       "fat_g": 4.8,
       "brand": "Babas",
       "sodium_mg": 680,
-      "aliases": [
-        "pes rendang babas"
-      ],
+      "aliases": ["pes rendang babas"],
       "icon": "food/sambal-jar",
       "source": "model_estimate",
       "verified": false
@@ -2473,10 +2093,7 @@
       "fat_g": 4.3,
       "brand": "Adabi",
       "sodium_mg": 620,
-      "aliases": [
-        "pes sambal tumis adabi",
-        "adabi sambal"
-      ],
+      "aliases": ["pes sambal tumis adabi", "adabi sambal"],
       "icon": "food/sambal-jar",
       "source": "model_estimate",
       "verified": false
@@ -2491,9 +2108,7 @@
       "fat_g": 5.0,
       "brand": "Adabi",
       "sodium_mg": 650,
-      "aliases": [
-        "pes rendang adabi"
-      ],
+      "aliases": ["pes rendang adabi"],
       "icon": "food/sambal-jar",
       "source": "model_estimate",
       "verified": false
@@ -2508,9 +2123,7 @@
       "fat_g": 3.6,
       "brand": "Adabi",
       "sodium_mg": 560,
-      "aliases": [
-        "pes nasi lemak adabi"
-      ],
+      "aliases": ["pes nasi lemak adabi"],
       "icon": "food/sambal-jar",
       "source": "model_estimate",
       "verified": false
@@ -2526,10 +2139,7 @@
       "brand": "Dumex",
       "sugar_g": 9,
       "sodium_mg": 75,
-      "aliases": [
-        "dumex dugro",
-        "susu dugro"
-      ],
+      "aliases": ["dumex dugro", "susu dugro"],
       "icon": "food/milk-carton",
       "source": "model_estimate",
       "verified": false
@@ -2544,10 +2154,7 @@
       "fat_g": 14.0,
       "brand": "FamilyMart",
       "sodium_mg": 620,
-      "aliases": [
-        "familymart sandwich tuna",
-        "sandwic tuna"
-      ],
+      "aliases": ["familymart sandwich tuna", "sandwic tuna"],
       "icon": "food/bread-loaf",
       "source": "model_estimate",
       "verified": false
@@ -2562,10 +2169,7 @@
       "fat_g": 14.0,
       "brand": "FamilyMart",
       "sodium_mg": 560,
-      "aliases": [
-        "familymart egg sandwich",
-        "sandwic telur"
-      ],
+      "aliases": ["familymart egg sandwich", "sandwic telur"],
       "icon": "food/bread-loaf",
       "source": "model_estimate",
       "verified": false
@@ -2580,9 +2184,7 @@
       "fat_g": 2.5,
       "brand": "FamilyMart",
       "sodium_mg": 480,
-      "aliases": [
-        "onigiri salmon"
-      ],
+      "aliases": ["onigiri salmon"],
       "icon": "food/rice-bowl",
       "source": "model_estimate",
       "verified": false
@@ -2597,10 +2199,7 @@
       "fat_g": 5.0,
       "brand": "FamilyMart",
       "sodium_mg": 980,
-      "aliases": [
-        "familymart oden",
-        "oden fishball"
-      ],
+      "aliases": ["familymart oden", "oden fishball"],
       "icon": "food/fish-ball",
       "source": "model_estimate",
       "verified": false
@@ -2615,10 +2214,7 @@
       "fat_g": 12.0,
       "brand": "7-Eleven",
       "sodium_mg": 540,
-      "aliases": [
-        "seven eleven sausage bun",
-        "roti sosej"
-      ],
+      "aliases": ["seven eleven sausage bun", "roti sosej"],
       "icon": "food/bun",
       "source": "model_estimate",
       "verified": false
@@ -2634,10 +2230,7 @@
       "brand": "Nescafe",
       "sugar_g": 20,
       "sodium_mg": 90,
-      "aliases": [
-        "nescafe smoovlatte",
-        "kopi susu botol"
-      ],
+      "aliases": ["nescafe smoovlatte", "kopi susu botol"],
       "icon": "food/coffee",
       "source": "model_estimate",
       "verified": false
@@ -2654,11 +2247,7 @@
       "fibre_g": 2.4,
       "sugar_g": 8,
       "sodium_mg": 90,
-      "aliases": [
-        "milo nutri g",
-        "milo less sugar",
-        "milo gandum"
-      ],
+      "aliases": ["milo nutri g", "milo less sugar", "milo gandum"],
       "icon": "dishes/milo-ais",
       "source": "model_estimate",
       "verified": false
@@ -2674,11 +2263,7 @@
       "brand": "Milo",
       "sugar_g": 9,
       "sodium_mg": 70,
-      "aliases": [
-        "milo tin",
-        "serbuk milo",
-        "milo powder"
-      ],
+      "aliases": ["milo tin", "serbuk milo", "milo powder"],
       "icon": "dishes/milo-ais",
       "source": "model_estimate",
       "verified": false

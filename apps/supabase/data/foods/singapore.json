@@ -35,12 +35,7 @@
       "carbs_g": 72,
       "protein_g": 34,
       "fat_g": 29,
-      "aliases": [
-        "roasted chicken rice",
-        "烧鸡饭",
-        "roast chicken rice singapore",
-        "siew kai fan"
-      ],
+      "aliases": ["roasted chicken rice", "烧鸡饭", "roast chicken rice singapore", "siew kai fan"],
       "icon": "dishes/chicken-rice",
       "verified": false,
       "source": "model_estimate"
@@ -53,12 +48,7 @@
       "carbs_g": 55,
       "protein_g": 70,
       "fat_g": 52,
-      "aliases": [
-        "singapore chilli crab",
-        "辣椒螃蟹",
-        "chili crab",
-        "ketam cili singapura"
-      ],
+      "aliases": ["singapore chilli crab", "辣椒螃蟹", "chili crab", "ketam cili singapura"],
       "icon": "food/crab",
       "verified": false,
       "source": "model_estimate",
@@ -77,11 +67,7 @@
       "carbs_g": 28,
       "protein_g": 72,
       "fat_g": 55,
-      "aliases": [
-        "黑胡椒螃蟹",
-        "blackpepper crab",
-        "ketam lada hitam singapura"
-      ],
+      "aliases": ["黑胡椒螃蟹", "blackpepper crab", "ketam lada hitam singapura"],
       "icon": "food/crab",
       "verified": false,
       "source": "model_estimate",
@@ -100,10 +86,7 @@
       "carbs_g": 22,
       "protein_g": 70,
       "fat_g": 51,
-      "aliases": [
-        "白胡椒螃蟹",
-        "white pepper crab singapore"
-      ],
+      "aliases": ["白胡椒螃蟹", "white pepper crab singapore"],
       "icon": "food/crab",
       "verified": false,
       "source": "model_estimate"
@@ -116,11 +99,7 @@
       "carbs_g": 30,
       "protein_g": 68,
       "fat_g": 65,
-      "aliases": [
-        "咸蛋螃蟹",
-        "salted egg yolk crab",
-        "ketam telur masin"
-      ],
+      "aliases": ["咸蛋螃蟹", "salted egg yolk crab", "ketam telur masin"],
       "icon": "food/crab",
       "verified": false,
       "source": "model_estimate"
@@ -133,11 +112,7 @@
       "carbs_g": 38,
       "protein_g": 66,
       "fat_g": 74,
-      "aliases": [
-        "butter crab",
-        "奶油螃蟹",
-        "creamy crab singapore"
-      ],
+      "aliases": ["butter crab", "奶油螃蟹", "creamy crab singapore"],
       "icon": "food/crab",
       "verified": false,
       "source": "model_estimate"
@@ -150,12 +125,7 @@
       "carbs_g": 58,
       "protein_g": 45,
       "fat_g": 24,
-      "aliases": [
-        "螃蟹米粉汤",
-        "crab beehoon",
-        "sri lankan crab bee hoon",
-        "crab meehoon soup"
-      ],
+      "aliases": ["螃蟹米粉汤", "crab beehoon", "sri lankan crab bee hoon", "crab meehoon soup"],
       "icon": "food/rice-vermicelli",
       "verified": false,
       "source": "model_estimate"
@@ -168,12 +138,7 @@
       "carbs_g": 66,
       "protein_g": 10,
       "fat_g": 26,
-      "aliases": [
-        "炸馒头",
-        "fried bun",
-        "mantou goreng",
-        "deep fried mantou"
-      ],
+      "aliases": ["炸馒头", "fried bun", "mantou goreng", "deep fried mantou"],
       "icon": "food/bun",
       "verified": false,
       "source": "model_estimate",
@@ -229,12 +194,7 @@
       "carbs_g": 12,
       "protein_g": 33,
       "fat_g": 12,
-      "aliases": [
-        "bbq sotong",
-        "grilled squid",
-        "烧苏东",
-        "sotong bakar singapura"
-      ],
+      "aliases": ["bbq sotong", "grilled squid", "烧苏东", "sotong bakar singapura"],
       "icon": "food/squid-rings",
       "verified": false,
       "source": "model_estimate"
@@ -247,12 +207,7 @@
       "carbs_g": 45,
       "protein_g": 105,
       "fat_g": 62,
-      "aliases": [
-        "bbq seafood",
-        "烧烤海鲜",
-        "seafood bbq singapore",
-        "east coast bbq seafood"
-      ],
+      "aliases": ["bbq seafood", "烧烤海鲜", "seafood bbq singapore", "east coast bbq seafood"],
       "icon": "food/grilled-fish",
       "verified": false,
       "source": "model_estimate"
@@ -284,11 +239,7 @@
       "carbs_g": 62,
       "protein_g": 42,
       "fat_g": 27,
-      "aliases": [
-        "bak kut teh set",
-        "肉骨茶套餐",
-        "bkt set singapore"
-      ],
+      "aliases": ["bak kut teh set", "肉骨茶套餐", "bkt set singapore"],
       "icon": "dishes/bak-kut-teh",
       "verified": false,
       "source": "model_estimate"
@@ -301,13 +252,7 @@
       "carbs_g": 6,
       "protein_g": 32,
       "fat_g": 36,
-      "aliases": [
-        "猪脚",
-        "pig trotter",
-        "ti pang",
-        "braised trotter",
-        "kaki babi"
-      ],
+      "aliases": ["猪脚", "pig trotter", "ti pang", "braised trotter", "kaki babi"],
       "icon": "food/pork-belly",
       "verified": false,
       "source": "model_estimate"
@@ -415,12 +360,7 @@
       "carbs_g": 72,
       "protein_g": 26,
       "fat_g": 34,
-      "aliases": [
-        "烧肉饭",
-        "roast pork rice singapore",
-        "sio bak png",
-        "nasi siew yoke singapura"
-      ],
+      "aliases": ["烧肉饭", "roast pork rice singapore", "sio bak png", "nasi siew yoke singapura"],
       "icon": "food/plate-rice",
       "verified": false,
       "source": "model_estimate"
@@ -491,13 +431,7 @@
       "carbs_g": 40,
       "protein_g": 4,
       "fat_g": 9,
-      "aliases": [
-        "水粿",
-        "chwee kuih",
-        "chwee kway",
-        "steamed rice cake with chye poh",
-        "水糕"
-      ],
+      "aliases": ["水粿", "chwee kuih", "chwee kway", "steamed rice cake with chye poh", "水糕"],
       "icon": "food/kuih",
       "verified": false,
       "source": "model_estimate",
@@ -516,12 +450,7 @@
       "carbs_g": 62,
       "protein_g": 24,
       "fat_g": 24,
-      "aliases": [
-        "沙爹米粉",
-        "satay beehoon",
-        "sate bihun singapura",
-        "satay meehoon"
-      ],
+      "aliases": ["沙爹米粉", "satay beehoon", "sate bihun singapura", "satay meehoon"],
       "icon": "food/rice-vermicelli",
       "verified": false,
       "source": "model_estimate"
@@ -553,12 +482,7 @@
       "carbs_g": 54,
       "protein_g": 34,
       "fat_g": 18,
-      "aliases": [
-        "大虾面",
-        "big prawn mee",
-        "jumbo prawn noodle",
-        "har mee besar"
-      ],
+      "aliases": ["大虾面", "big prawn mee", "jumbo prawn noodle", "har mee besar"],
       "icon": "food/prawn",
       "verified": false,
       "source": "model_estimate"
@@ -571,13 +495,7 @@
       "carbs_g": 58,
       "protein_g": 24,
       "fat_g": 17,
-      "aliases": [
-        "面薄打",
-        "mee pok dry",
-        "mee pok tah",
-        "dry flat egg noodle",
-        "面博打"
-      ],
+      "aliases": ["面薄打", "mee pok dry", "mee pok tah", "dry flat egg noodle", "面博打"],
       "icon": "food/egg-noodles",
       "verified": false,
       "source": "model_estimate"
@@ -590,12 +508,7 @@
       "carbs_g": 56,
       "protein_g": 24,
       "fat_g": 17,
-      "aliases": [
-        "面仔",
-        "mee kia ta",
-        "thin egg noodle dry",
-        "mee kiah"
-      ],
+      "aliases": ["面仔", "mee kia ta", "thin egg noodle dry", "mee kiah"],
       "icon": "food/egg-noodles",
       "verified": false,
       "source": "model_estimate"
@@ -608,12 +521,7 @@
       "carbs_g": 62,
       "protein_g": 32,
       "fat_g": 11,
-      "aliases": [
-        "鱼片汤饭",
-        "fish soup rice",
-        "sliced fish soup singapore",
-        "sup ikan nasi"
-      ],
+      "aliases": ["鱼片汤饭", "fish soup rice", "sliced fish soup singapore", "sup ikan nasi"],
       "icon": "food/fish-fillet",
       "verified": false,
       "source": "model_estimate"
@@ -626,12 +534,7 @@
       "carbs_g": 46,
       "protein_g": 28,
       "fat_g": 9,
-      "aliases": [
-        "鱼片米粉汤",
-        "fish slice beehoon",
-        "clear fish soup bee hoon",
-        "sup ikan bihun"
-      ],
+      "aliases": ["鱼片米粉汤", "fish slice beehoon", "clear fish soup bee hoon", "sup ikan bihun"],
       "icon": "food/rice-vermicelli",
       "verified": false,
       "source": "model_estimate"
@@ -644,12 +547,7 @@
       "carbs_g": 66,
       "protein_g": 18,
       "fat_g": 16,
-      "aliases": [
-        "mee rebus singapura",
-        "sweet potato gravy noodles",
-        "米粉汤马来",
-        "mi rebus sg"
-      ],
+      "aliases": ["mee rebus singapura", "sweet potato gravy noodles", "米粉汤马来", "mi rebus sg"],
       "icon": "dishes/mee-rebus",
       "verified": false,
       "source": "model_estimate"
@@ -717,12 +615,7 @@
       "carbs_g": 68,
       "protein_g": 24,
       "fat_g": 24,
-      "aliases": [
-        "生捞米粉",
-        "sang lou bee hoon",
-        "san lao beehoon",
-        "zi char fried bee hoon"
-      ],
+      "aliases": ["生捞米粉", "sang lou bee hoon", "san lao beehoon", "zi char fried bee hoon"],
       "icon": "food/rice-vermicelli",
       "verified": false,
       "source": "model_estimate"
@@ -844,11 +737,7 @@
       "carbs_g": 92,
       "protein_g": 36,
       "fat_g": 27,
-      "aliases": [
-        "chicken biryani singapore",
-        "nasi briyani ayam singapura",
-        "briyani ayam sg"
-      ],
+      "aliases": ["chicken biryani singapore", "nasi briyani ayam singapura", "briyani ayam sg"],
       "icon": "dishes/nasi-briyani",
       "verified": false,
       "source": "model_estimate"
@@ -861,13 +750,7 @@
       "carbs_g": 40,
       "protein_g": 6,
       "fat_g": 16,
-      "aliases": [
-        "prata kosong",
-        "plain prata",
-        "roti prata singapore",
-        "パラタ",
-        "prata"
-      ],
+      "aliases": ["prata kosong", "plain prata", "roti prata singapore", "パラタ", "prata"],
       "icon": "dishes/roti-canai",
       "verified": false,
       "source": "model_estimate",
@@ -886,12 +769,7 @@
       "carbs_g": 42,
       "protein_g": 13,
       "fat_g": 23,
-      "aliases": [
-        "egg prata",
-        "prata telur",
-        "roti prata telur",
-        "prata egg singapore"
-      ],
+      "aliases": ["egg prata", "prata telur", "roti prata telur", "prata egg singapore"],
       "icon": "dishes/roti-telur",
       "verified": false,
       "source": "model_estimate"
@@ -904,11 +782,7 @@
       "carbs_g": 44,
       "protein_g": 7,
       "fat_g": 17,
-      "aliases": [
-        "onion prata",
-        "prata bawang",
-        "roti prata bawang"
-      ],
+      "aliases": ["onion prata", "prata bawang", "roti prata bawang"],
       "icon": "dishes/roti-canai",
       "verified": false,
       "source": "model_estimate"
@@ -921,11 +795,7 @@
       "carbs_g": 42,
       "protein_g": 15,
       "fat_g": 26,
-      "aliases": [
-        "cheese prata",
-        "prata keju",
-        "roti prata cheese singapore"
-      ],
+      "aliases": ["cheese prata", "prata keju", "roti prata cheese singapore"],
       "icon": "dishes/roti-canai",
       "verified": false,
       "source": "model_estimate"
@@ -938,12 +808,7 @@
       "carbs_g": 52,
       "protein_g": 8,
       "fat_g": 26,
-      "aliases": [
-        "ball prata",
-        "bomb prata",
-        "prata bom",
-        "roti bom singapore"
-      ],
+      "aliases": ["ball prata", "bomb prata", "prata bom", "roti bom singapore"],
       "icon": "dishes/roti-canai",
       "verified": false,
       "source": "model_estimate"
@@ -956,12 +821,7 @@
       "carbs_g": 68,
       "protein_g": 8,
       "fat_g": 24,
-      "aliases": [
-        "tissue prata singapore",
-        "roti tisu prata",
-        "cone prata",
-        "paper prata"
-      ],
+      "aliases": ["tissue prata singapore", "roti tisu prata", "cone prata", "paper prata"],
       "icon": "dishes/roti-canai",
       "verified": false,
       "source": "model_estimate"
@@ -974,11 +834,7 @@
       "carbs_g": 40,
       "protein_g": 12,
       "fat_g": 23,
-      "aliases": [
-        "prata plaster",
-        "egg on top prata",
-        "roti plaster singapore"
-      ],
+      "aliases": ["prata plaster", "egg on top prata", "roti plaster singapore"],
       "icon": "dishes/roti-telur",
       "verified": false,
       "source": "model_estimate"
@@ -991,11 +847,7 @@
       "carbs_g": 84,
       "protein_g": 16,
       "fat_g": 37,
-      "aliases": [
-        "prata with curry",
-        "prata set singapore",
-        "roti prata kari ikan"
-      ],
+      "aliases": ["prata with curry", "prata set singapore", "roti prata kari ikan"],
       "icon": "dishes/roti-canai",
       "verified": false,
       "source": "model_estimate"
@@ -1026,11 +878,7 @@
       "carbs_g": 62,
       "protein_g": 32,
       "fat_g": 32,
-      "aliases": [
-        "chicken murtabak singapore",
-        "murtabak ayam singapura",
-        "martabak ayam sg"
-      ],
+      "aliases": ["chicken murtabak singapore", "murtabak ayam singapura", "martabak ayam sg"],
       "icon": "dishes/murtabak",
       "verified": false,
       "source": "model_estimate"
@@ -1062,12 +910,7 @@
       "carbs_g": 42,
       "protein_g": 6,
       "fat_g": 14,
-      "aliases": [
-        "thick toast kaya",
-        "厚片咖椰吐司",
-        "roti bakar tebal kaya",
-        "kaya thick toast"
-      ],
+      "aliases": ["thick toast kaya", "厚片咖椰吐司", "roti bakar tebal kaya", "kaya thick toast"],
       "icon": "dishes/kaya-toast",
       "verified": false,
       "source": "model_estimate"
@@ -1080,11 +923,7 @@
       "carbs_g": 44,
       "protein_g": 11,
       "fat_g": 22,
-      "aliases": [
-        "french toast kopitiam",
-        "法式吐司",
-        "roti bakar perancis kaya"
-      ],
+      "aliases": ["french toast kopitiam", "法式吐司", "roti bakar perancis kaya"],
       "icon": "food/toast",
       "verified": false,
       "source": "model_estimate"
@@ -1097,11 +936,7 @@
       "carbs_g": 34,
       "protein_g": 10,
       "fat_g": 18,
-      "aliases": [
-        "peanut butter toast singapore",
-        "花生酱吐司",
-        "roti bakar mentega kacang"
-      ],
+      "aliases": ["peanut butter toast singapore", "花生酱吐司", "roti bakar mentega kacang"],
       "icon": "food/toast",
       "verified": false,
       "source": "model_estimate"
@@ -1114,13 +949,7 @@
       "carbs_g": 38,
       "protein_g": 5,
       "fat_g": 5,
-      "aliases": [
-        "tutu kueh",
-        "kuih tutu",
-        "嘟嘟糕",
-        "tutu kuih kacang",
-        "peanut tutu kueh"
-      ],
+      "aliases": ["tutu kueh", "kuih tutu", "嘟嘟糕", "tutu kuih kacang", "peanut tutu kueh"],
       "icon": "food/kuih",
       "verified": false,
       "source": "model_estimate"
@@ -1133,12 +962,7 @@
       "carbs_g": 38,
       "protein_g": 4,
       "fat_g": 8,
-      "aliases": [
-        "tutu kueh coconut",
-        "kuih tutu kelapa",
-        "嘟嘟糕椰丝",
-        "coconut tutu kueh"
-      ],
+      "aliases": ["tutu kueh coconut", "kuih tutu kelapa", "嘟嘟糕椰丝", "coconut tutu kueh"],
       "icon": "food/kuih",
       "verified": false,
       "source": "model_estimate"
@@ -1151,13 +975,7 @@
       "carbs_g": 32,
       "protein_g": 5,
       "fat_g": 5,
-      "aliases": [
-        "笋粿",
-        "soon kuih",
-        "bamboo shoot dumpling",
-        "soon kway",
-        "teochew soon kueh"
-      ],
+      "aliases": ["笋粿", "soon kuih", "bamboo shoot dumpling", "soon kway", "teochew soon kueh"],
       "icon": "food/dumpling",
       "verified": false,
       "source": "model_estimate"
@@ -1170,13 +988,7 @@
       "carbs_g": 44,
       "protein_g": 6,
       "fat_g": 6,
-      "aliases": [
-        "饭粿",
-        "peng kueh",
-        "png kuih",
-        "glutinous rice kueh",
-        "teochew png kueh"
-      ],
+      "aliases": ["饭粿", "peng kueh", "png kuih", "glutinous rice kueh", "teochew png kueh"],
       "icon": "food/glutinous-rice",
       "verified": false,
       "source": "model_estimate"
@@ -1227,11 +1039,7 @@
       "carbs_g": 34,
       "protein_g": 5,
       "fat_g": 6,
-      "aliases": [
-        "面煎粿红豆",
-        "red bean pancake singapore",
-        "min chiang kueh red bean"
-      ],
+      "aliases": ["面煎粿红豆", "red bean pancake singapore", "min chiang kueh red bean"],
       "icon": "dishes/apam-balik",
       "verified": false,
       "source": "model_estimate"
@@ -1282,12 +1090,7 @@
       "carbs_g": 48,
       "protein_g": 8,
       "fat_g": 2,
-      "aliases": [
-        "豆爽",
-        "split mung bean dessert",
-        "tau suan with you tiao",
-        "tow suan"
-      ],
+      "aliases": ["豆爽", "split mung bean dessert", "tau suan with you tiao", "tow suan"],
       "icon": "food/pudding",
       "verified": false,
       "source": "model_estimate"
@@ -1319,12 +1122,7 @@
       "carbs_g": 39,
       "protein_g": 1,
       "fat_g": 0.2,
-      "aliases": [
-        "雪燕",
-        "ice jelly longan",
-        "ais jeli longan",
-        "ice jelly dessert singapore"
-      ],
+      "aliases": ["雪燕", "ice jelly longan", "ais jeli longan", "ice jelly dessert singapore"],
       "icon": "food/jelly",
       "verified": false,
       "source": "model_estimate"
@@ -1337,12 +1135,7 @@
       "carbs_g": 34,
       "protein_g": 1,
       "fat_g": 0.2,
-      "aliases": [
-        "仙草龙眼",
-        "chin chow longan",
-        "grass jelly with longan",
-        "cincau longan"
-      ],
+      "aliases": ["仙草龙眼", "chin chow longan", "grass jelly with longan", "cincau longan"],
       "icon": "food/jelly",
       "verified": false,
       "source": "model_estimate"
@@ -1355,12 +1148,7 @@
       "carbs_g": 52,
       "protein_g": 4,
       "fat_g": 11,
-      "aliases": [
-        "杨枝甘露",
-        "mango pomelo sago",
-        "mango sago",
-        "yang zhi gan lu"
-      ],
+      "aliases": ["杨枝甘露", "mango pomelo sago", "mango sago", "yang zhi gan lu"],
       "icon": "food/sago",
       "verified": false,
       "source": "model_estimate"
@@ -1373,12 +1161,7 @@
       "carbs_g": 16,
       "protein_g": 26,
       "fat_g": 28,
-      "aliases": [
-        "铁板豆腐",
-        "hotplate tofu",
-        "tofu besi panas",
-        "sizzling tofu singapore"
-      ],
+      "aliases": ["铁板豆腐", "hotplate tofu", "tofu besi panas", "sizzling tofu singapore"],
       "icon": "food/tofu",
       "verified": false,
       "source": "model_estimate"
@@ -1415,11 +1198,7 @@
       "carbs_g": 82,
       "protein_g": 42,
       "fat_g": 30,
-      "aliases": [
-        "fish head curry set",
-        "curry fish head rice",
-        "set kari kepala ikan"
-      ],
+      "aliases": ["fish head curry set", "curry fish head rice", "set kari kepala ikan"],
       "icon": "dishes/fish-head-curry",
       "verified": false,
       "source": "model_estimate"
@@ -1451,11 +1230,7 @@
       "carbs_g": 18,
       "protein_g": 24,
       "fat_g": 13,
-      "aliases": [
-        "西兰花带子",
-        "scallop broccoli zi char",
-        "brokoli kekapis"
-      ],
+      "aliases": ["西兰花带子", "scallop broccoli zi char", "brokoli kekapis"],
       "icon": "food/vegetables",
       "verified": false,
       "source": "model_estimate"
@@ -1487,12 +1262,7 @@
       "carbs_g": 46,
       "protein_g": 10,
       "fat_g": 11,
-      "aliases": [
-        "popiah singapura",
-        "薄饼",
-        "poh piah singapore",
-        "fresh spring roll singapore"
-      ],
+      "aliases": ["popiah singapura", "薄饼", "poh piah singapore", "fresh spring roll singapore"],
       "icon": "dishes/popiah",
       "verified": false,
       "source": "model_estimate"
@@ -1562,12 +1332,7 @@
       "carbs_g": 5,
       "protein_g": 9,
       "fat_g": 20,
-      "aliases": [
-        "午餐肉",
-        "fried luncheon meat",
-        "spam slices cai fan",
-        "daging luncheon goreng"
-      ],
+      "aliases": ["午餐肉", "fried luncheon meat", "spam slices cai fan", "daging luncheon goreng"],
       "icon": "food/sausage",
       "verified": false,
       "source": "model_estimate"
@@ -1598,12 +1363,7 @@
       "carbs_g": 3,
       "protein_g": 14,
       "fat_g": 10,
-      "aliases": [
-        "蒸水蛋",
-        "steamed egg cai fan",
-        "telur kukus daging cincang",
-        "chun dan"
-      ],
+      "aliases": ["蒸水蛋", "steamed egg cai fan", "telur kukus daging cincang", "chun dan"],
       "icon": "food/boiled-egg",
       "verified": false,
       "source": "model_estimate"
@@ -1635,12 +1395,7 @@
       "carbs_g": 16,
       "protein_g": 2.5,
       "fat_g": 2.5,
-      "aliases": [
-        "kopi siu dai",
-        "咖啡少甜",
-        "coffee less sweet singapore",
-        "kopi siewdai"
-      ],
+      "aliases": ["kopi siu dai", "咖啡少甜", "coffee less sweet singapore", "kopi siewdai"],
       "icon": "dishes/kopi-o",
       "verified": false,
       "source": "model_estimate"
@@ -1653,12 +1408,7 @@
       "carbs_g": 9,
       "protein_g": 3,
       "fat_g": 3,
-      "aliases": [
-        "kopi c siu dai",
-        "咖啡C少甜",
-        "kopi c less sweet",
-        "kopi see siew dai"
-      ],
+      "aliases": ["kopi c siu dai", "咖啡C少甜", "kopi c less sweet", "kopi see siew dai"],
       "icon": "dishes/kopi-o",
       "verified": false,
       "source": "model_estimate"
@@ -1671,11 +1421,7 @@
       "carbs_g": 10,
       "protein_g": 0.2,
       "fat_g": 0,
-      "aliases": [
-        "kopi o siu dai",
-        "咖啡乌少甜",
-        "black coffee less sugar singapore"
-      ],
+      "aliases": ["kopi o siu dai", "咖啡乌少甜", "black coffee less sugar singapore"],
       "icon": "dishes/kopi-o",
       "verified": false,
       "source": "model_estimate"
@@ -1688,11 +1434,7 @@
       "carbs_g": 15,
       "protein_g": 2.5,
       "fat_g": 2.5,
-      "aliases": [
-        "teh siu dai",
-        "茶少甜",
-        "tea less sweet singapore"
-      ],
+      "aliases": ["teh siu dai", "茶少甜", "tea less sweet singapore"],
       "icon": "dishes/teh-tarik",
       "verified": false,
       "source": "model_estimate"
@@ -1705,12 +1447,7 @@
       "carbs_g": 9,
       "protein_g": 2.8,
       "fat_g": 2.8,
-      "aliases": [
-        "teh c siu dai",
-        "茶C少甜",
-        "teh see siew dai",
-        "teh c less sweet"
-      ],
+      "aliases": ["teh c siu dai", "茶C少甜", "teh see siew dai", "teh c less sweet"],
       "icon": "dishes/teh-tarik",
       "verified": false,
       "source": "model_estimate"
@@ -1723,12 +1460,7 @@
       "carbs_g": 28,
       "protein_g": 3.5,
       "fat_g": 3.5,
-      "aliases": [
-        "kopi ga dai",
-        "咖啡加甜",
-        "kopi extra sweet",
-        "kopi gah dai singapore"
-      ],
+      "aliases": ["kopi ga dai", "咖啡加甜", "kopi extra sweet", "kopi gah dai singapore"],
       "icon": "dishes/kopi-o",
       "verified": false,
       "source": "model_estimate"
@@ -1741,11 +1473,7 @@
       "carbs_g": 18,
       "protein_g": 2.8,
       "fat_g": 2.8,
-      "aliases": [
-        "iced kopi less sweet",
-        "咖啡冰少甜",
-        "kopi ping siew dai"
-      ],
+      "aliases": ["iced kopi less sweet", "咖啡冰少甜", "kopi ping siew dai"],
       "icon": "dishes/kopi-o",
       "verified": false,
       "source": "model_estimate"
@@ -1758,11 +1486,7 @@
       "carbs_g": 17,
       "protein_g": 2.8,
       "fat_g": 2.8,
-      "aliases": [
-        "iced teh less sweet",
-        "茶冰少甜",
-        "teh ping siew dai"
-      ],
+      "aliases": ["iced teh less sweet", "茶冰少甜", "teh ping siew dai"],
       "icon": "dishes/teh-tarik",
       "verified": false,
       "source": "model_estimate"
@@ -1794,12 +1518,7 @@
       "carbs_g": 40,
       "protein_g": 8,
       "fat_g": 6,
-      "aliases": [
-        "milo ping",
-        "iced milo singapore",
-        "美禄冰",
-        "milo ais singapura"
-      ],
+      "aliases": ["milo ping", "iced milo singapore", "美禄冰", "milo ais singapura"],
       "icon": "dishes/milo-ais",
       "verified": false,
       "source": "model_estimate"
@@ -1812,11 +1531,7 @@
       "carbs_g": 66,
       "protein_g": 12,
       "fat_g": 12,
-      "aliases": [
-        "horlicks dino",
-        "好立克恐龙",
-        "horlicks dinosaur singapore"
-      ],
+      "aliases": ["horlicks dino", "好立克恐龙", "horlicks dinosaur singapore"],
       "icon": "food/milk-carton",
       "verified": false,
       "source": "model_estimate"
@@ -1848,12 +1563,7 @@
       "carbs_g": 26,
       "protein_g": 4,
       "fat_g": 9,
-      "aliases": [
-        "ya kun toast",
-        "亚坤咖椰吐司",
-        "yakun kaya toast",
-        "ya kun kaya butter toast"
-      ],
+      "aliases": ["ya kun toast", "亚坤咖椰吐司", "yakun kaya toast", "ya kun kaya butter toast"],
       "icon": "dishes/kaya-toast",
       "verified": false,
       "source": "model_estimate"
@@ -1866,12 +1576,7 @@
       "carbs_g": 44,
       "protein_g": 17,
       "fat_g": 22,
-      "aliases": [
-        "ya kun set a",
-        "亚坤套餐",
-        "yakun breakfast set",
-        "ya kun toast set"
-      ],
+      "aliases": ["ya kun set a", "亚坤套餐", "yakun breakfast set", "ya kun toast set"],
       "icon": "dishes/kaya-toast",
       "verified": false,
       "source": "model_estimate"
@@ -1884,10 +1589,7 @@
       "carbs_g": 40,
       "protein_g": 11,
       "fat_g": 19,
-      "aliases": [
-        "yakun french toast",
-        "亚坤法式吐司"
-      ],
+      "aliases": ["yakun french toast", "亚坤法式吐司"],
       "icon": "food/toast",
       "verified": false,
       "source": "model_estimate"
@@ -1900,11 +1602,7 @@
       "carbs_g": 42,
       "protein_g": 7,
       "fat_g": 16,
-      "aliases": [
-        "yakun thick toast",
-        "亚坤厚吐司",
-        "ya kun kaya thick toast"
-      ],
+      "aliases": ["yakun thick toast", "亚坤厚吐司", "ya kun kaya thick toast"],
       "icon": "dishes/kaya-toast",
       "verified": false,
       "source": "model_estimate"
@@ -1917,11 +1615,7 @@
       "carbs_g": 28,
       "protein_g": 5,
       "fat_g": 11,
-      "aliases": [
-        "toastbox kaya toast",
-        "土司工坊咖椰吐司",
-        "toast box kaya"
-      ],
+      "aliases": ["toastbox kaya toast", "土司工坊咖椰吐司", "toast box kaya"],
       "icon": "dishes/kaya-toast",
       "verified": false,
       "source": "model_estimate"
@@ -1934,10 +1628,7 @@
       "carbs_g": 44,
       "protein_g": 7,
       "fat_g": 16,
-      "aliases": [
-        "toastbox thick toast",
-        "土司工坊厚吐司"
-      ],
+      "aliases": ["toastbox thick toast", "土司工坊厚吐司"],
       "icon": "dishes/kaya-toast",
       "verified": false,
       "source": "model_estimate"
@@ -1950,10 +1641,7 @@
       "carbs_g": 68,
       "protein_g": 24,
       "fat_g": 28,
-      "aliases": [
-        "toastbox nasi lemak",
-        "土司工坊椰浆饭"
-      ],
+      "aliases": ["toastbox nasi lemak", "土司工坊椰浆饭"],
       "icon": "dishes/nasi-lemak",
       "verified": false,
       "source": "model_estimate"
@@ -1966,11 +1654,7 @@
       "carbs_g": 52,
       "protein_g": 28,
       "fat_g": 26,
-      "aliases": [
-        "toastbox curry chicken",
-        "咖喱鸡面包",
-        "curry chicken bread toast box"
-      ],
+      "aliases": ["toastbox curry chicken", "咖喱鸡面包", "curry chicken bread toast box"],
       "icon": "food/chicken-drumstick",
       "verified": false,
       "source": "model_estimate"
@@ -1983,10 +1667,7 @@
       "carbs_g": 56,
       "protein_g": 20,
       "fat_g": 26,
-      "aliases": [
-        "toastbox laksa",
-        "土司工坊叻沙"
-      ],
+      "aliases": ["toastbox laksa", "土司工坊叻沙"],
       "icon": "dishes/laksa",
       "verified": false,
       "source": "model_estimate"
@@ -1999,11 +1680,7 @@
       "carbs_g": 20,
       "protein_g": 3.5,
       "fat_g": 3.5,
-      "aliases": [
-        "toastbox kopi",
-        "土司工坊咖啡",
-        "toast box coffee"
-      ],
+      "aliases": ["toastbox kopi", "土司工坊咖啡", "toast box coffee"],
       "icon": "dishes/kopi-o",
       "verified": false,
       "source": "model_estimate"
@@ -2035,11 +1712,7 @@
       "carbs_g": 12,
       "protein_g": 10,
       "fat_g": 11,
-      "aliases": [
-        "occ sotong head",
-        "old chang kee squid head",
-        "苏东头"
-      ],
+      "aliases": ["occ sotong head", "old chang kee squid head", "苏东头"],
       "icon": "food/squid-rings",
       "verified": false,
       "source": "model_estimate"
@@ -2052,11 +1725,7 @@
       "carbs_g": 6,
       "protein_g": 14,
       "fat_g": 14,
-      "aliases": [
-        "occ chicken wing",
-        "old chang kee fried wing",
-        "炸鸡翅"
-      ],
+      "aliases": ["occ chicken wing", "old chang kee fried wing", "炸鸡翅"],
       "icon": "food/chicken-wing",
       "verified": false,
       "source": "model_estimate"
@@ -2069,11 +1738,7 @@
       "carbs_g": 14,
       "protein_g": 9,
       "fat_g": 6,
-      "aliases": [
-        "occ fishball",
-        "old chang kee fish ball stick",
-        "鱼丸串"
-      ],
+      "aliases": ["occ fishball", "old chang kee fish ball stick", "鱼丸串"],
       "icon": "food/fish-ball",
       "verified": false,
       "source": "model_estimate"
@@ -2086,11 +1751,7 @@
       "carbs_g": 24,
       "protein_g": 8,
       "fat_g": 12,
-      "aliases": [
-        "occ sardine puff",
-        "old chang kee epok sardin",
-        "沙丁鱼卜"
-      ],
+      "aliases": ["occ sardine puff", "old chang kee epok sardin", "沙丁鱼卜"],
       "icon": "dishes/curry-puff",
       "verified": false,
       "source": "model_estimate"
@@ -2103,12 +1764,7 @@
       "carbs_g": 38,
       "protein_g": 8,
       "fat_g": 12,
-      "aliases": [
-        "breadtalk floss bun",
-        "面包新语肉松包",
-        "flosss",
-        "chicken floss bun breadtalk"
-      ],
+      "aliases": ["breadtalk floss bun", "面包新语肉松包", "flosss", "chicken floss bun breadtalk"],
       "icon": "food/bun",
       "verified": false,
       "source": "model_estimate"
@@ -2139,11 +1795,7 @@
       "carbs_g": 34,
       "protein_g": 11,
       "fat_g": 16,
-      "aliases": [
-        "breadtalk sausage bun",
-        "芝士香肠包",
-        "cheese sausage breadtalk"
-      ],
+      "aliases": ["breadtalk sausage bun", "芝士香肠包", "cheese sausage breadtalk"],
       "icon": "food/sausage",
       "verified": false,
       "source": "model_estimate"
@@ -2156,11 +1808,7 @@
       "carbs_g": 46,
       "protein_g": 17,
       "fat_g": 22,
-      "aliases": [
-        "killiney toast set",
-        "killiney kopitiam set",
-        "keli ni kaya toast"
-      ],
+      "aliases": ["killiney toast set", "killiney kopitiam set", "keli ni kaya toast"],
       "icon": "dishes/kaya-toast",
       "verified": false,
       "source": "model_estimate"
@@ -2173,11 +1821,7 @@
       "carbs_g": 56,
       "protein_g": 24,
       "fat_g": 22,
-      "aliases": [
-        "killiney curry chicken beehoon",
-        "咖喱鸡米粉",
-        "killiney curry mee hoon"
-      ],
+      "aliases": ["killiney curry chicken beehoon", "咖喱鸡米粉", "killiney curry mee hoon"],
       "icon": "food/rice-vermicelli",
       "verified": false,
       "source": "model_estimate"
@@ -2190,10 +1834,7 @@
       "carbs_g": 60,
       "protein_g": 14,
       "fat_g": 14,
-      "aliases": [
-        "killiney meesiam",
-        "killiney mee siam singapore"
-      ],
+      "aliases": ["killiney meesiam", "killiney mee siam singapore"],
       "icon": "dishes/mee-siam",
       "verified": false,
       "source": "model_estimate"
@@ -2206,11 +1847,7 @@
       "carbs_g": 30,
       "protein_g": 15,
       "fat_g": 16,
-      "aliases": [
-        "翡翠小笼包",
-        "crystal jade xlb",
-        "crystal jade soup dumpling"
-      ],
+      "aliases": ["翡翠小笼包", "crystal jade xlb", "crystal jade soup dumpling"],
       "icon": "dishes/dim-sum",
       "verified": false,
       "source": "model_estimate"
@@ -2223,11 +1860,7 @@
       "carbs_g": 74,
       "protein_g": 32,
       "fat_g": 21,
-      "aliases": [
-        "crystal jade lamian",
-        "翡翠拉面排骨",
-        "crystal jade pork rib noodle"
-      ],
+      "aliases": ["crystal jade lamian", "翡翠拉面排骨", "crystal jade pork rib noodle"],
       "icon": "food/noodle-bowl",
       "verified": false,
       "source": "model_estimate"
@@ -2240,11 +1873,7 @@
       "carbs_g": 54,
       "protein_g": 12,
       "fat_g": 13,
-      "aliases": [
-        "crystal jade bbq pork bun",
-        "翡翠叉烧包",
-        "char siew pau crystal jade"
-      ],
+      "aliases": ["crystal jade bbq pork bun", "翡翠叉烧包", "char siew pau crystal jade"],
       "icon": "dishes/pau",
       "verified": false,
       "source": "model_estimate"
@@ -2257,11 +1886,7 @@
       "carbs_g": 92,
       "protein_g": 30,
       "fat_g": 32,
-      "aliases": [
-        "dtf pork chop fried rice",
-        "鼎泰丰排骨蛋炒饭",
-        "din tai fung fried rice"
-      ],
+      "aliases": ["dtf pork chop fried rice", "鼎泰丰排骨蛋炒饭", "din tai fung fried rice"],
       "icon": "dishes/nasi-goreng",
       "verified": false,
       "source": "model_estimate"
@@ -2274,11 +1899,7 @@
       "carbs_g": 14,
       "protein_g": 8,
       "fat_g": 7,
-      "aliases": [
-        "dtf hot sour soup",
-        "鼎泰丰酸辣汤",
-        "din tai fung suan la tang"
-      ],
+      "aliases": ["dtf hot sour soup", "鼎泰丰酸辣汤", "din tai fung suan la tang"],
       "icon": "food/cooking-pot",
       "verified": false,
       "source": "model_estimate"
@@ -2291,11 +1912,7 @@
       "carbs_g": 26,
       "protein_g": 16,
       "fat_g": 17,
-      "aliases": [
-        "dtf wonton",
-        "鼎泰丰虾肉馄饨",
-        "din tai fung shrimp wanton"
-      ],
+      "aliases": ["dtf wonton", "鼎泰丰虾肉馄饨", "din tai fung shrimp wanton"],
       "icon": "food/dumpling",
       "verified": false,
       "source": "model_estimate"
@@ -2326,11 +1943,7 @@
       "carbs_g": 42,
       "protein_g": 14,
       "fat_g": 11,
-      "aliases": [
-        "tim ho wan rice roll",
-        "添好运鲜虾肠粉",
-        "thw cheong fun"
-      ],
+      "aliases": ["tim ho wan rice roll", "添好运鲜虾肠粉", "thw cheong fun"],
       "icon": "dishes/chee-cheong-fun",
       "verified": false,
       "source": "model_estimate"
@@ -2343,11 +1956,7 @@
       "carbs_g": 26,
       "protein_g": 12,
       "fat_g": 7,
-      "aliases": [
-        "tim ho wan prawn dumpling",
-        "添好运虾饺",
-        "thw har gao"
-      ],
+      "aliases": ["tim ho wan prawn dumpling", "添好运虾饺", "thw har gao"],
       "icon": "dishes/dim-sum",
       "verified": false,
       "source": "model_estimate"
@@ -2360,11 +1969,7 @@
       "carbs_g": 40,
       "protein_g": 18,
       "fat_g": 20,
-      "aliases": [
-        "paradise dynasty xlb",
-        "乐天皇朝小笼包",
-        "eight flavour xiao long bao"
-      ],
+      "aliases": ["paradise dynasty xlb", "乐天皇朝小笼包", "eight flavour xiao long bao"],
       "icon": "dishes/dim-sum",
       "verified": false,
       "source": "model_estimate"
@@ -2377,11 +1982,7 @@
       "carbs_g": 76,
       "protein_g": 28,
       "fat_g": 19,
-      "aliases": [
-        "paradise dynasty lamian",
-        "乐天皇朝拉面",
-        "paradise group la mian"
-      ],
+      "aliases": ["paradise dynasty lamian", "乐天皇朝拉面", "paradise group la mian"],
       "icon": "food/noodle-bowl",
       "verified": false,
       "source": "model_estimate"
@@ -2394,11 +1995,7 @@
       "carbs_g": 4,
       "protein_g": 36,
       "fat_g": 20,
-      "aliases": [
-        "松发肉骨茶",
-        "song fa bkt",
-        "songfa bak kut teh"
-      ],
+      "aliases": ["松发肉骨茶", "song fa bkt", "songfa bak kut teh"],
       "icon": "dishes/bak-kut-teh",
       "verified": false,
       "source": "model_estimate"
@@ -2411,11 +2008,7 @@
       "carbs_g": 6,
       "protein_g": 31,
       "fat_g": 35,
-      "aliases": [
-        "song fa pig trotter",
-        "松发猪脚",
-        "songfa braised trotter"
-      ],
+      "aliases": ["song fa pig trotter", "松发猪脚", "songfa braised trotter"],
       "icon": "food/pork-belly",
       "verified": false,
       "source": "model_estimate"
@@ -2428,11 +2021,7 @@
       "carbs_g": 26,
       "protein_g": 4,
       "fat_g": 12,
-      "aliases": [
-        "song fa dough fritter",
-        "松发油条",
-        "you char kuay song fa"
-      ],
+      "aliases": ["song fa dough fritter", "松发油条", "you char kuay song fa"],
       "icon": "food/bread-loaf",
       "verified": false,
       "source": "model_estimate"
@@ -2445,11 +2034,7 @@
       "carbs_g": 58,
       "protein_g": 70,
       "fat_g": 54,
-      "aliases": [
-        "jumbo seafood chilli crab",
-        "珍宝辣椒螃蟹",
-        "jumbo chili crab singapore"
-      ],
+      "aliases": ["jumbo seafood chilli crab", "珍宝辣椒螃蟹", "jumbo chili crab singapore"],
       "icon": "food/crab",
       "verified": false,
       "source": "model_estimate"
@@ -2462,10 +2047,7 @@
       "carbs_g": 30,
       "protein_g": 72,
       "fat_g": 56,
-      "aliases": [
-        "jumbo seafood black pepper crab",
-        "珍宝黑胡椒螃蟹"
-      ],
+      "aliases": ["jumbo seafood black pepper crab", "珍宝黑胡椒螃蟹"],
       "icon": "food/crab",
       "verified": false,
       "source": "model_estimate"
@@ -2478,11 +2060,7 @@
       "carbs_g": 64,
       "protein_g": 10,
       "fat_g": 25,
-      "aliases": [
-        "jumbo seafood mantou",
-        "珍宝炸馒头",
-        "jumbo deep fried bun"
-      ],
+      "aliases": ["jumbo seafood mantou", "珍宝炸馒头", "jumbo deep fried bun"],
       "icon": "food/bun",
       "verified": false,
       "source": "model_estimate"
@@ -2495,11 +2073,7 @@
       "carbs_g": 68,
       "protein_g": 26,
       "fat_g": 36,
-      "aliases": [
-        "ljs fish and chips",
-        "long john silvers singapore",
-        "long john fish chips"
-      ],
+      "aliases": ["ljs fish and chips", "long john silvers singapore", "long john fish chips"],
       "icon": "food/fish-fillet",
       "verified": false,
       "source": "model_estimate"
@@ -2512,11 +2086,7 @@
       "carbs_g": 72,
       "protein_g": 36,
       "fat_g": 44,
-      "aliases": [
-        "ljs platter",
-        "long john chicken fish",
-        "long john silvers combo"
-      ],
+      "aliases": ["ljs platter", "long john chicken fish", "long john silvers combo"],
       "icon": "food/tray",
       "verified": false,
       "source": "model_estimate"
@@ -2529,12 +2099,7 @@
       "carbs_g": 20,
       "protein_g": 6,
       "fat_g": 3,
-      "aliases": [
-        "mr bean soy milk",
-        "mr bean豆奶",
-        "mrbean soya",
-        "soya milk singapore"
-      ],
+      "aliases": ["mr bean soy milk", "mr bean豆奶", "mrbean soya", "soya milk singapore"],
       "icon": "food/milk-carton",
       "verified": false,
       "source": "model_estimate"
@@ -2547,11 +2112,7 @@
       "carbs_g": 24,
       "protein_g": 4,
       "fat_g": 6,
-      "aliases": [
-        "mr bean chocolate pancake",
-        "mrbean pancake",
-        "mr bean 煎饼"
-      ],
+      "aliases": ["mr bean chocolate pancake", "mrbean pancake", "mr bean 煎饼"],
       "icon": "food/pancakes",
       "verified": false,
       "source": "model_estimate"
@@ -2564,11 +2125,7 @@
       "carbs_g": 24,
       "protein_g": 6,
       "fat_g": 3,
-      "aliases": [
-        "mr bean tau huay",
-        "mrbean beancurd",
-        "mr bean豆花"
-      ],
+      "aliases": ["mr bean tau huay", "mrbean beancurd", "mr bean豆花"],
       "icon": "food/tofu",
       "verified": false,
       "source": "model_estimate"
@@ -2581,11 +2138,7 @@
       "carbs_g": 82,
       "protein_g": 8,
       "fat_g": 10,
-      "aliases": [
-        "liho brown sugar",
-        "里贺黑糖珍珠",
-        "liho tea brown sugar pearl"
-      ],
+      "aliases": ["liho brown sugar", "里贺黑糖珍珠", "liho tea brown sugar pearl"],
       "icon": "food/straw-cup",
       "verified": false,
       "source": "model_estimate"
@@ -2598,11 +2151,7 @@
       "carbs_g": 40,
       "protein_g": 5,
       "fat_g": 9,
-      "aliases": [
-        "liho cheese tea",
-        "里贺芝士茶",
-        "liho green tea cheese"
-      ],
+      "aliases": ["liho cheese tea", "里贺芝士茶", "liho green tea cheese"],
       "icon": "food/straw-cup",
       "verified": false,
       "source": "model_estimate"
@@ -2615,11 +2164,7 @@
       "carbs_g": 46,
       "protein_g": 6,
       "fat_g": 10,
-      "aliases": [
-        "koi macchiato",
-        "五十岚玛奇朵",
-        "koi the macchiato milk tea"
-      ],
+      "aliases": ["koi macchiato", "五十岚玛奇朵", "koi the macchiato milk tea"],
       "icon": "food/straw-cup",
       "verified": false,
       "source": "model_estimate"
@@ -2632,11 +2177,7 @@
       "carbs_g": 66,
       "protein_g": 6,
       "fat_g": 10,
-      "aliases": [
-        "koi golden bubble",
-        "koi the golden bubble",
-        "koi 黄金珍珠奶茶"
-      ],
+      "aliases": ["koi golden bubble", "koi the golden bubble", "koi 黄金珍珠奶茶"],
       "icon": "food/straw-cup",
       "verified": false,
       "source": "model_estimate"
@@ -2649,11 +2190,7 @@
       "carbs_g": 78,
       "protein_g": 8,
       "fat_g": 10,
-      "aliases": [
-        "gong cha brown sugar",
-        "贡茶黑糖珍珠奶茶",
-        "gongcha brown sugar milk tea"
-      ],
+      "aliases": ["gong cha brown sugar", "贡茶黑糖珍珠奶茶", "gongcha brown sugar milk tea"],
       "icon": "food/straw-cup",
       "verified": false,
       "source": "model_estimate"
@@ -2666,11 +2203,7 @@
       "carbs_g": 30,
       "protein_g": 12,
       "fat_g": 10,
-      "aliases": [
-        "ah chew desserts steamed milk",
-        "阿秋炖蛋白奶",
-        "steamed egg white milk"
-      ],
+      "aliases": ["ah chew desserts steamed milk", "阿秋炖蛋白奶", "steamed egg white milk"],
       "icon": "food/pudding",
       "verified": false,
       "source": "model_estimate"
@@ -2683,10 +2216,7 @@
       "carbs_g": 54,
       "protein_g": 4,
       "fat_g": 11,
-      "aliases": [
-        "ah chew desserts mango sago",
-        "阿秋杨枝甘露"
-      ],
+      "aliases": ["ah chew desserts mango sago", "阿秋杨枝甘露"],
       "icon": "food/sago",
       "verified": false,
       "source": "model_estimate"
@@ -2699,10 +2229,7 @@
       "carbs_g": 56,
       "protein_g": 5,
       "fat_g": 17,
-      "aliases": [
-        "ah chew durian dessert",
-        "阿秋榴莲西米露"
-      ],
+      "aliases": ["ah chew durian dessert", "阿秋榴莲西米露"],
       "icon": "food/sago",
       "verified": false,
       "source": "model_estimate"
@@ -2715,11 +2242,7 @@
       "carbs_g": 38,
       "protein_g": 6,
       "fat_g": 12,
-      "aliases": [
-        "swee choon mee sua kueh",
-        "瑞春面线粿",
-        "mee suah kueh singapore"
-      ],
+      "aliases": ["swee choon mee sua kueh", "瑞春面线粿", "mee suah kueh singapore"],
       "icon": "food/kuih",
       "verified": false,
       "source": "model_estimate"
@@ -2732,11 +2255,7 @@
       "carbs_g": 48,
       "protein_g": 9,
       "fat_g": 21,
-      "aliases": [
-        "swee choon liu sha bao",
-        "瑞春流沙包",
-        "salted egg lava bun singapore"
-      ],
+      "aliases": ["swee choon liu sha bao", "瑞春流沙包", "salted egg lava bun singapore"],
       "icon": "dishes/pau",
       "verified": false,
       "source": "model_estimate"
@@ -2749,10 +2268,7 @@
       "carbs_g": 70,
       "protein_g": 24,
       "fat_g": 29,
-      "aliases": [
-        "encik tan nasi lemak",
-        "set nasi lemak encik tan"
-      ],
+      "aliases": ["encik tan nasi lemak", "set nasi lemak encik tan"],
       "icon": "dishes/nasi-lemak",
       "verified": false,
       "source": "model_estimate"
@@ -2765,10 +2281,7 @@
       "carbs_g": 62,
       "protein_g": 14,
       "fat_g": 14,
-      "aliases": [
-        "encik tan meesiam",
-        "mee siam encik tan"
-      ],
+      "aliases": ["encik tan meesiam", "mee siam encik tan"],
       "icon": "dishes/mee-siam",
       "verified": false,
       "source": "model_estimate"
@@ -2781,11 +2294,7 @@
       "carbs_g": 48,
       "protein_g": 17,
       "fat_g": 22,
-      "aliases": [
-        "fun toast set",
-        "fun toast kaya toast",
-        "fun toast breakfast set"
-      ],
+      "aliases": ["fun toast set", "fun toast kaya toast", "fun toast breakfast set"],
       "icon": "dishes/kaya-toast",
       "verified": false,
       "source": "model_estimate"
@@ -2798,11 +2307,7 @@
       "carbs_g": 46,
       "protein_g": 17,
       "fat_g": 22,
-      "aliases": [
-        "heavenly wang set",
-        "wang cafe kaya toast",
-        "王咖啡咖椰吐司"
-      ],
+      "aliases": ["heavenly wang set", "wang cafe kaya toast", "王咖啡咖椰吐司"],
       "icon": "dishes/kaya-toast",
       "verified": false,
       "source": "model_estimate"

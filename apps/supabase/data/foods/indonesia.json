@@ -97,12 +97,7 @@
       "carbs_g": 48,
       "protein_g": 28,
       "fat_g": 18,
-      "aliases": [
-        "soto madura",
-        "madurese soto",
-        "soto daging madura",
-        "beef soto madura"
-      ],
+      "aliases": ["soto madura", "madurese soto", "soto daging madura", "beef soto madura"],
       "source": "model_estimate",
       "verified": false
     },
@@ -114,12 +109,7 @@
       "carbs_g": 46,
       "protein_g": 25,
       "fat_g": 15,
-      "aliases": [
-        "soto kudus",
-        "soto ayam kudus",
-        "kudus chicken soto",
-        "soto kerbau kudus"
-      ],
+      "aliases": ["soto kudus", "soto ayam kudus", "kudus chicken soto", "soto kerbau kudus"],
       "source": "model_estimate",
       "verified": false
     },
@@ -131,12 +121,7 @@
       "carbs_g": 55,
       "protein_g": 22,
       "fat_g": 19,
-      "aliases": [
-        "soto mie",
-        "soto mie bogor",
-        "noodle soto with risol",
-        "beef noodle soto"
-      ],
+      "aliases": ["soto mie", "soto mie bogor", "noodle soto with risol", "beef noodle soto"],
       "icon": "food/noodle-bowl",
       "source": "model_estimate",
       "verified": false
@@ -149,11 +134,7 @@
       "carbs_g": 50,
       "protein_g": 27,
       "fat_g": 18,
-      "aliases": [
-        "soto banjar",
-        "banjarmasin chicken soto",
-        "soto banjar ketupat"
-      ],
+      "aliases": ["soto banjar", "banjarmasin chicken soto", "soto banjar ketupat"],
       "source": "model_estimate",
       "verified": false
     },
@@ -165,12 +146,7 @@
       "carbs_g": 45,
       "protein_g": 26,
       "fat_g": 16,
-      "aliases": [
-        "soto padang",
-        "minang beef soto",
-        "soto daging padang",
-        "crispy beef soto"
-      ],
+      "aliases": ["soto padang", "minang beef soto", "soto daging padang", "crispy beef soto"],
       "source": "model_estimate",
       "verified": false
     },
@@ -182,12 +158,7 @@
       "carbs_g": 38,
       "protein_g": 32,
       "fat_g": 27,
-      "aliases": [
-        "coto makassar",
-        "coto mangkasara",
-        "makassar beef offal soup",
-        "coto daging"
-      ],
+      "aliases": ["coto makassar", "coto mangkasara", "makassar beef offal soup", "coto daging"],
       "source": "model_estimate",
       "verified": false
     },
@@ -199,12 +170,7 @@
       "carbs_g": 18,
       "protein_g": 34,
       "fat_g": 31,
-      "aliases": [
-        "sop konro",
-        "konro soup",
-        "makassar beef rib soup",
-        "sup konro"
-      ],
+      "aliases": ["sop konro", "konro soup", "makassar beef rib soup", "sup konro"],
       "icon": "dishes/sup-tulang",
       "source": "model_estimate",
       "verified": false
@@ -234,12 +200,7 @@
       "carbs_g": 20,
       "protein_g": 32,
       "fat_g": 33,
-      "aliases": [
-        "pallubasa",
-        "palubasa",
-        "makassar beef soup with coconut",
-        "pallubasa serigala"
-      ],
+      "aliases": ["pallubasa", "palubasa", "makassar beef soup with coconut", "pallubasa serigala"],
       "source": "model_estimate",
       "verified": false
     },
@@ -251,12 +212,7 @@
       "carbs_g": 46,
       "protein_g": 20,
       "fat_g": 24,
-      "aliases": [
-        "rujak cingur",
-        "surabaya rujak",
-        "ox muzzle salad",
-        "rujak cingur surabaya"
-      ],
+      "aliases": ["rujak cingur", "surabaya rujak", "ox muzzle salad", "rujak cingur surabaya"],
       "icon": "dishes/rojak",
       "source": "model_estimate",
       "verified": false
@@ -269,12 +225,7 @@
       "carbs_g": 68,
       "protein_g": 16,
       "fat_g": 20,
-      "aliases": [
-        "nasi pecel madiun",
-        "pecel madiun",
-        "javanese peanut salad rice",
-        "nasi pecel"
-      ],
+      "aliases": ["nasi pecel madiun", "pecel madiun", "javanese peanut salad rice", "nasi pecel"],
       "source": "model_estimate",
       "verified": false
     },
@@ -286,12 +237,7 @@
       "carbs_g": 22,
       "protein_g": 10,
       "fat_g": 15,
-      "aliases": [
-        "pecel sayur",
-        "pecel",
-        "blanched vegetables peanut sauce",
-        "sayur pecel"
-      ],
+      "aliases": ["pecel sayur", "pecel", "blanched vegetables peanut sauce", "sayur pecel"],
       "icon": "food/vegetables",
       "source": "model_estimate",
       "verified": false
@@ -304,12 +250,7 @@
       "carbs_g": 42,
       "protein_g": 15,
       "fat_g": 22,
-      "aliases": [
-        "lotek",
-        "lotek bandung",
-        "sundanese vegetable peanut salad",
-        "lotek atah"
-      ],
+      "aliases": ["lotek", "lotek bandung", "sundanese vegetable peanut salad", "lotek atah"],
       "source": "model_estimate",
       "verified": false
     },
@@ -338,12 +279,7 @@
       "carbs_g": 72,
       "protein_g": 24,
       "fat_g": 24,
-      "aliases": [
-        "nasi liwet",
-        "nasi liwet solo",
-        "sego liwet",
-        "coconut rice solo with chicken"
-      ],
+      "aliases": ["nasi liwet", "nasi liwet solo", "sego liwet", "coconut rice solo with chicken"],
       "source": "model_estimate",
       "verified": false
     },
@@ -355,11 +291,7 @@
       "carbs_g": 14,
       "protein_g": 9,
       "fat_g": 10,
-      "aliases": [
-        "tahu gejrot",
-        "cirebon fried tofu in palm sugar vinegar",
-        "tahu gejrot cirebon"
-      ],
+      "aliases": ["tahu gejrot", "cirebon fried tofu in palm sugar vinegar", "tahu gejrot cirebon"],
       "icon": "food/tofu",
       "source": "model_estimate",
       "verified": false
@@ -372,11 +304,7 @@
       "carbs_g": 50,
       "protein_g": 22,
       "fat_g": 23,
-      "aliases": [
-        "tahu campur",
-        "tahu campur lamongan",
-        "beef tendon tofu soup east java"
-      ],
+      "aliases": ["tahu campur", "tahu campur lamongan", "beef tendon tofu soup east java"],
       "source": "model_estimate",
       "verified": false
     },
@@ -388,11 +316,7 @@
       "carbs_g": 55,
       "protein_g": 16,
       "fat_g": 14,
-      "aliases": [
-        "lontong balap",
-        "lontong balap surabaya",
-        "rice cake with lentho and sprouts"
-      ],
+      "aliases": ["lontong balap", "lontong balap surabaya", "rice cake with lentho and sprouts"],
       "icon": "dishes/lontong",
       "source": "model_estimate",
       "verified": false
@@ -405,11 +329,7 @@
       "carbs_g": 48,
       "protein_g": 22,
       "fat_g": 26,
-      "aliases": [
-        "rujak soto",
-        "rujak soto banyuwangi",
-        "soto over rujak petis"
-      ],
+      "aliases": ["rujak soto", "rujak soto banyuwangi", "soto over rujak petis"],
       "source": "model_estimate",
       "verified": false
     },
@@ -457,11 +377,7 @@
       "carbs_g": 8,
       "protein_g": 30,
       "fat_g": 37,
-      "aliases": [
-        "sate buntel",
-        "sate buntel solo",
-        "minced goat satay wrapped in caul fat"
-      ],
+      "aliases": ["sate buntel", "sate buntel solo", "minced goat satay wrapped in caul fat"],
       "icon": "food/satay",
       "source": "model_estimate",
       "verified": false
@@ -528,11 +444,7 @@
       "carbs_g": 52,
       "protein_g": 22,
       "fat_g": 19,
-      "aliases": [
-        "bakso malang",
-        "bakso mie malang",
-        "malang meatball soup with dumplings"
-      ],
+      "aliases": ["bakso malang", "bakso mie malang", "malang meatball soup with dumplings"],
       "icon": "food/meatball",
       "source": "model_estimate",
       "verified": false
@@ -545,11 +457,7 @@
       "carbs_g": 55,
       "protein_g": 30,
       "fat_g": 30,
-      "aliases": [
-        "bakso beranak",
-        "bakso mercon beranak",
-        "giant stuffed meatball soup"
-      ],
+      "aliases": ["bakso beranak", "bakso mercon beranak", "giant stuffed meatball soup"],
       "icon": "food/meatball",
       "source": "model_estimate",
       "verified": false
@@ -562,12 +470,7 @@
       "carbs_g": 58,
       "protein_g": 24,
       "fat_g": 21,
-      "aliases": [
-        "mie kocok",
-        "mie kocok bandung",
-        "beef tendon noodle soup bandung",
-        "mi kocok"
-      ],
+      "aliases": ["mie kocok", "mie kocok bandung", "beef tendon noodle soup bandung", "mi kocok"],
       "icon": "food/noodle-bowl",
       "source": "model_estimate",
       "verified": false
@@ -580,12 +483,7 @@
       "carbs_g": 18,
       "protein_g": 28,
       "fat_g": 31,
-      "aliases": [
-        "tongseng",
-        "tongseng kambing",
-        "goat tongseng with cabbage",
-        "tongseng sapi"
-      ],
+      "aliases": ["tongseng", "tongseng kambing", "goat tongseng with cabbage", "tongseng sapi"],
       "source": "model_estimate",
       "verified": false
     },
@@ -615,12 +513,7 @@
       "carbs_g": 8,
       "protein_g": 24,
       "fat_g": 22,
-      "aliases": [
-        "opor ayam",
-        "chicken in white coconut curry",
-        "opor",
-        "opor ayam lebaran"
-      ],
+      "aliases": ["opor ayam", "chicken in white coconut curry", "opor", "opor ayam lebaran"],
       "icon": "dishes/gulai",
       "source": "model_estimate",
       "verified": false
@@ -633,12 +526,7 @@
       "carbs_g": 12,
       "protein_g": 26,
       "fat_g": 20,
-      "aliases": [
-        "semur daging",
-        "semur daging betawi",
-        "beef in sweet soy stew",
-        "semur sapi"
-      ],
+      "aliases": ["semur daging", "semur daging betawi", "beef in sweet soy stew", "semur sapi"],
       "source": "model_estimate",
       "verified": false
     },
@@ -650,12 +538,7 @@
       "carbs_g": 16,
       "protein_g": 4,
       "fat_g": 3,
-      "aliases": [
-        "sayur asem",
-        "sayur asam",
-        "tamarind vegetable soup",
-        "sayur asem jakarta"
-      ],
+      "aliases": ["sayur asem", "sayur asam", "tamarind vegetable soup", "sayur asem jakarta"],
       "icon": "food/vegetables",
       "source": "model_estimate",
       "verified": false
@@ -720,11 +603,7 @@
       "carbs_g": 10,
       "protein_g": 25,
       "fat_g": 18,
-      "aliases": [
-        "ayam goreng kalasan",
-        "ayam kalasan",
-        "sweet braised fried chicken yogyakarta"
-      ],
+      "aliases": ["ayam goreng kalasan", "ayam kalasan", "sweet braised fried chicken yogyakarta"],
       "icon": "dishes/ayam-goreng",
       "source": "model_estimate",
       "verified": false
@@ -737,11 +616,7 @@
       "carbs_g": 18,
       "protein_g": 28,
       "fat_g": 26,
-      "aliases": [
-        "ayam kremes",
-        "ayam goreng kremes",
-        "fried chicken with crispy batter flakes"
-      ],
+      "aliases": ["ayam kremes", "ayam goreng kremes", "fried chicken with crispy batter flakes"],
       "icon": "dishes/ayam-goreng",
       "source": "model_estimate",
       "verified": false
@@ -754,11 +629,7 @@
       "carbs_g": 52,
       "protein_g": 24,
       "fat_g": 24,
-      "aliases": [
-        "empal gentong",
-        "empal gentong cirebon",
-        "cirebon beef coconut soup"
-      ],
+      "aliases": ["empal gentong", "empal gentong cirebon", "cirebon beef coconut soup"],
       "source": "model_estimate",
       "verified": false
     },
@@ -770,11 +641,7 @@
       "carbs_g": 78,
       "protein_g": 24,
       "fat_g": 23,
-      "aliases": [
-        "nasi jamblang",
-        "sega jamblang",
-        "cirebon rice on teak leaf"
-      ],
+      "aliases": ["nasi jamblang", "sega jamblang", "cirebon rice on teak leaf"],
       "icon": "dishes/nasi-campur",
       "source": "model_estimate",
       "verified": false
@@ -787,11 +654,7 @@
       "carbs_g": 74,
       "protein_g": 17,
       "fat_g": 17,
-      "aliases": [
-        "nasi lengko",
-        "sega lengko",
-        "cirebon rice with tempe and peanut sauce"
-      ],
+      "aliases": ["nasi lengko", "sega lengko", "cirebon rice with tempe and peanut sauce"],
       "source": "model_estimate",
       "verified": false
     },
@@ -803,11 +666,7 @@
       "carbs_g": 85,
       "protein_g": 30,
       "fat_g": 28,
-      "aliases": [
-        "nasi timbel",
-        "nasi timbel komplit",
-        "sundanese banana leaf rice set"
-      ],
+      "aliases": ["nasi timbel", "nasi timbel komplit", "sundanese banana leaf rice set"],
       "icon": "dishes/nasi-campur",
       "source": "model_estimate",
       "verified": false
@@ -820,12 +679,7 @@
       "carbs_g": 78,
       "protein_g": 26,
       "fat_g": 24,
-      "aliases": [
-        "nasi rames",
-        "sego rames",
-        "javanese mixed rice plate",
-        "nasi ramesan"
-      ],
+      "aliases": ["nasi rames", "sego rames", "javanese mixed rice plate", "nasi ramesan"],
       "icon": "dishes/nasi-campur",
       "source": "model_estimate",
       "verified": false
@@ -855,12 +709,7 @@
       "carbs_g": 6,
       "protein_g": 28,
       "fat_g": 19,
-      "aliases": [
-        "empal daging",
-        "empal gepuk",
-        "javanese sweet fried beef",
-        "empal goreng"
-      ],
+      "aliases": ["empal daging", "empal gepuk", "javanese sweet fried beef", "empal goreng"],
       "source": "model_estimate",
       "verified": false
     },
@@ -872,12 +721,7 @@
       "carbs_g": 14,
       "protein_g": 32,
       "fat_g": 26,
-      "aliases": [
-        "sop buntut",
-        "sup buntut",
-        "oxtail soup indonesia",
-        "sop buntut bakar"
-      ],
+      "aliases": ["sop buntut", "sup buntut", "oxtail soup indonesia", "sop buntut bakar"],
       "icon": "dishes/sup-tulang",
       "source": "model_estimate",
       "verified": false
@@ -907,11 +751,7 @@
       "carbs_g": 3,
       "protein_g": 1,
       "fat_g": 4,
-      "aliases": [
-        "dabu-dabu",
-        "sambal dabu dabu",
-        "manado raw tomato chilli relish"
-      ],
+      "aliases": ["dabu-dabu", "sambal dabu dabu", "manado raw tomato chilli relish"],
       "icon": "food/sambal-jar",
       "source": "model_estimate",
       "verified": false
@@ -924,12 +764,7 @@
       "carbs_g": 8,
       "protein_g": 26,
       "fat_g": 26,
-      "aliases": [
-        "rendang padang",
-        "randang",
-        "minang dry beef rendang",
-        "rendang minangkabau"
-      ],
+      "aliases": ["rendang padang", "randang", "minang dry beef rendang", "rendang minangkabau"],
       "icon": "dishes/rendang",
       "source": "model_estimate",
       "verified": false
@@ -942,12 +777,7 @@
       "carbs_g": 6,
       "protein_g": 22,
       "fat_g": 24,
-      "aliases": [
-        "gulai tunjang",
-        "gulai kikil",
-        "beef tendon curry padang",
-        "tunjang padang"
-      ],
+      "aliases": ["gulai tunjang", "gulai kikil", "beef tendon curry padang", "tunjang padang"],
       "icon": "dishes/gulai",
       "source": "model_estimate",
       "verified": false
@@ -960,12 +790,7 @@
       "carbs_g": 6,
       "protein_g": 16,
       "fat_g": 25,
-      "aliases": [
-        "gulai otak",
-        "gulai otak sapi",
-        "beef brain curry padang",
-        "otak padang"
-      ],
+      "aliases": ["gulai otak", "gulai otak sapi", "beef brain curry padang", "otak padang"],
       "icon": "dishes/gulai",
       "source": "model_estimate",
       "verified": false
@@ -978,11 +803,7 @@
       "carbs_g": 8,
       "protein_g": 24,
       "fat_g": 24,
-      "aliases": [
-        "gulai cincang",
-        "gulai cincang padang",
-        "minang beef and offal curry"
-      ],
+      "aliases": ["gulai cincang", "gulai cincang padang", "minang beef and offal curry"],
       "icon": "dishes/gulai",
       "source": "model_estimate",
       "verified": false
@@ -995,11 +816,7 @@
       "carbs_g": 10,
       "protein_g": 5,
       "fat_g": 7,
-      "aliases": [
-        "daun singkong",
-        "daun ubi padang",
-        "boiled cassava leaves with curry gravy"
-      ],
+      "aliases": ["daun singkong", "daun ubi padang", "boiled cassava leaves with curry gravy"],
       "icon": "food/vegetables",
       "source": "model_estimate",
       "verified": false
@@ -1012,11 +829,7 @@
       "carbs_g": 5,
       "protein_g": 8,
       "fat_g": 14,
-      "aliases": [
-        "telur balado",
-        "egg in red chilli sambal",
-        "telor balado padang"
-      ],
+      "aliases": ["telur balado", "egg in red chilli sambal", "telor balado padang"],
       "icon": "food/boiled-egg",
       "source": "model_estimate",
       "verified": false
@@ -1064,11 +877,7 @@
       "carbs_g": 6,
       "protein_g": 28,
       "fat_g": 18,
-      "aliases": [
-        "dendeng batokok",
-        "pounded dried beef padang",
-        "dendeng batokok lado mudo"
-      ],
+      "aliases": ["dendeng batokok", "pounded dried beef padang", "dendeng batokok lado mudo"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1080,11 +889,7 @@
       "carbs_g": 60,
       "protein_g": 14,
       "fat_g": 20,
-      "aliases": [
-        "lontong sayur padang",
-        "lontong gulai nangka",
-        "minang rice cake breakfast"
-      ],
+      "aliases": ["lontong sayur padang", "lontong gulai nangka", "minang rice cake breakfast"],
       "icon": "dishes/lontong",
       "source": "model_estimate",
       "verified": false
@@ -1097,11 +902,7 @@
       "carbs_g": 58,
       "protein_g": 6,
       "fat_g": 14,
-      "aliases": [
-        "bubur kampiun",
-        "minang mixed sweet porridge",
-        "bubur kampiun padang"
-      ],
+      "aliases": ["bubur kampiun", "minang mixed sweet porridge", "bubur kampiun padang"],
       "icon": "food/porridge",
       "source": "model_estimate",
       "verified": false
@@ -1114,12 +915,7 @@
       "carbs_g": 72,
       "protein_g": 26,
       "fat_g": 25,
-      "aliases": [
-        "mie aceh",
-        "mie aceh goreng",
-        "acehnese fried noodles",
-        "mi aceh goreng"
-      ],
+      "aliases": ["mie aceh", "mie aceh goreng", "acehnese fried noodles", "mi aceh goreng"],
       "icon": "dishes/mee-goreng",
       "source": "model_estimate",
       "verified": false
@@ -1132,12 +928,7 @@
       "carbs_g": 68,
       "protein_g": 25,
       "fat_g": 21,
-      "aliases": [
-        "mie aceh kuah",
-        "acehnese noodle soup",
-        "mi aceh kuah",
-        "mie aceh rebus"
-      ],
+      "aliases": ["mie aceh kuah", "acehnese noodle soup", "mi aceh kuah", "mie aceh rebus"],
       "icon": "food/noodle-bowl",
       "source": "model_estimate",
       "verified": false
@@ -1168,12 +959,7 @@
       "carbs_g": 30,
       "protein_g": 3,
       "fat_g": 8,
-      "aliases": [
-        "bika ambon",
-        "medan honeycomb cake",
-        "bika ambon medan",
-        "kue bika ambon"
-      ],
+      "aliases": ["bika ambon", "medan honeycomb cake", "bika ambon medan", "kue bika ambon"],
       "icon": "food/cake-slice",
       "source": "model_estimate",
       "verified": false
@@ -1186,11 +972,7 @@
       "carbs_g": 38,
       "protein_g": 14,
       "fat_g": 12,
-      "aliases": [
-        "pempek kapal selam",
-        "submarine fishcake with egg",
-        "empek-empek kapal selam"
-      ],
+      "aliases": ["pempek kapal selam", "submarine fishcake with egg", "empek-empek kapal selam"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1202,11 +984,7 @@
       "carbs_g": 30,
       "protein_g": 9,
       "fat_g": 5,
-      "aliases": [
-        "pempek lenjer",
-        "lenjer fishcake palembang",
-        "empek-empek lenjer"
-      ],
+      "aliases": ["pempek lenjer", "lenjer fishcake palembang", "empek-empek lenjer"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1218,11 +996,7 @@
       "carbs_g": 26,
       "protein_g": 10,
       "fat_g": 12,
-      "aliases": [
-        "pempek adaan",
-        "pempek bulat",
-        "fried round fishcake palembang"
-      ],
+      "aliases": ["pempek adaan", "pempek bulat", "fried round fishcake palembang"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1234,12 +1008,7 @@
       "carbs_g": 28,
       "protein_g": 12,
       "fat_g": 6,
-      "aliases": [
-        "tekwan",
-        "tekwan palembang",
-        "fish dumpling clear soup",
-        "sup tekwan"
-      ],
+      "aliases": ["tekwan", "tekwan palembang", "fish dumpling clear soup", "sup tekwan"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1268,12 +1037,7 @@
       "carbs_g": 55,
       "protein_g": 22,
       "fat_g": 23,
-      "aliases": [
-        "mie celor",
-        "mie celor palembang",
-        "prawn coconut noodle soup",
-        "mi celor"
-      ],
+      "aliases": ["mie celor", "mie celor palembang", "prawn coconut noodle soup", "mi celor"],
       "icon": "food/noodle-bowl",
       "source": "model_estimate",
       "verified": false
@@ -1286,11 +1050,7 @@
       "carbs_g": 8,
       "protein_g": 24,
       "fat_g": 18,
-      "aliases": [
-        "gulai patin palembang",
-        "gulai ikan patin",
-        "catfish curry palembang"
-      ],
+      "aliases": ["gulai patin palembang", "gulai ikan patin", "catfish curry palembang"],
       "icon": "dishes/gulai",
       "source": "model_estimate",
       "verified": false
@@ -1303,11 +1063,7 @@
       "carbs_g": 10,
       "protein_g": 26,
       "fat_g": 11,
-      "aliases": [
-        "pindang patin",
-        "pindang ikan palembang",
-        "sour spicy catfish soup"
-      ],
+      "aliases": ["pindang patin", "pindang ikan palembang", "sour spicy catfish soup"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1319,12 +1075,7 @@
       "carbs_g": 60,
       "protein_g": 32,
       "fat_g": 38,
-      "aliases": [
-        "babi guling",
-        "balinese suckling pig",
-        "be guling",
-        "babi guling bali"
-      ],
+      "aliases": ["babi guling", "balinese suckling pig", "be guling", "babi guling bali"],
       "icon": "food/pork-belly",
       "source": "model_estimate",
       "verified": false
@@ -1354,11 +1105,7 @@
       "carbs_g": 8,
       "protein_g": 30,
       "fat_g": 34,
-      "aliases": [
-        "bebek betutu",
-        "balinese spiced duck",
-        "betutu duck"
-      ],
+      "aliases": ["bebek betutu", "balinese spiced duck", "betutu duck"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1370,12 +1117,7 @@
       "carbs_g": 10,
       "protein_g": 12,
       "fat_g": 15,
-      "aliases": [
-        "lawar",
-        "lawar bali",
-        "balinese minced meat coconut salad",
-        "lawar merah"
-      ],
+      "aliases": ["lawar", "lawar bali", "balinese minced meat coconut salad", "lawar merah"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1405,11 +1147,7 @@
       "carbs_g": 14,
       "protein_g": 8,
       "fat_g": 10,
-      "aliases": [
-        "jukut ares",
-        "balinese banana stem soup",
-        "ares bali"
-      ],
+      "aliases": ["jukut ares", "balinese banana stem soup", "ares bali"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1421,13 +1159,7 @@
       "carbs_g": 4,
       "protein_g": 30,
       "fat_g": 16,
-      "aliases": [
-        "sei sapi",
-        "se'i sapi",
-        "kupang smoked beef",
-        "smoked beef ntt",
-        "sei daging"
-      ],
+      "aliases": ["sei sapi", "se'i sapi", "kupang smoked beef", "smoked beef ntt", "sei daging"],
       "icon": "food/beef-slices",
       "source": "model_estimate",
       "verified": false
@@ -1440,11 +1172,7 @@
       "carbs_g": 12,
       "protein_g": 5,
       "fat_g": 7,
-      "aliases": [
-        "plecing kangkung",
-        "lombok water spinach with sambal",
-        "plecing"
-      ],
+      "aliases": ["plecing kangkung", "lombok water spinach with sambal", "plecing"],
       "icon": "food/vegetables",
       "source": "model_estimate",
       "verified": false
@@ -1457,11 +1185,7 @@
       "carbs_g": 14,
       "protein_g": 30,
       "fat_g": 23,
-      "aliases": [
-        "sate rembiga",
-        "lombok sweet spicy beef satay",
-        "sate rembiga mataram"
-      ],
+      "aliases": ["sate rembiga", "lombok sweet spicy beef satay", "sate rembiga mataram"],
       "icon": "food/satay",
       "source": "model_estimate",
       "verified": false
@@ -1474,11 +1198,7 @@
       "carbs_g": 68,
       "protein_g": 24,
       "fat_g": 21,
-      "aliases": [
-        "nasi balap puyung",
-        "lombok shredded chicken rice",
-        "nasi puyung"
-      ],
+      "aliases": ["nasi balap puyung", "lombok shredded chicken rice", "nasi puyung"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1490,11 +1210,7 @@
       "carbs_g": 30,
       "protein_g": 26,
       "fat_g": 21,
-      "aliases": [
-        "sate bulayak",
-        "lombok satay with rice cake",
-        "bulayak"
-      ],
+      "aliases": ["sate bulayak", "lombok satay with rice cake", "bulayak"],
       "icon": "food/satay",
       "source": "model_estimate",
       "verified": false
@@ -1507,12 +1223,7 @@
       "carbs_g": 42,
       "protein_g": 8,
       "fat_g": 6,
-      "aliases": [
-        "tinutuan",
-        "bubur manado",
-        "manado vegetable porridge",
-        "midal"
-      ],
+      "aliases": ["tinutuan", "bubur manado", "manado vegetable porridge", "midal"],
       "icon": "food/porridge",
       "source": "model_estimate",
       "verified": false
@@ -1525,11 +1236,7 @@
       "carbs_g": 4,
       "protein_g": 30,
       "fat_g": 7,
-      "aliases": [
-        "cakalang fufu",
-        "smoked skipjack tuna manado",
-        "ikan cakalang asap"
-      ],
+      "aliases": ["cakalang fufu", "smoked skipjack tuna manado", "ikan cakalang asap"],
       "icon": "food/grilled-fish",
       "source": "model_estimate",
       "verified": false
@@ -1542,12 +1249,7 @@
       "carbs_g": 10,
       "protein_g": 28,
       "fat_g": 21,
-      "aliases": [
-        "ayam rica rica",
-        "rica-rica",
-        "manado chilli chicken",
-        "ayam rica manado"
-      ],
+      "aliases": ["ayam rica rica", "rica-rica", "manado chilli chicken", "ayam rica manado"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1559,12 +1261,7 @@
       "carbs_g": 8,
       "protein_g": 28,
       "fat_g": 15,
-      "aliases": [
-        "woku belanga",
-        "ikan woku",
-        "manado herb fish stew",
-        "ayam woku"
-      ],
+      "aliases": ["woku belanga", "ikan woku", "manado herb fish stew", "ayam woku"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1594,11 +1291,7 @@
       "carbs_g": 6,
       "protein_g": 28,
       "fat_g": 9,
-      "aliases": [
-        "ikan kuah kuning",
-        "yellow turmeric fish soup",
-        "kuah kuning maluku"
-      ],
+      "aliases": ["ikan kuah kuning", "yellow turmeric fish soup", "kuah kuning maluku"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1610,11 +1303,7 @@
       "carbs_g": 24,
       "protein_g": 18,
       "fat_g": 12,
-      "aliases": [
-        "brenebon",
-        "sup brenebon",
-        "manado red kidney bean pork soup"
-      ],
+      "aliases": ["brenebon", "sup brenebon", "manado red kidney bean pork soup"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1650,12 +1339,7 @@
       "carbs_g": 28,
       "protein_g": 8,
       "fat_g": 13,
-      "aliases": [
-        "risoles",
-        "risol",
-        "risoles ragout",
-        "indonesian crumbed crepe roll"
-      ],
+      "aliases": ["risoles", "risol", "risoles ragout", "indonesian crumbed crepe roll"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1703,11 +1387,7 @@
       "carbs_g": 40,
       "protein_g": 7,
       "fat_g": 7,
-      "aliases": [
-        "arem arem",
-        "arem-arem",
-        "banana leaf rice roll with filling"
-      ],
+      "aliases": ["arem arem", "arem-arem", "banana leaf rice roll with filling"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1719,12 +1399,7 @@
       "carbs_g": 38,
       "protein_g": 2,
       "fat_g": 6,
-      "aliases": [
-        "klepon",
-        "kelepon",
-        "glutinous rice ball with palm sugar",
-        "onde-onde jawa"
-      ],
+      "aliases": ["klepon", "kelepon", "glutinous rice ball with palm sugar", "onde-onde jawa"],
       "icon": "dishes/ondeh-ondeh",
       "source": "model_estimate",
       "verified": false
@@ -1754,12 +1429,7 @@
       "carbs_g": 22,
       "protein_g": 4,
       "fat_g": 14,
-      "aliases": [
-        "lapis legit",
-        "spekkoek",
-        "thousand layer spice cake",
-        "kue lapis legit"
-      ],
+      "aliases": ["lapis legit", "spekkoek", "thousand layer spice cake", "kue lapis legit"],
       "icon": "food/cake-slice",
       "source": "model_estimate",
       "verified": false
@@ -1772,11 +1442,7 @@
       "carbs_g": 32,
       "protein_g": 1,
       "fat_g": 5,
-      "aliases": [
-        "kue lapis sagu",
-        "steamed layer cake indonesia",
-        "lapis pelangi"
-      ],
+      "aliases": ["kue lapis sagu", "steamed layer cake indonesia", "lapis pelangi"],
       "icon": "dishes/kuih-lapis",
       "source": "model_estimate",
       "verified": false
@@ -1825,12 +1491,7 @@
       "carbs_g": 38,
       "protein_g": 2,
       "fat_g": 4,
-      "aliases": [
-        "cenil",
-        "chenil",
-        "chewy tapioca cake with coconut",
-        "cetil"
-      ],
+      "aliases": ["cenil", "chenil", "chewy tapioca cake with coconut", "cetil"],
       "icon": "food/tapioca",
       "source": "model_estimate",
       "verified": false
@@ -1843,12 +1504,7 @@
       "carbs_g": 40,
       "protein_g": 2,
       "fat_g": 4,
-      "aliases": [
-        "getuk",
-        "getuk lindri",
-        "mashed cassava cake java",
-        "gethuk"
-      ],
+      "aliases": ["getuk", "getuk lindri", "mashed cassava cake java", "gethuk"],
       "icon": "food/tapioca",
       "source": "model_estimate",
       "verified": false
@@ -1861,11 +1517,7 @@
       "carbs_g": 32,
       "protein_g": 5,
       "fat_g": 8,
-      "aliases": [
-        "kue cubit",
-        "pinched cake indonesia",
-        "kue cubit greentea"
-      ],
+      "aliases": ["kue cubit", "pinched cake indonesia", "kue cubit greentea"],
       "icon": "food/kuih-cara",
       "source": "model_estimate",
       "verified": false
@@ -1878,12 +1530,7 @@
       "carbs_g": 34,
       "protein_g": 5,
       "fat_g": 9,
-      "aliases": [
-        "kue pukis",
-        "pukis",
-        "half moon coconut cake",
-        "pukis keju"
-      ],
+      "aliases": ["kue pukis", "pukis", "half moon coconut cake", "pukis keju"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1895,12 +1542,7 @@
       "carbs_g": 34,
       "protein_g": 2,
       "fat_g": 5,
-      "aliases": [
-        "nagasari",
-        "steamed banana rice flour cake",
-        "kue nagasari",
-        "pisang nagasari"
-      ],
+      "aliases": ["nagasari", "steamed banana rice flour cake", "kue nagasari", "pisang nagasari"],
       "icon": "food/kuih",
       "source": "model_estimate",
       "verified": false
@@ -1913,11 +1555,7 @@
       "carbs_g": 28,
       "protein_g": 5,
       "fat_g": 10,
-      "aliases": [
-        "kue lumpur",
-        "potato custard cake indonesia",
-        "kue lumpur kentang"
-      ],
+      "aliases": ["kue lumpur", "potato custard cake indonesia", "kue lumpur kentang"],
       "icon": "food/custard-tart",
       "source": "model_estimate",
       "verified": false
@@ -1930,12 +1568,7 @@
       "carbs_g": 30,
       "protein_g": 4,
       "fat_g": 12,
-      "aliases": [
-        "combro",
-        "oncom di jero",
-        "fried cassava ball with oncom",
-        "misro"
-      ],
+      "aliases": ["combro", "oncom di jero", "fried cassava ball with oncom", "misro"],
       "source": "model_estimate",
       "verified": false
     },
@@ -1947,11 +1580,7 @@
       "carbs_g": 58,
       "protein_g": 4,
       "fat_g": 8,
-      "aliases": [
-        "es campur",
-        "mixed shaved ice indonesia",
-        "es campur jakarta"
-      ],
+      "aliases": ["es campur", "mixed shaved ice indonesia", "es campur jakarta"],
       "icon": "food/shaved-ice",
       "source": "model_estimate",
       "verified": false
@@ -1964,13 +1593,7 @@
       "carbs_g": 52,
       "protein_g": 3,
       "fat_g": 9,
-      "aliases": [
-        "es cendol",
-        "dawet",
-        "es dawet ayu",
-        "cendol indonesia",
-        "dawet banjarnegara"
-      ],
+      "aliases": ["es cendol", "dawet", "es dawet ayu", "cendol indonesia", "dawet banjarnegara"],
       "icon": "dishes/cendol",
       "source": "model_estimate",
       "verified": false
@@ -1983,11 +1606,7 @@
       "carbs_g": 56,
       "protein_g": 5,
       "fat_g": 10,
-      "aliases": [
-        "es doger",
-        "pink coconut shaved ice",
-        "es doger bandung"
-      ],
+      "aliases": ["es doger", "pink coconut shaved ice", "es doger bandung"],
       "icon": "food/shaved-ice",
       "source": "model_estimate",
       "verified": false
@@ -2000,12 +1619,7 @@
       "carbs_g": 46,
       "protein_g": 3,
       "fat_g": 10,
-      "aliases": [
-        "kolak",
-        "kolak pisang",
-        "banana in palm sugar coconut milk",
-        "kolak pisang ubi"
-      ],
+      "aliases": ["kolak", "kolak pisang", "banana in palm sugar coconut milk", "kolak pisang ubi"],
       "source": "model_estimate",
       "verified": false
     },
@@ -2017,11 +1631,7 @@
       "carbs_g": 56,
       "protein_g": 3,
       "fat_g": 10,
-      "aliases": [
-        "biji salak",
-        "kolak biji salak",
-        "sweet potato balls in palm sugar"
-      ],
+      "aliases": ["biji salak", "kolak biji salak", "sweet potato balls in palm sugar"],
       "source": "model_estimate",
       "verified": false
     },
@@ -2050,12 +1660,7 @@
       "carbs_g": 22,
       "protein_g": 8,
       "fat_g": 12,
-      "aliases": [
-        "tahu isi",
-        "tahu bunting",
-        "stuffed fried tofu with vegetables",
-        "tahu susur"
-      ],
+      "aliases": ["tahu isi", "tahu bunting", "stuffed fried tofu with vegetables", "tahu susur"],
       "icon": "food/fried-tofu-puff",
       "source": "model_estimate",
       "verified": false
@@ -2068,13 +1673,7 @@
       "carbs_g": 22,
       "protein_g": 4,
       "fat_g": 11,
-      "aliases": [
-        "bakwan",
-        "bakwan sayur",
-        "ote-ote",
-        "vegetable fritter indonesia",
-        "bala-bala"
-      ],
+      "aliases": ["bakwan", "bakwan sayur", "ote-ote", "vegetable fritter indonesia", "bala-bala"],
       "source": "model_estimate",
       "verified": false
     },
@@ -2086,12 +1685,7 @@
       "carbs_g": 26,
       "protein_g": 5,
       "fat_g": 12,
-      "aliases": [
-        "bakwan jagung",
-        "perkedel jagung",
-        "corn fritter indonesia",
-        "dadar jagung"
-      ],
+      "aliases": ["bakwan jagung", "perkedel jagung", "corn fritter indonesia", "dadar jagung"],
       "icon": "food/corn",
       "source": "model_estimate",
       "verified": false
@@ -2104,12 +1698,7 @@
       "carbs_g": 32,
       "protein_g": 3,
       "fat_g": 12,
-      "aliases": [
-        "cireng",
-        "aci digoreng",
-        "fried tapioca cake sunda",
-        "cireng bumbu rujak"
-      ],
+      "aliases": ["cireng", "aci digoreng", "fried tapioca cake sunda", "cireng bumbu rujak"],
       "source": "model_estimate",
       "verified": false
     },
@@ -2121,12 +1710,7 @@
       "carbs_g": 34,
       "protein_g": 4,
       "fat_g": 8,
-      "aliases": [
-        "cilok",
-        "aci dicolok",
-        "tapioca ball with peanut sauce",
-        "cilok bandung"
-      ],
+      "aliases": ["cilok", "aci dicolok", "tapioca ball with peanut sauce", "cilok bandung"],
       "source": "model_estimate",
       "verified": false
     },
@@ -2138,12 +1722,7 @@
       "carbs_g": 42,
       "protein_g": 12,
       "fat_g": 18,
-      "aliases": [
-        "seblak",
-        "seblak ceker",
-        "wet cracker stir fry bandung",
-        "seblak bandung"
-      ],
+      "aliases": ["seblak", "seblak ceker", "wet cracker stir fry bandung", "seblak bandung"],
       "source": "model_estimate",
       "verified": false
     },
@@ -2172,12 +1751,7 @@
       "carbs_g": 32,
       "protein_g": 16,
       "fat_g": 16,
-      "aliases": [
-        "siomay",
-        "siomay bandung",
-        "steamed fish dumpling with peanut sauce",
-        "somay"
-      ],
+      "aliases": ["siomay", "siomay bandung", "steamed fish dumpling with peanut sauce", "somay"],
       "icon": "food/dumpling",
       "source": "model_estimate",
       "verified": false
@@ -2208,11 +1782,7 @@
       "carbs_g": 14,
       "protein_g": 2,
       "fat_g": 7,
-      "aliases": [
-        "kerupuk udang",
-        "prawn cracker indonesia",
-        "krupuk udang sidoarjo"
-      ],
+      "aliases": ["kerupuk udang", "prawn cracker indonesia", "krupuk udang sidoarjo"],
       "icon": "food/crackers",
       "source": "model_estimate",
       "verified": false
@@ -2225,12 +1795,7 @@
       "carbs_g": 6,
       "protein_g": 8,
       "fat_g": 12,
-      "aliases": [
-        "kerupuk kulit",
-        "krupuk rambak",
-        "beef skin cracker",
-        "kerupuk jangek"
-      ],
+      "aliases": ["kerupuk kulit", "krupuk rambak", "beef skin cracker", "kerupuk jangek"],
       "icon": "food/crackers",
       "source": "model_estimate",
       "verified": false
@@ -2243,12 +1808,7 @@
       "carbs_g": 16,
       "protein_g": 3,
       "fat_g": 8,
-      "aliases": [
-        "emping",
-        "emping melinjo",
-        "gnetum cracker",
-        "emping manis"
-      ],
+      "aliases": ["emping", "emping melinjo", "gnetum cracker", "emping manis"],
       "icon": "food/crackers",
       "source": "model_estimate",
       "verified": false
@@ -2261,12 +1821,7 @@
       "carbs_g": 14,
       "protein_g": 5,
       "fat_g": 12,
-      "aliases": [
-        "rempeyek",
-        "peyek kacang",
-        "peanut rice cracker java",
-        "rempeyek teri"
-      ],
+      "aliases": ["rempeyek", "peyek kacang", "peanut rice cracker java", "rempeyek teri"],
       "source": "model_estimate",
       "verified": false
     },
@@ -2278,12 +1833,7 @@
       "carbs_g": 16,
       "protein_g": 10,
       "fat_g": 11,
-      "aliases": [
-        "tempe orek",
-        "orek tempe",
-        "sweet soy stir fried tempeh",
-        "kering tempe"
-      ],
+      "aliases": ["tempe orek", "orek tempe", "sweet soy stir fried tempeh", "kering tempe"],
       "icon": "food/tempeh",
       "source": "model_estimate",
       "verified": false
@@ -2296,12 +1846,7 @@
       "carbs_g": 44,
       "protein_g": 10,
       "fat_g": 23,
-      "aliases": [
-        "gorengan",
-        "gorengan campur",
-        "mixed indonesian fritters",
-        "jajanan gorengan"
-      ],
+      "aliases": ["gorengan", "gorengan campur", "mixed indonesian fritters", "jajanan gorengan"],
       "source": "model_estimate",
       "verified": false
     },
@@ -2330,12 +1875,7 @@
       "carbs_g": 48,
       "protein_g": 4,
       "fat_g": 6,
-      "aliases": [
-        "rujak buah",
-        "rujak manis",
-        "fruit rujak with palm sugar sauce",
-        "rujak serut"
-      ],
+      "aliases": ["rujak buah", "rujak manis", "fruit rujak with palm sugar sauce", "rujak serut"],
       "icon": "dishes/rojak",
       "source": "model_estimate",
       "verified": false
@@ -2348,11 +1888,7 @@
       "carbs_g": 48,
       "protein_g": 8,
       "fat_g": 21,
-      "aliases": [
-        "roti bakar bandung",
-        "indonesian grilled sandwich",
-        "roti bakar coklat keju"
-      ],
+      "aliases": ["roti bakar bandung", "indonesian grilled sandwich", "roti bakar coklat keju"],
       "icon": "food/toast",
       "source": "model_estimate",
       "verified": false
@@ -2382,12 +1918,7 @@
       "carbs_g": 50,
       "protein_g": 2,
       "fat_g": 5,
-      "aliases": [
-        "es buah",
-        "sop buah",
-        "iced fruit cocktail indonesia",
-        "es buah segar"
-      ],
+      "aliases": ["es buah", "sop buah", "iced fruit cocktail indonesia", "es buah segar"],
       "source": "model_estimate",
       "verified": false
     },
@@ -2399,12 +1930,7 @@
       "carbs_g": 22,
       "protein_g": 0,
       "fat_g": 0,
-      "aliases": [
-        "es teh manis",
-        "iced sweet tea indonesia",
-        "teh manis dingin",
-        "es teh"
-      ],
+      "aliases": ["es teh manis", "iced sweet tea indonesia", "teh manis dingin", "es teh"],
       "icon": "food/straw-cup",
       "source": "model_estimate",
       "verified": false
@@ -2417,12 +1943,7 @@
       "carbs_g": 33,
       "protein_g": 0,
       "fat_g": 0,
-      "aliases": [
-        "teh botol",
-        "teh botol sosro",
-        "bottled jasmine tea indonesia",
-        "sosro"
-      ],
+      "aliases": ["teh botol", "teh botol sosro", "bottled jasmine tea indonesia", "sosro"],
       "brand": "Sosro",
       "icon": "food/soda-bottle",
       "source": "model_estimate",
@@ -2436,11 +1957,7 @@
       "carbs_g": 14,
       "protein_g": 1,
       "fat_g": 0,
-      "aliases": [
-        "kopi tubruk",
-        "indonesian boiled coffee with sugar",
-        "kopi tumbuk"
-      ],
+      "aliases": ["kopi tubruk", "indonesian boiled coffee with sugar", "kopi tumbuk"],
       "icon": "food/coffee",
       "source": "model_estimate",
       "verified": false
@@ -2471,12 +1988,7 @@
       "carbs_g": 22,
       "protein_g": 0,
       "fat_g": 0,
-      "aliases": [
-        "wedang jahe",
-        "ginger drink java",
-        "wedang uwuh",
-        "air jahe indonesia"
-      ],
+      "aliases": ["wedang jahe", "ginger drink java", "wedang uwuh", "air jahe indonesia"],
       "icon": "food/ginger",
       "source": "model_estimate",
       "verified": false
@@ -2489,11 +2001,7 @@
       "carbs_g": 30,
       "protein_g": 2,
       "fat_g": 3,
-      "aliases": [
-        "bandrek",
-        "sundanese spiced ginger drink",
-        "bandrek susu"
-      ],
+      "aliases": ["bandrek", "sundanese spiced ginger drink", "bandrek susu"],
       "icon": "food/ginger",
       "source": "model_estimate",
       "verified": false
@@ -2506,11 +2014,7 @@
       "carbs_g": 30,
       "protein_g": 3,
       "fat_g": 8,
-      "aliases": [
-        "bajigur",
-        "sundanese coconut coffee drink",
-        "bajigur hangat"
-      ],
+      "aliases": ["bajigur", "sundanese coconut coffee drink", "bajigur hangat"],
       "icon": "food/coconut",
       "source": "model_estimate",
       "verified": false
@@ -2523,12 +2027,7 @@
       "carbs_g": 22,
       "protein_g": 0,
       "fat_g": 0,
-      "aliases": [
-        "jamu kunyit asam",
-        "turmeric tamarind tonic",
-        "kunir asem",
-        "jamu gendong"
-      ],
+      "aliases": ["jamu kunyit asam", "turmeric tamarind tonic", "kunir asem", "jamu gendong"],
       "source": "model_estimate",
       "verified": false
     },
@@ -2540,11 +2039,7 @@
       "carbs_g": 25,
       "protein_g": 1,
       "fat_g": 0,
-      "aliases": [
-        "beras kencur",
-        "jamu beras kencur",
-        "rice and aromatic ginger tonic"
-      ],
+      "aliases": ["beras kencur", "jamu beras kencur", "rice and aromatic ginger tonic"],
       "source": "model_estimate",
       "verified": false
     },
@@ -2556,11 +2051,7 @@
       "carbs_g": 44,
       "protein_g": 4,
       "fat_g": 3,
-      "aliases": [
-        "wedang ronde",
-        "ginger soup with glutinous balls",
-        "ronde jahe"
-      ],
+      "aliases": ["wedang ronde", "ginger soup with glutinous balls", "ronde jahe"],
       "source": "model_estimate",
       "verified": false
     },
@@ -2572,12 +2063,7 @@
       "carbs_g": 32,
       "protein_g": 1,
       "fat_g": 0,
-      "aliases": [
-        "es jeruk",
-        "es jeruk peras",
-        "iced orange juice indonesia",
-        "jeruk peras manis"
-      ],
+      "aliases": ["es jeruk", "es jeruk peras", "iced orange juice indonesia", "jeruk peras manis"],
       "icon": "food/orange-juice",
       "source": "model_estimate",
       "verified": false
@@ -2590,11 +2076,7 @@
       "carbs_g": 58,
       "protein_g": 5,
       "fat_g": 11,
-      "aliases": [
-        "es teler 77",
-        "es teler 77 original",
-        "avocado jackfruit coconut ice"
-      ],
+      "aliases": ["es teler 77", "es teler 77 original", "avocado jackfruit coconut ice"],
       "brand": "Es Teler 77",
       "icon": "food/shaved-ice",
       "source": "model_estimate",
@@ -2608,11 +2090,7 @@
       "carbs_g": 46,
       "protein_g": 22,
       "fat_g": 16,
-      "aliases": [
-        "es teler 77 bakso",
-        "bakso es teler 77",
-        "meatball soup es teler 77"
-      ],
+      "aliases": ["es teler 77 bakso", "bakso es teler 77", "meatball soup es teler 77"],
       "brand": "Es Teler 77",
       "icon": "food/meatball",
       "source": "model_estimate",
@@ -2626,10 +2104,7 @@
       "carbs_g": 82,
       "protein_g": 26,
       "fat_g": 26,
-      "aliases": [
-        "solaria nasi goreng",
-        "nasi goreng spesial solaria"
-      ],
+      "aliases": ["solaria nasi goreng", "nasi goreng spesial solaria"],
       "brand": "Solaria",
       "icon": "dishes/nasi-goreng",
       "source": "model_estimate",
@@ -2643,11 +2118,7 @@
       "carbs_g": 82,
       "protein_g": 30,
       "fat_g": 26,
-      "aliases": [
-        "hokben beef yakiniku",
-        "hoka hoka bento yakiniku",
-        "hokben set"
-      ],
+      "aliases": ["hokben beef yakiniku", "hoka hoka bento yakiniku", "hokben set"],
       "brand": "HokBen",
       "icon": "food/lunch-box",
       "source": "model_estimate",
@@ -2661,11 +2132,7 @@
       "carbs_g": 88,
       "protein_g": 30,
       "fat_g": 27,
-      "aliases": [
-        "hokben chicken katsu",
-        "hoka hoka bento chicken katsu",
-        "katsu hokben"
-      ],
+      "aliases": ["hokben chicken katsu", "hoka hoka bento chicken katsu", "katsu hokben"],
       "brand": "HokBen",
       "icon": "food/lunch-box",
       "source": "model_estimate",
@@ -2679,11 +2146,7 @@
       "carbs_g": 16,
       "protein_g": 9,
       "fat_g": 12,
-      "aliases": [
-        "ekkado",
-        "hokben ekkado",
-        "hoka hoka bento ekkado"
-      ],
+      "aliases": ["ekkado", "hokben ekkado", "hoka hoka bento ekkado"],
       "brand": "HokBen",
       "source": "model_estimate",
       "verified": false
@@ -2696,11 +2159,7 @@
       "carbs_g": 68,
       "protein_g": 26,
       "fat_g": 20,
-      "aliases": [
-        "bakmi gm",
-        "bakmi gm ayam",
-        "bakmi gm special chicken noodle"
-      ],
+      "aliases": ["bakmi gm", "bakmi gm ayam", "bakmi gm special chicken noodle"],
       "brand": "Bakmi GM",
       "icon": "food/noodle-bowl",
       "source": "model_estimate",
@@ -2714,10 +2173,7 @@
       "carbs_g": 24,
       "protein_g": 8,
       "fat_g": 17,
-      "aliases": [
-        "pangsit goreng bakmi gm",
-        "bakmi gm fried wonton"
-      ],
+      "aliases": ["pangsit goreng bakmi gm", "bakmi gm fried wonton"],
       "brand": "Bakmi GM",
       "icon": "food/dumpling",
       "source": "model_estimate",
@@ -2731,11 +2187,7 @@
       "carbs_g": 22,
       "protein_g": 34,
       "fat_g": 23,
-      "aliases": [
-        "sate khas senayan",
-        "senayan sate ayam",
-        "sate senayan chicken"
-      ],
+      "aliases": ["sate khas senayan", "senayan sate ayam", "sate senayan chicken"],
       "brand": "Sate Khas Senayan",
       "icon": "food/satay",
       "source": "model_estimate",
@@ -2749,11 +2201,7 @@
       "carbs_g": 16,
       "protein_g": 34,
       "fat_g": 30,
-      "aliases": [
-        "senayan sop buntut",
-        "sop buntut sate khas senayan",
-        "oxtail soup senayan"
-      ],
+      "aliases": ["senayan sop buntut", "sop buntut sate khas senayan", "oxtail soup senayan"],
       "brand": "Sate Khas Senayan",
       "icon": "dishes/sup-tulang",
       "source": "model_estimate",
@@ -2767,11 +2215,7 @@
       "carbs_g": 28,
       "protein_g": 4,
       "fat_g": 13,
-      "aliases": [
-        "jco alcapone",
-        "j.co donuts alcapone",
-        "jco donut almond chocolate"
-      ],
+      "aliases": ["jco alcapone", "j.co donuts alcapone", "jco donut almond chocolate"],
       "brand": "J.CO",
       "icon": "food/doughnut",
       "source": "model_estimate",
@@ -2785,11 +2229,7 @@
       "carbs_g": 34,
       "protein_g": 7,
       "fat_g": 10,
-      "aliases": [
-        "jcoccino",
-        "jco coffee",
-        "j.co jcoccino"
-      ],
+      "aliases": ["jcoccino", "jco coffee", "j.co jcoccino"],
       "brand": "J.CO",
       "icon": "food/coffee",
       "source": "model_estimate",
@@ -2803,12 +2243,7 @@
       "carbs_g": 36,
       "protein_g": 5,
       "fat_g": 12,
-      "aliases": [
-        "rotio",
-        "roti o",
-        "roti'o coffee bun",
-        "roti boy indonesia"
-      ],
+      "aliases": ["rotio", "roti o", "roti'o coffee bun", "roti boy indonesia"],
       "brand": "Roti'O",
       "icon": "food/bun",
       "source": "model_estimate",
@@ -2822,11 +2257,7 @@
       "carbs_g": 36,
       "protein_g": 5,
       "fat_g": 8,
-      "aliases": [
-        "kopi kenangan mantan",
-        "kenangan mantan",
-        "kopi kenangan gula aren"
-      ],
+      "aliases": ["kopi kenangan mantan", "kenangan mantan", "kopi kenangan gula aren"],
       "brand": "Kopi Kenangan",
       "icon": "food/coffee",
       "source": "model_estimate",
@@ -2840,11 +2271,7 @@
       "carbs_g": 34,
       "protein_g": 5,
       "fat_g": 8,
-      "aliases": [
-        "janji jiwa",
-        "kopi janji jiwa",
-        "es kopi susu janji jiwa"
-      ],
+      "aliases": ["janji jiwa", "kopi janji jiwa", "es kopi susu janji jiwa"],
       "brand": "Janji Jiwa",
       "icon": "food/coffee",
       "source": "model_estimate",
@@ -2876,11 +2303,7 @@
       "carbs_g": 78,
       "protein_g": 26,
       "fat_g": 22,
-      "aliases": [
-        "indomaret nasi ayam geprek",
-        "indomaret ready meal",
-        "nasi geprek indomaret"
-      ],
+      "aliases": ["indomaret nasi ayam geprek", "indomaret ready meal", "nasi geprek indomaret"],
       "brand": "Indomaret",
       "icon": "food/lunch-box",
       "source": "model_estimate",
@@ -2913,11 +2336,7 @@
       "carbs_g": 46,
       "protein_g": 7,
       "fat_g": 13,
-      "aliases": [
-        "indomie soto",
-        "indomie soto mie",
-        "indomie soup soto flavour"
-      ],
+      "aliases": ["indomie soto", "indomie soto mie", "indomie soup soto flavour"],
       "brand": "Indomie",
       "icon": "food/instant-noodles",
       "source": "model_estimate",
@@ -2931,11 +2350,7 @@
       "carbs_g": 48,
       "protein_g": 7,
       "fat_g": 13,
-      "aliases": [
-        "indomie kari ayam",
-        "indomie chicken curry",
-        "indomie kuah kari"
-      ],
+      "aliases": ["indomie kari ayam", "indomie chicken curry", "indomie kuah kari"],
       "brand": "Indomie",
       "icon": "food/instant-noodles",
       "source": "model_estimate",
@@ -2949,11 +2364,7 @@
       "carbs_g": 55,
       "protein_g": 8,
       "fat_g": 15,
-      "aliases": [
-        "mie sedaap goreng",
-        "mi sedaap",
-        "mie sedap fried noodles"
-      ],
+      "aliases": ["mie sedaap goreng", "mi sedaap", "mie sedap fried noodles"],
       "brand": "Mie Sedaap",
       "icon": "food/instant-noodles",
       "source": "model_estimate",

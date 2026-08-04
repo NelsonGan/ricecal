@@ -47,13 +47,7 @@
       "fat_g": 7.8,
       "fibre_g": 5.9,
       "sugar_g": 31.2,
-      "aliases": [
-        "d24",
-        "durian sultan",
-        "sultan durian",
-        "d24 榴莲",
-        "durian d 24"
-      ],
+      "aliases": ["d24", "durian sultan", "sultan durian", "d24 榴莲", "durian d 24"],
       "verified": false,
       "source": "usda_fdc durian per 100 g, cultivar-adjusted, converted to seeds",
       "extra_servings": [
@@ -117,14 +111,7 @@
       "fat_g": 10.6,
       "fibre_g": 6.3,
       "sugar_g": 38.7,
-      "aliases": [
-        "black thorn",
-        "ochee",
-        "durian duri hitam",
-        "duri hitam",
-        "d200",
-        "黑刺榴莲"
-      ],
+      "aliases": ["black thorn", "ochee", "durian duri hitam", "duri hitam", "d200", "黑刺榴莲"],
       "verified": false,
       "source": "usda_fdc durian per 100 g, cultivar-adjusted, converted to seeds",
       "extra_servings": [
@@ -152,12 +139,7 @@
       "fat_g": 7.4,
       "fibre_g": 5.9,
       "sugar_g": 30.4,
-      "aliases": [
-        "xo durian",
-        "durian x o",
-        "d24 xo",
-        "xo 榴莲"
-      ],
+      "aliases": ["xo durian", "durian x o", "d24 xo", "xo 榴莲"],
       "verified": false,
       "source": "usda_fdc durian per 100 g, cultivar-adjusted, converted to seeds",
       "extra_servings": [
@@ -220,11 +202,7 @@
       "fat_g": 6.7,
       "fibre_g": 5.6,
       "sugar_g": 28.9,
-      "aliases": [
-        "d101",
-        "durian d 101",
-        "d101 榴莲"
-      ],
+      "aliases": ["d101", "durian d 101", "d101 榴莲"],
       "verified": false,
       "source": "usda_fdc durian per 100 g, cultivar-adjusted, converted to seeds",
       "extra_servings": [
@@ -252,13 +230,7 @@
       "fat_g": 7.4,
       "fibre_g": 5.9,
       "sugar_g": 30.4,
-      "aliases": [
-        "tekka durian",
-        "teka",
-        "d160",
-        "durian tekka d160",
-        "竹脚榴莲"
-      ],
+      "aliases": ["tekka durian", "teka", "d160", "durian tekka d160", "竹脚榴莲"],
       "verified": false,
       "source": "usda_fdc durian per 100 g, cultivar-adjusted, converted to seeds",
       "extra_servings": [
@@ -286,13 +258,7 @@
       "fat_g": 6.4,
       "fibre_g": 6.1,
       "sugar_g": 29.6,
-      "aliases": [
-        "golden phoenix",
-        "jin feng",
-        "durian jin fong",
-        "d198",
-        "金凤榴莲"
-      ],
+      "aliases": ["golden phoenix", "jin feng", "durian jin fong", "d198", "金凤榴莲"],
       "verified": false,
       "source": "usda_fdc durian per 100 g, cultivar-adjusted, converted to seeds",
       "extra_servings": [
@@ -320,11 +286,7 @@
       "fat_g": 7,
       "fibre_g": 5.6,
       "sugar_g": 29.6,
-      "aliases": [
-        "d13",
-        "durian d 13",
-        "d13 榴莲"
-      ],
+      "aliases": ["d13", "durian d 13", "d13 榴莲"],
       "verified": false,
       "source": "usda_fdc durian per 100 g, cultivar-adjusted, converted to seeds",
       "extra_servings": [
@@ -352,13 +314,7 @@
       "fat_g": 8,
       "fibre_g": 5.8,
       "sugar_g": 31.2,
-      "aliases": [
-        "hor lor",
-        "horlor durian",
-        "d163",
-        "葫芦榴莲",
-        "durian holo"
-      ],
+      "aliases": ["hor lor", "horlor durian", "d163", "葫芦榴莲", "durian holo"],
       "verified": false,
       "source": "usda_fdc durian per 100 g, cultivar-adjusted, converted to seeds",
       "extra_servings": [
@@ -386,14 +342,7 @@
       "fat_g": 5.4,
       "fibre_g": 5.8,
       "sugar_g": 29.7,
-      "aliases": [
-        "monthong",
-        "montong",
-        "durian thai",
-        "thai durian",
-        "golden pillow",
-        "金枕头"
-      ],
+      "aliases": ["monthong", "montong", "durian thai", "thai durian", "golden pillow", "金枕头"],
       "verified": false,
       "source": "usda_fdc durian per 100 g, cultivar-adjusted, converted to seeds",
       "extra_servings": [
@@ -601,13 +550,7 @@
       "fat_g": 0.2,
       "fibre_g": 2.1,
       "sugar_g": 19,
-      "aliases": [
-        "md2 pineapple",
-        "nenas madu",
-        "honey pineapple",
-        "nanas md 2",
-        "蜜黄梨"
-      ],
+      "aliases": ["md2 pineapple", "nenas madu", "honey pineapple", "nanas md 2", "蜜黄梨"],
       "icon": "food/pineapple",
       "verified": false,
       "source": "usda_fdc pineapple per 100 g, variety-adjusted, converted to 1 cup",
@@ -632,12 +575,7 @@
       "fat_g": 0.2,
       "fibre_g": 2.5,
       "sugar_g": 16.5,
-      "aliases": [
-        "josapine pineapple",
-        "nenas josapine",
-        "josaphine",
-        "nanas josephine"
-      ],
+      "aliases": ["josapine pineapple", "nenas josapine", "josaphine", "nanas josephine"],
       "icon": "food/pineapple",
       "verified": false,
       "source": "usda_fdc pineapple per 100 g, variety-adjusted, converted to 1 cup",
@@ -662,12 +600,7 @@
       "fat_g": 0.2,
       "fibre_g": 2.3,
       "sugar_g": 15.7,
-      "aliases": [
-        "moris pineapple",
-        "nenas moris",
-        "mauritius pineapple",
-        "nanas morris"
-      ],
+      "aliases": ["moris pineapple", "nenas moris", "mauritius pineapple", "nanas morris"],
       "icon": "food/pineapple",
       "verified": false,
       "source": "usda_fdc pineapple per 100 g, variety-adjusted, converted to 1 cup",
@@ -722,12 +655,7 @@
       "fat_g": 0.5,
       "fibre_g": 2.7,
       "sugar_g": 25.2,
-      "aliases": [
-        "mangga susu",
-        "milk mango",
-        "susu mango",
-        "mangga susu johor"
-      ],
+      "aliases": ["mangga susu", "milk mango", "susu mango", "mangga susu johor"],
       "verified": false,
       "source": "usda_fdc mango per 100 g, variety-adjusted, converted to one fruit",
       "extra_servings": [
@@ -747,13 +675,7 @@
       "fat_g": 0.6,
       "fibre_g": 3.4,
       "sugar_g": 26,
-      "aliases": [
-        "apple mango",
-        "mangga apple",
-        "mangga apel",
-        "mangga epal thai",
-        "苹果芒"
-      ],
+      "aliases": ["apple mango", "mangga apple", "mangga apel", "mangga epal thai", "苹果芒"],
       "verified": false,
       "source": "usda_fdc mango per 100 g, variety-adjusted, converted to one fruit",
       "extra_servings": [
@@ -773,12 +695,7 @@
       "fat_g": 0.7,
       "fibre_g": 3.5,
       "sugar_g": 31.9,
-      "aliases": [
-        "chokanan mango",
-        "chok anan",
-        "mangga chok anan",
-        "mangga madu chokanan"
-      ],
+      "aliases": ["chokanan mango", "chok anan", "mangga chok anan", "mangga madu chokanan"],
       "verified": false,
       "source": "usda_fdc mango per 100 g, variety-adjusted, converted to one fruit",
       "extra_servings": [
@@ -825,13 +742,7 @@
       "fat_g": 1,
       "fibre_g": 3.6,
       "sugar_g": 30,
-      "aliases": [
-        "kuini mango",
-        "kuwini",
-        "mangga kuini",
-        "mangifera odorata",
-        "kuweni"
-      ],
+      "aliases": ["kuini mango", "kuwini", "mangga kuini", "mangifera odorata", "kuweni"],
       "verified": false,
       "source": "usda_fdc mango per 100 g, species-adjusted, converted to one fruit",
       "extra_servings": [
@@ -851,14 +762,7 @@
       "fat_g": 0.8,
       "fibre_g": 3.6,
       "sugar_g": 24,
-      "aliases": [
-        "bacang",
-        "machang",
-        "horse mango",
-        "mangifera foetida",
-        "embacang",
-        "bachang"
-      ],
+      "aliases": ["bacang", "machang", "horse mango", "mangifera foetida", "embacang", "bachang"],
       "verified": false,
       "source": "usda_fdc mango per 100 g, species-adjusted, converted to one fruit",
       "extra_servings": [
@@ -909,11 +813,7 @@
       "fat_g": 0.4,
       "fibre_g": 3.5,
       "sugar_g": 21.7,
-      "aliases": [
-        "pisang nipah",
-        "nipah banana",
-        "pisang gajah nipah"
-      ],
+      "aliases": ["pisang nipah", "nipah banana", "pisang gajah nipah"],
       "icon": "food/banana",
       "verified": false,
       "source": "myfcd_1997 banana per 100 g, variety-adjusted, converted to whole fruits",
@@ -934,11 +834,7 @@
       "fat_g": 0.5,
       "fibre_g": 4.5,
       "sugar_g": 24.3,
-      "aliases": [
-        "pisang lemak manis",
-        "lemak manis banana",
-        "pisang berangan lemak manis"
-      ],
+      "aliases": ["pisang lemak manis", "lemak manis banana", "pisang berangan lemak manis"],
       "icon": "food/banana",
       "verified": false,
       "source": "myfcd_1997 banana per 100 g, variety-adjusted, converted to whole fruits",
@@ -994,13 +890,7 @@
       "fat_g": 0.2,
       "fibre_g": 3.2,
       "sugar_g": 25.2,
-      "aliases": [
-        "ajwa dates",
-        "ajwah",
-        "kurma ajwah madinah",
-        "buah kurma ajwa",
-        "pericham ajwa"
-      ],
+      "aliases": ["ajwa dates", "ajwah", "kurma ajwah madinah", "buah kurma ajwa", "pericham ajwa"],
       "verified": false,
       "source": "usda_fdc dates per 100 g, cultivar-adjusted, converted to 5 dates",
       "extra_servings": [
@@ -1028,11 +918,7 @@
       "fat_g": 0.2,
       "fibre_g": 3.8,
       "sugar_g": 33,
-      "aliases": [
-        "safawi dates",
-        "kurma safawi madinah",
-        "buah kurma safawi"
-      ],
+      "aliases": ["safawi dates", "kurma safawi madinah", "buah kurma safawi"],
       "verified": false,
       "source": "usda_fdc dates per 100 g, cultivar-adjusted, converted to 5 dates",
       "extra_servings": [
@@ -1060,11 +946,7 @@
       "fat_g": 0.2,
       "fibre_g": 3.5,
       "sugar_g": 28.8,
-      "aliases": [
-        "mabroom dates",
-        "kurma mabrum",
-        "buah kurma mabroom"
-      ],
+      "aliases": ["mabroom dates", "kurma mabrum", "buah kurma mabroom"],
       "verified": false,
       "source": "usda_fdc dates per 100 g, cultivar-adjusted, converted to 5 dates",
       "extra_servings": [
@@ -1092,12 +974,7 @@
       "fat_g": 0.3,
       "fibre_g": 4.2,
       "sugar_g": 42,
-      "aliases": [
-        "sukkari dates",
-        "kurma sukari",
-        "sugar dates",
-        "buah kurma sukkari"
-      ],
+      "aliases": ["sukkari dates", "kurma sukari", "sugar dates", "buah kurma sukkari"],
       "verified": false,
       "source": "usda_fdc dates per 100 g, cultivar-adjusted, converted to 5 dates",
       "extra_servings": [
@@ -1156,13 +1033,7 @@
       "fat_g": 0.2,
       "fibre_g": 0.9,
       "sugar_g": 13.2,
-      "aliases": [
-        "dokong",
-        "buah dokong",
-        "lansium domesticum dokong",
-        "dukong",
-        "longkong"
-      ],
+      "aliases": ["dokong", "buah dokong", "lansium domesticum dokong", "dukong", "longkong"],
       "verified": true,
       "source": "myfcd_1997 duku and langsat per 100 g converted to 10 fruits",
       "extra_servings": [
@@ -1186,12 +1057,7 @@
       "fat_g": 0.2,
       "fibre_g": 0.8,
       "sugar_g": 12,
-      "aliases": [
-        "duku langsat",
-        "buah duku langsat",
-        "dukong langsat",
-        "langsat duku"
-      ],
+      "aliases": ["duku langsat", "buah duku langsat", "dukong langsat", "langsat duku"],
       "verified": true,
       "source": "myfcd_1997 duku and langsat per 100 g converted to 10 fruits",
       "extra_servings": [
@@ -1357,12 +1223,7 @@
       "fat_g": 0.2,
       "fibre_g": 0.8,
       "sugar_g": 11.2,
-      "aliases": [
-        "rambai",
-        "baccaurea motleyana",
-        "buah rambai hutan",
-        "rambai fruit"
-      ],
+      "aliases": ["rambai", "baccaurea motleyana", "buah rambai hutan", "rambai fruit"],
       "verified": false,
       "source": "myfcd_1997 rambai per 100 g converted to 10 fruits",
       "extra_servings": [
@@ -1667,13 +1528,7 @@
       "fibre_g": 9.8,
       "sugar_g": 3.6,
       "sodium_mg": 300,
-      "aliases": [
-        "cut jicama",
-        "sengkuang potong",
-        "yam bean sticks",
-        "bangkuang",
-        "沙葛"
-      ],
+      "aliases": ["cut jicama", "sengkuang potong", "yam bean sticks", "bangkuang", "沙葛"],
       "verified": true,
       "source": "usda_fdc jicama raw per 100 g converted to a 200 g stall pack",
       "extra_servings": [
@@ -1722,13 +1577,7 @@
       "fibre_g": 2,
       "sugar_g": 27,
       "sodium_mg": 900,
-      "aliases": [
-        "pickled mango",
-        "jeruk mangga",
-        "asinan mangga",
-        "mangga jeruk manis",
-        "腌芒果"
-      ],
+      "aliases": ["pickled mango", "jeruk mangga", "asinan mangga", "mangga jeruk manis", "腌芒果"],
       "verified": false,
       "source": "myfcd_1997 spicy pickled fruit per 100 g",
       "extra_servings": [
@@ -2027,13 +1876,7 @@
       "fat_g": 0.1,
       "fibre_g": 0.3,
       "sugar_g": 0.1,
-      "aliases": [
-        "wild betel leaf",
-        "daun kadok",
-        "piper sarmentosum",
-        "cha plu",
-        "kaduk leaf"
-      ],
+      "aliases": ["wild betel leaf", "daun kadok", "piper sarmentosum", "cha plu", "kaduk leaf"],
       "verified": false,
       "source": "myfcd_1997 daun kadok per 100 g converted to 5 leaves",
       "extra_servings": [
@@ -2187,12 +2030,7 @@
       "fat_g": 22.1,
       "fibre_g": 16.7,
       "sugar_g": 87.8,
-      "aliases": [
-        "whole d24 durian",
-        "d24 sebiji",
-        "durian sultan sebiji",
-        "整粒d24"
-      ],
+      "aliases": ["whole d24 durian", "d24 sebiji", "durian sultan sebiji", "整粒d24"],
       "verified": false,
       "source": "usda_fdc durian per 100 g, cultivar-adjusted, converted to seeds",
       "extra_servings": [
@@ -2216,13 +2054,7 @@
       "fat_g": 11.2,
       "fibre_g": 7.2,
       "sugar_g": 42,
-      "aliases": [
-        "durian puree",
-        "durian paste pack",
-        "pes durian",
-        "durian pulp pack",
-        "榴莲泥"
-      ],
+      "aliases": ["durian puree", "durian paste pack", "pes durian", "durian pulp pack", "榴莲泥"],
       "verified": false,
       "source": "usda_fdc durian per 100 g, cultivar-adjusted, converted to seeds",
       "extra_servings": [
@@ -2246,12 +2078,7 @@
       "fat_g": 0.2,
       "fibre_g": 1.1,
       "sugar_g": 21.6,
-      "aliases": [
-        "yellow rambutan",
-        "rambutan gading",
-        "rambutan kuning",
-        "gading rambutan"
-      ],
+      "aliases": ["yellow rambutan", "rambutan gading", "rambutan kuning", "gading rambutan"],
       "verified": true,
       "source": "myfcd_1997 rambutan per 100 g converted to 10 fruits",
       "extra_servings": [
@@ -2275,12 +2102,7 @@
       "fat_g": 0.2,
       "fibre_g": 1,
       "sugar_g": 19.8,
-      "aliases": [
-        "rambutan anak sekolah",
-        "r156 rambutan",
-        "rambutan r156",
-        "school boy rambutan"
-      ],
+      "aliases": ["rambutan anak sekolah", "r156 rambutan", "rambutan r156", "school boy rambutan"],
       "verified": true,
       "source": "myfcd_1997 rambutan per 100 g converted to 10 fruits",
       "extra_servings": [
@@ -2304,12 +2126,7 @@
       "fat_g": 0.4,
       "fibre_g": 1.8,
       "sugar_g": 36,
-      "aliases": [
-        "peeled rambutan pack",
-        "rambutan kupas",
-        "rambutan bungkus",
-        "红毛丹盒装"
-      ],
+      "aliases": ["peeled rambutan pack", "rambutan kupas", "rambutan bungkus", "红毛丹盒装"],
       "verified": true,
       "source": "myfcd_1997 rambutan per 100 g converted to a 200 g pack",
       "extra_servings": [
@@ -2329,13 +2146,7 @@
       "fat_g": 0.6,
       "fibre_g": 5.1,
       "sugar_g": 30,
-      "aliases": [
-        "packed cempedak",
-        "cempedak isi",
-        "chempedak pack",
-        "cempedak kupas",
-        "尖蜜拉"
-      ],
+      "aliases": ["packed cempedak", "cempedak isi", "chempedak pack", "cempedak kupas", "尖蜜拉"],
       "verified": true,
       "source": "myfcd_1997 cempedak per 100 g converted to a 150 g pack",
       "extra_servings": [
@@ -2386,13 +2197,7 @@
       "fat_g": 1.2,
       "fibre_g": 3.6,
       "sugar_g": 32,
-      "aliases": [
-        "mangosteen pack",
-        "manggis bungkus",
-        "manggis sekilo",
-        "山竹",
-        "mangostan"
-      ],
+      "aliases": ["mangosteen pack", "manggis bungkus", "manggis sekilo", "山竹", "mangostan"],
       "verified": true,
       "source": "usda_fdc mangosteen per 100 g converted to 10 fruits",
       "extra_servings": [
@@ -2416,12 +2221,7 @@
       "fat_g": 0.3,
       "fibre_g": 0.8,
       "sugar_g": 12.4,
-      "aliases": [
-        "yellow watermelon",
-        "tembikai kuning",
-        "semangka kuning",
-        "黄西瓜"
-      ],
+      "aliases": ["yellow watermelon", "tembikai kuning", "semangka kuning", "黄西瓜"],
       "icon": "food/watermelon",
       "verified": true,
       "source": "usda_fdc watermelon raw per 100 g converted to 1 slice",
@@ -2442,13 +2242,7 @@
       "fat_g": 0.4,
       "fibre_g": 1.8,
       "sugar_g": 15.8,
-      "aliases": [
-        "rock melon",
-        "cantaloupe",
-        "tembikai wangi",
-        "melon oren",
-        "哈密瓜"
-      ],
+      "aliases": ["rock melon", "cantaloupe", "tembikai wangi", "melon oren", "哈密瓜"],
       "verified": true,
       "source": "usda_fdc cantaloupe raw per 100 g converted to a 200 g pack",
       "extra_servings": [
@@ -2522,13 +2316,7 @@
       "fat_g": 0.2,
       "fibre_g": 3.3,
       "sugar_g": 27,
-      "aliases": [
-        "rutab dates",
-        "kurma rutab",
-        "fresh soft dates",
-        "kurma basah",
-        "رطب"
-      ],
+      "aliases": ["rutab dates", "kurma rutab", "fresh soft dates", "kurma basah", "رطب"],
       "verified": true,
       "source": "usda_fdc dates, fresh, per 100 g converted to 5 dates",
       "extra_servings": [
@@ -2556,12 +2344,7 @@
       "fat_g": 0.2,
       "fibre_g": 3.6,
       "sugar_g": 29.7,
-      "aliases": [
-        "piarom dates",
-        "kurma piarom",
-        "maryami dates",
-        "chocolate dates"
-      ],
+      "aliases": ["piarom dates", "kurma piarom", "maryami dates", "chocolate dates"],
       "verified": false,
       "source": "usda_fdc dates per 100 g, cultivar-adjusted, converted to 5 dates",
       "extra_servings": [
@@ -2589,14 +2372,7 @@
       "fat_g": 0.2,
       "fibre_g": 1.1,
       "sugar_g": 4.3,
-      "aliases": [
-        "jujube",
-        "buah bidara",
-        "indian jujube",
-        "ziziphus",
-        "bidara arab",
-        "红枣鲜果"
-      ],
+      "aliases": ["jujube", "buah bidara", "indian jujube", "ziziphus", "bidara arab", "红枣鲜果"],
       "verified": true,
       "source": "usda_fdc jujube raw per 100 g converted to 10 fruits",
       "extra_servings": [
@@ -2616,13 +2392,7 @@
       "fat_g": 0.1,
       "fibre_g": 0.9,
       "sugar_g": 3.6,
-      "aliases": [
-        "kelubi",
-        "asam paya",
-        "eleiodoxa conferta",
-        "buah asam kelubi",
-        "asam kelubi"
-      ],
+      "aliases": ["kelubi", "asam paya", "eleiodoxa conferta", "buah asam kelubi", "asam kelubi"],
       "verified": false,
       "source": "myfcd_1997 salak per 100 g, species-adjusted, converted to 10 fruits",
       "extra_servings": [
@@ -2642,13 +2412,7 @@
       "fat_g": 1.5,
       "fibre_g": 1.5,
       "sugar_g": 0.3,
-      "aliases": [
-        "petai cina",
-        "petai belalang",
-        "leucaena seeds",
-        "lamtoro",
-        "kemlandingan"
-      ],
+      "aliases": ["petai cina", "petai belalang", "leucaena seeds", "lamtoro", "kemlandingan"],
       "verified": false,
       "source": "myfcd_1997 petai cina per 100 g converted to 2 tablespoons",
       "extra_servings": [
@@ -2694,13 +2458,7 @@
       "fat_g": 1.7,
       "fibre_g": 8,
       "sugar_g": 22.5,
-      "aliases": [
-        "cut sapodilla",
-        "ciku potong",
-        "sapodilla pack",
-        "chiku bungkus",
-        "人心果"
-      ],
+      "aliases": ["cut sapodilla", "ciku potong", "sapodilla pack", "chiku bungkus", "人心果"],
       "verified": true,
       "source": "usda_fdc sapodilla raw per 100 g converted to a 150 g pack",
       "extra_servings": [
@@ -2720,13 +2478,7 @@
       "fat_g": 0.5,
       "fibre_g": 3.8,
       "sugar_g": 30,
-      "aliases": [
-        "snake fruit pack",
-        "salak bungkus",
-        "salak sekilo",
-        "salak pack",
-        "蛇皮果盒装"
-      ],
+      "aliases": ["snake fruit pack", "salak bungkus", "salak sekilo", "salak pack", "蛇皮果盒装"],
       "verified": true,
       "source": "myfcd_1997 salak per 100 g converted to a 250 g pack",
       "extra_servings": [
@@ -2881,13 +2633,7 @@
       "fat_g": 5.7,
       "fibre_g": 5.3,
       "sugar_g": 27.8,
-      "aliases": [
-        "chanee",
-        "durian chanee thai",
-        "kan yao chanee",
-        "durian gajah",
-        "长柄榴莲"
-      ],
+      "aliases": ["chanee", "durian chanee thai", "kan yao chanee", "durian gajah", "长柄榴莲"],
       "verified": false,
       "source": "usda_fdc durian per 100 g, cultivar-adjusted, converted to seeds",
       "extra_servings": [
@@ -2915,13 +2661,7 @@
       "fat_g": 0.2,
       "fibre_g": 1.2,
       "sugar_g": 0.6,
-      "aliases": [
-        "boiled durian seeds",
-        "biji durian",
-        "durian seed",
-        "isi biji durian",
-        "榴莲核"
-      ],
+      "aliases": ["boiled durian seeds", "biji durian", "durian seed", "isi biji durian", "榴莲核"],
       "verified": true,
       "source": "myfcd_1997 durian seed, boiled, per 100 g converted to 5 seeds",
       "extra_servings": [
@@ -2941,12 +2681,7 @@
       "fat_g": 1.6,
       "fibre_g": 13.6,
       "sugar_g": 80,
-      "aliases": [
-        "whole cempedak",
-        "cempedak sebiji",
-        "chempedak whole",
-        "satu biji cempedak"
-      ],
+      "aliases": ["whole cempedak", "cempedak sebiji", "chempedak whole", "satu biji cempedak"],
       "verified": true,
       "source": "myfcd_1997 cempedak per 100 g converted to one whole fruit",
       "extra_servings": [

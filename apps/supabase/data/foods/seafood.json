@@ -9,12 +9,7 @@
       "carbs_g": 4,
       "protein_g": 17,
       "fat_g": 9,
-      "aliases": [
-        "ikan kembong bakar",
-        "grilled indian mackerel",
-        "kembung panggang",
-        "烤甘望鱼"
-      ],
+      "aliases": ["ikan kembong bakar", "grilled indian mackerel", "kembung panggang", "烤甘望鱼"],
       "icon": "dishes/ikan-bakar",
       "source": "model_estimate",
       "verified": false
@@ -27,11 +22,7 @@
       "carbs_g": 7,
       "protein_g": 18,
       "fat_g": 19,
-      "aliases": [
-        "ikan kembong sumbat",
-        "stuffed mackerel",
-        "kembung sumbat sambal"
-      ],
+      "aliases": ["ikan kembong sumbat", "stuffed mackerel", "kembung sumbat sambal"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -44,11 +35,7 @@
       "carbs_g": 8,
       "protein_g": 18,
       "fat_g": 12,
-      "aliases": [
-        "ikan kembong taucu",
-        "mackerel in fermented bean sauce",
-        "kembung taucu"
-      ],
+      "aliases": ["ikan kembong taucu", "mackerel in fermented bean sauce", "kembung taucu"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -61,11 +48,7 @@
       "carbs_g": 1,
       "protein_g": 19,
       "fat_g": 12,
-      "aliases": [
-        "ikan kembong goreng kunyit",
-        "turmeric fried mackerel",
-        "kembung goreng"
-      ],
+      "aliases": ["ikan kembong goreng kunyit", "turmeric fried mackerel", "kembung goreng"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -78,12 +61,7 @@
       "carbs_g": 1,
       "protein_g": 19,
       "fat_g": 12,
-      "aliases": [
-        "ikan selar goreng",
-        "fried yellowstripe scad",
-        "selar kuning",
-        "黄尾鱼"
-      ],
+      "aliases": ["ikan selar goreng", "fried yellowstripe scad", "selar kuning", "黄尾鱼"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -96,11 +74,7 @@
       "carbs_g": 3,
       "protein_g": 18,
       "fat_g": 8,
-      "aliases": [
-        "grilled selar",
-        "selar bakar sambal",
-        "ikan selar panggang"
-      ],
+      "aliases": ["grilled selar", "selar bakar sambal", "ikan selar panggang"],
       "icon": "dishes/ikan-bakar",
       "source": "model_estimate",
       "verified": false
@@ -113,11 +87,7 @@
       "carbs_g": 4,
       "protein_g": 22,
       "fat_g": 10,
-      "aliases": [
-        "ikan cincaru bakar",
-        "grilled torpedo scad",
-        "cencaru panggang"
-      ],
+      "aliases": ["ikan cincaru bakar", "grilled torpedo scad", "cencaru panggang"],
       "icon": "dishes/ikan-bakar",
       "source": "model_estimate",
       "verified": false
@@ -130,11 +100,7 @@
       "carbs_g": 8,
       "protein_g": 27,
       "fat_g": 21,
-      "aliases": [
-        "cencaru sumbat udang",
-        "prawn-stuffed scad",
-        "ikan cincaru sumbat udang"
-      ],
+      "aliases": ["cencaru sumbat udang", "prawn-stuffed scad", "ikan cincaru sumbat udang"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -147,12 +113,7 @@
       "carbs_g": 2,
       "protein_g": 30,
       "fat_g": 15,
-      "aliases": [
-        "fried white pomfret",
-        "bawal putih goreng",
-        "白鲳鱼",
-        "silver pomfret fried"
-      ],
+      "aliases": ["fried white pomfret", "bawal putih goreng", "白鲳鱼", "silver pomfret fried"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -165,12 +126,7 @@
       "carbs_g": 4,
       "protein_g": 31,
       "fat_g": 9,
-      "aliases": [
-        "steamed white pomfret",
-        "bawal kukus",
-        "清蒸白鲳",
-        "bawal stim"
-      ],
+      "aliases": ["steamed white pomfret", "bawal kukus", "清蒸白鲳", "bawal stim"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -183,11 +139,7 @@
       "carbs_g": 8,
       "protein_g": 25,
       "fat_g": 13,
-      "aliases": [
-        "bawal hitam taucu",
-        "black pomfret in bean sauce",
-        "豆酱鲳鱼"
-      ],
+      "aliases": ["bawal hitam taucu", "black pomfret in bean sauce", "豆酱鲳鱼"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -200,11 +152,7 @@
       "carbs_g": 4,
       "protein_g": 24,
       "fat_g": 11,
-      "aliases": [
-        "grilled black pomfret",
-        "bawal hitam bakar",
-        "bawal panggang"
-      ],
+      "aliases": ["grilled black pomfret", "bawal hitam bakar", "bawal panggang"],
       "icon": "dishes/ikan-bakar",
       "source": "model_estimate",
       "verified": false
@@ -217,12 +165,7 @@
       "carbs_g": 2,
       "protein_g": 34,
       "fat_g": 17,
-      "aliases": [
-        "golden pomfret fried",
-        "bawal emas",
-        "金鲳鱼",
-        "ikan bawal emas"
-      ],
+      "aliases": ["golden pomfret fried", "bawal emas", "金鲳鱼", "ikan bawal emas"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -259,12 +202,7 @@
       "carbs_g": 45,
       "protein_g": 68,
       "fat_g": 35,
-      "aliases": [
-        "siakap 3 rasa",
-        "three flavour barramundi",
-        "siakap goreng tiga rasa",
-        "三味鱼"
-      ],
+      "aliases": ["siakap 3 rasa", "three flavour barramundi", "siakap goreng tiga rasa", "三味鱼"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false,
@@ -283,11 +221,7 @@
       "carbs_g": 8,
       "protein_g": 66,
       "fat_g": 14,
-      "aliases": [
-        "grilled barramundi",
-        "siakap panggang",
-        "ikan siakap bakar"
-      ],
+      "aliases": ["grilled barramundi", "siakap panggang", "ikan siakap bakar"],
       "icon": "dishes/ikan-bakar",
       "source": "model_estimate",
       "verified": false,
@@ -306,11 +240,7 @@
       "carbs_g": 14,
       "protein_g": 66,
       "fat_g": 16,
-      "aliases": [
-        "asam pedas siakap",
-        "sour spicy barramundi",
-        "siakap asam pedas"
-      ],
+      "aliases": ["asam pedas siakap", "sour spicy barramundi", "siakap asam pedas"],
       "icon": "dishes/asam-pedas",
       "source": "model_estimate",
       "verified": false,
@@ -329,12 +259,7 @@
       "carbs_g": 8,
       "protein_g": 54,
       "fat_g": 8,
-      "aliases": [
-        "steamed red snapper",
-        "ikan merah kukus",
-        "红鱼清蒸",
-        "ikan merah stim"
-      ],
+      "aliases": ["steamed red snapper", "ikan merah kukus", "红鱼清蒸", "ikan merah stim"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false,
@@ -353,11 +278,7 @@
       "carbs_g": 22,
       "protein_g": 55,
       "fat_g": 27,
-      "aliases": [
-        "fried red snapper chilli soy",
-        "ikan merah cili kicap",
-        "红鱼辣椒酱油"
-      ],
+      "aliases": ["fried red snapper chilli soy", "ikan merah cili kicap", "红鱼辣椒酱油"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false,
@@ -393,11 +314,7 @@
       "carbs_g": 7,
       "protein_g": 54,
       "fat_g": 12,
-      "aliases": [
-        "grilled red snapper",
-        "ikan merah panggang",
-        "red snapper bakar"
-      ],
+      "aliases": ["grilled red snapper", "ikan merah panggang", "red snapper bakar"],
       "icon": "dishes/ikan-bakar",
       "source": "model_estimate",
       "verified": false,
@@ -416,11 +333,7 @@
       "carbs_g": 6,
       "protein_g": 21,
       "fat_g": 14,
-      "aliases": [
-        "gulai tenggiri",
-        "spanish mackerel curry",
-        "kari ikan tenggiri"
-      ],
+      "aliases": ["gulai tenggiri", "spanish mackerel curry", "kari ikan tenggiri"],
       "icon": "dishes/gulai",
       "source": "model_estimate",
       "verified": false
@@ -433,12 +346,7 @@
       "carbs_g": 4,
       "protein_g": 25,
       "fat_g": 10,
-      "aliases": [
-        "grilled spanish mackerel",
-        "tenggiri bakar",
-        "tenggiri panggang",
-        "马鲛鱼烧"
-      ],
+      "aliases": ["grilled spanish mackerel", "tenggiri bakar", "tenggiri panggang", "马鲛鱼烧"],
       "icon": "dishes/ikan-bakar",
       "source": "model_estimate",
       "verified": false
@@ -468,11 +376,7 @@
       "carbs_g": 9,
       "protein_g": 24,
       "fat_g": 18,
-      "aliases": [
-        "sambal tenggiri",
-        "mackerel sambal",
-        "tenggiri sambal tumis"
-      ],
+      "aliases": ["sambal tenggiri", "mackerel sambal", "tenggiri sambal tumis"],
       "icon": "food/sambal-jar",
       "source": "model_estimate",
       "verified": false
@@ -485,12 +389,7 @@
       "carbs_g": 10,
       "protein_g": 38,
       "fat_g": 16,
-      "aliases": [
-        "grilled stingray",
-        "pari bakar sambal",
-        "ikan pari panggang",
-        "烤魔鬼鱼"
-      ],
+      "aliases": ["grilled stingray", "pari bakar sambal", "ikan pari panggang", "烤魔鬼鱼"],
       "icon": "dishes/ikan-bakar",
       "source": "model_estimate",
       "verified": false
@@ -503,11 +402,7 @@
       "carbs_g": 7,
       "protein_g": 29,
       "fat_g": 16,
-      "aliases": [
-        "stingray in coconut gravy",
-        "pari masak lemak",
-        "masak lemak ikan pari"
-      ],
+      "aliases": ["stingray in coconut gravy", "pari masak lemak", "masak lemak ikan pari"],
       "icon": "dishes/masak-lemak",
       "source": "model_estimate",
       "verified": false
@@ -520,11 +415,7 @@
       "carbs_g": 12,
       "protein_g": 30,
       "fat_g": 17,
-      "aliases": [
-        "fried spiced stingray",
-        "pari goreng",
-        "ikan pari goreng berempah"
-      ],
+      "aliases": ["fried spiced stingray", "pari goreng", "ikan pari goreng berempah"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -537,11 +428,7 @@
       "carbs_g": 6,
       "protein_g": 20,
       "fat_g": 22,
-      "aliases": [
-        "patin masak lemak",
-        "silver catfish coconut curry",
-        "masak lemak ikan patin"
-      ],
+      "aliases": ["patin masak lemak", "silver catfish coconut curry", "masak lemak ikan patin"],
       "icon": "dishes/masak-lemak",
       "source": "model_estimate",
       "verified": false
@@ -554,11 +441,7 @@
       "carbs_g": 1,
       "protein_g": 21,
       "fat_g": 20,
-      "aliases": [
-        "fried patin",
-        "pangasius goreng",
-        "ikan patin goreng kunyit"
-      ],
+      "aliases": ["fried patin", "pangasius goreng", "ikan patin goreng kunyit"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -571,11 +454,7 @@
       "carbs_g": 6,
       "protein_g": 17,
       "fat_g": 11,
-      "aliases": [
-        "patin soup",
-        "sup patin",
-        "ikan patin sup"
-      ],
+      "aliases": ["patin soup", "sup patin", "ikan patin sup"],
       "icon": "food/noodle-bowl",
       "source": "model_estimate",
       "verified": false
@@ -588,11 +467,7 @@
       "carbs_g": 1,
       "protein_g": 21,
       "fat_g": 18,
-      "aliases": [
-        "fried catfish",
-        "keli goreng rangup",
-        "ikan keli goreng garing"
-      ],
+      "aliases": ["fried catfish", "keli goreng rangup", "ikan keli goreng garing"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -605,11 +480,7 @@
       "carbs_g": 7,
       "protein_g": 20,
       "fat_g": 20,
-      "aliases": [
-        "keli masak lemak",
-        "catfish coconut gravy",
-        "masak lemak ikan keli"
-      ],
+      "aliases": ["keli masak lemak", "catfish coconut gravy", "masak lemak ikan keli"],
       "icon": "dishes/masak-lemak",
       "source": "model_estimate",
       "verified": false
@@ -622,11 +493,7 @@
       "carbs_g": 7,
       "protein_g": 23,
       "fat_g": 20,
-      "aliases": [
-        "smoked catfish coconut curry",
-        "keli salai",
-        "salai keli masak lemak"
-      ],
+      "aliases": ["smoked catfish coconut curry", "keli salai", "salai keli masak lemak"],
       "icon": "dishes/masak-lemak",
       "source": "model_estimate",
       "verified": false
@@ -639,12 +506,7 @@
       "carbs_g": 4,
       "protein_g": 24,
       "fat_g": 5,
-      "aliases": [
-        "snakehead with ginger",
-        "haruan masak halia",
-        "ikan haruan halia",
-        "生鱼姜汤"
-      ],
+      "aliases": ["snakehead with ginger", "haruan masak halia", "ikan haruan halia", "生鱼姜汤"],
       "icon": "food/ginger",
       "source": "model_estimate",
       "verified": false
@@ -657,12 +519,7 @@
       "carbs_g": 5,
       "protein_g": 24,
       "fat_g": 4,
-      "aliases": [
-        "snakehead fish soup",
-        "sup haruan",
-        "haruan soup",
-        "生鱼汤"
-      ],
+      "aliases": ["snakehead fish soup", "sup haruan", "haruan soup", "生鱼汤"],
       "icon": "food/noodle-bowl",
       "source": "model_estimate",
       "verified": false
@@ -675,11 +532,7 @@
       "carbs_g": 1,
       "protein_g": 26,
       "fat_g": 13,
-      "aliases": [
-        "fried snakehead",
-        "haruan goreng",
-        "ikan haruan goreng kunyit"
-      ],
+      "aliases": ["fried snakehead", "haruan goreng", "ikan haruan goreng kunyit"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -692,11 +545,7 @@
       "carbs_g": 5,
       "protein_g": 24,
       "fat_g": 8,
-      "aliases": [
-        "haruan masak kunyit",
-        "turmeric snakehead",
-        "ikan haruan kunyit"
-      ],
+      "aliases": ["haruan masak kunyit", "turmeric snakehead", "ikan haruan kunyit"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -709,12 +558,7 @@
       "carbs_g": 6,
       "protein_g": 41,
       "fat_g": 11,
-      "aliases": [
-        "grilled tilapia",
-        "tilapia bakar sambal",
-        "ikan tilapia panggang",
-        "烤非洲鱼"
-      ],
+      "aliases": ["grilled tilapia", "tilapia bakar sambal", "ikan tilapia panggang", "烤非洲鱼"],
       "icon": "food/grilled-fish",
       "source": "model_estimate",
       "verified": false
@@ -727,11 +571,7 @@
       "carbs_g": 1,
       "protein_g": 40,
       "fat_g": 24,
-      "aliases": [
-        "fried tilapia whole",
-        "tilapia goreng",
-        "ikan tilapia goreng garing"
-      ],
+      "aliases": ["fried tilapia whole", "tilapia goreng", "ikan tilapia goreng garing"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -744,11 +584,7 @@
       "carbs_g": 36,
       "protein_g": 42,
       "fat_g": 26,
-      "aliases": [
-        "tilapia 3 rasa",
-        "three flavour tilapia",
-        "tilapia tiga rasa"
-      ],
+      "aliases": ["tilapia 3 rasa", "three flavour tilapia", "tilapia tiga rasa"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -761,11 +597,7 @@
       "carbs_g": 6,
       "protein_g": 42,
       "fat_g": 8,
-      "aliases": [
-        "steamed tilapia ginger",
-        "tilapia kukus",
-        "tilapia stim halia"
-      ],
+      "aliases": ["steamed tilapia ginger", "tilapia kukus", "tilapia stim halia"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -778,11 +610,7 @@
       "carbs_g": 6,
       "protein_g": 37,
       "fat_g": 10,
-      "aliases": [
-        "grilled golden snapper",
-        "jenahak bakar",
-        "ikan jenahak panggang"
-      ],
+      "aliases": ["grilled golden snapper", "jenahak bakar", "ikan jenahak panggang"],
       "icon": "dishes/ikan-bakar",
       "source": "model_estimate",
       "verified": false
@@ -795,11 +623,7 @@
       "carbs_g": 5,
       "protein_g": 38,
       "fat_g": 8,
-      "aliases": [
-        "steamed golden snapper",
-        "jenahak kukus",
-        "jenahak stim"
-      ],
+      "aliases": ["steamed golden snapper", "jenahak kukus", "jenahak stim"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -812,11 +636,7 @@
       "carbs_g": 1,
       "protein_g": 18,
       "fat_g": 14,
-      "aliases": [
-        "fried sardines",
-        "ikan tamban goreng",
-        "sardin segar goreng"
-      ],
+      "aliases": ["fried sardines", "ikan tamban goreng", "sardin segar goreng"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -830,12 +650,7 @@
       "protein_g": 22,
       "fat_g": 11,
       "sodium_mg": 640,
-      "aliases": [
-        "canned sardines",
-        "sardin tin",
-        "sardine in tomato sauce",
-        "sardin ayam brand"
-      ],
+      "aliases": ["canned sardines", "sardin tin", "sardine in tomato sauce", "sardin ayam brand"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -849,11 +664,7 @@
       "protein_g": 8,
       "fat_g": 2,
       "sodium_mg": 900,
-      "aliases": [
-        "anchovy soup",
-        "sup bilis",
-        "kuah sup ikan bilis"
-      ],
+      "aliases": ["anchovy soup", "sup bilis", "kuah sup ikan bilis"],
       "icon": "food/noodle-bowl",
       "source": "model_estimate",
       "verified": false
@@ -867,11 +678,7 @@
       "protein_g": 12,
       "fat_g": 13,
       "sodium_mg": 700,
-      "aliases": [
-        "fried anchovies with peanuts",
-        "bilis kacang",
-        "ikan bilis kacang nasi lemak"
-      ],
+      "aliases": ["fried anchovies with peanuts", "bilis kacang", "ikan bilis kacang nasi lemak"],
       "icon": "food/peanuts",
       "source": "model_estimate",
       "verified": false
@@ -885,11 +692,7 @@
       "protein_g": 6,
       "fat_g": 9,
       "sodium_mg": 450,
-      "aliases": [
-        "salted fish potato patty",
-        "bergedil ikan masin",
-        "begedil ikan masin"
-      ],
+      "aliases": ["salted fish potato patty", "bergedil ikan masin", "begedil ikan masin"],
       "icon": "food/potato",
       "source": "model_estimate",
       "verified": false
@@ -903,11 +706,7 @@
       "protein_g": 16,
       "fat_g": 9,
       "sodium_mg": 2200,
-      "aliases": [
-        "steamed salted fish with ginger",
-        "ikan masin stim",
-        "咸鱼蒸"
-      ],
+      "aliases": ["steamed salted fish with ginger", "ikan masin stim", "咸鱼蒸"],
       "icon": "food/salted-fish",
       "source": "model_estimate",
       "verified": false
@@ -921,11 +720,7 @@
       "protein_g": 6,
       "fat_g": 8,
       "sodium_mg": 900,
-      "aliases": [
-        "salted fish sambal",
-        "sambal ikan masin cili",
-        "ikan masin berlada"
-      ],
+      "aliases": ["salted fish sambal", "sambal ikan masin cili", "ikan masin berlada"],
       "icon": "food/salted-fish",
       "source": "model_estimate",
       "verified": false
@@ -938,12 +733,7 @@
       "carbs_g": 1,
       "protein_g": 24,
       "fat_g": 15,
-      "aliases": [
-        "fried threadfin",
-        "kurau goreng",
-        "ikan kurau goreng kunyit",
-        "午鱼"
-      ],
+      "aliases": ["fried threadfin", "kurau goreng", "ikan kurau goreng kunyit", "午鱼"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -956,11 +746,7 @@
       "carbs_g": 4,
       "protein_g": 25,
       "fat_g": 8,
-      "aliases": [
-        "steamed threadfin",
-        "kurau stim",
-        "ikan kurau kukus kicap"
-      ],
+      "aliases": ["steamed threadfin", "kurau stim", "ikan kurau kukus kicap"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -973,11 +759,7 @@
       "carbs_g": 1,
       "protein_g": 24,
       "fat_g": 12,
-      "aliases": [
-        "fried tuna",
-        "tongkol goreng",
-        "ikan tongkol goreng kunyit"
-      ],
+      "aliases": ["fried tuna", "tongkol goreng", "ikan tongkol goreng kunyit"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -990,11 +772,7 @@
       "carbs_g": 8,
       "protein_g": 23,
       "fat_g": 17,
-      "aliases": [
-        "sambal tongkol",
-        "tuna sambal",
-        "ikan tongkol berlada"
-      ],
+      "aliases": ["sambal tongkol", "tuna sambal", "ikan tongkol berlada"],
       "icon": "food/sambal-jar",
       "source": "model_estimate",
       "verified": false
@@ -1025,11 +803,7 @@
       "carbs_g": 1,
       "protein_g": 22,
       "fat_g": 14,
-      "aliases": [
-        "fried round scad",
-        "selayang goreng",
-        "ikan selayang"
-      ],
+      "aliases": ["fried round scad", "selayang goreng", "ikan selayang"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -1042,11 +816,7 @@
       "carbs_g": 8,
       "protein_g": 16,
       "fat_g": 10,
-      "aliases": [
-        "fried jewfish",
-        "gelama goreng",
-        "ikan gelama tepung"
-      ],
+      "aliases": ["fried jewfish", "gelama goreng", "ikan gelama tepung"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -1060,11 +830,7 @@
       "protein_g": 14,
       "fat_g": 9,
       "sodium_mg": 1800,
-      "aliases": [
-        "fried salted jewfish",
-        "gelama masin",
-        "ikan masin gelama"
-      ],
+      "aliases": ["fried salted jewfish", "gelama masin", "ikan masin gelama"],
       "icon": "food/salted-fish",
       "source": "model_estimate",
       "verified": false
@@ -1094,11 +860,7 @@
       "carbs_g": 10,
       "protein_g": 21,
       "fat_g": 17,
-      "aliases": [
-        "baung tempoyak",
-        "river catfish with fermented durian",
-        "tempoyak ikan baung"
-      ],
+      "aliases": ["baung tempoyak", "river catfish with fermented durian", "tempoyak ikan baung"],
       "icon": "dishes/gulai",
       "source": "model_estimate",
       "verified": false
@@ -1111,11 +873,7 @@
       "carbs_g": 8,
       "protein_g": 22,
       "fat_g": 12,
-      "aliases": [
-        "asam pedas baung",
-        "baung asam pedas",
-        "ikan baung asam"
-      ],
+      "aliases": ["asam pedas baung", "baung asam pedas", "ikan baung asam"],
       "icon": "dishes/asam-pedas",
       "source": "model_estimate",
       "verified": false
@@ -1128,11 +886,7 @@
       "carbs_g": 1,
       "protein_g": 25,
       "fat_g": 17,
-      "aliases": [
-        "fried tinfoil barb",
-        "lampam goreng",
-        "ikan lampam jawa"
-      ],
+      "aliases": ["fried tinfoil barb", "lampam goreng", "ikan lampam jawa"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false
@@ -1145,11 +899,7 @@
       "carbs_g": 7,
       "protein_g": 19,
       "fat_g": 16,
-      "aliases": [
-        "mudskipper coconut curry",
-        "tembakul masak lemak",
-        "ikan belacak"
-      ],
+      "aliases": ["mudskipper coconut curry", "tembakul masak lemak", "ikan belacak"],
       "icon": "dishes/masak-lemak",
       "source": "model_estimate",
       "verified": false
@@ -1162,12 +912,7 @@
       "carbs_g": 5,
       "protein_g": 52,
       "fat_g": 10,
-      "aliases": [
-        "steamed grouper",
-        "kerapu kukus",
-        "清蒸石斑",
-        "ikan kerapu kukus"
-      ],
+      "aliases": ["steamed grouper", "kerapu kukus", "清蒸石斑", "ikan kerapu kukus"],
       "icon": "food/fish",
       "source": "model_estimate",
       "verified": false,
@@ -1188,12 +933,7 @@
       "carbs_g": 42,
       "protein_g": 32,
       "fat_g": 28,
-      "aliases": [
-        "battered fried prawns",
-        "prawn fritters",
-        "udang tepung goreng",
-        "炸虾"
-      ],
+      "aliases": ["battered fried prawns", "prawn fritters", "udang tepung goreng", "炸虾"],
       "icon": "food/prawn"
     },
     {
@@ -1206,11 +946,7 @@
       "carbs_g": 7,
       "protein_g": 19,
       "fat_g": 17,
-      "aliases": [
-        "prawns in coconut gravy",
-        "masak lemak udang",
-        "udang masak lemak"
-      ],
+      "aliases": ["prawns in coconut gravy", "masak lemak udang", "udang masak lemak"],
       "icon": "dishes/masak-lemak"
     },
     {
@@ -1223,11 +959,7 @@
       "carbs_g": 2,
       "protein_g": 19,
       "fat_g": 11,
-      "aliases": [
-        "grilled freshwater prawn",
-        "udang galah panggang",
-        "giant river prawn grilled"
-      ],
+      "aliases": ["grilled freshwater prawn", "udang galah panggang", "giant river prawn grilled"],
       "icon": "food/prawn"
     },
     {
@@ -1240,11 +972,7 @@
       "carbs_g": 2,
       "protein_g": 21,
       "fat_g": 10,
-      "aliases": [
-        "grilled tiger prawns",
-        "udang harimau panggang",
-        "tiger prawn bakar"
-      ],
+      "aliases": ["grilled tiger prawns", "udang harimau panggang", "tiger prawn bakar"],
       "icon": "food/prawn"
     },
     {
@@ -1257,11 +985,7 @@
       "carbs_g": 8,
       "protein_g": 19,
       "fat_g": 11,
-      "aliases": [
-        "ginger prawns",
-        "udang halia",
-        "姜葱虾"
-      ],
+      "aliases": ["ginger prawns", "udang halia", "姜葱虾"],
       "icon": "food/ginger"
     },
     {
@@ -1274,11 +998,7 @@
       "carbs_g": 15,
       "protein_g": 19,
       "fat_g": 10,
-      "aliases": [
-        "prawns in soy sauce",
-        "udang kicap",
-        "soy sauce prawns"
-      ],
+      "aliases": ["prawns in soy sauce", "udang kicap", "soy sauce prawns"],
       "icon": "food/prawn"
     },
     {
@@ -1291,11 +1011,7 @@
       "carbs_g": 26,
       "protein_g": 34,
       "fat_g": 36,
-      "aliases": [
-        "salted egg prawns",
-        "udang telur masin",
-        "咸蛋虾"
-      ],
+      "aliases": ["salted egg prawns", "udang telur masin", "咸蛋虾"],
       "icon": "food/prawn"
     },
     {
@@ -1308,11 +1024,7 @@
       "carbs_g": 24,
       "protein_g": 23,
       "fat_g": 14,
-      "aliases": [
-        "chilli prawns",
-        "udang masak cili",
-        "sweet chilli prawns"
-      ],
+      "aliases": ["chilli prawns", "udang masak cili", "sweet chilli prawns"],
       "icon": "food/prawn"
     },
     {
@@ -1325,11 +1037,7 @@
       "carbs_g": 4,
       "protein_g": 23,
       "fat_g": 18,
-      "aliases": [
-        "garlic butter prawns",
-        "udang bawang putih",
-        "蒜蓉虾"
-      ],
+      "aliases": ["garlic butter prawns", "udang bawang putih", "蒜蓉虾"],
       "icon": "food/prawn"
     },
     {
@@ -1342,11 +1050,7 @@
       "carbs_g": 14,
       "protein_g": 22,
       "fat_g": 14,
-      "aliases": [
-        "prawns in tomato chilli gravy",
-        "udang merah",
-        "udang masak merah pengantin"
-      ],
+      "aliases": ["prawns in tomato chilli gravy", "udang merah", "udang masak merah pengantin"],
       "icon": "dishes/sambal-udang"
     },
     {
@@ -1359,10 +1063,7 @@
       "carbs_g": 8,
       "protein_g": 19,
       "fat_g": 18,
-      "aliases": [
-        "freshwater prawn coconut curry",
-        "udang galah masak lemak cili api"
-      ],
+      "aliases": ["freshwater prawn coconut curry", "udang galah masak lemak cili api"],
       "icon": "dishes/masak-lemak"
     },
     {
@@ -1376,11 +1077,7 @@
       "protein_g": 9,
       "fat_g": 9,
       "sodium_mg": 600,
-      "aliases": [
-        "dried shrimp sambal",
-        "sambal udang kering hae bee",
-        "hae bee hiam"
-      ],
+      "aliases": ["dried shrimp sambal", "sambal udang kering hae bee", "hae bee hiam"],
       "icon": "food/sambal-jar"
     },
     {
@@ -1393,11 +1090,7 @@
       "carbs_g": 5,
       "protein_g": 18,
       "fat_g": 4,
-      "aliases": [
-        "prawn soup",
-        "sup udang bening",
-        "clear prawn soup"
-      ],
+      "aliases": ["prawn soup", "sup udang bening", "clear prawn soup"],
       "icon": "food/noodle-bowl"
     },
     {
@@ -1410,11 +1103,7 @@
       "carbs_g": 26,
       "protein_g": 18,
       "fat_g": 5,
-      "aliases": [
-        "squid with water spinach",
-        "jiu hu char kangkung",
-        "苏东蕹菜"
-      ],
+      "aliases": ["squid with water spinach", "jiu hu char kangkung", "苏东蕹菜"],
       "icon": "food/squid-rings"
     },
     {
@@ -1427,11 +1116,7 @@
       "carbs_g": 26,
       "protein_g": 20,
       "fat_g": 12,
-      "aliases": [
-        "stuffed squid",
-        "sotong sumbat pulut",
-        "sotong isi"
-      ],
+      "aliases": ["stuffed squid", "sotong sumbat pulut", "sotong isi"],
       "icon": "food/squid-rings"
     },
     {
@@ -1444,11 +1129,7 @@
       "carbs_g": 4,
       "protein_g": 20,
       "fat_g": 11,
-      "aliases": [
-        "turmeric fried squid",
-        "sotong goreng",
-        "fried squid kunyit"
-      ],
+      "aliases": ["turmeric fried squid", "sotong goreng", "fried squid kunyit"],
       "icon": "food/squid-rings"
     },
     {
@@ -1461,11 +1142,7 @@
       "carbs_g": 8,
       "protein_g": 20,
       "fat_g": 17,
-      "aliases": [
-        "squid in coconut gravy",
-        "masak lemak sotong",
-        "sotong masak lemak"
-      ],
+      "aliases": ["squid in coconut gravy", "masak lemak sotong", "sotong masak lemak"],
       "icon": "dishes/masak-lemak"
     },
     {
@@ -1478,11 +1155,7 @@
       "carbs_g": 14,
       "protein_g": 21,
       "fat_g": 16,
-      "aliases": [
-        "squid sambal with stink beans",
-        "sambal sotong petai",
-        "sotong petai"
-      ],
+      "aliases": ["squid sambal with stink beans", "sambal sotong petai", "sotong petai"],
       "icon": "food/sambal-jar"
     },
     {
@@ -1495,11 +1168,7 @@
       "carbs_g": 20,
       "protein_g": 23,
       "fat_g": 24,
-      "aliases": [
-        "butter squid",
-        "sotong butter",
-        "牛油苏东"
-      ],
+      "aliases": ["butter squid", "sotong butter", "牛油苏东"],
       "icon": "food/squid-rings"
     },
     {
@@ -1512,12 +1181,7 @@
       "carbs_g": 9,
       "protein_g": 16,
       "fat_g": 14,
-      "aliases": [
-        "fried cockles with sambal",
-        "kerang sambal",
-        "sambal kerang",
-        "炒血蚶"
-      ],
+      "aliases": ["fried cockles with sambal", "kerang sambal", "sambal kerang", "炒血蚶"],
       "icon": "food/cockles"
     },
     {
@@ -1530,11 +1194,7 @@
       "carbs_g": 8,
       "protein_g": 15,
       "fat_g": 17,
-      "aliases": [
-        "cockles in coconut gravy",
-        "masak lemak kerang",
-        "kerang masak lemak cili api"
-      ],
+      "aliases": ["cockles in coconut gravy", "masak lemak kerang", "kerang masak lemak cili api"],
       "icon": "dishes/masak-lemak"
     },
     {
@@ -1547,12 +1207,7 @@
       "carbs_g": 8,
       "protein_g": 14,
       "fat_g": 10,
-      "aliases": [
-        "ginger clams",
-        "lala halia",
-        "姜酒啦啦",
-        "clams in ginger sauce"
-      ],
+      "aliases": ["ginger clams", "lala halia", "姜酒啦啦", "clams in ginger sauce"],
       "icon": "food/cockles"
     },
     {
@@ -1565,11 +1220,7 @@
       "carbs_g": 7,
       "protein_g": 14,
       "fat_g": 15,
-      "aliases": [
-        "garlic clams",
-        "lala bawang putih",
-        "蒜蓉啦啦"
-      ],
+      "aliases": ["garlic clams", "lala bawang putih", "蒜蓉啦啦"],
       "icon": "food/cockles"
     },
     {
@@ -1582,11 +1233,7 @@
       "carbs_g": 5,
       "protein_g": 13,
       "fat_g": 3,
-      "aliases": [
-        "clam soup",
-        "lala soup",
-        "啦啦汤"
-      ],
+      "aliases": ["clam soup", "lala soup", "啦啦汤"],
       "icon": "food/noodle-bowl"
     },
     {
@@ -1617,11 +1264,7 @@
       "carbs_g": 3,
       "protein_g": 22,
       "fat_g": 18,
-      "aliases": [
-        "turmeric fried crab",
-        "ketam goreng",
-        "fried crab kunyit"
-      ],
+      "aliases": ["turmeric fried crab", "ketam goreng", "fried crab kunyit"],
       "icon": "food/crab"
     },
     {
@@ -1634,11 +1277,7 @@
       "carbs_g": 16,
       "protein_g": 25,
       "fat_g": 27,
-      "aliases": [
-        "salted egg crab",
-        "ketam telur masin",
-        "咸蛋螃蟹"
-      ],
+      "aliases": ["salted egg crab", "ketam telur masin", "咸蛋螃蟹"],
       "icon": "food/crab"
     },
     {
@@ -1651,11 +1290,7 @@
       "carbs_g": 24,
       "protein_g": 11,
       "fat_g": 18,
-      "aliases": [
-        "fried oysters",
-        "tiram celup tepung",
-        "炸生蚝"
-      ],
+      "aliases": ["fried oysters", "tiram celup tepung", "炸生蚝"],
       "icon": "food/cockles"
     },
     {
@@ -1668,12 +1303,7 @@
       "carbs_g": 4,
       "protein_g": 9,
       "fat_g": 2,
-      "aliases": [
-        "fresh oysters",
-        "raw oysters",
-        "tiram mentah",
-        "生蚝"
-      ],
+      "aliases": ["fresh oysters", "raw oysters", "tiram mentah", "生蚝"],
       "icon": "food/cockles"
     },
     {
@@ -1686,11 +1316,7 @@
       "carbs_g": 9,
       "protein_g": 16,
       "fat_g": 15,
-      "aliases": [
-        "green mussels in coconut gravy",
-        "masak lemak kupang",
-        "siput sudu masak lemak"
-      ],
+      "aliases": ["green mussels in coconut gravy", "masak lemak kupang", "siput sudu masak lemak"],
       "icon": "dishes/masak-lemak"
     },
     {
@@ -1703,11 +1329,7 @@
       "carbs_g": 4,
       "protein_g": 20,
       "fat_g": 16,
-      "aliases": [
-        "cheese baked mussels",
-        "kupang bakar cheese",
-        "grilled mussels with cheese"
-      ],
+      "aliases": ["cheese baked mussels", "kupang bakar cheese", "grilled mussels with cheese"],
       "icon": "food/cockles"
     },
     {
@@ -1720,11 +1342,7 @@
       "carbs_g": 5,
       "protein_g": 14,
       "fat_g": 3,
-      "aliases": [
-        "crab soup",
-        "sup ketam bening",
-        "螃蟹汤"
-      ],
+      "aliases": ["crab soup", "sup ketam bening", "螃蟹汤"],
       "icon": "food/crab"
     },
     {
@@ -1737,12 +1355,7 @@
       "carbs_g": 12,
       "protein_g": 15,
       "fat_g": 9,
-      "aliases": [
-        "sup perut ikan",
-        "hu piu soup",
-        "鱼鳔汤",
-        "fish maw thick soup"
-      ],
+      "aliases": ["sup perut ikan", "hu piu soup", "鱼鳔汤", "fish maw thick soup"],
       "icon": "food/noodle-bowl"
     },
     {
@@ -1755,12 +1368,7 @@
       "carbs_g": 14,
       "protein_g": 24,
       "fat_g": 19,
-      "aliases": [
-        "fish head steamboat",
-        "steamboat kepala ikan",
-        "鱼头炉",
-        "fish head pot"
-      ],
+      "aliases": ["fish head steamboat", "steamboat kepala ikan", "鱼头炉", "fish head pot"],
       "icon": "dishes/fish-head-curry"
     },
     {
@@ -1773,11 +1381,7 @@
       "carbs_g": 6,
       "protein_g": 21,
       "fat_g": 4,
-      "aliases": [
-        "clear fish soup",
-        "fish soup",
-        "sup ikan bening"
-      ],
+      "aliases": ["clear fish soup", "fish soup", "sup ikan bening"],
       "icon": "food/noodle-bowl"
     },
     {
@@ -1790,11 +1394,7 @@
       "carbs_g": 7,
       "protein_g": 20,
       "fat_g": 7,
-      "aliases": [
-        "fish head soup",
-        "sup kepala ikan merah",
-        "fish head clear soup"
-      ],
+      "aliases": ["fish head soup", "sup kepala ikan merah", "fish head clear soup"],
       "icon": "food/noodle-bowl"
     },
     {
@@ -1807,11 +1407,7 @@
       "carbs_g": 62,
       "protein_g": 32,
       "fat_g": 15,
-      "aliases": [
-        "grilled fish set",
-        "set ikan bakar nasi",
-        "ikan bakar dengan nasi"
-      ],
+      "aliases": ["grilled fish set", "set ikan bakar nasi", "ikan bakar dengan nasi"],
       "icon": "dishes/ikan-bakar"
     },
     {
@@ -1824,11 +1420,7 @@
       "carbs_g": 72,
       "protein_g": 28,
       "fat_g": 18,
-      "aliases": [
-        "mixed rice with fried fish",
-        "nasi campur lauk ikan",
-        "economy rice fried fish"
-      ],
+      "aliases": ["mixed rice with fried fish", "nasi campur lauk ikan", "economy rice fried fish"],
       "icon": "dishes/nasi-campur"
     },
     {
@@ -1841,11 +1433,7 @@
       "carbs_g": 1,
       "protein_g": 14,
       "fat_g": 9,
-      "aliases": [
-        "fried fish roe",
-        "telur ikan",
-        "fish roe goreng"
-      ],
+      "aliases": ["fried fish roe", "telur ikan", "fish roe goreng"],
       "icon": "food/fish"
     },
     {
@@ -1858,11 +1446,7 @@
       "carbs_g": 8,
       "protein_g": 17,
       "fat_g": 12,
-      "aliases": [
-        "grilled fish salad",
-        "kerabu ikan",
-        "flaked fish kerabu"
-      ],
+      "aliases": ["grilled fish salad", "kerabu ikan", "flaked fish kerabu"],
       "icon": "food/fish"
     },
     {
@@ -1875,11 +1459,7 @@
       "carbs_g": 6,
       "protein_g": 22,
       "fat_g": 6,
-      "aliases": [
-        "tamarind fish broth",
-        "ikan asam rebus",
-        "asam rebus"
-      ],
+      "aliases": ["tamarind fish broth", "ikan asam rebus", "asam rebus"],
       "icon": "dishes/asam-pedas"
     },
     {
@@ -1892,11 +1472,7 @@
       "carbs_g": 32,
       "protein_g": 20,
       "fat_g": 22,
-      "aliases": [
-        "battered fish snack",
-        "ict ikan",
-        "fish celup tepung"
-      ],
+      "aliases": ["battered fish snack", "ict ikan", "fish celup tepung"],
       "icon": "food/fish-cake"
     },
     {
@@ -1909,11 +1485,7 @@
       "carbs_g": 8,
       "protein_g": 13,
       "fat_g": 10,
-      "aliases": [
-        "sata terengganu",
-        "grilled fish in banana leaf",
-        "satar"
-      ],
+      "aliases": ["sata terengganu", "grilled fish in banana leaf", "satar"],
       "icon": "dishes/otak-otak"
     },
     {
@@ -1962,11 +1534,7 @@
       "carbs_g": 8,
       "protein_g": 13,
       "fat_g": 14,
-      "aliases": [
-        "surf clams in coconut gravy",
-        "masak lemak kepah",
-        "kepah masak lemak cili api"
-      ],
+      "aliases": ["surf clams in coconut gravy", "masak lemak kepah", "kepah masak lemak cili api"],
       "icon": "dishes/masak-lemak"
     }
   ]

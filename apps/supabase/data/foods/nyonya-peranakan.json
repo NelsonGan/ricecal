@@ -62,12 +62,7 @@
       "carbs_g": 16,
       "protein_g": 20,
       "fat_g": 36,
-      "aliases": [
-        "pork buah keluak",
-        "babi buah keluk",
-        "pork with black nut",
-        "keluak pork"
-      ],
+      "aliases": ["pork buah keluak", "babi buah keluk", "pork with black nut", "keluak pork"],
       "icon": "food/pork-belly",
       "verified": false,
       "source": "model_estimate"
@@ -144,12 +139,7 @@
       "carbs_g": 15,
       "protein_g": 22,
       "fat_g": 27,
-      "aliases": [
-        "babi siow",
-        "pork sioh",
-        "nyonya coriander pork",
-        "peranakan babi sioh"
-      ],
+      "aliases": ["babi siow", "pork sioh", "nyonya coriander pork", "peranakan babi sioh"],
       "icon": "food/pork-belly",
       "verified": false,
       "source": "model_estimate"
@@ -162,12 +152,7 @@
       "carbs_g": 12,
       "protein_g": 24,
       "fat_g": 24,
-      "aliases": [
-        "itek sioh",
-        "duck sioh",
-        "nyonya braised duck",
-        "peranakan duck in coriander"
-      ],
+      "aliases": ["itek sioh", "duck sioh", "nyonya braised duck", "peranakan duck in coriander"],
       "icon": "dishes/roast-duck-rice",
       "verified": false,
       "source": "model_estimate"
@@ -331,12 +316,7 @@
       "carbs_g": 10,
       "protein_g": 14,
       "fat_g": 17,
-      "aliases": [
-        "petai prawn sambal",
-        "sambal udang petai",
-        "stink bean prawns",
-        "petai udang"
-      ],
+      "aliases": ["petai prawn sambal", "sambal udang petai", "stink bean prawns", "petai udang"],
       "icon": "dishes/sambal-udang",
       "verified": false,
       "source": "model_estimate"
@@ -373,12 +353,7 @@
       "carbs_g": 8,
       "protein_g": 10,
       "fat_g": 12,
-      "aliases": [
-        "otak otak muar",
-        "muar otak-otak",
-        "johor otak-otak",
-        "otak muar"
-      ],
+      "aliases": ["otak otak muar", "muar otak-otak", "johor otak-otak", "otak muar"],
       "icon": "dishes/otak-otak",
       "verified": false,
       "source": "model_estimate",
@@ -471,12 +446,7 @@
       "carbs_g": 56,
       "protein_g": 13,
       "fat_g": 16,
-      "aliases": [
-        "nyonya mee siam",
-        "peranakan mee siam",
-        "mee siam kuah nyonya",
-        "mihun siam"
-      ],
+      "aliases": ["nyonya mee siam", "peranakan mee siam", "mee siam kuah nyonya", "mihun siam"],
       "icon": "dishes/mee-siam",
       "verified": false,
       "source": "model_estimate"
@@ -570,12 +540,7 @@
       "carbs_g": 4.5,
       "protein_g": 1.5,
       "fat_g": 4,
-      "aliases": [
-        "cucumber sambal",
-        "sambal mentimun",
-        "nyonya sambal timun",
-        "acar timun sambal"
-      ],
+      "aliases": ["cucumber sambal", "sambal mentimun", "nyonya sambal timun", "acar timun sambal"],
       "icon": "food/sambal-jar",
       "verified": false,
       "source": "model_estimate"
@@ -681,12 +646,7 @@
       "carbs_g": 13,
       "protein_g": 20,
       "fat_g": 25,
-      "aliases": [
-        "babi asam",
-        "pork in tamarind",
-        "nyonya tamarind pork",
-        "babi masak assam"
-      ],
+      "aliases": ["babi asam", "pork in tamarind", "nyonya tamarind pork", "babi masak assam"],
       "icon": "food/pork-belly",
       "verified": false,
       "source": "model_estimate"
@@ -791,12 +751,7 @@
       "carbs_g": 9,
       "protein_g": 1,
       "fat_g": 5,
-      "aliases": [
-        "sambal nenas",
-        "pineapple sambal",
-        "nyonya pineapple sambal",
-        "sambal nanas"
-      ],
+      "aliases": ["sambal nenas", "pineapple sambal", "nyonya pineapple sambal", "sambal nanas"],
       "icon": "food/pineapple",
       "verified": false,
       "source": "model_estimate"
@@ -883,12 +838,7 @@
       "carbs_g": 22,
       "protein_g": 6,
       "fat_g": 13,
-      "aliases": [
-        "fried popiah",
-        "nyonya spring roll",
-        "popiah goreng",
-        "deep fried popiah"
-      ],
+      "aliases": ["fried popiah", "nyonya spring roll", "popiah goreng", "deep fried popiah"],
       "icon": "food/spring-roll",
       "verified": false,
       "source": "model_estimate"
@@ -955,12 +905,7 @@
       "carbs_g": 88,
       "protein_g": 28,
       "fat_g": 30,
-      "aliases": [
-        "nyonya set meal",
-        "peranakan rice set",
-        "nasi nyonya",
-        "baba nyonya lunch set"
-      ],
+      "aliases": ["nyonya set meal", "peranakan rice set", "nasi nyonya", "baba nyonya lunch set"],
       "icon": "dishes/nasi-campur",
       "verified": false,
       "source": "model_estimate"
@@ -1019,13 +964,7 @@
       "carbs_g": 15,
       "protein_g": 25,
       "fat_g": 19,
-      "aliases": [
-        "semur kristang",
-        "eurasian beef stew",
-        "smore",
-        "kristang semur",
-        "beef semur"
-      ],
+      "aliases": ["semur kristang", "eurasian beef stew", "smore", "kristang semur", "beef semur"],
       "icon": "food/cooking-pot",
       "verified": false,
       "source": "model_estimate"
@@ -1094,12 +1033,7 @@
       "carbs_g": 8,
       "protein_g": 26,
       "fat_g": 27,
-      "aliases": [
-        "sey bak",
-        "kristang seybak",
-        "eurasian braised pork platter",
-        "sebak"
-      ],
+      "aliases": ["sey bak", "kristang seybak", "eurasian braised pork platter", "sebak"],
       "icon": "food/pork-belly",
       "verified": false,
       "source": "model_estimate"
@@ -1203,11 +1137,7 @@
       "carbs_g": 8,
       "protein_g": 22,
       "fat_g": 18,
-      "aliases": [
-        "eurasian fish curry",
-        "kristang fish curry",
-        "portuguese fish curry melaka"
-      ],
+      "aliases": ["eurasian fish curry", "kristang fish curry", "portuguese fish curry melaka"],
       "icon": "dishes/fish-head-curry",
       "verified": false,
       "source": "model_estimate"
@@ -1291,12 +1221,7 @@
       "carbs_g": 20,
       "protein_g": 3,
       "fat_g": 10,
-      "aliases": [
-        "biskut sugee",
-        "suji cookies",
-        "eurasian sugee biscuit",
-        "semolina cookies"
-      ],
+      "aliases": ["biskut sugee", "suji cookies", "eurasian sugee biscuit", "semolina cookies"],
       "icon": "food/peanut-cookie",
       "verified": false,
       "source": "model_estimate"
@@ -1328,13 +1253,7 @@
       "carbs_g": 27,
       "protein_g": 3,
       "fat_g": 6,
-      "aliases": [
-        "apom penang",
-        "sweet apom",
-        "apam manis",
-        "penang apom",
-        "apom bokwa"
-      ],
+      "aliases": ["apom penang", "sweet apom", "apam manis", "penang apom", "apom bokwa"],
       "icon": "dishes/apam-balik",
       "verified": false,
       "source": "model_estimate"
@@ -1385,13 +1304,7 @@
       "carbs_g": 29,
       "protein_g": 3,
       "fat_g": 8,
-      "aliases": [
-        "heong peng",
-        "香饼",
-        "fragrant biscuit",
-        "penang heong peah",
-        "ipoh heong peng"
-      ],
+      "aliases": ["heong peng", "香饼", "fragrant biscuit", "penang heong peah", "ipoh heong peng"],
       "icon": "food/biscuit-stack",
       "verified": false,
       "source": "model_estimate"
@@ -1423,12 +1336,7 @@
       "carbs_g": 54,
       "protein_g": 4,
       "fat_g": 12,
-      "aliases": [
-        "cendol penang",
-        "penang chendol",
-        "cendol pulau pinang",
-        "chendul penang"
-      ],
+      "aliases": ["cendol penang", "penang chendol", "cendol pulau pinang", "chendul penang"],
       "icon": "dishes/cendol",
       "verified": false,
       "source": "model_estimate"
@@ -1441,12 +1349,7 @@
       "carbs_g": 62,
       "protein_g": 5,
       "fat_g": 17,
-      "aliases": [
-        "durian cendol",
-        "chendol durian",
-        "penang durian chendul",
-        "cendol with durian"
-      ],
+      "aliases": ["durian cendol", "chendol durian", "penang durian chendul", "cendol with durian"],
       "icon": "dishes/cendol",
       "verified": false,
       "source": "model_estimate"
@@ -1497,11 +1400,7 @@
       "carbs_g": 20,
       "protein_g": 6,
       "fat_g": 8,
-      "aliases": [
-        "popiah penang",
-        "penang fresh spring roll",
-        "popiah basah penang"
-      ],
+      "aliases": ["popiah penang", "penang fresh spring roll", "popiah basah penang"],
       "icon": "dishes/popiah",
       "verified": false,
       "source": "model_estimate",
@@ -1520,11 +1419,7 @@
       "carbs_g": 23,
       "protein_g": 6,
       "fat_g": 8,
-      "aliases": [
-        "melaka popiah",
-        "popiah melaka nyonya",
-        "malacca popiah"
-      ],
+      "aliases": ["melaka popiah", "popiah melaka nyonya", "malacca popiah"],
       "icon": "dishes/popiah",
       "verified": false,
       "source": "model_estimate",
@@ -1562,12 +1457,7 @@
       "carbs_g": 18,
       "protein_g": 3,
       "fat_g": 14,
-      "aliases": [
-        "puff durian",
-        "durian cream puff",
-        "melaka durian puff",
-        "durian profiterole"
-      ],
+      "aliases": ["puff durian", "durian cream puff", "melaka durian puff", "durian profiterole"],
       "icon": "food/custard-tart",
       "verified": false,
       "source": "model_estimate"
@@ -1616,12 +1506,7 @@
       "carbs_g": 17,
       "protein_g": 2,
       "fat_g": 5,
-      "aliases": [
-        "tapak kuda",
-        "horseshoe kuih",
-        "kueh tapak kuda",
-        "nyonya kuih tapak kuda"
-      ],
+      "aliases": ["tapak kuda", "horseshoe kuih", "kueh tapak kuda", "nyonya kuih tapak kuda"],
       "icon": "food/kuih",
       "verified": false,
       "source": "model_estimate",
@@ -1640,13 +1525,7 @@
       "carbs_g": 30,
       "protein_g": 1.5,
       "fat_g": 4,
-      "aliases": [
-        "kuih kaswi",
-        "kueh kosui",
-        "kuih koswi",
-        "gula melaka kuih kosui",
-        "kosui"
-      ],
+      "aliases": ["kuih kaswi", "kueh kosui", "kuih koswi", "gula melaka kuih kosui", "kosui"],
       "icon": "food/kuih-talam",
       "verified": false,
       "source": "model_estimate"
@@ -1925,11 +1804,7 @@
       "carbs_g": 22,
       "protein_g": 3,
       "fat_g": 6,
-      "aliases": [
-        "kuih cara gula melaka",
-        "sweet kuih cara",
-        "kuih cara manis pandan"
-      ],
+      "aliases": ["kuih cara gula melaka", "sweet kuih cara", "kuih cara manis pandan"],
       "icon": "food/kuih-cara",
       "verified": false,
       "source": "model_estimate"
@@ -1995,11 +1870,7 @@
       "carbs_g": 15,
       "protein_g": 7,
       "fat_g": 15,
-      "aliases": [
-        "lodeh nyonya",
-        "peranakan sayur lodeh",
-        "nyonya vegetable coconut stew"
-      ],
+      "aliases": ["lodeh nyonya", "peranakan sayur lodeh", "nyonya vegetable coconut stew"],
       "icon": "dishes/masak-lemak",
       "verified": false,
       "source": "model_estimate"
@@ -2030,11 +1901,7 @@
       "carbs_g": 58,
       "protein_g": 14,
       "fat_g": 15,
-      "aliases": [
-        "bihun goreng nyonya",
-        "peranakan fried vermicelli",
-        "nyonya mee hoon goreng"
-      ],
+      "aliases": ["bihun goreng nyonya", "peranakan fried vermicelli", "nyonya mee hoon goreng"],
       "icon": "food/rice-vermicelli",
       "verified": false,
       "source": "model_estimate"
@@ -2047,11 +1914,7 @@
       "carbs_g": 12,
       "protein_g": 7,
       "fat_g": 15,
-      "aliases": [
-        "kuah satay celup",
-        "melaka satay celup gravy",
-        "satay celup peanut gravy"
-      ],
+      "aliases": ["kuah satay celup", "melaka satay celup gravy", "satay celup peanut gravy"],
       "icon": "dishes/satay-celup",
       "verified": false,
       "source": "model_estimate"
@@ -2064,11 +1927,7 @@
       "carbs_g": 10,
       "protein_g": 22,
       "fat_g": 13,
-      "aliases": [
-        "nyonya asam pedas",
-        "peranakan asam pedas",
-        "asam pedas melaka nyonya"
-      ],
+      "aliases": ["nyonya asam pedas", "peranakan asam pedas", "asam pedas melaka nyonya"],
       "icon": "dishes/asam-pedas",
       "verified": false,
       "source": "model_estimate"
@@ -2098,12 +1957,7 @@
       "carbs_g": 8,
       "protein_g": 20,
       "fat_g": 14,
-      "aliases": [
-        "satay babi",
-        "pork satay nyonya",
-        "peranakan pork satay",
-        "satay babi nyonya"
-      ],
+      "aliases": ["satay babi", "pork satay nyonya", "peranakan pork satay", "satay babi nyonya"],
       "icon": "food/satay",
       "verified": false,
       "source": "model_estimate"
@@ -2116,12 +1970,7 @@
       "carbs_g": 24,
       "protein_g": 2,
       "fat_g": 6,
-      "aliases": [
-        "sarang semut",
-        "honeycomb kuih",
-        "kuih sarang semut",
-        "nyonya honeycomb cake"
-      ],
+      "aliases": ["sarang semut", "honeycomb kuih", "kuih sarang semut", "nyonya honeycomb cake"],
       "icon": "food/kuih",
       "verified": false,
       "source": "model_estimate"
