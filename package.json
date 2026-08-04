@@ -21,6 +21,8 @@
     "db:types": "node --no-warnings apps/supabase/scripts/gen-types.mjs",
     "foods:have": "node --no-warnings apps/supabase/scripts/foods-have.mjs",
     "foods:import": "node --no-warnings apps/supabase/scripts/import-foods.mjs",
+    "foods:dupes": "node --no-warnings apps/supabase/scripts/foods-dupes.mjs",
+    "foods:alias": "node --no-warnings apps/supabase/scripts/foods-alias.mjs",
     "eval:prompts": "deno run -A apps/supabase/scripts/eval-prompts.ts",
     "eas": "pnpm --filter @ricecal/mobile exec eas",
     "eas:credentials": "pnpm --filter @ricecal/mobile exec eas credentials",
