@@ -1657,169 +1657,6 @@
       ]
     },
     {
-      "name": "Buah Potong Campur",
-      "place": "hawker",
-      "serving": "1 pack (250 g)",
-      "kcal": 100,
-      "carbs_g": 24,
-      "protein_g": 1,
-      "fat_g": 0.3,
-      "fibre_g": 4.5,
-      "sugar_g": 18,
-      "aliases": [
-        "mixed cut fruit",
-        "buah potong",
-        "cut fruit pack",
-        "buah campur bungkus",
-        "什果",
-        "fruit potong"
-      ],
-      "verified": false,
-      "source": "usda_fdc watermelon, papaya, pineapple and guava over a 250 g stall pack",
-      "extra_servings": [
-        {
-          "label": "Half pack",
-          "factor": 0.5
-        }
-      ]
-    },
-    {
-      "name": "Mangga Muda dengan Asam Boi",
-      "place": "hawker",
-      "serving": "1 pack (200 g)",
-      "kcal": 105,
-      "carbs_g": 25.5,
-      "protein_g": 1.6,
-      "fat_g": 0.6,
-      "fibre_g": 4,
-      "sugar_g": 15,
-      "sodium_mg": 700,
-      "aliases": [
-        "green mango with sour plum",
-        "mangga asam boi",
-        "mangga muda asam boi",
-        "sour plum mango",
-        "酸梅芒果"
-      ],
-      "verified": false,
-      "source": "usda_fdc green mango per 100 g over 200 g plus asam boi and salt",
-      "extra_servings": [
-        {
-          "label": "Half pack",
-          "factor": 0.5
-        }
-      ]
-    },
-    {
-      "name": "Jambu Batu dengan Serbuk Asam Boi",
-      "place": "hawker",
-      "serving": "1 pack (200 g)",
-      "kcal": 148,
-      "carbs_g": 31.6,
-      "protein_g": 5.2,
-      "fat_g": 1.9,
-      "fibre_g": 10.8,
-      "sugar_g": 21,
-      "sodium_mg": 600,
-      "aliases": [
-        "guava with sour plum powder",
-        "jambu asam boi",
-        "jambu batu serbuk asam",
-        "guava sour plum",
-        "酸梅粉番石榴"
-      ],
-      "verified": false,
-      "source": "usda_fdc guava raw per 100 g over 200 g plus 5 g sour plum powder",
-      "extra_servings": [
-        {
-          "label": "Half pack",
-          "factor": 0.5
-        }
-      ]
-    },
-    {
-      "name": "Nanas Potong dengan Garam",
-      "place": "hawker",
-      "serving": "1 pack (200 g)",
-      "kcal": 100,
-      "carbs_g": 26.2,
-      "protein_g": 1,
-      "fat_g": 0.2,
-      "fibre_g": 2.8,
-      "sugar_g": 19.8,
-      "sodium_mg": 400,
-      "aliases": [
-        "pineapple with salt",
-        "nanas garam",
-        "nenas potong",
-        "salted pineapple",
-        "盐黄梨"
-      ],
-      "icon": "food/pineapple",
-      "verified": false,
-      "source": "usda_fdc pineapple raw per 100 g over a 200 g stall pack with salt",
-      "extra_servings": [
-        {
-          "label": "Half pack",
-          "factor": 0.5
-        }
-      ]
-    },
-    {
-      "name": "Tembikai Potong Sebungkus",
-      "place": "hawker",
-      "serving": "1 pack (250 g)",
-      "kcal": 75,
-      "carbs_g": 19,
-      "protein_g": 1.5,
-      "fat_g": 0.4,
-      "fibre_g": 1,
-      "sugar_g": 15.5,
-      "aliases": [
-        "cut watermelon pack",
-        "tembikai potong",
-        "watermelon slices",
-        "semangka potong",
-        "西瓜切片"
-      ],
-      "icon": "food/watermelon",
-      "verified": true,
-      "source": "usda_fdc watermelon raw per 100 g converted to a 250 g stall pack",
-      "extra_servings": [
-        {
-          "label": "Half pack",
-          "factor": 0.5
-        }
-      ]
-    },
-    {
-      "name": "Betik Potong Sebungkus",
-      "place": "hawker",
-      "serving": "1 pack (200 g)",
-      "kcal": 86,
-      "carbs_g": 21.6,
-      "protein_g": 1,
-      "fat_g": 0.5,
-      "fibre_g": 3.4,
-      "sugar_g": 15.6,
-      "aliases": [
-        "cut papaya pack",
-        "betik potong",
-        "papaya slices",
-        "papaya potong",
-        "木瓜切片"
-      ],
-      "icon": "food/papaya",
-      "verified": true,
-      "source": "usda_fdc papaya raw per 100 g converted to a 200 g stall pack",
-      "extra_servings": [
-        {
-          "label": "Half pack",
-          "factor": 0.5
-        }
-      ]
-    },
-    {
       "name": "Sengkuang Potong Sebungkus",
       "place": "hawker",
       "serving": "1 pack (200 g)",
@@ -1839,33 +1676,6 @@
       ],
       "verified": true,
       "source": "usda_fdc jicama raw per 100 g converted to a 200 g stall pack",
-      "extra_servings": [
-        {
-          "label": "Half pack",
-          "factor": 0.5
-        }
-      ]
-    },
-    {
-      "name": "Kedondong dengan Asam Boi",
-      "place": "hawker",
-      "serving": "1 pack (150 g)",
-      "kcal": 80,
-      "carbs_g": 19,
-      "protein_g": 1.2,
-      "fat_g": 0.4,
-      "fibre_g": 3.3,
-      "sugar_g": 14,
-      "sodium_mg": 550,
-      "aliases": [
-        "ambarella with sour plum",
-        "kedondong asam boi",
-        "buah kedondong potong",
-        "hog plum sour plum",
-        "沙梨酸梅"
-      ],
-      "verified": false,
-      "source": "myfcd_1997 kedondong per 100 g over 150 g plus 6 g asam boi",
       "extra_servings": [
         {
           "label": "Half pack",
@@ -2981,33 +2791,6 @@
       ]
     },
     {
-      "name": "Betik dengan Limau Potong",
-      "place": "hawker",
-      "serving": "1 pack (200 g)",
-      "kcal": 88,
-      "carbs_g": 22,
-      "protein_g": 1,
-      "fat_g": 0.5,
-      "fibre_g": 3.4,
-      "sugar_g": 15.6,
-      "sodium_mg": 10,
-      "aliases": [
-        "papaya with lime",
-        "betik limau",
-        "papaya lime potong",
-        "betik potong limau"
-      ],
-      "icon": "food/papaya",
-      "verified": false,
-      "source": "usda_fdc papaya raw per 100 g over 200 g with a squeeze of lime",
-      "extra_servings": [
-        {
-          "label": "Half pack",
-          "factor": 0.5
-        }
-      ]
-    },
-    {
       "name": "Belimbing dengan Asam Boi",
       "place": "hawker",
       "serving": "1 pack (150 g)",
@@ -3081,6 +2864,177 @@
       "icon": "food/coconut",
       "verified": false,
       "source": "myfcd_1997 young coconut flesh and coconut water, 150 g plus 200 ml",
+      "extra_servings": [
+        {
+          "label": "Half pack",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Durian Chanee",
+      "place": "home",
+      "serving": "3 seeds (150 g flesh)",
+      "kcal": 210,
+      "carbs_g": 40.5,
+      "protein_g": 2.4,
+      "fat_g": 5.7,
+      "fibre_g": 5.3,
+      "sugar_g": 27.8,
+      "aliases": [
+        "chanee",
+        "durian chanee thai",
+        "kan yao chanee",
+        "durian gajah",
+        "长柄榴莲"
+      ],
+      "verified": false,
+      "source": "usda_fdc durian per 100 g, cultivar-adjusted, converted to seeds",
+      "extra_servings": [
+        {
+          "label": "1 seed",
+          "factor": 0.33
+        },
+        {
+          "label": "2 seeds",
+          "factor": 0.67
+        },
+        {
+          "label": "5 seeds",
+          "factor": 1.67
+        }
+      ]
+    },
+    {
+      "name": "Biji Durian Rebus",
+      "place": "home",
+      "serving": "5 seeds (60 g)",
+      "kcal": 78,
+      "carbs_g": 16.2,
+      "protein_g": 2.8,
+      "fat_g": 0.2,
+      "fibre_g": 1.2,
+      "sugar_g": 0.6,
+      "aliases": [
+        "boiled durian seeds",
+        "biji durian",
+        "durian seed",
+        "isi biji durian",
+        "榴莲核"
+      ],
+      "verified": true,
+      "source": "myfcd_1997 durian seed, boiled, per 100 g converted to 5 seeds",
+      "extra_servings": [
+        {
+          "label": "10 seeds",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Cempedak Sebiji",
+      "place": "home",
+      "serving": "1 whole fruit (400 g flesh)",
+      "kcal": 464,
+      "carbs_g": 112,
+      "protein_g": 10,
+      "fat_g": 1.6,
+      "fibre_g": 13.6,
+      "sugar_g": 80,
+      "aliases": [
+        "whole cempedak",
+        "cempedak sebiji",
+        "chempedak whole",
+        "satu biji cempedak"
+      ],
+      "verified": true,
+      "source": "myfcd_1997 cempedak per 100 g converted to one whole fruit",
+      "extra_servings": [
+        {
+          "label": "Half fruit",
+          "factor": 0.5
+        },
+        {
+          "label": "Quarter fruit",
+          "factor": 0.25
+        }
+      ]
+    },
+    {
+      "name": "Buah Naga Kuning",
+      "place": "home",
+      "serving": "1 whole fruit (150 g flesh)",
+      "kcal": 75,
+      "carbs_g": 16.5,
+      "protein_g": 1.7,
+      "fat_g": 0.6,
+      "fibre_g": 4.5,
+      "sugar_g": 12,
+      "aliases": [
+        "yellow dragon fruit",
+        "buah naga kuning",
+        "yellow pitaya",
+        "pitahaya kuning",
+        "黄龙果"
+      ],
+      "verified": false,
+      "source": "myfcd_current dragon fruit per 100 g converted to one whole fruit",
+      "extra_servings": [
+        {
+          "label": "Half fruit",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Kelapa Bakar",
+      "place": "hawker",
+      "serving": "1 coconut (roasted)",
+      "kcal": 125,
+      "carbs_g": 21.5,
+      "protein_g": 1.5,
+      "fat_g": 4.4,
+      "fibre_g": 2.5,
+      "sugar_g": 17,
+      "sodium_mg": 95,
+      "aliases": [
+        "roasted young coconut",
+        "kelapa bakar",
+        "burnt coconut drink",
+        "air kelapa bakar",
+        "烤椰子"
+      ],
+      "icon": "food/coconut",
+      "verified": false,
+      "source": "myfcd_1997 coconut water and young coconut flesh, roasted whole nut",
+      "extra_servings": [
+        {
+          "label": "Half coconut",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Buah Potong dengan Serbuk Cili",
+      "place": "hawker",
+      "serving": "1 pack (250 g)",
+      "kcal": 105,
+      "carbs_g": 25,
+      "protein_g": 1.1,
+      "fat_g": 0.4,
+      "fibre_g": 4.5,
+      "sugar_g": 18,
+      "sodium_mg": 650,
+      "aliases": [
+        "cut fruit with chilli salt",
+        "buah potong serbuk cili",
+        "garam cili buah",
+        "chilli salt fruit",
+        "辣椒盐水果"
+      ],
+      "icon": "food/chilli",
+      "verified": false,
+      "source": "usda_fdc mixed cut fruit per 100 g over 250 g plus 5 g chilli salt",
       "extra_servings": [
         {
           "label": "Half pack",
