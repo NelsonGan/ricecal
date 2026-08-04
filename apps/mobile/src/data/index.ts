@@ -38,6 +38,7 @@ export { dateKey, today } from './client'
 export {
   useDay,
   useDayLog,
+  useDayMarks,
   useNutritionRange,
   useSetWater,
   useStreak,

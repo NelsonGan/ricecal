@@ -481,6 +481,10 @@ export function useClearDemoActivity() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.healthConnection(userId) })
+      // Generated movement was extending the budget, and a fortnight of days
+      // just lost it. Both the ring and the week strip's dots read that budget.
+      queryClient.invalidateQueries({ queryKey: keys.dayAll(userId) })
+      queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
     },
   })
 }

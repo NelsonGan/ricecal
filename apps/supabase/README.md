@@ -79,6 +79,11 @@ Plus `goals_on(date)` and `logging_streak()`, and the two range families —
 `trend_days` / `trend_series` / `trend_summary` for the diary, and
 `activity_days_range` / `activity_series` / `activity_summary` for movement.
 
+`day_marks(from, to)` sits beside them and is the one that takes DATES rather
+than a named range: it feeds the week strip on Today, which is a calendar week
+and any earlier one swiped back to, so there is no window for `local_today()`
+to name.
+
 **The activity tables are the one thing `authenticated` writes in bulk**, and
 they are the only tables in this schema with a background writer. Nothing about
 them needs a server: the data is already on the user's phone, behind a

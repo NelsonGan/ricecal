@@ -371,6 +371,8 @@ export function useConnectHealth() {
       // The budget on Today is goal + burned now. A connect that did not move it
       // would look like it had not worked.
       queryClient.invalidateQueries({ queryKey: keys.dayAll(userId) })
+      // Movement extends the budget, so it moves the week strip's dots too.
+      queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
     },
   })
 }
@@ -409,6 +411,8 @@ export function useSyncHealth() {
       queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.healthConnection(userId) })
       queryClient.invalidateQueries({ queryKey: keys.dayAll(userId) })
+      // Movement extends the budget, so it moves the week strip's dots too.
+      queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
     },
   })
 }

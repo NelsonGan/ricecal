@@ -1172,6 +1172,16 @@ export type Database = {
         }[]
       }
       current_weight_kg: { Args: { p_user_id?: string }; Returns: number }
+      day_marks: {
+        Args: { p_from: string; p_to: string; p_user_id?: string }
+        Returns: {
+          active_kcal: number
+          at: string
+          entry_count: number
+          goal_kcal: number
+          kcal: number
+        }[]
+      }
       estimate_food_backlog: {
         Args: { p_limit?: number }
         Returns: {

@@ -311,6 +311,36 @@ export type DayLog = {
   waterGlasses: number
 }
 
+/**
+ * One day of the week strip: enough to colour a dot, and nothing else.
+ *
+ * `goalKcal` is nullable and the others are not, which is the distinction the
+ * strip turns on — a day before the account had a budget has no line to be over
+ * or under, while a day with no entries genuinely ate nothing.
+ */
+export type DayMark = {
+  date: string
+  entryCount: number
+  kcal: number
+  goalKcal: number | null
+  activeKcal: number
+}
+
+/**
+ * `day_marks` as PostgREST sends it.
+ *
+ * Hand-written rather than taken from the generated types, which declare every
+ * column of a returning function non-null: three of these five are left joins
+ * and arrive as null on any day with no food, no budget or no watch.
+ */
+export type DayMarkRow = {
+  at: string
+  entry_count: number | null
+  kcal: number | null
+  goal_kcal: number | null
+  active_kcal: number | null
+}
+
 export type Profile = Tables<'profiles'>
 export type Settings = Tables<'user_settings'>
 export type MealTime = Tables<'meal_times'>
