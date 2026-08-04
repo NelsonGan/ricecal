@@ -1,0 +1,2309 @@
+{
+  "source": "research:drinks",
+  "foods": [
+    {
+      "name": "Kopi",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 132,
+      "carbs_g": 22.5,
+      "protein_g": 3.2,
+      "fat_g": 3.5,
+      "sugar_g": 22.0,
+      "aliases": [
+        "kopi panas",
+        "hot coffee condensed milk",
+        "coffee with condensed milk",
+        "kopi susu panas",
+        "咖啡",
+        "kopi biasa"
+      ],
+      "icon": "food/coffee",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "Large glass", "factor": 1.4 }]
+    },
+    {
+      "name": "Kopi Kurang Manis",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 100,
+      "carbs_g": 17.0,
+      "protein_g": 2.4,
+      "fat_g": 2.6,
+      "sugar_g": 16.5,
+      "aliases": [
+        "kopi siew dai",
+        "kopi less sweet",
+        "kopi kurang gula",
+        "less sweet coffee",
+        "少甜咖啡"
+      ],
+      "icon": "food/coffee",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kopi Extra Susu",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 175,
+      "carbs_g": 30.0,
+      "protein_g": 4.2,
+      "fat_g": 4.6,
+      "sugar_g": 29.0,
+      "aliases": [
+        "kopi ga dai",
+        "kopi extra milk",
+        "kopi lebih susu",
+        "coffee extra condensed milk",
+        "加奶咖啡"
+      ],
+      "icon": "food/condensed-milk",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kopi Gao",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 155,
+      "carbs_g": 26.0,
+      "protein_g": 3.8,
+      "fat_g": 4.2,
+      "sugar_g": 25.0,
+      "aliases": [
+        "kopi kaw",
+        "kopi gau",
+        "thick coffee",
+        "strong kopi",
+        "浓咖啡"
+      ],
+      "icon": "food/coffee",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kopi Poh",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 118,
+      "carbs_g": 20.5,
+      "protein_g": 2.9,
+      "fat_g": 3.2,
+      "sugar_g": 20.0,
+      "aliases": [
+        "kopi po",
+        "kopi cair",
+        "weak coffee",
+        "diluted kopi",
+        "薄咖啡"
+      ],
+      "icon": "food/coffee",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kopi O Kosong",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 3,
+      "carbs_g": 0.6,
+      "protein_g": 0.3,
+      "fat_g": 0.0,
+      "sugar_g": 0.0,
+      "aliases": [
+        "kopi o tanpa gula",
+        "black coffee no sugar",
+        "kopi kosong",
+        "kopi o siew dai kosong",
+        "无糖黑咖啡"
+      ],
+      "icon": "dishes/kopi-o",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kopi O Kurang Manis",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 40,
+      "carbs_g": 10.0,
+      "protein_g": 0.3,
+      "fat_g": 0.0,
+      "sugar_g": 9.5,
+      "aliases": [
+        "kopi o siew dai",
+        "kopi o less sugar",
+        "kopi o kurang gula",
+        "少甜黑咖啡"
+      ],
+      "icon": "dishes/kopi-o",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kopi O Peng",
+      "place": "kopitiam",
+      "serving": "1 glass (300 ml)",
+      "kcal": 90,
+      "carbs_g": 22.5,
+      "protein_g": 0.4,
+      "fat_g": 0.0,
+      "sugar_g": 22.0,
+      "aliases": [
+        "kopi o ais",
+        "kopi o ping",
+        "iced black coffee",
+        "kopi o ice",
+        "冰黑咖啡"
+      ],
+      "icon": "dishes/kopi-o",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kopi O Kosong Peng",
+      "place": "kopitiam",
+      "serving": "1 glass (300 ml)",
+      "kcal": 5,
+      "carbs_g": 1.0,
+      "protein_g": 0.4,
+      "fat_g": 0.0,
+      "sugar_g": 0.0,
+      "aliases": [
+        "kopi o ais kosong",
+        "iced black coffee no sugar",
+        "kopi o ping kosong",
+        "无糖冰黑咖啡"
+      ],
+      "icon": "dishes/kopi-o",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kopi O Gao",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 70,
+      "carbs_g": 17.0,
+      "protein_g": 0.5,
+      "fat_g": 0.0,
+      "sugar_g": 16.5,
+      "aliases": [
+        "kopi o kaw",
+        "strong black coffee",
+        "kopi o gau",
+        "浓黑咖啡"
+      ],
+      "icon": "dishes/kopi-o",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kopi O Ais Limau",
+      "place": "kopitiam",
+      "serving": "1 glass (300 ml)",
+      "kcal": 95,
+      "carbs_g": 23.5,
+      "protein_g": 0.4,
+      "fat_g": 0.0,
+      "sugar_g": 22.5,
+      "aliases": [
+        "kopi o limau",
+        "iced black coffee with lime",
+        "kopi limau ais",
+        "柠檬黑咖啡"
+      ],
+      "icon": "food/lime-juice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kopi C Peng",
+      "place": "kopitiam",
+      "serving": "1 glass (300 ml)",
+      "kcal": 145,
+      "carbs_g": 20.5,
+      "protein_g": 4.5,
+      "fat_g": 4.6,
+      "sugar_g": 18.0,
+      "aliases": [
+        "kopi c ais",
+        "kopi c ping",
+        "iced coffee evaporated milk",
+        "kopi c ice",
+        "冰咖啡加淡奶"
+      ],
+      "icon": "food/coffee",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kopi C Kosong",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 55,
+      "carbs_g": 4.5,
+      "protein_g": 2.8,
+      "fat_g": 3.0,
+      "sugar_g": 4.2,
+      "aliases": [
+        "kopi c tanpa gula",
+        "coffee evaporated milk no sugar",
+        "kopi c no sugar",
+        "无糖淡奶咖啡"
+      ],
+      "icon": "food/coffee",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kopi C Kosong Peng",
+      "place": "kopitiam",
+      "serving": "1 glass (300 ml)",
+      "kcal": 65,
+      "carbs_g": 5.3,
+      "protein_g": 3.3,
+      "fat_g": 3.5,
+      "sugar_g": 5.0,
+      "aliases": [
+        "kopi c ais kosong",
+        "iced coffee evaporated milk no sugar",
+        "kopi c ping kosong"
+      ],
+      "icon": "food/coffee",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kopi C Kurang Manis",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 78,
+      "carbs_g": 10.5,
+      "protein_g": 2.8,
+      "fat_g": 3.0,
+      "sugar_g": 10.0,
+      "aliases": [
+        "kopi c siew dai",
+        "kopi c less sugar",
+        "kopi c kurang gula"
+      ],
+      "icon": "food/coffee",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kopi Tarik",
+      "place": "kopitiam",
+      "serving": "1 glass (250 ml)",
+      "kcal": 150,
+      "carbs_g": 25.5,
+      "protein_g": 3.7,
+      "fat_g": 4.0,
+      "sugar_g": 25.0,
+      "aliases": [
+        "pulled coffee",
+        "kopi tarek",
+        "kopi tarik panas",
+        "拉咖啡"
+      ],
+      "icon": "food/coffee",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kopi Cham",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 138,
+      "carbs_g": 23.5,
+      "protein_g": 3.4,
+      "fat_g": 3.6,
+      "sugar_g": 23.0,
+      "aliases": [
+        "cham",
+        "yuanyang",
+        "yin yong",
+        "coffee tea mix",
+        "kopi teh campur",
+        "鸳鸯"
+      ],
+      "icon": "food/coffee",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Cham Peng",
+      "place": "kopitiam",
+      "serving": "1 glass (300 ml)",
+      "kcal": 185,
+      "carbs_g": 31.5,
+      "protein_g": 4.5,
+      "fat_g": 4.8,
+      "sugar_g": 31.0,
+      "aliases": [
+        "cham ais",
+        "iced yuanyang",
+        "kopi cham ais",
+        "cham ping",
+        "冰鸳鸯"
+      ],
+      "icon": "food/coffee",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Cham C",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 108,
+      "carbs_g": 15.5,
+      "protein_g": 3.3,
+      "fat_g": 3.4,
+      "sugar_g": 14.5,
+      "aliases": [
+        "kopi cham c",
+        "yuanyang evaporated milk",
+        "cham c panas",
+        "鸳鸯淡奶"
+      ],
+      "icon": "food/coffee",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 128,
+      "carbs_g": 21.8,
+      "protein_g": 3.1,
+      "fat_g": 3.4,
+      "sugar_g": 21.5,
+      "aliases": [
+        "teh panas",
+        "teh susu",
+        "milk tea condensed milk",
+        "hot tea with condensed milk",
+        "奶茶"
+      ],
+      "icon": "food/teapot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh Peng",
+      "place": "kopitiam",
+      "serving": "1 glass (300 ml)",
+      "kcal": 175,
+      "carbs_g": 29.8,
+      "protein_g": 4.2,
+      "fat_g": 4.6,
+      "sugar_g": 29.0,
+      "aliases": [
+        "teh ais",
+        "teh ping",
+        "iced milk tea",
+        "teh ice",
+        "冰奶茶"
+      ],
+      "icon": "food/teapot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh Kurang Manis",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 98,
+      "carbs_g": 16.6,
+      "protein_g": 2.4,
+      "fat_g": 2.6,
+      "sugar_g": 16.0,
+      "aliases": [
+        "teh siew dai",
+        "teh less sweet",
+        "teh kurang gula",
+        "少甜奶茶"
+      ],
+      "icon": "food/teapot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh O",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 62,
+      "carbs_g": 15.2,
+      "protein_g": 0.2,
+      "fat_g": 0.0,
+      "sugar_g": 15.0,
+      "aliases": [
+        "teh o panas",
+        "black tea with sugar",
+        "teh kosong susu",
+        "无奶茶",
+        "清茶"
+      ],
+      "icon": "food/teapot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh O Kosong",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 2,
+      "carbs_g": 0.4,
+      "protein_g": 0.2,
+      "fat_g": 0.0,
+      "sugar_g": 0.0,
+      "aliases": [
+        "teh o tanpa gula",
+        "plain black tea",
+        "teh kosong",
+        "unsweetened tea",
+        "无糖茶"
+      ],
+      "icon": "food/teapot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh O Kurang Manis",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 38,
+      "carbs_g": 9.2,
+      "protein_g": 0.2,
+      "fat_g": 0.0,
+      "sugar_g": 9.0,
+      "aliases": [
+        "teh o siew dai",
+        "teh o less sugar",
+        "teh o kurang gula"
+      ],
+      "icon": "food/teapot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh O Peng",
+      "place": "kopitiam",
+      "serving": "1 glass (300 ml)",
+      "kcal": 88,
+      "carbs_g": 21.6,
+      "protein_g": 0.3,
+      "fat_g": 0.0,
+      "sugar_g": 21.0,
+      "aliases": [
+        "teh o ais",
+        "teh o ping",
+        "iced black tea",
+        "冰清茶"
+      ],
+      "icon": "food/teapot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh O Kosong Peng",
+      "place": "kopitiam",
+      "serving": "1 glass (300 ml)",
+      "kcal": 3,
+      "carbs_g": 0.5,
+      "protein_g": 0.2,
+      "fat_g": 0.0,
+      "sugar_g": 0.0,
+      "aliases": [
+        "teh o ais kosong",
+        "iced tea no sugar",
+        "teh o ping kosong",
+        "无糖冰茶"
+      ],
+      "icon": "food/teapot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh O Ais Limau",
+      "place": "mamak",
+      "serving": "1 glass (300 ml)",
+      "kcal": 95,
+      "carbs_g": 23.4,
+      "protein_g": 0.3,
+      "fat_g": 0.0,
+      "sugar_g": 22.5,
+      "aliases": [
+        "teh o limau ais",
+        "iced lime tea",
+        "teh limau ais",
+        "lime tea",
+        "柠檬冰茶"
+      ],
+      "icon": "dishes/teh-o-ais-limau",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh O Ais Asam Boi",
+      "place": "mamak",
+      "serving": "1 glass (300 ml)",
+      "kcal": 105,
+      "carbs_g": 25.8,
+      "protein_g": 0.3,
+      "fat_g": 0.0,
+      "sugar_g": 25.0,
+      "aliases": [
+        "teh asam boi",
+        "sour plum iced tea",
+        "teh o limau asam boi",
+        "话梅冰茶"
+      ],
+      "icon": "dishes/teh-o-ais-limau",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh C",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 98,
+      "carbs_g": 13.8,
+      "protein_g": 2.9,
+      "fat_g": 3.1,
+      "sugar_g": 12.5,
+      "aliases": [
+        "teh c panas",
+        "tea with evaporated milk",
+        "teh susu sejat",
+        "淡奶茶"
+      ],
+      "icon": "food/teapot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh C Kosong",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 52,
+      "carbs_g": 4.2,
+      "protein_g": 2.7,
+      "fat_g": 2.9,
+      "sugar_g": 4.0,
+      "aliases": [
+        "teh c tanpa gula",
+        "tea evaporated milk no sugar",
+        "teh c no sugar",
+        "无糖淡奶茶"
+      ],
+      "icon": "food/teapot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh C Kosong Peng",
+      "place": "kopitiam",
+      "serving": "1 glass (300 ml)",
+      "kcal": 62,
+      "carbs_g": 5.0,
+      "protein_g": 3.2,
+      "fat_g": 3.4,
+      "sugar_g": 4.8,
+      "aliases": [
+        "teh c ais kosong",
+        "iced tea evaporated milk no sugar",
+        "teh c ping kosong"
+      ],
+      "icon": "food/teapot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh C Kurang Manis",
+      "place": "kopitiam",
+      "serving": "1 glass (200 ml)",
+      "kcal": 76,
+      "carbs_g": 9.8,
+      "protein_g": 2.8,
+      "fat_g": 3.0,
+      "sugar_g": 9.5,
+      "aliases": [
+        "teh c siew dai",
+        "teh c less sugar",
+        "teh c kurang gula"
+      ],
+      "icon": "food/teapot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh Tarik Ais",
+      "place": "mamak",
+      "serving": "1 glass (300 ml)",
+      "kcal": 185,
+      "carbs_g": 31.0,
+      "protein_g": 4.4,
+      "fat_g": 4.9,
+      "sugar_g": 30.0,
+      "aliases": [
+        "iced teh tarik",
+        "teh tarik peng",
+        "teh tarik ping",
+        "iced pulled tea",
+        "冰拉茶"
+      ],
+      "icon": "dishes/teh-tarik",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh Tarik Kurang Manis",
+      "place": "mamak",
+      "serving": "1 glass (250 ml)",
+      "kcal": 120,
+      "carbs_g": 20.0,
+      "protein_g": 3.0,
+      "fat_g": 3.3,
+      "sugar_g": 19.5,
+      "aliases": [
+        "teh tarik less sweet",
+        "teh tarik kurang gula",
+        "less sweet pulled tea",
+        "少甜拉茶"
+      ],
+      "icon": "dishes/teh-tarik",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh Tarik Kaw",
+      "place": "mamak",
+      "serving": "1 glass (250 ml)",
+      "kcal": 195,
+      "carbs_g": 32.0,
+      "protein_g": 4.8,
+      "fat_g": 5.3,
+      "sugar_g": 31.0,
+      "aliases": [
+        "teh tarik gao",
+        "strong pulled tea",
+        "teh tarik pekat",
+        "浓拉茶"
+      ],
+      "icon": "dishes/teh-tarik",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh Tarik Extra Susu",
+      "place": "mamak",
+      "serving": "1 glass (250 ml)",
+      "kcal": 210,
+      "carbs_g": 35.0,
+      "protein_g": 5.2,
+      "fat_g": 5.6,
+      "sugar_g": 34.0,
+      "aliases": [
+        "teh tarik lebih susu",
+        "teh tarik extra milk",
+        "teh tarik ga dai"
+      ],
+      "icon": "food/condensed-milk",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh Halia Ais",
+      "place": "mamak",
+      "serving": "1 glass (300 ml)",
+      "kcal": 180,
+      "carbs_g": 30.5,
+      "protein_g": 4.4,
+      "fat_g": 4.7,
+      "sugar_g": 30.0,
+      "aliases": [
+        "iced ginger tea",
+        "teh halia peng",
+        "teh halia tarik ais",
+        "冰姜茶"
+      ],
+      "icon": "food/ginger",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh O Halia",
+      "place": "mamak",
+      "serving": "1 glass (200 ml)",
+      "kcal": 70,
+      "carbs_g": 17.2,
+      "protein_g": 0.2,
+      "fat_g": 0.0,
+      "sugar_g": 16.5,
+      "aliases": [
+        "ginger black tea",
+        "teh halia kosong susu",
+        "teh o ginger",
+        "姜清茶"
+      ],
+      "icon": "food/ginger",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh Cina",
+      "place": "kopitiam",
+      "serving": "1 cup (150 ml)",
+      "kcal": 2,
+      "carbs_g": 0.4,
+      "protein_g": 0.2,
+      "fat_g": 0.0,
+      "sugar_g": 0.0,
+      "aliases": [
+        "chinese tea",
+        "teh pot",
+        "teh panas cina",
+        "oolong tea",
+        "中国茶",
+        "茶"
+      ],
+      "icon": "food/teapot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Teh Bunga",
+      "place": "kopitiam",
+      "serving": "1 glass (250 ml)",
+      "kcal": 85,
+      "carbs_g": 21.0,
+      "protein_g": 0.2,
+      "fat_g": 0.0,
+      "sugar_g": 20.5,
+      "aliases": [
+        "chrysanthemum tea",
+        "air kekwa",
+        "teh kekwa",
+        "chrysanthemum drink",
+        "菊花茶"
+      ],
+      "icon": "food/teapot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Lemon Tea Ais",
+      "place": "mamak",
+      "serving": "1 glass (300 ml)",
+      "kcal": 120,
+      "carbs_g": 29.5,
+      "protein_g": 0.3,
+      "fat_g": 0.0,
+      "sugar_g": 28.5,
+      "aliases": [
+        "iced lemon tea",
+        "teh lemon ais",
+        "lemon tea",
+        "柠檬茶"
+      ],
+      "icon": "food/lemon",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Milo Panas",
+      "place": "kopitiam",
+      "serving": "1 glass (250 ml)",
+      "kcal": 190,
+      "carbs_g": 28.0,
+      "protein_g": 5.5,
+      "fat_g": 5.8,
+      "sugar_g": 24.0,
+      "aliases": [
+        "hot milo",
+        "milo hot",
+        "milo susu",
+        "美禄",
+        "milo panas kopitiam"
+      ],
+      "icon": "dishes/milo-ais",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Milo O",
+      "place": "kopitiam",
+      "serving": "1 glass (250 ml)",
+      "kcal": 110,
+      "carbs_g": 21.0,
+      "protein_g": 2.5,
+      "fat_g": 1.5,
+      "sugar_g": 17.0,
+      "aliases": [
+        "milo kosong",
+        "milo without milk",
+        "milo o panas",
+        "milo air",
+        "无奶美禄"
+      ],
+      "icon": "dishes/milo-ais",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Milo Kaw",
+      "place": "kopitiam",
+      "serving": "1 glass (300 ml)",
+      "kcal": 260,
+      "carbs_g": 40.0,
+      "protein_g": 7.5,
+      "fat_g": 7.0,
+      "sugar_g": 33.0,
+      "aliases": [
+        "milo gao",
+        "thick milo",
+        "milo pekat",
+        "strong milo",
+        "浓美禄"
+      ],
+      "icon": "dishes/milo-ais",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Milo Godzilla",
+      "place": "kopitiam",
+      "serving": "1 glass (400 ml)",
+      "kcal": 445,
+      "carbs_g": 62.0,
+      "protein_g": 10.0,
+      "fat_g": 16.0,
+      "sugar_g": 52.0,
+      "aliases": [
+        "milo godzila",
+        "milo dinosaur with ice cream",
+        "milo ais krim",
+        "哥斯拉美禄"
+      ],
+      "icon": "dishes/milo-ais",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Milo Ais Blended",
+      "place": "kopitiam",
+      "serving": "1 glass (400 ml)",
+      "kcal": 320,
+      "carbs_g": 48.0,
+      "protein_g": 8.0,
+      "fat_g": 9.0,
+      "sugar_g": 42.0,
+      "aliases": [
+        "blended milo",
+        "milo blended",
+        "milo ice blended",
+        "milo frappe",
+        "冰沙美禄"
+      ],
+      "icon": "food/smoothie",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Milo Ais Kurang Manis",
+      "place": "kopitiam",
+      "serving": "1 glass (300 ml)",
+      "kcal": 162,
+      "carbs_g": 25.0,
+      "protein_g": 4.8,
+      "fat_g": 4.5,
+      "sugar_g": 20.0,
+      "aliases": [
+        "milo ais less sugar",
+        "milo kurang gula",
+        "milo ais siew dai"
+      ],
+      "icon": "dishes/milo-ais",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Neslo",
+      "place": "kopitiam",
+      "serving": "1 glass (250 ml)",
+      "kcal": 200,
+      "carbs_g": 30.0,
+      "protein_g": 5.2,
+      "fat_g": 5.8,
+      "sugar_g": 26.0,
+      "aliases": [
+        "nescafe milo",
+        "neslo panas",
+        "milo nescafe mix",
+        "nes lo"
+      ],
+      "icon": "dishes/milo-ais",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Neslo Ais",
+      "place": "kopitiam",
+      "serving": "1 glass (350 ml)",
+      "kcal": 245,
+      "carbs_g": 37.0,
+      "protein_g": 6.2,
+      "fat_g": 6.8,
+      "sugar_g": 32.0,
+      "aliases": [
+        "iced neslo",
+        "neslo peng",
+        "nescafe milo ais",
+        "冰美禄咖啡"
+      ],
+      "icon": "dishes/milo-ais",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nescafe Panas",
+      "place": "kopitiam",
+      "serving": "1 glass (250 ml)",
+      "kcal": 140,
+      "carbs_g": 23.5,
+      "protein_g": 3.5,
+      "fat_g": 3.8,
+      "sugar_g": 23.0,
+      "aliases": [
+        "hot nescafe",
+        "nescafe susu",
+        "instant coffee condensed milk",
+        "雀巢咖啡"
+      ],
+      "icon": "food/coffee",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nescafe Ais",
+      "place": "mamak",
+      "serving": "1 glass (350 ml)",
+      "kcal": 185,
+      "carbs_g": 31.0,
+      "protein_g": 4.5,
+      "fat_g": 5.0,
+      "sugar_g": 30.0,
+      "aliases": [
+        "iced nescafe",
+        "nescafe peng",
+        "nescafe ice",
+        "冰雀巢咖啡"
+      ],
+      "icon": "food/coffee",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nescafe Tarik",
+      "place": "mamak",
+      "serving": "1 glass (250 ml)",
+      "kcal": 175,
+      "carbs_g": 29.5,
+      "protein_g": 4.3,
+      "fat_g": 4.7,
+      "sugar_g": 29.0,
+      "aliases": [
+        "pulled nescafe",
+        "nescafe tarek",
+        "kopi nescafe tarik"
+      ],
+      "icon": "food/coffee",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nescafe O",
+      "place": "mamak",
+      "serving": "1 glass (200 ml)",
+      "kcal": 65,
+      "carbs_g": 16.0,
+      "protein_g": 0.3,
+      "fat_g": 0.0,
+      "sugar_g": 15.5,
+      "aliases": [
+        "nescafe kosong susu",
+        "black instant coffee",
+        "nescafe o panas"
+      ],
+      "icon": "dishes/kopi-o",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nescafe O Ais",
+      "place": "mamak",
+      "serving": "1 glass (300 ml)",
+      "kcal": 88,
+      "carbs_g": 21.5,
+      "protein_g": 0.3,
+      "fat_g": 0.0,
+      "sugar_g": 21.0,
+      "aliases": [
+        "iced black nescafe",
+        "nescafe o peng",
+        "nescafe o ice"
+      ],
+      "icon": "dishes/kopi-o",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Horlicks Panas",
+      "place": "kopitiam",
+      "serving": "1 glass (250 ml)",
+      "kcal": 195,
+      "carbs_g": 32.0,
+      "protein_g": 6.5,
+      "fat_g": 4.0,
+      "sugar_g": 25.0,
+      "aliases": [
+        "hot horlicks",
+        "horlick panas",
+        "malted milk drink",
+        "好立克"
+      ],
+      "icon": "food/milk-carton",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Horlicks Ais",
+      "place": "kopitiam",
+      "serving": "1 glass (350 ml)",
+      "kcal": 235,
+      "carbs_g": 39.0,
+      "protein_g": 7.5,
+      "fat_g": 4.8,
+      "sugar_g": 31.0,
+      "aliases": [
+        "iced horlicks",
+        "horlicks peng",
+        "horlick ais",
+        "冰好立克"
+      ],
+      "icon": "food/milk-carton",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Vico Panas",
+      "place": "kopitiam",
+      "serving": "1 glass (250 ml)",
+      "kcal": 185,
+      "carbs_g": 30.0,
+      "protein_g": 5.5,
+      "fat_g": 4.5,
+      "sugar_g": 25.0,
+      "aliases": [
+        "hot vico",
+        "ovaltine panas",
+        "chocolate malt drink",
+        "vico chocolate"
+      ],
+      "icon": "food/chocolate-bar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Vico Ais",
+      "place": "kopitiam",
+      "serving": "1 glass (350 ml)",
+      "kcal": 225,
+      "carbs_g": 37.0,
+      "protein_g": 6.5,
+      "fat_g": 5.2,
+      "sugar_g": 31.0,
+      "aliases": [
+        "iced vico",
+        "ovaltine ais",
+        "vico peng",
+        "冰维口"
+      ],
+      "icon": "food/chocolate-bar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bandung Cincau",
+      "place": "mamak",
+      "serving": "1 glass (350 ml)",
+      "kcal": 235,
+      "carbs_g": 45.0,
+      "protein_g": 3.5,
+      "fat_g": 4.0,
+      "sugar_g": 42.0,
+      "aliases": [
+        "sirap bandung cincau",
+        "rose milk grass jelly",
+        "bandung cincau ais",
+        "玫瑰仙草奶"
+      ],
+      "icon": "food/bandung",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Air Sirap",
+      "place": "mamak",
+      "serving": "1 glass (300 ml)",
+      "kcal": 130,
+      "carbs_g": 32.5,
+      "protein_g": 0.0,
+      "fat_g": 0.0,
+      "sugar_g": 32.0,
+      "aliases": [
+        "sirap ais",
+        "rose syrup drink",
+        "air sirap ros",
+        "red syrup drink",
+        "玫瑰糖水"
+      ],
+      "icon": "food/bandung",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sirap Limau",
+      "place": "mamak",
+      "serving": "1 glass (300 ml)",
+      "kcal": 140,
+      "carbs_g": 35.0,
+      "protein_g": 0.0,
+      "fat_g": 0.0,
+      "sugar_g": 34.0,
+      "aliases": [
+        "sirap limau ais",
+        "rose syrup with lime",
+        "air sirap limau",
+        "syrup lime drink"
+      ],
+      "icon": "food/lime-juice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sirap Selasih",
+      "place": "mamak",
+      "serving": "1 glass (300 ml)",
+      "kcal": 145,
+      "carbs_g": 35.5,
+      "protein_g": 0.5,
+      "fat_g": 0.5,
+      "sugar_g": 33.0,
+      "aliases": [
+        "air selasih sirap",
+        "rose syrup basil seed",
+        "sirap biji selasih",
+        "basil seed drink"
+      ],
+      "icon": "food/bandung",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Air Selasih",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 120,
+      "carbs_g": 29.0,
+      "protein_g": 0.8,
+      "fat_g": 0.5,
+      "sugar_g": 27.0,
+      "aliases": [
+        "basil seed drink",
+        "biji selasih",
+        "sweet basil seed water",
+        "罗勒籽饮料"
+      ],
+      "icon": "food/water-glass",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Air Cincau",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 120,
+      "carbs_g": 30.0,
+      "protein_g": 0.3,
+      "fat_g": 0.0,
+      "sugar_g": 29.0,
+      "aliases": [
+        "cincau ais",
+        "grass jelly drink",
+        "leung fun",
+        "liang fen",
+        "凉粉",
+        "仙草水"
+      ],
+      "icon": "food/jelly",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Cincau Susu",
+      "place": "hawker",
+      "serving": "1 glass (350 ml)",
+      "kcal": 200,
+      "carbs_g": 35.0,
+      "protein_g": 3.2,
+      "fat_g": 3.5,
+      "sugar_g": 33.0,
+      "aliases": [
+        "grass jelly with milk",
+        "cincau susu ais",
+        "milk grass jelly",
+        "仙草奶"
+      ],
+      "icon": "food/jelly",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Soya Cincau",
+      "place": "hawker",
+      "serving": "1 glass (350 ml)",
+      "kcal": 245,
+      "carbs_g": 40.0,
+      "protein_g": 6.5,
+      "fat_g": 5.5,
+      "sugar_g": 34.0,
+      "aliases": [
+        "michael jackson drink",
+        "soya bean grass jelly",
+        "tau huay cincau",
+        "soya cincau ais",
+        "豆浆仙草"
+      ],
+      "icon": "food/tofu",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Soya Kosong",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 110,
+      "carbs_g": 8.0,
+      "protein_g": 8.0,
+      "fat_g": 5.0,
+      "sugar_g": 2.0,
+      "aliases": [
+        "soya tanpa gula",
+        "unsweetened soy milk",
+        "susu soya kosong",
+        "air soya kosong",
+        "无糖豆浆"
+      ],
+      "icon": "food/tofu",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tau Fu Fa",
+      "place": "hawker",
+      "serving": "1 bowl (250 ml)",
+      "kcal": 150,
+      "carbs_g": 24.0,
+      "protein_g": 5.0,
+      "fat_g": 3.5,
+      "sugar_g": 20.0,
+      "aliases": [
+        "tau fu fah",
+        "taufufa",
+        "soybean pudding",
+        "douhua",
+        "tofu pudding drink",
+        "豆腐花"
+      ],
+      "icon": "food/tofu",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Air Barli",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 130,
+      "carbs_g": 32.0,
+      "protein_g": 0.8,
+      "fat_g": 0.0,
+      "sugar_g": 28.0,
+      "aliases": [
+        "barley drink",
+        "barli ais",
+        "air barley",
+        "iced barley",
+        "薏米水"
+      ],
+      "icon": "food/water-glass",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Barli Limau",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 135,
+      "carbs_g": 33.0,
+      "protein_g": 0.8,
+      "fat_g": 0.0,
+      "sugar_g": 29.0,
+      "aliases": [
+        "barley with lime",
+        "air barli limau",
+        "barley lemon",
+        "柠檬薏米水"
+      ],
+      "icon": "food/lime-juice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Barli Kosong",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 30,
+      "carbs_g": 6.5,
+      "protein_g": 0.8,
+      "fat_g": 0.0,
+      "sugar_g": 0.5,
+      "aliases": [
+        "unsweetened barley water",
+        "barli tanpa gula",
+        "plain barley drink",
+        "无糖薏米水"
+      ],
+      "icon": "food/water-glass",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Barli Ginkgo",
+      "place": "hawker",
+      "serving": "1 bowl (300 ml)",
+      "kcal": 175,
+      "carbs_g": 38.0,
+      "protein_g": 2.5,
+      "fat_g": 0.8,
+      "sugar_g": 30.0,
+      "aliases": [
+        "barli pak kor",
+        "barley with ginkgo nuts",
+        "barli fu chuk",
+        "barley beancurd skin ginkgo",
+        "白果薏米"
+      ],
+      "icon": "food/water-glass",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Air Limau Ais",
+      "place": "mamak",
+      "serving": "1 glass (300 ml)",
+      "kcal": 110,
+      "carbs_g": 27.0,
+      "protein_g": 0.3,
+      "fat_g": 0.0,
+      "sugar_g": 26.0,
+      "aliases": [
+        "lime juice",
+        "limau ais",
+        "iced lime juice",
+        "air limau nipis",
+        "kalamansi juice",
+        "酸柑水"
+      ],
+      "icon": "food/lime-juice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Air Limau Kosong",
+      "place": "mamak",
+      "serving": "1 glass (300 ml)",
+      "kcal": 12,
+      "carbs_g": 3.0,
+      "protein_g": 0.2,
+      "fat_g": 0.0,
+      "sugar_g": 1.0,
+      "aliases": [
+        "lime juice no sugar",
+        "limau ais kosong",
+        "air limau tanpa gula",
+        "unsweetened lime juice"
+      ],
+      "icon": "food/lime-juice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Air Limau Asam Boi",
+      "place": "mamak",
+      "serving": "1 glass (300 ml)",
+      "kcal": 125,
+      "carbs_g": 31.0,
+      "protein_g": 0.3,
+      "fat_g": 0.0,
+      "sugar_g": 29.0,
+      "aliases": [
+        "limau asam boi",
+        "lime with sour plum",
+        "asam boi lime juice",
+        "话梅酸柑水"
+      ],
+      "icon": "food/lime-juice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Air Asam Boi",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 115,
+      "carbs_g": 28.5,
+      "protein_g": 0.3,
+      "fat_g": 0.0,
+      "sugar_g": 27.0,
+      "sodium_mg": 320,
+      "aliases": [
+        "sour plum drink",
+        "asam boi",
+        "suan mei tang",
+        "preserved plum drink",
+        "话梅水"
+      ],
+      "icon": "food/water-glass",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Air Tebu",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 220,
+      "carbs_g": 54.0,
+      "protein_g": 0.4,
+      "fat_g": 0.0,
+      "sugar_g": 52.0,
+      "aliases": [
+        "sugarcane juice",
+        "tebu ais",
+        "jus tebu",
+        "air tebu ais",
+        "甘蔗水"
+      ],
+      "icon": "food/sugarcane-juice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Air Tebu Limau",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 225,
+      "carbs_g": 55.0,
+      "protein_g": 0.5,
+      "fat_g": 0.0,
+      "sugar_g": 52.0,
+      "aliases": [
+        "sugarcane juice with lime",
+        "tebu limau",
+        "jus tebu limau",
+        "柠檬甘蔗水"
+      ],
+      "icon": "food/sugarcane-juice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Air Kelapa Muda",
+      "place": "hawker",
+      "serving": "1 whole coconut (400 ml)",
+      "kcal": 90,
+      "carbs_g": 21.0,
+      "protein_g": 1.5,
+      "fat_g": 0.6,
+      "sugar_g": 18.0,
+      "sodium_mg": 100,
+      "aliases": [
+        "young coconut water",
+        "air kelapa",
+        "kelapa muda",
+        "fresh coconut drink",
+        "椰青水"
+      ],
+      "icon": "food/coconut-water",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Coconut Shake",
+      "place": "hawker",
+      "serving": "1 cup (350 ml)",
+      "kcal": 320,
+      "carbs_g": 45.0,
+      "protein_g": 4.0,
+      "fat_g": 13.0,
+      "sugar_g": 38.0,
+      "aliases": [
+        "klebang coconut shake",
+        "coconut milk shake",
+        "shake kelapa",
+        "melaka coconut shake",
+        "椰子冰沙"
+      ],
+      "icon": "food/coconut",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Susu Jagung",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 210,
+      "carbs_g": 40.0,
+      "protein_g": 4.5,
+      "fat_g": 3.0,
+      "sugar_g": 30.0,
+      "aliases": [
+        "corn milk",
+        "air jagung susu",
+        "sweet corn milk drink",
+        "玉米奶"
+      ],
+      "icon": "food/corn",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Air Jagung",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 160,
+      "carbs_g": 34.0,
+      "protein_g": 2.5,
+      "fat_g": 1.5,
+      "sugar_g": 28.0,
+      "aliases": [
+        "corn drink",
+        "sweet corn water",
+        "jus jagung",
+        "玉米水"
+      ],
+      "icon": "food/corn",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Air Badam",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 200,
+      "carbs_g": 28.0,
+      "protein_g": 4.5,
+      "fat_g": 7.5,
+      "sugar_g": 22.0,
+      "aliases": [
+        "almond drink",
+        "susu badam",
+        "almond milk drink malaysia",
+        "杏仁露"
+      ],
+      "icon": "food/almonds",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Air Herba",
+      "place": "hawker",
+      "serving": "1 glass (250 ml)",
+      "kcal": 45,
+      "carbs_g": 11.0,
+      "protein_g": 0.2,
+      "fat_g": 0.0,
+      "sugar_g": 10.0,
+      "aliases": [
+        "herbal tea",
+        "leung cha",
+        "liang cha",
+        "cooling tea",
+        "凉茶"
+      ],
+      "icon": "food/water-glass",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Air Lo Han Kuo",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 80,
+      "carbs_g": 20.0,
+      "protein_g": 0.2,
+      "fat_g": 0.0,
+      "sugar_g": 18.0,
+      "aliases": [
+        "luo han guo drink",
+        "monk fruit drink",
+        "lo han kor",
+        "罗汉果水"
+      ],
+      "icon": "food/water-glass",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Air Katira",
+      "place": "hawker",
+      "serving": "1 glass (350 ml)",
+      "kcal": 180,
+      "carbs_g": 32.0,
+      "protein_g": 3.5,
+      "fat_g": 4.0,
+      "sugar_g": 28.0,
+      "aliases": [
+        "katira drink",
+        "air kathira",
+        "gum tragacanth drink",
+        "ramadan katira"
+      ],
+      "icon": "food/water-glass",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jus Buah Pala",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 145,
+      "carbs_g": 35.5,
+      "protein_g": 0.4,
+      "fat_g": 0.0,
+      "sugar_g": 33.0,
+      "aliases": [
+        "nutmeg juice",
+        "air buah pala",
+        "penang nutmeg drink",
+        "肉豆蔻汁"
+      ],
+      "icon": "food/water-glass",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jus Tembikai",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 105,
+      "carbs_g": 25.0,
+      "protein_g": 1.5,
+      "fat_g": 0.4,
+      "sugar_g": 23.0,
+      "aliases": [
+        "watermelon juice",
+        "jus semangka",
+        "air tembikai",
+        "西瓜汁"
+      ],
+      "icon": "food/watermelon",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jus Lobak Merah",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 130,
+      "carbs_g": 29.0,
+      "protein_g": 2.5,
+      "fat_g": 0.5,
+      "sugar_g": 22.0,
+      "aliases": [
+        "carrot juice",
+        "jus carrot",
+        "air lobak merah",
+        "胡萝卜汁"
+      ],
+      "icon": "food/carrot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jus Lobak Merah Susu",
+      "place": "hawker",
+      "serving": "1 glass (350 ml)",
+      "kcal": 245,
+      "carbs_g": 42.0,
+      "protein_g": 5.5,
+      "fat_g": 5.0,
+      "sugar_g": 36.0,
+      "aliases": [
+        "carrot juice with milk",
+        "jus carrot susu",
+        "carrot milk",
+        "牛奶胡萝卜汁"
+      ],
+      "icon": "food/carrot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jus Epal",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 145,
+      "carbs_g": 35.0,
+      "protein_g": 0.5,
+      "fat_g": 0.4,
+      "sugar_g": 31.0,
+      "aliases": [
+        "apple juice fresh",
+        "air epal",
+        "fresh apple juice",
+        "苹果汁"
+      ],
+      "icon": "food/apple",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jus Mangga",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 190,
+      "carbs_g": 45.0,
+      "protein_g": 1.5,
+      "fat_g": 0.6,
+      "sugar_g": 40.0,
+      "aliases": [
+        "mango juice",
+        "air mangga",
+        "fresh mango juice",
+        "芒果汁"
+      ],
+      "icon": "food/smoothie",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jus Tembikai Susu",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 165,
+      "carbs_g": 40.0,
+      "protein_g": 1.2,
+      "fat_g": 0.4,
+      "sugar_g": 36.0,
+      "aliases": [
+        "honeydew juice",
+        "jus honeydew",
+        "air tembikai susu",
+        "蜜瓜汁"
+      ],
+      "icon": "food/smoothie",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jus Avokado",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 380,
+      "carbs_g": 42.0,
+      "protein_g": 5.0,
+      "fat_g": 21.0,
+      "sugar_g": 33.0,
+      "aliases": [
+        "avocado juice",
+        "jus alpukat",
+        "avocado shake",
+        "air avokado",
+        "牛油果汁"
+      ],
+      "icon": "food/avocado",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jus Buah Naga",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 135,
+      "carbs_g": 32.0,
+      "protein_g": 1.5,
+      "fat_g": 0.5,
+      "sugar_g": 27.0,
+      "aliases": [
+        "dragonfruit juice",
+        "jus dragon fruit",
+        "air buah naga",
+        "火龙果汁"
+      ],
+      "icon": "food/smoothie",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jus Betik",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 130,
+      "carbs_g": 31.0,
+      "protein_g": 1.2,
+      "fat_g": 0.4,
+      "sugar_g": 27.0,
+      "aliases": [
+        "papaya juice",
+        "air betik",
+        "fresh papaya juice",
+        "木瓜汁"
+      ],
+      "icon": "food/papaya",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jus Nanas",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 155,
+      "carbs_g": 37.0,
+      "protein_g": 1.0,
+      "fat_g": 0.3,
+      "sugar_g": 33.0,
+      "aliases": [
+        "pineapple juice",
+        "jus nenas",
+        "air nanas",
+        "菠萝汁"
+      ],
+      "icon": "food/pineapple",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jus Sirsak",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 165,
+      "carbs_g": 40.0,
+      "protein_g": 1.5,
+      "fat_g": 0.5,
+      "sugar_g": 34.0,
+      "aliases": [
+        "soursop juice",
+        "jus durian belanda",
+        "air durian belanda",
+        "红毛榴莲汁"
+      ],
+      "icon": "food/soursop",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jus Jambu",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 140,
+      "carbs_g": 33.0,
+      "protein_g": 1.5,
+      "fat_g": 0.6,
+      "sugar_g": 28.0,
+      "aliases": [
+        "guava juice",
+        "jus jambu batu",
+        "air jambu",
+        "番石榴汁"
+      ],
+      "icon": "food/smoothie",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jus Tomato Segar",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 75,
+      "carbs_g": 16.0,
+      "protein_g": 2.0,
+      "fat_g": 0.5,
+      "sugar_g": 12.0,
+      "aliases": [
+        "fresh tomato juice",
+        "jus tomato",
+        "air tomato",
+        "番茄汁"
+      ],
+      "icon": "food/tomato",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sweet Lassi",
+      "place": "mamak",
+      "serving": "1 glass (300 ml)",
+      "kcal": 220,
+      "carbs_g": 34.0,
+      "protein_g": 8.0,
+      "fat_g": 5.5,
+      "sugar_g": 30.0,
+      "aliases": [
+        "lassi manis",
+        "meethi lassi",
+        "yogurt drink",
+        "sweet yoghurt lassi"
+      ],
+      "icon": "food/yogurt",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mango Lassi",
+      "place": "mamak",
+      "serving": "1 glass (300 ml)",
+      "kcal": 250,
+      "carbs_g": 42.0,
+      "protein_g": 8.0,
+      "fat_g": 5.5,
+      "sugar_g": 38.0,
+      "aliases": [
+        "lassi mangga",
+        "mango yogurt drink",
+        "aam lassi",
+        "芒果酸奶"
+      ],
+      "icon": "food/yogurt",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Salt Lassi",
+      "place": "mamak",
+      "serving": "1 glass (300 ml)",
+      "kcal": 130,
+      "carbs_g": 12.0,
+      "protein_g": 8.0,
+      "fat_g": 6.0,
+      "sugar_g": 11.0,
+      "sodium_mg": 620,
+      "aliases": [
+        "namkeen lassi",
+        "lassi masin",
+        "salted lassi",
+        "chaas",
+        "buttermilk drink"
+      ],
+      "icon": "food/yogurt",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pearl Milk Tea, No Sugar",
+      "place": "kopitiam",
+      "serving": "Regular (500 ml)",
+      "kcal": 190,
+      "carbs_g": 27.0,
+      "protein_g": 3.5,
+      "fat_g": 6.5,
+      "sugar_g": 3.0,
+      "aliases": [
+        "boba 0% sugar",
+        "bubble tea no sugar",
+        "pearl milk tea kosong",
+        "0% sugar boba",
+        "无糖珍珠奶茶"
+      ],
+      "icon": "food/straw-cup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pearl Milk Tea, Half Sugar",
+      "place": "kopitiam",
+      "serving": "Regular (500 ml)",
+      "kcal": 245,
+      "carbs_g": 41.0,
+      "protein_g": 3.5,
+      "fat_g": 6.5,
+      "sugar_g": 17.0,
+      "aliases": [
+        "boba 50% sugar",
+        "bubble tea half sugar",
+        "pearl milk tea kurang manis",
+        "50% sugar boba",
+        "半糖珍珠奶茶"
+      ],
+      "icon": "food/straw-cup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "KOI Thé Bubble Milk Tea",
+      "brand": "KOI Thé",
+      "place": "kopitiam",
+      "serving": "Regular (500 ml)",
+      "kcal": 290,
+      "carbs_g": 52.0,
+      "protein_g": 3.5,
+      "fat_g": 6.5,
+      "sugar_g": 33.0,
+      "aliases": [
+        "koi the milk tea",
+        "koi bubble tea",
+        "koi golden bubble milk tea",
+        "koi 奶茶"
+      ],
+      "icon": "food/straw-cup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tiger Sugar Brown Sugar Boba Milk",
+      "brand": "Tiger Sugar",
+      "place": "kopitiam",
+      "serving": "Regular (500 ml)",
+      "kcal": 430,
+      "carbs_g": 68.0,
+      "protein_g": 7.0,
+      "fat_g": 12.0,
+      "sugar_g": 50.0,
+      "aliases": [
+        "tiger sugar boba",
+        "brown sugar pearl milk",
+        "tiger sugar milk tea",
+        "老虎堂黑糖珍珠"
+      ],
+      "icon": "food/straw-cup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Each A Cup Pearl Milk Tea",
+      "brand": "Each A Cup",
+      "place": "kopitiam",
+      "serving": "Regular (500 ml)",
+      "kcal": 300,
+      "carbs_g": 55.0,
+      "protein_g": 3.0,
+      "fat_g": 6.5,
+      "sugar_g": 36.0,
+      "aliases": [
+        "each a cup bubble tea",
+        "each a cup milk tea",
+        "eachacup pearl"
+      ],
+      "icon": "food/straw-cup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Yi Fang Fruit Tea",
+      "brand": "Yi Fang",
+      "place": "kopitiam",
+      "serving": "Regular (500 ml)",
+      "kcal": 210,
+      "carbs_g": 50.0,
+      "protein_g": 0.5,
+      "fat_g": 0.3,
+      "sugar_g": 44.0,
+      "aliases": [
+        "yifang fruit tea",
+        "yi fang taiwan fruit tea",
+        "一芳水果茶"
+      ],
+      "icon": "food/straw-cup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Milksha Milk Tea",
+      "brand": "Milksha",
+      "place": "kopitiam",
+      "serving": "Regular (500 ml)",
+      "kcal": 260,
+      "carbs_g": 44.0,
+      "protein_g": 5.0,
+      "fat_g": 6.5,
+      "sugar_g": 30.0,
+      "aliases": [
+        "milk shop milk tea",
+        "milksha bubble tea",
+        "迷客夏奶茶"
+      ],
+      "icon": "food/straw-cup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Blackball Milk Tea",
+      "brand": "Blackball",
+      "place": "kopitiam",
+      "serving": "Regular (500 ml)",
+      "kcal": 275,
+      "carbs_g": 50.0,
+      "protein_g": 3.5,
+      "fat_g": 6.0,
+      "sugar_g": 33.0,
+      "aliases": [
+        "black ball milk tea",
+        "blackball taiwan dessert drink",
+        "黑丸奶茶"
+      ],
+      "icon": "food/straw-cup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "HeyTea Cheese Tea",
+      "brand": "HeyTea",
+      "place": "kopitiam",
+      "serving": "Regular (500 ml)",
+      "kcal": 320,
+      "carbs_g": 45.0,
+      "protein_g": 6.0,
+      "fat_g": 12.0,
+      "sugar_g": 36.0,
+      "aliases": [
+        "hey tea cheese tea",
+        "heytea cheezo",
+        "cheese foam tea",
+        "喜茶芝士茶"
+      ],
+      "icon": "food/straw-cup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Playmade Pearl Milk Tea",
+      "brand": "Playmade",
+      "place": "kopitiam",
+      "serving": "Regular (500 ml)",
+      "kcal": 285,
+      "carbs_g": 51.0,
+      "protein_g": 3.5,
+      "fat_g": 6.5,
+      "sugar_g": 34.0,
+      "aliases": [
+        "play made milk tea",
+        "playmade boba",
+        "playmade handmade pearl"
+      ],
+      "icon": "food/straw-cup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Moge Tee Milk Tea",
+      "brand": "Moge Tee",
+      "place": "kopitiam",
+      "serving": "Regular (500 ml)",
+      "kcal": 310,
+      "carbs_g": 55.0,
+      "protein_g": 4.0,
+      "fat_g": 7.0,
+      "sugar_g": 38.0,
+      "aliases": [
+        "mogetee milk tea",
+        "moge tee boba",
+        "魔阁奶茶"
+      ],
+      "icon": "food/straw-cup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Starbucks Caramel Macchiato",
+      "brand": "Starbucks",
+      "place": "kopitiam",
+      "serving": "Tall (354 ml)",
+      "kcal": 190,
+      "carbs_g": 27.0,
+      "protein_g": 8.0,
+      "fat_g": 6.0,
+      "sugar_g": 25.0,
+      "aliases": [
+        "caramel macchiato",
+        "starbucks macchiato",
+        "焦糖玛奇朵"
+      ],
+      "icon": "food/paper-cup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Starbucks Java Chip Frappuccino",
+      "brand": "Starbucks",
+      "place": "kopitiam",
+      "serving": "Tall (354 ml)",
+      "kcal": 330,
+      "carbs_g": 47.0,
+      "protein_g": 5.0,
+      "fat_g": 13.0,
+      "sugar_g": 40.0,
+      "aliases": [
+        "java chip frappuccino",
+        "starbucks frappe",
+        "java chip frappe",
+        "星冰乐"
+      ],
+      "icon": "food/smoothie",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "ZUS Kopi O Ais",
+      "brand": "ZUS Coffee",
+      "place": "kopitiam",
+      "serving": "Regular (350 ml)",
+      "kcal": 85,
+      "carbs_g": 21.0,
+      "protein_g": 0.4,
+      "fat_g": 0.0,
+      "sugar_g": 20.0,
+      "aliases": [
+        "zus kopi o",
+        "zus iced black coffee",
+        "zus coffee kopi o ais"
+      ],
+      "icon": "dishes/kopi-o",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tealive Bubble Milk Tea, No Sugar",
+      "brand": "Tealive",
+      "place": "kopitiam",
+      "serving": "Regular (500 ml)",
+      "kcal": 205,
+      "carbs_g": 30.0,
+      "protein_g": 3.5,
+      "fat_g": 6.5,
+      "sugar_g": 3.0,
+      "aliases": [
+        "tealive 0% sugar",
+        "tealive kosong",
+        "tealive no sugar milk tea"
+      ],
+      "icon": "food/straw-cup",
+      "source": "model_estimate",
+      "verified": false
+    }
+  ]
+}

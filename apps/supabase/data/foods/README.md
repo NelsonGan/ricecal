@@ -56,6 +56,13 @@ own stated `kcal` — the same margin the scan cascade holds its own guesses to.
 Most rejections are this, and most of those are a portion size that changed
 between writing the calories and writing the macros.
 
+**`source` records two things and keeps both.** The file's `source` names the
+research round; a dish's own `source` names where its numbers came from. The
+loader joins them — `model_estimate · research:kuih` — because either alone is
+useless later: the citation with no round cannot be traced back to the payload
+that produced it, and the round with no citation does not say whether anybody
+checked.
+
 **`verified` is false unless the figure was published.** It is the flag a
 review queue will sort on, so a researched estimate claiming it hides itself
 from the only process that would ever check it. A number off a nutrition panel

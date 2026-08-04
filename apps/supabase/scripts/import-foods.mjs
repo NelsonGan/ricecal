@@ -254,7 +254,13 @@ function shape(raw, fileSource) {
       // review queue sorts on, so a researched estimate claiming it would hide
       // itself from the only process that would ever check it.
       verified: raw.verified === true,
-      source: raw.source ?? fileSource ?? 'research',
+      // Both halves, when there are two. The row's own source says where the
+      // NUMBER came from — a citation, which is what the column is for — and
+      // the file's says which research round wrote it down. Keeping only the
+      // first loses the round, and 223 rows all reading "model_estimate" with
+      // no way back to the payload that produced them is not an audit trail.
+      // Keeping only the second loses the citation, which is worse.
+      source: [raw.source, fileSource].filter(Boolean).join(' · ') || 'research',
       search_text: searchText,
       servings,
     },
