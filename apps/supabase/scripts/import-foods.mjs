@@ -74,21 +74,29 @@ const BATCH = 150
 
 /**
  * The client-side echo of `public.search_normalize`, used for the slug and for
- * the alias bag. It does NOT decide anything: `name_norm`, which is what dedup
- * actually compares, is computed by the database's own trigger from the name it
- * is given. This staying approximately in step is a nicety; the two disagreeing
- * would cost nothing but a slightly odd slug.
+ * the alias bag. `name_norm` — the thing dedup actually compares — is computed
+ * by the database's own trigger, so this is not the authority on identity.
  *
- * Apostrophes elide rather than split — "McDonald's" is "mcdonalds", which is
- * what someone types — and CJK survives, because `\p{L}` is not an ASCII range
- * and half the aliases in this catalogue are Chinese.
+ * It does have to agree on TOKENS, though, and that is not cosmetic. Whatever
+ * this writes into `search_text` is indexed by `to_tsvector`, and whatever a
+ * user types is put through `search_normalize` before being matched against it.
+ * Emit a token the query form cannot produce and the row is simply unfindable
+ * by that word.
+ *
+ * Which is why the apostrophe splits rather than elides: Postgres turns
+ * "McDonald's" into "mcdonald s", two tokens, and a client writing "mcdonalds"
+ * would index a word no query ever asks for. The function's own comment claimed
+ * the opposite for a while; the test in tests/06_import_foods.test.sql pins the
+ * real behaviour.
+ *
+ * CJK survives, because `\p{L}` is not an ASCII range and half the aliases in
+ * this catalogue are Chinese.
  */
 function normalize(text) {
   return String(text ?? '')
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
-    .replace(/['’]/g, '')
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim()
     .replace(/\s+/g, ' ')

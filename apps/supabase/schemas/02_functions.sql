@@ -64,9 +64,12 @@ as $$
 $$;
 
 comment on function public.search_normalize is
-  'Lowercase, accent-folded, punctuation-stripped form of a name or a query. '
-  'Apostrophes elide rather than split, so "McDonald''s" normalizes to '
-  '"mcdonalds" — what a user actually types.';
+  'Lowercase, accent-folded form of a name or a query, with every run of '
+  'non-alphanumerics collapsed to one space. Apostrophes SPLIT rather than '
+  'elide: "McDonald''s" normalizes to "mcdonald s", not "mcdonalds". Both ends '
+  'of every comparison go through here, so the split is harmless — but anything '
+  'building a search_text or a slug outside the database has to split too, or '
+  'it writes a token the query form can never produce.';
 
 
 -- Free text to a tsquery, ORing the terms.
