@@ -37,6 +37,11 @@ coverage
 # Supabase local dev
 apps/supabase/.branches
 apps/supabase/.temp
+# The CLI writes its scratch state next to the CWD, not next to `--workdir`, so
+# a command run from the repo root leaves a second one of these here. Biome
+# reads this file, and an unformatted `linked-project.json` fails `pnpm check`
+# for reasons that have nothing to do with the change being checked.
+/supabase/
 
 # macOS
 .DS_Store
