@@ -261,12 +261,7 @@
       "carbs_g": 6,
       "protein_g": 21,
       "fat_g": 5,
-      "aliases": [
-        "umai prawn",
-        "prawn umai",
-        "umai udang sarawak",
-        "melanau prawn salad"
-      ],
+      "aliases": ["umai prawn", "prawn umai", "umai udang sarawak", "melanau prawn salad"],
       "icon": "food/prawn",
       "verified": false,
       "source": "model_estimate"
@@ -432,12 +427,7 @@
       "carbs_g": 18,
       "protein_g": 12,
       "fat_g": 7,
-      "aliases": [
-        "bidayuh hot soup",
-        "sup panas bidayuh",
-        "sup ponas",
-        "bidayuh tapioca soup"
-      ],
+      "aliases": ["bidayuh hot soup", "sup panas bidayuh", "sup ponas", "bidayuh tapioca soup"],
       "icon": "food/cooking-pot",
       "verified": false,
       "source": "model_estimate"
@@ -619,12 +609,7 @@
       "carbs_g": 4,
       "protein_g": 1,
       "fat_g": 9,
-      "aliases": [
-        "dabai sambal",
-        "sambal buah dabai",
-        "sarawak olive sambal",
-        "sambal dabai sibu"
-      ],
+      "aliases": ["dabai sambal", "sambal buah dabai", "sarawak olive sambal", "sambal dabai sibu"],
       "icon": "food/sambal-jar",
       "verified": false,
       "source": "model_estimate"
@@ -860,13 +845,7 @@
       "carbs_g": 14,
       "protein_g": 12,
       "fat_g": 10,
-      "aliases": [
-        "sio bee",
-        "kuching siew mai",
-        "烧卖古晋",
-        "sarawak siomai",
-        "sio bee sarawak"
-      ],
+      "aliases": ["sio bee", "kuching siew mai", "烧卖古晋", "sarawak siomai", "sio bee sarawak"],
       "icon": "dishes/dim-sum",
       "verified": false,
       "source": "model_estimate"
@@ -1009,12 +988,7 @@
       "carbs_g": 44,
       "protein_g": 4,
       "fat_g": 4,
-      "aliases": [
-        "white lady drink",
-        "white lady sarawak",
-        "kuching white lady",
-        "air white lady"
-      ],
+      "aliases": ["white lady drink", "white lady sarawak", "kuching white lady", "air white lady"],
       "icon": "food/smoothie",
       "verified": false,
       "source": "model_estimate"
@@ -1100,12 +1074,7 @@
       "carbs_g": 8,
       "protein_g": 8,
       "fat_g": 5,
-      "aliases": [
-        "hairy fern soup",
-        "paku kubok",
-        "sup paku sarawak",
-        "dayak fern soup"
-      ],
+      "aliases": ["hairy fern soup", "paku kubok", "sup paku sarawak", "dayak fern soup"],
       "icon": "food/vegetables",
       "verified": false,
       "source": "model_estimate"
@@ -1210,12 +1179,7 @@
       "carbs_g": 6,
       "protein_g": 2,
       "fat_g": 9,
-      "aliases": [
-        "tuhau serunding",
-        "crispy tuhau",
-        "tuhau goreng",
-        "shredded wild ginger sabah"
-      ],
+      "aliases": ["tuhau serunding", "crispy tuhau", "tuhau goreng", "shredded wild ginger sabah"],
       "icon": "food/ginger",
       "verified": false,
       "source": "model_estimate"
@@ -1248,12 +1212,7 @@
       "carbs_g": 4,
       "protein_g": 7,
       "fat_g": 5,
-      "aliases": [
-        "fermented wild boar sabah",
-        "noonsom bakas",
-        "bosou babi hutan",
-        "sinamu bakas"
-      ],
+      "aliases": ["fermented wild boar sabah", "noonsom bakas", "bosou babi hutan", "sinamu bakas"],
       "icon": "food/pork-belly",
       "verified": false,
       "source": "model_estimate"
@@ -1435,12 +1394,7 @@
       "carbs_g": 8,
       "protein_g": 28,
       "fat_g": 14,
-      "aliases": [
-        "ngiu chap soup only",
-        "beef offal soup sabah",
-        "sup daging ngiu chap",
-        "牛什汤"
-      ],
+      "aliases": ["ngiu chap soup only", "beef offal soup sabah", "sup daging ngiu chap", "牛什汤"],
       "icon": "food/cooking-pot",
       "verified": false,
       "source": "model_estimate"
@@ -1453,12 +1407,7 @@
       "carbs_g": 70,
       "protein_g": 30,
       "fat_g": 16,
-      "aliases": [
-        "ngiu chap rice",
-        "beef rice sabah",
-        "nasi ngiu chap sabah",
-        "牛什饭"
-      ],
+      "aliases": ["ngiu chap rice", "beef rice sabah", "nasi ngiu chap sabah", "牛什饭"],
       "icon": "food/plate-rice",
       "verified": false,
       "source": "model_estimate"
@@ -1509,13 +1458,7 @@
       "carbs_g": 66,
       "protein_g": 24,
       "fat_g": 20,
-      "aliases": [
-        "mee tenom",
-        "tenom noodles",
-        "丹南面",
-        "hakka tenom mee",
-        "tenom mee sabah"
-      ],
+      "aliases": ["mee tenom", "tenom noodles", "丹南面", "hakka tenom mee", "tenom mee sabah"],
       "icon": "food/egg-noodles",
       "verified": false,
       "source": "model_estimate"
@@ -1528,12 +1471,7 @@
       "carbs_g": 68,
       "protein_g": 24,
       "fat_g": 22,
-      "aliases": [
-        "mee tamparuli",
-        "tamparuli noodles",
-        "担布南面",
-        "tamparuli mee sabah"
-      ],
+      "aliases": ["mee tamparuli", "tamparuli noodles", "担布南面", "tamparuli mee sabah"],
       "icon": "food/egg-noodles",
       "verified": false,
       "source": "model_estimate"
@@ -1583,12 +1521,7 @@
       "carbs_g": 66,
       "protein_g": 18,
       "fat_g": 18,
-      "aliases": [
-        "mi tauhu tawau",
-        "tofu noodle tawau",
-        "豆腐面斗湖",
-        "mee tauhu sabah"
-      ],
+      "aliases": ["mi tauhu tawau", "tofu noodle tawau", "豆腐面斗湖", "mee tauhu sabah"],
       "icon": "food/yellow-noodles",
       "verified": false,
       "source": "model_estimate"
@@ -1697,12 +1630,7 @@
       "carbs_g": 30,
       "protein_g": 1,
       "fat_g": 5,
-      "aliases": [
-        "tompek bajau",
-        "grated tapioca cake sabah",
-        "tompeq",
-        "bajau tapioca cake"
-      ],
+      "aliases": ["tompek bajau", "grated tapioca cake sabah", "tompeq", "bajau tapioca cake"],
       "icon": "food/tapioca",
       "verified": false,
       "source": "model_estimate"
@@ -1715,12 +1643,7 @@
       "carbs_g": 32,
       "protein_g": 1.5,
       "fat_g": 3,
-      "aliases": [
-        "putu sabah",
-        "bajau putu",
-        "steamed tapioca cake sabah",
-        "putu ubi kayu bajau"
-      ],
+      "aliases": ["putu sabah", "bajau putu", "steamed tapioca cake sabah", "putu ubi kayu bajau"],
       "icon": "food/tapioca",
       "verified": false,
       "source": "model_estimate"
@@ -1827,12 +1750,7 @@
       "carbs_g": 10,
       "protein_g": 0.2,
       "fat_g": 0.1,
-      "aliases": [
-        "teh sabah",
-        "sabah tea ranau",
-        "kundasang tea",
-        "teh kebun sabah"
-      ],
+      "aliases": ["teh sabah", "sabah tea ranau", "kundasang tea", "teh kebun sabah"],
       "icon": "food/teapot",
       "verified": false,
       "source": "model_estimate"
@@ -1937,13 +1855,7 @@
       "carbs_g": 1,
       "protein_g": 4,
       "fat_g": 6,
-      "aliases": [
-        "sago worm sabah",
-        "butod sabah",
-        "ulat sagu",
-        "sago grub",
-        "butud"
-      ],
+      "aliases": ["sago worm sabah", "butod sabah", "ulat sagu", "sago grub", "butud"],
       "icon": "food/high-protein",
       "verified": false,
       "source": "model_estimate"
@@ -1976,12 +1888,7 @@
       "carbs_g": 16,
       "protein_g": 2,
       "fat_g": 6,
-      "aliases": [
-        "kuih jala sabah",
-        "net cake brunei",
-        "kuih jala brunei",
-        "jala kuih borneo"
-      ],
+      "aliases": ["kuih jala sabah", "net cake brunei", "kuih jala brunei", "jala kuih borneo"],
       "icon": "food/kuih",
       "verified": false,
       "source": "model_estimate"

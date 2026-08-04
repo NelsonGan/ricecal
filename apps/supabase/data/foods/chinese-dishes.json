@@ -49,13 +49,7 @@
       "carbs_g": 8,
       "protein_g": 32,
       "fat_g": 15,
-      "aliases": [
-        "chik kut teh",
-        "chicken bkt",
-        "鸡骨茶",
-        "bak kut teh ayam",
-        "halal bak kut teh"
-      ],
+      "aliases": ["chik kut teh", "chicken bkt", "鸡骨茶", "bak kut teh ayam", "halal bak kut teh"],
       "icon": "dishes/bak-kut-teh",
       "verified": false,
       "source": "model_estimate"
@@ -345,12 +339,7 @@
       "carbs_g": 80,
       "protein_g": 30,
       "fat_g": 18,
-      "aliases": [
-        "see yau kai fan",
-        "豉油鸡饭",
-        "soya sauce chicken rice",
-        "nasi ayam kicap cina"
-      ],
+      "aliases": ["see yau kai fan", "豉油鸡饭", "soya sauce chicken rice", "nasi ayam kicap cina"],
       "icon": "dishes/chicken-rice",
       "verified": false,
       "source": "model_estimate"
@@ -749,13 +738,7 @@
       "carbs_g": 10,
       "protein_g": 22,
       "fat_g": 18,
-      "aliases": [
-        "san bei ji",
-        "三杯鸡",
-        "ayam tiga cawan",
-        "3 cup chicken",
-        "sam pui kai"
-      ],
+      "aliases": ["san bei ji", "三杯鸡", "ayam tiga cawan", "3 cup chicken", "sam pui kai"],
       "verified": false,
       "source": "model_estimate"
     },
@@ -1535,14 +1518,7 @@
       "carbs_g": 40,
       "protein_g": 6,
       "fat_g": 4,
-      "aliases": [
-        "kompyang",
-        "光饼",
-        "foochow bun",
-        "sibu kompia",
-        "kong pia",
-        "kompia sibu"
-      ],
+      "aliases": ["kompyang", "光饼", "foochow bun", "sibu kompia", "kong pia", "kompia sibu"],
       "icon": "food/bun",
       "verified": false,
       "source": "model_estimate"
@@ -1634,13 +1610,7 @@
       "carbs_g": 42,
       "protein_g": 16,
       "fat_g": 6,
-      "aliases": [
-        "chu yok chok",
-        "猪肉粥",
-        "minced pork congee",
-        "bubur babi",
-        "pork congee"
-      ],
+      "aliases": ["chu yok chok", "猪肉粥", "minced pork congee", "bubur babi", "pork congee"],
       "icon": "food/porridge",
       "verified": true,
       "source": "hpb_singapore_hawker_energy_table"
@@ -1730,12 +1700,7 @@
       "carbs_g": 18,
       "protein_g": 30,
       "fat_g": 26,
-      "aliases": [
-        "ketam lada hitam",
-        "黑胡椒蟹",
-        "pepper crab",
-        "black pepper ketam"
-      ],
+      "aliases": ["ketam lada hitam", "黑胡椒蟹", "pepper crab", "black pepper ketam"],
       "icon": "food/crab",
       "verified": false,
       "source": "model_estimate"
@@ -1748,12 +1713,7 @@
       "carbs_g": 22,
       "protein_g": 26,
       "fat_g": 21,
-      "aliases": [
-        "udang marmite",
-        "妈蜜虾",
-        "marmite shrimp",
-        "marmite prawns chinese"
-      ],
+      "aliases": ["udang marmite", "妈蜜虾", "marmite shrimp", "marmite prawns chinese"],
       "icon": "food/prawn",
       "verified": false,
       "source": "model_estimate"
@@ -1766,13 +1726,7 @@
       "carbs_g": 28,
       "protein_g": 25,
       "fat_g": 27,
-      "aliases": [
-        "udang cereal",
-        "麦片虾",
-        "oat prawn",
-        "nestum prawn",
-        "cereal butter prawn"
-      ],
+      "aliases": ["udang cereal", "麦片虾", "oat prawn", "nestum prawn", "cereal butter prawn"],
       "icon": "food/prawn",
       "verified": false,
       "source": "model_estimate"
@@ -1844,14 +1798,7 @@
       "carbs_g": 25,
       "protein_g": 40,
       "fat_g": 32,
-      "aliases": [
-        "poon choi",
-        "盆菜",
-        "basin dish",
-        "treasure pot",
-        "pun choi",
-        "cny pen cai"
-      ],
+      "aliases": ["poon choi", "盆菜", "basin dish", "treasure pot", "pun choi", "cny pen cai"],
       "icon": "food/cooking-pot",
       "verified": false,
       "source": "model_estimate"
@@ -1998,12 +1945,7 @@
       "carbs_g": 62,
       "protein_g": 32,
       "fat_g": 38,
-      "aliases": [
-        "pork chop hainan",
-        "海南猪扒",
-        "hainanese pork cutlet",
-        "pork chop kopitiam"
-      ],
+      "aliases": ["pork chop hainan", "海南猪扒", "hainanese pork cutlet", "pork chop kopitiam"],
       "verified": false,
       "source": "model_estimate"
     },
@@ -2034,13 +1976,7 @@
       "carbs_g": 16,
       "protein_g": 11,
       "fat_g": 6,
-      "aliases": [
-        "wantan soup",
-        "云吞汤",
-        "wonton soup",
-        "sup wantan",
-        "dumpling soup chinese"
-      ],
+      "aliases": ["wantan soup", "云吞汤", "wonton soup", "sup wantan", "dumpling soup chinese"],
       "icon": "food/dumpling",
       "verified": false,
       "source": "model_estimate"

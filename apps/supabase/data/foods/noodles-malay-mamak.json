@@ -378,13 +378,7 @@
       "carbs_g": 53.6,
       "protein_g": 13.7,
       "fat_g": 13.4,
-      "aliases": [
-        "maggi sup",
-        "maggi rebus",
-        "instant noodle soup",
-        "mee maggi sup",
-        "maggi kuah"
-      ],
+      "aliases": ["maggi sup", "maggi rebus", "instant noodle soup", "mee maggi sup", "maggi kuah"],
       "icon": "food/instant-noodles",
       "verified": false,
       "source": "model_estimate",
@@ -707,11 +701,7 @@
       "carbs_g": 86.4,
       "protein_g": 25.6,
       "fat_g": 21.3,
-      "aliases": [
-        "mee goreng tomyam",
-        "mee goreng tom yam",
-        "spicy sour fried yellow noodles"
-      ],
+      "aliases": ["mee goreng tomyam", "mee goreng tom yam", "spicy sour fried yellow noodles"],
       "icon": "dishes/mee-goreng",
       "verified": false,
       "source": "model_estimate",
@@ -874,11 +864,7 @@
       "carbs_g": 86.6,
       "protein_g": 23.6,
       "fat_g": 21,
-      "aliases": [
-        "mee goreng ikan masin",
-        "salted fish fried noodles",
-        "mi goreng ikan masin"
-      ],
+      "aliases": ["mee goreng ikan masin", "salted fish fried noodles", "mi goreng ikan masin"],
       "icon": "dishes/mee-goreng",
       "verified": false,
       "source": "model_estimate",
@@ -901,11 +887,7 @@
       "carbs_g": 82.6,
       "protein_g": 16.8,
       "fat_g": 18,
-      "aliases": [
-        "mee goreng cendawan",
-        "mushroom fried noodles",
-        "mi goreng cendawan"
-      ],
+      "aliases": ["mee goreng cendawan", "mushroom fried noodles", "mi goreng cendawan"],
       "icon": "dishes/mee-goreng",
       "verified": false,
       "source": "model_estimate",
@@ -1097,11 +1079,7 @@
       "carbs_g": 75.5,
       "protein_g": 18.6,
       "fat_g": 17.1,
-      "aliases": [
-        "bihun goreng tomyam",
-        "tom yam fried rice vermicelli",
-        "mee hoon goreng tomyam"
-      ],
+      "aliases": ["bihun goreng tomyam", "tom yam fried rice vermicelli", "mee hoon goreng tomyam"],
       "icon": "food/rice-vermicelli",
       "verified": false,
       "source": "model_estimate",
@@ -1548,12 +1526,7 @@
       "carbs_g": 50.2,
       "protein_g": 11.1,
       "fat_g": 10.6,
-      "aliases": [
-        "bihun kerabu",
-        "kerabu bihun",
-        "rice vermicelli herb salad",
-        "mee hoon kerabu"
-      ],
+      "aliases": ["bihun kerabu", "kerabu bihun", "rice vermicelli herb salad", "mee hoon kerabu"],
       "icon": "food/rice-vermicelli",
       "verified": false,
       "source": "model_estimate",
@@ -1797,11 +1770,7 @@
       "carbs_g": 55.7,
       "protein_g": 20.3,
       "fat_g": 11.3,
-      "aliases": [
-        "kuey teow sup ayam",
-        "chicken flat rice noodle soup",
-        "kuetiau sup ayam"
-      ],
+      "aliases": ["kuey teow sup ayam", "chicken flat rice noodle soup", "kuetiau sup ayam"],
       "icon": "dishes/kuey-teow-soup",
       "verified": false,
       "source": "model_estimate",
@@ -1852,11 +1821,7 @@
       "carbs_g": 53.6,
       "protein_g": 22.4,
       "fat_g": 9.5,
-      "aliases": [
-        "kuey teow sup ikan",
-        "fish flat rice noodle soup",
-        "kuetiau sup ikan"
-      ],
+      "aliases": ["kuey teow sup ikan", "fish flat rice noodle soup", "kuetiau sup ikan"],
       "icon": "dishes/kuey-teow-soup",
       "verified": false,
       "source": "model_estimate",
@@ -1879,12 +1844,7 @@
       "carbs_g": 66.9,
       "protein_g": 19.7,
       "fat_g": 19.8,
-      "aliases": [
-        "kuey teow kari",
-        "curry flat rice noodles",
-        "kuetiau kari",
-        "curry kway teow"
-      ],
+      "aliases": ["kuey teow kari", "curry flat rice noodles", "kuetiau kari", "curry kway teow"],
       "icon": "dishes/curry-mee",
       "verified": false,
       "source": "model_estimate",
@@ -1937,11 +1897,7 @@
       "carbs_g": 65.7,
       "protein_g": 25.3,
       "fat_g": 15.7,
-      "aliases": [
-        "mee soto johor",
-        "johor style mee soto",
-        "mi soto johor"
-      ],
+      "aliases": ["mee soto johor", "johor style mee soto", "mi soto johor"],
       "icon": "food/noodle-bowl",
       "verified": false,
       "source": "model_estimate",
@@ -1964,12 +1920,7 @@
       "carbs_g": 63.7,
       "protein_g": 27.3,
       "fat_g": 17.3,
-      "aliases": [
-        "mee soto daging",
-        "beef mee soto",
-        "soto daging mee",
-        "mi soto daging"
-      ],
+      "aliases": ["mee soto daging", "beef mee soto", "soto daging mee", "mi soto daging"],
       "icon": "food/noodle-bowl",
       "verified": false,
       "source": "model_estimate",
@@ -2049,12 +2000,7 @@
       "carbs_g": 51.1,
       "protein_g": 14.2,
       "fat_g": 8.2,
-      "aliases": [
-        "laksa perlis",
-        "perlis laksa",
-        "laksa kuala perlis",
-        "northern fish laksa"
-      ],
+      "aliases": ["laksa perlis", "perlis laksa", "laksa kuala perlis", "northern fish laksa"],
       "icon": "dishes/laksa",
       "verified": false,
       "source": "model_estimate",
@@ -2077,12 +2023,7 @@
       "carbs_g": 48.1,
       "protein_g": 13.2,
       "fat_g": 7.2,
-      "aliases": [
-        "laksa utara",
-        "northern laksa",
-        "laksa north malaysia",
-        "laksa asam utara"
-      ],
+      "aliases": ["laksa utara", "northern laksa", "laksa north malaysia", "laksa asam utara"],
       "icon": "dishes/laksa",
       "verified": false,
       "source": "model_estimate",
@@ -2162,12 +2103,7 @@
       "carbs_g": 51.5,
       "protein_g": 14.2,
       "fat_g": 10.3,
-      "aliases": [
-        "laksa ipoh",
-        "ipoh laksa",
-        "perak laksa",
-        "laksa perak"
-      ],
+      "aliases": ["laksa ipoh", "ipoh laksa", "perak laksa", "laksa perak"],
       "icon": "dishes/laksa",
       "verified": false,
       "source": "model_estimate",
@@ -2190,11 +2126,7 @@
       "carbs_g": 50.3,
       "protein_g": 13.2,
       "fat_g": 8.4,
-      "aliases": [
-        "laksa kuala kangsar",
-        "kuala kangsar laksa",
-        "laksa kk perak"
-      ],
+      "aliases": ["laksa kuala kangsar", "kuala kangsar laksa", "laksa kk perak"],
       "icon": "dishes/laksa",
       "verified": false,
       "source": "model_estimate",
@@ -2217,12 +2149,7 @@
       "carbs_g": 55,
       "protein_g": 15,
       "fat_g": 13.3,
-      "aliases": [
-        "laksa pahang",
-        "pahang laksa",
-        "laksa kuantan",
-        "laksa pekan"
-      ],
+      "aliases": ["laksa pahang", "pahang laksa", "laksa kuantan", "laksa pekan"],
       "icon": "dishes/laksa",
       "verified": false,
       "source": "model_estimate",
@@ -2245,12 +2172,7 @@
       "carbs_g": 65.4,
       "protein_g": 19.1,
       "fat_g": 23,
-      "aliases": [
-        "laksa melaka",
-        "melaka laksa",
-        "malacca laksa",
-        "laksa lemak melaka"
-      ],
+      "aliases": ["laksa melaka", "melaka laksa", "malacca laksa", "laksa lemak melaka"],
       "icon": "dishes/laksa",
       "verified": false,
       "source": "model_estimate",
@@ -2302,11 +2224,7 @@
       "carbs_g": 57.6,
       "protein_g": 17.4,
       "fat_g": 15,
-      "aliases": [
-        "laksa sabah",
-        "sabah laksa",
-        "laksa kota kinabalu"
-      ],
+      "aliases": ["laksa sabah", "sabah laksa", "laksa kota kinabalu"],
       "icon": "dishes/laksa",
       "verified": false,
       "source": "model_estimate",
@@ -2329,11 +2247,7 @@
       "carbs_g": 52.2,
       "protein_g": 14.4,
       "fat_g": 10.4,
-      "aliases": [
-        "laksa rembau",
-        "negeri sembilan laksa",
-        "laksa negeri sembilan"
-      ],
+      "aliases": ["laksa rembau", "negeri sembilan laksa", "laksa negeri sembilan"],
       "icon": "dishes/laksa",
       "verified": false,
       "source": "model_estimate",
@@ -2356,12 +2270,7 @@
       "carbs_g": 50.3,
       "protein_g": 14.2,
       "fat_g": 8.6,
-      "aliases": [
-        "laksa ikan sardin",
-        "sardine laksa",
-        "laksa sardin",
-        "canned sardine laksa"
-      ],
+      "aliases": ["laksa ikan sardin", "sardine laksa", "laksa sardin", "canned sardine laksa"],
       "icon": "dishes/laksa",
       "verified": false,
       "source": "model_estimate",
@@ -2384,13 +2293,7 @@
       "carbs_g": 67.4,
       "protein_g": 20.8,
       "fat_g": 15.2,
-      "aliases": [
-        "mee tomyam",
-        "mi tom yam",
-        "tom yam noodles",
-        "mee tom yam",
-        "டோம் யாம் மீ"
-      ],
+      "aliases": ["mee tomyam", "mi tom yam", "tom yam noodles", "mee tom yam", "டோம் யாம் மீ"],
       "icon": "dishes/tomyam",
       "verified": false,
       "source": "model_estimate",
@@ -2441,11 +2344,7 @@
       "carbs_g": 63.1,
       "protein_g": 29,
       "fat_g": 15.2,
-      "aliases": [
-        "mee tomyam seafood",
-        "seafood tom yam noodles",
-        "mee tomyam makanan laut"
-      ],
+      "aliases": ["mee tomyam seafood", "seafood tom yam noodles", "mee tomyam makanan laut"],
       "icon": "dishes/tomyam",
       "verified": false,
       "source": "model_estimate",
@@ -2468,11 +2367,7 @@
       "carbs_g": 65.6,
       "protein_g": 24.8,
       "fat_g": 14.9,
-      "aliases": [
-        "mee tomyam ayam",
-        "chicken tom yam noodles",
-        "mee tom yam ayam"
-      ],
+      "aliases": ["mee tomyam ayam", "chicken tom yam noodles", "mee tom yam ayam"],
       "icon": "dishes/tomyam",
       "verified": false,
       "source": "model_estimate",
@@ -2495,12 +2390,7 @@
       "carbs_g": 58.1,
       "protein_g": 22.6,
       "fat_g": 11.9,
-      "aliases": [
-        "mee sup ayam",
-        "chicken noodle soup",
-        "mi sup ayam",
-        "mee kuah ayam"
-      ],
+      "aliases": ["mee sup ayam", "chicken noodle soup", "mi sup ayam", "mee kuah ayam"],
       "icon": "food/noodle-bowl",
       "verified": false,
       "source": "model_estimate",
@@ -2523,12 +2413,7 @@
       "carbs_g": 58.8,
       "protein_g": 25.9,
       "fat_g": 14.6,
-      "aliases": [
-        "mee sup daging",
-        "beef noodle soup",
-        "mi sup daging",
-        "mee sup lembu"
-      ],
+      "aliases": ["mee sup daging", "beef noodle soup", "mi sup daging", "mee sup lembu"],
       "icon": "food/noodle-bowl",
       "verified": false,
       "source": "model_estimate",
@@ -2551,12 +2436,7 @@
       "carbs_g": 59.3,
       "protein_g": 27.8,
       "fat_g": 17.4,
-      "aliases": [
-        "mee sup kambing",
-        "mutton noodle soup",
-        "mi sup kambing",
-        "sup kambing mee"
-      ],
+      "aliases": ["mee sup kambing", "mutton noodle soup", "mi sup kambing", "sup kambing mee"],
       "icon": "food/noodle-bowl",
       "verified": false,
       "source": "model_estimate",
@@ -2579,12 +2459,7 @@
       "carbs_g": 56.9,
       "protein_g": 27.2,
       "fat_g": 17.6,
-      "aliases": [
-        "mee sup tulang",
-        "bone soup noodles",
-        "sup tulang mee",
-        "mi sup tulang"
-      ],
+      "aliases": ["mee sup tulang", "bone soup noodles", "sup tulang mee", "mi sup tulang"],
       "icon": "food/noodle-bowl",
       "verified": false,
       "source": "model_estimate",
@@ -2607,12 +2482,7 @@
       "carbs_g": 59,
       "protein_g": 22.3,
       "fat_g": 13.4,
-      "aliases": [
-        "mee sup utara",
-        "northern noodle soup",
-        "mi sup utara",
-        "mee sup kedah"
-      ],
+      "aliases": ["mee sup utara", "northern noodle soup", "mi sup utara", "mee sup kedah"],
       "icon": "food/noodle-bowl",
       "verified": false,
       "source": "model_estimate",
@@ -2635,12 +2505,7 @@
       "carbs_g": 55.4,
       "protein_g": 23.6,
       "fat_g": 10.5,
-      "aliases": [
-        "mee sup ikan",
-        "fish noodle soup",
-        "mi sup ikan",
-        "mee sup ikan pekasam"
-      ],
+      "aliases": ["mee sup ikan", "fish noodle soup", "mi sup ikan", "mee sup ikan pekasam"],
       "icon": "food/noodle-bowl",
       "verified": false,
       "source": "model_estimate",
@@ -2663,12 +2528,7 @@
       "carbs_g": 72.2,
       "protein_g": 19.4,
       "fat_g": 21,
-      "aliases": [
-        "mee kuah kacang",
-        "peanut gravy noodles",
-        "mi kuah kacang",
-        "mee kacang"
-      ],
+      "aliases": ["mee kuah kacang", "peanut gravy noodles", "mi kuah kacang", "mee kacang"],
       "icon": "food/noodle-bowl",
       "verified": false,
       "source": "model_estimate",
@@ -2691,12 +2551,7 @@
       "carbs_g": 62.3,
       "protein_g": 20,
       "fat_g": 15.7,
-      "aliases": [
-        "mee celup",
-        "mi celup",
-        "dipped noodles kelantan",
-        "mee celop"
-      ],
+      "aliases": ["mee celup", "mi celup", "dipped noodles kelantan", "mee celop"],
       "icon": "food/noodle-bowl",
       "verified": false,
       "source": "model_estimate",
@@ -2719,12 +2574,7 @@
       "carbs_g": 48.1,
       "protein_g": 19.3,
       "fat_g": 8.9,
-      "aliases": [
-        "mee calong",
-        "mi calong",
-        "terengganu fish ball noodles",
-        "mee calung"
-      ],
+      "aliases": ["mee calong", "mi calong", "terengganu fish ball noodles", "mee calung"],
       "icon": "food/noodle-bowl",
       "verified": false,
       "source": "model_estimate",
@@ -2747,12 +2597,7 @@
       "carbs_g": 54.9,
       "protein_g": 14.4,
       "fat_g": 12,
-      "aliases": [
-        "mee kerabu",
-        "kerabu mee",
-        "kelantan herb noodle salad",
-        "mi kerabu"
-      ],
+      "aliases": ["mee kerabu", "kerabu mee", "kelantan herb noodle salad", "mi kerabu"],
       "icon": "food/yellow-noodles",
       "verified": false,
       "source": "model_estimate",
@@ -2775,13 +2620,7 @@
       "carbs_g": 74.9,
       "protein_g": 17.7,
       "fat_g": 19.4,
-      "aliases": [
-        "mee rojak",
-        "mi rojak",
-        "noodle rojak",
-        "rojak mee",
-        "pasembur mee"
-      ],
+      "aliases": ["mee rojak", "mi rojak", "noodle rojak", "rojak mee", "pasembur mee"],
       "icon": "dishes/rojak",
       "verified": false,
       "source": "model_estimate",
@@ -2832,12 +2671,7 @@
       "carbs_g": 68.1,
       "protein_g": 30,
       "fat_g": 17,
-      "aliases": [
-        "mee ketam",
-        "crab noodles",
-        "mi ketam",
-        "crab mee"
-      ],
+      "aliases": ["mee ketam", "crab noodles", "mi ketam", "crab mee"],
       "icon": "food/noodle-bowl",
       "verified": false,
       "source": "model_estimate",
@@ -2888,12 +2722,7 @@
       "carbs_g": 82.2,
       "protein_g": 24.8,
       "fat_g": 21.4,
-      "aliases": [
-        "mee racun",
-        "poison noodles ipoh",
-        "mi racun",
-        "mee racun ipoh"
-      ],
+      "aliases": ["mee racun", "poison noodles ipoh", "mi racun", "mee racun ipoh"],
       "icon": "dishes/mee-goreng",
       "verified": false,
       "source": "model_estimate",
@@ -2916,12 +2745,7 @@
       "carbs_g": 57,
       "protein_g": 20.4,
       "fat_g": 13.4,
-      "aliases": [
-        "mee bakso",
-        "bakso mee",
-        "meatball noodle soup",
-        "mi bakso"
-      ],
+      "aliases": ["mee bakso", "bakso mee", "meatball noodle soup", "mi bakso"],
       "icon": "food/noodle-bowl",
       "verified": false,
       "source": "model_estimate",
@@ -3000,11 +2824,7 @@
       "carbs_g": 78.4,
       "protein_g": 22.8,
       "fat_g": 18.4,
-      "aliases": [
-        "mee rebus ayam",
-        "mi rebus ayam",
-        "sweet potato gravy noodles with chicken"
-      ],
+      "aliases": ["mee rebus ayam", "mi rebus ayam", "sweet potato gravy noodles with chicken"],
       "icon": "dishes/mee-rebus",
       "verified": false,
       "source": "model_estimate",
@@ -3083,12 +2903,7 @@
       "carbs_g": 71.7,
       "protein_g": 23.4,
       "fat_g": 22.8,
-      "aliases": [
-        "mee kari ayam",
-        "chicken curry noodles",
-        "mi kari ayam",
-        "curry mee ayam"
-      ],
+      "aliases": ["mee kari ayam", "chicken curry noodles", "mi kari ayam", "curry mee ayam"],
       "icon": "dishes/curry-mee",
       "verified": false,
       "source": "model_estimate",
@@ -3111,12 +2926,7 @@
       "carbs_g": 68.1,
       "protein_g": 14.1,
       "fat_g": 15.7,
-      "aliases": [
-        "mee siam goreng",
-        "dry mee siam",
-        "mi siam goreng",
-        "fried mee siam"
-      ],
+      "aliases": ["mee siam goreng", "dry mee siam", "mi siam goreng", "fried mee siam"],
       "icon": "dishes/mee-siam",
       "verified": false,
       "source": "model_estimate",
@@ -3139,12 +2949,7 @@
       "carbs_g": 60.9,
       "protein_g": 14.7,
       "fat_g": 13.1,
-      "aliases": [
-        "mee siam kuah",
-        "wet mee siam",
-        "mi siam kuah",
-        "mee siam with gravy"
-      ],
+      "aliases": ["mee siam kuah", "wet mee siam", "mi siam kuah", "mee siam with gravy"],
       "icon": "dishes/mee-siam",
       "verified": false,
       "source": "model_estimate",
@@ -3167,13 +2972,7 @@
       "carbs_g": 58,
       "protein_g": 19,
       "fat_g": 10.2,
-      "aliases": [
-        "mee sua ayam",
-        "misua ayam",
-        "chicken misua soup",
-        "mi sua ayam",
-        "面线鸡"
-      ],
+      "aliases": ["mee sua ayam", "misua ayam", "chicken misua soup", "mi sua ayam", "面线鸡"],
       "icon": "food/noodle-bowl",
       "verified": false,
       "source": "model_estimate",
@@ -3196,11 +2995,7 @@
       "carbs_g": 63.6,
       "protein_g": 19.2,
       "fat_g": 16.5,
-      "aliases": [
-        "mee kacang melaka",
-        "melaka peanut noodles",
-        "mi kacang melaka"
-      ],
+      "aliases": ["mee kacang melaka", "melaka peanut noodles", "mi kacang melaka"],
       "icon": "food/noodle-bowl",
       "verified": false,
       "source": "model_estimate",

@@ -278,12 +278,7 @@
       "protein_g": 1.5,
       "fat_g": 7,
       "sugar_g": 8,
-      "aliases": [
-        "sagun",
-        "kuih sagon",
-        "roasted coconut flour kuih",
-        "sagun kelapa"
-      ],
+      "aliases": ["sagun", "kuih sagon", "roasted coconut flour kuih", "sagun kelapa"],
       "icon": "food/coconut",
       "source": "model_estimate",
       "verified": false
@@ -442,12 +437,7 @@
       "protein_g": 2,
       "fat_g": 4,
       "sugar_g": 12,
-      "aliases": [
-        "talam jagung",
-        "corn talam",
-        "kuih talam corn",
-        "sweetcorn layered kuih"
-      ],
+      "aliases": ["talam jagung", "corn talam", "kuih talam corn", "sweetcorn layered kuih"],
       "icon": "food/kuih-talam",
       "source": "model_estimate",
       "verified": false
@@ -481,11 +471,7 @@
       "protein_g": 2.5,
       "fat_g": 4.5,
       "sugar_g": 13,
-      "aliases": [
-        "kuih bakar ubi keledek",
-        "baked sweet potato kuih",
-        "kuih bakar keledek pandan"
-      ],
+      "aliases": ["kuih bakar ubi keledek", "baked sweet potato kuih", "kuih bakar keledek pandan"],
       "icon": "food/sweet-potato",
       "source": "model_estimate",
       "verified": false
@@ -954,13 +940,7 @@
       "protein_g": 2.5,
       "fat_g": 8.5,
       "sugar_g": 16,
-      "aliases": [
-        "lou poh peng",
-        "老婆饼",
-        "wife cake",
-        "winter melon pastry",
-        "lo po beng"
-      ],
+      "aliases": ["lou poh peng", "老婆饼", "wife cake", "winter melon pastry", "lo po beng"],
       "icon": "food/biscuit-stack",
       "source": "model_estimate",
       "verified": false
@@ -1005,12 +985,7 @@
       "protein_g": 10,
       "fat_g": 26,
       "sugar_g": 62,
-      "aliases": [
-        "red bean mooncake",
-        "kuih bulan kacang merah",
-        "豆沙月饼",
-        "adzuki mooncake"
-      ],
+      "aliases": ["red bean mooncake", "kuih bulan kacang merah", "豆沙月饼", "adzuki mooncake"],
       "icon": "food/cake-slice",
       "source": "model_estimate",
       "verified": false,
@@ -1451,12 +1426,7 @@
       "protein_g": 5,
       "fat_g": 13,
       "sugar_g": 56,
-      "aliases": [
-        "abc durian",
-        "ice kacang durian",
-        "air batu campur durian",
-        "durian shaved ice"
-      ],
+      "aliases": ["abc durian", "ice kacang durian", "air batu campur durian", "durian shaved ice"],
       "icon": "food/shaved-ice",
       "source": "model_estimate",
       "verified": false
@@ -1496,12 +1466,7 @@
       "protein_g": 5,
       "fat_g": 16,
       "sugar_g": 24,
-      "aliases": [
-        "fried ice cream",
-        "aiskrim goreng",
-        "ice cream goreng",
-        "炸雪糕"
-      ],
+      "aliases": ["fried ice cream", "aiskrim goreng", "ice cream goreng", "炸雪糕"],
       "icon": "food/ice-cream",
       "source": "model_estimate",
       "verified": false
@@ -1595,13 +1560,7 @@
       "protein_g": 4,
       "fat_g": 15,
       "sugar_g": 16,
-      "aliases": [
-        "durian pancake",
-        "durian crepe",
-        "crepe durian",
-        "durian puff",
-        "榴莲班戟"
-      ],
+      "aliases": ["durian pancake", "durian crepe", "crepe durian", "durian puff", "榴莲班戟"],
       "icon": "food/crepe",
       "source": "model_estimate",
       "verified": false
@@ -1675,12 +1634,7 @@
       "protein_g": 5,
       "fat_g": 19,
       "sugar_g": 40,
-      "aliases": [
-        "pengat durian",
-        "durian in coconut milk",
-        "durian pengat",
-        "bubur durian"
-      ],
+      "aliases": ["pengat durian", "durian in coconut milk", "durian pengat", "bubur durian"],
       "icon": "food/coconut",
       "source": "model_estimate",
       "verified": false
@@ -1896,13 +1850,7 @@
       "protein_g": 4,
       "fat_g": 14.5,
       "sugar_g": 21,
-      "aliases": [
-        "marble butter cake",
-        "kek marble",
-        "kek marmar",
-        "marble cake",
-        "kek belang"
-      ],
+      "aliases": ["marble butter cake", "kek marble", "kek marmar", "marble cake", "kek belang"],
       "icon": "food/cake-slice",
       "source": "model_estimate",
       "verified": false
@@ -2023,12 +1971,7 @@
       "protein_g": 2.5,
       "fat_g": 7.5,
       "sugar_g": 17,
-      "aliases": [
-        "durian ice cream",
-        "aiskrim durian",
-        "ice cream durian",
-        "榴莲雪糕"
-      ],
+      "aliases": ["durian ice cream", "aiskrim durian", "ice cream durian", "榴莲雪糕"],
       "icon": "food/ice-cream",
       "source": "model_estimate",
       "verified": false,

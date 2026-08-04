@@ -250,12 +250,7 @@
       "carbs_g": 60,
       "protein_g": 8,
       "fat_g": 20,
-      "aliases": [
-        "roti canai kaya",
-        "kaya roti",
-        "roti kaya mamak",
-        "kaya roti canai"
-      ],
+      "aliases": ["roti canai kaya", "kaya roti", "roti kaya mamak", "kaya roti canai"],
       "icon": "dishes/roti-canai",
       "source": "model_estimate",
       "verified": false
@@ -268,11 +263,7 @@
       "carbs_g": 60,
       "protein_g": 8,
       "fat_g": 22,
-      "aliases": [
-        "roti canai durian",
-        "durian roti",
-        "durian roti canai"
-      ],
+      "aliases": ["roti canai durian", "durian roti", "durian roti canai"],
       "icon": "dishes/roti-canai",
       "source": "model_estimate",
       "verified": false
@@ -285,12 +276,7 @@
       "carbs_g": 65,
       "protein_g": 9,
       "fat_g": 25,
-      "aliases": [
-        "roti canai nutella",
-        "nutella roti",
-        "chocolate roti canai",
-        "roti coklat"
-      ],
+      "aliases": ["roti canai nutella", "nutella roti", "chocolate roti canai", "roti coklat"],
       "icon": "dishes/roti-canai",
       "source": "model_estimate",
       "verified": false
@@ -397,11 +383,7 @@
       "carbs_g": 34,
       "protein_g": 12,
       "fat_g": 12,
-      "aliases": [
-        "sardine toast",
-        "roti bakar sardine",
-        "toast sardin"
-      ],
+      "aliases": ["sardine toast", "roti bakar sardine", "toast sardin"],
       "icon": "food/toast",
       "source": "model_estimate",
       "verified": false
@@ -432,11 +414,7 @@
       "carbs_g": 34,
       "protein_g": 13,
       "fat_g": 17,
-      "aliases": [
-        "cheese toast",
-        "roti bakar keju",
-        "toast cheese"
-      ],
+      "aliases": ["cheese toast", "roti bakar keju", "toast cheese"],
       "icon": "food/cheese",
       "source": "model_estimate",
       "verified": false
@@ -486,11 +464,7 @@
       "carbs_g": 62,
       "protein_g": 34,
       "fat_g": 36,
-      "aliases": [
-        "cheese roti john",
-        "roti john keju",
-        "roti john special cheese"
-      ],
+      "aliases": ["cheese roti john", "roti john keju", "roti john special cheese"],
       "icon": "dishes/roti-john",
       "source": "model_estimate",
       "verified": false
@@ -503,11 +477,7 @@
       "carbs_g": 58,
       "protein_g": 26,
       "fat_g": 26,
-      "aliases": [
-        "sardine roti john",
-        "roti john sardine",
-        "roti jon sardin"
-      ],
+      "aliases": ["sardine roti john", "roti john sardine", "roti jon sardin"],
       "icon": "dishes/roti-john",
       "source": "model_estimate",
       "verified": false
@@ -540,12 +510,7 @@
       "carbs_g": 46,
       "protein_g": 9,
       "fat_g": 11,
-      "aliases": [
-        "naan bawang putih",
-        "naan garlic",
-        "garlic nan",
-        "roti naan garlic"
-      ],
+      "aliases": ["naan bawang putih", "naan garlic", "garlic nan", "roti naan garlic"],
       "icon": "food/garlic",
       "source": "model_estimate",
       "verified": false
@@ -558,12 +523,7 @@
       "carbs_g": 46,
       "protein_g": 9,
       "fat_g": 13,
-      "aliases": [
-        "naan mentega",
-        "naan butter",
-        "butter nan",
-        "roti naan butter"
-      ],
+      "aliases": ["naan mentega", "naan butter", "butter nan", "roti naan butter"],
       "icon": "food/butter",
       "source": "model_estimate",
       "verified": false
@@ -576,12 +536,7 @@
       "carbs_g": 48,
       "protein_g": 17,
       "fat_g": 20,
-      "aliases": [
-        "naan cheese",
-        "naan keju",
-        "cheese nan",
-        "roti naan cheese"
-      ],
+      "aliases": ["naan cheese", "naan keju", "cheese nan", "roti naan cheese"],
       "icon": "food/cheese",
       "source": "model_estimate",
       "verified": false
@@ -594,11 +549,7 @@
       "carbs_g": 49,
       "protein_g": 18,
       "fat_g": 22,
-      "aliases": [
-        "cheese garlic naan",
-        "naan cheese garlic",
-        "garlic cheese nan"
-      ],
+      "aliases": ["cheese garlic naan", "naan cheese garlic", "garlic cheese nan"],
       "icon": "food/cheese",
       "source": "model_estimate",
       "verified": false
@@ -611,12 +562,7 @@
       "carbs_g": 58,
       "protein_g": 11,
       "fat_g": 14,
-      "aliases": [
-        "kashmiri naan",
-        "naan peshawari",
-        "sweet naan",
-        "naan manis"
-      ],
+      "aliases": ["kashmiri naan", "naan peshawari", "sweet naan", "naan manis"],
       "icon": "food/roti",
       "source": "model_estimate",
       "verified": false
@@ -648,12 +594,7 @@
       "carbs_g": 58,
       "protein_g": 28,
       "fat_g": 30,
-      "aliases": [
-        "chicken murtabak",
-        "martabak ayam",
-        "murtabak chicken",
-        "murtabak ayam mamak"
-      ],
+      "aliases": ["chicken murtabak", "martabak ayam", "murtabak chicken", "murtabak ayam mamak"],
       "icon": "dishes/murtabak",
       "source": "model_estimate",
       "verified": false
@@ -666,12 +607,7 @@
       "carbs_g": 58,
       "protein_g": 30,
       "fat_g": 34,
-      "aliases": [
-        "beef murtabak",
-        "martabak daging",
-        "murtabak beef",
-        "murtabak lembu"
-      ],
+      "aliases": ["beef murtabak", "martabak daging", "murtabak beef", "murtabak lembu"],
       "icon": "dishes/murtabak",
       "source": "model_estimate",
       "verified": false
@@ -684,12 +620,7 @@
       "carbs_g": 58,
       "protein_g": 30,
       "fat_g": 38,
-      "aliases": [
-        "mutton murtabak",
-        "martabak kambing",
-        "murtabak mutton",
-        "lamb murtabak"
-      ],
+      "aliases": ["mutton murtabak", "martabak kambing", "murtabak mutton", "lamb murtabak"],
       "icon": "dishes/murtabak",
       "source": "model_estimate",
       "verified": false
@@ -702,11 +633,7 @@
       "carbs_g": 56,
       "protein_g": 24,
       "fat_g": 28,
-      "aliases": [
-        "sardine murtabak",
-        "martabak sardin",
-        "murtabak sardine"
-      ],
+      "aliases": ["sardine murtabak", "martabak sardin", "murtabak sardine"],
       "icon": "dishes/murtabak",
       "source": "model_estimate",
       "verified": false
@@ -719,12 +646,7 @@
       "carbs_g": 55,
       "protein_g": 18,
       "fat_g": 26,
-      "aliases": [
-        "egg murtabak",
-        "martabak telur",
-        "murtabak egg",
-        "murtabak kosong"
-      ],
+      "aliases": ["egg murtabak", "martabak telur", "murtabak egg", "murtabak kosong"],
       "icon": "dishes/murtabak",
       "source": "model_estimate",
       "verified": false
@@ -737,12 +659,7 @@
       "carbs_g": 22,
       "protein_g": 10,
       "fat_g": 12,
-      "aliases": [
-        "mini murtabak",
-        "martabak mini",
-        "murtabak kecil",
-        "murtabak singapore mini"
-      ],
+      "aliases": ["mini murtabak", "martabak mini", "murtabak kecil", "murtabak singapore mini"],
       "icon": "dishes/murtabak",
       "source": "model_estimate",
       "verified": false
@@ -1010,14 +927,7 @@
       "carbs_g": 48,
       "protein_g": 10,
       "fat_g": 10,
-      "aliases": [
-        "uttapam",
-        "oothappam",
-        "uttappam",
-        "onion uthappam",
-        "thick dosa",
-        "utthapam"
-      ],
+      "aliases": ["uttapam", "oothappam", "uttappam", "onion uthappam", "thick dosa", "utthapam"],
       "icon": "food/pancakes",
       "source": "model_estimate",
       "verified": false
@@ -1030,13 +940,7 @@
       "carbs_g": 45,
       "protein_g": 10,
       "fat_g": 15,
-      "aliases": [
-        "podi dosa",
-        "podi dosai",
-        "milagai podi dosa",
-        "podi tosai",
-        "thosai podi"
-      ],
+      "aliases": ["podi dosa", "podi dosai", "milagai podi dosa", "podi tosai", "thosai podi"],
       "icon": "dishes/thosai",
       "source": "model_estimate",
       "verified": false
@@ -1049,13 +953,7 @@
       "carbs_g": 44,
       "protein_g": 16,
       "fat_g": 20,
-      "aliases": [
-        "cheese thosai",
-        "cheese dosa",
-        "cheese dosai",
-        "tosai cheese",
-        "thosai keju"
-      ],
+      "aliases": ["cheese thosai", "cheese dosa", "cheese dosai", "tosai cheese", "thosai keju"],
       "icon": "dishes/thosai",
       "source": "model_estimate",
       "verified": false
@@ -1088,12 +986,7 @@
       "carbs_g": 34,
       "protein_g": 7,
       "fat_g": 6,
-      "aliases": [
-        "rawa idli",
-        "semolina idli",
-        "rava idly",
-        "rava iddly"
-      ],
+      "aliases": ["rawa idli", "semolina idli", "rava idly", "rava iddly"],
       "icon": "food/pancakes",
       "source": "model_estimate",
       "verified": false
@@ -1106,13 +999,7 @@
       "carbs_g": 32,
       "protein_g": 6,
       "fat_g": 9,
-      "aliases": [
-        "paniyaram",
-        "kuli paniyaram",
-        "kuzhi paniyaaram",
-        "ponganalu",
-        "appe"
-      ],
+      "aliases": ["paniyaram", "kuli paniyaram", "kuzhi paniyaaram", "ponganalu", "appe"],
       "icon": "food/pancakes",
       "source": "model_estimate",
       "verified": false
@@ -1225,13 +1112,7 @@
       "carbs_g": 18,
       "protein_g": 6,
       "fat_g": 9,
-      "aliases": [
-        "masala vada",
-        "paruppu vadai",
-        "masal vadai",
-        "chana dal vada",
-        "masala vadey"
-      ],
+      "aliases": ["masala vada", "paruppu vadai", "masal vadai", "chana dal vada", "masala vadey"],
       "icon": "food/chickpeas",
       "source": "model_estimate",
       "verified": false
@@ -1244,13 +1125,7 @@
       "carbs_g": 20,
       "protein_g": 8,
       "fat_g": 11,
-      "aliases": [
-        "prawn vadai",
-        "vadai prawn",
-        "vadey udang",
-        "prawn vada",
-        "vadai sotong"
-      ],
+      "aliases": ["prawn vadai", "vadai prawn", "vadey udang", "prawn vada", "vadai sotong"],
       "icon": "food/prawn",
       "source": "model_estimate",
       "verified": false
@@ -1283,12 +1158,7 @@
       "carbs_g": 24,
       "protein_g": 4,
       "fat_g": 10,
-      "aliases": [
-        "aloo bonda",
-        "potato bonda",
-        "urulai bonda",
-        "bondas"
-      ],
+      "aliases": ["aloo bonda", "potato bonda", "urulai bonda", "bondas"],
       "icon": "food/doughnut",
       "source": "model_estimate",
       "verified": false
@@ -1301,13 +1171,7 @@
       "carbs_g": 16,
       "protein_g": 6,
       "fat_g": 9,
-      "aliases": [
-        "meat samosa",
-        "samosa lembu",
-        "beef samosa",
-        "samusa daging",
-        "mutton samosa"
-      ],
+      "aliases": ["meat samosa", "samosa lembu", "beef samosa", "samusa daging", "mutton samosa"],
       "icon": "dishes/samosa",
       "source": "model_estimate",
       "verified": false
@@ -1339,12 +1203,7 @@
       "carbs_g": 20,
       "protein_g": 6,
       "fat_g": 12,
-      "aliases": [
-        "chicken curry puff",
-        "curry puff ayam",
-        "epok epok ayam",
-        "karipap chicken"
-      ],
+      "aliases": ["chicken curry puff", "curry puff ayam", "epok epok ayam", "karipap chicken"],
       "icon": "dishes/curry-puff",
       "source": "model_estimate",
       "verified": false
@@ -1436,12 +1295,7 @@
       "carbs_g": 60,
       "protein_g": 7,
       "fat_g": 16,
-      "aliases": [
-        "coconut rice",
-        "thengai satham",
-        "nasi kelapa india",
-        "coconut sadam"
-      ],
+      "aliases": ["coconut rice", "thengai satham", "nasi kelapa india", "coconut sadam"],
       "icon": "food/plate-rice",
       "source": "model_estimate",
       "verified": false
@@ -1454,13 +1308,7 @@
       "carbs_g": 62,
       "protein_g": 8,
       "fat_g": 14,
-      "aliases": [
-        "tamarind rice",
-        "puliyogare",
-        "pulihora",
-        "nasi asam jawa india",
-        "puli sadam"
-      ],
+      "aliases": ["tamarind rice", "puliyogare", "pulihora", "nasi asam jawa india", "puli sadam"],
       "icon": "food/plate-rice",
       "source": "model_estimate",
       "verified": false
@@ -1548,12 +1396,7 @@
       "carbs_g": 10,
       "protein_g": 22,
       "fat_g": 16,
-      "aliases": [
-        "squid curry",
-        "kari sotong mamak",
-        "cuttlefish curry",
-        "kanava kuzhambu"
-      ],
+      "aliases": ["squid curry", "kari sotong mamak", "cuttlefish curry", "kanava kuzhambu"],
       "icon": "food/squid-rings",
       "source": "model_estimate",
       "verified": false
@@ -1566,13 +1409,7 @@
       "carbs_g": 8,
       "protein_g": 14,
       "fat_g": 20,
-      "aliases": [
-        "egg curry",
-        "kari telur mamak",
-        "muttai kuzhambu",
-        "anda curry",
-        "telur kari"
-      ],
+      "aliases": ["egg curry", "kari telur mamak", "muttai kuzhambu", "anda curry", "telur kari"],
       "icon": "food/boiled-egg",
       "source": "model_estimate",
       "verified": false
@@ -1664,13 +1501,7 @@
       "carbs_g": 14,
       "protein_g": 26,
       "fat_g": 20,
-      "aliases": [
-        "ayam 65",
-        "chicken sixty five",
-        "chicken65",
-        "kozhi 65",
-        "chicken 65 mamak"
-      ],
+      "aliases": ["ayam 65", "chicken sixty five", "chicken65", "kozhi 65", "chicken 65 mamak"],
       "icon": "food/chicken-nugget",
       "source": "model_estimate",
       "verified": false
@@ -1758,12 +1589,7 @@
       "carbs_g": 8,
       "protein_g": 1,
       "fat_g": 5,
-      "aliases": [
-        "tomato chutney",
-        "thakkali chutney",
-        "chatni tomato",
-        "chutney tomatoes"
-      ],
+      "aliases": ["tomato chutney", "thakkali chutney", "chatni tomato", "chutney tomatoes"],
       "icon": "food/tomato",
       "source": "model_estimate",
       "verified": false
@@ -1924,13 +1750,7 @@
       "carbs_g": 16,
       "protein_g": 4,
       "fat_g": 10,
-      "aliases": [
-        "sev",
-        "omapodi sev",
-        "besan sev",
-        "ompodi",
-        "nylon sev"
-      ],
+      "aliases": ["sev", "omapodi sev", "besan sev", "ompodi", "nylon sev"],
       "icon": "food/crackers",
       "source": "model_estimate",
       "verified": false
@@ -1943,12 +1763,7 @@
       "carbs_g": 17,
       "protein_g": 3,
       "fat_g": 10,
-      "aliases": [
-        "ribbon murukku",
-        "ola pakoda",
-        "ribbon pakoda snack",
-        "ribbon muruku"
-      ],
+      "aliases": ["ribbon murukku", "ola pakoda", "ribbon pakoda snack", "ribbon muruku"],
       "icon": "food/crackers",
       "source": "model_estimate",
       "verified": false
@@ -1961,13 +1776,7 @@
       "carbs_g": 12,
       "protein_g": 2,
       "fat_g": 7,
-      "aliases": [
-        "rose cookie",
-        "kuih loyang",
-        "achu murukku",
-        "rosette cookie",
-        "kuih ros"
-      ],
+      "aliases": ["rose cookie", "kuih loyang", "achu murukku", "rosette cookie", "kuih ros"],
       "icon": "food/biscuit-stack",
       "source": "model_estimate",
       "verified": false
@@ -1980,14 +1789,7 @@
       "carbs_g": 42,
       "protein_g": 2,
       "fat_g": 10,
-      "aliases": [
-        "jalebi india",
-        "jilebi",
-        "jilapi",
-        "jangiri",
-        "manisan jalebi",
-        "jalebee"
-      ],
+      "aliases": ["jalebi india", "jilebi", "jilapi", "jangiri", "manisan jalebi", "jalebee"],
       "icon": "food/candy",
       "source": "model_estimate",
       "verified": false
@@ -2000,13 +1802,7 @@
       "carbs_g": 28,
       "protein_g": 2,
       "fat_g": 8,
-      "aliases": [
-        "adhirasam",
-        "ariselu",
-        "athirasam deepavali",
-        "atirasam",
-        "kuih athirasam"
-      ],
+      "aliases": ["adhirasam", "ariselu", "athirasam deepavali", "atirasam", "kuih athirasam"],
       "icon": "food/kuih",
       "source": "model_estimate",
       "verified": false
@@ -2019,13 +1815,7 @@
       "carbs_g": 18,
       "protein_g": 3,
       "fat_g": 5,
-      "aliases": [
-        "pal kova",
-        "therattipal",
-        "milk cake india",
-        "palkoa",
-        "milk halwa"
-      ],
+      "aliases": ["pal kova", "therattipal", "milk cake india", "palkoa", "milk halwa"],
       "icon": "food/kuih",
       "source": "model_estimate",
       "verified": false
@@ -2038,12 +1828,7 @@
       "carbs_g": 42,
       "protein_g": 4,
       "fat_g": 12,
-      "aliases": [
-        "gulab jamun india",
-        "gulab jaman",
-        "golab jamun",
-        "manisan gulab jamun"
-      ],
+      "aliases": ["gulab jamun india", "gulab jaman", "golab jamun", "manisan gulab jamun"],
       "icon": "food/doughnut",
       "source": "model_estimate",
       "verified": false
@@ -2095,12 +1880,7 @@
       "carbs_g": 20,
       "protein_g": 3,
       "fat_g": 9,
-      "aliases": [
-        "nei urundai deepavali",
-        "ghee ball",
-        "maa urundai",
-        "rice flour ghee ball"
-      ],
+      "aliases": ["nei urundai deepavali", "ghee ball", "maa urundai", "rice flour ghee ball"],
       "icon": "food/kuih",
       "source": "model_estimate",
       "verified": false
@@ -2132,12 +1912,7 @@
       "carbs_g": 30,
       "protein_g": 12,
       "fat_g": 18,
-      "aliases": [
-        "sambar vada",
-        "vadai sambar",
-        "sambhar vadai",
-        "vadey sambar"
-      ],
+      "aliases": ["sambar vada", "vadai sambar", "sambhar vadai", "vadey sambar"],
       "icon": "food/lentils",
       "source": "model_estimate",
       "verified": false
@@ -2150,12 +1925,7 @@
       "carbs_g": 66,
       "protein_g": 12,
       "fat_g": 12,
-      "aliases": [
-        "idli podi",
-        "podi idly",
-        "milagai podi idli",
-        "idli with podi and ghee"
-      ],
+      "aliases": ["idli podi", "podi idly", "milagai podi idli", "idli with podi and ghee"],
       "icon": "food/pancakes",
       "source": "model_estimate",
       "verified": false

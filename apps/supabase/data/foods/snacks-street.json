@@ -9,11 +9,19 @@
       "carbs_g": 14,
       "protein_g": 40,
       "fat_g": 26,
-      "aliases": ["satay kajang chicken", "sate kajang ayam", "kajang chicken satay", "沙爹加影鸡肉"],
+      "aliases": [
+        "satay kajang chicken",
+        "sate kajang ayam",
+        "kajang chicken satay",
+        "沙爹加影鸡肉"
+      ],
       "icon": "food/satay",
       "source": "model_estimate",
       "verified": false,
-      "extra_servings": [{ "label": "5 sticks", "factor": 0.5 }, { "label": "20 sticks", "factor": 2 }]
+      "extra_servings": [
+        { "label": "5 sticks", "factor": 0.5 },
+        { "label": "20 sticks", "factor": 2 }
+      ]
     },
     {
       "name": "Satay Kajang Daging",
@@ -23,11 +31,19 @@
       "carbs_g": 14,
       "protein_g": 42,
       "fat_g": 27,
-      "aliases": ["satay kajang beef", "sate kajang daging", "kajang beef satay", "satay lembu kajang"],
+      "aliases": [
+        "satay kajang beef",
+        "sate kajang daging",
+        "kajang beef satay",
+        "satay lembu kajang"
+      ],
       "icon": "food/satay",
       "source": "model_estimate",
       "verified": false,
-      "extra_servings": [{ "label": "5 sticks", "factor": 0.5 }, { "label": "20 sticks", "factor": 2 }]
+      "extra_servings": [
+        { "label": "5 sticks", "factor": 0.5 },
+        { "label": "20 sticks", "factor": 2 }
+      ]
     },
     {
       "name": "Satay Kambing",
@@ -41,7 +57,10 @@
       "icon": "food/satay",
       "source": "model_estimate",
       "verified": false,
-      "extra_servings": [{ "label": "5 sticks", "factor": 0.5 }, { "label": "20 sticks", "factor": 2 }]
+      "extra_servings": [
+        { "label": "5 sticks", "factor": 0.5 },
+        { "label": "20 sticks", "factor": 2 }
+      ]
     },
     {
       "name": "Satay Perut",
@@ -69,7 +88,10 @@
       "icon": "food/quail-eggs",
       "source": "model_estimate",
       "verified": false,
-      "extra_servings": [{ "label": "1 stick", "factor": 0.2 }, { "label": "10 sticks", "factor": 2 }]
+      "extra_servings": [
+        { "label": "1 stick", "factor": 0.2 },
+        { "label": "10 sticks", "factor": 2 }
+      ]
     },
     {
       "name": "Satay Hati Ayam",
@@ -111,7 +133,10 @@
       "icon": "dishes/satay-celup",
       "source": "model_estimate",
       "verified": false,
-      "extra_servings": [{ "label": "5 sticks", "factor": 0.5 }, { "label": "20 sticks", "factor": 2 }]
+      "extra_servings": [
+        { "label": "5 sticks", "factor": 0.5 },
+        { "label": "20 sticks", "factor": 2 }
+      ]
     },
     {
       "name": "Satay Ikan Sarawak",
@@ -164,11 +189,19 @@
       "carbs_g": 40,
       "protein_g": 3,
       "fat_g": 13,
-      "aliases": ["battered fried sweet potato", "goreng keledek", "sweet potato fritter", "cekodok keledek"],
+      "aliases": [
+        "battered fried sweet potato",
+        "goreng keledek",
+        "sweet potato fritter",
+        "cekodok keledek"
+      ],
       "icon": "food/sweet-potato",
       "source": "model_estimate",
       "verified": false,
-      "extra_servings": [{ "label": "1 piece", "factor": 0.33 }, { "label": "5 pieces", "factor": 1.67 }]
+      "extra_servings": [
+        { "label": "1 piece", "factor": 0.33 },
+        { "label": "5 pieces", "factor": 1.67 }
+      ]
     },
     {
       "name": "Ubi Kayu Rebus",
@@ -178,7 +211,12 @@
       "carbs_g": 48,
       "protein_g": 2,
       "fat_g": 3.5,
-      "aliases": ["boiled tapioca", "boiled cassava with coconut", "ubi rebus", "ubi kayu rebus kelapa"],
+      "aliases": [
+        "boiled tapioca",
+        "boiled cassava with coconut",
+        "ubi rebus",
+        "ubi kayu rebus kelapa"
+      ],
       "icon": "food/tapioca",
       "source": "model_estimate",
       "verified": false,
@@ -224,7 +262,10 @@
       "icon": "food/spring-roll",
       "source": "model_estimate",
       "verified": false,
-      "extra_servings": [{ "label": "1 piece", "factor": 0.33 }, { "label": "5 pieces", "factor": 1.67 }]
+      "extra_servings": [
+        { "label": "1 piece", "factor": 0.33 },
+        { "label": "5 pieces", "factor": 1.67 }
+      ]
     },
     {
       "name": "Sotong Celup Tepung",
@@ -308,7 +349,10 @@
       "icon": "food/chicken-nugget",
       "source": "model_estimate",
       "verified": false,
-      "extra_servings": [{ "label": "3 pieces", "factor": 0.5 }, { "label": "10 pieces", "factor": 1.67 }]
+      "extra_servings": [
+        { "label": "3 pieces", "factor": 0.5 },
+        { "label": "10 pieces", "factor": 1.67 }
+      ]
     },
     {
       "name": "Sosej Goreng Bercili",
@@ -374,7 +418,12 @@
       "carbs_g": 26,
       "protein_g": 6,
       "fat_g": 16,
-      "aliases": ["fried oyster mushroom", "crispy mushroom", "cendawan goreng tepung", "mushroom fritters"],
+      "aliases": [
+        "fried oyster mushroom",
+        "crispy mushroom",
+        "cendawan goreng tepung",
+        "mushroom fritters"
+      ],
       "icon": "food/mushroom",
       "source": "model_estimate",
       "verified": false,
@@ -458,7 +507,12 @@
       "carbs_g": 32,
       "protein_g": 15,
       "fat_g": 21,
-      "aliases": ["ramly beef burger", "burger daging biasa", "plain ramly burger", "burger tepi jalan"],
+      "aliases": [
+        "ramly beef burger",
+        "burger daging biasa",
+        "plain ramly burger",
+        "burger tepi jalan"
+      ],
       "icon": "dishes/ramly-burger",
       "source": "model_estimate",
       "verified": false,
@@ -551,7 +605,12 @@
       "carbs_g": 42,
       "protein_g": 28,
       "fat_g": 38,
-      "aliases": ["grilled burger", "burger bakar kaw kaw", "burger bakar abang burn", "flame grilled stall burger"],
+      "aliases": [
+        "grilled burger",
+        "burger bakar kaw kaw",
+        "burger bakar abang burn",
+        "flame grilled stall burger"
+      ],
       "icon": "dishes/ramly-burger",
       "source": "model_estimate",
       "verified": false
@@ -644,11 +703,19 @@
       "carbs_g": 44,
       "protein_g": 12,
       "fat_g": 12,
-      "aliases": ["losong keropok", "keropok lekor losong", "terengganu fish sausage", "losong lekor"],
+      "aliases": [
+        "losong keropok",
+        "keropok lekor losong",
+        "terengganu fish sausage",
+        "losong lekor"
+      ],
       "icon": "dishes/keropok-lekor",
       "source": "model_estimate",
       "verified": false,
-      "extra_servings": [{ "label": "2 pieces", "factor": 0.4 }, { "label": "10 pieces", "factor": 2 }]
+      "extra_servings": [
+        { "label": "2 pieces", "factor": 0.4 },
+        { "label": "10 pieces", "factor": 2 }
+      ]
     },
     {
       "name": "Keropok Keping Goreng",
@@ -686,7 +753,12 @@
       "carbs_g": 30,
       "protein_g": 5,
       "fat_g": 11,
-      "aliases": ["glazed fish crackers", "keropok sira", "sugar coated keropok", "keropok manis terengganu"],
+      "aliases": [
+        "glazed fish crackers",
+        "keropok sira",
+        "sugar coated keropok",
+        "keropok manis terengganu"
+      ],
       "icon": "food/crackers",
       "source": "model_estimate",
       "verified": false,
@@ -729,7 +801,11 @@
       "carbs_g": 8,
       "protein_g": 29,
       "fat_g": 22,
-      "aliases": ["white percik chicken", "ayam percik kelantan putih", "coconut gravy grilled chicken"],
+      "aliases": [
+        "white percik chicken",
+        "ayam percik kelantan putih",
+        "coconut gravy grilled chicken"
+      ],
       "icon": "dishes/ayam-percik",
       "source": "model_estimate",
       "verified": false,
@@ -756,7 +832,12 @@
       "carbs_g": 6,
       "protein_g": 27,
       "fat_g": 22,
-      "aliases": ["grilled chicken wings", "kepak ayam bakar", "bbq chicken wings stall", "chicken wing bakar"],
+      "aliases": [
+        "grilled chicken wings",
+        "kepak ayam bakar",
+        "bbq chicken wings stall",
+        "chicken wing bakar"
+      ],
       "icon": "food/chicken-wing",
       "source": "model_estimate",
       "verified": false,
@@ -783,7 +864,12 @@
       "carbs_g": 3,
       "protein_g": 30,
       "fat_g": 22,
-      "aliases": ["whole roast lamb", "kambing golek slice", "spit roast goat", "roast mutton stall"],
+      "aliases": [
+        "whole roast lamb",
+        "kambing golek slice",
+        "spit roast goat",
+        "roast mutton stall"
+      ],
       "icon": "food/lamb-chop",
       "source": "model_estimate",
       "verified": false
@@ -796,7 +882,12 @@
       "carbs_g": 12,
       "protein_g": 26,
       "fat_g": 8,
-      "aliases": ["grilled squid with chilli sauce", "sotong bakar", "bbq squid stall", "grilled sotong"],
+      "aliases": [
+        "grilled squid with chilli sauce",
+        "sotong bakar",
+        "bbq squid stall",
+        "grilled sotong"
+      ],
       "icon": "food/squid-rings",
       "source": "model_estimate",
       "verified": false
@@ -809,7 +900,12 @@
       "carbs_g": 4,
       "protein_g": 22,
       "fat_g": 1,
-      "aliases": ["grilled dried squid", "sotong kering bakar", "dried cuttlefish grilled", "roasted dried squid"],
+      "aliases": [
+        "grilled dried squid",
+        "sotong kering bakar",
+        "dried cuttlefish grilled",
+        "roasted dried squid"
+      ],
       "icon": "food/squid-rings",
       "source": "model_estimate",
       "verified": false,
@@ -836,7 +932,12 @@
       "carbs_g": 34,
       "protein_g": 5,
       "fat_g": 9,
-      "aliases": ["grilled corn", "grilled corn on the cob", "jagung panggang", "buttered grilled corn"],
+      "aliases": [
+        "grilled corn",
+        "grilled corn on the cob",
+        "jagung panggang",
+        "buttered grilled corn"
+      ],
       "icon": "food/corn",
       "source": "model_estimate",
       "verified": false
@@ -878,11 +979,19 @@
       "carbs_g": 28,
       "protein_g": 14,
       "fat_g": 12,
-      "aliases": ["assorted dim sum bazaar", "dim sum bazar", "mixed steamed dim sum stall", "dim sum ramadan"],
+      "aliases": [
+        "assorted dim sum bazaar",
+        "dim sum bazar",
+        "mixed steamed dim sum stall",
+        "dim sum ramadan"
+      ],
       "icon": "dishes/dim-sum",
       "source": "model_estimate",
       "verified": false,
-      "extra_servings": [{ "label": "3 pieces", "factor": 0.5 }, { "label": "10 pieces", "factor": 1.67 }]
+      "extra_servings": [
+        { "label": "3 pieces", "factor": 0.5 },
+        { "label": "10 pieces", "factor": 1.67 }
+      ]
     },
     {
       "name": "Kebab Ayam Bazar",
@@ -973,7 +1082,12 @@
       "carbs_g": 28,
       "protein_g": 4,
       "fat_g": 1.5,
-      "aliases": ["boiled corn", "boiled corn on the cob", "jagung rebus manis", "steamed sweetcorn"],
+      "aliases": [
+        "boiled corn",
+        "boiled corn on the cob",
+        "jagung rebus manis",
+        "steamed sweetcorn"
+      ],
       "icon": "food/corn",
       "source": "model_estimate",
       "verified": false,
@@ -987,7 +1101,12 @@
       "carbs_g": 20,
       "protein_g": 12,
       "fat_g": 18,
-      "aliases": ["boiled peanuts", "kacang tanah rebus", "boiled groundnuts in shell", "kacang rebus panas"],
+      "aliases": [
+        "boiled peanuts",
+        "kacang tanah rebus",
+        "boiled groundnuts in shell",
+        "kacang rebus panas"
+      ],
       "icon": "food/peanuts",
       "source": "model_estimate",
       "verified": false,
@@ -1014,7 +1133,12 @@
       "carbs_g": 28,
       "protein_g": 20,
       "fat_g": 21,
-      "aliases": ["popcorn chicken stall", "ayam popcorn", "taiwanese popcorn chicken", "salted crispy chicken"],
+      "aliases": [
+        "popcorn chicken stall",
+        "ayam popcorn",
+        "taiwanese popcorn chicken",
+        "salted crispy chicken"
+      ],
       "icon": "food/chicken-nugget",
       "source": "model_estimate",
       "verified": false,
@@ -1028,7 +1152,12 @@
       "carbs_g": 32,
       "protein_g": 26,
       "fat_g": 24,
-      "aliases": ["scissors cut chicken", "ayam gunting pasar malam", "korean scissor chicken", "ayam gunting cheese"],
+      "aliases": [
+        "scissors cut chicken",
+        "ayam gunting pasar malam",
+        "korean scissor chicken",
+        "ayam gunting cheese"
+      ],
       "icon": "dishes/ayam-goreng",
       "source": "model_estimate",
       "verified": false,
@@ -1046,7 +1175,10 @@
       "icon": "food/fish-ball",
       "source": "model_estimate",
       "verified": false,
-      "extra_servings": [{ "label": "3 balls", "factor": 0.6 }, { "label": "8 balls", "factor": 1.6 }]
+      "extra_servings": [
+        { "label": "3 balls", "factor": 0.6 },
+        { "label": "8 balls", "factor": 1.6 }
+      ]
     },
     {
       "name": "Telur Gulung",
@@ -1056,7 +1188,12 @@
       "carbs_g": 3,
       "protein_g": 7,
       "fat_g": 10,
-      "aliases": ["rolled egg on a stick", "egg roll stick", "telur gulung pasar malam", "thai rolled egg"],
+      "aliases": [
+        "rolled egg on a stick",
+        "egg roll stick",
+        "telur gulung pasar malam",
+        "thai rolled egg"
+      ],
       "icon": "food/omelette",
       "source": "model_estimate",
       "verified": false,
@@ -1150,7 +1287,12 @@
       "carbs_g": 28,
       "protein_g": 8,
       "fat_g": 10,
-      "aliases": ["fried chickpeas", "kacang kuda goreng bergaram", "crispy chana", "roasted gram snack"],
+      "aliases": [
+        "fried chickpeas",
+        "kacang kuda goreng bergaram",
+        "crispy chana",
+        "roasted gram snack"
+      ],
       "icon": "food/chickpeas",
       "source": "model_estimate",
       "verified": false
@@ -1177,7 +1319,12 @@
       "carbs_g": 7,
       "protein_g": 10,
       "fat_g": 20,
-      "aliases": ["salted fried peanuts", "kacang goreng", "roasted salted peanuts", "kacang tanah goreng"],
+      "aliases": [
+        "salted fried peanuts",
+        "kacang goreng",
+        "roasted salted peanuts",
+        "kacang tanah goreng"
+      ],
       "icon": "food/peanuts",
       "source": "model_estimate",
       "verified": false,
@@ -1192,7 +1339,12 @@
       "carbs_g": 26,
       "protein_g": 1,
       "fat_g": 0.3,
-      "aliases": ["green mango with sour plum", "mangga asam boi", "unripe mango asam boi", "cut mango stall"],
+      "aliases": [
+        "green mango with sour plum",
+        "mangga asam boi",
+        "unripe mango asam boi",
+        "cut mango stall"
+      ],
       "icon": "food/orange",
       "source": "model_estimate",
       "verified": false
@@ -1284,7 +1436,12 @@
       "carbs_g": 36,
       "protein_g": 4,
       "fat_g": 8,
-      "aliases": ["ice cream in bread", "ais krim roti", "ice cream sandwich bread", "aiskrim malaysia"],
+      "aliases": [
+        "ice cream in bread",
+        "ais krim roti",
+        "ice cream sandwich bread",
+        "aiskrim malaysia"
+      ],
       "icon": "food/ice-cream",
       "source": "model_estimate",
       "verified": false
@@ -1297,7 +1454,12 @@
       "carbs_g": 42,
       "protein_g": 5,
       "fat_g": 16,
-      "aliases": ["rolled ice cream", "thai rolled ice cream", "ais krim gulung", "stir fried ice cream"],
+      "aliases": [
+        "rolled ice cream",
+        "thai rolled ice cream",
+        "ais krim gulung",
+        "stir fried ice cream"
+      ],
       "icon": "food/ice-cream",
       "source": "model_estimate",
       "verified": false
@@ -1311,7 +1473,13 @@
       "carbs_g": 26,
       "protein_g": 9,
       "fat_g": 15,
-      "aliases": ["klang siew pau", "baked bbq pork bun", "烧包", "siu bao klang", "seremban style siew pau"],
+      "aliases": [
+        "klang siew pau",
+        "baked bbq pork bun",
+        "烧包",
+        "siu bao klang",
+        "seremban style siew pau"
+      ],
       "icon": "dishes/pau",
       "source": "model_estimate",
       "verified": false,
@@ -1405,7 +1573,12 @@
       "carbs_g": 52,
       "protein_g": 9,
       "fat_g": 17,
-      "aliases": ["packed nasi lemak", "nasi lemak daun pisang", "nasi lemak bungkus kecil", "wrapped nasi lemak"],
+      "aliases": [
+        "packed nasi lemak",
+        "nasi lemak daun pisang",
+        "nasi lemak bungkus kecil",
+        "wrapped nasi lemak"
+      ],
       "icon": "dishes/nasi-lemak",
       "source": "model_estimate",
       "verified": false,
@@ -1419,7 +1592,12 @@
       "carbs_g": 82,
       "protein_g": 18,
       "fat_g": 23,
-      "aliases": ["packed fried rice", "nasi goreng bungkus tepi jalan", "takeaway fried rice packet", "supper fried rice"],
+      "aliases": [
+        "packed fried rice",
+        "nasi goreng bungkus tepi jalan",
+        "takeaway fried rice packet",
+        "supper fried rice"
+      ],
       "icon": "dishes/nasi-goreng",
       "source": "model_estimate",
       "verified": false

@@ -447,13 +447,7 @@
       "carbs_g": 16,
       "protein_g": 9,
       "fat_g": 5,
-      "aliases": [
-        "wanton soup",
-        "云吞汤",
-        "wonton soup",
-        "wantan soup",
-        "dumpling soup"
-      ],
+      "aliases": ["wanton soup", "云吞汤", "wonton soup", "wantan soup", "dumpling soup"],
       "icon": "food/dumpling",
       "verified": false,
       "source": "model_estimate",
@@ -604,12 +598,7 @@
       "carbs_g": 64,
       "protein_g": 24,
       "fat_g": 19,
-      "aliases": [
-        "dry ban mian",
-        "干捞板面",
-        "ban mee dry",
-        "dry banmian"
-      ],
+      "aliases": ["dry ban mian", "干捞板面", "ban mee dry", "dry banmian"],
       "icon": "dishes/pan-mee",
       "verified": false,
       "source": "model_estimate"
@@ -737,13 +726,7 @@
       "carbs_g": 66,
       "protein_g": 20,
       "fat_g": 14,
-      "aliases": [
-        "loh mee",
-        "卤面",
-        "braised noodles in thick gravy",
-        "lor mien",
-        "lu mian"
-      ],
+      "aliases": ["loh mee", "卤面", "braised noodles in thick gravy", "lor mien", "lu mian"],
       "icon": "dishes/lor-mee",
       "source": "hawker_sg_published",
       "verified": true
@@ -868,12 +851,7 @@
       "carbs_g": 60,
       "protein_g": 22,
       "fat_g": 29,
-      "aliases": [
-        "curry ee mee",
-        "咖喱伊面",
-        "curry yi mee",
-        "yee mee in curry gravy"
-      ],
+      "aliases": ["curry ee mee", "咖喱伊面", "curry yi mee", "yee mee in curry gravy"],
       "icon": "dishes/curry-mee",
       "verified": false,
       "source": "model_estimate"
@@ -1038,13 +1016,7 @@
       "carbs_g": 64,
       "protein_g": 22,
       "fat_g": 20,
-      "aliases": [
-        "wet ee mee",
-        "湿伊面",
-        "yee mee with egg gravy",
-        "wet yee mee",
-        "yi mee basah"
-      ],
+      "aliases": ["wet ee mee", "湿伊面", "yee mee with egg gravy", "wet yee mee", "yi mee basah"],
       "icon": "food/egg-noodles",
       "verified": false,
       "source": "model_estimate"
@@ -1076,13 +1048,7 @@
       "carbs_g": 54,
       "protein_g": 18,
       "fat_g": 15,
-      "aliases": [
-        "ee mee soup",
-        "伊面汤",
-        "yee mee soup",
-        "yi mee sup",
-        "ee fu noodle soup"
-      ],
+      "aliases": ["ee mee soup", "伊面汤", "yee mee soup", "yi mee sup", "ee fu noodle soup"],
       "icon": "food/egg-noodles",
       "verified": false,
       "source": "model_estimate"
@@ -1341,12 +1307,7 @@
       "carbs_g": 50,
       "protein_g": 22,
       "fat_g": 10,
-      "aliases": [
-        "minced pork noodle soup",
-        "肉脞面汤",
-        "bak chor mee soup",
-        "bcm soup"
-      ],
+      "aliases": ["minced pork noodle soup", "肉脞面汤", "bak chor mee soup", "bcm soup"],
       "icon": "food/noodle-bowl",
       "source": "hawker_sg_published",
       "verified": true
@@ -1510,12 +1471,7 @@
       "carbs_g": 52,
       "protein_g": 22,
       "fat_g": 11,
-      "aliases": [
-        "hakka noodle soup",
-        "客家面汤",
-        "hakka mee soup",
-        "hakka mian sup"
-      ],
+      "aliases": ["hakka noodle soup", "客家面汤", "hakka mee soup", "hakka mian sup"],
       "icon": "food/egg-noodles",
       "verified": false,
       "source": "model_estimate"

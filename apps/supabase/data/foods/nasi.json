@@ -189,11 +189,7 @@
       "carbs_g": 78,
       "protein_g": 24,
       "fat_g": 24,
-      "aliases": [
-        "nasi lemak udang",
-        "nasi lemak prawn sambal",
-        "coconut rice with sambal prawn"
-      ],
+      "aliases": ["nasi lemak udang", "nasi lemak prawn sambal", "coconut rice with sambal prawn"],
       "icon": "dishes/sambal-udang",
       "source": "model_estimate",
       "verified": false
@@ -280,12 +276,7 @@
       "carbs_g": 85,
       "protein_g": 27,
       "fat_g": 25,
-      "aliases": [
-        "nasi goreng beef",
-        "beef fried rice",
-        "牛肉炒饭",
-        "nasi goreng daging lembu"
-      ],
+      "aliases": ["nasi goreng beef", "beef fried rice", "牛肉炒饭", "nasi goreng daging lembu"],
       "icon": "dishes/nasi-goreng",
       "source": "model_estimate",
       "verified": false
@@ -298,11 +289,7 @@
       "carbs_g": 85,
       "protein_g": 28,
       "fat_g": 28,
-      "aliases": [
-        "nasi goreng mutton",
-        "mutton fried rice",
-        "nasi goreng daging kambing"
-      ],
+      "aliases": ["nasi goreng mutton", "mutton fried rice", "nasi goreng daging kambing"],
       "icon": "dishes/nasi-goreng",
       "source": "model_estimate",
       "verified": false
@@ -315,11 +302,7 @@
       "carbs_g": 85,
       "protein_g": 24,
       "fat_g": 21,
-      "aliases": [
-        "prawn fried rice",
-        "nasi goreng prawn",
-        "虾仁炒饭"
-      ],
+      "aliases": ["prawn fried rice", "nasi goreng prawn", "虾仁炒饭"],
       "icon": "dishes/nasi-goreng",
       "source": "model_estimate",
       "verified": false
@@ -332,12 +315,7 @@
       "carbs_g": 86,
       "protein_g": 16,
       "fat_g": 21,
-      "aliases": [
-        "egg fried rice",
-        "nasi goreng egg",
-        "蛋炒饭",
-        "nasi goreng telur mata"
-      ],
+      "aliases": ["egg fried rice", "nasi goreng egg", "蛋炒饭", "nasi goreng telur mata"],
       "icon": "dishes/nasi-goreng",
       "source": "model_estimate",
       "verified": false
@@ -368,12 +346,7 @@
       "carbs_g": 86,
       "protein_g": 22,
       "fat_g": 22,
-      "aliases": [
-        "tomyam fried rice",
-        "nasi goreng tom yam",
-        "nasi goreng tomyum",
-        "冬炎炒饭"
-      ],
+      "aliases": ["tomyam fried rice", "nasi goreng tom yam", "nasi goreng tomyum", "冬炎炒饭"],
       "icon": "dishes/nasi-goreng",
       "source": "model_estimate",
       "verified": false
@@ -422,11 +395,7 @@
       "carbs_g": 86,
       "protein_g": 14,
       "fat_g": 20,
-      "aliases": [
-        "mushroom fried rice",
-        "nasi goreng mushroom",
-        "蘑菇炒饭"
-      ],
+      "aliases": ["mushroom fried rice", "nasi goreng mushroom", "蘑菇炒饭"],
       "icon": "dishes/nasi-goreng",
       "source": "model_estimate",
       "verified": false
@@ -457,12 +426,7 @@
       "carbs_g": 95,
       "protein_g": 16,
       "fat_g": 19,
-      "aliases": [
-        "pineapple fried rice",
-        "nasi goreng pineapple",
-        "菠萝炒饭",
-        "nasi goreng nenas"
-      ],
+      "aliases": ["pineapple fried rice", "nasi goreng pineapple", "菠萝炒饭", "nasi goreng nenas"],
       "icon": "dishes/nasi-goreng",
       "source": "model_estimate",
       "verified": false
@@ -475,11 +439,7 @@
       "carbs_g": 88,
       "protein_g": 18,
       "fat_g": 21,
-      "aliases": [
-        "turmeric fried rice",
-        "nasi goreng turmeric",
-        "nasi goreng kuning"
-      ],
+      "aliases": ["turmeric fried rice", "nasi goreng turmeric", "nasi goreng kuning"],
       "icon": "dishes/nasi-goreng",
       "source": "model_estimate",
       "verified": false
@@ -492,11 +452,7 @@
       "carbs_g": 86,
       "protein_g": 20,
       "fat_g": 24,
-      "aliases": [
-        "spiced fried rice",
-        "nasi goreng rempah",
-        "nasi goreng spicy"
-      ],
+      "aliases": ["spiced fried rice", "nasi goreng rempah", "nasi goreng spicy"],
       "icon": "dishes/nasi-goreng",
       "source": "model_estimate",
       "verified": false
@@ -527,12 +483,7 @@
       "carbs_g": 88,
       "protein_g": 20,
       "fat_g": 21,
-      "aliases": [
-        "thai fried rice",
-        "nasi goreng siam",
-        "nasi goreng thailand",
-        "泰式炒饭"
-      ],
+      "aliases": ["thai fried rice", "nasi goreng siam", "nasi goreng thailand", "泰式炒饭"],
       "icon": "dishes/nasi-goreng",
       "source": "model_estimate",
       "verified": false
@@ -545,11 +496,7 @@
       "carbs_g": 84,
       "protein_g": 20,
       "fat_g": 18,
-      "aliases": [
-        "kerabu fried rice",
-        "nasi goreng ulam",
-        "herb salad fried rice"
-      ],
+      "aliases": ["kerabu fried rice", "nasi goreng ulam", "herb salad fried rice"],
       "icon": "dishes/nasi-goreng",
       "source": "model_estimate",
       "verified": false
@@ -580,12 +527,7 @@
       "carbs_g": 92,
       "protein_g": 24,
       "fat_g": 24,
-      "aliases": [
-        "wet fried rice",
-        "nasi goreng kuah",
-        "nasi goreng bersos",
-        "gravy fried rice"
-      ],
+      "aliases": ["wet fried rice", "nasi goreng kuah", "nasi goreng bersos", "gravy fried rice"],
       "icon": "dishes/nasi-goreng",
       "source": "model_estimate",
       "verified": false
@@ -653,11 +595,7 @@
       "carbs_g": 86,
       "protein_g": 20,
       "fat_g": 24,
-      "aliases": [
-        "green sambal fried rice",
-        "nasi goreng cili hijau",
-        "green chilli fried rice"
-      ],
+      "aliases": ["green sambal fried rice", "nasi goreng cili hijau", "green chilli fried rice"],
       "icon": "dishes/nasi-goreng",
       "source": "model_estimate",
       "verified": false
@@ -726,12 +664,7 @@
       "carbs_g": 74,
       "protein_g": 34,
       "fat_g": 25,
-      "aliases": [
-        "roasted chicken rice",
-        "nasi ayam roasted",
-        "烧鸡饭",
-        "roast chicken rice"
-      ],
+      "aliases": ["roasted chicken rice", "nasi ayam roasted", "烧鸡饭", "roast chicken rice"],
       "icon": "dishes/chicken-rice",
       "source": "model_estimate",
       "verified": false
@@ -854,12 +787,7 @@
       "carbs_g": 88,
       "protein_g": 33,
       "fat_g": 24,
-      "aliases": [
-        "honey chicken rice",
-        "nasi ayam honey",
-        "ayam madu rice",
-        "蜜汁鸡饭"
-      ],
+      "aliases": ["honey chicken rice", "nasi ayam honey", "ayam madu rice", "蜜汁鸡饭"],
       "icon": "dishes/chicken-rice",
       "source": "model_estimate",
       "verified": false
@@ -911,13 +839,7 @@
       "carbs_g": 62,
       "protein_g": 12,
       "fat_g": 12,
-      "aliases": [
-        "nasi keladi",
-        "芋头饭",
-        "taro rice",
-        "yam rice with pork",
-        "wu tao fan"
-      ],
+      "aliases": ["nasi keladi", "芋头饭", "taro rice", "yam rice with pork", "wu tao fan"],
       "icon": "food/yam",
       "source": "model_estimate",
       "verified": false
@@ -1066,11 +988,7 @@
       "carbs_g": 85,
       "protein_g": 32,
       "fat_g": 34,
-      "aliases": [
-        "nasi kandar mutton",
-        "mutton kandar rice",
-        "nasi kandar kari kambing"
-      ],
+      "aliases": ["nasi kandar mutton", "mutton kandar rice", "nasi kandar kari kambing"],
       "icon": "dishes/nasi-kandar",
       "source": "model_estimate",
       "verified": false
@@ -1083,11 +1001,7 @@
       "carbs_g": 85,
       "protein_g": 32,
       "fat_g": 30,
-      "aliases": [
-        "nasi kandar beef",
-        "beef kandar rice",
-        "nasi kandar kari daging"
-      ],
+      "aliases": ["nasi kandar beef", "beef kandar rice", "nasi kandar kari daging"],
       "icon": "dishes/nasi-kandar",
       "source": "model_estimate",
       "verified": false
@@ -1100,11 +1014,7 @@
       "carbs_g": 85,
       "protein_g": 26,
       "fat_g": 24,
-      "aliases": [
-        "nasi kandar squid",
-        "nasi kandar sotong goreng",
-        "squid kandar rice"
-      ],
+      "aliases": ["nasi kandar squid", "nasi kandar sotong goreng", "squid kandar rice"],
       "icon": "dishes/nasi-kandar",
       "source": "model_estimate",
       "verified": false
@@ -1117,11 +1027,7 @@
       "carbs_g": 85,
       "protein_g": 28,
       "fat_g": 24,
-      "aliases": [
-        "nasi kandar prawn",
-        "prawn kandar rice",
-        "nasi kandar udang goreng"
-      ],
+      "aliases": ["nasi kandar prawn", "prawn kandar rice", "nasi kandar udang goreng"],
       "icon": "dishes/nasi-kandar",
       "source": "model_estimate",
       "verified": false
@@ -1207,12 +1113,7 @@
       "carbs_g": 92,
       "protein_g": 34,
       "fat_g": 32,
-      "aliases": [
-        "nasi briyani gam",
-        "beriani gam johor",
-        "nasi beriyani gam",
-        "briyani gam"
-      ],
+      "aliases": ["nasi briyani gam", "beriani gam johor", "nasi beriyani gam", "briyani gam"],
       "icon": "dishes/nasi-briyani",
       "source": "model_estimate",
       "verified": false
@@ -1225,12 +1126,7 @@
       "carbs_g": 88,
       "protein_g": 32,
       "fat_g": 34,
-      "aliases": [
-        "mutton briyani",
-        "nasi beriani kambing",
-        "biryani mutton",
-        "ஆட்டு பிரியாணி"
-      ],
+      "aliases": ["mutton briyani", "nasi beriani kambing", "biryani mutton", "ஆட்டு பிரியாணி"],
       "icon": "dishes/nasi-briyani",
       "source": "model_estimate",
       "verified": false
@@ -1243,12 +1139,7 @@
       "carbs_g": 88,
       "protein_g": 30,
       "fat_g": 26,
-      "aliases": [
-        "fish briyani",
-        "nasi beriani ikan",
-        "biryani fish",
-        "மீன் பிரியாணி"
-      ],
+      "aliases": ["fish briyani", "nasi beriani ikan", "biryani fish", "மீன் பிரியாணி"],
       "icon": "dishes/nasi-briyani",
       "source": "model_estimate",
       "verified": false
@@ -1261,12 +1152,7 @@
       "carbs_g": 88,
       "protein_g": 28,
       "fat_g": 26,
-      "aliases": [
-        "prawn briyani",
-        "nasi beriani udang",
-        "biryani prawn",
-        "இறால் பிரியாணி"
-      ],
+      "aliases": ["prawn briyani", "nasi beriani udang", "biryani prawn", "இறால் பிரியாணி"],
       "icon": "dishes/nasi-briyani",
       "source": "model_estimate",
       "verified": false
@@ -1279,12 +1165,7 @@
       "carbs_g": 90,
       "protein_g": 20,
       "fat_g": 26,
-      "aliases": [
-        "egg briyani",
-        "nasi beriani telur",
-        "biryani egg",
-        "முட்டை பிரியாணி"
-      ],
+      "aliases": ["egg briyani", "nasi beriani telur", "biryani egg", "முட்டை பிரியாணி"],
       "icon": "dishes/nasi-briyani",
       "source": "model_estimate",
       "verified": false
@@ -1334,11 +1215,7 @@
       "carbs_g": 54,
       "protein_g": 5,
       "fat_g": 7,
-      "aliases": [
-        "tomato rice",
-        "nasi tomato sahaja",
-        "nasi tomato plain"
-      ],
+      "aliases": ["tomato rice", "nasi tomato sahaja", "nasi tomato plain"],
       "icon": "food/rice-bowl",
       "source": "model_estimate",
       "verified": false
@@ -1407,12 +1284,7 @@
       "carbs_g": 95,
       "protein_g": 30,
       "fat_g": 30,
-      "aliases": [
-        "nasi ambang",
-        "nasi ambeng jawa",
-        "javanese communal rice",
-        "nasi ambeng johor"
-      ],
+      "aliases": ["nasi ambang", "nasi ambeng jawa", "javanese communal rice", "nasi ambeng johor"],
       "icon": "dishes/nasi-campur",
       "source": "model_estimate",
       "verified": false
@@ -1425,12 +1297,7 @@
       "carbs_g": 90,
       "protein_g": 30,
       "fat_g": 34,
-      "aliases": [
-        "nasi minang",
-        "padang rice",
-        "nasi padang rendang",
-        "masakan padang"
-      ],
+      "aliases": ["nasi minang", "padang rice", "nasi padang rendang", "masakan padang"],
       "icon": "dishes/nasi-campur",
       "source": "model_estimate",
       "verified": false
@@ -1443,11 +1310,7 @@
       "carbs_g": 72,
       "protein_g": 18,
       "fat_g": 22,
-      "aliases": [
-        "nasi uduk betawi",
-        "indonesian coconut rice",
-        "nasi uduk ayam"
-      ],
+      "aliases": ["nasi uduk betawi", "indonesian coconut rice", "nasi uduk ayam"],
       "icon": "food/plate-rice",
       "source": "model_estimate",
       "verified": false
@@ -1478,12 +1341,7 @@
       "carbs_g": 88,
       "protein_g": 30,
       "fat_g": 30,
-      "aliases": [
-        "nasi kabuli",
-        "kabuli rice",
-        "nasi kebuli kambing",
-        "arab spiced rice"
-      ],
+      "aliases": ["nasi kabuli", "kabuli rice", "nasi kebuli kambing", "arab spiced rice"],
       "icon": "food/plate-rice",
       "source": "model_estimate",
       "verified": false
@@ -1533,11 +1391,7 @@
       "carbs_g": 78,
       "protein_g": 32,
       "fat_g": 22,
-      "aliases": [
-        "nasi kerabu percik",
-        "blue rice with grilled chicken",
-        "nasi kerabu ayam"
-      ],
+      "aliases": ["nasi kerabu percik", "blue rice with grilled chicken", "nasi kerabu ayam"],
       "icon": "dishes/nasi-kerabu",
       "source": "model_estimate",
       "verified": false
@@ -1550,11 +1404,7 @@
       "carbs_g": 76,
       "protein_g": 30,
       "fat_g": 16,
-      "aliases": [
-        "nasi kerabu ikan",
-        "blue rice with grilled fish",
-        "nasi kerabu ikan kembung"
-      ],
+      "aliases": ["nasi kerabu ikan", "blue rice with grilled fish", "nasi kerabu ikan kembung"],
       "icon": "dishes/nasi-kerabu",
       "source": "model_estimate",
       "verified": false
@@ -1567,12 +1417,7 @@
       "carbs_g": 52,
       "protein_g": 5,
       "fat_g": 1,
-      "aliases": [
-        "blue rice",
-        "nasi kerabu biru",
-        "nasi bunga telang",
-        "butterfly pea rice"
-      ],
+      "aliases": ["blue rice", "nasi kerabu biru", "nasi bunga telang", "butterfly pea rice"],
       "icon": "food/rice-bowl",
       "source": "model_estimate",
       "verified": false
@@ -1611,13 +1456,7 @@
       "carbs_g": 68,
       "protein_g": 7,
       "fat_g": 2,
-      "aliases": [
-        "brown rice",
-        "nasi beras perang",
-        "nasi merah",
-        "糙米饭",
-        "wholegrain rice"
-      ],
+      "aliases": ["brown rice", "nasi beras perang", "nasi merah", "糙米饭", "wholegrain rice"],
       "icon": "food/brown-rice",
       "source": "model_estimate",
       "verified": false,
@@ -1690,12 +1529,7 @@
       "carbs_g": 62,
       "protein_g": 5,
       "fat_g": 1,
-      "aliases": [
-        "linopot sabah",
-        "kadazan rice parcel",
-        "nasi bungkus daun tarap",
-        "linupot"
-      ],
+      "aliases": ["linopot sabah", "kadazan rice parcel", "nasi bungkus daun tarap", "linupot"],
       "icon": "food/food-parcel",
       "source": "model_estimate",
       "verified": false
@@ -1855,14 +1689,7 @@
       "carbs_g": 30,
       "protein_g": 3,
       "fat_g": 0.5,
-      "aliases": [
-        "plain rice porridge",
-        "bubur kosong",
-        "白粥",
-        "congee",
-        "bubur putih",
-        "காஞ்சி"
-      ],
+      "aliases": ["plain rice porridge", "bubur kosong", "白粥", "congee", "bubur putih", "காஞ்சி"],
       "icon": "food/porridge",
       "source": "model_estimate",
       "verified": false

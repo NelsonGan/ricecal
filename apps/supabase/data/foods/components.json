@@ -60,13 +60,7 @@
       "fat_g": 1,
       "fibre_g": 1.6,
       "sodium_mg": 4,
-      "aliases": [
-        "brown rice",
-        "nasi perang",
-        "nasi beras perang",
-        "wholegrain rice",
-        "糙米饭"
-      ],
+      "aliases": ["brown rice", "nasi perang", "nasi beras perang", "wholegrain rice", "糙米饭"],
       "icon": "food/brown-rice",
       "source": "usda_fdc_20041_brown_rice_cooked_converted_to_household_portion",
       "verified": true,
@@ -99,12 +93,7 @@
       "fat_g": 0.4,
       "fibre_g": 0.7,
       "sodium_mg": 1,
-      "aliases": [
-        "basmati rice",
-        "nasi basmati",
-        "beras basmati",
-        "long grain rice"
-      ],
+      "aliases": ["basmati rice", "nasi basmati", "beras basmati", "long grain rice"],
       "icon": "food/rice-grains",
       "source": "usda_fdc_basmati_rice_cooked_converted_to_household_portion",
       "verified": true,
@@ -167,12 +156,7 @@
       "protein_g": 3.2,
       "fat_g": 4.6,
       "sodium_mg": 300,
-      "aliases": [
-        "nasi minyak",
-        "ghee rice",
-        "oily rice",
-        "nasi minyak sahaja"
-      ],
+      "aliases": ["nasi minyak", "ghee rice", "oily rice", "nasi minyak sahaja"],
       "icon": "food/plate-rice",
       "source": "myfcd_1997_nasi_minyak_436_kcal_per_plate_converted_to_scoop",
       "verified": true,
@@ -201,12 +185,7 @@
       "fat_g": 6.2,
       "fibre_g": 0.8,
       "sodium_mg": 320,
-      "aliases": [
-        "briyani rice",
-        "nasi briyani sahaja",
-        "biryani rice only",
-        "nasi beriani"
-      ],
+      "aliases": ["briyani rice", "nasi briyani sahaja", "biryani rice only", "nasi beriani"],
       "icon": "dishes/nasi-briyani",
       "source": "model_estimate",
       "extra_servings": [
@@ -268,12 +247,7 @@
       "fat_g": 0.4,
       "fibre_g": 0.5,
       "sodium_mg": 60,
-      "aliases": [
-        "blue rice",
-        "nasi kerabu rice only",
-        "nasi biru",
-        "butterfly pea rice"
-      ],
+      "aliases": ["blue rice", "nasi kerabu rice only", "nasi biru", "butterfly pea rice"],
       "icon": "dishes/nasi-kerabu",
       "source": "usda_fdc_20450_white_rice_cooked_converted_to_scoop",
       "verified": true,
@@ -298,11 +272,7 @@
       "fat_g": 7.2,
       "fibre_g": 1.2,
       "sodium_mg": 180,
-      "aliases": [
-        "nasi dagang rice only",
-        "nasi dagang sahaja",
-        "coconut rice terengganu"
-      ],
+      "aliases": ["nasi dagang rice only", "nasi dagang sahaja", "coconut rice terengganu"],
       "icon": "dishes/nasi-dagang",
       "source": "model_estimate",
       "extra_servings": [
@@ -325,11 +295,7 @@
       "protein_g": 3.2,
       "fat_g": 4.2,
       "sodium_mg": 280,
-      "aliases": [
-        "nasi tomato",
-        "tomato rice",
-        "nasi tomato sahaja"
-      ],
+      "aliases": ["nasi tomato", "tomato rice", "nasi tomato sahaja"],
       "icon": "food/plate-rice",
       "source": "model_estimate",
       "extra_servings": [
@@ -352,12 +318,7 @@
       "protein_g": 1.5,
       "fat_g": 0.15,
       "sodium_mg": 80,
-      "aliases": [
-        "ketupat",
-        "rice dumpling",
-        "ketupat nasi",
-        "woven rice cake"
-      ],
+      "aliases": ["ketupat", "rice dumpling", "ketupat nasi", "woven rice cake"],
       "icon": "dishes/ketupat",
       "source": "usda_fdc_20450_white_rice_cooked_converted_to_one_ketupat",
       "verified": true,
@@ -382,12 +343,7 @@
       "fat_g": 1.1,
       "fibre_g": 2.4,
       "sodium_mg": 9,
-      "aliases": [
-        "raw white rice",
-        "uncooked rice",
-        "beras putih",
-        "dry rice cup"
-      ],
+      "aliases": ["raw white rice", "uncooked rice", "beras putih", "dry rice cup"],
       "icon": "food/rice-grains",
       "source": "usda_fdc_20444_white_rice_raw_converted_to_cup",
       "verified": true,
@@ -474,14 +430,7 @@
       "protein_g": 1.4,
       "fat_g": 0.3,
       "sodium_mg": 30,
-      "aliases": [
-        "bee hoon",
-        "mee hoon",
-        "rice vermicelli",
-        "bihun",
-        "米粉",
-        "plain bee hoon"
-      ],
+      "aliases": ["bee hoon", "mee hoon", "rice vermicelli", "bihun", "米粉", "plain bee hoon"],
       "icon": "food/rice-vermicelli",
       "source": "usda_fdc_20134_rice_vermicelli_cooked_converted_to_hawker_portion",
       "verified": true,
@@ -531,13 +480,7 @@
       "protein_g": 3.6,
       "fat_g": 0.4,
       "sodium_mg": 260,
-      "aliases": [
-        "hor fun",
-        "sar hor fun",
-        "wide rice noodles",
-        "plain hor fun",
-        "河粉"
-      ],
+      "aliases": ["hor fun", "sar hor fun", "wide rice noodles", "plain hor fun", "河粉"],
       "icon": "food/flat-rice-noodles",
       "source": "usda_fdc_rice_noodles_cooked_converted_to_hawker_portion",
       "verified": true,
@@ -639,13 +582,7 @@
       "protein_g": 5.5,
       "fat_g": 1.4,
       "sodium_mg": 350,
-      "aliases": [
-        "wantan noodles",
-        "wonton noodles",
-        "mee wantan",
-        "thin egg noodles",
-        "云吞面"
-      ],
+      "aliases": ["wantan noodles", "wonton noodles", "mee wantan", "thin egg noodles", "云吞面"],
       "icon": "food/egg-noodles",
       "source": "myfcd_current_egg_noodles_per_100_g_converted_to_one_ball",
       "verified": true,
@@ -669,13 +606,7 @@
       "protein_g": 7.5,
       "fat_g": 2.5,
       "sodium_mg": 300,
-      "aliases": [
-        "pan mee noodles",
-        "handmade noodles",
-        "mee hoon kueh",
-        "pan mee dough",
-        "板面"
-      ],
+      "aliases": ["pan mee noodles", "handmade noodles", "mee hoon kueh", "pan mee dough", "板面"],
       "icon": "dishes/pan-mee",
       "source": "model_estimate",
       "extra_servings": [
@@ -694,12 +625,7 @@
       "protein_g": 4.5,
       "fat_g": 0.5,
       "sodium_mg": 380,
-      "aliases": [
-        "mee suah",
-        "misua",
-        "wheat vermicelli",
-        "面线"
-      ],
+      "aliases": ["mee suah", "misua", "wheat vermicelli", "面线"],
       "icon": "food/noodle-bowl",
       "source": "usda_fdc_wheat_noodles_cooked_converted_to_portion",
       "verified": true,
@@ -719,12 +645,7 @@
       "protein_g": 5.5,
       "fat_g": 10,
       "sodium_mg": 400,
-      "aliases": [
-        "yee mee",
-        "yi mein",
-        "crispy noodle cake",
-        "伊面"
-      ],
+      "aliases": ["yee mee", "yi mein", "crispy noodle cake", "伊面"],
       "icon": "food/instant-noodles",
       "source": "model_estimate",
       "extra_servings": [
@@ -769,12 +690,7 @@
       "protein_g": 2.2,
       "fat_g": 0.4,
       "sodium_mg": 90,
-      "aliases": [
-        "plain rice noodle rolls",
-        "chee cheong fun rolls",
-        "cheung fun",
-        "猪肠粉"
-      ],
+      "aliases": ["plain rice noodle rolls", "chee cheong fun rolls", "cheung fun", "猪肠粉"],
       "icon": "dishes/chee-cheong-fun",
       "source": "usda_fdc_rice_noodle_rolls_converted_to_three_rolls",
       "verified": true,
@@ -799,12 +715,7 @@
       "fat_g": 0.5,
       "fibre_g": 0.9,
       "sodium_mg": 9,
-      "aliases": [
-        "dry rice vermicelli",
-        "bee hoon kering",
-        "bihun kering",
-        "uncooked bee hoon"
-      ],
+      "aliases": ["dry rice vermicelli", "bee hoon kering", "bihun kering", "uncooked bee hoon"],
       "icon": "food/rice-vermicelli",
       "source": "usda_fdc_rice_noodles_dry_converted_to_bundle",
       "verified": true,
@@ -874,11 +785,7 @@
       "protein_g": 33,
       "fat_g": 16,
       "sodium_mg": 480,
-      "aliases": [
-        "fried chicken breast",
-        "dada ayam goreng",
-        "chicken breast piece"
-      ],
+      "aliases": ["fried chicken breast", "dada ayam goreng", "chicken breast piece"],
       "icon": "dishes/ayam-goreng",
       "source": "usda_fdc_fried_chicken_breast_with_breading_converted_to_one_piece",
       "verified": true
@@ -892,12 +799,7 @@
       "protein_g": 11,
       "fat_g": 9.5,
       "sodium_mg": 230,
-      "aliases": [
-        "fried chicken wing",
-        "kepak ayam",
-        "chicken wing piece",
-        "sayap ayam goreng"
-      ],
+      "aliases": ["fried chicken wing", "kepak ayam", "chicken wing piece", "sayap ayam goreng"],
       "icon": "food/chicken-wing",
       "source": "usda_fdc_fried_chicken_wing_with_breading_converted_to_one_wing",
       "verified": true,
@@ -921,12 +823,7 @@
       "protein_g": 3.5,
       "fat_g": 7.5,
       "sodium_mg": 150,
-      "aliases": [
-        "fried chicken skin",
-        "kulit ayam",
-        "crispy chicken skin",
-        "chicken skin piece"
-      ],
+      "aliases": ["fried chicken skin", "kulit ayam", "crispy chicken skin", "chicken skin piece"],
       "source": "usda_fdc_fried_chicken_skin_and_breading_converted_to_one_piece",
       "verified": true,
       "extra_servings": [
@@ -1004,11 +901,7 @@
       "protein_g": 21,
       "fat_g": 8,
       "sodium_mg": 350,
-      "aliases": [
-        "grilled fish piece",
-        "sekeping ikan bakar",
-        "one piece grilled fish"
-      ],
+      "aliases": ["grilled fish piece", "sekeping ikan bakar", "one piece grilled fish"],
       "icon": "food/grilled-fish",
       "source": "usda_fdc_fish_grilled_with_marinade_converted_to_one_piece",
       "verified": true,
@@ -1032,12 +925,7 @@
       "protein_g": 12,
       "fat_g": 5,
       "sodium_mg": 200,
-      "aliases": [
-        "fried prawns",
-        "udang goreng",
-        "three prawns",
-        "pan fried shrimp"
-      ],
+      "aliases": ["fried prawns", "udang goreng", "three prawns", "pan fried shrimp"],
       "icon": "food/prawn",
       "source": "usda_fdc_shrimp_cooked_with_oil_converted_to_three_prawns",
       "verified": true,
@@ -1061,12 +949,7 @@
       "protein_g": 12.5,
       "fat_g": 0.9,
       "sodium_mg": 120,
-      "aliases": [
-        "boiled prawns",
-        "steamed prawns",
-        "udang rebus",
-        "three boiled prawns"
-      ],
+      "aliases": ["boiled prawns", "steamed prawns", "udang rebus", "three boiled prawns"],
       "icon": "food/prawn",
       "source": "usda_fdc_shrimp_cooked_moist_heat_converted_to_three_prawns",
       "verified": true,
@@ -1086,12 +969,7 @@
       "protein_g": 12,
       "fat_g": 10,
       "sodium_mg": 300,
-      "aliases": [
-        "fried squid rings",
-        "calamari rings",
-        "sotong cincin",
-        "squid ring portion"
-      ],
+      "aliases": ["fried squid rings", "calamari rings", "sotong cincin", "squid ring portion"],
       "icon": "food/squid-rings",
       "source": "usda_fdc_squid_fried_converted_to_six_rings",
       "verified": true,
@@ -1115,12 +993,7 @@
       "protein_g": 15,
       "fat_g": 1.5,
       "sodium_mg": 180,
-      "aliases": [
-        "boiled squid",
-        "steamed squid",
-        "sotong rebus",
-        "poached calamari"
-      ],
+      "aliases": ["boiled squid", "steamed squid", "sotong rebus", "poached calamari"],
       "icon": "food/squid-rings",
       "source": "usda_fdc_squid_cooked_moist_heat_converted_to_serving",
       "verified": true
@@ -1160,12 +1033,7 @@
       "protein_g": 8.5,
       "fat_g": 10,
       "sodium_mg": 1200,
-      "aliases": [
-        "salted egg",
-        "telur masin",
-        "salted duck egg",
-        "咸蛋"
-      ],
+      "aliases": ["salted egg", "telur masin", "salted duck egg", "咸蛋"],
       "icon": "food/boiled-egg",
       "source": "usda_fdc_salted_duck_egg_converted_to_one_egg",
       "verified": true,
@@ -1185,13 +1053,7 @@
       "protein_g": 4,
       "fat_g": 3.5,
       "sodium_mg": 250,
-      "aliases": [
-        "boiled wantan",
-        "wonton dumplings",
-        "wantan rebus",
-        "three wantan",
-        "云吞"
-      ],
+      "aliases": ["boiled wantan", "wonton dumplings", "wantan rebus", "three wantan", "云吞"],
       "icon": "food/dumpling",
       "source": "usda_fdc_wonton_boiled_pork_filled_converted_to_three_pieces",
       "verified": true,
@@ -1215,13 +1077,7 @@
       "protein_g": 5.5,
       "fat_g": 1.2,
       "sodium_mg": 300,
-      "aliases": [
-        "fish balls",
-        "bebola ikan",
-        "boiled fish balls",
-        "three fish balls",
-        "鱼丸"
-      ],
+      "aliases": ["fish balls", "bebola ikan", "boiled fish balls", "three fish balls", "鱼丸"],
       "icon": "food/fish-ball",
       "source": "myfcd_1997_fish_ball_converted_to_three_balls",
       "verified": true,
@@ -1245,13 +1101,7 @@
       "protein_g": 6.5,
       "fat_g": 4.5,
       "sodium_mg": 320,
-      "aliases": [
-        "beef balls",
-        "meatballs",
-        "bebola daging",
-        "three beef balls",
-        "牛丸"
-      ],
+      "aliases": ["beef balls", "meatballs", "bebola daging", "three beef balls", "牛丸"],
       "icon": "food/meatball",
       "source": "usda_fdc_beef_meatball_cooked_converted_to_three_balls",
       "verified": true,
@@ -1302,13 +1152,7 @@
       "fat_g": 4.8,
       "fibre_g": 0.9,
       "sodium_mg": 12,
-      "aliases": [
-        "white tofu",
-        "plain tofu",
-        "tauhu putih",
-        "beancurd block",
-        "豆腐"
-      ],
+      "aliases": ["white tofu", "plain tofu", "tauhu putih", "beancurd block", "豆腐"],
       "icon": "food/tofu",
       "source": "usda_fdc_16427_tofu_firm_converted_to_one_piece",
       "verified": true,
@@ -1332,13 +1176,7 @@
       "protein_g": 2.2,
       "fat_g": 2.6,
       "sodium_mg": 5,
-      "aliases": [
-        "tofu puff",
-        "tauhu pok",
-        "fried beancurd puff",
-        "taupok",
-        "豆卜"
-      ],
+      "aliases": ["tofu puff", "tauhu pok", "fried beancurd puff", "taupok", "豆卜"],
       "icon": "food/fried-tofu-puff",
       "source": "usda_fdc_16130_tofu_fried_converted_to_one_puff",
       "verified": true,
@@ -1363,12 +1201,7 @@
       "fat_g": 5.4,
       "fibre_g": 0.5,
       "sodium_mg": 5,
-      "aliases": [
-        "steamed tempe",
-        "plain tempeh",
-        "tempe kukus",
-        "one piece tempe"
-      ],
+      "aliases": ["steamed tempe", "plain tempeh", "tempe kukus", "one piece tempe"],
       "icon": "food/tempeh",
       "source": "usda_fdc_16114_tempeh_converted_to_one_piece",
       "verified": true,
@@ -1450,12 +1283,7 @@
       "protein_g": 10,
       "fat_g": 1.5,
       "sodium_mg": 220,
-      "aliases": [
-        "boiled cockles",
-        "kerang rebus",
-        "ten cockles",
-        "blood cockles"
-      ],
+      "aliases": ["boiled cockles", "kerang rebus", "ten cockles", "blood cockles"],
       "icon": "food/cockles",
       "source": "myfcd_current_cockles_boiled_per_100_g_converted_to_ten_cockles",
       "verified": true,
@@ -1499,12 +1327,7 @@
       "protein_g": 12,
       "fat_g": 9.5,
       "sodium_mg": 320,
-      "aliases": [
-        "curry beef pieces",
-        "daging kari",
-        "beef in curry",
-        "mutton curry meat"
-      ],
+      "aliases": ["curry beef pieces", "daging kari", "beef in curry", "mutton curry meat"],
       "icon": "food/beef-slices",
       "source": "model_estimate",
       "extra_servings": [
@@ -1523,12 +1346,7 @@
       "protein_g": 14,
       "fat_g": 6.5,
       "sodium_mg": 330,
-      "aliases": [
-        "curry fish piece",
-        "ikan kari",
-        "fish in curry",
-        "one piece fish curry"
-      ],
+      "aliases": ["curry fish piece", "ikan kari", "fish in curry", "one piece fish curry"],
       "icon": "food/fish",
       "source": "model_estimate",
       "extra_servings": [
@@ -1547,11 +1365,7 @@
       "protein_g": 12,
       "fat_g": 7.5,
       "sodium_mg": 300,
-      "aliases": [
-        "fried beef lung",
-        "paru goreng",
-        "crispy paru"
-      ],
+      "aliases": ["fried beef lung", "paru goreng", "crispy paru"],
       "source": "model_estimate",
       "extra_servings": [
         {
@@ -1569,13 +1383,7 @@
       "protein_g": 10,
       "fat_g": 5.5,
       "sodium_mg": 6,
-      "aliases": [
-        "beancurd skin",
-        "fu chuk",
-        "tofu skin",
-        "dried beancurd sheet",
-        "腐竹"
-      ],
+      "aliases": ["beancurd skin", "fu chuk", "tofu skin", "dried beancurd sheet", "腐竹"],
       "icon": "food/tofu",
       "source": "usda_fdc_16139_tofu_dried_frozen_converted_to_one_sheet",
       "verified": true,
@@ -1627,13 +1435,7 @@
       "fat_g": 5.5,
       "fibre_g": 1.8,
       "sodium_mg": 300,
-      "aliases": [
-        "stir fried sawi",
-        "mustard greens",
-        "choy sum stir fry",
-        "sawi goreng",
-        "菜心"
-      ],
+      "aliases": ["stir fried sawi", "mustard greens", "choy sum stir fry", "sawi goreng", "菜心"],
       "icon": "food/vegetables",
       "source": "myfcd_1997_sawi_per_100_g_with_stir_fry_oil",
       "verified": true,
@@ -1658,12 +1460,7 @@
       "fat_g": 6.5,
       "fibre_g": 2,
       "sodium_mg": 320,
-      "aliases": [
-        "stir fried kailan",
-        "chinese kale",
-        "kai lan",
-        "芥兰"
-      ],
+      "aliases": ["stir fried kailan", "chinese kale", "kai lan", "芥兰"],
       "icon": "food/vegetables",
       "source": "usda_fdc_chinese_broccoli_cooked_with_oil_converted_to_serving",
       "verified": true,
@@ -1711,12 +1508,7 @@
       "fat_g": 6.5,
       "fibre_g": 2.6,
       "sodium_mg": 250,
-      "aliases": [
-        "four angle beans",
-        "winged beans",
-        "kacang botol",
-        "stir fried winged bean"
-      ],
+      "aliases": ["four angle beans", "winged beans", "kacang botol", "stir fried winged bean"],
       "icon": "food/green-beans",
       "source": "usda_fdc_winged_bean_cooked_with_oil_converted_to_serving",
       "verified": true
@@ -1731,12 +1523,7 @@
       "fat_g": 6,
       "fibre_g": 2.7,
       "sodium_mg": 240,
-      "aliases": [
-        "stir fried french beans",
-        "kacang buncis",
-        "green beans stir fry",
-        "四季豆"
-      ],
+      "aliases": ["stir fried french beans", "kacang buncis", "green beans stir fry", "四季豆"],
       "icon": "food/green-beans",
       "source": "usda_fdc_11054_green_beans_cooked_with_oil_converted_to_serving",
       "verified": true
@@ -1751,12 +1538,7 @@
       "fat_g": 10,
       "fibre_g": 2.5,
       "sodium_mg": 210,
-      "aliases": [
-        "fried brinjal",
-        "terung goreng",
-        "eggplant stir fry",
-        "aubergine fried"
-      ],
+      "aliases": ["fried brinjal", "terung goreng", "eggplant stir fry", "aubergine fried"],
       "icon": "food/vegetables",
       "source": "usda_fdc_11210_eggplant_cooked_with_oil_converted_to_serving",
       "verified": true
@@ -1771,12 +1553,7 @@
       "fat_g": 0.2,
       "fibre_g": 2.6,
       "sodium_mg": 5,
-      "aliases": [
-        "boiled okra",
-        "lady finger",
-        "bendi",
-        "kacang bendi rebus"
-      ],
+      "aliases": ["boiled okra", "lady finger", "bendi", "kacang bendi rebus"],
       "icon": "food/vegetables",
       "source": "usda_fdc_11279_okra_cooked_converted_to_serving",
       "verified": true
@@ -1791,12 +1568,7 @@
       "fat_g": 7,
       "fibre_g": 2.4,
       "sodium_mg": 280,
-      "aliases": [
-        "stir fried fern shoots",
-        "pucuk paku",
-        "midin goreng",
-        "fiddlehead fern"
-      ],
+      "aliases": ["stir fried fern shoots", "pucuk paku", "midin goreng", "fiddlehead fern"],
       "icon": "food/vegetables",
       "source": "model_estimate"
     },
@@ -1810,12 +1582,7 @@
       "fat_g": 0.05,
       "fibre_g": 0.2,
       "sodium_mg": 1,
-      "aliases": [
-        "cucumber slices",
-        "timun",
-        "sliced cucumber",
-        "cucumber garnish"
-      ],
+      "aliases": ["cucumber slices", "timun", "sliced cucumber", "cucumber garnish"],
       "icon": "food/vegetables",
       "source": "usda_fdc_11205_cucumber_raw_converted_to_garnish_serving",
       "verified": true,
@@ -1836,12 +1603,7 @@
       "fat_g": 4,
       "fibre_g": 3.5,
       "sodium_mg": 280,
-      "aliases": [
-        "chickpeas in curry",
-        "kacang kuda",
-        "chana curry",
-        "kacang kuda kari"
-      ],
+      "aliases": ["chickpeas in curry", "kacang kuda", "chana curry", "kacang kuda kari"],
       "icon": "food/chickpeas",
       "source": "usda_fdc_16057_chickpeas_cooked_with_curry_converted_to_serving",
       "verified": true
@@ -1856,11 +1618,7 @@
       "fat_g": 3.2,
       "fibre_g": 1.1,
       "sodium_mg": 200,
-      "aliases": [
-        "potato in curry",
-        "kentang kari",
-        "curry potato pieces"
-      ],
+      "aliases": ["potato in curry", "kentang kari", "curry potato pieces"],
       "icon": "food/potato",
       "source": "usda_fdc_11367_potato_cooked_with_curry_converted_to_two_pieces",
       "verified": true,
@@ -1885,12 +1643,7 @@
       "fat_g": 4.8,
       "fibre_g": 1.8,
       "sodium_mg": 240,
-      "aliases": [
-        "cabbage in curry",
-        "kobis kari",
-        "curried cabbage",
-        "cabbage serving"
-      ],
+      "aliases": ["cabbage in curry", "kobis kari", "curried cabbage", "cabbage serving"],
       "icon": "food/vegetables",
       "source": "myfcd_current_kobis_goreng_per_100_g_converted_to_serving",
       "verified": true
@@ -1904,12 +1657,7 @@
       "protein_g": 2,
       "fat_g": 8.5,
       "sodium_mg": 380,
-      "aliases": [
-        "chicken curry gravy",
-        "kuah kari ayam",
-        "curry sauce",
-        "one ladle curry"
-      ],
+      "aliases": ["chicken curry gravy", "kuah kari ayam", "curry sauce", "one ladle curry"],
       "icon": "food/ladle",
       "source": "model_estimate",
       "extra_servings": [
@@ -1936,11 +1684,7 @@
       "protein_g": 2.5,
       "fat_g": 6.5,
       "sodium_mg": 400,
-      "aliases": [
-        "fish curry gravy",
-        "kuah kari ikan",
-        "fish head curry gravy"
-      ],
+      "aliases": ["fish curry gravy", "kuah kari ikan", "fish head curry gravy"],
       "icon": "food/ladle",
       "source": "model_estimate",
       "extra_servings": [
@@ -1963,11 +1707,7 @@
       "protein_g": 3,
       "fat_g": 9,
       "sodium_mg": 420,
-      "aliases": [
-        "mutton curry gravy",
-        "kuah kari kambing",
-        "lamb curry sauce"
-      ],
+      "aliases": ["mutton curry gravy", "kuah kari kambing", "lamb curry sauce"],
       "icon": "food/ladle",
       "source": "model_estimate",
       "extra_servings": [
@@ -1990,11 +1730,7 @@
       "protein_g": 3,
       "fat_g": 8.5,
       "sodium_mg": 400,
-      "aliases": [
-        "beef curry gravy",
-        "kuah kari daging",
-        "meat curry sauce"
-      ],
+      "aliases": ["beef curry gravy", "kuah kari daging", "meat curry sauce"],
       "icon": "food/ladle",
       "source": "model_estimate",
       "extra_servings": [
@@ -2018,12 +1754,7 @@
       "fat_g": 2.2,
       "fibre_g": 1.5,
       "sodium_mg": 300,
-      "aliases": [
-        "dhal gravy",
-        "kuah dal",
-        "lentil gravy",
-        "one ladle dhal"
-      ],
+      "aliases": ["dhal gravy", "kuah dal", "lentil gravy", "one ladle dhal"],
       "icon": "food/lentils",
       "source": "myfcd_1997_yellow_dhal_gravy_half_cup_converted_to_ladle",
       "verified": true,
@@ -2047,11 +1778,7 @@
       "protein_g": 1.5,
       "fat_g": 10,
       "sodium_mg": 320,
-      "aliases": [
-        "rendang gravy",
-        "kuah rendang",
-        "rendang sauce only"
-      ],
+      "aliases": ["rendang gravy", "kuah rendang", "rendang sauce only"],
       "icon": "dishes/rendang",
       "source": "model_estimate",
       "extra_servings": [
@@ -2102,11 +1829,7 @@
       "protein_g": 2,
       "fat_g": 8.5,
       "sodium_mg": 360,
-      "aliases": [
-        "gulai gravy",
-        "kuah gulai",
-        "malay curry gravy"
-      ],
+      "aliases": ["gulai gravy", "kuah gulai", "malay curry gravy"],
       "icon": "dishes/gulai",
       "source": "model_estimate",
       "extra_servings": [
@@ -2129,11 +1852,7 @@
       "protein_g": 1.5,
       "fat_g": 2.8,
       "sodium_mg": 380,
-      "aliases": [
-        "asam pedas gravy",
-        "kuah asam pedas",
-        "sour spicy gravy"
-      ],
+      "aliases": ["asam pedas gravy", "kuah asam pedas", "sour spicy gravy"],
       "icon": "dishes/asam-pedas",
       "source": "model_estimate",
       "extra_servings": [
@@ -2152,12 +1871,7 @@
       "protein_g": 1.5,
       "fat_g": 1.2,
       "sodium_mg": 350,
-      "aliases": [
-        "clear soup broth",
-        "kuah sup",
-        "noodle soup broth",
-        "sup ayam kuah"
-      ],
+      "aliases": ["clear soup broth", "kuah sup", "noodle soup broth", "sup ayam kuah"],
       "icon": "food/ladle",
       "source": "usda_fdc_chicken_broth_converted_to_ladle",
       "verified": true,
@@ -2177,12 +1891,7 @@
       "protein_g": 2.5,
       "fat_g": 9,
       "sodium_mg": 500,
-      "aliases": [
-        "nasi kandar mixed gravy",
-        "kuah campur",
-        "banjir gravy",
-        "flooded curry gravy"
-      ],
+      "aliases": ["nasi kandar mixed gravy", "kuah campur", "banjir gravy", "flooded curry gravy"],
       "icon": "dishes/nasi-kandar",
       "source": "model_estimate",
       "extra_servings": [
@@ -2205,11 +1914,7 @@
       "protein_g": 2.5,
       "fat_g": 10.5,
       "sodium_mg": 460,
-      "aliases": [
-        "curry laksa gravy",
-        "kuah laksa lemak",
-        "curry mee broth"
-      ],
+      "aliases": ["curry laksa gravy", "kuah laksa lemak", "curry mee broth"],
       "icon": "dishes/curry-mee",
       "source": "model_estimate",
       "extra_servings": [
@@ -2228,11 +1933,7 @@
       "protein_g": 3,
       "fat_g": 1.5,
       "sodium_mg": 480,
-      "aliases": [
-        "asam laksa broth",
-        "kuah laksa asam",
-        "penang laksa gravy"
-      ],
+      "aliases": ["asam laksa broth", "kuah laksa asam", "penang laksa gravy"],
       "icon": "dishes/laksa",
       "source": "model_estimate",
       "extra_servings": [
@@ -2251,11 +1952,7 @@
       "protein_g": 3,
       "fat_g": 3.8,
       "sodium_mg": 420,
-      "aliases": [
-        "mee rebus gravy",
-        "kuah mee rebus",
-        "sweet potato gravy"
-      ],
+      "aliases": ["mee rebus gravy", "kuah mee rebus", "sweet potato gravy"],
       "icon": "dishes/mee-rebus",
       "source": "model_estimate",
       "extra_servings": [
@@ -2274,11 +1971,7 @@
       "protein_g": 2,
       "fat_g": 2,
       "sodium_mg": 520,
-      "aliases": [
-        "tomyam broth",
-        "kuah tomyam",
-        "tom yum soup base"
-      ],
+      "aliases": ["tomyam broth", "kuah tomyam", "tom yum soup base"],
       "icon": "dishes/tomyam",
       "source": "model_estimate",
       "extra_servings": [
@@ -2321,12 +2014,7 @@
       "protein_g": 0,
       "fat_g": 5,
       "sodium_mg": 0,
-      "aliases": [
-        "cooking oil",
-        "minyak masak",
-        "palm oil",
-        "vegetable oil teaspoon"
-      ],
+      "aliases": ["cooking oil", "minyak masak", "palm oil", "vegetable oil teaspoon"],
       "icon": "food/cooking-oil",
       "source": "myfcd_1997_palm_olein_per_tablespoon_converted_to_teaspoon",
       "verified": true,
@@ -2350,12 +2038,7 @@
       "protein_g": 0.1,
       "fat_g": 13.8,
       "sodium_mg": 2,
-      "aliases": [
-        "shallot oil",
-        "minyak bawang",
-        "fried shallot oil",
-        "scallion oil"
-      ],
+      "aliases": ["shallot oil", "minyak bawang", "fried shallot oil", "scallion oil"],
       "icon": "food/cooking-oil",
       "source": "myfcd_1997_palm_olein_per_tablespoon_with_shallot_infusion",
       "verified": true,
@@ -2375,12 +2058,7 @@
       "protein_g": 1.5,
       "fat_g": 0.1,
       "sodium_mg": 800,
-      "aliases": [
-        "toasted shrimp paste",
-        "belacan",
-        "belacan bakar",
-        "shrimp paste"
-      ],
+      "aliases": ["toasted shrimp paste", "belacan", "belacan bakar", "shrimp paste"],
       "source": "myfcd_1997_shrimp_paste_per_100_g_converted_to_teaspoon",
       "verified": true,
       "extra_servings": [
@@ -2399,11 +2077,7 @@
       "protein_g": 1.8,
       "fat_g": 0,
       "sodium_mg": 1100,
-      "aliases": [
-        "fermented fish sauce kelantan",
-        "budu",
-        "anchovy sauce"
-      ],
+      "aliases": ["fermented fish sauce kelantan", "budu", "anchovy sauce"],
       "icon": "food/soy-sauce",
       "source": "model_estimate"
     },
@@ -2416,12 +2090,7 @@
       "protein_g": 0.2,
       "fat_g": 0.05,
       "sodium_mg": 220,
-      "aliases": [
-        "pickled green chilli",
-        "cili jeruk",
-        "cuka cili hijau",
-        "pickled chillies"
-      ],
+      "aliases": ["pickled green chilli", "cili jeruk", "cuka cili hijau", "pickled chillies"],
       "icon": "food/chilli",
       "source": "usda_fdc_peppers_pickled_converted_to_tablespoon",
       "verified": true
@@ -2435,12 +2104,7 @@
       "protein_g": 0.3,
       "fat_g": 4.5,
       "sodium_mg": 180,
-      "aliases": [
-        "ginger scallion paste",
-        "halia cincang",
-        "chicken rice ginger sauce",
-        "姜蓉"
-      ],
+      "aliases": ["ginger scallion paste", "halia cincang", "chicken rice ginger sauce", "姜蓉"],
       "icon": "food/ginger",
       "source": "model_estimate"
     },
@@ -2485,13 +2149,7 @@
       "fat_g": 3,
       "fibre_g": 0.4,
       "sodium_mg": 8,
-      "aliases": [
-        "fried garlic",
-        "bawang putih goreng",
-        "crispy garlic",
-        "garlic topping",
-        "蒜酥"
-      ],
+      "aliases": ["fried garlic", "bawang putih goreng", "crispy garlic", "garlic topping", "蒜酥"],
       "icon": "food/garlic",
       "source": "usda_fdc_garlic_fried_converted_to_tablespoon",
       "verified": true,
@@ -2512,12 +2170,7 @@
       "fat_g": 4.5,
       "fibre_g": 1.1,
       "sodium_mg": 1,
-      "aliases": [
-        "toasted sesame seeds",
-        "bijan",
-        "sesame seed topping",
-        "芝麻"
-      ],
+      "aliases": ["toasted sesame seeds", "bijan", "sesame seed topping", "芝麻"],
       "source": "usda_fdc_12023_sesame_seeds_roasted_converted_to_tablespoon",
       "verified": true,
       "extra_servings": [
@@ -2537,13 +2190,7 @@
       "fat_g": 6,
       "fibre_g": 1,
       "sodium_mg": 25,
-      "aliases": [
-        "roasted peanuts",
-        "kacang goreng",
-        "peanut topping",
-        "ground peanuts",
-        "花生"
-      ],
+      "aliases": ["roasted peanuts", "kacang goreng", "peanut topping", "ground peanuts", "花生"],
       "icon": "food/peanuts",
       "source": "usda_fdc_16090_peanuts_roasted_converted_to_tablespoon",
       "verified": true,
@@ -2563,13 +2210,7 @@
       "protein_g": 1.5,
       "fat_g": 6.8,
       "sodium_mg": 60,
-      "aliases": [
-        "crispy pork lard",
-        "pork crackling",
-        "chu yau char",
-        "lard croutons",
-        "猪油渣"
-      ],
+      "aliases": ["crispy pork lard", "pork crackling", "chu yau char", "lard croutons", "猪油渣"],
       "icon": "food/pork-belly",
       "source": "usda_fdc_pork_cracklings_converted_to_tablespoon",
       "verified": true,
@@ -2590,12 +2231,7 @@
       "fat_g": 6.3,
       "fibre_g": 1.6,
       "sodium_mg": 2,
-      "aliases": [
-        "toasted grated coconut",
-        "kerisik",
-        "coconut paste",
-        "kelapa sangai"
-      ],
+      "aliases": ["toasted grated coconut", "kerisik", "coconut paste", "kelapa sangai"],
       "icon": "food/coconut",
       "source": "myfcd_1997_grated_coconut_toasted_per_100_g_converted_to_tablespoon",
       "verified": true,
@@ -2615,11 +2251,7 @@
       "protein_g": 1.5,
       "fat_g": 6,
       "sodium_mg": 340,
-      "aliases": [
-        "masak merah gravy",
-        "kuah masak merah",
-        "tomato chilli gravy"
-      ],
+      "aliases": ["masak merah gravy", "kuah masak merah", "tomato chilli gravy"],
       "icon": "food/ladle",
       "source": "model_estimate",
       "extra_servings": [
@@ -2642,11 +2274,7 @@
       "protein_g": 2.5,
       "fat_g": 8.5,
       "sodium_mg": 360,
-      "aliases": [
-        "kurma gravy",
-        "kuah kurma",
-        "mild coconut curry gravy"
-      ],
+      "aliases": ["kurma gravy", "kuah kurma", "mild coconut curry gravy"],
       "icon": "food/ladle",
       "source": "model_estimate",
       "extra_servings": [
@@ -2670,11 +2298,7 @@
       "fat_g": 2.5,
       "fibre_g": 1.6,
       "sodium_mg": 300,
-      "aliases": [
-        "dalca gravy",
-        "kuah dalca",
-        "lentil vegetable gravy"
-      ],
+      "aliases": ["dalca gravy", "kuah dalca", "lentil vegetable gravy"],
       "icon": "food/lentils",
       "source": "model_estimate",
       "extra_servings": [
@@ -2693,11 +2317,7 @@
       "protein_g": 2.5,
       "fat_g": 3,
       "sodium_mg": 400,
-      "aliases": [
-        "mutton soup broth",
-        "kuah sup kambing",
-        "sup tulang broth"
-      ],
+      "aliases": ["mutton soup broth", "kuah sup kambing", "sup tulang broth"],
       "icon": "food/ladle",
       "source": "model_estimate",
       "extra_servings": [
@@ -2717,11 +2337,7 @@
       "fat_g": 5.5,
       "fibre_g": 2,
       "sodium_mg": 260,
-      "aliases": [
-        "mixed vegetables in curry",
-        "sayur campur kari",
-        "nasi kandar vegetables"
-      ],
+      "aliases": ["mixed vegetables in curry", "sayur campur kari", "nasi kandar vegetables"],
       "icon": "food/vegetables",
       "source": "model_estimate",
       "extra_servings": [
@@ -2741,11 +2357,7 @@
       "fat_g": 7,
       "fibre_g": 2.2,
       "sodium_mg": 290,
-      "aliases": [
-        "stir fried spinach",
-        "bayam goreng",
-        "malabar spinach stir fry"
-      ],
+      "aliases": ["stir fried spinach", "bayam goreng", "malabar spinach stir fry"],
       "icon": "food/vegetables",
       "source": "usda_fdc_11458_spinach_cooked_with_oil_converted_to_serving",
       "verified": true
