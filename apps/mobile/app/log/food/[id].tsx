@@ -1,8 +1,8 @@
 import { Image } from 'expo-image'
-import { useLocalSearchParams } from 'expo-router'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useLocalSearchParams, useNavigation } from 'expo-router'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, ScrollView, TextInput, View } from 'react-native'
+import { ActivityIndicator, BackHandler, Platform, TextInput, View } from 'react-native'
 
 import {
   type EntryPatch,
@@ -23,7 +23,7 @@ import {
   useUpdateIngredient,
   useUserId,
 } from '@/data'
-import { IconPicker } from '@/features/logging'
+import { FixSheet, IconPicker } from '@/features/logging'
 import { MacroBars } from '@/features/shared'
 import { useBack, useDismissTo } from '@/lib/navigation'
 import { entryTotals } from '@/lib/nutrition'
@@ -48,30 +48,31 @@ import {
 } from '@/ui'
 
 /**
- * Chips over the note field for a hand-logged entry. A SCANNED entry gets its
+ * Chips under the fix box for a hand-logged entry. A SCANNED entry gets its
  * chips from the vision model instead — food-specific, carried on the row —
- * and its box applies the correction through scan-refine rather than saving a
+ * and its box applies the correction through scan-refine rather than keeping a
  * note.
  */
 const QUICK_FIXES = ['halfPortion', 'noSambal', 'addEgg', 'extraRice'] as const
 
-/**
- * How long an edit waits before it is written.
- *
- * The stepper is the reason there is a delay at all: four taps on plus is one
- * intention, and without this it was four round trips. Short enough that
- * nobody notices it, long enough to collect a burst — and every path off this
- * screen flushes what is pending, so the number is about batching rather than
- * about whether the edit survives.
- */
-const SAVE_DEBOUNCE_MS = 600
+/** The four figures a user can type over, in the order the card reads them. */
+const FIGURES = ['kcal', 'carbs', 'protein', 'fat'] as const
 
 /**
  * L6 FOOD DETAIL, in both of its jobs.
  *
  * With an `entryId` it edits something already logged; without one it composes
  * a new entry from the catalogue. The controls are identical either way, so the
- * difference is confined to what the save button does.
+ * difference is confined to what the button at the foot of it does.
+ *
+ * NOTHING HERE IS WRITTEN UNTIL SAVE. Every control stages its change in local
+ * state and the footer commits the lot — the portion, the serving, the typed
+ * figures, the name, the picture and each part of a scanned plate, in one
+ * deliberate act. It used to write as it was edited, on a debounce, which made
+ * the screen honest about the moment but impossible to think in: a plate being
+ * corrected in four places was four round trips and four refetches, and there
+ * was no way to change your mind about any of them except by changing them
+ * back.
  */
 export default function FoodDetail() {
   const { t } = useTranslation(['logging', 'common'])
@@ -86,6 +87,7 @@ export default function FoodDetail() {
    * presented and then replaces, so either shape ends up on Today.
    */
   const finish = useDismissTo('/today')
+  const navigation = useNavigation()
   const colors = useThemeColors()
   const toast = useToast()
   const logFood = useLogFood()
@@ -120,12 +122,18 @@ export default function FoodDetail() {
   const refineEntry = useRefineEntry()
   const updateIngredient = useUpdateIngredient()
   const removeIngredient = useRemoveIngredient()
-  const [instruction, setInstruction] = useState('')
 
   const [quantity, setQuantity] = useState(existing?.quantity ?? 1)
   const [servingId, setServingId] = useState(existing?.servingId ?? '')
   const [note, setNote] = useState(existing?.note ?? '')
   const [confirmDelete, setConfirmDelete] = useState(false)
+  /** Leaving with something staged, which throws it away. */
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
+  const [saving, setSaving] = useState(false)
+  /** The fix-by-typing sheet, and the words in it. */
+  const [fixing, setFixing] = useState(false)
+  const [instruction, setInstruction] = useState('')
+  const [sending, setSending] = useState(false)
   /**
    * Which entry the controls above were filled in from.
    *
@@ -158,12 +166,13 @@ export default function FoodDetail() {
    */
   const [pendingIcon, setPendingIcon] = useState<IconRef>()
   /**
-   * A photo taken here, before there is a row to hang it on.
+   * A photo taken here, uploaded but not yet on any row.
    *
    * Two fields because they are needed at different moments: the local uri is
    * what the tile shows the instant the shot is taken, and the bucket key is what
-   * the insert carries. An entry that already exists skips both — its photo is
-   * written straight to the row, and the day query brings it back.
+   * Save carries. The upload cannot wait for the button — it is what turns a
+   * 4MB frame into a key — so leaving without saving has to delete the object it
+   * left behind, which is what the discard below does.
    */
   const [shot, setShot] = useState<{ uri: string; path: string }>()
   const [attaching, setAttaching] = useState(false)
@@ -192,6 +201,15 @@ export default function FoodDetail() {
   /** The title, while it is being retyped. */
   const [renaming, setRenaming] = useState(false)
   const [name, setName] = useState('')
+  /**
+   * Parts of a scanned plate that have been moved or taken off, not yet written.
+   *
+   * An overlay on the fetched list rather than a copy of it, so a refetch
+   * landing mid-edit cannot silently drop a staged change — and so "stepped up
+   * and back down again" is not a change at all. `null` is a part on its way
+   * off the plate.
+   */
+  const [partEdits, setPartEdits] = useState<Record<string, number | null>>({})
 
   const { data: heroUrl } = useMealPhotoUrl(existing?.photoPath)
 
@@ -210,64 +228,81 @@ export default function FoodDetail() {
   }
 
   /**
-   * Everything an existing entry can change, written as it changes.
+   * The plate as the screen shows it: what the scan found, with the staged
+   * changes laid over it.
    *
-   * There is no save button any more. The screen edits one row that already
-   * exists, and every control on it — the stepper, the serving, a typed figure,
-   * the name — was already an unambiguous instruction; asking for a second
-   * confirmation of an instruction is how an edit gets lost by backing out.
-   *
-   * Debounced, because the stepper is a button people press four times in a
-   * row and each press would otherwise be a round trip. Long enough to collect
-   * a burst, short enough that leaving the screen never outruns it — and the
-   * pending write is flushed on the way out regardless.
+   * Everything on a row scales with its portion, not only the calories. The
+   * card's total and the entry's macros are a sum of these, so moving kcal
+   * alone would show a plate that disagreed with its own total right up until
+   * Save — which is the same reasoning behind the optimistic patch in
+   * `useUpdateIngredient`, applied here to an edit that has not been sent yet.
    */
-  const pendingPatch = useRef<EntryPatch | null>(null)
-  const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const parts = ingredients.flatMap((ingredient) => {
+    const staged = partEdits[ingredient.id]
+    if (staged === null) return []
+    if (staged === undefined || staged === ingredient.quantity) return [ingredient]
+    const factor = staged / Math.max(0.01, ingredient.quantity)
+    const tenth = (value: number) => Math.round(value * factor * 10) / 10
+    return [
+      {
+        ...ingredient,
+        quantity: staged,
+        kcal: Math.round(ingredient.kcal * factor),
+        carbs: tenth(ingredient.carbs),
+        protein: tenth(ingredient.protein),
+        fat: tenth(ingredient.fat),
+      },
+    ]
+  })
 
-  const flush = useCallback(() => {
-    if (flushTimer.current) {
-      clearTimeout(flushTimer.current)
-      flushTimer.current = null
-    }
-    const patch = pendingPatch.current
-    pendingPatch.current = null
-    if (patch) updateEntry.mutate(patch)
-  }, [updateEntry])
-
-  const queue = useCallback(
-    (patch: Omit<EntryPatch, 'id' | 'logDate'>) => {
-      if (!existing) return
-      const held = pendingPatch.current
-      pendingPatch.current = {
-        ...(held ?? { id: existing.id, logDate: existing.logDate }),
-        ...patch,
-        // Merged rather than replaced. Each field is queued on its own blur,
-        // and a plain spread would drop the calories the moment the carbs were
-        // typed inside the same debounce window.
-        ...(held?.overrides || patch.overrides
-          ? { overrides: { ...held?.overrides, ...patch.overrides } }
-          : {}),
-        id: existing.id,
-        logDate: existing.logDate,
-      }
-      if (flushTimer.current) clearTimeout(flushTimer.current)
-      flushTimer.current = setTimeout(flush, SAVE_DEBOUNCE_MS)
-    },
-    [existing, flush],
-  )
+  /** The parts whose staged value actually differs from what is on the server. */
+  const partChanges = ingredients.filter((ingredient) => {
+    const staged = partEdits[ingredient.id]
+    return staged === null || (staged !== undefined && staged !== ingredient.quantity)
+  })
 
   /**
-   * Flushed once, on the way out.
+   * What each control would write, or `undefined` for one nobody touched.
    *
-   * Through a ref rather than by depending on `flush`: react-query hands back
-   * a new mutation object whenever its state changes, so an effect keyed on
-   * that identity tears down and re-runs mid-edit — and its teardown IS the
-   * flush, which turned the debounce into a write per keystroke.
+   * Computed rather than tracked, so a value edited back to what it was is not
+   * a change — which is what makes the Save button an honest answer to "is
+   * there anything here to save".
    */
-  const flushRef = useRef(flush)
-  flushRef.current = flush
-  useEffect(() => () => flushRef.current(), [])
+  const nameChange = name.trim() && name.trim() !== existing?.foodName ? name.trim() : undefined
+  const noteChange = existing && note !== (existing.note ?? '') ? note || null : undefined
+  // Only on an entry with no breakdown. An entry with one IS its breakdown, so
+  // the stepper is not on screen and the parts above are what moves.
+  const quantityChange =
+    existing && !parts.length && quantity !== existing.quantity ? quantity : undefined
+  const servingChange =
+    existing && !parts.length && servingId && servingId !== existing.servingId
+      ? servingId
+      : undefined
+  // All four together or none: `typed` holds the user's answer for every
+  // figure, and an empty field is the deliberate "use the app's number".
+  const overridesChange =
+    existing && FIGURES.some((key) => figure(typed[key]) !== (existing.overrides?.[key] ?? null))
+      ? {
+          kcal: figure(typed.kcal),
+          carbs: figure(typed.carbs),
+          protein: figure(typed.protein),
+          fat: figure(typed.fat),
+        }
+      : undefined
+  // A row carries a photo or a drawing, never both, and each of the two
+  // controls clears the other — so at most one of these is ever set.
+  const pictureChange = shot ? { photoPath: shot.path } : icon ? { icon } : undefined
+
+  const dirty = Boolean(
+    existing &&
+      (nameChange ||
+        noteChange !== undefined ||
+        quantityChange !== undefined ||
+        servingChange ||
+        overridesChange ||
+        pictureChange ||
+        partChanges.length),
+  )
 
   // The controls, filled in from the row the first time it is actually here.
   // See `seededFrom` for why once is not the same as at mount.
@@ -277,6 +312,8 @@ export default function FoodDetail() {
     setQuantity(existing.quantity)
     setServingId(existing.servingId)
     setNote(existing.note ?? '')
+    setName(existing.foodName)
+    setPartEdits({})
     setTyped({
       kcal: existing.overrides?.kcal?.toString() ?? '',
       carbs: existing.overrides?.carbs?.toString() ?? '',
@@ -284,6 +321,28 @@ export default function FoodDetail() {
       fat: existing.overrides?.fat?.toString() ?? '',
     })
   }, [existing])
+
+  /**
+   * The two ways off this screen that are not the chevron.
+   *
+   * A staged form has to ask before it throws the staging away, and the back
+   * chevron is the only exit this screen owns. The swipe is turned off while
+   * there is something to lose — react-navigation's own "prevent remove" is not
+   * reachable through expo-router's fork — and Android's hardware back is
+   * caught and turned into the same question the chevron asks.
+   */
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: !dirty })
+  }, [navigation, dirty])
+
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !dirty) return
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      setConfirmDiscard(true)
+      return true
+    })
+    return () => subscription.remove()
+  }, [dirty])
 
   if (!food) {
     return (
@@ -326,16 +385,14 @@ export default function FoodDetail() {
   }
 
   /**
-   * What this entry actually counts as.
+   * What this entry would count as if it were saved now.
    *
    * `entryTotals` is the client's copy of the `coalesce` in
-   * `food_log_details`: typed, then parts, then portion. Read from here rather
-   * than from the saved row so that every edit on this screen shows
-   * immediately — a figure still inside the debounce, a portion stepped a
-   * moment ago, an ingredient the optimistic update has already moved.
-   * Recomputing only the third form, which is what this screen used to do,
-   * meant a typed 500 kcal snapped back to the app's 594 the instant the field
-   * closed, and a decomposed plate read differently here than on Today.
+   * `food_log_details`: typed, then parts, then portion. Read from the staged
+   * values rather than from the row, which is the whole point of a form — a
+   * figure typed a moment ago, a portion just stepped, an ingredient taken off
+   * the plate all show here before anything is written, and the number the
+   * Save button commits is the number that was on screen.
    *
    * While a scanned plate's parts are still on their way, the row's own figure
    * stands in. It is the same three-source answer, worked out by the view — so
@@ -352,7 +409,7 @@ export default function FoodDetail() {
             protein: figure(typed.protein) ?? undefined,
             fat: figure(typed.fat) ?? undefined,
           },
-          parts: ingredients,
+          parts,
           portion: computed,
         })
     : computed
@@ -391,27 +448,16 @@ export default function FoodDetail() {
    * asked to present while this sheet was dismissing, which iOS cancels — leaving a
    * promise that never settles and a spinner that never stops.
    *
-   * An existing entry is written straight away rather than at save: the upload has
-   * already happened, so holding the key in state until the save button would mean
-   * an object in the bucket that a cancelled edit orphans. A row being composed
-   * has nowhere to write to yet, so its key waits for the insert.
+   * The upload happens here rather than at Save because a key is what the row can
+   * hold; only the key waits for the button. A shot this one replaces never
+   * reached a row, so it is deleted on the spot.
    */
   const attachPhoto = async (uri: string) => {
     setPickingIcon(false)
     setAttaching(true)
     try {
       const path = await uploadMealPhoto(userId, uri)
-
-      if (existing) {
-        updateEntry.mutate({
-          id: existing.id,
-          logDate: existing.logDate,
-          photoPath: path,
-          currentPhotoPath: existing.photoPath,
-        })
-      }
-      // Shown either way: for an existing row it is what the tile draws until the
-      // day query comes back with a signed URL for the same photo.
+      if (shot) void removeMealPhoto(shot.path).catch(() => {})
       setShot({ uri, path })
       // The photo IS the picture now, so an unsaved drawing has been answered.
       setIcon(undefined)
@@ -427,17 +473,17 @@ export default function FoodDetail() {
   /**
    * A drawing wins the slot, so whatever photo was in it has to go.
    *
-   * The upload has already happened by the time this runs, so a shot taken on the
-   * add screen and then overruled here is an object nothing points at — deleted on
-   * the spot. An existing row's photo is left alone: it is still what the row
-   * shows, and `save` deletes it when the icon is actually written.
+   * A shot staged on this screen has already been uploaded and now points at
+   * nothing, so it is deleted here. The row's OWN photo is left alone — it is
+   * still what the row shows until Save writes the drawing over it, and
+   * `useUpdateEntry` deletes it then.
    */
   const applyIcon = (next: IconRef) => {
     setIcon(next)
     if (!shot) return
     const orphan = shot.path
     setShot(undefined)
-    if (!existing) void removeMealPhoto(orphan).catch(() => {})
+    void removeMealPhoto(orphan).catch(() => {})
   }
 
   const hasPhoto = Boolean(shot ?? existing?.photoPath)
@@ -460,12 +506,104 @@ export default function FoodDetail() {
   }
 
   /**
-   * Send the typed correction and leave. Nothing is awaited here on purpose —
-   * see the field it belongs to, below.
+   * Everything staged, written in one go. Throws, so its callers can leave the
+   * user where they are with the form still filled in.
+   *
+   * Parts first: `set_ingredient_quantity` recomputes the parent entry inside
+   * the same transaction, and the patch that follows carries figures the user
+   * typed against the plate those parts add up to.
    */
-  const applyFix = () => {
+  const commit = async () => {
+    if (!existing) return
+
+    for (const ingredient of partChanges) {
+      const staged = partEdits[ingredient.id]
+      if (staged === null) {
+        await removeIngredient.mutateAsync({
+          ingredientId: ingredient.id,
+          entryId: existing.id,
+          logDate: selectedDate,
+        })
+      } else if (staged !== undefined) {
+        await updateIngredient.mutateAsync({
+          ingredientId: ingredient.id,
+          quantity: staged,
+          entryId: existing.id,
+          logDate: selectedDate,
+        })
+      }
+    }
+
+    const patch: EntryPatch = {
+      id: existing.id,
+      logDate: existing.logDate,
+      ...(nameChange ? { name: nameChange } : {}),
+      ...(noteChange === undefined ? {} : { note: noteChange }),
+      ...(quantityChange === undefined ? {} : { quantity: quantityChange }),
+      ...(servingChange ? { servingId: servingChange } : {}),
+      ...(overridesChange ? { overrides: overridesChange } : {}),
+      ...(pictureChange ?? {}),
+      // What is on the row now, so whichever picture replaces it can delete the
+      // object it leaves behind.
+      ...(pictureChange ? { currentPhotoPath: existing.photoPath } : {}),
+    }
+    // Two keys is the empty patch: an update with nothing in it is a round trip
+    // that invalidates the day for no reason.
+    if (Object.keys(patch).length > 2) await updateEntry.mutateAsync(patch)
+  }
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      await commit()
+    } catch {
+      toast.show({ title: t('logging:detail.saveFailed'), tone: 'error' })
+      setSaving(false)
+      return
+    }
+    goBack()
+  }
+
+  const leave = () => {
+    if (dirty) {
+      setConfirmDiscard(true)
+      return
+    }
+    goBack()
+  }
+
+  const discard = () => {
+    setConfirmDiscard(false)
+    // The shot was uploaded when it was taken and no row ever pointed at it.
+    if (shot) void removeMealPhoto(shot.path).catch(() => {})
+    goBack()
+  }
+
+  /** A scanned plate's fix goes to the model; a hand-logged one is a note. */
+  const scanned = Boolean(existing?.scanId)
+
+  /**
+   * Send the typed correction and leave.
+   *
+   * Whatever is staged is written FIRST. The server interprets the correction
+   * against the entry as it stands there — the parts it is shown, the calories
+   * it is told — so sending "and half the rice" against a plate the user has
+   * already changed on screen would correct a meal neither of them is looking
+   * at. After that it is fire-and-forget: the correction runs for several
+   * seconds and this screen describes the entry's OLD identity the whole time,
+   * so it leaves and the row on Today shows the work.
+   */
+  const sendFix = async () => {
     const text = instruction.trim()
     if (!existing || !text) return
+    setSending(true)
+    try {
+      await commit()
+    } catch {
+      toast.show({ title: t('logging:detail.saveFailed'), tone: 'error' })
+      setSending(false)
+      return
+    }
     refineEntry({
       entryId: existing.id,
       instruction: text,
@@ -481,8 +619,8 @@ export default function FoodDetail() {
 
   const commitName = () => {
     setRenaming(false)
-    const next = name.trim().slice(0, 120)
-    if (next && next !== existing?.foodName) queue({ name: next })
+    // A name emptied is not a rename, and the title falls back to the row's.
+    if (!name.trim()) setName(existing?.foodName ?? '')
   }
 
   const remove = () => {
@@ -499,11 +637,31 @@ export default function FoodDetail() {
 
   return (
     <Screen
-      // Only while composing. An entry that already exists saves as it is
-      // edited, so a button at the foot of it would be a second answer to a
-      // question the screen has already asked.
       footer={
-        existing ? undefined : (
+        existing ? (
+          /* Two buttons, and the split is what they cost. Save writes what is
+             on screen and stays in the diary; Fix it hands the entry back to
+             the model, which can return a different meal — so it is the
+             secondary, and it is the one that opens a question first. */
+          <View className="flex-row gap-3">
+            <Button
+              variant="secondary"
+              className="flex-1"
+              leftIcon={<Icon set="system" name="sparkle" size={20} />}
+              onPress={() => setFixing(true)}
+            >
+              {t('logging:detail.fixAction')}
+            </Button>
+            <Button
+              className="flex-1"
+              loading={saving}
+              disabled={!dirty}
+              onPress={() => void save()}
+            >
+              {t('logging:detail.save')}
+            </Button>
+          </View>
+        ) : (
           <View>
             <Button fullWidth onPress={addToDiary}>
               {t('common:action.add')}
@@ -522,21 +680,14 @@ export default function FoodDetail() {
            catalogue row's ("MEAL KIT, KOREAN FRIED CHICKEN WITH SWEET
            GOCHUJANG SAUCE"). Everything else on this screen is the catalogue
            row's; the title is what the user just tapped. */
-        title={existing?.foodName ?? food.name}
+        title={name.trim() || existing?.foodName || food.name}
         // Tapping the title renames THIS entry — the model's guess at a dish
         // is right about the food and wrong about the words often enough that
-        // correcting it should not require re-describing the meal. It writes
+        // correcting it should not require re-describing the meal. It stages
         // `display_label`, so the catalogue row underneath is untouched and
         // every other log of the same dish keeps its own name.
-        onPressTitle={
-          existing
-            ? () => {
-                setRenaming(true)
-                setName(existing.foodName)
-              }
-            : undefined
-        }
-        onBack={() => goBack()}
+        onPressTitle={existing ? () => setRenaming(true) : undefined}
+        onBack={leave}
         backLabel={t('common:a11y.back')}
         /* Delete lives up here rather than in a card at the foot of the screen.
            It was the last thing on a page that scrolls, so removing a row meant
@@ -569,14 +720,14 @@ export default function FoodDetail() {
 
       {renaming ? (
         <Card>
-          {/* Committed on the way out, whichever way out that is. Everything
-              else on this screen saves as it is changed, and a name that only
-              counted if the return key was pressed was the one control where
-              tapping elsewhere threw the edit away. */}
+          {/* Closed on the way out, whichever way out that is — but nothing is
+              written here either way: the name is staged like everything else,
+              and Save is what commits it. */}
           <TextField
             label={t('logging:detail.nameField')}
             value={name}
             onChangeText={setName}
+            maxLength={120}
             autoFocus
             returnKeyType="done"
             onBlur={commitName}
@@ -665,14 +816,11 @@ export default function FoodDetail() {
           and nothing in the diary. The ingredient list below is where that
           plate's amounts are edited, one part at a time, which is the whole
           reason the breakdown exists. */}
-      {ingredients.length ? null : (
+      {parts.length ? null : (
         <Card>
           <Stepper
             value={quantity}
-            onChange={(next) => {
-              setQuantity(next)
-              queue({ quantity: next })
-            }}
+            onChange={setQuantity}
             // Half a plate is an ordinary portion and used to be unreachable
             // here: the steps were whole servings, so "half" could only be had
             // by picking a serving that happened to be one. `Stepper` renders
@@ -699,10 +847,7 @@ export default function FoodDetail() {
               <Chip
                 key={option.id}
                 selected={option.id === chosen}
-                onPress={() => {
-                  setServingId(option.id)
-                  queue({ servingId: option.id })
-                }}
+                onPress={() => setServingId(option.id)}
               >
                 {option.label}
               </Chip>
@@ -731,14 +876,8 @@ export default function FoodDetail() {
             <TextInput
               value={typed.kcal}
               onChangeText={(value) => setTyped((current) => ({ ...current, kcal: value }))}
-              onBlur={() => {
-                setEditing(null)
-                queue({ overrides: { kcal: figure(typed.kcal) } })
-              }}
-              onSubmitEditing={() => {
-                setEditing(null)
-                queue({ overrides: { kcal: figure(typed.kcal) } })
-              }}
+              onBlur={() => setEditing(null)}
+              onSubmitEditing={() => setEditing(null)}
               placeholder={String(macros.kcal)}
               placeholderTextColor={colors.faint}
               keyboardType="number-pad"
@@ -786,21 +925,13 @@ export default function FoodDetail() {
                 editing && editing !== 'kcal' ? { ...current, [editing]: value } : current,
               )
             }
-            onDoneAmount={() => {
-              if (editing && editing !== 'kcal') {
-                queue({ overrides: { [editing]: figure(typed[editing]) } })
-              }
-              setEditing(null)
-            }}
+            onDoneAmount={() => setEditing(null)}
           />
         ) : null}
 
         {existing && (typed.kcal || typed.carbs || typed.protein || typed.fat) ? (
           <Tappable
-            onPress={() => {
-              setTyped({ kcal: '', carbs: '', protein: '', fat: '' })
-              queue({ overrides: { kcal: null, carbs: null, protein: null, fat: null } })
-            }}
+            onPress={() => setTyped({ kcal: '', carbs: '', protein: '', fat: '' })}
             accessibilityRole="button"
             accessibilityLabel={t('logging:detail.numbersReset')}
           >
@@ -851,13 +982,14 @@ export default function FoodDetail() {
       </Card>
 
       {/* What the scan decided the plate was made of, each part with its own
-          portion stepper. Edits go through set_ingredient_quantity, which
-          recomputes the entry's quantity in the same transaction — so the
-          plate total always equals the sum of parts, and the shared parent
-          row's macros are never touched. */}
-      {ingredients.length ? (
+          portion stepper. The edits stage: the card's total and the entry's
+          calories above both follow them straight away, and Save sends each one
+          through set_ingredient_quantity — which recomputes the entry's own
+          quantity in the same transaction, so the plate total always equals the
+          sum of parts and the shared parent row's macros are never touched. */}
+      {parts.length ? (
         <Card title={t('logging:detail.plateTitle')}>
-          {ingredients.map((ingredient) => {
+          {parts.map((ingredient) => {
             // Whole steps for a counted part, quarters for a measured one.
             // Eight satay skewers step to seven, not to 7.75 — the row says
             // "× 8" because the scan counted eight of them, and a quarter of a
@@ -873,21 +1005,12 @@ export default function FoodDetail() {
             const atFloor = ingredient.quantity <= 0.25
             const step = (direction: 1 | -1) => {
               if (direction === -1 && atFloor) {
-                removeIngredient.mutate({
-                  ingredientId: ingredient.id,
-                  entryId: existing?.id ?? '',
-                  logDate: selectedDate,
-                })
+                setPartEdits((current) => ({ ...current, [ingredient.id]: null }))
                 return
               }
               const next = Math.min(10, Math.max(0.25, ingredient.quantity + direction * size))
               if (next === ingredient.quantity) return
-              updateIngredient.mutate({
-                ingredientId: ingredient.id,
-                quantity: next,
-                entryId: existing?.id ?? '',
-                logDate: selectedDate,
-              })
+              setPartEdits((current) => ({ ...current, [ingredient.id]: next }))
             }
             return (
               <View key={ingredient.id} className="flex-row items-center justify-between gap-3">
@@ -914,11 +1037,6 @@ export default function FoodDetail() {
                     <Text variant="numeric">{ingredient.kcal.toLocaleString()}</Text>
                     <Text variant="caption">{t('common:unit.kcal')}</Text>
                   </View>
-                  {/* Only the range disables them. Disabling every button on
-                      every row while a write was in flight made one tap blink
-                      the whole card grey and back — and there was nothing to
-                      wait for: the list updates optimistically, and the
-                      database clamps the range it accepts anyway. */}
                   <IconButton
                     size="sm"
                     variant="neutral"
@@ -953,7 +1071,7 @@ export default function FoodDetail() {
             <Text variant="bodyStrong">{t('logging:detail.plateTotal')}</Text>
             <View className="flex-row items-baseline gap-1">
               <Text variant="numeric">
-                {ingredients.reduce((sum, item) => sum + item.kcal, 0).toLocaleString()}
+                {parts.reduce((sum, item) => sum + item.kcal, 0).toLocaleString()}
               </Text>
               <Text variant="caption">{t('common:unit.kcal')}</Text>
             </View>
@@ -963,123 +1081,45 @@ export default function FoodDetail() {
 
       {/* Correcting a dish by describing it belongs to an entry that already
           exists: "no sambal" is a fix to something logged, and on the way IN the
-          serving chips and the stepper above say the same thing more precisely. */}
-      {existing?.scanId ? (
-        // A scanned entry: the box APPLIES the correction. The chips come from
-        // the vision model — what people most often vary about this exact dish
-        // — and the text goes to scan-refine, which rescales the quantity or
-        // re-resolves the food through the same cascade the scan used.
-        <Card>
-          <View className="flex-row items-center gap-2">
-            <Icon set="system" name="sparkle" size={20} />
-            <Text variant="caption" className="text-pandan-ink">
-              {t('logging:detail.fixTitle')}
-            </Text>
-          </View>
+          serving chips and the stepper above say the same thing more precisely.
 
-          {/* A message box, not a form: the send button lives in the field and
-              the keyboard's return key does the same thing. The correction runs
-              for several seconds on the server and this screen describes the
-              entry's OLD identity the whole time — so it fires and leaves, and
-              the wait happens on Today where the row shows the work and then
-              becomes its corrected self. */}
-          <TextField
-            value={instruction}
-            onChangeText={setInstruction}
-            placeholder={t('logging:detail.fixPlaceholder')}
-            returnKeyType="send"
-            onSubmitEditing={applyFix}
-            // Less room on the right than the field's own padding: the button
-            // is the edge now, and five points of gutter past it reads as a
-            // control that missed its corner.
-            className="pr-2"
-            rightSlot={
-              <IconButton
-                size="sm"
-                variant="primary"
-                className="self-center"
-                accessibilityLabel={t('logging:detail.fixSend')}
-                disabled={!instruction.trim()}
-                onPress={applyFix}
-              >
-                <Icon set="ui" name="arrow-up" size={20} tintColor={colors.onPandan} />
-              </IconButton>
+          A scanned entry's words go to scan-refine, which rescales the quantity
+          or re-resolves the food through the same cascade the scan used, and the
+          chips come from the vision model — what people most often vary about
+          this exact dish. A hand-logged one has nothing to re-resolve, so the
+          same box keeps a note on the row and its chips are generic fillers. */}
+      {existing ? (
+        <FixSheet
+          visible={fixing}
+          onClose={() => setFixing(false)}
+          value={scanned ? instruction : note}
+          onChangeText={scanned ? setInstruction : setNote}
+          placeholder={t('logging:detail.fixPlaceholder')}
+          suggestions={
+            scanned
+              ? existing.suggestedEdits
+              : QUICK_FIXES.map((fix) => t(`logging:detail.quickFix.${fix}`))
+          }
+          onPickSuggestion={(text) => {
+            if (scanned) {
+              setInstruction(text)
+              return
             }
-          />
-
-          {existing.suggestedEdits?.length ? (
-            // One line that scrolls, rather than wrapping to two. Three chips
-            // of unpredictable length were rearranging the card's height as
-            // the model's suggestions changed.
-            // Bled past the card's own padding on both sides, so a chip that
-            // runs off the screen is cut by the screen rather than stopping
-            // short of it behind a strip of white.
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              className="-mx-card"
-              contentContainerClassName="flex-row gap-2 px-card"
-            >
-              {existing.suggestedEdits.map((edit) => (
-                <Chip
-                  key={edit}
-                  selected={instruction === edit}
-                  onPress={() => setInstruction(edit)}
-                >
-                  {edit}
-                </Chip>
-              ))}
-            </ScrollView>
-          ) : null}
-        </Card>
-      ) : existing ? (
-        // A hand-logged entry keeps the note box: the text is saved on the row,
-        // and the chips are generic fillers.
-        <Card>
-          <View className="flex-row items-center gap-2">
-            <Icon set="system" name="sparkle" size={20} />
-            <Text variant="caption" className="text-pandan-ink">
-              {t('logging:detail.fixTitle')}
-            </Text>
-          </View>
-
-          <TextField
-            value={note}
-            onChangeText={setNote}
-            onBlur={() => queue({ note: note || null })}
-            placeholder={t('logging:detail.fixPlaceholder')}
-            returnKeyType="done"
-          />
-
-          <View className="flex-row flex-wrap gap-2">
-            {QUICK_FIXES.map((fix) => (
-              <Chip
-                key={fix}
-                selected={note === t(`logging:detail.quickFix.${fix}`)}
-                onPress={() => {
-                  const label = t(`logging:detail.quickFix.${fix}`)
-                  setNote(label)
-                  // Queued, not just shown. The note box saves on blur, and a
-                  // chip is tapped without ever putting a caret in the box —
-                  // so while there was a save button underneath these worked,
-                  // and the moment it went they became decoration.
-                  queue({ note: label })
-                  // "Half portion" is not just a note, it is a serving. Applying
-                  // it silently as text would leave the calories wrong.
-                  if (fix === 'halfPortion') {
-                    const half = food.servings.find((option) => option.factor === 0.5)
-                    if (half) {
-                      setServingId(half.id)
-                      queue({ servingId: half.id })
-                    }
-                  }
-                }}
-              >
-                {t(`logging:detail.quickFix.${fix}`)}
-              </Chip>
-            ))}
-          </View>
-        </Card>
+            setNote(text)
+            // "Half portion" is not just a note, it is a serving. Staging it
+            // silently as text would leave the calories wrong.
+            if (text === t('logging:detail.quickFix.halfPortion')) {
+              const half = food.servings.find((option) => option.factor === 0.5)
+              if (half) setServingId(half.id)
+            }
+          }}
+          onSubmit={scanned ? () => void sendFix() : () => setFixing(false)}
+          submitLabel={scanned ? t('logging:detail.fixSend') : t('logging:detail.fixNoteDone')}
+          // A note emptied is an edit; a correction with nothing in it is not.
+          submitDisabled={scanned && !instruction.trim()}
+          submitting={sending}
+          returnKey={scanned ? 'send' : 'done'}
+        />
       ) : null}
 
       <ConfirmSheet
@@ -1089,6 +1129,16 @@ export default function FoodDetail() {
         title={t('logging:detail.deleteTitle')}
         description={t('logging:detail.deleteBody')}
         confirmLabel={t('common:action.delete')}
+        tone="danger"
+      />
+
+      <ConfirmSheet
+        visible={confirmDiscard}
+        onClose={() => setConfirmDiscard(false)}
+        onConfirm={discard}
+        title={t('logging:detail.discardTitle')}
+        description={t('logging:detail.discardBody')}
+        confirmLabel={t('logging:detail.discardConfirm')}
         tone="danger"
       />
     </Screen>
