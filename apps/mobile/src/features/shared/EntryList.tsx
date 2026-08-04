@@ -245,11 +245,22 @@ function AnalysingRow({
   // A refining entry's photo is already in the bucket, not on disk.
   const { data: signedUrl } = useMealPhotoUrl(entry.photoPath)
 
+  /**
+   * Whether this row is a typed meal, asked of the ENTRY and not of `mode`.
+   *
+   * `mode` is about the progress bar — which stages to name, and whether to
+   * draw a bar at all — and `resumed` answers that for a row read back from
+   * storage whichever way it was logged. Asking it what the row IS put a
+   * camera and "Reading your plate" over a sentence somebody typed, every time
+   * the app restarted mid-scan.
+   */
+  const typed = entry.source === 'text'
+
   const phrases =
     mode === 'refine'
       ? [t('logging:today.refiningApply'), t('logging:today.refiningCount')]
       : mode === 'resumed'
-        ? [t('logging:today.analysing')]
+        ? [typed ? t('logging:today.describing') : t('logging:today.analysing')]
         : mode === 'describe'
           ? [
               // The same cascade, so the same three stages after the first —
@@ -306,7 +317,7 @@ function AnalysingRow({
             contentFit="cover"
           />
         ) : (
-          <Icon set="system" name={mode === 'describe' ? 'sparkle' : 'camera'} size={40} />
+          <Icon set="system" name={typed ? 'sparkle' : 'camera'} size={40} />
         )}
       </View>
 
@@ -323,8 +334,9 @@ function AnalysingRow({
         {/* What the user typed, while it is being read. A snapped plate has
             its photograph in the tile to the left and needs no caption; a
             typed one has nothing on the row at all until the dish lands, and
-            a spinner over an empty line reads as the app having lost it. */}
-        {mode === 'describe' && entry.foodName ? (
+            a spinner over an empty line reads as the app having lost it. A
+            resumed row needs it most of all — it has no progress bar either. */}
+        {typed && entry.foodName ? (
           <Text variant="meta" numberOfLines={1}>
             {entry.foodName}
           </Text>
