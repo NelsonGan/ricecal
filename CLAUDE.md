@@ -390,7 +390,11 @@ Break these and the feature is wrong in ways tests may not catch.
 - **An LLM figure is never averaged with a catalogue figure**, and the nutrition
   call is never told the vision call's guess — anchored, the model answered
   450 kcal for a plate of apple slices, and 120 without.
-- **Only edge functions write the catalogue**, as `service_role`.
+- **No client writes the catalogue.** `authenticated` holds `select` on `foods`
+  and `food_servings` and nothing else — no grant, not merely no policy. The two
+  writers are both `service_role`: the edge functions, and the loaders
+  (`scripts/import-catalogue.sql` for the CSV export, `public.import_foods` for
+  researched JSON — see `data/foods/README.md`).
 - **Adjust the amount, never the macros**, when a row is the right dish at the
   wrong size.
 - **Burned calories extend the budget; they never shrink what was eaten.** The
