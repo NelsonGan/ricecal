@@ -315,8 +315,8 @@ async function main() {
   for (const r of rejected) process.stdout.write(`  ✗ ${r.name} — ${r.reason}\n`)
   for (const w of warnings) process.stdout.write(`  ! ${w}\n`)
 
-  if (dryRun || rows.length === 0) {
-    process.stdout.write(dryRun ? '\n--dry-run: nothing written\n' : '\nnothing to write\n')
+  if (rows.length === 0) {
+    process.stdout.write('\nnothing to write\n')
     return
   }
 
@@ -329,12 +329,29 @@ async function main() {
     const json = JSON.stringify(batch)
     if (json.includes('$payload$')) throw new Error('payload contains the quote delimiter')
 
+    const call = `public.import_foods($payload$${json}$payload$::jsonb, ${update})`
+
+    // A dry run goes all the way into the loader and is then rolled back,
+    // rather than stopping at the shape check. Half of what a researcher needs
+    // to know is whether the catalogue already has the dish, and that is a
+    // question only the database can answer — a run that reports "108 shaped,
+    // 0 rejected" and then inserts nine rows because ninety-nine were already
+    // there has told them nothing they could act on.
+    //
+    // The rows come back through a temp table because the endpoint returns the
+    // last statement that produced any, and `rollback` produces none.
     const result = await runSql(
-      `select * from public.import_foods($payload$${json}$payload$::jsonb, ${update})`,
+      dryRun
+        ? `begin;
+           select * into temp _dry from ${call};
+           select * from _dry order by idx;
+           rollback;`
+        : `select * from ${call}`,
     )
     outcomes.push(...result)
     process.stdout.write(
-      `batch ${Math.floor(i / BATCH) + 1}: ${result.filter((r) => r.outcome === 'inserted').length} in, ` +
+      `batch ${Math.floor(i / BATCH) + 1}: ${result.filter((r) => r.outcome === 'inserted').length} ` +
+        `${dryRun ? 'would go in' : 'in'}, ` +
         `${result.filter((r) => r.outcome.startsWith('skipped')).length} already there, ` +
         `${result.filter((r) => r.outcome === 'rejected').length} rejected\n`,
     )
