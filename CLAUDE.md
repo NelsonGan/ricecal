@@ -421,6 +421,24 @@ Break these and the feature is wrong in ways tests may not catch.
 - **A `TextInput` crops to its line box where `Text` does not.** Copying a text
   variant's `leading-*` onto an input slices tall glyphs. Let the font choose its
   line box and pin the row's height instead.
+- **A sheet with a text field in it is `fullHeight`. Every time.** This has been
+  got wrong repeatedly, so it is a rule rather than a judgement call. A capped
+  panel is PADDED UP off the bottom edge by `KeyboardAvoidingView` when the
+  keyboard opens, and the strip left behind shows the scrim through the curve of
+  the keyboard's top corners — the sheet stops reading as attached to the bottom
+  of the screen and starts reading as floating over it. `fullHeight` keeps the
+  panel where it is and lets the scroll view inset its own content instead
+  (`automaticallyAdjustKeyboardInsets`). The picture picker, the quick selector's
+  search and describe panels, and `FixSheet` are all this shape.
+  The corollary: such a sheet has NO `footer`. A footer sits outside that scroll
+  view, so at full height it lands at the bottom of the panel behind the
+  keyboard. Put the button in the body, after the field, where the inset carries
+  it.
+- **`autoFocus` inside a `Modal` is dropped.** The field mounts with the window,
+  before the platform has presented it, and the keyboard never comes up. `Sheet`
+  takes an `onShow` for this — fire `ref.focus()` there. `SheetSurface` is a
+  route rather than a window and needs none of this, which is why `autoFocus`
+  works in the quick selector and not in a `Sheet`.
 - **A current iOS simulator has a Health store with nothing in it.** It is widely
   documented as having no Health app; that stopped being true. iOS 26 reports
   `isHealthDataAvailable()` as true and shows the real permission sheet, then
