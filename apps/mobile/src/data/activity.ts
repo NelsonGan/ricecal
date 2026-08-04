@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 
 import type { Database, Tables } from '@/lib/database.types'
 import { type ProviderId, parseHrZones, providerFor } from '@/lib/health'
 import { supabase } from '@/lib/supabase'
-import { dateKey, unwrap, unwrapMaybe } from './client'
+import { dateKey, datesBetween, seedMissing, unwrap, unwrapMaybe } from './client'
 import { keys } from './keys'
 import { useUserId } from './session'
 import type { TrendRange } from './types'
@@ -269,6 +270,57 @@ export function useActivityDay(date: string) {
       return row ? toDay(row) : null
     },
   })
+}
+
+/**
+ * Warms a week of movement, alongside `usePrefetchDays`.
+ *
+ * The other query Today keys by the selected date, and therefore the other half
+ * of the wait a tap on the strip used to cost — the ring's budget is
+ * `goal + active - eaten`, so a day whose meals were ready and whose movement
+ * was not would still have had to hold. That file carries the reasoning for the
+ * whole approach; this is the same shape over one table.
+ *
+ * A day with no row is seeded as `null`, which is what `useActivityDay`
+ * promises and what most dates genuinely are.
+ */
+export function usePrefetchActivityDays(from: string, to: string) {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    const dates = datesBetween(from, to)
+    if (
+      dates.every((date) => queryClient.getQueryData(keys.activityDay(userId, date)) !== undefined)
+    ) {
+      return
+    }
+
+    let cancelled = false
+    ;(async () => {
+      const rows = new Map(
+        unwrap(
+          await supabase
+            .from('activity_days')
+            .select('*')
+            .eq('user_id', userId)
+            .gte('log_date', from)
+            .lte('log_date', to),
+        ).map((row) => [row.log_date, toDay(row)]),
+      )
+      if (cancelled) return
+      seedMissing(
+        queryClient,
+        dates.map((date) => [keys.activityDay(userId, date), rows.get(date) ?? null] as const),
+      )
+      // Silent, like the meals it runs beside: a warm-up that fails costs
+      // nothing, because the day the user picks fetches itself.
+    })().catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [userId, from, to, queryClient])
 }
 
 /**

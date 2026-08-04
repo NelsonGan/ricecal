@@ -3,7 +3,13 @@ import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, View } from 'react-native'
 
-import { useDayMarks, useSelectedDate, useSettings } from '@/data'
+import {
+  useDayMarks,
+  usePrefetchActivityDays,
+  usePrefetchDays,
+  useSelectedDate,
+  useSettings,
+} from '@/data'
 import { DateStrip, type DateStripDay } from '@/ui'
 import { markFor, weekDays, weekStarts } from './week'
 
@@ -17,18 +23,34 @@ type WeekProps = {
 }
 
 /**
- * One page: seven cells and the query behind their dots.
+ * One page: seven cells, the query behind their dots, and the days themselves.
  *
- * The query lives here rather than in the pager so that swiping back a year
+ * The queries live here rather than in the pager so that swiping back a year
  * does not fetch a year. A week is asked for when it is rendered and
  * react-query keeps it, so the swipe back is a request and the swipe forward
  * is not.
+ *
+ * WHY THE PAGE FETCHES THE DAYS AND NOT ONLY THE DOTS
+ *
+ * Every cell here is a tap that puts its day on the screen below, so the seven
+ * days of a rendered page are exactly the set Today can be asked for next.
+ * Warming them is what makes picking one instant instead of a placeholder and
+ * then an answer — a swap the reader sees even when it is honest. It is two
+ * requests for the whole page, not two per day; see `usePrefetchDays`.
+ *
+ * Clamped at today, because a day that has not happened cannot be picked: the
+ * cells ahead of it are disabled, and seeding them would be claiming to know
+ * something about a day nobody has had yet.
  */
 function Week({ start, width, selected, today, onSelect }: WeekProps) {
   const { t } = useTranslation('logging')
   const days = useMemo(() => weekDays(start), [start])
   const { data: marks, isSuccess } = useDayMarks(start, days[6])
   const { data: settings } = useSettings()
+
+  const reachable = days[6] > today ? today : days[6]
+  usePrefetchDays(start, reachable)
+  usePrefetchActivityDays(start, reachable)
 
   const extendsBudget = settings?.activity_extends_budget !== false
 

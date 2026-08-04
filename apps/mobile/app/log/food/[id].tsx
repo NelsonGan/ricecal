@@ -40,6 +40,7 @@ import {
   Icon,
   IconButton,
   Screen,
+  Skeleton,
   Stepper,
   Tappable,
   Text,
@@ -193,7 +194,10 @@ export default function FoodDetail() {
   const [renaming, setRenaming] = useState(false)
   const [name, setName] = useState('')
 
-  const { data: heroUrl } = useMealPhotoUrl(existing?.photoPath)
+  // `isLoading` rather than `isPending`, for the reason the ingredients query
+  // above gives: an entry with no photo disables this one, and a disabled query
+  // is pending forever.
+  const { data: heroUrl, isLoading: signing } = useMealPhotoUrl(existing?.photoPath)
 
   /**
    * A typed figure as a number, and `null` for a field holding nothing.
@@ -599,10 +603,14 @@ export default function FoodDetail() {
           // Tall enough for the whole plate when a real photo is in the slot —
           // 130px was sized for an icon and cropped the meal to a letterbox
           // strip. Icons and the empty state keep the short box.
-          hero && !icon ? 'h-[260px]' : 'h-[130px]',
+          //
+          // `signing` counts as having one, because it means the entry HAS a
+          // photograph and we are waiting on a URL for it. Left out, the box
+          // opened short and grew by 130px under the reader a moment later.
+          (hero || signing) && !icon ? 'h-[260px]' : 'h-[130px]',
           // Dashed while there is nothing in it: a solid frame around an empty
           // box reads as a picture that failed to load.
-          hero || shownIcon ? 'border-line' : 'border-line border-dashed',
+          hero || signing || shownIcon ? 'border-line' : 'border-line border-dashed',
         )}
         onPress={() => setPickingIcon(true)}
         accessibilityRole="button"
@@ -621,7 +629,16 @@ export default function FoodDetail() {
             style={{ flex: 1, width: '100%' }}
             contentFit="cover"
             accessibilityLabel={t('logging:camera.photoOf', { food: food.name })}
+            // See `ItemRow`: the bucket is private, so a stored plate is always
+            // one signing request behind the screen it belongs to.
+            transition={180}
           />
+        ) : signing && !icon ? (
+          /* This entry HAS a photograph and it is still being signed for.
+             Without this the box drew the dish's illustration first and then
+             replaced it with the photograph — the largest thing on the screen
+             changing into something else while being looked at. */
+          <Skeleton width="100%" height={260} rounded={false} className="bg-line" />
         ) : shownIcon ? (
           <Icon {...shownIcon} size={100} />
         ) : (

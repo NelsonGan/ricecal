@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 
 import { supabase } from '@/lib/supabase'
-import { unwrap, unwrapMaybe, unwrapOne } from './client'
+import { datesBetween, seedMissing, unwrap, unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
 import { toEntry } from './mappers'
 import { pendingAsEntry, usePendingSnaps } from './pending-snaps'
@@ -133,10 +133,109 @@ export function useDayLog(date: string): DayView {
   }, [data, snaps, date, isPending])
 }
 
-// `usePrefetchDays` used to live here too, warming the days either side of the
-// diary's pager so a swipe never landed on one that was still loading. The pager
-// went with the diary; `fetchDay` above stays factored out, which is all a future
-// one would need to bring it back.
+/**
+ * Every day in a range, in one request per table.
+ *
+ * The same two selects `fetchDay` makes, with `gte`/`lte` where it has `eq` —
+ * so seven days cost what one costs. That is the whole reason warming a week is
+ * affordable: asked a day at a time it would be fourteen requests to save one.
+ *
+ * Days with nothing on them are in the result, as empty days. They have to be:
+ * the point of the warm-up is that the screen never has to wait to find out,
+ * and "no rows came back for Tuesday" is the answer, not a gap.
+ */
+async function fetchDays(userId: string, from: string, to: string): Promise<DayLog[]> {
+  const [entries, water] = await Promise.all([
+    supabase
+      .from('food_log_details')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('log_date', from)
+      .lte('log_date', to)
+      .order('logged_at'),
+    supabase
+      .from('daily_logs')
+      .select('log_date, water_glasses')
+      .eq('user_id', userId)
+      .gte('log_date', from)
+      .lte('log_date', to),
+  ])
+
+  const glasses = new Map(
+    (unwrap(water) as { log_date: string; water_glasses: number }[]).map((row) => [
+      row.log_date,
+      row.water_glasses,
+    ]),
+  )
+
+  const days = new Map<string, DayLog>(
+    datesBetween(from, to).map((date) => [
+      date,
+      { date, entries: [], waterGlasses: glasses.get(date) ?? 0 },
+    ]),
+  )
+
+  // Bucketed on the MAPPED entry rather than on the row. Every column of a view
+  // is typed nullable — see the data README — so `row.log_date` is `string |
+  // null` here, and `toEntry` is the one place allowed to coalesce it.
+  for (const entry of (unwrap(entries) as FoodLogRow[]).map(toEntry)) {
+    days.get(entry.logDate)?.entries.push(entry)
+  }
+
+  return [...days.values()]
+}
+
+/**
+ * Warms a week of the strip, so picking a day in it draws that day at once.
+ *
+ * `usePrefetchDays` used to live here, warming the days either side of the
+ * diary's pager; the pager went with the diary and this is the same idea against
+ * the week strip, which can put any of seven days on Today with one tap.
+ *
+ * WHY THIS RATHER THAN A BETTER PLACEHOLDER
+ *
+ * Today already refuses to draw a day it has not got — that is what stopped the
+ * strip announcing every unfetched day as a day nobody ate on. But a placeholder
+ * is still a swap, and on a tap that resolves in a few hundred milliseconds the
+ * screen changes twice: to the skeleton, and back. The only version of this with
+ * no swap in it is one where the day is already in the cache when it is asked
+ * for, and a week is exactly the set of days one screen can reach.
+ *
+ * Fetched imperatively rather than through `useQuery`, because a query of its
+ * own would be a SECOND persisted copy of every entry in the week — the range's
+ * and the seven days' — for a value nothing reads after it has been spread out.
+ * A failure is deliberately silent: this is a warm-up, and the day the user
+ * actually picks fetches itself.
+ */
+export function usePrefetchDays(from: string, to: string) {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    const dates = datesBetween(from, to)
+    // Nothing missing, nothing to do. This is the common case after the first
+    // visit, and it is what keeps a week the user pages back and forth over
+    // from re-requesting itself on every render.
+    if (dates.every((date) => queryClient.getQueryData(keys.day(userId, date)) !== undefined)) {
+      return
+    }
+
+    let cancelled = false
+    fetchDays(userId, from, to)
+      .then((days) => {
+        if (cancelled) return
+        seedMissing(
+          queryClient,
+          days.map((day) => [keys.day(userId, day.date), day] as const),
+        )
+      })
+      .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [userId, from, to, queryClient])
+}
 
 /**
  * Sets the water count for a day.
