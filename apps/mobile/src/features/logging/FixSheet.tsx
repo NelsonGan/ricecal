@@ -65,20 +65,29 @@ export function FixSheet({
       // See `onShow` on `Sheet`: `autoFocus` inside a window that has not been
       // presented yet is dropped, and the sheet then opens over no keyboard.
       onShow={() => field.current?.focus()}
-      // Nothing here is long enough to scroll, and a scroll view between the
-      // field and the keyboard is one more thing to fight over the first tap.
-      scrollable={false}
-      footer={
-        <Button fullWidth loading={submitting} disabled={submitDisabled} onPress={onSubmit}>
-          {submitLabel}
-        </Button>
+      /* Full height because this sheet raises the keyboard itself. A capped
+         panel is PADDED UP off the bottom edge by `KeyboardAvoidingView`, and
+         the strip it leaves behind shows the scrim through the curve of the
+         keyboard's top corners — the sheet reads as floating rather than as
+         attached to the bottom of the screen. A full-height panel stays where
+         it is and the scroll view insets its own content instead, which is what
+         the quick selector does when search or describe opens.
+
+         And no `footer`, for the other half of the same problem: a footer is
+         outside that scroll view, so at full height it sits at the bottom of
+         the panel BEHIND the keyboard. The button goes in the body, under the
+         chips, where the inset carries it. */
+      fullHeight
+      /* Through `header` rather than as the first child, so it stays above the
+         body: the scroll-to-first-responder that follows the keyboard would
+         otherwise slide it up under the handle and crop it. */
+      header={
+        <View className="flex-row items-center gap-2">
+          <Icon set="system" name="sparkle" size={20} />
+          <Text variant="subtitle">{t('logging:detail.fixTitle')}</Text>
+        </View>
       }
     >
-      <View className="flex-row items-center gap-2">
-        <Icon set="system" name="sparkle" size={20} />
-        <Text variant="subtitle">{t('logging:detail.fixTitle')}</Text>
-      </View>
-
       <TextField
         ref={field}
         value={value}
@@ -113,6 +122,10 @@ export function FixSheet({
           ))}
         </ScrollView>
       ) : null}
+
+      <Button fullWidth loading={submitting} disabled={submitDisabled} onPress={onSubmit}>
+        {submitLabel}
+      </Button>
     </Sheet>
   )
 }
