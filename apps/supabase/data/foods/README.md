@@ -6,6 +6,15 @@ this directory is the provenance record for every catalogue row that did not
 come from USDA or MyFCD. When a figure is later disputed, the file that
 introduced it says who wrote it down and where they got it.
 
+The catalogue started Malaysian and is widening to Asia, so a topic is now
+usually a country or a cuisine (`singapore.json`, `thailand.json`) rather than
+a Malaysian food family. The overlap between neighbours is the thing to watch:
+Malaysian and Indonesian cooking share most of a repertoire, as do Malaysian
+and Singaporean, and a round that restates its neighbour's dishes has done
+nothing. Skip what is genuinely the same; where the regional version is a
+different dish — Singapore and Penang Hokkien mee, Padang and Malaysian
+rendang — give it a name that distinguishes it.
+
 ```bash
 pnpm foods:have kuih laksa                 # what the catalogue already holds
 pnpm foods:import --dry-run data/foods/kuih.json
