@@ -215,6 +215,29 @@ typed one would otherwise be a spinner over an empty line.
 
 ### Correcting it
 
+There are two ways to change a logged entry, and they are separated because
+they cost different things.
+
+**By hand, on `app/log/food/[id].tsx`.** The detail screen is a FORM: the
+portion, the serving, a typed figure, the name, the picture and each part of a
+decomposed plate all stage in local state, and the Save button in the footer
+writes the lot in one go. It used to write as it was edited, on a debounce,
+which was honest about the moment and impossible to think in — a plate corrected
+in four places was four round trips, and changing your mind meant changing the
+control back. The staging is what makes the number on screen a preview: the
+totals card reads `entryTotals` over the staged values, so what Save commits is
+what was being read. Leaving with something staged asks first, since the back
+chevron is now a discard.
+
+**By describing it**, through the sparkle button beside Save. That opens a sheet
+with the field and the model's suggested chips (`features/logging/FixSheet.tsx`),
+and it is a sheet rather than a card on the page because it is not one more
+staged control — for a scanned plate the words go to the server, come back as a
+different meal, and leave the screen behind. Anything staged is written BEFORE
+the correction is sent: the server interprets the words against the entry as it
+stands there, so "and half the rice" against a plate already changed on screen
+would correct a meal neither of them is looking at.
+
 **`scan-refine/index.ts`** — free text against a logged entry becomes one of
 four things, and they are a LADDER ordered by how much of the entry survives.
 The interpreter's prompt is written as one, and it is told to stop at the first

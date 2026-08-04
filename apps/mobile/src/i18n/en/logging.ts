@@ -202,11 +202,16 @@ export const logging = {
     nutrientsUnknown: 'No figures recorded for this dish yet. Its calories and macros are.',
     fixTitle: 'Fix it by typing',
     fixPlaceholder: 'no sambal, and it was half a plate',
-    /**
-     * The send button inside the field, on a scanned entry only. Icon-only, so
-     * this is what a screen reader announces.
-     */
+    /** The sparkle button in the footer, which opens the sheet above. */
+    fixAction: 'Fix it',
+    /** Its submit, on a scanned entry: the correction goes to the server. */
     fixSend: 'Send this correction',
+    /**
+     * The same sheet on a HAND-LOGGED entry, where the text is a note on the
+     * row rather than a correction to interpret. Nothing is sent — it is staged
+     * like every other control on the screen, and Save writes it.
+     */
+    fixNoteDone: 'Keep this note',
     fixNotApplied: 'Could not apply that — try rewording it',
     /** The scanned plate's ingredient breakdown. */
     plateTitle: 'INGREDIENTS',
@@ -246,6 +251,24 @@ export const logging = {
       extraRice: 'Extra rice',
     },
     editByHand: 'Edit the details by hand',
+    /**
+     * The footer. Short because it shares the row with "Fix it" — "Save
+     * changes" and a sparkle button do not both fit on a small phone.
+     */
+    save: 'Save',
+    /**
+     * A write that failed. The screen stays where it is with everything still
+     * filled in, so this says what happened rather than what to do about it.
+     */
+    saveFailed: 'Could not save those changes',
+    /**
+     * Leaving with edits staged. Nothing on this screen is written until Save,
+     * so the back chevron is a discard and has to say so.
+     */
+    discardTitle: 'Leave without saving?',
+    discardBody: 'What you changed here is dropped and the entry stays as it was.',
+    /** Short: it shares a row with "Keep", and the title has said what goes. */
+    discardConfirm: 'Discard',
     deleteEntry: 'Delete this entry',
     deleteTitle: 'Delete this entry?',
     deleteBody: 'It comes straight out of today and the count goes back up.',

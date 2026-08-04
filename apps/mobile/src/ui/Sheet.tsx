@@ -42,11 +42,20 @@ const FALL_MS = 180
 const DISMISS_DISTANCE = 96
 const DISMISS_VELOCITY = 900
 
-export type SheetSurfaceProps = Omit<SheetProps, 'visible'>
+/** No `onShow`: a surface without a window of its own is never presented. */
+export type SheetSurfaceProps = Omit<SheetProps, 'visible' | 'onShow'>
 
 export type SheetProps = {
   visible: boolean
   onClose: () => void
+  /**
+   * The window is on screen. For a sheet that has to focus a field: `autoFocus`
+   * inside a `Modal` is applied while the field is still off screen and is
+   * routinely dropped, so the keyboard never comes up. This fires once the
+   * platform has actually presented the window, which is the moment a `focus()`
+   * takes. Ignored by `SheetSurface`, which has no window of its own.
+   */
+  onShow?: () => void
   /**
    * What a screen reader calls the handle, which is a button as well as a drag
    * target. Defaulted rather than required, the same way `Stepper` defaults its
@@ -93,7 +102,7 @@ export type SheetProps = {
  * one: without this the keyboard covers a sheet anchored to the bottom, and
  * every result the user is typing to find is behind it.
  */
-export function Sheet({ visible, ...rest }: SheetProps) {
+export function Sheet({ visible, onShow, ...rest }: SheetProps) {
   return (
     /**
      * `animationType="none"`, not `"slide"`.
@@ -106,7 +115,13 @@ export function Sheet({ visible, ...rest }: SheetProps) {
      * The scrim now paints at full strength on the first frame, and only the
      * panel travels, which is what the design shows.
      */
-    <Modal visible={visible} transparent animationType="none" onRequestClose={rest.onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onShow={onShow}
+      onRequestClose={rest.onClose}
+    >
       {/* A `Modal` is its own window, and on Android gesture-handler's root view
           does not reach into one — the app's root is outside it, so the handle's
           pan would simply never fire. A root of its own inside the window is what
