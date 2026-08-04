@@ -125,13 +125,22 @@ function EntryRow({
   if (entry.status === 'analysing') {
     // A row read back from storage is still working, but its progress bar
     // would be starting over for a scan that began before the app did.
-    return <AnalysingRow entry={entry} mode={entry.restored ? 'resumed' : 'scan'} />
+    return (
+      <AnalysingRow
+        entry={entry}
+        mode={entry.restored ? 'resumed' : entry.source === 'text' ? 'describe' : 'scan'}
+      />
+    )
   }
   if (entry.status === 'nofood') {
     return (
       <ItemRow
-        title={t('logging:today.noFoodTitle')}
-        icon={{ set: 'system', name: 'camera' }}
+        title={
+          entry.source === 'text'
+            ? t('logging:today.noFoodTypedTitle')
+            : t('logging:today.noFoodTitle')
+        }
+        icon={{ set: 'system', name: entry.source === 'text' ? 'sparkle' : 'camera' }}
         photoUri={entry.localPhotoUri}
         value=""
         detail={t('logging:today.noFoodHint')}
@@ -152,10 +161,12 @@ function EntryRow({
     return (
       <ItemRow
         title={t('logging:today.analysisFailedTitle')}
-        icon={{ set: 'system', name: 'camera' }}
+        icon={{ set: 'system', name: entry.source === 'text' ? 'sparkle' : 'camera' }}
         photoUri={entry.localPhotoUri}
         value="—"
-        detail={t('logging:today.analysisFailedHint')}
+        // A failed typed meal still has the sentence on it, which is the one
+        // thing worth showing: it is what the user would have to type again.
+        detail={entry.foodName || t('logging:today.analysisFailedHint')}
         onPress={onFix ? () => onFix(entry) : undefined}
       />
     )
@@ -227,24 +238,44 @@ function AnalysingRow({
   mode = 'scan',
 }: {
   entry: Entry
-  mode?: 'scan' | 'refine' | 'resumed'
+  mode?: 'scan' | 'refine' | 'resumed' | 'describe'
 }) {
   const { t } = useTranslation(['logging'])
   const colors = useThemeColors()
   // A refining entry's photo is already in the bucket, not on disk.
   const { data: signedUrl } = useMealPhotoUrl(entry.photoPath)
 
+  /**
+   * Whether this row is a typed meal, asked of the ENTRY and not of `mode`.
+   *
+   * `mode` is about the progress bar — which stages to name, and whether to
+   * draw a bar at all — and `resumed` answers that for a row read back from
+   * storage whichever way it was logged. Asking it what the row IS put a
+   * camera and "Reading your plate" over a sentence somebody typed, every time
+   * the app restarted mid-scan.
+   */
+  const typed = entry.source === 'text'
+
   const phrases =
     mode === 'refine'
       ? [t('logging:today.refiningApply'), t('logging:today.refiningCount')]
       : mode === 'resumed'
-        ? [t('logging:today.analysing')]
-        : [
-            t('logging:today.scanningRead'),
-            t('logging:today.scanningMatch'),
-            t('logging:today.scanningPortion'),
-            t('logging:today.scanningCount'),
-          ]
+        ? [typed ? t('logging:today.describing') : t('logging:today.analysing')]
+        : mode === 'describe'
+          ? [
+              // The same cascade, so the same three stages after the first —
+              // only the reading is of words rather than of a photograph.
+              t('logging:today.describingRead'),
+              t('logging:today.scanningMatch'),
+              t('logging:today.scanningPortion'),
+              t('logging:today.scanningCount'),
+            ]
+          : [
+              t('logging:today.scanningRead'),
+              t('logging:today.scanningMatch'),
+              t('logging:today.scanningPortion'),
+              t('logging:today.scanningCount'),
+            ]
   const [phrase, setPhrase] = useState(0)
   useEffect(() => {
     const id = setInterval(() => setPhrase((current) => current + 1), PHRASE_MS)
@@ -286,7 +317,7 @@ function AnalysingRow({
             contentFit="cover"
           />
         ) : (
-          <Icon set="system" name="camera" size={40} />
+          <Icon set="system" name={typed ? 'sparkle' : 'camera'} size={40} />
         )}
       </View>
 
@@ -300,6 +331,16 @@ function AnalysingRow({
             {label}
           </Text>
         </Shimmer>
+        {/* What the user typed, while it is being read. A snapped plate has
+            its photograph in the tile to the left and needs no caption; a
+            typed one has nothing on the row at all until the dish lands, and
+            a spinner over an empty line reads as the app having lost it. A
+            resumed row needs it most of all — it has no progress bar either. */}
+        {typed && entry.foodName ? (
+          <Text variant="meta" numberOfLines={1}>
+            {entry.foodName}
+          </Text>
+        ) : null}
         {/* A resumed row has no bar. The bar is timed from the shutter, and
             this scan started before the app did — restarting it at zero would
             be a progress indicator that is certainly wrong. */}

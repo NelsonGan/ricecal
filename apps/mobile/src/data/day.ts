@@ -7,7 +7,7 @@ import { keys } from './keys'
 import { toEntry } from './mappers'
 import { pendingAsEntry, usePendingSnaps } from './pending-snaps'
 import { useUserId } from './session'
-import type { DailyNutritionRow, DayLog, FoodLogRow } from './types'
+import type { DailyNutritionRow, DayLog, DayMark, DayMarkRow, FoodLogRow } from './types'
 
 /**
  * One day: what was eaten, and how much water.
@@ -76,9 +76,14 @@ export function useDayLog(date: string): DayLog {
      * The client removes its own pending row when the request resolves, but
      * the day can refetch before that — on focus, or when a notification
      * brings the app forward — and for a second or two the meal appeared
-     * twice: once as the spinner, once as itself. The scan writes a camera
-     * entry stamped after the shutter, so an unclaimed one of those IS this
-     * snap, arriving by another route.
+     * twice: once as the spinner, once as itself. Recognition writes an entry
+     * stamped after the shutter (or after the send), so an unclaimed one of
+     * those IS this snap, arriving by another route.
+     *
+     * Matched on the SOURCE the pending row would become, not on `camera`
+     * alone: a typed meal writes `text`, and a pending row that cannot
+     * recognise its own arrival sits there until the stale sweep drops it —
+     * ninety seconds of a spinner over a meal already on the day.
      */
     const claimed = new Set<string>()
     const landed = (snap: (typeof mine)[number]) => {
@@ -87,8 +92,9 @@ export function useDayLog(date: string): DayLog {
       // and a Z, so the two strings sort against each other by punctuation
       // once their seconds agree.
       const shutter = Date.parse(snap.loggedAt)
+      const wrote = snap.text ? 'text' : 'camera'
       return base.entries.some((entry) => {
-        if (entry.source !== 'camera' || claimed.has(entry.id)) return false
+        if (entry.source !== wrote || claimed.has(entry.id)) return false
         if (Date.parse(entry.loggedAt) < shutter) return false
         claimed.add(entry.id)
         return true
@@ -182,6 +188,48 @@ export function useNutritionRange(from: string, to: string) {
           .lte('log_date', to)
           .order('log_date'),
       ) as DailyNutritionRow[],
+  })
+}
+
+/**
+ * How each day of a week went, for the dots under the strip on Today.
+ *
+ * Keyed by date so the strip can ask about a day rather than search a list —
+ * seven lookups per week, once per swipe.
+ *
+ * The verdict is not here and is not in the database either. `day_marks`
+ * returns what was eaten, the goal in force that day and what movement added
+ * to it; whether that reads as under or over is decided where the ring decides
+ * it, because the two are on the same screen about the same day and must not
+ * disagree.
+ */
+export function useDayMarks(from: string, to: string) {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.dayMarks(userId, from, to),
+    queryFn: async (): Promise<Record<string, DayMark>> => {
+      const rows = unwrap(
+        await supabase.rpc('day_marks', { p_from: from, p_to: to }),
+      ) as DayMarkRow[]
+
+      return Object.fromEntries(
+        rows.map((row) => [
+          row.at,
+          {
+            date: row.at,
+            entryCount: row.entry_count ?? 0,
+            kcal: row.kcal ?? 0,
+            // Null where the account had no budget yet — before onboarding ran,
+            // or on a day earlier than its first `daily_goals` row. A day with
+            // no goal cannot be over or under one, and the strip draws it as a
+            // day with nothing logged rather than as a failure.
+            goalKcal: row.goal_kcal,
+            activeKcal: row.active_kcal ?? 0,
+          },
+        ]),
+      )
+    },
   })
 }
 

@@ -2,18 +2,33 @@
 //
 // "half portion", "no sambal", "it was rendang not curry", "add a fried egg"
 // — the interpreter turns the instruction plus the entry's current state into
-// one of three decisions:
+// one of four decisions, and they are ORDERED BY HOW MUCH OF THE ENTRY THEY
+// KEEP. That order is the whole design: everything about a logged meal except
+// the words just typed is something the user has already accepted, so a
+// correction that reaches further down this list than it had to comes back as
+// a different meal from the one they were fixing.
 //
+//   none        the text is not a food correction, or has no calories in it
+//               ("extra spicy"): nothing changes
 //   quantity    only the amount changed: rescale the entry's quantity, and
-//               every ingredient under it by the same factor
-//   adjust      one part of the same dish changed: on a plate with a
-//               breakdown that part is dropped or added and the entry is
-//               re-priced from what is left; on one without, the delta lands
-//               on the entry's own figure
-//   redescribe  the food changed: describe the corrected dish and re-run the
-//               SAME cascade a fresh scan uses (catalogue first, estimate,
-//               archetype floor), then repoint the entry and its ingredients
-//   none        the text is not a food correction: nothing changes
+//               every ingredient under it by the same factor. A calorie total
+//               for the whole dish lands here too — "more like 500 calories"
+//               is a different amount of this food, not a different food.
+//               NOT `override_kcal`, which would hit the figure exactly:
+//               the override sits above the parts in `food_log_details`, so
+//               an entry with a breakdown would show the typed number while
+//               its own ingredient list added to something else. Rescaling
+//               keeps the two in lockstep and pays for it in granularity —
+//               twentieths of a portion, so a figure within about 5% of where
+//               the entry already is rounds back to no change at all
+//   adjust      one part of the same meal was added, removed, resized or
+//               SWAPPED: on a plate with a breakdown that part is edited in
+//               place and the entry is re-priced from what is left; on one
+//               without, the delta lands on the entry's own figure
+//   redescribe  the food itself was wrong: describe the corrected dish and
+//               re-run the SAME cascade a fresh scan uses (catalogue first,
+//               estimate, archetype floor), then repoint the entry and its
+//               ingredients
 //
 // A correction never silently loses the breakdown. It is the only part of an
 // entry the user can edit piece by piece, and every path through here either
@@ -258,7 +273,21 @@ Deno.serve(async (req: Request) => {
   const parts = entry.food_log_ingredients
   const partName = (part: RefineEntry['food_log_ingredients'][number]) =>
     part.display_label ?? part.foods.name
-  const ingredientNames = parts.map(partName)
+
+  // The breakdown WITH its numbers. The interpreter is asked for a calorie
+  // delta for one part, and it cannot compute a fraction of a portion it has
+  // only been told the name of — see `RefineContext.ingredients`. One extra
+  // read, and only when the entry has parts at all.
+  const partKcal = new Map<string, number>()
+  if (parts.length) {
+    const { data: rows } = await db
+      .from('food_log_ingredient_details')
+      .select('id, kcal')
+      .eq('food_log_id', entry.id)
+    for (const row of (rows ?? []) as Array<{ id: string; kcal: number | null }>) {
+      partKcal.set(row.id, Number(row.kcal ?? 0))
+    }
+  }
 
   try {
     const interpretation = await interpretInstruction(
@@ -267,7 +296,11 @@ Deno.serve(async (req: Request) => {
         kcal: Math.round(food.kcal * serving.factor * Number(entry.quantity)),
         quantity: Number(entry.quantity),
         servingLabel: serving.label,
-        ingredients: ingredientNames,
+        ingredients: parts.map((part) => ({
+          name: partName(part),
+          quantity: Number(part.quantity),
+          kcal: partKcal.get(part.id) ?? 0,
+        })),
       },
       instruction,
       mock,
@@ -319,16 +352,69 @@ Deno.serve(async (req: Request) => {
       // then had to delete the breakdown to stop it contradicting the total.
       // That is the bug this replaces: one correction and the plate forgot
       // what was on it.
-      const wanted = interpretation.part?.toLowerCase().trim() ?? ''
-      const match = wanted
-        ? (parts.find((part) => partName(part).toLowerCase() === wanted) ??
+      // Exact name first, then either direction of containment: the model is
+      // asked to copy the ingredient's name and mostly does, but "the chicken"
+      // has to find "fried chicken wing" too.
+      const findPart = (wanted: string | null) => {
+        const needle = wanted?.toLowerCase().trim() ?? ''
+        if (!needle) return undefined
+        return (
+          parts.find((part) => partName(part).toLowerCase() === needle) ??
           parts.find((part) => {
             const name = partName(part).toLowerCase()
-            return name.includes(wanted) || wanted.includes(name)
-          }))
-        : undefined
+            return name.includes(needle) || needle.includes(name)
+          })
+        )
+      }
+      const match = findPart(interpretation.part)
+      const swapped = findPart(interpretation.replaces)
 
-      if (match && interpretation.total) {
+      if (swapped && interpretation.part) {
+        // ONE PART BECAME A DIFFERENT FOOD. The row is replaced in place: same
+        // count, same position, priced from what it used to cost plus the
+        // model's delta for the swap — so the three parts nobody mentioned are
+        // untouched, which is the whole reason this is not a redescribe.
+        const held = Math.max(0.25, Number(swapped.quantity))
+        const before = partKcal.get(swapped.id) ?? 0
+        // The model's own price for the new food when it gave one, and only
+        // the delta as a fallback. See `Interpretation.part_kcal`: asked what
+        // rendang chicken costs it answers 280; asked how it differs from a
+        // 247 kcal fried chicken it answered -172, which is 75 kcal of rendang.
+        const after = Math.max(
+          10,
+          Math.round(interpretation.part_kcal ?? before + interpretation.kcal_delta),
+        )
+        const perUnit = Math.max(1, Math.round(after / held))
+        const { data: swapId } = await db.rpc('upsert_estimate_food', {
+          p_name: interpretation.part,
+          p_kcal: perUnit,
+          p_carbs_g: Math.round((perUnit * 0.5) / 4),
+          p_protein_g: Math.round((perUnit * 0.2) / 4),
+          p_fat_g: Math.round((perUnit * 0.3) / 9),
+          p_fibre_g: null,
+          p_sugar_g: null,
+          p_sodium_mg: null,
+        })
+        const { data: swapServing } = swapId
+          ? await db
+              .from('food_servings')
+              .select('id')
+              .eq('food_id', swapId as string)
+              .eq('is_default', true)
+              .single()
+          : { data: null }
+        if (swapId && swapServing) {
+          await db
+            .from('food_log_ingredients')
+            .update({
+              food_id: swapId as string,
+              serving_id: swapServing.id,
+              quantity: refineQuantity(held),
+              display_label: interpretation.part.slice(0, 120),
+            })
+            .eq('id', swapped.id)
+        }
+      } else if (match && interpretation.total) {
         // The user said how many there ARE. "Only 3 skewers" sets that part to
         // three and leaves the rest of the plate alone — read as a change it
         // would be nine, and read as a portion of the whole dish (which is
@@ -379,13 +465,15 @@ Deno.serve(async (req: Request) => {
           .select('kcal, quantity')
           .eq('id', match.id)
           .single()
-        const partKcal = Number(row?.kcal ?? 0)
+        // Not `partKcal`: that name is the map above, and shadowing it here
+        // hid which of the two a reader was looking at.
+        const partCost = Number(row?.kcal ?? 0)
         const removed = Math.abs(interpretation.kcal_delta)
 
-        if (partKcal <= 0 || removed >= partKcal * REMOVES_THE_PART) {
+        if (partCost <= 0 || removed >= partCost * REMOVES_THE_PART) {
           await db.from('food_log_ingredients').delete().eq('id', match.id)
         } else {
-          const left = Number(row?.quantity ?? 1) * (1 - removed / partKcal)
+          const left = Number(row?.quantity ?? 1) * (1 - removed / partCost)
           await db
             .from('food_log_ingredients')
             .update({ quantity: refineQuantity(Math.max(0.25, left)) })
@@ -473,8 +561,15 @@ Deno.serve(async (req: Request) => {
       // sambal" can never re-guess the whole plate, and the answer moves in
       // the direction the words say. Macros scale proportionally, which keeps
       // Atwater consistency by construction.
+      //
+      // The delta is for the WHOLE correction, so it has to be divided by the
+      // portion count before it is added to ONE portion — the row below is
+      // priced per serving and then multiplied by the quantity again. Added
+      // flat, "add a fried egg" to an entry logged at half a plate put half an
+      // egg on it: 90 kcal became 45 by the time the quantity had its say.
       const portionKcal = food.kcal * serving.factor
-      const target = Math.max(20, Math.round(portionKcal + interpretation.kcal_delta))
+      const perPortionDelta = interpretation.kcal_delta / Math.max(0.25, Number(entry.quantity))
+      const target = Math.max(20, Math.round(portionKcal + perPortionDelta))
       const scale = target / Math.max(1, portionKcal)
       const round1 = (value: number) => Math.round(value * 10) / 10
 

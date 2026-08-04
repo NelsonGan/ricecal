@@ -411,6 +411,7 @@ export type Database = {
           components: Json | null
           confidence: number | null
           created_at: string
+          described_text: string | null
           food_log_id: string | null
           generic_query: string | null
           id: string
@@ -432,6 +433,7 @@ export type Database = {
           components?: Json | null
           confidence?: number | null
           created_at?: string
+          described_text?: string | null
           food_log_id?: string | null
           generic_query?: string | null
           id?: string
@@ -453,6 +455,7 @@ export type Database = {
           components?: Json | null
           confidence?: number | null
           created_at?: string
+          described_text?: string | null
           food_log_id?: string | null
           generic_query?: string | null
           id?: string
@@ -1169,6 +1172,16 @@ export type Database = {
         }[]
       }
       current_weight_kg: { Args: { p_user_id?: string }; Returns: number }
+      day_marks: {
+        Args: { p_from: string; p_to: string; p_user_id?: string }
+        Returns: {
+          active_kcal: number
+          at: string
+          entry_count: number
+          goal_kcal: number
+          kcal: number
+        }[]
+      }
       estimate_food_backlog: {
         Args: { p_limit?: number }
         Returns: {
@@ -1342,7 +1355,7 @@ export type Database = {
     Enums: {
       activity_level: 'sedentary' | 'light' | 'on_feet' | 'very_active'
       energy_unit: 'kcal' | 'kj'
-      entry_source: 'search' | 'quick_add' | 'camera' | 'voice' | 'import'
+      entry_source: 'search' | 'quick_add' | 'camera' | 'voice' | 'import' | 'text'
       food_place: 'mamak' | 'kopitiam' | 'hawker' | 'packaged' | 'home'
       health_provider: 'apple_health' | 'health_connect' | 'demo'
       icon_set: 'body' | 'dishes' | 'food' | 'system' | 'ui'
@@ -1479,7 +1492,7 @@ export const Constants = {
     Enums: {
       activity_level: ['sedentary', 'light', 'on_feet', 'very_active'],
       energy_unit: ['kcal', 'kj'],
-      entry_source: ['search', 'quick_add', 'camera', 'voice', 'import'],
+      entry_source: ['search', 'quick_add', 'camera', 'voice', 'import', 'text'],
       food_place: ['mamak', 'kopitiam', 'hawker', 'packaged', 'home'],
       health_provider: ['apple_health', 'health_connect', 'demo'],
       icon_set: ['body', 'dishes', 'food', 'system', 'ui'],

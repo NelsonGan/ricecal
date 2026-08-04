@@ -8,13 +8,14 @@ import {
   dateKey,
   useDay,
   useDayLog,
+  useDescribeFood,
   useLogFood,
   useRecentFoods,
   useSelectedDate,
   useSnapFood,
   useTargets,
 } from '@/data'
-import { FoodSearchPanel, InlineCamera, QuickAction } from '@/features/logging'
+import { DescribePanel, FoodSearchPanel, InlineCamera, QuickAction } from '@/features/logging'
 import { ItemRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { sumMacros } from '@/lib/nutrition'
@@ -40,6 +41,7 @@ export default function LogSheet() {
   const goBack = useBack('/today')
   const logFood = useLogFood()
   const snapFood = useSnapFood()
+  const describeFood = useDescribeFood()
   const { selectedDate } = useSelectedDate()
   const day = useDayLog(selectedDate)
   const { data: targets } = useTargets()
@@ -53,8 +55,8 @@ export default function LogSheet() {
    * screen of their own, so the day stays visible behind them and nothing has to
    * be dismissed twice.
    */
-  const [panel, setPanel] = useState<'camera' | 'search' | null>(null)
-  const toggle = (next: 'camera' | 'search') =>
+  const [panel, setPanel] = useState<'camera' | 'describe' | 'search' | null>(null)
+  const toggle = (next: 'camera' | 'describe' | 'search') =>
     setPanel((current) => (current === next ? null : next))
 
   const left = (targets?.kcal ?? 0) - sumMacros(day.entries).kcal
@@ -131,7 +133,15 @@ export default function LogSheet() {
           onPress={() => toggle('camera')}
         />
         {/* No "Say". Dictation is off until it does something — `log/voice` is
-            still routable, and nothing points at it. */}
+            still routable, and nothing points at it. Typing, though, is the
+            same recognition without the microphone, so it is here. */}
+        <QuickAction
+          label={t('logging:selector.describe')}
+          icon={{ set: 'system', name: 'sparkle' }}
+          tone="kaya"
+          selected={panel === 'describe'}
+          onPress={() => toggle('describe')}
+        />
         <QuickAction
           label={t('logging:selector.search')}
           icon={{ set: 'ui', name: 'search' }}
@@ -151,6 +161,18 @@ export default function LogSheet() {
           }}
         />
       ) : null}
+      {panel === 'describe' ? (
+        // Same contract as the shutter: the row is written now and the sheet
+        // closes, because the cascade takes several seconds and the day is a
+        // better place to wait than a sheet.
+        <DescribePanel
+          autoFocus
+          onSubmit={(text) => {
+            describeFood({ text, logDate: selectedDate })
+            goBack()
+          }}
+        />
+      ) : null}
       {panel === 'search' ? <FoodSearchPanel autoFocus onPick={openFood} /> : null}
 
       {/* Both suggestion blocks are put away while search is open — they are for
@@ -159,7 +181,7 @@ export default function LogSheet() {
           nothing in it. A heading over an empty space and a line saying nothing
           has been logged are both the sheet taking up room to tell the user it
           cannot help; the three buttons above already say what to do next. */}
-      {panel === 'search' ? null : (
+      {panel === 'search' || panel === 'describe' ? null : (
         <>
           {recent.length ? (
             <View className="gap-3 pt-1">

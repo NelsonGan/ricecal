@@ -9,6 +9,7 @@ import {
   Card,
   ConfirmSheet,
   DateStrip,
+  type DateStripDay,
   type NavTab,
   Sheet,
   StepProgress,
@@ -17,14 +18,15 @@ import {
   useToast,
 } from '@/ui'
 
-const DAYS = [
-  { key: '2026-07-20', initial: 'M', day: 20, logged: true },
-  { key: '2026-07-21', initial: 'T', day: 21, logged: true },
-  { key: '2026-07-22', initial: 'W', day: 22, logged: true },
-  { key: '2026-07-23', initial: 'T', day: 23 },
-  { key: '2026-07-24', initial: 'F', day: 24, logged: true },
-  { key: '2026-07-25', initial: 'S', day: 25, logged: true },
-  { key: '2026-07-26', initial: 'S', day: 26 },
+/** Every state of the dot in one week, which is the point of showing it here. */
+const DAYS: DateStripDay[] = [
+  { key: '2026-07-20', initial: 'M', day: 20, mark: 'under' },
+  { key: '2026-07-21', initial: 'T', day: 21, mark: 'over' },
+  { key: '2026-07-22', initial: 'W', day: 22, mark: 'under' },
+  { key: '2026-07-23', initial: 'T', day: 23, mark: 'missed' },
+  { key: '2026-07-24', initial: 'F', day: 24, mark: 'under' },
+  { key: '2026-07-25', initial: 'S', day: 25 },
+  { key: '2026-07-26', initial: 'S', day: 26, disabled: true },
 ]
 
 const DETAIL_TABS = [

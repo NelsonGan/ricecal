@@ -19,6 +19,7 @@
     "db:diff": "supabase db diff --workdir apps -f",
     "db:test": "supabase test db --workdir apps",
     "db:types": "node --no-warnings apps/supabase/scripts/gen-types.mjs",
+    "eval:prompts": "deno run -A apps/supabase/scripts/eval-prompts.ts",
     "eas": "pnpm --filter @ricecal/mobile exec eas",
     "eas:credentials": "pnpm --filter @ricecal/mobile exec eas credentials",
     "expo": "pnpm --filter @ricecal/mobile exec expo",

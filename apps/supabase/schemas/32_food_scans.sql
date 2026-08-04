@@ -35,6 +35,12 @@ create table public.food_scan_items (
   -- people have to correct", which is the scan accuracy backlog sorted by pain.
   refine_instruction text check (char_length(refine_instruction) <= 500),
 
+  -- Set when the meal was TYPED rather than photographed: the description,
+  -- verbatim. The columns above are the model's reading of this sentence, and
+  -- "which phrasings does it read badly" needs both halves on the row —
+  -- there is no photo to go back to and look at.
+  described_text text check (char_length(described_text) <= 500),
+
   -- Where the cascade landed. `resolved_tier` is 1..5; the food is the row the
   -- entry points at, and `catalogue_kcal` is that row's figure at the time —
   -- the estimate row is expected to be corrected later, and the comparison

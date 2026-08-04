@@ -13,7 +13,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(17);
+select plan(19);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -238,6 +238,32 @@ select is(
      and pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE')),
   2,
   'but a signed-in user can still edit the parts of their own plate'
+);
+
+-- The same pair for `day_marks`, which is new and reads one week of a diary.
+-- It is a read, so the risk is the other way round from the writes above: the
+-- revoke has to hold AND the grant has to survive, or the week strip on Today
+-- draws no dots at all for everybody.
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.proname = 'day_marks'
+     and pg_catalog.has_function_privilege('public', p.oid, 'EXECUTE')),
+  0,
+  'day_marks is not executable by PUBLIC'
+);
+
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.proname = 'day_marks'
+     and pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE')),
+  1,
+  'but a signed-in user can read their own week'
 );
 
 
