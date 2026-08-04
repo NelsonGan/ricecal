@@ -229,14 +229,22 @@ totals card reads `entryTotals` over the staged values, so what Save commits is
 what was being read. Leaving with something staged asks first, since the back
 chevron is now a discard.
 
-**By describing it**, through the sparkle button beside Save. That opens a sheet
-with the field and the model's suggested chips (`features/logging/FixSheet.tsx`),
-and it is a sheet rather than a card on the page because it is not one more
-staged control — for a scanned plate the words go to the server, come back as a
-different meal, and leave the screen behind. Anything staged is written BEFORE
-the correction is sent: the server interprets the words against the entry as it
-stands there, so "and half the rice" against a plate already changed on screen
-would correct a meal neither of them is looking at.
+**By describing it to the model**, through the sparkle button beside Save. That
+opens a sheet with the field and the suggested chips
+(`features/logging/FixSheet.tsx`), and it is a sheet rather than a card on the
+page because it is not one more staged control — the words go to the server,
+come back as a different meal, and leave the screen behind. Anything staged is
+written BEFORE the correction is sent: the server interprets the words against
+the entry as it stands there, so "and half the rice" against a plate already
+changed on screen would correct a meal neither of them is looking at.
+
+There is ONE behaviour here, not one per source. `scan-refine` reads `scan_id`
+as optional everywhere it touches it, so a hand-logged entry corrects exactly
+like a photographed one — and the chips are instructions to the model rather
+than text the client acts on, which is why "Half portion" is no longer a serving
+swap the screen performs itself. There was briefly a second variant that saved
+the words as a note on the row instead; it was a different feature wearing this
+one's clothes, and nothing in the app displayed the note it wrote.
 
 **`scan-refine/index.ts`** — free text against a logged entry becomes one of
 four things, and they are a LADDER ordered by how much of the entry survives.
@@ -430,10 +438,16 @@ Break these and the feature is wrong in ways tests may not catch.
   panel where it is and lets the scroll view inset its own content instead
   (`automaticallyAdjustKeyboardInsets`). The picture picker, the quick selector's
   search and describe panels, and `FixSheet` are all this shape.
-  The corollary: such a sheet has NO `footer`. A footer sits outside that scroll
-  view, so at full height it lands at the bottom of the panel behind the
-  keyboard. Put the button in the body, after the field, where the inset carries
-  it.
+  Two corollaries, both learnt the hard way. Such a sheet has NO `footer`: a
+  footer sits outside the scroll view, so at full height it lands at the bottom
+  of the panel behind the keyboard. Put the button in the body, after the field.
+  And if the content is SHORT — a field, some chips, a button, rather than a
+  list — pass `scrollable={false}` as well. A scroll view scrolls itself to
+  reveal the first responder when the keyboard opens, and on the first open,
+  before the keyboard's real height is known, it overshoots and carries the
+  field clean off the top of the panel. A full-height sheet lays its content out
+  at the top and lets the keyboard cover the empty part below; with nothing to
+  scroll there is no scroll to get wrong.
 - **`autoFocus` inside a `Modal` is dropped.** The field mounts with the window,
   before the platform has presented it, and the keyboard never comes up. `Sheet`
   takes an `onShow` for this — fire `ref.focus()` there. `SheetSurface` is a

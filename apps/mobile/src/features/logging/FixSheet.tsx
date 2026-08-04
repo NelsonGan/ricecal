@@ -7,38 +7,32 @@ import { Button, Chip, Icon, Sheet, Text, TextField } from '@/ui'
 export type FixSheetProps = {
   visible: boolean
   onClose: () => void
-  /** What is being written. Shared with the chips, which fill the field in. */
+  /** The correction being written. Shared with the chips, which fill it in. */
   value: string
   onChangeText: (value: string) => void
   placeholder: string
   /** Offered under the field. What people most often vary about this dish. */
   suggestions?: readonly string[]
-  /**
-   * A chip was tapped. Its own prop rather than `onChangeText(text)` because a
-   * suggestion can mean more than its words — "Half portion" is a serving as
-   * well as a note, and only the screen knows that.
-   */
-  onPickSuggestion: (text: string) => void
   onSubmit: () => void
-  submitLabel: string
-  submitDisabled?: boolean
+  /** The correction is on its way to the server. Blocks a second send. */
   submitting?: boolean
-  /** The keyboard's own submit key. "Send" dispatches; "Done" only closes. */
-  returnKey?: 'send' | 'done'
 }
 
 /**
- * FIX IT, in a sheet of its own.
+ * FIX IT — describe what the scan got wrong and let the model correct it.
  *
- * The detail screen is a form now — every control on it stages an edit that
- * Save writes — and a free-text correction is not one of those: for a scanned
- * plate it goes to the server, comes back as a different meal, and leaves the
- * screen behind. Sitting in a card among the staged controls it read as one
- * more field waiting for the same button.
+ * This is the AI path, and the only thing in it. The words go to `scan-refine`,
+ * which rescales the portion, edits one part of the plate, or re-resolves the
+ * dish through the same cascade the scan used. That is true of a hand-logged
+ * entry as much as a photographed one: the function reads `scan_id` as optional
+ * throughout, so there is one behaviour here and not two. There was briefly a
+ * second variant that saved the text as a note on the row, and it was a
+ * different feature wearing this one's clothes.
  *
- * It also wants the keyboard the instant it opens and nothing else competing
- * for the first tap, which a sheet gives and a card three cards down a
- * scrolling page does not.
+ * It is a sheet rather than a card on the detail screen because it is not one
+ * of that screen's staged edits: the correction leaves for the server, comes
+ * back as a different meal, and takes the screen with it. It also wants the
+ * keyboard the instant it opens and nothing else competing for the first tap.
  */
 export function FixSheet({
   visible,
@@ -47,15 +41,12 @@ export function FixSheet({
   onChangeText,
   placeholder,
   suggestions,
-  onPickSuggestion,
   onSubmit,
-  submitLabel,
-  submitDisabled = false,
   submitting = false,
-  returnKey = 'send',
 }: FixSheetProps) {
   const { t } = useTranslation(['logging', 'common'])
   const field = useRef<TextInput>(null)
+  const ready = Boolean(value.trim()) && !submitting
 
   return (
     <Sheet
@@ -69,32 +60,30 @@ export function FixSheet({
          panel is PADDED UP off the bottom edge by `KeyboardAvoidingView`, and
          the strip it leaves behind shows the scrim through the curve of the
          keyboard's top corners — the sheet reads as floating rather than as
-         attached to the bottom of the screen. A full-height panel stays where
-         it is and the scroll view insets its own content instead, which is what
-         the quick selector does when search or describe opens.
-
-         And no `footer`, for the other half of the same problem: a footer is
-         outside that scroll view, so at full height it sits at the bottom of
-         the panel BEHIND the keyboard. The button goes in the body, under the
-         chips, where the inset carries it. */
+         attached to the bottom of the screen. Full height stays put and lets
+         the keyboard cover the empty part of it. */
       fullHeight
-      /* Through `header` rather than as the first child, so it stays above the
-         body: the scroll-to-first-responder that follows the keyboard would
-         otherwise slide it up under the handle and crop it. */
-      header={
-        <View className="flex-row items-center gap-2">
-          <Icon set="system" name="sparkle" size={20} />
-          <Text variant="subtitle">{t('logging:detail.fixTitle')}</Text>
-        </View>
-      }
+      /* And NOT scrollable, which is the other half of the same decision.
+         A scroll view scrolls itself to reveal the first responder when the
+         keyboard opens, and on the first open — before the keyboard's real
+         height is known — it overshoots and carries the field off the top of
+         the panel. There is nothing here worth scrolling: the content is four
+         short rows at the top of a full-height sheet, and the keyboard covers
+         the space below them. No scroll view, no scroll to get wrong. */
+      scrollable={false}
     >
+      <View className="flex-row items-center gap-2">
+        <Icon set="system" name="sparkle" size={20} />
+        <Text variant="subtitle">{t('logging:detail.fixTitle')}</Text>
+      </View>
+
       <TextField
         ref={field}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        returnKeyType={returnKey}
-        onSubmitEditing={submitDisabled ? undefined : onSubmit}
+        returnKeyType="send"
+        onSubmitEditing={ready ? onSubmit : undefined}
         accessibilityLabel={t('logging:detail.fixTitle')}
       />
 
@@ -115,7 +104,7 @@ export function FixSheet({
             <Chip
               key={suggestion}
               selected={value === suggestion}
-              onPress={() => onPickSuggestion(suggestion)}
+              onPress={() => onChangeText(suggestion)}
             >
               {suggestion}
             </Chip>
@@ -123,8 +112,10 @@ export function FixSheet({
         </ScrollView>
       ) : null}
 
-      <Button fullWidth loading={submitting} disabled={submitDisabled} onPress={onSubmit}>
-        {submitLabel}
+      {/* The same words as the button that opened this, deliberately: the sheet
+          is that button's second half, not a new question. */}
+      <Button fullWidth loading={submitting} disabled={!ready} onPress={onSubmit}>
+        {t('logging:detail.fixAction')}
       </Button>
     </Sheet>
   )

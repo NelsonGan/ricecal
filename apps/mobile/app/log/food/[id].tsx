@@ -48,10 +48,12 @@ import {
 } from '@/ui'
 
 /**
- * Chips under the fix box for a hand-logged entry. A SCANNED entry gets its
- * chips from the vision model instead — food-specific, carried on the row —
- * and its box applies the correction through scan-refine rather than keeping a
- * note.
+ * Chips under the fix box for an entry the model offered none of its own for —
+ * anything hand-logged, and a scan that came back without suggestions.
+ *
+ * The four most common corrections in any diary, and each is a sentence
+ * `scan-refine` reads: "Half portion" is its quantity rung, "No sambal" its
+ * adjust rung. Nothing here is special-cased on the client.
  */
 const QUICK_FIXES = ['halfPortion', 'noSambal', 'addEgg', 'extraRice'] as const
 
@@ -125,7 +127,6 @@ export default function FoodDetail() {
 
   const [quantity, setQuantity] = useState(existing?.quantity ?? 1)
   const [servingId, setServingId] = useState(existing?.servingId ?? '')
-  const [note, setNote] = useState(existing?.note ?? '')
   const [confirmDelete, setConfirmDelete] = useState(false)
   /** Leaving with something staged, which throws it away. */
   const [confirmDiscard, setConfirmDiscard] = useState(false)
@@ -293,7 +294,6 @@ export default function FoodDetail() {
   const seeded = Boolean(existing) && seededId === existing?.id
   const nameChange =
     seeded && name.trim() && name.trim() !== existing?.foodName ? name.trim() : undefined
-  const noteChange = seeded && note !== (existing?.note ?? '') ? note || null : undefined
   // Only on an entry with no breakdown. An entry with one IS its breakdown, so
   // the stepper is not on screen and the parts above are what moves.
   const quantityChange =
@@ -320,7 +320,6 @@ export default function FoodDetail() {
 
   const dirty = Boolean(
     nameChange ||
-      noteChange !== undefined ||
       quantityChange !== undefined ||
       servingChange ||
       overridesChange ||
@@ -335,7 +334,6 @@ export default function FoodDetail() {
     setSeededId(existing.id)
     setQuantity(existing.quantity)
     setServingId(existing.servingId)
-    setNote(existing.note ?? '')
     setName(existing.foodName)
     setPartEdits({})
     setTyped({
@@ -527,7 +525,6 @@ export default function FoodDetail() {
       foodId: food.id,
       servingId: chosen,
       quantity,
-      note: note || undefined,
       logDate: selectedDate,
       // Only what was actually chosen. `shownIcon` would write the food's own
       // drawing onto the row as an override, which is not an override at all.
@@ -575,7 +572,6 @@ export default function FoodDetail() {
       id: existing.id,
       logDate: existing.logDate,
       ...(nameChange ? { name: nameChange } : {}),
-      ...(noteChange === undefined ? {} : { note: noteChange }),
       ...(quantityChange === undefined ? {} : { quantity: quantityChange }),
       ...(servingChange ? { servingId: servingChange } : {}),
       ...(overridesChange ? { overrides: overridesChange } : {}),
@@ -619,9 +615,6 @@ export default function FoodDetail() {
     // the unmount sweep takes it whichever way this screen goes.
     goBack()
   }
-
-  /** A scanned plate's fix goes to the model; a hand-logged one is a note. */
-  const scanned = Boolean(existing?.scanId)
 
   /**
    * Send the typed correction and leave.
@@ -1124,42 +1117,26 @@ export default function FoodDetail() {
           exists: "no sambal" is a fix to something logged, and on the way IN the
           serving chips and the stepper above say the same thing more precisely.
 
-          A scanned entry's words go to scan-refine, which rescales the quantity
-          or re-resolves the food through the same cascade the scan used, and the
-          chips come from the vision model — what people most often vary about
-          this exact dish. A hand-logged one has nothing to re-resolve, so the
-          same box keeps a note on the row and its chips are generic fillers. */}
+          The chips are the vision model's, when it offered any — what people
+          most often vary about this exact dish — and a generic four when it did
+          not. Either way they are instructions to the model rather than text
+          the app acts on: "Half portion" reaches scan-refine's quantity rung,
+          which rescales the entry and every part under it, and does it better
+          than the serving swap this screen used to do by hand. */}
       {existing ? (
         <FixSheet
           visible={fixing}
           onClose={() => setFixing(false)}
-          value={scanned ? instruction : note}
-          onChangeText={scanned ? setInstruction : setNote}
+          value={instruction}
+          onChangeText={setInstruction}
           placeholder={t('logging:detail.fixPlaceholder')}
           suggestions={
-            scanned
+            existing.suggestedEdits?.length
               ? existing.suggestedEdits
               : QUICK_FIXES.map((fix) => t(`logging:detail.quickFix.${fix}`))
           }
-          onPickSuggestion={(text) => {
-            if (scanned) {
-              setInstruction(text)
-              return
-            }
-            setNote(text)
-            // "Half portion" is not just a note, it is a serving. Staging it
-            // silently as text would leave the calories wrong.
-            if (text === t('logging:detail.quickFix.halfPortion')) {
-              const half = food.servings.find((option) => option.factor === 0.5)
-              if (half) setServingId(half.id)
-            }
-          }}
-          onSubmit={scanned ? () => void sendFix() : () => setFixing(false)}
-          submitLabel={scanned ? t('logging:detail.fixSend') : t('logging:detail.fixNoteDone')}
-          // A note emptied is an edit; a correction with nothing in it is not.
-          submitDisabled={scanned && !instruction.trim()}
+          onSubmit={() => void sendFix()}
           submitting={sending}
-          returnKey={scanned ? 'send' : 'done'}
         />
       ) : null}
 
