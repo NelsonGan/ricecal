@@ -1,0 +1,1070 @@
+{
+  "source": "research:mainland-sea",
+  "note": "Burmese, Cambodian, Lao and Bruneian dishes — the mainland Southeast Asian repertoires the earlier country rounds did not reach. WEB SEARCH WAS UNAVAILABLE FOR THIS ROUND: every figure is a model estimate reasoned from the dish's own ingredients and anchored against comparable rows the catalogue already holds (the Thai round's noodle bowls and som tam, the Vietnamese round's phở and bánh mì, the Malaysian nasi and mee rows, the MyFCD component rows). Nothing was read off a published table, so every row is verified:false and source:model_estimate. Brunei is deliberately thin: Bruneian and Malaysian cooking are close to the same repertoire and the catalogue already holds Ambuyat, Cacah Binjai, Cacah Tempoyak, Linut, Nasi Katok, Kuih Kelupis, Kuih Pinjaram, Kuih Cincin, Kuih Jala, Kuih Tahi Itik, Wajid Sabah, Pulut Panggang, Bubur Pedas, Air Katira and Sagol, so only what is genuinely Brunei's own is written here and the rest was widened with foods:alias. Where a name collides with a Thai or Vietnamese row already in the catalogue the country leads the name (Lao Larb Moo against Larb Moo, Lao Khao Soi against Khao Soi Gai). Portions are the local street portion: a Burmese mohinga is the standard bowl, a danbauk is one plate, a Lao sticky rice basket is the one that comes with the meal, and a Khmer num pang is one 20 cm baguette.",
+  "foods": [
+    {
+      "name": "Mohinga",
+      "place": "hawker",
+      "serving": "1 bowl (500 g)",
+      "kcal": 460,
+      "carbs_g": 66,
+      "protein_g": 20,
+      "fat_g": 13,
+      "aliases": [
+        "mohinga",
+        "mont hin gar",
+        "moh hin gha",
+        "burmese fish noodle soup",
+        "myanmar national dish",
+        "mee hoon sup ikan burma"
+      ],
+      "icon": "dishes/kuey-teow-soup",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "Large bowl", "factor": 1.4 }]
+    },
+    {
+      "name": "Mohinga with Egg and Fritter",
+      "place": "hawker",
+      "serving": "1 bowl (600 g)",
+      "kcal": 640,
+      "carbs_g": 78,
+      "protein_g": 27,
+      "fat_g": 24,
+      "aliases": [
+        "mohinga with egg",
+        "mont hin gar kyet u",
+        "mohinga full",
+        "fish noodle soup with boiled egg and split pea fritter"
+      ],
+      "icon": "dishes/kuey-teow-soup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ohn No Khao Swè",
+      "place": "hawker",
+      "serving": "1 bowl (500 g)",
+      "kcal": 620,
+      "carbs_g": 70,
+      "protein_g": 26,
+      "fat_g": 26,
+      "aliases": [
+        "ohn no khao swe",
+        "ohn no khauk swe",
+        "onno khaukswe",
+        "burmese coconut chicken noodles",
+        "coconut milk noodle soup burma",
+        "khow suey"
+      ],
+      "icon": "dishes/curry-mee",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "Large bowl", "factor": 1.4 }]
+    },
+    {
+      "name": "Shan Khao Swè",
+      "place": "hawker",
+      "serving": "1 bowl (450 g)",
+      "kcal": 435,
+      "carbs_g": 62,
+      "protein_g": 22,
+      "fat_g": 11,
+      "aliases": [
+        "shan khao swe",
+        "shan khauk swe",
+        "shan noodles",
+        "shan noodle soup",
+        "mee shan",
+        "burmese shan style noodles"
+      ],
+      "icon": "dishes/kuey-teow-soup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Shan Khao Swè Thoke",
+      "place": "hawker",
+      "serving": "1 plate (350 g)",
+      "kcal": 480,
+      "carbs_g": 64,
+      "protein_g": 22,
+      "fat_g": 15,
+      "aliases": [
+        "shan khao swe thoke",
+        "dry shan noodles",
+        "shan noodle salad",
+        "shan khauk swe thoke",
+        "mee shan kering"
+      ],
+      "icon": "dishes/mee-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nan Gyi Thoke",
+      "place": "hawker",
+      "serving": "1 plate (350 g)",
+      "kcal": 560,
+      "carbs_g": 74,
+      "protein_g": 24,
+      "fat_g": 19,
+      "aliases": [
+        "nan gyi thoke",
+        "nangyi thote",
+        "nan gyi thote",
+        "burmese thick rice noodle salad",
+        "burmese noodle salad with chicken curry"
+      ],
+      "icon": "dishes/mee-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Khao Swè Thoke",
+      "place": "hawker",
+      "serving": "1 plate (330 g)",
+      "kcal": 455,
+      "carbs_g": 66,
+      "protein_g": 16,
+      "fat_g": 14,
+      "aliases": [
+        "khao swe thoke",
+        "khauk swe thote",
+        "burmese noodle salad",
+        "kyauk swe thoke",
+        "mee thoke burma"
+      ],
+      "icon": "dishes/mee-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mont Di",
+      "place": "hawker",
+      "serving": "1 bowl (400 g)",
+      "kcal": 435,
+      "carbs_g": 68,
+      "protein_g": 18,
+      "fat_g": 10,
+      "aliases": ["mont di", "mondi", "moun di", "burmese rice noodle salad", "mandalay mont di"],
+      "icon": "dishes/laksam",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Rakhine Mont Di",
+      "place": "hawker",
+      "serving": "1 bowl (450 g)",
+      "kcal": 395,
+      "carbs_g": 60,
+      "protein_g": 20,
+      "fat_g": 8,
+      "aliases": [
+        "rakhine mont di",
+        "rakhine mote tee",
+        "arakanese mont di",
+        "rakhine peppery fish noodle soup",
+        "rakhine monti"
+      ],
+      "icon": "dishes/kuey-teow-soup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kyay Oh",
+      "place": "hawker",
+      "serving": "1 bowl (550 g)",
+      "kcal": 520,
+      "carbs_g": 60,
+      "protein_g": 30,
+      "fat_g": 18,
+      "aliases": [
+        "kyay oh",
+        "kyay oh soup",
+        "kyayo",
+        "burmese pork noodle soup",
+        "copper pot noodle soup"
+      ],
+      "icon": "dishes/kuey-teow-soup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kyay Oh Thoke",
+      "place": "hawker",
+      "serving": "1 plate (400 g)",
+      "kcal": 555,
+      "carbs_g": 64,
+      "protein_g": 30,
+      "fat_g": 20,
+      "aliases": ["kyay oh thoke", "dry kyay oh", "kyay oh kyaw", "burmese dry pork noodles"],
+      "icon": "dishes/mee-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Si Chet Khauk Swè",
+      "place": "hawker",
+      "serving": "1 plate (350 g)",
+      "kcal": 595,
+      "carbs_g": 68,
+      "protein_g": 20,
+      "fat_g": 27,
+      "aliases": [
+        "si chet khauk swe",
+        "si chat khao swe",
+        "burmese oily noodles",
+        "garlic oil noodles burma",
+        "si jet khauk swe"
+      ],
+      "icon": "dishes/mee-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kat Kyi Kaik",
+      "place": "hawker",
+      "serving": "1 plate (400 g)",
+      "kcal": 600,
+      "carbs_g": 72,
+      "protein_g": 26,
+      "fat_g": 23,
+      "aliases": [
+        "kat kyi kaik",
+        "kut kyee kaik",
+        "rakhine flat noodle stir fry",
+        "sittwe noodles",
+        "burmese char kway teow"
+      ],
+      "icon": "dishes/char-kuey-teow",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Meeshay",
+      "place": "hawker",
+      "serving": "1 bowl (400 g)",
+      "kcal": 460,
+      "carbs_g": 68,
+      "protein_g": 18,
+      "fat_g": 13,
+      "aliases": [
+        "meeshay",
+        "mi shay",
+        "shan mee shay",
+        "burmese rice noodles with pork",
+        "myay shay"
+      ],
+      "icon": "dishes/kuey-teow-soup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Panthay Khao Swè",
+      "place": "hawker",
+      "serving": "1 bowl (450 g)",
+      "kcal": 515,
+      "carbs_g": 64,
+      "protein_g": 24,
+      "fat_g": 18,
+      "aliases": [
+        "panthay khao swe",
+        "panthay khauk swe",
+        "burmese chinese muslim noodles",
+        "panthay noodles"
+      ],
+      "icon": "dishes/kuey-teow-soup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nan Pyar Thoke",
+      "place": "hawker",
+      "serving": "1 plate (300 g)",
+      "kcal": 415,
+      "carbs_g": 62,
+      "protein_g": 14,
+      "fat_g": 12,
+      "aliases": ["nan pyar thoke", "nan pya thote", "burmese flat noodle salad", "nanpya thoke"],
+      "icon": "dishes/mee-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Lahpet Thoke",
+      "place": "hawker",
+      "serving": "1 plate (200 g)",
+      "kcal": 325,
+      "carbs_g": 22,
+      "protein_g": 12,
+      "fat_g": 21,
+      "aliases": [
+        "lahpet thoke",
+        "laphet thoke",
+        "lephet thoke",
+        "burmese tea leaf salad",
+        "fermented tea leaf salad",
+        "kerabu daun teh burma"
+      ],
+      "icon": "dishes/rojak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tohu Thoke",
+      "place": "hawker",
+      "serving": "1 plate (250 g)",
+      "kcal": 275,
+      "carbs_g": 30,
+      "protein_g": 12,
+      "fat_g": 12,
+      "aliases": [
+        "tohu thoke",
+        "tofu thoke",
+        "to hpu thote",
+        "shan tofu salad",
+        "chickpea tofu salad burma"
+      ],
+      "icon": "food/tofu",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tohu Nway",
+      "place": "hawker",
+      "serving": "1 bowl (350 g)",
+      "kcal": 300,
+      "carbs_g": 40,
+      "protein_g": 12,
+      "fat_g": 10,
+      "aliases": [
+        "tohu nway",
+        "to hpu nway",
+        "warm shan tofu",
+        "shan tofu porridge",
+        "burmese warm chickpea tofu"
+      ],
+      "icon": "food/porridge",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Shan Tohu Kyaw",
+      "place": "hawker",
+      "serving": "1 plate (150 g)",
+      "kcal": 295,
+      "carbs_g": 26,
+      "protein_g": 10,
+      "fat_g": 17,
+      "aliases": [
+        "shan tohu kyaw",
+        "fried shan tofu",
+        "to hpu kyaw",
+        "burmese fried chickpea tofu",
+        "tauhu goreng shan"
+      ],
+      "icon": "food/fried-tofu-puff",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Gin Thoke",
+      "place": "hawker",
+      "serving": "1 plate (180 g)",
+      "kcal": 245,
+      "carbs_g": 22,
+      "protein_g": 8,
+      "fat_g": 14,
+      "aliases": [
+        "gin thoke",
+        "gyin thote",
+        "burmese ginger salad",
+        "pickled ginger salad",
+        "kerabu halia burma"
+      ],
+      "icon": "dishes/rojak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Samusa Thoke",
+      "place": "hawker",
+      "serving": "1 plate (300 g)",
+      "kcal": 410,
+      "carbs_g": 48,
+      "protein_g": 14,
+      "fat_g": 18,
+      "aliases": ["samusa thoke", "samosa thote", "burmese samosa salad", "samusa thote"],
+      "icon": "dishes/samosa",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nga Phe Thoke",
+      "place": "hawker",
+      "serving": "1 plate (220 g)",
+      "kcal": 285,
+      "carbs_g": 26,
+      "protein_g": 16,
+      "fat_g": 13,
+      "aliases": [
+        "nga phe thoke",
+        "nga hpe thote",
+        "burmese fish cake salad",
+        "fish cake salad myanmar"
+      ],
+      "icon": "food/fish-cake",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Khayan Thee Thoke",
+      "place": "home",
+      "serving": "1 plate (200 g)",
+      "kcal": 180,
+      "carbs_g": 16,
+      "protein_g": 4,
+      "fat_g": 11,
+      "aliases": [
+        "khayan thee thoke",
+        "kayan thi thote",
+        "burmese roasted aubergine salad",
+        "burmese eggplant salad"
+      ],
+      "icon": "food/vegetables",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tha Khwa Thee Thoke",
+      "place": "home",
+      "serving": "1 plate (180 g)",
+      "kcal": 130,
+      "carbs_g": 12,
+      "protein_g": 3,
+      "fat_g": 8,
+      "aliases": [
+        "tha khwa thee thoke",
+        "thakhwa thi thote",
+        "burmese cucumber salad",
+        "kerabu timun burma"
+      ],
+      "icon": "food/vegetables",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pè Thoke",
+      "place": "hawker",
+      "serving": "1 plate (200 g)",
+      "kcal": 300,
+      "carbs_g": 36,
+      "protein_g": 14,
+      "fat_g": 11,
+      "aliases": ["pe thoke", "bae thote", "burmese bean salad", "mixed bean salad myanmar"],
+      "icon": "food/chickpeas",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Danbauk",
+      "place": "hawker",
+      "serving": "1 plate (450 g)",
+      "kcal": 770,
+      "carbs_g": 96,
+      "protein_g": 34,
+      "fat_g": 28,
+      "aliases": [
+        "danbauk",
+        "dan bauk",
+        "danpauk",
+        "burmese biryani",
+        "myanmar biryani chicken",
+        "nasi briyani burma"
+      ],
+      "icon": "dishes/nasi-briyani",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Danbauk Seik",
+      "place": "hawker",
+      "serving": "1 plate (450 g)",
+      "kcal": 810,
+      "carbs_g": 94,
+      "protein_g": 34,
+      "fat_g": 33,
+      "aliases": ["danbauk seik", "danpauk mutton", "burmese mutton biryani", "danbauk sate tha"],
+      "icon": "dishes/nasi-briyani",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Htamin Jaw",
+      "place": "hawker",
+      "serving": "1 plate (350 g)",
+      "kcal": 515,
+      "carbs_g": 72,
+      "protein_g": 12,
+      "fat_g": 20,
+      "aliases": [
+        "htamin jaw",
+        "htamin kyaw",
+        "burmese fried rice",
+        "myanmar fried rice with peas",
+        "nasi goreng burma"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ohn Htamin",
+      "place": "home",
+      "serving": "1 plate (250 g)",
+      "kcal": 430,
+      "carbs_g": 64,
+      "protein_g": 7,
+      "fat_g": 16,
+      "aliases": [
+        "ohn htamin",
+        "on htamin",
+        "burmese coconut rice",
+        "myanmar coconut rice",
+        "nasi lemak burma"
+      ],
+      "icon": "food/rice-bowl",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Si Htamin",
+      "place": "hawker",
+      "serving": "1 plate (200 g)",
+      "kcal": 380,
+      "carbs_g": 58,
+      "protein_g": 6,
+      "fat_g": 14,
+      "aliases": [
+        "si htamin",
+        "sihtamin",
+        "burmese turmeric sticky rice",
+        "myanmar glutinous rice snack"
+      ],
+      "icon": "food/glutinous-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Htamin Thoke",
+      "place": "hawker",
+      "serving": "1 plate (300 g)",
+      "kcal": 405,
+      "carbs_g": 62,
+      "protein_g": 10,
+      "fat_g": 13,
+      "aliases": ["htamin thoke", "htamin thote", "burmese rice salad", "myanmar rice salad"],
+      "icon": "dishes/nasi-ulam",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nga Baung Doke",
+      "place": "home",
+      "serving": "1 parcel (180 g)",
+      "kcal": 210,
+      "carbs_g": 18,
+      "protein_g": 12,
+      "fat_g": 10,
+      "aliases": [
+        "nga baung doke",
+        "nga baung dote",
+        "burmese banana leaf steamed fish",
+        "myanmar steamed fish parcel"
+      ],
+      "icon": "dishes/otak-otak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kyet Thar Hin",
+      "place": "home",
+      "serving": "1 bowl (250 g)",
+      "kcal": 395,
+      "carbs_g": 10,
+      "protein_g": 28,
+      "fat_g": 27,
+      "aliases": [
+        "kyet thar hin",
+        "kyet tha hin",
+        "burmese chicken curry",
+        "myanmar chicken curry",
+        "kari ayam burma"
+      ],
+      "icon": "dishes/gulai",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Wet Thar Hin",
+      "place": "home",
+      "serving": "1 bowl (250 g)",
+      "kcal": 470,
+      "carbs_g": 8,
+      "protein_g": 24,
+      "fat_g": 38,
+      "aliases": [
+        "wet thar hin",
+        "wet tha hin",
+        "burmese pork curry",
+        "wet tha nat pyaw",
+        "myanmar pork belly curry"
+      ],
+      "icon": "food/pork-belly",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Amè Hnat",
+      "place": "home",
+      "serving": "1 bowl (250 g)",
+      "kcal": 405,
+      "carbs_g": 10,
+      "protein_g": 30,
+      "fat_g": 27,
+      "aliases": ["ame hnat", "amai hnat", "burmese beef stew", "myanmar braised beef", "amè hnat"],
+      "icon": "dishes/rendang",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Wet Thar Dote Htoe",
+      "place": "hawker",
+      "serving": "6 skewers (150 g)",
+      "kcal": 290,
+      "carbs_g": 6,
+      "protein_g": 20,
+      "fat_g": 21,
+      "aliases": [
+        "wet thar dote htoe",
+        "wet tha dok htoe",
+        "burmese pork offal skewers",
+        "myanmar skewered snacks"
+      ],
+      "icon": "food/satay",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nga Thalauk Paung",
+      "place": "home",
+      "serving": "1 serving (180 g)",
+      "kcal": 345,
+      "carbs_g": 4,
+      "protein_g": 26,
+      "fat_g": 25,
+      "aliases": [
+        "nga thalauk paung",
+        "nga tha lauk paung",
+        "burmese steamed hilsa",
+        "myanmar pressure cooked hilsa"
+      ],
+      "icon": "food/fish",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chin Baung Kyaw",
+      "place": "home",
+      "serving": "1 plate (180 g)",
+      "kcal": 150,
+      "carbs_g": 10,
+      "protein_g": 5,
+      "fat_g": 10,
+      "aliases": [
+        "chin baung kyaw",
+        "chin baung gyaw",
+        "burmese sour leaf stir fry",
+        "roselle leaf stir fry myanmar"
+      ],
+      "icon": "food/vegetables",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pe Byouk",
+      "place": "hawker",
+      "serving": "1 bowl (180 g)",
+      "kcal": 235,
+      "carbs_g": 36,
+      "protein_g": 13,
+      "fat_g": 4,
+      "aliases": ["pe byouk", "bae byouk", "burmese boiled chickpeas", "myanmar breakfast peas"],
+      "icon": "food/chickpeas",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Balachaung",
+      "place": "home",
+      "serving": "2 tbsp (30 g)",
+      "kcal": 130,
+      "carbs_g": 4,
+      "protein_g": 8,
+      "fat_g": 9,
+      "aliases": [
+        "balachaung",
+        "balachaung kyaw",
+        "burmese dried shrimp relish",
+        "myanmar crispy shrimp condiment",
+        "sambal udang kering burma"
+      ],
+      "icon": "food/sambal-jar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ngapi Yay",
+      "place": "home",
+      "serving": "1 bowl (150 g)",
+      "kcal": 90,
+      "carbs_g": 8,
+      "protein_g": 8,
+      "fat_g": 3,
+      "aliases": [
+        "ngapi yay",
+        "ngapi ye",
+        "burmese fish paste dip",
+        "myanmar fish sauce dip with vegetables"
+      ],
+      "icon": "food/sambal-jar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ngapi Kyaw",
+      "place": "home",
+      "serving": "2 tbsp (30 g)",
+      "kcal": 110,
+      "carbs_g": 3,
+      "protein_g": 5,
+      "fat_g": 9,
+      "aliases": [
+        "ngapi kyaw",
+        "ngapi gyaw",
+        "fried burmese fish paste",
+        "myanmar shrimp paste relish"
+      ],
+      "icon": "food/sambal-jar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Hin Gyo",
+      "place": "home",
+      "serving": "1 bowl (250 ml)",
+      "kcal": 60,
+      "carbs_g": 7,
+      "protein_g": 4,
+      "fat_g": 2,
+      "aliases": ["hin gyo", "hin cho", "burmese clear soup", "myanmar vegetable broth"],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chin Ye Hin",
+      "place": "home",
+      "serving": "1 bowl (300 ml)",
+      "kcal": 95,
+      "carbs_g": 9,
+      "protein_g": 8,
+      "fat_g": 3,
+      "aliases": ["chin ye hin", "chin yay hin", "burmese sour soup", "myanmar tamarind soup"],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Palata",
+      "place": "hawker",
+      "serving": "1 piece (100 g)",
+      "kcal": 330,
+      "carbs_g": 42,
+      "protein_g": 7,
+      "fat_g": 15,
+      "aliases": [
+        "palata",
+        "paratha burma",
+        "burmese flatbread",
+        "myanmar palata",
+        "roti canai burma"
+      ],
+      "icon": "dishes/roti-canai",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nan Bya",
+      "place": "hawker",
+      "serving": "1 piece (90 g)",
+      "kcal": 245,
+      "carbs_g": 44,
+      "protein_g": 8,
+      "fat_g": 4,
+      "aliases": ["nan bya", "nanbya", "burmese naan", "myanmar oven flatbread", "nan pya"],
+      "icon": "food/roti",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "E Kya Kway",
+      "place": "kopitiam",
+      "serving": "1 piece (50 g)",
+      "kcal": 190,
+      "carbs_g": 22,
+      "protein_g": 4,
+      "fat_g": 10,
+      "aliases": [
+        "e kya kway",
+        "ei kya kway",
+        "burmese youtiao",
+        "myanmar fried dough stick",
+        "cakoi burma"
+      ],
+      "icon": "food/doughnut",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mont Lin Ma Yar",
+      "place": "hawker",
+      "serving": "6 pieces (120 g)",
+      "kcal": 245,
+      "carbs_g": 30,
+      "protein_g": 9,
+      "fat_g": 10,
+      "aliases": [
+        "mont lin ma yar",
+        "moun lin ma yar",
+        "burmese quail egg fritters",
+        "husband and wife snack",
+        "myanmar takoyaki"
+      ],
+      "icon": "food/quail-eggs",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bein Mont",
+      "place": "hawker",
+      "serving": "1 piece (100 g)",
+      "kcal": 280,
+      "carbs_g": 44,
+      "protein_g": 5,
+      "fat_g": 9,
+      "aliases": [
+        "bein mont",
+        "bane mont",
+        "burmese pancake",
+        "myanmar sweet pancake",
+        "apam balik burma"
+      ],
+      "icon": "dishes/apam-balik",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mont Pyar Thalet",
+      "place": "hawker",
+      "serving": "2 pieces (100 g)",
+      "kcal": 195,
+      "carbs_g": 36,
+      "protein_g": 4,
+      "fat_g": 4,
+      "aliases": [
+        "mont pyar thalet",
+        "moun pyar thalet",
+        "burmese steamed rice pancake",
+        "myanmar rice cake snack"
+      ],
+      "icon": "food/kuih",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Burmese Samusa",
+      "place": "hawker",
+      "serving": "2 pieces (100 g)",
+      "kcal": 275,
+      "carbs_g": 30,
+      "protein_g": 7,
+      "fat_g": 14,
+      "aliases": ["burmese samusa", "samusa myanmar", "burmese samosa", "samusa mutton burma"],
+      "icon": "dishes/samosa",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bu Thee Kyaw",
+      "place": "hawker",
+      "serving": "3 pieces (120 g)",
+      "kcal": 255,
+      "carbs_g": 26,
+      "protein_g": 4,
+      "fat_g": 15,
+      "aliases": [
+        "bu thee kyaw",
+        "buthee gyaw",
+        "burmese gourd fritters",
+        "myanmar pumpkin fritter"
+      ],
+      "icon": "dishes/cucur-udang",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kyet Thun Kyaw",
+      "place": "hawker",
+      "serving": "3 pieces (110 g)",
+      "kcal": 275,
+      "carbs_g": 28,
+      "protein_g": 5,
+      "fat_g": 16,
+      "aliases": [
+        "kyet thun kyaw",
+        "kyet thun gyaw",
+        "burmese onion fritters",
+        "myanmar onion bhaji"
+      ],
+      "icon": "dishes/cucur-udang",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mont Lone Yay Paw",
+      "place": "hawker",
+      "serving": "5 pieces (120 g)",
+      "kcal": 260,
+      "carbs_g": 48,
+      "protein_g": 3,
+      "fat_g": 6,
+      "aliases": [
+        "mont lone yay paw",
+        "moun lone yay paw",
+        "burmese floating rice balls",
+        "myanmar jaggery rice balls",
+        "ondeh ondeh burma"
+      ],
+      "icon": "dishes/ondeh-ondeh",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Shwe Yin Aye",
+      "place": "hawker",
+      "serving": "1 glass (350 ml)",
+      "kcal": 340,
+      "carbs_g": 56,
+      "protein_g": 4,
+      "fat_g": 11,
+      "aliases": [
+        "shwe yin aye",
+        "shwe yin aye dessert",
+        "burmese coconut milk dessert",
+        "myanmar iced dessert",
+        "cendol burma"
+      ],
+      "icon": "dishes/cendol",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mont Let Saung",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 285,
+      "carbs_g": 52,
+      "protein_g": 3,
+      "fat_g": 7,
+      "aliases": [
+        "mont let saung",
+        "moun let saung",
+        "burmese jaggery sago drink",
+        "myanmar sago coconut dessert"
+      ],
+      "icon": "food/sago",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Burmese Faluda",
+      "place": "hawker",
+      "serving": "1 glass (350 ml)",
+      "kcal": 370,
+      "carbs_g": 62,
+      "protein_g": 8,
+      "fat_g": 10,
+      "aliases": ["burmese faluda", "falooda myanmar", "myanmar faluda", "faluda burma"],
+      "icon": "dishes/ais-kacang",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sanwin Makin",
+      "place": "hawker",
+      "serving": "1 slice (100 g)",
+      "kcal": 295,
+      "carbs_g": 42,
+      "protein_g": 5,
+      "fat_g": 12,
+      "aliases": [
+        "sanwin makin",
+        "sanwin ma kin",
+        "burmese semolina cake",
+        "myanmar semolina pudding"
+      ],
+      "icon": "food/cake-slice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kyauk Kyaw",
+      "place": "hawker",
+      "serving": "2 pieces (100 g)",
+      "kcal": 160,
+      "carbs_g": 26,
+      "protein_g": 1,
+      "fat_g": 6,
+      "aliases": [
+        "kyauk kyaw",
+        "kyauk gyaw",
+        "burmese agar coconut jelly",
+        "myanmar coconut jelly"
+      ],
+      "icon": "food/agar-agar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Lahpet Yay",
+      "place": "kopitiam",
+      "serving": "1 cup (150 ml)",
+      "kcal": 150,
+      "carbs_g": 22,
+      "protein_g": 4,
+      "fat_g": 5,
+      "aliases": [
+        "lahpet yay",
+        "laphet yay",
+        "burmese milk tea",
+        "myanmar tea shop tea",
+        "teh burma"
+      ],
+      "icon": "dishes/teh-tarik",
+      "source": "model_estimate",
+      "verified": false
+    }
+  ]
+}

@@ -1,0 +1,1049 @@
+{
+  "source": "research:china",
+  "foods": [
+    {
+      "name": "Dan Dan Mian",
+      "place": "hawker",
+      "serving": "1 bowl (350 g)",
+      "kcal": 510,
+      "carbs_g": 62,
+      "protein_g": 16,
+      "fat_g": 22,
+      "aliases": [
+        "担担面",
+        "擔擔麵",
+        "dan dan noodles",
+        "dandan mian",
+        "sichuan sesame chilli noodles"
+      ],
+      "icon": "food/noodle-bowl",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chongqing Xiaomian",
+      "place": "hawker",
+      "serving": "1 bowl (400 g)",
+      "kcal": 515,
+      "carbs_g": 70,
+      "protein_g": 14,
+      "fat_g": 20,
+      "aliases": [
+        "重庆小面",
+        "重慶小麵",
+        "chongqing small noodles",
+        "xiao mian",
+        "chongqing spicy noodles"
+      ],
+      "icon": "food/noodle-bowl",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Shuizhu Yu",
+      "place": "hawker",
+      "serving": "1 pot (600 g)",
+      "kcal": 595,
+      "carbs_g": 14,
+      "protein_g": 45,
+      "fat_g": 40,
+      "aliases": [
+        "水煮鱼",
+        "水煮魚",
+        "sichuan boiled fish",
+        "shui zhu yu",
+        "poached fish in chilli oil"
+      ],
+      "icon": "food/fish-fillet",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Shuizhu Niurou",
+      "place": "hawker",
+      "serving": "1 pot (600 g)",
+      "kcal": 630,
+      "carbs_g": 16,
+      "protein_g": 42,
+      "fat_g": 44,
+      "aliases": ["水煮牛肉", "shui zhu niu rou", "sichuan boiled beef", "beef in chilli oil"],
+      "icon": "food/beef-slices",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Fuqi Feipian",
+      "place": "hawker",
+      "serving": "1 plate (200 g)",
+      "kcal": 355,
+      "carbs_g": 8,
+      "protein_g": 22,
+      "fat_g": 26,
+      "aliases": [
+        "夫妻肺片",
+        "fu qi fei pian",
+        "husband and wife lung slices",
+        "sliced beef offal in chilli oil"
+      ],
+      "icon": "food/beef-slices",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Huiguorou",
+      "place": "hawker",
+      "serving": "1 plate (250 g)",
+      "kcal": 520,
+      "carbs_g": 12,
+      "protein_g": 24,
+      "fat_g": 42,
+      "aliases": [
+        "回锅肉",
+        "回鍋肉",
+        "hui guo rou",
+        "twice cooked pork",
+        "double cooked pork belly"
+      ],
+      "icon": "food/pork-belly",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Yuxiang Rousi",
+      "place": "hawker",
+      "serving": "1 plate (250 g)",
+      "kcal": 385,
+      "carbs_g": 22,
+      "protein_g": 20,
+      "fat_g": 24,
+      "aliases": [
+        "鱼香肉丝",
+        "魚香肉絲",
+        "yu xiang rou si",
+        "fish fragrant pork strips",
+        "shredded pork in garlic sauce"
+      ],
+      "icon": "food/pork-belly",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Yuxiang Qiezi",
+      "place": "hawker",
+      "serving": "1 plate (250 g)",
+      "kcal": 355,
+      "carbs_g": 24,
+      "protein_g": 6,
+      "fat_g": 26,
+      "aliases": [
+        "鱼香茄子",
+        "魚香茄子",
+        "yu xiang qie zi",
+        "fish fragrant aubergine",
+        "sichuan brinjal in garlic sauce"
+      ],
+      "icon": "food/vegetables",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Laziji",
+      "place": "hawker",
+      "serving": "1 plate (250 g)",
+      "kcal": 490,
+      "carbs_g": 16,
+      "protein_g": 30,
+      "fat_g": 34,
+      "aliases": [
+        "辣子鸡",
+        "辣子雞",
+        "la zi ji",
+        "chongqing chilli chicken",
+        "chicken in a pile of chillies"
+      ],
+      "icon": "food/chicken-drumstick",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Maoxuewang",
+      "place": "hawker",
+      "serving": "1 pot (600 g)",
+      "kcal": 665,
+      "carbs_g": 20,
+      "protein_g": 38,
+      "fat_g": 48,
+      "aliases": [
+        "毛血旺",
+        "mao xue wang",
+        "duck blood in chilli soup",
+        "chongqing blood curd hotpot"
+      ],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Suanla Fen",
+      "place": "hawker",
+      "serving": "1 bowl (450 g)",
+      "kcal": 390,
+      "carbs_g": 58,
+      "protein_g": 8,
+      "fat_g": 14,
+      "aliases": [
+        "酸辣粉",
+        "suan la fen",
+        "hot and sour sweet potato noodles",
+        "chongqing sour spicy noodles"
+      ],
+      "icon": "food/glass-noodles",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ganguo Jipian",
+      "place": "hawker",
+      "serving": "1 pot (400 g)",
+      "kcal": 565,
+      "carbs_g": 24,
+      "protein_g": 32,
+      "fat_g": 38,
+      "aliases": [
+        "干锅鸡",
+        "乾鍋雞",
+        "gan guo ji pian",
+        "dry pot chicken",
+        "griddle cooked chicken"
+      ],
+      "icon": "food/wok",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ganguo Huacai",
+      "place": "hawker",
+      "serving": "1 pot (350 g)",
+      "kcal": 390,
+      "carbs_g": 22,
+      "protein_g": 12,
+      "fat_g": 28,
+      "aliases": [
+        "干锅花菜",
+        "乾鍋花菜",
+        "gan guo hua cai",
+        "dry pot cauliflower",
+        "griddle cauliflower with pork belly"
+      ],
+      "icon": "food/vegetables",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mala Xiang Guo",
+      "place": "hawker",
+      "serving": "1 plate (450 g)",
+      "kcal": 660,
+      "carbs_g": 34,
+      "protein_g": 30,
+      "fat_g": 45,
+      "aliases": [
+        "麻辣香锅",
+        "麻辣香鍋",
+        "ma la xiang guo",
+        "spicy numbing stir fry pot",
+        "pick and mix mala pot"
+      ],
+      "icon": "food/wok",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chongqing Hotpot Mala Broth",
+      "place": "hawker",
+      "serving": "1 serving of broth (300 ml)",
+      "kcal": 230,
+      "carbs_g": 6,
+      "protein_g": 2,
+      "fat_g": 22,
+      "aliases": [
+        "重庆火锅",
+        "麻辣锅底",
+        "chongqing huoguo",
+        "mala hotpot soup base",
+        "beef tallow chilli broth"
+      ],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Hotpot Beef Tripe",
+      "place": "hawker",
+      "serving": "1 plate (150 g)",
+      "kcal": 115,
+      "carbs_g": 2,
+      "protein_g": 18,
+      "fat_g": 4,
+      "aliases": ["毛肚", "maodu", "hotpot tripe plate", "ox tripe for hotpot"],
+      "icon": "food/beef-slices",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Hotpot Luncheon Meat",
+      "place": "hawker",
+      "serving": "1 plate (120 g)",
+      "kcal": 330,
+      "carbs_g": 10,
+      "protein_g": 14,
+      "fat_g": 26,
+      "aliases": ["午餐肉", "wucanrou", "spam slices for hotpot", "hotpot pork luncheon meat"],
+      "icon": "food/sausage",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Hotpot Wide Sweet Potato Noodle",
+      "place": "hawker",
+      "serving": "1 portion (150 g cooked)",
+      "kcal": 145,
+      "carbs_g": 34,
+      "protein_g": 1,
+      "fat_g": 0.3,
+      "aliases": ["宽粉", "寬粉", "kuan fen", "wide potato starch noodle", "hotpot wide noodle"],
+      "icon": "food/glass-noodles",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Hotpot Duck Blood",
+      "place": "hawker",
+      "serving": "1 plate (150 g)",
+      "kcal": 100,
+      "carbs_g": 1,
+      "protein_g": 20,
+      "fat_g": 2,
+      "aliases": ["鸭血", "鴨血", "yaxue", "duck blood curd", "hotpot blood tofu"],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Hotpot Beef Slices",
+      "place": "hawker",
+      "serving": "1 plate (150 g)",
+      "kcal": 275,
+      "carbs_g": 1,
+      "protein_g": 27,
+      "fat_g": 18,
+      "aliases": ["肥牛", "feiniu", "marbled beef slices hotpot", "hotpot sliced beef plate"],
+      "icon": "food/beef-slices",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Hotpot Sesame Oil Dip Bowl",
+      "place": "hawker",
+      "serving": "1 dip bowl (50 g)",
+      "kcal": 355,
+      "carbs_g": 2,
+      "protein_g": 1,
+      "fat_g": 38,
+      "aliases": ["油碟", "麻酱碟", "you die", "hotpot dipping sauce bowl", "sesame garlic dip"],
+      "icon": "food/sambal-jar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Zhong Shui Jiao",
+      "place": "hawker",
+      "serving": "8 dumplings (200 g)",
+      "kcal": 365,
+      "carbs_g": 32,
+      "protein_g": 14,
+      "fat_g": 20,
+      "aliases": [
+        "钟水饺",
+        "鍾水餃",
+        "zhong shuijiao",
+        "chengdu sweet chilli dumplings",
+        "zhong dumplings"
+      ],
+      "icon": "food/dumpling",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Hongyou Chaoshou",
+      "place": "hawker",
+      "serving": "1 bowl (300 g)",
+      "kcal": 400,
+      "carbs_g": 34,
+      "protein_g": 16,
+      "fat_g": 22,
+      "aliases": [
+        "红油抄手",
+        "紅油抄手",
+        "hong you chao shou",
+        "sichuan wontons in chilli oil",
+        "chaoshou"
+      ],
+      "icon": "food/dumpling",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tianshui Mian",
+      "place": "hawker",
+      "serving": "1 bowl (300 g)",
+      "kcal": 450,
+      "carbs_g": 66,
+      "protein_g": 10,
+      "fat_g": 16,
+      "aliases": [
+        "甜水面",
+        "甜水麵",
+        "tian shui mian",
+        "chengdu sweet water noodles",
+        "thick chewy sweet chilli noodles"
+      ],
+      "icon": "food/noodle-bowl",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kou Shui Ji",
+      "place": "hawker",
+      "serving": "1 plate (250 g)",
+      "kcal": 425,
+      "carbs_g": 6,
+      "protein_g": 28,
+      "fat_g": 32,
+      "aliases": [
+        "口水鸡",
+        "口水雞",
+        "kou shui ji",
+        "mouthwatering chicken",
+        "sichuan cold chicken in chilli oil"
+      ],
+      "icon": "food/chicken-drumstick",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bang Bang Ji",
+      "place": "hawker",
+      "serving": "1 plate (200 g)",
+      "kcal": 315,
+      "carbs_g": 8,
+      "protein_g": 26,
+      "fat_g": 20,
+      "aliases": [
+        "棒棒鸡",
+        "棒棒雞",
+        "bang bang ji si",
+        "bang bang chicken",
+        "shredded chicken sesame sauce"
+      ],
+      "icon": "food/chicken-drumstick",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chuanchuan Xiang",
+      "place": "hawker",
+      "serving": "10 skewers (250 g)",
+      "kcal": 415,
+      "carbs_g": 12,
+      "protein_g": 24,
+      "fat_g": 30,
+      "aliases": ["串串香", "chuan chuan xiang", "sichuan skewer hotpot", "chengdu skewers"],
+      "icon": "food/satay",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sichuan Suancai Yu",
+      "place": "hawker",
+      "serving": "1 pot (700 g)",
+      "kcal": 520,
+      "carbs_g": 16,
+      "protein_g": 46,
+      "fat_g": 30,
+      "aliases": [
+        "酸菜鱼",
+        "酸菜魚",
+        "suan cai yu",
+        "fish with pickled mustard greens",
+        "sichuan sauerkraut fish"
+      ],
+      "icon": "food/fish-fillet",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ganbian Sijidou",
+      "place": "hawker",
+      "serving": "1 plate (200 g)",
+      "kcal": 260,
+      "carbs_g": 16,
+      "protein_g": 8,
+      "fat_g": 18,
+      "aliases": [
+        "干煸四季豆",
+        "乾煸四季豆",
+        "gan bian si ji dou",
+        "dry fried green beans",
+        "sichuan long beans with minced pork"
+      ],
+      "icon": "food/green-beans",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Suanla Tudousi",
+      "place": "hawker",
+      "serving": "1 plate (200 g)",
+      "kcal": 245,
+      "carbs_g": 30,
+      "protein_g": 4,
+      "fat_g": 12,
+      "aliases": [
+        "酸辣土豆丝",
+        "酸辣土豆絲",
+        "suan la tu dou si",
+        "hot and sour potato shreds",
+        "shredded potato with vinegar"
+      ],
+      "icon": "food/potato",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mala Xiaolongxia",
+      "place": "hawker",
+      "serving": "1 plate (500 g with shell)",
+      "kcal": 470,
+      "carbs_g": 10,
+      "protein_g": 40,
+      "fat_g": 30,
+      "aliases": [
+        "麻辣小龙虾",
+        "麻辣小龍蝦",
+        "ma la xiao long xia",
+        "spicy crayfish",
+        "chinese crawfish in chilli"
+      ],
+      "icon": "food/prawn",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sichuan Liangmian",
+      "place": "hawker",
+      "serving": "1 bowl (300 g)",
+      "kcal": 415,
+      "carbs_g": 62,
+      "protein_g": 10,
+      "fat_g": 14,
+      "aliases": [
+        "四川凉面",
+        "四川涼麵",
+        "liang mian",
+        "sichuan cold noodles",
+        "chengdu cold noodles"
+      ],
+      "icon": "food/noodle-bowl",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Leshan Bobo Ji",
+      "place": "hawker",
+      "serving": "1 basket (200 g)",
+      "kcal": 355,
+      "carbs_g": 6,
+      "protein_g": 24,
+      "fat_g": 26,
+      "aliases": [
+        "钵钵鸡",
+        "缽缽雞",
+        "bo bo ji",
+        "leshan cold skewers",
+        "chilled skewers in chilli oil"
+      ],
+      "icon": "food/satay",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Gongbao Xiaren",
+      "place": "hawker",
+      "serving": "1 plate (250 g)",
+      "kcal": 400,
+      "carbs_g": 18,
+      "protein_g": 26,
+      "fat_g": 24,
+      "aliases": [
+        "宫保虾仁",
+        "宮保蝦仁",
+        "gong bao xia ren",
+        "kung pao prawns",
+        "sichuan peanut chilli prawns"
+      ],
+      "icon": "food/prawn",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sichuan Mala Yabo",
+      "place": "hawker",
+      "serving": "1 packet (200 g)",
+      "kcal": 300,
+      "carbs_g": 8,
+      "protein_g": 26,
+      "fat_g": 18,
+      "aliases": ["麻辣鸭脖", "麻辣鴨脖", "ya bo", "spicy duck neck", "braised mala duck neck"],
+      "icon": "dishes/roast-duck-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ganbian Niurou Si",
+      "place": "hawker",
+      "serving": "1 plate (200 g)",
+      "kcal": 400,
+      "carbs_g": 10,
+      "protein_g": 28,
+      "fat_g": 26,
+      "aliases": [
+        "干煸牛肉丝",
+        "乾煸牛肉絲",
+        "gan bian niu rou si",
+        "dry fried shredded beef",
+        "sichuan crispy beef strips"
+      ],
+      "icon": "food/beef-slices",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Duojiao Yutou",
+      "place": "hawker",
+      "serving": "1 fish head (600 g)",
+      "kcal": 475,
+      "carbs_g": 8,
+      "protein_g": 52,
+      "fat_g": 26,
+      "aliases": [
+        "剁椒鱼头",
+        "剁椒魚頭",
+        "duo jiao yu tou",
+        "steamed fish head with chopped chilli",
+        "hunan chilli fish head"
+      ],
+      "icon": "food/grilled-fish",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Xiaochao Rou",
+      "place": "hawker",
+      "serving": "1 plate (250 g)",
+      "kcal": 470,
+      "carbs_g": 8,
+      "protein_g": 24,
+      "fat_g": 38,
+      "aliases": [
+        "小炒肉",
+        "农家小炒肉",
+        "xiao chao rou",
+        "hunan farmhouse stir fried pork",
+        "pork belly with green chilli"
+      ],
+      "icon": "food/pork-belly",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Changsha Chou Doufu",
+      "place": "hawker",
+      "serving": "6 pieces (150 g)",
+      "kcal": 310,
+      "carbs_g": 16,
+      "protein_g": 12,
+      "fat_g": 22,
+      "aliases": [
+        "长沙臭豆腐",
+        "長沙臭豆腐",
+        "chou doufu",
+        "black stinky tofu",
+        "hunan fried stinky tofu"
+      ],
+      "icon": "food/tofu",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mao Shi Hong Shao Rou",
+      "place": "hawker",
+      "serving": "1 plate (250 g)",
+      "kcal": 575,
+      "carbs_g": 14,
+      "protein_g": 22,
+      "fat_g": 48,
+      "aliases": [
+        "毛氏红烧肉",
+        "毛氏紅燒肉",
+        "mao shi hongshao rou",
+        "chairman mao red braised pork",
+        "hunan braised pork belly"
+      ],
+      "icon": "food/pork-belly",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "La Wei He Zheng",
+      "place": "hawker",
+      "serving": "1 plate (250 g)",
+      "kcal": 540,
+      "carbs_g": 6,
+      "protein_g": 30,
+      "fat_g": 44,
+      "aliases": [
+        "腊味合蒸",
+        "臘味合蒸",
+        "la wei he zheng",
+        "steamed hunan cured meats",
+        "cured pork and sausage steamed"
+      ],
+      "icon": "food/sausage",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Changsha Mifen",
+      "place": "hawker",
+      "serving": "1 bowl (500 g)",
+      "kcal": 510,
+      "carbs_g": 72,
+      "protein_g": 20,
+      "fat_g": 16,
+      "aliases": [
+        "长沙米粉",
+        "長沙米粉",
+        "changsha rice noodles",
+        "hunan rice noodle soup",
+        "chang sha mi fen"
+      ],
+      "icon": "food/rice-vermicelli",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Changde Niurou Fen",
+      "place": "hawker",
+      "serving": "1 bowl (500 g)",
+      "kcal": 555,
+      "carbs_g": 70,
+      "protein_g": 24,
+      "fat_g": 20,
+      "aliases": [
+        "常德牛肉粉",
+        "changde beef rice noodles",
+        "hunan beef noodle soup",
+        "chang de niu rou fen"
+      ],
+      "icon": "food/rice-vermicelli",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Hunan Kouwei Xia",
+      "place": "hawker",
+      "serving": "1 plate (400 g)",
+      "kcal": 435,
+      "carbs_g": 12,
+      "protein_g": 34,
+      "fat_g": 28,
+      "aliases": [
+        "口味虾",
+        "口味蝦",
+        "kou wei xia",
+        "changsha spicy crayfish",
+        "hunan flavour prawns"
+      ],
+      "icon": "food/prawn",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Hunan La Rou Chao Qincai",
+      "place": "home",
+      "serving": "1 plate (220 g)",
+      "kcal": 390,
+      "carbs_g": 10,
+      "protein_g": 18,
+      "fat_g": 32,
+      "aliases": [
+        "腊肉炒芹菜",
+        "臘肉炒芹菜",
+        "la rou chao qin cai",
+        "cured pork with celery",
+        "hunan smoked bacon stir fry"
+      ],
+      "icon": "food/wok",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Wenchang Chicken",
+      "place": "hawker",
+      "serving": "1/4 chicken (250 g)",
+      "kcal": 395,
+      "carbs_g": 2,
+      "protein_g": 38,
+      "fat_g": 26,
+      "aliases": [
+        "文昌鸡",
+        "文昌雞",
+        "wenchang ji",
+        "hainan wenchang chicken",
+        "poached wenchang chicken"
+      ],
+      "icon": "dishes/chicken-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Shao Ru Ge",
+      "place": "hawker",
+      "serving": "1 whole pigeon (300 g)",
+      "kcal": 420,
+      "carbs_g": 3,
+      "protein_g": 34,
+      "fat_g": 30,
+      "aliases": ["烧乳鸽", "燒乳鴿", "shao ru ge", "cantonese roast pigeon", "crispy roast squab"],
+      "icon": "food/roast-chicken",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chaozhou Lushui Goose",
+      "place": "hawker",
+      "serving": "1 plate (180 g)",
+      "kcal": 335,
+      "carbs_g": 4,
+      "protein_g": 30,
+      "fat_g": 22,
+      "aliases": [
+        "潮州卤水鹅",
+        "潮州滷水鵝",
+        "lu shui e",
+        "teochew braised goose",
+        "chiu chow master stock goose"
+      ],
+      "icon": "dishes/roast-duck-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chaozhou Niuwan Fen",
+      "place": "hawker",
+      "serving": "1 bowl (500 g)",
+      "kcal": 470,
+      "carbs_g": 62,
+      "protein_g": 24,
+      "fat_g": 14,
+      "aliases": [
+        "潮州牛丸粉",
+        "牛肉丸粿条",
+        "teochew beef ball noodles",
+        "chaozhou beef ball kway teow",
+        "niu wan fen"
+      ],
+      "icon": "dishes/kuey-teow-soup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chaozhou Haolie",
+      "place": "hawker",
+      "serving": "1 plate (250 g)",
+      "kcal": 440,
+      "carbs_g": 26,
+      "protein_g": 16,
+      "fat_g": 30,
+      "aliases": [
+        "蚝烙",
+        "蠔烙",
+        "hao lie",
+        "teochew oyster pancake",
+        "chaozhou crispy oyster omelette"
+      ],
+      "icon": "food/omelette",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chaozhou Beef Hotpot Serving",
+      "place": "hawker",
+      "serving": "1 serving (400 g)",
+      "kcal": 450,
+      "carbs_g": 6,
+      "protein_g": 44,
+      "fat_g": 28,
+      "aliases": [
+        "潮汕牛肉火锅",
+        "潮汕牛肉火鍋",
+        "chaoshan beef hotpot",
+        "teochew beef hotpot",
+        "sha cha beef hotpot"
+      ],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chaozhou Dong Xie",
+      "place": "hawker",
+      "serving": "1 half crab (200 g)",
+      "kcal": 120,
+      "carbs_g": 1,
+      "protein_g": 22,
+      "fat_g": 3,
+      "aliases": ["潮州冻蟹", "潮州凍蟹", "dong xie", "teochew chilled crab", "chaozhou cold crab"],
+      "icon": "food/crab",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mei Cai Kou Rou",
+      "place": "hawker",
+      "serving": "1 plate (250 g)",
+      "kcal": 550,
+      "carbs_g": 12,
+      "protein_g": 22,
+      "fat_g": 46,
+      "aliases": [
+        "梅菜扣肉",
+        "mei cai kou rou",
+        "pork belly with preserved mustard greens",
+        "hakka steamed pork with mei cai"
+      ],
+      "icon": "food/pork-belly",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Gan Chao Niu He",
+      "place": "hawker",
+      "serving": "1 plate (400 g)",
+      "kcal": 600,
+      "carbs_g": 68,
+      "protein_g": 24,
+      "fat_g": 26,
+      "aliases": [
+        "干炒牛河",
+        "乾炒牛河",
+        "gon chow ngau ho",
+        "dry fried beef ho fun",
+        "cantonese beef flat noodles"
+      ],
+      "icon": "food/flat-rice-noodles",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Guangdong Lao Huo Tang",
+      "place": "home",
+      "serving": "1 bowl (350 ml)",
+      "kcal": 125,
+      "carbs_g": 6,
+      "protein_g": 12,
+      "fat_g": 6,
+      "aliases": [
+        "老火汤",
+        "老火湯",
+        "lao huo tang",
+        "cantonese slow boiled soup",
+        "old fire soup"
+      ],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bozai Fan with Chicken and Mushroom",
+      "place": "hawker",
+      "serving": "1 claypot (450 g)",
+      "kcal": 640,
+      "carbs_g": 86,
+      "protein_g": 28,
+      "fat_g": 20,
+      "aliases": [
+        "煲仔饭",
+        "煲仔飯",
+        "bo zai fan",
+        "claypot rice with chicken and mushroom",
+        "cantonese clay pot rice"
+      ],
+      "icon": "dishes/claypot-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Guangzhou Zhaliang",
+      "place": "hawker",
+      "serving": "1 plate (180 g)",
+      "kcal": 330,
+      "carbs_g": 42,
+      "protein_g": 6,
+      "fat_g": 14,
+      "aliases": [
+        "炸两",
+        "炸兩",
+        "zha liang",
+        "rice roll wrapped youtiao",
+        "cheung fun with fritter"
+      ],
+      "icon": "dishes/chee-cheong-fun",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Hakka Niang Ku Gua",
+      "place": "hawker",
+      "serving": "3 pieces (180 g)",
+      "kcal": 250,
+      "carbs_g": 12,
+      "protein_g": 16,
+      "fat_g": 15,
+      "aliases": [
+        "客家酿苦瓜",
+        "客家釀苦瓜",
+        "niang ku gua",
+        "hakka stuffed bitter gourd",
+        "meat stuffed bitter melon"
+      ],
+      "icon": "dishes/yong-tau-foo",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Hakka Sanbeiya",
+      "place": "hawker",
+      "serving": "1 plate (250 g)",
+      "kcal": 460,
+      "carbs_g": 8,
+      "protein_g": 30,
+      "fat_g": 34,
+      "aliases": ["三杯鸭", "三杯鴨", "san bei ya", "three cup duck", "hakka duck with sesame oil"],
+      "icon": "dishes/roast-duck-rice",
+      "source": "model_estimate",
+      "verified": false
+    }
+  ]
+}
