@@ -24,7 +24,7 @@ export default function MeScreen() {
 
   const { data: profile } = useProfile()
   const { data: settings } = useSettings()
-  const { data: targets } = useTargets()
+  const { data: targets, isPending: targetsPending } = useTargets()
   const { data: subscription } = useSubscription()
   const { data: mealTimes } = useMealTimes()
   const streak = useStreak()
@@ -39,6 +39,19 @@ export default function MeScreen() {
           Boolean,
         ).length
       : 0)
+
+  /**
+   * A row with no value yet shows no value.
+   *
+   * Every summary on this screen has a plausible-looking default behind it — no
+   * streak, no connected store, metric units, zero reminders — and each one is
+   * a statement about the account rather than about the request. `SettingRow`
+   * drops its value column entirely for `undefined`, which is the honest shape
+   * while the answer is out and costs no layout: the title and the chevron do
+   * not move when the figure lands beside them.
+   */
+  const remindersValue =
+    settings && mealTimes ? t('profile:home.remindersValue', { count: activeReminders }) : undefined
 
   const status = subscription?.status ?? 'none'
   const planLine =
@@ -81,11 +94,14 @@ export default function MeScreen() {
         </View>
 
         <View className="flex-row gap-2.5">
+          {/* An em dash for a figure nobody has yet, the same as the two tiles
+              beside it. This one used to print "0", which is a real answer —
+              and the wrong one on every account that has a streak. */}
           <StatTile
             className="flex-1"
             tone="track"
             label={t('profile:home.streak')}
-            value={String(streak.current)}
+            value={streak.isPending ? '—' : String(streak.current)}
           />
           <StatTile
             className="flex-1"
@@ -117,7 +133,11 @@ export default function MeScreen() {
           icon={{ set: 'body', name: 'target' }}
           title={t('profile:home.goals')}
           value={
-            targets ? t('profile:home.goalsValue', { kcal: targets.kcal.toLocaleString() }) : '—'
+            targetsPending
+              ? undefined
+              : targets
+                ? t('profile:home.goalsValue', { kcal: targets.kcal.toLocaleString() })
+                : '—'
           }
           onPress={() => router.push('/settings/goals')}
         />
@@ -146,25 +166,31 @@ export default function MeScreen() {
           icon={{ set: 'system', name: 'watch' }}
           title={t('activity:settings.title')}
           value={
-            health.data?.connected
-              ? t(`activity:provider.${health.data.provider}`)
-              : t('profile:home.healthOff')
+            health.isPending
+              ? undefined
+              : health.data?.connected
+                ? t(`activity:provider.${health.data.provider}`)
+                : t('profile:home.healthOff')
           }
           onPress={() => router.push('/settings/health')}
         />
         <SettingRow
           icon={{ set: 'system', name: 'bell' }}
           title={t('profile:home.reminders')}
-          value={t('profile:home.remindersValue', { count: activeReminders })}
+          value={remindersValue}
           onPress={() => router.push('/settings/reminders')}
         />
         <SettingRow
           icon={{ set: 'system', name: 'language' }}
           title={t('profile:home.units')}
-          value={t('profile:home.unitsValue', {
-            units: t(`profile:home.${settings?.units ?? 'metric'}`),
-            language: (settings?.language ?? 'en').toUpperCase(),
-          })}
+          value={
+            settings
+              ? t('profile:home.unitsValue', {
+                  units: t(`profile:home.${settings.units}`),
+                  language: settings.language.toUpperCase(),
+                })
+              : undefined
+          }
           onPress={() => router.push('/settings/preferences')}
         />
         <SettingRow

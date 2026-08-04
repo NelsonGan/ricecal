@@ -33,13 +33,16 @@ export {
   useClearDemoActivity,
   useDisconnectHealth,
   useHealthConnection,
+  usePrefetchActivityDays,
 } from './activity'
 export { dateKey, today } from './client'
 export {
+  type DayView,
   useDay,
   useDayLog,
   useDayMarks,
   useNutritionRange,
+  usePrefetchDays,
   useSetWater,
   useStreak,
 } from './day'

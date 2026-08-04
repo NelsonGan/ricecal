@@ -4,7 +4,7 @@ import { ActivityIndicator, View } from 'react-native'
 
 import type { IconRef } from '@/data'
 import { useMealPhotoUrl } from '@/data'
-import { cn, Icon, Tappable, Text } from '@/ui'
+import { cn, Icon, Skeleton, Tappable, Text } from '@/ui'
 
 const valueTones = {
   ink: 'text-ink',
@@ -86,7 +86,7 @@ export function ItemRow({
   onPress,
   className,
 }: ItemRowProps) {
-  const { data: signedUrl } = useMealPhotoUrl(photoPath)
+  const { data: signedUrl, isLoading: signing } = useMealPhotoUrl(photoPath)
   const photo = photoUri ?? signedUrl
 
   const tile = (
@@ -99,7 +99,27 @@ export function ItemRow({
           source={{ uri: photo }}
           style={{ flex: 1, width: '100%', opacity: busy ? 0.55 : 1 }}
           contentFit="cover"
+          /**
+           * Faded in, because a plate is always at least one request late.
+           *
+           * The bucket is private and signed URLs are deliberately kept OUT of
+           * the persisted cache — they expire within the hour and this cache
+           * lives for a week — so every launch re-signs them, and a day of
+           * snapped meals drew its rows as grey squares and then hard-cut to
+           * photographs a moment later. The rows themselves are not late any
+           * more; this is the last thing on the list that was, and 180ms of
+           * cross-fade turns a row of pops into the picture arriving.
+           */
+          transition={180}
         />
+      ) : signing ? (
+        // Not an icon, and not nothing: a snapped row's `icon` is undefined by
+        // design — the view suppresses it while a photo exists — so the choice
+        // here is between a pulse and a bare grey square that gives no reason
+        // for itself.
+        // `bg-line` rather than the skeleton's own `bg-track`, which is what
+        // the tile behind it already is — track on track does not pulse.
+        <Skeleton width="100%" height={56} rounded={false} className="bg-line" />
       ) : busy || !icon ? null : (
         <Icon {...icon} size={40} />
       )}

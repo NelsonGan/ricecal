@@ -315,6 +315,11 @@ function AnalysingRow({
             source={{ uri: entry.localPhotoUri ?? signedUrl }}
             style={{ flex: 1, width: '100%', opacity: 0.55 }}
             contentFit="cover"
+            // Same cross-fade as `ItemRow`, for the same reason: a stored photo
+            // is one signing request behind the row it belongs to. This row
+            // already draws a camera in the meantime, so what the fade removes
+            // is the cut from that to the photograph.
+            transition={180}
           />
         ) : (
           <Icon set="system" name={typed ? 'sparkle' : 'camera'} size={40} />

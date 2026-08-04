@@ -86,7 +86,7 @@ export default function ActivityScreen() {
   const day = useActivityDay(date)
   const sessions = useActivitySessions(date)
   const summary = useActivitySummary('7d')
-  const { data: targets } = useTargets()
+  const targets = useTargets()
   const { data: settings } = useSettings()
   const food = useDayLog(date)
 
@@ -155,6 +155,23 @@ export default function ActivityScreen() {
   const activity = day.data
   const synced = syncedAgo(connection.data?.lastSyncedAt ?? null)
   const eaten = sumMacros(food.entries).kcal
+
+  /**
+   * The body of the screen waits as one, for the reason Today's does.
+   *
+   * Every figure here falls back to zero or to a dash, and four of the five
+   * queries behind them are separate requests that land in whatever order the
+   * network decides. Gated one at a time the screen assembled itself in front
+   * of the reader: rings at zero, a budget strip claiming the whole allowance
+   * was still there, "No workouts this week" over a week with three in it.
+   *
+   * The rings in particular are gated on the SUMMARY as well as on the day,
+   * because the summary is where a tile's reference figure comes from when the
+   * provider gives no goal — see `against` below. Without it the bars drew
+   * against nothing and then jumped to an average.
+   */
+  const loading =
+    day.isPending || sessions.isPending || summary.isPending || food.isPending || targets.isPending
 
   /**
    * A tile's reference figure: the store's goal, else the user's own average.
@@ -303,7 +320,7 @@ export default function ActivityScreen() {
         }
       />
 
-      {day.isPending ? (
+      {loading ? (
         <Card>
           <Skeleton className="h-[92px] w-full" />
         </Card>
@@ -319,12 +336,16 @@ export default function ActivityScreen() {
       ) : null}
 
       <Card>
-        <BudgetStrip
-          goal={targets?.kcal ?? 0}
-          eaten={eaten}
-          burned={activity?.activeKcal ?? 0}
-          extends={settings?.activity_extends_budget ?? true}
-        />
+        {loading ? (
+          <Skeleton className="h-[76px] w-full" />
+        ) : (
+          <BudgetStrip
+            goal={targets.data?.kcal ?? 0}
+            eaten={eaten}
+            burned={activity?.activeKcal ?? 0}
+            extends={settings?.activity_extends_budget ?? true}
+          />
+        )}
       </Card>
 
       {/**
@@ -343,31 +364,37 @@ export default function ActivityScreen() {
        */}
       <Card title={t('activity:today.todayTitle')} flush>
         <View className="px-7">
-          <ListRow
-            title={t('activity:today.stepsRow')}
-            subtitle={t('activity:today.stepsRowValue', { steps: count(activity?.steps ?? 0) })}
-            leading={<Icon set="body" name="footprints" size={32} />}
-            onPress={() => router.push('/activity/steps')}
-            divider={(sessions.data?.length ?? 0) > 0}
-          />
+          {loading ? (
+            <Skeleton className="h-[52px] w-full" />
+          ) : (
+            <>
+              <ListRow
+                title={t('activity:today.stepsRow')}
+                subtitle={t('activity:today.stepsRowValue', { steps: count(activity?.steps ?? 0) })}
+                leading={<Icon set="body" name="footprints" size={32} />}
+                onPress={() => router.push('/activity/steps')}
+                divider={(sessions.data?.length ?? 0) > 0}
+              />
 
-          {sessions.data?.map((session, index) => (
-            <SessionRow
-              key={session.id}
-              session={session}
-              divider={index < (sessions.data?.length ?? 0) - 1}
-              onPress={() =>
-                router.push({
-                  pathname: '/activity/workout/[id]',
-                  params: { id: session.id },
-                })
-              }
-            />
-          ))}
+              {sessions.data?.map((session, index) => (
+                <SessionRow
+                  key={session.id}
+                  session={session}
+                  divider={index < (sessions.data?.length ?? 0) - 1}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/activity/workout/[id]',
+                      params: { id: session.id },
+                    })
+                  }
+                />
+              ))}
+            </>
+          )}
         </View>
       </Card>
 
-      {sessions.data && sessions.data.length === 0 ? (
+      {!loading && sessions.data && sessions.data.length === 0 ? (
         <EmptyState
           title={t('activity:today.noSessionsTitle')}
           description={t('activity:today.noSessionsBody')}
@@ -377,32 +404,38 @@ export default function ActivityScreen() {
 
       <Card title={t('activity:today.weekTitle')} flush>
         <View className="px-7">
-          <ListRow
-            title={t('activity:today.balanceRow')}
-            subtitle={
-              balance == null
-                ? t('activity:today.balanceUnknown')
-                : balance < 0
-                  ? t('activity:today.balanceDeficit', { value: count(Math.abs(balance)) })
-                  : t('activity:today.balanceSurplus', { value: count(balance) })
-            }
-            leading={<Icon set="body" name="pulse-wave" size={32} />}
-            onPress={() => router.push('/activity/balance')}
-          />
-          <ListRow
-            title={t('activity:history.title')}
-            subtitle={
-              weekSessions === 0
-                ? t('activity:today.historyNone')
-                : t('activity:today.historyRowValue', {
-                    count: weekSessions,
-                    time: duration((summary.data?.sessionMinutes ?? 0) * 60),
-                  })
-            }
-            leading={<Icon set="system" name="calendar" size={32} />}
-            onPress={() => router.push('/activity/history')}
-            divider={false}
-          />
+          {loading ? (
+            <Skeleton className="h-[104px] w-full" />
+          ) : (
+            <>
+              <ListRow
+                title={t('activity:today.balanceRow')}
+                subtitle={
+                  balance == null
+                    ? t('activity:today.balanceUnknown')
+                    : balance < 0
+                      ? t('activity:today.balanceDeficit', { value: count(Math.abs(balance)) })
+                      : t('activity:today.balanceSurplus', { value: count(balance) })
+                }
+                leading={<Icon set="body" name="pulse-wave" size={32} />}
+                onPress={() => router.push('/activity/balance')}
+              />
+              <ListRow
+                title={t('activity:history.title')}
+                subtitle={
+                  weekSessions === 0
+                    ? t('activity:today.historyNone')
+                    : t('activity:today.historyRowValue', {
+                        count: weekSessions,
+                        time: duration((summary.data?.sessionMinutes ?? 0) * 60),
+                      })
+                }
+                leading={<Icon set="system" name="calendar" size={32} />}
+                onPress={() => router.push('/activity/history')}
+                divider={false}
+              />
+            </>
+          )}
         </View>
       </Card>
 
@@ -415,7 +448,7 @@ export default function ActivityScreen() {
           that screen is gone.
 
           Development builds only, so nothing here can reach a released app. */}
-      {__DEV__ && provider !== 'demo' && summary.data?.activeDays === 0 ? (
+      {__DEV__ && !loading && provider !== 'demo' && summary.data?.activeDays === 0 ? (
         <Card tone="kaya">
           <View className="gap-3">
             <Text variant="body" className="text-kaya-ink">
