@@ -7,7 +7,7 @@ import { keys } from './keys'
 import { toEntry } from './mappers'
 import { pendingAsEntry, usePendingSnaps } from './pending-snaps'
 import { useUserId } from './session'
-import type { DailyNutritionRow, DayLog, FoodLogRow } from './types'
+import type { DailyNutritionRow, DayLog, DayMark, DayMarkRow, FoodLogRow } from './types'
 
 /**
  * One day: what was eaten, and how much water.
@@ -188,6 +188,48 @@ export function useNutritionRange(from: string, to: string) {
           .lte('log_date', to)
           .order('log_date'),
       ) as DailyNutritionRow[],
+  })
+}
+
+/**
+ * How each day of a week went, for the dots under the strip on Today.
+ *
+ * Keyed by date so the strip can ask about a day rather than search a list —
+ * seven lookups per week, once per swipe.
+ *
+ * The verdict is not here and is not in the database either. `day_marks`
+ * returns what was eaten, the goal in force that day and what movement added
+ * to it; whether that reads as under or over is decided where the ring decides
+ * it, because the two are on the same screen about the same day and must not
+ * disagree.
+ */
+export function useDayMarks(from: string, to: string) {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.dayMarks(userId, from, to),
+    queryFn: async (): Promise<Record<string, DayMark>> => {
+      const rows = unwrap(
+        await supabase.rpc('day_marks', { p_from: from, p_to: to }),
+      ) as DayMarkRow[]
+
+      return Object.fromEntries(
+        rows.map((row) => [
+          row.at,
+          {
+            date: row.at,
+            entryCount: row.entry_count ?? 0,
+            kcal: row.kcal ?? 0,
+            // Null where the account had no budget yet — before onboarding ran,
+            // or on a day earlier than its first `daily_goals` row. A day with
+            // no goal cannot be over or under one, and the strip draws it as a
+            // day with nothing logged rather than as a failure.
+            goalKcal: row.goal_kcal,
+            activeKcal: row.active_kcal ?? 0,
+          },
+        ]),
+      )
+    },
   })
 }
 

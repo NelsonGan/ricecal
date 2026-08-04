@@ -29,6 +29,14 @@ export const keys = {
   dayAll: (userId: string) => ['day', userId] as const,
   /** Totals for a date range, for the charts and the weekly report. */
   nutrition: (userId: string, from: string, to: string) => ['nutrition', userId, from, to] as const,
+  /** One week of dots under the strip on Today: eaten, goal and movement per day. */
+  dayMarks: (userId: string, from: string, to: string) => ['day-marks', userId, from, to] as const,
+  /**
+   * Every week of them. What the write side wants: a logged meal moves one
+   * day's dot and a health sync moves seven, and neither mutation is in a
+   * position to know which week is on screen.
+   */
+  dayMarksAll: (userId: string) => ['day-marks', userId] as const,
   streak: (userId: string) => ['streak', userId] as const,
 
   /**

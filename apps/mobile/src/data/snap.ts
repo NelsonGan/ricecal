@@ -170,6 +170,7 @@ function useRecogniseMeal() {
           queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
           queryClient.invalidateQueries({ queryKey: keys.recentFoodsAll(userId) })
           queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+          queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
           // Movement is measured against what was eaten: the balance chart, the
           // "eaten" average and the deficit sentence all read `daily_nutrition`
           // through `activity_summary`. Without this a meal logged today left

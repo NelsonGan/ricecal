@@ -14,6 +14,12 @@ export const logging = {
     /** Shown when the day is over budget. Never scold. */
     overNote: 'A bit over today, tomorrow is a new count.',
     /**
+     * The same, for a day reached through the week strip. "Tomorrow is a new
+     * count" is a kindness about a day that is still running; said about last
+     * Tuesday it is just wrong, and the tomorrow it promises has been and gone.
+     */
+    overNoteOn: 'A bit over that day.',
+    /**
      * Under the ring when a health store credited movement.
      *
      * Present so the goal reading higher than the one in Settings is explained
@@ -22,6 +28,8 @@ export const logging = {
      * movement adds.
      */
     burnedNote: '+{{kcal}} from moving today',
+    /** The same line about a day the strip went back to. */
+    burnedNoteOn: '+{{kcal}} from moving that day',
     /**
      * Everything logged today, in one list. It was a heading per meal, and the
      * meals are not headings any more — see `EntryList` for why.
@@ -80,6 +88,25 @@ export const logging = {
     noBudgetTitle: 'No daily budget yet',
     noBudgetBody: 'Set your target and the ring has something to fill.',
     noBudgetAction: 'Set my target',
+  },
+
+  /**
+   * The week strip above the ring.
+   *
+   * All of it is for a screen reader. The cell itself is two glyphs and a dot,
+   * which is legible at a glance and says nothing at all read aloud — "M 21"
+   * is not a date and a coloured circle is not a word.
+   */
+  week: {
+    a11y: {
+      plain: '{{day}}',
+      /** A day that has not happened. It cannot be selected, and says why. */
+      ahead: '{{day}}, still to come',
+      under: '{{day}}, under goal',
+      /** Never "over budget" and never a failure — the ring below is kinder than that. */
+      over: '{{day}}, over goal',
+      missed: '{{day}}, nothing logged',
+    },
   },
 
   selector: {
