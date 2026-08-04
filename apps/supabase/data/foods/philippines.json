@@ -1,0 +1,3178 @@
+{
+  "source": "research:philippines",
+  "foods": [
+    {
+      "name": "Adobong Manok",
+      "place": "home",
+      "serving": "1 serving (2 pieces)",
+      "kcal": 380,
+      "carbs_g": 6,
+      "protein_g": 30,
+      "fat_g": 26,
+      "aliases": [
+        "chicken adobo",
+        "adobong manok",
+        "adobo manok",
+        "filipino chicken adobo",
+        "chicken in soy and vinegar"
+      ],
+      "icon": "food/chicken-drumstick",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        { "label": "1 piece", "factor": 0.5 },
+        { "label": "with 1 cup rice", "factor": 1.55 }
+      ]
+    },
+    {
+      "name": "Adobong Baboy",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 430,
+      "carbs_g": 5,
+      "protein_g": 26,
+      "fat_g": 34,
+      "aliases": [
+        "pork adobo",
+        "adobong baboy",
+        "adobo baboy",
+        "filipino pork adobo",
+        "pork in soy and vinegar"
+      ],
+      "icon": "food/pork-belly",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        { "label": "half serving", "factor": 0.5 },
+        { "label": "with 1 cup rice", "factor": 1.48 }
+      ]
+    },
+    {
+      "name": "Adobong Puti",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 390,
+      "carbs_g": 3,
+      "protein_g": 27,
+      "fat_g": 30,
+      "aliases": [
+        "adobong puti",
+        "white adobo",
+        "adobo without soy sauce",
+        "adobong tuyo puti",
+        "vinegar adobo"
+      ],
+      "icon": "food/pork-belly",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Adobong Sitaw",
+      "place": "home",
+      "serving": "1 cup",
+      "kcal": 180,
+      "carbs_g": 12,
+      "protein_g": 7,
+      "fat_g": 12,
+      "aliases": [
+        "adobong sitaw",
+        "adobo string beans",
+        "long beans adobo",
+        "sitaw adobo"
+      ],
+      "icon": "food/green-beans",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Adobong Kangkong",
+      "place": "home",
+      "serving": "1 cup",
+      "kcal": 130,
+      "carbs_g": 8,
+      "protein_g": 5,
+      "fat_g": 9,
+      "aliases": [
+        "adobong kangkong",
+        "water spinach adobo",
+        "kangkong adobo",
+        "adobo kangkong"
+      ],
+      "icon": "food/vegetables",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Adobong Pusit",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 260,
+      "carbs_g": 9,
+      "protein_g": 24,
+      "fat_g": 14,
+      "aliases": [
+        "adobong pusit",
+        "squid adobo",
+        "adobo pusit",
+        "squid in ink and vinegar"
+      ],
+      "icon": "food/squid-rings",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sinigang na Baboy",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 320,
+      "carbs_g": 14,
+      "protein_g": 22,
+      "fat_g": 19,
+      "aliases": [
+        "sinigang na baboy",
+        "pork sinigang",
+        "sour tamarind pork soup",
+        "sinigang baboy",
+        "sinigang sa sampalok"
+      ],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "1 large bowl", "factor": 1.5 }]
+    },
+    {
+      "name": "Sinigang na Hipon",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 190,
+      "carbs_g": 14,
+      "protein_g": 20,
+      "fat_g": 6,
+      "aliases": [
+        "sinigang na hipon",
+        "prawn sinigang",
+        "shrimp sinigang",
+        "sour prawn soup"
+      ],
+      "icon": "food/prawn",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sinigang na Bangus",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 260,
+      "carbs_g": 13,
+      "protein_g": 24,
+      "fat_g": 12,
+      "aliases": [
+        "sinigang na bangus",
+        "milkfish sinigang",
+        "bangus sinigang",
+        "sour milkfish soup"
+      ],
+      "icon": "food/fish",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sinigang na Baka",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 340,
+      "carbs_g": 15,
+      "protein_g": 26,
+      "fat_g": 19,
+      "aliases": [
+        "sinigang na baka",
+        "beef sinigang",
+        "sour beef soup",
+        "sinigang baka"
+      ],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kare-Kare",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 480,
+      "carbs_g": 18,
+      "protein_g": 26,
+      "fat_g": 34,
+      "aliases": [
+        "kare kare",
+        "karekare",
+        "oxtail peanut stew",
+        "peanut stew filipino",
+        "kare-kare with bagoong"
+      ],
+      "icon": "food/peanuts",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "with 1 cup rice", "factor": 1.42 }]
+    },
+    {
+      "name": "Kaldereta",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 420,
+      "carbs_g": 16,
+      "protein_g": 26,
+      "fat_g": 27,
+      "aliases": [
+        "caldereta",
+        "kalderetang baka",
+        "beef caldereta",
+        "beef stew tomato liver sauce",
+        "kaldereta baka"
+      ],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kalderetang Kambing",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 430,
+      "carbs_g": 15,
+      "protein_g": 28,
+      "fat_g": 28,
+      "aliases": [
+        "kalderetang kambing",
+        "goat caldereta",
+        "kambing kaldereta",
+        "goat stew filipino"
+      ],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mechado",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 390,
+      "carbs_g": 15,
+      "protein_g": 27,
+      "fat_g": 24,
+      "aliases": [
+        "mechado",
+        "beef mechado",
+        "larded beef stew",
+        "mitsado"
+      ],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Afritada",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 330,
+      "carbs_g": 20,
+      "protein_g": 24,
+      "fat_g": 17,
+      "aliases": [
+        "afritada",
+        "apritada",
+        "chicken afritada",
+        "afritadang manok",
+        "tomato chicken stew"
+      ],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Menudo",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 350,
+      "carbs_g": 19,
+      "protein_g": 22,
+      "fat_g": 21,
+      "aliases": [
+        "menudo",
+        "pork menudo",
+        "menudong baboy",
+        "pork liver tomato stew"
+      ],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pochero",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 430,
+      "carbs_g": 30,
+      "protein_g": 26,
+      "fat_g": 23,
+      "aliases": [
+        "pochero",
+        "puchero",
+        "beef pochero",
+        "pochero with saba banana"
+      ],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bistek Tagalog",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 330,
+      "carbs_g": 8,
+      "protein_g": 28,
+      "fat_g": 21,
+      "aliases": [
+        "bistek tagalog",
+        "bistek",
+        "filipino beef steak",
+        "beef in calamansi and soy",
+        "bistec tagalog"
+      ],
+      "icon": "food/beef-steak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Beef Tapa",
+      "place": "home",
+      "serving": "1 serving (100 g)",
+      "kcal": 280,
+      "carbs_g": 8,
+      "protein_g": 28,
+      "fat_g": 15,
+      "aliases": [
+        "tapa",
+        "beef tapa",
+        "tapang baka",
+        "cured beef filipino",
+        "sweet beef tapa"
+      ],
+      "icon": "food/beef-slices",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pork Tocino",
+      "place": "home",
+      "serving": "1 serving (100 g)",
+      "kcal": 290,
+      "carbs_g": 20,
+      "protein_g": 21,
+      "fat_g": 14,
+      "aliases": [
+        "tocino",
+        "pork tocino",
+        "tosino",
+        "sweet cured pork",
+        "filipino sweet bacon"
+      ],
+      "icon": "food/pork-belly",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Vigan Longganisa",
+      "place": "home",
+      "serving": "2 pieces",
+      "kcal": 250,
+      "carbs_g": 3,
+      "protein_g": 13,
+      "fat_g": 21,
+      "aliases": [
+        "vigan longganisa",
+        "longganisang vigan",
+        "ilocos longganisa",
+        "garlic longganisa",
+        "longanisa vigan"
+      ],
+      "icon": "food/sausage",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "1 piece", "factor": 0.5 }]
+    },
+    {
+      "name": "Lucban Longganisa",
+      "place": "home",
+      "serving": "2 pieces",
+      "kcal": 260,
+      "carbs_g": 3,
+      "protein_g": 14,
+      "fat_g": 22,
+      "aliases": [
+        "lucban longganisa",
+        "longganisang lucban",
+        "quezon longganisa",
+        "sour garlic sausage",
+        "longanisa lucban"
+      ],
+      "icon": "food/sausage",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Longganisang Hamonado",
+      "place": "home",
+      "serving": "2 pieces",
+      "kcal": 270,
+      "carbs_g": 12,
+      "protein_g": 12,
+      "fat_g": 19,
+      "aliases": [
+        "longganisang hamonado",
+        "sweet longganisa",
+        "hamonado longganisa",
+        "pampanga longganisa",
+        "longanisa hamonado"
+      ],
+      "icon": "food/sausage",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tinolang Manok",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 250,
+      "carbs_g": 12,
+      "protein_g": 25,
+      "fat_g": 11,
+      "aliases": [
+        "tinolang manok",
+        "chicken tinola",
+        "tinola",
+        "ginger chicken soup",
+        "tinolang manok na may papaya"
+      ],
+      "icon": "food/ginger",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nilagang Baka",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 340,
+      "carbs_g": 20,
+      "protein_g": 26,
+      "fat_g": 17,
+      "aliases": [
+        "nilagang baka",
+        "boiled beef soup",
+        "nilaga",
+        "beef nilaga"
+      ],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bulalo",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 420,
+      "carbs_g": 16,
+      "protein_g": 30,
+      "fat_g": 26,
+      "aliases": [
+        "bulalo",
+        "beef shank marrow soup",
+        "bulalo soup",
+        "batangas bulalo"
+      ],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sisig na Baboy",
+      "place": "hawker",
+      "serving": "1 sizzling plate",
+      "kcal": 520,
+      "carbs_g": 8,
+      "protein_g": 30,
+      "fat_g": 40,
+      "aliases": [
+        "sisig",
+        "pork sisig",
+        "sisig na baboy",
+        "sizzling sisig",
+        "pampanga sisig"
+      ],
+      "icon": "food/pork-belly",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "half plate", "factor": 0.5 }]
+    },
+    {
+      "name": "Bangus Sisig",
+      "place": "hawker",
+      "serving": "1 sizzling plate",
+      "kcal": 380,
+      "carbs_g": 9,
+      "protein_g": 28,
+      "fat_g": 26,
+      "aliases": [
+        "bangus sisig",
+        "milkfish sisig",
+        "sisig na bangus",
+        "fish sisig"
+      ],
+      "icon": "food/fish",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tofu Sisig",
+      "place": "hawker",
+      "serving": "1 sizzling plate",
+      "kcal": 320,
+      "carbs_g": 14,
+      "protein_g": 18,
+      "fat_g": 22,
+      "aliases": [
+        "tofu sisig",
+        "tokwa sisig",
+        "sisig na tokwa",
+        "vegetarian sisig"
+      ],
+      "icon": "food/tofu",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Crispy Pata",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 780,
+      "carbs_g": 2,
+      "protein_g": 45,
+      "fat_g": 66,
+      "aliases": [
+        "crispy pata",
+        "deep fried pork knuckle",
+        "pata",
+        "crispy pork leg"
+      ],
+      "icon": "food/pork-belly",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "quarter, one person", "factor": 0.25 }]
+    },
+    {
+      "name": "Lechon Kawali",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 560,
+      "carbs_g": 0,
+      "protein_g": 30,
+      "fat_g": 48,
+      "aliases": [
+        "lechon kawali",
+        "crispy pork belly",
+        "litson kawali",
+        "deep fried pork belly"
+      ],
+      "icon": "food/pork-belly",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Lechon Belly",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 520,
+      "carbs_g": 2,
+      "protein_g": 28,
+      "fat_g": 44,
+      "aliases": [
+        "lechon belly",
+        "boneless lechon",
+        "roasted pork belly roll",
+        "litson belly"
+      ],
+      "icon": "food/pork-belly",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Lechon Baboy",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 480,
+      "carbs_g": 0,
+      "protein_g": 27,
+      "fat_g": 40,
+      "aliases": [
+        "lechon baboy",
+        "lechon",
+        "whole roast pig",
+        "litson baboy",
+        "cebu lechon"
+      ],
+      "icon": "food/pork-belly",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chicken Inasal",
+      "place": "hawker",
+      "serving": "1 quarter chicken",
+      "kcal": 380,
+      "carbs_g": 4,
+      "protein_g": 36,
+      "fat_g": 24,
+      "aliases": [
+        "chicken inasal",
+        "inasal na manok",
+        "bacolod inasal",
+        "grilled chicken filipino",
+        "inasal"
+      ],
+      "icon": "food/grilled-chicken",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "with 1 cup rice", "factor": 1.55 }]
+    },
+    {
+      "name": "Pork Barbecue Skewer",
+      "place": "hawker",
+      "serving": "1 stick",
+      "kcal": 180,
+      "carbs_g": 8,
+      "protein_g": 12,
+      "fat_g": 11,
+      "aliases": [
+        "pork barbecue",
+        "pork bbq stick",
+        "filipino pork barbecue",
+        "inihaw na baboy",
+        "bbq pork skewer"
+      ],
+      "icon": "food/satay",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        { "label": "2 sticks", "factor": 2 },
+        { "label": "3 sticks", "factor": 3 }
+      ]
+    },
+    {
+      "name": "Dinuguan",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 380,
+      "carbs_g": 8,
+      "protein_g": 24,
+      "fat_g": 28,
+      "aliases": [
+        "dinuguan",
+        "pork blood stew",
+        "chocolate meat",
+        "dinuguang baboy"
+      ],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pinakbet",
+      "place": "home",
+      "serving": "1 cup",
+      "kcal": 160,
+      "carbs_g": 14,
+      "protein_g": 7,
+      "fat_g": 9,
+      "aliases": [
+        "pinakbet",
+        "pakbet",
+        "ilocano vegetable stew",
+        "pinakbet ilocano",
+        "vegetables with bagoong"
+      ],
+      "icon": "food/vegetables",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Laing",
+      "place": "home",
+      "serving": "1 cup",
+      "kcal": 280,
+      "carbs_g": 12,
+      "protein_g": 6,
+      "fat_g": 24,
+      "aliases": [
+        "laing",
+        "taro leaves in coconut milk",
+        "pinangat",
+        "bicol laing",
+        "gabi leaves coconut"
+      ],
+      "icon": "food/vegetables",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bicol Express",
+      "place": "home",
+      "serving": "1 cup",
+      "kcal": 380,
+      "carbs_g": 9,
+      "protein_g": 17,
+      "fat_g": 31,
+      "aliases": [
+        "bicol express",
+        "sinilihan",
+        "pork in coconut milk and chilli",
+        "bicol express baboy"
+      ],
+      "icon": "food/chilli",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ginataang Gulay",
+      "place": "home",
+      "serving": "1 cup",
+      "kcal": 220,
+      "carbs_g": 15,
+      "protein_g": 5,
+      "fat_g": 16,
+      "aliases": [
+        "ginataang gulay",
+        "vegetables in coconut milk",
+        "ginataan gulay",
+        "guinataang gulay"
+      ],
+      "icon": "food/coconut",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Gising-Gising",
+      "place": "home",
+      "serving": "1 cup",
+      "kcal": 270,
+      "carbs_g": 12,
+      "protein_g": 10,
+      "fat_g": 21,
+      "aliases": [
+        "gising gising",
+        "gisinggising",
+        "green beans coconut chilli",
+        "ginataang sitaw at baboy"
+      ],
+      "icon": "food/green-beans",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ampalaya con Carne",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 230,
+      "carbs_g": 10,
+      "protein_g": 18,
+      "fat_g": 13,
+      "aliases": [
+        "ampalaya con carne",
+        "bitter gourd with beef",
+        "ampalaya beef",
+        "ginisang ampalaya"
+      ],
+      "icon": "food/vegetables",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tortang Talong",
+      "place": "home",
+      "serving": "1 piece",
+      "kcal": 210,
+      "carbs_g": 8,
+      "protein_g": 9,
+      "fat_g": 16,
+      "aliases": [
+        "tortang talong",
+        "eggplant omelette",
+        "grilled eggplant omelette",
+        "torta talong"
+      ],
+      "icon": "food/omelette",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ginisang Munggo",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 260,
+      "carbs_g": 28,
+      "protein_g": 16,
+      "fat_g": 9,
+      "aliases": [
+        "ginisang munggo",
+        "monggo",
+        "mung bean stew",
+        "munggo guisado",
+        "monggos"
+      ],
+      "icon": "food/lentils",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Rellenong Bangus",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 380,
+      "carbs_g": 14,
+      "protein_g": 28,
+      "fat_g": 23,
+      "aliases": [
+        "rellenong bangus",
+        "stuffed milkfish",
+        "relyenong bangus",
+        "stuffed bangus"
+      ],
+      "icon": "food/fish",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Daing na Bangus",
+      "place": "home",
+      "serving": "1 piece (half fish)",
+      "kcal": 340,
+      "carbs_g": 2,
+      "protein_g": 30,
+      "fat_g": 24,
+      "aliases": [
+        "daing na bangus",
+        "marinated fried milkfish",
+        "bangus daing",
+        "butterflied milkfish"
+      ],
+      "icon": "food/grilled-fish",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Paksiw na Isda",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 190,
+      "carbs_g": 4,
+      "protein_g": 24,
+      "fat_g": 9,
+      "aliases": [
+        "paksiw na isda",
+        "fish in vinegar",
+        "paksiw isda",
+        "poached fish vinegar ginger"
+      ],
+      "icon": "food/fish",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Escabecheng Isda",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 320,
+      "carbs_g": 20,
+      "protein_g": 24,
+      "fat_g": 15,
+      "aliases": [
+        "escabeche",
+        "escabecheng isda",
+        "sweet and sour fried fish",
+        "eskabetse"
+      ],
+      "icon": "food/fish-fillet",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kinilaw na Tanigue",
+      "place": "hawker",
+      "serving": "1 cup",
+      "kcal": 170,
+      "carbs_g": 6,
+      "protein_g": 25,
+      "fat_g": 5,
+      "aliases": [
+        "kinilaw",
+        "kinilaw na tanigue",
+        "filipino ceviche",
+        "kilawin na isda",
+        "raw fish in vinegar"
+      ],
+      "icon": "food/fish-fillet",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sinuglaw",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 280,
+      "carbs_g": 7,
+      "protein_g": 26,
+      "fat_g": 16,
+      "aliases": [
+        "sinuglaw",
+        "grilled pork with kinilaw",
+        "sinugba at kinilaw",
+        "sinuglaw davao"
+      ],
+      "icon": "food/fish-fillet",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chopsuey",
+      "place": "hawker",
+      "serving": "1 cup",
+      "kcal": 180,
+      "carbs_g": 14,
+      "protein_g": 10,
+      "fat_g": 10,
+      "aliases": [
+        "chopsuey",
+        "chop suey filipino",
+        "mixed vegetables filipino",
+        "chapsuy"
+      ],
+      "icon": "food/vegetables",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kilawing Kambing",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 260,
+      "carbs_g": 6,
+      "protein_g": 26,
+      "fat_g": 14,
+      "aliases": [
+        "kilawin",
+        "kilawing kambing",
+        "goat kilawin",
+        "kilawin na kambing"
+      ],
+      "icon": "food/lamb-chop",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Papaitan",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 240,
+      "carbs_g": 6,
+      "protein_g": 24,
+      "fat_g": 13,
+      "aliases": [
+        "papaitan",
+        "papaitan kambing",
+        "bitter offal soup",
+        "ilocano papaitan"
+      ],
+      "icon": "food/cooking-pot",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Embutido",
+      "place": "home",
+      "serving": "2 slices",
+      "kcal": 220,
+      "carbs_g": 12,
+      "protein_g": 12,
+      "fat_g": 13,
+      "aliases": [
+        "embutido",
+        "filipino meatloaf",
+        "embotido",
+        "steamed pork roll"
+      ],
+      "icon": "food/sausage",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Morcon",
+      "place": "home",
+      "serving": "1 slice",
+      "kcal": 260,
+      "carbs_g": 8,
+      "protein_g": 20,
+      "fat_g": 17,
+      "aliases": [
+        "morcon",
+        "beef morcon",
+        "stuffed beef roll",
+        "morkon"
+      ],
+      "icon": "food/beef-slices",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Hamonado",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 330,
+      "carbs_g": 24,
+      "protein_g": 22,
+      "fat_g": 15,
+      "aliases": [
+        "hamonado",
+        "pork hamonado",
+        "pineapple braised pork",
+        "hamonadong baboy"
+      ],
+      "icon": "food/pork-belly",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Lumpiang Shanghai",
+      "place": "hawker",
+      "serving": "5 pieces",
+      "kcal": 280,
+      "carbs_g": 20,
+      "protein_g": 12,
+      "fat_g": 17,
+      "aliases": [
+        "lumpiang shanghai",
+        "lumpia shanghai",
+        "filipino spring rolls",
+        "pork spring rolls",
+        "lumpia"
+      ],
+      "icon": "food/spring-roll",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        { "label": "3 pieces", "factor": 0.6 },
+        { "label": "10 pieces", "factor": 2 }
+      ]
+    },
+    {
+      "name": "Lumpiang Sariwa",
+      "place": "hawker",
+      "serving": "1 roll",
+      "kcal": 220,
+      "carbs_g": 26,
+      "protein_g": 7,
+      "fat_g": 10,
+      "aliases": [
+        "lumpiang sariwa",
+        "fresh lumpia",
+        "fresh spring roll filipino",
+        "lumpia sariwa with peanut sauce"
+      ],
+      "icon": "dishes/popiah",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Lumpiang Togue",
+      "place": "hawker",
+      "serving": "2 pieces",
+      "kcal": 180,
+      "carbs_g": 20,
+      "protein_g": 5,
+      "fat_g": 9,
+      "aliases": [
+        "lumpiang togue",
+        "bean sprout spring roll",
+        "lumpiang gulay",
+        "vegetable lumpia"
+      ],
+      "icon": "food/spring-roll",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Siopao Asado",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 300,
+      "carbs_g": 46,
+      "protein_g": 11,
+      "fat_g": 8,
+      "aliases": [
+        "siopao",
+        "siopao asado",
+        "filipino steamed bun",
+        "asado bun",
+        "syopao"
+      ],
+      "icon": "dishes/pau",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pork Siomai",
+      "place": "hawker",
+      "serving": "4 pieces",
+      "kcal": 220,
+      "carbs_g": 16,
+      "protein_g": 12,
+      "fat_g": 12,
+      "aliases": [
+        "siomai",
+        "pork siomai",
+        "filipino siomai",
+        "shumai filipino",
+        "siomai with chilli garlic"
+      ],
+      "icon": "food/dumpling",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Atchara",
+      "place": "home",
+      "serving": "1/4 cup",
+      "kcal": 45,
+      "carbs_g": 11,
+      "protein_g": 0.4,
+      "fat_g": 0.1,
+      "aliases": [
+        "atchara",
+        "achara",
+        "pickled green papaya",
+        "atsara"
+      ],
+      "icon": "food/papaya",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bagoong Alamang",
+      "place": "home",
+      "serving": "1 tablespoon",
+      "kcal": 25,
+      "carbs_g": 1.5,
+      "protein_g": 2.5,
+      "fat_g": 1,
+      "aliases": [
+        "bagoong",
+        "bagoong alamang",
+        "shrimp paste filipino",
+        "sauteed shrimp paste",
+        "ginisang bagoong"
+      ],
+      "icon": "food/sambal-jar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pancit Canton",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 420,
+      "carbs_g": 55,
+      "protein_g": 17,
+      "fat_g": 14,
+      "aliases": [
+        "pancit canton",
+        "pansit canton",
+        "filipino stir fried egg noodles",
+        "canton guisado",
+        "pancit"
+      ],
+      "icon": "food/egg-noodles",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        { "label": "half plate", "factor": 0.5 },
+        { "label": "1 large plate", "factor": 1.5 }
+      ]
+    },
+    {
+      "name": "Pancit Bihon",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 380,
+      "carbs_g": 54,
+      "protein_g": 14,
+      "fat_g": 11,
+      "aliases": [
+        "pancit bihon",
+        "pansit bihon",
+        "bihon guisado",
+        "rice noodles filipino",
+        "pancit bihon guisado"
+      ],
+      "icon": "food/rice-vermicelli",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "half plate", "factor": 0.5 }]
+    },
+    {
+      "name": "Pancit Malabon",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 520,
+      "carbs_g": 62,
+      "protein_g": 22,
+      "fat_g": 20,
+      "aliases": [
+        "pancit malabon",
+        "pansit malabon",
+        "thick rice noodles with shrimp sauce",
+        "malabon noodles"
+      ],
+      "icon": "food/flat-rice-noodles",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pancit Palabok",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 450,
+      "carbs_g": 58,
+      "protein_g": 18,
+      "fat_g": 16,
+      "aliases": [
+        "pancit palabok",
+        "palabok",
+        "pansit palabok",
+        "rice noodles with shrimp gravy",
+        "luglug"
+      ],
+      "icon": "food/rice-vermicelli",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pancit Sotanghon",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 350,
+      "carbs_g": 50,
+      "protein_g": 14,
+      "fat_g": 10,
+      "aliases": [
+        "pancit sotanghon",
+        "sotanghon guisado",
+        "glass noodles filipino",
+        "pansit sotanghon"
+      ],
+      "icon": "food/glass-noodles",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pancit Habhab",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 330,
+      "carbs_g": 48,
+      "protein_g": 11,
+      "fat_g": 10,
+      "aliases": [
+        "pancit habhab",
+        "lucban pancit",
+        "pansit habhab",
+        "noodles on banana leaf"
+      ],
+      "icon": "food/egg-noodles",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pancit Molo",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 300,
+      "carbs_g": 28,
+      "protein_g": 18,
+      "fat_g": 13,
+      "aliases": [
+        "pancit molo",
+        "molo soup",
+        "filipino wonton soup",
+        "pansit molo",
+        "iloilo molo"
+      ],
+      "icon": "food/dumpling",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Lomi",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 480,
+      "carbs_g": 60,
+      "protein_g": 22,
+      "fat_g": 17,
+      "aliases": [
+        "lomi",
+        "batangas lomi",
+        "pancit lomi",
+        "thick egg noodle soup"
+      ],
+      "icon": "food/noodle-bowl",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "La Paz Batchoy",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 420,
+      "carbs_g": 48,
+      "protein_g": 22,
+      "fat_g": 15,
+      "aliases": [
+        "batchoy",
+        "la paz batchoy",
+        "batsoy",
+        "iloilo batchoy",
+        "noodle soup with chicharon"
+      ],
+      "icon": "food/noodle-bowl",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Arroz Caldo",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 320,
+      "carbs_g": 45,
+      "protein_g": 16,
+      "fat_g": 8,
+      "aliases": [
+        "arroz caldo",
+        "chicken rice porridge filipino",
+        "aroskaldo",
+        "arozcaldo",
+        "ginger chicken congee"
+      ],
+      "icon": "food/porridge",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Goto",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 300,
+      "carbs_g": 42,
+      "protein_g": 15,
+      "fat_g": 8,
+      "aliases": [
+        "goto",
+        "tripe rice porridge",
+        "goto batangas",
+        "beef tripe congee filipino"
+      ],
+      "icon": "food/porridge",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Lugaw",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 200,
+      "carbs_g": 40,
+      "protein_g": 5,
+      "fat_g": 2,
+      "aliases": [
+        "lugaw",
+        "plain rice porridge filipino",
+        "lugao",
+        "rice gruel"
+      ],
+      "icon": "food/porridge",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Champorado",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 340,
+      "carbs_g": 60,
+      "protein_g": 7,
+      "fat_g": 8,
+      "aliases": [
+        "champorado",
+        "chocolate rice porridge",
+        "tsampurado",
+        "champorado with tuyo"
+      ],
+      "icon": "food/porridge",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sinangag",
+      "place": "home",
+      "serving": "1 cup",
+      "kcal": 280,
+      "carbs_g": 45,
+      "protein_g": 5,
+      "fat_g": 9,
+      "aliases": [
+        "sinangag",
+        "garlic fried rice",
+        "sinangag na kanin",
+        "filipino garlic rice"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tapsilog",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 720,
+      "carbs_g": 78,
+      "protein_g": 34,
+      "fat_g": 29,
+      "aliases": [
+        "tapsilog",
+        "tapa sinangag itlog",
+        "beef tapa with garlic rice and egg",
+        "tapsi"
+      ],
+      "icon": "food/plate-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tocilog",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 740,
+      "carbs_g": 92,
+      "protein_g": 28,
+      "fat_g": 27,
+      "aliases": [
+        "tocilog",
+        "tosilog",
+        "tocino sinangag itlog",
+        "tocino with garlic rice and egg"
+      ],
+      "icon": "food/plate-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Longsilog",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 780,
+      "carbs_g": 78,
+      "protein_g": 26,
+      "fat_g": 39,
+      "aliases": [
+        "longsilog",
+        "longganisa sinangag itlog",
+        "longganisa with garlic rice and egg",
+        "lognisilog"
+      ],
+      "icon": "food/plate-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bangsilog",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 700,
+      "carbs_g": 76,
+      "protein_g": 32,
+      "fat_g": 29,
+      "aliases": [
+        "bangsilog",
+        "bangus sinangag itlog",
+        "daing na bangus with rice and egg",
+        "bangussilog"
+      ],
+      "icon": "food/plate-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Hotsilog",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 680,
+      "carbs_g": 80,
+      "protein_g": 22,
+      "fat_g": 30,
+      "aliases": [
+        "hotsilog",
+        "hotdog sinangag itlog",
+        "hotdog with garlic rice and egg",
+        "hotdogsilog"
+      ],
+      "icon": "food/plate-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kwek Kwek",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 230,
+      "carbs_g": 18,
+      "protein_g": 9,
+      "fat_g": 14,
+      "aliases": [
+        "kwek kwek",
+        "kwek-kwek",
+        "orange battered quail eggs",
+        "tokneneng",
+        "quail egg street food"
+      ],
+      "icon": "food/quail-eggs",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        { "label": "6 pieces", "factor": 2 },
+        { "label": "1 piece", "factor": 0.33 }
+      ]
+    },
+    {
+      "name": "Isaw Manok",
+      "place": "hawker",
+      "serving": "2 sticks",
+      "kcal": 160,
+      "carbs_g": 3,
+      "protein_g": 14,
+      "fat_g": 10,
+      "aliases": [
+        "isaw",
+        "isaw manok",
+        "grilled chicken intestines",
+        "chicken isaw stick"
+      ],
+      "icon": "food/satay",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "1 stick", "factor": 0.5 }]
+    },
+    {
+      "name": "Isaw Baboy",
+      "place": "hawker",
+      "serving": "2 sticks",
+      "kcal": 190,
+      "carbs_g": 3,
+      "protein_g": 15,
+      "fat_g": 13,
+      "aliases": [
+        "isaw baboy",
+        "grilled pork intestines",
+        "pork isaw",
+        "isaw ng baboy"
+      ],
+      "icon": "food/satay",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Betamax",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 90,
+      "carbs_g": 2,
+      "protein_g": 12,
+      "fat_g": 4,
+      "aliases": [
+        "betamax",
+        "grilled chicken blood",
+        "dugo stick",
+        "blood cubes street food"
+      ],
+      "icon": "food/satay",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Adidas",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 140,
+      "carbs_g": 2,
+      "protein_g": 14,
+      "fat_g": 8,
+      "aliases": [
+        "adidas",
+        "grilled chicken feet",
+        "adidas street food",
+        "chicken feet skewer"
+      ],
+      "icon": "food/satay",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Fishball",
+      "place": "hawker",
+      "serving": "10 pieces",
+      "kcal": 180,
+      "carbs_g": 20,
+      "protein_g": 8,
+      "fat_g": 8,
+      "aliases": [
+        "fishball",
+        "fish ball street food",
+        "bola bola isda",
+        "fishball with sweet sauce"
+      ],
+      "icon": "food/fish-ball",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "5 pieces", "factor": 0.5 }]
+    },
+    {
+      "name": "Kikiam",
+      "place": "hawker",
+      "serving": "5 pieces",
+      "kcal": 200,
+      "carbs_g": 22,
+      "protein_g": 7,
+      "fat_g": 9,
+      "aliases": [
+        "kikiam",
+        "quekiam",
+        "ngohiong",
+        "fried kikiam street food"
+      ],
+      "icon": "food/fish-cake",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Squidball",
+      "place": "hawker",
+      "serving": "6 pieces",
+      "kcal": 170,
+      "carbs_g": 18,
+      "protein_g": 9,
+      "fat_g": 7,
+      "aliases": [
+        "squidball",
+        "squid ball",
+        "bola bola pusit",
+        "squid balls street food"
+      ],
+      "icon": "food/fish-ball",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chicharon Baboy",
+      "place": "packaged",
+      "serving": "1 small pack (30 g)",
+      "kcal": 170,
+      "carbs_g": 1,
+      "protein_g": 15,
+      "fat_g": 12,
+      "aliases": [
+        "chicharon",
+        "chicharon baboy",
+        "pork rinds filipino",
+        "chicharron",
+        "pork crackling"
+      ],
+      "icon": "food/crackers",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Banana Cue",
+      "place": "hawker",
+      "serving": "1 stick (2 pieces)",
+      "kcal": 250,
+      "carbs_g": 52,
+      "protein_g": 1.5,
+      "fat_g": 4,
+      "aliases": [
+        "banana cue",
+        "bananacue",
+        "banana que",
+        "caramelised saba banana",
+        "saging na saba fried"
+      ],
+      "icon": "food/banana",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "1 piece", "factor": 0.5 }]
+    },
+    {
+      "name": "Camote Cue",
+      "place": "hawker",
+      "serving": "1 stick",
+      "kcal": 230,
+      "carbs_g": 46,
+      "protein_g": 1.5,
+      "fat_g": 4.5,
+      "aliases": [
+        "camote cue",
+        "kamote cue",
+        "camotecue",
+        "caramelised sweet potato stick"
+      ],
+      "icon": "food/sweet-potato",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Turon",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 210,
+      "carbs_g": 36,
+      "protein_g": 1.5,
+      "fat_g": 7,
+      "aliases": [
+        "turon",
+        "banana lumpia",
+        "turon saba",
+        "fried banana roll",
+        "lumpiang saging"
+      ],
+      "icon": "food/spring-roll",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "2 pieces", "factor": 2 }]
+    },
+    {
+      "name": "Maruya",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 180,
+      "carbs_g": 28,
+      "protein_g": 2,
+      "fat_g": 7,
+      "aliases": [
+        "maruya",
+        "banana fritter filipino",
+        "sinapot",
+        "pinaypay na saging"
+      ],
+      "icon": "food/banana",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Taho",
+      "place": "hawker",
+      "serving": "1 cup",
+      "kcal": 160,
+      "carbs_g": 28,
+      "protein_g": 5,
+      "fat_g": 3,
+      "aliases": [
+        "taho",
+        "silken tofu with arnibal and sago",
+        "soft tofu dessert filipino",
+        "taho vendor cup"
+      ],
+      "icon": "food/tofu",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Balut",
+      "place": "hawker",
+      "serving": "1 egg",
+      "kcal": 190,
+      "carbs_g": 2,
+      "protein_g": 14,
+      "fat_g": 14,
+      "aliases": [
+        "balut",
+        "fertilised duck egg",
+        "balut sa puti",
+        "boiled duck embryo egg"
+      ],
+      "icon": "food/boiled-egg",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Penoy",
+      "place": "hawker",
+      "serving": "1 egg",
+      "kcal": 150,
+      "carbs_g": 1,
+      "protein_g": 12,
+      "fat_g": 11,
+      "aliases": [
+        "penoy",
+        "unfertilised duck egg",
+        "boiled duck egg filipino",
+        "itlog na penoy"
+      ],
+      "icon": "food/boiled-egg",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mais con Yelo",
+      "place": "hawker",
+      "serving": "1 glass",
+      "kcal": 230,
+      "carbs_g": 42,
+      "protein_g": 5,
+      "fat_g": 5,
+      "aliases": [
+        "mais con yelo",
+        "corn with shaved ice and milk",
+        "maiz con hielo",
+        "sweet corn ice dessert"
+      ],
+      "icon": "food/corn",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sorbetes",
+      "place": "hawker",
+      "serving": "1 scoop in cone",
+      "kcal": 160,
+      "carbs_g": 26,
+      "protein_g": 2.5,
+      "fat_g": 5,
+      "aliases": [
+        "sorbetes",
+        "dirty ice cream",
+        "filipino street ice cream",
+        "sorbetero ice cream"
+      ],
+      "icon": "food/ice-cream",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "2 scoops", "factor": 2 }]
+    },
+    {
+      "name": "Halo-Halo",
+      "place": "hawker",
+      "serving": "1 tall glass",
+      "kcal": 380,
+      "carbs_g": 65,
+      "protein_g": 8,
+      "fat_g": 10,
+      "aliases": [
+        "halo halo",
+        "halohalo",
+        "shaved ice with beans and leche flan",
+        "filipino shaved ice dessert",
+        "halo-halo special"
+      ],
+      "icon": "dishes/ais-kacang",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "1 regular cup", "factor": 0.7 }]
+    },
+    {
+      "name": "Leche Flan",
+      "place": "home",
+      "serving": "1 slice",
+      "kcal": 290,
+      "carbs_g": 36,
+      "protein_g": 7,
+      "fat_g": 13,
+      "aliases": [
+        "leche flan",
+        "filipino creme caramel",
+        "flan de leche",
+        "steamed custard with caramel"
+      ],
+      "icon": "food/custard-tart",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "1 whole llanera", "factor": 4 }]
+    },
+    {
+      "name": "Ube Halaya",
+      "place": "home",
+      "serving": "1/2 cup",
+      "kcal": 280,
+      "carbs_g": 44,
+      "protein_g": 4,
+      "fat_g": 10,
+      "aliases": [
+        "ube halaya",
+        "halayang ube",
+        "purple yam jam",
+        "ube jam",
+        "haleyang ube"
+      ],
+      "icon": "food/yam",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bibingka",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 280,
+      "carbs_g": 42,
+      "protein_g": 6,
+      "fat_g": 10,
+      "aliases": [
+        "bibingka",
+        "rice cake with salted egg and cheese",
+        "bibingka galapong",
+        "christmas rice cake filipino"
+      ],
+      "icon": "food/kuih",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Puto Bumbong",
+      "place": "hawker",
+      "serving": "1 serving (4 tubes)",
+      "kcal": 290,
+      "carbs_g": 48,
+      "protein_g": 4,
+      "fat_g": 9,
+      "aliases": [
+        "puto bumbong",
+        "purple sticky rice tubes",
+        "putobumbong",
+        "simbang gabi rice cake"
+      ],
+      "icon": "food/glutinous-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Puto",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 180,
+      "carbs_g": 34,
+      "protein_g": 3.5,
+      "fat_g": 3.5,
+      "aliases": [
+        "puto",
+        "steamed rice cake filipino",
+        "puto puti",
+        "puto with cheese"
+      ],
+      "icon": "food/kuih",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "1 piece", "factor": 0.33 }]
+    },
+    {
+      "name": "Kutsinta",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 160,
+      "carbs_g": 33,
+      "protein_g": 1.5,
+      "fat_g": 2,
+      "aliases": [
+        "kutsinta",
+        "cuchinta",
+        "brown steamed rice cake",
+        "kutsinta with coconut"
+      ],
+      "icon": "food/kuih",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sapin-Sapin",
+      "place": "hawker",
+      "serving": "1 slice",
+      "kcal": 220,
+      "carbs_g": 38,
+      "protein_g": 2.5,
+      "fat_g": 7,
+      "aliases": [
+        "sapin sapin",
+        "sapin-sapin",
+        "layered glutinous rice cake",
+        "sapinsapin with latik"
+      ],
+      "icon": "dishes/kuih-lapis",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Biko",
+      "place": "home",
+      "serving": "1 slice",
+      "kcal": 280,
+      "carbs_g": 48,
+      "protein_g": 3,
+      "fat_g": 9,
+      "aliases": [
+        "biko",
+        "sinukmani",
+        "sticky rice cake with latik",
+        "biko malagkit"
+      ],
+      "icon": "food/glutinous-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Suman",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 210,
+      "carbs_g": 36,
+      "protein_g": 2.5,
+      "fat_g": 6.5,
+      "aliases": [
+        "suman",
+        "suman malagkit",
+        "sticky rice in banana leaf",
+        "suman sa lihiya",
+        "budbud"
+      ],
+      "icon": "dishes/pulut-panggang",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Palitaw",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 200,
+      "carbs_g": 36,
+      "protein_g": 3,
+      "fat_g": 5,
+      "aliases": [
+        "palitaw",
+        "flat rice cake with coconut and sesame",
+        "palitao",
+        "boiled glutinous rice patty"
+      ],
+      "icon": "food/kuih",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Cassava Cake",
+      "place": "hawker",
+      "serving": "1 slice",
+      "kcal": 290,
+      "carbs_g": 42,
+      "protein_g": 4,
+      "fat_g": 12,
+      "aliases": [
+        "cassava cake",
+        "cassava bibingka",
+        "kamoteng kahoy cake",
+        "baked cassava with coconut"
+      ],
+      "icon": "food/tapioca",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Buko Pie",
+      "place": "hawker",
+      "serving": "1 slice",
+      "kcal": 340,
+      "carbs_g": 44,
+      "protein_g": 4,
+      "fat_g": 17,
+      "aliases": [
+        "buko pie",
+        "young coconut pie",
+        "laguna buko pie",
+        "coconut custard pie filipino"
+      ],
+      "icon": "food/coconut",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ensaymada",
+      "place": "kopitiam",
+      "serving": "1 piece",
+      "kcal": 350,
+      "carbs_g": 42,
+      "protein_g": 7,
+      "fat_g": 17,
+      "aliases": [
+        "ensaymada",
+        "ensaimada",
+        "buttery cheese brioche filipino",
+        "ensaymada with cheese"
+      ],
+      "icon": "food/bun",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pandesal",
+      "place": "kopitiam",
+      "serving": "2 pieces",
+      "kcal": 190,
+      "carbs_g": 34,
+      "protein_g": 5,
+      "fat_g": 3.5,
+      "aliases": [
+        "pandesal",
+        "pan de sal",
+        "filipino bread roll",
+        "salt bread"
+      ],
+      "icon": "food/bun",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        { "label": "1 piece", "factor": 0.5 },
+        { "label": "4 pieces", "factor": 2 }
+      ]
+    },
+    {
+      "name": "Hopia Mongo",
+      "place": "packaged",
+      "serving": "1 piece",
+      "kcal": 180,
+      "carbs_g": 28,
+      "protein_g": 3,
+      "fat_g": 6,
+      "aliases": [
+        "hopia",
+        "hopia mongo",
+        "mung bean pastry filipino",
+        "hopiang munggo"
+      ],
+      "icon": "food/peanut-cookie",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Hopia Baboy",
+      "place": "packaged",
+      "serving": "1 piece",
+      "kcal": 200,
+      "carbs_g": 27,
+      "protein_g": 3,
+      "fat_g": 9,
+      "aliases": [
+        "hopia baboy",
+        "hopiang baboy",
+        "pork lard flaky pastry",
+        "hopia with winter melon"
+      ],
+      "icon": "food/peanut-cookie",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Polvoron",
+      "place": "packaged",
+      "serving": "2 pieces",
+      "kcal": 180,
+      "carbs_g": 22,
+      "protein_g": 2.5,
+      "fat_g": 9,
+      "aliases": [
+        "polvoron",
+        "pulboron",
+        "toasted flour milk candy",
+        "polvoron pinipig"
+      ],
+      "icon": "food/peanut-cookie",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "1 piece", "factor": 0.5 }]
+    },
+    {
+      "name": "Yema",
+      "place": "packaged",
+      "serving": "3 pieces",
+      "kcal": 150,
+      "carbs_g": 24,
+      "protein_g": 3,
+      "fat_g": 4.5,
+      "aliases": [
+        "yema",
+        "custard candy filipino",
+        "yema balls",
+        "egg yolk milk candy"
+      ],
+      "icon": "food/candy",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pastillas de Leche",
+      "place": "packaged",
+      "serving": "3 pieces",
+      "kcal": 140,
+      "carbs_g": 26,
+      "protein_g": 3,
+      "fat_g": 2.5,
+      "aliases": [
+        "pastillas",
+        "pastillas de leche",
+        "carabao milk candy",
+        "pastilyas"
+      ],
+      "icon": "food/candy",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mamon",
+      "place": "packaged",
+      "serving": "1 piece",
+      "kcal": 220,
+      "carbs_g": 30,
+      "protein_g": 4,
+      "fat_g": 9,
+      "aliases": [
+        "mamon",
+        "filipino chiffon sponge cake",
+        "mamon tostado soft",
+        "buttered sponge cupcake"
+      ],
+      "icon": "food/cupcake",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Brazo de Mercedes",
+      "place": "hawker",
+      "serving": "1 slice",
+      "kcal": 280,
+      "carbs_g": 38,
+      "protein_g": 6,
+      "fat_g": 11,
+      "aliases": [
+        "brazo de mercedes",
+        "meringue roll with custard",
+        "braso de mercedes",
+        "filipino meringue log"
+      ],
+      "icon": "food/swiss-roll",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sans Rival",
+      "place": "hawker",
+      "serving": "1 slice",
+      "kcal": 420,
+      "carbs_g": 34,
+      "protein_g": 5,
+      "fat_g": 29,
+      "aliases": [
+        "sans rival",
+        "sansrival",
+        "cashew meringue buttercream cake",
+        "sylvanas cake"
+      ],
+      "icon": "food/cake-slice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Silvanas",
+      "place": "packaged",
+      "serving": "2 pieces",
+      "kcal": 300,
+      "carbs_g": 26,
+      "protein_g": 4,
+      "fat_g": 20,
+      "aliases": [
+        "silvanas",
+        "sylvanas",
+        "frozen cashew meringue cookie",
+        "silvanas dumaguete"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tsokolate",
+      "place": "kopitiam",
+      "serving": "1 cup",
+      "kcal": 220,
+      "carbs_g": 26,
+      "protein_g": 5,
+      "fat_g": 11,
+      "aliases": [
+        "tsokolate",
+        "tablea chocolate drink",
+        "chocolate eh",
+        "sikwate",
+        "filipino hot chocolate"
+      ],
+      "icon": "food/chocolate-bar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ginataang Bilo-Bilo",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 340,
+      "carbs_g": 56,
+      "protein_g": 4,
+      "fat_g": 11,
+      "aliases": [
+        "ginataang bilo bilo",
+        "bilo-bilo",
+        "glutinous rice balls in coconut milk",
+        "ginataang halo halo"
+      ],
+      "icon": "food/coconut",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mango Float",
+      "place": "home",
+      "serving": "1 slice",
+      "kcal": 340,
+      "carbs_g": 42,
+      "protein_g": 4,
+      "fat_g": 17,
+      "aliases": [
+        "mango float",
+        "crema de mangga",
+        "mango graham cake",
+        "refrigerator mango cake"
+      ],
+      "icon": "food/cake-slice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sago't Gulaman",
+      "place": "hawker",
+      "serving": "1 large glass",
+      "kcal": 210,
+      "carbs_g": 52,
+      "protein_g": 0.5,
+      "fat_g": 0.2,
+      "aliases": [
+        "sago gulaman",
+        "sago't gulaman",
+        "samalamig",
+        "tapioca pearls with jelly drink",
+        "gulaman at sago"
+      ],
+      "icon": "food/sago",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Buko Juice",
+      "place": "hawker",
+      "serving": "1 glass (300 ml)",
+      "kcal": 90,
+      "carbs_g": 20,
+      "protein_g": 1,
+      "fat_g": 0.5,
+      "aliases": [
+        "buko juice",
+        "young coconut water filipino",
+        "buko shake plain",
+        "coconut juice with meat"
+      ],
+      "icon": "food/coconut-water",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Calamansi Juice",
+      "place": "hawker",
+      "serving": "1 glass",
+      "kcal": 110,
+      "carbs_g": 27,
+      "protein_g": 0.3,
+      "fat_g": 0.1,
+      "aliases": [
+        "calamansi juice",
+        "kalamansi juice",
+        "philippine lime juice",
+        "calamansi drink"
+      ],
+      "icon": "food/lime-juice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Salabat",
+      "place": "home",
+      "serving": "1 cup",
+      "kcal": 60,
+      "carbs_g": 15,
+      "protein_g": 0.2,
+      "fat_g": 0,
+      "aliases": [
+        "salabat",
+        "ginger tea filipino",
+        "hot ginger brew",
+        "tsaang luya"
+      ],
+      "icon": "food/ginger",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kapeng Barako",
+      "place": "kopitiam",
+      "serving": "1 cup, black",
+      "kcal": 5,
+      "carbs_g": 1,
+      "protein_g": 0.3,
+      "fat_g": 0,
+      "aliases": [
+        "kapeng barako",
+        "barako coffee",
+        "batangas liberica coffee",
+        "kape barako black"
+      ],
+      "icon": "food/coffee",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "1 cup with sugar", "factor": 8 }]
+    },
+    {
+      "name": "Filipino Iced Coffee",
+      "place": "kopitiam",
+      "serving": "1 glass",
+      "kcal": 180,
+      "carbs_g": 30,
+      "protein_g": 4,
+      "fat_g": 5,
+      "aliases": [
+        "filipino iced coffee",
+        "kape with condensed milk",
+        "iced kapeng barako",
+        "kapeng may gatas",
+        "kape sa yelo"
+      ],
+      "icon": "food/coffee",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jollibee Palabok Fiesta",
+      "brand": "Jollibee",
+      "place": "hawker",
+      "serving": "1 regular",
+      "kcal": 500,
+      "carbs_g": 62,
+      "protein_g": 20,
+      "fat_g": 19,
+      "aliases": [
+        "jollibee palabok",
+        "palabok fiesta",
+        "jollibee pancit palabok"
+      ],
+      "icon": "food/rice-vermicelli",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jollibee Peach Mango Pie",
+      "brand": "Jollibee",
+      "place": "hawker",
+      "serving": "1 pie",
+      "kcal": 260,
+      "carbs_g": 34,
+      "protein_g": 3,
+      "fat_g": 13,
+      "aliases": [
+        "peach mango pie",
+        "jollibee mango pie",
+        "jollibee peach mango"
+      ],
+      "icon": "food/custard-tart",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jollibee Burger Steak",
+      "brand": "Jollibee",
+      "place": "hawker",
+      "serving": "1 serving with rice",
+      "kcal": 460,
+      "carbs_g": 62,
+      "protein_g": 16,
+      "fat_g": 16,
+      "aliases": [
+        "jollibee burger steak",
+        "burger steak with rice",
+        "jollibee burgersteak"
+      ],
+      "icon": "food/plate-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jollibee Jolly Crispy Fries",
+      "brand": "Jollibee",
+      "place": "hawker",
+      "serving": "1 regular",
+      "kcal": 290,
+      "carbs_g": 38,
+      "protein_g": 3.5,
+      "fat_g": 14,
+      "aliases": [
+        "jolly crispy fries",
+        "jollibee fries",
+        "jollibee crispy fries"
+      ],
+      "icon": "food/potato",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jollibee Jolly Hotdog",
+      "brand": "Jollibee",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 400,
+      "carbs_g": 40,
+      "protein_g": 12,
+      "fat_g": 21,
+      "aliases": [
+        "jolly hotdog",
+        "jollibee hotdog",
+        "jollibee cheesy hotdog"
+      ],
+      "icon": "food/sausage",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mang Inasal Chicken Inasal Paa",
+      "brand": "Mang Inasal",
+      "place": "hawker",
+      "serving": "1 large with rice",
+      "kcal": 620,
+      "carbs_g": 72,
+      "protein_g": 32,
+      "fat_g": 22,
+      "aliases": [
+        "mang inasal paa",
+        "chicken inasal paa large",
+        "mang inasal chicken leg",
+        "paa large unli rice"
+      ],
+      "icon": "food/grilled-chicken",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mang Inasal Chicken Inasal Pecho",
+      "brand": "Mang Inasal",
+      "place": "hawker",
+      "serving": "1 serving with rice",
+      "kcal": 600,
+      "carbs_g": 72,
+      "protein_g": 38,
+      "fat_g": 17,
+      "aliases": [
+        "mang inasal pecho",
+        "chicken inasal pecho",
+        "mang inasal breast part"
+      ],
+      "icon": "food/grilled-chicken",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mang Inasal Palabok",
+      "brand": "Mang Inasal",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 420,
+      "carbs_g": 52,
+      "protein_g": 17,
+      "fat_g": 16,
+      "aliases": [
+        "mang inasal palabok",
+        "mang inasal pancit palabok"
+      ],
+      "icon": "food/rice-vermicelli",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mang Inasal Halo-Halo",
+      "brand": "Mang Inasal",
+      "place": "hawker",
+      "serving": "1 regular",
+      "kcal": 340,
+      "carbs_g": 58,
+      "protein_g": 7,
+      "fat_g": 9,
+      "aliases": [
+        "mang inasal halo halo",
+        "mang inasal halo-halo special"
+      ],
+      "icon": "dishes/ais-kacang",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chowking Chao Fan",
+      "brand": "Chowking",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 480,
+      "carbs_g": 72,
+      "protein_g": 15,
+      "fat_g": 14,
+      "aliases": [
+        "chowking chao fan",
+        "chaofan",
+        "chowking fried rice",
+        "chao fan rice"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chowking Halo-Halo",
+      "brand": "Chowking",
+      "place": "hawker",
+      "serving": "1 regular",
+      "kcal": 380,
+      "carbs_g": 66,
+      "protein_g": 8,
+      "fat_g": 9,
+      "aliases": [
+        "chowking halo halo",
+        "chowking halo-halo supreme"
+      ],
+      "icon": "dishes/ais-kacang",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chowking Siomai",
+      "brand": "Chowking",
+      "place": "hawker",
+      "serving": "4 pieces",
+      "kcal": 240,
+      "carbs_g": 18,
+      "protein_g": 12,
+      "fat_g": 13,
+      "aliases": [
+        "chowking siomai",
+        "chowking pork siomai"
+      ],
+      "icon": "food/dumpling",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chowking Beef Wanton Mami",
+      "brand": "Chowking",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 420,
+      "carbs_g": 52,
+      "protein_g": 22,
+      "fat_g": 13,
+      "aliases": [
+        "chowking wanton mami",
+        "beef wanton mami",
+        "chowking mami noodles"
+      ],
+      "icon": "food/noodle-bowl",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Greenwich Hawaiian Overload Pizza",
+      "brand": "Greenwich",
+      "place": "hawker",
+      "serving": "1 slice",
+      "kcal": 240,
+      "carbs_g": 30,
+      "protein_g": 10,
+      "fat_g": 9,
+      "aliases": [
+        "greenwich hawaiian overload",
+        "greenwich pizza slice",
+        "hawaiian overload pizza"
+      ],
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "3 slices", "factor": 3 }]
+    },
+    {
+      "name": "Greenwich Lasagna Supreme",
+      "brand": "Greenwich",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 420,
+      "carbs_g": 42,
+      "protein_g": 20,
+      "fat_g": 19,
+      "aliases": [
+        "greenwich lasagna",
+        "lasagna supreme greenwich"
+      ],
+      "icon": "food/macaroni",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Max's Fried Chicken",
+      "brand": "Max's",
+      "place": "hawker",
+      "serving": "1 quarter chicken",
+      "kcal": 420,
+      "carbs_g": 6,
+      "protein_g": 34,
+      "fat_g": 29,
+      "aliases": [
+        "max's fried chicken",
+        "maxs fried chicken",
+        "sarap to the bones chicken",
+        "max's restaurant chicken"
+      ],
+      "icon": "dishes/ayam-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Max's Kare-Kare",
+      "brand": "Max's",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 520,
+      "carbs_g": 20,
+      "protein_g": 27,
+      "fat_g": 37,
+      "aliases": [
+        "max's kare kare",
+        "maxs kare-kare",
+        "max's restaurant kare kare"
+      ],
+      "icon": "food/peanuts",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Max's Crispy Pata",
+      "brand": "Max's",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 820,
+      "carbs_g": 3,
+      "protein_g": 48,
+      "fat_g": 68,
+      "aliases": [
+        "max's crispy pata",
+        "maxs crispy pata",
+        "max's restaurant pata"
+      ],
+      "icon": "food/pork-belly",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "quarter, one person", "factor": 0.25 }]
+    },
+    {
+      "name": "Goldilocks Mocha Chiffon Cake",
+      "brand": "Goldilocks",
+      "place": "packaged",
+      "serving": "1 slice",
+      "kcal": 300,
+      "carbs_g": 40,
+      "protein_g": 4,
+      "fat_g": 14,
+      "aliases": [
+        "goldilocks mocha cake",
+        "goldilocks chiffon cake",
+        "mocha chiffon goldilocks"
+      ],
+      "icon": "food/cake-slice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Goldilocks Polvoron",
+      "brand": "Goldilocks",
+      "place": "packaged",
+      "serving": "1 piece",
+      "kcal": 100,
+      "carbs_g": 12,
+      "protein_g": 1.5,
+      "fat_g": 5,
+      "aliases": [
+        "goldilocks polvoron",
+        "goldilocks pulboron"
+      ],
+      "icon": "food/peanut-cookie",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Red Ribbon Black Forest Cake",
+      "brand": "Red Ribbon",
+      "place": "packaged",
+      "serving": "1 slice",
+      "kcal": 330,
+      "carbs_g": 42,
+      "protein_g": 4,
+      "fat_g": 16,
+      "aliases": [
+        "red ribbon black forest",
+        "red ribbon cake slice",
+        "black forest red ribbon"
+      ],
+      "icon": "food/cake-slice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Red Ribbon Ube Overload Cake",
+      "brand": "Red Ribbon",
+      "place": "packaged",
+      "serving": "1 slice",
+      "kcal": 340,
+      "carbs_g": 45,
+      "protein_g": 4,
+      "fat_g": 16,
+      "aliases": [
+        "red ribbon ube cake",
+        "ube overload cake",
+        "red ribbon ube overload"
+      ],
+      "icon": "food/yam",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mister Donut Bavarian Filled",
+      "brand": "Mister Donut",
+      "place": "packaged",
+      "serving": "1 piece",
+      "kcal": 260,
+      "carbs_g": 32,
+      "protein_g": 4,
+      "fat_g": 13,
+      "aliases": [
+        "mister donut bavarian",
+        "mister donut philippines",
+        "bavarian filled doughnut"
+      ],
+      "icon": "food/doughnut",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Shakey's Chicken 'N' Mojos",
+      "brand": "Shakey's",
+      "place": "hawker",
+      "serving": "1 solo serving",
+      "kcal": 760,
+      "carbs_g": 62,
+      "protein_g": 36,
+      "fat_g": 40,
+      "aliases": [
+        "shakeys chicken n mojos",
+        "chicken and mojos",
+        "shakey's mojos",
+        "shakeys philippines mojos"
+      ],
+      "icon": "dishes/ayam-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Shakey's Manager's Choice Pizza",
+      "brand": "Shakey's",
+      "place": "hawker",
+      "serving": "1 slice",
+      "kcal": 280,
+      "carbs_g": 28,
+      "protein_g": 12,
+      "fat_g": 13,
+      "aliases": [
+        "shakeys managers choice",
+        "shakey's pizza slice",
+        "managers choice pizza"
+      ],
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "3 slices", "factor": 3 }]
+    },
+    {
+      "name": "Andok's Lechon Manok",
+      "brand": "Andok's",
+      "place": "hawker",
+      "serving": "1 quarter chicken",
+      "kcal": 340,
+      "carbs_g": 2,
+      "protein_g": 32,
+      "fat_g": 23,
+      "aliases": [
+        "andoks lechon manok",
+        "lechon manok",
+        "roast chicken filipino",
+        "andok's roasted chicken"
+      ],
+      "icon": "food/roast-chicken",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "1 whole chicken", "factor": 4 }]
+    },
+    {
+      "name": "Andok's Liempo",
+      "brand": "Andok's",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 480,
+      "carbs_g": 3,
+      "protein_g": 28,
+      "fat_g": 40,
+      "aliases": [
+        "andoks liempo",
+        "inihaw na liempo",
+        "grilled pork belly filipino",
+        "andok's pork liempo"
+      ],
+      "icon": "food/pork-belly",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bonchon Chicken Soy Garlic",
+      "brand": "Bonchon",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 480,
+      "carbs_g": 26,
+      "protein_g": 30,
+      "fat_g": 28,
+      "aliases": [
+        "bonchon soy garlic",
+        "bonchon chicken philippines",
+        "soy garlic korean fried chicken"
+      ],
+      "icon": "food/chicken-wing",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bonchon Chicken Spicy",
+      "brand": "Bonchon",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 470,
+      "carbs_g": 24,
+      "protein_g": 30,
+      "fat_g": 28,
+      "aliases": [
+        "bonchon spicy chicken",
+        "bonchon hot and spicy",
+        "spicy korean fried chicken bonchon"
+      ],
+      "icon": "food/chicken-wing",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Zark's Jawbreaker Burger",
+      "brand": "Zark's",
+      "place": "hawker",
+      "serving": "1 burger",
+      "kcal": 1200,
+      "carbs_g": 70,
+      "protein_g": 55,
+      "fat_g": 76,
+      "aliases": [
+        "zarks jawbreaker",
+        "zark's burger",
+        "jawbreaker burger",
+        "zarks burgers"
+      ],
+      "icon": "dishes/ramly-burger",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Army Navy Bulgogi Burrito",
+      "brand": "Army Navy",
+      "place": "hawker",
+      "serving": "1 burrito",
+      "kcal": 650,
+      "carbs_g": 68,
+      "protein_g": 30,
+      "fat_g": 28,
+      "aliases": [
+        "army navy burrito",
+        "bulgogi burrito army navy",
+        "armynavy burrito"
+      ],
+      "icon": "food/food-parcel",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Army Navy Crispy Chicken Taco",
+      "brand": "Army Navy",
+      "place": "hawker",
+      "serving": "2 tacos",
+      "kcal": 480,
+      "carbs_g": 44,
+      "protein_g": 22,
+      "fat_g": 24,
+      "aliases": [
+        "army navy taco",
+        "crispy chicken taco army navy",
+        "armynavy tacos"
+      ],
+      "icon": "food/chicken-nugget",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "7-Eleven Siopao Asado",
+      "brand": "7-Eleven",
+      "place": "packaged",
+      "serving": "1 piece",
+      "kcal": 280,
+      "carbs_g": 44,
+      "protein_g": 10,
+      "fat_g": 7,
+      "aliases": [
+        "7 eleven siopao",
+        "seven eleven siopao asado",
+        "711 siopao philippines"
+      ],
+      "icon": "dishes/pau",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "7-Eleven Adobo Rice Meal",
+      "brand": "7-Eleven",
+      "place": "packaged",
+      "serving": "1 box",
+      "kcal": 520,
+      "carbs_g": 72,
+      "protein_g": 22,
+      "fat_g": 15,
+      "aliases": [
+        "7 eleven rice meal",
+        "seven eleven adobo rice",
+        "711 adobo rice meal philippines"
+      ],
+      "icon": "food/lunch-box",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "7-Eleven Chicken Empanada",
+      "brand": "7-Eleven",
+      "place": "packaged",
+      "serving": "1 piece",
+      "kcal": 320,
+      "carbs_g": 34,
+      "protein_g": 9,
+      "fat_g": 16,
+      "aliases": [
+        "7 eleven empanada",
+        "seven eleven chicken empanada",
+        "711 empanada philippines"
+      ],
+      "icon": "dishes/curry-puff",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Potato Corner Flavoured Fries",
+      "brand": "Potato Corner",
+      "place": "hawker",
+      "serving": "1 regular",
+      "kcal": 340,
+      "carbs_g": 44,
+      "protein_g": 4,
+      "fat_g": 17,
+      "aliases": [
+        "potato corner fries",
+        "flavoured fries cheese",
+        "potato corner regular",
+        "bbq fries potato corner"
+      ],
+      "icon": "food/potato",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        { "label": "1 jumbo", "factor": 1.7 },
+        { "label": "1 giant", "factor": 2.5 }
+      ]
+    },
+    {
+      "name": "Turks Beef Shawarma Rice",
+      "brand": "Turks",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 620,
+      "carbs_g": 78,
+      "protein_g": 28,
+      "fat_g": 22,
+      "aliases": [
+        "turks shawarma rice",
+        "turks beef shawarma rice",
+        "shawarma rice philippines"
+      ],
+      "icon": "food/plate-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Turks Beef Shawarma Wrap",
+      "brand": "Turks",
+      "place": "hawker",
+      "serving": "1 wrap",
+      "kcal": 480,
+      "carbs_g": 48,
+      "protein_g": 24,
+      "fat_g": 21,
+      "aliases": [
+        "turks shawarma wrap",
+        "turks pita shawarma",
+        "beef shawarma wrap philippines"
+      ],
+      "icon": "food/food-parcel",
+      "source": "model_estimate",
+      "verified": false
+    }
+  ]
+}
