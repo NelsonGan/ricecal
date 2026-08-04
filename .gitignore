@@ -54,3 +54,7 @@ apps/supabase/.temp
 # edge functions with `--no-lock` for the reason in CLAUDE.md — a lockfile that
 # reaches a function directory gets bundled into the deployed script.
 deno.lock
+
+# The last loader run's outcome-by-row, written beside the payload it explains.
+# Useful for the next round and worthless the moment there is one.
+apps/supabase/data/foods/.last-import.json

@@ -1,6 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalPassThroughEnv": ["SUPABASE_PROJECT_ID"],
+  "globalPassThroughEnv": ["SUPABASE_PROJECT_ID", "SUPABASE_ACCESS_TOKEN"],
   "tasks": {
     "typecheck": {
       "dependsOn": ["^typecheck"]

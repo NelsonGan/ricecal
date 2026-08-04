@@ -43,7 +43,23 @@ psql "$SOURCE_DB_URL" -f scripts/export_for_ricecal.sql   # -> /tmp/xfer_*.csv
 psql "$DB_URL" -v ON_ERROR_STOP=1 -f apps/supabase/scripts/import-catalogue.sql
 ```
 
-457,014 dishes, 478,236 portions. Every test in `apps/supabase/tests` passes both on
+457,014 dishes, 478,236 portions. There is a second, smaller loader beside it —
+`public.import_foods(jsonb)` and `scripts/import-foods.mjs` — for the other
+shape of arrival: a few hundred researched dishes at a time, written down as
+JSON, arriving repeatedly with heavy overlap. It validates and dedupes inside
+the database rather than in the client, because a loader that fetched the
+catalogue to decide what is new would have to pull 457,000 names to answer a
+question about 200, and two runs at once would each conclude the same dish was
+new. See `data/foods/README.md` for the payload shape and
+`schemas/95_import_foods.sql` for what it refuses.
+
+```bash
+pnpm foods:have laksa                    # what is already in there
+pnpm foods:import --dry-run apps/supabase/data/foods/laksa.json
+pnpm foods:import apps/supabase/data/foods/laksa.json
+```
+
+Every test in `apps/supabase/tests` passes both on
 an empty catalogue and on a loaded one — assertions about the catalogue are
 written against its actual size rather than a fixture count, because a developer
 who has run the import has half a million rows in that table.
