@@ -187,6 +187,27 @@ function shape(raw, fileSource) {
     }
   }
 
+  // The check Atwater cannot make, and the reason it is here.
+  //
+  // 4/4/9 compares a row against ITSELF, so it passes any panel whose carbohydrate
+  // was inflated in step with its energy. An Open Food Facts record for a 140 g
+  // pack of Samyang declared 119 g carbohydrate, 13 g protein and 28 g fat —
+  // self-consistent to 2.3%, and 160 g of macronutrient inside a 140 g pack.
+  // Conservation of mass is the only thing that sees it.
+  //
+  // Only usable when the serving names a weight, which is exactly where it is
+  // needed: a "1 plate" row has no mass to check against, and a packaged row
+  // read off a panel almost always does. A little slack, because a label rounds
+  // and water and ash are not free.
+  const grams = serving.match(/(\d+(?:\.\d+)?)\s*g\b/i)
+  if (grams) {
+    const mass = Number(grams[1])
+    const macros = carbs + protein + fat
+    if (mass > 0 && macros > mass * 1.05) {
+      return reject(`${Math.round(macros)} g of carbs, protein and fat in a ${mass} g serving`)
+    }
+  }
+
   // Prefixed with the brand only when the name does not already carry it, which
   // is the same rule the database applies to `name_norm` — otherwise a chain
   // item lands at `mcdonalds-mcdonalds-filet-o-fish`.
