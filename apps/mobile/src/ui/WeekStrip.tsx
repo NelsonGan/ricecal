@@ -2,6 +2,7 @@ import { View } from 'react-native'
 
 import { radius, slab } from '@/theme/tokens'
 import { cn } from './cn'
+import { Skeleton } from './Skeleton'
 import { Squish } from './Squish'
 import { Text } from './Text'
 
@@ -83,6 +84,16 @@ const GLASSES_PER_ROW = 8
 export type WaterTrackerProps = {
   filled: number
   goal: number
+  /**
+   * The count is not known yet.
+   *
+   * Its own state rather than something the caller place-holds around, because
+   * an empty glass is a STATEMENT — "no water yet today" — and a tracker
+   * rendered at zero while the day is still loading says it out loud. The grid
+   * is laid out from the goal, which is known first, so the placeholder is
+   * exactly the size the real thing will be and nothing moves when it arrives.
+   */
+  loading?: boolean
   onChange?: (filled: number) => void
   /** Names each glass to a screen reader, e.g. "Glass 3 of 8". Pass translated copy. */
   glassLabel?: (ordinal: number, goal: number) => string
@@ -99,6 +110,7 @@ export type WaterTrackerProps = {
 export function WaterTracker({
   filled,
   goal,
+  loading = false,
   onChange,
   glassLabel = (ordinal, total) => `Glass ${ordinal} of ${total}`,
   className,
@@ -133,6 +145,15 @@ export function WaterTracker({
               // Holds a column so the row above and the row below line up. A
               // spacer draws nothing and is invisible to a screen reader.
               <View key={cell.id} className="flex-1" />
+            ) : loading ? (
+              // 12, the same literal the glass gives `Squish`, so the
+              // placeholder and the thing it stands in for are the same shape.
+              <Skeleton
+                key={cell.id}
+                height={60}
+                rounded={false}
+                className="flex-1 rounded-[12px]"
+              />
             ) : (
               <Squish
                 key={cell.id}

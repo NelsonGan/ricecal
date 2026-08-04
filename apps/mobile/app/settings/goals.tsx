@@ -10,6 +10,7 @@ import {
   useSetTargets,
   useTargets,
   useUpdateProfile,
+  useWeighIns,
 } from '@/data'
 import { useBack } from '@/lib/navigation'
 import { computeTargets, macroSplit } from '@/lib/nutrition'
@@ -19,6 +20,7 @@ import {
   Card,
   Screen,
   SegmentedControl,
+  Skeleton,
   Slider,
   Stepper,
   Text,
@@ -32,11 +34,23 @@ export default function GoalsScreen() {
   const { t } = useTranslation(['profile', 'common'])
   const goBack = useBack('/me')
   const toast = useToast()
-  const { data: profile } = useProfile()
-  const { data: targets } = useTargets()
+  const { data: profile, isPending: profilePending } = useProfile()
+  const { data: targets, isPending: targetsPending } = useTargets()
+  const { isPending: weightPending } = useWeighIns()
   const updateProfile = useUpdateProfile()
   const setTargets = useSetTargets()
   const weight = useCurrentWeight() ?? 0
+
+  /**
+   * Nothing is editable until everything it is seeded from is here.
+   *
+   * The controls on this screen fall back to a budget of zero, a goal of
+   * "maintain" and a target weight of nothing — so a user arriving before the
+   * queries answered did not just see the wrong slider positions, they could
+   * drag one and save them. The footer button waits with the cards for the same
+   * reason: Save wrote whatever the placeholders happened to say.
+   */
+  const loading = profilePending || targetsPending || weightPending
 
   // Edited locally and committed on save, so backing out of the screen does not
   // silently move the user's budget. Seeded once the queries answer.
@@ -90,7 +104,7 @@ export default function GoalsScreen() {
   return (
     <Screen
       footer={
-        <Button fullWidth onPress={save}>
+        <Button fullWidth onPress={save} disabled={loading}>
           {t('common:action.save')}
         </Button>
       }
@@ -101,87 +115,111 @@ export default function GoalsScreen() {
         backLabel={t('common:a11y.back')}
       />
 
-      <Card title={t('profile:goals.dailyCalories')}>
-        <View className="flex-row items-baseline justify-between">
-          <Text variant="title">{currentKcal.toLocaleString()}</Text>
-          <Text variant="caption">
-            {t('profile:goals.recommended', { value: recommended.toLocaleString() })}
-          </Text>
-        </View>
-        <Slider
-          value={currentKcal}
-          onChange={setKcal}
-          min={1200}
-          max={3500}
-          step={10}
-          // The card heading and the figure above already name this; a slider
-          // label would be the third copy of the same words.
-          accessibilityLabel={t('profile:goals.dailyCalories')}
-          format={(value) => `${value.toLocaleString()} ${t('common:unit.kcal')}`}
-        />
-      </Card>
+      {loading ? (
+        <>
+          {/* One block per card, at the height each will be, so the screen does
+              not reflow under the reader's thumb when the answers land. */}
+          <Card title={t('profile:goals.dailyCalories')}>
+            <Skeleton className="h-[68px] w-full" />
+          </Card>
+          <Card title={t('profile:goals.macroTargets')}>
+            <Skeleton className="h-[72px] w-full" />
+          </Card>
+          <Card title={t('profile:goals.goal')}>
+            <Skeleton className="h-[124px] w-full" />
+          </Card>
+          <Card title={t('profile:goals.other')}>
+            <Skeleton className="h-[76px] w-full" />
+          </Card>
+        </>
+      ) : (
+        <>
+          <Card title={t('profile:goals.dailyCalories')}>
+            <View className="flex-row items-baseline justify-between">
+              <Text variant="title">{currentKcal.toLocaleString()}</Text>
+              <Text variant="caption">
+                {t('profile:goals.recommended', { value: recommended.toLocaleString() })}
+              </Text>
+            </View>
+            <Slider
+              value={currentKcal}
+              onChange={setKcal}
+              min={1200}
+              max={3500}
+              step={10}
+              // The card heading and the figure above already name this; a slider
+              // label would be the third copy of the same words.
+              accessibilityLabel={t('profile:goals.dailyCalories')}
+              format={(value) => `${value.toLocaleString()} ${t('common:unit.kcal')}`}
+            />
+          </Card>
 
-      <Card title={t('profile:goals.macroTargets')}>
-        {macros.map((macro) => (
-          <View key={macro.key} className="flex-row items-center gap-3">
-            <View className={`h-3 w-3 rounded ${macro.dot}`} />
-            <Text variant="label" className="flex-1">
-              {macro.label}
-            </Text>
-            <Text variant="meta">
-              {t('profile:goals.macroValue', {
-                grams: macro.grams,
-                percent: Math.round(
-                  ((macro.grams * (macro.key === 'fat' ? 9 : 4)) / (currentKcal || 1)) * 100,
-                ),
-              })}
-            </Text>
-          </View>
-        ))}
-      </Card>
+          <Card title={t('profile:goals.macroTargets')}>
+            {macros.map((macro) => (
+              <View key={macro.key} className="flex-row items-center gap-3">
+                <View className={`h-3 w-3 rounded ${macro.dot}`} />
+                <Text variant="label" className="flex-1">
+                  {macro.label}
+                </Text>
+                <Text variant="meta">
+                  {t('profile:goals.macroValue', {
+                    grams: macro.grams,
+                    percent: Math.round(
+                      ((macro.grams * (macro.key === 'fat' ? 9 : 4)) / (currentKcal || 1)) * 100,
+                    ),
+                  })}
+                </Text>
+              </View>
+            ))}
+          </Card>
 
-      <Card title={t('profile:goals.goal')}>
-        <SegmentedControl
-          options={GOALS.map((option) => ({ value: option, label: t(`profile:goals.${option}`) }))}
-          // "Just tracking" has no slider position of its own; it sits where
-          // maintain does, and picking any option here commits to that goal.
-          value={currentGoal === 'track' ? 'maintain' : currentGoal}
-          onChange={(value) => setGoal(value as Goal)}
-          accessibilityLabel={t('profile:goals.goal')}
-        />
+          <Card title={t('profile:goals.goal')}>
+            <SegmentedControl
+              options={GOALS.map((option) => ({
+                value: option,
+                label: t(`profile:goals.${option}`),
+              }))}
+              // "Just tracking" has no slider position of its own; it sits where
+              // maintain does, and picking any option here commits to that goal.
+              value={currentGoal === 'track' ? 'maintain' : currentGoal}
+              onChange={(value) => setGoal(value as Goal)}
+              accessibilityLabel={t('profile:goals.goal')}
+            />
 
-        <View className="flex-row items-center justify-between">
-          <Text variant="label" className="text-muted">
-            {t('profile:goals.targetWeight')}
-          </Text>
-          <Text variant="label">
-            {currentTargetWeight.toFixed(1)} {t('common:unit.kg')}
-          </Text>
-        </View>
-        <Slider
-          value={currentTargetWeight}
-          onChange={setTargetWeight}
-          min={40}
-          max={120}
-          step={0.5}
-          accessibilityLabel={t('profile:goals.targetWeight')}
-          format={(value) => `${value.toFixed(1)} ${t('common:unit.kg')}`}
-        />
-      </Card>
+            <View className="flex-row items-center justify-between">
+              <Text variant="label" className="text-muted">
+                {t('profile:goals.targetWeight')}
+              </Text>
+              <Text variant="label">
+                {currentTargetWeight.toFixed(1)} {t('common:unit.kg')}
+              </Text>
+            </View>
+            <Slider
+              value={currentTargetWeight}
+              onChange={setTargetWeight}
+              min={40}
+              max={120}
+              step={0.5}
+              accessibilityLabel={t('profile:goals.targetWeight')}
+              format={(value) => `${value.toFixed(1)} ${t('common:unit.kg')}`}
+            />
+          </Card>
 
-      <Card title={t('profile:goals.other')}>
-        <Text variant="label">{t('profile:goals.waterGoal')}</Text>
-        <Stepper
-          value={currentWater}
-          onChange={setWater}
-          min={4}
-          max={16}
-          accessibilityLabel={t('profile:goals.waterGoal')}
-          decrementLabel={t('common:a11y.decrease')}
-          incrementLabel={t('common:a11y.increase')}
-          format={(value) => t('common:count.glasses', { count: value })}
-        />
-      </Card>
+          <Card title={t('profile:goals.other')}>
+            <Text variant="label">{t('profile:goals.waterGoal')}</Text>
+            <Stepper
+              value={currentWater}
+              onChange={setWater}
+              min={4}
+              max={16}
+              accessibilityLabel={t('profile:goals.waterGoal')}
+              decrementLabel={t('common:a11y.decrease')}
+              incrementLabel={t('common:a11y.increase')}
+              format={(value) => t('common:count.glasses', { count: value })}
+            />
+          </Card>
+        </>
+      )}
     </Screen>
   )
 }

@@ -53,6 +53,17 @@ export function useDay(date: string) {
 }
 
 /**
+ * A day, plus whether it is the real one yet.
+ *
+ * The empty day this hook falls back to is indistinguishable from a day nobody
+ * logged anything on, and the screens cannot tell them apart from the shape
+ * alone — which is how switching dates came to draw "nothing logged" over every
+ * day for as long as its request was out. `isPending` is the one bit that says
+ * which of the two this is.
+ */
+export type DayView = DayLog & { isPending: boolean }
+
+/**
  * The day currently on screen, never undefined — an unlogged day is empty.
  *
  * Snaps still being recognised are merged in here rather than being a second
@@ -60,12 +71,12 @@ export function useDay(date: string) {
  * cannot come from the query; sorting by time puts each one where it belongs
  * in its meal rather than at the end.
  */
-export function useDayLog(date: string): DayLog {
-  const { data } = useDay(date)
+export function useDayLog(date: string): DayView {
+  const { data, isPending } = useDay(date)
   const { snaps } = usePendingSnaps()
 
   return useMemo(() => {
-    const base = data ?? { date, entries: [], waterGlasses: 0 }
+    const base = { ...(data ?? { date, entries: [], waterGlasses: 0 }), isPending }
     const mine = snaps.filter((snap) => snap.logDate === date)
     if (mine.length === 0) return base
 
@@ -106,11 +117,20 @@ export function useDayLog(date: string): DayLog {
 
     return {
       ...base,
+      /**
+       * A snap is content, so a day carrying one is never "still loading".
+       *
+       * The shutter writes its row into MMKV before there is anything to
+       * fetch, and a screen that hid the day behind a skeleton until the query
+       * answered would take the photograph off the day it was just added to —
+       * which is the one moment the user is watching that row.
+       */
+      isPending: false,
       entries: [...base.entries, ...waiting.map(pendingAsEntry)].sort((a, b) =>
         a.loggedAt.localeCompare(b.loggedAt),
       ),
     }
-  }, [data, snaps, date])
+  }, [data, snaps, date, isPending])
 }
 
 // `usePrefetchDays` used to live here too, warming the days either side of the
@@ -243,10 +263,10 @@ export function useDayMarks(from: string, to: string) {
  * A run ending yesterday still counts as current — otherwise a 30-day streak
  * reads as zero every morning until breakfast is logged.
  */
-export function useStreak(): { current: number; best: number } {
+export function useStreak(): { current: number; best: number; isPending: boolean } {
   const userId = useUserId()
 
-  const { data } = useQuery({
+  const { data, isPending } = useQuery({
     queryKey: keys.streak(userId),
     queryFn: async () => {
       const rows = unwrap(await supabase.rpc('logging_streak'))
@@ -258,5 +278,8 @@ export function useStreak(): { current: number; best: number } {
     },
   })
 
-  return data ?? { current: 0, best: 0 }
+  // Zero is a real answer here — a fresh account has no streak — so the callers
+  // are told which zero this is rather than being left to draw "0 day streak"
+  // for as long as the request is out.
+  return { current: data?.current ?? 0, best: data?.best ?? 0, isPending }
 }
