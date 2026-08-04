@@ -96,6 +96,16 @@ Leave them out. A confident zero is a claim.
 **An icon is optional and must exist.** `apps/mobile/assets/icons/dishes/` and
 `.../food/` are the drawings there are; naming anything else gets the dish
 imported without one, which renders as no icon rather than as a stand-in plate.
+The two directories are not interchangeable and guessing which one holds a
+drawing has now cost two rounds a batch of blank icons — `food/satay` exists,
+`dishes/satay` does not. List the directory rather than assuming.
+
+**Write the file as you go.** A round is long enough to be interrupted, and a
+session limit killed six of them at once. Four had files on disk, all four
+parsed, and 453 dishes survived because each agent had been saving valid JSON
+after every block rather than holding the payload in its head until the end.
+A partial file is worth importing and worth resuming; a lost one is worth
+nothing.
 
 ## What the loader reports
 
