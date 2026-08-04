@@ -203,10 +203,12 @@ export const logging = {
     fixTitle: 'Fix it by typing',
     fixPlaceholder: 'no sambal, and it was half a plate',
     /**
-     * The send button inside the field, on a scanned entry only. Icon-only, so
-     * this is what a screen reader announces.
+     * The sparkle button in the footer, and the sheet's own submit. The same
+     * two words twice on purpose: the sheet is that button's second half, not a
+     * new question, and "Send this correction" invited the user to wonder what
+     * else they might have been sending.
      */
-    fixSend: 'Send this correction',
+    fixAction: 'Fix it',
     fixNotApplied: 'Could not apply that — try rewording it',
     /** The scanned plate's ingredient breakdown. */
     plateTitle: 'INGREDIENTS',
@@ -239,6 +241,12 @@ export const logging = {
      * measurement ("1 medium paper (8-5/8\" dia)") or a code ("383 GRM").
      */
     servingWord: 'serving',
+    /**
+     * The fallback chips, for an entry the model suggested nothing for. They go
+     * into the fix box as text and are read by `scan-refine` like anything else
+     * typed there, so each one has to be a sentence a model can act on rather
+     * than a label the client understands.
+     */
     quickFix: {
       halfPortion: 'Half portion',
       noSambal: 'No sambal',
@@ -246,6 +254,24 @@ export const logging = {
       extraRice: 'Extra rice',
     },
     editByHand: 'Edit the details by hand',
+    /**
+     * The footer. Short because it shares the row with "Fix it" — "Save
+     * changes" and a sparkle button do not both fit on a small phone.
+     */
+    save: 'Save',
+    /**
+     * A write that failed. The screen stays where it is with everything still
+     * filled in, so this says what happened rather than what to do about it.
+     */
+    saveFailed: 'Could not save those changes',
+    /**
+     * Leaving with edits staged. Nothing on this screen is written until Save,
+     * so the back chevron is a discard and has to say so.
+     */
+    discardTitle: 'Leave without saving?',
+    discardBody: 'What you changed here is dropped and the entry stays as it was.',
+    /** Short: it shares a row with "Keep", and the title has said what goes. */
+    discardConfirm: 'Discard',
     deleteEntry: 'Delete this entry',
     deleteTitle: 'Delete this entry?',
     deleteBody: 'It comes straight out of today and the count goes back up.',
