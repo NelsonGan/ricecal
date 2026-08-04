@@ -3,7 +3,7 @@ import { View } from 'react-native'
 
 import type { TrendSummary } from '@/data'
 import { radius, slab } from '@/theme/tokens'
-import { cn, Icon, type IconProps, Squish, Text } from '@/ui'
+import { cn, Icon, type IconProps, Skeleton, Squish, Text } from '@/ui'
 import { showWeight, UNIT_KEY, type WeightUnit } from './units'
 
 export type TrendMetric = 'calories' | 'water' | 'weight'
@@ -35,6 +35,15 @@ export type MetricTabsProps = {
   onChange: (value: TrendMetric) => void
   /** Null until the range's first answer arrives, and after it for an empty one. */
   summary: TrendSummary | null | undefined
+  /**
+   * The range's answer is still out.
+   *
+   * Distinct from a null summary, which means the range genuinely holds
+   * nothing: both render without figures, and only one of them is a claim. The
+   * TILES stay — they are the tab control, and hiding them would take the
+   * user's own selection off screen — so it is the three numbers that wait.
+   */
+  loading?: boolean
   unit: WeightUnit
   className?: string
 }
@@ -53,7 +62,14 @@ export type MetricTabsProps = {
  * own colour was the first attempt and it made the row read as three states of
  * one thing rather than as a choice between three.
  */
-export function MetricTabs({ value, onChange, summary, unit, className }: MetricTabsProps) {
+export function MetricTabs({
+  value,
+  onChange,
+  summary,
+  loading = false,
+  unit,
+  className,
+}: MetricTabsProps) {
   const { t } = useTranslation(['progress', 'common'])
 
   const figures: Record<TrendMetric, { value: string; unit: string }> = {
@@ -98,10 +114,14 @@ export function MetricTabs({ value, onChange, summary, unit, className }: Metric
             onPress={() => onChange(metric)}
             accessibilityRole="tab"
             accessibilityState={{ selected }}
-            accessibilityLabel={t('progress:metric.a11y', {
-              metric: label,
-              value: `${figure.value} ${figure.unit}`,
-            })}
+            accessibilityLabel={
+              loading
+                ? label
+                : t('progress:metric.a11y', {
+                    metric: label,
+                    value: `${figure.value} ${figure.unit}`,
+                  })
+            }
           >
             <View className="flex-row items-center gap-1.5">
               {/* Untinted on both states. These are flat colour illustrations
@@ -117,24 +137,32 @@ export function MetricTabs({ value, onChange, summary, unit, className }: Metric
               </Text>
             </View>
 
-            <View className="flex-row items-baseline gap-1">
-              <Text
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.7}
-                // No `leading-` — `adjustsFontSizeToFit` beside an explicit line
-                // height shrinks text that has room. The note on `StatTile` has
-                // the long version.
-                className={cn(
-                  'shrink font-display text-[20px]',
-                  selected ? 'text-on-pandan' : 'text-ink',
-                )}
-              >
-                {figure.value}
-              </Text>
-              <Text variant="micro" className={selected ? 'text-on-pandan' : 'text-faint'}>
-                {figure.unit}
-              </Text>
+            {/* Height pinned to the figure's own line box so the row does not
+                grow by a point when the numbers arrive. */}
+            <View className="h-[24px] flex-row items-baseline gap-1">
+              {loading ? (
+                <Skeleton width={56} height={16} className="self-center" />
+              ) : (
+                <>
+                  <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                    // No `leading-` — `adjustsFontSizeToFit` beside an explicit line
+                    // height shrinks text that has room. The note on `StatTile` has
+                    // the long version.
+                    className={cn(
+                      'shrink font-display text-[20px]',
+                      selected ? 'text-on-pandan' : 'text-ink',
+                    )}
+                  >
+                    {figure.value}
+                  </Text>
+                  <Text variant="micro" className={selected ? 'text-on-pandan' : 'text-faint'}>
+                    {figure.unit}
+                  </Text>
+                </>
+              )}
             </View>
           </Squish>
         )

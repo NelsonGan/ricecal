@@ -36,6 +36,7 @@ export {
 } from './activity'
 export { dateKey, today } from './client'
 export {
+  type DayView,
   useDay,
   useDayLog,
   useDayMarks,

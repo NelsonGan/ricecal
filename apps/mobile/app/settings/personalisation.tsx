@@ -4,7 +4,18 @@ import { View } from 'react-native'
 
 import { type Meal, useMealTimes, useUpdateMealTime } from '@/data'
 import { useBack } from '@/lib/navigation'
-import { AppBar, Button, Card, Divider, Screen, Sheet, Stepper, Tappable, Text } from '@/ui'
+import {
+  AppBar,
+  Button,
+  Card,
+  Divider,
+  Screen,
+  Sheet,
+  Skeleton,
+  Stepper,
+  Tappable,
+  Text,
+} from '@/ui'
 
 /** The order they happen in, which is not the order the table returns. */
 const MEALS: Meal[] = ['breakfast', 'lunch', 'dinner', 'snack']
@@ -29,7 +40,7 @@ export default function PersonalisationScreen() {
   const { t } = useTranslation(['profile', 'common'])
   const goBack = useBack('/(tabs)/me')
 
-  const { data: mealTimes = [] } = useMealTimes()
+  const { data: mealTimes = [], isPending } = useMealTimes()
   const updateMealTime = useUpdateMealTime()
 
   /** The meal being retimed, if any. */
@@ -71,24 +82,32 @@ export default function PersonalisationScreen() {
         {/* A rule between rows, not around them: the card draws its own edges,
             so a divider above the first row or below the last would be a second
             line against the border. */}
-        {MEALS.map((meal, index) => (
-          <Fragment key={meal}>
-            {index === 0 ? null : <Divider />}
-            <Tappable
-              className="min-h-[56px] flex-row items-center justify-between gap-3"
-              onPress={() => open(meal)}
-              accessibilityRole="button"
-              accessibilityLabel={t('profile:personalisation.editMeal', {
-                meal: t(`common:meal.${meal}`),
-              })}
-            >
-              <Text variant="body">{t(`common:meal.${meal}`)}</Text>
-              <Text variant="label" className="text-pandan-ink">
-                {formatTime(timeFor(meal))}
-              </Text>
-            </Tappable>
-          </Fragment>
-        ))}
+        {isPending ? (
+          // `timeFor` falls back to 08:00 so a row always has something to
+          // print, which is the right default for a stepper being opened and
+          // the wrong one for the list: four meals all claiming eight in the
+          // morning, one of which then jumps. Four rows at 56.
+          <Skeleton className="h-[224px] w-full" />
+        ) : (
+          MEALS.map((meal, index) => (
+            <Fragment key={meal}>
+              {index === 0 ? null : <Divider />}
+              <Tappable
+                className="min-h-[56px] flex-row items-center justify-between gap-3"
+                onPress={() => open(meal)}
+                accessibilityRole="button"
+                accessibilityLabel={t('profile:personalisation.editMeal', {
+                  meal: t(`common:meal.${meal}`),
+                })}
+              >
+                <Text variant="body">{t(`common:meal.${meal}`)}</Text>
+                <Text variant="label" className="text-pandan-ink">
+                  {formatTime(timeFor(meal))}
+                </Text>
+              </Tappable>
+            </Fragment>
+          ))
+        )}
       </Card>
 
       <Text variant="meta" className="px-1">

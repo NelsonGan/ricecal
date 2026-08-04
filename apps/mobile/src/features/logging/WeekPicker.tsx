@@ -32,9 +32,20 @@ function Week({ start, width, selected, today, onSelect }: WeekProps) {
 
   const extendsBudget = settings?.activity_extends_budget !== false
 
+  /**
+   * The settings row counts toward readiness, not just the marks.
+   *
+   * `extendsBudget` defaults to true while that query is out, and it is the
+   * term that decides whether a day with movement on it reads as under or
+   * over. On an account that has the setting turned OFF, every such day drew
+   * green and then went amber a moment later — the strip changing its verdict
+   * on days the user had already read.
+   */
+  const ready = isSuccess && settings !== undefined
+
   const cells: DateStripDay[] = days.map((date) => {
     const at = parseISO(date)
-    const mark = markFor(date, marks?.[date], today, isSuccess, extendsBudget)
+    const mark = markFor(date, marks?.[date], today, ready, extendsBudget)
 
     return {
       key: date,

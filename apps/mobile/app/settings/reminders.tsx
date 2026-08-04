@@ -5,7 +5,7 @@ import { type Meal, useMealTimes, useSettings, useUpdateMealTime, useUpdateSetti
 import { ToggleRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { ensureNotificationPermission } from '@/lib/notifications'
-import { Alert, AppBar, Card, Screen, Text, useToast } from '@/ui'
+import { Alert, AppBar, Card, Screen, Skeleton, Text, useToast } from '@/ui'
 
 const REMINDER_MEALS: Meal[] = ['breakfast', 'lunch', 'dinner']
 
@@ -15,11 +15,22 @@ export default function RemindersScreen() {
   const goBack = useBack('/me')
   const toast = useToast()
 
-  const { data: settings } = useSettings()
-  const { data: mealTimes } = useMealTimes()
+  const { data: settings, isPending: settingsPending } = useSettings()
+  const { data: mealTimes, isPending: mealTimesPending } = useMealTimes()
   const updateSettings = useUpdateSettings()
   const updateMealTime = useUpdateMealTime()
   const [blocked, setBlocked] = useState(false)
+
+  /**
+   * A switch has no honest resting position.
+   *
+   * Every row here falls back to off, and off is an answer — so a screen full
+   * of reminders drew itself as a screen with none and then flipped three
+   * switches on, which looks exactly like the app having just turned them on.
+   * The meal rows had a second copy of the problem in their titles: with no
+   * times loaded, `formatTime('')` renders "Breakfast at 12:00 am".
+   */
+  const loading = settingsPending || mealTimesPending
 
   /**
    * Every switch on this screen goes through here.
@@ -85,45 +96,59 @@ export default function RemindersScreen() {
       ) : null}
 
       <Card title={t('profile:reminders.meals')} contentClassName="gap-0">
-        {REMINDER_MEALS.map((meal, index) => (
-          <ToggleRow
-            key={meal}
-            title={t('profile:reminders.mealAt', {
-              meal: t(`common:meal.${meal}`),
-              time: formatTime(timeFor(meal)),
-            })}
-            value={enabledFor(meal)}
-            onValueChange={(value) =>
-              withPermission(value, () => updateMealTime.mutate({ meal, reminder_enabled: value }))
-            }
-            divider={index < REMINDER_MEALS.length - 1}
-          />
-        ))}
+        {loading ? (
+          // 52 a row, which is what `ToggleRow` measures with a single-line
+          // title: three of them, and nothing moves when the switches arrive.
+          <Skeleton className="h-[156px] w-full" />
+        ) : (
+          REMINDER_MEALS.map((meal, index) => (
+            <ToggleRow
+              key={meal}
+              title={t('profile:reminders.mealAt', {
+                meal: t(`common:meal.${meal}`),
+                time: formatTime(timeFor(meal)),
+              })}
+              value={enabledFor(meal)}
+              onValueChange={(value) =>
+                withPermission(value, () =>
+                  updateMealTime.mutate({ meal, reminder_enabled: value }),
+                )
+              }
+              divider={index < REMINDER_MEALS.length - 1}
+            />
+          ))
+        )}
       </Card>
 
       <Card title={t('profile:reminders.habits')} contentClassName="gap-0">
-        <ToggleRow
-          title={t('profile:reminders.water')}
-          value={settings?.notify_water ?? false}
-          onValueChange={(value) =>
-            withPermission(value, () => updateSettings.mutate({ notify_water: value }))
-          }
-        />
-        <ToggleRow
-          title={t('profile:reminders.weighIn')}
-          value={settings?.notify_weigh_in ?? false}
-          onValueChange={(value) =>
-            withPermission(value, () => updateSettings.mutate({ notify_weigh_in: value }))
-          }
-        />
-        <ToggleRow
-          title={t('profile:reminders.weeklyReport')}
-          value={settings?.notify_weekly_report ?? false}
-          onValueChange={(value) =>
-            withPermission(value, () => updateSettings.mutate({ notify_weekly_report: value }))
-          }
-          divider={false}
-        />
+        {loading ? (
+          <Skeleton className="h-[156px] w-full" />
+        ) : (
+          <>
+            <ToggleRow
+              title={t('profile:reminders.water')}
+              value={settings?.notify_water ?? false}
+              onValueChange={(value) =>
+                withPermission(value, () => updateSettings.mutate({ notify_water: value }))
+              }
+            />
+            <ToggleRow
+              title={t('profile:reminders.weighIn')}
+              value={settings?.notify_weigh_in ?? false}
+              onValueChange={(value) =>
+                withPermission(value, () => updateSettings.mutate({ notify_weigh_in: value }))
+              }
+            />
+            <ToggleRow
+              title={t('profile:reminders.weeklyReport')}
+              value={settings?.notify_weekly_report ?? false}
+              onValueChange={(value) =>
+                withPermission(value, () => updateSettings.mutate({ notify_weekly_report: value }))
+              }
+              divider={false}
+            />
+          </>
+        )}
       </Card>
     </Screen>
   )

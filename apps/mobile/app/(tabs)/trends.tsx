@@ -90,7 +90,17 @@ export default function TrendsScreen() {
         }
       />
 
-      <MetricTabs value={metric} onChange={setMetric} summary={summary.data} unit={unit} />
+      {/* The same gate as the panel below. The tiles are the tab control so
+          they stay put, but their figures belong to the range being switched
+          away from until the new one lands — three numbers that were true a
+          moment ago and are not any more. */}
+      <MetricTabs
+        value={metric}
+        onChange={setMetric}
+        summary={summary.data}
+        loading={loading}
+        unit={unit}
+      />
 
       {loading || !buckets ? (
         // One block, not three. The panels differ in how many cards they have,
