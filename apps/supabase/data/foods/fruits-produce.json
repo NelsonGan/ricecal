@@ -2337,6 +2337,756 @@
           "factor": 1.9
         }
       ]
+    },
+    {
+      "name": "Durian Black Thorn Sebiji",
+      "place": "home",
+      "serving": "1 whole fruit (500 g flesh)",
+      "kcal": 900,
+      "carbs_g": 152.5,
+      "protein_g": 10.5,
+      "fat_g": 29.5,
+      "fibre_g": 17.5,
+      "sugar_g": 107.5,
+      "aliases": [
+        "whole black thorn durian",
+        "black thorn sebiji",
+        "duri hitam sebiji",
+        "整粒黑刺"
+      ],
+      "verified": false,
+      "source": "usda_fdc durian per 100 g, cultivar-adjusted, converted to seeds",
+      "extra_servings": [
+        {
+          "label": "Half fruit",
+          "factor": 0.5
+        },
+        {
+          "label": "Quarter fruit",
+          "factor": 0.25
+        }
+      ]
+    },
+    {
+      "name": "Durian D24 Sebiji",
+      "place": "home",
+      "serving": "1 whole fruit (450 g flesh)",
+      "kcal": 729,
+      "carbs_g": 126,
+      "protein_g": 8.5,
+      "fat_g": 22.1,
+      "fibre_g": 16.7,
+      "sugar_g": 87.8,
+      "aliases": [
+        "whole d24 durian",
+        "d24 sebiji",
+        "durian sultan sebiji",
+        "整粒d24"
+      ],
+      "verified": false,
+      "source": "usda_fdc durian per 100 g, cultivar-adjusted, converted to seeds",
+      "extra_servings": [
+        {
+          "label": "Half fruit",
+          "factor": 0.5
+        },
+        {
+          "label": "Quarter fruit",
+          "factor": 0.25
+        }
+      ]
+    },
+    {
+      "name": "Durian Puree Sebungkus",
+      "place": "packaged",
+      "serving": "1 pack (200 g)",
+      "kcal": 350,
+      "carbs_g": 60,
+      "protein_g": 4,
+      "fat_g": 11.2,
+      "fibre_g": 7.2,
+      "sugar_g": 42,
+      "aliases": [
+        "durian puree",
+        "durian paste pack",
+        "pes durian",
+        "durian pulp pack",
+        "榴莲泥"
+      ],
+      "verified": false,
+      "source": "usda_fdc durian per 100 g, cultivar-adjusted, converted to seeds",
+      "extra_servings": [
+        {
+          "label": "Half pack",
+          "factor": 0.5
+        },
+        {
+          "label": "2 tablespoons",
+          "factor": 0.15
+        }
+      ]
+    },
+    {
+      "name": "Rambutan Gading",
+      "place": "home",
+      "serving": "10 fruits (120 g flesh)",
+      "kcal": 98,
+      "carbs_g": 25.1,
+      "protein_g": 0.8,
+      "fat_g": 0.2,
+      "fibre_g": 1.1,
+      "sugar_g": 21.6,
+      "aliases": [
+        "yellow rambutan",
+        "rambutan gading",
+        "rambutan kuning",
+        "gading rambutan"
+      ],
+      "verified": true,
+      "source": "myfcd_1997 rambutan per 100 g converted to 10 fruits",
+      "extra_servings": [
+        {
+          "label": "5 fruits",
+          "factor": 0.5
+        },
+        {
+          "label": "20 fruits",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Rambutan Anak Sekolah",
+      "place": "home",
+      "serving": "10 fruits (110 g flesh)",
+      "kcal": 90,
+      "carbs_g": 23,
+      "protein_g": 0.8,
+      "fat_g": 0.2,
+      "fibre_g": 1,
+      "sugar_g": 19.8,
+      "aliases": [
+        "rambutan anak sekolah",
+        "r156 rambutan",
+        "rambutan r156",
+        "school boy rambutan"
+      ],
+      "verified": true,
+      "source": "myfcd_1997 rambutan per 100 g converted to 10 fruits",
+      "extra_servings": [
+        {
+          "label": "5 fruits",
+          "factor": 0.5
+        },
+        {
+          "label": "20 fruits",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Rambutan Kupas Sebungkus",
+      "place": "packaged",
+      "serving": "1 pack (200 g flesh)",
+      "kcal": 164,
+      "carbs_g": 41.8,
+      "protein_g": 1.4,
+      "fat_g": 0.4,
+      "fibre_g": 1.8,
+      "sugar_g": 36,
+      "aliases": [
+        "peeled rambutan pack",
+        "rambutan kupas",
+        "rambutan bungkus",
+        "红毛丹盒装"
+      ],
+      "verified": true,
+      "source": "myfcd_1997 rambutan per 100 g converted to a 200 g pack",
+      "extra_servings": [
+        {
+          "label": "Half pack",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Cempedak Isi Sebungkus",
+      "place": "packaged",
+      "serving": "1 pack (150 g flesh)",
+      "kcal": 174,
+      "carbs_g": 42,
+      "protein_g": 3.8,
+      "fat_g": 0.6,
+      "fibre_g": 5.1,
+      "sugar_g": 30,
+      "aliases": [
+        "packed cempedak",
+        "cempedak isi",
+        "chempedak pack",
+        "cempedak kupas",
+        "尖蜜拉"
+      ],
+      "verified": true,
+      "source": "myfcd_1997 cempedak per 100 g converted to a 150 g pack",
+      "extra_servings": [
+        {
+          "label": "Half pack",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Longan Segar",
+      "place": "home",
+      "serving": "20 fruits (60 g flesh)",
+      "kcal": 36,
+      "carbs_g": 9.1,
+      "protein_g": 0.8,
+      "fat_g": 0.1,
+      "fibre_g": 0.7,
+      "sugar_g": 7.2,
+      "aliases": [
+        "fresh longan",
+        "longan",
+        "mata kucing longan",
+        "dimocarpus longan",
+        "龙眼",
+        "lengkeng"
+      ],
+      "verified": true,
+      "source": "usda_fdc longan raw per 100 g converted to 20 fruits",
+      "extra_servings": [
+        {
+          "label": "10 fruits",
+          "factor": 0.5
+        },
+        {
+          "label": "40 fruits",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Manggis Sebungkus",
+      "place": "packaged",
+      "serving": "10 fruits (200 g flesh)",
+      "kcal": 146,
+      "carbs_g": 35.8,
+      "protein_g": 0.8,
+      "fat_g": 1.2,
+      "fibre_g": 3.6,
+      "sugar_g": 32,
+      "aliases": [
+        "mangosteen pack",
+        "manggis bungkus",
+        "manggis sekilo",
+        "山竹",
+        "mangostan"
+      ],
+      "verified": true,
+      "source": "usda_fdc mangosteen per 100 g converted to 10 fruits",
+      "extra_servings": [
+        {
+          "label": "5 fruits",
+          "factor": 0.5
+        },
+        {
+          "label": "15 fruits",
+          "factor": 1.5
+        }
+      ]
+    },
+    {
+      "name": "Tembikai Kuning",
+      "place": "home",
+      "serving": "1 slice (200 g flesh)",
+      "kcal": 60,
+      "carbs_g": 15.2,
+      "protein_g": 1.2,
+      "fat_g": 0.3,
+      "fibre_g": 0.8,
+      "sugar_g": 12.4,
+      "aliases": [
+        "yellow watermelon",
+        "tembikai kuning",
+        "semangka kuning",
+        "黄西瓜"
+      ],
+      "icon": "food/watermelon",
+      "verified": true,
+      "source": "usda_fdc watermelon raw per 100 g converted to 1 slice",
+      "extra_servings": [
+        {
+          "label": "2 slices",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Rock Melon Potong",
+      "place": "hawker",
+      "serving": "1 pack (200 g)",
+      "kcal": 68,
+      "carbs_g": 16.4,
+      "protein_g": 1.6,
+      "fat_g": 0.4,
+      "fibre_g": 1.8,
+      "sugar_g": 15.8,
+      "aliases": [
+        "rock melon",
+        "cantaloupe",
+        "tembikai wangi",
+        "melon oren",
+        "哈密瓜"
+      ],
+      "verified": true,
+      "source": "usda_fdc cantaloupe raw per 100 g converted to a 200 g pack",
+      "extra_servings": [
+        {
+          "label": "Half pack",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Jambu Batu Merah",
+      "place": "home",
+      "serving": "1 whole fruit (150 g)",
+      "kcal": 102,
+      "carbs_g": 21.5,
+      "protein_g": 3.9,
+      "fat_g": 1.4,
+      "fibre_g": 8.1,
+      "sugar_g": 13.4,
+      "aliases": [
+        "pink guava",
+        "jambu batu merah",
+        "jambu merah muda",
+        "red guava",
+        "jambu sitiawan"
+      ],
+      "verified": true,
+      "source": "usda_fdc guava raw per 100 g converted to one whole fruit",
+      "extra_servings": [
+        {
+          "label": "Half fruit",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Limau Bali Sepinggan",
+      "place": "home",
+      "serving": "1 cup segments (190 g)",
+      "kcal": 72,
+      "carbs_g": 18.2,
+      "protein_g": 1.5,
+      "fat_g": 0.1,
+      "fibre_g": 1.9,
+      "sugar_g": 16.2,
+      "aliases": [
+        "pomelo segments",
+        "limau bali",
+        "limau betawi",
+        "pomelo tambun",
+        "柚子",
+        "shaddock"
+      ],
+      "icon": "food/orange",
+      "verified": true,
+      "source": "usda_fdc pomelo raw per 100 g converted to 1 cup of segments",
+      "extra_servings": [
+        {
+          "label": "Half cup",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Kurma Rutab",
+      "place": "home",
+      "serving": "5 dates (60 g)",
+      "kcal": 128,
+      "carbs_g": 33,
+      "protein_g": 1.1,
+      "fat_g": 0.2,
+      "fibre_g": 3.3,
+      "sugar_g": 27,
+      "aliases": [
+        "rutab dates",
+        "kurma rutab",
+        "fresh soft dates",
+        "kurma basah",
+        "رطب"
+      ],
+      "verified": true,
+      "source": "usda_fdc dates, fresh, per 100 g converted to 5 dates",
+      "extra_servings": [
+        {
+          "label": "1 date",
+          "factor": 0.2
+        },
+        {
+          "label": "3 dates",
+          "factor": 0.6
+        },
+        {
+          "label": "10 dates",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Kurma Piarom",
+      "place": "home",
+      "serving": "5 dates (45 g)",
+      "kcal": 135,
+      "carbs_g": 35.1,
+      "protein_g": 1.1,
+      "fat_g": 0.2,
+      "fibre_g": 3.6,
+      "sugar_g": 29.7,
+      "aliases": [
+        "piarom dates",
+        "kurma piarom",
+        "maryami dates",
+        "chocolate dates"
+      ],
+      "verified": false,
+      "source": "usda_fdc dates per 100 g, cultivar-adjusted, converted to 5 dates",
+      "extra_servings": [
+        {
+          "label": "1 date",
+          "factor": 0.2
+        },
+        {
+          "label": "3 dates",
+          "factor": 0.6
+        },
+        {
+          "label": "10 dates",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Buah Bidara",
+      "place": "home",
+      "serving": "10 fruits (80 g)",
+      "kcal": 63,
+      "carbs_g": 16.2,
+      "protein_g": 1,
+      "fat_g": 0.2,
+      "fibre_g": 1.1,
+      "sugar_g": 4.3,
+      "aliases": [
+        "jujube",
+        "buah bidara",
+        "indian jujube",
+        "ziziphus",
+        "bidara arab",
+        "红枣鲜果"
+      ],
+      "verified": true,
+      "source": "usda_fdc jujube raw per 100 g converted to 10 fruits",
+      "extra_servings": [
+        {
+          "label": "5 fruits",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Buah Kelubi",
+      "place": "home",
+      "serving": "10 fruits (60 g flesh)",
+      "kcal": 30,
+      "carbs_g": 7.5,
+      "protein_g": 0.3,
+      "fat_g": 0.1,
+      "fibre_g": 0.9,
+      "sugar_g": 3.6,
+      "aliases": [
+        "kelubi",
+        "asam paya",
+        "eleiodoxa conferta",
+        "buah asam kelubi",
+        "asam kelubi"
+      ],
+      "verified": false,
+      "source": "myfcd_1997 salak per 100 g, species-adjusted, converted to 10 fruits",
+      "extra_servings": [
+        {
+          "label": "20 fruits",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Petai Cina",
+      "place": "home",
+      "serving": "2 tablespoons (25 g)",
+      "kcal": 37,
+      "carbs_g": 3,
+      "protein_g": 3,
+      "fat_g": 1.5,
+      "fibre_g": 1.5,
+      "sugar_g": 0.3,
+      "aliases": [
+        "petai cina",
+        "petai belalang",
+        "leucaena seeds",
+        "lamtoro",
+        "kemlandingan"
+      ],
+      "verified": false,
+      "source": "myfcd_1997 petai cina per 100 g converted to 2 tablespoons",
+      "extra_servings": [
+        {
+          "label": "4 tablespoons",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Buah Naga Potong Sebungkus",
+      "place": "hawker",
+      "serving": "1 pack (200 g)",
+      "kcal": 100,
+      "carbs_g": 22,
+      "protein_g": 2.2,
+      "fat_g": 0.8,
+      "fibre_g": 6,
+      "sugar_g": 16,
+      "aliases": [
+        "cut dragon fruit",
+        "buah naga potong",
+        "dragonfruit pack",
+        "pitaya potong",
+        "火龙果切片"
+      ],
+      "verified": true,
+      "source": "myfcd_current dragon fruit per 100 g converted to a 200 g pack",
+      "extra_servings": [
+        {
+          "label": "Half pack",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Ciku Potong Sebungkus",
+      "place": "packaged",
+      "serving": "1 pack (150 g flesh)",
+      "kcal": 125,
+      "carbs_g": 30,
+      "protein_g": 0.8,
+      "fat_g": 1.7,
+      "fibre_g": 8,
+      "sugar_g": 22.5,
+      "aliases": [
+        "cut sapodilla",
+        "ciku potong",
+        "sapodilla pack",
+        "chiku bungkus",
+        "人心果"
+      ],
+      "verified": true,
+      "source": "usda_fdc sapodilla raw per 100 g converted to a 150 g pack",
+      "extra_servings": [
+        {
+          "label": "Half pack",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Salak Sebungkus",
+      "place": "packaged",
+      "serving": "1 pack (250 g flesh)",
+      "kcal": 193,
+      "carbs_g": 50,
+      "protein_g": 1,
+      "fat_g": 0.5,
+      "fibre_g": 3.8,
+      "sugar_g": 30,
+      "aliases": [
+        "snake fruit pack",
+        "salak bungkus",
+        "salak sekilo",
+        "salak pack",
+        "蛇皮果盒装"
+      ],
+      "verified": true,
+      "source": "myfcd_1997 salak per 100 g converted to a 250 g pack",
+      "extra_servings": [
+        {
+          "label": "Half pack",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Tembikai dengan Asam Boi",
+      "place": "hawker",
+      "serving": "1 pack (250 g)",
+      "kcal": 87,
+      "carbs_g": 22,
+      "protein_g": 1.5,
+      "fat_g": 0.4,
+      "fibre_g": 1,
+      "sugar_g": 18.5,
+      "sodium_mg": 550,
+      "aliases": [
+        "watermelon with sour plum",
+        "tembikai asam boi",
+        "semangka asam boi",
+        "酸梅西瓜"
+      ],
+      "icon": "food/watermelon",
+      "verified": false,
+      "source": "usda_fdc watermelon raw per 100 g over 250 g plus 6 g asam boi",
+      "extra_servings": [
+        {
+          "label": "Half pack",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Timun dengan Asam Boi",
+      "place": "hawker",
+      "serving": "1 pack (200 g)",
+      "kcal": 42,
+      "carbs_g": 10.2,
+      "protein_g": 1.3,
+      "fat_g": 0.2,
+      "fibre_g": 1,
+      "sugar_g": 6.4,
+      "sodium_mg": 600,
+      "aliases": [
+        "cucumber with sour plum",
+        "timun asam boi",
+        "timun potong",
+        "cucumber sour plum",
+        "酸梅黄瓜"
+      ],
+      "verified": false,
+      "source": "usda_fdc cucumber raw per 100 g over 200 g plus 6 g asam boi",
+      "extra_servings": [
+        {
+          "label": "Half pack",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Betik dengan Limau Potong",
+      "place": "hawker",
+      "serving": "1 pack (200 g)",
+      "kcal": 88,
+      "carbs_g": 22,
+      "protein_g": 1,
+      "fat_g": 0.5,
+      "fibre_g": 3.4,
+      "sugar_g": 15.6,
+      "sodium_mg": 10,
+      "aliases": [
+        "papaya with lime",
+        "betik limau",
+        "papaya lime potong",
+        "betik potong limau"
+      ],
+      "icon": "food/papaya",
+      "verified": false,
+      "source": "usda_fdc papaya raw per 100 g over 200 g with a squeeze of lime",
+      "extra_servings": [
+        {
+          "label": "Half pack",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Belimbing dengan Asam Boi",
+      "place": "hawker",
+      "serving": "1 pack (150 g)",
+      "kcal": 59,
+      "carbs_g": 13,
+      "protein_g": 1.6,
+      "fat_g": 0.5,
+      "fibre_g": 4.2,
+      "sugar_g": 8,
+      "sodium_mg": 500,
+      "aliases": [
+        "starfruit with sour plum",
+        "belimbing asam boi",
+        "carambola sour plum",
+        "酸梅杨桃"
+      ],
+      "verified": false,
+      "source": "usda_fdc starfruit raw per 100 g over 150 g plus 6 g asam boi",
+      "extra_servings": [
+        {
+          "label": "Half pack",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Sengkuang Rojak dengan Kuah",
+      "place": "hawker",
+      "serving": "1 plate (195 g)",
+      "kcal": 167,
+      "carbs_g": 28.4,
+      "protein_g": 4.6,
+      "fat_g": 4.7,
+      "fibre_g": 8.9,
+      "sugar_g": 14,
+      "sodium_mg": 700,
+      "aliases": [
+        "jicama with rojak sauce",
+        "sengkuang rojak",
+        "bangkuang rojak",
+        "yam bean rojak"
+      ],
+      "icon": "dishes/rojak",
+      "verified": false,
+      "source": "usda_fdc jicama per 100 g over 150 g plus 45 g rojak sauce",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Kelapa Muda Kupas",
+      "place": "packaged",
+      "serving": "1 pack (150 g flesh, 200 ml water)",
+      "kcal": 140,
+      "carbs_g": 17.2,
+      "protein_g": 1.9,
+      "fat_g": 7.2,
+      "fibre_g": 4,
+      "sugar_g": 12,
+      "sodium_mg": 130,
+      "aliases": [
+        "peeled young coconut",
+        "kelapa muda kupas",
+        "packed young coconut",
+        "kelapa kupas",
+        "去皮椰青"
+      ],
+      "icon": "food/coconut",
+      "verified": false,
+      "source": "myfcd_1997 young coconut flesh and coconut water, 150 g plus 200 ml",
+      "extra_servings": [
+        {
+          "label": "Half pack",
+          "factor": 0.5
+        }
+      ]
     }
   ]
 }
