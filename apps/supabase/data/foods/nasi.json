@@ -1,0 +1,1983 @@
+{
+  "source": "research:nasi",
+  "foods": [
+    {
+      "name": "Nasi Lemak Ayam Goreng",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 740,
+      "carbs_g": 78,
+      "protein_g": 33,
+      "fat_g": 32,
+      "aliases": [
+        "nasi lemak ayam",
+        "coconut rice with fried chicken",
+        "nasi lemak with fried chicken",
+        "nasi lemak ayam goreng biasa",
+        "椰浆饭配炸鸡"
+      ],
+      "icon": "dishes/nasi-lemak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Lemak Ayam Berempah",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 770,
+      "carbs_g": 80,
+      "protein_g": 34,
+      "fat_g": 34,
+      "aliases": [
+        "nasi lemak ayam rempah",
+        "nasi lemak spiced fried chicken",
+        "nasi lemak berempah",
+        "nasi lemak ayam goreng berempah"
+      ],
+      "icon": "dishes/nasi-lemak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Lemak Rendang Daging",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 790,
+      "carbs_g": 76,
+      "protein_g": 30,
+      "fat_g": 40,
+      "aliases": [
+        "nasi lemak rendang",
+        "nasi lemak beef rendang",
+        "nasi lemak daging",
+        "coconut rice with beef rendang"
+      ],
+      "icon": "dishes/nasi-lemak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Lemak Sotong",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 620,
+      "carbs_g": 80,
+      "protein_g": 26,
+      "fat_g": 22,
+      "aliases": [
+        "nasi lemak sambal sotong",
+        "nasi lemak squid",
+        "coconut rice with sambal squid",
+        "nasi lemak sotong sambal"
+      ],
+      "icon": "dishes/nasi-lemak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Lemak Kerang",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 580,
+      "carbs_g": 78,
+      "protein_g": 22,
+      "fat_g": 20,
+      "aliases": [
+        "nasi lemak sambal kerang",
+        "nasi lemak cockles",
+        "coconut rice with cockles",
+        "nasi lemak see hum"
+      ],
+      "icon": "dishes/nasi-lemak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Lemak Telur Mata",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 540,
+      "carbs_g": 70,
+      "protein_g": 15,
+      "fat_g": 22,
+      "aliases": [
+        "nasi lemak telur",
+        "nasi lemak with fried egg",
+        "nasi lemak biasa telur",
+        "nasi lemak egg"
+      ],
+      "icon": "dishes/nasi-lemak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Lemak Paru",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 670,
+      "carbs_g": 74,
+      "protein_g": 26,
+      "fat_g": 30,
+      "aliases": [
+        "nasi lemak sambal paru",
+        "nasi lemak beef lung",
+        "coconut rice with paru",
+        "nasi lemak paru goreng"
+      ],
+      "icon": "dishes/nasi-lemak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Lemak Ayam Percik",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 670,
+      "carbs_g": 76,
+      "protein_g": 32,
+      "fat_g": 26,
+      "aliases": [
+        "nasi lemak percik",
+        "nasi lemak grilled chicken",
+        "coconut rice with ayam percik"
+      ],
+      "icon": "dishes/ayam-percik",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Lemak Cendawan",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 530,
+      "carbs_g": 76,
+      "protein_g": 11,
+      "fat_g": 20,
+      "aliases": [
+        "nasi lemak mushroom",
+        "vegetarian nasi lemak",
+        "nasi lemak sayur",
+        "nasi lemak rendang cendawan"
+      ],
+      "icon": "dishes/nasi-lemak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Lemak Daun Pisang",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 840,
+      "carbs_g": 95,
+      "protein_g": 30,
+      "fat_g": 38,
+      "aliases": [
+        "nasi lemak banana leaf",
+        "nasi lemak antarabangsa",
+        "nasi lemak campur",
+        "nasi lemak with lauk"
+      ],
+      "icon": "dishes/nasi-lemak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Lemak Sambal Udang",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 620,
+      "carbs_g": 78,
+      "protein_g": 24,
+      "fat_g": 24,
+      "aliases": [
+        "nasi lemak udang",
+        "nasi lemak prawn sambal",
+        "coconut rice with sambal prawn"
+      ],
+      "icon": "dishes/sambal-udang",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Lemak Ayam Masak Merah",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 680,
+      "carbs_g": 80,
+      "protein_g": 30,
+      "fat_g": 26,
+      "aliases": [
+        "nasi lemak masak merah",
+        "nasi lemak red chicken",
+        "coconut rice with ayam masak merah"
+      ],
+      "icon": "dishes/nasi-lemak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Lemak Rice Only",
+      "place": "hawker",
+      "serving": "1 cup",
+      "kcal": 285,
+      "carbs_g": 50,
+      "protein_g": 5,
+      "fat_g": 7,
+      "aliases": [
+        "nasi santan",
+        "nasi lemak sahaja",
+        "coconut milk rice",
+        "nasi lemak kosong",
+        "nasi lemak plain"
+      ],
+      "icon": "food/rice-bowl",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [{ "label": "1 plate", "factor": 1.4 }]
+    },
+
+    {
+      "name": "Nasi Goreng USA",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 880,
+      "carbs_g": 92,
+      "protein_g": 34,
+      "fat_g": 42,
+      "aliases": [
+        "nasi goreng usa",
+        "fried rice usa",
+        "nasi goreng ayam telur sosej",
+        "usa fried rice"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Seafood",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 650,
+      "carbs_g": 86,
+      "protein_g": 26,
+      "fat_g": 22,
+      "aliases": [
+        "nasi goreng makanan laut",
+        "seafood fried rice",
+        "海鲜炒饭",
+        "nasi goreng sotong udang"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Daging",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 670,
+      "carbs_g": 85,
+      "protein_g": 27,
+      "fat_g": 25,
+      "aliases": [
+        "nasi goreng beef",
+        "beef fried rice",
+        "牛肉炒饭",
+        "nasi goreng daging lembu"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Kambing",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 700,
+      "carbs_g": 85,
+      "protein_g": 28,
+      "fat_g": 28,
+      "aliases": [
+        "nasi goreng mutton",
+        "mutton fried rice",
+        "nasi goreng daging kambing"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Udang",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 625,
+      "carbs_g": 85,
+      "protein_g": 24,
+      "fat_g": 21,
+      "aliases": [
+        "prawn fried rice",
+        "nasi goreng prawn",
+        "虾仁炒饭"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Telur",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 600,
+      "carbs_g": 86,
+      "protein_g": 16,
+      "fat_g": 21,
+      "aliases": [
+        "egg fried rice",
+        "nasi goreng egg",
+        "蛋炒饭",
+        "nasi goreng telur mata"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Kicap",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 605,
+      "carbs_g": 90,
+      "protein_g": 16,
+      "fat_g": 20,
+      "aliases": [
+        "soy sauce fried rice",
+        "nasi goreng soya",
+        "dark soy fried rice",
+        "nasi goreng kicap manis"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Tomyam",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 630,
+      "carbs_g": 86,
+      "protein_g": 22,
+      "fat_g": 22,
+      "aliases": [
+        "tomyam fried rice",
+        "nasi goreng tom yam",
+        "nasi goreng tomyum",
+        "冬炎炒饭"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Belacan",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 610,
+      "carbs_g": 86,
+      "protein_g": 17,
+      "fat_g": 22,
+      "aliases": [
+        "belacan fried rice",
+        "shrimp paste fried rice",
+        "nasi goreng sambal belacan",
+        "马拉盏炒饭"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Ikan Masin",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 630,
+      "carbs_g": 86,
+      "protein_g": 20,
+      "fat_g": 23,
+      "aliases": [
+        "salted fish fried rice",
+        "nasi goreng salted fish",
+        "咸鱼炒饭",
+        "nasi goreng ikan asin"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Cendawan",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 580,
+      "carbs_g": 86,
+      "protein_g": 14,
+      "fat_g": 20,
+      "aliases": [
+        "mushroom fried rice",
+        "nasi goreng mushroom",
+        "蘑菇炒饭"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Sayur",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 560,
+      "carbs_g": 88,
+      "protein_g": 12,
+      "fat_g": 18,
+      "aliases": [
+        "vegetarian fried rice",
+        "nasi goreng vegetarian",
+        "nasi goreng sayuran",
+        "素炒饭"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Nanas",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 615,
+      "carbs_g": 95,
+      "protein_g": 16,
+      "fat_g": 19,
+      "aliases": [
+        "pineapple fried rice",
+        "nasi goreng pineapple",
+        "菠萝炒饭",
+        "nasi goreng nenas"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Kunyit",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 615,
+      "carbs_g": 88,
+      "protein_g": 18,
+      "fat_g": 21,
+      "aliases": [
+        "turmeric fried rice",
+        "nasi goreng turmeric",
+        "nasi goreng kuning"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Berempah",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 640,
+      "carbs_g": 86,
+      "protein_g": 20,
+      "fat_g": 24,
+      "aliases": [
+        "spiced fried rice",
+        "nasi goreng rempah",
+        "nasi goreng spicy"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Cili Padi",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 615,
+      "carbs_g": 86,
+      "protein_g": 18,
+      "fat_g": 22,
+      "aliases": [
+        "chilli fried rice",
+        "nasi goreng cili api",
+        "nasi goreng pedas",
+        "bird's eye chilli fried rice"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Thai",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 620,
+      "carbs_g": 88,
+      "protein_g": 20,
+      "fat_g": 21,
+      "aliases": [
+        "thai fried rice",
+        "nasi goreng siam",
+        "nasi goreng thailand",
+        "泰式炒饭"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Kerabu",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 580,
+      "carbs_g": 84,
+      "protein_g": 20,
+      "fat_g": 18,
+      "aliases": [
+        "kerabu fried rice",
+        "nasi goreng ulam",
+        "herb salad fried rice"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Dabai",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 625,
+      "carbs_g": 84,
+      "protein_g": 18,
+      "fat_g": 24,
+      "aliases": [
+        "dabai fried rice",
+        "sarawak dabai fried rice",
+        "nasi goreng buah dabai",
+        "sibu olive fried rice"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Basah",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 680,
+      "carbs_g": 92,
+      "protein_g": 24,
+      "fat_g": 24,
+      "aliases": [
+        "wet fried rice",
+        "nasi goreng kuah",
+        "nasi goreng bersos",
+        "gravy fried rice"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Yong Chow",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 645,
+      "carbs_g": 88,
+      "protein_g": 24,
+      "fat_g": 22,
+      "aliases": [
+        "yong chow fried rice",
+        "yangzhou fried rice",
+        "扬州炒饭",
+        "nasi goreng yeung chow",
+        "yong chow chow fan"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Olive",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 630,
+      "carbs_g": 88,
+      "protein_g": 16,
+      "fat_g": 24,
+      "aliases": [
+        "olive fried rice",
+        "橄榄菜炒饭",
+        "nasi goreng zaitun",
+        "olive vegetable fried rice"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Sambal Petai",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 650,
+      "carbs_g": 84,
+      "protein_g": 20,
+      "fat_g": 26,
+      "aliases": [
+        "petai fried rice",
+        "nasi goreng petai",
+        "stink bean fried rice",
+        "nasi goreng sambal petai udang"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Goreng Sambal Hijau",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 640,
+      "carbs_g": 86,
+      "protein_g": 20,
+      "fat_g": 24,
+      "aliases": [
+        "green sambal fried rice",
+        "nasi goreng cili hijau",
+        "green chilli fried rice"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Aruk",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 540,
+      "carbs_g": 80,
+      "protein_g": 14,
+      "fat_g": 18,
+      "aliases": [
+        "nasi aruk sarawak",
+        "sarawak malay fried rice",
+        "nasi aruk ikan bilis",
+        "nasi arok"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Bujang",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 515,
+      "carbs_g": 82,
+      "protein_g": 11,
+      "fat_g": 16,
+      "aliases": [
+        "nasi goreng bujang",
+        "bachelor fried rice",
+        "nasi goreng kosong",
+        "plain fried rice"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+
+    {
+      "name": "Nasi Ayam Hainan",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 615,
+      "carbs_g": 74,
+      "protein_g": 35,
+      "fat_g": 20,
+      "aliases": [
+        "hainanese chicken rice",
+        "steamed chicken rice",
+        "海南鸡饭",
+        "nasi ayam kukus",
+        "chicken rice steamed"
+      ],
+      "icon": "dishes/chicken-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Ayam Panggang",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 655,
+      "carbs_g": 74,
+      "protein_g": 34,
+      "fat_g": 25,
+      "aliases": [
+        "roasted chicken rice",
+        "nasi ayam roasted",
+        "烧鸡饭",
+        "roast chicken rice"
+      ],
+      "icon": "dishes/chicken-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Ayam Goreng",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 720,
+      "carbs_g": 78,
+      "protein_g": 34,
+      "fat_g": 30,
+      "aliases": [
+        "fried chicken rice",
+        "nasi ayam fried",
+        "炸鸡饭",
+        "chicken rice with fried chicken"
+      ],
+      "icon": "dishes/ayam-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Ayam Bebola",
+      "place": "kopitiam",
+      "serving": "1 set (5 rice balls with chicken)",
+      "kcal": 535,
+      "carbs_g": 68,
+      "protein_g": 30,
+      "fat_g": 16,
+      "aliases": [
+        "chicken rice ball",
+        "melaka chicken rice ball",
+        "鸡饭粒",
+        "nasi ayam bola",
+        "chicken rice balls malacca"
+      ],
+      "icon": "dishes/chicken-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Ayam Hainan Rice Only",
+      "place": "kopitiam",
+      "serving": "1 cup",
+      "kcal": 300,
+      "carbs_g": 52,
+      "protein_g": 5,
+      "fat_g": 8,
+      "aliases": [
+        "chicken rice rice only",
+        "nasi ayam sahaja",
+        "鸡饭",
+        "chicken oil rice",
+        "nasi minyak ayam"
+      ],
+      "icon": "food/rice-bowl",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Ayam Penyet",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 760,
+      "carbs_g": 82,
+      "protein_g": 36,
+      "fat_g": 32,
+      "aliases": [
+        "ayam penyet rice",
+        "smashed fried chicken rice",
+        "nasi ayam penyet sambal",
+        "penyet chicken rice"
+      ],
+      "icon": "dishes/ayam-penyet",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Ayam Geprek",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 770,
+      "carbs_g": 82,
+      "protein_g": 34,
+      "fat_g": 34,
+      "aliases": [
+        "ayam geprek rice",
+        "nasi geprek",
+        "crushed fried chicken rice",
+        "geprek chicken rice"
+      ],
+      "icon": "dishes/ayam-penyet",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Ayam Percik",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 655,
+      "carbs_g": 80,
+      "protein_g": 34,
+      "fat_g": 22,
+      "aliases": [
+        "ayam percik rice",
+        "grilled chicken rice kelantan",
+        "nasi percik",
+        "nasi ayam percik kelantan"
+      ],
+      "icon": "dishes/ayam-percik",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Ayam Madu",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 700,
+      "carbs_g": 88,
+      "protein_g": 33,
+      "fat_g": 24,
+      "aliases": [
+        "honey chicken rice",
+        "nasi ayam honey",
+        "ayam madu rice",
+        "蜜汁鸡饭"
+      ],
+      "icon": "dishes/chicken-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+
+    {
+      "name": "Siew Yoke Rice",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 690,
+      "carbs_g": 74,
+      "protein_g": 26,
+      "fat_g": 32,
+      "aliases": [
+        "roast pork rice",
+        "烧肉饭",
+        "nasi babi panggang",
+        "siu yuk rice",
+        "crispy pork belly rice"
+      ],
+      "icon": "dishes/char-siu-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Siew Lap Rice",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 685,
+      "carbs_g": 74,
+      "protein_g": 30,
+      "fat_g": 30,
+      "aliases": [
+        "siu laap rice",
+        "烧腊饭",
+        "roast meat combination rice",
+        "char siew siew yoke rice",
+        "mixed roast rice"
+      ],
+      "icon": "dishes/char-siu-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Yam Rice",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 405,
+      "carbs_g": 62,
+      "protein_g": 12,
+      "fat_g": 12,
+      "aliases": [
+        "nasi keladi",
+        "芋头饭",
+        "taro rice",
+        "yam rice with pork",
+        "wu tao fan"
+      ],
+      "icon": "food/yam",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Loh Mai Kai",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 425,
+      "carbs_g": 55,
+      "protein_g": 15,
+      "fat_g": 16,
+      "aliases": [
+        "糯米鸡",
+        "lo mai kai",
+        "steamed glutinous rice with chicken",
+        "nasi pulut ayam kukus",
+        "loh mai gai"
+      ],
+      "icon": "food/glutinous-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Lo Mai Fan",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 420,
+      "carbs_g": 62,
+      "protein_g": 12,
+      "fat_g": 14,
+      "aliases": [
+        "糯米饭",
+        "loh mai fan",
+        "fried glutinous rice",
+        "nasi pulut goreng cina",
+        "sticky rice with mushroom"
+      ],
+      "icon": "food/glutinous-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bak Chang",
+      "place": "kopitiam",
+      "serving": "1 piece",
+      "kcal": 395,
+      "carbs_g": 55,
+      "protein_g": 12,
+      "fat_g": 14,
+      "aliases": [
+        "肉粽",
+        "zongzi",
+        "rice dumpling",
+        "nyonya chang",
+        "kuih chang",
+        "glutinous rice dumpling"
+      ],
+      "icon": "food/glutinous-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Economy Rice, 1 Meat 2 Vegetables",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 590,
+      "carbs_g": 78,
+      "protein_g": 24,
+      "fat_g": 20,
+      "aliases": [
+        "chap fan",
+        "economy rice",
+        "杂饭",
+        "nasi campur cina",
+        "mixed rice 3 dishes",
+        "cai fan",
+        "chap peng"
+      ],
+      "icon": "dishes/nasi-campur",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Economy Rice, 3 Dishes",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 690,
+      "carbs_g": 80,
+      "protein_g": 30,
+      "fat_g": 28,
+      "aliases": [
+        "chap fan 3 lauk",
+        "economy rice 4 dishes",
+        "杂菜饭",
+        "mixed rice with three dishes",
+        "nasi campur kedai kopi"
+      ],
+      "icon": "dishes/nasi-campur",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Wat Tan Fried Rice",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 680,
+      "carbs_g": 88,
+      "protein_g": 24,
+      "fat_g": 26,
+      "aliases": [
+        "滑蛋炒饭",
+        "egg gravy fried rice",
+        "nasi goreng telur bersos",
+        "wat tan chow fan",
+        "hong kong fried rice"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+
+    {
+      "name": "Nasi Kandar Ikan",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 695,
+      "carbs_g": 85,
+      "protein_g": 30,
+      "fat_g": 26,
+      "aliases": [
+        "nasi kandar fish",
+        "nasi kandar ikan goreng",
+        "kandar rice with fish",
+        "nasi kandar kari ikan"
+      ],
+      "icon": "dishes/nasi-kandar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Kandar Kambing",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 775,
+      "carbs_g": 85,
+      "protein_g": 32,
+      "fat_g": 34,
+      "aliases": [
+        "nasi kandar mutton",
+        "mutton kandar rice",
+        "nasi kandar kari kambing"
+      ],
+      "icon": "dishes/nasi-kandar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Kandar Daging",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 740,
+      "carbs_g": 85,
+      "protein_g": 32,
+      "fat_g": 30,
+      "aliases": [
+        "nasi kandar beef",
+        "beef kandar rice",
+        "nasi kandar kari daging"
+      ],
+      "icon": "dishes/nasi-kandar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Kandar Sotong",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 660,
+      "carbs_g": 85,
+      "protein_g": 26,
+      "fat_g": 24,
+      "aliases": [
+        "nasi kandar squid",
+        "nasi kandar sotong goreng",
+        "squid kandar rice"
+      ],
+      "icon": "dishes/nasi-kandar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Kandar Udang",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 670,
+      "carbs_g": 85,
+      "protein_g": 28,
+      "fat_g": 24,
+      "aliases": [
+        "nasi kandar prawn",
+        "prawn kandar rice",
+        "nasi kandar udang goreng"
+      ],
+      "icon": "dishes/nasi-kandar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Kandar Telur Dadar",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 655,
+      "carbs_g": 85,
+      "protein_g": 20,
+      "fat_g": 26,
+      "aliases": [
+        "nasi kandar omelette",
+        "nasi kandar telur",
+        "kandar rice with omelette",
+        "nasi kandar telur bawang"
+      ],
+      "icon": "dishes/nasi-kandar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Kandar Ayam Ros",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 730,
+      "carbs_g": 88,
+      "protein_g": 32,
+      "fat_g": 28,
+      "aliases": [
+        "ayam ros",
+        "nasi kandar rose chicken",
+        "nasi ayam ros",
+        "kandar rose chicken rice"
+      ],
+      "icon": "dishes/nasi-kandar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Kandar Kuah Campur",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 495,
+      "carbs_g": 78,
+      "protein_g": 10,
+      "fat_g": 16,
+      "aliases": [
+        "nasi kandar kuah banjir",
+        "flooded curry rice",
+        "nasi banjir",
+        "nasi kandar gravy only",
+        "nasi kandar kosong"
+      ],
+      "icon": "dishes/nasi-kandar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Ganja",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 735,
+      "carbs_g": 86,
+      "protein_g": 30,
+      "fat_g": 30,
+      "aliases": [
+        "nasi ganja ipoh",
+        "nasi kandar ayam merah ipoh",
+        "yong suan nasi ganja",
+        "nasi kandar ganja"
+      ],
+      "icon": "dishes/nasi-kandar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Beriani Gam",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 790,
+      "carbs_g": 92,
+      "protein_g": 34,
+      "fat_g": 32,
+      "aliases": [
+        "nasi briyani gam",
+        "beriani gam johor",
+        "nasi beriyani gam",
+        "briyani gam"
+      ],
+      "icon": "dishes/nasi-briyani",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Briyani Kambing",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 785,
+      "carbs_g": 88,
+      "protein_g": 32,
+      "fat_g": 34,
+      "aliases": [
+        "mutton briyani",
+        "nasi beriani kambing",
+        "biryani mutton",
+        "ஆட்டு பிரியாணி"
+      ],
+      "icon": "dishes/nasi-briyani",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Briyani Ikan",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 705,
+      "carbs_g": 88,
+      "protein_g": 30,
+      "fat_g": 26,
+      "aliases": [
+        "fish briyani",
+        "nasi beriani ikan",
+        "biryani fish",
+        "மீன் பிரியாணி"
+      ],
+      "icon": "dishes/nasi-briyani",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Briyani Udang",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 700,
+      "carbs_g": 88,
+      "protein_g": 28,
+      "fat_g": 26,
+      "aliases": [
+        "prawn briyani",
+        "nasi beriani udang",
+        "biryani prawn",
+        "இறால் பிரியாணி"
+      ],
+      "icon": "dishes/nasi-briyani",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Briyani Telur",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 675,
+      "carbs_g": 90,
+      "protein_g": 20,
+      "fat_g": 26,
+      "aliases": [
+        "egg briyani",
+        "nasi beriani telur",
+        "biryani egg",
+        "முட்டை பிரியாணி"
+      ],
+      "icon": "dishes/nasi-briyani",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Briyani Sayur",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 620,
+      "carbs_g": 92,
+      "protein_g": 14,
+      "fat_g": 22,
+      "aliases": [
+        "vegetable briyani",
+        "nasi beriani sayur",
+        "veg biryani",
+        "காய்கறி பிரியாணி",
+        "vegetarian briyani"
+      ],
+      "icon": "dishes/nasi-briyani",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Tomato Ayam Masak Merah",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 715,
+      "carbs_g": 88,
+      "protein_g": 32,
+      "fat_g": 26,
+      "aliases": [
+        "nasi tomato ayam",
+        "tomato rice with red chicken",
+        "nasi tomato masak merah",
+        "nasi tomato kenduri"
+      ],
+      "icon": "food/plate-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Tomato Rice Only",
+      "place": "hawker",
+      "serving": "1 cup",
+      "kcal": 300,
+      "carbs_g": 54,
+      "protein_g": 5,
+      "fat_g": 7,
+      "aliases": [
+        "tomato rice",
+        "nasi tomato sahaja",
+        "nasi tomato plain"
+      ],
+      "icon": "food/rice-bowl",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Minyak Daging Kurma",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 760,
+      "carbs_g": 88,
+      "protein_g": 30,
+      "fat_g": 32,
+      "aliases": [
+        "nasi minyak kurma",
+        "ghee rice with beef korma",
+        "nasi minyak daging",
+        "nasi kenduri"
+      ],
+      "icon": "food/plate-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+
+    {
+      "name": "Nasi Kukus Ayam Berempah",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 700,
+      "carbs_g": 80,
+      "protein_g": 32,
+      "fat_g": 28,
+      "aliases": [
+        "nasi kukus",
+        "steamed rice with spiced fried chicken",
+        "nasi kukus ayam goreng",
+        "nasi kukus berlauk",
+        "nasi kukus kuah"
+      ],
+      "icon": "dishes/ayam-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Katok",
+      "place": "hawker",
+      "serving": "1 bungkus",
+      "kcal": 630,
+      "carbs_g": 78,
+      "protein_g": 26,
+      "fat_g": 24,
+      "aliases": [
+        "nasi katok brunei",
+        "nasi ketok",
+        "rice with fried chicken and sambal",
+        "nasi katok ayam"
+      ],
+      "icon": "dishes/ayam-goreng",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Ambeng",
+      "place": "home",
+      "serving": "1 portion",
+      "kcal": 770,
+      "carbs_g": 95,
+      "protein_g": 30,
+      "fat_g": 30,
+      "aliases": [
+        "nasi ambang",
+        "nasi ambeng jawa",
+        "javanese communal rice",
+        "nasi ambeng johor"
+      ],
+      "icon": "dishes/nasi-campur",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Padang",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 785,
+      "carbs_g": 90,
+      "protein_g": 30,
+      "fat_g": 34,
+      "aliases": [
+        "nasi minang",
+        "padang rice",
+        "nasi padang rendang",
+        "masakan padang"
+      ],
+      "icon": "dishes/nasi-campur",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Uduk",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 560,
+      "carbs_g": 72,
+      "protein_g": 18,
+      "fat_g": 22,
+      "aliases": [
+        "nasi uduk betawi",
+        "indonesian coconut rice",
+        "nasi uduk ayam"
+      ],
+      "icon": "food/plate-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Bakar",
+      "place": "hawker",
+      "serving": "1 parcel",
+      "kcal": 555,
+      "carbs_g": 78,
+      "protein_g": 20,
+      "fat_g": 18,
+      "aliases": [
+        "grilled rice parcel",
+        "nasi bakar daun pisang",
+        "banana leaf grilled rice",
+        "nasi bakar ayam"
+      ],
+      "icon": "food/food-parcel",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Kebuli",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 740,
+      "carbs_g": 88,
+      "protein_g": 30,
+      "fat_g": 30,
+      "aliases": [
+        "nasi kabuli",
+        "kabuli rice",
+        "nasi kebuli kambing",
+        "arab spiced rice"
+      ],
+      "icon": "food/plate-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Hujan Panas",
+      "place": "hawker",
+      "serving": "1 cup",
+      "kcal": 295,
+      "carbs_g": 55,
+      "protein_g": 5,
+      "fat_g": 6,
+      "aliases": [
+        "rainbow rice",
+        "nasi warna",
+        "coloured festive rice",
+        "nasi hujan panas kenduri"
+      ],
+      "icon": "food/rice-bowl",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Kunyit",
+      "place": "home",
+      "serving": "1 portion",
+      "kcal": 385,
+      "carbs_g": 68,
+      "protein_g": 6,
+      "fat_g": 10,
+      "aliases": [
+        "pulut kuning",
+        "turmeric glutinous rice",
+        "nasi kuning",
+        "yellow glutinous rice",
+        "黄姜饭"
+      ],
+      "icon": "food/glutinous-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Kerabu Ayam Percik",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 640,
+      "carbs_g": 78,
+      "protein_g": 32,
+      "fat_g": 22,
+      "aliases": [
+        "nasi kerabu percik",
+        "blue rice with grilled chicken",
+        "nasi kerabu ayam"
+      ],
+      "icon": "dishes/nasi-kerabu",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Kerabu Ikan Bakar",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 570,
+      "carbs_g": 76,
+      "protein_g": 30,
+      "fat_g": 16,
+      "aliases": [
+        "nasi kerabu ikan",
+        "blue rice with grilled fish",
+        "nasi kerabu ikan kembung"
+      ],
+      "icon": "dishes/nasi-kerabu",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Kerabu Rice Only",
+      "place": "hawker",
+      "serving": "1 cup",
+      "kcal": 235,
+      "carbs_g": 52,
+      "protein_g": 5,
+      "fat_g": 1,
+      "aliases": [
+        "blue rice",
+        "nasi kerabu biru",
+        "nasi bunga telang",
+        "butterfly pea rice"
+      ],
+      "icon": "food/rice-bowl",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Putih",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 310,
+      "carbs_g": 70,
+      "protein_g": 6.5,
+      "fat_g": 0.7,
+      "aliases": [
+        "white rice",
+        "steamed rice",
+        "plain rice",
+        "白饭",
+        "nasi kosong",
+        "cooked rice",
+        "சாதம்"
+      ],
+      "icon": "food/plate-rice",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        { "label": "1 bowl", "factor": 0.72 },
+        { "label": "1 cup", "factor": 0.64 },
+        { "label": "half plate", "factor": 0.5 }
+      ]
+    },
+    {
+      "name": "Nasi Perang",
+      "place": "home",
+      "serving": "1 plate",
+      "kcal": 315,
+      "carbs_g": 68,
+      "protein_g": 7,
+      "fat_g": 2,
+      "aliases": [
+        "brown rice",
+        "nasi beras perang",
+        "nasi merah",
+        "糙米饭",
+        "wholegrain rice"
+      ],
+      "icon": "food/brown-rice",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        { "label": "1 bowl", "factor": 0.72 },
+        { "label": "1 cup", "factor": 0.64 }
+      ]
+    },
+    {
+      "name": "Nasi Impit",
+      "place": "home",
+      "serving": "4 cubes",
+      "kcal": 110,
+      "carbs_g": 25,
+      "protein_g": 2,
+      "fat_g": 0.3,
+      "aliases": [
+        "nasi himpit",
+        "compressed rice cake",
+        "rice cubes",
+        "nasi impit satay",
+        "pressed rice"
+      ],
+      "icon": "dishes/ketupat",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Lontong",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 465,
+      "carbs_g": 55,
+      "protein_g": 12,
+      "fat_g": 22,
+      "aliases": [
+        "lontong sayur",
+        "rice cake in coconut gravy",
+        "lontong kuah lodeh",
+        "nasi impit kuah lodeh",
+        "lontong johor"
+      ],
+      "icon": "dishes/lontong",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ketupat Palas",
+      "place": "hawker",
+      "serving": "2 pieces",
+      "kcal": 290,
+      "carbs_g": 46,
+      "protein_g": 4,
+      "fat_g": 10,
+      "aliases": [
+        "ketupat daun palas",
+        "glutinous rice in palm leaf",
+        "ketupat pulut",
+        "ketupat palas kelantan"
+      ],
+      "icon": "dishes/ketupat",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Linopot",
+      "place": "home",
+      "serving": "1 parcel",
+      "kcal": 275,
+      "carbs_g": 62,
+      "protein_g": 5,
+      "fat_g": 1,
+      "aliases": [
+        "linopot sabah",
+        "kadazan rice parcel",
+        "nasi bungkus daun tarap",
+        "linupot"
+      ],
+      "icon": "food/food-parcel",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Lemang dengan Rendang",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 480,
+      "carbs_g": 48,
+      "protein_g": 18,
+      "fat_g": 24,
+      "aliases": [
+        "lemang rendang",
+        "lemang with beef rendang",
+        "bamboo glutinous rice with rendang",
+        "lemang raya"
+      ],
+      "icon": "dishes/rendang",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pulut Kuning dengan Rendang",
+      "place": "home",
+      "serving": "1 plate",
+      "kcal": 550,
+      "carbs_g": 70,
+      "protein_g": 18,
+      "fat_g": 22,
+      "aliases": [
+        "pulut kuning rendang",
+        "yellow glutinous rice with rendang",
+        "nasi kunyit rendang",
+        "pulut kuning ayam"
+      ],
+      "icon": "food/glutinous-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pulut Serunding",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 415,
+      "carbs_g": 62,
+      "protein_g": 10,
+      "fat_g": 14,
+      "aliases": [
+        "pulut with meat floss",
+        "glutinous rice with serunding",
+        "pulut serunding daging",
+        "pulut serunding ayam"
+      ],
+      "icon": "food/glutinous-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pulut Mangga",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 460,
+      "carbs_g": 78,
+      "protein_g": 6,
+      "fat_g": 14,
+      "aliases": [
+        "mango sticky rice",
+        "pulut mangga thai",
+        "khao niew mamuang",
+        "芒果糯米饭",
+        "sticky rice with mango"
+      ],
+      "icon": "food/glutinous-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pulut Durian",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 455,
+      "carbs_g": 72,
+      "protein_g": 6,
+      "fat_g": 16,
+      "aliases": [
+        "durian sticky rice",
+        "pulut with durian",
+        "榴莲糯米饭",
+        "glutinous rice with durian"
+      ],
+      "icon": "food/glutinous-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pulut Inti",
+      "place": "hawker",
+      "serving": "2 pieces",
+      "kcal": 270,
+      "carbs_g": 44,
+      "protein_g": 3,
+      "fat_g": 9,
+      "aliases": [
+        "kuih pulut inti",
+        "glutinous rice with coconut topping",
+        "pulut inti gula melaka",
+        "pulut nyior"
+      ],
+      "icon": "dishes/pulut-panggang",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Lepat Pulut",
+      "place": "hawker",
+      "serving": "2 pieces",
+      "kcal": 245,
+      "carbs_g": 40,
+      "protein_g": 3,
+      "fat_g": 8,
+      "aliases": [
+        "lepat pulut daun pisang",
+        "glutinous rice in banana leaf",
+        "lopat pulut",
+        "pulut lepat"
+      ],
+      "icon": "dishes/pulut-panggang",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pulut Tai Tai",
+      "place": "hawker",
+      "serving": "2 pieces",
+      "kcal": 245,
+      "carbs_g": 42,
+      "protein_g": 3,
+      "fat_g": 7,
+      "aliases": [
+        "pulut tekan",
+        "kuih tai tai",
+        "blue glutinous rice with kaya",
+        "pulut tai tai kaya",
+        "娘惹蓝花糯米糕"
+      ],
+      "icon": "food/glutinous-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+
+    {
+      "name": "Bubur Nasi",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 135,
+      "carbs_g": 30,
+      "protein_g": 3,
+      "fat_g": 0.5,
+      "aliases": [
+        "plain rice porridge",
+        "bubur kosong",
+        "白粥",
+        "congee",
+        "bubur putih",
+        "காஞ்சி"
+      ],
+      "icon": "food/porridge",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bubur Ayam",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 260,
+      "carbs_g": 38,
+      "protein_g": 14,
+      "fat_g": 6,
+      "aliases": [
+        "chicken porridge",
+        "bubur ayam kampung",
+        "鸡粥",
+        "chicken congee",
+        "bubur nasi ayam"
+      ],
+      "icon": "food/porridge",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bubur Lambuk",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 275,
+      "carbs_g": 34,
+      "protein_g": 12,
+      "fat_g": 10,
+      "aliases": [
+        "bubur lambuk masjid",
+        "ramadan spiced porridge",
+        "bubur lambuk kampung baru",
+        "bubur lambuk daging"
+      ],
+      "icon": "food/porridge",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bubur Pedas",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 240,
+      "carbs_g": 32,
+      "protein_g": 10,
+      "fat_g": 8,
+      "aliases": [
+        "bubur pedas sarawak",
+        "sarawak spicy porridge",
+        "bubur paddas",
+        "bubur pedas sambas"
+      ],
+      "icon": "food/porridge",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bubur Ikan",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 255,
+      "carbs_g": 36,
+      "protein_g": 16,
+      "fat_g": 5,
+      "aliases": [
+        "fish porridge",
+        "鱼粥",
+        "fish congee",
+        "bubur ikan segar",
+        "sliced fish porridge"
+      ],
+      "icon": "food/porridge",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bubur Telur Century",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 295,
+      "carbs_g": 40,
+      "protein_g": 16,
+      "fat_g": 8,
+      "aliases": [
+        "century egg porridge",
+        "皮蛋瘦肉粥",
+        "century egg and lean pork congee",
+        "bubur pei tan",
+        "pei tan chuk"
+      ],
+      "icon": "food/porridge",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bubur Teochew",
+      "place": "kopitiam",
+      "serving": "1 set",
+      "kcal": 450,
+      "carbs_g": 55,
+      "protein_g": 22,
+      "fat_g": 16,
+      "aliases": [
+        "teochew porridge",
+        "潮州粥",
+        "teochew muey",
+        "bubur teochew dengan lauk",
+        "teochew rice porridge with dishes"
+      ],
+      "icon": "food/porridge",
+      "source": "model_estimate",
+      "verified": false
+    }
+  ]
+}

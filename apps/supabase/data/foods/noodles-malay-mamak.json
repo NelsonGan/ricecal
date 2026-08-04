@@ -1,0 +1,3219 @@
+{
+  "source": "research:noodles-malay-mamak",
+  "foods": [
+    {
+      "name": "Maggi Goreng Ayam",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 585,
+      "carbs_g": 79,
+      "protein_g": 24.9,
+      "fat_g": 18.8,
+      "aliases": [
+        "maggi goreng ayam",
+        "mee maggi goreng ayam",
+        "fried instant noodles with chicken",
+        "maggie goreng ayam",
+        "மேகி கோரெங் அயம்",
+        "magi goreng ayam"
+      ],
+      "icon": "food/instant-noodles",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Maggi Goreng Telur",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 592,
+      "carbs_g": 78.4,
+      "protein_g": 20.7,
+      "fat_g": 21.7,
+      "aliases": [
+        "maggi goreng telur",
+        "maggi goreng with egg",
+        "fried instant noodles with egg",
+        "maggie goreng telor",
+        "மேகி கோரெங் தெலூர்"
+      ],
+      "icon": "food/instant-noodles",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Maggi Goreng Pattaya",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 655,
+      "carbs_g": 78.6,
+      "protein_g": 26.2,
+      "fat_g": 26.2,
+      "aliases": [
+        "maggi goreng pattaya",
+        "maggi pattaya",
+        "fried instant noodles wrapped in omelette",
+        "maggie goreng pataya",
+        "maggi goreng telur bungkus"
+      ],
+      "icon": "food/instant-noodles",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Maggi Goreng Sotong",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 570,
+      "carbs_g": 75.5,
+      "protein_g": 27.1,
+      "fat_g": 17.7,
+      "aliases": [
+        "maggi goreng sotong",
+        "maggi goreng squid",
+        "fried instant noodles with squid",
+        "maggie goreng sotong"
+      ],
+      "icon": "food/instant-noodles",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Maggi Goreng Daging",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 620,
+      "carbs_g": 77.5,
+      "protein_g": 27.9,
+      "fat_g": 22,
+      "aliases": [
+        "maggi goreng daging",
+        "maggi goreng beef",
+        "fried instant noodles with beef",
+        "maggie goreng daging"
+      ],
+      "icon": "food/instant-noodles",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Maggi Goreng Udang",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 545,
+      "carbs_g": 74.9,
+      "protein_g": 24.5,
+      "fat_g": 16.4,
+      "aliases": [
+        "maggi goreng udang",
+        "maggi goreng prawn",
+        "fried instant noodles with prawns",
+        "maggie goreng udang"
+      ],
+      "icon": "food/instant-noodles",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Maggi Goreng Kerang",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 555,
+      "carbs_g": 74.9,
+      "protein_g": 25,
+      "fat_g": 17.3,
+      "aliases": [
+        "maggi goreng kerang",
+        "maggi goreng cockles",
+        "fried instant noodles with cockles",
+        "maggie goreng kerang"
+      ],
+      "icon": "food/instant-noodles",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Maggi Goreng Cheese",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 690,
+      "carbs_g": 79.4,
+      "protein_g": 27.6,
+      "fat_g": 29.1,
+      "aliases": [
+        "maggi goreng cheese",
+        "maggi cheese",
+        "cheesy fried instant noodles",
+        "maggie goreng cheese",
+        "maggi goreng keju"
+      ],
+      "icon": "food/instant-noodles",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Maggi Goreng Special",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 720,
+      "carbs_g": 86.4,
+      "protein_g": 30.6,
+      "fat_g": 28,
+      "aliases": [
+        "maggi goreng special",
+        "maggi goreng istimewa",
+        "fried instant noodles with chicken egg and prawn",
+        "maggie goreng special"
+      ],
+      "icon": "food/instant-noodles",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Maggi Goreng Sayur",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 470,
+      "carbs_g": 70.5,
+      "protein_g": 12.9,
+      "fat_g": 15.1,
+      "aliases": [
+        "maggi goreng sayur",
+        "vegetarian maggi goreng",
+        "maggi goreng vege",
+        "fried instant noodles with vegetables"
+      ],
+      "icon": "food/instant-noodles",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Maggi Goreng Tomyam",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 560,
+      "carbs_g": 74.2,
+      "protein_g": 22.4,
+      "fat_g": 19.3,
+      "aliases": [
+        "maggi goreng tomyam",
+        "maggi goreng tom yam",
+        "spicy sour fried instant noodles",
+        "maggie goreng tomyam"
+      ],
+      "icon": "food/instant-noodles",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Maggi Goreng Basah",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 600,
+      "carbs_g": 79.5,
+      "protein_g": 22.5,
+      "fat_g": 21.3,
+      "aliases": [
+        "maggi goreng basah",
+        "wet fried instant noodles",
+        "saucy maggi goreng",
+        "maggie goreng basah"
+      ],
+      "icon": "food/instant-noodles",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Maggi Goreng Kambing",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 640,
+      "carbs_g": 78.4,
+      "protein_g": 28.8,
+      "fat_g": 23.5,
+      "aliases": [
+        "maggi goreng kambing",
+        "maggi goreng mutton",
+        "fried instant noodles with mutton",
+        "maggie goreng kambing"
+      ],
+      "icon": "food/instant-noodles",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Maggi Sup",
+      "place": "mamak",
+      "serving": "1 bowl",
+      "kcal": 390,
+      "carbs_g": 53.6,
+      "protein_g": 13.7,
+      "fat_g": 13.4,
+      "aliases": [
+        "maggi sup",
+        "maggi rebus",
+        "instant noodle soup",
+        "mee maggi sup",
+        "maggi kuah"
+      ],
+      "icon": "food/instant-noodles",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Maggi Sup Ayam",
+      "place": "mamak",
+      "serving": "1 bowl",
+      "kcal": 445,
+      "carbs_g": 57.9,
+      "protein_g": 21.1,
+      "fat_g": 14.3,
+      "aliases": [
+        "maggi sup ayam",
+        "maggi rebus ayam",
+        "instant noodle soup with chicken",
+        "maggi kuah ayam"
+      ],
+      "icon": "food/instant-noodles",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Maggi Tomyam Sup",
+      "place": "mamak",
+      "serving": "1 bowl",
+      "kcal": 420,
+      "carbs_g": 55.7,
+      "protein_g": 16.8,
+      "fat_g": 14.5,
+      "aliases": [
+        "maggi tomyam",
+        "maggi tom yam sup",
+        "instant noodle tom yam soup",
+        "maggi sup tomyam"
+      ],
+      "icon": "food/instant-noodles",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Maggi Kari, Cooked",
+      "place": "packaged",
+      "serving": "1 packet",
+      "kcal": 400,
+      "carbs_g": 56,
+      "protein_g": 9,
+      "fat_g": 15.6,
+      "aliases": [
+        "maggi kari",
+        "maggi curry instant noodles",
+        "mee segera kari",
+        "instant curry noodles",
+        "maggi curry flavour"
+      ],
+      "icon": "food/instant-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Mee Goreng Ayam",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 700,
+      "carbs_g": 92.8,
+      "protein_g": 29.8,
+      "fat_g": 23.3,
+      "aliases": [
+        "mee goreng ayam",
+        "mi goreng ayam",
+        "fried yellow noodles with chicken",
+        "மீ கோரெங் அயம்",
+        "印度炒面鸡"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Goreng Daging",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 715,
+      "carbs_g": 89.4,
+      "protein_g": 32.2,
+      "fat_g": 25.4,
+      "aliases": [
+        "mee goreng daging",
+        "mi goreng daging",
+        "fried yellow noodles with beef",
+        "மீ கோரெங் தாகிங்"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Goreng Udang",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 660,
+      "carbs_g": 90.8,
+      "protein_g": 28.1,
+      "fat_g": 20.5,
+      "aliases": [
+        "mee goreng udang",
+        "mi goreng udang",
+        "fried yellow noodles with prawns",
+        "prawn mee goreng"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Goreng Sotong",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 665,
+      "carbs_g": 89.8,
+      "protein_g": 29.9,
+      "fat_g": 20.7,
+      "aliases": [
+        "mee goreng sotong",
+        "mi goreng sotong",
+        "fried yellow noodles with squid",
+        "squid mee goreng"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Goreng Telur",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 690,
+      "carbs_g": 91.4,
+      "protein_g": 24.2,
+      "fat_g": 25.3,
+      "aliases": [
+        "mee goreng telur",
+        "mi goreng telur",
+        "fried yellow noodles with egg",
+        "mee goreng telor"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Goreng Pattaya",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 740,
+      "carbs_g": 90.6,
+      "protein_g": 27.8,
+      "fat_g": 29.6,
+      "aliases": [
+        "mee goreng pattaya",
+        "mee pattaya",
+        "fried noodles wrapped in omelette",
+        "mee goreng telur bungkus"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Goreng Kerang",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 670,
+      "carbs_g": 90.5,
+      "protein_g": 28.5,
+      "fat_g": 21.6,
+      "aliases": [
+        "mee goreng kerang",
+        "mi goreng kerang",
+        "fried yellow noodles with cockles",
+        "cockle mee goreng"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Goreng Sayur",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 560,
+      "carbs_g": 85.4,
+      "protein_g": 14,
+      "fat_g": 18,
+      "aliases": [
+        "mee goreng sayur",
+        "vegetarian mee goreng",
+        "mee goreng vege",
+        "fried yellow noodles with vegetables"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Goreng Tomyam",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 640,
+      "carbs_g": 86.4,
+      "protein_g": 25.6,
+      "fat_g": 21.3,
+      "aliases": [
+        "mee goreng tomyam",
+        "mee goreng tom yam",
+        "spicy sour fried yellow noodles"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Goreng Kicap",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 610,
+      "carbs_g": 88.4,
+      "protein_g": 19.8,
+      "fat_g": 19.7,
+      "aliases": [
+        "mee goreng kicap",
+        "soy sauce fried noodles",
+        "mi goreng kicap",
+        "dark soy fried noodles"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Goreng Jawa",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 590,
+      "carbs_g": 85.6,
+      "protein_g": 17.7,
+      "fat_g": 19.7,
+      "aliases": [
+        "mee goreng jawa",
+        "javanese fried noodles",
+        "mi goreng jawa",
+        "bakmi goreng jawa"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Goreng Kampung",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 620,
+      "carbs_g": 85.3,
+      "protein_g": 21.7,
+      "fat_g": 21.4,
+      "aliases": [
+        "mee goreng kampung",
+        "village style fried noodles",
+        "mi goreng kampung",
+        "kampung fried noodles"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Hailam",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 605,
+      "carbs_g": 84.7,
+      "protein_g": 22.7,
+      "fat_g": 19.5,
+      "aliases": [
+        "mee hailam",
+        "mi hailam",
+        "hainanese style saucy fried noodles",
+        "mee hailam mamak",
+        "海南面"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Goreng Basah Ayam",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 665,
+      "carbs_g": 89.8,
+      "protein_g": 26.6,
+      "fat_g": 22.2,
+      "aliases": [
+        "mee goreng basah ayam",
+        "wet fried noodles with chicken",
+        "saucy mee goreng chicken"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Goreng Ikan Masin",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 630,
+      "carbs_g": 86.6,
+      "protein_g": 23.6,
+      "fat_g": 21,
+      "aliases": [
+        "mee goreng ikan masin",
+        "salted fish fried noodles",
+        "mi goreng ikan masin"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Goreng Cendawan",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 560,
+      "carbs_g": 82.6,
+      "protein_g": 16.8,
+      "fat_g": 18,
+      "aliases": [
+        "mee goreng cendawan",
+        "mushroom fried noodles",
+        "mi goreng cendawan"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Goreng Mamak",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 545,
+      "carbs_g": 79,
+      "protein_g": 16.3,
+      "fat_g": 18.2,
+      "aliases": [
+        "bihun goreng mamak",
+        "mee hoon goreng mamak",
+        "mihun goreng mamak",
+        "mamak fried rice vermicelli",
+        "பீஹூன் கோரெங்"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Goreng Basah",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 520,
+      "carbs_g": 76.7,
+      "protein_g": 15.6,
+      "fat_g": 16.8,
+      "aliases": [
+        "bihun goreng basah",
+        "wet fried rice vermicelli",
+        "mee hoon goreng basah",
+        "mihun goreng basah"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Goreng Singapura",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 505,
+      "carbs_g": 72,
+      "protein_g": 17.7,
+      "fat_g": 16.3,
+      "aliases": [
+        "bihun goreng singapura",
+        "singapore fried bee hoon",
+        "mee hoon goreng singapura",
+        "singapore noodles",
+        "星洲米粉"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Goreng Ayam",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 560,
+      "carbs_g": 77,
+      "protein_g": 22.4,
+      "fat_g": 18,
+      "aliases": [
+        "bihun goreng ayam",
+        "fried rice vermicelli with chicken",
+        "mee hoon goreng ayam",
+        "mihun goreng ayam"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Goreng Udang",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 520,
+      "carbs_g": 74.1,
+      "protein_g": 20.8,
+      "fat_g": 15.6,
+      "aliases": [
+        "bihun goreng udang",
+        "fried rice vermicelli with prawns",
+        "mee hoon goreng udang"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Goreng Telur",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 540,
+      "carbs_g": 75.6,
+      "protein_g": 17.6,
+      "fat_g": 18.6,
+      "aliases": [
+        "bihun goreng telur",
+        "fried rice vermicelli with egg",
+        "mee hoon goreng telur",
+        "mihun goreng telor"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Goreng Tomyam",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 530,
+      "carbs_g": 75.5,
+      "protein_g": 18.6,
+      "fat_g": 17.1,
+      "aliases": [
+        "bihun goreng tomyam",
+        "tom yam fried rice vermicelli",
+        "mee hoon goreng tomyam"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Goreng Sotong",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 545,
+      "carbs_g": 73.6,
+      "protein_g": 24.5,
+      "fat_g": 17,
+      "aliases": [
+        "bihun goreng sotong",
+        "fried rice vermicelli with squid",
+        "mee hoon goreng sotong"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Goreng Kampung",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 545,
+      "carbs_g": 76.3,
+      "protein_g": 19.1,
+      "fat_g": 18.2,
+      "aliases": [
+        "bihun goreng kampung",
+        "village style fried rice vermicelli",
+        "mee hoon goreng kampung"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Sup",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 355,
+      "carbs_g": 51.5,
+      "protein_g": 15.1,
+      "fat_g": 9.9,
+      "aliases": [
+        "bihun sup",
+        "mee hoon sup",
+        "mihun sup",
+        "rice vermicelli soup",
+        "bihun kuah",
+        "米粉汤"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Sup Ayam",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 400,
+      "carbs_g": 53,
+      "protein_g": 22,
+      "fat_g": 11.1,
+      "aliases": [
+        "bihun sup ayam",
+        "chicken rice vermicelli soup",
+        "mee hoon sup ayam",
+        "mihun sup ayam"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Sup Daging",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 445,
+      "carbs_g": 54.5,
+      "protein_g": 24.5,
+      "fat_g": 14.3,
+      "aliases": [
+        "bihun sup daging",
+        "beef rice vermicelli soup",
+        "mee hoon sup daging",
+        "mihun sup daging"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Sup Tulang",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 470,
+      "carbs_g": 54.1,
+      "protein_g": 25.9,
+      "fat_g": 16.7,
+      "aliases": [
+        "bihun sup tulang",
+        "bone soup rice vermicelli",
+        "mee hoon sup tulang",
+        "sup tulang bihun"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Sup Utara",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 415,
+      "carbs_g": 55,
+      "protein_g": 20.8,
+      "fat_g": 12.5,
+      "aliases": [
+        "bihun sup utara",
+        "mihun sup utara",
+        "northern style rice vermicelli soup",
+        "mee hoon sup utara",
+        "bihun sup kedah"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Sup Ikan",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 370,
+      "carbs_g": 50.9,
+      "protein_g": 21.3,
+      "fat_g": 9,
+      "aliases": [
+        "bihun sup ikan",
+        "fish rice vermicelli soup",
+        "mee hoon sup ikan",
+        "mihun sup ikan"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Sup Kambing",
+      "place": "mamak",
+      "serving": "1 bowl",
+      "kcal": 480,
+      "carbs_g": 56.4,
+      "protein_g": 26.4,
+      "fat_g": 16.5,
+      "aliases": [
+        "bihun sup kambing",
+        "mutton rice vermicelli soup",
+        "mee hoon sup kambing",
+        "sup kambing bihun"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Sup Seafood",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 400,
+      "carbs_g": 52,
+      "protein_g": 23,
+      "fat_g": 11.1,
+      "aliases": [
+        "bihun sup seafood",
+        "seafood rice vermicelli soup",
+        "mee hoon sup seafood",
+        "bihun sup makanan laut"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Tomyam",
+      "place": "mamak",
+      "serving": "1 bowl",
+      "kcal": 425,
+      "carbs_g": 58.4,
+      "protein_g": 19.1,
+      "fat_g": 12.8,
+      "aliases": [
+        "bihun tomyam",
+        "mee hoon tom yam",
+        "tom yam rice vermicelli",
+        "mihun tomyam",
+        "bihun tom yam"
+      ],
+      "icon": "dishes/tomyam",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Tomyam Seafood",
+      "place": "mamak",
+      "serving": "1 bowl",
+      "kcal": 455,
+      "carbs_g": 58,
+      "protein_g": 25,
+      "fat_g": 13.7,
+      "aliases": [
+        "bihun tomyam seafood",
+        "seafood tom yam rice vermicelli",
+        "mee hoon tomyam campur"
+      ],
+      "icon": "dishes/tomyam",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Kari",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 505,
+      "carbs_g": 64.4,
+      "protein_g": 17.7,
+      "fat_g": 19.6,
+      "aliases": [
+        "bihun kari",
+        "curry rice vermicelli",
+        "mee hoon kari",
+        "curry bee hoon",
+        "咖喱米粉"
+      ],
+      "icon": "dishes/curry-mee",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Soto",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 400,
+      "carbs_g": 55,
+      "protein_g": 19,
+      "fat_g": 11.6,
+      "aliases": [
+        "bihun soto",
+        "soto bihun",
+        "rice vermicelli in soto broth",
+        "mee hoon soto",
+        "soto mihun"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Siam",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 380,
+      "carbs_g": 57,
+      "protein_g": 11.4,
+      "fat_g": 11.8,
+      "aliases": [
+        "bihun siam",
+        "mee hoon siam",
+        "siamese style rice vermicelli",
+        "bee hoon siam",
+        "mihun siam"
+      ],
+      "icon": "dishes/mee-siam",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Bihun Kerabu",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 340,
+      "carbs_g": 50.2,
+      "protein_g": 11.1,
+      "fat_g": 10.6,
+      "aliases": [
+        "bihun kerabu",
+        "kerabu bihun",
+        "rice vermicelli herb salad",
+        "mee hoon kerabu"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Kuey Teow Goreng Basah",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 610,
+      "carbs_g": 88.4,
+      "protein_g": 19.8,
+      "fat_g": 19.7,
+      "aliases": [
+        "kuey teow goreng basah",
+        "wet fried flat rice noodles",
+        "kuetiau goreng basah",
+        "kway teow goreng basah",
+        "滑蛋河粉"
+      ],
+      "icon": "dishes/char-kuey-teow",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Kuey Teow Goreng Mamak",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 640,
+      "carbs_g": 89.6,
+      "protein_g": 22.4,
+      "fat_g": 21.3,
+      "aliases": [
+        "kuey teow goreng mamak",
+        "kuetiau goreng mamak",
+        "mamak fried flat rice noodles",
+        "kway teow goreng mamak",
+        "குவேத்தியௌ கோரெங்"
+      ],
+      "icon": "dishes/char-kuey-teow",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Kuey Teow Goreng Telur",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 625,
+      "carbs_g": 85.9,
+      "protein_g": 21.9,
+      "fat_g": 21.5,
+      "aliases": [
+        "kuey teow goreng telur",
+        "fried flat rice noodles with egg",
+        "kuetiau goreng telur"
+      ],
+      "icon": "dishes/char-kuey-teow",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Kuey Teow Goreng Pattaya",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 700,
+      "carbs_g": 89.3,
+      "protein_g": 26.3,
+      "fat_g": 26.4,
+      "aliases": [
+        "kuey teow goreng pattaya",
+        "kuetiau pattaya",
+        "fried flat rice noodles in omelette"
+      ],
+      "icon": "dishes/char-kuey-teow",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Kuey Teow Goreng Ayam",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 655,
+      "carbs_g": 90.1,
+      "protein_g": 26.2,
+      "fat_g": 21.1,
+      "aliases": [
+        "kuey teow goreng ayam",
+        "fried flat rice noodles with chicken",
+        "kuetiau goreng ayam"
+      ],
+      "icon": "dishes/char-kuey-teow",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Kuey Teow Goreng Kerang",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 590,
+      "carbs_g": 81.1,
+      "protein_g": 25.1,
+      "fat_g": 18.4,
+      "aliases": [
+        "kuey teow goreng kerang",
+        "fried flat rice noodles with cockles",
+        "kuetiau goreng kerang"
+      ],
+      "icon": "dishes/char-kuey-teow",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Kuey Teow Goreng Sayur",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 500,
+      "carbs_g": 78.8,
+      "protein_g": 12.5,
+      "fat_g": 15,
+      "aliases": [
+        "kuey teow goreng sayur",
+        "vegetarian fried flat rice noodles",
+        "kuetiau goreng sayur"
+      ],
+      "icon": "dishes/char-kuey-teow",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Kuey Teow Tomyam",
+      "place": "mamak",
+      "serving": "1 bowl",
+      "kcal": 460,
+      "carbs_g": 64.4,
+      "protein_g": 19.6,
+      "fat_g": 13.8,
+      "aliases": [
+        "kuey teow tomyam",
+        "kuetiau tom yam",
+        "tom yam flat rice noodles",
+        "kway teow tom yam"
+      ],
+      "icon": "dishes/tomyam",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Kuey Teow Sup Ayam",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 405,
+      "carbs_g": 55.7,
+      "protein_g": 20.3,
+      "fat_g": 11.3,
+      "aliases": [
+        "kuey teow sup ayam",
+        "chicken flat rice noodle soup",
+        "kuetiau sup ayam"
+      ],
+      "icon": "dishes/kuey-teow-soup",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Kuey Teow Sup Daging",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 445,
+      "carbs_g": 55.6,
+      "protein_g": 24.5,
+      "fat_g": 13.8,
+      "aliases": [
+        "kuey teow sup daging",
+        "beef flat rice noodle soup",
+        "kuetiau sup daging",
+        "kuey teow sup lembu"
+      ],
+      "icon": "dishes/kuey-teow-soup",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Kuey Teow Sup Ikan",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 390,
+      "carbs_g": 53.6,
+      "protein_g": 22.4,
+      "fat_g": 9.5,
+      "aliases": [
+        "kuey teow sup ikan",
+        "fish flat rice noodle soup",
+        "kuetiau sup ikan"
+      ],
+      "icon": "dishes/kuey-teow-soup",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Kuey Teow Kari",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 525,
+      "carbs_g": 66.9,
+      "protein_g": 19.7,
+      "fat_g": 19.8,
+      "aliases": [
+        "kuey teow kari",
+        "curry flat rice noodles",
+        "kuetiau kari",
+        "curry kway teow"
+      ],
+      "icon": "dishes/curry-mee",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Soto",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 480,
+      "carbs_g": 63.6,
+      "protein_g": 24,
+      "fat_g": 14.4,
+      "aliases": [
+        "mee soto",
+        "mi soto",
+        "soto mee",
+        "yellow noodles in soto broth",
+        "soto ayam mee",
+        "mee soto ayam"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Soto Johor",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 505,
+      "carbs_g": 65.7,
+      "protein_g": 25.3,
+      "fat_g": 15.7,
+      "aliases": [
+        "mee soto johor",
+        "johor style mee soto",
+        "mi soto johor"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Soto Daging",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 520,
+      "carbs_g": 63.7,
+      "protein_g": 27.3,
+      "fat_g": 17.3,
+      "aliases": [
+        "mee soto daging",
+        "beef mee soto",
+        "soto daging mee",
+        "mi soto daging"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Soto Bergedil",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 590,
+      "carbs_g": 76.7,
+      "protein_g": 25.1,
+      "fat_g": 20.3,
+      "aliases": [
+        "mee soto bergedil",
+        "mee soto with potato cutlet",
+        "mee soto begedil",
+        "soto mee bergedil"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Laksa Kedah",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 320,
+      "carbs_g": 49.6,
+      "protein_g": 12.8,
+      "fat_g": 7.8,
+      "aliases": [
+        "laksa kedah",
+        "kedah laksa",
+        "northern sour fish laksa",
+        "laksa lemak kedah",
+        "laksa utara kedah"
+      ],
+      "icon": "dishes/laksa",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Laksa Perlis",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 335,
+      "carbs_g": 51.1,
+      "protein_g": 14.2,
+      "fat_g": 8.2,
+      "aliases": [
+        "laksa perlis",
+        "perlis laksa",
+        "laksa kuala perlis",
+        "northern fish laksa"
+      ],
+      "icon": "dishes/laksa",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Laksa Utara",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 310,
+      "carbs_g": 48.1,
+      "protein_g": 13.2,
+      "fat_g": 7.2,
+      "aliases": [
+        "laksa utara",
+        "northern laksa",
+        "laksa north malaysia",
+        "laksa asam utara"
+      ],
+      "icon": "dishes/laksa",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Laksa Kelantan",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 425,
+      "carbs_g": 56.3,
+      "protein_g": 15.9,
+      "fat_g": 15.1,
+      "aliases": [
+        "laksa kelantan",
+        "kelantanese laksa",
+        "laksa kuah putih",
+        "white gravy laksa",
+        "laksa kelate"
+      ],
+      "icon": "dishes/laksa",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Laksa Terengganu",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 430,
+      "carbs_g": 57,
+      "protein_g": 16.1,
+      "fat_g": 15.3,
+      "aliases": [
+        "laksa terengganu",
+        "terengganu laksa",
+        "laksa ganu",
+        "coconut fish laksa terengganu"
+      ],
+      "icon": "dishes/laksa",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Laksa Ipoh",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 355,
+      "carbs_g": 51.5,
+      "protein_g": 14.2,
+      "fat_g": 10.3,
+      "aliases": [
+        "laksa ipoh",
+        "ipoh laksa",
+        "perak laksa",
+        "laksa perak"
+      ],
+      "icon": "dishes/laksa",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Laksa Kuala Kangsar",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 330,
+      "carbs_g": 50.3,
+      "protein_g": 13.2,
+      "fat_g": 8.4,
+      "aliases": [
+        "laksa kuala kangsar",
+        "kuala kangsar laksa",
+        "laksa kk perak"
+      ],
+      "icon": "dishes/laksa",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Laksa Pahang",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 400,
+      "carbs_g": 55,
+      "protein_g": 15,
+      "fat_g": 13.3,
+      "aliases": [
+        "laksa pahang",
+        "pahang laksa",
+        "laksa kuantan",
+        "laksa pekan"
+      ],
+      "icon": "dishes/laksa",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Laksa Melaka",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 545,
+      "carbs_g": 65.4,
+      "protein_g": 19.1,
+      "fat_g": 23,
+      "aliases": [
+        "laksa melaka",
+        "melaka laksa",
+        "malacca laksa",
+        "laksa lemak melaka"
+      ],
+      "icon": "dishes/laksa",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Laksa Lemak",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 560,
+      "carbs_g": 67.2,
+      "protein_g": 19.6,
+      "fat_g": 23.6,
+      "aliases": [
+        "laksa lemak",
+        "coconut milk laksa",
+        "laksa santan",
+        "nyonya laksa lemak",
+        "叻沙"
+      ],
+      "icon": "dishes/laksa",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Laksa Sabah",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 435,
+      "carbs_g": 57.6,
+      "protein_g": 17.4,
+      "fat_g": 15,
+      "aliases": [
+        "laksa sabah",
+        "sabah laksa",
+        "laksa kota kinabalu"
+      ],
+      "icon": "dishes/laksa",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Laksa Rembau",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 360,
+      "carbs_g": 52.2,
+      "protein_g": 14.4,
+      "fat_g": 10.4,
+      "aliases": [
+        "laksa rembau",
+        "negeri sembilan laksa",
+        "laksa negeri sembilan"
+      ],
+      "icon": "dishes/laksa",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Laksa Ikan Sardin",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 335,
+      "carbs_g": 50.3,
+      "protein_g": 14.2,
+      "fat_g": 8.6,
+      "aliases": [
+        "laksa ikan sardin",
+        "sardine laksa",
+        "laksa sardin",
+        "canned sardine laksa"
+      ],
+      "icon": "dishes/laksa",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Tomyam",
+      "place": "mamak",
+      "serving": "1 bowl",
+      "kcal": 490,
+      "carbs_g": 67.4,
+      "protein_g": 20.8,
+      "fat_g": 15.2,
+      "aliases": [
+        "mee tomyam",
+        "mi tom yam",
+        "tom yam noodles",
+        "mee tom yam",
+        "டோம் யாம் மீ"
+      ],
+      "icon": "dishes/tomyam",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Tomyam Campur",
+      "place": "mamak",
+      "serving": "1 bowl",
+      "kcal": 520,
+      "carbs_g": 66.3,
+      "protein_g": 27.3,
+      "fat_g": 16.2,
+      "aliases": [
+        "mee tomyam campur",
+        "mixed tom yam noodles",
+        "tomyam campur mee",
+        "mee tom yam campur"
+      ],
+      "icon": "dishes/tomyam",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Tomyam Seafood",
+      "place": "mamak",
+      "serving": "1 bowl",
+      "kcal": 505,
+      "carbs_g": 63.1,
+      "protein_g": 29,
+      "fat_g": 15.2,
+      "aliases": [
+        "mee tomyam seafood",
+        "seafood tom yam noodles",
+        "mee tomyam makanan laut"
+      ],
+      "icon": "dishes/tomyam",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Tomyam Ayam",
+      "place": "mamak",
+      "serving": "1 bowl",
+      "kcal": 495,
+      "carbs_g": 65.6,
+      "protein_g": 24.8,
+      "fat_g": 14.9,
+      "aliases": [
+        "mee tomyam ayam",
+        "chicken tom yam noodles",
+        "mee tom yam ayam"
+      ],
+      "icon": "dishes/tomyam",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Sup Ayam",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 430,
+      "carbs_g": 58.1,
+      "protein_g": 22.6,
+      "fat_g": 11.9,
+      "aliases": [
+        "mee sup ayam",
+        "chicken noodle soup",
+        "mi sup ayam",
+        "mee kuah ayam"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Sup Daging",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 470,
+      "carbs_g": 58.8,
+      "protein_g": 25.9,
+      "fat_g": 14.6,
+      "aliases": [
+        "mee sup daging",
+        "beef noodle soup",
+        "mi sup daging",
+        "mee sup lembu"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Sup Kambing",
+      "place": "mamak",
+      "serving": "1 bowl",
+      "kcal": 505,
+      "carbs_g": 59.3,
+      "protein_g": 27.8,
+      "fat_g": 17.4,
+      "aliases": [
+        "mee sup kambing",
+        "mutton noodle soup",
+        "mi sup kambing",
+        "sup kambing mee"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Sup Tulang",
+      "place": "mamak",
+      "serving": "1 bowl",
+      "kcal": 495,
+      "carbs_g": 56.9,
+      "protein_g": 27.2,
+      "fat_g": 17.6,
+      "aliases": [
+        "mee sup tulang",
+        "bone soup noodles",
+        "sup tulang mee",
+        "mi sup tulang"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Sup Utara",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 445,
+      "carbs_g": 59,
+      "protein_g": 22.3,
+      "fat_g": 13.4,
+      "aliases": [
+        "mee sup utara",
+        "northern noodle soup",
+        "mi sup utara",
+        "mee sup kedah"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Sup Ikan",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 410,
+      "carbs_g": 55.4,
+      "protein_g": 23.6,
+      "fat_g": 10.5,
+      "aliases": [
+        "mee sup ikan",
+        "fish noodle soup",
+        "mi sup ikan",
+        "mee sup ikan pekasam"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Kuah Kacang",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 555,
+      "carbs_g": 72.2,
+      "protein_g": 19.4,
+      "fat_g": 21,
+      "aliases": [
+        "mee kuah kacang",
+        "peanut gravy noodles",
+        "mi kuah kacang",
+        "mee kacang"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Celup",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 470,
+      "carbs_g": 62.3,
+      "protein_g": 20,
+      "fat_g": 15.7,
+      "aliases": [
+        "mee celup",
+        "mi celup",
+        "dipped noodles kelantan",
+        "mee celop"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Calong",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 350,
+      "carbs_g": 48.1,
+      "protein_g": 19.3,
+      "fat_g": 8.9,
+      "aliases": [
+        "mee calong",
+        "mi calong",
+        "terengganu fish ball noodles",
+        "mee calung"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Kerabu",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 385,
+      "carbs_g": 54.9,
+      "protein_g": 14.4,
+      "fat_g": 12,
+      "aliases": [
+        "mee kerabu",
+        "kerabu mee",
+        "kelantan herb noodle salad",
+        "mi kerabu"
+      ],
+      "icon": "food/yellow-noodles",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Rojak",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 545,
+      "carbs_g": 74.9,
+      "protein_g": 17.7,
+      "fat_g": 19.4,
+      "aliases": [
+        "mee rojak",
+        "mi rojak",
+        "noodle rojak",
+        "rojak mee",
+        "pasembur mee"
+      ],
+      "icon": "dishes/rojak",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Sotong Padang Kota",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 610,
+      "carbs_g": 82.4,
+      "protein_g": 25.9,
+      "fat_g": 19.7,
+      "aliases": [
+        "mee sotong padang kota",
+        "penang mee sotong",
+        "mee sotong",
+        "squid noodles penang"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Ketam",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 545,
+      "carbs_g": 68.1,
+      "protein_g": 30,
+      "fat_g": 17,
+      "aliases": [
+        "mee ketam",
+        "crab noodles",
+        "mi ketam",
+        "crab mee"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Udang Banjir",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 560,
+      "carbs_g": 70,
+      "protein_g": 29.4,
+      "fat_g": 18,
+      "aliases": [
+        "mee udang banjir",
+        "flooded prawn noodles",
+        "mee udang sungai dua",
+        "mi udang banjir"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Racun",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 620,
+      "carbs_g": 82.2,
+      "protein_g": 24.8,
+      "fat_g": 21.4,
+      "aliases": [
+        "mee racun",
+        "poison noodles ipoh",
+        "mi racun",
+        "mee racun ipoh"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Bakso",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 430,
+      "carbs_g": 57,
+      "protein_g": 20.4,
+      "fat_g": 13.4,
+      "aliases": [
+        "mee bakso",
+        "bakso mee",
+        "meatball noodle soup",
+        "mi bakso"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Kolok Ayam",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 520,
+      "carbs_g": 68.9,
+      "protein_g": 22.1,
+      "fat_g": 17.3,
+      "aliases": [
+        "mee kolok ayam",
+        "kolok mee ayam",
+        "sarawak dry noodles with chicken",
+        "mi kolok ayam"
+      ],
+      "icon": "dishes/mee-kolok",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Kolok Daging",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 545,
+      "carbs_g": 68.1,
+      "protein_g": 25.9,
+      "fat_g": 18.8,
+      "aliases": [
+        "mee kolok daging",
+        "kolok mee beef",
+        "sarawak dry noodles with beef",
+        "mi kolok daging"
+      ],
+      "icon": "dishes/mee-kolok",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Rebus Ayam",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 570,
+      "carbs_g": 78.4,
+      "protein_g": 22.8,
+      "fat_g": 18.4,
+      "aliases": [
+        "mee rebus ayam",
+        "mi rebus ayam",
+        "sweet potato gravy noodles with chicken"
+      ],
+      "icon": "dishes/mee-rebus",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Rebus Tulang",
+      "place": "mamak",
+      "serving": "1 plate",
+      "kcal": 620,
+      "carbs_g": 76,
+      "protein_g": 29.5,
+      "fat_g": 22,
+      "aliases": [
+        "mee rebus tulang",
+        "mi rebus tulang",
+        "mee rebus with beef bone",
+        "mee rebus sup tulang"
+      ],
+      "icon": "dishes/mee-rebus",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Bandung Telur",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 545,
+      "carbs_g": 69.5,
+      "protein_g": 23.2,
+      "fat_g": 19.4,
+      "aliases": [
+        "mee bandung telur",
+        "mi bandung telur",
+        "mee bandung with egg",
+        "mee bandung muar telur"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Kari Ayam",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 585,
+      "carbs_g": 71.7,
+      "protein_g": 23.4,
+      "fat_g": 22.8,
+      "aliases": [
+        "mee kari ayam",
+        "chicken curry noodles",
+        "mi kari ayam",
+        "curry mee ayam"
+      ],
+      "icon": "dishes/curry-mee",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Siam Goreng",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 470,
+      "carbs_g": 68.1,
+      "protein_g": 14.1,
+      "fat_g": 15.7,
+      "aliases": [
+        "mee siam goreng",
+        "dry mee siam",
+        "mi siam goreng",
+        "fried mee siam"
+      ],
+      "icon": "dishes/mee-siam",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half plate",
+          "factor": 0.5
+        },
+        {
+          "label": "Large plate",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Siam Kuah",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 420,
+      "carbs_g": 60.9,
+      "protein_g": 14.7,
+      "fat_g": 13.1,
+      "aliases": [
+        "mee siam kuah",
+        "wet mee siam",
+        "mi siam kuah",
+        "mee siam with gravy"
+      ],
+      "icon": "dishes/mee-siam",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Sua Ayam",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 400,
+      "carbs_g": 58,
+      "protein_g": 19,
+      "fat_g": 10.2,
+      "aliases": [
+        "mee sua ayam",
+        "misua ayam",
+        "chicken misua soup",
+        "mi sua ayam",
+        "面线鸡"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    },
+    {
+      "name": "Mee Kacang Melaka",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 480,
+      "carbs_g": 63.6,
+      "protein_g": 19.2,
+      "fat_g": 16.5,
+      "aliases": [
+        "mee kacang melaka",
+        "melaka peanut noodles",
+        "mi kacang melaka"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "Half bowl",
+          "factor": 0.5
+        },
+        {
+          "label": "Large bowl",
+          "factor": 1.4
+        }
+      ]
+    }
+  ]
+}
