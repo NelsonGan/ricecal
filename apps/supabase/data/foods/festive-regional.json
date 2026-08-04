@@ -1,0 +1,2189 @@
+{
+  "source": "research:festive-regional",
+  "foods": [
+    {
+      "name": "Biskut Almond London",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 240,
+      "carbs_g": 22,
+      "protein_g": 3.5,
+      "fat_g": 15,
+      "aliases": [
+        "almond london",
+        "biskut badam london",
+        "london almond cookie",
+        "almond london raya"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        {
+          "label": "1 piece",
+          "factor": 0.33
+        },
+        {
+          "label": "6 pieces",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Biskut Cornflake Madu",
+      "place": "home",
+      "serving": "5 mini cups",
+      "kcal": 200,
+      "carbs_g": 26,
+      "protein_g": 1.5,
+      "fat_g": 10,
+      "aliases": [
+        "cornflake madu",
+        "honey cornflake cookie",
+        "biskut konflek madu",
+        "cornflakes cookie raya"
+      ],
+      "icon": "food/cereal",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        {
+          "label": "1 mini cup",
+          "factor": 0.2
+        },
+        {
+          "label": "10 mini cups",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Biskut Sarang Semut",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 188,
+      "carbs_g": 22,
+      "protein_g": 2,
+      "fat_g": 10,
+      "aliases": [
+        "sarang semut cookie",
+        "biskut sarang semut raya",
+        "ant nest cookie",
+        "honeycomb cookie"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Biskut Chocolate Chip Raya",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 220,
+      "carbs_g": 27,
+      "protein_g": 2.5,
+      "fat_g": 11,
+      "aliases": [
+        "chocolate chip cookie raya",
+        "biskut cip coklat",
+        "choc chip cookie",
+        "biskut coklat cip"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        {
+          "label": "1 piece",
+          "factor": 0.33
+        }
+      ]
+    },
+    {
+      "name": "Biskut Dahlia",
+      "place": "home",
+      "serving": "5 pieces",
+      "kcal": 195,
+      "carbs_g": 22,
+      "protein_g": 2,
+      "fat_g": 11,
+      "aliases": [
+        "dahlia cookie",
+        "biskut bunga dahlia",
+        "piped butter cookie raya"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        {
+          "label": "1 piece",
+          "factor": 0.2
+        },
+        {
+          "label": "10 pieces",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Biskut Nestum",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 145,
+      "carbs_g": 16,
+      "protein_g": 1.8,
+      "fat_g": 8,
+      "aliases": [
+        "nestum cookie",
+        "biskut nestum raya",
+        "cereal cookie"
+      ],
+      "icon": "food/cereal",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Biskut Coklat Rice",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 180,
+      "carbs_g": 21,
+      "protein_g": 2.2,
+      "fat_g": 9.5,
+      "aliases": [
+        "biskut coklat rais",
+        "chocolate rice cookie",
+        "biskut mercun coklat"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Biskut Kastard",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 165,
+      "carbs_g": 17,
+      "protein_g": 1.5,
+      "fat_g": 10,
+      "aliases": [
+        "custard cookie",
+        "biskut custard",
+        "melt in mouth cookie",
+        "biskut kastad"
+      ],
+      "icon": "food/custard-tart",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Biskut Horlicks",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 148,
+      "carbs_g": 18,
+      "protein_g": 2,
+      "fat_g": 7.5,
+      "aliases": [
+        "horlicks cookie",
+        "biskut horlick raya",
+        "malt cookie"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Biskut Milo",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 166,
+      "carbs_g": 20,
+      "protein_g": 2.2,
+      "fat_g": 8.5,
+      "aliases": [
+        "milo cookie",
+        "biskut milo raya",
+        "milo crunchy cookie"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Biskut Keju",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 173,
+      "carbs_g": 16,
+      "protein_g": 3.5,
+      "fat_g": 10.5,
+      "aliases": [
+        "cheese cookie",
+        "biskut cheese",
+        "cheddar cookie raya",
+        "biskut keju raya"
+      ],
+      "icon": "food/cheese",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Biskut Red Velvet Cheese",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 208,
+      "carbs_g": 24,
+      "protein_g": 2.8,
+      "fat_g": 11,
+      "aliases": [
+        "red velvet cookie",
+        "biskut red velvet raya",
+        "red velvet cheese cookie"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Biskut Oreo Cheese",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 200,
+      "carbs_g": 24,
+      "protein_g": 2.5,
+      "fat_g": 10.5,
+      "aliases": [
+        "oreo cheese cookie",
+        "biskut oreo raya",
+        "oreo crumble cookie"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tart Nenas Cheese",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 197,
+      "carbs_g": 25,
+      "protein_g": 2.8,
+      "fat_g": 9.5,
+      "aliases": [
+        "cheese pineapple tart",
+        "tart nanas keju",
+        "pineapple cheese tart"
+      ],
+      "icon": "food/pineapple-tart",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        {
+          "label": "1 piece",
+          "factor": 0.33
+        },
+        {
+          "label": "6 pieces",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Tart Nenas Bola",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 208,
+      "carbs_g": 28,
+      "protein_g": 2.4,
+      "fat_g": 9.5,
+      "aliases": [
+        "golf ball pineapple tart",
+        "tart nanas bola",
+        "enclosed pineapple tart",
+        "pineapple ball tart"
+      ],
+      "icon": "food/pineapple-tart",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        {
+          "label": "1 piece",
+          "factor": 0.33
+        }
+      ]
+    },
+    {
+      "name": "Popia Cheese Rangup",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 163,
+      "carbs_g": 12,
+      "protein_g": 4,
+      "fat_g": 11,
+      "aliases": [
+        "cheese roll raya",
+        "popia cheese",
+        "crispy cheese roll",
+        "cheese stick raya"
+      ],
+      "icon": "food/spring-roll",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kuih Siput Manis",
+      "place": "home",
+      "serving": "1 small handful (30 g)",
+      "kcal": 150,
+      "carbs_g": 19,
+      "protein_g": 2,
+      "fat_g": 7.5,
+      "aliases": [
+        "kuih siput",
+        "sweet snail cookie",
+        "kuih siput gula",
+        "snail kuih"
+      ],
+      "icon": "food/crackers",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kuih Siput Pedas",
+      "place": "home",
+      "serving": "1 small handful (30 g)",
+      "kcal": 153,
+      "carbs_g": 18,
+      "protein_g": 2.2,
+      "fat_g": 8,
+      "aliases": [
+        "spicy snail cookie",
+        "kuih siput pedas raya",
+        "savoury kuih siput"
+      ],
+      "icon": "food/crackers",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Biskut Raya Bercampur",
+      "place": "home",
+      "serving": "6 assorted pieces",
+      "kcal": 315,
+      "carbs_g": 38,
+      "protein_g": 4,
+      "fat_g": 16,
+      "aliases": [
+        "assorted raya cookies",
+        "biskut raya campur",
+        "kuih raya assorted",
+        "raya cookie plate",
+        "open house cookies"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        {
+          "label": "3 assorted pieces",
+          "factor": 0.5
+        },
+        {
+          "label": "12 assorted pieces",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Set Hari Raya Open House",
+      "place": "home",
+      "serving": "1 plate",
+      "kcal": 850,
+      "carbs_g": 88,
+      "protein_g": 30,
+      "fat_g": 42,
+      "aliases": [
+        "raya open house plate",
+        "hidangan raya",
+        "set raya",
+        "rumah terbuka raya plate"
+      ],
+      "icon": "dishes/nasi-campur",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ketupat Palas dengan Rendang",
+      "place": "home",
+      "serving": "2 ketupat with rendang",
+      "kcal": 555,
+      "carbs_g": 55,
+      "protein_g": 22,
+      "fat_g": 27,
+      "aliases": [
+        "ketupat palas rendang",
+        "ketupat daun palas with rendang",
+        "palas rendang raya"
+      ],
+      "icon": "dishes/ketupat",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Lemang dengan Serunding",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 395,
+      "carbs_g": 45,
+      "protein_g": 12,
+      "fat_g": 18,
+      "aliases": [
+        "lemang serunding",
+        "lemang with beef floss",
+        "lemang raya"
+      ],
+      "icon": "food/glutinous-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kuah Lodeh",
+      "place": "home",
+      "serving": "1 ladle (80 ml)",
+      "kcal": 104,
+      "carbs_g": 6,
+      "protein_g": 2,
+      "fat_g": 8,
+      "aliases": [
+        "sayur lodeh gravy",
+        "kuah lontong",
+        "lodeh gravy",
+        "kuah sayur lodeh"
+      ],
+      "icon": "dishes/lontong",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sambal Goreng Jawa",
+      "place": "home",
+      "serving": "3 tablespoons",
+      "kcal": 178,
+      "carbs_g": 10,
+      "protein_g": 8,
+      "fat_g": 12,
+      "aliases": [
+        "sambal goreng",
+        "sambal goreng hati",
+        "sambal goreng raya",
+        "javanese sambal goreng"
+      ],
+      "icon": "food/sambal-jar",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tapai Ubi",
+      "place": "home",
+      "serving": "1 serving (100 g)",
+      "kcal": 150,
+      "carbs_g": 35,
+      "protein_g": 1,
+      "fat_g": 0.5,
+      "aliases": [
+        "fermented tapioca",
+        "tape singkong",
+        "tapai ubi kayu",
+        "fermented cassava"
+      ],
+      "icon": "food/tapioca",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Yee Sang Salmon",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 336,
+      "carbs_g": 34,
+      "protein_g": 9,
+      "fat_g": 18,
+      "aliases": [
+        "lou sang salmon",
+        "salmon yusheng",
+        "撈生",
+        "prosperity toss salmon",
+        "yusheng"
+      ],
+      "icon": "food/fish-fillet",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bak Kwa Ayam",
+      "place": "packaged",
+      "serving": "1 piece (50 g)",
+      "kcal": 200,
+      "carbs_g": 16,
+      "protein_g": 15,
+      "fat_g": 8.5,
+      "aliases": [
+        "chicken bak kwa",
+        "rougan ayam",
+        "肉干鸡肉",
+        "chicken dried meat",
+        "bakkwa chicken"
+      ],
+      "icon": "food/grilled-chicken",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        {
+          "label": "half a piece",
+          "factor": 0.5
+        },
+        {
+          "label": "2 pieces",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Bak Kwa Floss Roll",
+      "place": "packaged",
+      "serving": "1 roll",
+      "kcal": 176,
+      "carbs_g": 18,
+      "protein_g": 6,
+      "fat_g": 9,
+      "aliases": [
+        "pork floss roll",
+        "bak kwa roll",
+        "floss seaweed roll",
+        "肉松卷"
+      ],
+      "icon": "food/spring-roll",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Arrowroot Chips",
+      "place": "packaged",
+      "serving": "1 small bowl (30 g)",
+      "kcal": 158,
+      "carbs_g": 17,
+      "protein_g": 1,
+      "fat_g": 9.5,
+      "aliases": [
+        "nga ku chips",
+        "keropok ubi nga ku",
+        "arrowhead chips",
+        "慈菇片",
+        "cny arrowroot crisps"
+      ],
+      "icon": "food/crackers",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Prawn Roll CNY",
+      "place": "packaged",
+      "serving": "5 pieces",
+      "kcal": 176,
+      "carbs_g": 15,
+      "protein_g": 4.5,
+      "fat_g": 11,
+      "aliases": [
+        "hae bee hiam roll",
+        "dried shrimp roll",
+        "prawn crisp roll",
+        "虾米卷",
+        "cny prawn roll"
+      ],
+      "icon": "food/prawn",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Seaweed Crisp Roll",
+      "place": "packaged",
+      "serving": "5 pieces",
+      "kcal": 151,
+      "carbs_g": 14,
+      "protein_g": 3.5,
+      "fat_g": 9,
+      "aliases": [
+        "seaweed roll cny",
+        "nori crisp roll",
+        "紫菜卷",
+        "seaweed tempura roll"
+      ],
+      "icon": "food/crackers",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Walnut Cookie",
+      "place": "home",
+      "serving": "2 pieces",
+      "kcal": 192,
+      "carbs_g": 21,
+      "protein_g": 2.5,
+      "fat_g": 11,
+      "aliases": [
+        "hup toh soh",
+        "核桃酥",
+        "chinese walnut cookie",
+        "biskut walnut cny"
+      ],
+      "icon": "food/peanut-cookie",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "German Cookies",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 156,
+      "carbs_g": 15,
+      "protein_g": 1.4,
+      "fat_g": 10,
+      "aliases": [
+        "biskut german",
+        "german butter cookie",
+        "melting moments cookie"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Chinese Almond Cookie",
+      "place": "home",
+      "serving": "2 pieces",
+      "kcal": 182,
+      "carbs_g": 20,
+      "protein_g": 2.4,
+      "fat_g": 10.5,
+      "aliases": [
+        "hang yan beng",
+        "杏仁饼",
+        "almond biscuit cny",
+        "biskut badam cina"
+      ],
+      "icon": "food/almonds",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kuih Kapit Tebal",
+      "place": "home",
+      "serving": "5 pieces",
+      "kcal": 144,
+      "carbs_g": 20,
+      "protein_g": 1.5,
+      "fat_g": 6.5,
+      "aliases": [
+        "thick love letter",
+        "kuih kapit tebal cny",
+        "folded love letter",
+        "kuih belanda tebal"
+      ],
+      "icon": "food/love-letter",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Lap Cheong",
+      "place": "packaged",
+      "serving": "1 sausage (30 g)",
+      "kcal": 130,
+      "carbs_g": 4,
+      "protein_g": 6,
+      "fat_g": 10,
+      "aliases": [
+        "chinese waxed sausage",
+        "腊肠",
+        "lup cheong",
+        "sosej cina",
+        "waxed sausage"
+      ],
+      "icon": "food/sausage",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        {
+          "label": "2 sausages",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Lap Mei Fan",
+      "place": "hawker",
+      "serving": "1 claypot serving",
+      "kcal": 605,
+      "carbs_g": 78,
+      "protein_g": 22,
+      "fat_g": 22,
+      "aliases": [
+        "waxed meat rice",
+        "腊味饭",
+        "lap mei fan claypot",
+        "nasi lap cheong",
+        "waxed sausage rice"
+      ],
+      "icon": "dishes/claypot-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Fatt Choy Hou See",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 205,
+      "carbs_g": 12,
+      "protein_g": 14,
+      "fat_g": 11,
+      "aliases": [
+        "dried oyster with black moss",
+        "发菜蚝豉",
+        "fatt choy oyster",
+        "black moss dried oyster"
+      ],
+      "icon": "food/cockles",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Longevity Noodles",
+      "place": "home",
+      "serving": "1 plate",
+      "kcal": 476,
+      "carbs_g": 62,
+      "protein_g": 16,
+      "fat_g": 18,
+      "aliases": [
+        "sau mee",
+        "长寿面",
+        "birthday noodles",
+        "mee panjang umur",
+        "yee mee sang yat"
+      ],
+      "icon": "food/egg-noodles",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Thenkuzhal Murukku",
+      "place": "home",
+      "serving": "5 pieces (40 g)",
+      "kcal": 200,
+      "carbs_g": 21,
+      "protein_g": 3.5,
+      "fat_g": 11,
+      "aliases": [
+        "thenkuzhal",
+        "murukku thenkuzhal",
+        "தேன்குழல்",
+        "rice flour murukku",
+        "muruku thenkuzhal"
+      ],
+      "icon": "food/crackers",
+      "source": "model_estimate",
+      "verified": false,
+      "extra_servings": [
+        {
+          "label": "10 pieces",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Mullu Murukku",
+      "place": "home",
+      "serving": "3 pieces (35 g)",
+      "kcal": 177,
+      "carbs_g": 19,
+      "protein_g": 3.2,
+      "fat_g": 9.8,
+      "aliases": [
+        "mullu thenkuzhal",
+        "முள்ளு முறுக்கு",
+        "spiral murukku",
+        "muruku mullu"
+      ],
+      "icon": "food/crackers",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kai Murukku",
+      "place": "home",
+      "serving": "2 pieces (30 g)",
+      "kcal": 152,
+      "carbs_g": 17,
+      "protein_g": 2.5,
+      "fat_g": 8.2,
+      "aliases": [
+        "kai murukku deepavali",
+        "கை முறுக்கு",
+        "hand rolled murukku",
+        "chakli"
+      ],
+      "icon": "food/crackers",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Thattai",
+      "place": "home",
+      "serving": "3 pieces (30 g)",
+      "kcal": 147,
+      "carbs_g": 17,
+      "protein_g": 3,
+      "fat_g": 7.5,
+      "aliases": [
+        "thattai deepavali",
+        "தட்டை",
+        "rice cracker thattai",
+        "thattai vadai"
+      ],
+      "icon": "food/crackers",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Achu Murukku",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 143,
+      "carbs_g": 17,
+      "protein_g": 1.8,
+      "fat_g": 7.5,
+      "aliases": [
+        "rose cookie",
+        "achappam",
+        "அச்சு முறுக்கு",
+        "rosette cookie",
+        "kuih rose india"
+      ],
+      "icon": "food/crackers",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Uppu Seedai",
+      "place": "home",
+      "serving": "15 balls (30 g)",
+      "kcal": 154,
+      "carbs_g": 18,
+      "protein_g": 2.4,
+      "fat_g": 8,
+      "aliases": [
+        "seedai",
+        "உப்பு சீடை",
+        "salt seedai",
+        "rice flour balls"
+      ],
+      "icon": "food/crackers",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kara Boondi",
+      "place": "home",
+      "serving": "1 small bowl (30 g)",
+      "kcal": 161,
+      "carbs_g": 15,
+      "protein_g": 4,
+      "fat_g": 9.5,
+      "aliases": [
+        "boondi",
+        "kara bundi",
+        "காரா பூந்தி",
+        "spicy boondi",
+        "boondi deepavali"
+      ],
+      "icon": "food/crackers",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Manoharam",
+      "place": "home",
+      "serving": "1 piece",
+      "kcal": 195,
+      "carbs_g": 30,
+      "protein_g": 2,
+      "fat_g": 7.5,
+      "aliases": [
+        "manoharam deepavali",
+        "மனோகரம்",
+        "jaggery coated murukku ball",
+        "thenkuzhal urundai"
+      ],
+      "icon": "food/candy",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kaju Katli",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 169,
+      "carbs_g": 19,
+      "protein_g": 3,
+      "fat_g": 9,
+      "aliases": [
+        "kaju barfi",
+        "cashew fudge",
+        "காஜு கத்லி",
+        "kaju katli deepavali"
+      ],
+      "icon": "food/cashews",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Badusha",
+      "place": "home",
+      "serving": "1 piece",
+      "kcal": 209,
+      "carbs_g": 30,
+      "protein_g": 2,
+      "fat_g": 9,
+      "aliases": [
+        "balushahi",
+        "பாதுஷா",
+        "indian doughnut badusha",
+        "badhusha"
+      ],
+      "icon": "food/doughnut",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Rava Laddu",
+      "place": "home",
+      "serving": "1 piece",
+      "kcal": 185,
+      "carbs_g": 26,
+      "protein_g": 2.5,
+      "fat_g": 8,
+      "aliases": [
+        "rava ladoo",
+        "semolina laddu",
+        "ரவா லட்டு",
+        "suji laddu"
+      ],
+      "icon": "food/candy",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sakkarai Pongal",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 327,
+      "carbs_g": 52,
+      "protein_g": 5,
+      "fat_g": 11,
+      "aliases": [
+        "chakkarai pongal",
+        "sweet pongal",
+        "சர்க்கரை பொங்கல்",
+        "jaggery rice pongal"
+      ],
+      "icon": "food/porridge",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Paal Payasam",
+      "place": "home",
+      "serving": "1 bowl (200 ml)",
+      "kcal": 266,
+      "carbs_g": 42,
+      "protein_g": 6.5,
+      "fat_g": 8,
+      "aliases": [
+        "milk payasam",
+        "பால் பாயசம்",
+        "rice kheer",
+        "payasam susu"
+      ],
+      "icon": "food/pudding",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Javvarisi Payasam",
+      "place": "home",
+      "serving": "1 bowl (200 ml)",
+      "kcal": 244,
+      "carbs_g": 43,
+      "protein_g": 4.5,
+      "fat_g": 6,
+      "aliases": [
+        "sago payasam",
+        "javvarisi kheer",
+        "ஜவ்வரிசி பாயசம்",
+        "sabudana payasam"
+      ],
+      "icon": "food/sago",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kolukattai",
+      "place": "home",
+      "serving": "2 pieces",
+      "kcal": 206,
+      "carbs_g": 34,
+      "protein_g": 3,
+      "fat_g": 6.5,
+      "aliases": [
+        "modak",
+        "kozhukattai",
+        "கொழுக்கட்டை",
+        "sweet kolukattai",
+        "modak india"
+      ],
+      "icon": "food/dumpling",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ellu Urundai",
+      "place": "home",
+      "serving": "2 pieces",
+      "kcal": 164,
+      "carbs_g": 20,
+      "protein_g": 3,
+      "fat_g": 8,
+      "aliases": [
+        "sesame ball",
+        "எள்ளு உருண்டை",
+        "til laddu",
+        "sesame jaggery ball"
+      ],
+      "icon": "food/candy",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Deepavali Mixture",
+      "place": "packaged",
+      "serving": "1 small bowl (40 g)",
+      "kcal": 209,
+      "carbs_g": 22,
+      "protein_g": 4.5,
+      "fat_g": 11.5,
+      "aliases": [
+        "bombay mix",
+        "indian mixture",
+        "மிக்சர்",
+        "namkeen mixture",
+        "mixture deepavali"
+      ],
+      "icon": "food/crackers",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mutton Varuval",
+      "place": "mamak",
+      "serving": "1 serving",
+      "kcal": 332,
+      "carbs_g": 6,
+      "protein_g": 28,
+      "fat_g": 22,
+      "aliases": [
+        "kambing varuval",
+        "mutton varuval deepavali",
+        "மட்டன் வறுவல்",
+        "dry mutton fry"
+      ],
+      "icon": "food/lamb-chop",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pinggan Manisan Deepavali",
+      "place": "home",
+      "serving": "4 assorted pieces",
+      "kcal": 476,
+      "carbs_g": 62,
+      "protein_g": 7,
+      "fat_g": 22,
+      "aliases": [
+        "deepavali sweets platter",
+        "assorted indian sweets",
+        "deepavali sweet plate",
+        "mithai platter"
+      ],
+      "icon": "food/tray",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Penganan Sarawak",
+      "place": "home",
+      "serving": "1 piece",
+      "kcal": 174,
+      "carbs_g": 24,
+      "protein_g": 1.5,
+      "fat_g": 8,
+      "aliases": [
+        "penganan",
+        "kuih penganan",
+        "penganan gawai",
+        "sarawak penganan cake"
+      ],
+      "icon": "food/kuih",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kuih Sepit Sarawak",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 128,
+      "carbs_g": 18,
+      "protein_g": 1.5,
+      "fat_g": 5.5,
+      "aliases": [
+        "kuih sepit",
+        "sepit sarawak",
+        "folded love letter sarawak",
+        "kuih kapit sepit"
+      ],
+      "icon": "food/love-letter",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kuih Cincin",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 189,
+      "carbs_g": 30,
+      "protein_g": 1.5,
+      "fat_g": 7,
+      "aliases": [
+        "kuih cincin sabah",
+        "ring cookie sabah",
+        "kuih cincin brunei",
+        "kek cincin"
+      ],
+      "icon": "food/doughnut",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Set Gawai Lemang Ayam Pansuh",
+      "place": "home",
+      "serving": "1 plate",
+      "kcal": 552,
+      "carbs_g": 62,
+      "protein_g": 28,
+      "fat_g": 21,
+      "aliases": [
+        "gawai plate",
+        "lemang with ayam pansuh",
+        "set gawai dayak",
+        "hidangan gawai"
+      ],
+      "icon": "dishes/nasi-campur",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pinggan Kenduri Kahwin",
+      "place": "home",
+      "serving": "1 plate",
+      "kcal": 872,
+      "carbs_g": 100,
+      "protein_g": 32,
+      "fat_g": 38,
+      "aliases": [
+        "kenduri plate",
+        "malay wedding plate",
+        "hidangan kenduri",
+        "nasi minyak kenduri plate",
+        "wedding feast plate"
+      ],
+      "icon": "dishes/nasi-campur",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Acar Rampai",
+      "place": "home",
+      "serving": "3 tablespoons",
+      "kcal": 84,
+      "carbs_g": 9,
+      "protein_g": 1.5,
+      "fat_g": 4.5,
+      "aliases": [
+        "acar rampai kenduri",
+        "mixed pickle rampai",
+        "acar campur",
+        "rampai pickle"
+      ],
+      "icon": "food/vegetables",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bunga Telur",
+      "place": "home",
+      "serving": "1 egg",
+      "kcal": 76,
+      "carbs_g": 0.6,
+      "protein_g": 6.3,
+      "fat_g": 5.3,
+      "aliases": [
+        "bunga telur kahwin",
+        "wedding favour egg",
+        "telur bunga",
+        "boiled egg favour"
+      ],
+      "icon": "food/boiled-egg",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pinggan Kuih Muih Kenduri",
+      "place": "home",
+      "serving": "4 assorted pieces",
+      "kcal": 455,
+      "carbs_g": 62,
+      "protein_g": 6,
+      "fat_g": 20,
+      "aliases": [
+        "kuih muih platter",
+        "assorted kuih plate",
+        "talam kuih kenduri",
+        "kuih platter kenduri"
+      ],
+      "icon": "food/tray",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Roti Jala Kari Ayam",
+      "place": "home",
+      "serving": "5 pieces with curry",
+      "kcal": 429,
+      "carbs_g": 42,
+      "protein_g": 18,
+      "fat_g": 21,
+      "aliases": [
+        "roti jala with chicken curry",
+        "net bread curry set",
+        "roti jala set kenduri"
+      ],
+      "icon": "food/roti",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Air Kelantan",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 287,
+      "carbs_g": 42,
+      "protein_g": 14,
+      "fat_g": 7,
+      "aliases": [
+        "nasi air",
+        "rice water porridge kelantan",
+        "nasi berair",
+        "bubur nasi air"
+      ],
+      "icon": "food/porridge",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Jala Mas",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 198,
+      "carbs_g": 30,
+      "protein_g": 5,
+      "fat_g": 6.5,
+      "aliases": [
+        "jala emas",
+        "golden threads kuih",
+        "kuih jala mas",
+        "jala mas kelantan"
+      ],
+      "icon": "food/kuih",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Buah Tanjung",
+      "place": "home",
+      "serving": "5 pieces",
+      "kcal": 174,
+      "carbs_g": 26,
+      "protein_g": 3.5,
+      "fat_g": 6,
+      "aliases": [
+        "kuih buah tanjung",
+        "buah tanjung kelantan",
+        "mung bean tanjung kuih"
+      ],
+      "icon": "food/kuih",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sata",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 172,
+      "carbs_g": 8,
+      "protein_g": 12,
+      "fat_g": 10,
+      "aliases": [
+        "sata ikan",
+        "satar",
+        "grilled fish parcel terengganu",
+        "sata terengganu"
+      ],
+      "icon": "dishes/otak-otak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nekbat",
+      "place": "home",
+      "serving": "2 pieces",
+      "kcal": 177,
+      "carbs_g": 24,
+      "protein_g": 3,
+      "fat_g": 7.5,
+      "aliases": [
+        "kuih nekbat",
+        "nekbat terengganu",
+        "nerkbat",
+        "kuih nek bat"
+      ],
+      "icon": "food/kuih",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pulut Lepa",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 244,
+      "carbs_g": 34,
+      "protein_g": 8,
+      "fat_g": 8.5,
+      "aliases": [
+        "pulut lepa terengganu",
+        "glutinous rice fish roll",
+        "lepa ikan",
+        "pulut lepa kelantan"
+      ],
+      "icon": "food/glutinous-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ketupat Sotong",
+      "place": "hawker",
+      "serving": "2 pieces",
+      "kcal": 315,
+      "carbs_g": 46,
+      "protein_g": 12,
+      "fat_g": 9,
+      "aliases": [
+        "squid stuffed with glutinous rice",
+        "sotong sumbat pulut",
+        "ketupat sotong terengganu"
+      ],
+      "icon": "food/squid-rings",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Laksa Teluk Kechai",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 337,
+      "carbs_g": 52,
+      "protein_g": 16,
+      "fat_g": 7,
+      "aliases": [
+        "laksa teluk kechai kedah",
+        "teluk kechai laksa",
+        "laksa kedah teluk kechai"
+      ],
+      "icon": "dishes/laksa",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pekasam Ikan Goreng",
+      "place": "home",
+      "serving": "2 pieces",
+      "kcal": 211,
+      "carbs_g": 6,
+      "protein_g": 18,
+      "fat_g": 13,
+      "aliases": [
+        "pekasam",
+        "ikan pekasam",
+        "fermented fried fish",
+        "pekasam ikan puyu"
+      ],
+      "icon": "food/salted-fish",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Masak Lemak Cili Api Ayam",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 308,
+      "carbs_g": 8,
+      "protein_g": 24,
+      "fat_g": 20,
+      "aliases": [
+        "ayam masak lemak cili api",
+        "chicken in turmeric coconut gravy",
+        "masak lemak ayam cili padi"
+      ],
+      "icon": "dishes/masak-lemak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Masak Lemak Cili Api Udang",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 240,
+      "carbs_g": 8,
+      "protein_g": 20,
+      "fat_g": 14,
+      "aliases": [
+        "udang masak lemak cili api",
+        "prawn in turmeric coconut gravy",
+        "masak lemak udang nenas"
+      ],
+      "icon": "food/prawn",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Masak Lemak Cili Api Daging",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 325,
+      "carbs_g": 7,
+      "protein_g": 24,
+      "fat_g": 22,
+      "aliases": [
+        "daging masak lemak cili api",
+        "beef in turmeric coconut gravy",
+        "masak lemak daging negeri sembilan"
+      ],
+      "icon": "dishes/masak-lemak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Masak Lemak Umbut Kelapa",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 174,
+      "carbs_g": 12,
+      "protein_g": 3,
+      "fat_g": 12.5,
+      "aliases": [
+        "umbut kelapa masak lemak",
+        "palm heart in coconut gravy",
+        "gulai umbut",
+        "masak lemak umbut"
+      ],
+      "icon": "dishes/masak-lemak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tauge Ayam Ipoh",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 329,
+      "carbs_g": 10,
+      "protein_g": 34,
+      "fat_g": 17,
+      "aliases": [
+        "ipoh bean sprout chicken",
+        "nga choy kai",
+        "芽菜鸡",
+        "tauge ayam",
+        "ipoh chicken bean sprouts"
+      ],
+      "icon": "food/grilled-chicken",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ikan Patin Bakar",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 242,
+      "carbs_g": 3,
+      "protein_g": 26,
+      "fat_g": 14,
+      "aliases": [
+        "grilled patin",
+        "patin bakar temerloh",
+        "baked silver catfish",
+        "ikan patin panggang"
+      ],
+      "icon": "food/grilled-fish",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Gulai Patin Masak Kuning",
+      "place": "home",
+      "serving": "1 slice with gravy",
+      "kcal": 233,
+      "carbs_g": 6,
+      "protein_g": 22,
+      "fat_g": 13.5,
+      "aliases": [
+        "patin masak kuning",
+        "yellow gravy patin",
+        "gulai kuning ikan patin",
+        "patin gulai kuning pahang"
+      ],
+      "icon": "dishes/gulai",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Botok-Botok",
+      "place": "home",
+      "serving": "1 parcel",
+      "kcal": 195,
+      "carbs_g": 6,
+      "protein_g": 18,
+      "fat_g": 11,
+      "aliases": [
+        "botok botok",
+        "steamed fish parcel johor",
+        "otak-otak botok",
+        "botok botok ikan"
+      ],
+      "icon": "food/fish-fillet",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kacang Pool",
+      "place": "hawker",
+      "serving": "1 plate with bread",
+      "kcal": 477,
+      "carbs_g": 52,
+      "protein_g": 20,
+      "fat_g": 21,
+      "aliases": [
+        "kacang phool",
+        "ful medames johor",
+        "kacang pool johor",
+        "broad bean stew with bread"
+      ],
+      "icon": "food/chickpeas",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pengat Pisang Gula Melaka",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 266,
+      "carbs_g": 42,
+      "protein_g": 2.5,
+      "fat_g": 10,
+      "aliases": [
+        "pengat pisang",
+        "banana in coconut palm sugar",
+        "pengat melaka",
+        "banana pengat"
+      ],
+      "icon": "food/banana",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Roast Turkey with Stuffing",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 414,
+      "carbs_g": 22,
+      "protein_g": 38,
+      "fat_g": 19,
+      "aliases": [
+        "ayam belanda panggang",
+        "christmas turkey",
+        "turkey dinner",
+        "turkey with stuffing"
+      ],
+      "icon": "food/roast-chicken",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Yule Log Cake",
+      "place": "packaged",
+      "serving": "1 slice",
+      "kcal": 321,
+      "carbs_g": 38,
+      "protein_g": 4,
+      "fat_g": 17,
+      "aliases": [
+        "buche de noel",
+        "christmas log cake",
+        "kek batang krismas",
+        "chocolate log cake"
+      ],
+      "icon": "food/swiss-roll",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Christmas Fruit Cake",
+      "place": "packaged",
+      "serving": "1 slice",
+      "kcal": 291,
+      "carbs_g": 45,
+      "protein_g": 3,
+      "fat_g": 11,
+      "aliases": [
+        "kek buah krismas",
+        "rich fruit cake",
+        "christmas cake",
+        "fruitcake"
+      ],
+      "icon": "food/cake-slice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Mince Pie",
+      "place": "packaged",
+      "serving": "1 piece",
+      "kcal": 245,
+      "carbs_g": 34,
+      "protein_g": 2.5,
+      "fat_g": 11,
+      "aliases": [
+        "christmas mince pie",
+        "fruit mince tart",
+        "mincemeat pie"
+      ],
+      "icon": "food/custard-tart",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Gingerbread Man Cookie",
+      "place": "packaged",
+      "serving": "1 piece",
+      "kcal": 130,
+      "carbs_g": 22,
+      "protein_g": 1.5,
+      "fat_g": 4,
+      "aliases": [
+        "gingerbread cookie",
+        "biskut halia krismas",
+        "gingerbread man"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Christmas Ham Slice",
+      "place": "packaged",
+      "serving": "2 slices (60 g)",
+      "kcal": 147,
+      "carbs_g": 3,
+      "protein_g": 14,
+      "fat_g": 9,
+      "aliases": [
+        "honey glazed ham",
+        "christmas ham",
+        "roast ham slice",
+        "ham krismas"
+      ],
+      "icon": "food/beef-slices",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Biskut Bawang",
+      "place": "home",
+      "serving": "1 small handful (30 g)",
+      "kcal": 154,
+      "carbs_g": 18,
+      "protein_g": 2.5,
+      "fat_g": 8,
+      "aliases": [
+        "onion cracker raya",
+        "biskut bawang goreng",
+        "savoury onion cookie",
+        "biskut bawang raya"
+      ],
+      "icon": "food/crackers",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Biskut Bola Coklat",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 205,
+      "carbs_g": 24,
+      "protein_g": 2.5,
+      "fat_g": 11,
+      "aliases": [
+        "chocolate ball cookie",
+        "biskut coklat bola",
+        "truffle ball cookie raya"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Biskut Cornflake Coklat",
+      "place": "home",
+      "serving": "5 clusters",
+      "kcal": 213,
+      "carbs_g": 26,
+      "protein_g": 2.5,
+      "fat_g": 11,
+      "aliases": [
+        "chocolate cornflake cluster",
+        "biskut konflek coklat",
+        "choc cornflake raya"
+      ],
+      "icon": "food/cereal",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Biskut Oat Kismis",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 192,
+      "carbs_g": 26,
+      "protein_g": 2.8,
+      "fat_g": 8.5,
+      "aliases": [
+        "oat raisin cookie",
+        "biskut oat raya",
+        "oatmeal raisin cookie",
+        "biskut oat kismis raya"
+      ],
+      "icon": "food/oats",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Biskut Semperit Coklat",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 172,
+      "carbs_g": 19,
+      "protein_g": 2.2,
+      "fat_g": 9.5,
+      "aliases": [
+        "chocolate semperit",
+        "semperit coklat raya",
+        "piped chocolate butter cookie"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tart Blueberry Cheese",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 197,
+      "carbs_g": 25,
+      "protein_g": 3,
+      "fat_g": 9.5,
+      "aliases": [
+        "blueberry cheese tart cookie",
+        "tart blueberi",
+        "blueberry tart raya"
+      ],
+      "icon": "food/pineapple-tart",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Biskut Kurma",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 212,
+      "carbs_g": 30,
+      "protein_g": 2.8,
+      "fat_g": 9,
+      "aliases": [
+        "date filled cookie",
+        "maamoul",
+        "biskut inti kurma",
+        "date cookie raya"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Dan Juan Egg Roll",
+      "place": "packaged",
+      "serving": "3 pieces",
+      "kcal": 134,
+      "carbs_g": 17,
+      "protein_g": 2,
+      "fat_g": 6.5,
+      "aliases": [
+        "egg roll biscuit",
+        "dan juan",
+        "蛋卷",
+        "kuih kapit gulung",
+        "egg roll cookie cny",
+        "biskut telur gulung cny"
+      ],
+      "icon": "food/love-letter",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kacang Bersalut Gula",
+      "place": "packaged",
+      "serving": "1 small handful (30 g)",
+      "kcal": 156,
+      "carbs_g": 15,
+      "protein_g": 5,
+      "fat_g": 8.5,
+      "aliases": [
+        "sugar coated peanuts",
+        "kacang gula cny",
+        "candied peanuts",
+        "糖花生"
+      ],
+      "icon": "food/peanuts",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Peanut Puff",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 183,
+      "carbs_g": 20,
+      "protein_g": 4,
+      "fat_g": 9.5,
+      "aliases": [
+        "kok chai",
+        "peanut puff cny",
+        "angku peanut puff",
+        "fried peanut dumpling cookie",
+        "花生角仔"
+      ],
+      "icon": "food/peanut-cookie",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Yee Sang Vegetarian",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 255,
+      "carbs_g": 32,
+      "protein_g": 4,
+      "fat_g": 12,
+      "aliases": [
+        "vegetarian lou sang",
+        "素撈生",
+        "yusheng vegetarian",
+        "yee sang sayur"
+      ],
+      "icon": "food/vegetables",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kuih Bakul Kukus Kelapa",
+      "place": "home",
+      "serving": "2 pieces",
+      "kcal": 206,
+      "carbs_g": 40,
+      "protein_g": 2,
+      "fat_g": 4,
+      "aliases": [
+        "steamed nian gao with coconut",
+        "kuih bakul kukus",
+        "nian gao coconut",
+        "年糕椰丝"
+      ],
+      "icon": "food/coconut",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Somas",
+      "place": "home",
+      "serving": "2 pieces",
+      "kcal": 189,
+      "carbs_g": 24,
+      "protein_g": 3,
+      "fat_g": 9,
+      "aliases": [
+        "karjikai",
+        "sweet somas",
+        "சோமாஸ்",
+        "coconut sweet dumpling deepavali",
+        "karanji"
+      ],
+      "icon": "food/dumpling",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kadalai Urundai",
+      "place": "home",
+      "serving": "2 pieces",
+      "kcal": 184,
+      "carbs_g": 22,
+      "protein_g": 5,
+      "fat_g": 8.5,
+      "aliases": [
+        "peanut jaggery ball",
+        "கடலை உருண்டை",
+        "peanut ball deepavali",
+        "groundnut urundai"
+      ],
+      "icon": "food/peanuts",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pori Urundai",
+      "place": "home",
+      "serving": "2 balls",
+      "kcal": 142,
+      "carbs_g": 30,
+      "protein_g": 2,
+      "fat_g": 1.5,
+      "aliases": [
+        "puffed rice ball",
+        "பொரி உருண்டை",
+        "murmura laddu",
+        "pori urundai deepavali"
+      ],
+      "icon": "food/candy",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bombay Halwa",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 197,
+      "carbs_g": 32,
+      "protein_g": 1.5,
+      "fat_g": 7,
+      "aliases": [
+        "karachi halwa",
+        "corn flour halwa",
+        "bombay halwa deepavali",
+        "halwa bombay"
+      ],
+      "icon": "food/jelly",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Nasi Berkat",
+      "place": "home",
+      "serving": "1 packet",
+      "kcal": 516,
+      "carbs_g": 68,
+      "protein_g": 20,
+      "fat_g": 18,
+      "aliases": [
+        "nasi berkat kenduri",
+        "blessing rice packet",
+        "bungkusan nasi kenduri",
+        "nasi kotak kenduri"
+      ],
+      "icon": "food/food-parcel",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Punch Buah Kenduri",
+      "place": "home",
+      "serving": "1 glass (300 ml)",
+      "kcal": 156,
+      "carbs_g": 38,
+      "protein_g": 0.5,
+      "fat_g": 0.2,
+      "aliases": [
+        "fruit punch kenduri",
+        "punch buah",
+        "air punch kenduri",
+        "wedding fruit punch"
+      ],
+      "icon": "food/straw-cup",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Gulai Darat",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 265,
+      "carbs_g": 8,
+      "protein_g": 20,
+      "fat_g": 17,
+      "aliases": [
+        "gulai darat terengganu",
+        "dry land curry terengganu",
+        "gulai daging darat"
+      ],
+      "icon": "dishes/gulai",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kuih Bekang",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 174,
+      "carbs_g": 22,
+      "protein_g": 2,
+      "fat_g": 8.5,
+      "aliases": [
+        "bekang",
+        "kuih bekang terengganu",
+        "kuih bekang kelantan"
+      ],
+      "icon": "food/kuih",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Buah Colek",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 212,
+      "carbs_g": 38,
+      "protein_g": 4,
+      "fat_g": 5,
+      "aliases": [
+        "colek buah",
+        "buah colek kelantan",
+        "fruit with colek sauce",
+        "rojak colek"
+      ],
+      "icon": "dishes/rojak",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Biskut Mazola",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 163,
+      "carbs_g": 19,
+      "protein_g": 1.6,
+      "fat_g": 9,
+      "aliases": [
+        "mazola cookie",
+        "biskut mazola raya",
+        "cornflour butter cookie",
+        "biskut tepung jagung"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Tau Sar Piah",
+      "place": "packaged",
+      "serving": "1 piece",
+      "kcal": 193,
+      "carbs_g": 28,
+      "protein_g": 3.5,
+      "fat_g": 7.5,
+      "aliases": [
+        "tambun biscuit",
+        "豆沙饼",
+        "mung bean pastry",
+        "tau sar pneah",
+        "biskut tambun"
+      ],
+      "icon": "food/biscuit-stack",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Bak Hu",
+      "place": "packaged",
+      "serving": "3 tablespoons (15 g)",
+      "kcal": 76,
+      "carbs_g": 4,
+      "protein_g": 6,
+      "fat_g": 4,
+      "aliases": [
+        "pork floss",
+        "肉松",
+        "meat floss",
+        "rousong",
+        "bak hu cny"
+      ],
+      "icon": "food/beef-slices",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Dalca Daging",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 262,
+      "carbs_g": 14,
+      "protein_g": 20,
+      "fat_g": 14,
+      "aliases": [
+        "dalcha daging",
+        "beef dhal curry",
+        "dalca daging kenduri",
+        "dalca kambing"
+      ],
+      "icon": "food/lentils",
+      "source": "model_estimate",
+      "verified": false
+    }
+  ]
+}
