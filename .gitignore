@@ -57,4 +57,4 @@ deno.lock
 
 # The last loader run's outcome-by-row, written beside the payload it explains.
 # Useful for the next round and worthless the moment there is one.
-apps/supabase/data/foods/.last-import.json
+apps/supabase/data/foods/.reports/

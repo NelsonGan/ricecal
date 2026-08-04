@@ -53,8 +53,8 @@
  *   }
  */
 
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
-import { basename } from 'node:path'
+import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { basename, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { runSql } from './lib/sql.mjs'
 
@@ -385,10 +385,16 @@ async function main() {
   }
 
   // The skipped rows are the interesting output, not noise: they are what the
-  // next research round should be told not to look for again. Written beside
-  // the payload rather than printed, because there are usually more of them
-  // than of anything else.
-  const report = `${REPO_ROOT}apps/supabase/data/foods/.last-import.json`
+  // next research round should be told not to look for again. Written rather
+  // than printed, because there are usually more of them than of anything else.
+  //
+  // Named after the payload, not "the last run". Several researchers dry-run
+  // their own files at the same time, and a single shared report meant each of
+  // them read somebody else's verdicts — reported as "watch out, concurrent
+  // rounds overwrite it", which is a bug and not a caveat.
+  const stem = basename(expand(paths)[0] ?? 'import').replace(/\.json$/, '')
+  const report = `${REPO_ROOT}apps/supabase/data/foods/.reports/${stem}${dryRun ? '.dry' : ''}.json`
+  mkdirSync(dirname(report), { recursive: true })
   writeFileSync(report, `${JSON.stringify({ tally, rejected, outcomes }, null, 2)}\n`)
   process.stdout.write(`\nreport: ${report}\n`)
 }
