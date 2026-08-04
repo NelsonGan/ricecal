@@ -10,7 +10,14 @@ introduced it says who wrote it down and where they got it.
 pnpm foods:have kuih laksa                 # what the catalogue already holds
 pnpm foods:import --dry-run data/foods/kuih.json
 pnpm foods:import data/foods/kuih.json
+pnpm foods:dupes                           # pairs one round wrote twice
+pnpm foods:alias <slug> "another name"     # widen a row rather than add one
 ```
+
+A dry run goes all the way into the loader and rolls back, so it reports what
+the catalogue already has as well as what is malformed. That is the check to
+iterate on: fix every `rejected`, and drop or rename anything that comes back
+`skipped_name` or `skipped_slug`.
 
 Nothing here is applied automatically and re-importing is free: the loader
 dedupes on the slug and on the normalized name, so a file that has already
@@ -82,5 +89,22 @@ the same handle, `skipped_name` for the same dish under a different one. Then a
 list of near-matches: rows that went in next to something that already looks
 like them (`char-kway-teow ≈ Char Kuey Teow`). Those are not refused, because
 no similarity threshold separates a second romanization from two dishes sharing
-three words — see the header of `schemas/95_import_foods.sql`. They are for a
-person to look at.
+three words — see the header of `schemas/95_import_foods.sql`.
+
+`pnpm foods:dupes` is where that list gets decided. It prints the pairs side by
+side with their calories, and marks `!!` when the two figures agree to within
+8% — which is what one dish written twice by two researchers looks like, since
+they reasoned from the same ingredients. `--merge <keep> <drop>` folds the
+dropped row's names into the kept row's `search_text` and deletes it, so the
+name that goes away still finds the dish. It refuses if anything has been
+logged against the row being dropped.
+
+Similarity alone will not tell you. Measured on this catalogue,
+`Siew Yoke Rice` / `Siew Yoke Fan` — the same dish — scores 0.53, while
+`Kuey Teow Goreng Ayam` / `Kuey Teow Goreng Basah` — different dishes — scores
+0.61. Read the pair.
+
+When the right answer is "the dish is already there but nobody types that
+name", use `pnpm foods:alias` rather than writing a second row. It only widens
+`search_text`, never `name` or `name_norm`, so it cannot change what a future
+payload is considered a duplicate of.

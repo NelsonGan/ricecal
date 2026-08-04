@@ -1,0 +1,2130 @@
+{
+  "source": "research:nyonya-peranakan",
+  "foods": [
+    {
+      "name": "Babi Pongteh",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 420,
+      "carbs_g": 14,
+      "protein_g": 20,
+      "fat_g": 32,
+      "aliases": [
+        "pongteh babi",
+        "pork pongteh",
+        "nyonya braised pork",
+        "babi pontay",
+        "peranakan pork with taucheo",
+        "肉炖菜"
+      ],
+      "icon": "food/pork-belly",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "2 servings",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Ayam Buah Keluak",
+      "place": "home",
+      "serving": "1 serving (2 pieces with gravy)",
+      "kcal": 430,
+      "carbs_g": 16,
+      "protein_g": 24,
+      "fat_g": 30,
+      "aliases": [
+        "buah keluak",
+        "buah keluk",
+        "ayam buah keluk",
+        "chicken with black nut",
+        "keluak chicken",
+        "nyonya black nut chicken",
+        "peranakan buah keluak"
+      ],
+      "icon": "dishes/gulai",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "1 piece",
+          "factor": 0.5
+        }
+      ]
+    },
+    {
+      "name": "Babi Buah Keluak",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 470,
+      "carbs_g": 16,
+      "protein_g": 20,
+      "fat_g": 36,
+      "aliases": [
+        "pork buah keluak",
+        "babi buah keluk",
+        "pork with black nut",
+        "keluak pork"
+      ],
+      "icon": "food/pork-belly",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Itik Tim",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 210,
+      "carbs_g": 8,
+      "protein_g": 18,
+      "fat_g": 12,
+      "aliases": [
+        "itek tim",
+        "duck and salted vegetable soup",
+        "sup itik tim",
+        "kiam chye ark",
+        "咸菜鸭汤",
+        "peranakan duck soup"
+      ],
+      "icon": "food/cooking-pot",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kari Kapitan",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 400,
+      "carbs_g": 13,
+      "protein_g": 24,
+      "fat_g": 28,
+      "aliases": [
+        "kapitan chicken",
+        "chicken kapitan",
+        "ayam kapitan",
+        "curry kapitan",
+        "captain's curry",
+        "nyonya kapitan curry"
+      ],
+      "icon": "dishes/gulai",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "2 servings",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Ayam Sioh",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 330,
+      "carbs_g": 11,
+      "protein_g": 26,
+      "fat_g": 20,
+      "aliases": [
+        "ayam siow",
+        "chicken sioh",
+        "nyonya coriander tamarind chicken",
+        "peranakan ayam sioh"
+      ],
+      "icon": "food/chicken-drumstick",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Babi Sioh",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 390,
+      "carbs_g": 15,
+      "protein_g": 22,
+      "fat_g": 27,
+      "aliases": [
+        "babi siow",
+        "pork sioh",
+        "nyonya coriander pork",
+        "peranakan babi sioh"
+      ],
+      "icon": "food/pork-belly",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Itik Sioh",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 360,
+      "carbs_g": 12,
+      "protein_g": 24,
+      "fat_g": 24,
+      "aliases": [
+        "itek sioh",
+        "duck sioh",
+        "nyonya braised duck",
+        "peranakan duck in coriander"
+      ],
+      "icon": "dishes/roast-duck-rice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Hati Babi Bungkus",
+      "place": "home",
+      "serving": "3 pieces",
+      "kcal": 285,
+      "carbs_g": 8,
+      "protein_g": 18,
+      "fat_g": 20,
+      "aliases": [
+        "hati babi",
+        "pork liver balls",
+        "nyonya liver rolls",
+        "caul fat pork liver",
+        "peranakan hati babi bungkus"
+      ],
+      "icon": "food/meatball",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Jiu Hu Char",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 195,
+      "carbs_g": 13,
+      "protein_g": 11,
+      "fat_g": 11,
+      "aliases": [
+        "ju hu char",
+        "jiu hoo char",
+        "cuttlefish and jicama",
+        "shredded turnip with cuttlefish",
+        "魷魚炒",
+        "sengkuang goreng nyonya"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kerabu Bok Nee",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 105,
+      "carbs_g": 9,
+      "protein_g": 4,
+      "fat_g": 6,
+      "aliases": [
+        "kerabu bok nee",
+        "bok nee salad",
+        "wood ear fungus salad",
+        "kerabu kuping tikus",
+        "black fungus kerabu",
+        "木耳"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sambal Belimbing",
+      "place": "home",
+      "serving": "3 tablespoons",
+      "kcal": 95,
+      "carbs_g": 6,
+      "protein_g": 2,
+      "fat_g": 7,
+      "aliases": [
+        "sambal belimbing buluh",
+        "starfruit sambal",
+        "belimbing sambal",
+        "nyonya sambal belimbing"
+      ],
+      "icon": "food/sambal-jar",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chap Chye",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 180,
+      "carbs_g": 13,
+      "protein_g": 7,
+      "fat_g": 11,
+      "aliases": [
+        "chap chai",
+        "cap cai",
+        "nyonya chap chye",
+        "braised mixed vegetables",
+        "杂菜",
+        "peranakan cabbage stew"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chap Chye Masak Titek",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 140,
+      "carbs_g": 11,
+      "protein_g": 8,
+      "fat_g": 7,
+      "aliases": [
+        "masak titek",
+        "chye titek",
+        "peppery vegetable soup nyonya",
+        "sayur masak titek"
+      ],
+      "icon": "food/cooking-pot",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ikan Cili Garam",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 300,
+      "carbs_g": 8,
+      "protein_g": 22,
+      "fat_g": 20,
+      "aliases": [
+        "ikan chilli garam",
+        "chilli salt fish",
+        "fried fish with chilli and salt",
+        "nyonya ikan cili garam"
+      ],
+      "icon": "food/fish-fillet",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Udang Masak Nanas",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 245,
+      "carbs_g": 12,
+      "protein_g": 16,
+      "fat_g": 15,
+      "aliases": [
+        "prawn pineapple curry",
+        "udang nanas",
+        "nyonya pineapple prawn",
+        "udang masak lemak nanas"
+      ],
+      "icon": "food/prawn",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sambal Petai Udang",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 250,
+      "carbs_g": 10,
+      "protein_g": 14,
+      "fat_g": 17,
+      "aliases": [
+        "petai prawn sambal",
+        "sambal udang petai",
+        "stink bean prawns",
+        "petai udang"
+      ],
+      "icon": "dishes/sambal-udang",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Otak-Otak Melaka",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 195,
+      "carbs_g": 8,
+      "protein_g": 10,
+      "fat_g": 14,
+      "aliases": [
+        "otak otak melaka",
+        "melaka otak-otak",
+        "grilled fish paste banana leaf",
+        "otak-otak bakar"
+      ],
+      "icon": "dishes/otak-otak",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "6 pieces",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Otak-Otak Muar",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 180,
+      "carbs_g": 8,
+      "protein_g": 10,
+      "fat_g": 12,
+      "aliases": [
+        "otak otak muar",
+        "muar otak-otak",
+        "johor otak-otak",
+        "otak muar"
+      ],
+      "icon": "dishes/otak-otak",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "6 pieces",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Otak-Otak Penang",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 230,
+      "carbs_g": 6,
+      "protein_g": 13,
+      "fat_g": 17,
+      "aliases": [
+        "otak otak penang",
+        "steamed otak-otak",
+        "nyonya otak-otak custard",
+        "penang otak"
+      ],
+      "icon": "dishes/otak-otak",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nyonya Laksa",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 590,
+      "carbs_g": 54,
+      "protein_g": 22,
+      "fat_g": 32,
+      "aliases": [
+        "laksa lemak nyonya",
+        "nonya laksa",
+        "peranakan laksa",
+        "coconut laksa",
+        "laksa nyonya melaka"
+      ],
+      "icon": "dishes/laksa",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Asam Laksa Penang",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 310,
+      "carbs_g": 51,
+      "protein_g": 15,
+      "fat_g": 5,
+      "aliases": [
+        "penang assam laksa",
+        "asam laksa pulau pinang",
+        "laksa penang",
+        "sour fish laksa",
+        "亚参叻沙"
+      ],
+      "icon": "dishes/laksa",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Katong Laksa",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 560,
+      "carbs_g": 52,
+      "protein_g": 20,
+      "fat_g": 30,
+      "aliases": [
+        "laksa katong",
+        "singapore peranakan laksa",
+        "cut noodle laksa",
+        "katong nyonya laksa"
+      ],
+      "icon": "dishes/laksa",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Mee Siam Nyonya",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 420,
+      "carbs_g": 56,
+      "protein_g": 13,
+      "fat_g": 16,
+      "aliases": [
+        "nyonya mee siam",
+        "peranakan mee siam",
+        "mee siam kuah nyonya",
+        "mihun siam"
+      ],
+      "icon": "dishes/mee-siam",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Popiah Nyonya",
+      "place": "hawker",
+      "serving": "1 roll",
+      "kcal": 180,
+      "carbs_g": 21,
+      "protein_g": 6,
+      "fat_g": 8,
+      "aliases": [
+        "nyonya popiah",
+        "peranakan popiah",
+        "popiah basah nyonya",
+        "fresh spring roll nyonya",
+        "薄饼"
+      ],
+      "icon": "dishes/popiah",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "2 rolls",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Roti Babi",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 420,
+      "carbs_g": 30,
+      "protein_g": 17,
+      "fat_g": 26,
+      "aliases": [
+        "roti babi penang",
+        "pork stuffed french toast",
+        "nyonya roti babi",
+        "deep fried pork sandwich"
+      ],
+      "icon": "dishes/roti-john",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Acar Awak",
+      "place": "home",
+      "serving": "3 tablespoons",
+      "kcal": 120,
+      "carbs_g": 9,
+      "protein_g": 3,
+      "fat_g": 8,
+      "aliases": [
+        "achar awak",
+        "nyonya acar",
+        "acar nyonya",
+        "pickled vegetables with peanuts",
+        "penang acar"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Telur Cincalok",
+      "place": "home",
+      "serving": "1 omelette",
+      "kcal": 215,
+      "carbs_g": 3,
+      "protein_g": 12,
+      "fat_g": 17,
+      "aliases": [
+        "cincalok omelette",
+        "omelet cencaluk",
+        "telur goreng cincalok",
+        "fermented shrimp omelette",
+        "chinchalok omelette"
+      ],
+      "icon": "food/omelette",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sambal Timun",
+      "place": "home",
+      "serving": "3 tablespoons",
+      "kcal": 60,
+      "carbs_g": 4.5,
+      "protein_g": 1.5,
+      "fat_g": 4,
+      "aliases": [
+        "cucumber sambal",
+        "sambal mentimun",
+        "nyonya sambal timun",
+        "acar timun sambal"
+      ],
+      "icon": "food/sambal-jar",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Bakwan Kepiting",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 240,
+      "carbs_g": 13,
+      "protein_g": 20,
+      "fat_g": 12,
+      "aliases": [
+        "bakwan kepeting",
+        "crab meatball soup",
+        "peranakan crab ball soup",
+        "nyonya bakwan kepiting"
+      ],
+      "icon": "food/crab",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Perut Ikan",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 260,
+      "carbs_g": 16,
+      "protein_g": 15,
+      "fat_g": 15,
+      "aliases": [
+        "perot ikan",
+        "fish stomach curry",
+        "nyonya perut ikan",
+        "penang perut ikan",
+        "pickled fish stomach stew"
+      ],
+      "icon": "dishes/gulai",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Gulai Tumis Nyonya",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 235,
+      "carbs_g": 10,
+      "protein_g": 20,
+      "fat_g": 13,
+      "aliases": [
+        "gerang asam",
+        "ikan gerang asam",
+        "penang nyonya asam fish",
+        "gulai tumis penang",
+        "tamarind fish curry nyonya"
+      ],
+      "icon": "dishes/gulai",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Enche Kabin",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 395,
+      "carbs_g": 10,
+      "protein_g": 28,
+      "fat_g": 27,
+      "aliases": [
+        "inche kabin",
+        "encik kabin",
+        "nyonya fried chicken",
+        "penang fried chicken nyonya",
+        "ayam goreng inche kabin"
+      ],
+      "icon": "dishes/ayam-goreng",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Hong Bak",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 400,
+      "carbs_g": 12,
+      "protein_g": 20,
+      "fat_g": 30,
+      "aliases": [
+        "hong bak nyonya",
+        "peranakan braised pork",
+        "红肉",
+        "nyonya soy braised pork belly"
+      ],
+      "icon": "food/pork-belly",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Babi Assam",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 355,
+      "carbs_g": 13,
+      "protein_g": 20,
+      "fat_g": 25,
+      "aliases": [
+        "babi asam",
+        "pork in tamarind",
+        "nyonya tamarind pork",
+        "babi masak assam"
+      ],
+      "icon": "food/pork-belly",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Babi Chin",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 385,
+      "carbs_g": 12,
+      "protein_g": 21,
+      "fat_g": 28,
+      "aliases": [
+        "bak chin",
+        "peranakan pork in soy sauce",
+        "nyonya babi chin",
+        "coriander soy pork"
+      ],
+      "icon": "food/pork-belly",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ayam Kleo",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 380,
+      "carbs_g": 11,
+      "protein_g": 23,
+      "fat_g": 27,
+      "aliases": [
+        "kari ayam kleo",
+        "nyonya white chicken curry",
+        "ayam kelio",
+        "peranakan coconut chicken curry"
+      ],
+      "icon": "dishes/masak-lemak",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kuah Lada",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 300,
+      "carbs_g": 10,
+      "protein_g": 20,
+      "fat_g": 20,
+      "aliases": [
+        "kuah lada nyonya",
+        "peppery pork stew",
+        "penang nyonya kuah lada",
+        "hu chio bak"
+      ],
+      "icon": "food/cooking-pot",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Jiu Hu Eng Chai",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 240,
+      "carbs_g": 28,
+      "protein_g": 12,
+      "fat_g": 9,
+      "aliases": [
+        "sotong kangkung",
+        "cuttlefish kangkung",
+        "jiu hu eng chye",
+        "squid water spinach",
+        "魷魚蕹菜",
+        "penang sotong kangkung"
+      ],
+      "icon": "food/squid-rings",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Acar Ikan",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 230,
+      "carbs_g": 8,
+      "protein_g": 18,
+      "fat_g": 14,
+      "aliases": [
+        "achar ikan",
+        "pickled fried fish",
+        "nyonya acar ikan",
+        "fish in turmeric vinegar"
+      ],
+      "icon": "food/fish-fillet",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sambal Nanas Nyonya",
+      "place": "home",
+      "serving": "3 tablespoons",
+      "kcal": 85,
+      "carbs_g": 9,
+      "protein_g": 1,
+      "fat_g": 5,
+      "aliases": [
+        "sambal nenas",
+        "pineapple sambal",
+        "nyonya pineapple sambal",
+        "sambal nanas"
+      ],
+      "icon": "food/pineapple",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sambal Goreng Nyonya",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 210,
+      "carbs_g": 15,
+      "protein_g": 9,
+      "fat_g": 13,
+      "aliases": [
+        "sambal goreng",
+        "nyonya sambal goreng",
+        "fried tempeh tofu long bean sambal",
+        "sambal goreng peranakan"
+      ],
+      "icon": "food/tempeh",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Udang Goreng Assam",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 235,
+      "carbs_g": 8,
+      "protein_g": 19,
+      "fat_g": 14,
+      "aliases": [
+        "udang goreng asam",
+        "tamarind fried prawns",
+        "assam prawns",
+        "nyonya assam prawns"
+      ],
+      "icon": "food/prawn",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nasi Ulam Nyonya",
+      "place": "home",
+      "serving": "1 plate",
+      "kcal": 470,
+      "carbs_g": 71,
+      "protein_g": 15,
+      "fat_g": 14,
+      "aliases": [
+        "nyonya nasi ulam",
+        "peranakan herb rice",
+        "nasi ulam melaka",
+        "nasi kerabu nyonya"
+      ],
+      "icon": "dishes/nasi-ulam",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nyonya Chang",
+      "place": "hawker",
+      "serving": "1 dumpling",
+      "kcal": 380,
+      "carbs_g": 51,
+      "protein_g": 12,
+      "fat_g": 14,
+      "aliases": [
+        "kuih chang babi",
+        "nyonya bak chang",
+        "nonya zongzi",
+        "娘惹粽",
+        "nyonya rice dumpling",
+        "kuih chang nyonya"
+      ],
+      "icon": "food/glutinous-rice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Popiah Goreng Nyonya",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 230,
+      "carbs_g": 22,
+      "protein_g": 6,
+      "fat_g": 13,
+      "aliases": [
+        "fried popiah",
+        "nyonya spring roll",
+        "popiah goreng",
+        "deep fried popiah"
+      ],
+      "icon": "food/spring-roll",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sotong Masak Nanas",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 220,
+      "carbs_g": 13,
+      "protein_g": 17,
+      "fat_g": 11,
+      "aliases": [
+        "squid pineapple curry",
+        "sotong nanas",
+        "nyonya squid pineapple",
+        "sotong masak lemak nanas"
+      ],
+      "icon": "food/squid-rings",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Terung Masak Lemak Nyonya",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 195,
+      "carbs_g": 12,
+      "protein_g": 4,
+      "fat_g": 15,
+      "aliases": [
+        "terung masak lemak",
+        "brinjal coconut curry",
+        "eggplant masak lemak",
+        "nyonya terung lemak"
+      ],
+      "icon": "dishes/masak-lemak",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ikan Chuan Chuan",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 275,
+      "carbs_g": 9,
+      "protein_g": 22,
+      "fat_g": 17,
+      "aliases": [
+        "chuan chuan fish",
+        "ikan chuan chuan nyonya",
+        "fried fish with taucheo",
+        "peranakan bean paste fish"
+      ],
+      "icon": "food/fish-fillet",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nasi Peranakan Set",
+      "place": "hawker",
+      "serving": "1 set",
+      "kcal": 750,
+      "carbs_g": 88,
+      "protein_g": 28,
+      "fat_g": 30,
+      "aliases": [
+        "nyonya set meal",
+        "peranakan rice set",
+        "nasi nyonya",
+        "baba nyonya lunch set"
+      ],
+      "icon": "dishes/nasi-campur",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Curry Debal",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 340,
+      "carbs_g": 12,
+      "protein_g": 24,
+      "fat_g": 22,
+      "aliases": [
+        "kari debal",
+        "devil curry",
+        "devil's curry",
+        "curry devil",
+        "kristang devil curry",
+        "eurasian devil curry",
+        "debal"
+      ],
+      "icon": "dishes/gulai",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "2 servings",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Curry Feng",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 320,
+      "carbs_g": 9,
+      "protein_g": 24,
+      "fat_g": 21,
+      "aliases": [
+        "feng",
+        "kari feng",
+        "eurasian curry feng",
+        "kristang feng",
+        "pork offal curry eurasian"
+      ],
+      "icon": "dishes/gulai",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Semur",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 330,
+      "carbs_g": 15,
+      "protein_g": 25,
+      "fat_g": 19,
+      "aliases": [
+        "semur kristang",
+        "eurasian beef stew",
+        "smore",
+        "kristang semur",
+        "beef semur"
+      ],
+      "icon": "food/cooking-pot",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sugee Cake",
+      "place": "home",
+      "serving": "1 slice",
+      "kcal": 330,
+      "carbs_g": 34,
+      "protein_g": 6,
+      "fat_g": 19,
+      "aliases": [
+        "suji cake",
+        "kek sugee",
+        "eurasian sugee cake",
+        "semolina almond cake",
+        "kristang sugee cake"
+      ],
+      "icon": "food/cake-slice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Pang Susi",
+      "place": "home",
+      "serving": "1 bun",
+      "kcal": 265,
+      "carbs_g": 34,
+      "protein_g": 9,
+      "fat_g": 10,
+      "aliases": [
+        "pang soosee",
+        "kristang pang susi",
+        "eurasian sweet potato bun",
+        "pork filled sweet potato bun"
+      ],
+      "icon": "food/bun",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Cincalok Sambal Kristang",
+      "place": "home",
+      "serving": "2 tablespoons",
+      "kcal": 45,
+      "carbs_g": 4,
+      "protein_g": 3,
+      "fat_g": 2,
+      "aliases": [
+        "chinchalok",
+        "cincaluk kristang",
+        "cencaluk sambal",
+        "fermented shrimp condiment",
+        "eurasian cincalok"
+      ],
+      "icon": "food/sambal-jar",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Seybak",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 380,
+      "carbs_g": 8,
+      "protein_g": 26,
+      "fat_g": 27,
+      "aliases": [
+        "sey bak",
+        "kristang seybak",
+        "eurasian braised pork platter",
+        "sebak"
+      ],
+      "icon": "food/pork-belly",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Prawn Bostador",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 260,
+      "carbs_g": 7,
+      "protein_g": 20,
+      "fat_g": 17,
+      "aliases": [
+        "udang bostador",
+        "kristang prawn bostador",
+        "eurasian chilli prawns",
+        "bostador"
+      ],
+      "icon": "food/prawn",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Vinho d'Alhos",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 380,
+      "carbs_g": 10,
+      "protein_g": 24,
+      "fat_g": 27,
+      "aliases": [
+        "vindaloo kristang",
+        "vinho dalhos",
+        "eurasian vinegar garlic pork",
+        "pork vinho d alhos",
+        "kristang vindaloo"
+      ],
+      "icon": "food/pork-belly",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ikan Bakar Portugis",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 320,
+      "carbs_g": 8,
+      "protein_g": 30,
+      "fat_g": 19,
+      "aliases": [
+        "portuguese grilled fish",
+        "ikan panggang portugis",
+        "portuguese settlement grilled stingray",
+        "melaka portuguese fish"
+      ],
+      "icon": "dishes/ikan-bakar",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ikan Panggang Portugis",
+      "place": "hawker",
+      "serving": "1 whole fish",
+      "kcal": 380,
+      "carbs_g": 10,
+      "protein_g": 36,
+      "fat_g": 22,
+      "aliases": [
+        "portuguese baked fish",
+        "portuguese settlement baked fish",
+        "ikan bakar portuguese square",
+        "melaka baked fish"
+      ],
+      "icon": "dishes/ikan-bakar",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kari Kambing Kristang",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 355,
+      "carbs_g": 11,
+      "protein_g": 24,
+      "fat_g": 24,
+      "aliases": [
+        "eurasian mutton curry",
+        "kristang mutton curry",
+        "kari kambing eurasian",
+        "portuguese mutton curry melaka"
+      ],
+      "icon": "dishes/gulai",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kari Ikan Kristang",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 280,
+      "carbs_g": 8,
+      "protein_g": 22,
+      "fat_g": 18,
+      "aliases": [
+        "eurasian fish curry",
+        "kristang fish curry",
+        "portuguese fish curry melaka"
+      ],
+      "icon": "dishes/fish-head-curry",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sambal Sotong Portugis",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 250,
+      "carbs_g": 11,
+      "protein_g": 22,
+      "fat_g": 13,
+      "aliases": [
+        "portuguese sambal squid",
+        "sotong sambal portugis",
+        "portuguese settlement squid",
+        "grilled sambal sotong melaka"
+      ],
+      "icon": "food/squid-rings",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ketam Masak Sambal Portugis",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 300,
+      "carbs_g": 13,
+      "protein_g": 26,
+      "fat_g": 16,
+      "aliases": [
+        "portuguese sambal crab",
+        "ketam sambal portugis",
+        "portuguese settlement crab",
+        "melaka chilli crab portuguese"
+      ],
+      "icon": "food/crab",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Udang Bakar Portugis",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 210,
+      "carbs_g": 4,
+      "protein_g": 26,
+      "fat_g": 10,
+      "aliases": [
+        "portuguese grilled prawns",
+        "udang panggang portugis",
+        "portuguese settlement prawns"
+      ],
+      "icon": "food/prawn",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Bebinca Eurasia",
+      "place": "home",
+      "serving": "1 slice",
+      "kcal": 290,
+      "carbs_g": 32,
+      "protein_g": 4,
+      "fat_g": 16,
+      "aliases": [
+        "bebinca",
+        "bibingka eurasian",
+        "kristang layer cake",
+        "eurasian coconut layer cake"
+      ],
+      "icon": "food/cake-slice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sugee Cookies",
+      "place": "home",
+      "serving": "4 pieces",
+      "kcal": 180,
+      "carbs_g": 20,
+      "protein_g": 3,
+      "fat_g": 10,
+      "aliases": [
+        "biskut sugee",
+        "suji cookies",
+        "eurasian sugee biscuit",
+        "semolina cookies"
+      ],
+      "icon": "food/peanut-cookie",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Rojak Penang",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 350,
+      "carbs_g": 52,
+      "protein_g": 8,
+      "fat_g": 12,
+      "aliases": [
+        "penang rojak",
+        "rojak pasembur penang",
+        "fruit rojak penang",
+        "rojak buah penang",
+        "hae ko rojak"
+      ],
+      "icon": "dishes/rojak",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Apom Manis",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 175,
+      "carbs_g": 27,
+      "protein_g": 3,
+      "fat_g": 6,
+      "aliases": [
+        "apom penang",
+        "sweet apom",
+        "apam manis",
+        "penang apom",
+        "apom bokwa"
+      ],
+      "icon": "dishes/apam-balik",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Apom Berkuah",
+      "place": "hawker",
+      "serving": "2 pieces with gravy",
+      "kcal": 265,
+      "carbs_g": 38,
+      "protein_g": 4,
+      "fat_g": 11,
+      "aliases": [
+        "apam berkuah",
+        "apom kuah",
+        "apom with coconut gravy",
+        "apom nyonya",
+        "apom berkuah nyonya"
+      ],
+      "icon": "dishes/apam-balik",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ban Chang Kuih",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 290,
+      "carbs_g": 40,
+      "protein_g": 6,
+      "fat_g": 12,
+      "aliases": [
+        "ban jian kuih",
+        "apam balik penang",
+        "penang peanut pancake",
+        "曼煎粿",
+        "min chiang kueh"
+      ],
+      "icon": "dishes/apam-balik",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Heong Peah",
+      "place": "packaged",
+      "serving": "1 piece",
+      "kcal": 200,
+      "carbs_g": 29,
+      "protein_g": 3,
+      "fat_g": 8,
+      "aliases": [
+        "heong peng",
+        "香饼",
+        "fragrant biscuit",
+        "penang heong peah",
+        "ipoh heong peng"
+      ],
+      "icon": "food/biscuit-stack",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ais Tingkap",
+      "place": "hawker",
+      "serving": "1 glass",
+      "kcal": 165,
+      "carbs_g": 33,
+      "protein_g": 1,
+      "fat_g": 3,
+      "aliases": [
+        "air tingkap",
+        "ice tingkap",
+        "window ice penang",
+        "ais tingkap penang",
+        "rose coconut basil seed drink"
+      ],
+      "icon": "food/shaved-ice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Penang Cendol",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 340,
+      "carbs_g": 54,
+      "protein_g": 4,
+      "fat_g": 12,
+      "aliases": [
+        "cendol penang",
+        "penang chendol",
+        "cendol pulau pinang",
+        "chendul penang"
+      ],
+      "icon": "dishes/cendol",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Cendol Durian Penang",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 420,
+      "carbs_g": 62,
+      "protein_g": 5,
+      "fat_g": 17,
+      "aliases": [
+        "durian cendol",
+        "chendol durian",
+        "penang durian chendul",
+        "cendol with durian"
+      ],
+      "icon": "dishes/cendol",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Penang Koay Teow Th'ng",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 360,
+      "carbs_g": 50,
+      "protein_g": 20,
+      "fat_g": 9,
+      "aliases": [
+        "koay teow theng penang",
+        "penang kuey teow soup",
+        "koay teow thng",
+        "粿條湯",
+        "penang flat noodle soup"
+      ],
+      "icon": "dishes/kuey-teow-soup",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Penang Lam Mee",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 480,
+      "carbs_g": 62,
+      "protein_g": 22,
+      "fat_g": 16,
+      "aliases": [
+        "lam mee",
+        "loh mee penang",
+        "birthday noodles penang",
+        "焖面",
+        "penang longevity noodles"
+      ],
+      "icon": "dishes/wantan-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Penang Popiah",
+      "place": "hawker",
+      "serving": "1 roll",
+      "kcal": 175,
+      "carbs_g": 20,
+      "protein_g": 6,
+      "fat_g": 8,
+      "aliases": [
+        "popiah penang",
+        "penang fresh spring roll",
+        "popiah basah penang"
+      ],
+      "icon": "dishes/popiah",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "2 rolls",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Popiah Melaka",
+      "place": "hawker",
+      "serving": "1 roll",
+      "kcal": 190,
+      "carbs_g": 23,
+      "protein_g": 6,
+      "fat_g": 8,
+      "aliases": [
+        "melaka popiah",
+        "popiah melaka nyonya",
+        "malacca popiah"
+      ],
+      "icon": "dishes/popiah",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "2 rolls",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Cendol Melaka",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 380,
+      "carbs_g": 59,
+      "protein_g": 4,
+      "fat_g": 14,
+      "aliases": [
+        "nyonya cendol",
+        "melaka chendol",
+        "cendol gula melaka",
+        "malacca cendol",
+        "chendol melaka"
+      ],
+      "icon": "dishes/cendol",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Durian Puff",
+      "place": "packaged",
+      "serving": "3 pieces",
+      "kcal": 210,
+      "carbs_g": 18,
+      "protein_g": 3,
+      "fat_g": 14,
+      "aliases": [
+        "puff durian",
+        "durian cream puff",
+        "melaka durian puff",
+        "durian profiterole"
+      ],
+      "icon": "food/custard-tart",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Puding Gula Melaka",
+      "place": "home",
+      "serving": "1 cup",
+      "kcal": 240,
+      "carbs_g": 34,
+      "protein_g": 3,
+      "fat_g": 10,
+      "aliases": [
+        "gula melaka pudding",
+        "palm sugar pudding",
+        "sago pudding gula melaka",
+        "puding sagu gula melaka"
+      ],
+      "icon": "food/pudding",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Coconut Shake Melaka",
+      "place": "hawker",
+      "serving": "1 cup (400 ml)",
+      "kcal": 310,
+      "carbs_g": 42,
+      "protein_g": 4,
+      "fat_g": 14,
+      "aliases": [
+        "melaka coconut shake",
+        "klebang coconut shake",
+        "coconut milkshake",
+        "kelapa shake"
+      ],
+      "icon": "food/coconut",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kuih Tapak Kuda",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 120,
+      "carbs_g": 17,
+      "protein_g": 2,
+      "fat_g": 5,
+      "aliases": [
+        "tapak kuda",
+        "horseshoe kuih",
+        "kueh tapak kuda",
+        "nyonya kuih tapak kuda"
+      ],
+      "icon": "food/kuih",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "2 pieces",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Kuih Kosui",
+      "place": "hawker",
+      "serving": "2 pieces",
+      "kcal": 165,
+      "carbs_g": 30,
+      "protein_g": 1.5,
+      "fat_g": 4,
+      "aliases": [
+        "kuih kaswi",
+        "kueh kosui",
+        "kuih koswi",
+        "gula melaka kuih kosui",
+        "kosui"
+      ],
+      "icon": "food/kuih-talam",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kuih Bakar Pandan",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 180,
+      "carbs_g": 24,
+      "protein_g": 3,
+      "fat_g": 8,
+      "aliases": [
+        "kuih bakar berlauk",
+        "pandan baked kuih",
+        "kueh bakar pandan",
+        "nyonya kuih bakar"
+      ],
+      "icon": "food/kuih-cara",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kuih Ee",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 190,
+      "carbs_g": 37,
+      "protein_g": 3,
+      "fat_g": 3,
+      "aliases": [
+        "kuih ee",
+        "tang yuan",
+        "汤圆",
+        "glutinous rice balls in syrup",
+        "kueh ee nyonya",
+        "winter solstice balls"
+      ],
+      "icon": "food/glutinous-rice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kuih Talam Gula Melaka",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 165,
+      "carbs_g": 25,
+      "protein_g": 2,
+      "fat_g": 6,
+      "aliases": [
+        "talam gula melaka",
+        "palm sugar talam",
+        "kueh talam gula melaka",
+        "nyonya kuih talam"
+      ],
+      "icon": "food/kuih-talam",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kuih Kapit Nyonya",
+      "place": "packaged",
+      "serving": "5 pieces",
+      "kcal": 95,
+      "carbs_g": 15,
+      "protein_g": 1.5,
+      "fat_g": 3.5,
+      "aliases": [
+        "love letters",
+        "kuih kapit penang",
+        "kueh kapit",
+        "surat layang",
+        "鸡蛋卷",
+        "love letter biscuit"
+      ],
+      "icon": "food/love-letter",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [
+        {
+          "label": "10 pieces",
+          "factor": 2
+        }
+      ]
+    },
+    {
+      "name": "Kuih Bangkit Nyonya",
+      "place": "packaged",
+      "serving": "5 pieces",
+      "kcal": 85,
+      "carbs_g": 14,
+      "protein_g": 1,
+      "fat_g": 3,
+      "aliases": [
+        "kueh bangkit",
+        "coconut tapioca cookie",
+        "kuih bangkit pandan",
+        "nyonya bangkit",
+        "melt in mouth cookies"
+      ],
+      "icon": "food/peanut-cookie",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Tart Nenas Nyonya",
+      "place": "packaged",
+      "serving": "3 pieces",
+      "kcal": 165,
+      "carbs_g": 22,
+      "protein_g": 2,
+      "fat_g": 8,
+      "aliases": [
+        "nyonya pineapple tart",
+        "kuih tart nenas nyonya",
+        "rolled pineapple tart",
+        "pineapple tart nyonya",
+        "kueh tae"
+      ],
+      "icon": "food/pineapple-tart",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nyonya Kuih Platter",
+      "place": "hawker",
+      "serving": "1 plate (4 pieces)",
+      "kcal": 480,
+      "carbs_g": 72,
+      "protein_g": 6,
+      "fat_g": 18,
+      "aliases": [
+        "assorted nyonya kuih",
+        "kuih muih nyonya",
+        "peranakan kuih assortment",
+        "nyonya kueh platter"
+      ],
+      "icon": "food/kuih",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Lauk Pindang Chetti",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 220,
+      "carbs_g": 8,
+      "protein_g": 20,
+      "fat_g": 12,
+      "aliases": [
+        "lauk pindang",
+        "chetti fish tamarind curry",
+        "pindang ikan chetti",
+        "peranakan indian fish curry"
+      ],
+      "icon": "food/fish",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ikan Masak Nanas Chetti",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 235,
+      "carbs_g": 11,
+      "protein_g": 19,
+      "fat_g": 13,
+      "aliases": [
+        "ikan sipat masak nanas",
+        "chetti pineapple fish curry",
+        "fish in pineapple curry chetti",
+        "chetti melaka fish"
+      ],
+      "icon": "food/fish-fillet",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kari Ikan Parang Chetti",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 265,
+      "carbs_g": 9,
+      "protein_g": 22,
+      "fat_g": 15,
+      "aliases": [
+        "ikan parang chetti",
+        "chetti wolf herring curry",
+        "chetti melaka fish curry",
+        "kari ikan chetti"
+      ],
+      "icon": "dishes/fish-head-curry",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nasi Kembuli",
+      "place": "home",
+      "serving": "1 plate",
+      "kcal": 480,
+      "carbs_g": 73,
+      "protein_g": 11,
+      "fat_g": 16,
+      "aliases": [
+        "nasi kembuli chetti",
+        "chetti spiced cashew rice",
+        "kembuli rice",
+        "chetti melaka wedding rice"
+      ],
+      "icon": "dishes/nasi-briyani",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Puttu Chetti",
+      "place": "home",
+      "serving": "2 pieces",
+      "kcal": 190,
+      "carbs_g": 33,
+      "protein_g": 3,
+      "fat_g": 5,
+      "aliases": [
+        "puttu",
+        "chetti puttu",
+        "steamed rice flour cylinder",
+        "puttu melaka",
+        "peranakan indian puttu"
+      ],
+      "icon": "food/kuih",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kuih Kanda Kasturi",
+      "place": "home",
+      "serving": "1 piece",
+      "kcal": 145,
+      "carbs_g": 21,
+      "protein_g": 2,
+      "fat_g": 6,
+      "aliases": [
+        "kwey kanda kasturi",
+        "kanda kasturi",
+        "chetti kuih kanda kasturi",
+        "chetti melaka kuih"
+      ],
+      "icon": "food/kuih",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kuih Cara Berlauk",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 165,
+      "carbs_g": 16,
+      "protein_g": 6,
+      "fat_g": 9,
+      "aliases": [
+        "kuih cara",
+        "cara berlauk",
+        "savoury kuih cara",
+        "kuih cara berinti",
+        "penang kuih cara"
+      ],
+      "icon": "food/kuih-cara",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kuih Cara Manis",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 155,
+      "carbs_g": 22,
+      "protein_g": 3,
+      "fat_g": 6,
+      "aliases": [
+        "kuih cara gula melaka",
+        "sweet kuih cara",
+        "kuih cara manis pandan"
+      ],
+      "icon": "food/kuih-cara",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kerabu Timun Nanas",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 65,
+      "carbs_g": 9,
+      "protein_g": 1.5,
+      "fat_g": 2.5,
+      "aliases": [
+        "cucumber pineapple kerabu",
+        "kerabu nanas timun",
+        "nyonya cucumber pineapple salad"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ayam Buah Keluak Rice Set",
+      "place": "hawker",
+      "serving": "1 set",
+      "kcal": 760,
+      "carbs_g": 84,
+      "protein_g": 30,
+      "fat_g": 33,
+      "aliases": [
+        "buah keluak set",
+        "nasi ayam buah keluak",
+        "buah keluak with rice",
+        "peranakan keluak set"
+      ],
+      "icon": "dishes/nasi-campur",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nyonya Chicken Curry",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 365,
+      "carbs_g": 12,
+      "protein_g": 23,
+      "fat_g": 25,
+      "aliases": [
+        "kari ayam nyonya",
+        "peranakan chicken curry",
+        "nyonya kari ayam",
+        "baba nyonya curry chicken"
+      ],
+      "icon": "dishes/gulai",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sayur Lodeh Nyonya",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 220,
+      "carbs_g": 15,
+      "protein_g": 7,
+      "fat_g": 15,
+      "aliases": [
+        "lodeh nyonya",
+        "peranakan sayur lodeh",
+        "nyonya vegetable coconut stew"
+      ],
+      "icon": "dishes/masak-lemak",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nyonya Steamed Fish",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 250,
+      "carbs_g": 8,
+      "protein_g": 26,
+      "fat_g": 13,
+      "aliases": [
+        "ikan kukus nyonya",
+        "peranakan steamed fish",
+        "nyonya assam steamed fish",
+        "ikan stim nyonya"
+      ],
+      "icon": "food/grilled-fish",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nyonya Fried Bee Hoon",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 430,
+      "carbs_g": 58,
+      "protein_g": 14,
+      "fat_g": 15,
+      "aliases": [
+        "bihun goreng nyonya",
+        "peranakan fried vermicelli",
+        "nyonya mee hoon goreng"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Satay Celup Sauce",
+      "place": "hawker",
+      "serving": "1 bowl (dipping)",
+      "kcal": 210,
+      "carbs_g": 12,
+      "protein_g": 7,
+      "fat_g": 15,
+      "aliases": [
+        "kuah satay celup",
+        "melaka satay celup gravy",
+        "satay celup peanut gravy"
+      ],
+      "icon": "dishes/satay-celup",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Asam Pedas Nyonya",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 250,
+      "carbs_g": 10,
+      "protein_g": 22,
+      "fat_g": 13,
+      "aliases": [
+        "nyonya asam pedas",
+        "peranakan asam pedas",
+        "asam pedas melaka nyonya"
+      ],
+      "icon": "dishes/asam-pedas",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ikan Goreng Cili Nyonya",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 310,
+      "carbs_g": 10,
+      "protein_g": 22,
+      "fat_g": 21,
+      "aliases": [
+        "fried fish with chilli nyonya",
+        "ikan goreng sambal nyonya",
+        "nyonya chilli fried fish"
+      ],
+      "icon": "food/fish-fillet",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nyonya Pork Satay",
+      "place": "hawker",
+      "serving": "5 sticks",
+      "kcal": 235,
+      "carbs_g": 8,
+      "protein_g": 20,
+      "fat_g": 14,
+      "aliases": [
+        "satay babi",
+        "pork satay nyonya",
+        "peranakan pork satay",
+        "satay babi nyonya"
+      ],
+      "icon": "food/satay",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kuih Sarang Semut Nyonya",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 155,
+      "carbs_g": 24,
+      "protein_g": 2,
+      "fat_g": 6,
+      "aliases": [
+        "sarang semut",
+        "honeycomb kuih",
+        "kuih sarang semut",
+        "nyonya honeycomb cake"
+      ],
+      "icon": "food/kuih",
+      "verified": false,
+      "source": "model_estimate"
+    }
+  ]
+}
