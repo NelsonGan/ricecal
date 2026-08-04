@@ -1,0 +1,39 @@
+{
+  "pho-bo": ["phở bò", "beef pho", "pho tai chin", "pho vietnam", "vietnamese beef pho"],
+  "pho-ga": ["phở gà", "chicken pho", "pho ga vietnam"],
+  "bun-bo-hue": ["bún bò huế", "bun bo", "hue beef noodle soup", "bun bo hue giò"],
+  "bun-thit-nuong": [
+    "bún thịt nướng",
+    "vermicelli bowl with grilled pork",
+    "bun thit nuong sai gon"
+  ],
+  "bun-cha-hanoi": [
+    "bún chả hà nội",
+    "bún chả",
+    "bun cha ha noi",
+    "grilled pork patties with vermicelli"
+  ],
+  "banh-mi": [
+    "bánh mì",
+    "banh mi thap cam",
+    "banh mi dac biet",
+    "vietnamese baguette sandwich",
+    "banh mi sai gon"
+  ],
+  "banh-mi-ga": ["bánh mì gà"],
+  "goi-cuon": [
+    "gỏi cuốn",
+    "goi cuon tom thit",
+    "fresh spring roll vietnam",
+    "banh trang cuon",
+    "rice paper roll"
+  ],
+  "banh-xeo": ["bánh xèo", "banh xeo mien nam", "southern banh xeo", "vietnamese savoury pancake"],
+  "com-tam-suon-nuong": [
+    "cơm tấm sườn nướng",
+    "com tam suon",
+    "com suon",
+    "broken rice with pork chop"
+  ],
+  "ca-phe-sua-da": ["cà phê sữa đá", "vietnamese iced coffee", "ca phe sua", "kopi vietnam ais"]
+}
