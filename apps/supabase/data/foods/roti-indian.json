@@ -20,7 +20,12 @@
       "icon": "dishes/roti-canai",
       "source": "model_estimate",
       "verified": false,
-      "extra_servings": [{ "label": "2 pieces", "factor": 2 }]
+      "extra_servings": [
+        {
+          "label": "2 pieces",
+          "factor": 2
+        }
+      ]
     },
     {
       "name": "Roti Bawang",
@@ -41,7 +46,12 @@
       "icon": "dishes/roti-canai",
       "source": "model_estimate",
       "verified": false,
-      "extra_servings": [{ "label": "2 pieces", "factor": 2 }]
+      "extra_servings": [
+        {
+          "label": "2 pieces",
+          "factor": 2
+        }
+      ]
     },
     {
       "name": "Roti Sardin",
@@ -258,7 +268,11 @@
       "carbs_g": 60,
       "protein_g": 8,
       "fat_g": 22,
-      "aliases": ["roti canai durian", "durian roti", "durian roti canai"],
+      "aliases": [
+        "roti canai durian",
+        "durian roti",
+        "durian roti canai"
+      ],
       "icon": "dishes/roti-canai",
       "source": "model_estimate",
       "verified": false
@@ -383,7 +397,11 @@
       "carbs_g": 34,
       "protein_g": 12,
       "fat_g": 12,
-      "aliases": ["sardine toast", "roti bakar sardine", "toast sardin"],
+      "aliases": [
+        "sardine toast",
+        "roti bakar sardine",
+        "toast sardin"
+      ],
       "icon": "food/toast",
       "source": "model_estimate",
       "verified": false
@@ -414,7 +432,11 @@
       "carbs_g": 34,
       "protein_g": 13,
       "fat_g": 17,
-      "aliases": ["cheese toast", "roti bakar keju", "toast cheese"],
+      "aliases": [
+        "cheese toast",
+        "roti bakar keju",
+        "toast cheese"
+      ],
       "icon": "food/cheese",
       "source": "model_estimate",
       "verified": false
@@ -481,7 +503,11 @@
       "carbs_g": 58,
       "protein_g": 26,
       "fat_g": 26,
-      "aliases": ["sardine roti john", "roti john sardine", "roti jon sardin"],
+      "aliases": [
+        "sardine roti john",
+        "roti john sardine",
+        "roti jon sardin"
+      ],
       "icon": "dishes/roti-john",
       "source": "model_estimate",
       "verified": false
@@ -550,7 +576,12 @@
       "carbs_g": 48,
       "protein_g": 17,
       "fat_g": 20,
-      "aliases": ["naan cheese", "naan keju", "cheese nan", "roti naan cheese"],
+      "aliases": [
+        "naan cheese",
+        "naan keju",
+        "cheese nan",
+        "roti naan cheese"
+      ],
       "icon": "food/cheese",
       "source": "model_estimate",
       "verified": false
@@ -1057,7 +1088,12 @@
       "carbs_g": 34,
       "protein_g": 7,
       "fat_g": 6,
-      "aliases": ["rawa idli", "semolina idli", "rava idly", "rava iddly"],
+      "aliases": [
+        "rawa idli",
+        "semolina idli",
+        "rava idly",
+        "rava iddly"
+      ],
       "icon": "food/pancakes",
       "source": "model_estimate",
       "verified": false
@@ -1096,19 +1132,6 @@
         "pongal rice dish",
         "moong dal pongal"
       ],
-      "icon": "food/porridge",
-      "source": "model_estimate",
-      "verified": false
-    },
-    {
-      "name": "Upma",
-      "place": "mamak",
-      "serving": "1 bowl",
-      "kcal": 332,
-      "carbs_g": 48,
-      "protein_g": 8,
-      "fat_g": 12,
-      "aliases": ["uppuma", "rava upma", "uppittu", "semolina upma"],
       "icon": "food/porridge",
       "source": "model_estimate",
       "verified": false
@@ -1260,7 +1283,12 @@
       "carbs_g": 24,
       "protein_g": 4,
       "fat_g": 10,
-      "aliases": ["aloo bonda", "potato bonda", "urulai bonda", "bondas"],
+      "aliases": [
+        "aloo bonda",
+        "potato bonda",
+        "urulai bonda",
+        "bondas"
+      ],
       "icon": "food/doughnut",
       "source": "model_estimate",
       "verified": false
@@ -1434,101 +1462,6 @@
         "puli sadam"
       ],
       "icon": "food/plate-rice",
-      "source": "model_estimate",
-      "verified": false
-    },
-    {
-      "name": "Briyani Kambing",
-      "place": "mamak",
-      "serving": "1 plate",
-      "kcal": 802,
-      "carbs_g": 88,
-      "protein_g": 36,
-      "fat_g": 34,
-      "aliases": [
-        "mutton briyani",
-        "nasi briyani kambing",
-        "mutton biryani",
-        "lamb biryani",
-        "briyani mutton",
-        "nasi beriani kambing"
-      ],
-      "icon": "dishes/nasi-briyani",
-      "source": "model_estimate",
-      "verified": false
-    },
-    {
-      "name": "Briyani Udang",
-      "place": "mamak",
-      "serving": "1 plate",
-      "kcal": 680,
-      "carbs_g": 86,
-      "protein_g": 30,
-      "fat_g": 24,
-      "aliases": [
-        "prawn briyani",
-        "nasi briyani udang",
-        "prawn biryani",
-        "shrimp biryani",
-        "nasi beriani udang"
-      ],
-      "icon": "dishes/nasi-briyani",
-      "source": "model_estimate",
-      "verified": false
-    },
-    {
-      "name": "Briyani Ikan",
-      "place": "mamak",
-      "serving": "1 plate",
-      "kcal": 688,
-      "carbs_g": 86,
-      "protein_g": 32,
-      "fat_g": 24,
-      "aliases": [
-        "fish briyani",
-        "nasi briyani ikan",
-        "fish biryani",
-        "nasi beriani ikan"
-      ],
-      "icon": "dishes/nasi-briyani",
-      "source": "model_estimate",
-      "verified": false
-    },
-    {
-      "name": "Briyani Sayur",
-      "place": "mamak",
-      "serving": "1 plate",
-      "kcal": 606,
-      "carbs_g": 88,
-      "protein_g": 14,
-      "fat_g": 22,
-      "aliases": [
-        "vegetable briyani",
-        "nasi briyani sayur",
-        "veg biryani",
-        "vegetarian biryani",
-        "nasi beriani sayur"
-      ],
-      "icon": "dishes/nasi-briyani",
-      "source": "model_estimate",
-      "verified": false
-    },
-    {
-      "name": "Briyani Gam",
-      "place": "mamak",
-      "serving": "1 plate",
-      "kcal": 800,
-      "carbs_g": 92,
-      "protein_g": 36,
-      "fat_g": 32,
-      "aliases": [
-        "nasi briyani gam",
-        "beriani gam",
-        "briyani gam ayam",
-        "dum biryani",
-        "nasi beriani gam"
-      ],
-      "icon": "dishes/nasi-briyani",
       "source": "model_estimate",
       "verified": false
     },
@@ -1991,7 +1924,13 @@
       "carbs_g": 16,
       "protein_g": 4,
       "fat_g": 10,
-      "aliases": ["sev", "omapodi sev", "besan sev", "ompodi", "nylon sev"],
+      "aliases": [
+        "sev",
+        "omapodi sev",
+        "besan sev",
+        "ompodi",
+        "nylon sev"
+      ],
       "icon": "food/crackers",
       "source": "model_estimate",
       "verified": false
@@ -2163,6 +2102,135 @@
         "rice flour ghee ball"
       ],
       "icon": "food/kuih",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Ayam Tandoori",
+      "place": "mamak",
+      "serving": "1 quarter chicken",
+      "kcal": 346,
+      "carbs_g": 6,
+      "protein_g": 40,
+      "fat_g": 18,
+      "aliases": [
+        "tandoori chicken",
+        "ayam tandoori mamak",
+        "tandoori ayam",
+        "chicken tandoori",
+        "ayam tandoori suku"
+      ],
+      "icon": "food/grilled-chicken",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Sambar Vadai",
+      "place": "mamak",
+      "serving": "2 pieces in sambar",
+      "kcal": 330,
+      "carbs_g": 30,
+      "protein_g": 12,
+      "fat_g": 18,
+      "aliases": [
+        "sambar vada",
+        "vadai sambar",
+        "sambhar vadai",
+        "vadey sambar"
+      ],
+      "icon": "food/lentils",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Podi Idli",
+      "place": "mamak",
+      "serving": "3 pieces",
+      "kcal": 420,
+      "carbs_g": 66,
+      "protein_g": 12,
+      "fat_g": 12,
+      "aliases": [
+        "idli podi",
+        "podi idly",
+        "milagai podi idli",
+        "idli with podi and ghee"
+      ],
+      "icon": "food/pancakes",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Banana Leaf Rice Vegetarian",
+      "place": "mamak",
+      "serving": "1 set",
+      "kcal": 794,
+      "carbs_g": 120,
+      "protein_g": 20,
+      "fat_g": 26,
+      "aliases": [
+        "banana leaf rice sayur",
+        "vegetarian banana leaf",
+        "nasi daun pisang sayur",
+        "banana leaf set vegetarian",
+        "daun pisang vegetarian"
+      ],
+      "icon": "dishes/banana-leaf-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Banana Leaf Rice Ayam Varuval",
+      "place": "mamak",
+      "serving": "1 set",
+      "kcal": 998,
+      "carbs_g": 122,
+      "protein_g": 42,
+      "fat_g": 38,
+      "aliases": [
+        "banana leaf rice chicken",
+        "nasi daun pisang ayam",
+        "banana leaf ayam varuval",
+        "banana leaf rice with chicken varuval"
+      ],
+      "icon": "dishes/banana-leaf-rice",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Kari Kentang",
+      "place": "mamak",
+      "serving": "1 bowl",
+      "kcal": 198,
+      "carbs_g": 24,
+      "protein_g": 3,
+      "fat_g": 10,
+      "aliases": [
+        "potato curry",
+        "urulai kuzhambu",
+        "kari kentang india",
+        "aloo curry",
+        "kuah kentang banana leaf"
+      ],
+      "icon": "food/potato",
+      "source": "model_estimate",
+      "verified": false
+    },
+    {
+      "name": "Pachadi Timun",
+      "place": "mamak",
+      "serving": "2 tablespoons",
+      "kcal": 59,
+      "carbs_g": 6,
+      "protein_g": 2,
+      "fat_g": 3,
+      "aliases": [
+        "cucumber pachadi",
+        "vellarikkai pachadi",
+        "raita timun",
+        "indian cucumber yogurt salad",
+        "pachadi"
+      ],
       "source": "model_estimate",
       "verified": false
     }
