@@ -108,10 +108,26 @@ export default function LogSheet() {
   }
 
   return (
-    // Full height while search is open: the results are a list, and four rows
-    // above a keyboard is not one. The sheet is otherwise unchanged, so the
-    // transition is the panel growing rather than a screen arriving.
-    <SheetSurface onClose={() => goBack()} scrollable fullHeight={panel === 'search'}>
+    /**
+     * Full height whenever a panel raises the keyboard, which is search AND
+     * describe. A capped sheet is padded up off the bottom edge by
+     * `KeyboardAvoidingView`, and the strip left behind shows the scrim through
+     * the curve of the keyboard's top corners — the panel stops reading as
+     * attached to the bottom of the screen. Full height keeps it where it is and
+     * lets the body inset itself instead.
+     *
+     * And describe is not scrollable. Its content is a field, a hint and a
+     * button, so there is nothing to scroll — but a scroll view scrolls ITSELF
+     * to reveal the first responder when the keyboard opens, and on the first
+     * open, before the keyboard's real height is known, it overshoots and
+     * carries the field off the top of the panel. With nothing to scroll there
+     * is no scroll to get wrong.
+     */
+    <SheetSurface
+      onClose={() => goBack()}
+      scrollable={panel !== 'describe'}
+      fullHeight={panel === 'search' || panel === 'describe'}
+    >
       {/* The heading is rendered here rather than through `title` so the
           remaining count can sit on the same line, right aligned, the way the
           design puts it. */}
