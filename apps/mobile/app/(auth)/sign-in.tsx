@@ -12,6 +12,7 @@ import {
   signInWithGoogle,
 } from '@/data/auth'
 import { ProviderButton } from '@/features/auth'
+import { emailProblem, normaliseEmail, suggestEmail } from '@/lib/email'
 import { Alert, Button, Divider, Icon, Screen, Text, TextField, useToast } from '@/ui'
 
 /** Only what the screen says differs; the email button does the same thing either way. */
@@ -50,6 +51,15 @@ export default function SignInScreen() {
   const [busy, setBusy] = useState(false)
   const [sentTo, setSentTo] = useState<string | undefined>()
 
+  /**
+   * The address we have already queried, and the correction we offered for it.
+   *
+   * Both, rather than a bare flag, because the question is about one specific
+   * address: edit the field after declining and the next suspicious domain has
+   * to be asked about afresh.
+   */
+  const [queried, setQueried] = useState<{ typed: string; meant: string } | undefined>()
+
   // Asked of the OS rather than assumed from the platform, because a local
   // simulator build ships without the entitlement. `undefined` until the answer
   // arrives, so the button does not appear and then vanish.
@@ -64,9 +74,20 @@ export default function SignInScreen() {
     }
   }, [])
 
-  const emailError = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)
-    ? undefined
-    : t('onboarding:account.errors.email')
+  /**
+   * Two different failures, and they need different sentences. A malformed
+   * address is a typo; `example.com` is somebody deliberately getting past the
+   * form, who has to be told that the form is how they get back in.
+   */
+  const problem = emailProblem(email)
+  const emailError = problem
+    ? t(
+        problem === 'undeliverable' ? 'account.errors.emailUndeliverable' : 'account.errors.email',
+        {
+          ns: 'onboarding',
+        },
+      )
+    : undefined
 
   /** Every provider funnels through here so one failure path serves all three. */
   const attempt = async (work: () => Promise<void>) => {
@@ -86,17 +107,45 @@ export default function SignInScreen() {
     }
   }
 
+  /**
+   * The first press on a suspicious address asks rather than sends.
+   *
+   * `gmail.con` is a well-formed address for a domain that does not take mail,
+   * so nothing above catches it and the link goes nowhere — and because the
+   * email IS the credential, the account it creates is one nobody can ever open.
+   * Supabase counts that bounce against the project and throttles its shared
+   * sender when enough of them add up, so one person's typo degrades sign-in for
+   * everybody.
+   *
+   * Asked once and once only. A second press sends what is in the field, because
+   * a domain one letter from a common one is sometimes exactly the domain the
+   * user has — and a button that refuses twice is a button that has decided it
+   * knows better than the person who owns the mailbox.
+   */
   const mailLink = () => {
     setSubmitted(true)
     if (emailError) return
 
+    const typed = normaliseEmail(email)
+    if (queried?.typed !== typed) {
+      const meant = suggestEmail(typed)
+      setQueried({ typed, meant: meant ?? '' })
+      if (meant) return
+    }
+
     attempt(async () => {
-      await sendLoginLink(email)
+      await sendLoginLink(typed)
       // The session arrives through the link, not through this call, so this
       // screen has to say what happens next or it looks like nothing did.
-      setSentTo(email.trim())
+      setSentTo(typed)
     })
   }
+
+  // Only while it is still the address in the field, and only until it is sent:
+  // a correction offered under a "link sent" banner is asking about a decision
+  // already made.
+  const suggestion =
+    !sentTo && queried?.meant && queried.typed === normaliseEmail(email) ? queried.meant : undefined
 
   return (
     <Screen
@@ -123,6 +172,30 @@ export default function SignInScreen() {
 
       {sentTo ? (
         <Alert tone="success" title={t('onboarding:account.linkSent', { email: sentTo })} />
+      ) : null}
+
+      {suggestion ? (
+        <Alert
+          tone="warning"
+          title={t('onboarding:account.didYouMean', { email: suggestion })}
+          description={t('onboarding:account.didYouMeanBody', {
+            domain: normaliseEmail(email).split('@')[1],
+          })}
+          action={
+            <Button
+              size="sm"
+              variant="secondary"
+              onPress={() => {
+                setEmail(suggestion)
+                // Marked as answered for the address now in the field, so the
+                // next press sends rather than asking about the corrected one.
+                setQueried({ typed: suggestion, meant: '' })
+              }}
+            >
+              {t('onboarding:account.useSuggestion')}
+            </Button>
+          }
+        />
       ) : null}
 
       {appleReady ? (

@@ -86,10 +86,10 @@ describe('the login link', () => {
   it('sends one', async () => {
     await render(<SignInScreen />)
 
-    await fill('EMAIL', 'aisyah@example.com')
+    await fill('EMAIL', 'aisyah@gmail.com')
     await submit()
 
-    expect(auth.sendLoginLink).toHaveBeenCalledWith('aisyah@example.com')
+    expect(auth.sendLoginLink).toHaveBeenCalledWith('aisyah@gmail.com')
   })
 
   /**
@@ -99,18 +99,18 @@ describe('the login link', () => {
   it('says where it went', async () => {
     await render(<SignInScreen />)
 
-    await fill('EMAIL', 'aisyah@example.com')
+    await fill('EMAIL', 'aisyah@gmail.com')
     await submit()
 
-    expect(await screen.findByText(/aisyah@example.com/)).toBeOnTheScreen()
+    expect(await screen.findByText(/aisyah@gmail.com/)).toBeOnTheScreen()
   })
 
   it('stops talking about the last link once the address changes', async () => {
     await render(<SignInScreen />)
 
-    await fill('EMAIL', 'aisyah@example.com')
+    await fill('EMAIL', 'aisyah@gmail.com')
     await submit()
-    expect(await screen.findByText(/aisyah@example.com/)).toBeOnTheScreen()
+    expect(await screen.findByText(/aisyah@gmail.com/)).toBeOnTheScreen()
 
     await fill('EMAIL', '.my')
     expect(screen.queryByText(/Link sent/)).toBeNull()
@@ -126,14 +126,100 @@ describe('the login link', () => {
     expect(screen.getByText('That does not look like an email address.')).toBeOnTheScreen()
   })
 
+  /**
+   * Reserved so that it never resolves. Every link sent to one is a hard bounce
+   * counted against the project, and the account it creates cannot be opened.
+   */
+  it('refuses a domain that exists only as a placeholder', async () => {
+    await render(<SignInScreen />)
+
+    await fill('EMAIL', 'dev@example.com')
+    await submit()
+
+    expect(auth.sendLoginLink).not.toHaveBeenCalled()
+    expect(
+      screen.getByText('That domain cannot receive mail. Use an address you can open.'),
+    ).toBeOnTheScreen()
+  })
+
   it('reports a failure to send', async () => {
     auth.sendLoginLink.mockRejectedValue(new Error('Email rate limit exceeded'))
     await render(<SignInScreen />)
 
-    await fill('EMAIL', 'aisyah@example.com')
+    await fill('EMAIL', 'aisyah@gmail.com')
     await submit()
 
     expect(await screen.findByText('Email rate limit exceeded')).toBeOnTheScreen()
+  })
+})
+
+/**
+ * `gmail.con` is well-formed, so nothing above catches it, and the link it earns
+ * goes nowhere. Since the email IS the credential, that is not a wasted mail —
+ * it is an account nobody can ever open, and a bounce counted against the
+ * project's sender.
+ */
+describe('the address they probably meant', () => {
+  it('asks before mailing a domain one letter out', async () => {
+    await render(<SignInScreen />)
+
+    await fill('EMAIL', 'aisyah@gmail.con')
+    await submit()
+
+    expect(auth.sendLoginLink).not.toHaveBeenCalled()
+    expect(screen.getByText('Did you mean aisyah@gmail.com?')).toBeOnTheScreen()
+  })
+
+  it('takes the correction when it is tapped', async () => {
+    await render(<SignInScreen />)
+
+    await fill('EMAIL', 'aisyah@gmail.con')
+    await submit()
+    await user.press(screen.getByText('Use it'))
+    await submit()
+
+    expect(auth.sendLoginLink).toHaveBeenCalledWith('aisyah@gmail.com')
+  })
+
+  /**
+   * Asked once. A domain one letter from a common one is sometimes the domain
+   * the user actually has, and a button that refuses twice has decided it knows
+   * better than the person who owns the mailbox.
+   */
+  it('sends it anyway on the second press', async () => {
+    await render(<SignInScreen />)
+
+    await fill('EMAIL', 'aisyah@gmail.con')
+    await submit()
+    await submit()
+
+    expect(auth.sendLoginLink).toHaveBeenCalledWith('aisyah@gmail.con')
+  })
+
+  it('says nothing about an address that looks right', async () => {
+    await render(<SignInScreen />)
+
+    await fill('EMAIL', 'aisyah@gmail.com')
+    await submit()
+
+    expect(screen.queryByText('Use it')).toBeNull()
+    expect(auth.sendLoginLink).toHaveBeenCalledWith('aisyah@gmail.com')
+  })
+
+  /** Editing after declining means the next suspicious domain is asked afresh. */
+  it('asks again once the address changes', async () => {
+    await render(<SignInScreen />)
+
+    await fill('EMAIL', 'aisyah@gmail.con')
+    await submit()
+    await submit()
+    expect(auth.sendLoginLink).toHaveBeenCalledTimes(1)
+
+    await fill('EMAIL', 'x')
+    await submit()
+
+    expect(auth.sendLoginLink).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('Did you mean aisyah@gmail.com?')).toBeOnTheScreen()
   })
 })
 
