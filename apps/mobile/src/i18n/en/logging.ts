@@ -82,8 +82,10 @@ export const logging = {
     noFoodDismiss: 'Dismiss',
     analysisFailedTitle: 'Could not read this one',
     analysisFailedHint: 'Tap to pick the dish yourself',
-    emptyTitle: 'Nothing logged yet',
-    emptyBody: 'Tap the green button to snap or search your first dish.',
+    // No `emptyTitle` / `emptyBody`. A day before its first meal is the state
+    // this screen is in every morning, and a card announcing it pushed the ring
+    // and the water tracker apart to say what the empty list already said.
+
     /** No `daily_goals` row yet — onboarding is what computes the first one. */
     noBudgetTitle: 'No daily budget yet',
     noBudgetBody: 'Set your target and the ring has something to fill.',

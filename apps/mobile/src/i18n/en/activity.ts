@@ -146,8 +146,19 @@ export const activity = {
     historyRowValue_other: '{{count}} workouts · {{time}}',
     historyNone: 'No workouts yet',
 
-    noSessionsTitle: 'No workouts today',
-    noSessionsBody: 'A walk counts. Anything your watch records shows up here.',
+    // No `noSessionsTitle` / `noSessionsBody`. A day with nothing recorded is
+    // the normal state of this screen before the afternoon, and a card saying so
+    // was a screenful spent reporting that nothing had happened yet.
+
+    /**
+     * The badge while a pass is running, in place of the "13 min ago" stamp.
+     *
+     * This is the ONLY thing an automatic sync is allowed to move. It used to
+     * report itself through the pull-to-refresh spinner, which holds the whole
+     * scroll view down while it spins — so the tab opened with its header parked
+     * below the notch and stayed there until the sync finished.
+     */
+    syncing: 'Syncing…',
 
     /** The one thing separating generated data from a watch. */
     demoBadge: 'Demo data',
