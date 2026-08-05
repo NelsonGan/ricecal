@@ -131,7 +131,7 @@ export const logging = {
    */
   describe: {
     placeholder: 'Nasi lemak with fried chicken and a teh tarik',
-    hint: 'Say what you ate, sides and drinks included. Amounts help — "2 roti canai", "half a plate".',
+    hint: 'Say what you ate, sides and drinks included. Amounts help: "2 roti canai", "half a plate".',
     send: 'Log this meal',
   },
 
@@ -209,7 +209,7 @@ export const logging = {
      * else they might have been sending.
      */
     fixAction: 'Fix it',
-    fixNotApplied: 'Could not apply that — try rewording it',
+    fixNotApplied: 'Could not apply that. Try rewording it',
     /** The scanned plate's ingredient breakdown. */
     plateTitle: 'INGREDIENTS',
     plateTotal: 'Total',

@@ -90,7 +90,7 @@ export const profile = {
     /** Copy for the notifications themselves, not for the screen. */
     push: {
       mealTitle: 'Time for {{meal}}',
-      mealBody: 'Log it while you remember — it takes ten seconds.',
+      mealBody: 'Log it while you remember. It takes ten seconds.',
       waterTitle: 'Water check',
       waterBody: 'How many glasses so far today?',
       weighInTitle: 'Morning weigh in',
