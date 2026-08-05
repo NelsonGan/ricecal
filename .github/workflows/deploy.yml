@@ -49,9 +49,9 @@ on:
           - preview
           - development
       xcode:
-        description: Xcode version (iOS only, e.g. 26.2)
+        description: Xcode version (iOS only, e.g. 26.3) — blank uses the pinned version
         type: string
-        default: latest-stable
+        default: ''
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -320,17 +320,32 @@ jobs:
           docker image prune --all --force || true
           df -h /
 
-      # `latest-stable` is a moving target: the runner image rolled onto Xcode
-      # 26.3 and every production archive since has died in Expo's own
-      # "Build ExpoModulesJSI xcframework" script phase with a Swift
-      # "type of expression is ambiguous without a type annotation". The input
-      # exists so a dispatch run can bisect toolchains without landing a guess
-      # on main — pass e.g. 26.2 to try an older one.
+      # Pinned, because `latest-stable` is a moving target and where it moved to
+      # does not compile. The runner image rolled onto Xcode 26.3, and every
+      # production archive since has died in Expo's own "Build ExpoModulesJSI
+      # xcframework" script phase on one line of a dependency we do not own:
+      #
+      #   JavaScriptCodable+Date.swift:53
+      #   guard milliseconds.isFinite, abs(milliseconds) <= maxJavaScriptDateMilliseconds
+      #                                                  ^ type of expression is
+      #                                                    ambiguous without a
+      #                                                    type annotation
+      #
+      # 26.3's type checker cannot resolve that comparison and 26.2's can. There
+      # is no version to upgrade out of it by: expo-modules-jsi 57.0.4 is both
+      # what the lockfile resolves and the newest published, so the toolchain is
+      # the only end of this we control. Revisit when a later expo-modules-jsi
+      # ships — the pin holds the build back from newer SDKs, so it is a debt
+      # rather than a fix.
+      #
+      # The dispatch input overrides it and defaults to blank rather than to a
+      # version, so there is one place to change the pin and a dispatch run
+      # archives the same toolchain main does unless asked otherwise.
       - name: Select Xcode
         if: matrix.platform == 'ios'
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: ${{ github.event.inputs.xcode || 'latest-stable' }}
+          xcode-version: ${{ github.event.inputs.xcode || '26.2' }}
 
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
