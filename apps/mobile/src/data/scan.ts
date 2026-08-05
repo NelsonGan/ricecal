@@ -49,9 +49,15 @@ export function useEntryIngredients(entryId: string | undefined) {
 }
 
 /**
- * Set one ingredient's portion. The database function recomputes the parent
- * entry's quantity in the same transaction, so the plate total and the parts
- * can never disagree — which is why this is an RPC and not a table update.
+ * Set one ingredient's portion.
+ *
+ * An RPC rather than a table update because clients hold `select` on
+ * `food_log_ingredients` and nothing else — a direct grant would let anything
+ * be written into the list the entry's totals are read from. Nothing else has
+ * to be written: `food_log_details` sums the parts, so the plate total follows
+ * from this row changing. The function used to rescale the parent's `quantity`
+ * as well, which moved all four macros together — doubling the rice put fat on
+ * the plate.
  *
  * Optimistic on the ingredient list: the row's numbers move under the finger,
  * and the server's answer reconciles quietly afterwards. The day totals are

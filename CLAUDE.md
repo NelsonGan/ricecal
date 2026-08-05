@@ -6,7 +6,8 @@ or search a catalogue of ~457k dishes — and get calories and macros back.
 ```
 apps/mobile      Expo / React Native app (expo-router, NativeWind, react-query)
 apps/supabase    Postgres schema, RLS, pgTAP tests, Deno edge functions
-packages/shared  the few constants both sides need
+packages/shared  SCHEMA_VERSION and the app name. Only apps/mobile consumes it;
+                 the edge functions are Deno and outside the pnpm workspace
 ```
 
 Deeper docs live next to what they describe, and they are the authority on
@@ -14,7 +15,7 @@ their own area:
 
 | where | what |
 |---|---|
-| `apps/supabase/README.md` | the declarative schema workflow, the catalogue import, why nothing seeds `foods` |
+| `apps/supabase/README.md` | the declarative schema workflow, the catalogue import, why nothing seeds `foods`, and the edge functions |
 | `apps/mobile/src/data/README.md` | the data layer, file by file |
 | `apps/mobile/src/ui/README.md` | the design system, and which prop targets which box |
 | `apps/mobile/src/lib/health/README.md` | what each health store actually gives you, and what Android is missing |
@@ -344,11 +345,13 @@ repetition free.
 ## Money, and reminders
 
 **Entitlement is the store's to decide and RevenueCat's to report.**
-`subscriptions` is a read-only mirror with no client write grant at all, filled
-by webhook; `data/purchases.ts` buys and restores but can never grant. A client
-that could write that table is not a paywall. Every SDK in `lib/startup.ts` is
-gated on its key being real — RevenueCat is additionally disabled in code, and
-says so plainly rather than failing at the tap.
+`subscriptions` is a read-only mirror with no client write grant at all, to be
+filled by a webhook that does not exist yet; `data/purchases.ts` buys and
+restores but can never grant. A client that could write that table is not a
+paywall, and an empty table reads correctly as "no subscription" in the
+meantime. Every SDK in `lib/startup.ts` is gated on its key being real —
+RevenueCat is additionally disabled in code, and says so plainly rather than
+failing at the tap.
 
 **Reminders are all local.** A meal reminder is "every day at 08:00 in the
 user's own timezone", which both platforms express as a repeating calendar
@@ -372,7 +375,38 @@ real view rather than a shadow, which is why a control's outer box is `depth`
 taller than its visible surface.
 
 `app/gallery.tsx` renders every component in every state, in both modes, on a
-real device.
+real device. No screen links to it; navigate to `/gallery` on purpose.
+
+Every string on screen comes from `src/i18n/en/*`, one namespace per area,
+bundled rather than fetched so `t` is synchronous everywhere and no frame paints
+a raw key. English interface, Malay food names. One locale today, and
+`SUPPORTED_LANGUAGES` is what a second one is added to.
+
+---
+
+## Which app is on the phone
+
+`app.json` is the base config and `app.config.ts` derives two variants from
+`APP_VARIANT`. Both exist for a specific reason and neither is cosmetic.
+
+**`development`** (the EAS profile) is a SEPARATE APP: `.dev` suffixed bundle id
+and package, its own name, and the scheme `ricecal-dev`. Without the suffix a
+dev client and the TestFlight build cannot coexist on one phone, so testing a
+change means uninstalling the build you were comparing against. The scheme has
+to move with the identifiers — two apps registering `ricecal://` is undefined on
+both platforms, and a login link mailed to a dev build opens the store build
+instead. Which is why `loginLinkRedirect` reads the scheme off the resolved
+config rather than hardcoding it, and why `ricecal-dev://**` has to be in the
+Supabase redirect allow-list (`config.toml` locally, Authentication → URL
+Configuration on the hosted project) or dev sign-in silently stops working.
+
+**`simulator`** (what `pnpm ios` sets) goes the other way: it keeps the release
+identifiers and drops Apple Sign-In. Expo forces development code signing for
+any build carrying the `applesignin` entitlement, even a simulator one, so on a
+machine with no signing identity `expo run:ios` refuses before it compiles.
+Dropping the plugin is necessary but not sufficient — autolinking re-applies it
+at prebuild, so `plugins/withoutAppleSignIn` deletes the entitlement afterwards.
+The cost is local and narrow: "Continue with Apple" fails in a `pnpm ios` build.
 
 ---
 
@@ -489,7 +523,10 @@ Worth knowing before wondering where the handler went.
   the same ground with real recognition, which is what the sheet offers instead.
 - **RevenueCat** is disabled in `lib/startup.ts` by an explicit list rather than
   by a missing key, so the log does not blame `.env.local` for something a
-  comment did.
+  comment did. The `subscriptions` webhook that would fill the mirror table does
+  not exist either; nothing writes that table today.
+- **The design gallery.** `app/gallery.tsx` is complete and routable and nothing
+  links to it, on purpose.
 
 ---
 

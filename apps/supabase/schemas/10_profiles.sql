@@ -4,7 +4,7 @@
 -- The split against `user_settings` is not arbitrary. Everything here is an
 -- INPUT TO THE CALORIE BUDGET or an identity fact; everything there is a
 -- preference that changes only what is displayed. That line is what makes the
--- recompute trigger in 80_targets_sync.sql safe to attach to this table and
+-- recompute trigger in 80_goals_sync.sql safe to attach to this table and
 -- only this table — a user switching to imperial must not silently rewrite
 -- their targets.
 --
