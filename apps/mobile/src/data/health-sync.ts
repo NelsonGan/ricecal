@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState } from 'react-native'
 
 import type { HealthProvider, HealthReading, ProviderId } from '@/lib/health'
@@ -431,10 +431,27 @@ export function useSyncHealth() {
  */
 export function useHealthAutoSync(provider: ProviderId | null): {
   syncNow: () => void
+  /**
+   * A sync THE USER ASKED FOR is in flight. Not the automatic ones.
+   *
+   * The distinction exists because the only consumer is a `RefreshControl`, and
+   * a refresh control that is `refreshing` holds the whole scroll view pushed
+   * down under its spinner. The automatic pass runs on mount, so opening the
+   * Activity tab parked the header below the notch and left it there for the
+   * length of the sync — which reads as a screen stuck mid-swipe, not as
+   * progress. The badge in the header is where an automatic pass reports
+   * itself; a pull is the only thing allowed to move the screen.
+   */
   isSyncing: boolean
+  /** Any pass at all, automatic or asked for. For the header badge. */
+  isBusy: boolean
 } {
   const sync = useSyncHealth()
   const lastRun = useRef(0)
+
+  // Whether the pass in flight was asked for. State rather than a ref: the
+  // refresh control has to re-render when it changes.
+  const [forced, setForced] = useState(false)
 
   // The mutation object is a new identity on every render, so the effect below
   // would re-subscribe to AppState constantly if it depended on it. A ref
@@ -448,10 +465,20 @@ export function useHealthAutoSync(provider: ProviderId | null): {
       const now = Date.now()
       if (!force && now - lastRun.current < MIN_INTERVAL_MS) return
       lastRun.current = now
+      // After the guards, so a pull that was thrown away for want of a provider
+      // does not leave the control spinning over nothing.
+      if (force) setForced(true)
       // Fire and forget. A failed sync is not something to interrupt anybody
       // over — the numbers are simply as fresh as the last successful pass, and
       // the screen says when that was.
-      syncRef.current.mutate(provider)
+      //
+      // `onSettled` rather than `onSuccess`: a pull that fails still has to give
+      // the screen back, or the spinner is permanent.
+      syncRef.current.mutate(provider, {
+        onSettled: () => {
+          if (force) setForced(false)
+        },
+      })
     },
     [provider],
   )
@@ -466,5 +493,8 @@ export function useHealthAutoSync(provider: ProviderId | null): {
     return () => subscription.remove()
   }, [provider, run])
 
-  return { syncNow: () => run(true), isSyncing: sync.isPending }
+  // `forced` alone, not `forced && sync.isPending`. Both are set in the same
+  // event handler and therefore batched into one render, so there is no frame
+  // where the control is told to stop while the user is still holding it down.
+  return { syncNow: () => run(true), isSyncing: forced, isBusy: sync.isPending }
 }

@@ -28,7 +28,7 @@ import { ScreenTitle } from '@/features/shared'
 import { type Availability, canOfferDemo, offeredProviders, type ProviderId } from '@/lib/health'
 import { sumMacros } from '@/lib/nutrition'
 import { useThemeColors } from '@/theme/useTheme'
-import { Badge, Button, Card, EmptyState, Icon, ListRow, Screen, Skeleton, Text } from '@/ui'
+import { Badge, Button, Card, Icon, ListRow, Screen, Skeleton, Text } from '@/ui'
 
 /**
  * A2 / N3: the Activity tab.
@@ -93,7 +93,7 @@ export default function ActivityScreen() {
   // `syncNow` forces a pass past the throttle, which is exactly what a deliberate
   // pull means: the automatic one already ran on mount and on the last
   // foreground, so an unforced call would spin and do nothing.
-  const { syncNow, isSyncing } = useHealthAutoSync(provider)
+  const { syncNow, isSyncing, isBusy } = useHealthAutoSync(provider)
 
   // What the platform will allow, asked once on mount. State rather than a
   // query because it is a question about this device, not about this account —
@@ -301,6 +301,12 @@ export default function ActivityScreen() {
        * return value unused by anybody. A stamp reading "13 min ago" is an
        * invitation to pull, and on a screen whose whole subject is a number that
        * arrives from somewhere else it is the gesture people try first.
+       *
+       * `isSyncing` is the PULL, not every pass. A refreshing control holds the
+       * whole scroll view pushed down under its spinner, and the automatic sync
+       * runs on mount — so this tab opened with its header parked below the
+       * notch and stayed there until the sync landed, which reads as a screen
+       * stuck mid-swipe. An automatic pass reports itself in the badge instead.
        */
       refreshControl={
         <RefreshControl refreshing={isSyncing} onRefresh={syncNow} tintColor={colors.muted} />
@@ -312,9 +318,15 @@ export default function ActivityScreen() {
           <Badge tone={provider === 'demo' ? 'kaya' : 'neutral'}>
             <Icon set="system" name="sync" size={16} />
             <Text variant="caption" className={provider === 'demo' ? 'text-kaya-ink' : ''}>
+              {/* Syncing outranks the stamp, and only for a real store: on demo
+                  data the badge names where the numbers came from, which is the
+                  more important thing to say and does not stop being true for
+                  the length of a pass. */}
               {provider === 'demo'
                 ? t('activity:today.demoBadge')
-                : t(`activity:today.${synced.key}`, { count: synced.count })}
+                : isBusy
+                  ? t('activity:today.syncing')
+                  : t(`activity:today.${synced.key}`, { count: synced.count })}
             </Text>
           </Badge>
         }
@@ -394,13 +406,11 @@ export default function ActivityScreen() {
         </View>
       </Card>
 
-      {!loading && sessions.data && sessions.data.length === 0 ? (
-        <EmptyState
-          title={t('activity:today.noSessionsTitle')}
-          description={t('activity:today.noSessionsBody')}
-          icon={{ set: 'body', name: 'running-shoe' }}
-        />
-      ) : null}
+      {/* No "No workouts today" block. A day with nothing recorded on it is the
+          normal state of this screen before the afternoon, and a card saying so
+          is the app taking up a screenful to report that nothing has happened
+          yet. The Today card above already shows the steps row on its own, and
+          the week's count is one card below. */}
 
       <Card title={t('activity:today.weekTitle')} flush>
         <View className="px-7">
