@@ -1,4 +1,4 @@
-import { completeLoginFromUrl } from '../auth'
+import { completeLoginFromUrl, loginLinkRedirect } from '../auth'
 
 /**
  * Reading a session back out of a login link.
@@ -30,14 +30,42 @@ jest.mock('@/lib/supabase', () => ({
 
 jest.mock('expo-linking', () => ({ createURL: (path: string) => `ricecal://${path}` }))
 
+// Stands in for the embedded manifest. Mutable because the whole point of reading
+// the scheme from it is that the development build carries a different one.
+const expoConfig: { scheme?: string | string[] } = { scheme: 'ricecal' }
+jest.mock('expo-constants', () => ({
+  __esModule: true,
+  get default() {
+    return { expoConfig }
+  },
+}))
+
 const { supabase } = require('@/lib/supabase') as {
   supabase: { auth: { setSession: jest.Mock; exchangeCodeForSession: jest.Mock } }
 }
 
 beforeEach(() => {
   jest.clearAllMocks()
+  expoConfig.scheme = 'ricecal'
   supabase.auth.setSession.mockResolvedValue({ data: {}, error: null })
   supabase.auth.exchangeCodeForSession.mockResolvedValue({ data: {}, error: null })
+})
+
+/**
+ * The redirect has to name the build that asked for it. Both apps can be
+ * installed at once, so a link back to `ricecal://` from the development build
+ * opens the store build — signed in as nobody, on the wrong data.
+ */
+it('sends the login link back to the scheme this build registered', () => {
+  expect(loginLinkRedirect()).toBe('ricecal://auth/callback')
+
+  expoConfig.scheme = 'ricecal-dev'
+  expect(loginLinkRedirect()).toBe('ricecal-dev://auth/callback')
+})
+
+it('falls back to the release scheme when there is no manifest to read', () => {
+  expoConfig.scheme = undefined
+  expect(loginLinkRedirect()).toBe('ricecal://auth/callback')
 })
 
 it('takes the token pair from the fragment', async () => {
