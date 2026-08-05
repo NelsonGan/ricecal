@@ -78,6 +78,15 @@ own stated `kcal` — the same margin the scan cascade holds its own guesses to.
 Most rejections are this, and most of those are a portion size that changed
 between writing the calories and writing the macros.
 
+**A `brand` is prefixed onto the name unless the name already carries it in
+full.** `food_name_norm` does the check literally, so a name using a shortened
+form of its own brand gets prefixed anyway — `MOS Teriyaki Chicken Burger` with
+brand `MOS Burger` normalizes to `mos burger mos teriyaki chicken burger`.
+Twenty rows read like that. Nothing breaks, because the app shows `name` and
+the dedup is at least consistent with itself, but it is avoidable: write the
+brand exactly as the name spells it, or leave `brand` off when the name already
+says who made it.
+
 **`source` records two things and keeps both.** The file's `source` names the
 research round; a dish's own `source` names where its numbers came from. The
 loader joins them — `model_estimate · research:kuih` — because either alone is
