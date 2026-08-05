@@ -199,6 +199,45 @@ seam below.
 a key inside a bucket. Moving to Cloudflare R2 (still open) is then
 a change of base URL rather than a migration over every row.
 
+## The one email this project sends
+
+There is exactly one, and it is the login link — `signInWithOtp` from
+`data/auth.ts`. No password reset (there are no passwords), no confirmation
+step (`enable_confirmations = false`), no marketing. So everything about the
+project's email reputation comes down to how good the addresses in that one
+field are.
+
+That matters more than the volume suggests. The email IS the credential, so an
+address that bounces is not a wasted send — it is an account created against a
+mailbox nobody can open, and the only way back in is to sign up again with the
+right address. Supabase counts hard bounces against the project and throttles
+its shared sender when enough accumulate, which turns one person's typo into a
+sign-in outage for everybody.
+
+Three defences, and only the first is in this repository:
+
+**In the app**, `mobile/src/lib/email.ts`. It normalises what the field gives
+back (the contact picker's `Name <addr>`, a `mailto:` prefix, an invisible
+zero-width character pasted out of a web page — all of which look right on
+screen and bounce), refuses what cannot be delivered at all, and *asks* about a
+domain one edit from a common one. That last one only ever asks: `ymail.com` is
+a real domain one letter from `gmail.com`, so a correction applied silently
+would mail somebody else's mailbox. `sendLoginLink` normalises again on the way
+out, because it is the choke point every future caller passes through.
+
+**In the dashboard**, two settings that no file here can hold:
+
+| setting | why |
+|---|---|
+| a custom SMTP provider (Auth → Emails) | the built-in sender is shared across projects and rate-limited to a handful an hour, which is a hard ceiling on sign-ups as well as a shared reputation. `config.toml` has the `[auth.email.smtp]` block commented out for the local side; the hosted side is dashboard-only |
+| CAPTCHA (Auth → Attack Protection) | `signInWithOtp` with `shouldCreateUser` is reachable by anyone holding the anon key, and a bot enumerating addresses through it mails every one of them. `[auth.captcha]` in `config.toml` is the local half |
+
+**In how it is developed.** The local stack mails into Inbucket
+(`[local_smtp]`, the web interface on :54424) and never sends anything real, so
+local work is free. A dev build pointed at the HOSTED project is not — those
+sends are real, they come out of the same reputation, and `example.com` and
+`test.com` are refused by the client now for exactly that reason.
+
 ## Seams left open
 
 **Calorie scanning.** Most of the shape is here: `entry_source` has a `camera`

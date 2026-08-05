@@ -112,8 +112,21 @@ export const onboarding = {
     /** There is no password to type, so the screen has to say what will happen. */
     linkExplainer: 'No password to remember. We will send a link that signs you in.',
     linkSent: 'Link sent to {{email}}. Open it on this phone to carry on.',
+    /**
+     * The "did you mean" question. It names the address it is offering rather
+     * than only the domain, because the whole address is what gets tapped.
+     */
+    didYouMean: 'Did you mean {{email}}?',
+    didYouMeanBody: 'A link sent to {{domain}} will not arrive. Send again to use it anyway.',
+    useSuggestion: 'Use it',
     errors: {
       email: 'That does not look like an email address.',
+      /**
+       * Reserved domains, which exist so that they never resolve. Says what to
+       * do rather than what is wrong: somebody types example.com to get past
+       * the form, and needs telling that this form is the way back in.
+       */
+      emailUndeliverable: 'That domain cannot receive mail. Use an address you can open.',
     },
   },
 

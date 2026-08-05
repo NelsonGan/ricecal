@@ -1,6 +1,7 @@
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { Platform } from 'react-native'
 
+import { normaliseEmail } from '@/lib/email'
 import { env, isConfigured } from '@/lib/env'
 import { supabase } from '@/lib/supabase'
 
@@ -59,10 +60,17 @@ export function loginLinkRedirect(): string {
  * The project's redirect allow-list has to contain the app's scheme or Supabase
  * refuses the `emailRedirectTo` and falls back to `site_url`, which on a phone is
  * a web address nobody can act on.
+ *
+ * Normalised HERE rather than only on the screen, because this is the choke
+ * point: every future caller — a resend button, a change-of-address screen, a
+ * test harness — gets the same treatment without knowing it needs to. A trim was
+ * not enough. `Aisyah <a@gmail.com>` from the contact picker and an address
+ * carrying a zero-width character out of a web page both look right and both
+ * bounce, and a bounced link is an account nobody can open again.
  */
 export async function sendLoginLink(email: string): Promise<void> {
   const { error } = await supabase.auth.signInWithOtp({
-    email: email.trim(),
+    email: normaliseEmail(email),
     options: { shouldCreateUser: true, emailRedirectTo: loginLinkRedirect() },
   })
   if (error) throw error
