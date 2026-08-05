@@ -331,13 +331,12 @@ export default function TodayScreen() {
           <SkeletonRow />
           <SkeletonRow />
         </Card>
-      ) : day.entries.length === 0 ? (
-        <EmptyState
-          title={t('logging:today.emptyTitle')}
-          description={t('logging:today.emptyBody')}
-          icon={{ set: 'food', name: 'empty-plate' }}
-        />
-      ) : (
+      ) : day.entries.length === 0 ? /* No "Nothing logged yet" block. A day
+          before its first meal is the state this screen is in every morning,
+          and a card announcing it pushed the water tracker and the ring apart
+          to say something the empty list already said. The FAB is the answer to
+          "what now", and it is on screen either way. */
+      null : (
         /* One list, in the order the day happened. It was a card per meal, and
            three of the four were usually empty — each still taking a heading and
            an add button, so two entries filled a screen with furniture. */
