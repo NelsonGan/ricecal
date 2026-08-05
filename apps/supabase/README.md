@@ -88,21 +88,39 @@ auth.users
        ├── daily_goals ────── the budget, effective-dated
        ├── subscriptions ──── read-only mirror of RevenueCat
        ├── food_logs ──────── what was eaten          → foods, food_servings
+       │    └── food_log_ingredients   what a scanned plate was made of
        ├── daily_logs ─────── water and a day note
-       ├── weight_logs ────── the source of truth for current weight
+       ├── weight_logs ─────── the source of truth for current weight
        └── health_connections  which health store, and how far back it has read
             ├── activity_days ───── one day of movement, keyed by local date
             ├── activity_sessions  one workout, keyed by the store's own id
             └── activity_hours ──── steps by local hour, last month only
 
 foods ──── food_servings      the shared catalogue, read-only to clients
+food_scan_items               what the model claimed, and where it landed
+food_scan_misses              the catalogue-widening backlog
 ```
 
+The ~60 archetype rows are not a table of their own: they are `foods` rows
+written by `seed_archetype_foods()` in `33_archetypes.sql`. A function rather
+than inserts, because schema files only shape the shadow database during a diff
+and data written there would never reach a migration — so the call sits at the
+foot of the baseline instead.
+
 Read shapes are views, all `security_invoker`: `food_details`,
-`food_log_details`, `daily_nutrition`, `user_food_stats`, `current_daily_goals`.
-Plus `goals_on(date)` and `logging_streak()`, and the two range families —
-`trend_days` / `trend_series` / `trend_summary` for the diary, and
-`activity_days_range` / `activity_series` / `activity_summary` for movement.
+`food_log_details`, `food_log_ingredient_details`, `daily_nutrition`,
+`user_food_stats`, `current_daily_goals`. Plus `goals_on(date)` and
+`logging_streak()`, and the two range families — `trend_days` / `trend_series` /
+`trend_summary` for the diary, and `activity_days_range` / `activity_series` /
+`activity_summary` for movement.
+
+`search_foods(q, place, limit, fuzzy)` is the other function worth knowing:
+three retrieval arms — exact name, full text, trigram — fused with Reciprocal
+Rank Fusion over a ~460,000-row catalogue. `fuzzy => false` drops the trigram
+arm and requires every term, which is two orders of magnitude cheaper and is
+what the scan cascade uses, because its queries are machine-written and spelled
+correctly. See the header of `91_food_search.sql` for the timings that decided
+each of those.
 
 `day_marks(from, to)` sits beside them and is the one that takes DATES rather
 than a named range: it feeds the week strip on Today, which is a calendar week
@@ -199,24 +217,81 @@ seam below.
 a key inside a bucket. Moving to Cloudflare R2 (still open) is then
 a change of base URL rather than a migration over every row.
 
+## How scanning lands in this schema
+
+A photographed or typed meal is resolved by the `scan-meal` edge function and
+written as an ordinary `food_logs` row. Three things in the schema exist for it,
+and they are what answers the question this section used to leave open — where a
+plate the catalogue has no row for is supposed to go.
+
+**`foods.is_estimate`.** A shared row carrying model-derived nutrition, deduped
+on `name_norm` **and size** by `upsert_estimate_food` (`32_food_scans.sql`).
+Size matters: two rows called "fried chicken wing" at 90 and 250 kcal are
+different foods, so the dedup accepts a reuse only within a step that widens
+with the figure. These rows are excluded from `search_foods` and from
+`user_food_stats` — they exist so `food_logs.food_id` has something real to
+reference, not so a guess can sit next to a curated dish in search.
+
+**`foods.is_archetype`.** The ~60 seeded generic rows, plus one terminal "Mixed
+meal" at a hardcoded id. That id is the cascade's floor: reaching it needs no
+model call, no search and no network, which is why the endpoint can promise that
+an authenticated request with a parseable body never returns an HTTP error. A
+diary that refuses the meal is worse than one that logs it roughly.
+
+**`food_log_ingredients`.** A decomposed plate is ONE entry with its parts
+hanging off it. `food_log_details` coalesces three sources in order — what the
+user typed (`override_*`), what the parts sum to, what the dish costs at this
+portion — so an entry with a breakdown *is* its breakdown, and editing one part
+moves only the macros that part carries. Clients hold `select` and nothing else;
+the two edits they may make go through `set_ingredient_quantity` and
+`remove_ingredient`.
+
+`food_scan_items` records what the model claimed and which tier accepted it, for
+every scan and every refine. `food_scan_misses` is the queries that matched
+nothing — the catalogue-widening backlog. Both are `service_role` only.
+
+## The edge functions
+
+`functions/` is Deno, not the pnpm workspace, and it is deployed by the same
+Supabase GitHub integration that applies the migrations.
+
+| function | what it does |
+|---|---|
+| `scan-meal` | a photo or a sentence to one or more diary entries |
+| `scan-refine` | free text against a logged entry, applied down a four-rung ladder |
+| `healthcheck` | auth self-inspection, for smoke-testing a deployment |
+| `_shared/cascade.ts` | the five-tier resolution both scan functions run |
+| `_shared/llm.ts` | every model call, its prompts, its shape checks and its mocks |
+
+They hold the OpenRouter key and they write as `service_role`, and both facts
+are load-bearing. The key never reaches a client. The role has to be
+`service_role` because tiers 2 and 4 create `foods` rows, which no client may
+do — see the grants on `foods` above.
+
+Three things about working on them:
+
+- **Adding or renaming a function needs a full stop and start of the local
+  stack.** The running edge runtime does not pick it up.
+- **They are outside the workspace, so `pnpm check` does not see them.**
+  `deno check --no-lock --config <fn>/deno.json <fn>/index.ts` is their
+  typecheck, and CI runs it over every function. `--no-lock` matters: a lockfile
+  left in a function directory gets bundled and triples the deployed script.
+- **Mock AI is on whenever `OPENROUTER_API_KEY` is unset**, or `MOCK_AI=true`.
+  So a local stack scans with no configuration at all, and production can never
+  mock silently. A request may steer the mock through `body.mock`, honoured in
+  mock mode only.
+
 ## Seams left open
-
-**Calorie scanning.** Most of the shape is here: `entry_source` has a `camera`
-value, `food_logs.photo_path` exists, and the private `meal-photos` bucket
-exists, so a scan that resolves to a catalogue row writes an ordinary entry and
-nothing moves. `foods.verified` tells a reviewed dish from a guessed one.
-
-The open question is the miss. With no per-user rows, a photo matching nothing
-in the catalogue cannot be logged at all — that has to be answered by widening
-the catalogue or by asking the user to pick from candidates, not by writing a
-private food.
 
 **RevenueCat.** `subscriptions` is the mirror. Nothing writes it until the
 webhook exists; an empty table reads correctly as "no subscription".
 
-**Fibre and sugar** are nullable columns on `foods`, currently unfilled. The
-nutrition screen derives them from carbohydrate; that hack gets deleted as rows
-get filled in rather than rewritten.
+**Fibre, sugar and sodium** are nullable columns on `foods` and unfilled across
+most of the imported catalogue. Nothing derives them any more: null means nobody
+recorded it, the client maps them to `undefined` rather than zero, and the
+screens say nothing rather than claiming a dish has no sugar in it. A
+photographed nutrition panel is the one path that fills them in, because they
+are printed there.
 
 ## Tests
 

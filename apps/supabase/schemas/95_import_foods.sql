@@ -71,10 +71,12 @@
 -- ---------------------------------------------------------------------------
 -- The loader itself.
 --
--- `payload` is a JSON array of dish objects; see scripts/import-foods.mjs for
--- the contract and for the client that normalizes into it. Every optional field
--- may be absent or null. `servings` is an array of {slug,label,factor,
--- is_default,position} and must contain exactly one default at factor 1.
+-- `payload` is a JSON array of dish objects. There is no client for it in this
+-- repo — it is called directly as `service_role`, and the contract is the
+-- `jsonb_to_recordset` below plus the checks under it. Every optional field may
+-- be absent or null. `servings` is an array of {slug,label,factor,is_default,
+-- position} and must contain exactly one default at factor 1.
+-- `tests/06_import_foods.test.sql` pins the verdicts and is the worked example.
 --
 -- Returns one row per input dish, in input order, so the caller can report
 -- what happened without a second query.

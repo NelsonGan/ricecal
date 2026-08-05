@@ -10,13 +10,13 @@
 -- immutable history; the target that applied to them has to be too.
 --
 -- The cost is one extra primary-key column and `order by effective_from desc
--- limit 1` on the read, both of which are in `current_targets` and
--- `targets_on()` so no caller writes them. Retrofitting this later would mean
+-- limit 1` on the read, both of which are in `current_daily_goals` and
+-- `goals_on()` so no caller writes them. Retrofitting this later would mean
 -- reconstructing targets that were never recorded, which is not possible.
 --
 -- WHO WRITES IT
 --
--- Normally nobody: the trigger in 80_targets_sync.sql recomputes a row when
+-- Normally nobody: the trigger in 80_goals_sync.sql recomputes a row when
 -- the profile or the current weight changes. The Goals screen writes directly
 -- with `is_custom = true`, which is the flag that tells the trigger to leave
 -- this user's targets alone from then on.

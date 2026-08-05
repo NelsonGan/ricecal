@@ -6,8 +6,9 @@
 -- `supabase gen types typescript` turns a Postgres enum into a TypeScript
 -- string-literal union and a `check (x in (...))` into plain `string`. These
 -- values are already unions in the client (`Meal`, `Goal`, `ActivityLevel` in
--- src/mock/types.ts), so an enum is what keeps the two ends in step: adding a
--- meal in SQL is a type error in the app until the app handles it.
+-- apps/mobile/src/data/types.ts), so an enum is what keeps the two ends in
+-- step: adding a meal in SQL is a type error in the app until the app handles
+-- it.
 --
 -- The cost is that a value can be added but never removed, and never renamed
 -- inside a transaction on older servers. Every enum here is a closed set the

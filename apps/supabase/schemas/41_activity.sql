@@ -43,8 +43,7 @@
 -- All of them are readable and none of them is on a screen. A calorie diary
 -- that quietly hoovers a user's medical history because the permission was
 -- already granted is a different app; the permission list in
--- `src/features/activity/providers` is short on purpose and this schema is what
--- holds it short.
+-- `src/lib/health` is short on purpose and this schema is what holds it short.
 -- ---------------------------------------------------------------------------
 
 
