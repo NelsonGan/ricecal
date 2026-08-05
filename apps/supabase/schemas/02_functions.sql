@@ -64,9 +64,12 @@ as $$
 $$;
 
 comment on function public.search_normalize is
-  'Lowercase, accent-folded, punctuation-stripped form of a name or a query. '
-  'Apostrophes elide rather than split, so "McDonald''s" normalizes to '
-  '"mcdonalds" — what a user actually types.';
+  'Lowercase, accent-folded form of a name or a query, with every run of '
+  'non-alphanumerics collapsed to one space. Apostrophes SPLIT rather than '
+  'elide: "McDonald''s" normalizes to "mcdonald s", not "mcdonalds". Both ends '
+  'of every comparison go through here, so the split is harmless — but anything '
+  'building a search_text or a slug outside the database has to split too, or '
+  'it writes a token the query form can never produce.';
 
 
 -- Free text to a tsquery, ORing the terms.
@@ -147,23 +150,48 @@ comment on function public.search_tsquery_all is
 -- not contain ("char koay teow", "炒粿條", "CKT"), and clobbering that on every
 -- update would throw the alias coverage away. It is only filled in when a writer
 -- left it empty, which is what a hand-inserted dish does.
+-- The rule itself is a function rather than the trigger's own arithmetic,
+-- because `import_foods` has to apply it BEFORE inserting: it dedupes a payload
+-- against `foods.name_norm`, and a second copy of this expression would
+-- eventually disagree with the column it is being compared to.
+--
+-- The brand is prepended only when the name does not already carry it.
+-- Catalogue names often do ("KFC Chicken Rice" with brand "KFC"), and
+-- concatenating unconditionally produced "kfc kfc chicken rice" — a longer
+-- string that scores every trigram comparison lower for no added meaning.
+create or replace function public.food_name_norm(p_name text, p_brand text)
+returns text
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select case
+    when b <> '' and n not like b || '%' then b || ' ' || n
+    else n
+  end
+  from (
+    select public.search_normalize(p_name)                as n,
+           public.search_normalize(coalesce(p_brand, '')) as b
+  ) t;
+$$;
+
+comment on function public.food_name_norm is
+  'The value foods_set_search writes to name_norm for a given (name, brand). '
+  'Exposed so the JSON loader can dedupe on the same rule the index uses.';
+
+-- Only the roles that can write `foods` need it: the trigger runs as its
+-- invoker, and the loader is the only other caller.
+revoke execute on function public.food_name_norm from public, anon, authenticated;
+grant execute on function public.food_name_norm to service_role;
+
 create or replace function public.foods_set_search()
 returns trigger
 language plpgsql
 set search_path = ''
 as $$
-declare
-  n text := public.search_normalize(new.name);
-  b text := public.search_normalize(coalesce(new.brand, ''));
 begin
-  -- The brand is prepended only when the name does not already carry it.
-  -- Catalogue names often do ("KFC Chicken Rice" with brand "KFC"), and
-  -- concatenating unconditionally produced "kfc kfc chicken rice" — a longer
-  -- string that scores every trigram comparison lower for no added meaning.
-  new.name_norm := case
-    when b <> '' and n not like b || '%' then b || ' ' || n
-    else n
-  end;
+  new.name_norm := public.food_name_norm(new.name, new.brand);
   if coalesce(trim(new.search_text), '') = '' then
     new.search_text := new.name_norm;
   end if;

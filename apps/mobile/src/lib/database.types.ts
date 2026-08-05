@@ -1192,6 +1192,10 @@ export type Database = {
           name: string
         }[]
       }
+      food_name_norm: {
+        Args: { p_brand: string; p_name: string }
+        Returns: string
+      }
       goals_on: {
         Args: { p_date: string; p_user_id?: string }
         Returns: {
@@ -1212,6 +1216,16 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      import_foods: {
+        Args: { p_update?: boolean; payload: Json }
+        Returns: {
+          detail: string
+          idx: number
+          nearest: string
+          outcome: string
+          slug: string
+        }[]
       }
       local_today: { Args: { p_user_id?: string }; Returns: string }
       logging_streak: {

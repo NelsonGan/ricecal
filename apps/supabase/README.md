@@ -20,11 +20,26 @@ Then open a PR. `supabase-migrations.yml` re-runs the last three steps on a
 throwaway Postgres, and merging to `main` deploys through the Supabase GitHub
 integration.
 
-One thing lives outside `schemas/` because `supabase db diff` cannot see it:
+`migrations/` currently holds ONE file, and that is deliberate. The first
+week's twenty-nine migrations recorded how the schema was arrived at — columns
+added and dropped, functions rewritten four times, one migration whose only job
+was to revoke what an earlier one granted by accident — and none of it needed
+replaying, because the deployed project was already at the end of the chain and
+every other database is built from scratch. So the chain was squashed into
+`20260805040853_initial_schema.sql`, which is `schemas/*.sql` concatenated in
+`schema_paths` order plus the two things below, and the remote migration ledger
+was reset to that single version. Nothing about the workflow changed: the next
+change is still `pnpm db:diff <name>`, and the baseline is never edited again.
 
-| file | why |
+Two things live outside `schemas/`, both because `supabase db diff` cannot see
+them, and both now folded into the foot of that baseline:
+
+| what | why |
 |---|---|
-| `migrations/*_storage_buckets.sql` | the diff ignores the `storage` schema entirely |
+| the `storage` buckets and their object policies | the diff ignores the `storage` schema entirely |
+| the `select seed_archetype_foods()` call | the rows are data, and a diff only ever emits structure |
+
+The `auth` schema is **not** in that category — see below.
 
 Nothing seeds the catalogue. `foods` and `food_servings` are empty on a fresh
 database and fill from the import loader running as `service_role`, which is
@@ -47,6 +62,16 @@ psql "$DB_URL" -v ON_ERROR_STOP=1 -f apps/supabase/scripts/import-catalogue.sql
 an empty catalogue and on a loaded one — assertions about the catalogue are
 written against its actual size rather than a fixture count, because a developer
 who has run the import has half a million rows in that table.
+
+The CSV loader is for the bulk import. The other way in is `import_foods`
+(`95_import_foods.sql`), which takes a JSON payload of researched dishes and
+returns a verdict per row — inserted, skipped as a duplicate, or rejected with a
+reason — rather than failing the batch. It is `service_role` only, and unlike
+the CSV loader it is a declared function rather than a script, because it makes
+decisions: the dedupe rule it applies is `food_name_norm`, the same expression
+the `name_norm` column is written with, and a second copy of that rule outside
+the database would eventually disagree with the column it compares against.
+`tests/06_import_foods.test.sql` pins the verdicts.
 
 The `auth` schema is **not** in that list. The diff tracks triggers on
 `auth.users` perfectly well, and putting `on_auth_user_created` in a migration
