@@ -170,7 +170,7 @@ export const activity = {
      * shows the real permission sheet, then has no data behind it.
      */
     storeEmpty:
-      'This health store is connected but has no data in it — which is what a simulator looks like. Generated data will fill these screens in.',
+      'This health store is connected but has no data in it, which is what a simulator looks like. Generated data will fill these screens in.',
 
     /**
      * Android, where the third ring has nothing behind it.
@@ -225,7 +225,7 @@ export const activity = {
     noHeartRate: 'No heart rate recorded',
     noHeartRateBody: '{{source}} logged this session without heart rate. A watch would add it.',
     noHeartRateBodyGeneric:
-      'Nothing recorded a pulse for this session — a phone can time a workout but cannot take one.',
+      'Nothing recorded a pulse for this session. A phone can time a workout but cannot take one.',
 
     counted: "Already counted in today's budget",
     from: 'From {{source}}',

@@ -54,8 +54,13 @@ export function DescribePanel({ onSubmit, autoFocus = false }: DescribePanelProp
         blurOnSubmit={false}
         // Room for a meal with its sides on it, and the text starts at the top
         // of that room rather than floating in the middle of an empty box.
+        //
+        // The box is `items-start`, so the input sits flush against the border
+        // and the first line reads as pinned to it. The padding is on the INPUT
+        // rather than on the box: the send button is `self-end`, and padding the
+        // box would push it off the bottom of the same 92pt.
         className="min-h-[92px] items-start pr-2"
-        inputClassName="pt-1"
+        inputClassName="pt-4"
         textAlignVertical="top"
         maxLength={500}
         rightSlot={
