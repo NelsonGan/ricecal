@@ -1,4 +1,5 @@
 import * as AppleAuthentication from 'expo-apple-authentication'
+import Constants from 'expo-constants'
 import { Platform } from 'react-native'
 
 import { env, isConfigured } from '@/lib/env'
@@ -44,13 +45,21 @@ import { supabase } from '@/lib/supabase'
  * it is a stranger's mail client that opens it, and nothing there knows which
  * build sent it.
  *
- * `SCHEME` is `app.json`'s `expo.scheme`. Native registers it at build time from
- * that same value, so the two cannot drift without a rebuild.
+ * The scheme is read off the resolved config rather than written here, because
+ * the development build is a separate app with its own (`ricecal-dev`) — two apps
+ * registering `ricecal://` on one phone is undefined behaviour, and the loser is
+ * whichever one the login link was meant for. `Constants.expoConfig` is the same
+ * object app.config.ts returned, and native registers the scheme at build time
+ * from it, so the two cannot drift without a rebuild. The fallback is for the
+ * test environment, where there is no embedded manifest to read.
  */
-const SCHEME = 'ricecal'
+function scheme(): string {
+  const declared = Constants.expoConfig?.scheme
+  return (Array.isArray(declared) ? declared[0] : declared) ?? 'ricecal'
+}
 
 export function loginLinkRedirect(): string {
-  return `${SCHEME}://auth/callback`
+  return `${scheme()}://auth/callback`
 }
 
 /**

@@ -183,10 +183,16 @@ site_url = "http://127.0.0.1:3000"
 # `exp+ricecal` is the development client's scheme. It is a separate entry because
 # a dev build's deep links do not use the app's own scheme, so a list with only
 # the release scheme cannot be tested without a release build.
+#
+# `ricecal-dev` is the EAS development build, which is a separate app with its own
+# identifiers and scheme so it can sit beside the TestFlight one (see
+# apps/mobile/app.config.ts). The hosted project needs this entry too, under
+# Authentication → URL Configuration; this file only configures the local stack.
 additional_redirect_urls = [
   "https://127.0.0.1:3000",
   "ricecal://**",
   "exp+ricecal://**",
+  "ricecal-dev://**",
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
