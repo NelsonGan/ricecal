@@ -11,7 +11,7 @@ import Reanimated, {
 } from 'react-native-reanimated'
 
 import type { DayLog, Entry } from '@/data'
-import { useMealPhotoUrl, useRefiningEntries } from '@/data'
+import { storedImageSource, useMealPhotoUrl, useRefiningEntries } from '@/data'
 import { sumMacros } from '@/lib/nutrition'
 import { portionLabel } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
@@ -244,6 +244,7 @@ function AnalysingRow({
   const colors = useThemeColors()
   // A refining entry's photo is already in the bucket, not on disk.
   const { data: signedUrl } = useMealPhotoUrl(entry.photoPath)
+  const photo = storedImageSource(entry.photoPath, signedUrl, entry.localPhotoUri)
 
   /**
    * Whether this row is a typed meal, asked of the ENTRY and not of `mode`.
@@ -310,9 +311,9 @@ function AnalysingRow({
     >
       {/* Same 56pt tile as ItemRow, so the row sits flush in the list. */}
       <View className="h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-tile bg-track">
-        {entry.localPhotoUri || signedUrl ? (
+        {photo ? (
           <Image
-            source={{ uri: entry.localPhotoUri ?? signedUrl }}
+            source={photo}
             style={{ flex: 1, width: '100%', opacity: 0.55 }}
             contentFit="cover"
             // Same cross-fade as `ItemRow`, for the same reason: a stored photo
