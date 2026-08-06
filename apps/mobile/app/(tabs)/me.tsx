@@ -80,6 +80,7 @@ export default function MeScreen() {
           <Avatar
             name={profile?.display_name ?? ''}
             uri={avatarUrl}
+            cacheKey={profile?.avatar_path ?? undefined}
             accessibilityLabel={profile?.display_name || t('profile:home.noName')}
             size="md"
             tone="pandan"

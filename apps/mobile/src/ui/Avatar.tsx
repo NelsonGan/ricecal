@@ -44,6 +44,13 @@ export type AvatarProps = {
   /** Remote or local image. Falls back to `fallback` while loading or on error. */
   uri?: string | null
   /**
+   * What to cache the picture under, when `uri` is a signed URL that gets
+   * re-minted for bytes that do not change. Without it the cache is keyed on
+   * the URL, so a fresh signature reads as a different image and re-downloads
+   * one that is already on disk. Pass the stored key, never the URL.
+   */
+  cacheKey?: string
+  /**
    * What to draw with no picture: a stock figure, or the name's first letter.
    *
    * The figure is the default because the app's own user is the common case and
@@ -89,6 +96,7 @@ export function Avatar({
   name,
   accessibilityLabel,
   uri,
+  cacheKey,
   fallback = 'figure',
   size = 'md',
   tone,
@@ -116,7 +124,7 @@ export function Avatar({
       >
         {uri ? (
           <Image
-            source={{ uri }}
+            source={{ uri, cacheKey }}
             style={{ width: metrics.box, height: metrics.box }}
             contentFit="cover"
           />

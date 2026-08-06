@@ -18,7 +18,7 @@ three rules — the point of them was always that this swap would be cheap.
 | `day.ts`, `entries.ts`, `foods.ts` | logging |
 | `weight.ts` | progress |
 | `snap.ts`, `pending-snaps.tsx` | the camera path |
-| `photos.ts` | every image — upload, signed read, delete — through the `photos` edge function, since R2 has no idea who a user is |
+| `photos.ts` | every image — upload, signed read, delete — through the `photos` edge function, since R2 has no idea who a user is. The signature is fetched per hour; the bytes are cached against the key |
 | `purchases.ts`, `subscription.ts` | money |
 | `selected-date.tsx` | the one piece of genuine client state |
 
