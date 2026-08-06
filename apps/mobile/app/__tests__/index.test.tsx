@@ -62,7 +62,7 @@ it('waits rather than guessing while the keychain is being read', async () => {
 
 it('starts a visitor with no session at the top of the flow', async () => {
   mockSession.mockReturnValue({ session: null, loading: false })
-  mockDraft.mockReturnValue({ goal: 'lose' })
+  mockDraft.mockReturnValue({ targetWeightKg: 58 })
 
   await render(<Index />)
 
@@ -78,7 +78,7 @@ it('sends an onboarded user to the app', async () => {
 
 it('flushes the answers a half-finished account already has on this phone', async () => {
   mockProfile.mockReturnValue(loaded({ onboarded_at: null }))
-  mockDraft.mockReturnValue({ goal: 'lose' })
+  mockDraft.mockReturnValue({ targetWeightKg: 58 })
 
   await render(<Index />)
 
@@ -90,7 +90,10 @@ it('asks the questions when the account never finished and the phone has no draf
 
   await render(<Index />)
 
-  expect(redirectTo('/goal')).toBeTruthy()
+  // The first question, which is `/about` since the goal step was removed — the
+  // plan is read off the two weights that screen collects. A redirect to a route
+  // that no longer exists is a dead end the type checker does not see.
+  expect(redirectTo('/about')).toBeTruthy()
 })
 
 it('signs out a session whose account has been deleted', async () => {

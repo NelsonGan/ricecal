@@ -44,7 +44,7 @@ export default function Welcome() {
   ]
 
   /** Straight into the questions. No session needed: the answers are held locally. */
-  const start = () => router.push('/goal')
+  const start = () => router.push('/about')
 
   /**
    * Skips the questions.

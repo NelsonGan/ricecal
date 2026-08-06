@@ -22,7 +22,7 @@ const TARGET = { min: 40, max: 120 }
 /** Plausible rather than empty: every control here needs somewhere to start. */
 const FALLBACK = { heightCm: 164, weightKg: 65, age: 29, sex: 'female' as Sex }
 
-/** 03 ABOUT YOU */
+/** 02 ABOUT YOU */
 export default function AboutStep() {
   const { t } = useTranslation(['onboarding', 'common'])
   const router = useRouter()
@@ -50,8 +50,17 @@ export default function AboutStep() {
   // clamp to the minimum the moment the user cleared it to retype.
   const heightCm = clamp(Number(heightText) || savedHeightCm, HEIGHT)
   const weightKg = clamp(Number(weightText) || savedWeightKg, WEIGHT)
-  // Defaults to standing still. Clamped into the slider's own range so the
-  // thumb and the readout beside it cannot disagree.
+  /**
+   * Defaults to standing still, which is now a plan rather than a placeholder.
+   *
+   * This slider and the weight field beside it are the whole of the calorie
+   * goal — there is no lose/maintain/gain screen any more, because it could only
+   * agree with these two numbers or contradict them. So leaving the thumb where
+   * it starts says "keep me where I am", and it says it in the same place the
+   * user can see their current weight, which is where that sentence is easiest
+   * to mean. Clamped into the slider's own range so the thumb and the readout
+   * beside it cannot disagree.
+   */
   const targetWeightKg = draft.targetWeightKg ?? clamp(weightKg, TARGET)
 
   /**
@@ -78,8 +87,8 @@ export default function AboutStep() {
 
   return (
     <OnboardingStep
-      step={2}
-      total={5}
+      step={1}
+      total={4}
       accent="water"
       title={t('about.title')}
       subtitle={t('about.subtitle')}

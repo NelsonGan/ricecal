@@ -1,4 +1,4 @@
-import type { ActivityLevel, Entry, Goal, Macros, Targets } from '@/data/types'
+import type { ActivityLevel, Entry, Macros, Targets } from '@/data/types'
 
 /**
  * Arithmetic the screens share.
@@ -138,14 +138,50 @@ const ACTIVITY_FACTOR: Record<ActivityLevel, number> = {
 const KCAL_PER_KG = 7700
 
 /**
- * How fast each goal aims to move, in kg per week.
+ * How fast the plan moves in each direction, in kg per week, before the distance
+ * left to run is read.
  *
  * Loss at the gentle end of the 0.5–1 kg/week both the NHS and CDC call safe —
  * past 1 kg/week a growing share of what goes is lean tissue. Gain at 0.25
  * kg/week, the lean-gain rate: muscle has a ceiling on how fast it can be built
  * and anything quicker is mostly fat.
+ *
+ * NOMINAL, because this is the most either direction ever asks for and not what
+ * the plan does. How far the target is decides that — see `intendedPace`.
  */
-const PACE_KG_PER_WEEK: Record<Goal, number> = { lose: -0.5, maintain: 0, gain: 0.25, track: 0 }
+const NOMINAL_LOSS_KG_PER_WEEK = 0.5
+const NOMINAL_GAIN_KG_PER_WEEK = 0.25
+
+/**
+ * How close to the target counts as arrived, and the width of "no goal".
+ *
+ * Body weight swings a kilogram either way inside a single day on water alone,
+ * so a plan that chased the last hundred grams would be reading noise: the
+ * budget would move on every weigh-in and the number on Today would never
+ * settle. Half a kilo is also the step on the target-weight slider, so the
+ * deadband is exactly "you cannot ask for closer than this".
+ *
+ * It carries a second job now that the two weights are the whole statement of
+ * intent. A user who wants no goal at all sets their target where they already
+ * are, and this is what turns that into maintenance rather than into a plan to
+ * move a rounding error.
+ */
+const TARGET_DEADBAND_KG = 0.5
+
+/**
+ * The shortest horizon the plan will try to close the remaining distance in.
+ *
+ * This is the taper, and it is the thing a fixed pace gets wrong. Someone 30 kg
+ * out and someone 1 kg out were being handed the same 0.5 kg/week deficit —
+ * which for the second is two weeks of work priced as a diet, and which did not
+ * stop when they arrived, because a stored goal of "lose" went on saying so.
+ *
+ * Four weeks means the last two kilograms are the only ones affected — anyone
+ * further out than that still gets the full pace, because `remaining / 4` is
+ * larger than the nominal figure and the smaller one wins. It is a soft landing
+ * bolted onto the end, not a slower plan.
+ */
+const MIN_WEEKS_TO_TARGET = 4
 
 /**
  * The pace, capped as a share of maintenance.
@@ -194,7 +230,18 @@ export type BodyInput = {
   heightCm: number
   age: number
   activity: ActivityLevel
-  goal: Goal
+  /**
+   * Where the user is heading. With this and `weightKg` there is nothing left to
+   * ask: the sign says lose or gain, the size says how hard, and equal says
+   * neither. There used to be a `goal` beside it — a lose/maintain/gain enum
+   * picked on its own onboarding screen — and it could only ever agree with the
+   * two weights or contradict them, which meant a rule for deciding which of the
+   * user's own answers to believe.
+   *
+   * Null is "no target stated", which reads as maintenance. Only rows written
+   * before the target was collected are in that state.
+   */
+  targetWeightKg?: number | null
 }
 
 /** Mifflin St Jeor, the same formula `compute_targets()` runs server-side. */
@@ -209,15 +256,54 @@ export function maintenanceRate(body: BodyInput): number {
 }
 
 /**
+ * The kg/week this plan aims for, read entirely off the two weights.
+ *
+ * The gap between where the user is and where they say they want to be answers
+ * every question there is: which way to move, whether to move at all, and how
+ * hard. Nothing else is consulted, and that is the point — there was a
+ * lose/maintain/gain enum here, chosen on its own onboarding screen and stored
+ * beside the target, and a second source can only agree with the first or
+ * contradict it. Agreeing, it was noise; contradicting — "lose" with a target
+ * above the current weight, one drag of a slider away — it forced the app to
+ * decide which of the user's own answers to ignore.
+ *
+ * Three cases, in order:
+ *
+ * 1. **No target stated** — nothing to work toward, so maintenance. Only rows
+ *    written before the target was collected reach this.
+ * 2. **Already there**, within the deadband — nothing to do. This is also how a
+ *    user says they have no goal: the target sits where they are.
+ * 3. **A real gap** — the nominal pace for that direction, or the taper, or
+ *    whichever asks for less.
+ */
+function intendedPace(body: BodyInput): number {
+  const target = body.targetWeightKg
+  if (target === undefined || target === null) return 0
+
+  // Signed the way the pace is: negative when there is weight to lose.
+  const remaining = target - body.weightKg
+  if (Math.abs(remaining) < TARGET_DEADBAND_KG) return 0
+
+  const nominal = remaining < 0 ? -NOMINAL_LOSS_KG_PER_WEEK : NOMINAL_GAIN_KG_PER_WEEK
+
+  return Math.sign(nominal) * Math.min(Math.abs(nominal), Math.abs(remaining) / MIN_WEEKS_TO_TARGET)
+}
+
+/**
  * The kcal/day added or removed for the goal, capped against maintenance.
  *
  * The single source of truth for how fast the plan moves. `weeklyPace` reads the
  * answer back out rather than keeping its own copy — the two used to be separate
  * constants that disagreed, so the budget was built for 400 kcal a day while the
  * goal date was drawn for 0.5 kg a week, which needs 550.
+ *
+ * TWO caps, and they answer different questions. The taper in `intendedPace`
+ * asks how much distance is left; this one asks what this body can afford, and
+ * is why 0.5 kg/week is a gentle cut for a large man and a crash diet for a
+ * small woman at the same 550 kcal.
  */
 export function energyDelta(body: BodyInput): number {
-  const pace = PACE_KG_PER_WEEK[body.goal]
+  const pace = intendedPace(body)
   if (pace === 0) return 0
 
   const fromPace = (Math.abs(pace) * KCAL_PER_KG) / 7
@@ -232,17 +318,46 @@ export function weeklyPace(body: BodyInput): number {
   return (energyDelta(body) * 7) / KCAL_PER_KG
 }
 
+/** Five years. Past this the answer is "not at this rate", which is a null. */
+const MAX_WEEKS_PROJECTED = 260
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000
+
 /**
- * When the target weight is reached at the current pace, or null when there is
- * nothing to reach — a maintain plan has no finish line, and saying "never"
- * would be both true and unkind.
+ * When the target weight is reached, or null when there is nothing to reach — a
+ * maintain plan has no finish line, and saying "never" would be both true and
+ * unkind.
+ *
+ * Walked a week at a time rather than divided, because neither term of that
+ * division holds still any more. The pace tapers over the last two kilograms,
+ * and the body doing the losing gets lighter as it goes — Mifflin-St Jeor falls
+ * about 10 kcal per kilogram of BMR, so a capped deficit shrinks with it. That
+ * is the plateau every diet runs into, and a straight `distance / pace` promises
+ * a date before it.
+ *
+ * The loop is bounded twice over: the step is at most a quarter of what is left,
+ * so the remainder falls geometrically and the deadband is reached in weeks, and
+ * `MAX_WEEKS_PROJECTED` catches anything that somehow crawls.
  */
 export function goalDate(body: BodyInput, targetWeightKg: number, from: Date): Date | null {
-  const pace = Math.abs(weeklyPace(body))
-  const delta = Math.abs(body.weightKg - targetWeightKg)
-  if (pace === 0 || delta < 0.1) return null
-  const weeks = Math.ceil(delta / pace)
-  return new Date(from.getTime() + weeks * 7 * 24 * 60 * 60 * 1000)
+  let weightKg = body.weightKg
+
+  for (let week = 1; week <= MAX_WEEKS_PROJECTED; week++) {
+    const pace = weeklyPace({ ...body, weightKg, targetWeightKg })
+    // Nothing to reach. On the first pass that is a target already met — the
+    // only way this can be zero, now that the gap is the whole plan. Later it
+    // cannot happen at all, because a step is never more than a quarter of what
+    // is left and so never carries the weight past the deadband that would have
+    // ended the loop.
+    if (pace === 0) return null
+
+    weightKg += pace
+    if (Math.abs(weightKg - targetWeightKg) < TARGET_DEADBAND_KG) {
+      return new Date(from.getTime() + week * WEEK_MS)
+    }
+  }
+
+  return null
 }
 
 /**
