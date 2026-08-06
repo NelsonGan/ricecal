@@ -132,14 +132,25 @@ export function useUpdateProfile() {
  * copy of the activity spelling ternary. Null when the profile is not complete
  * enough to compute anything: a budget derived from a missing height is a number
  * with no meaning, and `null` makes the caller say what to show instead.
+ *
+ * `overrides` is for the goals screen, which shows what a plan WOULD cost before
+ * the profile carrying it has been saved. Everywhere else the stored row is the
+ * answer and the argument is left out.
  */
 export function bodyFrom(
   profile: Profile | null | undefined,
   weightKg: number | undefined,
-  goal?: Goal,
+  overrides?: { goal?: Goal; targetWeightKg?: number | null },
 ): BodyInput | null {
   if (!profile || !weightKg || !profile.sex || !profile.height_cm || !profile.birth_date)
     return null
+
+  // Null and undefined part company here. A profile with no target weight has
+  // never had one and the budget falls back to the goal's nominal pace; an
+  // override the caller did not mention is one they have no opinion about, and
+  // the stored value stands.
+  const stored = profile.target_weight_kg == null ? null : Number(profile.target_weight_kg)
+  const target = overrides?.targetWeightKg !== undefined ? overrides.targetWeightKg : stored
 
   return {
     sex: profile.sex,
@@ -147,7 +158,8 @@ export function bodyFrom(
     heightCm: Number(profile.height_cm),
     age: ageFrom(profile.birth_date),
     activity: profile.activity_level ? fromDbActivity(profile.activity_level) : 'sedentary',
-    goal: goal ?? profile.weight_goal ?? 'track',
+    goal: overrides?.goal ?? profile.weight_goal ?? 'track',
+    targetWeightKg: target,
   }
 }
 

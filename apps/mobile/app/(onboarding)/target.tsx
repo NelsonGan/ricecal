@@ -41,6 +41,11 @@ export default function TargetStep() {
     age: draft.age ?? 29,
     activity: draft.activity ?? 'light',
     goal: draft.goal ?? 'track',
+    // The target sets the pace, so it has to be here and not only in the
+    // footnote below. `finish` writes it to the profile and the trigger runs the
+    // same arithmetic against it — leaving it out is how this screen would
+    // promise a budget the account then quietly disagrees with.
+    targetWeightKg,
   }
 
   const targets = computeTargets(body)

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import type { Sex } from '@/data'
+import type { Goal, Sex } from '@/data'
 import { OnboardingStep, useOnboardingDraft } from '@/features/onboarding'
 import { Card, SegmentedControl, Slider, Stepper, Text, TextField } from '@/ui'
 
@@ -21,6 +21,21 @@ const TARGET = { min: 40, max: 120 }
 
 /** Plausible rather than empty: every control here needs somewhere to start. */
 const FALLBACK = { heightCm: 164, weightKg: 65, age: 29, sex: 'female' as Sex }
+
+/**
+ * How far the target slider starts from where the user is, by goal.
+ *
+ * It used to start at standing still for everybody, which was defensible while
+ * the number was stored and never read. It is an input to the calorie budget
+ * now, and "my target is my current weight" is how you say you are not moving —
+ * so a user who chose Lose on the previous screen and left this slider alone was
+ * handed a maintenance budget under a heading about losing weight.
+ *
+ * 5% is the first target both NICE and the CDC use, and it is the one most
+ * people can actually reach; it is a starting position on a slider they are
+ * looking at, not a plan they are stuck with.
+ */
+const FIRST_TARGET_SHARE = 0.05
 
 /** 03 ABOUT YOU */
 export default function AboutStep() {
@@ -50,9 +65,10 @@ export default function AboutStep() {
   // clamp to the minimum the moment the user cleared it to retype.
   const heightCm = clamp(Number(heightText) || savedHeightCm, HEIGHT)
   const weightKg = clamp(Number(weightText) || savedWeightKg, WEIGHT)
-  // Defaults to standing still. Clamped into the slider's own range so the
-  // thumb and the readout beside it cannot disagree.
-  const targetWeightKg = draft.targetWeightKg ?? clamp(weightKg, TARGET)
+  // Defaults to a first target for the goal chosen on the previous screen, and
+  // to standing still when there is no direction to take. Clamped into the
+  // slider's own range so the thumb and the readout beside it cannot disagree.
+  const targetWeightKg = draft.targetWeightKg ?? clamp(defaultTarget(weightKg, draft.goal), TARGET)
 
   /**
    * Commits everything the screen is SHOWING, not only what was touched.
@@ -169,4 +185,15 @@ export default function AboutStep() {
 
 function clamp(value: number, bounds: { min: number; max: number }) {
   return Math.min(bounds.max, Math.max(bounds.min, value))
+}
+
+/**
+ * Where the target slider starts, in the direction the goal asked for.
+ *
+ * Rounded to the slider's own half-kilo step, so the readout beside the thumb is
+ * a number the control can actually produce.
+ */
+function defaultTarget(weightKg: number, goal: Goal | undefined) {
+  const direction = goal === 'lose' ? -1 : goal === 'gain' ? 1 : 0
+  return Math.round(weightKg * (1 + direction * FIRST_TARGET_SHARE) * 2) / 2
 }

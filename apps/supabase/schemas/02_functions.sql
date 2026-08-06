@@ -217,6 +217,19 @@ $$;
 --     safe. Gain at 0.25 kg/week, the lean-gain rate — muscle has a ceiling on
 --     how fast it can be built and quicker is mostly fat. 7700 kcal per kg of
 --     tissue turns either into a daily figure.
+--   * That pace is what the GOAL asks for. What the plan actually does depends
+--     on the TARGET WEIGHT, which is the second half of the question and used to
+--     be ignored entirely: the goal enum alone handed someone 30 kg out and
+--     someone 1 kg out the same deficit, and went on handing it out after they
+--     arrived, because nothing in the arithmetic could tell that they had. The
+--     distance left decides three things — whether to move at all (inside half a
+--     kilo of the target, no: body weight swings that far on water inside a day),
+--     which way (the goal and the target can disagree, and then the plan holds
+--     steady rather than guessing), and how fast (never quicker than closing the
+--     remaining gap over four weeks, which leaves the pace untouched for anyone
+--     more than 2 kg out and tapers the landing for everyone else).
+--     A null target means no target was ever stated, and the nominal pace stands
+--     — which is exactly what every account predating this had.
 --   * That figure is then capped at 20% of maintenance for a cut and 15% for a
 --     surplus. A flat 550 kcal deficit is a fifth of a large man's day and
 --     nearly half a small woman's; the cap is what stops one number being gentle
@@ -239,12 +252,16 @@ $$;
 -- and not as the output of a formula.
 -- ---------------------------------------------------------------------------
 create or replace function public.compute_targets(
-  p_sex           public.sex,
-  p_birth_date    date,
-  p_height_cm     numeric,
-  p_weight_kg     numeric,
-  p_activity      public.activity_level,
-  p_goal          public.weight_goal
+  p_sex              public.sex,
+  p_birth_date       date,
+  p_height_cm        numeric,
+  p_weight_kg        numeric,
+  p_activity         public.activity_level,
+  p_goal             public.weight_goal,
+  -- Null when the user has never said. `profiles.target_weight_kg` is nullable
+  -- and was so long before it was an input here, so this is a state real rows
+  -- are in rather than a defensive default.
+  p_target_weight_kg numeric default null
 )
 returns table (kcal integer, carbs_g integer, protein_g integer, fat_g integer)
 language sql
@@ -262,19 +279,47 @@ as $$
       when 'light'       then 1.375
       when 'on_feet'     then 1.55
       when 'very_active' then 1.725
-    end as tdee
+    end as tdee,
+    -- Signed the same way the pace is: negative when there is weight to lose.
+    p_target_weight_kg - p_weight_kg as remaining
+  ),
+  -- What the goal asks for, before the target is consulted.
+  nominal as (
+    select
+      tdee,
+      remaining,
+      case p_goal when 'lose' then -0.5 when 'gain' then 0.25 else 0 end as pace
+    from maintenance
+  ),
+  -- What the plan does, which is the goal read against the distance left.
+  intent as (
+    select
+      tdee,
+      case
+        when pace = 0                          then 0
+        -- No target stated: the goal's own pace, unchanged.
+        when remaining is null                 then pace
+        -- Arrived. The goal enum still says `lose`, and it is wrong.
+        when abs(remaining) < 0.5              then 0
+        -- The goal and the target point opposite ways. Hold rather than guess.
+        when sign(remaining) <> sign(pace)     then 0
+        -- The taper: never quicker than closing what is left over four weeks.
+        else sign(pace) * least(abs(pace), abs(remaining) / 4)
+      end as kg_per_week
+    from nominal
   ),
   delta as (
     select
       tdee,
-      case p_goal
-        -- 0.5 kg/week over 7700 kcal/kg, or a fifth of maintenance, whichever
-        -- asks for less.
-        when 'lose' then -least(0.5 * 7700 / 7, tdee * 0.2)
-        when 'gain' then  least(0.25 * 7700 / 7, tdee * 0.15)
-        else 0
+      case
+        when kg_per_week = 0 then 0
+        -- kg/week over 7700 kcal/kg, or a share of maintenance, whichever asks
+        -- for less. The cut is allowed a fifth and the surplus 15%, because
+        -- overshooting a lean gain just adds fat.
+        when kg_per_week < 0 then -least(abs(kg_per_week) * 7700 / 7, tdee * 0.2)
+        else                       least(kg_per_week * 7700 / 7, tdee * 0.15)
       end as goal_delta
-    from maintenance
+    from intent
   ),
   budget as (
     select greatest(
@@ -302,7 +347,10 @@ $$;
 
 comment on function public.compute_targets is
   'Daily calorie and macro budget from body stats. Loss targets 0.5 kg/week and '
-  'gain 0.25 kg/week, each capped as a share of maintenance; protein is 1.6 g '
-  'per kg of body weight rather than a share of energy; the budget is floored at '
-  '1200 kcal for women and 1500 for men. Mirrors computeTargets() in '
+  'gain 0.25 kg/week, tapered so the last 2 kg to the target weight are not '
+  'chased at full pace and a target already reached asks for nothing, then '
+  'capped as a share of maintenance; protein is 1.6 g per kg of body weight '
+  'rather than a share of energy; the budget is floored at 1200 kcal for women '
+  'and 1500 for men. A null target weight means none was stated and the goal''s '
+  'nominal pace stands. Mirrors computeTargets() in '
   'apps/mobile/src/lib/nutrition.ts — change both together.';

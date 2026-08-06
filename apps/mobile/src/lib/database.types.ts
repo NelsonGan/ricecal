@@ -1162,6 +1162,7 @@ export type Database = {
           p_goal: Database['public']['Enums']['weight_goal']
           p_height_cm: number
           p_sex: Database['public']['Enums']['sex']
+          p_target_weight_kg?: number
           p_weight_kg: number
         }
         Returns: {

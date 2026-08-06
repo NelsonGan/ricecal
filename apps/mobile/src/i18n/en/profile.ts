@@ -50,6 +50,13 @@ export const profile = {
     gain: 'Gain',
     targetWeight: 'Target weight',
     weeklyPace: 'Weekly pace',
+    paceValue: '{{value}} kg / week',
+    /**
+     * The pace when the plan is not moving — a maintain goal, a target already
+     * reached, or a goal and a target weight pointing opposite ways. "0.00 kg /
+     * week" is the same fact and reads like a broken calculation.
+     */
+    paceHolding: 'Holding steady',
     other: 'OTHER',
     waterGoal: 'Water goal',
     saved: 'Targets saved',
