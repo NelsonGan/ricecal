@@ -7,7 +7,15 @@ import { keys } from './keys'
 import { toEntry } from './mappers'
 import { pendingAsEntry, usePendingSnaps } from './pending-snaps'
 import { useUserId } from './session'
-import type { DailyNutritionRow, DayLog, DayMark, DayMarkRow, FoodLogRow } from './types'
+import type {
+  DailyNutritionRow,
+  DayLog,
+  DayMark,
+  DayMarkRow,
+  EntrySource,
+  EntryStatus,
+  FoodLogRow,
+} from './types'
 
 /**
  * One day: what was eaten, and how much water.
@@ -64,14 +72,6 @@ export function useDay(date: string) {
 export type DayView = DayLog & { isPending: boolean }
 
 /**
- * The day currently on screen, never undefined — an unlogged day is empty.
- *
- * Snaps still being recognised are merged in here rather than being a second
- * list every screen has to remember to render. They have no row yet, so they
- * cannot come from the query; sorting by time puts each one where it belongs
- * in its meal rather than at the end.
- */
-/**
  * The pending rows whose meal has NOT turned up yet.
  *
  * The client removes its own pending row when the request resolves, but the day
@@ -99,9 +99,9 @@ export type DayView = DayLog & { isPending: boolean }
  * Exported for its own test. The rule is four lines and every one of them has
  * been wrong at some point, in ways that read as a caching bug.
  */
-export function unclaimedSnaps<S extends { loggedAt: string; text?: string; status: string }>(
+export function unclaimedSnaps<S extends { loggedAt: string; text?: string; status: EntryStatus }>(
   snaps: S[],
-  entries: Array<{ id: string; source: string; loggedAt: string }>,
+  entries: Array<{ id: string; source: EntrySource; loggedAt: string }>,
 ): S[] {
   const claimed = new Set<string>()
   const landed = (snap: S) => {
@@ -121,20 +121,42 @@ export function unclaimedSnaps<S extends { loggedAt: string; text?: string; stat
   return snaps.filter((snap) => snap.status === 'nofood' || !landed(snap))
 }
 
+/**
+ * The day currently on screen, never undefined — an unlogged day is empty.
+ *
+ * Snaps still being recognised are merged in here rather than being a second
+ * list every screen has to remember to render. They have no row yet, so they
+ * cannot come from the query; sorting by time puts each one where it belongs
+ * in its meal rather than at the end.
+ */
 export function useDayLog(date: string): DayView {
   const { data, isPending } = useDay(date)
-  const { snaps } = usePendingSnaps()
+  const { snaps, remove } = usePendingSnaps()
 
-  return useMemo(() => {
-    const base = { ...(data ?? { date, entries: [], waterGlasses: 0 }), isPending }
+  const view = useMemo((): DayView & { settled: string[] } => {
+    const base = { ...(data ?? { date, entries: [], waterGlasses: 0 }), isPending, settled: [] }
     const mine = snaps.filter((snap) => snap.logDate === date)
     if (mine.length === 0) return base
 
     const unresolved = unclaimedSnaps(mine, base.entries)
-    if (unresolved.length === 0) return base
+    /**
+     * A row whose meal turned up is DONE, not merely hidden.
+     *
+     * Claiming it only kept it out of this list, and for a snap the client
+     * resolved itself that is enough — the request already removed it. But a
+     * snap nobody was holding (killed app, timed-out request) has nothing else
+     * to take it out of storage, so it sat there until it aged out, invisible
+     * and claiming an entry. Delete that meal later and it reappears: a "could
+     * not read the plate" row for a plate that was read, on a day the user has
+     * just tidied.
+     */
+    const settled = mine.filter((snap) => !unresolved.includes(snap)).map((snap) => snap.id)
+
+    if (unresolved.length === 0) return { ...base, settled }
 
     return {
       ...base,
+      settled,
       /**
        * A snap is content, so a day carrying one is never "still loading".
        *
@@ -149,6 +171,18 @@ export function useDayLog(date: string): DayView {
       ),
     }
   }, [data, snaps, date, isPending])
+
+  // Swept after render rather than during it: `remove` sets state on another
+  // provider, and the list this hook returns is already correct without it.
+  // Joined into one string so the effect fires on the CONTENTS changing rather
+  // than on a fresh array every render.
+  const settledIds = view.settled.join(',')
+  useEffect(() => {
+    if (!settledIds) return
+    for (const id of settledIds.split(',')) remove(id)
+  }, [settledIds, remove])
+
+  return view
 }
 
 /**
