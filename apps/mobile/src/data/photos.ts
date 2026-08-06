@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'
 import { Image } from 'react-native'
 
+import { queryClient } from '@/lib/query'
 import { supabase } from '@/lib/supabase'
 import { keys } from './keys'
 
@@ -289,6 +290,10 @@ export function uploadAvatar(localUri: string): Promise<string> {
  * Not persisted to disk: `lib/query.ts` drops everything under the `photo` key
  * on dehydrate, since a week-old cache full of hour-old URLs is a pile of
  * strings that are wrong by the time anything reads them.
+ *
+ * Which is why the URL is the only thing re-fetched on a cold launch. The
+ * PICTURE it names survives, cached by expo-image against the key rather than
+ * against the signature — see `storedImageSource`.
  */
 function useStoredImageUrl(path: string | undefined) {
   return useQuery({
@@ -310,6 +315,51 @@ export function useAvatarUrl(path: string | undefined) {
 }
 
 /**
+ * Structurally what `expo-image` calls an `ImageSource`, written out rather
+ * than imported so the data layer keeps no dependency on a rendering library.
+ */
+export type StoredImageSource = { uri: string; cacheKey?: string }
+
+/**
+ * What to hand `<Image source>` for a picture that lives in the bucket.
+ *
+ * This exists because of a mismatch between two lifetimes. The BYTES never
+ * change — an object is written once under a UUID key and is never rewritten —
+ * but the URL naming them is a signature that expires within the hour, so it
+ * is re-minted on every launch and again every 55 minutes. expo-image caches
+ * on the URL by default, signing parameters and all, which made a stable
+ * photograph look like a different image every time it was signed for: a cold
+ * launch re-downloaded every plate on the day, and a diary left open across
+ * the hour re-downloaded them again. Bytes moving because a credential rotated.
+ *
+ * So the cache is keyed on `photo_path` instead. The key is what the row
+ * stores, it is minted per upload and never reused, and it names exactly one
+ * object — which makes it both a stable cache key AND the invalidation. A
+ * photo replaced by hand is a NEW key (the server mints one per upload), so the
+ * new picture cannot be served from the old one's entry; there is no cache to
+ * bust because the thing being asked for has a different name.
+ *
+ * That last part is load-bearing rather than incidental. An upload path that
+ * reused a key on replace — writing the new object over the old — would leave
+ * this cache confidently serving the previous photograph forever, on a key
+ * whose bytes it has no way of knowing changed.
+ *
+ * A LOCAL uri wins over a stored one and is deliberately given no cache key: a
+ * file on disk is not a download, and its path already names it uniquely.
+ */
+export function storedImageSource(
+  path: string | undefined,
+  signedUrl: string | undefined,
+  localUri?: string,
+): StoredImageSource | undefined {
+  if (localUri) return { uri: localUri }
+  if (!signedUrl) return undefined
+  // `cacheKey` undefined falls back to the uri, which is the pre-cache
+  // behaviour — correct, just not cached across a re-sign.
+  return { uri: signedUrl, cacheKey: path }
+}
+
+/**
  * Deletes stored images. Called when the row that owned one is deleted, or
  * when a new picture takes its place.
  *
@@ -328,6 +378,21 @@ export function useAvatarUrl(path: string | undefined) {
  */
 async function removeImages(paths: string[]): Promise<void> {
   if (paths.length === 0) return
+
+  /**
+   * Drop the signed URL before asking for the object to go, and drop it even
+   * if that ask then fails — the row has already stopped pointing here either
+   * way, so the URL is wrong regardless of whether the object survives it.
+   *
+   * The DISK bytes under this key are left alone, and there is no API to do
+   * otherwise: expo-image can clear its cache entirely or not at all, and
+   * evicting one dead plate by throwing away every other plate on the day is a
+   * worse trade than letting its own LRU reclaim a key nothing will ask for
+   * again. Nothing can be served stale in the meantime, because a replacement
+   * photo arrives under a key of its own.
+   */
+  for (const path of paths) queryClient.removeQueries({ queryKey: keys.photo(path) })
+
   try {
     await photos({ action: 'delete', keys: paths })
   } catch (error) {

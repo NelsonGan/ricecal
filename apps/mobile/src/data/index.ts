@@ -73,6 +73,8 @@ export {
 export {
   removeAvatar,
   removeMealPhoto,
+  type StoredImageSource,
+  storedImageSource,
   uploadAvatar,
   uploadMealPhoto,
   useAvatarUrl,

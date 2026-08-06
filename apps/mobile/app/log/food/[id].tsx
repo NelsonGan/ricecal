@@ -8,6 +8,7 @@ import {
   type EntryPatch,
   type IconRef,
   removeMealPhoto,
+  storedImageSource,
   uploadMealPhoto,
   useDayLog,
   useEntryIngredients,
@@ -388,7 +389,7 @@ export default function FoodDetail() {
 
   // A shot taken on this screen wins over the stored one: it is the newer answer,
   // and on the add screen it is the only one there is.
-  const hero = shot?.uri ?? heroUrl
+  const hero = storedImageSource(existing?.photoPath, heroUrl, shot?.uri)
 
   /**
    * The drawing this tile would show, if it is showing one at all.
@@ -806,7 +807,7 @@ export default function FoodDetail() {
           <ActivityIndicator />
         ) : hero && !icon ? (
           <Image
-            source={{ uri: hero }}
+            source={hero}
             style={{ flex: 1, width: '100%' }}
             contentFit="cover"
             accessibilityLabel={t('logging:camera.photoOf', { food: food.name })}
