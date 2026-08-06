@@ -38,6 +38,15 @@ export function useProfile() {
 /** The fields onboarding and the settings screens can write. */
 export type ProfilePatch = {
   displayName?: string
+  /**
+   * A key in R2, never a URL — the key `uploadAvatar` returned. `null` clears
+   * the picture and goes back to the stock figure.
+   *
+   * Storing the key is what makes the storage provider a detail: it changed
+   * once already, and a column full of URLs would have been a migration over
+   * every row rather than a different base to sign against.
+   */
+  avatarPath?: string | null
   sex?: Sex
   birthDate?: string
   heightCm?: number
@@ -54,6 +63,7 @@ function toRow(patch: ProfilePatch): TablesUpdate<'profiles'> {
   // not blank a column the caller never mentioned.
   const row: TablesUpdate<'profiles'> = {}
   if (patch.displayName !== undefined) row.display_name = patch.displayName
+  if (patch.avatarPath !== undefined) row.avatar_path = patch.avatarPath
   if (patch.sex !== undefined) row.sex = patch.sex
   if (patch.birthDate !== undefined) row.birth_date = patch.birthDate
   if (patch.heightCm !== undefined) row.height_cm = patch.heightCm

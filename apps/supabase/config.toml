@@ -126,6 +126,16 @@ port = 54424
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# On, even though nothing uses it. Images moved to Cloudflare R2 and no client
+# or function touches Supabase Storage any more — but turning this off does not
+# merely stop a container, it stops the `storage` schema being CREATED at all,
+# and both `20260805235505_move_images_to_r2.sql` (which drops the old object
+# policies) and `tests/03_storage.test.sql` (which asserts no bucket has come
+# back) name `storage.objects` and `storage.buckets`. With it off, a fresh
+# `db reset` dies on `relation "storage.objects" does not exist`.
+#
+# So it stays on to keep those two honest: a guard that cannot run is not a
+# guard. The cost is one idle container on a developer's machine.
 [storage]
 enabled = true
 # The maximum file size allowed (e.g. "5MB", "500KB").
@@ -466,6 +476,18 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/scan-meal/deno.json"
 entrypoint = "./functions/scan-meal/index.ts"
+
+# Signed URLs for images in R2: one action to upload, one to read a batch of
+# keys, one to delete. Same auth pattern as the others — it inspects the
+# Authorization header itself so a failure says which half broke. Secrets it
+# reads: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET.
+# Without them it answers 503 rather than pretending, which is what a local
+# stack with no Cloudflare credentials gets.
+[functions.photos]
+enabled = true
+verify_jwt = false
+import_map = "./functions/photos/deno.json"
+entrypoint = "./functions/photos/index.ts"
 
 # Fix-by-typing: free-text corrections to a scanned entry. Same auth pattern
 # and the same cascade code (functions/_shared) as scan-meal.

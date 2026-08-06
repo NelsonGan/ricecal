@@ -131,7 +131,7 @@ function useRecogniseMeal() {
         .catch(() => null)
 
       const work = async () => {
-        const path = photoUri ? await uploadMealPhoto(userId, photoUri) : undefined
+        const path = photoUri ? await uploadMealPhoto(photoUri) : undefined
         return scanMeal({ photoPath: path, text, logDate })
       }
 

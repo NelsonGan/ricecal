@@ -144,7 +144,7 @@ export type Entry = {
   logDate: string
   note?: string
   source: EntrySource
-  /** Key inside the private `meal-photos` bucket. */
+  /** An object key in R2, under `meals/<user>/`. Never a URL. */
   photoPath?: string
   /**
    * A local `file://` uri, set only while a snap is in flight — before the

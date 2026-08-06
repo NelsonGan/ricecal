@@ -54,3 +54,8 @@ apps/supabase/.temp
 # edge functions with `--no-lock` for the reason in CLAUDE.md — a lockfile that
 # reaches a function directory gets bundled into the deployed script.
 deno.lock
+
+# Wrangler's local-mode scratch state. `wrangler r2 ...` defaults to a LOCAL
+# simulated bucket and writes one of these next to the CWD; every real command
+# here needs `--remote`, and nothing in this directory is ever the truth.
+.wrangler/
