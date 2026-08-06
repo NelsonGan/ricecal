@@ -10,7 +10,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(14);
+select plan(18);
 
 -- Fixed ids so failures name the same user every run.
 \set user_a '11111111-1111-1111-1111-111111111111'
@@ -74,7 +74,8 @@ set timezone       = 'UTC',
     birth_date     = current_date - interval '28 years',
     height_cm      = 163,
     activity_level = 'light',
-    weight_goal    = 'lose',
+    -- The whole of the calorie plan, with the weigh-in below: ten kilos to lose.
+    -- There is no goal enum to agree or disagree with it.
     target_weight_kg = 58
 where id = :'user_a';
 
@@ -142,6 +143,67 @@ select is(
   (select kcal from public.daily_goals where user_id = :'user_a'),
   1800,
   'nor does a new weigh-in'
+);
+
+
+-- 3b. THE TARGET WEIGHT IS THE PLAN ------------------------------------------
+--
+-- `target_weight_kg` used to be a number the app stored and the budget ignored,
+-- so a lose/maintain/gain enum decided everything: someone 10 kg out and someone
+-- 200 g out were handed the same deficit, and it carried on after they arrived.
+-- The gap between the two weights is the whole plan now, and the column is on
+-- the recompute trigger's list — which is the half that is easy to leave behind,
+-- because without it the target is only ever read when something ELSE about the
+-- profile changes.
+--
+-- Back under the formula's control, and back to the body section 2 described, so
+-- every figure below is comparable with the 1540 asserted there. The profile
+-- write is second because it is what fires the recompute.
+update public.daily_goals set is_custom = false where user_id = :'user_a';
+update public.profiles set activity_level = 'light' where id = :'user_a';
+
+-- Half a kilo under the current 68.0, which is inside the deadband: body weight
+-- swings that far on water inside a day, so this reads as arrived. Maintenance
+-- is 1921.9 and nothing comes off it.
+update public.profiles set target_weight_kg = 67.8 where id = :'user_a';
+
+select is(
+  (select kcal from public.daily_goals where user_id = :'user_a'),
+  1920,
+  'a target already reached stops the cut, and moving the target recomputes at all'
+);
+
+-- One kilo to go. The taper closes what is left over four weeks rather than at
+-- the nominal 0.5 kg/week: 0.25 kg/week is 275 kcal, under the 384.4 the
+-- maintenance cap would have allowed, so 1921.9 - 275 = 1646.9 -> 1650.
+update public.profiles set target_weight_kg = 67.0 where id = :'user_a';
+
+select is(
+  (select kcal from public.daily_goals where user_id = :'user_a'),
+  1650,
+  'the last kilo is not chased at the full pace'
+);
+
+-- A target ABOVE the current weight is a gain, with no enum left to contradict
+-- it. Seven kilos is well past the taper, so it is the full 0.25 kg/week: 275
+-- kcal, under the 288.3 that 15% of maintenance allows. 1921.9 + 275 = 2196.9.
+update public.profiles set target_weight_kg = 75.0 where id = :'user_a';
+
+select is(
+  (select kcal from public.daily_goals where user_id = :'user_a'),
+  2200,
+  'a target above the current weight is a surplus, read off the sign of the gap'
+);
+
+-- Every account created before the target was collected has a null here, and a
+-- plan cannot be read off a number nobody gave. Maintenance, and no deficit
+-- invented on their behalf.
+update public.profiles set target_weight_kg = null where id = :'user_a';
+
+select is(
+  (select kcal from public.daily_goals where user_id = :'user_a'),
+  1920,
+  'no target stated is maintenance rather than a guessed direction'
 );
 
 

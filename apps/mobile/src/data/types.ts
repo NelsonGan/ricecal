@@ -20,7 +20,6 @@ import type { IconProps } from '@/ui'
 // Enums that mean the same thing on both sides.
 export type Meal = Enums<'meal'>
 export type Sex = Enums<'sex'>
-export type Goal = Enums<'weight_goal'>
 export type Place = Enums<'food_place'>
 export type Units = Enums<'unit_system'>
 export type Energy = Enums<'energy_unit'>

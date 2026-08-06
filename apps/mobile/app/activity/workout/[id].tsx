@@ -30,10 +30,6 @@ import { AppBar, Card, EmptyState, Icon, Screen, Skeleton, Text } from '@/ui'
  * empty state there names the app and says what would fix it. Hiding the
  * section on Android would have been easier and would have left an Android user
  * assuming the feature does not exist.
- *
- * "Already counted in today's budget" is the last line for a reason. The
- * calories are shown large at the top, and without that sentence the obvious
- * next thought is to add them somewhere.
  */
 export default function WorkoutScreen() {
   const { t } = useTranslation(['activity', 'common'])
@@ -228,12 +224,6 @@ export default function WorkoutScreen() {
       </Card>
 
       {heart.length > 0 ? <StatRow stats={heart} /> : null}
-
-      {/* The last word on the screen, and the reason the screen is safe to
-          show a big calorie number at the top of. */}
-      <Text variant="meta" className="text-center">
-        {t('activity:workout.counted')}
-      </Text>
     </Screen>
   )
 }
