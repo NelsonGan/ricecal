@@ -1,4 +1,5 @@
 import { unclaimedSnaps } from '../day'
+import type { EntrySource, EntryStatus } from '../types'
 
 /**
  * Which pending rows survive a refetch.
@@ -8,10 +9,10 @@ import { unclaimedSnaps } from '../day'
  * could not be read. None of them throw, so they only exist here.
  */
 
-const entry = (id: string, source: string, at: string) => ({ id, source, loggedAt: at })
-const snap = (over: Partial<{ loggedAt: string; text: string; status: string }> = {}) => ({
+const entry = (id: string, source: EntrySource, at: string) => ({ id, source, loggedAt: at })
+const snap = (over: Partial<{ loggedAt: string; text: string; status: EntryStatus }> = {}) => ({
   loggedAt: '2026-08-06T12:00:00.000Z',
-  status: 'analysing',
+  status: 'analysing' as EntryStatus,
   ...over,
 })
 
