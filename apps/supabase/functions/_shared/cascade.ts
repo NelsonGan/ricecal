@@ -855,12 +855,34 @@ async function resolveByEstimate(
     return Math.abs(atwater - n.kcal) / n.kcal <= 0.25
   }
 
+  /**
+   * And in the same world as the meal the vision call described.
+   *
+   * Atwater only asks whether an answer agrees with ITSELF, which a
+   * proportionally huge one does: a Korean fried chicken tray came back at
+   * 3,260 kcal with macros to match, passed, and was written to the diary
+   * against a photo the same model had bounded at 1,100-1,250 kcal. Nothing
+   * else in this tier looks at a portion at all — the catalogue has already
+   * failed by the time it runs, so the band is the only other evidence there
+   * is, and a figure two and a half times outside it is not a second opinion
+   * about this meal.
+   *
+   * The band is still not shown to the estimator, and that is deliberate:
+   * anchored with "expected around 400-500 kcal" the model answered 450 for a
+   * plate of apple slices and 120 without. Checking an answer afterwards is not
+   * the same as suggesting one beforehand.
+   */
+  const inBand = (n: Nutrition): boolean =>
+    item.kcal_high <= 0 || (n.kcal <= item.kcal_high * 2 && n.kcal >= item.kcal_low * 0.4)
+
   // One retry: a self-contradicting answer once may be noise, twice is the
-  // model not knowing this dish.
+  // model not knowing this dish. Failing both leaves the archetype floor, which
+  // prices the plate by scaling a generic row to the band — a rougher answer,
+  // and one that cannot be off by a factor of three.
   let nutrition: Nutrition | null = null
   for (let attempt = 0; attempt < 2 && !nutrition; attempt++) {
     const candidate = await estimateNutrition(item, mock)
-    if (atwaterOk(candidate)) nutrition = candidate
+    if (atwaterOk(candidate) && inBand(candidate)) nutrition = candidate
   }
   if (!nutrition) return null
 

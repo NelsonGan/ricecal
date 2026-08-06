@@ -13,7 +13,7 @@
 // mock through `body.mock`, which is only read in mock mode; it exists so a
 // test can force each tier of the cascade in turn.
 
-import { reconcile } from './portion.ts'
+import { reconcile, unfoldCounts } from './portion.ts'
 
 export type Scene = 'single' | 'composite' | 'packaged' | 'unclear'
 
@@ -385,84 +385,94 @@ function shapeVision(raw: unknown): Vision {
     const name = String(i.name ?? '').trim()
     if (!name) return []
     const low = clampNumber(i.kcal_low, 0, 10000, 0)
+    // Read before the components rather than beside them: the band is what
+    // decides whether the counts below have already been applied.
+    const high = clampNumber(i.kcal_high, low, 10000, low)
     return [
       {
         name: name.slice(0, 120),
         specific_query: String(i.specific_query ?? name).trim(),
         generic_query: String(i.generic_query ?? '').trim(),
         count: Math.round(clampNumber(i.count, 1, 20, 1)),
-        components: (Array.isArray(i.components) ? i.components : [])
-          .flatMap((c): VisionComponent[] => {
-            // Bare strings still parse (older mocks, stubborn models); they
-            // carry no sizing, which the resolver treats as "top hit, as-is".
-            if (typeof c === 'string') {
-              const name = c.trim()
-              return name
-                ? [
-                    {
-                      name,
-                      count: 1,
-                      grams: null,
-                      kcal: 0,
-                      carbs_g: null,
-                      protein_g: null,
-                      fat_g: null,
-                    },
-                  ]
-                : []
-            }
-            const o = (c ?? {}) as Record<string, unknown>
-            const name = String(o.name ?? '').trim()
-            if (!name) return []
-            const optional = (v: unknown): number | null => {
-              const n = Number(v)
-              return v !== null && v !== undefined && Number.isFinite(n) && n >= 0
-                ? Math.min(n, 9999)
-                : null
-            }
-            // A glass of water is not part of a meal's calories, and listing
-            // it made a durian into "Durian with water" — two components, so
-            // the plate was decomposed instead of counted, and one of its
-            // parts was a search for the word "water".
-            //
-            // EXPLICITLY zero, and this is the whole distinction. `Number(null)`
-            // is 0, so a model that answered the name and the weight of a part
-            // but left its calories out had that part DELETED — and the part a
-            // model is least willing to price is the plain base of the dish it
-            // is looking at. A basket of wings came back as celery and dip; a
-            // char kuey teow came back as prawns and lap cheong with no
-            // noodles under them, and the entry was priced from what was left.
-            // An unpriced part is the catalogue's question to answer, not a
-            // reason to pretend it is not on the plate.
-            //
-            // Written against the raw value rather than against `Number(...)`
-            // so that null and undefined are not zero, and loosely enough that
-            // "0" and 0.0 still are — a model half-following an instruction
-            // answers in strings, and this branch is about intent.
-            if (o.kcal !== null && o.kcal !== undefined && Number(o.kcal) === 0) return []
-            return [
-              {
-                name: name.slice(0, 120),
-                // Whole units. A model that answers 1.5 means one and a bit,
-                // which is what the kcal figure is for.
-                count: Math.round(clampNumber(o.count, 1, 12, 1)),
-                grams: unitGrams(o.grams),
-                kcal: Math.round(clampNumber(o.kcal, 0, 10000, 0)),
-                carbs_g: optional(o.carbs_g),
-                protein_g: optional(o.protein_g),
-                fat_g: optional(o.fat_g),
-              },
-            ]
-          })
-          // Made to agree with their own weight before anything downstream
-          // reads them: `reconcile` is where 180 kcal in a 30 g satay stick
-          // stops being a number the catalogue search has to work around.
-          .map((component) => ({ ...component, ...reconcile(component) }))
-          .slice(0, 8),
+        // `unfoldCounts` last, because it is the one step that needs the whole
+        // list and the band together: a part is only "already totalled" if the
+        // parts TOGETHER outrun the meal they are supposed to add up to.
+        components: unfoldCounts(
+          (Array.isArray(i.components) ? i.components : [])
+            .flatMap((c): VisionComponent[] => {
+              // Bare strings still parse (older mocks, stubborn models); they
+              // carry no sizing, which the resolver treats as "top hit, as-is".
+              if (typeof c === 'string') {
+                const name = c.trim()
+                return name
+                  ? [
+                      {
+                        name,
+                        count: 1,
+                        grams: null,
+                        kcal: 0,
+                        carbs_g: null,
+                        protein_g: null,
+                        fat_g: null,
+                      },
+                    ]
+                  : []
+              }
+              const o = (c ?? {}) as Record<string, unknown>
+              const name = String(o.name ?? '').trim()
+              if (!name) return []
+              const optional = (v: unknown): number | null => {
+                const n = Number(v)
+                return v !== null && v !== undefined && Number.isFinite(n) && n >= 0
+                  ? Math.min(n, 9999)
+                  : null
+              }
+              // A glass of water is not part of a meal's calories, and listing
+              // it made a durian into "Durian with water" — two components, so
+              // the plate was decomposed instead of counted, and one of its
+              // parts was a search for the word "water".
+              //
+              // EXPLICITLY zero, and this is the whole distinction. `Number(null)`
+              // is 0, so a model that answered the name and the weight of a part
+              // but left its calories out had that part DELETED — and the part a
+              // model is least willing to price is the plain base of the dish it
+              // is looking at. A basket of wings came back as celery and dip; a
+              // char kuey teow came back as prawns and lap cheong with no
+              // noodles under them, and the entry was priced from what was left.
+              // An unpriced part is the catalogue's question to answer, not a
+              // reason to pretend it is not on the plate.
+              //
+              // Written against the raw value rather than against `Number(...)`
+              // so that null and undefined are not zero, and loosely enough that
+              // "0" and 0.0 still are — a model half-following an instruction
+              // answers in strings, and this branch is about intent.
+              if (o.kcal !== null && o.kcal !== undefined && Number(o.kcal) === 0) return []
+              return [
+                {
+                  name: name.slice(0, 120),
+                  // Whole units. A model that answers 1.5 means one and a bit,
+                  // which is what the kcal figure is for.
+                  count: Math.round(clampNumber(o.count, 1, 12, 1)),
+                  grams: unitGrams(o.grams),
+                  kcal: Math.round(clampNumber(o.kcal, 0, 10000, 0)),
+                  carbs_g: optional(o.carbs_g),
+                  protein_g: optional(o.protein_g),
+                  fat_g: optional(o.fat_g),
+                },
+              ]
+            })
+            // Made to agree with their own weight before anything downstream
+            // reads them: `reconcile` is where 180 kcal in a 30 g satay stick
+            // stops being a number the catalogue search has to work around.
+            .map((component) => ({ ...component, ...reconcile(component) }))
+            .slice(0, 8),
+          low,
+          high,
+        ),
         grams: unitGrams(i.grams),
         serving_hint: i.serving_hint ? String(i.serving_hint).slice(0, 80) : null,
         kcal_low: low,
-        kcal_high: clampNumber(i.kcal_high, low, 10000, low),
+        kcal_high: high,
         confidence: clampNumber(i.confidence, 0, 1, 0.5),
         suggested_edits: (Array.isArray(i.suggested_edits) ? i.suggested_edits : [])
           .map((edit) => String(edit).trim().slice(0, 60))

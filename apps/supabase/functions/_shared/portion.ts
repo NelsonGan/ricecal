@@ -225,6 +225,65 @@ export function reconcile(part: Sized): Sized {
 }
 
 /**
+ * The counted-twice repair.
+ *
+ * A component states what ONE of it weighs and costs, and `count` says how many
+ * there are — so the plate is the sum of `kcal * count`. Models routinely
+ * answer with the total instead and set the count beside it, which multiplies a
+ * meal by four or six. A photographed Korean chicken set came back with
+ * `{fried chicken pieces, count 4, 140 g, 392 kcal}` and
+ * `{potato wedges, count 6, 150 g, 450 kcal}` — 150 g is the bowl of wedges and
+ * not one wedge — and the parts multiplied out to 4,568 kcal against the
+ * model's own 1,100-1,250 band for the same photo.
+ *
+ * The band is what makes this fixable rather than merely detectable. Two
+ * readings of the same answer are available, and here they are far apart: taken
+ * per unit the parts are 4,568, and taken as stated they are 1,142, which is
+ * inside the band the model gave. When the arithmetic disagrees that sharply
+ * and the other reading agrees that well, the counts have already been applied
+ * — so the weights and the figures are divided back down to one, which is also
+ * what makes the breakdown editable: 25 g a wedge, and a stepper that means
+ * something.
+ *
+ * Both tests matter. Without the first, a plate whose parts genuinely multiply
+ * to a large meal gets quartered; without the second, a wrong band could halve
+ * a correct breakdown. Neither reading fitting means neither is trusted, and
+ * the parts are left exactly as they came for the guard downstream to judge.
+ */
+export function unfoldCounts<T extends Sized & { count: number }>(
+  components: T[],
+  kcalLow: number,
+  kcalHigh: number,
+): T[] {
+  if (kcalHigh <= 0 || !components.some((c) => c.count > 1)) return components
+
+  const perUnit = components.reduce((sum, c) => sum + c.kcal * c.count, 0)
+  const asStated = components.reduce((sum, c) => sum + c.kcal, 0)
+  // The same tolerances the breakdown guard in the cascade applies, and for the
+  // same reason: a band is not a measurement, so this only fires on a
+  // disagreement too large to be about portion size.
+  if (perUnit <= kcalHigh * 1.8) return components
+  if (asStated < kcalLow * 0.6 || asStated > kcalHigh * 1.8) return components
+
+  const share = (value: number | null, count: number): number | null =>
+    value === null ? null : Math.round((value / count) * 10) / 10
+
+  return components.map((c) => {
+    if (c.count <= 1) return c
+    const grams = c.grams === null ? null : Math.round(c.grams / c.count)
+    return {
+      ...c,
+      // A part divided below a gram is a rounding artefact, not a portion.
+      grams: grams !== null && grams >= 1 ? grams : null,
+      kcal: Math.round(c.kcal / c.count),
+      carbs_g: share(c.carbs_g, c.count),
+      protein_g: share(c.protein_g, c.count),
+      fat_g: share(c.fat_g, c.count),
+    }
+  })
+}
+
+/**
  * Is `kcal` a believable price for `grams` of food? Used to gate a catalogue
  * row before its figure is trusted over the model's.
  *
