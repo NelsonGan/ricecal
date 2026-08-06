@@ -127,6 +127,12 @@ comment on function public.compute_targets is
 
 
 -- 2. The recompute trigger reads the new argument list. ---------------------
+--
+-- COPIED VERBATIM from schemas/80_goals_sync.sql, comments and all. Postgres
+-- stores a function's body exactly as it was written — comments included — so
+-- `db diff` compares that text, and an abbreviated copy here reads as a
+-- function the schema files declare and no migration produces. This one was
+-- trimmed for length and the CI drift check caught it.
 create or replace function public.sync_daily_goals()
 returns trigger
 language plpgsql
@@ -140,6 +146,18 @@ declare
   v_current  public.daily_goals%rowtype;
   v_computed record;
 begin
+  -- Attached to two tables whose owner columns are named differently, and to
+  -- DELETE where there is no NEW row.
+  --
+  -- This is an IF and not a CASE expression on purpose. PL/pgSQL resolves the
+  -- field references in EVERY branch of a CASE, so `case … then new.id else
+  -- new.user_id end` fails with `record "new" has no field "user_id"` while
+  -- firing on `profiles` — the branch it never takes is what breaks it. The
+  -- branches of an IF are separate statements and only the taken one is
+  -- evaluated.
+  --
+  -- Likewise `coalesce(new, old)`: OLD is unassigned during INSERT, and
+  -- touching it raises rather than returning null.
   if tg_op = 'DELETE' then
     v_user_id := old.user_id;
   elsif tg_table_name = 'profiles' then
@@ -150,6 +168,9 @@ begin
 
   select * into v_profile from public.profiles where id = v_user_id;
 
+  -- Onboarding fills the profile one screen at a time, so most of these calls
+  -- happen before there is enough to compute anything. Returning quietly is
+  -- correct: the write that completes the set will fire this again.
   if v_profile.id is null
      or v_profile.sex is null
      or v_profile.birth_date is null
@@ -188,6 +209,13 @@ begin
     v_profile.target_weight_kg
   );
 
+  -- Written against today, not against the row that is currently in force.
+  -- A new budget applies from now on; yesterday was still measured against
+  -- yesterday's target, which is the entire point of the effective_from key.
+  --
+  -- Water is carried forward rather than recomputed: it is not derived from
+  -- body stats, and resetting it to the default on every profile edit would
+  -- quietly undo a user's own choice.
   insert into public.daily_goals as g (
     user_id, effective_from, kcal, carbs_g, protein_g, fat_g,
     water_glasses, is_custom
