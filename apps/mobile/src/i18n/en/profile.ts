@@ -45,16 +45,23 @@ export const profile = {
     macroTargets: 'MACRO TARGETS',
     macroValue: '{{grams}} g · {{percent}}%',
     goal: 'GOAL',
-    lose: 'Lose',
-    maintain: 'Maintain',
-    gain: 'Gain',
+    currentWeight: 'Current weight',
     targetWeight: 'Target weight',
     weeklyPace: 'Weekly pace',
-    paceValue: '{{value}} kg / week',
     /**
-     * The pace when the plan is not moving — a maintain goal, a target already
-     * reached, or a goal and a target weight pointing opposite ways. "0.00 kg /
-     * week" is the same fact and reads like a broken calculation.
+     * Signed in words rather than with a minus.
+     *
+     * The direction used to be a Lose / Maintain / Gain control above the
+     * slider; it is the gap between the two weights now, and this line is where
+     * that gap is read back. "-0.50 kg / week" states the same thing and makes
+     * the reader do the arithmetic to find out which way they are going.
+     */
+    paceLosing: 'Losing {{value}} kg / week',
+    paceGaining: 'Gaining {{value}} kg / week',
+    /**
+     * The pace when the plan is not moving — the target sitting where the user
+     * already is, which is also how they say they have no goal. "0.00 kg / week"
+     * is the same fact and reads like a broken calculation.
      */
     paceHolding: 'Holding steady',
     other: 'OTHER',

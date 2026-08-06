@@ -34,9 +34,13 @@ create table public.profiles (
   sex               public.sex,
   birth_date        date check (birth_date > date '1900-01-01'),
   height_cm         numeric(5, 1) check (height_cm between 80 and 260),
+  -- Where the user is heading. With the newest row in `weight_logs` this is the
+  -- whole of the calorie plan — the sign of the gap says lose or gain, its size
+  -- says how hard, and equal says neither. There was a `weight_goal` enum beside
+  -- it, asked for on its own onboarding screen, and it could only agree with
+  -- these two numbers or contradict them; see `compute_targets`.
   target_weight_kg  numeric(5, 1) check (target_weight_kg between 20 and 400),
   activity_level    public.activity_level not null default 'light',
-  weight_goal       public.weight_goal not null default 'track',
 
   -- i18n keys into onboarding.foodStyle.tags — the label is translated, the
   -- key is data. An array rather than a join table: it is a short, unordered,

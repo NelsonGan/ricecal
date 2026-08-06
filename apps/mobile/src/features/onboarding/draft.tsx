@@ -10,7 +10,7 @@ import {
 } from 'react'
 import { createMMKV } from 'react-native-mmkv'
 
-import type { ActivityLevel, Goal, Sex } from '@/data'
+import type { ActivityLevel, Sex } from '@/data'
 
 /**
  * The onboarding answers, before there is an account to put them in.
@@ -35,7 +35,6 @@ const storage = createMMKV({ id: 'ricecal-onboarding' })
 const KEY = 'draft'
 
 export type OnboardingDraft = {
-  goal?: Goal
   sex?: Sex
   /** Kept as an age, converted to a birth date only on the way to the database. */
   age?: number
@@ -72,8 +71,7 @@ export type CompleteDraft = OnboardingDraft &
  */
 export function isComplete(draft: OnboardingDraft): draft is CompleteDraft {
   return Boolean(
-    draft.goal &&
-      draft.sex &&
+    draft.sex &&
       draft.age &&
       draft.heightCm &&
       draft.weightKg &&
@@ -143,7 +141,7 @@ export function OnboardingDraftProvider({ children, userId }: OnboardingDraftPro
    * found a complete set of answers and treated the user as mid-onboarding. And
    * worse: the next person to sign in on this phone who had not finished
    * onboarding would have had THOSE answers flushed onto their profile — someone
-   * else's height, weight and goal, silently.
+   * else's height, weight and target, silently.
    *
    * On the transition only. A launch with no session has never had one, and there
    * is nothing to clear; a first render must not wipe answers being collected

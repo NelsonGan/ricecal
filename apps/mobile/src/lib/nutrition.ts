@@ -1,4 +1,4 @@
-import type { ActivityLevel, Entry, Goal, Macros, Targets } from '@/data/types'
+import type { ActivityLevel, Entry, Macros, Targets } from '@/data/types'
 
 /**
  * Arithmetic the screens share.
@@ -138,31 +138,33 @@ const ACTIVITY_FACTOR: Record<ActivityLevel, number> = {
 const KCAL_PER_KG = 7700
 
 /**
- * How fast each goal aims to move, in kg per week, before the target is read.
+ * How fast the plan moves in each direction, in kg per week, before the distance
+ * left to run is read.
  *
  * Loss at the gentle end of the 0.5–1 kg/week both the NHS and CDC call safe —
  * past 1 kg/week a growing share of what goes is lean tissue. Gain at 0.25
  * kg/week, the lean-gain rate: muscle has a ceiling on how fast it can be built
  * and anything quicker is mostly fat.
  *
- * NOMINAL, because this is what the goal asks for and not what the plan does.
- * How far the target weight actually is decides that — see `intendedPace`.
+ * NOMINAL, because this is the most either direction ever asks for and not what
+ * the plan does. How far the target is decides that — see `intendedPace`.
  */
-const NOMINAL_PACE_KG_PER_WEEK: Record<Goal, number> = {
-  lose: -0.5,
-  maintain: 0,
-  gain: 0.25,
-  track: 0,
-}
+const NOMINAL_LOSS_KG_PER_WEEK = 0.5
+const NOMINAL_GAIN_KG_PER_WEEK = 0.25
 
 /**
- * How close to the target counts as arrived.
+ * How close to the target counts as arrived, and the width of "no goal".
  *
  * Body weight swings a kilogram either way inside a single day on water alone,
  * so a plan that chased the last hundred grams would be reading noise: the
  * budget would move on every weigh-in and the number on Today would never
  * settle. Half a kilo is also the step on the target-weight slider, so the
  * deadband is exactly "you cannot ask for closer than this".
+ *
+ * It carries a second job now that the two weights are the whole statement of
+ * intent. A user who wants no goal at all sets their target where they already
+ * are, and this is what turns that into maintenance rather than into a plan to
+ * move a rounding error.
  */
 const TARGET_DEADBAND_KG = 0.5
 
@@ -171,9 +173,8 @@ const TARGET_DEADBAND_KG = 0.5
  *
  * This is the taper, and it is the thing a fixed pace gets wrong. Someone 30 kg
  * out and someone 1 kg out were being handed the same 0.5 kg/week deficit —
- * which for the second is two weeks of work priced as a diet, and which does not
- * stop when they arrive: the goal enum still says `lose`, so the app goes on
- * cutting a body that is already where it asked to be.
+ * which for the second is two weeks of work priced as a diet, and which did not
+ * stop when they arrived, because a stored goal of "lose" went on saying so.
  *
  * Four weeks means the last two kilograms are the only ones affected — anyone
  * further out than that still gets the full pace, because `remaining / 4` is
@@ -229,14 +230,16 @@ export type BodyInput = {
   heightCm: number
   age: number
   activity: ActivityLevel
-  goal: Goal
   /**
-   * Where the user is heading, when they have said.
+   * Where the user is heading. With this and `weightKg` there is nothing left to
+   * ask: the sign says lose or gain, the size says how hard, and equal says
+   * neither. There used to be a `goal` beside it — a lose/maintain/gain enum
+   * picked on its own onboarding screen — and it could only ever agree with the
+   * two weights or contradict them, which meant a rule for deciding which of the
+   * user's own answers to believe.
    *
-   * Optional, and null is a real answer rather than a missing one: `profiles`
-   * has allowed a null `target_weight_kg` since before this was an input, so
-   * every account predating it has one. No target means the goal's nominal pace
-   * applies unchanged, which is exactly what those accounts already had.
+   * Null is "no target stated", which reads as maintenance. Only rows written
+   * before the target was collected are in that state.
    */
   targetWeightKg?: number | null
 }
@@ -253,36 +256,35 @@ export function maintenanceRate(body: BodyInput): number {
 }
 
 /**
- * The kg/week this plan aims for, from the goal AND the distance left to run.
+ * The kg/week this plan aims for, read entirely off the two weights.
  *
- * The goal enum says WHETHER to move and the two weights say WHICH WAY and HOW
- * FAR, and the three can disagree. Three rules settle it, in this order:
+ * The gap between where the user is and where they say they want to be answers
+ * every question there is: which way to move, whether to move at all, and how
+ * hard. Nothing else is consulted, and that is the point — there was a
+ * lose/maintain/gain enum here, chosen on its own onboarding screen and stored
+ * beside the target, and a second source can only agree with the first or
+ * contradict it. Agreeing, it was noise; contradicting — "lose" with a target
+ * above the current weight, one drag of a slider away — it forced the app to
+ * decide which of the user's own answers to ignore.
  *
- * 1. **No target stated** — the nominal pace, unchanged. That is every account
- *    created before target weight was an input to anything.
- * 2. **Already there**, within the deadband — nothing to do, whatever the enum
- *    still says. This is the one that matters most: without it a user who
- *    reached their goal weight keeps being told to eat at a deficit, and the
- *    only way out is noticing the setting and changing it themselves.
- * 3. **The two disagree** — `lose` with a target ABOVE current weight, or `gain`
- *    with one below. Neither input is obviously the stale one, so the plan holds
- *    steady rather than picking a direction the user may not have meant. The
- *    goals screen can produce this in one drag of the slider.
+ * Three cases, in order:
  *
- * What is left is a real distance in the direction the goal asked for, and the
- * pace is the nominal figure or the taper, whichever asks for less.
+ * 1. **No target stated** — nothing to work toward, so maintenance. Only rows
+ *    written before the target was collected reach this.
+ * 2. **Already there**, within the deadband — nothing to do. This is also how a
+ *    user says they have no goal: the target sits where they are.
+ * 3. **A real gap** — the nominal pace for that direction, or the taper, or
+ *    whichever asks for less.
  */
 function intendedPace(body: BodyInput): number {
-  const nominal = NOMINAL_PACE_KG_PER_WEEK[body.goal]
-  if (nominal === 0) return 0
-
   const target = body.targetWeightKg
-  if (target === undefined || target === null) return nominal
+  if (target === undefined || target === null) return 0
 
-  // Signed the same way the pace is: negative when there is weight to lose.
+  // Signed the way the pace is: negative when there is weight to lose.
   const remaining = target - body.weightKg
   if (Math.abs(remaining) < TARGET_DEADBAND_KG) return 0
-  if (Math.sign(remaining) !== Math.sign(nominal)) return 0
+
+  const nominal = remaining < 0 ? -NOMINAL_LOSS_KG_PER_WEEK : NOMINAL_GAIN_KG_PER_WEEK
 
   return Math.sign(nominal) * Math.min(Math.abs(nominal), Math.abs(remaining) / MIN_WEEKS_TO_TARGET)
 }

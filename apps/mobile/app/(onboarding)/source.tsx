@@ -4,7 +4,7 @@ import { ChoiceCard, OnboardingStep, useOnboardingDraft } from '@/features/onboa
 
 const OPTIONS = ['tiktok', 'instagram', 'friend', 'appStore', 'youtube', 'other'] as const
 
-/** 06 WHERE HEARD */
+/** 05 WHERE HEARD */
 export default function SourceStep() {
   const { t } = useTranslation(['onboarding', 'common'])
   const router = useRouter()
@@ -12,8 +12,8 @@ export default function SourceStep() {
 
   return (
     <OnboardingStep
-      step={5}
-      total={5}
+      step={4}
+      total={4}
       accent="water"
       title={t('source.title')}
       subtitle={t('source.subtitle')}

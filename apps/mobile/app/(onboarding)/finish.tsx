@@ -9,7 +9,7 @@ import { birthDateFromAge } from '@/lib/nutrition'
 import { Button, EmptyState, Screen, Spinner, Text } from '@/ui'
 
 /**
- * 08 SAVING
+ * 07 SAVING
  *
  * The one write the flow makes.
  *
@@ -66,7 +66,6 @@ function Flush({ draft }: { draft: CompleteDraft }) {
 
     finishOnboarding.mutate(
       {
-        goal: draft.goal,
         sex: draft.sex,
         // Stored as a birth date: an integer age is wrong within a year of being
         // written and nothing would ever correct it.

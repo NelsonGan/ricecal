@@ -9,7 +9,7 @@ import { computeTargets, goalDate } from '@/lib/nutrition'
 import { Button, CalorieRing, Screen, StatTile, Text } from '@/ui'
 
 /**
- * 07 YOUR TARGET
+ * 06 YOUR TARGET
  *
  * The budget, worked out on the phone.
  *
@@ -40,11 +40,10 @@ export default function TargetStep() {
     heightCm: draft.heightCm ?? 164,
     age: draft.age ?? 29,
     activity: draft.activity ?? 'light',
-    goal: draft.goal ?? 'track',
-    // The target sets the pace, so it has to be here and not only in the
-    // footnote below. `finish` writes it to the profile and the trigger runs the
-    // same arithmetic against it — leaving it out is how this screen would
-    // promise a budget the account then quietly disagrees with.
+    // The gap between this and `weightKg` IS the plan, so it has to be here and
+    // not only in the footnote below. `finish` writes it to the profile and the
+    // trigger runs the same arithmetic against it — leaving it out is how this
+    // screen would promise a budget the account then quietly disagrees with.
     targetWeightKg,
   }
 

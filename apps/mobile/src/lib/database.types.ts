@@ -735,7 +735,6 @@ export type Database = {
           target_weight_kg: number | null
           timezone: string
           updated_at: string
-          weight_goal: Database['public']['Enums']['weight_goal']
         }
         Insert: {
           activity_level?: Database['public']['Enums']['activity_level']
@@ -752,7 +751,6 @@ export type Database = {
           target_weight_kg?: number | null
           timezone?: string
           updated_at?: string
-          weight_goal?: Database['public']['Enums']['weight_goal']
         }
         Update: {
           activity_level?: Database['public']['Enums']['activity_level']
@@ -769,7 +767,6 @@ export type Database = {
           target_weight_kg?: number | null
           timezone?: string
           updated_at?: string
-          weight_goal?: Database['public']['Enums']['weight_goal']
         }
         Relationships: []
       }
@@ -1159,7 +1156,6 @@ export type Database = {
         Args: {
           p_activity: Database['public']['Enums']['activity_level']
           p_birth_date: string
-          p_goal: Database['public']['Enums']['weight_goal']
           p_height_cm: number
           p_sex: Database['public']['Enums']['sex']
           p_target_weight_kg?: number
@@ -1379,7 +1375,6 @@ export type Database = {
       subscription_plan: 'monthly' | 'yearly'
       subscription_status: 'none' | 'trial' | 'active' | 'expired' | 'billing_retry'
       unit_system: 'metric' | 'imperial'
-      weight_goal: 'lose' | 'maintain' | 'gain' | 'track'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1516,7 +1511,6 @@ export const Constants = {
       subscription_plan: ['monthly', 'yearly'],
       subscription_status: ['none', 'trial', 'active', 'expired', 'billing_retry'],
       unit_system: ['metric', 'imperial'],
-      weight_goal: ['lose', 'maintain', 'gain', 'track'],
     },
   },
 } as const

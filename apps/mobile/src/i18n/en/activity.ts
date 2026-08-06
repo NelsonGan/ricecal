@@ -227,7 +227,6 @@ export const activity = {
     noHeartRateBodyGeneric:
       'Nothing recorded a pulse for this session. A phone can time a workout but cannot take one.',
 
-    counted: "Already counted in today's budget",
     from: 'From {{source}}',
     missing: 'This workout is no longer in your health app.',
   },

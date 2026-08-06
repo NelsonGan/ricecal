@@ -18,7 +18,9 @@ create type public.meal as enum ('breakfast', 'lunch', 'dinner', 'snack');
 
 create type public.sex as enum ('female', 'male');
 
-create type public.weight_goal as enum ('lose', 'maintain', 'gain', 'track');
+-- There was a `weight_goal` here — lose/maintain/gain/track. The calorie plan is
+-- read off the gap between the current and target weights now, which answers the
+-- same question without a second source that can contradict the first.
 
 create type public.activity_level as enum (
   'sedentary',
