@@ -29,6 +29,13 @@ import {
   pickCandidate,
   type VisionItem,
 } from './llm.ts'
+import {
+  defaultMacros,
+  MAX_KCAL_PER_G,
+  plausibleForGrams,
+  servingGrams,
+  servingUnitCount,
+} from './portion.ts'
 
 /** The terminal archetype. Seeded with this exact id by seed_archetype_foods(). */
 export const TERMINAL_ARCHETYPE_ID = 'a0000000-0000-4000-8000-000000000000'
@@ -125,7 +132,7 @@ const headNoun = (q: string): string => {
   return words.length > 1 ? (words.at(-1) ?? '') : ''
 }
 
-type SearchRow = {
+export type SearchRow = {
   id: string
   name: string
   brand: string | null
@@ -180,19 +187,102 @@ const asFood = (r: SearchRow): FoodRow => ({
 })
 
 /**
- * How many of the thing one serving of a catalogue row holds.
+ * What one unit of a candidate row costs, and how much confidence that figure
+ * deserves — the whole of the size question, in one place.
  *
- * "10 sticks" is ten satay; "1 cup" and "100 g" are one serving of something
- * measured, not ten of it, so only countable units are read this way. Getting
- * this wrong in the other direction would divide a row's calories by a hundred.
+ * There are two ways a catalogue row can answer "what does one of these cost",
+ * and they are not equally good:
+ *
+ *   BY WEIGHT. The row states what its serving weighs ("100 g", "3.0 oz",
+ *   "1 bowl (400 g)"), so it knows its own energy density, and the price of the
+ *   model's `grams` of it is multiplication. Nothing here depends on the
+ *   model's calorie guess, which is the point.
+ *
+ *   BY UNIT. The row is countable ("10 sticks") or is simply one of the thing,
+ *   so its figure divided by that count is what one costs. This is what the
+ *   cascade did before weights existed, and it stays the answer for the two
+ *   thirds of the catalogue measured in cups and spoons.
  */
-const COUNTABLE =
-  /^(\d+(?:\.\d+)?)\s*(sticks?|skewers?|pieces?|pcs|slices?|wings?|balls?|eggs?|rolls?|cubes?|nuggets?|dumplings?|prawns?|drumsticks?|fillets?|cakes?|puffs?|buns?)\b/i
+type Priced = {
+  row: SearchRow
+  /** What ONE of the thing costs, converted from whichever the row could answer. */
+  kcal: number
+  byWeight: boolean
+  /** How many of the thing one serving of the row holds. 1 when it is one. */
+  units: number
+}
 
-const servingUnitCount = (label: string | null): number => {
-  const match = (label ?? '').trim().match(COUNTABLE)
-  const count = match ? Number(match[1]) : 1
-  return Number.isFinite(count) && count >= 1 && count <= 50 ? count : 1
+export const priceRow = (row: SearchRow, grams: number | null): Priced => {
+  const perServing = servingGrams(row.serving_label)
+  const units = servingUnitCount(row.serving_label)
+  if (grams && perServing) {
+    return { row, kcal: (row.kcal / perServing) * grams, byWeight: true, units }
+  }
+  return { row, kcal: row.kcal / units, byWeight: false, units }
+}
+
+/**
+ * A row that IS one of the thing, so an entry can point straight at it and let
+ * the catalogue's own figure stand.
+ *
+ * Both halves matter. `units === 1` says the row is not priced by the ten, and
+ * `!byWeight` says its figure was not converted — a row read by weight has been
+ * rescaled to the model's grams and no longer says what its own serving costs.
+ */
+const isWholeUnit = (fit: Priced): boolean => !fit.byWeight && fit.units === 1
+
+/**
+ * The candidate closest in size to what the model described, or null.
+ *
+ * The gate used to be the model's own calorie figure — a quarter to double of
+ * it — and that is the mechanism by which one bad guess became a bad entry.
+ * Told a satay stick was 180 kcal, the band ran 45-360 and so excluded the
+ * catalogue's own "Chicken Satay (Satay Ayam), 365 kcal per 10 sticks" at 36
+ * kcal a stick: the number that was wrong rejected the number that was right,
+ * and four skewers were logged at 720 kcal.
+ *
+ * With a weight in hand the gate becomes a physical one instead. A row is
+ * eligible if what it charges for THIS many grams is a believable energy
+ * density at all, which throws out the rice flour ranked above the rice and
+ * keeps everything else — and only then does the model's (already reconciled)
+ * figure act as a tie-break between the survivors. Where the two disagree
+ * about a row that is plainly the right food, the catalogue wins, which is the
+ * arrangement everywhere else in this file.
+ */
+export function bestFit(rows: SearchRow[], grams: number | null, kcal: number): Priced | null {
+  const priced = rows.map((row) => priceRow(row, grams))
+  if (kcal <= 0) {
+    // No price to compare against — a part the model named and weighed but did
+    // not cost. Relevance order is the only ranking left, so take the top hit
+    // that is not absurd for the weight, and nothing at all if none of them
+    // qualifies: falling back to the top row regardless is how 50 g of
+    // meatball became a 720 kcal row, at fourteen calories a gram.
+    if (!grams) return priced[0] ?? null
+    return priced.find((c) => plausibleForGrams(c.kcal, grams)) ?? null
+  }
+  return (
+    priced
+      .filter((candidate) => {
+        // Physically possible for something of this weight. Catches the row
+        // that is a different food under a similar name — search ranks by
+        // NAME, so "white rice" can top-rank rice flour.
+        if (grams && !plausibleForGrams(candidate.kcal, grams)) return false
+        // And in the same order of magnitude as what the model said, which is
+        // worth something again now that the model's figure has been made to
+        // agree with its own weight. Before that it was worth nothing: a satay
+        // stick claimed at 180 kcal put the band at 45-360 and so excluded the
+        // catalogue's own 36 kcal a stick. Wide, because the point is to throw
+        // out the row that is not this food at all — 40 g of lettuce matched a
+        // 140 kcal row and put a salad on the plate at fourteen times what the
+        // model, correctly, said a salad costs.
+        const ceiling = grams ? 2.5 : 2
+        return candidate.kcal >= kcal * 0.25 && candidate.kcal <= kcal * ceiling
+      })
+      // Closest in log space, so half-sized and double-sized rows lose to one
+      // that is nearly right in either direction.
+      .sort((a, b) => Math.abs(Math.log(a.kcal / kcal)) - Math.abs(Math.log(b.kcal / kcal)))[0] ??
+    null
+  )
 }
 
 /**
@@ -252,13 +342,14 @@ async function recordMisses(db: SupabaseClient, scanId: string, queries: string[
 /**
  * Tier 2: the plate as its parts, folded into ONE entry.
  *
- * Each component carries the vision model's own portion estimate, which does
- * two jobs. Against the catalogue it is the acceptance band — search ranks by
- * NAME, so "white rice" can top-rank rice flour at 578 kcal, and the first
- * relevance-ordered hit whose figure sits within ±50% of the estimate is the
- * one taken, with the residue absorbed into the ingredient's quantity. And
- * when no hit fits, the estimate PRICES a fallback `is_estimate` row for that
- * component — so one unsearchable side dish no longer kills the breakdown.
+ * Each component carries the vision model's own sizing — a WEIGHT for one of
+ * them, and what that weight costs — and it does two jobs. Against the
+ * catalogue the weight is what makes a row comparable at all: search ranks by
+ * NAME, so "white rice" can top-rank rice flour at 578 kcal, and a row priced
+ * per 100 g or per ten sticks says nothing about one scoop or one skewer until
+ * it is converted. And when no hit fits, the model's figures PRICE a fallback
+ * `is_estimate` row for that component — so one unsearchable side dish no
+ * longer kills the breakdown.
  *
  * Everything here is per SINGLE unit, with the count carried in the
  * ingredient's quantity. Two wings are a 125 kcal row at quantity 2, not a 250
@@ -308,43 +399,14 @@ async function resolveByComponents(
     let rows = await look('strict')
     if (!rows.length && q.split(' ').length <= 3) rows = await look('forgiving')
 
-    // The row whose ONE unit is closest in size to the model's one unit.
-    //
-    // Not the first row inside a band, which is what this was: catalogue
-    // servings are whatever the source recorded, and "Chicken Satay (Satay
-    // Ayam)" is 365 kcal for TEN STICKS. Against a model saying 85 for one
-    // stick that row looked absurd and was skipped, so eight sticks got priced
-    // from the model's own guess at more than double what a stick weighs in
-    // at. Divided by its serving's unit count it is 36 kcal a stick, which is
-    // the number that should have been competing.
-    const fit =
-      component.kcal > 0
-        ? rows
-            .map((row) => {
-              const units = servingUnitCount(row.serving_label)
-              return { row, units, perUnit: row.kcal / units }
-            })
-            // A quarter to double, which is deliberately lopsided. The model's
-            // per-unit guesses are unstable upwards — the same satay stick
-            // came back at 35, then 85, then 145 kcal on three runs — and a
-            // symmetric band around an inflated guess excludes the catalogue
-            // rows that would have corrected it. Letting a much smaller row
-            // through costs little, because the closest match still wins.
-            .filter(
-              (candidate) =>
-                candidate.perUnit >= component.kcal * 0.25 &&
-                candidate.perUnit <= component.kcal * 2,
-            )
-            // Closest in log space, so half-sized and double-sized rows lose
-            // to one that is nearly right in either direction.
-            .sort(
-              (a, b) =>
-                Math.abs(Math.log(a.perUnit / component.kcal)) -
-                Math.abs(Math.log(b.perUnit / component.kcal)),
-            )[0]
-        : rows[0] && { row: rows[0], units: 1, perUnit: rows[0].kcal }
+    // The catalogue row that best describes ONE of this part, at this weight.
+    // Catalogue servings are whatever the source recorded — "Chicken Satay
+    // (Satay Ayam)" is 365 kcal for TEN STICKS, and "Chicken, fried" is per
+    // 100 g — so a row's own figure is almost never the price of one of the
+    // thing on the plate. `bestFit` converts before it compares.
+    const fit = bestFit(rows, component.grams, component.kcal)
 
-    if (fit && fit.units === 1) {
+    if (fit && isWholeUnit(fit)) {
       // A row that IS one of the thing. The quantity is the count and nothing
       // else: the row's own figure is what one of them costs, and rescaling it
       // to chase the model's guess is how a single scoop of rice ended up
@@ -360,13 +422,17 @@ async function resolveByComponents(
     }
 
     if (fit) {
-      // A row that is ten of the thing. Pointing at it would put "0.8" on a
-      // plate of eight skewers, so the ingredient gets a per-unit row of its
-      // own — priced by DIVIDING the catalogue figure, never by asking the
-      // model again — and the quantity is the count the user can see.
-      const perUnit = Math.max(1, Math.round(fit.perUnit))
+      // A row that is ten of the thing, or a hundred grams of it. Pointing at
+      // it would put "0.8" on a plate of eight skewers, so the ingredient gets
+      // a per-unit row of its own — priced by CONVERTING the catalogue figure,
+      // never by asking the model again — and the quantity is the count the
+      // user can see. The macros come across at the same ratio the calories
+      // did, so the row stays internally consistent whichever way it was
+      // scaled.
+      const perUnit = Math.max(1, Math.round(fit.kcal))
+      const scale = fit.row.kcal > 0 ? fit.kcal / fit.row.kcal : 1
       const share = (value: number | null) =>
-        value === null ? 0 : Math.round((Number(value) / fit.units) * 10) / 10
+        value === null ? 0 : Math.round(Number(value) * scale * 10) / 10
       const unitRow = await estimateRow(db, {
         name: component.name,
         kcal: perUnit,
@@ -391,7 +457,17 @@ async function resolveByComponents(
     // shared estimate row for the component. Macros are the model's when it
     // gave them, else an Atwater-consistent default split; either way the
     // ingredient exists and the breakdown survives.
-    if (component.kcal <= 0) continue
+    //
+    // The figure used here is the RECONCILED one — already made to agree with
+    // the part's own weight in `shapeVision` — so the fallback is bounded even
+    // though nothing checked it against a real portion.
+    if (component.kcal <= 0) {
+      // Neither the catalogue nor the model will say what this is worth. It is
+      // dropped rather than invented, and the plate is one part short, which
+      // `parts.length < 2` below may yet decide is fatal.
+      trace?.push(`[cascade] components: "${component.name}" has no price anywhere`)
+      continue
+    }
     const macros =
       component.carbs_g !== null || component.protein_g !== null || component.fat_g !== null
         ? {
@@ -399,11 +475,7 @@ async function resolveByComponents(
             protein: Number(component.protein_g ?? 0),
             fat: Number(component.fat_g ?? 0),
           }
-        : {
-            carbs: Math.round((component.kcal * 0.5) / 4),
-            protein: Math.round((component.kcal * 0.2) / 4),
-            fat: Math.round((component.kcal * 0.3) / 9),
-          }
+        : defaultMacros(component.kcal)
     const guess = await estimateRow(db, {
       name: component.name,
       kcal: component.kcal,
@@ -432,6 +504,36 @@ async function resolveByComponents(
   const sum = { kcal: 0, carbs: 0, protein: 0, fat: 0 }
   for (const part of parts) {
     sum.kcal += part.kcal
+  }
+
+  // A breakdown has to be a breakdown OF THIS MEAL.
+  //
+  // The parts and the calorie band are two answers from the same model to the
+  // same question, and when they contradict each other the breakdown is the
+  // one that is wrong — because the band is about the meal and the list is
+  // about whatever the model chose to enumerate. What it chooses to leave out
+  // is the main food: a basket of chicken wings came back with two components,
+  // celery and a pot of dip, and since the entry is priced FROM the parts, a
+  // meal the model itself bounded at 780-900 kcal was logged at 160. The plain
+  // thing underneath — the rice, the noodles, the wings — is exactly what a
+  // model listing "what else is on the plate" omits.
+  //
+  // Both sides are checked and the tolerances are loose, because a band is not
+  // a measurement either: this is here to catch a breakdown that is describing
+  // a different meal, not to arbitrate a disagreement about a plate of rice.
+  // Failing it drops to the dish tier, which prices the whole plate at once and
+  // cannot lose a part it never enumerated.
+  if (item.kcal_low > 0 && sum.kcal < item.kcal_low * 0.6) {
+    const message = `[cascade] components: parts total ${Math.round(sum.kcal)} kcal against a meal the model put at ${item.kcal_low}-${item.kcal_high} — the main food is missing from the breakdown`
+    console.error(message)
+    trace?.push(message)
+    return null
+  }
+  if (item.kcal_high > 0 && sum.kcal > item.kcal_high * 1.8) {
+    const message = `[cascade] components: parts total ${Math.round(sum.kcal)} kcal against a meal the model put at ${item.kcal_low}-${item.kcal_high} — a part is priced as a portion`
+    console.error(message)
+    trace?.push(message)
+    return null
   }
   // Macros summed from the resolved rows at their quantities, fetched in one
   // read so the parent's split matches the parts exactly.
@@ -530,7 +632,12 @@ async function resolveByCount(
   trace?: string[],
 ): Promise<Resolved | null> {
   if (item.count < 2) return null
-  const perUnit = Math.round((item.kcal_low + item.kcal_high) / 2 / item.count)
+  // The band divided by the count is what the model thinks one of them costs.
+  // Where it also said what one WEIGHS, that figure gets the same reconciling
+  // a component's does: ten wings banded at 1800-2200 is 200 kcal each, which
+  // is more than twice what 60 g of fried chicken can hold.
+  let perUnit = Math.round((item.kcal_low + item.kcal_high) / 2 / item.count)
+  if (item.grams) perUnit = Math.min(Math.round(item.grams * MAX_KCAL_PER_G), perUnit)
   if (perUnit <= 0) return null
 
   // The local name first, then the generic one: "har gow" is in no catalogue
@@ -553,17 +660,13 @@ async function resolveByCount(
     if (rows.length) break
   }
 
-  const fit = rows
-    .map((row) => {
-      const units = servingUnitCount(row.serving_label)
-      return { row, units, perUnit: row.kcal / units }
-    })
-    .filter((c) => c.perUnit >= perUnit * 0.25 && c.perUnit <= perUnit * 2)
-    .sort(
-      (a, b) => Math.abs(Math.log(a.perUnit / perUnit)) - Math.abs(Math.log(b.perUnit / perUnit)),
-    )[0]
+  // Same conversion the breakdown uses, for the same reason: "Durian, raw" is
+  // priced per cup and a durian is not a cup. With the item's own weight the
+  // catalogue's per-100g rows become answerable too, which is most of what the
+  // catalogue holds for a single ingredient.
+  const fit = bestFit(rows, item.grams, perUnit)
 
-  if (fit?.units === 1) {
+  if (fit && isWholeUnit(fit)) {
     return {
       tier: 1,
       food: asFood(fit.row),
@@ -572,25 +675,21 @@ async function resolveByCount(
     }
   }
 
-  // Either a row measured in cups, or nothing usable. Both end in a row priced
-  // for one — from the catalogue when there is one, from the model when not.
-  const share = (value: number | null, units: number) =>
-    value === null ? 0 : Math.round((Number(value) / units) * 10) / 10
+  // Either a row measured in cups or in grams, or nothing usable. All end in a
+  // row priced for one — from the catalogue when there is one, from the model
+  // when not.
+  const scale = fit && fit.row.kcal > 0 ? fit.kcal / fit.row.kcal : 1
+  const share = (value: number | null) =>
+    value === null ? 0 : Math.round(Number(value) * scale * 10) / 10
   const unitRow = fit
     ? await estimateRow(db, {
         name: item.name,
-        kcal: Math.max(1, Math.round(fit.perUnit)),
-        carbs: share(fit.row.carbs_g, fit.units),
-        protein: share(fit.row.protein_g, fit.units),
-        fat: share(fit.row.fat_g, fit.units),
+        kcal: Math.max(1, Math.round(fit.kcal)),
+        carbs: share(fit.row.carbs_g),
+        protein: share(fit.row.protein_g),
+        fat: share(fit.row.fat_g),
       })
-    : await estimateRow(db, {
-        name: item.name,
-        kcal: perUnit,
-        carbs: Math.round((perUnit * 0.5) / 4),
-        protein: Math.round((perUnit * 0.2) / 4),
-        fat: Math.round((perUnit * 0.3) / 9),
-      })
+    : await estimateRow(db, { name: item.name, kcal: perUnit, ...defaultMacros(perUnit) })
   if (!unitRow) {
     trace?.push(`[cascade] count: no per-unit row for "${item.name}"`)
     return null
@@ -645,6 +744,18 @@ async function resolveByDish(
   // wrong name. Skipped when the two already read the same.
   const label = usable(item.name) === usable(chosen.name) ? null : item.name.slice(0, 120)
 
+  // What was eaten, by weight, against what one serving of the row weighs.
+  // Only both-or-nothing: a ratio of two weights is a conversion, and a ratio
+  // of a weight and a guess is a guess.
+  //
+  // `item.grams` is one unit and `item.count` is how many, so the numerator is
+  // their product — the same whole-meal quantity `ratio` below carries, since
+  // the band it divides covers every unit on the table. Weighing one durian
+  // against a 100 g row and logging that would put three of them on the diary
+  // as a third of one.
+  const rowGrams = servingGrams(chosen.serving_label)
+  const byWeight = item.grams && rowGrams ? (item.grams * item.count) / rowGrams : null
+
   // A row the verifier says IS this dish, at one portion.
   //
   // The gate here used to be the model's calorie range, and that had it
@@ -654,6 +765,18 @@ async function resolveByDish(
   // fell through to the model's own figure — the bad number rejecting the good
   // one. Within a factor of two and a half either way the row is simply taken.
   const ratio = chosen.kcal > 0 ? llmMid / chosen.kcal : 1
+  // A weight settles it before the calorie ratio gets a say. "100 g" of a dish
+  // against a 450 g plate of it is 4.5 servings whatever either party thinks
+  // the plate costs, and the ratio would have called the same row a size
+  // mismatch or a match depending on a number the model is bad at.
+  if (byWeight !== null && (byWeight < 0.85 || byWeight > 1.15)) {
+    return {
+      tier: 3,
+      food: asFood(chosen),
+      quantity: clampQuantity(byWeight),
+      displayLabel: label,
+    }
+  }
   if (ratio >= 0.5 && ratio <= 2.5) {
     return { tier: 1, food: asFood(chosen), quantity: 1, displayLabel: label }
   }
