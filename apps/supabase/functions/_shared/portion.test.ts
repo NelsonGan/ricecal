@@ -9,7 +9,13 @@
 // `select label, count(*) from food_servings group by 1 order by 2 desc`, which
 // is why the imperial spellings look the way they do.
 
-import { plausibleForGrams, reconcile, servingGrams, servingUnitCount } from './portion.ts'
+import {
+  plausibleForGrams,
+  reconcile,
+  servingGrams,
+  servingUnitCount,
+  unfoldCounts,
+} from './portion.ts'
 
 const eq = (got: unknown, want: unknown, what: string) => {
   if (got !== want) throw new Error(`${what}: expected ${want}, got ${got}`)
@@ -106,6 +112,83 @@ Deno.test('reconcile shrinks macros that outweigh the thing they are in', () => 
 Deno.test('reconcile leaves an unweighed part alone', () => {
   const part = { grams: null, kcal: 900, carbs_g: null, protein_g: null, fat_g: null }
   eq(reconcile(part).kcal, 900, 'nothing to check it against')
+})
+
+// The Korean fried chicken tray, exactly as the model returned it: totals in
+// the per-unit fields with the count beside them, so the parts multiplied out
+// to 4,568 kcal against its own 1,100-1,250 band for the same photo.
+const koreanTray = [
+  {
+    name: 'fried chicken pieces',
+    count: 4,
+    grams: 140,
+    kcal: 392,
+    carbs_g: 18,
+    protein_g: 24,
+    fat_g: 26,
+  },
+  {
+    name: 'white rice with seaweed',
+    count: 1,
+    grams: 200,
+    kcal: 260,
+    carbs_g: 57,
+    protein_g: 5,
+    fat_g: 1,
+  },
+  { name: 'potato wedges', count: 6, grams: 150, kcal: 450, carbs_g: 50, protein_g: 6, fat_g: 22 },
+  {
+    name: 'seasoned vegetable side',
+    count: 1,
+    grams: 80,
+    kcal: 40,
+    carbs_g: 6,
+    protein_g: 1,
+    fat_g: 2,
+  },
+]
+
+Deno.test('unfoldCounts divides a breakdown whose counts were already applied', () => {
+  const fixed = unfoldCounts(koreanTray, 1100, 1250)
+  const total = fixed.reduce((sum, c) => sum + c.kcal * c.count, 0)
+  if (total < 1100 || total > 1250) throw new Error(`parts now total ${total}, outside the band`)
+  eq(fixed[0].kcal, 98, 'one chicken piece')
+  eq(fixed[0].grams, 35, 'and what one weighs')
+  // 150 g was the bowl of wedges; a wedge is 25 g, which is what the prompt
+  // says a wedge is.
+  eq(fixed[2].kcal, 75, 'one wedge')
+  eq(fixed[2].grams, 25, 'and what one weighs')
+  eq(fixed[1].kcal, 260, 'a count of one is left alone')
+})
+
+Deno.test('unfoldCounts leaves a breakdown that already adds up', () => {
+  // Nasi lemak with squid: three cucumber slices at 7 kcal each, and the parts
+  // multiply out to 931 against a 900-960 band. Nothing to repair.
+  const nasiLemak = [
+    { name: 'cooked rice', count: 1, grams: 200, kcal: 260, carbs_g: 57, protein_g: 5, fat_g: 1 },
+    {
+      name: 'stir-fried squid',
+      count: 1,
+      grams: 130,
+      kcal: 220,
+      carbs_g: 6,
+      protein_g: 28,
+      fat_g: 8,
+    },
+    { name: 'cucumber', count: 3, grams: 15, kcal: 7, carbs_g: 1.5, protein_g: 0, fat_g: 0 },
+  ]
+  eq(unfoldCounts(nasiLemak, 400, 520), nasiLemak, 'unchanged, and the same array')
+})
+
+Deno.test('unfoldCounts will not repair what it cannot check', () => {
+  // Neither reading lands in the band, so neither is trusted and the guard in
+  // the cascade gets the parts exactly as they came.
+  eq(unfoldCounts(koreanTray, 100, 200), koreanTray, 'no band either reading fits')
+  eq(unfoldCounts(koreanTray, 0, 0), koreanTray, 'no band at all')
+  const single = [
+    { name: 'rice', count: 1, grams: 200, kcal: 9000, carbs_g: null, protein_g: null, fat_g: null },
+  ]
+  eq(unfoldCounts(single, 100, 200), single, 'nothing is counted more than once')
 })
 
 Deno.test('plausibleForGrams judges a catalogue row against a weight', () => {
