@@ -498,9 +498,10 @@ create table public.profiles (
   id                uuid primary key references auth.users (id) on delete cascade,
 
   display_name      text not null default '' check (char_length(display_name) <= 60),
-  -- A path inside the `avatars` bucket, never a URL. Storing the path is what
-  -- keeps a move to another object store (R2, still open) a change of
-  -- base URL rather than a data migration over every row.
+  -- An object key in R2, under `avatars/<user>/`, never a URL. Storing the key
+  -- is what kept the move off Supabase Storage a change of base URL rather
+  -- than a data migration over every row — it has already paid for itself
+  -- once. Read and written through the `photos` edge function.
   avatar_path       text,
 
   sex               public.sex,
@@ -1306,8 +1307,10 @@ create table public.food_logs (
   note         text check (char_length(note) <= 500),
 
   source       public.entry_source not null default 'search',
-  -- Path inside the private `meal-photos` bucket. Null until the scanning flow
-  -- exists; see the seam note above.
+  -- An object key in R2, under `meals/<user>/`. A key and never a URL, which
+  -- is what made moving off Supabase Storage a change of base URL rather than
+  -- a migration over every row. Read and written through the `photos` edge
+  -- function, which is the only thing holding a credential for that bucket.
   photo_path   text,
 
   -- Groups the entries one photographed plate decomposed into. A scan that
@@ -4246,154 +4249,26 @@ grant execute on function public.import_foods to service_role;
 
 
 -- ===========================================================================
--- STORAGE
+-- STORAGE — none.
 --
--- `supabase db diff` does not track the `storage` schema, so a declarative
--- file describing these buckets would be applied to the shadow database,
--- found missing from the diff's field of view, and silently dropped from
--- whatever it generated. Storage therefore lives in the migration and
--- nowhere else — including here, in the baseline.
+-- This baseline used to create two buckets (`avatars`, `meal-photos`) and
+-- eight policies over `storage.objects`, here rather than in `schemas/`
+-- because `supabase db diff` does not track the `storage` schema and would
+-- have silently dropped a declarative file describing them.
 --
--- (The `auth` schema is not in that category. The diff tracks triggers on
--- `auth.users` perfectly well, which is why `on_auth_user_created` is up
--- above in schemas/16_new_user.sql.)
+-- Images live in Cloudflare R2 now, behind the `photos` edge function, and the
+-- authorization those policies performed is `ownsKey` in
+-- `functions/_shared/r2.ts`. The creation is removed rather than left in and
+-- deleted by a later migration, because a bucket cannot be deleted in SQL at
+-- all — hosted Supabase guards `storage.buckets` with a `protect_delete`
+-- trigger that points at the Storage API — so a database built from these
+-- migrations has to be one that never made them.
 --
--- Both halves are idempotent — the buckets upsert, the policies drop
--- first — because this section has always been re-runnable and a baseline
--- is a worse place than most to lose that.
+-- The two on the deployed project were created by the version of this file
+-- that ran there, and were removed through the Storage API by hand.
+-- `tests/03_storage.test.sql` asserts they stay gone, since nothing else in
+-- the pipeline can see a bucket at all.
 -- ===========================================================================
-
--- Buckets -----------------------------------------------------------------
---
--- Paths are `{user_id}/...` in both buckets. That is not a convention the
--- client is trusted to follow — it is what the policies below check, so an
--- upload outside your own folder is rejected by the database rather than by
--- good behaviour.
---
--- We store the PATH on `profiles.avatar_path` and `food_logs.photo_path`,
--- never a URL. Signed URLs expire, public URLs embed the project ref, and
--- Moving images to Cloudflare R2 is still an open item. A
--- stored path makes that a change of base URL; a stored URL makes it a
--- migration over every row.
-
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values
-  -- Public-read. An avatar is shown beside the user's own name on their own
-  -- device today, but the filename is a uuid, so nothing is enumerable, and
-  -- public read avoids re-signing a URL on every render of every screen that
-  -- shows it.
-  (
-    'avatars', 'avatars', true,
-    5 * 1024 * 1024,
-    array['image/jpeg', 'image/png', 'image/webp']
-  ),
-  -- Private. A photo of a meal is a photo of where somebody was and when.
-  -- Read goes through a signed URL with a short expiry.
-  --
-  -- HEIC is allowed because that is what an iPhone camera produces by
-  -- default; the client downsizes to JPEG before upload, and the type is here
-  -- so that a path which skips that step fails at the bucket rather than
-  -- halfway through the scanning pipeline.
-  (
-    'meal-photos', 'meal-photos', false,
-    10 * 1024 * 1024,
-    array['image/jpeg', 'image/png', 'image/webp', 'image/heic']
-  )
-on conflict (id) do update
-  set public             = excluded.public,
-      file_size_limit    = excluded.file_size_limit,
-      allowed_mime_types = excluded.allowed_mime_types;
-
-
--- Object policies ---------------------------------------------------------
---
--- `storage.objects` already has RLS enabled by the storage extension, and
--- ships with no policies, so it currently denies everything. Each policy below
--- keys on the first path segment: (storage.foldername(name))[1] is the folder,
--- and it must equal the caller's uid.
-
-drop policy if exists "avatars: anyone may read" on storage.objects;
-drop policy if exists "avatars: upload own" on storage.objects;
-drop policy if exists "avatars: replace own" on storage.objects;
-drop policy if exists "avatars: delete own" on storage.objects;
-drop policy if exists "meal photos: read own" on storage.objects;
-drop policy if exists "meal photos: upload own" on storage.objects;
-drop policy if exists "meal photos: replace own" on storage.objects;
-drop policy if exists "meal photos: delete own" on storage.objects;
-
--- Avatars ---------------------------------------------------------------
--- `to public` covers both anon and authenticated: the bucket is public, and a
--- policy narrower than the bucket setting would be a confusing half-measure.
-create policy "avatars: anyone may read"
-  on storage.objects for select
-  to public
-  using (bucket_id = 'avatars');
-
-create policy "avatars: upload own"
-  on storage.objects for insert
-  to authenticated
-  with check (
-    bucket_id = 'avatars'
-    and (storage.foldername(name))[1] = (select auth.uid())::text
-  );
-
-create policy "avatars: replace own"
-  on storage.objects for update
-  to authenticated
-  using (
-    bucket_id = 'avatars'
-    and (storage.foldername(name))[1] = (select auth.uid())::text
-  )
-  with check (
-    bucket_id = 'avatars'
-    and (storage.foldername(name))[1] = (select auth.uid())::text
-  );
-
-create policy "avatars: delete own"
-  on storage.objects for delete
-  to authenticated
-  using (
-    bucket_id = 'avatars'
-    and (storage.foldername(name))[1] = (select auth.uid())::text
-  );
-
--- Meal photos -----------------------------------------------------------
-create policy "meal photos: read own"
-  on storage.objects for select
-  to authenticated
-  using (
-    bucket_id = 'meal-photos'
-    and (storage.foldername(name))[1] = (select auth.uid())::text
-  );
-
-create policy "meal photos: upload own"
-  on storage.objects for insert
-  to authenticated
-  with check (
-    bucket_id = 'meal-photos'
-    and (storage.foldername(name))[1] = (select auth.uid())::text
-  );
-
-create policy "meal photos: replace own"
-  on storage.objects for update
-  to authenticated
-  using (
-    bucket_id = 'meal-photos'
-    and (storage.foldername(name))[1] = (select auth.uid())::text
-  )
-  with check (
-    bucket_id = 'meal-photos'
-    and (storage.foldername(name))[1] = (select auth.uid())::text
-  );
-
-create policy "meal photos: delete own"
-  on storage.objects for delete
-  to authenticated
-  using (
-    bucket_id = 'meal-photos'
-    and (storage.foldername(name))[1] = (select auth.uid())::text
-  );
-
 
 -- ===========================================================================
 -- THE ARCHETYPE ROWS

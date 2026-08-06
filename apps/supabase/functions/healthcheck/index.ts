@@ -16,7 +16,8 @@
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
-import { AwsClient } from 'aws4fetch'
+
+import { r2Configured, signPut } from '../_shared/r2.ts'
 
 interface HealthcheckResponse {
   ok: boolean
@@ -35,33 +36,20 @@ function json(body: HealthcheckResponse, status = 200): Response {
 }
 
 /**
- * Mints a presigned PUT valid for 10 minutes. Returns null with a reason when
- * the R2 credentials are not yet set, so the auth half of this endpoint still
- * answers before Cloudflare exists.
+ * Mints a presigned PUT. Returns null with a reason when the R2 credentials are
+ * not set, so the auth half of this endpoint still answers on a stack that has
+ * no Cloudflare.
+ *
+ * Its own `healthcheck/` prefix, deliberately outside the two the app uses: a
+ * smoke test must not be able to write where a meal photo or an avatar lives,
+ * and anything left here is swept by the bucket's lifecycle rule.
  */
 async function presignUpload(
   userId: string,
 ): Promise<{ url: string | null; error: string | null }> {
-  const accountId = Deno.env.get('R2_ACCOUNT_ID')
-  const accessKeyId = Deno.env.get('R2_ACCESS_KEY_ID')
-  const secretAccessKey = Deno.env.get('R2_SECRET_ACCESS_KEY')
-  const bucket = Deno.env.get('R2_BUCKET')
-
-  if (!accountId || !accessKeyId || !secretAccessKey || !bucket) {
-    return { url: null, error: 'R2 secrets not set' }
-  }
-
-  const r2 = new AwsClient({ accessKeyId, secretAccessKey, service: 's3', region: 'auto' })
+  if (!r2Configured()) return { url: null, error: 'R2 secrets not set' }
   const key = `healthcheck/${userId}/${crypto.randomUUID()}.bin`
-  const target = new URL(`https://${accountId}.r2.cloudflarestorage.com/${bucket}/${key}`)
-  target.searchParams.set('X-Amz-Expires', '600')
-
-  const signed = await r2.sign(target.toString(), {
-    method: 'PUT',
-    aws: { signQuery: true },
-  })
-
-  return { url: signed.url, error: null }
+  return { url: await signPut(key), error: null }
 }
 
 Deno.serve(async (req: Request) => {

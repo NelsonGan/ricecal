@@ -25,9 +25,10 @@ create table public.profiles (
   id                uuid primary key references auth.users (id) on delete cascade,
 
   display_name      text not null default '' check (char_length(display_name) <= 60),
-  -- A path inside the `avatars` bucket, never a URL. Storing the path is what
-  -- keeps a move to another object store (R2, still open) a change of
-  -- base URL rather than a data migration over every row.
+  -- An object key in R2, under `avatars/<user>/`, never a URL. Storing the key
+  -- is what kept the move off Supabase Storage a change of base URL rather
+  -- than a data migration over every row — it has already paid for itself
+  -- once. Read and written through the `photos` edge function.
   avatar_path       text,
 
   sex               public.sex,

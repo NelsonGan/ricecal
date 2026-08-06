@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import {
+  useAvatarUrl,
   useCurrentWeight,
   useHealthConnection,
   useMealTimes,
@@ -23,6 +24,7 @@ export default function MeScreen() {
   const router = useRouter()
 
   const { data: profile } = useProfile()
+  const { data: avatarUrl } = useAvatarUrl(profile?.avatar_path ?? undefined)
   const { data: settings } = useSettings()
   const { data: targets, isPending: targetsPending } = useTargets()
   const { data: subscription } = useSubscription()
@@ -77,6 +79,7 @@ export default function MeScreen() {
               figure, and "—" would have been read out as the account's name. */}
           <Avatar
             name={profile?.display_name ?? ''}
+            uri={avatarUrl}
             accessibilityLabel={profile?.display_name || t('profile:home.noName')}
             size="md"
             tone="pandan"

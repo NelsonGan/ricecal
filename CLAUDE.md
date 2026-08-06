@@ -46,6 +46,17 @@ sees the key. It uploads a photo (or a sentence) and invokes a function, which
 does everything else and writes the row itself as `service_role` — it has to,
 because some tiers create catalogue rows and no client may do that.
 
+**Images live in Cloudflare R2, behind the `photos` function.** Postgres used to
+own this too: Supabase Storage let the client talk to the bucket and let eight
+RLS policies over `storage.objects` decide whether it was allowed to. R2 has no
+notion of a user, so that check is now `ownsKey` in `functions/_shared/r2.ts` —
+one line of TypeScript where there were eight policies, and the only thing
+standing between two users' diaries. The client holds no credential: it asks for
+a signed URL and gets one that expires. Uploads still go phone → R2 directly, so
+only the signature is a round trip, and `data/photos.ts` batches the read
+signatures a screenful at a time because a list of plates would otherwise be a
+list of cold starts.
+
 Cached queries persist to MMKV, so a relaunch has yesterday's answers before the
 first request returns. `SCHEMA_VERSION` in `packages/shared` is the persister's
 cache buster: bump it whenever the shape of anything persisted changes, or old
@@ -127,8 +138,8 @@ user's own clock" stays true when they fly somewhere else.
 
 The schema is DECLARATIVE: `apps/supabase/schemas/*.sql` is the source of truth
 and migrations are generated from it, never hand-written. The exceptions are
-documented in `apps/supabase/README.md` — storage buckets, which the diff cannot
-see, and the `auth` trigger, which it sees too well.
+documented in `apps/supabase/README.md` — the archetype seed call, which is data
+rather than structure, and the `auth` trigger, which the diff sees too well.
 
 ---
 
@@ -410,7 +421,13 @@ Break these and the feature is wrong in ways tests may not catch.
 - **Null is not zero in `activity_days`.** Health Connect has no stand hours at
   all and often no resting energy; a confident zero there is a claim about the
   user rather than about the provider.
-- **The OpenRouter key never reaches the client.**
+- **The OpenRouter key never reaches the client**, and neither do the R2
+  credentials. A client that could name its own object key, or hold a key that
+  does not expire, is a client that can read someone else's plate.
+- **An image column holds a KEY, never a URL.** `food_logs.photo_path` and
+  `profiles.avatar_path` are what made a change of storage provider a change of
+  base URL rather than a migration over every row. It has already paid for
+  itself once.
 - No embeddings.
 
 ---

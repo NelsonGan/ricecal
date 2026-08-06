@@ -8,7 +8,10 @@ import { isConfigured, PLACEHOLDER } from '@/lib/env'
 describe('workspace resolution', () => {
   it('imports from @ricecal/shared', () => {
     expect(APP_NAME).toBe('RiceCal')
-    expect(SCHEMA_VERSION).toBe('1')
+    // Not pinned to a number: SCHEMA_VERSION is a cache buster and is SUPPOSED
+    // to change whenever a persisted shape does. Asserting today's value would
+    // make a deliberate bump look like a regression.
+    expect(SCHEMA_VERSION).toMatch(/^\d+$/)
   })
 })
 
