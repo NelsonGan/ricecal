@@ -13,7 +13,7 @@ import {
   useWeighIns,
 } from '@/data'
 import { useBack } from '@/lib/navigation'
-import { computeTargets, macroSplit } from '@/lib/nutrition'
+import { computeTargets, macroSplit, weeklyPace } from '@/lib/nutrition'
 import {
   AppBar,
   Button,
@@ -59,17 +59,76 @@ export default function GoalsScreen() {
   const [targetWeight, setTargetWeight] = useState<number | undefined>()
   const [water, setWater] = useState<number | undefined>()
 
-  const currentKcal = kcal ?? targets?.kcal ?? 0
-  const currentGoal = goal ?? profile?.weight_goal ?? 'maintain'
-  const currentTargetWeight = targetWeight ?? Number(profile?.target_weight_kg ?? weight)
+  const storedGoal = profile?.weight_goal ?? 'maintain'
+  /**
+   * Null when the user has never stated one, which is a real answer rather than
+   * a missing one — the formula reads it as "no target" and falls back to the
+   * goal's own pace, which is the budget every account predating this already
+   * had. Defaulting it to the current weight here, as this screen used to,
+   * would tell the formula the target was already reached and quietly convert
+   * every one of those accounts to a maintain plan the first time Save was
+   * pressed.
+   */
+  const storedTargetWeight =
+    profile?.target_weight_kg == null ? null : Number(profile.target_weight_kg)
+
+  const currentGoal = goal ?? storedGoal
+  /** What the formula is told. An untouched slider is not a statement. */
+  const currentTargetWeight = targetWeight ?? storedTargetWeight
+  /**
+   * Where the handle sits. It has to be somewhere, and the current weight is the
+   * only honest place to put it when there is nothing to show.
+   */
+  const targetWeightPosition = currentTargetWeight ?? weight
   const currentWater = water ?? targets?.waterGlasses ?? 8
 
-  // What the same formula the database runs would suggest for this body and
-  // this goal — shown beside the slider so a hand-set number has a reference.
-  // Against the goal being edited rather than the stored one, so the reference
-  // moves as the goal does.
-  const body = bodyFrom(profile, weight, currentGoal)
+  // What the same formula the database runs would suggest for this body and this
+  // PLAN — shown beside the slider so a hand-set number has a reference. Against
+  // the goal and the target weight being edited rather than the stored ones, so
+  // the reference moves as they do.
+  const body = bodyFrom(profile, weight, {
+    goal: currentGoal,
+    targetWeightKg: currentTargetWeight,
+  })
   const recommended = body ? computeTargets(body).kcal : 0
+  const pace = body ? weeklyPace(body) : 0
+
+  /**
+   * Whether the plan under the budget is not the one that produced it.
+   *
+   * The bug this exists for: the calorie slider was seeded from the STORED
+   * budget and nothing re-seeded it, so switching Lose to Gain moved the
+   * "recommended" caption and left the number above it where it was — and then
+   * Save wrote that stale figure, flagged custom, which stopped the database
+   * ever recomputing it again. A user changing their goal got a budget built for
+   * the goal they had just abandoned, permanently.
+   */
+  const planChanged = currentGoal !== storedGoal || currentTargetWeight !== storedTargetWeight
+
+  /**
+   * The budget on screen: the user's own number if they have dragged the slider,
+   * otherwise what this plan asks for.
+   *
+   * Editing the goal or the target weight clears `kcal` — see the two handlers
+   * below — so "otherwise" means the recommendation for the plan as edited, and
+   * falls back to the stored budget only while nothing has been touched. That
+   * fallback is what preserves a hand-set number for someone who came in to
+   * change their water goal.
+   */
+  const currentKcal = kcal ?? (planChanged ? recommended : (targets?.kcal ?? 0))
+
+  // A plan edit takes the calorie budget back under the formula's control. The
+  // alternative — leaving a dragged number in place — is how you end up with a
+  // budget for the old goal wearing the new goal's name.
+  const changeGoal = (value: Goal) => {
+    setGoal(value)
+    setKcal(undefined)
+  }
+
+  const changeTargetWeight = (value: number) => {
+    setTargetWeight(value)
+    setKcal(undefined)
+  }
 
   const macros = [
     { key: 'carbs', label: t('common:macro.carbs'), grams: targets?.carbs ?? 0, dot: 'bg-kaya' },
@@ -83,11 +142,27 @@ export default function GoalsScreen() {
   ]
 
   const save = async () => {
-    await updateProfile.mutateAsync({ goal: currentGoal, targetWeightKg: currentTargetWeight })
-    // `is_custom` is the flag the recompute trigger reads and stops on. Setting
-    // it here is what stops tomorrow's weigh-in overwriting a number the user
-    // typed themselves — and it has to be written after the profile, whose own
-    // change would otherwise recompute over the top of it.
+    // `undefined` leaves the column alone rather than writing one — see
+    // `storedTargetWeight` above for why stamping the current weight in is not
+    // the harmless default it looks like.
+    await updateProfile.mutateAsync({
+      goal: currentGoal,
+      targetWeightKg: currentTargetWeight ?? undefined,
+    })
+    /**
+     * `is_custom` is the flag the recompute trigger reads and stops on, and it
+     * is EARNED rather than assumed.
+     *
+     * It used to be written as `true` unconditionally, which meant opening this
+     * screen and pressing Save — to change the water goal, or to change nothing
+     * at all — froze the calorie budget for good: no later weigh-in, and no
+     * later change of goal, could move it again. Setting it only when the number
+     * differs from what the formula asks for is what keeps that flag meaning
+     * "the user overrode this".
+     *
+     * Written after the profile either way, whose own change fires the trigger
+     * that would otherwise recompute over the top of a deliberate figure.
+     */
     await setTargets.mutateAsync({
       kcal: currentKcal,
       // Through the same splitter the automatic budget uses, so a hand-set
@@ -95,7 +170,7 @@ export default function GoalsScreen() {
       // share of energy.
       ...macroSplit(currentKcal, weight),
       waterGlasses: currentWater,
-      isCustom: true,
+      isCustom: currentKcal !== recommended,
     })
     toast.show({ title: t('profile:goals.saved'), tone: 'success' })
     goBack()
@@ -182,7 +257,7 @@ export default function GoalsScreen() {
               // "Just tracking" has no slider position of its own; it sits where
               // maintain does, and picking any option here commits to that goal.
               value={currentGoal === 'track' ? 'maintain' : currentGoal}
-              onChange={(value) => setGoal(value as Goal)}
+              onChange={(value) => changeGoal(value as Goal)}
               accessibilityLabel={t('profile:goals.goal')}
             />
 
@@ -191,18 +266,33 @@ export default function GoalsScreen() {
                 {t('profile:goals.targetWeight')}
               </Text>
               <Text variant="label">
-                {currentTargetWeight.toFixed(1)} {t('common:unit.kg')}
+                {targetWeightPosition.toFixed(1)} {t('common:unit.kg')}
               </Text>
             </View>
             <Slider
-              value={currentTargetWeight}
-              onChange={setTargetWeight}
+              value={targetWeightPosition}
+              onChange={changeTargetWeight}
               min={40}
               max={120}
               step={0.5}
               accessibilityLabel={t('profile:goals.targetWeight')}
               format={(value) => `${value.toFixed(1)} ${t('common:unit.kg')}`}
             />
+
+            {/* The pace is what the target weight actually buys, and without it
+                the taper is invisible: a user two kilos out sees a budget move
+                for no stated reason. Shown for the plan being edited, so it
+                answers the segmented control immediately rather than on save. */}
+            <View className="flex-row items-center justify-between">
+              <Text variant="label" className="text-muted">
+                {t('profile:goals.weeklyPace')}
+              </Text>
+              <Text variant="label">
+                {pace === 0
+                  ? t('profile:goals.paceHolding')
+                  : t('profile:goals.paceValue', { value: Math.abs(pace).toFixed(2) })}
+              </Text>
+            </View>
           </Card>
 
           <Card title={t('profile:goals.other')}>

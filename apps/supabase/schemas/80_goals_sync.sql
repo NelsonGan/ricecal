@@ -93,6 +93,10 @@ begin
     return null;
   end if;
 
+  -- Target weight is NOT in the guard above, and that is deliberate: it is
+  -- nullable, a null means "never stated", and `compute_targets` reads that as
+  -- the goal's nominal pace. Requiring it here would leave every account that
+  -- predates it with no budget at all.
   select * into v_computed
   from public.compute_targets(
     v_profile.sex,
@@ -100,7 +104,8 @@ begin
     v_profile.height_cm,
     v_weight,
     v_profile.activity_level,
-    v_profile.weight_goal
+    v_profile.weight_goal,
+    v_profile.target_weight_kg
   );
 
   -- Written against today, not against the row that is currently in force.
@@ -133,8 +138,15 @@ $$;
 
 -- `update of <columns>` so that renaming yourself, changing your avatar or
 -- finishing onboarding does not rerun the budget.
+--
+-- EVERY INPUT TO `compute_targets` HAS TO BE IN THIS LIST. `target_weight_kg`
+-- was not, back when it was a number the app stored and nothing read; now that
+-- it sets the pace, a user dragging their target on the goals screen has to move
+-- the budget, and the column list is the only thing that decides whether the
+-- write is even noticed.
 create trigger profiles_sync_daily_goals
-  after insert or update of sex, birth_date, height_cm, activity_level, weight_goal, timezone
+  after insert or update of
+    sex, birth_date, height_cm, target_weight_kg, activity_level, weight_goal, timezone
   on public.profiles
   for each row execute function public.sync_daily_goals();
 

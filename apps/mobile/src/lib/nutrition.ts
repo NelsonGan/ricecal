@@ -138,14 +138,49 @@ const ACTIVITY_FACTOR: Record<ActivityLevel, number> = {
 const KCAL_PER_KG = 7700
 
 /**
- * How fast each goal aims to move, in kg per week.
+ * How fast each goal aims to move, in kg per week, before the target is read.
  *
  * Loss at the gentle end of the 0.5–1 kg/week both the NHS and CDC call safe —
  * past 1 kg/week a growing share of what goes is lean tissue. Gain at 0.25
  * kg/week, the lean-gain rate: muscle has a ceiling on how fast it can be built
  * and anything quicker is mostly fat.
+ *
+ * NOMINAL, because this is what the goal asks for and not what the plan does.
+ * How far the target weight actually is decides that — see `intendedPace`.
  */
-const PACE_KG_PER_WEEK: Record<Goal, number> = { lose: -0.5, maintain: 0, gain: 0.25, track: 0 }
+const NOMINAL_PACE_KG_PER_WEEK: Record<Goal, number> = {
+  lose: -0.5,
+  maintain: 0,
+  gain: 0.25,
+  track: 0,
+}
+
+/**
+ * How close to the target counts as arrived.
+ *
+ * Body weight swings a kilogram either way inside a single day on water alone,
+ * so a plan that chased the last hundred grams would be reading noise: the
+ * budget would move on every weigh-in and the number on Today would never
+ * settle. Half a kilo is also the step on the target-weight slider, so the
+ * deadband is exactly "you cannot ask for closer than this".
+ */
+const TARGET_DEADBAND_KG = 0.5
+
+/**
+ * The shortest horizon the plan will try to close the remaining distance in.
+ *
+ * This is the taper, and it is the thing a fixed pace gets wrong. Someone 30 kg
+ * out and someone 1 kg out were being handed the same 0.5 kg/week deficit —
+ * which for the second is two weeks of work priced as a diet, and which does not
+ * stop when they arrive: the goal enum still says `lose`, so the app goes on
+ * cutting a body that is already where it asked to be.
+ *
+ * Four weeks means the last two kilograms are the only ones affected — anyone
+ * further out than that still gets the full pace, because `remaining / 4` is
+ * larger than the nominal figure and the smaller one wins. It is a soft landing
+ * bolted onto the end, not a slower plan.
+ */
+const MIN_WEEKS_TO_TARGET = 4
 
 /**
  * The pace, capped as a share of maintenance.
@@ -195,6 +230,15 @@ export type BodyInput = {
   age: number
   activity: ActivityLevel
   goal: Goal
+  /**
+   * Where the user is heading, when they have said.
+   *
+   * Optional, and null is a real answer rather than a missing one: `profiles`
+   * has allowed a null `target_weight_kg` since before this was an input, so
+   * every account predating it has one. No target means the goal's nominal pace
+   * applies unchanged, which is exactly what those accounts already had.
+   */
+  targetWeightKg?: number | null
 }
 
 /** Mifflin St Jeor, the same formula `compute_targets()` runs server-side. */
@@ -209,15 +253,55 @@ export function maintenanceRate(body: BodyInput): number {
 }
 
 /**
+ * The kg/week this plan aims for, from the goal AND the distance left to run.
+ *
+ * The goal enum says WHETHER to move and the two weights say WHICH WAY and HOW
+ * FAR, and the three can disagree. Three rules settle it, in this order:
+ *
+ * 1. **No target stated** — the nominal pace, unchanged. That is every account
+ *    created before target weight was an input to anything.
+ * 2. **Already there**, within the deadband — nothing to do, whatever the enum
+ *    still says. This is the one that matters most: without it a user who
+ *    reached their goal weight keeps being told to eat at a deficit, and the
+ *    only way out is noticing the setting and changing it themselves.
+ * 3. **The two disagree** — `lose` with a target ABOVE current weight, or `gain`
+ *    with one below. Neither input is obviously the stale one, so the plan holds
+ *    steady rather than picking a direction the user may not have meant. The
+ *    goals screen can produce this in one drag of the slider.
+ *
+ * What is left is a real distance in the direction the goal asked for, and the
+ * pace is the nominal figure or the taper, whichever asks for less.
+ */
+function intendedPace(body: BodyInput): number {
+  const nominal = NOMINAL_PACE_KG_PER_WEEK[body.goal]
+  if (nominal === 0) return 0
+
+  const target = body.targetWeightKg
+  if (target === undefined || target === null) return nominal
+
+  // Signed the same way the pace is: negative when there is weight to lose.
+  const remaining = target - body.weightKg
+  if (Math.abs(remaining) < TARGET_DEADBAND_KG) return 0
+  if (Math.sign(remaining) !== Math.sign(nominal)) return 0
+
+  return Math.sign(nominal) * Math.min(Math.abs(nominal), Math.abs(remaining) / MIN_WEEKS_TO_TARGET)
+}
+
+/**
  * The kcal/day added or removed for the goal, capped against maintenance.
  *
  * The single source of truth for how fast the plan moves. `weeklyPace` reads the
  * answer back out rather than keeping its own copy — the two used to be separate
  * constants that disagreed, so the budget was built for 400 kcal a day while the
  * goal date was drawn for 0.5 kg a week, which needs 550.
+ *
+ * TWO caps, and they answer different questions. The taper in `intendedPace`
+ * asks how much distance is left; this one asks what this body can afford, and
+ * is why 0.5 kg/week is a gentle cut for a large man and a crash diet for a
+ * small woman at the same 550 kcal.
  */
 export function energyDelta(body: BodyInput): number {
-  const pace = PACE_KG_PER_WEEK[body.goal]
+  const pace = intendedPace(body)
   if (pace === 0) return 0
 
   const fromPace = (Math.abs(pace) * KCAL_PER_KG) / 7
@@ -232,17 +316,45 @@ export function weeklyPace(body: BodyInput): number {
   return (energyDelta(body) * 7) / KCAL_PER_KG
 }
 
+/** Five years. Past this the answer is "not at this rate", which is a null. */
+const MAX_WEEKS_PROJECTED = 260
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000
+
 /**
- * When the target weight is reached at the current pace, or null when there is
- * nothing to reach — a maintain plan has no finish line, and saying "never"
- * would be both true and unkind.
+ * When the target weight is reached, or null when there is nothing to reach — a
+ * maintain plan has no finish line, and saying "never" would be both true and
+ * unkind.
+ *
+ * Walked a week at a time rather than divided, because neither term of that
+ * division holds still any more. The pace tapers over the last two kilograms,
+ * and the body doing the losing gets lighter as it goes — Mifflin-St Jeor falls
+ * about 10 kcal per kilogram of BMR, so a capped deficit shrinks with it. That
+ * is the plateau every diet runs into, and a straight `distance / pace` promises
+ * a date before it.
+ *
+ * The loop is bounded twice over: the step is at most a quarter of what is left,
+ * so the remainder falls geometrically and the deadband is reached in weeks, and
+ * `MAX_WEEKS_PROJECTED` catches anything that somehow crawls.
  */
 export function goalDate(body: BodyInput, targetWeightKg: number, from: Date): Date | null {
-  const pace = Math.abs(weeklyPace(body))
-  const delta = Math.abs(body.weightKg - targetWeightKg)
-  if (pace === 0 || delta < 0.1) return null
-  const weeks = Math.ceil(delta / pace)
-  return new Date(from.getTime() + weeks * 7 * 24 * 60 * 60 * 1000)
+  let weightKg = body.weightKg
+
+  for (let week = 1; week <= MAX_WEEKS_PROJECTED; week++) {
+    const pace = weeklyPace({ ...body, weightKg, targetWeightKg })
+    // Nothing to reach, or nothing this plan can do about it. On the first pass
+    // that is a maintain goal, a target already met, or a target on the wrong
+    // side of the goal; later it cannot happen, because the step never carries
+    // the weight past the deadband that would have ended the loop.
+    if (pace === 0) return null
+
+    weightKg += pace
+    if (Math.abs(weightKg - targetWeightKg) < TARGET_DEADBAND_KG) {
+      return new Date(from.getTime() + week * WEEK_MS)
+    }
+  }
+
+  return null
 }
 
 /**

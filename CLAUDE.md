@@ -408,6 +408,16 @@ Break these and the feature is wrong in ways tests may not catch.
   researched JSON).
 - **Adjust the amount, never the macros**, when a row is the right dish at the
   wrong size.
+- **Every input to `compute_targets` is on the recompute trigger's column list.**
+  `profiles_sync_daily_goals` is `after update of <columns>`, so a column the
+  formula reads and the trigger does not name is one whose edits are silently
+  ignored — the budget goes on describing the old plan until something else
+  about the profile changes. `target_weight_kg` was exactly that for as long as
+  it was a number the app stored and nothing read.
+- **A hand-set budget is one the user actually set.** `daily_goals.is_custom`
+  stops the recompute permanently, so writing it for a save that merely passed
+  through the goals screen freezes a user's target for good. It is set when the
+  number differs from what the formula asks for, and not before.
 - **Burned calories extend the budget; they never shrink what was eaten.** The
   arithmetic is `goal + active - eaten`, written as an addition on screen. Every
   app in this category has at some point shipped the subtraction, and it turns a
