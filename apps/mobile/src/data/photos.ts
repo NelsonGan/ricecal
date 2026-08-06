@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
+// Only ever for its cache, never to render — hence the name. The `Image` below
+// is React Native's, and it is here to measure a file rather than to draw one.
+import { Image as ImageCache } from 'expo-image'
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'
 import { Image } from 'react-native'
 
-import { queryClient } from '@/lib/query'
 import { supabase } from '@/lib/supabase'
 import { keys } from './keys'
 
@@ -294,12 +296,23 @@ export function uploadAvatar(localUri: string): Promise<string> {
  * Which is why the URL is the only thing re-fetched on a cold launch. The
  * PICTURE it names survives, cached by expo-image against the key rather than
  * against the signature — see `storedImageSource`.
+ *
+ * The one query in the app that overrides the global `gcTime`, and the only
+ * one that should: `Infinity` is set in `lib/query.ts` so that the persister
+ * gets a chance to write a query to disk before it is collected, and this is
+ * the query that is deliberately never written to disk. Kept forever, it also
+ * kept every key the user has ever deleted — a photo replaced by hand leaves
+ * its old URL behind with nothing pointing at it and no expiry to notice.
+ * Collected after the signature's own lifetime instead, since a URL that has
+ * outlived its signature has nothing left to offer anybody. A tile still on
+ * screen is unaffected: nothing is collected while it is being observed.
  */
 function useStoredImageUrl(path: string | undefined) {
   return useQuery({
     queryKey: keys.photo(path ?? ''),
     enabled: Boolean(path),
     staleTime: (READ_TTL_SECONDS - 300) * 1000,
+    gcTime: READ_TTL_SECONDS * 1000,
     queryFn: () => signRead(path as string),
   })
 }
@@ -315,8 +328,12 @@ export function useAvatarUrl(path: string | undefined) {
 }
 
 /**
- * Structurally what `expo-image` calls an `ImageSource`, written out rather
- * than imported so the data layer keeps no dependency on a rendering library.
+ * The two fields of `expo-image`'s `ImageSource` that this app fills in.
+ *
+ * Written out rather than imported because it is the SHAPE that call sites
+ * need, and narrowing it to two named fields is what makes the pairing legible
+ * at the `<Image>` — an `ImageSource` has a dozen optional fields and says
+ * nothing about which of them matter here.
  */
 export type StoredImageSource = { uri: string; cacheKey?: string }
 
@@ -380,19 +397,26 @@ async function removeImages(paths: string[]): Promise<void> {
   if (paths.length === 0) return
 
   /**
-   * Drop the signed URL before asking for the object to go, and drop it even
-   * if that ask then fails — the row has already stopped pointing here either
-   * way, so the URL is wrong regardless of whether the object survives it.
+   * Nothing is evicted here, deliberately, and both halves of that are worth
+   * saying because both look like omissions.
    *
-   * The DISK bytes under this key are left alone, and there is no API to do
-   * otherwise: expo-image can clear its cache entirely or not at all, and
-   * evicting one dead plate by throwing away every other plate on the day is a
-   * worse trade than letting its own LRU reclaim a key nothing will ask for
-   * again. Nothing can be served stale in the meantime, because a replacement
-   * photo arrives under a key of its own.
+   * The SIGNED URL is left to `gcTime` on `useStoredImageUrl` rather than
+   * removed on the spot. Removing it was tried and was worse than doing
+   * nothing: a screen that replaces a photo is still mounted on the old key
+   * while its own mutation runs, so the invalidation in `onSuccess` re-renders
+   * it, the observer finds its query gone, and it signs the key that was
+   * deleted a moment ago. `signGet` does not check that an object exists, so
+   * that request SUCCEEDS — paying a round trip to put a URL for a deleted
+   * object back in the cache the removal had just cleared.
+   *
+   * The DISK bytes are left alone because there is no API to do otherwise:
+   * expo-image can clear its cache entirely or not at all, and evicting one
+   * dead plate by throwing away every other plate on the day is the worse
+   * trade. Its own LRU reclaims a key nothing asks for again.
+   *
+   * Neither can be served stale in the meantime. A replacement photo arrives
+   * under a key of its own, so nothing is looking these up any more.
    */
-  for (const path of paths) queryClient.removeQueries({ queryKey: keys.photo(path) })
-
   try {
     await photos({ action: 'delete', keys: paths })
   } catch (error) {
@@ -408,4 +432,38 @@ export function removeMealPhoto(path: string): Promise<void> {
 /** Deletes a profile picture. */
 export function removeAvatar(path: string): Promise<void> {
   return removeImages([path])
+}
+
+/**
+ * Forgets every cached picture, on the way out of an account.
+ *
+ * This is the one moment where clearing the whole cache is the right shape
+ * rather than a blunt instrument — the point IS that nothing is kept.
+ *
+ * It became necessary when the cache started keying on `photo_path`. Keyed on
+ * the signed URL, a plate was re-downloaded under a new name every hour and
+ * the old entries aged out on their own, so a signed-out account's photographs
+ * left the device by accident, fairly promptly. Keyed on something stable they
+ * do not: they are exactly the long-lived entries this change set out to
+ * create. A meal photo is a picture of where somebody was and when, and a
+ * device that has been handed on or sold should not still be holding a year of
+ * them.
+ *
+ * SIGNED_OUT only, deliberately, though `session.tsx` clears its query cache on
+ * both edges. Signing in cannot expose anything — a key names its owner and the
+ * `photos` function refuses to sign one that is not the caller's — and if a
+ * future supabase-js were to report a restored session as a sign-in, clearing
+ * here would quietly throw away the disk cache on every launch and undo the
+ * whole point of keying it this way. The edge that matters is the one that
+ * leaves.
+ *
+ * Never rejects: this runs while an account is being torn down, and a cache
+ * that would not empty is not a reason to fail a sign-out.
+ */
+export async function clearImageCache(): Promise<void> {
+  try {
+    await Promise.all([ImageCache.clearMemoryCache(), ImageCache.clearDiskCache()])
+  } catch (error) {
+    console.warn('[photos] could not clear the image cache', error)
+  }
 }

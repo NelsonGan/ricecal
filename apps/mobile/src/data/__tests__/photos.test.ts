@@ -1,4 +1,11 @@
-import { storedImageSource } from '@/data/photos'
+import { Image } from 'expo-image'
+
+import { clearImageCache, storedImageSource } from '@/data/photos'
+
+const cache = Image as unknown as {
+  clearMemoryCache: jest.Mock
+  clearDiskCache: jest.Mock
+}
 
 /**
  * What the image cache is keyed on.
@@ -69,5 +76,40 @@ describe('storedImageSource', () => {
    */
   it('falls back to the URL when there is no key to file it under', () => {
     expect(storedImageSource(undefined, SIGNED)).toEqual({ uri: SIGNED, cacheKey: undefined })
+  })
+})
+
+/**
+ * The other side of keying on something stable: entries that used to age out
+ * on their own no longer do, so leaving an account has to say so explicitly.
+ */
+describe('clearImageCache', () => {
+  beforeEach(() => {
+    cache.clearMemoryCache.mockClear().mockResolvedValue(true)
+    cache.clearDiskCache.mockClear().mockResolvedValue(true)
+  })
+
+  it('empties the disk as well as the memory', async () => {
+    await clearImageCache()
+
+    // The disk is the one that matters — it is what survives the app being
+    // closed, and a decoded bitmap in memory does not outlive the process.
+    expect(cache.clearDiskCache).toHaveBeenCalled()
+    expect(cache.clearMemoryCache).toHaveBeenCalled()
+  })
+
+  /**
+   * It runs while an account is being torn down. A cache that will not empty
+   * is not a reason to fail somebody's sign-out, so the failure is logged and
+   * swallowed — the same bargain `removeImages` makes.
+   */
+  it('never rejects', async () => {
+    cache.clearDiskCache.mockRejectedValue(new Error('no such directory'))
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+    await expect(clearImageCache()).resolves.toBeUndefined()
+    expect(warn).toHaveBeenCalled()
+
+    warn.mockRestore()
   })
 })
