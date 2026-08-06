@@ -45,7 +45,7 @@ export default function FinishStep() {
    * elsewhere and already flushed there. Back to the start rather than writing
    * half a profile.
    */
-  if (!isComplete(draft)) return <Redirect href="/goal" />
+  if (!isComplete(draft)) return <Redirect href="/about" />
 
   return <Flush draft={draft} />
 }

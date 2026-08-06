@@ -49,15 +49,17 @@ export const profile = {
     targetWeight: 'Target weight',
     weeklyPace: 'Weekly pace',
     /**
-     * Signed in words rather than with a minus.
+     * Signed in words rather than with a minus, and without a period: the label
+     * beside these already says "Weekly pace", so "0.25 kg / week" under it
+     * would say week twice.
      *
      * The direction used to be a Lose / Maintain / Gain control above the
      * slider; it is the gap between the two weights now, and this line is where
-     * that gap is read back. "-0.50 kg / week" states the same thing and makes
-     * the reader do the arithmetic to find out which way they are going.
+     * that gap is read back. "-0.50 kg" states the same thing and makes the
+     * reader do the arithmetic to find out which way they are going.
      */
-    paceLosing: 'Losing {{value}} kg / week',
-    paceGaining: 'Gaining {{value}} kg / week',
+    paceLosing: 'Losing {{value}} kg',
+    paceGaining: 'Gaining {{value}} kg',
     /**
      * The pace when the plan is not moving — the target sitting where the user
      * already is, which is also how they say they have no goal. "0.00 kg / week"
