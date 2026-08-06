@@ -27,17 +27,25 @@ import {
  * "the number changed after I signed up".
  */
 
-/** 164 cm, 65 kg, 29, sedentary. BMR 1369, maintenance 1642.8. */
+/**
+ * 164 cm, 65 kg, 29, sedentary. BMR 1369, maintenance 1642.8.
+ *
+ * No target weight, which is the same as a target of 65: this body is holding
+ * steady, and every test below states its own plan by naming where it is going.
+ */
 const woman: BodyInput = {
   sex: 'female',
   weightKg: 65,
   heightCm: 164,
   age: 29,
   activity: 'sedentary',
-  goal: 'maintain',
 }
 
 const man: BodyInput = { ...woman, sex: 'male', weightKg: 82, heightCm: 178, age: 34 }
+
+/** The same woman, heading somewhere. Ten kilos out: far enough that nothing tapers. */
+const losing: BodyInput = { ...woman, targetWeightKg: 55 }
+const gaining: BodyInput = { ...man, targetWeightKg: 92 }
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
@@ -57,10 +65,11 @@ describe('Mifflin-St Jeor', () => {
   })
 })
 
-describe('the goal delta', () => {
-  it('leaves maintain and track alone', () => {
-    expect(energyDelta({ ...woman, goal: 'maintain' })).toBe(0)
-    expect(energyDelta({ ...woman, goal: 'track' })).toBe(0)
+describe('the energy delta', () => {
+  it('asks for nothing when there is no target, or when the target is here', () => {
+    expect(energyDelta(woman)).toBe(0)
+    expect(energyDelta({ ...woman, targetWeightKg: null })).toBe(0)
+    expect(energyDelta({ ...woman, targetWeightKg: 65 })).toBe(0)
   })
 
   /**
@@ -74,7 +83,7 @@ describe('the goal delta', () => {
       heightCm: 150,
       age: 60,
       activity: 'sedentary',
-      goal: 'lose',
+      targetWeightKg: 40,
     }
 
     // 0.5 kg/week would ask for 550 kcal, which is half this body's day.
@@ -83,12 +92,12 @@ describe('the goal delta', () => {
   })
 
   it('asks for the full 0.5 kg a week when the body can afford it', () => {
-    const big: BodyInput = { ...man, weightKg: 110, activity: 'onFeet', goal: 'lose' }
+    const big: BodyInput = { ...man, weightKg: 110, activity: 'onFeet', targetWeightKg: 90 }
     expect(energyDelta(big)).toBeCloseTo(-(0.5 * 7700) / 7)
   })
 
   it('keeps a surplus inside the lean-gain band', () => {
-    const delta = energyDelta({ ...man, goal: 'gain' })
+    const delta = energyDelta(gaining)
     expect(delta).toBeGreaterThan(0)
     // Published lean-gain advice runs +150 to +350 kcal a day.
     expect(delta).toBeLessThanOrEqual(350)
@@ -96,31 +105,30 @@ describe('the goal delta', () => {
 
   /** The bug this replaced: the budget was built for 400 and the date drawn for 550. */
   it('is the only source of the weekly pace', () => {
-    const losing = { ...woman, goal: 'lose' as const }
     expect(weeklyPace(losing)).toBeCloseTo((energyDelta(losing) * 7) / 7700)
-    expect(weeklyPace({ ...woman, goal: 'maintain' })).toBe(0)
+    expect(weeklyPace(woman)).toBe(0)
   })
 })
 
 /**
- * The target weight, which used to be a number the app stored and nothing read.
+ * The two weights, which are now the whole plan.
  *
- * Every case here was a real answer the old formula gave: the same deficit for
- * someone 30 kg out and someone 1 kg out, a cut that carried on after the target
- * was reached, and a cut prescribed toward a target ABOVE the user's weight.
+ * There was a lose/maintain/gain enum beside them, and the first three cases
+ * here are answers the app gave while it was the only thing consulted: the same
+ * deficit for someone 30 kg out and someone 1 kg out, a cut that carried on
+ * after the target was reached, and a cut prescribed toward a target ABOVE the
+ * user's own weight. The last of those is not a rule any more — it is
+ * unrepresentable, which is the point.
  */
 describe('the distance to the target', () => {
-  const losing = { ...woman, goal: 'lose' as const }
-  const gaining = { ...man, goal: 'gain' as const }
-
-  it('leaves the nominal pace alone when no target was ever stated', () => {
-    expect(energyDelta({ ...losing, targetWeightKg: null })).toBe(energyDelta(losing))
-    expect(energyDelta({ ...losing, targetWeightKg: undefined })).toBe(energyDelta(losing))
+  it('reads the direction off the sign of the gap', () => {
+    expect(energyDelta({ ...woman, targetWeightKg: 55 })).toBeLessThan(0)
+    expect(energyDelta({ ...woman, targetWeightKg: 75 })).toBeGreaterThan(0)
   })
 
   it('runs at the full pace while the target is more than a month away', () => {
-    // 65 kg heading for 55: ten kilos is far enough that the taper never binds.
-    expect(energyDelta({ ...losing, targetWeightKg: 55 })).toBe(energyDelta(losing))
+    // Ten kilos is far enough that the taper never binds; five is too.
+    expect(energyDelta({ ...woman, targetWeightKg: 60 })).toBe(energyDelta(losing))
   })
 
   /**
@@ -133,7 +141,7 @@ describe('the distance to the target', () => {
    * taper would be invisible behind it.
    */
   it('slows as the target comes within a month', () => {
-    const big = { ...man, weightKg: 110, activity: 'onFeet' as const, goal: 'lose' as const }
+    const big = { ...man, weightKg: 110, activity: 'onFeet' as const }
 
     expect(weeklyPace({ ...big, targetWeightKg: 100 })).toBeCloseTo(-0.5)
     // Two kilos out is exactly where the taper starts to bind, and not before.
@@ -142,47 +150,42 @@ describe('the distance to the target', () => {
     expect(weeklyPace({ ...big, targetWeightKg: 109 })).toBeCloseTo(-0.25)
 
     // A gentler cut is a larger budget, which is the whole visible effect.
-    expect(Math.abs(energyDelta({ ...losing, targetWeightKg: 64 }))).toBeLessThan(
-      Math.abs(energyDelta({ ...losing, targetWeightKg: 55 })),
+    expect(Math.abs(energyDelta({ ...woman, targetWeightKg: 64 }))).toBeLessThan(
+      Math.abs(energyDelta(losing)),
     )
   })
 
+  /** Gaining tapers on the same rule, at its own nominal pace. */
+  it('tapers a gain as well as a cut', () => {
+    expect(weeklyPace({ ...man, targetWeightKg: 92 })).toBeCloseTo(0.25)
+    expect(weeklyPace({ ...man, targetWeightKg: 82.5 })).toBeCloseTo(0.125)
+  })
+
   it('stops entirely once the target is reached', () => {
-    expect(energyDelta({ ...losing, targetWeightKg: 65 })).toBe(0)
-    // Overshot, and still nominally losing. Nothing more to take off.
-    expect(energyDelta({ ...losing, targetWeightKg: 66 })).toBe(0)
-    expect(energyDelta({ ...gaining, targetWeightKg: gaining.weightKg - 3 })).toBe(0)
+    expect(energyDelta({ ...woman, targetWeightKg: 65 })).toBe(0)
+    expect(energyDelta({ ...man, targetWeightKg: man.weightKg })).toBe(0)
   })
 
   /**
    * Weight moves a kilogram on water inside a day. Without the deadband the
-   * budget would chase that noise and never settle on a number.
+   * budget would chase that noise and never settle on a number — and there
+   * would be no way for a user to say they have no goal at all.
    */
   it('treats anything inside half a kilo as arrived', () => {
-    expect(energyDelta({ ...losing, targetWeightKg: 64.6 })).toBe(0)
-    expect(energyDelta({ ...losing, targetWeightKg: 64.4 })).not.toBe(0)
-  })
-
-  /** One drag of the goals screen's slider produces this. */
-  it('holds steady when the goal and the target point opposite ways', () => {
-    expect(energyDelta({ ...losing, targetWeightKg: 70 })).toBe(0)
-    expect(energyDelta({ ...gaining, targetWeightKg: gaining.weightKg - 10 })).toBe(0)
-  })
-
-  it('still asks for nothing on a maintain goal, whatever the target says', () => {
-    expect(energyDelta({ ...woman, goal: 'maintain', targetWeightKg: 55 })).toBe(0)
-    expect(energyDelta({ ...woman, goal: 'track', targetWeightKg: 55 })).toBe(0)
+    expect(energyDelta({ ...woman, targetWeightKg: 64.6 })).toBe(0)
+    expect(energyDelta({ ...woman, targetWeightKg: 65.4 })).toBe(0)
+    expect(energyDelta({ ...woman, targetWeightKg: 64.4 })).not.toBe(0)
   })
 
   /** The taper cuts the deficit, so the budget it produces is larger. */
   it('feeds through to the budget', () => {
-    const far = computeTargets({ ...losing, targetWeightKg: 55 }).kcal
-    const near = computeTargets({ ...losing, targetWeightKg: 64 }).kcal
-    const arrived = computeTargets({ ...losing, targetWeightKg: 65 }).kcal
+    const far = computeTargets(losing).kcal
+    const near = computeTargets({ ...woman, targetWeightKg: 64 }).kcal
+    const arrived = computeTargets({ ...woman, targetWeightKg: 65 }).kcal
 
     expect(near).toBeGreaterThan(far)
     expect(arrived).toBeGreaterThan(near)
-    expect(arrived).toBe(computeTargets({ ...woman, goal: 'maintain' }).kcal)
+    expect(arrived).toBe(computeTargets(woman).kcal)
   })
 })
 
@@ -194,7 +197,7 @@ describe('the budget', () => {
       heightCm: 145,
       age: 70,
       activity: 'sedentary',
-      goal: 'lose',
+      targetWeightKg: 37,
     }
     expect(computeTargets(tiny).kcal).toBe(1200)
     expect(computeTargets({ ...tiny, sex: 'male' }).kcal).toBe(1500)
@@ -217,11 +220,11 @@ describe('the macro split', () => {
    * when a deficit makes it matter most, which is backwards.
    */
   it('does not cut protein when the budget is cut', () => {
-    const maintaining = computeTargets({ ...woman, goal: 'maintain' })
-    const losing = computeTargets({ ...woman, goal: 'lose' })
+    const maintaining = computeTargets(woman)
+    const cutting = computeTargets(losing)
 
-    expect(losing.kcal).toBeLessThan(maintaining.kcal)
-    expect(losing.protein).toBe(maintaining.protein)
+    expect(cutting.kcal).toBeLessThan(maintaining.kcal)
+    expect(cutting.protein).toBe(maintaining.protein)
   })
 
   it('holds protein inside the AMDR ceiling on a small budget', () => {
@@ -245,8 +248,7 @@ describe('the macro split', () => {
   })
 
   it('leaves enough carbohydrate for a rice-based diet', () => {
-    const { carbs } = computeTargets({ ...woman, goal: 'maintain' })
-    const kcal = computeTargets({ ...woman, goal: 'maintain' }).kcal
+    const { carbs, kcal } = computeTargets(woman)
     // Not the AMDR's 45% — high protein in grams squeezes it — but well clear of
     // a low-carb plan, which this app is not.
     expect((carbs * 4) / kcal).toBeGreaterThan(0.35)
@@ -254,18 +256,9 @@ describe('the macro split', () => {
 })
 
 describe('the goal date', () => {
-  it('is null for a plan with no finish line', () => {
-    expect(goalDate({ ...woman, goal: 'maintain' }, 60, new Date('2026-01-01'))).toBeNull()
-    expect(goalDate({ ...woman, goal: 'track' }, 60, new Date('2026-01-01'))).toBeNull()
-  })
-
   it('is null when the target is already reached', () => {
-    expect(goalDate({ ...woman, goal: 'lose' }, 65, new Date('2026-01-01'))).toBeNull()
-  })
-
-  /** A cut toward a target above the user's weight has no finish line either. */
-  it('is null when the goal and the target disagree', () => {
-    expect(goalDate({ ...woman, goal: 'lose' }, 72, new Date('2026-01-01'))).toBeNull()
+    expect(goalDate(woman, 65, new Date('2026-01-01'))).toBeNull()
+    expect(goalDate(woman, 64.6, new Date('2026-01-01'))).toBeNull()
   })
 
   /**
@@ -275,7 +268,6 @@ describe('the goal date', () => {
    * so the same percentage cap buys a smaller deficit every month.
    */
   it('never promises a date sooner than the plan can make it', () => {
-    const losing = { ...woman, goal: 'lose' as const }
     const from = new Date('2026-01-01T00:00:00Z')
     const weeks = Math.round((Number(goalDate(losing, 60, from)) - from.getTime()) / WEEK_MS)
 
@@ -287,7 +279,6 @@ describe('the goal date', () => {
   })
 
   it('is further off the further the target is', () => {
-    const losing = { ...woman, goal: 'lose' as const }
     const from = new Date('2026-01-01T00:00:00Z')
 
     expect(Number(goalDate(losing, 62, from))).toBeLessThan(Number(goalDate(losing, 58, from)))
@@ -295,7 +286,7 @@ describe('the goal date', () => {
 
   /** A target the plan cannot reach in five years is a null, not a date in 2071. */
   it('gives up rather than projecting a lifetime', () => {
-    const far = { ...man, weightKg: 200, goal: 'lose' as const }
+    const far = { ...man, weightKg: 200 }
     expect(goalDate(far, 45, new Date('2026-01-01'))).toBeNull()
   })
 })
@@ -314,13 +305,12 @@ describe('the database copy', () => {
   const body = sql.slice(sql.indexOf('function public.compute_targets'))
 
   it.each([
-    ['the nominal paces', "when 'lose' then -0.5 when 'gain' then 0.25"],
+    ['the nominal paces', 'when remaining < 0 then -0.5 else 0.25'],
     ['the energy in a kilogram', '7700 / 7'],
     ['the deficit cap', 'tdee * 0.2'],
     ['the surplus cap', 'tdee * 0.15'],
     ['the target deadband', 'abs(remaining) < 0.5'],
     ['the taper horizon', 'abs(remaining) / 4'],
-    ['the disagreement rule', 'sign(remaining) <> sign(pace)'],
     ['protein per kg', 'p_weight_kg * 1.6'],
     ['the protein ceiling', 'kcal * 0.35 / 4'],
     ['the fat share', 'kcal * 0.25 / 9'],
@@ -337,8 +327,13 @@ describe('the database copy', () => {
     expect(body).toContain('p_target_weight_kg - p_weight_kg')
   })
 
-  /** The old split, in case a copy of it survives anywhere in the function. */
-  it.each(['0.47', '0.22', '0.31', '-400', 'greatest(kcal, 1000)'])(
+  /**
+   * The old split and the goal enum, in case a copy of either survives anywhere
+   * in the function. `p_goal` especially: the direction is the sign of the gap
+   * now, and a function still branching on a stored goal would be a second
+   * source of the same fact — which is the thing this replaced.
+   */
+  it.each(['0.47', '0.22', '0.31', '-400', 'greatest(kcal, 1000)', 'p_goal', 'weight_goal'])(
     'no longer carries %s',
     (fragment) => {
       expect(body).not.toContain(fragment)
@@ -365,16 +360,13 @@ describe('the recompute trigger', () => {
     expect(sql).toContain('v_profile.target_weight_kg')
   })
 
+  it('no longer reads a goal that no longer exists', () => {
+    expect(sql).not.toContain('weight_goal')
+  })
+
   it('fires on every input the formula reads', () => {
     const trigger = sql.slice(sql.indexOf('create trigger profiles_sync_daily_goals'))
-    for (const column of [
-      'sex',
-      'birth_date',
-      'height_cm',
-      'target_weight_kg',
-      'activity_level',
-      'weight_goal',
-    ]) {
+    for (const column of ['sex', 'birth_date', 'height_cm', 'target_weight_kg', 'activity_level']) {
       expect(trigger).toContain(column)
     }
   })

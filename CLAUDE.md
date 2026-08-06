@@ -70,7 +70,7 @@ data rehydrates into new code.
 entry pointing at nothing. It asks three questions in order — is the keychain
 read still in flight, is there a session, does the profile have `onboarded_at` —
 and the order is the flow. The questions come BEFORE the account: a visitor
-answers seven onboarding screens, is asked for an email at the end, and so the
+answers six onboarding screens, is asked for an email at the end, and so the
 local draft rather than the session is what says how far they got. The draft is
 in MMKV and outlives the account it was flushed for, which is why a signed-out
 relaunch starts at the top rather than resuming.
@@ -98,7 +98,7 @@ to sit between the second and third slots without being one.
 
 ```
 auth.users
-  └── profiles ────────────── body + goal: the inputs to the calorie budget
+  └── profiles ────────────── body + target weight: the calorie budget's inputs
        ├── user_settings ──── display, notifications, privacy
        ├── meal_times ─────── when each meal is, and whether to remind
        ├── daily_goals ────── the budget, effective-dated
@@ -408,6 +408,12 @@ Break these and the feature is wrong in ways tests may not catch.
   researched JSON).
 - **Adjust the amount, never the macros**, when a row is the right dish at the
   wrong size.
+- **The gap between the current and target weights IS the calorie plan.** Its
+  sign says lose or gain, its size says how hard, and equal says neither — so
+  there is nothing else to ask, and nothing else that can contradict it. There
+  was a `weight_goal` enum with its own onboarding screen, and it could only
+  agree with those two numbers or disagree with them; disagreeing, it forced the
+  formula to pick which of the user's own answers to ignore.
 - **Every input to `compute_targets` is on the recompute trigger's column list.**
   `profiles_sync_daily_goals` is `after update of <columns>`, so a column the
   formula reads and the trigger does not name is one whose edits are silently

@@ -10,7 +10,7 @@ import { Button, Icon, Screen, Text, useToast } from '@/ui'
 
 const MASCOT = require('../../assets/brand/mascot.png')
 
-/** 09 FREE TRIAL */
+/** 08 FREE TRIAL */
 export default function TrialStep() {
   const { t } = useTranslation('onboarding')
   const router = useRouter()

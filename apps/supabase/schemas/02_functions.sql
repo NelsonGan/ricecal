@@ -203,13 +203,22 @@ $$;
 -- ---------------------------------------------------------------------------
 -- The calorie budget.
 --
--- Mifflin-St Jeor, an activity multiplier, then a goal delta. The same
--- arithmetic as `computeTargets` in apps/mobile/src/lib/nutrition.ts, which
--- exists only because onboarding shows a budget before the account that would
--- store it. Change one and change the other; there is a test asserting they
--- agree, and the numbers below are the reason it is worth having.
+-- Mifflin-St Jeor, an activity multiplier, then a delta for the distance still
+-- to run. The same arithmetic as `computeTargets` in
+-- apps/mobile/src/lib/nutrition.ts, which exists only because onboarding shows a
+-- budget before the account that would store it. Change one and change the
+-- other; there is a test asserting they agree, and the numbers below are the
+-- reason it is worth having.
 --
 -- `stable`, not `immutable`: age depends on `current_date`.
+--
+-- THE GAP BETWEEN THE TWO WEIGHTS IS THE WHOLE PLAN. Its sign says which way,
+-- its size says how hard, and equal says neither. There was a `weight_goal`
+-- enum here as well — lose/maintain/gain/track, asked for on its own onboarding
+-- screen — and a second source of the same fact could only agree with the
+-- weights or contradict them. Agreeing it was noise; contradicting, it forced
+-- the function to decide which of the user's own answers to ignore, and the
+-- answer it ignored was usually the one they had just changed.
 --
 -- Every constant here is somebody's published guidance rather than a taste:
 --
@@ -217,19 +226,15 @@ $$;
 --     safe. Gain at 0.25 kg/week, the lean-gain rate — muscle has a ceiling on
 --     how fast it can be built and quicker is mostly fat. 7700 kcal per kg of
 --     tissue turns either into a daily figure.
---   * That pace is what the GOAL asks for. What the plan actually does depends
---     on the TARGET WEIGHT, which is the second half of the question and used to
---     be ignored entirely: the goal enum alone handed someone 30 kg out and
---     someone 1 kg out the same deficit, and went on handing it out after they
---     arrived, because nothing in the arithmetic could tell that they had. The
---     distance left decides three things — whether to move at all (inside half a
---     kilo of the target, no: body weight swings that far on water inside a day),
---     which way (the goal and the target can disagree, and then the plan holds
---     steady rather than guessing), and how fast (never quicker than closing the
---     remaining gap over four weeks, which leaves the pace untouched for anyone
---     more than 2 kg out and tapers the landing for everyone else).
---     A null target means no target was ever stated, and the nominal pace stands
---     — which is exactly what every account predating this had.
+--   * That pace is the most a direction ever asks for. The distance left decides
+--     the rest: inside half a kilo of the target nothing happens at all (body
+--     weight swings that far on water inside a day, and it is also how a user
+--     says they have no goal), and past that the plan never runs quicker than
+--     closing the remaining gap over four weeks — which leaves the pace
+--     untouched for anyone more than 2 kg out and tapers the landing for
+--     everyone else. Both used to be missing: one deficit was handed to someone
+--     30 kg out and someone 1 kg out alike, and it carried on after they
+--     arrived, because nothing in the arithmetic could tell that they had.
 --   * That figure is then capped at 20% of maintenance for a cut and 15% for a
 --     surplus. A flat 550 kcal deficit is a fifth of a large man's day and
 --     nearly half a small woman's; the cap is what stops one number being gentle
@@ -257,10 +262,8 @@ create or replace function public.compute_targets(
   p_height_cm        numeric,
   p_weight_kg        numeric,
   p_activity         public.activity_level,
-  p_goal             public.weight_goal,
-  -- Null when the user has never said. `profiles.target_weight_kg` is nullable
-  -- and was so long before it was an input here, so this is a state real rows
-  -- are in rather than a defensive default.
+  -- Null when the user has never said, which reads as maintenance. Only rows
+  -- written before the target was collected are in that state.
   p_target_weight_kg numeric default null
 )
 returns table (kcal integer, carbs_g integer, protein_g integer, fat_g integer)
@@ -280,29 +283,29 @@ as $$
       when 'on_feet'     then 1.55
       when 'very_active' then 1.725
     end as tdee,
-    -- Signed the same way the pace is: negative when there is weight to lose.
+    -- Signed the way the pace is: negative when there is weight to lose.
     p_target_weight_kg - p_weight_kg as remaining
   ),
-  -- What the goal asks for, before the target is consulted.
+  -- The most this direction ever asks for, before the distance is read. Loss at
+  -- 0.5 kg/week and gain at 0.25; which one applies is the sign of the gap and
+  -- nothing else.
   nominal as (
     select
       tdee,
       remaining,
-      case p_goal when 'lose' then -0.5 when 'gain' then 0.25 else 0 end as pace
+      case when remaining < 0 then -0.5 else 0.25 end as pace
     from maintenance
   ),
-  -- What the plan does, which is the goal read against the distance left.
+  -- What the plan does, which is that pace read against the distance left.
   intent as (
     select
       tdee,
       case
-        when pace = 0                          then 0
-        -- No target stated: the goal's own pace, unchanged.
-        when remaining is null                 then pace
-        -- Arrived. The goal enum still says `lose`, and it is wrong.
-        when abs(remaining) < 0.5              then 0
-        -- The goal and the target point opposite ways. Hold rather than guess.
-        when sign(remaining) <> sign(pace)     then 0
+        -- Nothing to work toward.
+        when remaining is null    then 0
+        -- Arrived — and also how a user says they have no goal at all, by
+        -- putting the target where they already are.
+        when abs(remaining) < 0.5 then 0
         -- The taper: never quicker than closing what is left over four weeks.
         else sign(pace) * least(abs(pace), abs(remaining) / 4)
       end as kg_per_week
@@ -346,11 +349,12 @@ as $$
 $$;
 
 comment on function public.compute_targets is
-  'Daily calorie and macro budget from body stats. Loss targets 0.5 kg/week and '
-  'gain 0.25 kg/week, tapered so the last 2 kg to the target weight are not '
-  'chased at full pace and a target already reached asks for nothing, then '
-  'capped as a share of maintenance; protein is 1.6 g per kg of body weight '
-  'rather than a share of energy; the budget is floored at 1200 kcal for women '
-  'and 1500 for men. A null target weight means none was stated and the goal''s '
-  'nominal pace stands. Mirrors computeTargets() in '
-  'apps/mobile/src/lib/nutrition.ts — change both together.';
+  'Daily calorie and macro budget from body stats. The gap between the current '
+  'and target weights is the entire plan: losing targets 0.5 kg/week and gaining '
+  '0.25, tapered so the last 2 kg are not chased at full pace, and a target '
+  'within half a kilo of the current weight asks for nothing at all. That figure '
+  'is then capped as a share of maintenance; protein is 1.6 g per kg of body '
+  'weight rather than a share of energy; the budget is floored at 1200 kcal for '
+  'women and 1500 for men. A null target weight means none was stated, and reads '
+  'as maintenance. Mirrors computeTargets() in apps/mobile/src/lib/nutrition.ts '
+  '— change both together.';

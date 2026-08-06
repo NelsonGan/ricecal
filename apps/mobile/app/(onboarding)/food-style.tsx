@@ -17,7 +17,7 @@ const TAGS = [
 ] as const
 
 /**
- * 05 FOOD STYLE
+ * 04 FOOD STYLE
  *
  * No meal times here any more. They are seeded alongside the account by the
  * signup trigger, and the account does not exist until the end of the flow — so
@@ -48,8 +48,8 @@ export default function FoodStyleStep() {
 
   return (
     <OnboardingStep
-      step={4}
-      total={5}
+      step={3}
+      total={4}
       accent="kaya"
       title={t('foodStyle.title')}
       subtitle={t('foodStyle.subtitle')}

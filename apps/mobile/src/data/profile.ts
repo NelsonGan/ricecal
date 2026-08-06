@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { today, unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
 import { useSession, useUserId } from './session'
-import type { ActivityLevel, Goal, Profile, Sex } from './types'
+import type { ActivityLevel, Profile, Sex } from './types'
 import { fromDbActivity, toDbActivity } from './types'
 
 /**
@@ -52,7 +52,6 @@ export type ProfilePatch = {
   heightCm?: number
   targetWeightKg?: number
   activity?: ActivityLevel
-  goal?: Goal
   foodStyles?: string[]
   referralSource?: string
   timezone?: string
@@ -69,7 +68,6 @@ function toRow(patch: ProfilePatch): TablesUpdate<'profiles'> {
   if (patch.heightCm !== undefined) row.height_cm = patch.heightCm
   if (patch.targetWeightKg !== undefined) row.target_weight_kg = patch.targetWeightKg
   if (patch.activity !== undefined) row.activity_level = toDbActivity(patch.activity)
-  if (patch.goal !== undefined) row.weight_goal = patch.goal
   if (patch.foodStyles !== undefined) row.food_styles = patch.foodStyles
   if (patch.referralSource !== undefined) row.referral_source = patch.referralSource
   if (patch.timezone !== undefined) row.timezone = patch.timezone
@@ -140,15 +138,15 @@ export function useUpdateProfile() {
 export function bodyFrom(
   profile: Profile | null | undefined,
   weightKg: number | undefined,
-  overrides?: { goal?: Goal; targetWeightKg?: number | null },
+  overrides?: { targetWeightKg?: number | null },
 ): BodyInput | null {
   if (!profile || !weightKg || !profile.sex || !profile.height_cm || !profile.birth_date)
     return null
 
   // Null and undefined part company here. A profile with no target weight has
-  // never had one and the budget falls back to the goal's nominal pace; an
-  // override the caller did not mention is one they have no opinion about, and
-  // the stored value stands.
+  // never had one and the budget reads that as maintenance; an override the
+  // caller did not mention is one they have no opinion about, and the stored
+  // value stands.
   const stored = profile.target_weight_kg == null ? null : Number(profile.target_weight_kg)
   const target = overrides?.targetWeightKg !== undefined ? overrides.targetWeightKg : stored
 
@@ -158,7 +156,6 @@ export function bodyFrom(
     heightCm: Number(profile.height_cm),
     age: ageFrom(profile.birth_date),
     activity: profile.activity_level ? fromDbActivity(profile.activity_level) : 'sedentary',
-    goal: overrides?.goal ?? profile.weight_goal ?? 'track',
     targetWeightKg: target,
   }
 }

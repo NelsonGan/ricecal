@@ -74,7 +74,8 @@ set timezone       = 'UTC',
     birth_date     = current_date - interval '28 years',
     height_cm      = 163,
     activity_level = 'light',
-    weight_goal    = 'lose',
+    -- The whole of the calorie plan, with the weigh-in below: ten kilos to lose.
+    -- There is no goal enum to agree or disagree with it.
     target_weight_kg = 58
 where id = :'user_a';
 
@@ -145,14 +146,15 @@ select is(
 );
 
 
--- 3b. THE TARGET WEIGHT SETS THE PACE ----------------------------------------
+-- 3b. THE TARGET WEIGHT IS THE PLAN ------------------------------------------
 --
 -- `target_weight_kg` used to be a number the app stored and the budget ignored,
--- so the goal enum decided everything: someone 10 kg out and someone 200 g out
--- were handed the same deficit, and it carried on after they arrived. It is an
--- argument to `compute_targets` now, and it is on the recompute trigger's column
--- list — which is the half that is easy to leave behind, because without it the
--- new argument is only ever read when something ELSE about the profile changes.
+-- so a lose/maintain/gain enum decided everything: someone 10 kg out and someone
+-- 200 g out were handed the same deficit, and it carried on after they arrived.
+-- The gap between the two weights is the whole plan now, and the column is on
+-- the recompute trigger's list — which is the half that is easy to leave behind,
+-- because without it the target is only ever read when something ELSE about the
+-- profile changes.
 --
 -- Back under the formula's control, and back to the body section 2 described, so
 -- every figure below is comparable with the 1540 asserted there. The profile
@@ -182,25 +184,26 @@ select is(
   'the last kilo is not chased at the full pace'
 );
 
--- Losing weight, toward a target above the current one. The two inputs point
--- opposite ways and neither is obviously the stale one, so the plan holds.
+-- A target ABOVE the current weight is a gain, with no enum left to contradict
+-- it. Seven kilos is well past the taper, so it is the full 0.25 kg/week: 275
+-- kcal, under the 288.3 that 15% of maintenance allows. 1921.9 + 275 = 2196.9.
 update public.profiles set target_weight_kg = 75.0 where id = :'user_a';
 
 select is(
   (select kcal from public.daily_goals where user_id = :'user_a'),
-  1920,
-  'a goal and a target pointing opposite ways hold steady rather than guessing'
+  2200,
+  'a target above the current weight is a surplus, read off the sign of the gap'
 );
 
--- Every account created before this was an input has a null here, and has to go
--- on getting the budget it already had: the goal's nominal pace, capped at a
--- fifth of maintenance, which is section 2's 1540 exactly.
+-- Every account created before the target was collected has a null here, and a
+-- plan cannot be read off a number nobody gave. Maintenance, and no deficit
+-- invented on their behalf.
 update public.profiles set target_weight_kg = null where id = :'user_a';
 
 select is(
   (select kcal from public.daily_goals where user_id = :'user_a'),
-  1540,
-  'no target stated leaves the nominal pace alone'
+  1920,
+  'no target stated is maintenance rather than a guessed direction'
 );
 
 

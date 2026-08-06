@@ -11,21 +11,6 @@ export const onboarding = {
     signIn: 'I already have an account',
   },
 
-  goal: {
-    title: 'What are you here for?',
-    subtitle: 'You can change this any time.',
-    /**
-     * No longer promises a rate. The deficit is capped as a share of what the
-     * body burns, so 0.5 kg a week is what a larger body gets and a smaller one
-     * moves slower on purpose — the date on the target screen is the honest
-     * answer, and it is worked out from that body.
-     */
-    lose: { title: 'Lose weight', subtitle: 'A gentle, steady deficit' },
-    maintain: { title: 'Maintain', subtitle: 'Stay where you are' },
-    gain: { title: 'Gain weight', subtitle: 'Slow, steady increase' },
-    track: { title: 'Just tracking', subtitle: 'No goal, only awareness' },
-  },
-
   about: {
     title: 'A few basics',
     subtitle: 'Used only to work out your daily budget.',

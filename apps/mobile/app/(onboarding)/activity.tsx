@@ -6,7 +6,7 @@ import { Text } from '@/ui'
 
 const OPTIONS: ActivityLevel[] = ['sedentary', 'light', 'onFeet', 'veryActive']
 
-/** 04 ACTIVITY */
+/** 03 ACTIVITY */
 export default function ActivityStep() {
   const { t } = useTranslation(['onboarding', 'common'])
   const router = useRouter()
@@ -16,8 +16,8 @@ export default function ActivityStep() {
 
   return (
     <OnboardingStep
-      step={3}
-      total={5}
+      step={2}
+      total={4}
       accent="hibiscus"
       title={t('activity.title')}
       subtitle={t('activity.subtitle')}
