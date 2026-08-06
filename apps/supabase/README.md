@@ -20,7 +20,7 @@ Then open a PR. `supabase-migrations.yml` re-runs the last three steps on a
 throwaway Postgres, and merging to `main` deploys through the Supabase GitHub
 integration.
 
-`migrations/` currently holds ONE file, and that is deliberate. The first
+`migrations/` starts from ONE file, and that is deliberate. The first
 week's twenty-nine migrations recorded how the schema was arrived at — columns
 added and dropped, functions rewritten four times, one migration whose only job
 was to revoke what an earlier one granted by accident — and none of it needed

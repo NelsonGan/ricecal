@@ -344,10 +344,11 @@ export function goalDate(body: BodyInput, targetWeightKg: number, from: Date): D
 
   for (let week = 1; week <= MAX_WEEKS_PROJECTED; week++) {
     const pace = weeklyPace({ ...body, weightKg, targetWeightKg })
-    // Nothing to reach, or nothing this plan can do about it. On the first pass
-    // that is a maintain goal, a target already met, or a target on the wrong
-    // side of the goal; later it cannot happen, because the step never carries
-    // the weight past the deadband that would have ended the loop.
+    // Nothing to reach. On the first pass that is a target already met — the
+    // only way this can be zero, now that the gap is the whole plan. Later it
+    // cannot happen at all, because a step is never more than a quarter of what
+    // is left and so never carries the weight past the deadband that would have
+    // ended the loop.
     if (pace === 0) return null
 
     weightKg += pace

@@ -80,7 +80,7 @@ export default function Index() {
   // into the middle of the flow and skip the welcome screen entirely.
   if (abandoned) return <Loading />
 
-  if (!profile?.onboarded_at) return <Redirect href={answered ? '/finish' : '/goal'} />
+  if (!profile?.onboarded_at) return <Redirect href={answered ? '/finish' : '/about'} />
 
   return <Redirect href="/today" />
 }

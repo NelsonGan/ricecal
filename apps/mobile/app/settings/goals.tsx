@@ -18,6 +18,13 @@ import { useBack } from '@/lib/navigation'
 import { computeTargets, macroSplit, weeklyPace } from '@/lib/nutrition'
 import { AppBar, Button, Card, Screen, Skeleton, Slider, Stepper, Text, useToast } from '@/ui'
 
+/**
+ * The bounds the target slider answers within. Narrower than the weight range
+ * because it is dragged rather than typed — the same numbers the onboarding
+ * copy of this control uses.
+ */
+const TARGET = { min: 40, max: 120 }
+
 /** U2 GOALS */
 export default function GoalsScreen() {
   const { t } = useTranslation(['profile', 'activity', 'common'])
@@ -64,9 +71,15 @@ export default function GoalsScreen() {
   const currentTargetWeight = targetWeight ?? storedTargetWeight
   /**
    * Where the handle sits. It has to be somewhere, and the current weight is the
-   * only honest place to put it when there is nothing to show.
+   * only honest place to put it when there is nothing to show — clamped into the
+   * slider's own range, as the onboarding copy of this control does, so a reader
+   * heavier than the track is long does not see a thumb pinned at 120 beside a
+   * readout saying 130.
    */
-  const targetWeightPosition = currentTargetWeight ?? weight
+  const targetWeightPosition = Math.min(
+    TARGET.max,
+    Math.max(TARGET.min, currentTargetWeight ?? weight),
+  )
   const currentWater = water ?? targets?.waterGlasses ?? 8
   const currentSteps = steps ?? settings?.step_goal ?? 8000
 
@@ -99,8 +112,13 @@ export default function GoalsScreen() {
    * to the stored budget only while nothing has been touched. That fallback is
    * what preserves a hand-set number for someone who came in to change their
    * water goal.
+   *
+   * The recommendation is also what stands in when there is no stored budget at
+   * all, which used to be a zero: `daily_goals.kcal` is checked `between 800 and
+   * 10000`, so saving the water goal on an account whose budget had not been
+   * computed yet failed on a constraint rather than saving anything.
    */
-  const currentKcal = kcal ?? (planChanged ? recommended : (targets?.kcal ?? 0))
+  const currentKcal = kcal ?? (planChanged ? recommended : (targets?.kcal ?? recommended))
 
   // A plan edit takes the calorie budget back under the formula's control. The
   // alternative — leaving a dragged number in place — is how you end up with a
@@ -121,25 +139,35 @@ export default function GoalsScreen() {
     { key: 'fat', label: t('common:macro.fat'), grams: targets?.fat ?? 0, dot: 'bg-teh' },
   ]
 
+  /**
+   * `is_custom` is the flag the recompute trigger reads and stops on, and it is
+   * EARNED rather than assumed.
+   *
+   * It used to be written as `true` unconditionally, which meant opening this
+   * screen and pressing Save — to change the water goal, or to change nothing at
+   * all — froze the calorie budget for good: no later weigh-in and no later
+   * change of plan could move it again.
+   *
+   * Read off INTENT rather than off the number. Comparing `currentKcal` to
+   * `recommended` looks equivalent and is not: the recommendation is this
+   * client's copy of the formula, and it can disagree with the stored budget by
+   * a rounding step without anybody having typed anything — the two compute age
+   * against different clocks, and in UTC+8 the phone's date and the server's
+   * differ for eight hours out of every day. A birthday landing in that window
+   * would silently freeze a budget nobody chose to freeze, which is the exact
+   * bug this replaced.
+   */
+  const isCustom = kcal !== undefined ? true : planChanged ? false : (targets?.isCustom ?? false)
+
   const save = async () => {
-    // `undefined` leaves the column alone rather than writing one — see
-    // `storedTargetWeight` above for why stamping the current weight in is not
-    // the harmless default it looks like.
-    await updateProfile.mutateAsync({ targetWeightKg: currentTargetWeight ?? undefined })
-    /**
-     * `is_custom` is the flag the recompute trigger reads and stops on, and it
-     * is EARNED rather than assumed.
-     *
-     * It used to be written as `true` unconditionally, which meant opening this
-     * screen and pressing Save — to change the water goal, or to change nothing
-     * at all — froze the calorie budget for good: no later weigh-in, and no
-     * later change of goal, could move it again. Setting it only when the number
-     * differs from what the formula asks for is what keeps that flag meaning
-     * "the user overrode this".
-     *
-     * Written after the profile either way, whose own change fires the trigger
-     * that would otherwise recompute over the top of a deliberate figure.
-     */
+    // Only when it actually moved. An unchanged profile write would fire the
+    // recompute trigger for nothing, and a user who has never set a target would
+    // send an empty patch.
+    if (planChanged && currentTargetWeight !== null) {
+      await updateProfile.mutateAsync({ targetWeightKg: currentTargetWeight })
+    }
+    // Written after the profile, whose own change fires the trigger that would
+    // otherwise recompute over the top of a deliberate figure.
     await setTargets.mutateAsync({
       kcal: currentKcal,
       // Through the same splitter the automatic budget uses, so a hand-set
@@ -147,7 +175,7 @@ export default function GoalsScreen() {
       // share of energy.
       ...macroSplit(currentKcal, weight),
       waterGlasses: currentWater,
-      isCustom: currentKcal !== recommended,
+      isCustom,
     })
     // Not part of the calorie budget, and stored beside the display preferences
     // rather than in `daily_goals` — but it is a goal, and this is the screen
@@ -257,8 +285,8 @@ export default function GoalsScreen() {
             <Slider
               value={targetWeightPosition}
               onChange={changeTargetWeight}
-              min={40}
-              max={120}
+              min={TARGET.min}
+              max={TARGET.max}
               step={0.5}
               accessibilityLabel={t('profile:goals.targetWeight')}
               format={(value) => `${value.toFixed(1)} ${t('common:unit.kg')}`}
