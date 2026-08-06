@@ -130,8 +130,32 @@ function useRecogniseMeal() {
         })
         .catch(() => null)
 
-      const work = async () => {
-        const path = photoUri ? await uploadMealPhoto(photoUri) : undefined
+      /**
+       * Two failures live in here and they mean opposite things.
+       *
+       * If the UPLOAD throws there is no object in the bucket, so nothing was
+       * ever asked to recognise anything and no entry is coming: that is a real
+       * failure and the row should say so at once. If the INVOKE throws, the
+       * request is what broke — a timeout, a dropped connection, an app the OS
+       * suspended mid-flight — and the function on the other end is very
+       * probably still working, because it writes the entry itself rather than
+       * handing it back for us to write. Calling that one "failed" is how a
+       * scan that succeeded produced an error message.
+       *
+       * So the two are distinguished here rather than at the catch, where they
+       * arrive as the same rejected promise.
+       */
+      const work = async (): Promise<ScanResponse> => {
+        let path: string | undefined
+        if (photoUri) {
+          try {
+            path = await uploadMealPhoto(photoUri)
+          } catch (error) {
+            throw Object.assign(error instanceof Error ? error : new Error('upload failed'), {
+              beforeScan: true,
+            })
+          }
+        }
         return scanMeal({ photoPath: path, text, logDate })
       }
 
@@ -177,16 +201,25 @@ function useRecogniseMeal() {
           // the Activity tab still saying "Not enough logged".
           queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
         })
-        // A failed scan has nothing to announce, so the booked notice goes
-        // too — the row on Today says what happened, and a banner claiming
-        // the plate was counted would be a lie the user acts on.
-        //
-        // The row stays, with its photo, and says it could not be read. Losing
-        // both because a request timed out would make the user take the
-        // picture again for nothing.
-        .catch(() => {
-          void booked.then(() => cancelScanNotice(notice))
-          pending.fail(id)
+        .catch((error: unknown) => {
+          // Nothing reached the server, so nothing is coming: say so now.
+          if ((error as { beforeScan?: boolean })?.beforeScan) {
+            // A failed scan has nothing to announce, so the booked notice goes
+            // too — the row on Today says what happened, and a banner claiming
+            // the plate was counted would be a lie the user acts on.
+            void booked.then(() => cancelScanNotice(notice))
+            pending.fail(id)
+            return
+          }
+          // The request broke; the scan probably did not. The row keeps its
+          // spinner and its photo, the day is polled until the entry appears,
+          // and only a deadline with nothing on it turns this into a failure.
+          //
+          // The booked notice STAYS for this one. It is the case it was
+          // written for: the answer is still coming, this process is no longer
+          // the thing that will hear it, and a scheduled notification fires
+          // whether or not the app is alive to fire it.
+          pending.detach(id)
         })
 
       return id

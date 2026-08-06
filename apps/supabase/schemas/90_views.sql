@@ -94,7 +94,20 @@ select
   round(f.kcal      * s.factor * i.quantity)::integer    as kcal,
   round(f.carbs_g   * s.factor * i.quantity, 1)::numeric as carbs_g,
   round(f.protein_g * s.factor * i.quantity, 1)::numeric as protein_g,
-  round(f.fat_g     * s.factor * i.quantity, 1)::numeric as fat_g
+  round(f.fat_g     * s.factor * i.quantity, 1)::numeric as fat_g,
+  -- What this much of the part weighs. Stored per unit and multiplied here, so
+  -- it moves with the stepper the way the calories do. The serving factor is
+  -- deliberately absent: the weight describes the ingredient row itself, and
+  -- nothing in the app lets an ingredient change the serving it was written
+  -- against.
+  --
+  -- LAST in the list, and that is load-bearing rather than tidy. Postgres only
+  -- allows `create or replace view` to APPEND columns, so putting it here is
+  -- what lets the migration replace this view in place — dropping it would take
+  -- `food_log_details` with it (it reads this one), and both would come back
+  -- with whatever grants the diff tool decided to write rather than the ones
+  -- declared below.
+  round(i.grams * i.quantity, 1)::numeric                as grams
 from public.food_log_ingredients i
 join public.foods f         on f.id = i.food_id
 join public.food_servings s on s.id = i.serving_id;
