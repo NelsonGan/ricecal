@@ -17,7 +17,8 @@ three rules — the point of them was always that this swap would be cheap.
 | `profile.ts`, `settings.ts`, `goals.ts` | the account |
 | `day.ts`, `entries.ts`, `foods.ts` | logging |
 | `weight.ts` | progress |
-| `photos.ts`, `snap.ts`, `pending-snaps.tsx` | the camera path |
+| `snap.ts`, `pending-snaps.tsx` | the camera path |
+| `photos.ts` | every image — upload, signed read, delete — through the `photos` edge function, since R2 has no idea who a user is |
 | `purchases.ts`, `subscription.ts` | money |
 | `selected-date.tsx` | the one piece of genuine client state |
 

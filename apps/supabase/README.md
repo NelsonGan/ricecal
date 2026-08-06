@@ -31,13 +31,19 @@ every other database is built from scratch. So the chain was squashed into
 was reset to that single version. Nothing about the workflow changed: the next
 change is still `pnpm db:diff <name>`, and the baseline is never edited again.
 
-Two things live outside `schemas/`, both because `supabase db diff` cannot see
-them, and both now folded into the foot of that baseline:
+One thing lives outside `schemas/`, because `supabase db diff` cannot see it,
+and it is folded into the foot of that baseline:
 
 | what | why |
 |---|---|
-| the `storage` buckets and their object policies | the diff ignores the `storage` schema entirely |
 | the `select seed_archetype_foods()` call | the rows are data, and a diff only ever emits structure |
+
+There used to be a second: the `storage` buckets and their object policies,
+invisible to the diff because it ignores the `storage` schema entirely. Images
+moved to Cloudflare R2 and both buckets were deleted, so that exception is gone
+— `tests/03_storage.test.sql` now asserts the absence rather than the shape,
+since a bucket recreated through the dashboard would still be invisible to
+every other check in the pipeline.
 
 The `auth` schema is **not** in that category — see below.
 
@@ -195,16 +201,33 @@ identity now, and `authenticated` holds `select` and nothing else. The cost is
 that a photo matching no catalogue row has nowhere to land — see the scanning
 seam below.
 
-**Images are stored as paths, never URLs.** `avatar_path` and `photo_path` hold
-a key inside a bucket. Moving to Cloudflare R2 (still open) is then
-a change of base URL rather than a migration over every row.
+**Images are stored as keys, never URLs.** `avatar_path` and `photo_path` hold
+an object key, and that is what made the move to Cloudflare R2 a change of base
+URL rather than a migration over every row. It also made the *shape* of a key
+free to change with it: one bucket now holds both kinds, so the kind leads —
+`meals/<user>/<uuid>.jpg`, `avatars/<user>/<uuid>.jpg`.
+
+**Images live in Cloudflare R2, behind the `photos` function.** Supabase Storage
+let the client talk to the bucket and let Postgres decide whether it was allowed
+to, as eight RLS policies over `storage.objects`. R2 has no notion of a user, so
+that check is now `ownsKey` in `functions/_shared/r2.ts` and the client holds no
+credential at all — it asks the `photos` function for a signed URL that expires.
+Uploads still go phone → R2 directly; only the signature is a round trip.
+
+Two things the buckets used to enforce for free are worth knowing about. The
+mime allowlist survives as a SIGNED HEADER, so an upload sending a different
+content type fails R2's own signature check. The size limit does not: a
+presigned PUT has no length condition, so the ceiling is checked against what
+the client declares when it asks for the URL, which stops the oversized photo
+that skipped the resize and would not stop a client that lied.
 
 ## Seams left open
 
 **Calorie scanning.** Most of the shape is here: `entry_source` has a `camera`
-value, `food_logs.photo_path` exists, and the private `meal-photos` bucket
-exists, so a scan that resolves to a catalogue row writes an ordinary entry and
-nothing moves. `foods.verified` tells a reviewed dish from a guessed one.
+value, `food_logs.photo_path` exists, and the R2 bucket behind the `photos`
+function holds the object, so a scan that resolves to a catalogue row writes an
+ordinary entry and nothing moves. `foods.verified` tells a reviewed dish from a
+guessed one.
 
 The open question is the miss. With no per-user rows, a photo matching nothing
 in the catalogue cannot be logged at all — that has to be answered by widening
@@ -217,6 +240,25 @@ webhook exists; an empty table reads correctly as "no subscription".
 **Fibre and sugar** are nullable columns on `foods`, currently unfilled. The
 nutrition screen derives them from carbohydrate; that hack gets deleted as rows
 get filled in rather than rewritten.
+
+## Function secrets
+
+Four of them belong to R2 and are read by `functions/_shared/r2.ts`:
+`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`. The
+credentials are an R2 API token scoped to the one bucket — not an account-wide
+key — and they never leave the server: the client is handed a URL that expires,
+never a key that does not.
+
+```sh
+supabase secrets set --workdir apps \
+  R2_ACCOUNT_ID=... R2_ACCESS_KEY_ID=... R2_SECRET_ACCESS_KEY=... R2_BUCKET=ricecal-assets
+```
+
+Locally they go in `apps/supabase/functions/.env` (gitignored), which the local
+edge runtime loads. Without them the `photos` function answers 503 in so many
+words rather than failing at the tap, and a local stack still starts, still
+resets and still scans — mock AI never reads the photo, so only the upload and
+the tiles need Cloudflare to exist.
 
 ## Tests
 

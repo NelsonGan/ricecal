@@ -34,6 +34,7 @@ import {
   type Vision,
   type VisionItem,
 } from '../_shared/llm.ts'
+import { ownsKey, readObject } from '../_shared/r2.ts'
 
 type ScanRequest = {
   photo_path?: string
@@ -79,6 +80,16 @@ Deno.serve(async (req: Request) => {
   if (!logDate) return json({ ok: false, error: 'log_date is required' }, 400)
 
   const photoPath = typeof body.photo_path === 'string' ? body.photo_path : null
+  // The object is read as `service_role`, which is above every check there is,
+  // so the key has to be checked HERE or not at all. Without this the caller
+  // could name someone else's plate and be told what was on it — not the image
+  // back, but the dish name and the calories, which is most of the answer.
+  //
+  // It was equally unchecked when this read Supabase Storage: the download ran
+  // as `service_role` there too, and the bucket policies never saw it.
+  if (photoPath && !ownsKey(photoPath, userId, 'meal')) {
+    return json({ ok: false, error: 'not your photo' }, 403)
+  }
   // Same ceiling as a refine instruction. A meal takes a sentence to describe;
   // anything past this is prose, and the model charges by the token for it.
   const description = photoPath ? '' : (body.text ?? '').trim().slice(0, 500)
@@ -99,9 +110,7 @@ Deno.serve(async (req: Request) => {
 
   /** Read the photo out of the bucket, as base64 for the vision call. */
   const fetchPhoto = async (path: string): Promise<string> => {
-    const { data: blob, error: downloadError } = await db.storage.from('meal-photos').download(path)
-    if (downloadError || !blob) throw downloadError ?? new Error('photo missing')
-    const bytes = new Uint8Array(await blob.arrayBuffer())
+    const bytes = await readObject(path)
     let binary = ''
     for (let i = 0; i < bytes.length; i += 0x8000) {
       binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
