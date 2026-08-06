@@ -61,6 +61,13 @@ export type Ingredient = {
   food: FoodRow
   quantity: number
   displayLabel: string | null
+  /**
+   * What ONE of the part weighs, when the model said. Carried through to the
+   * row so the breakdown can show "6 x 25 g" rather than "x 6" — the weight is
+   * what a person can check against the plate in front of them, and it is the
+   * only unit the stepper beside it has.
+   */
+  grams: number | null
 }
 
 export type Resolved = {
@@ -364,7 +371,14 @@ async function resolveByComponents(
 ): Promise<Resolved | null> {
   if (item.components.length < 2) return null
 
-  const parts: Array<{ food: FoodRow; quantity: number; label: string; kcal: number }> = []
+  const parts: Array<{
+    food: FoodRow
+    quantity: number
+    label: string
+    kcal: number
+    /** What one of it weighs, straight from the model. Null when unweighed. */
+    grams: number | null
+  }> = []
 
   // One part's search failing is not the plate's problem: it means no
   // catalogue answer for that part, which the model's own figures below
@@ -416,6 +430,7 @@ async function resolveByComponents(
         food: asFood(fit.row),
         quantity: component.count,
         label: component.name.slice(0, 120),
+        grams: component.grams,
         kcal: fit.row.kcal * component.count,
       })
       continue
@@ -445,6 +460,7 @@ async function resolveByComponents(
           food: unitRow,
           quantity: component.count,
           label: component.name.slice(0, 120),
+          grams: component.grams,
           kcal: unitRow.kcal * component.count,
         })
         continue
@@ -491,6 +507,7 @@ async function resolveByComponents(
       food: guess,
       quantity: component.count,
       label: component.name.slice(0, 120),
+      grams: component.grams,
       kcal: guess.kcal * component.count,
     })
   }
@@ -600,6 +617,7 @@ async function resolveByComponents(
           quantity: part.quantity,
           displayLabel:
             part.label.toLowerCase() === part.food.name.toLowerCase() ? null : part.label,
+          grams: part.grams,
         }))
       : undefined
 
@@ -1131,6 +1149,7 @@ export async function writeIngredients(
       serving_id: ingredient.food.serving_id,
       quantity: ingredient.quantity,
       display_label: ingredient.displayLabel,
+      grams: ingredient.grams,
       position: index,
     })),
   )

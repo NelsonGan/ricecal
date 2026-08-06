@@ -122,13 +122,21 @@ function EntryRow({
 
   // A snap in flight has no dish yet. It still gets a row — written the moment
   // the shutter fired — so the day is complete while the model is thinking.
-  if (entry.status === 'analysing') {
-    // A row read back from storage is still working, but its progress bar
-    // would be starting over for a scan that began before the app did.
+  if (entry.status === 'analysing' || entry.status === 'waiting') {
+    // A row read back from storage — or one whose request timed out — is still
+    // working, but its progress bar would be starting over for a scan that
+    // began before the app did. `resumed` is the honest spinner for both: the
+    // work is real and its progress is not something this process can know.
     return (
       <AnalysingRow
         entry={entry}
-        mode={entry.restored ? 'resumed' : entry.source === 'text' ? 'describe' : 'scan'}
+        mode={
+          entry.restored || entry.status === 'waiting'
+            ? 'resumed'
+            : entry.source === 'text'
+              ? 'describe'
+              : 'scan'
+        }
       />
     )
   }

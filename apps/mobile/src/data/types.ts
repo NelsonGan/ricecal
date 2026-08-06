@@ -133,7 +133,7 @@ export type Food = {
  * that the photo had nothing edible in it, so no entry was written at all and
  * the row waits to be dismissed rather than counted.
  */
-export type EntryStatus = 'analysing' | 'failed' | 'nofood'
+export type EntryStatus = 'analysing' | 'waiting' | 'failed' | 'nofood'
 
 export type Entry = {
   id: string

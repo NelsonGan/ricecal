@@ -17,6 +17,15 @@ export type EntryIngredient = {
   quantity: number
   servingLabel: string
   kcal: number
+  /**
+   * What this much of it weighs, when the scan was able to say.
+   *
+   * Already multiplied by the quantity — the view does it, so the figure moves
+   * with the stepper. Null for a part nobody weighed: an entry scanned before
+   * the cascade started asking for grams, or one added by a typed correction,
+   * where the model gives a calorie delta and never a mass.
+   */
+  grams: number | null
   /** Its own macros, which are what the entry's totals are summed from. */
   carbs: number
   protein: number
@@ -30,7 +39,9 @@ export function useEntryIngredients(entryId: string | undefined) {
     queryFn: async (): Promise<EntryIngredient[]> => {
       const { data, error } = await supabase
         .from('food_log_ingredient_details')
-        .select('id, name, quantity, serving_label, kcal, carbs_g, protein_g, fat_g, position')
+        .select(
+          'id, name, quantity, serving_label, kcal, carbs_g, protein_g, fat_g, grams, position',
+        )
         .eq('food_log_id', entryId as string)
         .order('position')
       if (error) throw error
@@ -40,6 +51,9 @@ export function useEntryIngredients(entryId: string | undefined) {
         quantity: Number(row.quantity ?? 1),
         servingLabel: row.serving_label ?? '',
         kcal: row.kcal ?? 0,
+        // Null and zero are different answers: one is "nobody weighed this",
+        // the other would be a claim that the part weighs nothing.
+        grams: row.grams === null || row.grams === undefined ? null : Number(row.grams),
         carbs: Number(row.carbs_g ?? 0),
         protein: Number(row.protein_g ?? 0),
         fat: Number(row.fat_g ?? 0),

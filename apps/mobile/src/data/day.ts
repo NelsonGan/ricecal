@@ -71,6 +71,56 @@ export type DayView = DayLog & { isPending: boolean }
  * cannot come from the query; sorting by time puts each one where it belongs
  * in its meal rather than at the end.
  */
+/**
+ * The pending rows whose meal has NOT turned up yet.
+ *
+ * The client removes its own pending row when the request resolves, but the day
+ * can refetch before that — on focus, or when a notification brings the app
+ * forward — and for a second or two the meal appeared twice: once as the
+ * spinner, once as itself. Recognition writes an entry stamped after the shutter
+ * (or after the send), so an unclaimed one of those IS this snap, arriving by
+ * another route.
+ *
+ * Matched on the SOURCE the pending row would become, not on `camera` alone: a
+ * typed meal writes `text`, and a pending row that cannot recognise its own
+ * arrival sits there over a meal already on the day.
+ *
+ * EVERY row about a scan gets to notice its arrival, not just the one still
+ * holding a request. Reconciling `analysing` alone is exactly how a slow scan
+ * became an error message beside the meal it produced: the platform gives up on
+ * a request at 60s, the row went `failed`, the entry landed five seconds later,
+ * and nothing afterwards was ever going to connect the two.
+ *
+ * `nofood` is the one status left out, and it is not an unfinished scan: it is a
+ * finished one that wrote nothing, so it has no entry of its own to find, and
+ * letting it claim the next camera row would delete the user's answer along with
+ * somebody else's meal.
+ *
+ * Exported for its own test. The rule is four lines and every one of them has
+ * been wrong at some point, in ways that read as a caching bug.
+ */
+export function unclaimedSnaps<S extends { loggedAt: string; text?: string; status: string }>(
+  snaps: S[],
+  entries: Array<{ id: string; source: string; loggedAt: string }>,
+): S[] {
+  const claimed = new Set<string>()
+  const landed = (snap: S) => {
+    // Parsed, not compared as text. Postgres stamps microseconds and an offset
+    // ("...:00.123456+00:00") where `toISOString` writes milliseconds and a Z,
+    // so the two strings sort against each other by punctuation once their
+    // seconds agree.
+    const shutter = Date.parse(snap.loggedAt)
+    const wrote = snap.text ? 'text' : 'camera'
+    return entries.some((entry) => {
+      if (entry.source !== wrote || claimed.has(entry.id)) return false
+      if (Date.parse(entry.loggedAt) < shutter) return false
+      claimed.add(entry.id)
+      return true
+    })
+  }
+  return snaps.filter((snap) => snap.status === 'nofood' || !landed(snap))
+}
+
 export function useDayLog(date: string): DayView {
   const { data, isPending } = useDay(date)
   const { snaps } = usePendingSnaps()
@@ -80,40 +130,8 @@ export function useDayLog(date: string): DayView {
     const mine = snaps.filter((snap) => snap.logDate === date)
     if (mine.length === 0) return base
 
-    /**
-     * A snap whose scan has already landed is dropped here rather than waited
-     * for.
-     *
-     * The client removes its own pending row when the request resolves, but
-     * the day can refetch before that — on focus, or when a notification
-     * brings the app forward — and for a second or two the meal appeared
-     * twice: once as the spinner, once as itself. Recognition writes an entry
-     * stamped after the shutter (or after the send), so an unclaimed one of
-     * those IS this snap, arriving by another route.
-     *
-     * Matched on the SOURCE the pending row would become, not on `camera`
-     * alone: a typed meal writes `text`, and a pending row that cannot
-     * recognise its own arrival sits there until the stale sweep drops it —
-     * ninety seconds of a spinner over a meal already on the day.
-     */
-    const claimed = new Set<string>()
-    const landed = (snap: (typeof mine)[number]) => {
-      // Parsed, not compared as text. Postgres stamps microseconds and an
-      // offset ("...:00.123456+00:00") where `toISOString` writes milliseconds
-      // and a Z, so the two strings sort against each other by punctuation
-      // once their seconds agree.
-      const shutter = Date.parse(snap.loggedAt)
-      const wrote = snap.text ? 'text' : 'camera'
-      return base.entries.some((entry) => {
-        if (entry.source !== wrote || claimed.has(entry.id)) return false
-        if (Date.parse(entry.loggedAt) < shutter) return false
-        claimed.add(entry.id)
-        return true
-      })
-    }
-
-    const waiting = mine.filter((snap) => snap.status !== 'analysing' || !landed(snap))
-    if (waiting.length === 0) return base
+    const unresolved = unclaimedSnaps(mine, base.entries)
+    if (unresolved.length === 0) return base
 
     return {
       ...base,
@@ -126,7 +144,7 @@ export function useDayLog(date: string): DayView {
        * which is the one moment the user is watching that row.
        */
       isPending: false,
-      entries: [...base.entries, ...waiting.map(pendingAsEntry)].sort((a, b) =>
+      entries: [...base.entries, ...unresolved.map(pendingAsEntry)].sort((a, b) =>
         a.loggedAt.localeCompare(b.loggedAt),
       ),
     }
