@@ -869,14 +869,14 @@ export default function FoodDetail() {
           <Stepper
             value={quantity}
             onChange={setQuantity}
-            // Half a plate is an ordinary portion and used to be unreachable
-            // here: the steps were whole servings, so "half" could only be had
-            // by picking a serving that happened to be one. `Stepper` renders
-            // 1.5 as "1½".
+            // Quarters, matching the ingredient rows below — a portion is far
+            // more often corrected a little than by a whole serving, and a
+            // half step made "a bit less than one" unreachable. `Stepper`
+            // renders the clean quarters as glyphs: 1.5 as "1½", 1.25 as "1¼".
             min={0.5}
             max={20}
-            step={0.5}
-            // And for the amounts halves cannot express — 0.3 of a tub — the
+            step={0.25}
+            // And for the amounts quarters cannot express — 0.3 of a tub — the
             // number itself is a field.
             editable
             editLabel={t('logging:detail.typeServings')}
