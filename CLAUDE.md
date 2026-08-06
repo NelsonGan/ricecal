@@ -456,6 +456,14 @@ Break these and the feature is wrong in ways tests may not catch.
   grants, check that job or query `pg_proc.proacl` directly — a leading
   `=X/postgres` means PUBLIC still has EXECUTE. `tests/02_rls.test.sql` asserts
   the ones that matter.
+- **A function's COMMENTS are part of its body, as far as the diff is
+  concerned.** Postgres stores `prosrc` exactly as written, so `db diff`
+  compares the comment text too: a migration that redefines a function with the
+  prose trimmed for length declares a function no migration produces, and the
+  `migrations` job fails on a change that is genuinely captured. When a
+  hand-written migration has to restate a function, copy the block out of
+  `schemas/` verbatim rather than retyping it. Only what is between the `$$`
+  markers counts — a note above the `create` is free.
 - **NativeWind only styles React Native's own components.** A third-party one
   takes `className` as an ordinary prop and drops it silently. `Screen.tsx`
   registers `cssInterop` for gesture-handler's ScrollView for exactly this.
