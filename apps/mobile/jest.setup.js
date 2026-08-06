@@ -23,7 +23,12 @@ process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ??= 'REPLACE_ME'
 // about — they assert behaviour and accessibility, not image decoding or the
 // taptic engine — so both are replaced with the smallest thing that renders.
 jest.mock('expo-image', () => ({
-  Image: require('react-native').Image,
+  // The cache statics have no React Native equivalent to borrow, so they are
+  // stubbed onto it: `data/photos.ts` empties both on sign-out.
+  Image: Object.assign(require('react-native').Image, {
+    clearMemoryCache: jest.fn(() => Promise.resolve(true)),
+    clearDiskCache: jest.fn(() => Promise.resolve(true)),
+  }),
 }))
 
 jest.mock('expo-haptics', () => ({

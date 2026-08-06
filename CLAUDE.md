@@ -452,6 +452,9 @@ Break these and the feature is wrong in ways tests may not catch.
   a different name, so there is no stale entry to find. An upload path that
   reused a key on replace would leave every phone that had seen the old
   photograph showing it indefinitely, with no way to know it had changed.
+  It has a price, and `clearImageCache` is it: cached against a rotating URL
+  those pictures aged off the device by accident, and cached against a stable
+  key they do not, so signing out now has to say so.
 - No embeddings.
 
 ---

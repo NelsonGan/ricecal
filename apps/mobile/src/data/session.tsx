@@ -4,6 +4,7 @@ import { createContext, type ReactNode, useContext, useEffect, useMemo, useState
 import { AppState } from 'react-native'
 
 import { supabase } from '@/lib/supabase'
+import { clearImageCache } from './photos'
 
 /**
  * Who is signed in, for the whole app.
@@ -56,6 +57,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
         queryClient.clear()
       }
+
+      // The pictures are not in that cache. They are on disk, in expo-image's,
+      // filed under a key that no longer rotates — so unlike every other trace
+      // of an account they do not age out by themselves. See `clearImageCache`
+      // for why this is the leaving edge only.
+      if (event === 'SIGNED_OUT') void clearImageCache()
     })
 
     return () => {
