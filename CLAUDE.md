@@ -444,6 +444,17 @@ Break these and the feature is wrong in ways tests may not catch.
   `profiles.avatar_path` are what made a change of storage provider a change of
   base URL rather than a migration over every row. It has already paid for
   itself once.
+- **A key names ONE object, for good.** `newKey` mints a UUID per upload and
+  nothing ever writes over an existing one — replacing a photo means a new key
+  and a delete of the old. That is what lets the client cache the picture under
+  the key (`storedImageSource`) instead of under a signature that rotates
+  hourly, and it is what makes a correction invalidate itself: the new photo is
+  a different name, so there is no stale entry to find. An upload path that
+  reused a key on replace would leave every phone that had seen the old
+  photograph showing it indefinitely, with no way to know it had changed.
+  It has a price, and `clearImageCache` is it: cached against a rotating URL
+  those pictures aged off the device by accident, and cached against a stable
+  key they do not, so signing out now has to say so.
 - No embeddings.
 
 ---

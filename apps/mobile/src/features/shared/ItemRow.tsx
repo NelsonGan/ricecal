@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { ActivityIndicator, View } from 'react-native'
 
 import type { IconRef } from '@/data'
-import { useMealPhotoUrl } from '@/data'
+import { storedImageSource, useMealPhotoUrl } from '@/data'
 import { cn, Icon, Skeleton, Tappable, Text } from '@/ui'
 
 const valueTones = {
@@ -87,7 +87,7 @@ export function ItemRow({
   className,
 }: ItemRowProps) {
   const { data: signedUrl, isLoading: signing } = useMealPhotoUrl(photoPath)
-  const photo = photoUri ?? signedUrl
+  const photo = storedImageSource(photoPath, signedUrl, photoUri)
 
   const tile = (
     <View className="h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-tile bg-track">
@@ -96,7 +96,7 @@ export function ItemRow({
         // letterboxing — a 4:3 photo in a 1:1 tile with bars reads as a broken
         // image.
         <Image
-          source={{ uri: photo }}
+          source={photo}
           style={{ flex: 1, width: '100%', opacity: busy ? 0.55 : 1 }}
           contentFit="cover"
           /**
@@ -109,6 +109,10 @@ export function ItemRow({
            * photographs a moment later. The rows themselves are not late any
            * more; this is the last thing on the list that was, and 180ms of
            * cross-fade turns a row of pops into the picture arriving.
+           *
+           * Shorter than it used to be, now that the bytes come off the disk
+           * cache and only the signature is fetched — but not gone, which is
+           * why the fade stays.
            */
           transition={180}
         />
