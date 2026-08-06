@@ -1038,14 +1038,12 @@ export default function FoodDetail() {
       {parts.length ? (
         <Card title={t('logging:detail.plateTitle')}>
           {parts.map((ingredient) => {
-            // Whole steps for a counted part, quarters for a measured one.
-            // Eight satay skewers step to seven, not to 7.75 — the row says
-            // "× 8" because the scan counted eight of them, and a quarter of a
-            // skewer is not a thing anyone put on a plate. A part already
-            // sitting at a fraction keeps quarter steps so it can be walked
-            // back to a whole number.
-            const size =
-              Number.isInteger(ingredient.quantity) && ingredient.quantity >= 1 ? 1 : 0.25
+            // Quarters for every part, counted or measured. Whole steps for a
+            // counted one made the common correction — "there was less rice
+            // than that" — unreachable without four taps down and three back
+            // up, and a plate is far more often resized a little than by a
+            // whole skewer.
+            const size = 0.25
             // At the smallest portion the minus takes the whole thing off the
             // plate. A quarter of a thing and "there wasn't any" are different
             // answers, and only one of them was reachable — the stepper simply
