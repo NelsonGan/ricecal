@@ -70,7 +70,14 @@ export {
   pendingAsEntry,
   usePendingSnaps,
 } from './pending-snaps'
-export { removeMealPhoto, uploadMealPhoto, useMealPhotoUrl } from './photos'
+export {
+  removeAvatar,
+  removeMealPhoto,
+  uploadAvatar,
+  uploadMealPhoto,
+  useAvatarUrl,
+  useMealPhotoUrl,
+} from './photos'
 export {
   bodyFrom,
   type OnboardingAnswers,

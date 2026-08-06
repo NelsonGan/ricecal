@@ -21,7 +21,6 @@ import {
   useTargets,
   useUpdateEntry,
   useUpdateIngredient,
-  useUserId,
 } from '@/data'
 import { FixSheet, IconPicker } from '@/features/logging'
 import { MacroBars } from '@/features/shared'
@@ -98,9 +97,6 @@ export default function FoodDetail() {
   const removeEntry = useRemoveEntry()
   const { data: targets } = useTargets()
   const { selectedDate } = useSelectedDate()
-  // For the upload's object key, which the bucket's insert policy checks against
-  // `auth.uid()` — a file written under anyone else's folder is refused.
-  const userId = useUserId()
 
   const params = useLocalSearchParams<{ id: string; entryId?: string }>()
   const { data: food, isPending } = useFood(params.id)
@@ -490,7 +486,7 @@ export default function FoodDetail() {
     setPickingIcon(false)
     setAttaching(true)
     try {
-      const path = await uploadMealPhoto(userId, uri)
+      const path = await uploadMealPhoto(uri)
       // A shot this one replaces never reached a row either.
       if (orphanShot.current) void removeMealPhoto(orphanShot.current).catch(() => {})
       orphanShot.current = path

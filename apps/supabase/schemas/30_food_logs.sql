@@ -56,8 +56,10 @@ create table public.food_logs (
   note         text check (char_length(note) <= 500),
 
   source       public.entry_source not null default 'search',
-  -- Path inside the private `meal-photos` bucket. Null until the scanning flow
-  -- exists; see the seam note above.
+  -- An object key in R2, under `meals/<user>/`. A key and never a URL, which
+  -- is what made moving off Supabase Storage a change of base URL rather than
+  -- a migration over every row. Read and written through the `photos` edge
+  -- function, which is the only thing holding a credential for that bucket.
   photo_path   text,
 
   -- Groups the entries one photographed plate decomposed into. A scan that
