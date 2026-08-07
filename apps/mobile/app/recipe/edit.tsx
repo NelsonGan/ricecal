@@ -101,6 +101,14 @@ export default function RecipeFormScreen() {
   const [adding, setAdding] = useState(false)
   const [camera, setCamera] = useState(false)
   const [describing, setDescribing] = useState(false)
+  /**
+   * Which read is in flight, and it exists because nothing else on screen still
+   * knows. The describe sheet is dismissed before the call is made, and `filled`
+   * is not set until the answer lands, so the banner was reading two pieces of
+   * state that are both false for the whole of a typed read and said "Reading
+   * your photo…" over somebody's typing.
+   */
+  const [reading, setReading] = useState<'photo' | 'text' | null>(null)
   // The describe sheet has actually been presented. `autoFocus` inside a
   // `Modal` is applied while the field is still off screen and routinely
   // dropped, so the field waits for `onShow` rather than for `visible`.
@@ -177,7 +185,13 @@ export default function RecipeFormScreen() {
     // A photo and a drawing answer the same question, and the photo wins.
     setIcon(null)
 
-    const draft = await read.mutateAsync({ photoPath: key })
+    setReading('photo')
+    let draft: ScannedRecipe | null
+    try {
+      draft = await read.mutateAsync({ photoPath: key })
+    } finally {
+      setReading(null)
+    }
     if (!draft) {
       toast.show({ title: t('recipes:new.scanFailed'), tone: 'warning' })
       return
@@ -198,7 +212,13 @@ export default function RecipeFormScreen() {
     setDescribeReady(false)
     touch()
 
-    const draft = await read.mutateAsync({ text: described })
+    setReading('text')
+    let draft: ScannedRecipe | null
+    try {
+      draft = await read.mutateAsync({ text: described })
+    } finally {
+      setReading(null)
+    }
     if (!draft) {
       toast.show({ title: t('recipes:new.describeFailed'), tone: 'warning' })
       return
@@ -322,9 +342,7 @@ export default function RecipeFormScreen() {
       {read.isPending ? (
         <Card tone="kaya">
           <Text variant="meta">
-            {describing || filled === 'text'
-              ? t('recipes:new.describing')
-              : t('recipes:new.scanning')}
+            {reading === 'text' ? t('recipes:new.describing') : t('recipes:new.scanning')}
           </Text>
         </Card>
       ) : null}

@@ -464,6 +464,24 @@ A failed read is a form they fill in themselves, and the endpoint says so.
 A draft is applied ONLY OVER EMPTY FIELDS. Somebody who typed a name and then
 reached for the camera meant it to fill in the parts they had not done.
 
+Two things about that prompt were learnt the expensive way, and both are about
+saying LESS. It described the app as Malaysian, and the model read that as an
+instruction about the food rather than about the audience: beef tacos came back
+named "Nasi goreng kampung" and a Thai green curry as "Kari hijau ayam", while
+every Malaysian case passed throughout. And its "nothing cookable in it" escape
+was written loosely enough that a dish named with no amounts — "Coq au vin,
+feeds 6" — looked to the model like describing no food, which is the ordinary
+way this feature is used. The home cuisine is now a tie-break rather than the
+framing, the escape is fenced to text that names no food at all, and
+`RECIPE_CASES` in `eval-prompts.ts` is the twelve examples written down.
+
+The steps are ONE INSTRUCTION A LINE, and that shape is settled rather than
+hoped for: the prompt asks for newlines, `shapeSteps` breaks a paragraph into
+its sentences when it did not get them, and `RecipeSteps` draws the numerals.
+Numbering in the data would double up against the numerals beside it, survive
+into the field the cook edits by hand, and renumber nothing when a step was
+taken out of the middle.
+
 `R2_ENDPOINT` exists so a local stack can point the storage seam at any S3 —
 the one Supabase runs beside it, say. Without it the one check standing between
 two users' diaries could only be exercised in production.

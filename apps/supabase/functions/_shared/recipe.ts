@@ -68,36 +68,95 @@ const clamp = (value: unknown, lo: number, hi: number, fallback: number): number
 const text = (value: unknown, max: number): string =>
   typeof value === 'string' ? value.trim().slice(0, max) : ''
 
+/**
+ * Nothing edible carries more than about 9 kcal a gram; pure fat is the
+ * ceiling and everything else is diluted by water, protein or starch. So a
+ * per-gram figure above it is not a rich ingredient, it is a decimal point in
+ * the wrong place — a per-kilo figure written against a 100 g amount, say.
+ *
+ * The same reasoning `portion.ts` applies to a scanned plate, and the same
+ * direction: mass bounds a calorie figure DOWNWARDS. Clamping loses nothing
+ * true, because there was nothing true above the line.
+ */
+const KCAL_PER_UNIT_CEILING: Partial<Record<RecipeUnit, number>> = { g: 9.4, ml: 9.4 }
+
+/** The rows, cleaned. Capped at twenty; see the note at the call site. */
+function shapeIngredients(list: unknown[]): DraftIngredient[] {
+  return list.slice(0, 20).flatMap((item): DraftIngredient[] => {
+    const i = (item ?? {}) as Record<string, unknown>
+    const name = text(i.name, 120)
+    if (!name) return []
+    const unit = UNITS.includes(i.unit as RecipeUnit) ? (i.unit as RecipeUnit) : 'g'
+    const amount = clamp(i.amount, 0.01, 100000, 0)
+    if (amount <= 0) return []
+
+    const ceiling = KCAL_PER_UNIT_CEILING[unit]
+    const kcal = clamp(i.kcal, 0, ceiling ? ceiling * amount : 100000, 0)
+    // Macros are bounded by the mass for the same reason, and a piece has no
+    // mass stated, so only a weighed ingredient can be checked this way.
+    const macro = (value: unknown) => clamp(value, 0, ceiling ? amount : 20000, 0)
+
+    return [
+      {
+        name,
+        amount,
+        unit,
+        kcal,
+        carbs_g: macro(i.carbs_g),
+        protein_g: macro(i.protein_g),
+        fat_g: macro(i.fat_g),
+      },
+    ]
+  })
+}
+
+/**
+ * The steps as one instruction a line, whatever shape they arrived in.
+ *
+ * The prompt asks for newlines and mostly gets them, but "mostly" is not a
+ * format: the same model that separated a nasi lemak into five lines wrote a
+ * butter chicken as one 250-character paragraph, and the screen renders what it
+ * is given. A cook reading a wall of text has to find their place in it every
+ * time they look up from the pan.
+ *
+ * So the shape is settled here rather than hoped for. Sentences become lines,
+ * and any numbering the model added is taken off — the list is numbered where
+ * it is DRAWN, so a "1." in the text would be a second number beside the first,
+ * and it would survive into the field the user edits by hand.
+ */
+function shapeSteps(raw: unknown): string {
+  const value = text(raw, 4000)
+  if (!value) return ''
+
+  return (
+    value
+      .split('\n')
+      // A sentence end followed by the start of another. Written to need the
+      // capital, so "1.5 kg" and "approx. 20" stay in one piece.
+      .flatMap((line) => line.split(/(?<=[.!?])\s+(?=[A-Z"'(])/))
+      .map((line) => line.replace(/^\s*(?:step\s*)?(?:\d+\s*[.):]|[-*•·])\s*/i, '').trim())
+      .filter(Boolean)
+      .join('\n')
+  )
+}
+
 function shapeDraft(raw: unknown): RecipeDraft {
   const o = (raw ?? {}) as Record<string, unknown>
-  const list = Array.isArray(o.ingredients) ? o.ingredients : []
+  // Capped at twenty. A pot with more parts than that is a model listing
+  // seasonings it cannot weigh, and every row past the twentieth is one more
+  // line the user has to read before they can trust the total.
+  const ingredients = shapeIngredients(Array.isArray(o.ingredients) ? o.ingredients : [])
 
   return {
-    name: text(o.name, 120) || 'Home recipe',
+    // "Home recipe" only once there is a recipe to call that. Applied
+    // unconditionally it filled the name in on the empty answer too, and the
+    // caller's "nothing cookable in it" test — no name AND no ingredients —
+    // could never be true again: a photo of a cat and a reminder to buy milk
+    // both came back as a pot called Home recipe with nothing in it.
+    name: text(o.name, 120) || (ingredients.length > 0 ? 'Home recipe' : ''),
     servings: Math.round(clamp(o.servings, 1, 100, 1)),
-    // Capped at twenty. A pot with more parts than that is a model listing
-    // seasonings it cannot weigh, and every row past the twentieth is one more
-    // line the user has to read before they can trust the total.
-    ingredients: list.slice(0, 20).flatMap((item): DraftIngredient[] => {
-      const i = (item ?? {}) as Record<string, unknown>
-      const name = text(i.name, 120)
-      if (!name) return []
-      const unit = UNITS.includes(i.unit as RecipeUnit) ? (i.unit as RecipeUnit) : 'g'
-      const amount = clamp(i.amount, 0.01, 100000, 0)
-      if (amount <= 0) return []
-      return [
-        {
-          name,
-          amount,
-          unit,
-          kcal: clamp(i.kcal, 0, 100000, 0),
-          carbs_g: clamp(i.carbs_g, 0, 20000, 0),
-          protein_g: clamp(i.protein_g, 0, 20000, 0),
-          fat_g: clamp(i.fat_g, 0, 20000, 0),
-        },
-      ]
-    }),
-    steps: text(o.steps, 4000),
+    ingredients,
+    steps: shapeSteps(o.steps),
   }
 }
 
@@ -138,8 +197,17 @@ const RECIPE_SHAPE =
   '"carbs_g": number, "protein_g": number, "fat_g": number}]} ' +
   // The name is the dish. "A pot of curry on a stove" is a caption; "Kari ayam"
   // is what somebody would look for in their own recipes.
-  'The name is what a Malaysian cook would call the dish, in its local spelling: ' +
-  '"Nasi goreng kampung", "Rendang daging", "Sayur lodeh". ' +
+  //
+  // And it is the dish's OWN name. Most of the cooking here is Malaysian, and
+  // saying so used to be how this sentence was written — which taught the model
+  // that a Malay name was the house style rather than the local one. Asked for
+  // beef tacos it answered "Nasi goreng kampung"; asked for a Thai green curry
+  // it answered "Kari hijau ayam". A cook looking for last week's tacos will
+  // never find them under either.
+  'The name is what the person cooking it calls the dish, in the language the ' +
+  'dish itself carries: "Nasi goreng kampung", "Rendang daging", "Spaghetti ' +
+  'carbonara", "Kimchi jjigae", "Coq au vin", "Tacos de carne molida". Never ' +
+  "translate a dish into another cuisine's words. " +
   // Amounts are for the whole pot, and the calories are for that amount. Stated
   // twice on purpose: a per-100g figure here silently divides the whole recipe
   // by ten.
@@ -148,8 +216,25 @@ const RECIPE_SHAPE =
   'per serving. 1000 g of beef shin is about 1640 kcal; write amount 1000, unit "g", ' +
   'kcal 1640. Use "ml" for liquids, "piece" for things counted whole (eggs, ' +
   'chicken thighs, whole chillies). ' +
+  // Anchors, for the same reason the meal prompts carry size anchors: a model
+  // asked for a calorie figure in the abstract drifts high on exactly the
+  // ingredients that dominate a pot. Told nothing, it priced a tin of santan at
+  // 1520 kcal and put a chicken curry at 760 a serving.
+  'Price them against these: 100 g of raw rice is about 360 kcal; 400 ml of ' +
+  'tinned coconut milk is about 800 kcal; 15 ml of cooking oil is about 120 kcal; ' +
+  'one large egg is about 72 kcal; 100 g of raw skinless chicken thigh is about ' +
+  '120 kcal. ' +
+  'Name each ingredient the way a shopping list does: singular, capitalised, and ' +
+  'specific enough to price. "Chicken thigh", "Coconut milk", "Potato". ' +
   'Six to ten ingredients is a full answer; do not pad it with seasonings you ' +
-  'cannot weigh. '
+  'cannot weigh. ' +
+  // The fat is the part that goes missing, and it is the part that costs. A pot
+  // whose steps say "fry" and whose list has no oil in it is understating the
+  // meal by a few hundred calories.
+  'Include the cooking fat and anything else the dish plainly needs to be that ' +
+  'dish, even when nobody mentioned it. Everything your steps name has to appear ' +
+  'in the list: steps that fry a rempah the ingredients never list describe a ' +
+  'different pot. '
 
 /**
  * How the steps are written, and it is a rule about PLAINNESS.
@@ -164,13 +249,32 @@ const RECIPE_SHAPE =
 const RECIPE_STEPS =
   '"steps" is how the dish is cooked, written straightforwardly: short plain ' +
   'sentences, one action each, in the order they happen, starting with a verb ' +
-  '("Fry the rempah until it darkens."). Three to six sentences, separated by ' +
-  'newlines, with no numbering, no bullets and no headings. Say the times and ' +
-  'temperatures that matter and nothing else. Do not describe how it tastes or ' +
-  'smells, and do not use em dashes or en dashes anywhere.'
+  '("Fry the rempah until it darkens."). Three to six of them. ' +
+  // Said as a fact about the string rather than as a preference about layout.
+  // Asked for "sentences separated by newlines" the model wrote a paragraph
+  // about a third of the time, and a paragraph is what the screen then draws.
+  'Each step is a separate line: put a \\n between them and nothing else, so the ' +
+  '"steps" value reads as one instruction per line. No numbering, no bullets and ' +
+  'no headings; the app numbers them itself. ' +
+  'Say the times and temperatures that matter and nothing else. Do not describe ' +
+  'how it tastes or smells, and do not use em dashes or en dashes anywhere.'
+
+/**
+ * Where the cooking is from, said once for both prompts.
+ *
+ * Malaysian food is the common case and the model should reach for it when the
+ * dish is ambiguous, but "a Malaysian app" as the whole framing is what turned
+ * every other cuisine into a Malay approximation of itself. The bias belongs on
+ * the tie-break, not on the dish.
+ */
+const RECIPE_KITCHEN =
+  'Most of the cooking is Malaysian and southeast Asian, so read an ambiguous ' +
+  'dish that way, but people cook everything and a dish from anywhere else is ' +
+  'answered on its own terms. '
 
 export const READ_RECIPE_PROMPT =
-  'You read home cooking out of photographs for a Malaysian calorie-tracking app. ' +
+  'You read home cooking out of photographs for a calorie-tracking app. ' +
+  RECIPE_KITCHEN +
   'The photo is a pot, a tray or a spread of ingredients that somebody cooked. ' +
   RECIPE_SHAPE +
   // A photograph has one witness and it is the model. Everything it says is
@@ -185,7 +289,8 @@ export const READ_RECIPE_PROMPT =
 
 export const DESCRIBE_RECIPE_PROMPT =
   "You turn a description of somebody's home cooking into a recipe for a " +
-  'Malaysian calorie-tracking app. ' +
+  'calorie-tracking app. ' +
+  RECIPE_KITCHEN +
   RECIPE_SHAPE +
   // THE DIFFERENCE FROM THE PHOTO PROMPT, and the only one that matters. A
   // sentence was written by the person who cooked the dish, so what it STATES
@@ -193,6 +298,14 @@ export const DESCRIBE_RECIPE_PROMPT =
   // amounts, and the servings they gave are the servings. The model is filling
   // in what they left out, not second-guessing what they said.
   'The person describing it COOKED it, so anything they state is the answer. ' +
+  // The other half of that: what they did NOT state still has to be there. A
+  // sentence that is only a dish name and a serving count is the ordinary way
+  // this feature is used, and a half-written list is a light pot — "Moussaka,
+  // feeds 8" came back without the bechamel or the frying oil and priced a
+  // 600 kcal serving at 258.
+  'Where they gave no amounts, write the dish out IN FULL as it is normally ' +
+  'cooked, including the fat it is fried or baked in and the parts assembled at ' +
+  'the end, and size it for the number of people it feeds. ' +
   'Use their amounts exactly where they gave one, and their serving count where ' +
   'they gave one. Only estimate what they left out, and keep those estimates ' +
   'ordinary for the dish. ' +
@@ -201,8 +314,15 @@ export const DESCRIBE_RECIPE_PROMPT =
   RECIPE_STEPS +
   ' Write the steps from what they told you. If they described no method, write ' +
   'the ordinary way the dish is cooked. ' +
-  'If the text describes no food at all, answer {"name": "", "servings": 1, ' +
-  '"ingredients": [], "steps": ""}.'
+  // The escape hatch, fenced. Read loosely it swallowed real cooking: "Coq au
+  // vin, feeds 6" and "Chicken shawarma wraps for 4" both came back as the
+  // empty answer, because naming a dish and listing nothing looked to the model
+  // like describing no food. A named dish with no amounts is the ordinary case
+  // this feature exists for.
+  'A dish named with no amounts is still a dish: cook it the usual way and ' +
+  'estimate what a pot of it holds. Answer {"name": "", "servings": 1, ' +
+  '"ingredients": [], "steps": ""} ONLY when the text names no food at all, as a ' +
+  'reminder, a greeting or a question would.'
 
 /**
  * Fill a recipe form in from a photograph of the pot.
@@ -353,12 +473,20 @@ export async function describeRecipe(
   const raw = await chatJSON(
     [
       { role: 'system', content: DESCRIBE_RECIPE_PROMPT },
-      { role: 'user', content: `The person cooking it wrote: "${text_}"` },
+      { role: 'user', content: describeRecipeUserMessage(text_) },
     ],
     2000,
   )
   return shapeDraft(raw)
 }
+
+/**
+ * What the model is shown, exported for the same reason `describeUserMessage`
+ * is: the eval harness grades the prompt as it is actually called, and a
+ * harness with its own copy of the wrapper grades a message nobody sends.
+ */
+export const describeRecipeUserMessage = (described: string): string =>
+  `The person cooking it wrote: "${described}"`
 
 export const REVIEW_RECIPE_PROMPT =
   'You are the moderator for a Malaysian recipe-sharing app. A recipe is about to ' +
