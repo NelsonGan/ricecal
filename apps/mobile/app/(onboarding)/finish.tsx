@@ -9,20 +9,24 @@ import { birthDateFromAge } from '@/lib/nutrition'
 import { Button, EmptyState, Screen, Spinner, Text } from '@/ui'
 
 /**
- * 07 SAVING
+ * SAVING — the hinge between the questions and the permissions.
  *
  * The one write the flow makes.
  *
- * Seven screens of answers were kept on the phone because there was no account to
- * put them in; this is where they land, and the only screen in the flow that needs
- * a session. It is reached two ways — straight from the target screen when the
- * user already had one, or from the index route the moment signing in creates one
- * — and both come here rather than writing at the call site, so one place knows
- * what "finished" means.
+ * Four screens of answers were kept on the phone because there was no account to
+ * put them in; this is where they land, and the first screen in the flow that
+ * needs a session. It is reached two ways — straight from the target screen when
+ * the user already had one, or from the index route the moment signing in creates
+ * one — and both come here rather than writing at the call site, so one place
+ * knows what "finished" means.
+ *
+ * It carries no progress bar of its own. There is no decision on it and it is
+ * gone in a second on any working connection; a mark that appears and vanishes
+ * before it can be read is worse than the bar simply pausing.
  *
  * Deliberately a screen rather than an effect somewhere invisible: this is a
  * network write that can fail, and a failure needs somewhere to say so and a
- * button to try again. Losing seven screens of answers to a dropped connection
+ * button to try again. Losing four screens of answers to a dropped connection
  * would be the worst moment in the app to be silent.
  *
  * Split in two because the guards have to run before the hooks. `useFinishOnboarding`
@@ -79,11 +83,22 @@ function Flush({ draft }: { draft: CompleteDraft }) {
       },
       {
         onSuccess: () => {
-          const exit = draft.exit === 'preview' ? '/preview' : '/today'
           // Cleared only now. Until the write lands, the draft is the only copy of
           // these answers anywhere.
           clear()
-          router.replace(exit)
+          /**
+           * On to the permissions, not to the diary.
+           *
+           * This is the first moment there IS an account, and both of the
+           * remaining asks need one — a health connection is a row keyed by
+           * user, and turning a meal reminder on is a write to `meal_times`.
+           * They could not have been asked earlier, which is why the flow
+           * crosses the account step to reach them.
+           *
+           * `replace`, so the saving screen is not something an edge swipe can
+           * return to. It would start the write again.
+           */
+          router.replace('/(onboarding)/health')
         },
       },
     )

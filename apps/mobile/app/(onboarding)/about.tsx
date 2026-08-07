@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { Sex } from '@/data'
-import { OnboardingStep, useOnboardingDraft } from '@/features/onboarding'
+import { OnboardingStep, stepNumber, TOTAL_STEPS, useOnboardingDraft } from '@/features/onboarding'
 import { Card, SegmentedControl, Slider, Stepper, Text, TextField } from '@/ui'
 
 /**
@@ -87,8 +87,8 @@ export default function AboutStep() {
 
   return (
     <OnboardingStep
-      step={1}
-      total={4}
+      step={stepNumber('about')}
+      total={TOTAL_STEPS}
       accent="water"
       title={t('about.title')}
       subtitle={t('about.subtitle')}

@@ -1,0 +1,36 @@
+/**
+ * The order of the flow, in one array.
+ *
+ * The progress bar spans nine screens across three route groups — the questions
+ * and the plan in `(onboarding)`, the account in `(auth)` — and every one of them
+ * has to agree about which number it is and how many there are in total. Written
+ * out per screen, that agreement lasted exactly as long as nobody inserted a
+ * step: adding the calculating beat meant editing "4" into "5" in four files and
+ * "of 4" into "of 9" in six, and a screen that got the second edit and not the
+ * first says "step 3 of 9" twice.
+ *
+ * So the position is derived from this list and nothing else. Inserting a screen
+ * is one line here; deleting one is one line here. A name that is not in the list
+ * does not typecheck.
+ */
+export const ONBOARDING_STEPS = [
+  'about',
+  'activity',
+  'foodStyle',
+  'source',
+  'calculating',
+  'target',
+  'account',
+  'health',
+  'notifications',
+] as const
+
+export type OnboardingStepName = (typeof ONBOARDING_STEPS)[number]
+
+/** How many marks the bar draws. */
+export const TOTAL_STEPS = ONBOARDING_STEPS.length
+
+/** 1-based, which is what `StepProgress` and the screen-reader label both want. */
+export function stepNumber(name: OnboardingStepName): number {
+  return ONBOARDING_STEPS.indexOf(name) + 1
+}

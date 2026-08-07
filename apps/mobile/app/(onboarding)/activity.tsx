@@ -1,7 +1,13 @@
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import type { ActivityLevel } from '@/data'
-import { ChoiceCard, OnboardingStep, useOnboardingDraft } from '@/features/onboarding'
+import {
+  ChoiceCard,
+  OnboardingStep,
+  stepNumber,
+  TOTAL_STEPS,
+  useOnboardingDraft,
+} from '@/features/onboarding'
 import { Text } from '@/ui'
 
 const OPTIONS: ActivityLevel[] = ['sedentary', 'light', 'onFeet', 'veryActive']
@@ -16,8 +22,8 @@ export default function ActivityStep() {
 
   return (
     <OnboardingStep
-      step={2}
-      total={4}
+      step={stepNumber('activity')}
+      total={TOTAL_STEPS}
       accent="hibiscus"
       title={t('activity.title')}
       subtitle={t('activity.subtitle')}
