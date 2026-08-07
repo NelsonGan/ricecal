@@ -18,12 +18,6 @@ export const recipes = {
     community: 'From the community',
   },
 
-  /** The line under each shelf's name. Says what this shelf IS. */
-  blurb: {
-    official: 'Cooked and weighed in our kitchen. Save a copy to change it.',
-    community: 'Cooked something good? Share yours as public and it shows up here.',
-  },
-
   search: {
     official: 'Search official recipes',
     community: 'Search public recipes',
@@ -77,27 +71,50 @@ export const recipes = {
     describePlaceholder: 'Kari ayam. 600g chicken thigh, a tin of santan, 3 potatoes. Feeds 4.',
     describeHint: 'Amounts and how many it feeds are the two worth typing.',
     describeAction: 'Fill in the form',
-    describing: 'Reading what you wrote…',
     describeFailed: 'We could not read that one. Fill it in yourself below.',
-    described: 'Filled in from what you wrote. Change anything that looks off.',
-    scanning: 'Reading your photo…',
-    scanned: 'Filled in from your photo. Change anything that looks off.',
     scanFailed: 'We could not read that one. Fill it in yourself below.',
+
+    /**
+     * The wait while the pot is being read, as stages rather than one line.
+     * The form is not editable for these few seconds, so the copy has to say
+     * what is happening rather than merely that something is.
+     */
+    readingPhoto: 'Reading your photo…',
+    readingText: 'Reading what you wrote…',
+    readingIngredients: 'Working out what went in…',
+    readingPortions: 'Sizing the portions…',
+    readingSteps: 'Writing the steps…',
+    readingHint: 'Hang on a moment. You can change anything once it lands.',
   },
 
   edit: {
     title: 'Edit recipe',
     name: 'NAME',
     namePlaceholder: 'What do you call it?',
-    photo: 'PHOTO',
-    addPhoto: 'Add',
+    picture: 'PICTURE',
+    changePicture: 'Change the picture',
+    /**
+     * The one choice in this form that throws something away: a drawing over a
+     * photograph of the real pot.
+     */
+    replacePhotoTitle: 'Use a drawing instead?',
+    replacePhotoBody: 'The photo of this recipe will be removed.',
+    replacePhotoConfirm: 'Use the drawing',
     servings: 'HOW MANY SERVINGS',
     ingredients: 'INGREDIENTS',
     ingredientsCount: 'INGREDIENTS · {{count}}',
     ingredientsEmpty: 'Nothing yet. Search each item and we add up the pot for you.',
     addIngredient: 'Add an ingredient',
     steps: 'HOW YOU COOK IT',
-    stepsPlaceholder: 'Write the steps however you like. Free text, no need to number them.',
+    /**
+     * The one thing worth saying about this field is what the RETURN key does,
+     * because the numbering is added where the steps are drawn and nowhere in
+     * the text. Without it people number the lines themselves and end up with
+     * "1. 1. Fry the rempah".
+     */
+    stepsPlaceholder: 'One step on each line. Start a new line and we number it for you.',
+    /** Under the field, since a placeholder disappears the moment they type. */
+    stepsHint: 'Each new line becomes the next numbered step.',
     save: 'Save recipe',
     saved: 'Recipe saved',
     nameRequired: 'Give it a name first',

@@ -24,6 +24,7 @@ import {
   Card,
   Chip,
   ConfirmSheet,
+  cn,
   Divider,
   EmptyState,
   Icon,
@@ -77,7 +78,7 @@ export default function RecipeDetailScreen() {
   const [menu, setMenu] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  const { data: signedUrl } = useMealPhotoUrl(recipe?.photoPath)
+  const { data: signedUrl, isLoading: signing } = useMealPhotoUrl(recipe?.photoPath)
   const photo = storedImageSource(recipe?.photoPath, signedUrl)
 
   if (isPending) {
@@ -195,9 +196,33 @@ export default function RecipeDetailScreen() {
         }
       />
 
-      <View className="h-[130px] items-center justify-center overflow-hidden rounded-tile border-[3px] border-line bg-track">
+      {/* Tall enough for the whole dish when there is a photograph of it, the
+          same two heights the logged-entry screen uses. At a flat 130pt a
+          photo of a pot came through as a letterbox strip across the middle of
+          it — the cook's own picture of their own cooking, cropped to a band.
+          A drawing keeps the short box: a 96pt illustration centred in a 260pt
+          frame is a small picture in a large empty one.
+
+          `signing` counts as having one, because it means the recipe HAS a
+          photograph and we are waiting on a URL for it. Left out, the box
+          opens short and grows by 130pt under the reader a moment later. */}
+      <View
+        className={cn(
+          'items-center justify-center overflow-hidden rounded-card border-[3px] border-line bg-track',
+          photo || signing ? 'h-[260px]' : 'h-[130px]',
+        )}
+      >
         {photo ? (
-          <Image source={photo} style={{ flex: 1, width: '100%' }} contentFit="cover" />
+          <Image
+            source={photo}
+            style={{ flex: 1, width: '100%' }}
+            contentFit="cover"
+            // See `ItemRow`: the bucket is private, so a stored photo is
+            // always one signing request behind the screen it belongs to.
+            transition={180}
+          />
+        ) : signing ? (
+          <Skeleton width="100%" height={260} rounded={false} className="bg-line" />
         ) : recipe.icon ? (
           <Icon {...recipe.icon} size={96} />
         ) : (

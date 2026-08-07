@@ -17,7 +17,6 @@ import {
   SearchField,
   SegmentedControl,
   Skeleton,
-  Text,
 } from '@/ui'
 
 const SHELVES: RecipeShelf[] = ['mine', 'official', 'community']
@@ -89,32 +88,21 @@ export default function RecipesScreen() {
         returnKeyType="search"
       />
 
-      {/* What this shelf IS, said once at the top. Absent on `mine`, where the
-          answer is obvious and the space belongs to the recipes. */}
-      {shelf !== 'mine' ? (
-        <Card tone={shelf === 'official' ? 'pandan' : 'water'}>
-          <View className="flex-row items-center gap-3">
-            <Icon set="ui" name={shelf === 'official' ? 'check' : 'share'} size={20} />
-            <Text variant="meta" className="flex-1">
-              {t(`recipes:blurb.${shelf}`)}
-            </Text>
-          </View>
+      {/* The skeletons are grouped exactly as the rows are, so the list does
+          not reflow from three cards into one when the answer lands. */}
+      {loading ? (
+        <Card>
+          {SKELETON_ROWS.map((id) => (
+            <View key={id} className="flex-row items-center gap-3">
+              <Skeleton className="h-[56px] w-[56px]" />
+              <View className="flex-1 gap-2">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-3 w-2/5" />
+              </View>
+            </View>
+          ))}
         </Card>
       ) : null}
-
-      {loading
-        ? SKELETON_ROWS.map((id) => (
-            <Card key={id}>
-              <View className="flex-row items-center gap-3">
-                <Skeleton className="h-[56px] w-[56px]" />
-                <View className="flex-1 gap-2">
-                  <Skeleton className="h-4 w-2/3" />
-                  <Skeleton className="h-3 w-2/5" />
-                </View>
-              </View>
-            </Card>
-          ))
-        : null}
 
       {!loading && recipes.length === 0 ? (
         searched ? (
@@ -132,13 +120,21 @@ export default function RecipesScreen() {
         )
       ) : null}
 
-      {recipes.map((recipe) => (
-        <RecipeRow
-          key={recipe.id}
-          recipe={recipe}
-          onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: recipe.id } })}
-        />
-      ))}
+      {/* ONE card for the whole shelf, the way the day's entries are one card
+          on Today. A card each put 28pt of padding and a slab under every
+          recipe, which spread eight of them over three screens and read as
+          eight separate things rather than as a list of one kind of thing. */}
+      {recipes.length > 0 ? (
+        <Card>
+          {recipes.map((recipe) => (
+            <RecipeRow
+              key={recipe.id}
+              recipe={recipe}
+              onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: recipe.id } })}
+            />
+          ))}
+        </Card>
+      ) : null}
     </Screen>
   )
 }
