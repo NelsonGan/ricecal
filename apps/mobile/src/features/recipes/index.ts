@@ -15,6 +15,7 @@ export {
 } from './basis'
 export { DescribeRecipePanel, type DescribeRecipePanelProps } from './DescribeRecipePanel'
 export { IngredientSheet, type IngredientSheetProps } from './IngredientSheet'
+export { ReadingRecipe, type ReadingRecipeProps } from './ReadingRecipe'
 export { RecipePanel, type RecipePanelProps } from './RecipePanel'
 export { RecipeRow, type RecipeRowProps } from './RecipeRow'
 export { RecipeSteps, splitSteps } from './RecipeSteps'

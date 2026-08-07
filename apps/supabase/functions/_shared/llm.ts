@@ -13,6 +13,7 @@
 // mock through `body.mock`, which is only read in mock mode; it exists so a
 // test can force each tier of the cascade in turn.
 
+import { ICON_INSTRUCTION, type IconChoice, resolveIcon } from './icons.ts'
 import { reconcile, unfoldCounts } from './portion.ts'
 
 export type Scene = 'single' | 'composite' | 'packaged' | 'unclear'
@@ -92,6 +93,14 @@ export type VisionItem = {
    * hardcoded list.
    */
   suggested_edits: string[]
+  /**
+   * The drawing for the row, chosen out of our own set — see `icons.ts`.
+   *
+   * Filled in on the TYPED path only. A photographed meal has the photograph,
+   * and `food_logs` will not hold both: the row carries a picture or a drawing,
+   * never one over the other.
+   */
+  icon: IconChoice | null
 }
 
 /**
@@ -483,6 +492,10 @@ function shapeVision(raw: unknown): Vision {
           .map((edit) => String(edit).trim().slice(0, 60))
           .filter(Boolean)
           .slice(0, 3),
+        // Null unless the model named a drawing we actually have. The photo
+        // prompt never asks for one, so this is null on that path by
+        // construction.
+        icon: resolveIcon(i.icon),
       } satisfies VisionItem,
     ]
   })
@@ -810,7 +823,16 @@ export const DESCRIBE_MEAL_PROMPT =
   '"confidence" is how precisely the words pin the food down — a named dish is ' +
   'high, "some rice and chicken" is low. Low is an honest answer, not a failure; ' +
   'the app has a cheaper way to price a vague meal and needs to be told when. ' +
-  TRAILING_FIELDS
+  TRAILING_FIELDS +
+  // Only on this path, where there is no photograph and the row would otherwise
+  // be a name over an empty square. A photographed meal has its picture, and
+  // `food_logs` holds one or the other.
+  //
+  // Dead last in the prompt, and see the note on ICON_INSTRUCTION for why: the
+  // list of ids is the biggest block of text here and everything after it is
+  // read in its shadow.
+  ' The item carries one more key: "icon", a string or null. ' +
+  ICON_INSTRUCTION
 
 /** The one line of context the text call gets. Exported with the prompt. */
 export const describeUserMessage = (text: string): string => `The person typed: "${text}"`
@@ -856,6 +878,10 @@ export async function describeMeal(text: string, mock: MockSteer | undefined): P
           kcal_high: 600 * count,
           confidence: 0.7,
           suggested_edits: ['Half portion', 'Add a fried egg', 'No rice'],
+          // A local run exercises the icon path too, or the one thing that
+          // only happens on this path is the one thing never seen before it
+          // deploys.
+          icon: 'nasi-lemak',
         },
       ],
     })
@@ -915,6 +941,10 @@ export function foldMealItems(vision: Vision): Vision {
     kcal_high: items.reduce((sum, item) => sum + item.kcal_high, 0),
     confidence: Math.min(...items.map((item) => item.confidence)),
     suggested_edits: primary.suggested_edits,
+    // The biggest thing on the tray names the meal, so it draws it too — and
+    // when that one had no drawing, any other part's is still a picture of
+    // something on this plate, which beats the empty square.
+    icon: primary.icon ?? items.find((item) => item.icon)?.icon ?? null,
   }
   return { scene: 'composite', items: [merged] }
 }

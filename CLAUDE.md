@@ -291,6 +291,29 @@ The client mirrors that difference only where it has to: a typed row wears the
 sentence until the dish lands, because a snapped row has its photograph and a
 typed one would otherwise be a spinner over an empty line.
 
+**A typed meal also picks its own drawing**, and only a typed one. It has no
+photograph, so the row would be a name over an empty square in a diary where
+its neighbours have pictures, and the model that just read "nasi lemak with
+fried chicken" knows perfectly well which of our illustrations that is. So the
+prompt carries the list of icon names and the answer is validated against it in
+`_shared/icons.ts` — the one place in a scan where a hallucination CANNOT be
+useful, since an invented name renders nothing. A photographed meal is never
+asked: it has the better picture, and `food_logs` holds one or the other. Same
+split on a recipe, for the same reason.
+
+Two things about that list were learnt immediately. Two hundred hyphenated
+slugs is the largest block of example text in either prompt, and a model reads a
+long list of names as the vocabulary it should answer in: asked for "Fried flat
+rice noodles with prawns" it came back NAMED `Char-kuey-teow`. So the block goes
+last, after every field it could contaminate, and says outright that these are
+filenames and belong in no other one. And a rejected name is logged, because it
+is the one failure on this path with no symptom — a near miss looks exactly like
+a row that never had a drawing.
+
+The names come from `icons.generated.ts`, written by the same script that builds
+the app's icon registry: edge functions are Deno and cannot import it, and a
+hand-kept second copy drifts the first time an icon is renamed.
+
 ### Correcting it
 
 There are two ways to change a logged entry, and they are separated because
@@ -437,9 +460,20 @@ invisible — and the client says "we are still looking at this one" rather than
 claiming either verdict. There is no branch in `functions/recipes` that approves
 a recipe because something went wrong.
 
-The reviewer has exactly two grounds: vulgarity and the like, and nutrition that
-is not credible. A moderator with a wider brief starts rejecting food it finds
+The reviewer asks ONE question and it is "is this a recipe". Two grounds follow
+from it: the text is not a recipe at all (placeholder text, a note to nobody,
+things that are not food), or it is not fit to read (vulgarity, hate, spam, an
+advert, a link). A moderator with a wider brief starts rejecting food it finds
 unhealthy, and the app has a calorie budget for that.
+
+Accuracy is explicitly none of its business, and that is a correction rather
+than an omission. There used to be a second ground about nutrition being
+credible, and it read as an invitation to audit: a model handed a licence to
+check arithmetic finds something wrong with almost every real pot, and ordinary
+home cooking was rejected often enough that publishing felt broken. The author
+could do nothing with it either, because the figures are the cascade's and not
+theirs. So the reviewer is not shown a single calorie figure — see the note on
+`ReviewInput` — and is told outright that the numbers are the app's work.
 
 ### Filling the form in, from a photo or from a sentence
 

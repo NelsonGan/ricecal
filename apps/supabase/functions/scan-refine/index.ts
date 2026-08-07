@@ -652,6 +652,14 @@ Deno.serve(async (req: Request) => {
           quantity: resolved.quantity,
           display_label: resolved.displayLabel,
           scan_id: scanId,
+          // The drawing described the OLD food, the same way the breakdown
+          // below did. A typed meal is illustrated from its own name (see
+          // `icons.ts`), so a redescribe leaves a picture of the dish that was
+          // just corrected away sitting on the dish that replaced it. Cleared
+          // rather than re-chosen: the row falls back to the blank tile every
+          // hand-logged entry has, and the detail screen has a picker.
+          icon_set: null,
+          icon_name: null,
         })
         .eq('id', entry.id)
       if (error) throw error

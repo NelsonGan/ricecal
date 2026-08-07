@@ -37,6 +37,7 @@
  * and the suite runs against the deployed key instead of a local one.
  */
 
+import { resolveIcon } from '../functions/_shared/icons.ts'
 import {
   DESCRIBE_MEAL_PROMPT,
   describeUserMessage,
@@ -792,6 +793,8 @@ type RecipeAnswer = {
   name?: string
   servings?: number
   steps?: string
+  /** A name out of our own icon set, or null. Graded below. */
+  icon?: string | null
   ingredients?: Array<{
     name?: string
     amount?: number
@@ -873,6 +876,15 @@ const universalRecipe = (answer: RecipeAnswer): Check[] => {
       'no long dashes',
       !/[—–]/.test(answer.steps ?? ''),
       answer.steps?.match(/[^\n]*[—–][^\n]*/)?.[0] ?? 'ok',
+    ),
+    // The drawing has to be one WE HAVE. `resolveIcon` drops anything else, so
+    // a prompt that invents names does not break the app — it silently loses
+    // the picture, which is exactly the kind of regression an eval is for.
+    // Null passes: "nothing in the list is this dish" is a real answer.
+    check(
+      'the icon is one of ours',
+      answer.icon === null || answer.icon === undefined || resolveIcon(answer.icon) !== null,
+      answer.icon ?? 'none',
     ),
   ]
 }

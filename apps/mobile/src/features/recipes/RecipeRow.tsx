@@ -3,7 +3,7 @@ import { View } from 'react-native'
 
 import type { Recipe } from '@/data'
 import { ItemRow } from '@/features/shared'
-import { Badge, Card } from '@/ui'
+import { Badge } from '@/ui'
 
 export type RecipeRowProps = {
   recipe: Recipe
@@ -12,6 +12,12 @@ export type RecipeRowProps = {
 
 /**
  * One recipe in a list.
+ *
+ * A ROW and not a card. It used to carry its own `Card`, which put 28pt of
+ * padding and a slab under every recipe and spread eight of them over three
+ * screens of scrolling — the shelf read as eight separate things rather than as
+ * one list. The caller groups them into a single card now, the way the day's
+ * entries are grouped on Today, and the rows sit at the card's own `gap-3`.
  *
  * The detail line answers a different question on each shelf, which is why it
  * is built here rather than passed in: on my own recipes it is the portion
@@ -37,23 +43,30 @@ export function RecipeRow({ recipe, onPress }: RecipeRowProps) {
         })
 
   return (
-    <Card>
-      <View className="gap-2.5">
-        <ItemRow
-          title={recipe.name}
-          detail={detail}
-          icon={recipe.icon}
-          photoPath={recipe.photoPath}
-          value={recipe.perServing.kcal}
-          unit="kcal"
-          onPress={onPress}
-        />
-        {/* Only on your own, and only when there is something to say. The badge
-            reports where a PUBLISHED recipe has got to; a private one is not
-            waiting for anything and says nothing. */}
-        {recipe.isMine && recipe.isPublic ? <ReviewBadge recipe={recipe} /> : null}
-      </View>
-    </Card>
+    <View className="gap-2">
+      <ItemRow
+        title={recipe.name}
+        detail={detail}
+        icon={recipe.icon}
+        photoPath={recipe.photoPath}
+        value={recipe.perServing.kcal}
+        unit="kcal"
+        onPress={onPress}
+      />
+      {/* Only on your own, and only when there is something to say. The badge
+          reports where a PUBLISHED recipe has got to; a private one is not
+          waiting for anything and says nothing.
+
+          Indented to the row's text column so it reads as belonging to the
+          recipe above it rather than to the gap between two of them, which is
+          what it looked like once the rows lost their cards. 56pt tile plus the
+          12pt gap. */}
+      {recipe.isMine && recipe.isPublic ? (
+        <View className="flex-row pl-[68px]">
+          <ReviewBadge recipe={recipe} />
+        </View>
+      ) : null}
+    </View>
   )
 }
 

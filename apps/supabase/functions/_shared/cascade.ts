@@ -1092,9 +1092,20 @@ export async function writeEntry(
      * from the camera" is the question `entry_source` exists to answer.
      */
     source: 'camera' | 'text'
+    /**
+     * The drawing the model picked for a TYPED meal, out of our own set.
+     *
+     * `food_logs_one_picture` allows a row a photograph or a drawing and not
+     * both, which is not a constraint to work around here: a typed meal has no
+     * photograph by definition, and a photographed one has the better picture
+     * already. Passing an icon alongside a `photoPath` is a caller bug, so the
+     * insert drops it rather than letting the database refuse the whole entry.
+     */
+    icon?: { set: string; name: string } | null
   },
 ): Promise<WrittenEntry> {
   const { resolved } = input
+  const icon = input.photoPath ? null : (input.icon ?? null)
   const { data: entry, error } = await db
     .from('food_logs')
     .insert({
@@ -1105,6 +1116,8 @@ export async function writeEntry(
       quantity: resolved.quantity,
       source: input.source,
       photo_path: input.photoPath,
+      icon_set: icon?.set ?? null,
+      icon_name: icon?.name ?? null,
       scan_id: input.scanId,
       display_label: resolved.displayLabel,
       suggested_edits: input.suggestedEdits.length ? input.suggestedEdits : null,
