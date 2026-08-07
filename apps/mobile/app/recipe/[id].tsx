@@ -14,7 +14,7 @@ import {
   useSaveRecipeCopy,
   useSelectedDate,
 } from '@/data'
-import { ShareSheet } from '@/features/recipes'
+import { RecipeSteps, ShareSheet } from '@/features/recipes'
 import { useBack } from '@/lib/navigation'
 import { energyShare } from '@/lib/nutrition'
 import { useThemeColors } from '@/theme/useTheme'
@@ -311,9 +311,13 @@ export default function RecipeDetailScreen() {
             : t('recipes:detail.stepsFrom', { name: recipe.authorName || t('recipes:someCook') })
         }
       >
-        <Text variant="body" className="text-muted">
-          {recipe.steps || t('recipes:detail.noSteps')}
-        </Text>
+        {recipe.steps ? (
+          <RecipeSteps steps={recipe.steps} />
+        ) : (
+          <Text variant="body" className="text-muted">
+            {t('recipes:detail.noSteps')}
+          </Text>
+        )}
       </Card>
 
       <ShareSheet visible={sharing} onClose={() => setSharing(false)} recipe={recipe} />
