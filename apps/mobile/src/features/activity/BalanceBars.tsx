@@ -1,5 +1,6 @@
 import { View } from 'react-native'
 
+import { axisTicks, ChartScale, niceCeiling } from '@/features/shared'
 import { cn, Text } from '@/ui'
 
 export type BalanceBar = {
@@ -40,15 +41,17 @@ export function BalanceBars({
   accessibilityLabel,
   className,
 }: BalanceBarsProps) {
-  const peak = Math.max(...bars.flatMap((bar) => [bar.eaten ?? 0, bar.burned ?? 0]), 1)
+  // Rounded up off the tallest of BOTH series, which is what keeps the pair on
+  // one scale — and now also what the axis ticks are written against.
+  const top = niceCeiling(Math.max(...bars.flatMap((bar) => [bar.eaten ?? 0, bar.burned ?? 0]), 1))
 
   return (
-    <View
-      className={cn('flex-row items-end gap-1.5', className)}
-      style={{ height }}
-      accessible={Boolean(accessibilityLabel)}
-      accessibilityRole={accessibilityLabel ? 'image' : undefined}
+    <ChartScale
+      height={height}
+      ticks={axisTicks(top)}
+      rowClassName="gap-1.5"
       accessibilityLabel={accessibilityLabel}
+      className={className}
     >
       {bars.map((bar) => (
         <View key={bar.key} className="h-full min-w-0 flex-1 items-center gap-1.5">
@@ -56,15 +59,15 @@ export function BalanceBars({
               full-height column plus its label cannot exceed the card. Same
               trick as `StackedBars`. */}
           <View className="w-full flex-1 flex-row items-end justify-center gap-[3px]">
-            <Column value={bar.eaten} peak={peak} fill="bg-kaya" />
-            <Column value={bar.burned} peak={peak} fill="bg-pandan" />
+            <Column value={bar.eaten} peak={top} fill="bg-kaya" />
+            <Column value={bar.burned} peak={top} fill="bg-pandan" />
           </View>
           <Text numberOfLines={1} variant="micro" className="h-[14px]">
             {bar.label}
           </Text>
         </View>
       ))}
-    </View>
+    </ChartScale>
   )
 }
 

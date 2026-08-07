@@ -1,5 +1,6 @@
 import { View } from 'react-native'
 
+import { axisTicks, ChartScale, niceCeiling } from '@/features/shared'
 import { cn, Text } from '@/ui'
 
 export type StackedBar = {
@@ -45,15 +46,17 @@ export function StackedBars({
   accessibilityLabel,
   className,
 }: StackedBarsProps) {
-  const peak = Math.max(...bars.map((bar) => bar.value ?? 0), 1)
+  // The ceiling rather than the tallest column, so the axis ticks are figures
+  // worth printing — see `niceCeiling`.
+  const top = niceCeiling(Math.max(...bars.map((bar) => bar.value ?? 0), 1))
 
   return (
-    <View
-      className={cn('flex-row items-end gap-1.5', className)}
-      style={{ height }}
-      accessible={Boolean(accessibilityLabel)}
-      accessibilityRole={accessibilityLabel ? 'image' : undefined}
+    <ChartScale
+      height={height}
+      ticks={axisTicks(top)}
+      rowClassName="gap-1.5"
       accessibilityLabel={accessibilityLabel}
+      className={className}
     >
       {bars.map((bar) => {
         const total = bar.share.carbs + bar.share.protein + bar.share.fat
@@ -73,7 +76,7 @@ export function StackedBars({
                   // A floor of 6%: a 400-calorie day beside a 2,600-calorie one
                   // is a sliver, and a sliver reads as no data rather than as a
                   // light day.
-                  style={{ height: `${Math.max(6, (bar.value / peak) * 100)}%` }}
+                  style={{ height: `${Math.max(6, (bar.value / top) * 100)}%` }}
                 >
                   {total <= 0 ? (
                     // Calories logged, no macros behind them — a quick-add, or a
@@ -94,14 +97,24 @@ export function StackedBars({
                 view labels every other month, and a zero-height empty string
                 would give those columns more room for their bar than their
                 neighbours — the tops would no longer be comparable, which is
-                the one thing a bar chart is for. */}
-            <Text numberOfLines={1} variant="micro" className="h-[14px]">
-              {bar.label}
-            </Text>
+                the one thing a bar chart is for.
+
+                The label OVERFLOWS the column, as in `HourBars`. Twelve months
+                across a card, minus the axis gutter, is about twenty points a
+                column, and "Dec" needs twenty-four — constrained, it rendered
+                as "D…", which is not a month. Since the year view labels every
+                OTHER column, the room it spills into belongs to a neighbour
+                with nothing to write there. React Native does not clip
+                overflow, so nothing has to opt in. */}
+            <View className="h-[14px] w-full items-center">
+              <Text numberOfLines={1} variant="micro" className="absolute w-[44px] text-center">
+                {bar.label}
+              </Text>
+            </View>
           </View>
         )
       })}
-    </View>
+    </ChartScale>
   )
 }
 

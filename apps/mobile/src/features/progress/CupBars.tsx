@@ -1,5 +1,6 @@
 import { View } from 'react-native'
 
+import { ChartScale } from '@/features/shared'
 import { cn, Text } from '@/ui'
 
 export type CupBar = {
@@ -50,12 +51,17 @@ export function CupBars({ bars, goal, height = 104, accessibilityLabel, classNam
   const cups = Array.from({ length: segments }, (_, index) => ({ id: `cup-${index}`, index }))
 
   return (
-    <View
-      className={cn('flex-row items-end gap-1.5', className)}
-      style={{ height }}
-      accessible={Boolean(accessibilityLabel)}
-      accessibilityRole={accessibilityLabel ? 'image' : undefined}
+    <ChartScale
+      height={height}
+      // One tick, and no hairlines. Every other chart's axis exists because the
+      // top of the plot is an arbitrary number; here it is the goal, and the
+      // column is already divided into countable cups — ruling it as well, and
+      // marking the middle of it, would be saying the same thing three times.
+      ticks={[{ at: 1, label: String(segments) }]}
+      lines={false}
+      rowClassName="gap-1.5"
       accessibilityLabel={accessibilityLabel}
+      className={className}
     >
       {bars.map((bar) => (
         <View key={bar.key} className="h-full min-w-0 flex-1 items-center gap-1.5">
@@ -75,17 +81,20 @@ export function CupBars({ bars, goal, height = 104, accessibilityLabel, classNam
               />
             ))}
           </View>
-          {/* Fixed height whether or not this column has a label — see the note
-              in `StackedBars`. */}
-          <Text
-            numberOfLines={1}
-            variant="micro"
-            className={cn('h-[14px]', bar.reached && 'text-water-ink')}
-          >
-            {bar.label}
-          </Text>
+          {/* Fixed height whether or not this column has a label, and the label
+              overflows the column rather than ellipsising in it — both for the
+              reasons `StackedBars` gives. */}
+          <View className="h-[14px] w-full items-center">
+            <Text
+              numberOfLines={1}
+              variant="micro"
+              className={cn('absolute w-[44px] text-center', bar.reached && 'text-water-ink')}
+            >
+              {bar.label}
+            </Text>
+          </View>
         </View>
       ))}
-    </View>
+    </ChartScale>
   )
 }
