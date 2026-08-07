@@ -1,21 +1,23 @@
-import { Redirect, useRouter } from 'expo-router'
+import { Redirect } from 'expo-router'
 import { TabList, TabSlot, Tabs, TabTrigger } from 'expo-router/ui'
 import { useTranslation } from 'react-i18next'
 import { useSession } from '@/data'
 import { useReminderSync } from '@/features/settings'
-import { NavAction, NavBar, NavItem } from '@/ui'
+import { NavBar, NavItem } from '@/ui'
 
 /**
- * Four tabs and the raised centre action.
+ * Five tabs, and no action among them.
  *
- * Built on the headless `expo-router/ui` tabs rather than a styled navigator,
- * because the FAB is not a tab: it opens a modal and must sit between the
- * second and third slots without being one itself.
+ * The log button used to sit in the middle of this bar, which is what capped it
+ * at four tabs: the action is centred by having the same number of tabs either
+ * side of it, so a fifth put it a tenth of the bar off to one side. It is a
+ * floating button on Today now — see `FloatingAction` there — and the bar is
+ * five tabs and nothing else.
  *
- * `TabList asChild` unwraps exactly one layer to find its triggers, which is
- * why `NavBar` takes them as direct children — and why a non-trigger among them,
- * the raised action, is fine: it looks for triggers rather than insisting every
- * child is one.
+ * Still the headless `expo-router/ui` tabs rather than a styled navigator,
+ * because `NavBar` / `NavItem` are the design system's and a native tab bar
+ * cannot be made to look like them. `TabList asChild` unwraps exactly one layer
+ * to find its triggers, which is why `NavBar` takes them as direct children.
  */
 export default function TabsLayout() {
   const { session, loading } = useSession()
@@ -40,7 +42,6 @@ export default function TabsLayout() {
 
 function SignedInTabs() {
   const { t } = useTranslation()
-  const router = useRouter()
 
   // Here rather than in the root layout: it needs a session, and this is the
   // first thing that only renders with one. Rewrites the phone's scheduled
@@ -56,20 +57,20 @@ function SignedInTabs() {
             <NavItem label={t('nav.today')} icon={{ set: 'ui', name: 'home' }} />
           </TabTrigger>
 
-          {/* The slot that was held open and empty. Activity inherits it, which
-              is what the spacer was reserved for: the raised action is centred
-              by having the same number of tabs either side of it, and with three
-              tabs it sat a sixth of the bar off to one side.
+          {/* Second, where the design puts it: cooking is a thing you go and
+              look at, and it sits beside the day it feeds rather than behind
+              the reports. A `food` icon, because the pot IS the noun. */}
+          <TabTrigger name="recipes" href="/recipes" asChild>
+            <NavItem label={t('nav.recipes')} icon={{ set: 'food', name: 'cooking-pot' }} />
+          </TabTrigger>
 
-              A `body` icon rather than a `ui` one. The other three tabs are
-              interface nouns and have interface glyphs; this tab is about a
-              body moving, and the set that has a running figure in it is the
-              set the workout rows already draw from. */}
+          {/* A `body` icon rather than a `ui` one. The other tabs are interface
+              nouns and have interface glyphs; this tab is about a body moving,
+              and the set that has a running figure in it is the set the workout
+              rows already draw from. */}
           <TabTrigger name="activity" href="/activity" asChild>
             <NavItem label={t('nav.activity')} icon={{ set: 'body', name: 'running-shoe' }} />
           </TabTrigger>
-
-          <NavAction onPress={() => router.push('/log')} label={t('nav.log')} />
 
           <TabTrigger name="trends" href="/trends" asChild>
             <NavItem label={t('nav.trends')} icon={{ set: 'ui', name: 'trends' }} />

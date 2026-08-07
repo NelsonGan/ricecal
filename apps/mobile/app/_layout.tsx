@@ -188,6 +188,15 @@ function RootStack() {
           rather than something glanced at over the day, and it is reached from
           search, which is now a page too. */}
       <Stack.Screen name="log/food/[id]" />
+      {/* ONE recipe pushes; the LIST is a tab. Singular and plural, and the
+          split is the information hierarchy rather than a naming quirk: the
+          collection is somewhere the app IS, and a recipe is somewhere you go,
+          edit and come back from.
+
+          One entry, not two: the group has a layout of its own, because a
+          shared recipe is a link and a link is opened cold. See
+          `recipe/_layout.tsx`. */}
+      <Stack.Screen name="recipe" />
       <Stack.Screen name="paywall/index" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/gate" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/welcome" options={{ presentation: 'fullScreenModal' }} />

@@ -187,6 +187,70 @@ export type Entry = {
   isArchetype: boolean
 }
 
+/** 'g' | 'ml' | 'piece'. What an ingredient's amount is counted in. */
+export type RecipeUnit = Enums<'recipe_unit'>
+/** Where a recipe somebody asked to publish has got to. */
+export type RecipeReviewStatus = Enums<'recipe_review'>
+
+/**
+ * One thing that went into the pot.
+ *
+ * Two sets of macros, and both are wanted on screen. `perUnit` is what the row
+ * stores and what stays true when the amount moves — it is what the stepper
+ * rescales against. `macros` is `perUnit` times `amount`, already worked out by
+ * `recipe_ingredient_details`, and is the number printed beside the row.
+ */
+export type RecipeIngredient = {
+  id: string
+  name: string
+  /** The catalogue row it was picked from, when it was picked rather than typed. */
+  foodId?: string
+  amount: number
+  unit: RecipeUnit
+  perUnit: Macros
+  macros: Macros
+  position: number
+}
+
+export type Recipe = {
+  id: string
+  name: string
+  /** Absent unless the cook picked one, or a photograph is carrying the row. */
+  icon?: IconRef
+  /** An object key in R2, never a URL — same as `Entry.photoPath`. */
+  photoPath?: string
+  /** How many the whole pot feeds. What turns a total into a portion. */
+  servings: number
+  steps?: string
+
+  /** From the RiceCal kitchen: a recipe with no owner. */
+  isOfficial: boolean
+  isMine: boolean
+  /** The owner asked for it to be listed. Not the same as it being listed. */
+  isPublic: boolean
+  review: RecipeReviewStatus
+  /** Why the review turned it down, shown to the owner. */
+  reviewNote?: string
+  /** Who to credit on a community card. Empty on your own and on official ones. */
+  authorName: string
+  shareSlug: string
+  savedCount: number
+
+  ingredientCount: number
+  /** The whole pot. */
+  total: Macros
+  /** One serving of it — what a log of this recipe costs. */
+  perServing: Macros
+
+  /**
+   * The mirror catalogue row and its base portion, which is what logging a
+   * recipe writes against. Carried on the recipe so that "add to today" is one
+   * insert rather than a lookup and an insert.
+   */
+  foodId: string
+  defaultServingId: string
+}
+
 export type Targets = {
   kcal: number
   carbs: number
@@ -344,6 +408,9 @@ export type Profile = Tables<'profiles'>
 export type Settings = Tables<'user_settings'>
 export type MealTime = Tables<'meal_times'>
 export type Subscription = Tables<'subscriptions'>
+
+export type RecipeRow = Database['public']['Views']['recipe_details']['Row']
+export type RecipeIngredientRow = Database['public']['Views']['recipe_ingredient_details']['Row']
 
 export type FoodDetailsRow = Database['public']['Views']['food_details']['Row']
 export type FoodLogRow = Database['public']['Views']['food_log_details']['Row']

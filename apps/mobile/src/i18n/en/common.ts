@@ -21,10 +21,11 @@ export const common = {
 
   nav: {
     today: 'Today',
+    recipes: 'Recipes',
     activity: 'Activity',
     trends: 'Trends',
     me: 'Me',
-    /** The raised centre button. */
+    /** The floating button on Today. Not a tab — it opens the log sheet. */
     log: 'Log food',
   },
 

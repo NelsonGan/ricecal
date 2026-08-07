@@ -1,0 +1,325 @@
+-- ---------------------------------------------------------------------------
+-- Recipes: the mirror, and who can see whose cooking.
+--
+-- Two things are being checked here and they fail in opposite ways. The mirror
+-- fails LOUDLY — a recipe whose `foods` row is wrong logs the wrong calories,
+-- and the assertions on it are ordinary arithmetic. Visibility fails QUIETLY,
+-- by returning more rows than it should, which is why the second half runs as
+-- `authenticated` with a forged JWT claim exactly as 02_rls does. Run as
+-- `postgres` every one of those assertions passes while proving nothing.
+-- ---------------------------------------------------------------------------
+begin;
+
+create extension if not exists pgtap with schema extensions;
+
+select plan(29);
+
+\set cook  '33333333-3333-3333-3333-333333333333'
+\set other '44444444-4444-4444-4444-444444444444'
+
+insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+values
+  (:'cook',  '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'cook@example.test',  '{}'::jsonb, '{}'::jsonb, now(), now()),
+  (:'other', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'other@example.test', '{}'::jsonb, '{}'::jsonb, now(), now());
+
+
+-- THE MIRROR -----------------------------------------------------------------
+
+-- Fixture names, not plausible ones, and every lookup below is by NAME. A
+-- database that has been used has recipes in it — the official seed alone has a
+-- rendang — and `\gset` fails outright on a second row, which is a test that
+-- breaks on a developer's machine and passes in CI. Same discipline as
+-- 00_catalogue's assertions about how big the catalogue actually is.
+insert into public.recipes (owner_id, name, servings, steps, photo_path)
+values (:'cook', 'fixture-pot-a', 6, 'Fry the rempah until it darkens.',
+        'meals/33333333-3333-3333-3333-333333333333/fixture.jpg');
+
+select id as recipe_id from public.recipes where name = 'fixture-pot-a' \gset
+select food_id as mirror_id from public.recipes where id = :'recipe_id' \gset
+
+select is(
+  (select is_recipe from public.foods where id = :'mirror_id'),
+  true,
+  'a new recipe mints its mirror catalogue row'
+);
+
+select is(
+  (select count(*)::integer from public.food_servings
+   where food_id = :'mirror_id' and is_default and factor = 1),
+  1,
+  'and exactly one base portion, at factor 1'
+);
+
+-- Six servings, so the whole pot is a portion and two servings is a portion.
+select is(
+  (select count(*)::integer from public.food_servings where food_id = :'mirror_id'),
+  4,
+  'a pot that feeds several offers half, one, two and the whole pot'
+);
+
+select is(
+  (select factor::numeric from public.food_servings
+   where food_id = :'mirror_id' and slug = 'pot'),
+  6::numeric,
+  'and the whole pot is as many servings as the recipe says'
+);
+
+-- 1 kg of beef at 1.64 kcal/g, 400 ml of santan at 1.95 kcal/ml: 2,420 kcal in
+-- the pot, 403 in a serving of six.
+insert into public.recipe_ingredients (recipe_id, name, amount, unit, kcal_per_unit, protein_g_per_unit, position)
+values (:'recipe_id', 'Beef shin', 1000, 'g', 1.64, 0.22, 0);
+
+insert into public.recipe_ingredients (recipe_id, name, amount, unit, kcal_per_unit, fat_g_per_unit, position)
+values (:'recipe_id', 'Coconut milk, thick', 400, 'ml', 1.95, 0.21, 1);
+
+select is(
+  (select total_kcal from public.recipe_details where id = :'recipe_id'),
+  2420,
+  'the pot costs what went into it'
+);
+
+select is(
+  (select serving_kcal from public.recipe_details where id = :'recipe_id'),
+  403,
+  'and a serving is that divided by how many it feeds'
+);
+
+select is(
+  (select kcal from public.foods where id = :'mirror_id'),
+  403,
+  'the mirror carries the per-serving figure, which is what a log of it costs'
+);
+
+-- Realising it was four servings and not six has to move every log of it, past
+-- ones included. That is the whole reason the mirror is recomputed rather than
+-- snapshotted.
+update public.recipes set servings = 4 where id = :'recipe_id';
+
+select is(
+  (select kcal from public.foods where id = :'mirror_id'),
+  605,
+  'changing how many it feeds reprices the mirror'
+);
+
+select is(
+  (select factor::numeric from public.food_servings
+   where food_id = :'mirror_id' and slug = 'pot'),
+  4::numeric,
+  'and moves the whole-pot portion with it'
+);
+
+-- On a pot that feeds two, "2 servings" and "the whole pot" are the same amount
+-- of food, and two portions with the same factor say it twice.
+update public.recipes set servings = 2 where id = :'recipe_id';
+
+select is(
+  (select count(*)::integer from public.food_servings
+   where food_id = :'mirror_id' and slug = 'pot'),
+  0,
+  'a pot that feeds two does not also offer itself whole'
+);
+
+update public.recipes set servings = 4 where id = :'recipe_id';
+
+-- A recipe is a catalogue row so it can be logged, and for no other reason. If
+-- it turned up in search, every user would be reading every other user's
+-- cooking — the policy on `foods` is `true` and always has been.
+select is(
+  (select count(*)::integer from public.search_foods('rendang daging')),
+  0,
+  'a recipe is never a search result'
+);
+
+insert into public.food_logs (user_id, log_date, food_id, serving_id)
+select :'cook', current_date, :'mirror_id', s.id
+from public.food_servings s where s.food_id = :'mirror_id' and s.is_default;
+
+select is(
+  (select kcal from public.food_log_details
+   where user_id = :'cook' and food_id = :'mirror_id'),
+  605,
+  'and a logged serving of it costs what the recipe says'
+);
+
+
+-- WHO SEES WHOSE COOKING -----------------------------------------------------
+
+-- The RiceCal kitchen. No owner, which is the only thing that makes a recipe
+-- official — written here as the table owner, because no client can.
+insert into public.recipes (owner_id, name, servings)
+values (null, 'fixture-kitchen-a', 1);
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', :'other', 'role', 'authenticated')::text, true);
+set local role authenticated;
+
+select is(
+  (select count(*)::integer from public.recipes where name = 'fixture-pot-a'),
+  0,
+  'a private recipe is invisible to everybody else'
+);
+
+select is(
+  (select count(*)::integer from public.recipes where name = 'fixture-kitchen-a'),
+  1,
+  'the RiceCal kitchen is visible to everybody'
+);
+
+select is(
+  (select is_official from public.recipe_details where name = 'fixture-kitchen-a'),
+  true,
+  'and reads as official, because it has no owner'
+);
+
+reset role;
+
+-- Public but not yet reviewed. This is the assertion the whole moderation gate
+-- rests on: asking to publish is not publishing.
+update public.recipes set is_public = true, review_status = 'pending'
+where id = :'recipe_id';
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', :'other', 'role', 'authenticated')::text, true);
+set local role authenticated;
+
+select is(
+  (select count(*)::integer from public.recipes where name = 'fixture-pot-a'),
+  0,
+  'a recipe awaiting review is not in the community yet'
+);
+
+-- The other half of that gate: a client that simply approved itself would make
+-- the review a formality the app performs on itself. `review_status` is not in
+-- the column grant, so this is a privilege error rather than a policy one.
+select throws_ok(
+  $q$update public.recipes set review_status = 'approved'$q$,
+  '42501',
+  null,
+  'and no client can approve one itself'
+);
+
+reset role;
+
+update public.recipes set review_status = 'approved' where id = :'recipe_id';
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', :'other', 'role', 'authenticated')::text, true);
+set local role authenticated;
+
+select is(
+  (select count(*)::integer from public.recipes where name = 'fixture-pot-a'),
+  1,
+  'an approved public recipe reaches the community'
+);
+
+select is(
+  (select count(*)::integer from public.recipe_ingredient_details
+   where recipe_id = :'recipe_id'),
+  2,
+  'with its ingredients, because visibility follows the recipe'
+);
+
+-- THE GATE'S SECOND HALF. Publishing bland text and then rewriting it is the
+-- way round a reviewer that only ever reads a recipe once.
+reset role;
+
+update public.recipes set steps = 'Buy my rendang at example.com' where id = :'recipe_id';
+
+select is(
+  (select review_status::text from public.recipes where id = :'recipe_id'),
+  'pending',
+  'editing a published recipe sends it back to the reviewer'
+);
+
+select is(
+  (select is_public from public.recipes where id = :'recipe_id'),
+  true,
+  'and leaves it public, so the author does not have to ask twice'
+);
+
+-- The nutrition is reviewable too — "calories that do not follow from the
+-- ingredients" is one of the two grounds — so swapping the list has to count.
+update public.recipes set review_status = 'approved' where id = :'recipe_id';
+
+update public.recipe_ingredients set amount = 5000
+where recipe_id = :'recipe_id' and name = 'Beef shin';
+
+select is(
+  (select review_status::text from public.recipes where id = :'recipe_id'),
+  'pending',
+  'and so does rewriting what is in it'
+);
+
+-- A private recipe has nothing to re-review: nobody but its author can see it,
+-- and marking it pending would let an edit stand in for a reading on the next
+-- publish.
+select id as private_id from public.recipes where name = 'fixture-kitchen-a' \gset
+
+-- Approved FIRST, so the assertion has something to preserve: `pending` is the
+-- default, and asserting it on a row that never left it proves nothing.
+update public.recipes set review_status = 'approved' where id = :'private_id';
+update public.recipes set servings = 3 where id = :'private_id';
+
+select is(
+  (select review_status::text from public.recipes where id = :'private_id'),
+  'approved',
+  'a recipe nobody can see is left where it was'
+);
+
+-- Put it back where the assertions below expect it.
+update public.recipe_ingredients set amount = 1000
+where recipe_id = :'recipe_id' and name = 'Beef shin';
+update public.recipes set review_status = 'approved' where id = :'recipe_id';
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', :'other', 'role', 'authenticated')::text, true);
+set local role authenticated;
+
+-- Saving somebody else's is a COPY. Changing it must not touch theirs.
+select public.save_recipe_copy(:'recipe_id') as copy_id \gset
+
+select is(
+  (select count(*)::integer from public.recipe_ingredients where recipe_id = :'copy_id'),
+  2,
+  'saving a copy brings the ingredients with it'
+);
+
+select is(
+  (select source_recipe_id from public.recipes where id = :'copy_id'),
+  :'recipe_id'::uuid,
+  'and records where it came from'
+);
+
+-- But NOT the photograph. A key names one object under one user's prefix, so a
+-- copied key could never be signed for its new owner — and deleting the
+-- original would take the object out from under every copy of it.
+select is(
+  (select photo_path from public.recipes where id = :'copy_id'),
+  null,
+  'a copy does not inherit the original author''s photograph'
+);
+
+select is(
+  (select saved_count from public.recipes where id = :'recipe_id'),
+  1,
+  'and counts as a save for the original'
+);
+
+-- The copy is the saver's own from the first moment, mirror and all.
+select is(
+  (select serving_kcal from public.recipe_details where id = :'copy_id'),
+  605,
+  'the copy prices itself the same way the original does'
+);
+
+reset role;
+
+select is(
+  (select count(*)::integer from public.recipes where id = :'copy_id' and owner_id = :'other'),
+  1,
+  'a saved copy belongs to whoever saved it'
+);
+
+select * from finish();
+
+rollback;

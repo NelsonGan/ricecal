@@ -61,6 +61,28 @@ export const keys = {
    */
   recentFoodsAll: (userId: string) => ['recent-foods', userId] as const,
 
+  /**
+   * One shelf of the recipe list: mine, the RiceCal kitchen, or the community,
+   * with whatever is in the search field.
+   *
+   * The shelf is part of the key rather than a filter over one cached list,
+   * because the three are three different queries — different ordering,
+   * different visibility rule — and folding them together would mean a write to
+   * my own recipe invalidating the kitchen's.
+   */
+  recipes: (userId: string, shelf: string, query: string) =>
+    ['recipes', userId, shelf, query] as const,
+  /**
+   * The prefix of all of them, which is what the write side wants. Publishing a
+   * recipe moves it off my shelf and onto the community's, and saving a copy
+   * moves one the other way — neither mutation knows which shelf or which
+   * search is on screen.
+   */
+  recipesAll: (userId: string) => ['recipes', userId] as const,
+  /** One recipe. Keyed by id alone: only ever asked for by id. */
+  recipe: (id: string) => ['recipe', id] as const,
+  recipeIngredients: (recipeId: string) => ['recipe-ingredients', recipeId] as const,
+
   weighIns: (userId: string) => ['weigh-ins', userId] as const,
 
   /** The chart columns for one range of the Trends screen. */

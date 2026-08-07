@@ -5,6 +5,7 @@ import { onboarding } from './onboarding'
 import { paywall } from './paywall'
 import { profile } from './profile'
 import { progress } from './progress'
+import { recipes } from './recipes'
 
 /**
  * The English bundle, and the shape every other locale must satisfy.
@@ -23,6 +24,7 @@ export const en = {
   progress,
   profile,
   paywall,
+  recipes,
 } as const
 
 export type Resources = typeof en
