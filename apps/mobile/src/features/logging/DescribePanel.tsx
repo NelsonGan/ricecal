@@ -9,6 +9,14 @@ export type DescribePanelProps = {
   /** The meal, as typed. Trimmed and non-empty; the host does the logging. */
   onSubmit: (text: string) => void
   autoFocus?: boolean
+  /**
+   * Copy overrides, for the second host: the recipe form types a POT rather
+   * than a plate, and an example that reads "nasi lemak with a teh tarik"
+   * teaches the wrong length there. The behaviour is identical, so the panel is
+   * shared and only the words move.
+   */
+  placeholder?: string
+  hint?: string
 }
 
 /**
@@ -29,7 +37,12 @@ export type DescribePanelProps = {
  * shape as the fix-by-typing box on a scanned entry: the wait belongs on the
  * row on Today, not on a spinner in a sheet the user is finished with.
  */
-export function DescribePanel({ onSubmit, autoFocus = false }: DescribePanelProps) {
+export function DescribePanel({
+  onSubmit,
+  autoFocus = false,
+  placeholder,
+  hint,
+}: DescribePanelProps) {
   const { t } = useTranslation(['logging', 'common'])
   const colors = useThemeColors()
   const [text, setText] = useState('')
@@ -45,7 +58,7 @@ export function DescribePanel({ onSubmit, autoFocus = false }: DescribePanelProp
       <TextField
         value={text}
         onChangeText={setText}
-        placeholder={t('logging:describe.placeholder')}
+        placeholder={placeholder ?? t('logging:describe.placeholder')}
         autoFocus={autoFocus}
         multiline
         // The keyboard's return key inserts a newline in a multiline field, so
@@ -79,7 +92,7 @@ export function DescribePanel({ onSubmit, autoFocus = false }: DescribePanelProp
       <View className="flex-row items-start gap-2 px-1">
         <Icon set="system" name="sparkle" size={16} />
         <Text variant="meta" className="flex-1">
-          {t('logging:describe.hint')}
+          {hint ?? t('logging:describe.hint')}
         </Text>
       </View>
     </View>

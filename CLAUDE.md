@@ -441,14 +441,28 @@ The reviewer has exactly two grounds: vulgarity and the like, and nutrition that
 is not credible. A moderator with a wider brief starts rejecting food it finds
 unhealthy, and the app has a calorie budget for that.
 
-### Filling the form in from a photo
+### Filling the form in, from a photo or from a sentence
 
-The same shape as a meal snap and the same order: upload first, then invoke,
-because the reader on the server fetches the object out of the bucket. Unlike
-the meal cascade it does NOT go near the catalogue — what comes back lands in a
-form the user is about to check line by line, and a catalogue lookup per
+Two offers on a new recipe, and they answer different situations rather than
+different preferences: the pot is on the stove, or it is not. Both land in the
+same `read` action and come back as the same draft, so only the first model call
+differs — exactly the split `scan-meal` makes between a photographed meal and a
+typed one, and `RECIPE_SHAPE` is shared between the two prompts for the reason
+`llm.ts` shares its size anchors.
+
+WHO THE AUTHORITY IS is the whole difference. A photograph has one witness and
+it is the model, so everything it says is inference. A sentence was written by
+the person who cooked the dish, so the amounts and the serving count they gave
+ARE the answer and the model only fills in what they left out.
+
+A photo uploads first and then invokes, because the reader on the server fetches
+the object out of the bucket. Neither path goes near the catalogue: what comes
+back lands in a form the user is about to check line by line, and a lookup per
 ingredient would be six searches to populate fields that are about to be edited.
 A failed read is a form they fill in themselves, and the endpoint says so.
+
+A draft is applied ONLY OVER EMPTY FIELDS. Somebody who typed a name and then
+reached for the camera meant it to fill in the parts they had not done.
 
 `R2_ENDPOINT` exists so a local stack can point the storage seam at any S3 —
 the one Supabase runs beside it, say. Without it the one check standing between
@@ -763,3 +777,22 @@ everything.
 
 Commit subjects are a sentence about what changed, not a conventional-commits
 prefix.
+
+**No long dashes in copy.** Anything a user reads is written without em dashes
+or en dashes: use a comma, a full stop, a semicolon or a pair of brackets
+instead. That covers `src/i18n/en/*`, any string that reaches a screen, a
+notification, a share sheet or a toast, and the model prompts that produce text
+we display back (the recipe reviewer's rejection reason is copy, so its prompt
+says so).
+
+Two things it does NOT cover. **Comments and this file** are prose for whoever
+is reading the code, and the dash is doing real work in them. And a lone `—`
+standing in for a missing measurement is a SYMBOL rather than a sentence: it is
+how a stat tile says "no reading", and it stays. A missing NAME is different and
+gets a word ("Someone"), because a dash where a person should be reads as a
+rendering fault.
+
+Rewrite rather than substitute. "Enter it once — what went in and how many it
+feeds — and logging it is one tap" becomes "Enter what went in and how many it
+feeds, once, and logging it is one tap"; swapping the dashes for commas without
+moving the words leaves a sentence with too many clauses in it.

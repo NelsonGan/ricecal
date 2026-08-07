@@ -158,14 +158,19 @@ export function Screen({
       {body}
 
       {/* Inside the keyboard-avoiding view, so a floating control rides up with
-          the content rather than sitting under an open keyboard. Positioned
-          against this view's bottom, which on a tab screen is already above the
-          nav bar — `TabSlot` and the bar are siblings, so the slot's frame stops
-          where the bar begins and no offset has to be guessed here. */}
+          the content rather than sitting under an open keyboard.
+
+          One gutter off this view's bottom and NO safe-area inset, which looks
+          like an oversight and is the correction for one. A floating control's
+          host is a tab screen, and `TabSlot` is a sibling of the nav bar rather
+          than its parent: the slot's frame already stops where the bar begins,
+          and the bar is what pads for the home indicator. Adding `insets.bottom`
+          here counted it a second time and left the button floating a
+          thumb-width too high. */}
       {floating ? (
         <View
           className="absolute right-gutter items-end"
-          style={{ bottom: insets.bottom + spacing.gutter }}
+          style={{ bottom: spacing.gutter }}
           pointerEvents="box-none"
         >
           {floating}

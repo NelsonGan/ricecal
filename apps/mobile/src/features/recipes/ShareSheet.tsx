@@ -39,7 +39,7 @@ export function ShareSheet({ visible, onClose, recipe }: ShareSheetProps) {
   const share = () => {
     // The platform's own sheet, which is copy, message and everything else in
     // one — and needs no native module this app does not already have.
-    Share.share({ message: `${recipe.name} — ${link}`, url: link }).catch(() => {})
+    Share.share({ message: `${recipe.name}: ${link}`, url: link }).catch(() => {})
   }
 
   const setPublic = async (next: boolean) => {

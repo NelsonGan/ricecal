@@ -214,7 +214,7 @@ export default function RecipeDetailScreen() {
             <Text variant="meta" className="flex-1">
               {recipe.isOfficial
                 ? t('recipes:detail.official')
-                : t('recipes:fromAuthor', { name: recipe.authorName || '—' })}
+                : t('recipes:fromAuthor', { name: recipe.authorName || t('recipes:someCook') })}
             </Text>
           </View>
         </Card>
@@ -308,7 +308,7 @@ export default function RecipeDetailScreen() {
         title={
           recipe.isMine || recipe.isOfficial
             ? t('recipes:detail.steps')
-            : t('recipes:detail.stepsFrom', { name: recipe.authorName || '—' })
+            : t('recipes:detail.stepsFrom', { name: recipe.authorName || t('recipes:someCook') })
         }
       >
         <Text variant="body" className="text-muted">

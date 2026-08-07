@@ -4,18 +4,18 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import type { IconRef, RecipeIngredientInput } from '@/data'
+import type { IconRef, RecipeIngredientInput, ScannedRecipe } from '@/data'
 import {
   removeMealPhoto,
   storedImageSource,
   uploadMealPhoto,
   useMealPhotoUrl,
+  useReadRecipe,
   useRecipe,
   useRecipeIngredients,
   useSaveRecipe,
-  useScanRecipePhoto,
 } from '@/data'
-import { InlineCamera } from '@/features/logging'
+import { DescribePanel, InlineCamera } from '@/features/logging'
 import { IngredientSheet, ingredientTotal, potTotals } from '@/features/recipes'
 import { useBack } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
@@ -24,9 +24,11 @@ import {
   Button,
   Card,
   ConfirmSheet,
+  cn,
   Divider,
   Icon,
   IconButton,
+  type IconProps,
   Screen,
   Sheet,
   Squish,
@@ -79,7 +81,7 @@ export default function RecipeFormScreen() {
   const { data: existingIngredients } = useRecipeIngredients(recipeId)
 
   const save = useSaveRecipe()
-  const scan = useScanRecipePhoto()
+  const read = useReadRecipe()
 
   const [name, setName] = useState('')
   const [servings, setServings] = useState(1)
@@ -93,9 +95,18 @@ export default function RecipeFormScreen() {
   const [dirty, setDirty] = useState(false)
   const [adding, setAdding] = useState(false)
   const [camera, setCamera] = useState(false)
+  const [describing, setDescribing] = useState(false)
+  // The describe sheet has actually been presented. `autoFocus` inside a
+  // `Modal` is applied while the field is still off screen and routinely
+  // dropped, so the field waits for `onShow` rather than for `visible`.
+  const [describeReady, setDescribeReady] = useState(false)
   const [leaving, setLeaving] = useState(false)
-  /** Set once the scan has filled the form, so the banner can say so. */
-  const [filled, setFilled] = useState(false)
+  /**
+   * Which way the form was filled in, once it has been. Drives the banner, and
+   * it names the SOURCE rather than being a boolean because "filled in from
+   * your photo" and "filled in from what you wrote" are different sentences.
+   */
+  const [filled, setFilled] = useState<'photo' | 'text' | null>(null)
 
   /**
    * Seed the form from the recipe being edited, exactly once.
@@ -161,16 +172,45 @@ export default function RecipeFormScreen() {
     // A photo and a drawing answer the same question, and the photo wins.
     setIcon(null)
 
-    const draft = await scan.mutateAsync(key)
+    const draft = await read.mutateAsync({ photoPath: key })
     if (!draft) {
       toast.show({ title: t('recipes:new.scanFailed'), tone: 'warning' })
       return
     }
 
-    setFilled(true)
-    // Only over empty fields. Somebody who typed a name and then reached for
-    // the camera meant the camera to fill in the parts they had not done, not
-    // to overwrite the part they had.
+    applyDraft(draft, 'photo')
+  }
+
+  /**
+   * The pot in words: read it, then fill the form.
+   *
+   * Shorter than the photo path by exactly the upload, which is the only thing
+   * that path does that this one does not. Everything after the model call is
+   * the same, hence `applyDraft`.
+   */
+  const readText = async (described: string) => {
+    setDescribing(false)
+    setDescribeReady(false)
+    touch()
+
+    const draft = await read.mutateAsync({ text: described })
+    if (!draft) {
+      toast.show({ title: t('recipes:new.describeFailed'), tone: 'warning' })
+      return
+    }
+    applyDraft(draft, 'text')
+  }
+
+  /**
+   * A draft into the form, ONLY OVER EMPTY FIELDS.
+   *
+   * Somebody who typed a name and then reached for the camera meant it to fill
+   * in the parts they had not done, not to overwrite the part they had. Shared
+   * by both paths so the two cannot drift on which fields they are willing to
+   * clobber.
+   */
+  const applyDraft = (draft: ScannedRecipe, source: 'photo' | 'text') => {
+    setFilled(source)
     setName((current) => current || draft.name)
     setSteps((current) => current || draft.steps)
     setServings((current) => (current === 1 ? draft.servings : current))
@@ -243,39 +283,53 @@ export default function RecipeFormScreen() {
         backLabel={t('common:a11y.close')}
       />
 
-      {/* The scan offer, on a new recipe only. Editing one, the form is already
-          full and a button that overwrites it is a trap. */}
-      {!recipeId && !filled ? (
-        <Squish
-          depth={6}
-          radius={22}
-          slabClassName="bg-pandan-soft-line"
-          className="flex-row items-center gap-3 border-[3px] border-pandan bg-pandan-soft p-4"
-          onPress={() => setCamera(true)}
-          accessibilityRole="button"
-          accessibilityLabel={t('recipes:new.scanTitle')}
-        >
-          <Icon set="system" name="camera" size={26} />
-          <View className="min-w-0 flex-1 gap-0.5">
-            <Text variant="bodyStrong">{t('recipes:new.scanTitle')}</Text>
-            <Text variant="meta">{t('recipes:new.scanBody')}</Text>
+      {/* Two ways to have the form filled in, on a NEW recipe only. Editing
+          one, the form is already full and a button that overwrites it is a
+          trap.
+
+          Both offered at once rather than behind a chooser: they answer
+          different situations, not different preferences. The pot is on the
+          stove, or it is not. */}
+      {!recipeId && !filled && !read.isPending ? (
+        <View className="gap-2.5">
+          <FillOption
+            icon={{ set: 'system', name: 'camera' }}
+            title={t('recipes:new.scanTitle')}
+            body={t('recipes:new.scanBody')}
+            tone="pandan"
+            onPress={() => setCamera(true)}
+          />
+          <FillOption
+            icon={{ set: 'system', name: 'sparkle' }}
+            title={t('recipes:new.describeTitle')}
+            body={t('recipes:new.describeBody')}
+            tone="kaya"
+            onPress={() => setDescribing(true)}
+          />
+          <View className="flex-row items-center gap-3 pt-1">
+            <View className="h-0.5 flex-1 bg-line" />
+            <Text variant="overline">{t('recipes:new.or')}</Text>
+            <View className="h-0.5 flex-1 bg-line" />
           </View>
-          <Icon set="ui" name="chevron-right" size={18} tintColor={colors.muted} />
-        </Squish>
+        </View>
       ) : null}
 
-      {scan.isPending ? (
+      {read.isPending ? (
         <Card tone="kaya">
-          <Text variant="meta">{t('recipes:new.scanning')}</Text>
+          <Text variant="meta">
+            {describing || filled === 'text'
+              ? t('recipes:new.describing')
+              : t('recipes:new.scanning')}
+          </Text>
         </Card>
       ) : null}
 
-      {filled && !scan.isPending ? (
+      {filled && !read.isPending ? (
         <Card tone="pandan">
           <View className="flex-row items-center gap-3">
             <Icon set="ui" name="check" size={18} />
             <Text variant="meta" className="flex-1">
-              {t('recipes:new.scanned')}
+              {filled === 'text' ? t('recipes:new.described') : t('recipes:new.scanned')}
             </Text>
           </View>
         </Card>
@@ -442,6 +496,29 @@ export default function RecipeFormScreen() {
         <InlineCamera onCapture={readPhoto} />
       </Sheet>
 
+      {/* A text field, so full height and not scrollable — the two rules a sheet
+          with typing in it always follows. See the note in CLAUDE.md. */}
+      <Sheet
+        visible={describing}
+        onClose={() => setDescribing(false)}
+        title={t('recipes:new.describeTitle')}
+        closeLabel={t('common:action.close')}
+        fullHeight
+        scrollable={false}
+        onShow={() => setDescribeReady(true)}
+      >
+        {/* `autoFocus` inside a `Modal` is dropped, so the field is mounted only
+            once the window is actually presented and focuses itself then. */}
+        {describeReady ? (
+          <DescribePanel
+            autoFocus
+            placeholder={t('recipes:new.describePlaceholder')}
+            hint={t('recipes:new.describeHint')}
+            onSubmit={readText}
+          />
+        ) : null}
+      </Sheet>
+
       <ConfirmSheet
         visible={leaving}
         onClose={() => setLeaving(false)}
@@ -456,6 +533,51 @@ export default function RecipeFormScreen() {
         }}
       />
     </Screen>
+  )
+}
+
+/**
+ * One of the two offers to fill the form in.
+ *
+ * A component rather than two near-copies, because near-copies drift: the two
+ * differ by an icon, two lines of copy and a tint, and everything else about
+ * them — the slab, the chevron, the press — is one control.
+ */
+function FillOption({
+  icon,
+  title,
+  body,
+  tone,
+  onPress,
+}: {
+  icon: IconProps
+  title: string
+  body: string
+  tone: 'pandan' | 'kaya'
+  onPress: () => void
+}) {
+  const colors = useThemeColors()
+
+  return (
+    <Squish
+      depth={6}
+      radius={22}
+      slabClassName={tone === 'pandan' ? 'bg-pandan-soft-line' : 'bg-kaya-soft-line'}
+      className={cn(
+        'flex-row items-center gap-3 border-[3px] p-4',
+        tone === 'pandan' ? 'border-pandan bg-pandan-soft' : 'border-kaya-soft-line bg-kaya-soft',
+      )}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+    >
+      <Icon {...icon} size={26} />
+      <View className="min-w-0 flex-1 gap-0.5">
+        <Text variant="bodyStrong">{title}</Text>
+        <Text variant="meta">{body}</Text>
+      </View>
+      <Icon set="ui" name="chevron-right" size={18} tintColor={colors.muted} />
+    </Squish>
   )
 }
 
