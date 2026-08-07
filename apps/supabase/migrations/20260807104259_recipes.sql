@@ -307,6 +307,29 @@ GRANT ALL ON FUNCTION public.save_recipe_copy(uuid) TO authenticated;
 
 GRANT ALL ON FUNCTION public.save_recipe_copy(uuid) TO service_role;
 
+-- HAND-ADDED to a generated migration, and the only reason this file applies at
+-- all. `search_foods` carries `set "pg_trgm.similarity_threshold"`, and a
+-- two-part parameter name whose extension has not been loaded in the current
+-- session is an unrecognized PLACEHOLDER — which only a superuser may set. The
+-- hosted `postgres` role is not one, so `supabase db push` died here with
+--
+--   ERROR: permission denied to set parameter "pg_trgm.similarity_threshold"
+--          (SQLSTATE 42501)
+--
+-- and rolled the whole migration back, leaving production a version behind
+-- while every check on the pull request stayed green. Nothing was wrong with
+-- the SQL: `db reset` applies the baseline in the same run, and the
+-- `create extension pg_trgm` at the top of it loads the library, so by the time
+-- the local stack reaches this statement the parameter is real. A push applies
+-- this file alone, in a session that has never touched a trigram.
+--
+-- Calling any pg_trgm function loads the library, which registers the parameter
+-- properly and makes it settable by anybody. It has to happen in THIS session,
+-- so it belongs in the migration rather than in `schemas/`, which only ever
+-- shapes the shadow database. Any future migration restating this function owes
+-- itself the same line.
+select extensions.similarity('', '');
+
 CREATE OR REPLACE FUNCTION public.search_foods (
   q           text,
   p_place     public.food_place DEFAULT NULL::public.food_place,
