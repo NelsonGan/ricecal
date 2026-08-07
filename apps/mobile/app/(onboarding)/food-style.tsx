@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { OnboardingStep, useOnboardingDraft } from '@/features/onboarding'
+import { OnboardingStep, stepNumber, TOTAL_STEPS, useOnboardingDraft } from '@/features/onboarding'
 import { Chip } from '@/ui'
 
 const TAGS = [
@@ -48,8 +48,8 @@ export default function FoodStyleStep() {
 
   return (
     <OnboardingStep
-      step={3}
-      total={4}
+      step={stepNumber('foodStyle')}
+      total={TOTAL_STEPS}
       accent="kaya"
       title={t('foodStyle.title')}
       subtitle={t('foodStyle.subtitle')}

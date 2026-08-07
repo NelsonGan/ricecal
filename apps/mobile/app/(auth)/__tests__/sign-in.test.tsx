@@ -18,7 +18,7 @@ import SignInScreen from '../sign-in'
 
 // `mock`-prefixed so the factories below may close over them: everything else is
 // out of scope by the time jest hoists the calls.
-const mockParams: { mode?: string } = {}
+const mockParams: { mode?: string; step?: string; total?: string } = {}
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
@@ -67,6 +67,8 @@ const submit = async () => {
 beforeEach(() => {
   jest.clearAllMocks()
   delete mockParams.mode
+  delete mockParams.step
+  delete mockParams.total
   // After `clearAllMocks` every implementation is gone, and a mock returning
   // `undefined` where the screen awaits a promise fails somewhere unrelated.
   auth.appleSignInAvailable.mockResolvedValue(false)
@@ -152,5 +154,42 @@ describe('the mode parameter', () => {
     mockParams.mode = 'sign-up'
     await render(<SignInScreen />)
     expect(screen.getByText('Save your progress')).toBeOnTheScreen()
+  })
+})
+
+/**
+ * This screen belongs to two flows, and only one of them has a length.
+ *
+ * Mid-onboarding it is step seven of nine, and dropping the bar for exactly the
+ * screen that asks for an email is where a flow stops reading as a flow — "how
+ * much more of this is there" is the question being weighed at that moment, and
+ * the answer was on every screen but this one. Reached on its own by a returning
+ * user, there is no flow to draw.
+ */
+describe('the onboarding progress bar', () => {
+  const bar = () => screen.queryByLabelText(/Step \d+ of \d+/)
+
+  it('stays away when nobody said where we are', async () => {
+    await render(<SignInScreen />)
+    expect(bar()).toBeNull()
+  })
+
+  it('carries the flow through when onboarding sent us here', async () => {
+    mockParams.mode = 'sign-up'
+    mockParams.step = '7'
+    mockParams.total = '9'
+    await render(<SignInScreen />)
+
+    expect(screen.getByLabelText('Step 7 of 9')).toBeOnTheScreen()
+  })
+
+  it('ignores a position that is not one', async () => {
+    // A deep link is not obliged to make sense, and a bar drawn from NaN is a
+    // row of marks with no filled ones under a heading about signing in.
+    mockParams.step = 'later'
+    mockParams.total = '9'
+    await render(<SignInScreen />)
+
+    expect(bar()).toBeNull()
   })
 })

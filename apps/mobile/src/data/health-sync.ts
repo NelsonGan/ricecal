@@ -24,7 +24,7 @@ import { useUserId } from './session'
  * and no state where the app is right and the watch is not. Three mechanisms
  * get there, and each one exists because the others cannot cover its case:
  *
- *   1. A BACKFILL on connect, a year deep, chunked so the UI keeps painting.
+ *   1. A BACKFILL on connect, a month deep, chunked so the UI keeps painting.
  *      Without it the Activity tab is empty on the day it is turned on, which
  *      reads as broken rather than as new.
  *   2. A ROLLING WINDOW on every foreground. Not "since last sync" — see below.
@@ -57,8 +57,25 @@ import { useUserId } from './session'
  * RiceCal that genuinely belongs on the client.
  */
 
-/** How far back a first connection reads. */
-const BACKFILL_DAYS = 365
+/**
+ * How far back a first connection reads.
+ *
+ * A month, not a year. The backfill exists so the Activity tab has something in
+ * it on the day it is turned on — an empty tab reads as broken rather than as
+ * new — and a month of days answers that completely: every range the app draws
+ * is 7d, 30d or a rolling average over them, so the twelfth month back was read,
+ * written, and then shown on no screen.
+ *
+ * It is also the difference between a connect that finishes while the user is
+ * looking at it and one they wait through. This ask now sits INSIDE onboarding,
+ * a screen away from an account that is a minute old, and thirteen chunked
+ * queries against HealthKit is the wrong thing to put there.
+ *
+ * Deeper history is not lost, only unread: the store still has it, and
+ * `backfilled_from` records how far this account has actually gone, so a future
+ * screen that wants a year can ask for the part it has not seen.
+ */
+const BACKFILL_DAYS = 30
 
 /**
  * How far back every incremental pass re-reads. See the header — this is the
@@ -72,10 +89,11 @@ const HOURLY_DAYS = 30
 /**
  * The backfill's chunk size, in days.
  *
- * A single year-long statistics query blocks the JS thread long enough to drop
- * frames on the screen that started it. Thirty days is about a tenth of a
- * second on an iPhone and lets the progress count climb visibly, which is the
- * difference between a wait and a hang.
+ * A long statistics query blocks the JS thread long enough to drop frames on
+ * the screen that started it. Thirty days is about a tenth of a second on an
+ * iPhone, which is why the backfill is one chunk now that it reads a month —
+ * and why the chunking stays, since the depth is a constant somebody will raise
+ * again and a re-read of a wider window must not hang the screen that asked.
  */
 const CHUNK_DAYS = 30
 
@@ -243,8 +261,7 @@ export async function syncRange(
   onProgress?: (progress: SyncProgress) => void,
 ): Promise<{ days: number; deviceName: string | null }> {
   // Once for the whole range rather than once per chunk. It cannot change
-  // between two chunks of the same sync, and a year-long backfill is thirteen
-  // of them.
+  // between two chunks of the same sync, and it is a round trip either way.
   const age = await ageOf(userId)
 
   const chunks: Array<{ from: string; to: string }> = []
@@ -270,8 +287,11 @@ export async function syncRange(
   const total = chunks.length
 
   for (const chunk of chunks) {
-    // Only recent chunks pay for the hourly read. A year of it is 8,760 rows
-    // per user to answer a question only ever asked about this month.
+    // Only chunks inside the retention window pay for the hourly read: 24 rows
+    // a day to answer a question only ever asked about this month. The backfill
+    // is a month deep now, so in practice every chunk qualifies — the guard
+    // stays because it is the incremental pass and any future deeper backfill
+    // that it exists for, not the current value of `BACKFILL_DAYS`.
     const withHours = chunk.to >= hourlyFrom
     const reading = await provider.read(chunk.from, chunk.to, { withHours, age })
     // The hour window is the CHUNK, not the retention window. A provider hands
@@ -322,7 +342,7 @@ export type ConnectResult = {
 }
 
 /**
- * Ask for access, then read a year.
+ * Ask for access, then read the recent past.
  *
  * One mutation rather than two because they are one user action: nobody taps
  * "connect" and then separately asks for their history. The permission sheet
@@ -349,7 +369,7 @@ export function useConnectHealth() {
       const from = daysAgo(BACKFILL_DAYS)
       const to = dateKey(new Date())
 
-      // Recorded BEFORE the read, not after. A backfill of a year takes long
+      // Recorded BEFORE the read, not after. Even a month's backfill is long
       // enough to be interrupted — a call comes in, the app is swiped away —
       // and a connection that only exists once the read finished would leave
       // the user on the connect screen with a full database behind it.
