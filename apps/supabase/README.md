@@ -95,6 +95,8 @@ auth.users
        ├── subscriptions ──── read-only mirror of RevenueCat
        ├── food_logs ──────── what was eaten          → foods, food_servings
        ├── daily_logs ─────── water and a day note
+       ├── recipes ────────── home cooking      → recipe_ingredients, and one
+       │                      mirrored `foods` row so it can be logged
        ├── weight_logs ────── the source of truth for current weight
        └── health_connections  which health store, and how far back it has read
             ├── activity_days ───── one day of movement, keyed by local date
@@ -105,7 +107,8 @@ foods ──── food_servings      the shared catalogue, read-only to clients
 ```
 
 Read shapes are views, all `security_invoker`: `food_details`,
-`food_log_details`, `daily_nutrition`, `user_food_stats`, `current_daily_goals`.
+`food_log_details`, `daily_nutrition`, `user_food_stats`, `current_daily_goals`,
+`recipe_details`, `recipe_ingredient_details`.
 Plus `goals_on(date)` and `logging_streak()`, and the two range families —
 `trend_days` / `trend_series` / `trend_summary` for the diary, and
 `activity_days_range` / `activity_series` / `activity_summary` for movement.
@@ -259,6 +262,23 @@ edge runtime loads. Without them the `photos` function answers 503 in so many
 words rather than failing at the tap, and a local stack still starts, still
 resets and still scans — mock AI never reads the photo, so only the upload and
 the tiles need Cloudflare to exist.
+
+A fifth is optional and local-only: **`R2_ENDPOINT`** overrides the Cloudflare
+host, so a developer can point the same signing code at any S3 — the one the
+local stack already runs beside it, say. Set it and an upload can be walked on
+the simulator without Cloudflare credentials, which is the difference between
+`ownsKey` being testable and only being testable in production. Unset in every
+deployed environment.
+
+```sh
+# apps/supabase/functions/.env — the endpoint is 127.0.0.1 and not the container
+# name, because the signature covers the HOST and the phone is what PUTs to it.
+R2_ACCOUNT_ID=local
+R2_ACCESS_KEY_ID=<S3_PROTOCOL_ACCESS_KEY_ID from `supabase start`>
+R2_SECRET_ACCESS_KEY=<S3_PROTOCOL_ACCESS_KEY_SECRET>
+R2_BUCKET=ricecal-local
+R2_ENDPOINT=http://127.0.0.1:54421/storage/v1/s3
+```
 
 ## Tests
 

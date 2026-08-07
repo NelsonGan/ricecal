@@ -244,12 +244,17 @@ export function mockActive(): boolean {
 /**
  * One OpenRouter chat call returning parsed JSON. Throws on anything else.
  *
+ * Exported for `recipe.ts`, which makes two calls of its own — reading a pot
+ * out of a photograph, and reviewing a recipe somebody asked to publish. They
+ * live in their own file because they answer to recipes rather than to the scan
+ * cascade, but there is no second way to talk to a model and this is it.
+ *
  * One retry, only for failures that a retry can fix — rate limits, provider
  * hiccups, timeouts. Everything below a model call is a cheaper tier, so a
  * transient 429 costing the user a catalogue match (and handing them an
  * archetype guess instead) is the expensive way to save 700ms.
  */
-async function chatJSON(messages: unknown[], maxTokens = 1200): Promise<unknown> {
+export async function chatJSON(messages: unknown[], maxTokens = 1200): Promise<unknown> {
   const key = Deno.env.get('OPENROUTER_API_KEY')
   if (!key) throw new Error('OPENROUTER_API_KEY not set')
 

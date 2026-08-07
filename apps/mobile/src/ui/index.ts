@@ -38,6 +38,8 @@ export { Badge, type BadgeProps, type BadgeTone, CountBadge, type CountBadgeProp
 export {
   BottomNav,
   type BottomNavProps,
+  FloatingAction,
+  type FloatingActionProps,
   NAV_BAR_HEIGHT,
   NavAction,
   type NavActionProps,

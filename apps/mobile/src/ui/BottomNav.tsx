@@ -164,6 +164,42 @@ export function NavAction({ onPress, label, className }: NavActionProps) {
   )
 }
 
+export type FloatingActionProps = NavActionProps
+
+/**
+ * The same pandan tile, floating over a screen instead of sitting in the bar.
+ *
+ * It used to be `NavAction`, in the middle of the tab bar, and that is what
+ * capped the bar at four tabs: a centre action is centred by having the same
+ * number of tabs either side of it. Recipes made five, so the action came out
+ * and the bar is tabs alone.
+ *
+ * Bigger than the bar version — 64pt against 62 — because a control with
+ * nothing beside it has no neighbours to be measured against, and because it is
+ * now the only target on the screen that is not a row of the diary.
+ *
+ * `NavAction` is still here and still used by the fully controlled `BottomNav`
+ * the design gallery renders. The two are one visual; if the fill or the slab
+ * changes, it changes in both.
+ */
+export function FloatingAction({ onPress, label, className }: FloatingActionProps) {
+  const colors = useThemeColors()
+
+  return (
+    <Squish
+      depth={slab.lg}
+      radius={radius.tile}
+      slabClassName="bg-pandan-slab"
+      className={cn('h-[64px] w-[64px] items-center justify-center bg-pandan', className)}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <Icon set="ui" name="plus" size={30} tintColor={colors.onPandan} />
+    </Squish>
+  )
+}
+
 export type BottomNavProps<T extends string> = {
   /** Exactly four. The FAB sits between the second and third. */
   tabs: readonly [NavTab<T>, NavTab<T>, NavTab<T>, NavTab<T>]
