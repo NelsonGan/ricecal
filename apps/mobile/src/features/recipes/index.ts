@@ -17,4 +17,5 @@ export { DescribeRecipePanel, type DescribeRecipePanelProps } from './DescribeRe
 export { IngredientSheet, type IngredientSheetProps } from './IngredientSheet'
 export { RecipePanel, type RecipePanelProps } from './RecipePanel'
 export { RecipeRow, type RecipeRowProps } from './RecipeRow'
+export { RecipeSteps, splitSteps } from './RecipeSteps'
 export { recipeLink, ShareSheet, type ShareSheetProps } from './ShareSheet'
