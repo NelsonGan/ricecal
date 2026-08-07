@@ -28,6 +28,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { mockActive } from '../_shared/llm.ts'
 import { ownsKey, readObject } from '../_shared/r2.ts'
 import {
+  describeRecipe,
   type RecipeMockSteer,
   type ReviewInput,
   readRecipePhoto,
@@ -35,7 +36,18 @@ import {
   toIngredientRow,
 } from '../_shared/recipe.ts'
 
-type ReadRequest = { action: 'read'; photo_path?: string; mock?: RecipeMockSteer }
+type ReadRequest = {
+  action: 'read'
+  photo_path?: string
+  /**
+   * The recipe in words, for a cook who would rather type it than photograph
+   * it. Read only when there is no `photo_path`: a request carrying both has a
+   * picture of the food, and a picture is the better evidence of what is in the
+   * pot. Same precedence `scan-meal` gives a typed meal.
+   */
+  text?: string
+  mock?: RecipeMockSteer
+}
 type ReviewRequest = { action: 'review'; recipe_id?: string; mock?: RecipeMockSteer }
 type RecipeRequest = ReadRequest | ReviewRequest
 
@@ -117,24 +129,37 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   )
 
-  // -- READ: a photograph of the pot becomes a filled-in form.
+  // -- READ: a photograph of the pot, or a description of it, becomes a
+  // filled-in form. One action rather than two, because everything after the
+  // first model call is identical — the shaping, the per-unit division, the
+  // "nothing here" answer — and the two differ only in what is handed to the
+  // model. The same split `scan-meal` makes between a photographed meal and a
+  // typed one.
   if (body.action === 'read') {
     const photoPath = typeof body.photo_path === 'string' ? body.photo_path : null
-    if (!photoPath) return json({ ok: false, error: 'photo_path is required' }, 400)
+    // Capped like a refine instruction and a described meal. A recipe takes a
+    // few sentences; past this is prose, and the model charges by the token.
+    const described = photoPath ? '' : (body.text ?? '').trim().slice(0, 1000)
+
+    if (!photoPath && !described) {
+      return json({ ok: false, error: 'photo_path or text is required' }, 400)
+    }
     // The object is read as `service_role`, above every check there is, so the
     // key is proven to be the caller's here — exactly as in scan-meal. Without
     // it, naming somebody else's plate would tell you what was on it.
-    if (!ownsKey(photoPath, userId, 'meal')) {
+    if (photoPath && !ownsKey(photoPath, userId, 'meal')) {
       return json({ ok: false, error: 'not your photo' }, 403)
     }
 
     try {
-      const photoBase64 = mockActive() ? null : await fetchPhoto(photoPath)
-      const draft = await readRecipePhoto(photoBase64, mock)
+      const draft = described
+        ? await describeRecipe(described, mock)
+        : await readRecipePhoto(mockActive() ? null : await fetchPhoto(photoPath as string), mock)
 
-      // A photo with no cooking in it. Not an error — the user pointed the
-      // camera at something and the honest answer is "there is nothing here to
-      // fill in", which the form shows as itself, empty.
+      // Nothing cookable in it. Not an error — the user pointed the camera at
+      // something, or typed something that is not food, and the honest answer
+      // is "there is nothing here to fill in", which the form shows as itself,
+      // empty.
       if (!draft.name && draft.ingredients.length === 0) {
         return json({ ok: true, food: false, draft: null })
       }

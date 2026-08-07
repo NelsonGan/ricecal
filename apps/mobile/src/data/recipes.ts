@@ -373,7 +373,19 @@ export type ScannedRecipe = {
 }
 
 /**
- * Read a pot out of a photograph.
+ * Where a drafted recipe came from: a photograph of the pot, or a sentence
+ * about it. One or the other, never both.
+ */
+export type RecipeSource = { photoPath: string } | { text: string }
+
+/**
+ * Read a pot out of a photograph, or out of a description of one.
+ *
+ * ONE HOOK for both, because everything after the request is the same shape and
+ * the screen does the same thing with it. Only the model call on the far side
+ * differs — the same split `useSnapFood` and `useDescribeFood` make over the
+ * meal cascade, folded into one here because a recipe draft is not written
+ * anywhere until Save, so there is no second write path to keep apart.
  *
  * A mutation rather than a query because it is an action with a cost, taken
  * once, at a moment the user chose — not a fact about a photo that a screen
@@ -384,11 +396,14 @@ export type ScannedRecipe = {
  * to `null` on a bad read rather than throwing at a screen that has a perfectly
  * good empty form to show.
  */
-export function useScanRecipePhoto() {
+export function useReadRecipe() {
   return useMutation({
-    mutationFn: async (photoPath: string): Promise<ScannedRecipe | null> => {
+    mutationFn: async (source: RecipeSource): Promise<ScannedRecipe | null> => {
       const { data, error } = await supabase.functions.invoke('recipes', {
-        body: { action: 'read', photo_path: photoPath },
+        body:
+          'photoPath' in source
+            ? { action: 'read', photo_path: source.photoPath }
+            : { action: 'read', text: source.text },
       })
       if (error) return null
 

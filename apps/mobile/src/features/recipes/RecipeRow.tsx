@@ -32,7 +32,7 @@ export function RecipeRow({ recipe, onPress }: RecipeRowProps) {
           count: recipe.ingredientCount,
         })}`
       : t('byAuthor', {
-          name: recipe.authorName || '—',
+          name: recipe.authorName || t('someCook'),
           saves: t('savedTimes', { count: recipe.savedCount }),
         })
 

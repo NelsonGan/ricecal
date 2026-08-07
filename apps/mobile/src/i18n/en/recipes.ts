@@ -36,7 +36,7 @@ export const recipes = {
   empty: {
     mineTitle: 'No recipes yet',
     mineBody:
-      'A shared pot has no serving size. Enter it once — what went in and how many it feeds — and logging it is one tap from then on.',
+      'A shared pot has no serving size. Enter what went in and how many it feeds, once, and logging it is one tap from then on.',
     officialTitle: 'The kitchen is empty',
     officialBody: 'Recipes from us will show up here.',
     communityTitle: 'Nothing shared yet',
@@ -52,11 +52,27 @@ export const recipes = {
   savedTimes_other: 'saved {{count}} times',
   byAuthor: '{{name}} · {{saves}}',
   fromAuthor: 'From {{name}}',
+  /**
+   * Whoever cooked it, when the credit is missing — a profile with no display
+   * name, or one deleted since. A word, not a dash: "— · saved 3 times" reads
+   * as a rendering fault rather than as an answer.
+   */
+  someCook: 'Someone',
 
   new: {
     title: 'New recipe',
     scanTitle: 'Fill it in from a photo',
     scanBody: 'Snap the pot, we read it and fill this form.',
+    /** The rule above the hand-filled fields, under the two offers. */
+    or: 'OR FILL IT IN YOURSELF',
+    describeTitle: 'Describe it',
+    describeBody: 'Say what you cooked and we fill this form.',
+    describePlaceholder:
+      'A pot of kari ayam. 600g chicken thigh, a tin of coconut milk, three potatoes. Feeds four.',
+    describeHint: 'Amounts and how many it feeds are the two worth typing.',
+    describing: 'Reading what you wrote…',
+    describeFailed: 'We could not read that one. Fill it in yourself below.',
+    described: 'Filled in from what you wrote. Change anything that looks off.',
     scanning: 'Reading your photo…',
     scanned: 'Filled in from your photo. Change anything that looks off.',
     scanFailed: 'We could not read that one. Fill it in yourself below.',

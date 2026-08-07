@@ -122,34 +122,86 @@ export function toIngredientRow(ingredient: DraftIngredient, position: number) {
   }
 }
 
-export const READ_RECIPE_PROMPT =
-  'You read home cooking out of photographs for a Malaysian calorie-tracking app. ' +
-  'The photo is a pot, a tray or a spread of ingredients that somebody cooked. ' +
+/**
+ * The half of the two prompts that is the same, and it is most of them.
+ *
+ * Shared as a CONSTANT rather than copied, for the reason `llm.ts` gives about
+ * the meal prompts: the sizing rules below were expensive to get right, and a
+ * second prompt carrying its own copy relearns them wrong. What differs between
+ * a photograph and a sentence is one thing only, and it is stated separately
+ * below — WHO THE AUTHORITY IS.
+ */
+const RECIPE_SHAPE =
   'Respond with JSON only, matching: ' +
   '{"name": string, "servings": number, "steps": string, "ingredients": [' +
   '{"name": string, "amount": number, "unit": "g"|"ml"|"piece", "kcal": number, ' +
   '"carbs_g": number, "protein_g": number, "fat_g": number}]} ' +
-  // The name is the dish, not the photograph. "A pot of curry on a stove" is a
-  // caption; "Kari ayam" is what somebody would look for in their own recipes.
-  'The name is what a Malaysian cook would call the dish, in its local spelling — ' +
-  '"Nasi goreng kampung", "Rendang daging", "Sayur lodeh". Never describe the ' +
-  'photograph itself. ' +
-  // The whole reason a recipe exists. Getting this wrong scales every future
-  // log of the dish by the same factor.
-  '"servings" is how many people the WHOLE pot feeds, read off how much food is ' +
-  'visible — a wok for a family is 4 to 6, a single bowl is 1. ' +
-  // Amounts are for the whole pot, and the calories are for that amount. This
-  // is stated twice on purpose: a per-100g figure here silently divides the
-  // whole recipe by ten.
+  // The name is the dish. "A pot of curry on a stove" is a caption; "Kari ayam"
+  // is what somebody would look for in their own recipes.
+  'The name is what a Malaysian cook would call the dish, in its local spelling: ' +
+  '"Nasi goreng kampung", "Rendang daging", "Sayur lodeh". ' +
+  // Amounts are for the whole pot, and the calories are for that amount. Stated
+  // twice on purpose: a per-100g figure here silently divides the whole recipe
+  // by ten.
   'Each ingredient is what went into the WHOLE pot, and "kcal", "carbs_g", ' +
-  '"protein_g" and "fat_g" are the totals for THAT amount — not per 100 g and not ' +
+  '"protein_g" and "fat_g" are the totals for THAT amount, not per 100 g and not ' +
   'per serving. 1000 g of beef shin is about 1640 kcal; write amount 1000, unit "g", ' +
   'kcal 1640. Use "ml" for liquids, "piece" for things counted whole (eggs, ' +
   'chicken thighs, whole chillies). ' +
-  'List only what you can see or what the dish plainly requires. Six to ten ' +
-  'ingredients is a full answer; do not pad it with seasonings you cannot weigh. ' +
-  '"steps" is how the dish is cooked, in two or three plain sentences, no numbering. ' +
-  'If the photo has no cooking in it at all, answer {"name": "", "servings": 1, ' +
+  'Six to ten ingredients is a full answer; do not pad it with seasonings you ' +
+  'cannot weigh. '
+
+/**
+ * How the steps are written, and it is a rule about PLAINNESS.
+ *
+ * What a model writes unprompted is a paragraph of food writing: the rempah
+ * "sings", the gravy "kisses" the meat. What a cook wants back is what to do
+ * next. So: imperative, one action a sentence, in the order they happen.
+ *
+ * No long dashes, because this text is displayed and the house rule reaches
+ * anything a user reads. See the conventions in CLAUDE.md.
+ */
+const RECIPE_STEPS =
+  '"steps" is how the dish is cooked, written straightforwardly: short plain ' +
+  'sentences, one action each, in the order they happen, starting with a verb ' +
+  '("Fry the rempah until it darkens."). Three to six sentences, separated by ' +
+  'newlines, with no numbering, no bullets and no headings. Say the times and ' +
+  'temperatures that matter and nothing else. Do not describe how it tastes or ' +
+  'smells, and do not use em dashes or en dashes anywhere.'
+
+export const READ_RECIPE_PROMPT =
+  'You read home cooking out of photographs for a Malaysian calorie-tracking app. ' +
+  'The photo is a pot, a tray or a spread of ingredients that somebody cooked. ' +
+  RECIPE_SHAPE +
+  // A photograph has one witness and it is the model. Everything it says is
+  // inference, which is why it is told to describe only what is in front of it.
+  'Never describe the photograph itself. ' +
+  '"servings" is how many people the WHOLE pot feeds, read off how much food is ' +
+  'visible: a wok for a family is 4 to 6, a single bowl is 1. ' +
+  'List only what you can see or what the dish plainly requires. ' +
+  RECIPE_STEPS +
+  ' If the photo has no cooking in it at all, answer {"name": "", "servings": 1, ' +
+  '"ingredients": [], "steps": ""}.'
+
+export const DESCRIBE_RECIPE_PROMPT =
+  "You turn a description of somebody's home cooking into a recipe for a " +
+  'Malaysian calorie-tracking app. ' +
+  RECIPE_SHAPE +
+  // THE DIFFERENCE FROM THE PHOTO PROMPT, and the only one that matters. A
+  // sentence was written by the person who cooked the dish, so what it STATES
+  // is the answer rather than evidence to weigh: the amounts they gave are the
+  // amounts, and the servings they gave are the servings. The model is filling
+  // in what they left out, not second-guessing what they said.
+  'The person describing it COOKED it, so anything they state is the answer. ' +
+  'Use their amounts exactly where they gave one, and their serving count where ' +
+  'they gave one. Only estimate what they left out, and keep those estimates ' +
+  'ordinary for the dish. ' +
+  'If they did not say how many it feeds, read it off the amounts they did give: ' +
+  'a kilo of meat feeds 4 to 6. ' +
+  RECIPE_STEPS +
+  ' Write the steps from what they told you. If they described no method, write ' +
+  'the ordinary way the dish is cooked. ' +
+  'If the text describes no food at all, answer {"name": "", "servings": 1, ' +
   '"ingredients": [], "steps": ""}.'
 
 /**
@@ -209,10 +261,14 @@ export async function readRecipePhoto(
           fat_g: 0,
         },
       ],
+      // Written the way the prompt asks for: one action a sentence, in order,
+      // starting with a verb, no flourishes and no long dashes. The mock is
+      // what a local run reads, so it has to model the house style too.
       steps:
-        'Fry the rempah in oil until it darkens and smells sweet, about 12 minutes.\n\n' +
-        'Add the beef and coat it well, then pour in the coconut milk, kerisik and turmeric leaf.\n\n' +
-        'Simmer on the smallest flame for 3 hours until the gravy dries and clings to the meat.',
+        'Fry the rempah in oil until it darkens, about 12 minutes.\n' +
+        'Add the beef and turn it until it is coated.\n' +
+        'Pour in the coconut milk, kerisik and turmeric leaf.\n' +
+        'Simmer on the smallest flame for 3 hours, until the gravy clings to the meat.',
     })
   }
 
@@ -236,6 +292,74 @@ export async function readRecipePhoto(
   return shapeDraft(raw)
 }
 
+/**
+ * The same form, filled in from a sentence instead of a photograph.
+ *
+ * Same shape out, same mock, same `null`-on-nothing contract: only the first
+ * model call differs, exactly as `describeMeal` differs from `analysePhoto` in
+ * `llm.ts`. Nothing downstream of this knows which way the draft arrived.
+ */
+export async function describeRecipe(
+  text_: string,
+  mock: RecipeMockSteer | undefined,
+): Promise<RecipeDraft> {
+  if (mockActive()) {
+    if (mock?.fail === 'read') throw new Error('mocked recipe read failure')
+    if (mock?.draft) return shapeDraft(mock.draft)
+    // Echoes the words back as the name, so a local run shows the typing
+    // actually reached the server rather than a fixture that would have come
+    // back regardless.
+    return shapeDraft({
+      name: text_.slice(0, 60) || 'Home recipe',
+      servings: 4,
+      ingredients: [
+        {
+          name: 'Chicken thigh',
+          amount: 600,
+          unit: 'g',
+          kcal: 1254,
+          carbs_g: 0,
+          protein_g: 156,
+          fat_g: 66,
+        },
+        {
+          name: 'Coconut milk',
+          amount: 200,
+          unit: 'ml',
+          kcal: 390,
+          carbs_g: 6,
+          protein_g: 4,
+          fat_g: 42,
+        },
+        {
+          name: 'Rempah paste',
+          amount: 120,
+          unit: 'g',
+          kcal: 168,
+          carbs_g: 14,
+          protein_g: 3,
+          fat_g: 11,
+        },
+        { name: 'Potato', amount: 300, unit: 'g', kcal: 231, carbs_g: 52, protein_g: 6, fat_g: 0 },
+      ],
+      steps:
+        'Fry the rempah in oil until it darkens, about 8 minutes.\n' +
+        'Add the chicken and turn it until the outside is sealed.\n' +
+        'Pour in the coconut milk and add the potato.\n' +
+        'Simmer on a low flame for 30 minutes, until the potato gives to a fork.',
+    })
+  }
+
+  const raw = await chatJSON(
+    [
+      { role: 'system', content: DESCRIBE_RECIPE_PROMPT },
+      { role: 'user', content: `The person cooking it wrote: "${text_}"` },
+    ],
+    2000,
+  )
+  return shapeDraft(raw)
+}
+
 export const REVIEW_RECIPE_PROMPT =
   'You are the moderator for a Malaysian recipe-sharing app. A recipe is about to ' +
   'be published where every other user can find it. Respond with JSON only: ' +
@@ -253,7 +377,11 @@ export const REVIEW_RECIPE_PROMPT =
   "somebody's home cooking, not a cookbook submission. " +
   'Judge only what you are shown. Do not ask for more detail, and do not reject ' +
   'for being incomplete. ' +
-  'The reason is one sentence, addressed to the author, and is empty when approved.'
+  'The reason is one sentence, addressed to the author, and is empty when approved. ' +
+  // The reason is SHOWN, so it is copy and the house rule reaches it: no long
+  // dashes anywhere a user reads. See the conventions in CLAUDE.md.
+  'Write it in plain sentences with no em dashes or en dashes; use a comma, a ' +
+  'full stop or a semicolon instead.'
 
 /** What the reviewer is shown. Everything a reader of the recipe would see. */
 export type ReviewInput = {
