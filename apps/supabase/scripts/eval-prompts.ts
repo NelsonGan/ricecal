@@ -4,17 +4,18 @@
  *   OPENROUTER_API_KEY=… deno run -A apps/supabase/scripts/eval-prompts.ts
  *   … eval-prompts.ts describe          # just the typed-meal suite
  *   … eval-prompts.ts refine            # just the fix-by-typing suite
+ *   … eval-prompts.ts recipe            # just the typed-recipe suite
  *   … eval-prompts.ts refine 3          # three runs of each case
  *
  * WHY THIS EXISTS
  *
- * Two of the model calls in `_shared/llm.ts` decide something the cascade
- * below them cannot check. `describeMeal` decides what a sentence names and
- * how much of it there was; `interpretInstruction` decides whether a
- * correction is a portion change, a part change or a different dish. Both are
- * a paragraph of English with no test around them, and both were changed by
- * hand more than once on the strength of a single example that happened to be
- * on screen at the time.
+ * Three of the model calls decide something the code below them cannot check.
+ * `describeMeal` decides what a sentence names and how much of it there was;
+ * `interpretInstruction` decides whether a correction is a portion change, a
+ * part change or a different dish; `describeRecipe` decides what a pot holds
+ * and how it is cooked. Each is a paragraph of English with no test around it,
+ * and each was changed by hand more than once on the strength of a single
+ * example that happened to be on screen at the time.
  *
  * So the cases below are the examples, written down. They assert the SHAPE of
  * the answer — which action, how many components, whether the count matched,
@@ -43,6 +44,7 @@ import {
   type RefineContext,
   refineUserMessage,
 } from '../functions/_shared/llm.ts'
+import { DESCRIBE_RECIPE_PROMPT, describeRecipeUserMessage } from '../functions/_shared/recipe.ts'
 
 const MODEL = Deno.env.get('OPENROUTER_MODEL') ?? 'qwen/qwen3.7-flash'
 const ENDPOINT = Deno.env.get('EVAL_ENDPOINT')
@@ -777,34 +779,282 @@ const REFINE_CASES: RefineCase[] = [
 ]
 
 // ---------------------------------------------------------------------------
+// Suite 3: a recipe typed out
+//
+// The failures this catches are the ones that survive a single example. Asked
+// for beef tacos the prompt answered "Nasi goreng kampung", and asked for coq
+// au vin it answered nothing at all — both because the prompt described the app
+// as Malaysian and the model read that as an instruction about the FOOD. Every
+// Malaysian case passed throughout.
+// ---------------------------------------------------------------------------
+
+type RecipeAnswer = {
+  name?: string
+  servings?: number
+  steps?: string
+  ingredients?: Array<{
+    name?: string
+    amount?: number
+    unit?: string
+    kcal?: number
+    carbs_g?: number
+    protein_g?: number
+    fat_g?: number
+  }>
+}
+
+const parts = (answer: RecipeAnswer) => answer.ingredients ?? []
+const potKcal = (answer: RecipeAnswer) =>
+  parts(answer).reduce((total, part) => total + (part.kcal ?? 0), 0)
+const stepLines = (answer: RecipeAnswer) =>
+  (answer.steps ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+/** An ingredient whose name contains the word, if there is one. */
+const ingredient = (answer: RecipeAnswer, word: RegExp) =>
+  parts(answer).find((part) => word.test(part.name ?? ''))
+
+/**
+ * What every drafted recipe has to get right, whatever the dish was.
+ *
+ * The physical ones are worth more than they look. Nothing edible carries more
+ * than about 9 kcal a gram, so an ingredient above that is a decimal point in
+ * the wrong place, and macros heavier than the ingredient itself are the same
+ * mistake wearing different units. `shapeIngredients` clamps both, but a prompt
+ * that needs the clamp is a prompt that is drifting.
+ */
+const universalRecipe = (answer: RecipeAnswer): Check[] => {
+  const list = parts(answer)
+  const dense = list.filter(
+    (part) =>
+      (part.unit === 'g' || part.unit === 'ml') &&
+      (part.kcal ?? 0) > 9.4 * Math.max(part.amount ?? 0, 0.01),
+  )
+  const heavy = list.filter((part) => {
+    if (part.unit === 'piece') return false
+    const grams = (part.carbs_g ?? 0) + (part.protein_g ?? 0) + (part.fat_g ?? 0)
+    return grams > (part.amount ?? 0) * 1.02
+  })
+  const lines = stepLines(answer)
+
+  return [
+    // A name, not a caption. "A pot of curry on the stove" is what the photo
+    // prompt used to answer and it is not what anybody searches for.
+    check('the name is a dish', (answer.name ?? '').length <= 40, answer.name),
+    check('3 to 15 ingredients', list.length >= 3 && list.length <= 15, list.length),
+    check('everything has an amount', !list.some((p) => !((p.amount ?? 0) > 0)), list.length),
+    check(
+      'nothing denser than fat',
+      dense.length === 0,
+      dense.map((p) => p.name),
+    ),
+    check(
+      'macros fit in the mass',
+      heavy.length === 0,
+      heavy.map((p) => p.name),
+    ),
+    check('three to six steps', lines.length >= 3 && lines.length <= 6, lines.length),
+    // One instruction a line, which is how the screen draws them. A paragraph
+    // in this field renders as a paragraph.
+    check(
+      'one instruction a line',
+      lines.every((l) => l.length <= 150),
+      Math.max(0, ...lines.map((l) => l.length)),
+    ),
+    check(
+      'no numbering; the app numbers them',
+      !lines.some((l) => /^(\d+[.)]|[-*•])\s/.test(l)),
+      lines.find((l) => /^(\d+[.)]|[-*•])\s/.test(l)) ?? 'ok',
+    ),
+    // The steps are displayed, so the house rule about long dashes reaches them.
+    check(
+      'no long dashes',
+      !/[—–]/.test(answer.steps ?? ''),
+      answer.steps?.match(/[^\n]*[—–][^\n]*/)?.[0] ?? 'ok',
+    ),
+  ]
+}
+
+/** The whole pot, per serving, is somewhere a person would recognise. */
+const perServing = (answer: RecipeAnswer, low: number, high: number): Check => {
+  const each = Math.round(potKcal(answer) / Math.max(1, answer.servings ?? 1))
+  return check(`${low}-${high} kcal a serving`, each >= low && each <= high, each)
+}
+
+/** An amount the cook stated is the answer, not a starting point. */
+const kept = (answer: RecipeAnswer, word: RegExp, amount: number, unit: string): Check => {
+  const hit = ingredient(answer, word)
+  return check(
+    `kept ${amount} ${unit} of ${word.source}`,
+    Boolean(hit) && Math.abs((hit?.amount ?? 0) - amount) <= amount * 0.02 && hit?.unit === unit,
+    hit ? `${hit.amount} ${hit.unit}` : 'missing',
+  )
+}
+
+const RECIPE_CASES: Array<Case<RecipeAnswer>> = [
+  // -- The home cuisine, which never broke and is here so a fix for the others
+  // cannot quietly cost it.
+  {
+    text: 'Kari ayam. 600g chicken thigh, a tin of santan, 3 potatoes. Feeds 4.',
+    checks: (a) => [
+      ...universalRecipe(a),
+      check('named in Malay', /kari ayam|ayam/i.test(a.name ?? ''), a.name),
+      check('feeds 4', a.servings === 4, a.servings),
+      kept(a, /chicken|ayam/i, 600, 'g'),
+      perServing(a, 250, 800),
+    ],
+  },
+  {
+    text: 'Rendang daging. 1kg beef, 400ml thick santan, kerisik, rempah.',
+    checks: (a) => [
+      ...universalRecipe(a),
+      check('named in Malay', /rendang/i.test(a.name ?? ''), a.name),
+      // Nobody said how many it feeds, so it is read off a kilo of beef.
+      check('feeds 4 to 8', (a.servings ?? 0) >= 4 && (a.servings ?? 0) <= 8, a.servings),
+      kept(a, /beef|daging/i, 1000, 'g'),
+      perServing(a, 400, 1100),
+    ],
+  },
+  // -- Everywhere else. Each of these is a dish the Malaysian framing either
+  // renamed or refused.
+  {
+    text: 'Beef tacos for 4. 500g minced beef, 12 corn tortillas, cheddar, salsa, sour cream.',
+    checks: (a) => [
+      ...universalRecipe(a),
+      check('named as tacos, not as nasi goreng', /taco/i.test(a.name ?? ''), a.name),
+      kept(a, /tortilla/i, 12, 'piece'),
+      perServing(a, 450, 1100),
+    ],
+  },
+  {
+    text: 'Coq au vin, feeds 6.',
+    checks: (a) => [
+      ...universalRecipe(a),
+      // A dish named with no amounts at all. This came back empty for as long
+      // as the "no food in it" escape was written loosely.
+      check('named in French', /coq au vin/i.test(a.name ?? ''), a.name),
+      check('feeds 6', a.servings === 6, a.servings),
+      perServing(a, 350, 900),
+    ],
+  },
+  {
+    text: 'Spaghetti carbonara for 2. 200g spaghetti, 100g guanciale, 2 eggs, 50g pecorino.',
+    checks: (a) => [
+      ...universalRecipe(a),
+      check('named in Italian', /carbonara/i.test(a.name ?? ''), a.name),
+      kept(a, /spaghetti|pasta/i, 200, 'g'),
+      perServing(a, 550, 1100),
+    ],
+  },
+  {
+    text: 'Thai green curry with chicken, feeds 4. 500g chicken, 400ml coconut milk, green curry paste, aubergine.',
+    checks: (a) => [
+      ...universalRecipe(a),
+      // Answered "Kari hijau ayam" while the prompt described the app rather
+      // than the dish.
+      check('not translated into Malay', !/kari/i.test(a.name ?? ''), a.name),
+      kept(a, /coconut/i, 400, 'ml'),
+      perServing(a, 300, 800),
+    ],
+  },
+  {
+    text: 'Chicken shawarma wraps for 4, with garlic sauce and pickles.',
+    checks: (a) => [
+      ...universalRecipe(a),
+      check('named as shawarma', /shawarma/i.test(a.name ?? ''), a.name),
+      perServing(a, 350, 1000),
+    ],
+  },
+  {
+    text: 'Kimchi jjigae with pork belly and tofu, feeds 3.',
+    checks: (a) => [
+      ...universalRecipe(a),
+      check('named in Korean', /kimchi/i.test(a.name ?? ''), a.name),
+      perServing(a, 250, 800),
+    ],
+  },
+  // -- The fat that goes missing. A pot whose steps say "fry" and whose list
+  // has no oil in it understates the meal by a few hundred calories.
+  {
+    text: 'Nasi goreng for 2, leftover rice, 2 eggs, a bit of chicken, kecap manis.',
+    checks: (a) => [
+      ...universalRecipe(a),
+      check(
+        'the cooking fat is listed',
+        Boolean(ingredient(a, /oil|butter|ghee|minyak|lard/i)),
+        parts(a).map((p) => p.name),
+      ),
+      perServing(a, 350, 900),
+    ],
+  },
+  // -- Imperial, and a unit the app does not store.
+  {
+    text: '2 lbs ground beef chili with 2 cans of kidney beans and a can of tomatoes, feeds 8.',
+    checks: (a) => [
+      ...universalRecipe(a),
+      check(
+        'pounds became grams',
+        Math.abs((ingredient(a, /beef/i)?.amount ?? 0) - 907) <= 60 &&
+          ingredient(a, /beef/i)?.unit === 'g',
+        ingredient(a, /beef/i),
+      ),
+      perServing(a, 250, 700),
+    ],
+  },
+  // -- Nothing to fill in. The empty answer is the one the endpoint turns into
+  // "there is nothing here", and it must stay reachable.
+  {
+    text: 'remind me to buy milk on the way home',
+    checks: (a) => [
+      check('no name', !(a.name ?? '').trim(), a.name),
+      check('no ingredients', parts(a).length === 0, parts(a).length),
+    ],
+  },
+]
+
+// ---------------------------------------------------------------------------
 
 async function run(name: string, runs: number) {
   const rows: Array<{ text: string; checks: Check[]; error?: string }> = []
 
-  const cases =
-    name === 'describe'
-      ? DESCRIBE_CASES.map((c) => ({
-          text: c.text,
-          go: async () =>
-            c.checks(
-              (await call(
-                DESCRIBE_MEAL_PROMPT,
-                describeUserMessage(c.text),
-                2400,
-              )) as DescribeAnswer,
-            ),
-        }))
-      : REFINE_CASES.map((c) => ({
-          text: `${c.context.name.slice(0, 18)} ← "${c.text}"`,
-          go: async () =>
-            c.checks(
-              (await call(
-                INTERPRET_INSTRUCTION_PROMPT,
-                refineUserMessage(c.context, c.text),
-                600,
-              )) as Interpretation,
-            ),
-        }))
+  const suites: Record<string, Array<{ text: string; go: () => Promise<Check[]> }>> = {
+    describe: DESCRIBE_CASES.map((c) => ({
+      text: c.text,
+      go: async () =>
+        c.checks(
+          (await call(DESCRIBE_MEAL_PROMPT, describeUserMessage(c.text), 2400)) as DescribeAnswer,
+        ),
+    })),
+    refine: REFINE_CASES.map((c) => ({
+      text: `${c.context.name.slice(0, 18)} ← "${c.text}"`,
+      go: async () =>
+        c.checks(
+          (await call(
+            INTERPRET_INSTRUCTION_PROMPT,
+            refineUserMessage(c.context, c.text),
+            600,
+          )) as Interpretation,
+        ),
+    })),
+    recipe: RECIPE_CASES.map((c) => ({
+      text: c.text.slice(0, 60),
+      go: async () =>
+        c.checks(
+          (await call(
+            DESCRIBE_RECIPE_PROMPT,
+            describeRecipeUserMessage(c.text),
+            // The same ceiling `describeRecipe` calls with. Ten ingredients
+            // with seven fields each plus the steps, and truncated JSON does
+            // not parse.
+            2000,
+          )) as RecipeAnswer,
+        ),
+    })),
+  }
+
+  const cases = suites[name] ?? []
 
   console.log(`\n=== ${name} · ${cases.length} cases × ${runs} ===\n`)
 
@@ -836,3 +1086,4 @@ const which = Deno.args[0] ?? 'all'
 const runs = Number(Deno.args[1] ?? 1)
 if (which === 'all' || which === 'describe') await run('describe', runs)
 if (which === 'all' || which === 'refine') await run('refine', runs)
+if (which === 'all' || which === 'recipe') await run('recipe', runs)
