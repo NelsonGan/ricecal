@@ -51,6 +51,16 @@ set search_path = ''
 -- costing ~190 ms of a ~200 ms query. At 0.4 it hands back 570 and the whole
 -- search runs in ~20 ms, while still reaching "char kway teow", "nasi lemk",
 -- "teh tarek" and "ayam gorng" — the misspellings this arm exists for.
+--
+-- This one line costs every MIGRATION that restates this function a line of its
+-- own. `pg_trgm.similarity_threshold` is only a real parameter in a session that
+-- has loaded pg_trgm; anywhere else it is an unrecognized placeholder, and
+-- setting one of those is superuser-only. The hosted `postgres` role is not a
+-- superuser, so a migration whose session has never touched a trigram fails here
+-- with SQLSTATE 42501 and rolls back — while CI, which applies the baseline and
+-- its `create extension` in the same run, stays green. See the note above the
+-- `select extensions.similarity('', '')` in 20260807104259_recipes.sql, which is
+-- the migration that learnt it.
 set "pg_trgm.similarity_threshold" = '0.4'
 as $$
   -- `materialized` matters. Inlined, `search_tsquery(q)` ends up inside the
