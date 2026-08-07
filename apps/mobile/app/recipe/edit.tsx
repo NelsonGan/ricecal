@@ -15,8 +15,13 @@ import {
   useRecipeIngredients,
   useSaveRecipe,
 } from '@/data'
-import { DescribePanel, InlineCamera } from '@/features/logging'
-import { IngredientSheet, ingredientTotal, potTotals } from '@/features/recipes'
+import { InlineCamera } from '@/features/logging'
+import {
+  DescribeRecipePanel,
+  IngredientSheet,
+  ingredientTotal,
+  potTotals,
+} from '@/features/recipes'
 import { useBack } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
 import {
@@ -292,20 +297,20 @@ export default function RecipeFormScreen() {
           stove, or it is not. */}
       {!recipeId && !filled && !read.isPending ? (
         <View className="gap-2.5">
-          <FillOption
-            icon={{ set: 'system', name: 'camera' }}
-            title={t('recipes:new.scanTitle')}
-            body={t('recipes:new.scanBody')}
-            tone="pandan"
-            onPress={() => setCamera(true)}
-          />
-          <FillOption
-            icon={{ set: 'system', name: 'sparkle' }}
-            title={t('recipes:new.describeTitle')}
-            body={t('recipes:new.describeBody')}
-            tone="kaya"
-            onPress={() => setDescribing(true)}
-          />
+          <View className="flex-row gap-2.5">
+            <FillOption
+              icon={{ set: 'system', name: 'camera' }}
+              label={t('recipes:new.scanLabel')}
+              tone="pandan"
+              onPress={() => setCamera(true)}
+            />
+            <FillOption
+              icon={{ set: 'system', name: 'sparkle' }}
+              label={t('recipes:new.describeLabel')}
+              tone="kaya"
+              onPress={() => setDescribing(true)}
+            />
+          </View>
           <View className="flex-row items-center gap-3 pt-1">
             <View className="h-0.5 flex-1 bg-line" />
             <Text variant="overline">{t('recipes:new.or')}</Text>
@@ -509,14 +514,7 @@ export default function RecipeFormScreen() {
       >
         {/* `autoFocus` inside a `Modal` is dropped, so the field is mounted only
             once the window is actually presented and focuses itself then. */}
-        {describeReady ? (
-          <DescribePanel
-            autoFocus
-            placeholder={t('recipes:new.describePlaceholder')}
-            hint={t('recipes:new.describeHint')}
-            onSubmit={readText}
-          />
-        ) : null}
+        {describeReady ? <DescribeRecipePanel autoFocus onSubmit={readText} /> : null}
       </Sheet>
 
       <ConfirmSheet
@@ -539,44 +537,52 @@ export default function RecipeFormScreen() {
 /**
  * One of the two offers to fill the form in.
  *
+ * A SQUARE-ISH TILE, side by side with its sibling, rather than a full-width
+ * row. Two stacked rows read as a list of settings and pushed the form's first
+ * real field below the fold; two tiles read as a choice, which is what this is.
+ * The same shape as the quick actions on the log sheet, and for the same
+ * reason.
+ *
+ * The label is one word and the explanation is GONE, not truncated. At this
+ * width a sentence wraps to three lines and makes the tile taller than the
+ * field it is offering to fill; "Photo" and "Describe" under an icon say what
+ * happens, and the sheet that opens says the rest — the describe panel's own
+ * placeholder is a worked example, which is a better explanation than a caption
+ * would have been.
+ *
  * A component rather than two near-copies, because near-copies drift: the two
- * differ by an icon, two lines of copy and a tint, and everything else about
- * them — the slab, the chevron, the press — is one control.
+ * differ by an icon, a word and a tint, and everything else about them is one
+ * control.
  */
 function FillOption({
   icon,
-  title,
-  body,
+  label,
   tone,
   onPress,
 }: {
   icon: IconProps
-  title: string
-  body: string
+  label: string
   tone: 'pandan' | 'kaya'
   onPress: () => void
 }) {
-  const colors = useThemeColors()
-
   return (
     <Squish
       depth={6}
       radius={22}
+      containerClassName="flex-1"
       slabClassName={tone === 'pandan' ? 'bg-pandan-soft-line' : 'bg-kaya-soft-line'}
       className={cn(
-        'flex-row items-center gap-3 border-[3px] p-4',
+        'items-center gap-2 border-[3px] px-3 py-4',
         tone === 'pandan' ? 'border-pandan bg-pandan-soft' : 'border-kaya-soft-line bg-kaya-soft',
       )}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={title}
+      accessibilityLabel={label}
     >
-      <Icon {...icon} size={26} />
-      <View className="min-w-0 flex-1 gap-0.5">
-        <Text variant="bodyStrong">{title}</Text>
-        <Text variant="meta">{body}</Text>
-      </View>
-      <Icon set="ui" name="chevron-right" size={18} tintColor={colors.muted} />
+      <Icon {...icon} size={30} />
+      <Text variant="label" numberOfLines={1}>
+        {label}
+      </Text>
     </Squish>
   )
 }

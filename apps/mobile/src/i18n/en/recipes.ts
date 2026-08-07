@@ -61,15 +61,22 @@ export const recipes = {
 
   new: {
     title: 'New recipe',
+    /**
+     * The two tiles at the top of a new recipe. One word each: at half the
+     * screen a sentence wraps to three lines, and the sheet each one opens
+     * explains itself better than a caption under an icon could.
+     */
+    scanLabel: 'Photo',
+    describeLabel: 'Describe',
     scanTitle: 'Fill it in from a photo',
-    scanBody: 'Snap the pot, we read it and fill this form.',
     /** The rule above the hand-filled fields, under the two offers. */
     or: 'OR FILL IT IN YOURSELF',
     describeTitle: 'Describe it',
-    describeBody: 'Say what you cooked and we fill this form.',
-    describePlaceholder:
-      'A pot of kari ayam. 600g chicken thigh, a tin of coconut milk, three potatoes. Feeds four.',
+    // A worked example, and short enough to read at a glance: the long version
+    // wrapped to three lines and turned the field into a wall of grey.
+    describePlaceholder: 'Kari ayam. 600g chicken thigh, a tin of santan, 3 potatoes. Feeds 4.',
     describeHint: 'Amounts and how many it feeds are the two worth typing.',
+    describeAction: 'Fill in the form',
     describing: 'Reading what you wrote…',
     describeFailed: 'We could not read that one. Fill it in yourself below.',
     described: 'Filled in from what you wrote. Change anything that looks off.',
