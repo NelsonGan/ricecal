@@ -78,14 +78,22 @@ select is(
 -- A dish with calories but no macros at all is a half-finished row. Zero
 -- calories is legitimate — Air kosong is plain water — so the assertion is
 -- "calories imply macros", not "calories are positive".
+--
+-- Recipe mirrors are exempt, and the exemption is the point rather than a
+-- loophole. This is an assertion about the CURATED catalogue, where a row with
+-- calories and no macros means somebody stopped halfway. A recipe's numbers are
+-- the sum of what its cook typed, and the form asks for macros "if you know
+-- them" — a pot of kerisik entered off a packet that only prints calories is a
+-- complete answer, not a half-finished one.
 select is(
   (
     select count(*)::integer
     from public.foods
     where kcal > 0 and carbs_g = 0 and protein_g = 0 and fat_g = 0
+      and not is_recipe
   ),
   0,
-  'every dish with calories records where they come from'
+  'every catalogue dish with calories records where they come from'
 );
 
 

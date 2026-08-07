@@ -1,4 +1,15 @@
-import type { Entry, Food, FoodDetailsRow, FoodLogRow, IconRef, Serving } from './types'
+import type {
+  Entry,
+  Food,
+  FoodDetailsRow,
+  FoodLogRow,
+  IconRef,
+  Recipe,
+  RecipeIngredient,
+  RecipeIngredientRow,
+  RecipeRow,
+  Serving,
+} from './types'
 import { fromDbSource } from './types'
 
 /**
@@ -85,6 +96,66 @@ export function toFood(row: FoodDetailsRow, stats?: FoodStats | undefined): Food
     },
     verified: row.verified ?? false,
     timesLogged: stats?.timesLogged,
+  }
+}
+
+export function toRecipe(row: RecipeRow): Recipe {
+  return {
+    id: row.id ?? '',
+    name: row.name ?? '',
+    icon: toIcon(row.icon_set, row.icon_name),
+    photoPath: row.photo_path ?? undefined,
+    servings: row.servings ?? 1,
+    steps: row.steps ?? undefined,
+
+    isOfficial: row.is_official ?? false,
+    isMine: row.is_mine ?? false,
+    isPublic: row.is_public ?? false,
+    review: row.review_status ?? 'pending',
+    reviewNote: row.review_note ?? undefined,
+    authorName: row.author_name ?? '',
+    shareSlug: row.share_slug ?? '',
+    savedCount: row.saved_count ?? 0,
+
+    ingredientCount: row.ingredient_count ?? 0,
+    total: {
+      kcal: row.total_kcal ?? 0,
+      carbs: Number(row.total_carbs_g ?? 0),
+      protein: Number(row.total_protein_g ?? 0),
+      fat: Number(row.total_fat_g ?? 0),
+    },
+    perServing: {
+      kcal: row.serving_kcal ?? 0,
+      carbs: Number(row.serving_carbs_g ?? 0),
+      protein: Number(row.serving_protein_g ?? 0),
+      fat: Number(row.serving_fat_g ?? 0),
+    },
+
+    foodId: row.food_id ?? '',
+    defaultServingId: row.default_serving_id ?? '',
+  }
+}
+
+export function toRecipeIngredient(row: RecipeIngredientRow): RecipeIngredient {
+  return {
+    id: row.id ?? '',
+    name: row.name ?? '',
+    foodId: row.food_id ?? undefined,
+    amount: Number(row.amount ?? 0),
+    unit: row.unit ?? 'g',
+    perUnit: {
+      kcal: Number(row.kcal_per_unit ?? 0),
+      carbs: Number(row.carbs_g_per_unit ?? 0),
+      protein: Number(row.protein_g_per_unit ?? 0),
+      fat: Number(row.fat_g_per_unit ?? 0),
+    },
+    macros: {
+      kcal: row.kcal ?? 0,
+      carbs: Number(row.carbs_g ?? 0),
+      protein: Number(row.protein_g ?? 0),
+      fat: Number(row.fat_g ?? 0),
+    },
+    position: row.position ?? 0,
   }
 }
 

@@ -7,6 +7,7 @@ import { Image } from 'react-native'
 
 import { supabase } from '@/lib/supabase'
 import { keys } from './keys'
+import { useUserId } from './session'
 
 /**
  * Images, in Cloudflare R2.
@@ -307,10 +308,31 @@ export function uploadAvatar(localUri: string): Promise<string> {
  * outlived its signature has nothing left to offer anybody. A tile still on
  * screen is unaffected: nothing is collected while it is being observed.
  */
+/**
+ * Whether this key is one the caller could possibly be handed a URL for.
+ *
+ * The server's `ownsKey` is the real check and this cannot replace it — it is
+ * the same rule, asked one round trip earlier, and it exists because of what a
+ * refusal COSTS here. `signRead` batches every key requested inside a 24 ms
+ * window into one call and rejects the whole promise if any of them is refused,
+ * so a single foreign key takes down the signing of every photograph beside it.
+ *
+ * A recipe list is where that first showed up: the community shelf renders
+ * other people's cooking, and asking for their photographs blanked the user's
+ * own. Filtered here, a foreign key is simply never asked for and the row falls
+ * back to its illustration.
+ */
+function ownKey(path: string | undefined, userId: string): boolean {
+  if (!path) return false
+  return path.startsWith(`meals/${userId}/`) || path.startsWith(`avatars/${userId}/`)
+}
+
 function useStoredImageUrl(path: string | undefined) {
+  const userId = useUserId()
+
   return useQuery({
     queryKey: keys.photo(path ?? ''),
-    enabled: Boolean(path),
+    enabled: ownKey(path, userId),
     staleTime: (READ_TTL_SECONDS - 300) * 1000,
     gcTime: READ_TTL_SECONDS * 1000,
     queryFn: () => signRead(path as string),

@@ -84,6 +84,24 @@ create table public.foods (
   -- by classification over the fixed list, never by search, so also excluded
   -- from `search_foods`.
   is_archetype   boolean not null default false,
+
+  -- The mirror of a row in `recipes` — somebody's pot of rendang, priced per
+  -- serving. It is a real catalogue row for exactly one reason: `food_logs`
+  -- resolves to `foods` and nothing else, so a recipe that could not be one
+  -- could not be logged, and every view, chart and report downstream would need
+  -- a second shape to understand.
+  --
+  -- Written only by the triggers in 22_recipes.sql, which run as definer — no
+  -- client gains a grant on this table, and the recipe stays the source of
+  -- truth that the mirror is recomputed from.
+  --
+  -- Excluded from `search_foods` and `user_food_stats`, for a sharper reason
+  -- than estimates are. A private recipe's mirror is visible to every
+  -- authenticated user, because the policy on this table is `true` and always
+  -- has been; what keeps one person's cooking out of another person's search is
+  -- that no arm of the search ever looks at these rows. A recipe is reached
+  -- through `recipe_details`, which is where the owner check lives.
+  is_recipe      boolean not null default false,
   -- Where the numbers came from. A citation, and the audit trail for an
   -- imported row whose figures someone later disputes.
   source         text,

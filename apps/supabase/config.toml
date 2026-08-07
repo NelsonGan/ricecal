@@ -489,6 +489,16 @@ verify_jwt = false
 import_map = "./functions/photos/deno.json"
 entrypoint = "./functions/photos/index.ts"
 
+# Recipes: fill a form in from a photograph of the pot, and review one somebody
+# asked to publish. Same auth pattern as the others. Secrets it reads:
+# OPENROUTER_API_KEY (absent locally, which switches it into mock mode) and the
+# R2 four, for the photograph — the review needs neither.
+[functions.recipes]
+enabled = true
+verify_jwt = false
+import_map = "./functions/recipes/deno.json"
+entrypoint = "./functions/recipes/index.ts"
+
 # Fix-by-typing: free-text corrections to a scanned entry. Same auth pattern
 # and the same cascade code (functions/_shared) as scan-meal.
 [functions.scan-refine]

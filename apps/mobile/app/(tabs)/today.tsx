@@ -24,6 +24,7 @@ import {
   CalorieRing,
   Card,
   EmptyState,
+  FloatingAction,
   Icon,
   Screen,
   Skeleton,
@@ -196,7 +197,10 @@ export default function TodayScreen() {
     // The one screen with swipeable rows on it, and the one that needs
     // gesture-handler's scroll view for them to work. Nothing here takes
     // typing, which is what makes that trade free — see `gestureScroll`.
-    <Screen gestureScroll>
+    <Screen
+      gestureScroll
+      floating={<FloatingAction onPress={() => router.push('/log')} label={t('common:nav.log')} />}
+    >
       <ScreenTitle
         title={title}
         trailing={

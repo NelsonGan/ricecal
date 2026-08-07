@@ -16,6 +16,7 @@ three rules — the point of them was always that this swap would be cheap.
 | `auth.ts` | Apple, Google and email sign-in |
 | `profile.ts`, `settings.ts`, `goals.ts` | the account |
 | `day.ts`, `entries.ts`, `foods.ts` | logging |
+| `recipes.ts` | home cooking. Two of its writes are RPCs rather than updates, because publishing may only ever move a recipe to `pending` and saving a copy has to bump a counter on somebody else's row |
 | `weight.ts` | progress |
 | `snap.ts`, `pending-snaps.tsx` | the camera path |
 | `photos.ts` | every image — upload, signed read, delete — through the `photos` edge function, since R2 has no idea who a user is. The signature is fetched per hour; the bytes are cached against the key |

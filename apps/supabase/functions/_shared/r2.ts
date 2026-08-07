@@ -78,6 +78,14 @@ let cached: R2Config | null = null
  * configured" in its own words — a local stack with no Cloudflare credentials
  * still starts, still scans (mock AI never reads the photo), and says exactly
  * what is missing when something does need an object.
+ *
+ * `R2_ENDPOINT` overrides the host, and exists so a LOCAL stack can point this
+ * at any S3 — the one Supabase already runs beside it, say. Nothing above this
+ * module changes: the keys are the same strings, the signature is the same
+ * signature, and the only difference is where the bytes land. Without it there
+ * is no way to exercise an upload without Cloudflare credentials, which means
+ * the one seam standing between two users' diaries can only be tested in
+ * production. Unset everywhere but a developer's machine.
  */
 function config(): R2Config | null {
   if (cached) return cached
@@ -86,12 +94,13 @@ function config(): R2Config | null {
   const accessKeyId = Deno.env.get('R2_ACCESS_KEY_ID')
   const secretAccessKey = Deno.env.get('R2_SECRET_ACCESS_KEY')
   const bucket = Deno.env.get('R2_BUCKET')
+  const endpoint = Deno.env.get('R2_ENDPOINT')?.replace(/\/+$/, '')
 
   if (!accountId || !accessKeyId || !secretAccessKey || !bucket) return null
 
   cached = {
     client: new AwsClient({ accessKeyId, secretAccessKey, service: 's3', region: 'auto' }),
-    base: `https://${accountId}.r2.cloudflarestorage.com/${bucket}`,
+    base: `${endpoint ?? `https://${accountId}.r2.cloudflarestorage.com`}/${bucket}`,
   }
   return cached
 }

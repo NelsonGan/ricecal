@@ -53,6 +53,20 @@ create type public.entry_source as enum (
   'text'
 );
 
+-- How much of an ingredient went into a pot. Three units and no more: the
+-- kitchen scale, the measuring jug, and counting. "1 kg" is 1000 g and "2 tbsp"
+-- is a weight somebody has to guess at anyway, so neither earns a value here —
+-- what the recipe stores has to be a number the totals can be computed from.
+create type public.recipe_unit as enum ('g', 'ml', 'piece');
+
+-- Where a recipe someone asked to publish has got to.
+--
+-- `pending` is the state a recipe enters the moment it is made public and the
+-- state it stays in if the review never runs, which is deliberate: the
+-- community tab reads `approved` only, so a moderation pass that fails, times
+-- out or is never deployed leaves the recipe invisible rather than published.
+create type public.recipe_review as enum ('pending', 'approved', 'rejected');
+
 create type public.unit_system as enum ('metric', 'imperial');
 
 create type public.energy_unit as enum ('kcal', 'kj');

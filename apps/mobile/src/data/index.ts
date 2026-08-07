@@ -63,7 +63,7 @@ export {
   useSyncHealth,
 } from './health-sync'
 export { keys } from './keys'
-export { toEntry, toFood, toIcon } from './mappers'
+export { toEntry, toFood, toIcon, toRecipe, toRecipeIngredient } from './mappers'
 export {
   type PendingSnap,
   PendingSnapProvider,
@@ -88,6 +88,21 @@ export {
   useProfile,
   useUpdateProfile,
 } from './profile'
+export {
+  type PublishResult,
+  type RecipeIngredientInput,
+  type RecipeInput,
+  type RecipeShelf,
+  type ScannedRecipe,
+  useDeleteRecipe,
+  usePublishRecipe,
+  useRecipe,
+  useRecipeIngredients,
+  useRecipes,
+  useSaveRecipe,
+  useSaveRecipeCopy,
+  useScanRecipePhoto,
+} from './recipes'
 export { RefiningProvider, useRefiningEntries } from './refining'
 export {
   type EntryIngredient,

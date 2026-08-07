@@ -16,11 +16,20 @@ import {
   useTargets,
 } from '@/data'
 import { DescribePanel, FoodSearchPanel, InlineCamera, QuickAction } from '@/features/logging'
+import { RecipePanel } from '@/features/recipes'
 import { ItemRow } from '@/features/shared'
-import { useBack } from '@/lib/navigation'
+import { useBack, useDismissTo } from '@/lib/navigation'
 import { sumMacros } from '@/lib/nutrition'
 import { useThemeColors } from '@/theme/useTheme'
 import { Icon, IconButton, SheetSurface, Tappable, Text } from '@/ui'
+
+/**
+ * Which of the four quick actions has its panel open below the row, if any.
+ *
+ * A union rather than a flag each, because they share the space under the row:
+ * opening the camera has to put search away, and the other way round.
+ */
+type Panel = 'camera' | 'describe' | 'search' | 'recipes' | null
 
 /**
  * L2 QUICK SELECTOR, and L3's backdrop.
@@ -36,9 +45,14 @@ import { Icon, IconButton, SheetSurface, Tappable, Text } from '@/ui'
  * the log button felt slow.
  */
 export default function LogSheet() {
-  const { t } = useTranslation(['logging', 'common'])
+  const { t } = useTranslation(['logging', 'recipes', 'common'])
   const router = useRouter()
   const goBack = useBack('/today')
+  // The recipe list is a TAB now, not a page this sheet can push. Replacing
+  // this route with it would leave the tab rendering inside a transparent
+  // modal presentation; dismissing first and then navigating puts the user on
+  // the tab bar where the list lives.
+  const seeAllRecipes = useDismissTo('/recipes')
   const logFood = useLogFood()
   const snapFood = useSnapFood()
   const describeFood = useDescribeFood()
@@ -46,17 +60,11 @@ export default function LogSheet() {
   const day = useDayLog(selectedDate)
   const { data: targets } = useTargets()
   const colors = useThemeColors()
-  /**
-   * Which of the quick actions has its panel open below the row, if any.
-   *
-   * One value rather than a flag each, because they share the space under the
-   * row: opening the camera has to put search away, and the other way round. The
-   * viewfinder and the search field both live inside this sheet rather than in a
-   * screen of their own, so the day stays visible behind them and nothing has to
-   * be dismissed twice.
-   */
-  const [panel, setPanel] = useState<'camera' | 'describe' | 'search' | null>(null)
-  const toggle = (next: 'camera' | 'describe' | 'search') =>
+  // The viewfinder, the search field and the recipe list all live inside this
+  // sheet rather than in a screen of their own, so the day stays visible behind
+  // them and nothing has to be dismissed twice. See the `Panel` union above.
+  const [panel, setPanel] = useState<Panel>(null)
+  const toggle = (next: NonNullable<Panel>) =>
     setPanel((current) => (current === next ? null : next))
 
   const left = (targets?.kcal ?? 0) - sumMacros(day.entries).kcal
@@ -164,6 +172,16 @@ export default function LogSheet() {
           selected={panel === 'search'}
           onPress={() => toggle('search')}
         />
+        {/* Something you cooked. The fourth way in, and the only one that logs a
+            dish the user wrote themselves — everything to its left resolves to
+            the shared catalogue one way or another. */}
+        <QuickAction
+          label={t('recipes:log.action')}
+          icon={{ set: 'food', name: 'cooking-pot' }}
+          tone="water"
+          selected={panel === 'recipes'}
+          onPress={() => toggle('recipes')}
+        />
       </View>
 
       {panel === 'camera' ? (
@@ -190,6 +208,18 @@ export default function LogSheet() {
         />
       ) : null}
       {panel === 'search' ? <FoodSearchPanel autoFocus onPick={openFood} /> : null}
+      {panel === 'recipes' ? (
+        // `replace` for the same reason `openFood` does it: a push from inside a
+        // transparent modal lands on the stack WITHIN that presentation, so the
+        // recipe would come up as a second modal stacked on this sheet.
+        <RecipePanel
+          onLog={(recipe) => add(recipe.foodId, recipe.defaultServingId)}
+          onOpen={(recipe) =>
+            router.replace({ pathname: '/recipe/[id]', params: { id: recipe.id } })
+          }
+          onSeeAll={seeAllRecipes}
+        />
+      ) : null}
 
       {/* Both suggestion blocks are put away while search is open — they are for
           someone who has not decided yet, and the results under the field are the
@@ -197,7 +227,9 @@ export default function LogSheet() {
           nothing in it. A heading over an empty space and a line saying nothing
           has been logged are both the sheet taking up room to tell the user it
           cannot help; the three buttons above already say what to do next. */}
-      {panel === 'search' || panel === 'describe' ? null : (
+      {/* The suggestion blocks are for somebody who has not decided yet, and a
+          panel that is open is the answer of somebody who has. */}
+      {panel === 'search' || panel === 'describe' || panel === 'recipes' ? null : (
         <>
           {recent.length ? (
             <View className="gap-3 pt-1">
