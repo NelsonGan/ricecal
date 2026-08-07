@@ -269,6 +269,10 @@ export default function FoodDetail() {
         carbs: tenth(ingredient.carbs),
         protein: tenth(ingredient.protein),
         fat: tenth(ingredient.fat),
+        // The weight is a quantity like the calories are, so it has to move
+        // with the stepper too — half a portion that still says 180 g is a
+        // preview of a row the server will not write.
+        grams: ingredient.grams === null ? null : Math.round(ingredient.grams * factor),
       },
     ]
   })
@@ -869,13 +873,14 @@ export default function FoodDetail() {
           <Stepper
             value={quantity}
             onChange={setQuantity}
-            // Half a plate is an ordinary portion and used to be unreachable
-            // here: the steps were whole servings, so "half" could only be had
-            // by picking a serving that happened to be one. `Stepper` renders
-            // 1.5 as "1½".
-            min={0.5}
+            // Quarters, matching the parts below — a portion is the same kind
+            // of quantity whether the plate came apart or not, and two controls
+            // on one screen that move by different amounts is a thing to
+            // discover rather than a thing to use. `Stepper` renders 1.25 as
+            // "1¼", so a quarter is as readable as a half.
+            min={0.25}
             max={20}
-            step={0.5}
+            step={0.25}
             // And for the amounts halves cannot express — 0.3 of a tub — the
             // number itself is a field.
             editable
@@ -1038,14 +1043,18 @@ export default function FoodDetail() {
       {parts.length ? (
         <Card title={t('logging:detail.plateTitle')}>
           {parts.map((ingredient) => {
-            // Whole steps for a counted part, quarters for a measured one.
-            // Eight satay skewers step to seven, not to 7.75 — the row says
-            // "× 8" because the scan counted eight of them, and a quarter of a
-            // skewer is not a thing anyone put on a plate. A part already
-            // sitting at a fraction keeps quarter steps so it can be walked
-            // back to a whole number.
-            const size =
-              Number.isInteger(ingredient.quantity) && ingredient.quantity >= 1 ? 1 : 0.25
+            // Quarters, whatever the part is sitting at.
+            //
+            // This used to step in whole units for a counted part and quarters
+            // only below one, on the reasoning that a quarter of a satay skewer
+            // is not a thing anyone put on a plate. True of skewers, and wrong
+            // about everything else the scan decomposes: a scoop of rice, a
+            // ladle of curry and a piece of fried chicken are all "× 1" and all
+            // routinely eaten by half. Under the old rule the only way down from
+            // 1 was to 0.25, and there was no way at all to say "a bit more than
+            // one" — the step you needed depended on where you already were,
+            // which is not something a pair of buttons can explain.
+            const size = 0.25
             // At the smallest portion the minus takes the whole thing off the
             // plate. A quarter of a thing and "there wasn't any" are different
             // answers, and only one of them was reachable — the stepper simply
@@ -1072,12 +1081,21 @@ export default function FoodDetail() {
                       here described the import rather than the plate. How many
                       of it there are is the only part of that the user is
                       changing, and the calories beside it say the rest. */}
-                  {/* The count, and only the count. Its macros were under
-                      here for a while and made every row two lines of small
-                      figures — the plate's totals are the sum of them and are
-                      already on the card above. */}
+                  {/* The count and what it weighs. Its macros were under here
+                      for a while and made every row two lines of small figures
+                      — the plate's totals are the sum of them and are already
+                      on the card above — but the weight is not more of that. It
+                      is the amount itself: "× 6" is six of something whose size
+                      nobody stated, and the scan now knows the size. Absent
+                      where the scan did not weigh the part, since "0 g" would
+                      be a claim about the food rather than about the answer. */}
                   <Text variant="meta">
-                    {t('logging:detail.times', { amount: ingredient.quantity })}
+                    {ingredient.grams
+                      ? t('logging:detail.timesWeight', {
+                          amount: ingredient.quantity,
+                          grams: Math.round(ingredient.grams).toLocaleString(),
+                        })
+                      : t('logging:detail.times', { amount: ingredient.quantity })}
                   </Text>
                 </View>
                 <View className="flex-row items-center gap-2">

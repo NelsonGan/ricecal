@@ -175,7 +175,23 @@ Search and quick-add are ordinary writes. The other two run the cascade.
 `_shared/cascade.ts`, model calls in `_shared/llm.ts`
 
 One vision call returns queries, per-component sizing and a kcal *range* — never
-nutrients. Then, in order:
+nutrients.
+
+Sizing is a WEIGHT before it is a calorie count, and `_shared/portion.ts` is
+what that buys. Grams are the one thing about a portion a picture actually
+carries, and unlike a calorie figure they can be checked: against the macro
+grams the model reports beside them (matter cannot outweigh the thing it is in,
+and a cooked food is mostly water), and against the catalogue rows that state
+their own serving weight — "100 g", "3.0 oz", "1 bowl (400 g)" — where 30 g of
+the thing is arithmetic rather than a second opinion. Everything downstream used
+to be anchored to the model's kcal instead, which is how one bad guess became a
+bad entry: told a satay stick was 180 kcal, the catalogue search accepted rows
+within a band around that figure, so the catalogue's own 36 kcal a stick was
+excluded and four skewers were logged at 720. Weights only ever bound a figure
+DOWNWARDS; a number too big for its mass is impossible, while a number too small
+for it usually means the mass was measured against the wrong thing.
+
+Then, in order:
 
 - **Nutrition panel** → read the figures off the label and stop. Nothing is
   searched or estimated; somebody photographing a panel is saying the answer is
@@ -401,6 +417,15 @@ Break these and the feature is wrong in ways tests may not catch.
 - **An LLM figure is never averaged with a catalogue figure**, and the nutrition
   call is never told the vision call's guess — anchored, the model answered
   450 kcal for a plate of apple slices, and 120 without.
+- **A breakdown must account for the meal.** The parts and the calorie band are
+  two answers from the same model to the same question, and when they contradict
+  each other the LIST is the one that is wrong — because the band is about the
+  meal and the list is about whatever the model chose to enumerate. What it
+  leaves out is the plain thing underneath: a basket of wings came back as
+  celery and a pot of dip, and since the entry is priced FROM the parts, a meal
+  the model itself bounded at 780-900 kcal was logged at 160. A breakdown far
+  outside its own band is dropped, not repaired, and the dish tier prices the
+  plate whole.
 - **No client writes the catalogue.** `authenticated` holds `select` on `foods`
   and `food_servings` and nothing else — no grant, not merely no policy. Every
   writer is `service_role`: the edge functions, and the two loaders
