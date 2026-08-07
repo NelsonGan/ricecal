@@ -7,6 +7,7 @@
  * the domain in with it.
  */
 export { type Bar, BarChart, type BarChartProps } from './BarChart'
+export { type AxisTick, ChartScale, type ChartScaleProps } from './ChartScale'
 export { CheckList, type CheckListProps } from './CheckList'
 export { EntryList, type EntryListProps, formatTime } from './EntryList'
 export { ItemRow, type ItemRowProps } from './ItemRow'
@@ -16,3 +17,4 @@ export { ScreenTitle, type ScreenTitleProps } from './ScreenTitle'
 export { SettingRow, type SettingRowProps, ToggleRow, type ToggleRowProps } from './SettingRow'
 export { type Stat, StatRow, type StatRowProps } from './StatRow'
 export { SwipeRow, type SwipeRowProps } from './SwipeRow'
+export { axisNumber, axisTicks, niceCeiling } from './scale'

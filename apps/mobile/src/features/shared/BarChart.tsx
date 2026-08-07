@@ -1,6 +1,8 @@
 import { View } from 'react-native'
 
 import { cn, Text } from '@/ui'
+import { ChartScale } from './ChartScale'
+import { axisNumber, axisTicks, niceCeiling } from './scale'
 
 export type Bar = {
   key: string
@@ -25,6 +27,8 @@ export type BarChartProps = {
    */
   scale?: 'zero' | 'range'
   height?: number
+  /** How the y-axis ticks read. Defaults to "820" / "1.2k". */
+  format?: (value: number) => string
   /** Screen-reader summary. The bars themselves are decorative. */
   accessibilityLabel?: string
   className?: string
@@ -49,25 +53,40 @@ export function BarChart({
   tone = 'pandan',
   scale = 'zero',
   height = 110,
+  format = axisNumber,
   accessibilityLabel,
   className,
 }: BarChartProps) {
   const values = bars.map((bar) => bar.value)
-  const peak = Math.max(...values, 1)
   const low = Math.min(...values)
+  // Rounded up on a zero scale so the top tick is a figure worth printing. On a
+  // range scale the top has to stay the real maximum: the whole point of that
+  // scale is that the span is narrow, and rounding 70.2 kg up to 80 would flatten
+  // the chart it was chosen to keep readable.
+  const peak = scale === 'zero' ? niceCeiling(Math.max(...values, 1)) : Math.max(...values, 1)
 
   // A tenth of the spread below the smallest value, so the shortest bar is a
   // visible stub rather than nothing.
   const floor = scale === 'range' ? low - (peak - low) * 0.1 - 0.001 : 0
   const span = peak - floor || 1
 
+  // On a range scale the two figures that mean anything are the ends of the
+  // data, not fractions of an axis that starts nowhere in particular.
+  const ticks =
+    scale === 'zero'
+      ? axisTicks(peak, { format })
+      : [
+          { at: 1, label: format(peak) },
+          { at: (low - floor) / span, label: format(low) },
+        ]
+
   return (
-    <View
-      className={cn('flex-row items-end gap-1.5', className)}
-      style={{ height }}
-      accessible={Boolean(accessibilityLabel)}
-      accessibilityRole={accessibilityLabel ? 'image' : undefined}
+    <ChartScale
+      height={height}
+      ticks={ticks}
+      rowClassName="gap-1.5"
       accessibilityLabel={accessibilityLabel}
+      className={className}
     >
       {bars.map((bar) => (
         <View key={bar.key} className="h-full min-w-0 flex-1 items-center gap-1.5">
@@ -87,6 +106,6 @@ export function BarChart({
           </Text>
         </View>
       ))}
-    </View>
+    </ChartScale>
   )
 }

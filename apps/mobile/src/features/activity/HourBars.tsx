@@ -1,6 +1,7 @@
 import { View } from 'react-native'
 
 import type { ActivityHour } from '@/data'
+import { axisTicks, ChartScale, niceCeiling } from '@/features/shared'
 import { cn, Text } from '@/ui'
 import { count, hourLabel } from './format'
 
@@ -49,15 +50,15 @@ export function HourBars({
   className,
 }: HourBarsProps) {
   const columns = blocks ? toBlocks(hours, blockLabels) : toHours(hours)
-  const peak = Math.max(...columns.map((column) => column.steps), 1)
+  const top = niceCeiling(Math.max(...columns.map((column) => column.steps), 1))
 
   return (
-    <View
-      className={cn('flex-row items-end', blocks ? 'gap-2.5' : 'gap-[3px]', className)}
-      style={{ height }}
-      accessible={Boolean(accessibilityLabel)}
-      accessibilityRole={accessibilityLabel ? 'image' : undefined}
+    <ChartScale
+      height={height}
+      ticks={axisTicks(top)}
+      rowClassName={blocks ? 'gap-2.5' : 'gap-[3px]'}
       accessibilityLabel={accessibilityLabel}
+      className={className}
     >
       {columns.map((column) => (
         <View key={column.key} className="h-full min-w-0 flex-1 items-center gap-1.5">
@@ -67,7 +68,7 @@ export function HourBars({
               // A floor of 3% so an empty hour is still a visible tick on the
               // baseline rather than nothing at all — which is what makes the
               // row read as a timeline instead of a scattering of bars.
-              style={{ height: `${Math.max(3, (column.steps / peak) * 100)}%` }}
+              style={{ height: `${Math.max(3, (column.steps / top) * 100)}%` }}
             />
           </View>
           {/* An hourly label OVERFLOWS its column; a block label does not.
@@ -100,7 +101,7 @@ export function HourBars({
           </View>
         </View>
       ))}
-    </View>
+    </ChartScale>
   )
 }
 

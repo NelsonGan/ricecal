@@ -22,7 +22,7 @@ import {
   hourLabel,
   hourlySummary,
 } from '@/features/activity'
-import { type Stat, StatRow } from '@/features/shared'
+import { axisTicks, ChartScale, niceCeiling, type Stat, StatRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { AppBar, Card, ProgressBar, Screen, SegmentedControl, Skeleton, Text } from '@/ui'
 
@@ -101,7 +101,9 @@ export default function StepsScreen() {
   // Hoisted out of the column loop below: it is a property of the series, not
   // of a bucket, and recomputing it per column made the chart O(n²) in its own
   // width for no reason.
-  const stepsPeak = Math.max(...(series.data ?? []).map(perDay), 1)
+  // Rounded up to a figure the axis can print, rather than to the tallest
+  // column — see `niceCeiling`.
+  const stepsPeak = niceCeiling(Math.max(...(series.data ?? []).map(perDay), 1))
 
   const stats: Stat[] = [
     {
@@ -229,7 +231,7 @@ export default function StepsScreen() {
                 `HourBars`: that component's bar is "did this hour move at all",
                 while this one is "did the bucket reach the goal", and the two
                 colour rules have nothing in common but a rectangle. */}
-            <View className="flex-row items-end gap-1.5" style={{ height: 130 }}>
+            <ChartScale height={130} ticks={axisTicks(stepsPeak)} rowClassName="gap-1.5">
               {series.data.map((bucket, index) => {
                 const average = perDay(bucket)
                 /**
@@ -267,7 +269,7 @@ export default function StepsScreen() {
                   </View>
                 )
               })}
-            </View>
+            </ChartScale>
 
             <StatRow stats={stats} />
 
