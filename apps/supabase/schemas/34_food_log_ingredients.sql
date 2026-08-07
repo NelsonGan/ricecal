@@ -26,6 +26,21 @@ create table public.food_log_ingredients (
   -- the catalogue row it resolved to can be blunter ("Fried chicken").
   display_label text check (char_length(display_label) between 1 and 120),
 
+  -- What ONE of this part weighs, when the scan was able to say.
+  --
+  -- The scan now sizes a plate by mass before it prices it (see
+  -- `functions/_shared/portion.ts`), and that weight is the only thing on the
+  -- row a person can check against the plate they are looking at. Without it
+  -- the breakdown reads "x 6" against a catalogue serving nobody chose — six of
+  -- WHAT, at what size — and the stepper beside it moves a number with no unit.
+  --
+  -- PER UNIT, like every other figure here: the view multiplies by `quantity`,
+  -- so halving the portion halves the grams on screen without this column
+  -- moving. Null where it is genuinely unknown — a part added by hand, or one
+  -- the model declined to weigh — and null renders as nothing rather than as a
+  -- zero, because "0 g" is a claim and "we did not weigh it" is not.
+  grams        numeric(7, 1) check (grams > 0 and grams <= 20000),
+
   -- Plate order, as the model listed them.
   position     smallint not null default 0,
 

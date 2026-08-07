@@ -16,10 +16,30 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: '14.5'
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -248,6 +268,7 @@ export type Database = {
           display_label: string | null
           food_id: string
           food_log_id: string
+          grams: number | null
           id: string
           position: number
           quantity: number
@@ -258,6 +279,7 @@ export type Database = {
           display_label?: string | null
           food_id: string
           food_log_id: string
+          grams?: number | null
           id?: string
           position?: number
           quantity?: number
@@ -268,6 +290,7 @@ export type Database = {
           display_label?: string | null
           food_id?: string
           food_log_id?: string
+          grams?: number | null
           id?: string
           position?: number
           quantity?: number
@@ -1007,6 +1030,7 @@ export type Database = {
           fat_g: number | null
           food_id: string | null
           food_log_id: string | null
+          grams: number | null
           id: string | null
           kcal: number | null
           name: string | null
@@ -1498,6 +1522,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       activity_level: ['sedentary', 'light', 'on_feet', 'very_active'],

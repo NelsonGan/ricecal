@@ -38,17 +38,31 @@ type ScanResponse = {
 }
 
 /**
+ * Mark an error as one whose OUTCOME IS KNOWN.
+ *
+ * The distinction the pending row turns on: a settled error means no entry is
+ * coming and the row should say so now, while an unsettled one means only that
+ * this process stopped hearing about it. Attached to the error rather than
+ * decided at the catch, because by the time it gets there a timeout and a
+ * refusal are the same rejected promise.
+ */
+const settled = <E>(error: E, known = true): E =>
+  known ? (Object.assign(error as object, { settled: true }) as E) : error
+
+/**
  * The recognition call. The photo is already in the bucket; everything else —
  * the vision model, the catalogue search, the five-tier fallback — happens
  * inside the `scan-meal` edge function, which also WRITES the entries itself
  * as service_role. It has to: tier 4 creates catalogue rows, which no client
  * is allowed to do.
  *
- * The function's contract is that once the photo is uploaded it never returns
- * an HTTP error — the cascade bottoms out at an archetype row that needs no
- * model and no network. So a rejection here means the scan genuinely did not
- * happen (offline, signed out), which is exactly when the pending row should
- * stay on screen as failed.
+ * That the function writes the entry ITSELF is why a rejection here is not the
+ * same as a failed scan. The work does not stop when the caller stops listening
+ * — there is no result to hand back and drop — so this throws two kinds of
+ * error and marks which is which. The function's contract is that once the
+ * caller is authenticated and the body parses it never returns an HTTP error,
+ * the cascade bottoming out at an archetype row that needs no model and no
+ * network; so a status IS an answer, and anything else is the wire.
  */
 async function scanMeal(input: {
   photoPath?: string
@@ -62,8 +76,17 @@ async function scanMeal(input: {
       log_date: input.logDate,
     },
   })
-  if (error) throw error
-  if (!data?.ok) throw new Error(data?.error ?? 'scan failed')
+  if (error) {
+    // A STATUS is an answer. This endpoint does not return an HTTP error once
+    // the caller is authenticated and the body parses — that is its contract —
+    // so a 4xx here means "not signed in" or "not your photo", and no entry is
+    // on its way. Everything else that lands in `error` is the transport
+    // failing, which says nothing about what the function is doing.
+    throw settled(error, (error as { name?: string }).name === 'FunctionsHttpError')
+  }
+  // The cascade's own floor gave way (the database was down, the terminal
+  // archetype row is missing). The function answered, and its answer is no.
+  if (!data?.ok) throw settled(new Error(data?.error ?? 'scan failed'), true)
   return data
 }
 
@@ -130,8 +153,27 @@ function useRecogniseMeal() {
         })
         .catch(() => null)
 
-      const work = async () => {
-        const path = photoUri ? await uploadMealPhoto(photoUri) : undefined
+      /**
+       * Failures in here mean two different things, and only one of them is a
+       * failure of the SCAN.
+       *
+       * If the upload throws there is no object in the bucket, so nothing was
+       * ever asked to recognise anything: settled, and the row should say so at
+       * once. If the request to the function breaks — a timeout, a dropped
+       * connection, an app the OS suspended mid-flight — the function on the
+       * other end is very probably still working, because it writes the entry
+       * itself rather than handing it back for us to write. Calling that one
+       * "failed" is how a scan that succeeded produced an error message.
+       */
+      const work = async (): Promise<ScanResponse> => {
+        let path: string | undefined
+        if (photoUri) {
+          try {
+            path = await uploadMealPhoto(photoUri)
+          } catch (error) {
+            throw settled(error instanceof Error ? error : new Error('upload failed'))
+          }
+        }
         return scanMeal({ photoPath: path, text, logDate })
       }
 
@@ -177,16 +219,26 @@ function useRecogniseMeal() {
           // the Activity tab still saying "Not enough logged".
           queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
         })
-        // A failed scan has nothing to announce, so the booked notice goes
-        // too — the row on Today says what happened, and a banner claiming
-        // the plate was counted would be a lie the user acts on.
-        //
-        // The row stays, with its photo, and says it could not be read. Losing
-        // both because a request timed out would make the user take the
-        // picture again for nothing.
-        .catch(() => {
-          void booked.then(() => cancelScanNotice(notice))
-          pending.fail(id)
+        .catch((error: unknown) => {
+          // The outcome is known and it is no: say so now rather than spinning
+          // out the deadline over an answer that already arrived.
+          if ((error as { settled?: boolean })?.settled) {
+            // A failed scan has nothing to announce, so the booked notice goes
+            // too — the row on Today says what happened, and a banner claiming
+            // the plate was counted would be a lie the user acts on.
+            void booked.then(() => cancelScanNotice(notice))
+            pending.fail(id)
+            return
+          }
+          // The request broke; the scan probably did not. The row keeps its
+          // spinner and its photo, the day is polled until the entry appears,
+          // and only a deadline with nothing on it turns this into a failure.
+          //
+          // The booked notice STAYS for this one. It is the case it was
+          // written for: the answer is still coming, this process is no longer
+          // the thing that will hear it, and a scheduled notification fires
+          // whether or not the app is alive to fire it.
+          pending.detach(id)
         })
 
       return id

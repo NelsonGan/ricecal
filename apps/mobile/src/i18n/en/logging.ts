@@ -221,6 +221,15 @@ export const logging = {
      * rather than as the amount every row has.
      */
     times: '× {{amount}}',
+    /**
+     * The same count with the weight the scan gave it: "× 6 · 150 g".
+     *
+     * The count alone says how many, which is only half an amount — six of a
+     * thing whose size nobody stated. The weight is the half a person can check
+     * against the plate in front of them, and it is what the stepper beside it
+     * is actually moving.
+     */
+    timesWeight: '× {{amount}} · {{grams}} g',
     /** The per-ingredient portion steppers, and the one that empties a row. */
     lessOf: 'Less {{name}}',
     moreOf: 'More {{name}}',

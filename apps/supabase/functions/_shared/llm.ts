@@ -13,6 +13,8 @@
 // mock through `body.mock`, which is only read in mock mode; it exists so a
 // test can force each tier of the cascade in turn.
 
+import { reconcile, unfoldCounts } from './portion.ts'
+
 export type Scene = 'single' | 'composite' | 'packaged' | 'unclear'
 
 /**
@@ -34,6 +36,19 @@ export type VisionComponent = {
   name: string
   /** How many of this part are visible. Whole numbers; 1 unless repeated. */
   count: number
+  /**
+   * What ONE of them weighs, edible parts only — no bone, no shell, no skewer.
+   *
+   * The size signal that actually survives contact with a photograph. A model
+   * asked only for calories priced a satay stick at 180 kcal and a slice of lap
+   * cheong at 217, and because the catalogue was then searched within a band
+   * around those figures, the rows that would have corrected them were the ones
+   * the band excluded. Asked what the stick WEIGHS it answers 30 g, which is
+   * both closer to true and — unlike a calorie count — checkable: against the
+   * macro grams it also reported, and against the catalogue rows that state
+   * their own serving weight. See `_shared/portion.ts`.
+   */
+  grams: number | null
   /** Calories for ONE of them, never the total for `count` of them. */
   kcal: number
   carbs_g: number | null
@@ -57,6 +72,15 @@ export type VisionItem = {
    */
   count: number
   components: VisionComponent[]
+  /**
+   * What ONE unit of this dish weighs, edible parts only.
+   *
+   * Read for the same reason a component's is, one level up: three durian are
+   * priced per seed, and a seed is 40 g of flesh whatever the model guesses it
+   * costs. Null for a plate that came back as a list of parts — there the
+   * parts carry the mass and the dish is their sum.
+   */
+  grams: number | null
   serving_hint: string | null
   kcal_low: number
   kcal_high: number
@@ -299,6 +323,22 @@ const clampNumber = (v: unknown, lo: number, hi: number, fallback: number): numb
   return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : fallback
 }
 
+/**
+ * The weight of ONE unit, or null.
+ *
+ * Null rather than a default, because everything that reads grams branches on
+ * having them: a missing weight leaves the old kcal-only path in place, and a
+ * defaulted one would put every unsized part at the same fictitious size. The
+ * bounds are what a single piece of food on a plate can weigh — under 2 g is a
+ * garnish the model has confused for a portion, over 2 kg is a whole roast
+ * being described as one of several.
+ */
+const unitGrams = (v: unknown): number | null => {
+  const n = Number(v)
+  if (v === null || v === undefined || !Number.isFinite(n) || n < 2 || n > 2000) return null
+  return Math.round(n)
+}
+
 function shapeVision(raw: unknown): Vision {
   const o = (raw ?? {}) as Record<string, unknown>
   const scene: Scene = ['single', 'composite', 'packaged', 'unclear'].includes(o.scene as string)
@@ -345,53 +385,94 @@ function shapeVision(raw: unknown): Vision {
     const name = String(i.name ?? '').trim()
     if (!name) return []
     const low = clampNumber(i.kcal_low, 0, 10000, 0)
+    // Read before the components rather than beside them: the band is what
+    // decides whether the counts below have already been applied.
+    const high = clampNumber(i.kcal_high, low, 10000, low)
     return [
       {
         name: name.slice(0, 120),
         specific_query: String(i.specific_query ?? name).trim(),
         generic_query: String(i.generic_query ?? '').trim(),
         count: Math.round(clampNumber(i.count, 1, 20, 1)),
-        components: (Array.isArray(i.components) ? i.components : [])
-          .flatMap((c): VisionComponent[] => {
-            // Bare strings still parse (older mocks, stubborn models); they
-            // carry no sizing, which the resolver treats as "top hit, as-is".
-            if (typeof c === 'string') {
-              const name = c.trim()
-              return name
-                ? [{ name, count: 1, kcal: 0, carbs_g: null, protein_g: null, fat_g: null }]
-                : []
-            }
-            const o = (c ?? {}) as Record<string, unknown>
-            const name = String(o.name ?? '').trim()
-            if (!name) return []
-            const optional = (v: unknown): number | null => {
-              const n = Number(v)
-              return v !== null && v !== undefined && Number.isFinite(n) && n >= 0
-                ? Math.min(n, 9999)
-                : null
-            }
-            // A glass of water is not part of a meal's calories, and listing
-            // it made a durian into "Durian with water" — two components, so
-            // the plate was decomposed instead of counted, and one of its
-            // parts was a search for the word "water".
-            if (Number(o.kcal) === 0) return []
-            return [
-              {
-                name: name.slice(0, 120),
-                // Whole units. A model that answers 1.5 means one and a bit,
-                // which is what the kcal figure is for.
-                count: Math.round(clampNumber(o.count, 1, 12, 1)),
-                kcal: Math.round(clampNumber(o.kcal, 0, 10000, 0)),
-                carbs_g: optional(o.carbs_g),
-                protein_g: optional(o.protein_g),
-                fat_g: optional(o.fat_g),
-              },
-            ]
-          })
-          .slice(0, 8),
+        // `unfoldCounts` last, because it is the one step that needs the whole
+        // list and the band together: a part is only "already totalled" if the
+        // parts TOGETHER outrun the meal they are supposed to add up to.
+        components: unfoldCounts(
+          (Array.isArray(i.components) ? i.components : [])
+            .flatMap((c): VisionComponent[] => {
+              // Bare strings still parse (older mocks, stubborn models); they
+              // carry no sizing, which the resolver treats as "top hit, as-is".
+              if (typeof c === 'string') {
+                const name = c.trim()
+                return name
+                  ? [
+                      {
+                        name,
+                        count: 1,
+                        grams: null,
+                        kcal: 0,
+                        carbs_g: null,
+                        protein_g: null,
+                        fat_g: null,
+                      },
+                    ]
+                  : []
+              }
+              const o = (c ?? {}) as Record<string, unknown>
+              const name = String(o.name ?? '').trim()
+              if (!name) return []
+              const optional = (v: unknown): number | null => {
+                const n = Number(v)
+                return v !== null && v !== undefined && Number.isFinite(n) && n >= 0
+                  ? Math.min(n, 9999)
+                  : null
+              }
+              // A glass of water is not part of a meal's calories, and listing
+              // it made a durian into "Durian with water" — two components, so
+              // the plate was decomposed instead of counted, and one of its
+              // parts was a search for the word "water".
+              //
+              // EXPLICITLY zero, and this is the whole distinction. `Number(null)`
+              // is 0, so a model that answered the name and the weight of a part
+              // but left its calories out had that part DELETED — and the part a
+              // model is least willing to price is the plain base of the dish it
+              // is looking at. A basket of wings came back as celery and dip; a
+              // char kuey teow came back as prawns and lap cheong with no
+              // noodles under them, and the entry was priced from what was left.
+              // An unpriced part is the catalogue's question to answer, not a
+              // reason to pretend it is not on the plate.
+              //
+              // Written against the raw value rather than against `Number(...)`
+              // so that null and undefined are not zero, and loosely enough that
+              // "0" and 0.0 still are — a model half-following an instruction
+              // answers in strings, and this branch is about intent.
+              if (o.kcal !== null && o.kcal !== undefined && Number(o.kcal) === 0) return []
+              return [
+                {
+                  name: name.slice(0, 120),
+                  // Whole units. A model that answers 1.5 means one and a bit,
+                  // which is what the kcal figure is for.
+                  count: Math.round(clampNumber(o.count, 1, 12, 1)),
+                  grams: unitGrams(o.grams),
+                  kcal: Math.round(clampNumber(o.kcal, 0, 10000, 0)),
+                  carbs_g: optional(o.carbs_g),
+                  protein_g: optional(o.protein_g),
+                  fat_g: optional(o.fat_g),
+                },
+              ]
+            })
+            // Made to agree with their own weight before anything downstream
+            // reads them: `reconcile` is where 180 kcal in a 30 g satay stick
+            // stops being a number the catalogue search has to work around.
+            .map((component) => ({ ...component, ...reconcile(component) }))
+            .slice(0, 8),
+          low,
+          high,
+        ),
+        grams: unitGrams(i.grams),
         serving_hint: i.serving_hint ? String(i.serving_hint).slice(0, 80) : null,
         kcal_low: low,
-        kcal_high: clampNumber(i.kcal_high, low, 10000, low),
+        kcal_high: high,
         confidence: clampNumber(i.confidence, 0, 1, 0.5),
         suggested_edits: (Array.isArray(i.suggested_edits) ? i.suggested_edits : [])
           .map((edit) => String(edit).trim().slice(0, 60))
@@ -422,7 +503,8 @@ function shapeVision(raw: unknown): Vision {
 const ITEM_SCHEMA =
   '{"scene": "single|composite|packaged|unclear", ' +
   '"items": [{"name": string, "specific_query": string, "generic_query": string, ' +
-  '"count": number, "components": [{"name": string, "count": number, "kcal": number, ' +
+  '"count": number, "grams": number|null, ' +
+  '"components": [{"name": string, "count": number, "grams": number, "kcal": number, ' +
   '"carbs_g": number|null, "protein_g": number|null, "fat_g": number|null}], ' +
   '"serving_hint": string|null, ' +
   '"kcal_low": number, "kcal_high": number, "confidence": number, ' +
@@ -443,28 +525,85 @@ const COUNT_VS_COMPONENTS =
 // The breakdown is editable per part, so each part is a control over a number.
 const COMPONENT_FIELDS =
   'A component carries a plain searchable "name", a "count" of how many there are, ' +
-  'and the "kcal" and macro grams of ONE of them (null when unsure — never guess 0). ' +
-  'Two chicken wings are one component with count 2 priced for a single wing. ' +
+  'and the "grams", "kcal" and macro grams of ONE of them. The weight and the calories are ' +
+  'both REQUIRED on every part — null is not an answer for either, and a part with no price ' +
+  'is one the app has to work out from a search that may find the wrong food. Only the three ' +
+  'macro fields may be null, when you are unsure; never guess them as 0. ' +
+  'Two chicken wings are one component with count 2 weighed and priced for a single wing. ' +
+  // The base of a dish is the part a model is least willing to price, and the
+  // one it can least afford to leave out.
+  'Every part gets a weight and a price, including the plain one underneath: the rice, the ' +
+  'noodles, the bread. Listing what is on top and leaving out what it is on is not a ' +
+  'breakdown of the meal. ' +
   // A list of one is the dish wearing a second name, and the app then shows a
   // breakdown with a single row in it that adds up to the row above it.
   'Never return exactly ONE component: one component IS the dish, so leave ' +
   '"components" empty. Two or none. ' +
   'A component name is the food alone ("coconut rice") — not the dish it came from, ' +
-  'and never a parenthesised recipe. '
+  'and never a parenthesised recipe. ' +
+  // Listed separately, the oil is counted twice: once as itself and once in
+  // the density of the fried thing it was cooked into.
+  'Oil, seasoning, gravy stirred through and anything else absorbed into a dish belong to ' +
+  'that dish and are never a part of their own — a fried noodle is already an oily food. ' +
+  'Only a sauce served on the side, in its own dish, is separate. '
 
-// The two counting mistakes seen in testing, both worth a sentence: cut pieces
-// read as several things, and a piece priced as a portion.
+// Size, as a weight rather than as a calorie count.
+//
+// Everything in this block used to be denominated in kcal, and the failures it
+// was written to stop went on happening: a satay stick priced at 180 kcal, a
+// slice of lap cheong at 217, four pork rinds at 160 each. A model has no way
+// to check a calorie figure, so an inflated one stands — and the cascade below
+// then searched the catalogue within a band around it, which threw out the very
+// rows that disagreed. A weight it CAN check, twice over: against the macro
+// grams it reports beside it, and against the fact that food is mostly water.
 const SIZE_ANCHORS =
-  'Count whole units, not cut pieces: an egg sliced in half is one egg, an apple in ' +
-  'slices is one apple. And keep a piece the size of a piece — dumpling or satay ' +
-  'stick 40-60 kcal, potato wedge 30-45, prawn 10-20, apple slice 10-15, chicken ' +
-  'wing 80-100, boiled egg 70-80, slice of bread 70-90; a single-patty fast-food ' +
-  'burger 250-350, a double or Big Mac 550-800, medium fries 300-350, a can of soft ' +
-  'drink 140. Those are ranges to reason from, not answers to copy. '
+  'SIZE IS A WEIGHT AND THE WEIGHT COMES FIRST. For every part decide "grams" — what ONE of ' +
+  'it weighs, edible parts only, no bone, shell, skewer or wrapper — and only then work out ' +
+  'what that weight costs. A calorie figure not arrived at from a weight is a guess about a ' +
+  'portion nobody measured, and it runs high. ' +
+  // Weighing one of a thing and counting how many there are are two different
+  // answers, and asking hard for the first cost the second: a plate of four
+  // satay came back as one 30 g stick, which is a correct weight and a third
+  // of a meal.
+  '"grams" and "kcal" describe ONE unit, and "count" is how many of them are there. Both are ' +
+  'needed and neither substitutes for the other: four skewers on a plate are count 4 at 30 g ' +
+  'each, never count 1 at 120 g and never count 1 at 30 g. Count what you can see and say so. ' +
+  'Count whole units, not cut pieces: an egg sliced in half is one egg, an apple in slices ' +
+  'is one apple. ' +
+  'Grams for ONE: satay stick 25-35, dumpling 25-35, prawn 10-20, chicken wing piece 35-50, ' +
+  'drumstick 90-120, fried chicken thigh 120-160, slice of lap cheong 10-15, boiled egg ' +
+  '50-60, slice of bread 30-40, apple slice 15-20, potato wedge 20-30, prawn cracker 2-4, ' +
+  'scoop of cooked rice 150-220, drained noodles 200-300, ladle of curry or soup 150-250, ' +
+  'spoon of sambal or sauce 15-25, single-patty burger 100-130, medium fries 110-130, ' +
+  'canned drink 330. ' +
+  // The conversion, so the two numbers are one answer rather than two.
+  'And what a gram is worth: cooked rice and noodles 1.2-1.5 kcal/g, steamed or grilled meat ' +
+  '1.5-2, fried chicken with skin 2.5-3, chips and fried potato 3, curry and coconut gravy ' +
+  '1.2-2, vegetables and salad 0.2-0.5, sweet drinks 0.4, peanuts, crisps and crackling 5-5.5. ' +
+  'Nothing on a plate is over 6 kcal/g. Multiply, and let the product be the answer: a 30 g ' +
+  'satay stick is about 55 kcal and not 180, so four of them are 220 and not 720. ' +
+  // Mass conservation, stated as an instruction the model can act on.
+  '"carbs_g", "protein_g" and "fat_g" are for ONE unit too, and they are grams of MATTER: ' +
+  'together they must weigh LESS than the unit, and much less for anything cooked, because ' +
+  'most of a cooked food is water. Check that 4*carbs + 4*protein + 9*fat lands on your kcal ' +
+  'before answering; where they disagree the weight is right and the kcal is wrong. ' +
+  // The mass check one level up. Individually plausible parts still add up to
+  // an impossible meal: a bowl of laksa came back with four 120 g chicken
+  // thighs in it, which is most of a chicken in a bowl of soup.
+  'Last, weigh the meal. A bowl of soup or noodles is 400-700 g of food all in, a plate of ' +
+  'rice with things on it 350-600 g, a snack or a side 100-250 g. If your parts add up to far ' +
+  'more than that, one of them is too big or there are fewer of it than you counted — a ' +
+  'serving bowl holds one serving. '
 
 const TRAILING_FIELDS =
   '"scene" is "composite" when the meal has distinct parts. "serving_hint" ' +
   'is the portion as a person would say it ("1 plate", "1 bowl"). ' +
+  // The item's own weight. It is what the estimator is anchored on when the
+  // catalogue has nothing, which is the tier that most needs an anchor.
+  'The item\'s own "grams" is what ONE unit of the dish weighs, edible parts only — one ' +
+  'plate, one bowl, one durian seed, one roti. When "count" is more than 1 it is the weight ' +
+  'of ONE of them and never of all of them together: nine apple slices are "count": 9 with ' +
+  '"grams": 18, not 160. ' +
   // The band is arithmetic over the answer already given, and asking for it as
   // a judgement got a plate of two roti and a dhal bounded at 380-380 while
   // its own components added to 640.
@@ -555,18 +694,36 @@ export async function analysePhoto(
           generic_query: 'nasi lemak',
           count: 1,
           components: [
-            { name: 'coconut rice', count: 1, kcal: 340, carbs_g: 55, protein_g: 6, fat_g: 11 },
-            // Two of them, priced one at a time — the shape the breakdown edits in.
+            {
+              name: 'coconut rice',
+              count: 1,
+              grams: 200,
+              kcal: 340,
+              carbs_g: 55,
+              protein_g: 6,
+              fat_g: 11,
+            },
+            // Two of them, weighed and priced one at a time — the shape the
+            // breakdown edits in.
             {
               name: 'fried chicken wing',
               count: 2,
+              grams: 45,
               kcal: 125,
               carbs_g: 4,
               protein_g: 10,
               fat_g: 8,
             },
-            { name: 'sambal', count: 1, kcal: 60, carbs_g: 6, protein_g: 1, fat_g: 4 },
-            { name: 'boiled egg', count: 1, kcal: 70, carbs_g: 1, protein_g: 6, fat_g: 5 },
+            { name: 'sambal', count: 1, grams: 25, kcal: 60, carbs_g: 6, protein_g: 1, fat_g: 4 },
+            {
+              name: 'boiled egg',
+              count: 1,
+              grams: 55,
+              kcal: 70,
+              carbs_g: 1,
+              protein_g: 6,
+              fat_g: 5,
+            },
           ],
           serving_hint: '1 plate',
           kcal_low: 550,
@@ -738,12 +895,16 @@ export function foldMealItems(vision: Vision): Vision {
       .map((item) => ({
         name: item.name,
         count: 1,
+        // Whatever weight the model gave that item, carried down with it. The
+        // fold changes what a thing is CALLED, not how heavy it was.
+        grams: item.grams,
         kcal: Math.round((item.kcal_low + item.kcal_high) / 2),
         carbs_g: null,
         protein_g: null,
         fat_g: null,
       }))
       .slice(0, 8),
+    grams: null,
     serving_hint: '1 meal',
     kcal_low: items.reduce((sum, item) => sum + item.kcal_low, 0),
     kcal_high: items.reduce((sum, item) => sum + item.kcal_high, 0),
@@ -886,13 +1047,20 @@ export async function estimateNutrition(
           'You estimate nutrition for a dish. Respond with JSON only: {"kcal": number, ' +
           '"carbs_g": number, "protein_g": number, "fat_g": number, "fibre_g": number|null, ' +
           '"sugar_g": number|null, "sodium_mg": number|null}. Values are for the stated ' +
-          'portion. null means unknown — never guess fibre, sugar or sodium as 0.',
+          'portion. null means unknown — never guess fibre, sugar or sodium as 0. ' +
+          // The weight is the one part of the question that is not a guess, so
+          // it is the part the answer has to be built from.
+          'When a weight is given, it is the portion: price that many grams and no more — ' +
+          'cooked rice and noodles about 1.3 kcal/g, grilled meat 1.5-2, fried chicken with ' +
+          'skin 2.5-3, vegetables 0.3, nuts and crisps 5.5. Nothing edible is over 9.',
       },
       {
         role: 'user',
         content:
           `${item.count > 1 ? `${item.count} × ` : ''}${item.name}` +
-          `, portion: ${item.serving_hint ?? '1 serving'}.` +
+          `, portion: ${item.serving_hint ?? '1 serving'}` +
+          (item.grams ? `, about ${item.grams} g${item.count > 1 ? ' each' : ''}` : '') +
+          '.' +
           // The visible parts pin the estimate to the actual plate — "nasi
           // campur" alone could be anything; its component list is the meal.
           //
@@ -904,7 +1072,10 @@ export async function estimateNutrition(
           // opinion that has been told the first opinion is not one.
           (item.components.length
             ? ` Contains: ${item.components
-                .map((c) => (c.count > 1 ? `${c.count} × ${c.name}` : c.name))
+                .map(
+                  (c) =>
+                    `${c.count > 1 ? `${c.count} × ` : ''}${c.name}${c.grams ? ` (${c.grams} g each)` : ''}`,
+                )
                 .join(', ')}.`
             : ''),
       },
@@ -1059,7 +1230,8 @@ export const INTERPRET_INSTRUCTION_PROMPT =
   'the santan in a bowl of laksa. Only a change with nothing to subtract ("extra ' +
   'spicy", "more chilli") is case 1.\n\n' +
   '4. {"action":"redescribe","item":{"name":string,"specific_query":string,' +
-  '"generic_query":string,"count":number,"components":[{"name":string,"count":number,' +
+  '"generic_query":string,"count":number,"grams":number|null,' +
+  '"components":[{"name":string,"count":number,"grams":number,' +
   '"kcal":number,"carbs_g":number|null,"protein_g":number|null,' +
   '"fat_g":number|null}],"serving_hint":string|null,' +
   '"kcal_low":number,"kcal_high":number,"confidence":number,"suggested_edits":[]}} — ' +
@@ -1070,7 +1242,10 @@ export const INTERPRET_INSTRUCTION_PROMPT =
   'again and may come back different. Choose it only when no version of the current ' +
   'entry is the right food. A wrong amount, a wrong side, a wrong number of something ' +
   'and a wrong calorie figure are all corrections to THIS entry, not new dishes. ' +
-  'Describe the correct dish as eaten and bound its calories tightly.'
+  'Describe the correct dish as eaten and bound its calories tightly. Weigh every part ' +
+  'first — "grams" is what ONE of it weighs, edible parts only — and price the weight: ' +
+  'cooked rice and noodles are about 1.3 kcal/g, grilled meat 1.5-2, fried chicken 2.5-3, ' +
+  'vegetables 0.3, and nothing on a plate is over 6 kcal/g.'
 
 /**
  * The entry state, as the interpreter is shown it. Exported with the prompt.
