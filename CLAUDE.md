@@ -115,13 +115,30 @@ name even for a frame; `ToastProvider` outside the navigator so a "saved"
 confirmation survives the screen that fired it popping.
 
 Routes come in two shapes. **Full pages push** — settings, the reports, search,
-the dish detail — and carry a chevron in their own `AppBar`. **Modals present** —
-the quick selector, the paywalls — and carry a cross. Every screen draws its own
-title bar; the native header is off everywhere.
+the dish detail, one recipe — and carry a chevron in their own `AppBar`.
+**Modals present** — the quick selector, the paywalls — and carry a cross. Every
+screen draws its own title bar; the native header is off everywhere. A tab
+carries a `ScreenTitle` instead, because there is nothing behind it to go back
+to.
 
-The tab bar is the headless `expo-router/ui` Tabs rather than a styled
-navigator, because the raised centre FAB is not a tab: it opens a modal and has
-to sit between the second and third slots without being one.
+Five tabs — Today, Recipes, Activity, Trends, Me — on the headless
+`expo-router/ui` Tabs rather than a styled navigator, because `NavBar` /
+`NavItem` are the design system's and a native tab bar cannot be made to look
+like them.
+
+**The log button is not in the bar.** It used to be, raised, in the middle, and
+that is what capped the bar at four tabs: a centre action is centred by having
+the same number of tabs either side of it, so a fifth put it a tenth of the bar
+off to one side. It is a `FloatingAction` at the bottom right of Today now,
+through `Screen`'s `floating` slot — which overlaps the scroll content rather
+than sitting above it like `footer`, so a screen using it owes its last row
+enough bottom padding to be read.
+
+Singular and plural is the information hierarchy, not a naming quirk:
+`/recipes` is the tab, and `/recipe/[id]` and `/recipe/edit` are pages you go
+to and come back from. Those two have a layout of their own that waits for the
+session, because a shared recipe is a link and a link is opened cold — before
+the keychain read that restores the session has finished.
 
 ---
 
@@ -137,6 +154,8 @@ auth.users
        ├── food_logs ──────── what was eaten          → foods, food_servings
        │    └── food_log_ingredients   what a scanned plate was made of
        ├── daily_logs ─────── water and a day note
+       ├── recipes ────────── home cooking       → recipe_ingredients, and a
+       │                      mirrored `foods` row so it can be logged
        ├── weight_logs ────── the source of truth for current weight
        └── health_connections  which health store, and how far back it has read
             ├── activity_days ───── one day of movement, keyed by local date
@@ -155,7 +174,8 @@ reach a migration.
 
 Read shapes are views, all `security_invoker`: `food_details`,
 `food_log_details`, `food_log_ingredient_details`, `daily_nutrition`,
-`user_food_stats`, `current_daily_goals`. Plus `goals_on(date)`,
+`user_food_stats`, `current_daily_goals`, `recipe_details`,
+`recipe_ingredient_details`. Plus `goals_on(date)`,
 `logging_streak()`, `day_marks(from, to)`, and two range families —
 `trend_days` / `trend_series` / `trend_summary` for the diary, and
 `activity_days_range` / `activity_series` / `activity_summary` for movement.
@@ -346,6 +366,110 @@ harness with its own copy grades a prompt nobody ships.
 
 ---
 
+---
+
+## Home cooking
+
+A shared pot has no serving size, which is where logging breaks down. A recipe
+is two answers — what went in, and how many it feeds — entered once, and every
+future log of it is one tap.
+
+**A recipe IS a `foods` row.** `food_logs.food_id` is not null and references
+the catalogue, and everything downstream reads a logged entry as a catalogue row
+times a portion times a quantity. So each recipe MIRRORS into one: `is_recipe`,
+priced per serving, carrying the portions the detail screen offers (half, one,
+two, the whole pot). The mirror is derived and never authored — triggers in
+`schemas/22_recipes.sql` rebuild it from the recipe and its ingredients on every
+write. Correcting a recipe therefore corrects every entry logged from it, which
+is the property `foods` has always had and the one people expect here: realising
+the pot was six servings and not four should move last week's diary, because it
+was always six.
+
+No client gains a grant on `foods`. The triggers are `security definer`, so the
+DATABASE writes the catalogue on the user's behalf — a different thing from the
+client being able to.
+
+**Ingredients are stored PER UNIT.** `kcal_per_unit` is what one gram, one
+millilitre or one of the thing costs, and `amount` is how many went in. That is
+what survives the amount being corrected: 400 ml of santan changed to 250
+reprices with no lookup and no second opinion, because the density was the part
+that was true. `ingredientBasis` in `features/recipes/basis.ts` is what turns a
+catalogue serving into one — it reads a weight out of the serving label ("100 g",
+"1 bowl (400 g)", "3.0 oz") and falls back to counting when there is none.
+
+**Three shelves, one list.** Mine, the RiceCal kitchen, and the community. Which
+one a recipe is on is a property of the row: official is the ABSENCE of an owner
+(so "official and owned by Farah" cannot be spelled), and community is somebody
+else's that is both public and approved.
+
+Somebody else's recipe is SAVED before it can be logged — `save_recipe_copy`,
+a copy with `source_recipe_id` for provenance. Logging it directly would put
+their future corrections into your past diary.
+
+### The publishing gate
+
+Making a recipe public is two writes and they are deliberately not one.
+
+```
+set_recipe_public(id, true)     flips is_public, parks review_status at pending
+functions/recipes {action:review}   the model reads it, writes approved/rejected
+```
+
+`is_public` and `review_status` are NOT in the client's column grant — see the
+header in `22_recipes.sql`. With a table-wide update grant the same client that
+asks to publish could approve itself, and the review would be a formality the
+app performs on itself. `set_recipe_public` can only ever move a row to
+`pending`; only `service_role` approves one.
+
+**An edit sends a published recipe back**, and without that the gate is
+decoration: publish something bland, collect an approval, then rewrite the name
+and the steps into an advert. A trigger resets `review_status` when the name,
+the steps, the servings or the ingredient list change on a public recipe — in
+the database, because a rule the client is trusted to follow is a rule an
+attacker declines to. `useSaveRecipe` then re-runs the review and reports what
+it said. Private recipes are left alone: there is nothing to re-review about
+something nobody else can see, and marking one `pending` would let an edit stand
+in for a reading at the next publish.
+
+Everything fails SHUT. The community tab reads `approved` only, so a review that
+errors, times out or was never deployed leaves the recipe public, pending and
+invisible — and the client says "we are still looking at this one" rather than
+claiming either verdict. There is no branch in `functions/recipes` that approves
+a recipe because something went wrong.
+
+The reviewer has exactly two grounds: vulgarity and the like, and nutrition that
+is not credible. A moderator with a wider brief starts rejecting food it finds
+unhealthy, and the app has a calorie budget for that.
+
+### Filling the form in, from a photo or from a sentence
+
+Two offers on a new recipe, and they answer different situations rather than
+different preferences: the pot is on the stove, or it is not. Both land in the
+same `read` action and come back as the same draft, so only the first model call
+differs — exactly the split `scan-meal` makes between a photographed meal and a
+typed one, and `RECIPE_SHAPE` is shared between the two prompts for the reason
+`llm.ts` shares its size anchors.
+
+WHO THE AUTHORITY IS is the whole difference. A photograph has one witness and
+it is the model, so everything it says is inference. A sentence was written by
+the person who cooked the dish, so the amounts and the serving count they gave
+ARE the answer and the model only fills in what they left out.
+
+A photo uploads first and then invokes, because the reader on the server fetches
+the object out of the bucket. Neither path goes near the catalogue: what comes
+back lands in a form the user is about to check line by line, and a lookup per
+ingredient would be six searches to populate fields that are about to be edited.
+A failed read is a form they fill in themselves, and the endpoint says so.
+
+A draft is applied ONLY OVER EMPTY FIELDS. Somebody who typed a name and then
+reached for the camera meant it to fill in the parts they had not done.
+
+`R2_ENDPOINT` exists so a local stack can point the storage seam at any S3 —
+the one Supabase runs beside it, say. Without it the one check standing between
+two users' diaries could only be exercised in production.
+
+---
+
 ## Which day Today is showing
 
 A week strip above the ring, Monday to Sunday, paged back a year — one page per
@@ -463,9 +587,21 @@ Break these and the feature is wrong in ways tests may not catch.
   plate whole.
 - **No client writes the catalogue.** `authenticated` holds `select` on `foods`
   and `food_servings` and nothing else — no grant, not merely no policy. Every
-  writer is `service_role`: the edge functions, and the two loaders
+  writer is `service_role`: the edge functions, the two loaders
   (`scripts/import-catalogue.sql` for the CSV export, `public.import_foods` for
-  researched JSON).
+  researched JSON), and the `security definer` triggers that mirror a recipe
+  into a `foods` row. A user authoring a recipe is the database writing the
+  catalogue on their behalf, which is a different thing from the client being
+  able to.
+- **A recipe's mirror is never a search result.** `search_foods` and
+  `user_food_stats` both exclude `is_recipe`, and that exclusion is the ONLY
+  thing keeping one person's cooking out of everybody else's results — the
+  policy on `foods` is `true` and always has been. A recipe is reached through
+  `recipe_details`, which is where the owner check lives.
+- **A recipe reaches the community only when a reviewer says so.** `is_public`
+  and `review_status` are outside the client's column grant, and the community
+  query requires `approved`. Every failure in the review leaves the row
+  `pending`, which is invisible.
 - **Adjust the amount, never the macros**, when a row is the right dish at the
   wrong size.
 - **The gap between the current and target weights IS the calorie plan.** Its
@@ -641,3 +777,22 @@ everything.
 
 Commit subjects are a sentence about what changed, not a conventional-commits
 prefix.
+
+**No long dashes in copy.** Anything a user reads is written without em dashes
+or en dashes: use a comma, a full stop, a semicolon or a pair of brackets
+instead. That covers `src/i18n/en/*`, any string that reaches a screen, a
+notification, a share sheet or a toast, and the model prompts that produce text
+we display back (the recipe reviewer's rejection reason is copy, so its prompt
+says so).
+
+Two things it does NOT cover. **Comments and this file** are prose for whoever
+is reading the code, and the dash is doing real work in them. And a lone `—`
+standing in for a missing measurement is a SYMBOL rather than a sentence: it is
+how a stat tile says "no reading", and it stays. A missing NAME is different and
+gets a word ("Someone"), because a dash where a person should be reads as a
+rendering fault.
+
+Rewrite rather than substitute. "Enter it once — what went in and how many it
+feeds — and logging it is one tap" becomes "Enter what went in and how many it
+feeds, once, and logging it is one tap"; swapping the dashes for commas without
+moving the words leaves a sentence with too many clauses in it.

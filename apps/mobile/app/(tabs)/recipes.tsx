@@ -1,0 +1,144 @@
+import { useRouter } from 'expo-router'
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { View } from 'react-native'
+
+import { type RecipeShelf, useRecipes } from '@/data'
+import { RecipeRow } from '@/features/recipes'
+import { ScreenTitle } from '@/features/shared'
+import { useDebouncedValue } from '@/lib/use-debounce'
+import { useThemeColors } from '@/theme/useTheme'
+import {
+  Card,
+  EmptyState,
+  Icon,
+  IconButton,
+  Screen,
+  SearchField,
+  SegmentedControl,
+  Skeleton,
+  Text,
+} from '@/ui'
+
+const SHELVES: RecipeShelf[] = ['mine', 'official', 'community']
+
+const SKELETON_ROWS = ['r1', 'r2', 'r3'] as const
+
+/**
+ * R1 / R1B / R1D — the three shelves of the recipe list, and the Recipes tab.
+ *
+ * One screen and not three, because they are one list read three ways: the same
+ * row, the same tap target, the same numbers. What changes is who wrote the
+ * recipe, and the segmented control says which of those is showing.
+ *
+ * A ROOT screen, so it carries a `ScreenTitle` rather than an `AppBar`: there is
+ * nothing behind it to go back to. The heading changes with the shelf, which is
+ * the one thing it does that the other tabs' titles do not — "My recipes" and
+ * "From the community" are different places, and the segmented control under it
+ * is what moved between them.
+ */
+export default function RecipesScreen() {
+  const { t } = useTranslation(['recipes', 'common'])
+  const router = useRouter()
+  const colors = useThemeColors()
+
+  const [shelf, setShelf] = useState<RecipeShelf>('mine')
+  const [query, setQuery] = useState('')
+  const debounced = useDebouncedValue(query)
+
+  const { data: recipes = [], isFetching } = useRecipes(shelf, debounced)
+
+  // Only while there is nothing to show. Skeletons over a list that already has
+  // rows in it makes a refetch look like a reload.
+  const loading = isFetching && recipes.length === 0
+  const searched = debounced.trim().length > 0
+
+  return (
+    <Screen>
+      <ScreenTitle
+        title={t(`recipes:heading.${shelf}`)}
+        trailing={
+          <IconButton
+            variant="primary"
+            accessibilityLabel={t('recipes:new.title')}
+            onPress={() => router.push('/recipe/edit')}
+          >
+            <Icon set="ui" name="plus" size={22} tintColor={colors.onPandan} />
+          </IconButton>
+        }
+      />
+
+      <SegmentedControl
+        options={SHELVES.map((value) => ({ value, label: t(`recipes:shelf.${value}`) }))}
+        value={shelf}
+        onChange={(next) => {
+          setShelf(next)
+          // The query belongs to the shelf that was showing. Carried across, it
+          // reads as "no official recipes match" when what happened is that the
+          // user changed tab and the field kept a word from the last one.
+          setQuery('')
+        }}
+      />
+
+      <SearchField
+        value={query}
+        onChangeText={setQuery}
+        onClear={() => setQuery('')}
+        clearLabel={t('recipes:search.clear')}
+        placeholder={t(`recipes:search.${shelf}`)}
+        returnKeyType="search"
+      />
+
+      {/* What this shelf IS, said once at the top. Absent on `mine`, where the
+          answer is obvious and the space belongs to the recipes. */}
+      {shelf !== 'mine' ? (
+        <Card tone={shelf === 'official' ? 'pandan' : 'water'}>
+          <View className="flex-row items-center gap-3">
+            <Icon set="ui" name={shelf === 'official' ? 'check' : 'share'} size={20} />
+            <Text variant="meta" className="flex-1">
+              {t(`recipes:blurb.${shelf}`)}
+            </Text>
+          </View>
+        </Card>
+      ) : null}
+
+      {loading
+        ? SKELETON_ROWS.map((id) => (
+            <Card key={id}>
+              <View className="flex-row items-center gap-3">
+                <Skeleton className="h-[56px] w-[56px]" />
+                <View className="flex-1 gap-2">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-2/5" />
+                </View>
+              </View>
+            </Card>
+          ))
+        : null}
+
+      {!loading && recipes.length === 0 ? (
+        searched ? (
+          <EmptyState
+            title={t('recipes:search.none')}
+            description={t('recipes:search.noneBody')}
+            icon={{ set: 'ui', name: 'search' }}
+          />
+        ) : (
+          <EmptyState
+            title={t(`recipes:empty.${shelf}Title`)}
+            description={t(`recipes:empty.${shelf}Body`)}
+            icon={{ set: 'food', name: 'cooking-pot' }}
+          />
+        )
+      ) : null}
+
+      {recipes.map((recipe) => (
+        <RecipeRow
+          key={recipe.id}
+          recipe={recipe}
+          onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: recipe.id } })}
+        />
+      ))}
+    </Screen>
+  )
+}

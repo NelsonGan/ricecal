@@ -1,0 +1,70 @@
+import { useTranslation } from 'react-i18next'
+import { View } from 'react-native'
+
+import type { Recipe } from '@/data'
+import { ItemRow } from '@/features/shared'
+import { Badge, Card } from '@/ui'
+
+export type RecipeRowProps = {
+  recipe: Recipe
+  onPress: () => void
+}
+
+/**
+ * One recipe in a list.
+ *
+ * The detail line answers a different question on each shelf, which is why it
+ * is built here rather than passed in: on my own recipes it is the portion
+ * ("4 servings · 6 ingredients"), and on the community it is who cooked it
+ * and how many people kept it. The number on the right is always the SERVING,
+ * never the pot — that is what logging it will cost, and a list that showed the
+ * pot would put 2,630 next to a bowl of rendang.
+ */
+export function RecipeRow({ recipe, onPress }: RecipeRowProps) {
+  const { t } = useTranslation('recipes')
+
+  // The number on the right is already "what one serving costs", so the detail
+  // line does not repeat it — said twice it truncated on a 393pt screen, and the
+  // half of it that survived was the half already on the right.
+  const detail =
+    recipe.isMine || recipe.isOfficial
+      ? `${t('servings', { count: recipe.servings })} · ${t('ingredients', {
+          count: recipe.ingredientCount,
+        })}`
+      : t('byAuthor', {
+          name: recipe.authorName || t('someCook'),
+          saves: t('savedTimes', { count: recipe.savedCount }),
+        })
+
+  return (
+    <Card>
+      <View className="gap-2.5">
+        <ItemRow
+          title={recipe.name}
+          detail={detail}
+          icon={recipe.icon}
+          photoPath={recipe.photoPath}
+          value={recipe.perServing.kcal}
+          unit="kcal"
+          onPress={onPress}
+        />
+        {/* Only on your own, and only when there is something to say. The badge
+            reports where a PUBLISHED recipe has got to; a private one is not
+            waiting for anything and says nothing. */}
+        {recipe.isMine && recipe.isPublic ? <ReviewBadge recipe={recipe} /> : null}
+      </View>
+    </Card>
+  )
+}
+
+function ReviewBadge({ recipe }: { recipe: Recipe }) {
+  const { t } = useTranslation('recipes')
+
+  if (recipe.review === 'approved') {
+    return <Badge tone="pandan">{t('review.badgePublic')}</Badge>
+  }
+  if (recipe.review === 'rejected') {
+    return <Badge tone="hibiscus">{t('review.badgeRejected')}</Badge>
+  }
+  return <Badge tone="neutral">{t('review.badgePending')}</Badge>
+}

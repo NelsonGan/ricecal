@@ -31,6 +31,17 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   children: ReactNode
   /** Content pinned below the scroll area — the footer CTA. Never scrolls away. */
   footer?: ReactNode
+  /**
+   * Content laid OVER the scroll area, pinned to its bottom-right corner — the
+   * floating action on Today.
+   *
+   * Not the same thing as `footer`, which is a row the content is laid out
+   * above: this overlaps, so the last card scrolls under it. That is the trade a
+   * floating button makes and the reason it is a separate slot — a screen using
+   * it owes its scroll content enough bottom padding that the last row can be
+   * read, and the caller is the only one who knows how much.
+   */
+  floating?: ReactNode
   /** Drop the 20pt screen gutter, for content that bleeds to the edge. */
   flush?: boolean
   /** Render children in a plain View instead of a ScrollView. */
@@ -97,6 +108,7 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
 export function Screen({
   children,
   footer,
+  floating,
   flush = false,
   scroll = true,
   gestureScroll = false,
@@ -144,6 +156,27 @@ export function Screen({
       keyboardVerticalOffset={keyboardOffset}
     >
       {body}
+
+      {/* Inside the keyboard-avoiding view, so a floating control rides up with
+          the content rather than sitting under an open keyboard.
+
+          One gutter off this view's bottom and NO safe-area inset, which looks
+          like an oversight and is the correction for one. A floating control's
+          host is a tab screen, and `TabSlot` is a sibling of the nav bar rather
+          than its parent: the slot's frame already stops where the bar begins,
+          and the bar is what pads for the home indicator. Adding `insets.bottom`
+          here counted it a second time and left the button floating a
+          thumb-width too high. */}
+      {floating ? (
+        <View
+          className="absolute right-gutter items-end"
+          style={{ bottom: spacing.gutter }}
+          pointerEvents="box-none"
+        >
+          {floating}
+        </View>
+      ) : null}
+
       {footer ? (
         // No rule above the footer. The design separates it with space and the
         // canvas colour alone, and a hairline under a full-width CTA reads as a

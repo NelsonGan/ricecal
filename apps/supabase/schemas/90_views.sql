@@ -263,8 +263,10 @@ from public.food_logs e
 join public.foods f on f.id = e.food_id
 -- Estimate and archetype rows are excluded for the same reason they are
 -- excluded from search: "usual at this time" is a list to log from, and a
--- shared guess should not become a habit the app reinforces.
-where not f.is_estimate and not f.is_archetype
+-- shared guess should not become a habit the app reinforces. Recipes are
+-- excluded because this list is joined against catalogue search results, and a
+-- recipe is never one of those.
+where not f.is_estimate and not f.is_archetype and not f.is_recipe
 group by e.user_id, e.food_id;
 
 grant select on public.user_food_stats to authenticated;
