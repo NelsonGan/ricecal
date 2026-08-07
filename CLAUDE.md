@@ -69,11 +69,42 @@ data rehydrates into new code.
 `app/index.tsx` is a redirect, not a screen, so there is never a back-stack
 entry pointing at nothing. It asks three questions in order — is the keychain
 read still in flight, is there a session, does the profile have `onboarded_at` —
-and the order is the flow. The questions come BEFORE the account: a visitor
-answers six onboarding screens, is asked for an email at the end, and so the
+and the order is the flow. The questions come BEFORE the account, and so the
 local draft rather than the session is what says how far they got. The draft is
 in MMKV and outlives the account it was flushed for, which is why a signed-out
 relaunch starts at the top rather than resuming.
+
+The flow is nine numbered steps plus a welcome and a tour, and it is in two
+halves with the account write between them:
+
+```
+welcome                          the pitch, and the fork for a returning user
+1 about   2 activity  3 food style  4 source     the questions, drafted locally
+5 calculating                    a beat, then it replaces itself with…
+6 target                         the budget, worked out on the phone
+7 account       (auth)/sign-in, carrying the same bar through the params
+  finish                         the one write: profile, first weigh-in, onboarded_at
+8 health        connect the store — a permission that GIVES rather than asks
+9 notifications turns the three meal reminders on, not just the OS permission
+  tutorial                       four cards, then Today
+```
+
+Everything from `finish` onwards **replaces** its predecessor and has the edge
+swipe turned off in `(onboarding)/_layout.tsx`. The stack under those screens is
+still the questions, so a back gesture on "Connect Apple Health" walked a user
+who had just made an account into "Where did you hear about us?".
+
+The two permissions sit AFTER the account because both of them need one — a
+health connection is a row keyed by user, and enabling a meal reminder is a
+write to `meal_times`. They could not have been asked any earlier. Neither can
+block: a refusal, an unusable store or a failed write says so in a toast and
+carries on, because there is a whole tab for trying again and no version of a
+permission screen should stand between a new account and their diary.
+
+The nine step numbers come from `ONBOARDING_STEPS` in
+`features/onboarding/steps.ts` and nowhere else. Written per screen they lasted
+until a screen was inserted: the questions said "of 4" while the permissions
+after them said "of 9", and nothing about that failed to typecheck.
 
 `app/_layout.tsx` stacks the providers, and the nesting is load-bearing:
 `ThemeProvider` above the navigator so every screen and Modal inherits the
@@ -356,8 +387,12 @@ lazily; a top-level import of a Nitro module throws on a dev client built before
 the dependency landed, and the symptom is a white screen rather than a broken
 tab.
 
-**Syncing** — `src/data/health-sync.ts`. A year-deep backfill on connect, then
-the last SEVEN DAYS re-read on every foreground. Not a cursor, and that is the
+**Syncing** — `src/data/health-sync.ts`. A MONTH-deep backfill on connect, then
+the last SEVEN DAYS re-read on every foreground. A month rather than a year
+because every range the app draws is 7d, 30d or an average over them — the
+twelfth month back was read, written and then shown on no screen — and because
+the connect now happens inside onboarding, a screen away from an account a
+minute old. Not a cursor, and that is the
 decision the file is shaped around: health data arrives late and arrives edited
 — a watch out of range writes Tuesday on Wednesday, Strava back-dates an upload,
 Apple recomputes a day when a second source appears. "Everything since the last

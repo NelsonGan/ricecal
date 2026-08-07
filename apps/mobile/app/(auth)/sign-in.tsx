@@ -12,7 +12,7 @@ import {
   signInWithGoogle,
 } from '@/data/auth'
 import { ProviderButton } from '@/features/auth'
-import { Alert, Button, Divider, Icon, Screen, Text, TextField, useToast } from '@/ui'
+import { Alert, Button, Divider, Icon, Screen, StepProgress, Text, TextField, useToast } from '@/ui'
 
 /** Only what the screen says differs; the email button does the same thing either way. */
 type Mode = 'sign-in' | 'sign-up'
@@ -42,8 +42,27 @@ export default function SignInScreen() {
    * the default, because a bare visit to this route is someone coming back — a
    * new user reaches it at the end of onboarding, which says so explicitly.
    */
-  const params = useLocalSearchParams<{ mode?: Mode }>()
+  const params = useLocalSearchParams<{ mode?: Mode; step?: string; total?: string }>()
   const mode: Mode = params.mode === 'sign-up' ? 'sign-up' : 'sign-in'
+
+  /**
+   * The onboarding bar, when onboarding is what sent us here.
+   *
+   * This screen belongs to two flows. In the middle of onboarding it is one
+   * numbered step of nine, and dropping the bar for exactly the screen that asks
+   * for an email is where a flow reads as having stopped being a flow — the
+   * question the user is weighing at that moment is "how much more of this is
+   * there", and the answer was on every screen but this one. Reached on its own,
+   * by a returning user tapping "I already have an account", there is no flow
+   * and no bar.
+   *
+   * Passed as params rather than read from a store because the position is a
+   * property of the route that pushed this one, and this file must not learn the
+   * shape of a flow it is only borrowed by.
+   */
+  const step = Number(params.step)
+  const total = Number(params.total)
+  const showProgress = Number.isFinite(step) && Number.isFinite(total) && step > 0 && step <= total
 
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
@@ -106,7 +125,16 @@ export default function SignInScreen() {
         </Button>
       }
     >
-      <View className="items-center gap-3 pt-6 pb-2">
+      {showProgress ? (
+        <StepProgress
+          total={total}
+          current={step}
+          tone="pandan"
+          accessibilityLabel={t('common:a11y.step', { current: step, total })}
+        />
+      ) : null}
+
+      <View className="items-center gap-3 pb-2 pt-6">
         <Icon set="food" name="rice-bowl" size={96} />
         {/* The heading follows the mode. It used to read "Save your progress"
             in both, so arriving from "I already have an account" showed a

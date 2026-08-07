@@ -7,4 +7,11 @@ export {
   type OnboardingDraftProviderProps,
   useOnboardingDraft,
 } from './draft'
+export { FactRow, type FactRowProps } from './FactRow'
 export { type Accent, OnboardingStep, type OnboardingStepProps } from './OnboardingStep'
+export {
+  ONBOARDING_STEPS,
+  type OnboardingStepName,
+  stepNumber,
+  TOTAL_STEPS,
+} from './steps'

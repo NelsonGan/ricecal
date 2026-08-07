@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { useSession } from '@/data'
-import { useOnboardingDraft } from '@/features/onboarding'
+import { stepNumber, TOTAL_STEPS, useOnboardingDraft } from '@/features/onboarding'
 import { computeTargets, goalDate } from '@/lib/nutrition'
-import { Button, CalorieRing, Screen, StatTile, Text } from '@/ui'
+import { Button, CalorieRing, Screen, StatTile, StepProgress, Text } from '@/ui'
 
 /**
  * 06 YOUR TARGET
@@ -27,7 +27,7 @@ import { Button, CalorieRing, Screen, StatTile, Text } from '@/ui'
 export default function TargetStep() {
   const { t } = useTranslation(['onboarding', 'common'])
   const router = useRouter()
-  const { draft, patch } = useOnboardingDraft()
+  const { draft } = useOnboardingDraft()
   const { session } = useSession()
 
   // Defaults that only matter if a screen was skipped, which the Continue gates
@@ -57,38 +57,72 @@ export default function TargetStep() {
   const meals = Math.max(2, Math.round(targets.kcal / 600))
 
   /**
-   * Records which way out was chosen, then asks for the account.
+   * On to the account, which is the next mark on the bar.
    *
-   * The choice is made here but cannot be acted on until there is somewhere to
-   * write the answers, and the account step sits in between — so it goes in the
-   * draft and `finish` reads it back. A user who already has a session (signed
-   * in, then answered the questions) skips straight to the flush.
+   * A user who already has a session — signed in first, then answered the
+   * questions — skips straight to the flush; there is nothing to ask them for.
+   * The step and total ride along so the account screen can draw the same bar
+   * rather than dropping it for one screen in the middle of the flow.
    */
-  const proceed = (exit: 'today' | 'preview') => {
-    patch({ exit })
+  const accept = () => {
     if (session) {
       router.replace('/finish')
       return
     }
-    router.push({ pathname: '/sign-in', params: { mode: 'sign-up' } })
+    router.push({
+      pathname: '/sign-in',
+      params: {
+        mode: 'sign-up',
+        step: String(stepNumber('account')),
+        total: String(TOTAL_STEPS),
+      },
+    })
   }
+
+  /**
+   * Back to the first question rather than into an editor.
+   *
+   * Every answer is already in the draft, so walking the four screens again is
+   * four taps with every choice made — and it is the only route that can change
+   * this number, since the number IS those answers.
+   *
+   * `dismissTo`, and the choice is load-bearing. `about` is already on the stack
+   * underneath this screen, so what is wanted is to UNWIND to it. `navigate`
+   * looks like it would — the name suggests going to a route rather than adding
+   * one — but in expo-router 57 it pushes unless the target is already the
+   * current screen, which put a second `about` ON TOP of `target`: the back
+   * swipe from "A few basics" then went FORWARD in time to the budget, and
+   * walking the questions again stacked another four. `dismissTo` pops to the
+   * href, and falls back to replacing this screen if it is not on the stack —
+   * which is what a deep link straight to `target` would hit.
+   */
+  const revise = () => router.dismissTo('/(onboarding)/about')
 
   return (
     <Screen
       scroll={false}
-      contentClassName="justify-center"
       footer={
         <View className="gap-1.5">
-          <Button fullWidth onPress={() => proceed('today')}>
-            {t('target.logFirst')}
+          <Button fullWidth onPress={accept}>
+            {t('target.looksRight')}
           </Button>
-          <Button variant="ghost" fullWidth onPress={() => proceed('preview')}>
-            {t('target.explore')}
+          <Button variant="ghost" fullWidth onPress={revise}>
+            {t('target.adjust')}
           </Button>
         </View>
       }
     >
-      <View className="items-center gap-5">
+      <StepProgress
+        total={TOTAL_STEPS}
+        current={stepNumber('target')}
+        tone="pandan"
+        accessibilityLabel={t('common:a11y.step', {
+          current: stepNumber('target'),
+          total: TOTAL_STEPS,
+        })}
+      />
+
+      <View className="flex-1 items-center justify-center gap-5">
         <CalorieRing
           value={targets.kcal}
           goal={targets.kcal}

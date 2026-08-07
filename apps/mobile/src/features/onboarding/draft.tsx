@@ -15,10 +15,11 @@ import type { ActivityLevel, Sex } from '@/data'
 /**
  * The onboarding answers, before there is an account to put them in.
  *
- * This exists because the questions come first now. A user answers seven screens
- * and only then is asked for an email, which means every answer has to live
- * somewhere that is not `profiles` — the profile row does not exist yet, and the
- * hooks that write it throw without a session rather than failing quietly.
+ * This exists because the questions come first now. A user answers four screens
+ * and sees the budget they produce, and only THEN is asked for an email — which
+ * means every answer has to live somewhere that is not `profiles`, since the
+ * profile row does not exist yet and the hooks that write it throw without a
+ * session rather than failing quietly.
  *
  * On disk rather than in memory, through MMKV, for two reasons. Onboarding is the
  * longest uninterrupted stretch of typing in the app and the most likely place to
@@ -27,8 +28,8 @@ import type { ActivityLevel, Sex } from '@/data'
  * `isComplete` to decide where a returning visitor belongs, which it cannot do
  * from state that died with the process.
  *
- * Reads are synchronous, so there is no loading state to thread through seven
- * screens — the first render already has the answers.
+ * Reads are synchronous, so there is no loading state to thread through the
+ * questions — the first render already has the answers.
  */
 
 const storage = createMMKV({ id: 'ricecal-onboarding' })
@@ -45,19 +46,19 @@ export type OnboardingDraft = {
   activity?: ActivityLevel
   foodStyles?: string[]
   referralSource?: string
-  /**
-   * Which screen the flow ends on once the account exists.
-   *
-   * Recorded on the target screen, because the choice is made there — "log my
-   * first meal" or "explore first" — but acted on after the account step, which
-   * sits between the two.
-   */
-  exit?: 'today' | 'preview'
 }
 
-/** A draft with every answer in it, which is what the flush needs. */
-export type CompleteDraft = OnboardingDraft &
-  Required<Omit<OnboardingDraft, 'exit'>> & { foodStyles: string[] }
+/**
+ * A draft with every answer in it, which is what the flush needs.
+ *
+ * There used to be an `exit` field here — which screen to land on once the
+ * account existed — recorded on the target screen and read back after the
+ * flush. The flow no longer ends there: the tour after the permissions is the
+ * last screen, it is on the far side of the write, and it can simply navigate.
+ * A remembered decision that outlives the screen that made it is only worth
+ * carrying when something in between has to be crossed.
+ */
+export type CompleteDraft = Required<OnboardingDraft>
 
 /**
  * Whether there is enough here to build a profile and a budget.
@@ -66,8 +67,8 @@ export type CompleteDraft = OnboardingDraft &
  * of them: a partial flush leaves a signed-in user with no budget and no screen
  * offering to fix it.
  *
- * A type guard rather than a boolean, so the one place that reads all nine fields
- * does not need nine casts to say what this check has already established.
+ * A type guard rather than a boolean, so the one place that reads every field
+ * does not need a cast apiece to say what this check has already established.
  */
 export function isComplete(draft: OnboardingDraft): draft is CompleteDraft {
   return Boolean(
