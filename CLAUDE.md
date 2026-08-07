@@ -671,6 +671,17 @@ Break these and the feature is wrong in ways tests may not catch.
   hand-written migration has to restate a function, copy the block out of
   `schemas/` verbatim rather than retyping it. Only what is between the `$$`
   markers counts — a note above the `create` is free.
+- **A migration is pushed in a session that has run nothing before it**, and
+  `search_foods` is the function that cares. Its `set
+  "pg_trgm.similarity_threshold"` is only a real parameter where pg_trgm has been
+  loaded; anywhere else it is an unrecognized placeholder, and setting one of
+  those is superuser-only — which the hosted `postgres` role is not. `db reset`
+  never notices, because the baseline's `create extension` runs in the same pass
+  and loads the library, so the whole pull request goes green and
+  `supabase db push` then fails with SQLSTATE 42501 and rolls the migration back.
+  A migration restating that function has to call a pg_trgm function of its own
+  first; `20260807104259_recipes.sql` carries the line and the reasoning. Nothing
+  in CI catches this class, since every job builds its database from scratch.
 - **NativeWind only styles React Native's own components.** A third-party one
   takes `className` as an ordinary prop and drops it silently. `Screen.tsx`
   registers `cssInterop` for gesture-handler's ScrollView for exactly this.
