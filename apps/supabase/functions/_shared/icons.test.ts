@@ -7,7 +7,7 @@
 // square forever. Nothing throws, nothing logs, and the row looks like every
 // other row that simply has no drawing.
 
-import { ICON_INSTRUCTION, ICON_LIST, resolveIcon } from './icons.ts'
+import { guessIcon, ICON_INSTRUCTION, ICON_LIST, resolveIcon } from './icons.ts'
 
 const eq = (got: unknown, want: unknown, what: string) => {
   if (got !== want) throw new Error(`${what}: expected ${want}, got ${got}`)
@@ -57,4 +57,34 @@ Deno.test('the prompt list is a plain comma-separated run of slugs', () => {
     if (!resolveIcon(name)) throw new Error(`"${name}" is offered but does not resolve`)
   }
   if (!ICON_INSTRUCTION.includes(ICON_LIST)) throw new Error('the instruction lost the list')
+})
+
+// The backstop for the model answering null, or answering a spelling we do not
+// carry. Our slugs have one spelling of each dish and the world has several.
+Deno.test('guessIcon reads a dish out of its own name', () => {
+  eq(guessIcon('Nasi lemak')?.name, 'nasi-lemak', 'an exact slug')
+  // Punctuation is a separator like any other, so the brackets do not stop
+  // `roti` and `canai` from being two shared words.
+  eq(guessIcon('Roti canai (kosong)')?.name, 'roti-canai', 'punctuation')
+  // Two shared words, which is what the threshold is for: `char` and `teow`.
+  eq(guessIcon('Char kway teow')?.name, 'char-kuey-teow', 'a near-miss spelling')
+  eq(guessIcon('Roti canai')?.name, 'roti-canai', 'two words, exact')
+})
+
+// THE assertion, and the reason the threshold is two rather than one. A single
+// shared word is a coincidence: putting a plate of chicken rice beside
+// somebody's chicken soup is worse than the plain pot they would get instead.
+Deno.test('guessIcon holds out for two shared words', () => {
+  eq(guessIcon('Chicken soup'), null, 'one word is a coincidence')
+  eq(guessIcon('Rice'), null, 'a single word cannot reach the threshold')
+  eq(guessIcon('Dinner'), null, 'nothing to match')
+  eq(guessIcon(''), null, 'empty')
+  eq(guessIcon(null), null, 'not a string')
+})
+
+// The excluded drawings stay excluded however the name is spelled, since the
+// fallback reads the same map the prompt is built from.
+Deno.test('guessIcon cannot reach a drawing that is not a meal', () => {
+  eq(guessIcon('kitchen scale'), null, 'not offerable')
+  eq(guessIcon('empty plate'), null, 'not offerable')
 })

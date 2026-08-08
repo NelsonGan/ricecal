@@ -224,6 +224,15 @@ export const recipes = {
   log: {
     action: 'Recipes',
     seeAll: 'All recipes',
-    empty: 'No recipes yet. Add one and logging it is a tap.',
+    /**
+     * Nothing on this shelf, said per shelf. "No recipes yet" is true of your
+     * own and wrong about the other two, where the answer is that nobody has
+     * put anything there rather than that you have not.
+     */
+    empty: {
+      mine: 'No recipes yet. Add one and logging it is a tap.',
+      official: 'Nothing in the kitchen yet.',
+      community: 'Nothing shared yet. Recipes people make public show up here.',
+    },
   },
 } as const

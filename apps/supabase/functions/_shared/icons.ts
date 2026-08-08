@@ -165,6 +165,60 @@ export function resolveIcon(raw: unknown): IconChoice | null {
 }
 
 /**
+ * A drawing worked out from the dish's own name, when the model gave none.
+ *
+ * The backstop for the honest failure: the model is asked for an icon and
+ * answers null, or answers a name in a spelling we do not carry. Our slugs have
+ * one spelling of each dish and the world has several — the list says
+ * `char-kuey-teow` and a model will happily write `char-kway-teow` — and a near
+ * miss is indistinguishable, on the row, from having no drawing at all.
+ *
+ * TWO SHARED WORDS, minimum, and that threshold is the whole design. One is far
+ * too loose: "Chicken soup" shares `chicken` with `chicken-rice`, and putting a
+ * plate of chicken rice beside somebody's soup is worse than the plain pot they
+ * would otherwise get. Two is enough for `char kway teow` to find
+ * `char-kuey-teow` on `char` and `teow`, and it is what stops a single common
+ * word from carrying a match on its own.
+ *
+ * An exact slug wins outright, which is the ordinary case: "Nasi lemak" is
+ * `nasi-lemak` and needs none of the scoring below.
+ */
+export function guessIcon(name: unknown): IconChoice | null {
+  if (typeof name !== 'string') return null
+  const slug = name
+    .trim()
+    .toLowerCase()
+    // Everything that is not a letter or a digit becomes a separator, so
+    // "Kari ayam (pedas)" and "char-kuey-teow" arrive in the same shape.
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+  if (!slug) return null
+
+  const exact = SET_OF.get(slug)
+  if (exact) return { set: exact, name: slug }
+
+  // Words worth matching on. The one-letter and two-letter ones are dropped
+  // because they are the joins — "of", "in", "a" — and a shared join is not a
+  // shared word.
+  const words = new Set(slug.split('-').filter((word) => word.length > 2))
+  if (words.size < 2) return null
+
+  let best: IconChoice | null = null
+  let bestScore = 1
+  for (const [candidate, set] of SET_OF) {
+    const shared = candidate.split('-').filter((word) => words.has(word)).length
+    // Strictly greater, so the FIRST icon at a given score keeps it — and
+    // `dishes` is inserted before `food`, which is the tie-break we want: the
+    // drawing of the dish beats the drawing of one thing in it.
+    if (shared > bestScore) {
+      bestScore = shared
+      best = { set, name: candidate }
+    }
+  }
+  return best
+}
+
+/**
  * What to say to the model about picking one.
  *
  * Shared by the meal and recipe prompts so the two cannot drift on the rule

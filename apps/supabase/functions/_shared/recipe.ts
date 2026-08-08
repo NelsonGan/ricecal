@@ -13,7 +13,7 @@
 // that will not parse — leaves the recipe at `pending`, which is invisible in
 // the community tab. Nothing in this file can approve a recipe by accident.
 
-import { ICON_INSTRUCTION, type IconChoice, resolveIcon } from './icons.ts'
+import { guessIcon, ICON_INSTRUCTION, type IconChoice, resolveIcon } from './icons.ts'
 import { chatJSON, mockActive } from './llm.ts'
 
 /** 'g' | 'ml' | 'piece' — the units `recipe_ingredients.unit` accepts. */
@@ -166,9 +166,14 @@ function shapeDraft(raw: unknown): RecipeDraft {
     servings: Math.round(clamp(o.servings, 1, 100, 1)),
     ingredients,
     steps: shapeSteps(o.steps),
-    // Null unless the model named a drawing we actually have. The photo prompt
-    // never asks for one, so this is null on that path by construction.
-    icon: resolveIcon(o.icon),
+    // The model's choice, or one worked out from the dish's own name when it
+    // gave none or named a spelling we do not carry. Null only when neither
+    // finds anything, which the form shows as its default pot.
+    //
+    // Read off `o.name` rather than the shaped name above, so the fallback is
+    // matching what the model actually called the dish rather than the
+    // "Home recipe" stand-in that replaces an empty one.
+    icon: resolveIcon(o.icon) ?? guessIcon(o.name),
   }
 }
 
@@ -202,11 +207,26 @@ export function toIngredientRow(ingredient: DraftIngredient, position: number) {
  * a photograph and a sentence is one thing only, and it is stated separately
  * below — WHO THE AUTHORITY IS.
  */
-const RECIPE_SHAPE =
+/**
+ * The shape sentence, and whether it declares an icon.
+ *
+ * A FUNCTION rather than a constant because the literal schema is the strongest
+ * instruction in the whole prompt, and a key that is not in it is a key the
+ * model leaves out. The icon was described in prose at the end and declared
+ * nowhere, and it came back about half the time — which on a form looks like a
+ * feature that does not work rather than one that sometimes does.
+ *
+ * Only the describe path asks for it: a photographed pot has its photograph.
+ */
+const recipeSchema = (withIcon: boolean): string =>
   'Respond with JSON only, matching: ' +
-  '{"name": string, "servings": number, "steps": string, "ingredients": [' +
+  '{"name": string, "servings": number, "steps": string, ' +
+  (withIcon ? '"icon": string|null, ' : '') +
+  '"ingredients": [' +
   '{"name": string, "amount": number, "unit": "g"|"ml"|"piece", "kcal": number, ' +
-  '"carbs_g": number, "protein_g": number, "fat_g": number}]} ' +
+  '"carbs_g": number, "protein_g": number, "fat_g": number}]} '
+
+const RECIPE_SHAPE =
   // The name is the dish. "A pot of curry on a stove" is a caption; "Kari ayam"
   // is what somebody would look for in their own recipes.
   //
@@ -288,6 +308,7 @@ export const READ_RECIPE_PROMPT =
   'You read home cooking out of photographs for a calorie-tracking app. ' +
   RECIPE_KITCHEN +
   'The photo is a pot, a tray or a spread of ingredients that somebody cooked. ' +
+  recipeSchema(false) +
   RECIPE_SHAPE +
   // A photograph has one witness and it is the model. Everything it says is
   // inference, which is why it is told to describe only what is in front of it.
@@ -303,11 +324,10 @@ export const DESCRIBE_RECIPE_PROMPT =
   "You turn a description of somebody's home cooking into a recipe for a " +
   'calorie-tracking app. ' +
   RECIPE_KITCHEN +
+  // Declared in the schema, which is the only place a model reliably reads a
+  // key from. See `recipeSchema`.
+  recipeSchema(true) +
   RECIPE_SHAPE +
-  // Only on this path. A photographed pot has its photograph, and the form
-  // shows that instead — see `RecipeDraft.icon`.
-  'One more key goes alongside those: "icon", a string or null, described at ' +
-  'the end. ' +
   // THE DIFFERENCE FROM THE PHOTO PROMPT, and the only one that matters. A
   // sentence was written by the person who cooked the dish, so what it STATES
   // is the answer rather than evidence to weigh: the amounts they gave are the

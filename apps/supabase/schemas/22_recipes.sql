@@ -131,6 +131,42 @@ create index recipes_source_idx
 
 
 -- ---------------------------------------------------------------------------
+-- Who has saved a community recipe.
+--
+-- ONE ROW PER PERSON PER RECIPE, and the primary key is what makes that true.
+-- `saved_count` used to be bumped on every call to `save_recipe_copy`, so a
+-- person who saved the same rendang three times to try three variations of it
+-- counted as three people — and since the community shelf is ORDERED by that
+-- column, the way to the top of it was to save your own favourite repeatedly.
+-- A counter with no ledger behind it cannot tell those apart.
+--
+-- The row records the FACT of the save and outlives the copy it was made from.
+-- Deleting your copy does not take the save back: it happened, and "how many
+-- people have saved this" is a question about people rather than about how many
+-- of them still have it in their list. The alternative — deriving the count
+-- from `count(distinct owner_id)` over `source_recipe_id` — is one fewer table
+-- and gets that question wrong, and it puts a subquery under the one shelf
+-- query that has an index built for it.
+--
+-- NO CLIENT GRANTS AT ALL, not merely no policy. `save_recipe_copy` is
+-- `security definer` and is the only writer there is; a client that could
+-- insert here could vote for its own recipe as many times as it liked, which
+-- is the thing this table exists to stop.
+-- ---------------------------------------------------------------------------
+create table public.recipe_saves (
+  recipe_id uuid not null references public.recipes (id) on delete cascade,
+  user_id   uuid not null references auth.users (id) on delete cascade,
+  saved_at  timestamptz not null default now(),
+
+  primary key (recipe_id, user_id)
+);
+
+alter table public.recipe_saves enable row level security;
+
+grant select, insert, delete on public.recipe_saves to service_role;
+
+
+-- ---------------------------------------------------------------------------
 -- What went into the pot.
 --
 -- PER UNIT, NOT PER INGREDIENT
