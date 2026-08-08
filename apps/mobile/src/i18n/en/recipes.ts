@@ -223,7 +223,6 @@ export const recipes = {
   /** The fourth option on the log sheet. */
   log: {
     action: 'Recipes',
-    seeAll: 'All recipes',
     /**
      * Nothing on this shelf, said per shelf. "No recipes yet" is true of your
      * own and wrong about the other two, where the answer is that nobody has

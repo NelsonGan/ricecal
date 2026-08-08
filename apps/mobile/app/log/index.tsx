@@ -18,7 +18,7 @@ import {
 import { DescribePanel, FoodSearchPanel, InlineCamera, QuickAction } from '@/features/logging'
 import { RecipePanel } from '@/features/recipes'
 import { ItemRow } from '@/features/shared'
-import { useBack, useDismissTo } from '@/lib/navigation'
+import { useBack } from '@/lib/navigation'
 import { sumMacros } from '@/lib/nutrition'
 import { useThemeColors } from '@/theme/useTheme'
 import { Icon, IconButton, SheetSurface, Tappable, Text } from '@/ui'
@@ -48,11 +48,6 @@ export default function LogSheet() {
   const { t } = useTranslation(['logging', 'recipes', 'common'])
   const router = useRouter()
   const goBack = useBack('/today')
-  // The recipe list is a TAB now, not a page this sheet can push. Replacing
-  // this route with it would leave the tab rendering inside a transparent
-  // modal presentation; dismissing first and then navigating puts the user on
-  // the tab bar where the list lives.
-  const seeAllRecipes = useDismissTo('/recipes')
   const logFood = useLogFood()
   const snapFood = useSnapFood()
   const describeFood = useDescribeFood()
@@ -117,8 +112,8 @@ export default function LogSheet() {
 
   return (
     /**
-     * Full height whenever a panel raises the keyboard, which is search AND
-     * describe. A capped sheet is padded up off the bottom edge by
+     * Full height whenever a panel raises the keyboard, which is search,
+     * describe and recipes. A capped sheet is padded up off the bottom edge by
      * `KeyboardAvoidingView`, and the strip left behind shows the scrim through
      * the curve of the keyboard's top corners — the panel stops reading as
      * attached to the bottom of the screen. Full height keeps it where it is and
@@ -134,7 +129,7 @@ export default function LogSheet() {
     <SheetSurface
       onClose={() => goBack()}
       scrollable={panel !== 'describe'}
-      fullHeight={panel === 'search' || panel === 'describe'}
+      fullHeight={panel === 'search' || panel === 'describe' || panel === 'recipes'}
     >
       {/* The heading is rendered here rather than through `title` so the
           remaining count can sit on the same line, right aligned, the way the
@@ -213,11 +208,11 @@ export default function LogSheet() {
         // transparent modal lands on the stack WITHIN that presentation, so the
         // recipe would come up as a second modal stacked on this sheet.
         <RecipePanel
+          autoFocus
           onLog={(recipe) => add(recipe.foodId, recipe.defaultServingId)}
           onOpen={(recipe) =>
             router.replace({ pathname: '/recipe/[id]', params: { id: recipe.id } })
           }
-          onSeeAll={seeAllRecipes}
         />
       ) : null}
 
