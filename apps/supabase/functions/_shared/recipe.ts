@@ -13,6 +13,7 @@
 // that will not parse — leaves the recipe at `pending`, which is invisible in
 // the community tab. Nothing in this file can approve a recipe by accident.
 
+import { guessIcon, ICON_INSTRUCTION, type IconChoice, resolveIcon } from './icons.ts'
 import { chatJSON, mockActive } from './llm.ts'
 
 /** 'g' | 'ml' | 'piece' — the units `recipe_ingredients.unit` accepts. */
@@ -43,6 +44,14 @@ export type RecipeDraft = {
   servings: number
   ingredients: DraftIngredient[]
   steps: string
+  /**
+   * The drawing for the pot, chosen out of our own set — see `icons.ts`.
+   *
+   * Only ever filled in on the DESCRIBED path. A photographed pot arrives with
+   * a photograph, and the form shows that; asking a vision call to also pick a
+   * drawing is paying for an answer nothing displays.
+   */
+  icon: IconChoice | null
 }
 
 export type RecipeReview = {
@@ -157,6 +166,14 @@ function shapeDraft(raw: unknown): RecipeDraft {
     servings: Math.round(clamp(o.servings, 1, 100, 1)),
     ingredients,
     steps: shapeSteps(o.steps),
+    // The model's choice, or one worked out from the dish's own name when it
+    // gave none or named a spelling we do not carry. Null only when neither
+    // finds anything, which the form shows as its default pot.
+    //
+    // Read off `o.name` rather than the shaped name above, so the fallback is
+    // matching what the model actually called the dish rather than the
+    // "Home recipe" stand-in that replaces an empty one.
+    icon: resolveIcon(o.icon) ?? guessIcon(o.name),
   }
 }
 
@@ -190,11 +207,26 @@ export function toIngredientRow(ingredient: DraftIngredient, position: number) {
  * a photograph and a sentence is one thing only, and it is stated separately
  * below — WHO THE AUTHORITY IS.
  */
-const RECIPE_SHAPE =
+/**
+ * The shape sentence, and whether it declares an icon.
+ *
+ * A FUNCTION rather than a constant because the literal schema is the strongest
+ * instruction in the whole prompt, and a key that is not in it is a key the
+ * model leaves out. The icon was described in prose at the end and declared
+ * nowhere, and it came back about half the time — which on a form looks like a
+ * feature that does not work rather than one that sometimes does.
+ *
+ * Only the describe path asks for it: a photographed pot has its photograph.
+ */
+const recipeSchema = (withIcon: boolean): string =>
   'Respond with JSON only, matching: ' +
-  '{"name": string, "servings": number, "steps": string, "ingredients": [' +
+  '{"name": string, "servings": number, "steps": string, ' +
+  (withIcon ? '"icon": string|null, ' : '') +
+  '"ingredients": [' +
   '{"name": string, "amount": number, "unit": "g"|"ml"|"piece", "kcal": number, ' +
-  '"carbs_g": number, "protein_g": number, "fat_g": number}]} ' +
+  '"carbs_g": number, "protein_g": number, "fat_g": number}]} '
+
+const RECIPE_SHAPE =
   // The name is the dish. "A pot of curry on a stove" is a caption; "Kari ayam"
   // is what somebody would look for in their own recipes.
   //
@@ -276,6 +308,7 @@ export const READ_RECIPE_PROMPT =
   'You read home cooking out of photographs for a calorie-tracking app. ' +
   RECIPE_KITCHEN +
   'The photo is a pot, a tray or a spread of ingredients that somebody cooked. ' +
+  recipeSchema(false) +
   RECIPE_SHAPE +
   // A photograph has one witness and it is the model. Everything it says is
   // inference, which is why it is told to describe only what is in front of it.
@@ -291,6 +324,9 @@ export const DESCRIBE_RECIPE_PROMPT =
   "You turn a description of somebody's home cooking into a recipe for a " +
   'calorie-tracking app. ' +
   RECIPE_KITCHEN +
+  // Declared in the schema, which is the only place a model reliably reads a
+  // key from. See `recipeSchema`.
+  recipeSchema(true) +
   RECIPE_SHAPE +
   // THE DIFFERENCE FROM THE PHOTO PROMPT, and the only one that matters. A
   // sentence was written by the person who cooked the dish, so what it STATES
@@ -322,7 +358,11 @@ export const DESCRIBE_RECIPE_PROMPT =
   'A dish named with no amounts is still a dish: cook it the usual way and ' +
   'estimate what a pot of it holds. Answer {"name": "", "servings": 1, ' +
   '"ingredients": [], "steps": ""} ONLY when the text names no food at all, as a ' +
-  'reminder, a greeting or a question would.'
+  'reminder, a greeting or a question would. ' +
+  // Dead last, and see the note on ICON_INSTRUCTION for why: the list of ids
+  // is the biggest block of text in this prompt and everything after it is
+  // read in its shadow.
+  ICON_INSTRUCTION
 
 /**
  * Fill a recipe form in from a photograph of the pot.
@@ -432,6 +472,9 @@ export async function describeRecipe(
     return shapeDraft({
       name: text_.slice(0, 60) || 'Home recipe',
       servings: 4,
+      // A local run exercises the icon path too, or the one thing that only
+      // happens on this path is the one thing never seen before it deploys.
+      icon: 'gulai',
       ingredients: [
         {
           name: 'Chicken thigh',
@@ -488,46 +531,76 @@ export async function describeRecipe(
 export const describeRecipeUserMessage = (described: string): string =>
   `The person cooking it wrote: "${described}"`
 
+/**
+ * The publishing gate's prompt, and it asks ONE question: is this a recipe?
+ *
+ * It used to ask two, and the second was whether the nutrition was credible.
+ * That ground reads as an invitation to audit, and a model handed a licence to
+ * audit arithmetic finds something wrong with almost every real pot: a rendang
+ * whose kerisik looked light, a serving count it would have written as five
+ * rather than six. Ordinary home cooking was being rejected at a rate that made
+ * publishing feel broken, and the author could do nothing with a reason like
+ * "the calories seem low for this much chicken" — the figures came from OUR
+ * cascade, not from them.
+ *
+ * So accuracy is explicitly none of the reviewer's business. What is left is
+ * what the gate was for: keeping the community tab from filling up with abuse,
+ * adverts and things that are not food. Everything else is somebody's cooking
+ * and goes through.
+ */
 export const REVIEW_RECIPE_PROMPT =
-  'You are the moderator for a Malaysian recipe-sharing app. A recipe is about to ' +
-  'be published where every other user can find it. Respond with JSON only: ' +
-  '{"approved": boolean, "reason": string}. ' +
-  // Two grounds and no others. A moderator with a wider brief starts rejecting
-  // food it finds unhealthy, and the app has a calorie budget for that.
+  'You check whether a submission to a recipe-sharing app is actually a recipe. ' +
+  'Respond with JSON only: {"approved": boolean, "reason": string}. ' +
+  // Two grounds and no others. Both are about what the text IS, never about
+  // whether it is any good or whether its numbers add up.
   'Reject it, with a short reason the author can act on, if EITHER: ' +
-  '(1) the text contains vulgarity, slurs, sexual content, harassment, spam, ' +
-  'advertising or a link; or ' +
-  '(2) the nutrition information is not credible — calories that do not follow ' +
-  'from the ingredients, a serving count that cannot be right for the amount of ' +
-  'food, or ingredients that are not food. ' +
-  'Approve everything else. An unusual dish, an unhealthy dish, a terse recipe, a ' +
-  'recipe with few ingredients or no steps written down are all fine — this is ' +
-  "somebody's home cooking, not a cookbook submission. " +
-  'Judge only what you are shown. Do not ask for more detail, and do not reject ' +
-  'for being incomplete. ' +
+  '(1) it is not a recipe at all: random or placeholder text, a note to nobody, ' +
+  'a test entry, a question, or ingredients that are not food; or ' +
+  '(2) the text contains vulgarity, slurs, sexual content, harassment, hate, ' +
+  'spam, advertising or a link. ' +
+  // Said as plainly as possible, because this is the half that was getting it
+  // wrong. A model told only "approve everything else" still hunts for a
+  // reason; told the numbers are not its job, it stops.
+  'Approve everything else. You are NOT judging the recipe: the calories, the ' +
+  'macros, the amounts and the serving count are calculated by the app and are ' +
+  "not the author's work, so never reject over a figure that looks wrong, high, " +
+  'low or inconsistent. An unusual dish, an unhealthy dish, a terse recipe, odd ' +
+  'amounts, a recipe with two ingredients or no steps written down are all fine. ' +
+  "This is somebody's home cooking, not a cookbook submission. " +
+  'If it names a dish and lists things that go in it, it is a recipe. When in ' +
+  'doubt, approve. ' +
   'The reason is one sentence, addressed to the author, and is empty when approved. ' +
   // The reason is SHOWN, so it is copy and the house rule reaches it: no long
   // dashes anywhere a user reads. See the conventions in CLAUDE.md.
   'Write it in plain sentences with no em dashes or en dashes; use a comma, a ' +
   'full stop or a semicolon instead.'
 
-/** What the reviewer is shown. Everything a reader of the recipe would see. */
+/**
+ * What the reviewer is shown, and it is the WORDS rather than the numbers.
+ *
+ * No calorie figures anywhere, which is a deliberate omission and the other
+ * half of the prompt above. A reviewer shown "394 kcal a serving" audits it
+ * whatever it has been told not to do, and the figure is not the author's to
+ * defend: it comes out of the ingredient rows the app priced. Nothing in the
+ * two remaining grounds needs a calorie count to be decided.
+ *
+ * The amounts stay. They cost almost nothing and they are part of reading
+ * whether this is a recipe at all: "2 cups bleach" is caught by the name and
+ * the amount together.
+ */
 export type ReviewInput = {
   name: string
   servings: number
   steps: string
-  totalKcal: number
-  servingKcal: number
-  ingredients: Array<{ name: string; amount: number; unit: string; kcal: number }>
+  ingredients: Array<{ name: string; amount: number; unit: string }>
 }
 
 export const reviewUserMessage = (recipe: ReviewInput): string =>
   [
     `Name: ${recipe.name}`,
     `Feeds: ${recipe.servings}`,
-    `Whole pot: ${recipe.totalKcal} kcal — ${recipe.servingKcal} kcal a serving`,
     'Ingredients:',
-    ...recipe.ingredients.map((i) => `- ${i.name}, ${i.amount} ${i.unit}, ${i.kcal} kcal`),
+    ...recipe.ingredients.map((i) => `- ${i.name}, ${i.amount} ${i.unit}`),
     `Steps: ${recipe.steps || '(none written)'}`,
   ].join('\n')
 

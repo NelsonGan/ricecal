@@ -207,6 +207,9 @@ Deno.serve(async (req: Request) => {
         photoPath: firstEntry ? photoPath : null,
         suggestedEdits: item?.suggested_edits ?? [],
         source,
+        // Only ever set on the typed path — the prompt that asks for it is the
+        // one with no photograph behind it. See `writeEntry`.
+        icon: item?.icon ?? null,
       })
       firstEntry = false
       written.push(entry)

@@ -78,15 +78,18 @@ async function fetchPhoto(path: string): Promise<string> {
 async function loadForReview(db: SupabaseClient, recipeId: string) {
   const { data: recipe } = await db
     .from('recipe_details')
-    .select('name, owner_id, servings, steps, total_kcal, serving_kcal, is_public')
+    .select('name, owner_id, servings, steps, is_public')
     .eq('id', recipeId)
     .maybeSingle()
 
   if (!recipe) return null
 
+  // No calorie columns. The reviewer decides whether this is a recipe and
+  // whether it is fit to read; the figures are the app's own arithmetic and
+  // showing them only invites a verdict on them. See `ReviewInput`.
   const { data: ingredients } = await db
     .from('recipe_ingredient_details')
-    .select('name, amount, unit, kcal')
+    .select('name, amount, unit')
     .eq('recipe_id', recipeId)
     .order('position')
 
@@ -174,6 +177,12 @@ Deno.serve(async (req: Request) => {
           name: draft.name,
           servings: draft.servings,
           steps: draft.steps,
+          // Two loose columns rather than the pair, because that is what
+          // `recipes.icon_set` / `icon_name` are and the client writes them
+          // straight through. Null on the photo path, where the photograph is
+          // the picture.
+          icon_set: draft.icon?.set ?? null,
+          icon_name: draft.icon?.name ?? null,
           ingredients: draft.ingredients.map(toIngredientRow),
         },
       })
@@ -210,13 +219,10 @@ Deno.serve(async (req: Request) => {
       name: loaded.recipe.name ?? '',
       servings: loaded.recipe.servings ?? 1,
       steps: loaded.recipe.steps ?? '',
-      totalKcal: loaded.recipe.total_kcal ?? 0,
-      servingKcal: loaded.recipe.serving_kcal ?? 0,
       ingredients: loaded.ingredients.map((i) => ({
         name: i.name ?? '',
         amount: Number(i.amount ?? 0),
         unit: i.unit ?? 'g',
-        kcal: i.kcal ?? 0,
       })),
     }
 

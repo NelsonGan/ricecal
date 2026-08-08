@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { useThemeColors } from '@/theme/useTheme'
-import { Icon, IconButton, Text, TextField } from '@/ui'
+import { Button, Icon, Text, TextField } from '@/ui'
 
 export type DescribePanelProps = {
   /** The meal, as typed. Trimmed and non-empty; the host does the logging. */
@@ -25,13 +24,19 @@ export type DescribePanelProps = {
  * room, an example in the placeholder that is a whole meal with a drink on the
  * end, and a hint that says amounts are worth typing.
  *
- * The send button is inside the field and the sheet closes on it, the same
- * shape as the fix-by-typing box on a scanned entry: the wait belongs on the
- * row on Today, not on a spinner in a sheet the user is finished with.
+ * The send button is UNDER the field, full width, and the sheet closes on it.
+ * It was an arrow tucked into the field's bottom-right corner — the shape the
+ * fix-by-typing box uses — and at this size that corner is where the third line
+ * of a three-line meal wants to be. The arrow crowded the text it was waiting
+ * for, and a 32pt target inside a box that is itself a target is an ambiguous
+ * tap: the sibling panel in this same sheet already puts a full-width button
+ * under its field, and so does the recipe describe panel.
+ *
+ * Either way the sheet closes on it and the wait belongs on the row on Today,
+ * not on a spinner in a sheet the user is finished with.
  */
 export function DescribePanel({ onSubmit, autoFocus = false }: DescribePanelProps) {
   const { t } = useTranslation(['logging', 'common'])
-  const colors = useThemeColors()
   const [text, setText] = useState('')
 
   const send = () => {
@@ -41,47 +46,42 @@ export function DescribePanel({ onSubmit, autoFocus = false }: DescribePanelProp
   }
 
   return (
-    <View className="gap-2">
-      <TextField
-        value={text}
-        onChangeText={setText}
-        placeholder={t('logging:describe.placeholder')}
-        autoFocus={autoFocus}
-        multiline
-        // The keyboard's return key inserts a newline in a multiline field, so
-        // it cannot double as send — the button is the only way, which is why
-        // it is inside the box where the thumb already is.
-        blurOnSubmit={false}
-        // Room for a meal with its sides on it, and the text starts at the top
-        // of that room rather than floating in the middle of an empty box.
-        //
-        // The box is `items-start`, so the input sits flush against the border
-        // and the first line reads as pinned to it. The padding is on the INPUT
-        // rather than on the box: the send button is `self-end`, and padding the
-        // box would push it off the bottom of the same 92pt.
-        className="min-h-[92px] items-start pr-2"
-        inputClassName="pt-4"
-        textAlignVertical="top"
-        maxLength={500}
-        rightSlot={
-          <IconButton
-            size="sm"
-            variant="primary"
-            className="self-end"
-            accessibilityLabel={t('logging:describe.send')}
-            disabled={!text.trim()}
-            onPress={send}
-          >
-            <Icon set="ui" name="arrow-up" size={20} tintColor={colors.onPandan} />
-          </IconButton>
-        }
-      />
-      <View className="flex-row items-start gap-2 px-1">
-        <Icon set="system" name="sparkle" size={16} />
-        <Text variant="meta" className="flex-1">
-          {t('logging:describe.hint')}
-        </Text>
+    // The field and its hint are one thing and the button is another, so the
+    // gap between them is the wider one.
+    <View className="gap-3">
+      <View className="gap-2">
+        <TextField
+          value={text}
+          onChangeText={setText}
+          placeholder={t('logging:describe.placeholder')}
+          autoFocus={autoFocus}
+          multiline
+          // The keyboard's return key inserts a newline in a multiline field, so
+          // it cannot double as send — the button is the only way, which is why
+          // it is inside the box where the thumb already is.
+          blurOnSubmit={false}
+          // Room for a meal with its sides on it, and the text starts at the top
+          // of that room rather than floating in the middle of an empty box.
+          //
+          // The box is `items-start`, so the input sits flush against the border
+          // and the first line reads as pinned to it. The whole 92pt is the
+          // text's now that the button has moved out from the corner.
+          className="min-h-[92px] items-start"
+          inputClassName="pt-4"
+          textAlignVertical="top"
+          maxLength={500}
+        />
+        <View className="flex-row items-start gap-2 px-1">
+          <Icon set="system" name="sparkle" size={16} />
+          <Text variant="meta" className="flex-1">
+            {t('logging:describe.hint')}
+          </Text>
+        </View>
       </View>
+
+      <Button fullWidth disabled={!text.trim()} onPress={send}>
+        {t('logging:describe.send')}
+      </Button>
     </View>
   )
 }

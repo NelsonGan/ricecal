@@ -240,8 +240,20 @@ begin
 
   -- Not on a copy of your own recipe: duplicating something to try a variation
   -- is not a vote for it.
+  --
+  -- And ONCE PER PERSON. The ledger's primary key is what decides that, so a
+  -- second save by the same person conflicts, inserts nothing, leaves `found`
+  -- false and never reaches the counter. Bumped on every call, the column
+  -- counted saves rather than people — and the community shelf is ordered by
+  -- it, so saving your own favourite twenty times was a way to the top of it.
   if src.owner_id is distinct from v_user then
-    update public.recipes set saved_count = saved_count + 1 where id = src.id;
+    insert into public.recipe_saves (recipe_id, user_id)
+    values (src.id, v_user)
+    on conflict do nothing;
+
+    if found then
+      update public.recipes set saved_count = saved_count + 1 where id = src.id;
+    end if;
   end if;
 
   return v_new;
@@ -250,8 +262,8 @@ $$;
 
 comment on function public.save_recipe_copy is
   'Copy a visible recipe and its ingredients into the caller''s own, recording '
-  'where it came from and bumping the original''s saved count. Returns the new '
-  'recipe id.';
+  'where it came from and counting the caller as one saver of the original, '
+  'however many copies they make. Returns the new recipe id.';
 
 revoke execute on function public.save_recipe_copy from public, anon;
 grant execute on function public.save_recipe_copy to authenticated, service_role;

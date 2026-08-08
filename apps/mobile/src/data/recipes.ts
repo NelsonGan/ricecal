@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { unwrap, unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
-import { toRecipe, toRecipeIngredient } from './mappers'
+import { toIcon, toRecipe, toRecipeIngredient } from './mappers'
 import { removeMealPhoto } from './photos'
 import { useUserId } from './session'
 import type { IconRef, Macros, Recipe, RecipeIngredient, RecipeUnit } from './types'
@@ -369,6 +369,14 @@ export type ScannedRecipe = {
   name: string
   servings: number
   steps: string
+  /**
+   * The drawing the model picked for the pot, out of our own set.
+   *
+   * Only ever set on the DESCRIBED path: a photographed pot arrives with a
+   * photograph and the form shows that instead, so the server does not spend a
+   * vision call's tokens choosing a picture nothing displays.
+   */
+  icon?: IconRef
   ingredients: RecipeIngredientInput[]
 }
 
@@ -413,6 +421,8 @@ export function useReadRecipe() {
           name?: string
           servings?: number
           steps?: string
+          icon_set?: string | null
+          icon_name?: string | null
           ingredients?: Array<{
             name?: string
             amount?: number
@@ -431,6 +441,10 @@ export function useReadRecipe() {
         name: draft.name ?? '',
         servings: draft.servings ?? 1,
         steps: draft.steps ?? '',
+        // Through the same seam every other icon comes through: two loose
+        // columns become the tagged pair `Icon` takes, and a name no set has
+        // renders blank rather than crashing.
+        icon: toIcon(draft.icon_set ?? null, draft.icon_name ?? null),
         ingredients: (draft.ingredients ?? []).map((item) => ({
           name: item.name ?? '',
           amount: Number(item.amount ?? 0),

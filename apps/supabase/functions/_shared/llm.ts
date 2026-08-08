@@ -13,6 +13,7 @@
 // mock through `body.mock`, which is only read in mock mode; it exists so a
 // test can force each tier of the cascade in turn.
 
+import { guessIcon, ICON_INSTRUCTION, type IconChoice, resolveIcon } from './icons.ts'
 import { reconcile, unfoldCounts } from './portion.ts'
 
 export type Scene = 'single' | 'composite' | 'packaged' | 'unclear'
@@ -92,6 +93,14 @@ export type VisionItem = {
    * hardcoded list.
    */
   suggested_edits: string[]
+  /**
+   * The drawing for the row, chosen out of our own set — see `icons.ts`.
+   *
+   * Filled in on the TYPED path only. A photographed meal has the photograph,
+   * and `food_logs` will not hold both: the row carries a picture or a drawing,
+   * never one over the other.
+   */
+  icon: IconChoice | null
 }
 
 /**
@@ -483,6 +492,13 @@ function shapeVision(raw: unknown): Vision {
           .map((edit) => String(edit).trim().slice(0, 60))
           .filter(Boolean)
           .slice(0, 3),
+        // The model's choice, or one worked out from the dish's own name when
+        // it gave none or named a spelling we do not carry. See `guessIcon`.
+        //
+        // Harmless on the photo path, which never asks for an icon and whose
+        // rows carry a photograph anyway: `writeEntry` drops an icon that
+        // arrives beside one.
+        icon: resolveIcon(i.icon) ?? guessIcon(name),
       } satisfies VisionItem,
     ]
   })
@@ -505,10 +521,20 @@ function shapeVision(raw: unknown): Vision {
 // written by the person who ate the meal.
 // ---------------------------------------------------------------------------
 
-const ITEM_SCHEMA =
+/**
+ * The shape sentence, and whether an item declares an icon.
+ *
+ * A FUNCTION rather than a constant for the reason `recipeSchema` gives: the
+ * literal schema is the strongest instruction in the prompt, and a key
+ * described only in prose at the end is a key the model leaves out about half
+ * the time. Only the typed path asks for one — a photographed plate has its
+ * photograph, and `food_logs` holds a picture or a drawing, never both.
+ */
+const itemSchema = (withIcon: boolean): string =>
   '{"scene": "single|composite|packaged|unclear", ' +
   '"items": [{"name": string, "specific_query": string, "generic_query": string, ' +
   '"count": number, "grams": number|null, ' +
+  (withIcon ? '"icon": string|null, ' : '') +
   '"components": [{"name": string, "count": number, "grams": number, "kcal": number, ' +
   '"carbs_g": number|null, "protein_g": number|null, "fat_g": number|null}], ' +
   '"serving_hint": string|null, ' +
@@ -659,7 +685,7 @@ export const ANALYSE_PHOTO_PROMPT =
   'Never invent a stand-in like "Unidentified Food Product"; null is the answer. ' +
   'If the panel is only readable per 100g, use those figures and say so in "serving". ' +
   'Otherwise respond with JSON only, matching: ' +
-  ITEM_SCHEMA +
+  itemSchema(false) +
   // ONE MEAL. Anything else is a diary with four rows for one lunch.
   'The photo is ONE logged meal. Return ONE item, named as a local menu would print ' +
   'it ("Korean fried chicken with rice and sides"). Only return more than one item ' +
@@ -773,7 +799,7 @@ export const DESCRIBE_MEAL_PROMPT =
   'If the text names no food that was eaten — a greeting, a question, a note to ' +
   'self — answer {"no_food": true} and nothing else. ' +
   'Otherwise respond with JSON only, matching: ' +
-  ITEM_SCHEMA +
+  itemSchema(true) +
   // ONE MEAL, for the same reason the photo path folds its items: the diary
   // gets one row per thing logged, and this is one thing logged.
   'The text is ONE logged meal however many dishes it names. Return ONE item, ' +
@@ -810,7 +836,17 @@ export const DESCRIBE_MEAL_PROMPT =
   '"confidence" is how precisely the words pin the food down — a named dish is ' +
   'high, "some rice and chicken" is low. Low is an honest answer, not a failure; ' +
   'the app has a cheaper way to price a vague meal and needs to be told when. ' +
-  TRAILING_FIELDS
+  TRAILING_FIELDS +
+  // Only on this path, where there is no photograph and the row would otherwise
+  // be a name over an empty square. A photographed meal has its picture, and
+  // `food_logs` holds one or the other.
+  //
+  // Dead last in the prompt, and see the note on ICON_INSTRUCTION for why: the
+  // list of ids is the biggest block of text here and everything after it is
+  // read in its shadow. The key itself is declared up in the schema, which is
+  // where a model actually reads one from.
+  ' ' +
+  ICON_INSTRUCTION
 
 /** The one line of context the text call gets. Exported with the prompt. */
 export const describeUserMessage = (text: string): string => `The person typed: "${text}"`
@@ -856,6 +892,10 @@ export async function describeMeal(text: string, mock: MockSteer | undefined): P
           kcal_high: 600 * count,
           confidence: 0.7,
           suggested_edits: ['Half portion', 'Add a fried egg', 'No rice'],
+          // A local run exercises the icon path too, or the one thing that
+          // only happens on this path is the one thing never seen before it
+          // deploys.
+          icon: 'nasi-lemak',
         },
       ],
     })
@@ -915,6 +955,10 @@ export function foldMealItems(vision: Vision): Vision {
     kcal_high: items.reduce((sum, item) => sum + item.kcal_high, 0),
     confidence: Math.min(...items.map((item) => item.confidence)),
     suggested_edits: primary.suggested_edits,
+    // The biggest thing on the tray names the meal, so it draws it too — and
+    // when that one had no drawing, any other part's is still a picture of
+    // something on this plate, which beats the empty square.
+    icon: primary.icon ?? items.find((item) => item.icon)?.icon ?? null,
   }
   return { scene: 'composite', items: [merged] }
 }
