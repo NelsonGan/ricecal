@@ -2,6 +2,7 @@ import { Platform } from 'react-native'
 
 import { dateKey } from '@/data/client'
 import { eachDay } from './apple'
+import { CONNECT_READ_TYPES, isConnectReadType } from './connectPermissions'
 import { hrZonesFromSamples } from './hrZones'
 import { fromConnectExerciseType } from './kinds'
 import type {
@@ -53,19 +54,8 @@ import type {
 
 type ConnectModule = typeof import('react-native-health-connect')
 
-const READ_TYPES = [
-  'ActiveCaloriesBurned',
-  'TotalCaloriesBurned',
-  'Steps',
-  'Distance',
-  'ExerciseSession',
-  'HeartRate',
-] as const
-
-export const CONNECT_READ_TYPES: string[] = [...READ_TYPES]
-
 const permissionsFor = () =>
-  READ_TYPES.map((recordType) => ({ accessType: 'read' as const, recordType }))
+  CONNECT_READ_TYPES.map((recordType) => ({ accessType: 'read' as const, recordType }))
 
 let cached: ConnectModule | null = null
 
@@ -184,9 +174,26 @@ export const healthConnect: HealthProvider = {
       // The array also carries the special permissions — background access,
       // exercise routes — which have no `recordType`. They are not read types
       // and do not belong in the list the screens explain themselves from.
-      if ('recordType' in permission && typeof permission.recordType === 'string') {
-        names.push(permission.recordType)
-      }
+      if (!('recordType' in permission) || typeof permission.recordType !== 'string') continue
+
+      /**
+       * And it carries record types we never asked for.
+       *
+       * A permission covers a FAMILY of record classes, and the library answers
+       * in record types by reporting every class the granted permission
+       * implies. Granting the six here comes back as eight: `READ_EXERCISE`
+       * drags in `CyclingPedalingCadence` and `READ_STEPS` drags in
+       * `StepsCadence`, neither of which this file reads. Observed on a Pixel
+       * API 36 emulator, not inferred.
+       *
+       * They are dropped because this list is what `health_connections
+       * .permissions` stores and what the Activity screens explain a gap from,
+       * and a column claiming a reading the app never takes is a lie waiting
+       * for somebody to build on it.
+       */
+      if (!isConnectReadType(permission.recordType)) continue
+
+      names.push(permission.recordType)
     }
 
     return { granted: names.length > 0, permissions: names }
