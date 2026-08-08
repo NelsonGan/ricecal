@@ -42,12 +42,17 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
   const { t } = useTranslation(['recipes', 'common'])
   const [editing, setEditing] = useState(false)
   /**
-   * The text under the cursor, which is NOT the form's until Done.
+   * The text under the cursor, held here rather than pushed up on every
+   * keystroke — but EVERY way out of the sheet commits it, including the
+   * handle and the scrim.
    *
-   * Staged like everything else on this form, and for the smaller version of
-   * the same reason: closing the sheet by swiping it down should leave the
-   * steps as they were, rather than committing a half-written line because the
-   * panel happened to be dismissed.
+   * Discarding on dismissal was the first shape and it is a trap: six lines of
+   * method typed into a full-height sheet, a reflexive tap on the handle, and
+   * the lot is gone with nothing asked. It also disagrees with every other
+   * field on this form, all of which go straight into form state as they are
+   * typed. The form is what guards against losing work, through the discard
+   * confirmation on its own back control, and staging it twice only creates a
+   * second place to lose it.
    */
   const [draft, setDraft] = useState('')
   // Presented, so the field may take focus. `autoFocus` inside a `Modal` is
@@ -60,13 +65,13 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
   }
 
   const close = () => {
+    // Only when it actually changed. `onChange` marks the form dirty, and
+    // opening the sheet to read the method and closing it again is not an
+    // edit — it would arm the discard confirmation on the way out of a form
+    // nobody touched.
+    if (draft !== value) onChange(draft)
     setEditing(false)
     setReady(false)
-  }
-
-  const done = () => {
-    onChange(draft)
-    close()
   }
 
   const steps = splitSteps(value)
@@ -142,7 +147,10 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
               maxLength={4000}
             />
 
-            <Button fullWidth onPress={done}>
+            {/* The way out that reads as one. The handle and the scrim commit
+                the same text; this is the one a cook who has finished writing
+                will actually look for. */}
+            <Button fullWidth onPress={close}>
               {t('common:action.done')}
             </Button>
           </View>
