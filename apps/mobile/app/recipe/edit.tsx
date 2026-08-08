@@ -18,10 +18,12 @@ import {
 import { IconPicker, InlineCamera } from '@/features/logging'
 import {
   DescribeRecipePanel,
+  IngredientAmountSheet,
   IngredientSheet,
   ingredientTotal,
   potTotals,
   ReadingRecipe,
+  StepsField,
 } from '@/features/recipes'
 import { useBack } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
@@ -132,6 +134,12 @@ export default function RecipeFormScreen() {
 
   const [dirty, setDirty] = useState(false)
   const [adding, setAdding] = useState(false)
+  /**
+   * Which staged row the amount sheet is open on, by its local key rather than
+   * by index — the list is filtered on removal, so an index would point at a
+   * different ingredient the moment one above it went.
+   */
+  const [editingKey, setEditingKey] = useState<string | null>(null)
   const [camera, setCamera] = useState(false)
   const [describing, setDescribing] = useState(false)
   /**
@@ -193,6 +201,7 @@ export default function RecipeFormScreen() {
 
   const totals = potTotals(items, servings)
   const ready = name.trim().length > 0
+  const editing = items.find((item) => item.key === editingKey)
 
   const touch = () => setDirty(true)
 
@@ -506,25 +515,48 @@ export default function RecipeFormScreen() {
 
               {items.map((item, index) => {
                 const line = ingredientTotal(item.perUnit, item.amount)
+                const measure = `${item.amount} ${t(`recipes:ingredient.unit.${item.unit}`, {
+                  count: item.amount,
+                })}`
                 return (
                   <View key={item.key}>
                     {index > 0 ? <Divider /> : null}
-                    <View className="flex-row items-center gap-2.5 py-2.5">
-                      <View className="min-w-0 flex-1">
-                        <Text variant="bodyStrong" numberOfLines={1}>
-                          {item.name}
-                        </Text>
-                        <Text variant="meta">
-                          {item.amount}{' '}
-                          {t(`recipes:ingredient.unit.${item.unit}`, { count: item.amount })}
-                        </Text>
-                      </View>
-                      <View className="flex-row items-baseline gap-1">
-                        <Text variant="numeric" className="text-[17px] leading-[22px]">
-                          {line.kcal.toLocaleString()}
-                        </Text>
-                        <Text variant="caption">{t('common:unit.kcal')}</Text>
-                      </View>
+                    <View className="flex-row items-center gap-2.5">
+                      {/* The row opens the amount and the cross stays outside
+                          it. An autofilled pot arrives with amounts the model
+                          estimated, and until this was tappable the only way to
+                          correct one was to delete the row and add it again —
+                          which for an ingredient the model invented meant
+                          retyping its calories by hand, since a described
+                          recipe never goes near the catalogue. */}
+                      <Tappable
+                        className="min-w-0 flex-1 flex-row items-center gap-2.5 py-2.5"
+                        onPress={() => setEditingKey(item.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('recipes:ingredient.change', {
+                          name: item.name,
+                          measure,
+                        })}
+                      >
+                        <View className="min-w-0 flex-1">
+                          <Text variant="bodyStrong" numberOfLines={1}>
+                            {item.name}
+                          </Text>
+                          <View className="flex-row items-center gap-1">
+                            <Text variant="meta">{measure}</Text>
+                            {/* Small, muted, and on every row: one row wearing
+                                a pencil would read as the only one that can be
+                                changed. */}
+                            <Icon set="ui" name="edit" size={12} tintColor={colors.muted} />
+                          </View>
+                        </View>
+                        <View className="flex-row items-baseline gap-1">
+                          <Text variant="numeric" className="text-[17px] leading-[22px]">
+                            {line.kcal.toLocaleString()}
+                          </Text>
+                          <Text variant="caption">{t('common:unit.kcal')}</Text>
+                        </View>
+                      </Tappable>
                       <IconButton
                         size="sm"
                         accessibilityLabel={`${t('recipes:ingredient.remove')}, ${item.name}`}
@@ -580,25 +612,13 @@ export default function RecipeFormScreen() {
             </Card>
           ) : null}
 
-          <View className="gap-1.5">
-            <TextField
-              label={t('recipes:edit.steps')}
-              value={steps}
-              onChangeText={(next) => {
-                setSteps(next)
-                touch()
-              }}
-              placeholder={t('recipes:edit.stepsPlaceholder')}
-              multiline
-              numberOfLines={5}
-              className="min-h-[120px] items-start py-4"
-            />
-            {/* Said twice on purpose. The placeholder is gone the moment they type
-            and the numbering is the one thing about this field that is not
-            visible in it: the numerals are drawn beside the steps and are not
-            in the text, so somebody who cannot see the rule types their own. */}
-            <Text variant="meta">{t('recipes:edit.stepsHint')}</Text>
-          </View>
+          <StepsField
+            value={steps}
+            onChange={(next) => {
+              setSteps(next)
+              touch()
+            }}
+          />
 
           <IconPicker
             visible={picking}
@@ -639,6 +659,17 @@ export default function RecipeFormScreen() {
             onClose={() => setAdding(false)}
             onAdd={(input) => {
               setItems((current) => [...current, stage(input)])
+              touch()
+            }}
+          />
+
+          <IngredientAmountSheet
+            ingredient={editing ?? null}
+            onClose={() => setEditingKey(null)}
+            onSave={(next) => {
+              setItems((current) =>
+                current.map((row) => (row.key === editingKey ? { ...row, ...next } : row)),
+              )
               touch()
             }}
           />

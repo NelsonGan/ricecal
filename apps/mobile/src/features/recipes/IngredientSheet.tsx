@@ -171,6 +171,80 @@ function SearchPanel({ onPick, onOwn }: { onPick: (foodId: string) => void; onOw
 }
 
 /**
+ * How much of something went in, and what that much costs.
+ *
+ * The one control shared by adding an ingredient and correcting one later, and
+ * it is short because per-unit storage does all the work: `perUnit` is what one
+ * gram, millilitre or piece is worth, so a new amount reprices with a
+ * multiplication and no lookup. That is the property `recipe_ingredients` was
+ * shaped for — 400 ml of santan changed to 250 needs no second opinion, because
+ * the density was the part that was true.
+ *
+ * THE UNIT IS NOT EDITABLE HERE, and that is the same reasoning from the other
+ * side. `perUnit` was derived against a unit; re-reading 250 g of santan as 250
+ * pieces would keep a number that means nothing. Changing what a thing is
+ * measured in is removing the row and adding it again.
+ */
+function AmountForm({
+  unit,
+  perUnit,
+  initial,
+  action,
+  onSubmit,
+}: {
+  unit: RecipeUnit
+  perUnit: Macros
+  /** Prefilled, so the figure on screen is the one they just tapped. */
+  initial: number
+  action: string
+  onSubmit: (amount: number) => void
+}) {
+  const { t } = useTranslation(['recipes', 'common'])
+  // Null until they touch it, so the field shows the prefill without that
+  // prefill becoming a string the moment the component mounts.
+  const [amount, setAmount] = useState<string | null>(null)
+
+  const value = amount === null ? initial : Number(amount)
+  const usable = Number.isFinite(value) && value > 0
+  const line = ingredientTotal(perUnit, usable ? value : 0)
+
+  return (
+    <>
+      <TextField
+        label={t('recipes:ingredient.amount')}
+        value={amount === null ? String(initial) : amount}
+        onChangeText={setAmount}
+        keyboardType="decimal-pad"
+        selectTextOnFocus
+        rightSlot={
+          <Text variant="label" className="text-muted">
+            {t(`recipes:ingredient.unit.${unit}`, { count: value })}
+          </Text>
+        }
+      />
+
+      {/* The point of the whole panel: the number moves as the amount is
+          typed, so what the button commits is what was being read. */}
+      <Card>
+        <View className="flex-row items-baseline justify-between">
+          <Text variant="bodyStrong">{t('recipes:ingredient.calories')}</Text>
+          <View className="flex-row items-baseline gap-1">
+            <Text variant="numeric" className="text-[26px] leading-[32px] text-pandan-ink">
+              {line.kcal.toLocaleString()}
+            </Text>
+            <Text variant="caption">{t('common:unit.kcal')}</Text>
+          </View>
+        </View>
+      </Card>
+
+      <Button fullWidth disabled={!usable} onPress={() => onSubmit(value)}>
+        {action}
+      </Button>
+    </>
+  )
+}
+
+/**
  * How much of the chosen dish went in.
  *
  * The amount is prefilled with the serving the catalogue quoted — see
@@ -191,13 +265,8 @@ function AmountPanel({
   const colors = useThemeColors()
   const { data: food } = useFood(foodId)
   const basis = food ? ingredientBasis(food) : null
-  const [amount, setAmount] = useState<string | null>(null)
 
   if (!food || !basis) return null
-
-  const value = amount === null ? basis.amount : Number(amount)
-  const usable = Number.isFinite(value) && value > 0
-  const line = ingredientTotal(basis.perUnit, usable ? value : 0)
 
   return (
     <View className="gap-3">
@@ -212,50 +281,80 @@ function AmountPanel({
         </Text>
       </View>
 
-      <View className="flex-row items-end gap-3">
-        <TextField
-          containerClassName="flex-1"
-          label={t('recipes:ingredient.amount')}
-          value={amount === null ? String(basis.amount) : amount}
-          onChangeText={setAmount}
-          keyboardType="decimal-pad"
-          selectTextOnFocus
-          rightSlot={
-            <Text variant="label" className="text-muted">
-              {t(`recipes:ingredient.unit.${basis.unit}`, { count: value })}
-            </Text>
-          }
-        />
-      </View>
-
-      <Card>
-        <View className="flex-row items-baseline justify-between">
-          <Text variant="bodyStrong">{t('recipes:ingredient.calories')}</Text>
-          <View className="flex-row items-baseline gap-1">
-            <Text variant="numeric" className="text-[26px] leading-[32px] text-pandan-ink">
-              {line.kcal.toLocaleString()}
-            </Text>
-            <Text variant="caption">{t('common:unit.kcal')}</Text>
-          </View>
-        </View>
-      </Card>
-
-      <Button
-        fullWidth
-        disabled={!usable}
-        onPress={() =>
+      <AmountForm
+        unit={basis.unit}
+        perUnit={basis.perUnit}
+        initial={basis.amount}
+        action={t('recipes:ingredient.add')}
+        onSubmit={(amount) =>
           onAdd({
             name: food.name,
             foodId: food.id,
-            amount: value,
+            amount,
             unit: basis.unit,
             perUnit: basis.perUnit,
           })
         }
-      >
-        {t('recipes:ingredient.add')}
-      </Button>
+      />
     </View>
+  )
+}
+
+export type IngredientAmountSheetProps = {
+  /** The row being corrected, or null when the sheet is closed. */
+  ingredient: RecipeIngredientInput | null
+  onClose: () => void
+  onSave: (ingredient: RecipeIngredientInput) => void
+}
+
+/**
+ * Correcting how much of something went in, after the fact.
+ *
+ * The gap this fills is the autofill. A described pot comes back with amounts
+ * the model estimated — 400 g of noodles, 3 eggs — and until this existed the
+ * only way to say "it was 250" was to delete the row and search the catalogue
+ * for it again, which for an ingredient the model invented (a described recipe
+ * never touches the catalogue) meant retyping its calories by hand. The amount
+ * is the one number on those rows most likely to be wrong and it was the one
+ * that could not be changed.
+ *
+ * Only the amount, and `AmountForm` says why. A wrong FOOD is a different
+ * correction and the row already has a cross for it.
+ */
+export function IngredientAmountSheet({ ingredient, onClose, onSave }: IngredientAmountSheetProps) {
+  const { t } = useTranslation(['recipes', 'common'])
+
+  return (
+    <Sheet
+      visible={ingredient !== null}
+      onClose={onClose}
+      title={ingredient?.name ?? ''}
+      closeLabel={t('common:action.close')}
+      // A text field, so full height. And short content, so not scrollable:
+      // a scroll view scrolls itself to reveal the first responder and, before
+      // the keyboard's real height is known, carries the field off the top.
+      // Both rules are in CLAUDE.md.
+      fullHeight
+      scrollable={false}
+    >
+      {/* Keyed by name, so opening the sheet on a different row remounts the
+          form and re-reads its prefill. Without it `AmountForm` keeps the
+          amount typed into the row before this one. */}
+      {ingredient ? (
+        <View key={ingredient.name} className="gap-3">
+          <AmountForm
+            unit={ingredient.unit}
+            perUnit={ingredient.perUnit}
+            initial={ingredient.amount}
+            action={t('common:action.save')}
+            onSubmit={(amount) => {
+              onSave({ ...ingredient, amount })
+              onClose()
+            }}
+          />
+        </View>
+      ) : null}
+    </Sheet>
   )
 }
 
