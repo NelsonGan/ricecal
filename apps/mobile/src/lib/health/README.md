@@ -180,6 +180,37 @@ a broken tab. Both providers load inside a `try` and report `not-linked`.
 **Adding these needs a native rebuild.** `expo prebuild && expo run:ios`. They
 do not work in Expo Go and never will.
 
+**Health Connect reads nothing that the manifest did not declare, and nobody
+tells you.** `react-native-health-connect`'s config plugin adds the rationale
+intent-filter and the `ViewPermissionUsageActivity` alias and *no*
+`uses-permission` at all — those are the app's to declare. Android health sync
+shipped without them, and the failure has no error anywhere in it: the record
+type is left off the permission sheet, `requestPermission` resolves without it,
+and `requestAccess` reports a refusal the user was never offered the chance to
+make. On a phone with RiceCal installed, Health Connect's own App permissions
+screen said "No compatible apps installed".
+
+So the six live in `app.json` under `android.permissions`, and they cannot be
+derived there: Expo's config loader transpiles `app.config.ts` alone and
+requires its relative imports through plain Node, which will not load a `.ts`
+module. `connectPermissions.ts` holds the record types and their permissions,
+and `__tests__/health.test.ts` holds the manifest to it in both directions — a
+type with no permission fails, and a permission for a type nobody reads fails
+too, because an app that asks for more health data than it uses is one a
+reviewer rejects.
+
+Those tests read the config through `app.config.ts` rather than off `app.json`,
+because the VARIANTS sit between the two. Both of them rebuild `android` by
+spreading it today; one that composed the object instead would drop the
+permissions for its own build and no other, and on the `development` profile
+that is every EAS dev build straight back to the bug above. So each assertion
+runs three times, once per variant.
+
+Note the one irregular name while you are there: `ExerciseSession` is read by
+`READ_EXERCISE`, not `READ_EXERCISE_SESSION`. Five of the six are the record
+type in screaming snake case, which is exactly what makes a derivation tempting
+and wrong.
+
 **Health Connect's `revokeAllPermissions` does not take effect until the app
 process restarts** — the library's own docs say so, and `getGrantedPermissions`
 keeps returning the revoked ones until then. That is why disconnecting in

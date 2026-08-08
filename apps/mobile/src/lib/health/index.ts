@@ -4,8 +4,13 @@ import { appleHealth } from './apple'
 import { demoHealth } from './demo'
 import type { Availability, HealthProvider, ProviderId } from './types'
 
-export { CONNECT_READ_TYPES, healthConnect, sourceLabel } from './androidHealth'
+export { healthConnect, sourceLabel } from './androidHealth'
 export { APPLE_READ_TYPES, appleHealth, eachDay } from './apple'
+// `ANDROID_HEALTH_PERMISSIONS` deliberately stays out of the barrel. It answers
+// a question about the MANIFEST, and nothing at runtime can act on it — a
+// screen that imported it would be reading build-time trivia and drawing
+// conclusions about a grant it does not describe.
+export { CONNECT_READ_TYPES, type ConnectReadType } from './connectPermissions'
 export { demoHealth } from './demo'
 export {
   estimatedMaxHr,
