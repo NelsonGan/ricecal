@@ -37,6 +37,7 @@
  * and the suite runs against the deployed key instead of a local one.
  */
 
+import { resolveIcon } from '../functions/_shared/icons.ts'
 import {
   DESCRIBE_MEAL_PROMPT,
   describeUserMessage,
@@ -125,6 +126,8 @@ type DescribeAnswer = {
     kcal_high?: number
     confidence?: number
     suggested_edits?: string[]
+    /** A name out of our own icon set, or null. Graded in `universal`. */
+    icon?: string | null
   }>
 }
 
@@ -166,6 +169,15 @@ const universal = (answer: DescribeAnswer): Check[] => {
       parts.map((p) => p.name),
     ),
     check('edit chips offered', (item.suggested_edits?.length ?? 0) > 0, item.suggested_edits),
+    // A typed meal has no photograph, so this drawing is the only picture the
+    // row will ever have. Same rule as the recipe suite's: an explicit null is
+    // a real answer, a missing key is the regression — the icon lived in prose
+    // and in no schema for a while and came back about half the time.
+    check(
+      'the icon is one of ours',
+      item.icon === null || (item.icon !== undefined && resolveIcon(item.icon) !== null),
+      item.icon === undefined ? 'the key is missing' : (item.icon ?? 'null'),
+    ),
     // A tenth of slack, because the parts are what the app actually prices the
     // meal from and the band only steers the fallback tiers. What this is for
     // is the 60% disagreements — a nasi kandar bounded at 650-850 whose four
@@ -792,6 +804,8 @@ type RecipeAnswer = {
   name?: string
   servings?: number
   steps?: string
+  /** A name out of our own icon set, or null. Graded below. */
+  icon?: string | null
   ingredients?: Array<{
     name?: string
     amount?: number
@@ -873,6 +887,17 @@ const universalRecipe = (answer: RecipeAnswer): Check[] => {
       'no long dashes',
       !/[—–]/.test(answer.steps ?? ''),
       answer.steps?.match(/[^\n]*[—–][^\n]*/)?.[0] ?? 'ok',
+    ),
+    // The drawing has to be one WE HAVE, and the KEY HAS TO BE THERE. Explicit
+    // null passes: "nothing in the list is this dish" is a real answer, and the
+    // form falls back to its pot. A missing key does not, and that distinction
+    // is the whole check — the icon was described in prose and declared in no
+    // schema for a while, and it came back about half the time. Graded as
+    // "null or absent, either is fine" that regression is green.
+    check(
+      'the icon is one of ours',
+      answer.icon === null || (answer.icon !== undefined && resolveIcon(answer.icon) !== null),
+      answer.icon === undefined ? 'the key is missing' : (answer.icon ?? 'null'),
     ),
   ]
 }

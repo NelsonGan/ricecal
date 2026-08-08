@@ -68,18 +68,20 @@ Deno.test('toIngredientRow keeps a usable figure at both ends of the range', () 
   if (gram <= 0) throw new Error(`a kilo at 1 kcal rounded to ${gram} a gram`)
 })
 
-Deno.test('reviewUserMessage shows the reviewer every figure a reader would see', () => {
+// The reviewer reads the WORDS. It is deciding whether this is a recipe and
+// whether it is fit to publish, and a calorie figure in front of it is a figure
+// it will find fault with — which is what made the gate reject real cooking.
+Deno.test('reviewUserMessage shows the reviewer the recipe and none of its arithmetic', () => {
   const message = reviewUserMessage({
     name: 'Kuah kacang',
     servings: 8,
     steps: 'Toast the peanuts.',
-    totalKcal: 3155,
-    servingKcal: 394,
-    ingredients: [{ name: 'Peanuts', amount: 500, unit: 'g', kcal: 2835 }],
+    ingredients: [{ name: 'Peanuts', amount: 500, unit: 'g' }],
   })
-  for (const needle of ['Kuah kacang', 'Feeds: 8', '3155', '394', 'Peanuts, 500 g, 2835 kcal']) {
+  for (const needle of ['Kuah kacang', 'Feeds: 8', 'Peanuts, 500 g', 'Toast the peanuts.']) {
     if (!message.includes(needle)) throw new Error(`the reviewer never sees ${needle}`)
   }
+  if (/kcal/i.test(message)) throw new Error(`the reviewer was shown calories: ${message}`)
 })
 
 // THE assertion. A gate that can be talked into approving is not a gate, and
@@ -90,8 +92,6 @@ Deno.test('reviewRecipe approves on an explicit true and on nothing else', async
     name: 'x',
     servings: 1,
     steps: '',
-    totalKcal: 0,
-    servingKcal: 0,
     ingredients: [],
   }
 
@@ -108,10 +108,7 @@ Deno.test('reviewRecipe approves on an explicit true and on nothing else', async
 // was turned down by a reviewer that never read it.
 Deno.test('reviewRecipe throws rather than answering when the call fails', async () => {
   try {
-    await reviewRecipe(
-      { name: 'x', servings: 1, steps: '', totalKcal: 0, servingKcal: 0, ingredients: [] },
-      { fail: 'review' },
-    )
+    await reviewRecipe({ name: 'x', servings: 1, steps: '', ingredients: [] }, { fail: 'review' })
   } catch {
     return
   }
