@@ -14,6 +14,11 @@ import { DescribePanel } from '../DescribePanel'
  * The multiline field is the other half of it, and it is deliberate: a meal is
  * "nasi lemak with fried chicken and a teh tarik", and a one-line box that
  * scrolls sideways teaches people to type "nasi lemak" and stop.
+ *
+ * Queried by ROLE AND NAME rather than by label. The send control used to be an
+ * arrow inside the field carrying "Log this meal" as its accessibility label,
+ * and is a full-width button wearing those words now — the role query holds
+ * across both, and it is the one that describes what a user is looking for.
  */
 
 const onSubmit = jest.fn()
@@ -24,7 +29,7 @@ beforeEach(() => onSubmit.mockClear())
 it('will not send an empty box', async () => {
   await render(<DescribePanel onSubmit={onSubmit} />)
 
-  const send = screen.getByLabelText('Log this meal')
+  const send = screen.getByRole('button', { name: 'Log this meal' })
   expect(send).toBeDisabled()
 
   await user.press(send)
@@ -38,7 +43,7 @@ it('sends the meal, trimmed', async () => {
     screen.getByPlaceholderText('Nasi lemak with fried chicken and a teh tarik'),
     '  nasi lemak with fried chicken  ',
   )
-  await user.press(screen.getByLabelText('Log this meal'))
+  await user.press(screen.getByRole('button', { name: 'Log this meal' }))
 
   expect(onSubmit).toHaveBeenCalledWith('nasi lemak with fried chicken')
 })

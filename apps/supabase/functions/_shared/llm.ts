@@ -13,7 +13,7 @@
 // mock through `body.mock`, which is only read in mock mode; it exists so a
 // test can force each tier of the cascade in turn.
 
-import { ICON_INSTRUCTION, type IconChoice, resolveIcon } from './icons.ts'
+import { guessIcon, ICON_INSTRUCTION, type IconChoice, resolveIcon } from './icons.ts'
 import { reconcile, unfoldCounts } from './portion.ts'
 
 export type Scene = 'single' | 'composite' | 'packaged' | 'unclear'
@@ -492,10 +492,13 @@ function shapeVision(raw: unknown): Vision {
           .map((edit) => String(edit).trim().slice(0, 60))
           .filter(Boolean)
           .slice(0, 3),
-        // Null unless the model named a drawing we actually have. The photo
-        // prompt never asks for one, so this is null on that path by
-        // construction.
-        icon: resolveIcon(i.icon),
+        // The model's choice, or one worked out from the dish's own name when
+        // it gave none or named a spelling we do not carry. See `guessIcon`.
+        //
+        // Harmless on the photo path, which never asks for an icon and whose
+        // rows carry a photograph anyway: `writeEntry` drops an icon that
+        // arrives beside one.
+        icon: resolveIcon(i.icon) ?? guessIcon(name),
       } satisfies VisionItem,
     ]
   })
@@ -518,10 +521,20 @@ function shapeVision(raw: unknown): Vision {
 // written by the person who ate the meal.
 // ---------------------------------------------------------------------------
 
-const ITEM_SCHEMA =
+/**
+ * The shape sentence, and whether an item declares an icon.
+ *
+ * A FUNCTION rather than a constant for the reason `recipeSchema` gives: the
+ * literal schema is the strongest instruction in the prompt, and a key
+ * described only in prose at the end is a key the model leaves out about half
+ * the time. Only the typed path asks for one — a photographed plate has its
+ * photograph, and `food_logs` holds a picture or a drawing, never both.
+ */
+const itemSchema = (withIcon: boolean): string =>
   '{"scene": "single|composite|packaged|unclear", ' +
   '"items": [{"name": string, "specific_query": string, "generic_query": string, ' +
   '"count": number, "grams": number|null, ' +
+  (withIcon ? '"icon": string|null, ' : '') +
   '"components": [{"name": string, "count": number, "grams": number, "kcal": number, ' +
   '"carbs_g": number|null, "protein_g": number|null, "fat_g": number|null}], ' +
   '"serving_hint": string|null, ' +
@@ -672,7 +685,7 @@ export const ANALYSE_PHOTO_PROMPT =
   'Never invent a stand-in like "Unidentified Food Product"; null is the answer. ' +
   'If the panel is only readable per 100g, use those figures and say so in "serving". ' +
   'Otherwise respond with JSON only, matching: ' +
-  ITEM_SCHEMA +
+  itemSchema(false) +
   // ONE MEAL. Anything else is a diary with four rows for one lunch.
   'The photo is ONE logged meal. Return ONE item, named as a local menu would print ' +
   'it ("Korean fried chicken with rice and sides"). Only return more than one item ' +
@@ -786,7 +799,7 @@ export const DESCRIBE_MEAL_PROMPT =
   'If the text names no food that was eaten — a greeting, a question, a note to ' +
   'self — answer {"no_food": true} and nothing else. ' +
   'Otherwise respond with JSON only, matching: ' +
-  ITEM_SCHEMA +
+  itemSchema(true) +
   // ONE MEAL, for the same reason the photo path folds its items: the diary
   // gets one row per thing logged, and this is one thing logged.
   'The text is ONE logged meal however many dishes it names. Return ONE item, ' +
@@ -830,8 +843,9 @@ export const DESCRIBE_MEAL_PROMPT =
   //
   // Dead last in the prompt, and see the note on ICON_INSTRUCTION for why: the
   // list of ids is the biggest block of text here and everything after it is
-  // read in its shadow.
-  ' The item carries one more key: "icon", a string or null. ' +
+  // read in its shadow. The key itself is declared up in the schema, which is
+  // where a model actually reads one from.
+  ' ' +
   ICON_INSTRUCTION
 
 /** The one line of context the text call gets. Exported with the prompt. */

@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(29);
+select plan(34);
 
 \set cook  '33333333-3333-3333-3333-333333333333'
 \set other '44444444-4444-4444-4444-444444444444'
@@ -305,6 +305,27 @@ select is(
   'and counts as a save for the original'
 );
 
+-- ONE SAVE PER PERSON, however many copies they take.
+--
+-- The community shelf is ORDERED by `saved_count`, so a counter that bumped on
+-- every call was a way to the top of it: save your own favourite twenty times.
+-- The ledger's primary key is what decides this, and the assertion is that the
+-- second copy still gets made — it is a legitimate thing to do, it just is not
+-- a second vote.
+select public.save_recipe_copy(:'recipe_id') as second_copy \gset
+
+select isnt(
+  :'second_copy'::uuid,
+  :'copy_id'::uuid,
+  'saving the same recipe twice still makes a second copy'
+);
+
+select is(
+  (select saved_count from public.recipes where id = :'recipe_id'),
+  1,
+  'but the same person saving twice counts once'
+);
+
 -- The copy is the saver's own from the first moment, mirror and all.
 select is(
   (select serving_kcal from public.recipe_details where id = :'copy_id'),
@@ -313,6 +334,25 @@ select is(
 );
 
 reset role;
+
+-- Read as the owner, because `authenticated` cannot see this table at all —
+-- which is the assertion two below.
+select is(
+  (select count(*)::integer from public.recipe_saves where recipe_id = :'recipe_id'),
+  1,
+  'and the ledger holds one row for them'
+);
+
+-- No client writes the ledger, which is the other half of counting people
+-- rather than saves: an insert grant here is a vote button.
+select ok(
+  not has_table_privilege('authenticated', 'public.recipe_saves', 'INSERT'),
+  'authenticated cannot write the saves ledger'
+);
+select ok(
+  not has_table_privilege('authenticated', 'public.recipe_saves', 'SELECT'),
+  'nor read it; the count on the recipe is what a client sees'
+);
 
 select is(
   (select count(*)::integer from public.recipes where id = :'copy_id' and owner_id = :'other'),
