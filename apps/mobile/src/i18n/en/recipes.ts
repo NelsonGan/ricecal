@@ -115,6 +115,12 @@ export const recipes = {
     stepsPlaceholder: 'One step on each line. Start a new line and we number it for you.',
     /** Under the field, since a placeholder disappears the moment they type. */
     stepsHint: 'Each new line becomes the next numbered step.',
+    stepsSheetTitle: 'How you cook it',
+    stepsEditAction: 'Edit the steps',
+    /** Read out in place of the list itself, which a screen reader would spell. */
+    stepsEdit_one: 'Edit the steps, {{count}} step',
+    stepsEdit_other: 'Edit the steps, {{count}} steps',
+    stepsWrite: 'Write how you cook it',
     save: 'Save recipe',
     saved: 'Recipe saved',
     nameRequired: 'Give it a name first',
@@ -140,6 +146,12 @@ export const recipes = {
     amount: 'HOW MUCH WENT IN',
     add: 'Add to the pot',
     remove: 'Remove',
+    /**
+     * The row itself, read out. The amount is in it because that is what
+     * tapping changes, and it is the number an autofilled pot most often has
+     * wrong.
+     */
+    change: 'Change how much {{name}}, currently {{measure}}',
     /**
      * The three units an amount can be counted in. Data-ish, but chosen from a
      * menu — and only one of them has a plural, because "1 g" is already right
