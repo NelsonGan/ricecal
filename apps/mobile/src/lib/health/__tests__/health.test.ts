@@ -1,3 +1,6 @@
+import type { ConfigContext, ExpoConfig } from 'expo/config'
+
+import { ANDROID_HEALTH_PERMISSIONS } from '../connectPermissions'
 import { demoHealth } from '../demo'
 import { estimatedMaxHr, hrZonesFromSamples } from '../hrZones'
 import { asWorkoutKind, fromAppleWorkoutType, fromConnectExerciseType } from '../kinds'
@@ -214,4 +217,96 @@ describe('workout kinds', () => {
     expect(fromAppleWorkoutType(4)).toBe('badminton')
     expect(fromConnectExerciseType(2)).toBe('badminton')
   })
+})
+
+/**
+ * The config as `expo prebuild` resolves it, for one variant.
+ *
+ * Read through `app.config.ts` rather than off `app.json`, because the variants
+ * are between the two and both of them rebuild `android` by spreading it. A
+ * future variant that composed that object rather than spreading it would drop
+ * the permissions for the build it applies to and no other, which on the
+ * `development` profile means every EAS dev build silently back where this
+ * started.
+ *
+ * `APP_VARIANT` is read at module scope, so the module has to be re-evaluated
+ * per variant, and the surrounding value is put back — jest workers share a
+ * process across files.
+ */
+function resolveConfig(variant?: string): ExpoConfig {
+  const before = process.env.APP_VARIANT
+
+  if (variant === undefined) delete process.env.APP_VARIANT
+  else process.env.APP_VARIANT = variant
+
+  try {
+    let resolved: ExpoConfig | undefined
+    jest.isolateModules(() => {
+      const appConfig = require('../../../../app.config').default as (
+        context: ConfigContext,
+      ) => ExpoConfig
+
+      resolved = appConfig({
+        projectRoot: '',
+        staticConfigPath: null,
+        packageJsonPath: null,
+        config: {},
+      })
+    })
+    return resolved as ExpoConfig
+  } finally {
+    if (before === undefined) delete process.env.APP_VARIANT
+    else process.env.APP_VARIANT = before
+  }
+}
+
+/** Every variant, named as the thing that builds it. */
+const VARIANTS: Array<[string, string | undefined]> = [
+  ['the store build', undefined],
+  ['the EAS development build', 'development'],
+  ['a local simulator build', 'simulator'],
+]
+
+describe('the Health Connect manifest declaration', () => {
+  /**
+   * The manifest is the other half of the Android permission request, and
+   * nothing at runtime can tell you it is missing.
+   *
+   * Android grants only what was DECLARED, and an undeclared health permission
+   * is not an error anywhere: the record type is left off the permission sheet,
+   * `requestPermission` resolves without it, and `requestAccess` reports a
+   * refusal the user was never given the chance to make. Android health sync
+   * shipped exactly that way — `app.json` declared CAMERA and RECORD_AUDIO and
+   * nothing else, `react-native-health-connect`'s config plugin adds only the
+   * rationale intent-filter and the `ViewPermissionUsageActivity` alias, and
+   * Health Connect listed the phone it was installed on under "No compatible
+   * apps installed".
+   *
+   * It cannot be a derivation. Expo's config loader transpiles `app.config.ts`
+   * and then requires its relative imports through plain Node, which will not
+   * load a `.ts` module, so the manifest list has to be literal. This is what
+   * makes the second copy safe: adding a record type without declaring its
+   * permission fails here rather than on a phone.
+   */
+  it.each(VARIANTS)('declares every record type the provider reads, for %s', (_name, variant) => {
+    const permissions = resolveConfig(variant).android?.permissions ?? []
+
+    expect(permissions).toEqual(expect.arrayContaining(ANDROID_HEALTH_PERMISSIONS))
+  })
+
+  /**
+   * The reverse, so a record type dropped from the read list takes its
+   * permission with it. An app that asks for more health data than it reads is
+   * one a reviewer rejects and a user is right to distrust.
+   */
+  it.each(VARIANTS)(
+    'declares no health permission the provider does not read, for %s',
+    (_name, variant) => {
+      const declared = (resolveConfig(variant).android?.permissions ?? []).filter((permission) =>
+        permission.startsWith('android.permission.health.'),
+      )
+
+      expect(declared.sort()).toEqual([...ANDROID_HEALTH_PERMISSIONS].sort())
+    },
+  )
 })
