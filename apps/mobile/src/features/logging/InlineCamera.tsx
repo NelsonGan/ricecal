@@ -41,17 +41,24 @@ const CONTROL_BAND = 84
  * the table, the cutlery and the rest of the plate around it, which is the
  * context the cascade reads a portion out of.
  *
- * This is LAYOUT rather than the camera's own `zoom`, which moves the lens and
- * would take the photograph with it, and rather than a transform, which on both
- * platforms scales a native preview surface that does not always clip with its
- * parent. The view is genuinely larger and the tile crops it.
+ * This is LAYOUT rather than the camera's own `zoom`, which drives the lens and
+ * would take the photograph with it. A transform would be applied after layout,
+ * to a view whose contents are a native preview surface rather than anything
+ * React Native draws — so the view is genuinely laid out larger instead, and the
+ * tile's `overflow-hidden` crops it the same way it crops any other child.
+ *
+ * Both platforms fill-centre their preview (`resizeAspectFill` on iOS,
+ * `FILL_CENTER` on Android), so a view a quarter larger shows a proportionally
+ * tighter crop on either. If a preview is ever seen spilling outside the tile on
+ * Android, this is what to look at first: a surface-backed child is the one kind
+ * that can outlive its parent's clip.
  */
 const PREVIEW_ZOOM = 1.25
 
-/** Percentages, for a preview whose size is only known once it is laid out. */
+/** Percentages, for a box whose width is only known once it is laid out. */
 const pct = (value: number): `${number}%` => `${value}%`
 
-const preview = {
+const previewStyle = {
   position: 'absolute',
   width: pct(PREVIEW_ZOOM * 100),
   height: pct(PREVIEW_ZOOM * 100),
@@ -158,11 +165,13 @@ export function InlineCamera({ onCapture }: InlineCameraProps) {
       style={{ height: VIEWFINDER_HEIGHT }}
     >
       {hasCamera ? (
-        <CameraView ref={camera} style={preview} facing={facing} />
+        <CameraView ref={camera} style={previewStyle} facing={facing} />
       ) : (
         // Lifted clear of the controls, so the illustration reads as the subject
-        // of the frame rather than as something behind the shutter.
-        <View style={{ paddingBottom: CONTROL_BAND }}>
+        // of the frame rather than as something behind the shutter. The padding
+        // that lifts it still reaches down over the shutter, so like the framing
+        // it takes no touches.
+        <View style={{ paddingBottom: CONTROL_BAND }} pointerEvents="none">
           <Icon set="food" name="empty-plate" size={132} />
         </View>
       )}
@@ -173,7 +182,14 @@ export function InlineCamera({ onCapture }: InlineCameraProps) {
           the height this row used to take below the frame is the height the
           frame gained. */}
       <View className="absolute inset-x-0 bottom-0 flex-row items-center justify-between gap-3 px-4 pb-4">
+        {/* `self-center` on both, because `IconButton` sets `self-start` on its
+            own box and that quietly beat the row's `items-center`: the two side
+            buttons are 61pt to the shutter's 68, so they hung 7pt high. Under
+            the frame that read as a wobble in a row of three; on the frame, with
+            the shutter's own bottom edge setting the inset, it read as the side
+            buttons floating. */}
         <IconButton
+          className="self-center"
           variant="neutral"
           accessibilityLabel={t('logging:camera.library')}
           onPress={pickFromLibrary}
@@ -197,6 +213,7 @@ export function InlineCamera({ onCapture }: InlineCameraProps) {
         </Squish>
 
         <IconButton
+          className="self-center"
           variant="neutral"
           accessibilityLabel={t('logging:camera.flip')}
           onPress={() => setFacing((current) => (current === 'back' ? 'front' : 'back'))}
