@@ -1,6 +1,7 @@
 import { cssInterop } from 'nativewind'
-import type { ReactNode } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -26,6 +27,35 @@ const GestureScrollView = cssInterop(RawGestureScrollView, {
   className: 'style',
   contentContainerClassName: 'contentContainerStyle',
 })
+
+/**
+ * Whether the soft keyboard is on screen.
+ *
+ * One consumer: the footer's bottom padding, which clears the home indicator
+ * and must not go on doing that once the keyboard has covered it. See there.
+ *
+ * `will` on iOS so the padding changes with the keyboard's own animation
+ * rather than a frame after it has finished; Android only ever fires `did`.
+ */
+function useKeyboardOpen() {
+  const [open, setOpen] = useState(() => Keyboard.isVisible())
+
+  useEffect(() => {
+    const ios = Platform.OS === 'ios'
+    const shown = Keyboard.addListener(ios ? 'keyboardWillShow' : 'keyboardDidShow', () =>
+      setOpen(true),
+    )
+    const hidden = Keyboard.addListener(ios ? 'keyboardWillHide' : 'keyboardDidHide', () =>
+      setOpen(false),
+    )
+    return () => {
+      shown.remove()
+      hidden.remove()
+    }
+  }, [])
+
+  return open
+}
 
 export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   children: ReactNode
@@ -118,6 +148,7 @@ export function Screen({
   ...rest
 }: ScreenProps) {
   const insets = useSafeAreaInsets()
+  const keyboardOpen = useKeyboardOpen()
   const Scroller = gestureScroll ? GestureScrollView : ScrollView
 
   const body = scroll ? (
@@ -183,7 +214,14 @@ export function Screen({
         // seam rather than a divider.
         <View
           className="gap-md bg-canvas px-gutter pt-md"
-          style={{ paddingBottom: insets.bottom + spacing.md }}
+          /* The home indicator's inset, UNLESS the keyboard is over it. That
+             inset exists to keep the buttons clear of the indicator; with a
+             keyboard up the indicator is behind the keys, and the inset is a
+             34pt band of canvas between the footer and the keyboard that reads
+             as the buttons floating away from what raised them. `md` alone is
+             what separates them then, which is the same gap the footer keeps
+             above itself. */
+          style={{ paddingBottom: (keyboardOpen ? 0 : insets.bottom) + spacing.md }}
         >
           {footer}
         </View>
