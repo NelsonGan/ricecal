@@ -1,6 +1,12 @@
 import { cssInterop } from 'nativewind'
 import { type ReactNode, useCallback, useState } from 'react'
-import { type LayoutChangeEvent, Platform, type ScrollViewProps, View } from 'react-native'
+import {
+  type LayoutChangeEvent,
+  Platform,
+  type ScrollViewProps,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import { ScrollView as RawGestureScrollView } from 'react-native-gesture-handler'
 import {
   KeyboardAvoidingView,
@@ -138,6 +144,7 @@ export function Screen({
   ...rest
 }: ScreenProps) {
   const insets = useSafeAreaInsets()
+  const { height: windowHeight } = useWindowDimensions()
 
   /**
    * Measured rather than guessed, because it is the number that decides where a
@@ -272,6 +279,34 @@ export function Screen({
           >
             {footer}
           </View>
+
+          {/* Canvas continuing below the footer, all the way down the screen.
+
+              The footer is a fixed-height block moved up by however much the
+              keyboard says it occupies, so anything the keyboard occupies but
+              does not COVER is a band of diary showing between the buttons and
+              the keys. iOS 26 is where that stopped being theoretical: a number
+              pad has no return key, so the system now floats a "Done" pill
+              above it, and the keyboard frame it reports grows by the pill's
+              height while the keys stay where they were. The footer cleared the
+              pill correctly and left a strip of the entry on show underneath
+              it, with a system button sitting on top of the totals card.
+
+              Skirting the footer rather than capping the lift, because the pill
+              genuinely needs that room — covering it would put our Save button
+              under a system control. The band should read as more of the
+              screen's own chrome, which is what this is. Off the bottom of the
+              screen whenever the keyboard is closed, so it costs a view and
+              nothing else.
+
+              Absolute, so it stays out of the layout the footer is measured
+              by — `bottomOffset` is that measurement, and a skirt inside it
+              would push every focused field a screen height up. */}
+          <View
+            pointerEvents="none"
+            className="absolute inset-x-0 bg-canvas"
+            style={{ top: '100%', height: windowHeight }}
+          />
         </Reanimated.View>
       ) : null}
     </KeyboardShell>
