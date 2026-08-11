@@ -1,7 +1,9 @@
 import { cssInterop } from 'nativewind'
-import { type ReactNode, useCallback, useState } from 'react'
+import { type ReactNode, useCallback, useRef, useState } from 'react'
 import {
   type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   Platform,
   type ScrollViewProps,
   useWindowDimensions,
@@ -12,6 +14,7 @@ import {
   KeyboardAvoidingView,
   KeyboardAwareScrollView,
   type KeyboardAwareScrollViewProps,
+  type KeyboardAwareScrollViewRef,
   useReanimatedKeyboardAnimation,
 } from 'react-native-keyboard-controller'
 import Reanimated, { useAnimatedStyle } from 'react-native-reanimated'
@@ -19,6 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
 import { cn } from './cn'
+import { NumpadHost, useNumpadInset } from './Numpad'
 
 /**
  * The scroll view, taught `className`.
@@ -187,12 +191,55 @@ export function Screen({
    * as well it would rise twice.
    */
   const keyboard = useReanimatedKeyboardAnimation()
+
+  /**
+   * The app's own number pad, which every numeric field opens instead of the
+   * system keyboard. It is a view rather than a window, so nothing reports it
+   * and this screen has to add it to the same two sums the keyboard feeds:
+   * how far the footer rides up, and how much room the scroll view leaves at
+   * the bottom. The two never coincide — a field is either numeric or it is
+   * not — but they add rather than branch, so there is one expression to read.
+   */
+  const numpad = useNumpadInset()
+
   const lift = useAnimatedStyle(() => ({
-    transform: [{ translateY: scroll ? Math.min(keyboard.height.value + insets.bottom, 0) : 0 }],
+    transform: [
+      {
+        translateY: scroll
+          ? Math.min(keyboard.height.value - numpad.offset.value + insets.bottom, 0)
+          : 0,
+      },
+    ],
   }))
+
+  /**
+   * Bringing the focused field back above the pad, which is the one job
+   * `KeyboardAwareScrollView` did for us and cannot do for a keyboard it is not
+   * told about. Minimal rather than centred: a field already in view does not
+   * move at all, and one that is not comes to rest exactly where the library
+   * would have put it — `bottomOffset` above whatever is covering it.
+   */
+  const scroller = useRef<KeyboardAwareScrollViewRef>(null)
+  const scrolled = useRef(0)
+  const trackScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrolled.current = event.nativeEvent.contentOffset.y
+  }, [])
+
+  const revealForNumpad = useCallback(
+    (measure: (report: (top: number, height: number) => void) => void) => {
+      measure((top, fieldHeight) => {
+        const clear = windowHeight - numpad.height - bottomOffset
+        const overlap = top + fieldHeight - clear
+        if (overlap > 1)
+          scroller.current?.scrollTo({ y: scrolled.current + overlap, animated: true })
+      })
+    },
+    [windowHeight, numpad.height, bottomOffset],
+  )
 
   const body = scroll ? (
     <AwareScrollView
+      ref={scroller}
       className={cn('flex-1', contentClassName)}
       contentContainerStyle={{
         padding: flush ? 0 : spacing.gutter,
@@ -200,7 +247,10 @@ export function Screen({
         // status bar is this view's problem. Without the top inset the first
         // line of every screen sits under the clock.
         paddingTop: (flush ? 0 : spacing.gutter) + insets.top,
-        paddingBottom: (flush ? 0 : spacing.gutter) + (footer ? 0 : insets.bottom),
+        // The pad's own share, so a field near the end of a screen has
+        // somewhere to be scrolled TO. Without it the reveal asks for an offset
+        // past the end of the content and the scroll view declines.
+        paddingBottom: (flush ? 0 : spacing.gutter) + (footer ? 0 : insets.bottom) + numpad.height,
         gap: spacing.stack,
       }}
       bottomOffset={bottomOffset}
@@ -210,13 +260,33 @@ export function Screen({
       keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       showsVerticalScrollIndicator={false}
       {...rest}
+      onScroll={(event) => {
+        trackScroll(event)
+        rest.onScroll?.(event)
+      }}
+      scrollEventThrottle={rest.scrollEventThrottle ?? 16}
+      // What `keyboardDismissMode` does for the system keyboard, done by hand
+      // for ours: a drag is somebody looking at the screen rather than typing
+      // into it. Only a real drag, so the reveal's own animated scroll — which
+      // fires no begin-drag — cannot close the pad it just made room for.
+      onScrollBeginDrag={(event) => {
+        numpad.dismiss?.()
+        rest.onScrollBeginDrag?.(event)
+      }}
     >
       {children}
     </AwareScrollView>
   ) : (
     <View
       className={cn('flex-1', !flush && 'p-gutter', contentClassName)}
-      style={{ gap: spacing.stack, paddingTop: (flush ? 0 : spacing.gutter) + insets.top }}
+      style={{
+        gap: spacing.stack,
+        paddingTop: (flush ? 0 : spacing.gutter) + insets.top,
+        // No scroll view to inset, so the content box is what shrinks — the
+        // same thing `behavior="padding"` does for the shell when a system
+        // keyboard opens.
+        paddingBottom: numpad.height,
+      }}
     >
       {children}
     </View>
@@ -231,9 +301,14 @@ export function Screen({
          a tapped field ends up scrolled up and then straight back down. */
       behavior={!scroll ? 'padding' : undefined}
     >
-      {body}
+      {/* Inside the shell rather than around it, so the pad it draws is
+          absolutely positioned against a box that reaches the bottom of the
+          window. Around it, the pad would be measured against whatever the
+          screen's parent happens to be. */}
+      <NumpadHost onOpen={revealForNumpad}>
+        {body}
 
-      {/* Rides up with the footer, so a floating control is never left under an
+        {/* Rides up with the footer, so a floating control is never left under an
           open keyboard.
 
           One gutter off this view's bottom and NO safe-area inset, which looks
@@ -247,68 +322,72 @@ export function Screen({
           Styled rather than classed: the position is what makes this an overlay
           at all, and NativeWind's support for a third-party animated view is
           not worth depending on for that. */}
-      {floating ? (
-        <Reanimated.View
-          style={[
-            {
-              position: 'absolute',
-              right: spacing.gutter,
-              bottom: spacing.gutter,
-              alignItems: 'flex-end',
-            },
-            lift,
-          ]}
-          pointerEvents="box-none"
-        >
-          {floating}
-        </Reanimated.View>
-      ) : null}
+        {floating ? (
+          <Reanimated.View
+            style={[
+              {
+                position: 'absolute',
+                right: spacing.gutter,
+                bottom: spacing.gutter,
+                alignItems: 'flex-end',
+              },
+              lift,
+            ]}
+            pointerEvents="box-none"
+          >
+            {floating}
+          </Reanimated.View>
+        ) : null}
 
-      {footer ? (
-        /* A transform, so the scroll view above keeps the frame the keyboard is
+        {footer ? (
+          /* A transform, so the scroll view above keeps the frame the keyboard is
            measured against and the footer's own height stays out of the layout
            pass entirely. See `lift` for how far it goes. */
-        <Reanimated.View style={lift}>
-          {/* No rule above the footer. The design separates it with space and
+          <Reanimated.View style={lift}>
+            {/* No rule above the footer. The design separates it with space and
               the canvas colour alone, and a hairline under a full-width CTA
               reads as a seam rather than a divider. */}
-          <View
-            onLayout={measureFooter}
-            className="gap-md bg-canvas px-gutter pt-md"
-            style={{ paddingBottom: insets.bottom + spacing.md }}
-          >
-            {footer}
-          </View>
+            <View
+              onLayout={measureFooter}
+              className="gap-md bg-canvas px-gutter pt-md"
+              style={{ paddingBottom: insets.bottom + spacing.md }}
+            >
+              {footer}
+            </View>
 
-          {/* Canvas continuing below the footer, all the way down the screen.
+            {/* Canvas continuing below the footer, all the way down the screen.
 
               The footer is a fixed-height block moved up by however much the
               keyboard says it occupies, so anything the keyboard occupies but
               does not COVER is a band of diary showing between the buttons and
-              the keys. iOS 26 is where that stopped being theoretical: a number
-              pad has no return key, so the system now floats a "Done" pill
-              above it, and the keyboard frame it reports grows by the pill's
-              height while the keys stay where they were. The footer cleared the
-              pill correctly and left a strip of the entry on show underneath
-              it, with a system button sitting on top of the totals card.
+              the keys. iOS 26's number pad is where that stopped being
+              theoretical: the "Done" pill it floats above the keys is inside
+              the frame the app is told about while the keys are not, so the
+              footer cleared a control it could not see and left a strip of the
+              entry on show underneath it.
 
-              Skirting the footer rather than capping the lift, because the pill
-              genuinely needs that room — covering it would put our Save button
-              under a system control. The band should read as more of the
-              screen's own chrome, which is what this is. Off the bottom of the
-              screen whenever the keyboard is closed, so it costs a view and
-              nothing else.
+              The pad is the app's own now, and its height is a constant this
+              app owns, so that particular gap is gone at the source. This stays
+              for every other keyboard, where the frame is still somebody else's
+              to report: a floating IME on Android, an autofill panel, whatever
+              a platform decides to attach next. Skirting rather than capping,
+              because a frame taller than its keys is usually taller for a
+              reason and covering the difference puts our buttons under
+              somebody else's.
 
               Absolute, so it stays out of the layout the footer is measured
               by — `bottomOffset` is that measurement, and a skirt inside it
-              would push every focused field a screen height up. */}
-          <View
-            pointerEvents="none"
-            className="absolute inset-x-0 bg-canvas"
-            style={{ top: '100%', height: windowHeight }}
-          />
-        </Reanimated.View>
-      ) : null}
+              would push every focused field a screen height up. Off the bottom
+              of the screen whenever nothing is open, so it costs a view and
+              nothing else. */}
+            <View
+              pointerEvents="none"
+              className="absolute inset-x-0 bg-canvas"
+              style={{ top: '100%', height: windowHeight }}
+            />
+          </Reanimated.View>
+        ) : null}
+      </NumpadHost>
     </KeyboardShell>
   )
 }

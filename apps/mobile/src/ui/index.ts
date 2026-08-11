@@ -81,6 +81,16 @@ export {
 } from './IconButton'
 export { ListRow, type ListRowProps } from './ListRow'
 export {
+  NUMPAD_BODY_HEIGHT,
+  type NumpadFieldOptions,
+  NumpadHost,
+  type NumpadLabels,
+  NumpadProvider,
+  type NumpadProviderProps,
+  useNumpadField,
+  useNumpadInset,
+} from './Numpad'
+export {
   MacroBar,
   type MacroBarProps,
   ProgressBar,

@@ -10,6 +10,7 @@ import Animated, {
 import { motion } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
+import { useNumpadField } from './Numpad'
 import { Tappable } from './Tappable'
 import { Text } from './Text'
 
@@ -129,6 +130,18 @@ export function MacroBar({
 }: MacroBarProps) {
   const colors = useThemeColors()
 
+  // The macro's own name in the pad's header: three of these rows sit one under
+  // another, and with the pad up the row being typed into is the only thing
+  // distinguishing them that is still on screen.
+  const numpad = useNumpadField({
+    enabled: editing,
+    value: editingValue,
+    onChangeText: onChangeAmount ?? (() => {}),
+    label: amountLabel ?? label,
+    replaceFirst: true,
+    onBlur: onDoneAmount,
+  })
+
   return (
     <View className={cn('gap-2', className)}>
       <View className="flex-row items-center justify-between">
@@ -140,7 +153,6 @@ export function MacroBar({
           <TextInput
             value={editingValue}
             onChangeText={onChangeAmount}
-            onBlur={onDoneAmount}
             onSubmitEditing={onDoneAmount}
             placeholder={amount}
             placeholderTextColor={colors.faint}
@@ -158,6 +170,7 @@ export function MacroBar({
             style={{ paddingVertical: 0, paddingHorizontal: 0 }}
             cursorColor={colors.pandan}
             selectionColor={colors.pandan}
+            {...numpad}
           />
         ) : onPressAmount ? (
           // The number itself is the control. A macro that can be corrected
