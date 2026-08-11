@@ -32,6 +32,17 @@ export type AppBarProps = {
    * title says which screen this is and is not anybody's to change.
    */
   onPressTitle?: () => void
+  /**
+   * How many lines the title may take before it truncates. One everywhere the
+   * title names a screen, since those are short and fixed. Two where it is a
+   * thing the user named or the model guessed at — a logged plate can be
+   * "Korean fried chicken with rice and sides", and one line of that is a
+   * dish nobody can identify from its first three words.
+   *
+   * The bar only grows when the title actually wraps, so a short one is laid
+   * out exactly as before.
+   */
+  titleLines?: 1 | 2
   className?: string
 }
 
@@ -53,6 +64,7 @@ export function AppBar({
   leading = 'back',
   action,
   onPressTitle,
+  titleLines = 1,
   className,
 }: AppBarProps) {
   const colors = useThemeColors()
@@ -77,12 +89,12 @@ export function AppBar({
 
       {onPressTitle ? (
         <Tappable className="flex-1" onPress={onPressTitle} accessibilityRole="button">
-          <Text variant="subtitle" numberOfLines={1}>
+          <Text variant="subtitle" numberOfLines={titleLines}>
             {title}
           </Text>
         </Tappable>
       ) : (
-        <Text variant="subtitle" className="flex-1" numberOfLines={1}>
+        <Text variant="subtitle" className="flex-1" numberOfLines={titleLines}>
           {title}
         </Text>
       )}
