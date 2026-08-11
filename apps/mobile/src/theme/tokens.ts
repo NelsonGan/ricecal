@@ -223,6 +223,14 @@ export const motion = {
   pressOut: 320,
   /** Bars and rings fill once, on mount. */
   fill: 1200,
+  /**
+   * A panel arriving from an edge — the number pad.
+   *
+   * Close to what UIKit spends presenting a keyboard, because the pad stands in
+   * for one: the footer riding up over a pad that moves at a different speed
+   * from the keyboard it replaced reads as two separate events.
+   */
+  panel: 220,
 } as const
 
 /** Minimum touch targets, in points. */

@@ -90,5 +90,8 @@ export const common = {
     increase: 'Increase',
     /** The onboarding progress bar, which shows its position without words. */
     step: 'Step {{current}} of {{total}}',
+    /** The app's own number pad. Its digits read as themselves; these two do not. */
+    backspace: 'Delete the last digit',
+    decimalPoint: 'Decimal point',
   },
 } as const
