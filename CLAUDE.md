@@ -797,6 +797,16 @@ Break these and the feature is wrong in ways tests may not catch.
   field clean off the top of the panel. A full-height sheet lays its content out
   at the top and lets the keyboard cover the empty part below; with nothing to
   scroll there is no scroll to get wrong.
+- **The keyboard's reported height is not where the keys start.** A number pad
+  has no return key, so iOS 26 floats a "Done" pill above it — and that pill is
+  inside the frame `useReanimatedKeyboardAnimation` reports, while the keys are
+  not. Anything moved by that height clears the pill and leaves a band of the
+  screen underneath on show, which on the food detail screen was a system button
+  sitting on the totals card. `Screen`'s footer answers it by skirting: canvas
+  continuing below the footer for a screen's worth, so the band is chrome rather
+  than a hole. Do not cap the lift instead — the pill needs the room, and
+  covering it puts Save under a system control. A screen with no footer has
+  nothing to skirt, and content scrolling under the pill is the ordinary case.
 - **`autoFocus` inside a `Modal` is dropped.** The field mounts with the window,
   before the platform has presented it, and the keyboard never comes up. `Sheet`
   takes an `onShow` for this — fire `ref.focus()` there. `SheetSurface` is a
