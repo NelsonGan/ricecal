@@ -5,6 +5,7 @@ import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
 import { Icon } from './Icon'
 import { IconButton } from './IconButton'
+import { useNumpadField } from './Numpad'
 import { Text } from './Text'
 
 export type StepperProps = {
@@ -126,6 +127,23 @@ export function Stepper({
     onChange(clamp(parsed))
   }
 
+  /**
+   * Typed on the app's own pad rather than the system one.
+   *
+   * The unit is what the pad calls it, because the caption saying "plates" is
+   * two lines under the field and the pad covers the bottom half of the screen:
+   * a header reading "Servings" is the only thing left on screen that says what
+   * the digits are for.
+   */
+  const numpad = useNumpadField({
+    enabled: editable && !disabled,
+    value: typed ?? '',
+    onChangeText: setTyped,
+    label: editLabel ?? unit,
+    onFocus: startEditing,
+    onBlur: commit,
+  })
+
   return (
     <View
       className={cn('flex-row items-center justify-between gap-md', className)}
@@ -163,12 +181,12 @@ export function Stepper({
           <TextInput
             value={typed ?? format(value)}
             editable={!disabled}
-            onFocus={startEditing}
             onChangeText={setTyped}
-            // Committed on blur as well as on submit: the decimal pad has no
-            // return key on iOS, so tapping away is the ordinary way out of it.
-            onBlur={commit}
             onSubmitEditing={commit}
+            // Kept, and it does nothing while the app's own pad is up. It is
+            // what this field falls back to if a platform ever declines to
+            // suppress the keyboard: a number pad in the wrong place beats a
+            // QWERTY one.
             keyboardType="decimal-pad"
             returnKeyType="done"
             // What the field held before it was emptied, so the number does not
@@ -189,6 +207,7 @@ export function Stepper({
             cursorColor={colors.pandan}
             selectionColor={colors.pandan}
             accessibilityLabel={editLabel}
+            {...numpad}
           />
         ) : (
           <Text className="font-display text-[34px] leading-[41px] text-heading">

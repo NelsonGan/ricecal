@@ -1,8 +1,19 @@
 import { cssInterop } from 'nativewind'
 import { type ReactNode, useCallback, useLayoutEffect, useRef } from 'react'
-import { Modal, Pressable, useWindowDimensions, View } from 'react-native'
+import {
+  Modal,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  Pressable,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
-import { KeyboardAvoidingView, KeyboardAwareScrollView } from 'react-native-keyboard-controller'
+import {
+  KeyboardAvoidingView,
+  KeyboardAwareScrollView,
+  type KeyboardAwareScrollViewRef,
+} from 'react-native-keyboard-controller'
 import Animated, {
   Easing,
   runOnJS,
@@ -14,6 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
 import { cn } from './cn'
+import { NumpadHost, useNumpadInset } from './Numpad'
 import { Text } from './Text'
 
 /**
@@ -244,13 +256,44 @@ export function SheetSurface({
       rise.value = withTiming(0, { duration: RISE_MS, easing: Easing.out(Easing.cubic) })
     })
 
+  /**
+   * The number pad, which a sheet has to account for itself.
+   *
+   * A `Sheet` is a native modal window, so the pad a field inside it opens is
+   * drawn by the host below rather than the one in `Screen` — see `NumpadHost`.
+   * What is left here is the same two sums a screen does: room at the end of
+   * the list, and a scroll that brings the focused field back above the keys.
+   */
+  const numpad = useNumpadInset()
+  const scroller = useRef<KeyboardAwareScrollViewRef>(null)
+  const scrolled = useRef(0)
+  const trackScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrolled.current = event.nativeEvent.contentOffset.y
+  }, [])
+
+  const revealForNumpad = useCallback(
+    (measure: (report: (top: number, fieldHeight: number) => void) => void) => {
+      measure((top, fieldHeight) => {
+        const clear = height - numpad.height - spacing.md
+        const overlap = top + fieldHeight - clear
+        if (overlap > 1) {
+          scroller.current?.scrollTo({ y: scrolled.current + overlap, animated: true })
+        }
+      })
+    },
+    [height, numpad.height],
+  )
+
   const body = scrollable ? (
     <ScrollBody
+      ref={scroller}
+      onScroll={trackScroll}
+      scrollEventThrottle={16}
       // Capped by default, and told to fill when the panel is full height —
       // without the second half the list keeps its 440pt and the panel grows a
       // field of empty surface under it.
       className={fullHeight ? 'flex-1' : 'max-h-[440px]'}
-      contentContainerStyle={{ gap: spacing.md }}
+      contentContainerStyle={{ gap: spacing.md, paddingBottom: numpad.height }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
       // How a full-height sheet gets out of the keyboard's way: the LIST insets
@@ -278,7 +321,13 @@ export function SheetSurface({
       accessible={false}
       importantForAccessibility="no"
     >
-      {/* Both platforms, now that `KeyboardProvider` reports the keyboard rather
+      {/* A host of its own, and this is why there is more than one. A sheet is a
+          native modal WINDOW: nothing rendered in the app's tree below it can
+          draw over it, so the pad a field in here opens has to be drawn in
+          here. `NumpadHost` picks the nearest one above the field, which is
+          this one whenever a sheet is up and `Screen`'s the rest of the time. */}
+      <NumpadHost onOpen={revealForNumpad}>
+        {/* Both platforms, now that `KeyboardProvider` reports the keyboard rather
           than Android's window resizing under us. It used to be iOS only, for
           exactly the reason that has gone away.
 
@@ -289,34 +338,34 @@ export function SheetSurface({
           of the screen has to keep reaching it; the scroll view above insets its
           own content instead, so the field stays above the keys and the surface
           runs the whole way down. */}
-      <KeyboardAvoidingView
-        behavior={fullHeight ? undefined : 'padding'}
-        // Styled rather than classed, unlike everything else here: this is the one
-        // element in the file that is not a plain RN view, and whether NativeWind
-        // reaches it is not worth depending on for the layout that decides whether
-        // the panel has any height at all.
-        //
-        // The margin keeps the scrim visible above a full-height panel. Flush to
-        // the top edge it reads as a screen that arrived from the wrong direction.
-        style={fullHeight ? { flex: 1, marginTop: insets.top } : undefined}
-      >
-        <AnimatedPressable
-          className={cn(
-            'gap-md rounded-t-card bg-surface px-gutter pt-md',
-            fullHeight && 'flex-1',
-            className,
-          )}
-          /* The home indicator's inset OR the gutter, not both added together.
+        <KeyboardAvoidingView
+          behavior={fullHeight ? undefined : 'padding'}
+          // Styled rather than classed, unlike everything else here: this is the one
+          // element in the file that is not a plain RN view, and whether NativeWind
+          // reaches it is not worth depending on for the layout that decides whether
+          // the panel has any height at all.
+          //
+          // The margin keeps the scrim visible above a full-height panel. Flush to
+          // the top edge it reads as a screen that arrived from the wrong direction.
+          style={fullHeight ? { flex: 1, marginTop: insets.top } : undefined}
+        >
+          <AnimatedPressable
+            className={cn(
+              'gap-md rounded-t-card bg-surface px-gutter pt-md',
+              fullHeight && 'flex-1',
+              className,
+            )}
+            /* The home indicator's inset OR the gutter, not both added together.
              Stacked, they left 54pt of blank surface under the last thing in the
              sheet — invisible under a full-width button, and an obvious band of
              nothing under anything else, like the picture picker's grid. The
              indicator's own inset already clears the indicator. */
-          style={[panel, { paddingBottom: Math.max(insets.bottom, spacing.gutter) }]}
-          onPress={(event) => event.stopPropagation()}
-          accessibilityViewIsModal
-          accessible={false}
-        >
-          {/* The grab area is the row, not the 6pt line: a drag target has to be
+            style={[panel, { paddingBottom: Math.max(insets.bottom, spacing.gutter) }]}
+            onPress={(event) => event.stopPropagation()}
+            accessibilityViewIsModal
+            accessible={false}
+          >
+            {/* The grab area is the row, not the 6pt line: a drag target has to be
               catchable without aiming, and the padding is what makes it 30pt tall
               without moving anything below it — `-mt-md` takes back the panel's
               own top padding, which the row then supplies itself.
@@ -324,24 +373,25 @@ export function SheetSurface({
               Announced as a button too, so the handle is not a gesture with no
               keyboard or screen-reader equivalent. Tapping it closes, which is
               what dragging it does. */}
-          <GestureDetector gesture={dragHandle}>
-            <Pressable
-              className="-mt-md items-center py-md"
-              onPress={dismiss}
-              accessibilityRole="button"
-              accessibilityLabel={closeLabel}
-            >
-              <View className="h-1.5 w-[54px] rounded-full bg-line" />
-            </Pressable>
-          </GestureDetector>
+            <GestureDetector gesture={dragHandle}>
+              <Pressable
+                className="-mt-md items-center py-md"
+                onPress={dismiss}
+                accessibilityRole="button"
+                accessibilityLabel={closeLabel}
+              >
+                <View className="h-1.5 w-[54px] rounded-full bg-line" />
+              </Pressable>
+            </GestureDetector>
 
-          {title ? <Text variant="subtitle">{title}</Text> : null}
-          {description ? <Text variant="body">{description}</Text> : null}
+            {title ? <Text variant="subtitle">{title}</Text> : null}
+            {description ? <Text variant="body">{description}</Text> : null}
 
-          {children ? body : null}
-          {footer}
-        </AnimatedPressable>
-      </KeyboardAvoidingView>
+            {children ? body : null}
+            {footer}
+          </AnimatedPressable>
+        </KeyboardAvoidingView>
+      </NumpadHost>
     </Pressable>
   )
 }

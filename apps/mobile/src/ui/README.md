@@ -36,6 +36,14 @@ rejects it, which matters as soon as anything here is wired to Supabase.
 resolve per mode automatically; a hex does not. For Skia, charts and other
 imperative surfaces, read `useThemeColors()`.
 
+**A number is typed on the app's own pad.** Any `keyboardType` that means a
+number — `number-pad`, `decimal-pad`, `numeric` — opens `Numpad` instead of the
+system keyboard, and `TextField` arranges that for you. A bare `TextInput` asks
+for it with `useNumpadField`, whose result is spread onto the input LAST: it
+composes `onFocus` and `onBlur` with the ones you passed in, and the composed
+pair has to be the one that reaches the field. See the header in `Numpad.tsx`
+for why the platform's own pad stopped being usable.
+
 ## Things that will bite you
 
 **Changing `tailwind.config.js` needs a Metro cache clear.** NativeWind caches
@@ -58,6 +66,18 @@ shears the top off "1,847".
 **The slab is a view, not a shadow.** See the comment in `Squish.tsx` for why.
 Its practical consequence: a control's outer box is `depth` taller than its
 visible surface, and layout classes belong on the outer box.
+
+**A numeric field needs a `NumpadHost` above it,** and `Screen` and `Sheet` are
+the two that provide one. A field outside both keeps the system keyboard rather
+than focusing into a pad nobody can draw — which is the right failure, but it
+means a numeric field rendered straight into a `Modal` of its own gets the
+platform's keyboard back without saying so.
+
+**A sheet hosts its own pad, and that is not redundant.** A `Sheet` is a native
+modal window: nothing rendered in the app's tree below it can draw over it, so
+the pad opened by a field inside a sheet has to be drawn inside that sheet.
+`NumpadHost` picks the nearest host above the field, which is why there is more
+than one.
 
 ## Icons
 
