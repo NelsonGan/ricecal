@@ -208,14 +208,20 @@ export function NumpadProvider({ children, labels }: NumpadProviderProps) {
   // tap moves from one field to another. Closing unconditionally would take the
   // pad down on the field that had just opened it.
   const close = useCallback(
-    (which: Session) => setSession((current) => (current === which ? null : current)),
+    (which: Session) => setSession((open) => (open === which ? null : open)),
     [],
   )
   const dismiss = useCallback(() => {
+    // Nothing open is the common case, not the edge one: `Screen` calls this on
+    // every scroll that starts, the way `keyboardDismissMode` works, and almost
+    // none of those have a pad up. Without this guard every drag anywhere in
+    // the app would push a state update through the provider above the whole
+    // tree.
+    if (!current.current) return
     // Blur first: the field's own `onBlur` is what commits the number, and
     // every caller hangs its commit there rather than on a key. Closing without
     // it would take the pad away and leave the value uncommitted.
-    current.current?.blur()
+    current.current.blur()
     setSession(null)
   }, [])
 
