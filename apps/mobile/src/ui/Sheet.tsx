@@ -1,14 +1,8 @@
+import { cssInterop } from 'nativewind'
 import { type ReactNode, useCallback, useLayoutEffect, useRef } from 'react'
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  useWindowDimensions,
-  View,
-} from 'react-native'
+import { Modal, Pressable, useWindowDimensions, View } from 'react-native'
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
+import { KeyboardAvoidingView, KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import Animated, {
   Easing,
   runOnJS,
@@ -28,6 +22,17 @@ import { Text } from './Text'
  * scrim stays exactly where it is.
  */
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
+
+/**
+ * The body, taught `className` — NativeWind only converts it to a style for
+ * React Native's own components, and a third-party one takes it as an ordinary
+ * prop and drops it silently. Without this the panel's list loses the `flex-1`
+ * that gives it any height at all.
+ */
+const ScrollBody = cssInterop(KeyboardAwareScrollView, {
+  className: 'style',
+  contentContainerClassName: 'contentContainerStyle',
+})
 
 /** How long the panel takes to rise. */
 const RISE_MS = 260
@@ -240,7 +245,7 @@ export function SheetSurface({
     })
 
   const body = scrollable ? (
-    <ScrollView
+    <ScrollBody
       // Capped by default, and told to fill when the panel is full height —
       // without the second half the list keeps its 440pt and the panel grows a
       // field of empty surface under it.
@@ -248,12 +253,15 @@ export function SheetSurface({
       contentContainerStyle={{ gap: spacing.md }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
-      // How a full-height sheet gets out of the keyboard's way: the LIST insets,
-      // rather than the panel shrinking. See the note on the wrapper below.
-      automaticallyAdjustKeyboardInsets={fullHeight}
+      // How a full-height sheet gets out of the keyboard's way: the LIST insets
+      // and reveals the focused field, rather than the panel shrinking. See the
+      // note on the wrapper below. A capped sheet is padded up by that wrapper
+      // instead, and insetting the list as well would count the keyboard twice.
+      enabled={fullHeight}
+      bottomOffset={spacing.md}
     >
       {children}
-    </ScrollView>
+    </ScrollBody>
   ) : (
     <View className="gap-md">{children}</View>
   )
@@ -270,18 +278,19 @@ export function SheetSurface({
       accessible={false}
       importantForAccessibility="no"
     >
-      {/* Android is left on `undefined`: `adjustResize` already shrinks the
-          window, and stacking both double-counts the inset — the same
-          reasoning as in `Screen`.
-          A full-height sheet gets no behaviour on either platform. `padding` pads
-          the panel's OUTSIDE, so the panel stopped where the keyboard began and
-          the strip behind it — including the curve at the keyboard's top corners —
+      {/* Both platforms, now that `KeyboardProvider` reports the keyboard rather
+          than Android's window resizing under us. It used to be iOS only, for
+          exactly the reason that has gone away.
+
+          A full-height sheet gets no behaviour at all. `padding` pads the
+          panel's OUTSIDE, so the panel stopped where the keyboard began and the
+          strip behind it — including the curve at the keyboard's top corners —
           showed the scrim rather than the sheet. A sheet that reaches the bottom
-          of the screen has to keep reaching it; the ScrollView above insets its
+          of the screen has to keep reaching it; the scroll view above insets its
           own content instead, so the field stays above the keys and the surface
           runs the whole way down. */}
       <KeyboardAvoidingView
-        behavior={!fullHeight && Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={fullHeight ? undefined : 'padding'}
         // Styled rather than classed, unlike everything else here: this is the one
         // element in the file that is not a plain RN view, and whether NativeWind
         // reaches it is not worth depending on for the layout that decides whether

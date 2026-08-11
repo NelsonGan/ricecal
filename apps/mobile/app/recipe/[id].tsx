@@ -181,6 +181,10 @@ export default function RecipeDetailScreen() {
     >
       <AppBar
         title={recipe.name}
+        /* A cook's own name for their own pot, so it is as long as they made
+           it: the same reason the logged-entry screen takes two lines. Every
+           other bar in the app names a screen and stays on one. */
+        titleLines={2}
         onBack={() => goBack()}
         backLabel={t('common:a11y.back')}
         action={

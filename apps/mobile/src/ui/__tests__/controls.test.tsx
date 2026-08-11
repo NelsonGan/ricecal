@@ -1,7 +1,8 @@
 import { impactAsync } from 'expo-haptics'
 import { StyleSheet } from 'react-native'
 
-import { render, screen, userEvent } from '../../test-utils'
+import { fireEvent, render, screen, userEvent } from '../../test-utils'
+import { AppBar } from '../AppBar'
 import { CountBadge } from '../Badge'
 import { NavItem } from '../BottomNav'
 import { Button } from '../Button'
@@ -337,6 +338,45 @@ describe('NavItem', () => {
    * hidden from every query the library still has, which is correct of it. The
    * reasoning lives in `NavItem` instead; verify it in the gallery on a device.
    */
+})
+
+describe('AppBar', () => {
+  it("offers the title as a button when it is the user's to rename", async () => {
+    const onPressTitle = jest.fn()
+    await render(<AppBar title="Nasi lemak" onPressTitle={onPressTitle} />)
+    await user.press(screen.getByRole('button', { name: 'Nasi lemak' }))
+    expect(onPressTitle).toHaveBeenCalledTimes(1)
+  })
+
+  /**
+   * The field stands where the heading was, so what matters is that the two do
+   * not disagree: the field carries the STAGED name, and the heading's own text
+   * becomes the placeholder — which is what an emptied name falls back to.
+   */
+  it("puts a field in the title's place, carrying the staged name", async () => {
+    const onDone = jest.fn()
+    await render(
+      <AppBar
+        title="Nasi lemak"
+        titleEdit={{
+          value: 'Nasi lemak ayam',
+          onChangeText: jest.fn(),
+          onDone,
+          label: 'What to call this',
+        }}
+      />,
+    )
+
+    const field = screen.getByLabelText('What to call this')
+    expect(field).toHaveDisplayValue('Nasi lemak ayam')
+    expect(field.props.placeholder).toBe('Nasi lemak')
+    expect(screen.queryByRole('button', { name: 'Nasi lemak' })).toBeNull()
+
+    // Done and losing focus are the same thing here: both end the rename and
+    // neither writes anything, since the name is staged on the screen.
+    fireEvent(field, 'submitEditing')
+    expect(onDone).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('cn', () => {

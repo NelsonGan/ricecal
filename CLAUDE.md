@@ -821,6 +821,15 @@ Break these and the feature is wrong in ways tests may not catch.
 - **`supabase db push` and other networked CLI commands** block on an invisible
   login prompt when `~/.supabase/` has no access token. The Supabase MCP tools
   work regardless.
+- **One simulator at a time. Never the iOS simulator and the Android emulator
+  together.** This machine does not have the headroom for both, and what it
+  costs is not a slow session but wrong answers: a Gradle build running beside
+  a jest run pushed 18 tests past their 5s timeout with nothing actually
+  broken, and the iOS simulator was shut down under us mid-test. Anything
+  timing-sensitive — the test suite, a keyboard animation, a screenshot of a
+  transition — has to be read on a quiet machine. Shut one platform down
+  before booting the other, and stop the build daemons afterwards
+  (`./gradlew --stop`, then `pkill -f GradleDaemon`, `pkill -f kotlin-daemon`).
 
 ---
 

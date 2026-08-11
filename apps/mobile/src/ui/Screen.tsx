@@ -1,20 +1,21 @@
 import { cssInterop } from 'nativewind'
-import type { ReactNode } from 'react'
+import { type ReactNode, useCallback, useState } from 'react'
+import { type LayoutChangeEvent, Platform, type ScrollViewProps, View } from 'react-native'
+import { ScrollView as RawGestureScrollView } from 'react-native-gesture-handler'
 import {
   KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  type ScrollViewProps,
-  View,
-} from 'react-native'
-import { ScrollView as RawGestureScrollView } from 'react-native-gesture-handler'
+  KeyboardAwareScrollView,
+  type KeyboardAwareScrollViewProps,
+  useReanimatedKeyboardAnimation,
+} from 'react-native-keyboard-controller'
+import Reanimated, { useAnimatedStyle } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
 import { cn } from './cn'
 
 /**
- * Gesture-handler's ScrollView, taught `className`.
+ * The scroll view, taught `className`.
  *
  * NativeWind converts className to style for the components it ships support
  * for, which are React Native's own. A third-party component takes `className`
@@ -22,10 +23,28 @@ import { cn } from './cn'
  * none of the styling it was asked for. Without this registration the scroll
  * view below loses its `flex-1`.
  */
-const GestureScrollView = cssInterop(RawGestureScrollView, {
+const AwareScrollView = cssInterop(KeyboardAwareScrollView, {
   className: 'style',
   contentContainerClassName: 'contentContainerStyle',
 })
+
+/** Same treatment, for the shell that pads a NON-scrolling screen. */
+const KeyboardShell = cssInterop(KeyboardAvoidingView, { className: 'style' })
+
+/**
+ * Gesture-handler's ScrollView, animated so it can stand in as the scroller
+ * above. `KeyboardAwareScrollView` drives its inner view's insets through
+ * `animatedProps`, which only a Reanimated component accepts — a plain one
+ * would take the whole keyboard mechanism as inert props and drop it.
+ *
+ * The cast is nominal rather than structural: the slot is typed as an animated
+ * copy of React Native's OWN ScrollView, which this is not and cannot be, while
+ * the only thing the library actually needs from it is that `animatedProps`
+ * reaches a scroll view. Gesture-handler's takes the same props.
+ */
+const GestureScrollView = Reanimated.createAnimatedComponent(
+  RawGestureScrollView,
+) as unknown as KeyboardAwareScrollViewProps['ScrollViewComponent']
 
 export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   children: ReactNode
@@ -66,16 +85,6 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    * the safe thing and nothing else needs it.
    */
   gestureScroll?: boolean
-  /**
-   * Extra points between the keyboard and the content, for the cases where
-   * this view's frame does not start where it appears to.
-   *
-   * 0 is right under a navigator, which lays the screen out below the header
-   * already. Pass `useHeaderHeight()` only if a header overlaps this view —
-   * `insets.top` is never the right answer, and floats the footer a status bar
-   * clear of the keyboard.
-   */
-  keyboardOffset?: number
   className?: string
   contentClassName?: string
 }
@@ -85,25 +94,37 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
  * handling.
  *
  * Keyboard behaviour is the reason this exists rather than each screen wiring
- * its own ScrollView. Three things have to line up or a focused input ends up
- * under the keyboard:
+ * its own ScrollView, and ONE LIBRARY OWNS IT ON BOTH PLATFORMS.
+ * `react-native-keyboard-controller` reports the keyboard's position every
+ * frame on the UI thread, which is the thing none of React Native's own
+ * primitives can do:
  *
- * - `automaticallyAdjustKeyboardInsets` (iOS) lets UIKit inset the scroll view
- *   by the real keyboard frame, which is more accurate than measuring it in JS
- *   and handles the hardware keyboard and floating iPad keyboard for free.
- * - `KeyboardAvoidingView` with `padding` carries the footer CTA above the
- *   keyboard. Android is left on `undefined` because `adjustResize` — which
- *   Expo sets by default — already resizes the window, and stacking both
- *   double-counts the inset.
- * - `keyboardShouldPersistTaps="handled"` makes the first tap on a button
- *   activate it instead of being eaten dismissing the keyboard. Without it
- *   every form needs two taps to submit.
+ * - `KeyboardAwareScrollView` insets the scroll view and reveals the focused
+ *   field, and it takes a `bottomOffset` — the one number the platform cannot
+ *   be told. UIKit's `automaticallyAdjustKeyboardInsets` always reveals a field
+ *   to the KEYBOARD'S top, and knows nothing about a footer sitting on the
+ *   keyboard: tapping the fat figure on a logged entry scrolled it neatly to
+ *   the top of the keys and left it behind the Save button, so the number being
+ *   typed was the one thing on screen the user could not see.
+ * - `KeyboardStickyView` moves the footer, on the UI thread, in the keyboard's
+ *   own animation. What it replaces was a `keyboardWillChangeFrame` listener
+ *   driving an `Animated.timing` over a bezier approximating UIKit's private
+ *   curve — close, but visibly not the same motion, and no help at all during
+ *   an interactive dismissal, where no JS event fires while the finger drags
+ *   the keyboard down and the footer simply hung in the air until it let go.
+ * - Android used to be a different mechanism entirely: `adjustResize` shrank
+ *   the window, and the footer's dead bottom padding was corrected by hand off
+ *   `keyboardDidShow`. `KeyboardProvider` takes the window edge-to-edge and
+ *   reports the keyboard instead, so both platforms now run the code above and
+ *   there is one behaviour to reason about rather than two.
  *
- * The first two look like they should double-count on iOS, and do not: the
- * KeyboardAvoidingView shrinks the scroll view out from under the keyboard
- * first, so by the time UIKit measures the overlap for its own inset there is
- * none left to add. Verified on device — if you change one of them, check the
- * other still behaves.
+ * `KeyboardAvoidingView` is still the root, but it only does anything for a
+ * screen that does NOT scroll — there is no scroll view to inset there, so
+ * padding the shell is the only way a field in one stays visible.
+ *
+ * `keyboardShouldPersistTaps="handled"` is the third piece: it makes the first
+ * tap on a button activate it instead of being eaten dismissing the keyboard.
+ * Without it every form needs two taps to submit.
  */
 export function Screen({
   children,
@@ -112,16 +133,59 @@ export function Screen({
   flush = false,
   scroll = true,
   gestureScroll = false,
-  keyboardOffset = 0,
   className,
   contentClassName,
   ...rest
 }: ScreenProps) {
   const insets = useSafeAreaInsets()
-  const Scroller = gestureScroll ? GestureScrollView : ScrollView
+
+  /**
+   * Measured rather than guessed, because it is the number that decides where a
+   * focused field comes to rest and the footer is a slot: one button on the
+   * paywall, two side by side on a logged entry, a button over a caption in
+   * onboarding.
+   */
+  const [footerHeight, setFooterHeight] = useState(0)
+  const measureFooter = useCallback((event: LayoutChangeEvent) => {
+    setFooterHeight(event.nativeEvent.layout.height)
+  }, [])
+
+  /**
+   * How much room to keep between the focused field and the keyboard.
+   *
+   * The footer rises to sit on the keyboard, so the part of it standing ABOVE
+   * the keys is what a field has to clear — its height less the home
+   * indicator's inset, which the lift already takes off (see the footer). Plus
+   * a gap, so the field is not flush against the buttons.
+   */
+  const bottomOffset = Math.max(footerHeight - insets.bottom, 0) + spacing.md
+
+  /**
+   * How far the footer and the floating action ride up, tracked on the UI
+   * thread. `height` runs from 0 to MINUS the keyboard's height, so this reads
+   * as "up by the keyboard, less the home indicator's inset" — that padding is
+   * there to clear the indicator, and with a keyboard over it the inset would
+   * otherwise be a band of canvas between the buttons and the keys.
+   *
+   * The clamp is the whole reason this is not `KeyboardStickyView`, which is
+   * the same expression without one. NEVER DOWNWARDS: a keyboard shorter than
+   * the bottom inset makes the subtraction positive and pushes the footer off
+   * the bottom of the screen. That is not hypothetical — a floating IME on
+   * Android reports a height of almost nothing while still counting as open,
+   * and the Android emulator sat in exactly that state with the sign-in button
+   * hanging over the gesture bar.
+   *
+   * Not on a screen with nothing to scroll, where the shell below is padding
+   * the whole thing — the footer included — out of the keyboard's way. Lifted
+   * as well it would rise twice.
+   */
+  const keyboard = useReanimatedKeyboardAnimation()
+  const lift = useAnimatedStyle(() => ({
+    transform: [{ translateY: scroll ? Math.min(keyboard.height.value + insets.bottom, 0) : 0 }],
+  }))
 
   const body = scroll ? (
-    <Scroller
+    <AwareScrollView
       className={cn('flex-1', contentClassName)}
       contentContainerStyle={{
         padding: flush ? 0 : spacing.gutter,
@@ -132,14 +196,16 @@ export function Screen({
         paddingBottom: (flush ? 0 : spacing.gutter) + (footer ? 0 : insets.bottom),
         gap: spacing.stack,
       }}
+      bottomOffset={bottomOffset}
+      // Only Today, and only because its rows are swipeable. See `gestureScroll`.
+      ScrollViewComponent={gestureScroll ? GestureScrollView : undefined}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-      automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
       showsVerticalScrollIndicator={false}
       {...rest}
     >
       {children}
-    </Scroller>
+    </AwareScrollView>
   ) : (
     <View
       className={cn('flex-1', !flush && 'p-gutter', contentClassName)}
@@ -150,15 +216,18 @@ export function Screen({
   )
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardShell
       className={cn('flex-1 bg-canvas', className)}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={keyboardOffset}
+      /* Only where there is no scroll view to do it better. On a scrolling
+         screen this padding would shrink the frame the scroller is measuring
+         the keyboard against, and two things insetting for one keyboard is how
+         a tapped field ends up scrolled up and then straight back down. */
+      behavior={!scroll ? 'padding' : undefined}
     >
       {body}
 
-      {/* Inside the keyboard-avoiding view, so a floating control rides up with
-          the content rather than sitting under an open keyboard.
+      {/* Rides up with the footer, so a floating control is never left under an
+          open keyboard.
 
           One gutter off this view's bottom and NO safe-area inset, which looks
           like an oversight and is the correction for one. A floating control's
@@ -166,28 +235,45 @@ export function Screen({
           than its parent: the slot's frame already stops where the bar begins,
           and the bar is what pads for the home indicator. Adding `insets.bottom`
           here counted it a second time and left the button floating a
-          thumb-width too high. */}
+          thumb-width too high.
+
+          Styled rather than classed: the position is what makes this an overlay
+          at all, and NativeWind's support for a third-party animated view is
+          not worth depending on for that. */}
       {floating ? (
-        <View
-          className="absolute right-gutter items-end"
-          style={{ bottom: spacing.gutter }}
+        <Reanimated.View
+          style={[
+            {
+              position: 'absolute',
+              right: spacing.gutter,
+              bottom: spacing.gutter,
+              alignItems: 'flex-end',
+            },
+            lift,
+          ]}
           pointerEvents="box-none"
         >
           {floating}
-        </View>
+        </Reanimated.View>
       ) : null}
 
       {footer ? (
-        // No rule above the footer. The design separates it with space and the
-        // canvas colour alone, and a hairline under a full-width CTA reads as a
-        // seam rather than a divider.
-        <View
-          className="gap-md bg-canvas px-gutter pt-md"
-          style={{ paddingBottom: insets.bottom + spacing.md }}
-        >
-          {footer}
-        </View>
+        /* A transform, so the scroll view above keeps the frame the keyboard is
+           measured against and the footer's own height stays out of the layout
+           pass entirely. See `lift` for how far it goes. */
+        <Reanimated.View style={lift}>
+          {/* No rule above the footer. The design separates it with space and
+              the canvas colour alone, and a hairline under a full-width CTA
+              reads as a seam rather than a divider. */}
+          <View
+            onLayout={measureFooter}
+            className="gap-md bg-canvas px-gutter pt-md"
+            style={{ paddingBottom: insets.bottom + spacing.md }}
+          >
+            {footer}
+          </View>
+        </Reanimated.View>
       ) : null}
-    </KeyboardAvoidingView>
+    </KeyboardShell>
   )
 }

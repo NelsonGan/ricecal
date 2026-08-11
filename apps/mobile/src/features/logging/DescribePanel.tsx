@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { Button, Icon, Text, TextField } from '@/ui'
+import { Button, TextField } from '@/ui'
 
 export type DescribePanelProps = {
   /** The meal, as typed. Trimmed and non-empty; the host does the logging. */
@@ -21,8 +21,12 @@ export type DescribePanelProps = {
  * MULTILINE, AND THAT IS THE POINT. A meal is "nasi lemak with fried chicken
  * and a teh tarik", and a one-line box that scrolls sideways teaches people to
  * type "nasi lemak" and stop — which logs a third of a lunch. Three lines of
- * room, an example in the placeholder that is a whole meal with a drink on the
- * end, and a hint that says amounts are worth typing.
+ * room, and an example in the placeholder that is a whole meal with a drink on
+ * the end.
+ *
+ * The placeholder is the ONLY instruction. A line of hint text under the field
+ * said the same thing again in the abstract, and prose explaining an example
+ * that already demonstrates itself is prose nobody reads.
  *
  * The send button is UNDER the field, full width, and the sheet closes on it.
  * It was an arrow tucked into the field's bottom-right corner — the shape the
@@ -46,38 +50,28 @@ export function DescribePanel({ onSubmit, autoFocus = false }: DescribePanelProp
   }
 
   return (
-    // The field and its hint are one thing and the button is another, so the
-    // gap between them is the wider one.
     <View className="gap-3">
-      <View className="gap-2">
-        <TextField
-          value={text}
-          onChangeText={setText}
-          placeholder={t('logging:describe.placeholder')}
-          autoFocus={autoFocus}
-          multiline
-          // The keyboard's return key inserts a newline in a multiline field, so
-          // it cannot double as send — the button is the only way, which is why
-          // it is inside the box where the thumb already is.
-          blurOnSubmit={false}
-          // Room for a meal with its sides on it, and the text starts at the top
-          // of that room rather than floating in the middle of an empty box.
-          //
-          // The box is `items-start`, so the input sits flush against the border
-          // and the first line reads as pinned to it. The whole 92pt is the
-          // text's now that the button has moved out from the corner.
-          className="min-h-[92px] items-start"
-          inputClassName="pt-4"
-          textAlignVertical="top"
-          maxLength={500}
-        />
-        <View className="flex-row items-start gap-2 px-1">
-          <Icon set="system" name="sparkle" size={16} />
-          <Text variant="meta" className="flex-1">
-            {t('logging:describe.hint')}
-          </Text>
-        </View>
-      </View>
+      <TextField
+        value={text}
+        onChangeText={setText}
+        placeholder={t('logging:describe.placeholder')}
+        autoFocus={autoFocus}
+        multiline
+        // The keyboard's return key inserts a newline in a multiline field, so
+        // it cannot double as send — the button is the only way, which is why
+        // it is inside the box where the thumb already is.
+        blurOnSubmit={false}
+        // Room for a meal with its sides on it, and the text starts at the top
+        // of that room rather than floating in the middle of an empty box.
+        //
+        // The box is `items-start`, so the input sits flush against the border
+        // and the first line reads as pinned to it. The whole 92pt is the
+        // text's now that the button has moved out from the corner.
+        className="min-h-[92px] items-start"
+        inputClassName="pt-4"
+        textAlignVertical="top"
+        maxLength={500}
+      />
 
       <Button fullWidth disabled={!text.trim()} onPress={send}>
         {t('logging:describe.send')}

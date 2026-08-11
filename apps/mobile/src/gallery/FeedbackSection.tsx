@@ -49,6 +49,9 @@ export function FeedbackSection() {
   const [day, setDay] = useState(DAYS[3].key)
   const [tab, setTab] = useState<(typeof DETAIL_TABS)[number]['value']>('overview')
   const [navTab, setNavTab] = useState('today')
+  /** The app bar's title being retyped in place, and what it is being retyped to. */
+  const [renaming, setRenaming] = useState(false)
+  const [entryName, setEntryName] = useState('Korean fried chicken with rice and sides')
 
   return (
     <>
@@ -152,6 +155,28 @@ export function FeedbackSection() {
       <Card title="App bar and tabs" flush>
         <View className="gap-3 p-card">
           <AppBar title="Food details" onBack={() => {}} />
+
+          {/* The two states one screen's title has, which are the ones worth
+              looking at on a device: a name too long for a line, and that same
+              name being retyped where it sits. Tap it. */}
+          <AppBar
+            title={entryName.trim() || 'Korean fried chicken with rice and sides'}
+            titleLines={2}
+            onBack={() => {}}
+            onPressTitle={() => setRenaming(true)}
+            titleEdit={
+              renaming
+                ? {
+                    value: entryName,
+                    onChangeText: setEntryName,
+                    onDone: () => setRenaming(false),
+                    label: 'What to call this',
+                    maxLength: 120,
+                  }
+                : undefined
+            }
+          />
+
           <Tabs options={DETAIL_TABS} value={tab} onChange={setTab} />
           <Text variant="meta">Showing: {tab}</Text>
         </View>
