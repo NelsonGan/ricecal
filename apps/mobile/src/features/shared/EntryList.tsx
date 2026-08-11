@@ -1,4 +1,3 @@
-import { Image } from 'expo-image'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Animated, Easing, View } from 'react-native'
@@ -17,6 +16,7 @@ import { portionLabel } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
 import { Card, Icon, IconButton, Text } from '@/ui'
 import { ItemRow } from './ItemRow'
+import { MealPhoto } from './MealPhoto'
 import { SwipeRow } from './SwipeRow'
 
 export type EntryListProps = {
@@ -320,16 +320,9 @@ function AnalysingRow({
       {/* Same 56pt tile as ItemRow, so the row sits flush in the list. */}
       <View className="h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-tile bg-track">
         {photo ? (
-          <Image
-            source={photo}
-            style={{ flex: 1, width: '100%', opacity: 0.55 }}
-            contentFit="cover"
-            // Same cross-fade as `ItemRow`, for the same reason: a stored photo
-            // is one resolution behind the row it belongs to. This row
-            // already draws a camera in the meantime, so what the fade removes
-            // is the cut from that to the photograph.
-            transition={180}
-          />
+          // Dimmed the whole time rather than only while busy: this row IS the
+          // busy one, and the plate under it has no dish yet.
+          <MealPhoto source={photo} dimmed />
         ) : (
           <Icon set="system" name={typed ? 'sparkle' : 'camera'} size={40} />
         )}

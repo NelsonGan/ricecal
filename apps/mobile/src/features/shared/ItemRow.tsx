@@ -1,10 +1,10 @@
-import { Image } from 'expo-image'
 import type { ReactNode } from 'react'
 import { ActivityIndicator, View } from 'react-native'
 
 import type { IconRef } from '@/data'
 import { storedImageSource, useMealPhotoUrl } from '@/data'
 import { cn, Icon, Skeleton, Tappable, Text } from '@/ui'
+import { MealPhoto } from './MealPhoto'
 
 const valueTones = {
   ink: 'text-ink',
@@ -92,29 +92,7 @@ export function ItemRow({
   const tile = (
     <View className="h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-tile bg-track">
       {photo ? (
-        // The tile is square and a plate photo is not, so it crops rather than
-        // letterboxing — a 4:3 photo in a 1:1 tile with bars reads as a broken
-        // image.
-        <Image
-          source={photo}
-          style={{ flex: 1, width: '100%', opacity: busy ? 0.55 : 1 }}
-          contentFit="cover"
-          /**
-           * Faded in, because a plate can still be a moment late.
-           *
-           * It used to be late by a request. Signed URLs are deliberately kept
-           * OUT of the persisted cache — they expire within the hour and this
-           * cache lives for a week — so every launch re-signed them, and a day
-           * of snapped meals drew its rows as grey squares and then hard-cut to
-           * photographs once the `photos` function answered.
-           *
-           * A launch now asks the disk before it asks the network and usually
-           * finds the picture there, so what is left to wait for is a local
-           * stat rather than a round trip. The fade stays for the launch that
-           * does have to fetch, and for the plate this device has never seen.
-           */
-          transition={180}
-        />
+        <MealPhoto source={photo} dimmed={busy} />
       ) : resolving ? (
         // Not an icon, and not nothing: a snapped row's `icon` is undefined by
         // design — the view suppresses it while a photo exists — so the choice
