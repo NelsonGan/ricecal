@@ -1,4 +1,3 @@
-import { Image } from 'expo-image'
 import { useLocalSearchParams, useNavigation } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -24,7 +23,7 @@ import {
   useUpdateIngredient,
 } from '@/data'
 import { FixSheet, IconPicker } from '@/features/logging'
-import { MacroBars } from '@/features/shared'
+import { MacroBars, MealPhoto } from '@/features/shared'
 import { useBack, useDismissTo } from '@/lib/navigation'
 import { entryTotals } from '@/lib/nutrition'
 import { servingUnit, titleCase } from '@/lib/portions'
@@ -810,14 +809,9 @@ export default function FoodDetail() {
           // did not change would read as the camera having done nothing.
           <ActivityIndicator />
         ) : hero && !icon ? (
-          <Image
+          <MealPhoto
             source={hero}
-            style={{ flex: 1, width: '100%' }}
-            contentFit="cover"
             accessibilityLabel={t('logging:camera.photoOf', { food: food.name })}
-            // See `ItemRow`: the bucket is private, so a stored plate is always
-            // one resolution behind the screen it belongs to.
-            transition={180}
           />
         ) : resolvingPhoto && !icon ? (
           /* This entry HAS a photograph and it is still being signed for.

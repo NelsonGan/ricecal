@@ -5,6 +5,7 @@ import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
+import { photoCropFill } from '@/lib/photo'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, Icon, IconButton, Squish, Text } from '@/ui'
 
@@ -29,44 +30,6 @@ const VIEWFINDER_HEIGHT = 310
  * with no camera. Both centre themselves in what is left rather than in the box.
  */
 const CONTROL_BAND = 84
-
-/**
- * How much bigger the preview is laid out than the box that shows it.
- *
- * The viewfinder is a CENTRE CROP of what the shutter will actually record, and
- * the asymmetry is the point. People fill the frame they are given, so whatever
- * the frame shows is what ends up at the very edges of the shot — and a plate
- * cropped at its rim is a plate with nothing beside it to judge the size of. A
- * preview tighter than the capture means the food they centred comes back with
- * the table, the cutlery and the rest of the plate around it, which is the
- * context the cascade reads a portion out of.
- *
- * This is LAYOUT rather than the camera's own `zoom`, which drives the lens and
- * would take the photograph with it. A transform would be applied after layout,
- * to a view whose contents are a native preview surface rather than anything
- * React Native draws — so the view is genuinely laid out larger instead, and the
- * tile's `overflow-hidden` crops it the same way it crops any other child.
- *
- * Both platforms fill-centre their preview (`resizeAspectFill` on iOS,
- * `FILL_CENTER` on Android), so a view a quarter larger shows a proportionally
- * tighter crop on either. If a preview is ever seen spilling outside the tile on
- * Android, this is what to look at first: a surface-backed child is the one kind
- * that can outlive its parent's clip.
- */
-const PREVIEW_ZOOM = 1.25
-
-/** Percentages, for a box whose width is only known once it is laid out. */
-const pct = (value: number): `${number}%` => `${value}%`
-
-const previewStyle = {
-  position: 'absolute',
-  width: pct(PREVIEW_ZOOM * 100),
-  height: pct(PREVIEW_ZOOM * 100),
-  // Half the overhang pulled back on each axis, so what is cropped away is
-  // shared evenly and the middle of the preview is the middle of the shot.
-  left: pct((1 - PREVIEW_ZOOM) * 50),
-  top: pct((1 - PREVIEW_ZOOM) * 50),
-} as const
 
 export type InlineCameraProps = {
   /**
@@ -93,7 +56,7 @@ export type InlineCameraProps = {
  *
  * It is one box: the preview fills it, the controls float over the bottom of it,
  * and what is shown is deliberately tighter than what is captured. See
- * `VIEWFINDER_HEIGHT` and `PREVIEW_ZOOM`.
+ * `VIEWFINDER_HEIGHT` and `PHOTO_CROP`.
  *
  * The library button presents its picker while this sheet is still up, on purpose.
  * A native picker cannot be presented while a modal is being DISMISSED — iOS
@@ -165,7 +128,19 @@ export function InlineCamera({ onCapture }: InlineCameraProps) {
       style={{ height: VIEWFINDER_HEIGHT }}
     >
       {hasCamera ? (
-        <CameraView ref={camera} style={previewStyle} facing={facing} />
+        /* Laid out bigger than the box that shows it, so the viewfinder is a
+           CENTRE CROP of what the shutter will actually record. See
+           `photoCropFill` for why the shot is wider than the frame, and why the
+           box is shared with the rows and screens that draw the photo back.
+
+           The camera's own `zoom` would drive the lens and take the photograph
+           with it, which is the opposite of what this is for. Both platforms
+           fill-centre their preview (`resizeAspectFill` on iOS, `FILL_CENTER`
+           on Android), so a view laid out larger shows a proportionally tighter
+           crop on either. If a preview is ever seen spilling outside the tile on
+           Android, this is what to look at first: a surface-backed child is the
+           one kind that can outlive its parent's clip. */
+        <CameraView ref={camera} style={photoCropFill} facing={facing} />
       ) : (
         // Lifted clear of the controls, so the illustration reads as the subject
         // of the frame rather than as something behind the shutter. The padding
@@ -227,9 +202,9 @@ export function InlineCamera({ onCapture }: InlineCameraProps) {
 }
 
 /**
- * The four corner brackets over the viewfinder. Decorative, and a lie by a
- * quarter: the shot is wider than they are (see `PREVIEW_ZOOM`), which is what
- * makes them safe to fill.
+ * The four corner brackets over the viewfinder. Decorative, and a deliberate
+ * understatement: the shot is wider than they are by `PHOTO_CROP`, which is
+ * what makes them safe to fill.
  */
 function Framing() {
   const corner = 'absolute h-[30px] w-[30px] border-on-inverse/70'

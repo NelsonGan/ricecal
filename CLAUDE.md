@@ -695,6 +695,14 @@ Break these and the feature is wrong in ways tests may not catch.
 - **The OpenRouter key never reaches the client**, and neither do the R2
   credentials. A client that could name its own object key, or hold a key that
   does not expire, is a client that can read someone else's plate.
+- **A plate is STORED wider than it is SHOWN.** The two readers of a photograph
+  want opposite things: the model judges a portion against what is around the
+  food, so the widest frame is the one worth keeping, while the person wants
+  back the picture they framed rather than a photo of their table. So the
+  viewfinder is already a centre crop of what the shutter records, and every box
+  that draws a stored photo afterwards (`MealPhoto`) crops in by the same
+  amount. One constant, `PHOTO_CROP` in `lib/photo.ts`, because two of them is a
+  diary framed differently from the viewfinder that took it.
 - **An image column holds a KEY, never a URL.** `food_logs.photo_path` and
   `profiles.avatar_path` are what made a change of storage provider a change of
   base URL rather than a migration over every row. It has already paid for
