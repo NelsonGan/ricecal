@@ -1,8 +1,7 @@
 import { cssInterop } from 'nativewind'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import {
   Animated,
-  Keyboard,
   Platform,
   ScrollView,
   type ScrollViewProps,
@@ -14,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
 import { cn } from './cn'
+import { useKeyboard } from './use-keyboard'
 
 /**
  * Gesture-handler's ScrollView, taught `className`.
@@ -28,53 +28,6 @@ const GestureScrollView = cssInterop(RawGestureScrollView, {
   className: 'style',
   contentContainerClassName: 'contentContainerStyle',
 })
-
-/**
- * How far the keyboard reaches up into this view, as something to translate by.
- *
- * A NUMBER OF POINTS ON iOS AND ALWAYS ZERO ON ANDROID, where `adjustResize` —
- * which Expo sets by default — has already resized the window out from under
- * the keyboard, and lifting anything again would count it twice. `up` is the
- * plain fact of a keyboard being on screen, and is true on both.
- *
- * `keyboardWillChangeFrame` rather than a will-show and a will-hide, which is
- * the event `KeyboardAvoidingView` picks for the same job: one notification
- * covers arriving, leaving, growing a suggestion bar, and the interactive
- * drag-to-dismiss, where nothing else fires until the finger lets go.
- */
-function useKeyboardRise(windowHeight: number) {
-  const [up, setUp] = useState(() => Keyboard.isVisible())
-  /** Negative, because everything it moves travels upwards. */
-  const shift = useRef(new Animated.Value(0)).current
-
-  useEffect(() => {
-    if (Platform.OS !== 'ios') {
-      const shown = Keyboard.addListener('keyboardDidShow', () => setUp(true))
-      const hidden = Keyboard.addListener('keyboardDidHide', () => setUp(false))
-      return () => {
-        shown.remove()
-        hidden.remove()
-      }
-    }
-
-    const change = Keyboard.addListener('keyboardWillChangeFrame', (event) => {
-      const overlap = Math.max(0, windowHeight - event.endCoordinates.screenY)
-      setUp(overlap > 0)
-      // The keyboard's own duration and no less than a frame of it, so the
-      // footer travels with the keys rather than jumping to where they are
-      // about to be. This is what `KeyboardAvoidingView` was doing through
-      // LayoutAnimation, and a transform can be handed to the native driver.
-      Animated.timing(shift, {
-        toValue: -overlap,
-        duration: Math.max(event.duration, 10),
-        useNativeDriver: true,
-      }).start()
-    })
-    return () => change.remove()
-  }, [shift, windowHeight])
-
-  return { up, shift }
-}
 
 export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   children: ReactNode
@@ -162,7 +115,7 @@ export function Screen({
 }: ScreenProps) {
   const insets = useSafeAreaInsets()
   const { height: windowHeight } = useWindowDimensions()
-  const { up, shift } = useKeyboardRise(windowHeight)
+  const { up, shift } = useKeyboard(windowHeight)
   /**
    * The footer's own height, for the padding below.
    *
@@ -170,7 +123,7 @@ export function Screen({
    * slot: one button, two side by side, a button over a line of small print.
    */
   const [footerHeight, setFooterHeight] = useState(0)
-  // Lifted, as opposed to merely having a keyboard on screen. See the hook.
+  // Lifted, as opposed to merely having a keyboard on screen. See `useKeyboard`.
   const lifted = up && Platform.OS === 'ios'
   const Scroller = gestureScroll ? GestureScrollView : ScrollView
 

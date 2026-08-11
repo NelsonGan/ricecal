@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { spacing } from '@/theme/tokens'
 import { cn } from './cn'
 import { Text } from './Text'
+import { useKeyboard } from './use-keyboard'
 
 /**
  * The panel is a Pressable so a tap inside it can swallow the event before it
@@ -161,6 +162,7 @@ export function SheetSurface({
 }: SheetSurfaceProps) {
   const insets = useSafeAreaInsets()
   const { height } = useWindowDimensions()
+  const { overlap } = useKeyboard(height)
 
   /**
    * The panel rises; the scrim does not.
@@ -236,18 +238,37 @@ export function SheetSurface({
       rise.value = withTiming(0, { duration: RISE_MS, easing: Easing.out(Easing.cubic) })
     })
 
+  /**
+   * How a full-height sheet gets out of the keyboard's way: the LIST insets,
+   * rather than the panel shrinking. See the note on the wrapper below.
+   *
+   * Measured here rather than left to `automaticallyAdjustKeyboardInsets`,
+   * which insets by the same amount and then SCROLLS ITSELF to bring the
+   * focused field above the keys. Asked to do that on the frame a sheet's
+   * window is being presented — before the field is settled in the hierarchy it
+   * is measured against — it scrolled by the whole height of the keyboard
+   * instead and carried the field clean off the top of the panel. That is the
+   * ingredient sheet opening onto an empty panel the first time and behaving
+   * every time after, and it is what `scrollable={false}` was working around on
+   * the sheets short enough to do without a scroll view. A full-height sheet
+   * does not want that scroll in the first place: its field is at the TOP of a
+   * panel that reaches the bottom of the screen, so there is nothing to reveal.
+   *
+   * The panel's own bottom padding comes off, since the keyboard covers it.
+   */
+  const keyboardPad = fullHeight
+    ? Math.max(0, overlap - Math.max(insets.bottom, spacing.gutter))
+    : 0
+
   const body = scrollable ? (
     <ScrollView
       // Capped by default, and told to fill when the panel is full height —
       // without the second half the list keeps its 440pt and the panel grows a
       // field of empty surface under it.
       className={fullHeight ? 'flex-1' : 'max-h-[440px]'}
-      contentContainerStyle={{ gap: spacing.md }}
+      contentContainerStyle={{ gap: spacing.md, paddingBottom: keyboardPad }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
-      // How a full-height sheet gets out of the keyboard's way: the LIST insets,
-      // rather than the panel shrinking. See the note on the wrapper below.
-      automaticallyAdjustKeyboardInsets={fullHeight}
     >
       {children}
     </ScrollView>

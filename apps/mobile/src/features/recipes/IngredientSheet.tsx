@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { type RefObject, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { type TextInput, View } from 'react-native'
 
 import type { Macros, RecipeIngredientInput, RecipeUnit } from '@/data'
 import { useFood, useFoodSearch } from '@/data'
@@ -59,6 +59,7 @@ const UNITS: RecipeUnit[] = ['g', 'ml', 'piece']
 export function IngredientSheet({ visible, onClose, onAdd }: IngredientSheetProps) {
   const { t } = useTranslation(['recipes', 'common'])
   const [panel, setPanel] = useState<Panel>('search')
+  const search = useRef<TextInput>(null)
 
   // The dish chosen out of the search results, which is the point the sheet
   // stops being a search and starts being "how much of it went in".
@@ -86,10 +87,16 @@ export function IngredientSheet({ visible, onClose, onAdd }: IngredientSheetProp
       onClose={close}
       title={t('recipes:ingredient.title')}
       closeLabel={t('common:action.close')}
+      // See `onShow` on `Sheet`: `autoFocus` inside a window that has not been
+      // presented yet is applied while the field is still off screen, and is
+      // dropped as often as it is honoured. This fires once the platform has
+      // the window on screen, which is the moment a `focus()` takes.
+      onShow={() => search.current?.focus()}
       fullHeight
     >
       {panel === 'search' ? (
         <SearchPanel
+          fieldRef={search}
           onPick={(foodId) => {
             setPickedId(foodId)
             setPanel('amount')
@@ -108,7 +115,15 @@ export function IngredientSheet({ visible, onClose, onAdd }: IngredientSheetProp
 }
 
 /** The catalogue, filtered. Same debounce and the same states as the log sheet's. */
-function SearchPanel({ onPick, onOwn }: { onPick: (foodId: string) => void; onOwn: () => void }) {
+function SearchPanel({
+  fieldRef,
+  onPick,
+  onOwn,
+}: {
+  fieldRef: RefObject<TextInput | null>
+  onPick: (foodId: string) => void
+  onOwn: () => void
+}) {
   const { t } = useTranslation(['recipes', 'logging'])
   const [query, setQuery] = useState('')
   const debounced = useDebouncedValue(query)
@@ -119,12 +134,12 @@ function SearchPanel({ onPick, onOwn }: { onPick: (foodId: string) => void; onOw
   return (
     <View className="gap-3">
       <SearchField
+        ref={fieldRef}
         value={query}
         onChangeText={setQuery}
         onClear={() => setQuery('')}
         clearLabel={t('recipes:search.clear')}
         placeholder={t('recipes:ingredient.search')}
-        autoFocus
         returnKeyType="search"
       />
 
