@@ -246,9 +246,12 @@ describe('Numpad', () => {
 
   /**
    * A field with no host above it has nowhere to draw a pad. It keeps the
-   * system keyboard rather than focusing into nothing.
+   * system keyboard rather than focusing into nothing, and says so: the silent
+   * version of this put the calorie total on a logged entry back on the system
+   * number pad, which is the bug the pad was written to remove.
    */
-  it('leaves a field outside a host on the system keyboard', async () => {
+  it('warns and keeps the system keyboard for a field outside a host', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
     function Loose() {
       const [value, setValue] = useState('')
       return (
@@ -268,5 +271,7 @@ describe('Numpad', () => {
     expect(screen.getByLabelText('Amount').props.showSoftInputOnFocus).toBe(true)
     fireEvent(screen.getByLabelText('Amount'), 'focus')
     expect(screen.queryByRole('button', { name: '7' })).toBeNull()
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('no <NumpadHost>'))
+    warn.mockRestore()
   })
 })

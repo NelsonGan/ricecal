@@ -295,6 +295,28 @@ export function useNumpadField({
   const live = enabled && Boolean(context) && hostId !== ''
 
   /**
+   * A field that wanted the pad and could not find a host to draw it.
+   *
+   * Loud, because the fallback is the bug this whole file exists to remove
+   * wearing a disguise: the field quietly keeps the system keyboard, which for
+   * a numeric one is the pad with the floating pill on it. It has already
+   * happened once — the calorie total on a logged entry called this hook up in
+   * the route, which RENDERS the screen rather than sitting inside it, so the
+   * host `Screen` provides was nowhere above it.
+   *
+   * A warning rather than a throw: a field genuinely outside both containers
+   * still works on the platform's keyboard, and crashing a screen over a
+   * layout mistake is the worse trade.
+   */
+  useEffect(() => {
+    if (!__DEV__ || !enabled || !context || hostId !== '') return
+    console.warn(
+      'useNumpadField: no <NumpadHost> above this field, so it is on the system keyboard. ' +
+        'Render it inside a Screen or a Sheet rather than in the component that returns one.',
+    )
+  }, [enabled, context, hostId])
+
+  /**
    * The two handlers, pulled out of the context value.
    *
    * They are stable where the context OBJECT is not — it carries the open
