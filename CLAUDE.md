@@ -747,6 +747,19 @@ Break these and the feature is wrong in ways tests may not catch.
   A migration restating that function has to call a pg_trgm function of its own
   first; `20260807104259_recipes.sql` carries the line and the reasoning. Nothing
   in CI catches this class, since every job builds its database from scratch.
+- **Expo Router orders a navigator's screens by the LENGTH of their route
+  names**, and a tab navigator goes "back" to whichever it decides is first. Left
+  to itself, `me` is two characters and sorts ahead of `today`, so the router's
+  idea of the first tab was the profile, and the Android back button on any tab
+  went there. `unstable_settings = { anchor: 'today' }` in `(tabs)/_layout.tsx`
+  pins it.
+- **`router.back()` is offered to every navigator in the focused chain**, so a
+  back with nothing left to pop is answered by the TABS underneath, and answering
+  it means changing tab. `canGoBack()` asks the same chain and says yes for the
+  same reason, which is why a fallback guarded by it never ran. `useBack` pops
+  instead: POP is a stack's action, and a dismissal that arrives twice — the
+  handle and the scrim answering one gesture — finds nothing to pop rather than
+  taking a bite out of the screen behind.
 - **NativeWind only styles React Native's own components.** A third-party one
   takes `className` as an ordinary prop and drops it silently. `Screen.tsx`
   registers `cssInterop` for gesture-handler's ScrollView for exactly this.

@@ -202,11 +202,14 @@ export function SheetSurface({
    * exactly where the rise left off and the two cannot fight.
    */
   /**
-   * Once, whatever asks. A tap on the handle and a drag that lets go past the
-   * threshold can both arrive, and `onClose` is `router.back()` for a sheet that
-   * is a route — called twice it pops the screen UNDERNEATH, which on a tab bar is
-   * a different tab. The ref rather than state because this must be true on the
-   * same tick, not after a render.
+   * Once, whatever asks. A tap on the handle, a drag that lets go past the
+   * threshold and a press on the scrim can all arrive for one dismissal, and
+   * `onClose` unwinds a navigator for a sheet that is a route — called twice it
+   * dismisses the screen UNDERNEATH. The ref rather than state because this must
+   * be true on the same tick, not after a render.
+   *
+   * The scrim goes through here too, and it did not: it called `onClose`
+   * directly, which is how a sheet still closed twice with this guard in place.
    */
   const closing = useRef(false)
 
@@ -263,7 +266,7 @@ export function SheetSurface({
        `onRequestClose`. */
     <Pressable
       className="flex-1 justify-end bg-black/40"
-      onPress={onClose}
+      onPress={dismiss}
       accessible={false}
       importantForAccessibility="no"
     >

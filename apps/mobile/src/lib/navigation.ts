@@ -16,13 +16,31 @@ import { useCallback } from 'react'
  * information hierarchy, not a guess.
  */
 
-/** Back if there is a history, otherwise to `fallback`. */
+/**
+ * Pop the stack if something is on it, otherwise go to `fallback`.
+ *
+ * `dismiss`, NOT `back`, and the difference is the whole point. `back()` sends
+ * GO_BACK, which every navigator in the focused chain gets a chance to claim —
+ * so once the stack is empty the TAB navigator answers it, and answering it
+ * means changing tab. Worse, `canGoBack()` asks the same chain, so it says yes
+ * on a tab with nothing pushed and the `fallback` below never runs: a dismissal
+ * that should have landed on the screen this one names walked to a tab instead.
+ *
+ * Which tab is the part nobody would guess. Expo Router sorts the screens of a
+ * navigator by the LENGTH of their route names, and the tab router's default
+ * back behaviour is "go to the first route" — so `me`, at two characters, is
+ * the first tab as far as the router is concerned, and every stray GO_BACK in
+ * the app landed on the profile. `unstable_settings` in `(tabs)/_layout.tsx`
+ * now pins that order, and this pops rather than going back, so a dismissal
+ * that arrives twice cannot reach the tabs at all: POP is a stack's action and
+ * nothing else handles it.
+ */
 export function useBack(fallback: Href): () => void {
   const router = useRouter()
 
   return useCallback(() => {
-    if (router.canGoBack()) {
-      router.back()
+    if (router.canDismiss()) {
+      router.dismiss()
       return
     }
     router.replace(fallback)
