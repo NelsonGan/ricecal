@@ -24,10 +24,17 @@ process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ??= 'REPLACE_ME'
 // taptic engine — so both are replaced with the smallest thing that renders.
 jest.mock('expo-image', () => ({
   // The cache statics have no React Native equivalent to borrow, so they are
-  // stubbed onto it: `data/photos.ts` empties both on sign-out.
+  // stubbed onto it: `data/photos.ts` empties both on sign-out, asks the disk
+  // where a picture already is before it signs for one, and seeds it with what
+  // it has just uploaded.
+  //
+  // `getCachePathAsync` answers "not here" by default, which is the branch that
+  // reaches the network — the tests that care about a hit say so themselves.
   Image: Object.assign(require('react-native').Image, {
     clearMemoryCache: jest.fn(() => Promise.resolve(true)),
     clearDiskCache: jest.fn(() => Promise.resolve(true)),
+    getCachePathAsync: jest.fn(() => Promise.resolve(null)),
+    writeToCacheAsync: jest.fn(() => Promise.resolve()),
   }),
 }))
 

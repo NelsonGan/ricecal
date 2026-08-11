@@ -74,17 +74,21 @@ export const persistOptions = {
   buster: SCHEMA_VERSION,
   dehydrateOptions: {
     /**
-     * Everything except the signed photo URLs.
+     * Everything except where the photos are.
      *
-     * Those are credentials with an expiry measured in the hour, and this
-     * cache survives for a week — so writing them to disk stores a growing
-     * pile of strings that are wrong by the time anything reads them. With
+     * Two kinds of answer live under that key and neither survives a relaunch
+     * intact. A signed URL is a credential with an expiry measured in the
+     * hour, and this cache survives for a week, so writing one to disk stores
+     * a string that is wrong by the time anything reads it — with
      * `offlineFirst` a rehydrated dead URL is even served before the refetch
-     * that would replace it, which renders as a plate that failed to load.
+     * that would replace it, which renders as a plate that failed to load. A
+     * path into expo-image's own cache is the other, and it belongs to an app
+     * container that a reinstall renumbers and an eviction can empty.
      *
-     * It costs nothing to leave them out: a signed URL is one request, and
-     * the tile that wants it asks as it mounts. Cheap to redo, dangerous to
-     * keep — the same test every persisted cache entry should pass.
+     * It costs nothing to leave them out. `resolveStoredImage` asks the disk
+     * before it asks the network, so the tile that wants one usually gets it
+     * back without a request at all. Cheap to redo, dangerous to keep — the
+     * same test every persisted cache entry should pass.
      *
      * Composed with the library's own predicate rather than replacing it.
      * Supplying this option overrides the default outright, and the default is
