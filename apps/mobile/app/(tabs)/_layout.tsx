@@ -6,6 +6,22 @@ import { useReminderSync } from '@/features/settings'
 import { NavBar, NavItem } from '@/ui'
 
 /**
+ * Today is the first tab, and saying so is not decoration.
+ *
+ * Expo Router sorts the screens of a navigator by the LENGTH of their route
+ * names, and the tab router's default back behaviour is "go to the first
+ * route". Unpinned, `me` is two characters and sorts ahead of `today`, so the
+ * router's idea of the first tab was the profile: the Android back button on
+ * any tab, and any stray GO_BACK anywhere in the app, jumped to it. Closing the
+ * log sheet by dragging its handle was the one people met, because a sheet that
+ * dismisses twice sends the second dismissal to the tabs.
+ *
+ * Naming the anchor puts `today` at index 0, which is where the design has it
+ * and where back belongs.
+ */
+export const unstable_settings = { anchor: 'today' }
+
+/**
  * Five tabs, and no action among them.
  *
  * The log button used to sit in the middle of this bar, which is what capped it
