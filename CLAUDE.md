@@ -57,6 +57,13 @@ only the signature is a round trip, and `data/photos.ts` batches the read
 signatures a screenful at a time because a list of plates would otherwise be a
 list of cold starts.
 
+The signature is also the only part of a photograph that is ever fetched twice.
+The bytes are cached on the device under the key rather than under the URL, so
+`resolveStoredImage` asks expo-image where a picture already is before it asks
+the server to name it — a launch into a familiar diary draws off the disk and
+invokes the function not at all. An upload seeds that cache with what it just
+sent, so the phone never downloads back a plate it photographed.
+
 Cached queries persist to MMKV, so a relaunch has yesterday's answers before the
 first request returns. `SCHEMA_VERSION` in `packages/shared` is the persister's
 cache buster: bump it whenever the shape of anything persisted changes, or old
@@ -703,6 +710,12 @@ Break these and the feature is wrong in ways tests may not catch.
   It has a price, and `clearImageCache` is it: cached against a rotating URL
   those pictures aged off the device by accident, and cached against a stable
   key they do not, so signing out now has to say so.
+- **The disk is asked before the network, and the disk copy is unkeyed.**
+  `resolveStoredImage` returns expo-image's own cache path when there is one,
+  which is why a cold launch is not a screen of grey tiles waiting on a
+  signature for pictures that never left. That path IS the cache entry, so
+  `storedImageSource` hands it over with no `cacheKey` — filing it again would
+  ask the cache to store what it just produced.
 - No embeddings.
 
 ---

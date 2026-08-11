@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import {
+  storedImageSource,
   useAvatarUrl,
   useCurrentWeight,
   useHealthConnection,
@@ -24,7 +25,15 @@ export default function MeScreen() {
   const router = useRouter()
 
   const { data: profile } = useProfile()
-  const { data: avatarUrl } = useAvatarUrl(profile?.avatar_path ?? undefined)
+  const { data: avatarUri } = useAvatarUrl(profile?.avatar_path ?? undefined)
+  /**
+   * Through `storedImageSource` rather than handed to `Avatar` in two pieces,
+   * because the uri is not always a signed URL: when the picture is already on
+   * this device it is a path into expo-image's own cache, and that one is the
+   * entry rather than a candidate for it. One rule, in the one place that
+   * knows it.
+   */
+  const avatar = storedImageSource(profile?.avatar_path ?? undefined, avatarUri)
   const { data: settings } = useSettings()
   const { data: targets, isPending: targetsPending } = useTargets()
   const { data: subscription } = useSubscription()
@@ -79,8 +88,8 @@ export default function MeScreen() {
               figure, and "—" would have been read out as the account's name. */}
           <Avatar
             name={profile?.display_name ?? ''}
-            uri={avatarUrl}
-            cacheKey={profile?.avatar_path ?? undefined}
+            uri={avatar?.uri}
+            cacheKey={avatar?.cacheKey}
             accessibilityLabel={profile?.display_name || t('profile:home.noName')}
             size="md"
             tone="pandan"

@@ -251,8 +251,8 @@ function AnalysingRow({
   const { t } = useTranslation(['logging'])
   const colors = useThemeColors()
   // A refining entry's photo is already in the bucket, not on disk.
-  const { data: signedUrl } = useMealPhotoUrl(entry.photoPath)
-  const photo = storedImageSource(entry.photoPath, signedUrl, entry.localPhotoUri)
+  const { data: photoUrl } = useMealPhotoUrl(entry.photoPath)
+  const photo = storedImageSource(entry.photoPath, photoUrl, entry.localPhotoUri)
 
   /**
    * Whether this row is a typed meal, asked of the ENTRY and not of `mode`.
@@ -325,7 +325,7 @@ function AnalysingRow({
             style={{ flex: 1, width: '100%', opacity: 0.55 }}
             contentFit="cover"
             // Same cross-fade as `ItemRow`, for the same reason: a stored photo
-            // is one signing request behind the row it belongs to. This row
+            // is one resolution behind the row it belongs to. This row
             // already draws a camera in the meantime, so what the fade removes
             // is the cut from that to the photograph.
             transition={180}

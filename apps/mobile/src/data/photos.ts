@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-// Only ever for its cache, never to render — hence the name. The `Image` below
-// is React Native's, and it is here to measure a file rather than to draw one.
+// Only ever for its cache, never to render — hence the name. It empties the
+// cache on the way out of an account, asks it where a picture already is, and
+// seeds it with a photo on the way up. The `Image` below is React Native's, and
+// it is here to measure a file rather than to draw one.
 import { Image as ImageCache } from 'expo-image'
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'
 import { Image } from 'react-native'
@@ -204,6 +206,55 @@ function signRead(key: string): Promise<string> {
 }
 
 /**
+ * Where the bytes for a key already sit on this device, as a `file://` uri, or
+ * null when they do not.
+ *
+ * This is the half of local caching that keying on `photo_path` did not buy.
+ * The BYTES survive a relaunch and always did — that is what the stable cache
+ * key is for — but nothing can be drawn until there is a `source` to draw, and
+ * the uri in that source was a signature this app deliberately never persists.
+ * So a cold launch showed a day of grey tiles while it waited on the `photos`
+ * function to sign for photographs that were already on the disk, and a cold
+ * start on that function made the wait a second or more. The pictures were
+ * local; the permission to name them was not.
+ *
+ * Asking expo-image where it put them turns that wait into a local stat. The
+ * path it hands back IS the cache entry rather than a copy of it, so nothing
+ * is duplicated by rendering it.
+ *
+ * Never throws. A device that cannot answer is a device that has to sign,
+ * which is exactly what happens next.
+ */
+async function cachedFile(key: string): Promise<string | null> {
+  try {
+    const path = await ImageCache.getCachePathAsync(key)
+    if (!path) return null
+    // iOS answers with `SDImageCache.cachePath(forKey:)` and Android with
+    // `File.absolutePath`. Both are bare filesystem paths, and a source needs
+    // a scheme on it before anything will read one back.
+    return path.startsWith('file://') ? path : `file://${path}`
+  } catch (error) {
+    console.warn('[photos] could not read the image cache', error)
+    return null
+  }
+}
+
+/**
+ * A uri to render for a stored key: the copy already on the device where there
+ * is one, a freshly signed URL where there is not.
+ *
+ * Disk first, and the signature is SKIPPED rather than raced. A launch into a
+ * diary of familiar plates invokes the `photos` function not at all, which is
+ * both the wait and a dozen edge invocations that no longer happen.
+ *
+ * Exported for the tests: the order of these two is the whole feature, and it
+ * is the kind of thing that gets quietly reversed by a later edit.
+ */
+export function resolveStoredImage(key: string): Promise<string> {
+  return cachedFile(key).then((local) => local ?? signRead(key))
+}
+
+/**
  * Downsizes an image and uploads it, returning the key to store on the row.
  *
  * The resize is not an optimisation, it is what makes the upload possible: a
@@ -268,6 +319,26 @@ async function uploadImage(kind: AssetKind, localUri: string): Promise<string> {
   })
   if (!response.ok) throw new Error(`Upload failed (${response.status})`)
 
+  /**
+   * File the picture under the key it now has, so the phone never downloads
+   * back a photograph it took.
+   *
+   * Without this the bytes make a full round trip for no reason: the row is
+   * written with a key nothing has cached, and the first time the diary draws
+   * it, it signs for the object and fetches it. What is seeded is exact rather
+   * than approximate — `image.uri` is the downsized JPEG that was PUT a line
+   * ago, not the camera's original, so it is byte for byte what the bucket
+   * holds.
+   *
+   * Never fails the upload. The object is in R2 by this point, and a cache
+   * that would not take a copy is a slow first render, not a lost photo.
+   */
+  try {
+    await ImageCache.writeToCacheAsync(image.uri, key)
+  } catch (error) {
+    console.warn('[photos] could not cache the upload', error)
+  }
+
   return key
 }
 
@@ -281,33 +352,6 @@ export function uploadAvatar(localUri: string): Promise<string> {
   return uploadImage('avatar', localUri)
 }
 
-/**
- * A URL for a stored image.
- *
- * Signed and short-lived, because the bucket is private and has no public
- * route at all — a photo of a meal is a photo of where somebody was and when,
- * and an avatar is a face. Cached for slightly less than the signature lasts,
- * so a diary that has been open for an hour re-signs rather than rendering
- * broken tiles.
- *
- * Not persisted to disk: `lib/query.ts` drops everything under the `photo` key
- * on dehydrate, since a week-old cache full of hour-old URLs is a pile of
- * strings that are wrong by the time anything reads them.
- *
- * Which is why the URL is the only thing re-fetched on a cold launch. The
- * PICTURE it names survives, cached by expo-image against the key rather than
- * against the signature — see `storedImageSource`.
- *
- * The one query in the app that overrides the global `gcTime`, and the only
- * one that should: `Infinity` is set in `lib/query.ts` so that the persister
- * gets a chance to write a query to disk before it is collected, and this is
- * the query that is deliberately never written to disk. Kept forever, it also
- * kept every key the user has ever deleted — a photo replaced by hand leaves
- * its old URL behind with nothing pointing at it and no expiry to notice.
- * Collected after the signature's own lifetime instead, since a URL that has
- * outlived its signature has nothing left to offer anybody. A tile still on
- * screen is unaffected: nothing is collected while it is being observed.
- */
 /**
  * Whether this key is one the caller could possibly be handed a URL for.
  *
@@ -327,7 +371,39 @@ function ownKey(path: string | undefined, userId: string): boolean {
   return path.startsWith(`meals/${userId}/`) || path.startsWith(`avatars/${userId}/`)
 }
 
-function useStoredImageUrl(path: string | undefined) {
+/**
+ * A uri for a stored image: a local file, or a signed URL.
+ *
+ * The bucket is private and has no public route at all — a photo of a meal is
+ * a photo of where somebody was and when, and an avatar is a face — so
+ * anything fetched over the network is fetched with a signature that expires
+ * within the hour. Held for slightly less than the signature lasts, so a diary
+ * left open across the hour re-signs rather than drawing broken tiles.
+ *
+ * Not persisted to disk: `lib/query.ts` drops everything under the `photo` key
+ * on dehydrate, since a week-old cache full of hour-old URLs is a pile of
+ * strings that are wrong by the time anything reads them, and the local path
+ * beside them belongs to an app container that a reinstall renumbers.
+ *
+ * So this query is re-run on every cold launch and `resolveStoredImage` is
+ * what makes that cheap: the answer usually comes off the disk, and the
+ * network is touched only for a picture this device has never seen.
+ *
+ * The one query in the app that overrides the global `gcTime`, and the only
+ * one that should: `Infinity` is set in `lib/query.ts` so that the persister
+ * gets a chance to write a query to disk before it is collected, and this is
+ * the query that is deliberately never written to disk. Kept forever, it also
+ * kept every key the user has ever deleted — a photo replaced by hand leaves
+ * its old uri behind with nothing pointing at it and no expiry to notice.
+ * Collected after the signature's own lifetime instead. A tile still on screen
+ * is unaffected: nothing is collected while it is being observed.
+ *
+ * A local answer refreshing on the same clock as a signed one is deliberate
+ * rather than an oversight. It costs a stat, and the refetch is what promotes
+ * an entry that WAS signed for an hour ago to the copy the download has since
+ * left on the disk.
+ */
+function useStoredImageUri(path: string | undefined) {
   const userId = useUserId()
 
   return useQuery({
@@ -335,18 +411,18 @@ function useStoredImageUrl(path: string | undefined) {
     enabled: ownKey(path, userId),
     staleTime: (READ_TTL_SECONDS - 300) * 1000,
     gcTime: READ_TTL_SECONDS * 1000,
-    queryFn: () => signRead(path as string),
+    queryFn: () => resolveStoredImage(path as string),
   })
 }
 
-/** A URL for a logged plate's photograph. */
+/** A uri for a logged plate's photograph. */
 export function useMealPhotoUrl(path: string | undefined) {
-  return useStoredImageUrl(path)
+  return useStoredImageUri(path)
 }
 
-/** A URL for the signed-in user's profile picture. */
+/** A uri for the signed-in user's profile picture. */
 export function useAvatarUrl(path: string | undefined) {
-  return useStoredImageUrl(path)
+  return useStoredImageUri(path)
 }
 
 /**
@@ -385,17 +461,28 @@ export type StoredImageSource = { uri: string; cacheKey?: string }
  *
  * A LOCAL uri wins over a stored one and is deliberately given no cache key: a
  * file on disk is not a download, and its path already names it uniquely.
+ *
+ * That covers two different files now. One is a shot taken on the screen doing
+ * the asking. The other is the cache's own copy, handed back by
+ * `resolveStoredImage` when the picture was already here — and that one must
+ * not be keyed either, for a plainer reason than the first: it IS the entry
+ * under that key, so filing it again would be asking the cache to store what
+ * it just produced. Both platforms ignore a `cacheKey` on a local file anyway
+ * (Android's `SourceMap` returns before it reads the field), and a source
+ * saying something the platform discards is a source that misleads whoever
+ * reads it next.
  */
 export function storedImageSource(
   path: string | undefined,
-  signedUrl: string | undefined,
+  uri: string | undefined,
   localUri?: string,
 ): StoredImageSource | undefined {
   if (localUri) return { uri: localUri }
-  if (!signedUrl) return undefined
+  if (!uri) return undefined
+  if (uri.startsWith('file://')) return { uri }
   // `cacheKey` undefined falls back to the uri, which is the pre-cache
   // behaviour — correct, just not cached across a re-sign.
-  return { uri: signedUrl, cacheKey: path }
+  return { uri, cacheKey: path }
 }
 
 /**
