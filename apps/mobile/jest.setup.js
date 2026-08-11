@@ -120,3 +120,16 @@ jest.mock('react-native-mmkv', () => {
     },
   }
 })
+
+/**
+ * Keyboard-controller reads its native bindings at import time and throws
+ * "doesn't seem to be linked" off a device. `Screen` and `Sheet` both import
+ * it, so without this most of the app is unrenderable under Jest.
+ *
+ * The package ships the substitutes — plain Views and a ScrollView, which is
+ * what these are in a test anyway — but only as an object to be handed to
+ * `jest.mock`. Listed in `setupFiles` on its own it registers nothing.
+ */
+jest.mock('react-native-keyboard-controller', () =>
+  require('react-native-keyboard-controller/jest'),
+)

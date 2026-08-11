@@ -11,6 +11,7 @@ import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { type ReactNode, useEffect } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import {
@@ -55,8 +56,18 @@ export default Sentry.wrap(function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        {/* Above the navigator so every screen and every Modal inherits the
+      {/* The one thing in the app that watches the keyboard. It has to sit
+          above every screen because it is a native measurement rather than a
+          component: `Screen` and `Sheet` read the position it publishes, and
+          on Android it is what takes the window edge-to-edge so a keyboard
+          moves what we say it moves instead of resizing the window under us.
+
+          Outside `SafeAreaProvider` deliberately. Nothing here reads an inset,
+          and the edge-to-edge switch it performs on Android is what the inset
+          provider then has to report — so it has to have happened first. */}
+      <KeyboardProvider>
+        <SafeAreaProvider>
+          {/* Above the navigator so every screen and every Modal inherits the
             palette — the variable scope follows the React tree, not the native
             view hierarchy. */}
         <ThemeProvider>
@@ -95,7 +106,8 @@ export default Sentry.wrap(function RootLayout() {
             </SessionProvider>
           </PersistQueryClientProvider>
         </ThemeProvider>
-      </SafeAreaProvider>
+        </SafeAreaProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   )
 })

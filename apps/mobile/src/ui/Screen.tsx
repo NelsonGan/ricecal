@@ -1,24 +1,21 @@
 import { cssInterop } from 'nativewind'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
-import {
-  Animated,
-  Dimensions,
-  Easing,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  type ScrollViewProps,
-  View,
-} from 'react-native'
+import { type ReactNode, useCallback, useState } from 'react'
+import { type LayoutChangeEvent, Platform, type ScrollViewProps, View } from 'react-native'
 import { ScrollView as RawGestureScrollView } from 'react-native-gesture-handler'
+import {
+  KeyboardAvoidingView,
+  KeyboardAwareScrollView,
+  type KeyboardAwareScrollViewProps,
+  KeyboardStickyView,
+} from 'react-native-keyboard-controller'
+import Reanimated from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
 import { cn } from './cn'
 
 /**
- * Gesture-handler's ScrollView, taught `className`.
+ * The scroll view, taught `className`.
  *
  * NativeWind converts className to style for the components it ships support
  * for, which are React Native's own. A third-party component takes `className`
@@ -26,95 +23,28 @@ import { cn } from './cn'
  * none of the styling it was asked for. Without this registration the scroll
  * view below loses its `flex-1`.
  */
-const GestureScrollView = cssInterop(RawGestureScrollView, {
+const AwareScrollView = cssInterop(KeyboardAwareScrollView, {
   className: 'style',
   contentContainerClassName: 'contentContainerStyle',
 })
 
-/**
- * Whether the soft keyboard is on screen. ANDROID's half of the footer's
- * bottom padding — see the footer for what it is for, and `useKeyboardLift`
- * for what iOS does instead.
- */
-function useKeyboardOpen(enabled: boolean) {
-  // Asked rather than assumed, for a screen that mounts under a keyboard
-  // somebody else raised: no `did-show` is coming for one already up.
-  const [open, setOpen] = useState(() => enabled && Keyboard.isVisible())
-
-  useEffect(() => {
-    if (!enabled) return
-    const shown = Keyboard.addListener('keyboardDidShow', () => setOpen(true))
-    const hidden = Keyboard.addListener('keyboardDidHide', () => setOpen(false))
-    return () => {
-      shown.remove()
-      hidden.remove()
-    }
-  }, [enabled])
-
-  return open
-}
+/** Same treatment, for the shell that pads a NON-scrolling screen. */
+const KeyboardShell = cssInterop(KeyboardAvoidingView, { className: 'style' })
 
 /**
- * How far the footer has to rise to sit on the keyboard, on iOS.
+ * Gesture-handler's ScrollView, animated so it can stand in as the scroller
+ * above. `KeyboardAwareScrollView` drives its inner view's insets through
+ * `animatedProps`, which only a Reanimated component accepts — a plain one
+ * would take the whole keyboard mechanism as inert props and drop it.
  *
- * This is the only part of the shell that still avoids the keyboard by hand,
- * and it is a transform rather than padding for a reason worth keeping. The
- * whole shell used to be a `KeyboardAvoidingView` with `behavior="padding"`,
- * which shrinks the scroll view — and a scroll view that changes size fights
- * `automaticallyAdjustKeyboardInsets`, which is doing the same job from the
- * native side and doing it better. UIKit insets the scroll view and scrolls
- * the focused field up on the keyboard notification, measuring against a frame
- * the padding is about to change; the padding lands a beat later, the next
- * notification recomputes an inset of nothing, and the content it had scrolled
- * up gets clamped back down. Tapping a field scrolled up and then down again.
- *
- * Only the footer ever needed the padding. A transform moves it without
- * touching the frame anything else is measured against, so the native side is
- * left to do the whole job: it insets by the real overlap, in the keyboard's
- * own animation, and it only scrolls at all when the focused field is actually
- * under the keyboard.
- *
- * It rises by the keyboard's height LESS the home indicator's inset. That
- * padding is there to clear the indicator, and with a keyboard over it the
- * inset is a band of canvas between the buttons and the keys instead.
+ * The cast is nominal rather than structural: the slot is typed as an animated
+ * copy of React Native's OWN ScrollView, which this is not and cannot be, while
+ * the only thing the library actually needs from it is that `animatedProps`
+ * reaches a scroll view. Gesture-handler's takes the same props.
  */
-function useKeyboardLift(enabled: boolean, inset: number) {
-  const lift = useRef(new Animated.Value(0)).current
-
-  useEffect(() => {
-    if (!enabled) return
-    /* `willChangeFrame` rather than will-show and will-hide: one listener for
-       the keyboard arriving, leaving, and changing height under a predictive
-       bar or a hardware keyboard, and it carries the frame it is heading for
-       along with the duration to get there. */
-    const sub = Keyboard.addListener('keyboardWillChangeFrame', ({ endCoordinates, duration }) => {
-      // Read fresh rather than closed over, so a rotation cannot leave this
-      // measuring against the height the screen used to be.
-      const windowHeight = Dimensions.get('window').height
-      /* Clamped by the keyboard's own height as well as by zero. With the
-         "prefer cross-fade transitions" accessibility setting on, iOS reports
-         a `screenY` of 0 for a keyboard that is really at the bottom, and the
-         subtraction alone would lift the footer the height of the screen. */
-      const height = Math.min(
-        Math.max(windowHeight - endCoordinates.screenY, 0),
-        endCoordinates.height,
-      )
-
-      Animated.timing(lift, {
-        toValue: -Math.max(height - inset, 0),
-        // The keyboard's own duration, so the two move together.
-        duration: duration > 10 ? duration : 10,
-        // Its curve is private to UIKit and cannot be named from here; this is
-        // the bezier it is commonly approximated with.
-        easing: Easing.bezier(0.17, 0.59, 0.4, 0.77),
-        useNativeDriver: true,
-      }).start()
-    })
-    return () => sub.remove()
-  }, [enabled, inset, lift])
-
-  return lift
-}
+const GestureScrollView = Reanimated.createAnimatedComponent(
+  RawGestureScrollView,
+) as unknown as KeyboardAwareScrollViewProps['ScrollViewComponent']
 
 export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   children: ReactNode
@@ -155,20 +85,6 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    * the safe thing and nothing else needs it.
    */
   gestureScroll?: boolean
-  /**
-   * Extra points between the keyboard and the content, for the cases where
-   * this view's frame does not start where it appears to.
-   *
-   * 0 is right under a navigator, which lays the screen out below the header
-   * already. Pass `useHeaderHeight()` only if a header overlaps this view —
-   * `insets.top` is never the right answer, and floats the footer a status bar
-   * clear of the keyboard.
-   *
-   * Only reaches the shell's own keyboard avoidance, which is to say only a
-   * screen with `scroll` off. A scrolling one is inset natively against the
-   * real keyboard frame and has nothing to correct.
-   */
-  keyboardOffset?: number
   className?: string
   contentClassName?: string
 }
@@ -178,20 +94,29 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
  * handling.
  *
  * Keyboard behaviour is the reason this exists rather than each screen wiring
- * its own ScrollView, and ONE THING OWNS IT PER PLATFORM:
+ * its own ScrollView, and ONE LIBRARY OWNS IT ON BOTH PLATFORMS.
+ * `react-native-keyboard-controller` reports the keyboard's position every
+ * frame on the UI thread, which is the thing none of React Native's own
+ * primitives can do:
  *
- * - iOS: `automaticallyAdjustKeyboardInsets`. UIKit insets the scroll view by
- *   the real keyboard frame and scrolls the focused field up only when the
- *   keyboard actually covers it, in the keyboard's own animation, and handles
- *   the hardware and floating iPad keyboards for free. Nothing else here may
- *   resize that scroll view while it is doing so — see `useKeyboardLift` for
- *   what a second mechanism cost.
- * - Android: `adjustResize`, which Expo sets by default. The window itself
- *   shrinks, so the footer is above the keyboard without anything being asked.
- *
- * The footer is the exception on both, and it moves without changing the
- * layout: a transform on iOS, and on Android only its bottom padding, which
- * the window resize has already made dead space.
+ * - `KeyboardAwareScrollView` insets the scroll view and reveals the focused
+ *   field, and it takes a `bottomOffset` — the one number the platform cannot
+ *   be told. UIKit's `automaticallyAdjustKeyboardInsets` always reveals a field
+ *   to the KEYBOARD'S top, and knows nothing about a footer sitting on the
+ *   keyboard: tapping the fat figure on a logged entry scrolled it neatly to
+ *   the top of the keys and left it behind the Save button, so the number being
+ *   typed was the one thing on screen the user could not see.
+ * - `KeyboardStickyView` moves the footer, on the UI thread, in the keyboard's
+ *   own animation. What it replaces was a `keyboardWillChangeFrame` listener
+ *   driving an `Animated.timing` over a bezier approximating UIKit's private
+ *   curve — close, but visibly not the same motion, and no help at all during
+ *   an interactive dismissal, where no JS event fires while the finger drags
+ *   the keyboard down and the footer simply hung in the air until it let go.
+ * - Android used to be a different mechanism entirely: `adjustResize` shrank
+ *   the window, and the footer's dead bottom padding was corrected by hand off
+ *   `keyboardDidShow`. `KeyboardProvider` takes the window edge-to-edge and
+ *   reports the keyboard instead, so both platforms now run the code above and
+ *   there is one behaviour to reason about rather than two.
  *
  * `KeyboardAvoidingView` is still the root, but it only does anything for a
  * screen that does NOT scroll — there is no scroll view to inset there, so
@@ -208,25 +133,35 @@ export function Screen({
   flush = false,
   scroll = true,
   gestureScroll = false,
-  keyboardOffset = 0,
   className,
   contentClassName,
   ...rest
 }: ScreenProps) {
   const insets = useSafeAreaInsets()
-  /* One of these does something and the other does not, per platform: iOS
-     moves the footer itself, Android's window has already moved it and only
-     the padding under it is left to correct.
 
-     Not on a screen with nothing to scroll, where the shell below is padding
-     the whole thing — including the footer — out of the keyboard's way. Lifted
-     as well it would rise twice. */
-  const lift = useKeyboardLift(Platform.OS === 'ios' && scroll, insets.bottom)
-  const keyboardOpen = useKeyboardOpen(Platform.OS === 'android')
-  const Scroller = gestureScroll ? GestureScrollView : ScrollView
+  /**
+   * Measured rather than guessed, because it is the number that decides where a
+   * focused field comes to rest and the footer is a slot: one button on the
+   * paywall, two side by side on a logged entry, a button over a caption in
+   * onboarding.
+   */
+  const [footerHeight, setFooterHeight] = useState(0)
+  const measureFooter = useCallback((event: LayoutChangeEvent) => {
+    setFooterHeight(event.nativeEvent.layout.height)
+  }, [])
+
+  /**
+   * How much room to keep between the focused field and the keyboard.
+   *
+   * The footer rises to sit on the keyboard, so the part of it standing ABOVE
+   * the keys is what a field has to clear — its height less the home
+   * indicator's inset, which the lift already takes off (see the footer). Plus
+   * a gap, so the field is not flush against the buttons.
+   */
+  const bottomOffset = Math.max(footerHeight - insets.bottom, 0) + spacing.md
 
   const body = scroll ? (
-    <Scroller
+    <AwareScrollView
       className={cn('flex-1', contentClassName)}
       contentContainerStyle={{
         padding: flush ? 0 : spacing.gutter,
@@ -237,14 +172,16 @@ export function Screen({
         paddingBottom: (flush ? 0 : spacing.gutter) + (footer ? 0 : insets.bottom),
         gap: spacing.stack,
       }}
+      bottomOffset={bottomOffset}
+      // Only Today, and only because its rows are swipeable. See `gestureScroll`.
+      ScrollViewComponent={gestureScroll ? GestureScrollView : undefined}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-      automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
       showsVerticalScrollIndicator={false}
       {...rest}
     >
       {children}
-    </Scroller>
+    </AwareScrollView>
   ) : (
     <View
       className={cn('flex-1', !flush && 'p-gutter', contentClassName)}
@@ -255,13 +192,13 @@ export function Screen({
   )
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardShell
       className={cn('flex-1 bg-canvas', className)}
       /* Only where there is no scroll view to do it better. On a scrolling
-         screen this padding is what fought `automaticallyAdjustKeyboardInsets`
-         and made a tapped field scroll up and then back down. */
-      behavior={!scroll && Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={keyboardOffset}
+         screen this padding would shrink the frame the scroller is measuring
+         the keyboard against, and two things insetting for one keyboard is how
+         a tapped field ends up scrolled up and then straight back down. */
+      behavior={!scroll ? 'padding' : undefined}
     >
       {body}
 
@@ -277,45 +214,50 @@ export function Screen({
           thumb-width too high.
 
           Styled rather than classed: the position is what makes this an overlay
-          at all, and NativeWind's support for an `Animated.View` is not worth
-          depending on for that. */}
+          at all, and NativeWind's support for a third-party animated view is
+          not worth depending on for that. */}
       {floating ? (
-        <Animated.View
+        <KeyboardStickyView
+          // Nothing moves the shell on a scrolling screen, so the sticky view is
+          // the only thing that can. On a non-scrolling one the padding above
+          // has already carried this up and a lift would count the keyboard
+          // twice.
+          enabled={scroll}
+          offset={{ closed: 0, opened: insets.bottom }}
           style={{
             position: 'absolute',
             right: spacing.gutter,
             bottom: spacing.gutter,
             alignItems: 'flex-end',
-            transform: [{ translateY: lift }],
           }}
           pointerEvents="box-none"
         >
           {floating}
-        </Animated.View>
+        </KeyboardStickyView>
       ) : null}
 
       {footer ? (
-        /* The footer rises over the keyboard on a transform rather than by
-           being pushed, so the scroll view above it keeps the frame UIKit is
-           measuring the keyboard against. See `useKeyboardLift`. */
-        <Animated.View style={{ transform: [{ translateY: lift }] }}>
+        /* The footer rises by the keyboard's height LESS the home indicator's
+           inset, which is what `offset.opened` adds back. That padding is there
+           to clear the indicator, and with a keyboard over it the inset would
+           otherwise be a band of canvas between the buttons and the keys.
+
+           A transform, so the scroll view above keeps the frame the keyboard is
+           measured against and the footer's own height stays out of the layout
+           pass entirely. */
+        <KeyboardStickyView enabled={scroll} offset={{ closed: 0, opened: insets.bottom }}>
           {/* No rule above the footer. The design separates it with space and
               the canvas colour alone, and a hairline under a full-width CTA
               reads as a seam rather than a divider. */}
           <View
+            onLayout={measureFooter}
             className="gap-md bg-canvas px-gutter pt-md"
-            /* The home indicator's inset, unless the keyboard is over it — that
-               padding is there to clear the indicator, and a keyboard leaves it
-               as a band of canvas between the buttons and the keys. iOS takes
-               the same amount off the lift instead, which changes no layout;
-               this is the Android half, where the window resize has already
-               moved the footer and only the padding is left. */
-            style={{ paddingBottom: (keyboardOpen ? 0 : insets.bottom) + spacing.md }}
+            style={{ paddingBottom: insets.bottom + spacing.md }}
           >
             {footer}
           </View>
-        </Animated.View>
+        </KeyboardStickyView>
       ) : null}
-    </KeyboardAvoidingView>
+    </KeyboardShell>
   )
 }

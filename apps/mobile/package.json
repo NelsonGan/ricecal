@@ -58,6 +58,7 @@
     "react-native-css-interop": "0.2.6",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-health-connect": "^4.1.2",
+    "react-native-keyboard-controller": "1.22.3",
     "react-native-mmkv": "^4.3.2",
     "react-native-nitro-modules": "^0.36.3",
     "react-native-purchases": "^10.4.4",
