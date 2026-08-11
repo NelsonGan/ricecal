@@ -6,9 +6,9 @@ import {
   KeyboardAvoidingView,
   KeyboardAwareScrollView,
   type KeyboardAwareScrollViewProps,
-  KeyboardStickyView,
+  useReanimatedKeyboardAnimation,
 } from 'react-native-keyboard-controller'
-import Reanimated from 'react-native-reanimated'
+import Reanimated, { useAnimatedStyle } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
@@ -160,6 +160,30 @@ export function Screen({
    */
   const bottomOffset = Math.max(footerHeight - insets.bottom, 0) + spacing.md
 
+  /**
+   * How far the footer and the floating action ride up, tracked on the UI
+   * thread. `height` runs from 0 to MINUS the keyboard's height, so this reads
+   * as "up by the keyboard, less the home indicator's inset" — that padding is
+   * there to clear the indicator, and with a keyboard over it the inset would
+   * otherwise be a band of canvas between the buttons and the keys.
+   *
+   * The clamp is the whole reason this is not `KeyboardStickyView`, which is
+   * the same expression without one. NEVER DOWNWARDS: a keyboard shorter than
+   * the bottom inset makes the subtraction positive and pushes the footer off
+   * the bottom of the screen. That is not hypothetical — a floating IME on
+   * Android reports a height of almost nothing while still counting as open,
+   * and the Android emulator sat in exactly that state with the sign-in button
+   * hanging over the gesture bar.
+   *
+   * Not on a screen with nothing to scroll, where the shell below is padding
+   * the whole thing — the footer included — out of the keyboard's way. Lifted
+   * as well it would rise twice.
+   */
+  const keyboard = useReanimatedKeyboardAnimation()
+  const lift = useAnimatedStyle(() => ({
+    transform: [{ translateY: scroll ? Math.min(keyboard.height.value + insets.bottom, 0) : 0 }],
+  }))
+
   const body = scroll ? (
     <AwareScrollView
       className={cn('flex-1', contentClassName)}
@@ -217,35 +241,27 @@ export function Screen({
           at all, and NativeWind's support for a third-party animated view is
           not worth depending on for that. */}
       {floating ? (
-        <KeyboardStickyView
-          // Nothing moves the shell on a scrolling screen, so the sticky view is
-          // the only thing that can. On a non-scrolling one the padding above
-          // has already carried this up and a lift would count the keyboard
-          // twice.
-          enabled={scroll}
-          offset={{ closed: 0, opened: insets.bottom }}
-          style={{
-            position: 'absolute',
-            right: spacing.gutter,
-            bottom: spacing.gutter,
-            alignItems: 'flex-end',
-          }}
+        <Reanimated.View
+          style={[
+            {
+              position: 'absolute',
+              right: spacing.gutter,
+              bottom: spacing.gutter,
+              alignItems: 'flex-end',
+            },
+            lift,
+          ]}
           pointerEvents="box-none"
         >
           {floating}
-        </KeyboardStickyView>
+        </Reanimated.View>
       ) : null}
 
       {footer ? (
-        /* The footer rises by the keyboard's height LESS the home indicator's
-           inset, which is what `offset.opened` adds back. That padding is there
-           to clear the indicator, and with a keyboard over it the inset would
-           otherwise be a band of canvas between the buttons and the keys.
-
-           A transform, so the scroll view above keeps the frame the keyboard is
+        /* A transform, so the scroll view above keeps the frame the keyboard is
            measured against and the footer's own height stays out of the layout
-           pass entirely. */
-        <KeyboardStickyView enabled={scroll} offset={{ closed: 0, opened: insets.bottom }}>
+           pass entirely. See `lift` for how far it goes. */
+        <Reanimated.View style={lift}>
           {/* No rule above the footer. The design separates it with space and
               the canvas colour alone, and a hairline under a full-width CTA
               reads as a seam rather than a divider. */}
@@ -256,7 +272,7 @@ export function Screen({
           >
             {footer}
           </View>
-        </KeyboardStickyView>
+        </Reanimated.View>
       ) : null}
     </KeyboardShell>
   )

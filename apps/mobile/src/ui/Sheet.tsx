@@ -253,7 +253,7 @@ export function SheetSurface({
       // How a full-height sheet gets out of the keyboard's way: the LIST insets
       // and reveals the focused field, rather than the panel shrinking. See the
       // note on the wrapper below. A capped sheet is padded up by that wrapper
-      // instead, and inseting the list as well would count the keyboard twice.
+      // instead, and insetting the list as well would count the keyboard twice.
       enabled={fullHeight}
       bottomOffset={spacing.md}
     >

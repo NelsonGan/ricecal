@@ -70,42 +70,42 @@ export default Sentry.wrap(function RootLayout() {
           {/* Above the navigator so every screen and every Modal inherits the
             palette — the variable scope follows the React tree, not the native
             view hierarchy. */}
-        <ThemeProvider>
-          <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
-            {/* Inside the query provider, because signing in and out clears the
+          <ThemeProvider>
+            <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+              {/* Inside the query provider, because signing in and out clears the
                 cache — one account's diary must never appear under another's
                 name, even for a frame. */}
-            <SessionProvider>
-              {/* Which day the diary is showing, and snaps whose dish is not
+              <SessionProvider>
+                {/* Which day the diary is showing, and snaps whose dish is not
                   known yet. Both are the client's own state: nothing to fetch,
                   nothing to invalidate. */}
-              <SelectedDateProvider>
-                {/* Above the navigator because the index route reads it to
+                <SelectedDateProvider>
+                  {/* Above the navigator because the index route reads it to
                     decide where a launch belongs, and the questions are answered
                     before there is an account to write them to. Backed by MMKV,
                     so it survives the app being killed mid-flow. */}
-                <OnboardingDraftScope>
-                  <PendingSnapProvider>
-                    {/* Entries with a fix-by-typing correction in flight —
+                  <OnboardingDraftScope>
+                    <PendingSnapProvider>
+                      {/* Entries with a fix-by-typing correction in flight —
                         same shape as pending snaps: the work outlives the
                         screen that started it. */}
-                    <RefiningProvider>
-                      {/* Outside the navigator so a toast survives navigation — a
+                      <RefiningProvider>
+                        {/* Outside the navigator so a toast survives navigation — a
                           "saved" confirmation usually fires as the screen that
                           triggered it pops. */}
-                      <ToastProvider offset={NAV_BAR_HEIGHT}>
-                        {/* Under the toast because its one job on failure is to
+                        <ToastProvider offset={NAV_BAR_HEIGHT}>
+                          {/* Under the toast because its one job on failure is to
                             say the link had expired. Renders nothing. */}
-                        <LoginLinkHandler />
-                        <RootStack />
-                      </ToastProvider>
-                    </RefiningProvider>
-                  </PendingSnapProvider>
-                </OnboardingDraftScope>
-              </SelectedDateProvider>
-            </SessionProvider>
-          </PersistQueryClientProvider>
-        </ThemeProvider>
+                          <LoginLinkHandler />
+                          <RootStack />
+                        </ToastProvider>
+                      </RefiningProvider>
+                    </PendingSnapProvider>
+                  </OnboardingDraftScope>
+                </SelectedDateProvider>
+              </SessionProvider>
+            </PersistQueryClientProvider>
+          </ThemeProvider>
         </SafeAreaProvider>
       </KeyboardProvider>
     </GestureHandlerRootView>
