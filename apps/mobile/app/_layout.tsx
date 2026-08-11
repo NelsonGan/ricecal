@@ -9,7 +9,8 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { useFonts } from 'expo-font'
 import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
-import { type ReactNode, useEffect } from 'react'
+import { type ReactNode, useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -28,7 +29,7 @@ import { persistOptions, queryClient } from '@/lib/query'
 import { initServices } from '@/lib/startup'
 import { fontMap } from '@/theme/fonts'
 import { ThemeProvider } from '@/theme/ThemeProvider'
-import { NAV_BAR_HEIGHT, ToastProvider } from '@/ui'
+import { NAV_BAR_HEIGHT, NumpadProvider, ToastProvider } from '@/ui'
 
 // Bind react-query to NetInfo at module scope so the very first query already
 // has a correct view of connectivity, rather than one render late.
@@ -67,45 +68,51 @@ export default Sentry.wrap(function RootLayout() {
           provider then has to report — so it has to have happened first. */}
       <KeyboardProvider>
         <SafeAreaProvider>
-          {/* Above the navigator so every screen and every Modal inherits the
+          {/* Holds whichever numeric field is being typed into, and the height
+              its pad is taking. Inside the inset provider because that height
+              ends at the home indicator; above everything else because both
+              `Screen` and `Sheet` read it. */}
+          <NumpadScope>
+            {/* Above the navigator so every screen and every Modal inherits the
             palette — the variable scope follows the React tree, not the native
             view hierarchy. */}
-          <ThemeProvider>
-            <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
-              {/* Inside the query provider, because signing in and out clears the
+            <ThemeProvider>
+              <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+                {/* Inside the query provider, because signing in and out clears the
                 cache — one account's diary must never appear under another's
                 name, even for a frame. */}
-              <SessionProvider>
-                {/* Which day the diary is showing, and snaps whose dish is not
+                <SessionProvider>
+                  {/* Which day the diary is showing, and snaps whose dish is not
                   known yet. Both are the client's own state: nothing to fetch,
                   nothing to invalidate. */}
-                <SelectedDateProvider>
-                  {/* Above the navigator because the index route reads it to
+                  <SelectedDateProvider>
+                    {/* Above the navigator because the index route reads it to
                     decide where a launch belongs, and the questions are answered
                     before there is an account to write them to. Backed by MMKV,
                     so it survives the app being killed mid-flow. */}
-                  <OnboardingDraftScope>
-                    <PendingSnapProvider>
-                      {/* Entries with a fix-by-typing correction in flight —
+                    <OnboardingDraftScope>
+                      <PendingSnapProvider>
+                        {/* Entries with a fix-by-typing correction in flight —
                         same shape as pending snaps: the work outlives the
                         screen that started it. */}
-                      <RefiningProvider>
-                        {/* Outside the navigator so a toast survives navigation — a
+                        <RefiningProvider>
+                          {/* Outside the navigator so a toast survives navigation — a
                           "saved" confirmation usually fires as the screen that
                           triggered it pops. */}
-                        <ToastProvider offset={NAV_BAR_HEIGHT}>
-                          {/* Under the toast because its one job on failure is to
+                          <ToastProvider offset={NAV_BAR_HEIGHT}>
+                            {/* Under the toast because its one job on failure is to
                             say the link had expired. Renders nothing. */}
-                          <LoginLinkHandler />
-                          <RootStack />
-                        </ToastProvider>
-                      </RefiningProvider>
-                    </PendingSnapProvider>
-                  </OnboardingDraftScope>
-                </SelectedDateProvider>
-              </SessionProvider>
-            </PersistQueryClientProvider>
-          </ThemeProvider>
+                            <LoginLinkHandler />
+                            <RootStack />
+                          </ToastProvider>
+                        </RefiningProvider>
+                      </PendingSnapProvider>
+                    </OnboardingDraftScope>
+                  </SelectedDateProvider>
+                </SessionProvider>
+              </PersistQueryClientProvider>
+            </ThemeProvider>
+          </NumpadScope>
         </SafeAreaProvider>
       </KeyboardProvider>
     </GestureHandlerRootView>
@@ -121,6 +128,27 @@ export default Sentry.wrap(function RootLayout() {
  * which no test environment can do. One `string | null` crossing the boundary is
  * all either side needs.
  */
+/**
+ * The number pad, with its copy.
+ *
+ * A component of its own only because the design system takes no words: every
+ * label in `src/ui` is a prop, and this is the one provider whose caller is the
+ * root layout rather than a screen with a `t` already in scope.
+ */
+function NumpadScope({ children }: { children: ReactNode }) {
+  const { t } = useTranslation('common')
+  const labels = useMemo(
+    () => ({
+      done: t('action.done'),
+      backspace: t('a11y.backspace'),
+      decimal: t('a11y.decimalPoint'),
+    }),
+    [t],
+  )
+
+  return <NumpadProvider labels={labels}>{children}</NumpadProvider>
+}
+
 function OnboardingDraftScope({ children }: { children: ReactNode }) {
   const { userId } = useSession()
 

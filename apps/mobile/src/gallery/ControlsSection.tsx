@@ -49,6 +49,7 @@ export function ControlsSection() {
   const [seafood, setSeafood] = useState(false)
   const [plates, setPlates] = useState(1.5)
   const [dailyGoal, setDailyGoal] = useState(2100)
+  const [kcal, setKcal] = useState('240')
 
   const portionRef = useRef<TextInput>(null)
 
@@ -70,12 +71,23 @@ export function ControlsSection() {
             onChangeText={setPortion}
             hint="Everyday serving units first."
           />
+          {/* Both shapes of the app's own number pad, which is what a numeric
+              keyboardType opens now. This one takes a decimal point; the one
+              under it blanks that key rather than moving 0 off centre. */}
           <TextField
             label="Servings"
             value={invalid}
             onChangeText={setInvalid}
             keyboardType="decimal-pad"
             error={Number(invalid) > 0 ? undefined : 'Portion needs to be more than 0.'}
+          />
+          <TextField
+            label="Calories"
+            value={kcal}
+            onChangeText={setKcal}
+            keyboardType="number-pad"
+            selectTextOnFocus
+            hint="Whole numbers, and the first key replaces what is there."
           />
           <TextField label="Disabled" value="Locked" editable={false} />
         </View>

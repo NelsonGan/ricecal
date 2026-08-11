@@ -797,16 +797,29 @@ Break these and the feature is wrong in ways tests may not catch.
   field clean off the top of the panel. A full-height sheet lays its content out
   at the top and lets the keyboard cover the empty part below; with nothing to
   scroll there is no scroll to get wrong.
-- **The keyboard's reported height is not where the keys start.** A number pad
-  has no return key, so iOS 26 floats a "Done" pill above it — and that pill is
-  inside the frame `useReanimatedKeyboardAnimation` reports, while the keys are
-  not. Anything moved by that height clears the pill and leaves a band of the
-  screen underneath on show, which on the food detail screen was a system button
-  sitting on the totals card. `Screen`'s footer answers it by skirting: canvas
-  continuing below the footer for a screen's worth, so the band is chrome rather
-  than a hole. Do not cap the lift instead — the pill needs the room, and
-  covering it puts Save under a system control. A screen with no footer has
-  nothing to skirt, and content scrolling under the pill is the ordinary case.
+- **A number is typed on the app's own pad, and that is not a flourish.** The
+  system number pad has no return key, so iOS 26 floats a "Done" pill above it —
+  inside the keyboard frame the app is told about, while the keys are not.
+  Everything positioned against that frame therefore clears a control it cannot
+  see, and the strip left behind shows the diary through it: on the food detail
+  screen, a system button sitting on the totals card. The height of that pill is
+  Apple's to change, so there is no number to correct by. `src/ui/Numpad.tsx` is
+  the answer — `showSoftInputOnFocus={false}` leaves the caret and takes the
+  keyboard away on both platforms, and what slides up instead is a view whose
+  height is a constant this app owns. Nothing about the geometry is reported by
+  anybody any more. Two consequences: a numeric field needs a `NumpadHost` above
+  it, which `Screen` and `Sheet` both provide, and a `Sheet` provides its own
+  because a native modal window cannot be drawn over from below. `keyboardType`
+  stays on every field regardless, as the fallback if a platform ever declines
+  to suppress the keyboard.
+- **The keyboard's reported height is still not where the keys start.**
+  `Screen`'s footer skirts for it: canvas continuing below the footer for a
+  screen's worth, so a frame taller than what it covers reads as chrome rather
+  than a hole. The numeric case is fixed at the source now, but the class is
+  not — a floating IME on Android, an autofill panel, whatever a platform
+  attaches next. Do not cap the lift instead: a frame taller than its keys is
+  usually taller for a reason, and covering the difference puts Save under
+  somebody else's control.
 - **`autoFocus` inside a `Modal` is dropped.** The field mounts with the window,
   before the platform has presented it, and the keyboard never comes up. `Sheet`
   takes an `onShow` for this — fire `ref.focus()` there. `SheetSurface` is a

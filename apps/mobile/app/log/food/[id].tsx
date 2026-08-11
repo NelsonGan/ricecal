@@ -43,6 +43,7 @@ import {
   Stepper,
   Tappable,
   Text,
+  useNumpadField,
   useToast,
 } from '@/ui'
 
@@ -211,6 +212,24 @@ export default function FoodDetail() {
    * and it asked the user to read the same numbers twice to change one.
    */
   const [editing, setEditing] = useState<'kcal' | 'carbs' | 'protein' | 'fat' | null>(null)
+
+  /**
+   * The calorie total, typed on the app's own pad.
+   *
+   * Whole numbers only: this figure is a calorie count, and 220.5 kcal is a
+   * precision nobody has about a plate of food. The three macros beside it are
+   * `MacroBar`'s and ask for the pad themselves.
+   */
+  const kcalPad = useNumpadField({
+    enabled: editing === 'kcal',
+    value: typed.kcal,
+    onChangeText: (value) => setTyped((current) => ({ ...current, kcal: value })),
+    decimal: false,
+    replaceFirst: true,
+    label: t('logging:detail.editKcal'),
+    onBlur: () => setEditing(null),
+  })
+
   /** The title, while it is being retyped. */
   const [renaming, setRenaming] = useState(false)
   const [name, setName] = useState('')
@@ -927,7 +946,6 @@ export default function FoodDetail() {
             <TextInput
               value={typed.kcal}
               onChangeText={(value) => setTyped((current) => ({ ...current, kcal: value }))}
-              onBlur={() => setEditing(null)}
               onSubmitEditing={() => setEditing(null)}
               placeholder={String(macros.kcal)}
               placeholderTextColor={colors.faint}
@@ -951,6 +969,7 @@ export default function FoodDetail() {
               style={{ paddingVertical: 0, paddingHorizontal: 0 }}
               cursorColor={colors.pandan}
               selectionColor={colors.pandan}
+              {...kcalPad}
             />
           ) : (
             <Tappable

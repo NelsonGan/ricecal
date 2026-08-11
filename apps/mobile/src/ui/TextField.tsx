@@ -3,7 +3,18 @@ import { TextInput, type TextInputProps, View } from 'react-native'
 
 import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
+import { useNumpadField } from './Numpad'
 import { Text } from './Text'
+
+/**
+ * The keyboard types that mean "a number", and so get the app's own pad
+ * instead of the system one. Everything else is left alone: an email field
+ * still wants the platform's keyboard, autocorrect and all.
+ */
+const NUMERIC = new Set<TextInputProps['keyboardType']>(['number-pad', 'decimal-pad', 'numeric'])
+
+/** For an uncontrolled numeric field, which the pad has nothing to write to. */
+const noop = () => {}
 
 export type TextFieldProps = Omit<TextInputProps, 'style' | 'className'> & {
   label?: string
@@ -44,6 +55,10 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
     onFocus,
     onBlur,
     editable = true,
+    value,
+    onChangeText,
+    keyboardType,
+    selectTextOnFocus,
     ...rest
   },
   ref,
@@ -51,20 +66,37 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   const colors = useThemeColors()
   const [focused, setFocused] = useState(false)
 
-  const handleFocus = useCallback<NonNullable<TextInputProps['onFocus']>>(
-    (event) => {
-      setFocused(true)
-      onFocus?.(event)
-    },
-    [onFocus],
-  )
+  /**
+   * A numeric field is driven by the app's own pad, and the label it already
+   * has is what the pad puts in its header — the field is often under the pad
+   * by the time it opens, and "1 2 3" over nothing says which number is being
+   * typed to nobody.
+   *
+   * `selectTextOnFocus` carries across as `replaceFirst`. With no keyboard
+   * there is no typing to replace a selection, so the pad reproduces what the
+   * prop was actually for: the first key stands in for the whole value.
+   */
+  const numpad = useNumpadField({
+    enabled: editable && NUMERIC.has(keyboardType),
+    value: value ?? '',
+    onChangeText: onChangeText ?? noop,
+    decimal: keyboardType !== 'number-pad',
+    label,
+    replaceFirst: Boolean(selectTextOnFocus),
+    onFocus: () => setFocused(true),
+    onBlur: () => setFocused(false),
+  })
 
-  const handleBlur = useCallback<NonNullable<TextInputProps['onBlur']>>(
-    (event) => {
-      setFocused(false)
-      onBlur?.(event)
+  // The pad owns a ref of its own so it can blur and measure the field. A
+  // caller's ref still has to reach the same node — the gallery focuses one
+  // field from another's return key — so both are set from one callback.
+  const setRef = useCallback(
+    (node: TextInput | null) => {
+      numpad.ref.current = node
+      if (typeof ref === 'function') ref(node)
+      else if (ref) ref.current = node
     },
-    [onBlur],
+    [ref, numpad.ref],
   )
 
   // Error outranks focus: a field you are typing into that is invalid should
@@ -85,10 +117,11 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
       >
         {leftSlot}
         <TextInput
-          ref={ref}
           editable={editable}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
+          value={value}
+          onChangeText={onChangeText}
+          keyboardType={keyboardType}
+          selectTextOnFocus={selectTextOnFocus}
           className={cn('flex-1 font-body-bold text-[17px] text-ink', inputClassName)}
           placeholderTextColor={colors.faint}
           // The caret defaults to the platform blue, which is the one colour in
@@ -97,6 +130,19 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
           selectionColor={colors.pandan}
           accessibilityLabel={label}
           {...rest}
+          // Last, and the ordering is load-bearing: the pad composes the focus
+          // handlers this field wants with the ones a caller passed in, and its
+          // pair has to be the one that reaches the input.
+          {...numpad}
+          ref={setRef}
+          onFocus={(event) => {
+            numpad.onFocus()
+            onFocus?.(event)
+          }}
+          onBlur={(event) => {
+            numpad.onBlur()
+            onBlur?.(event)
+          }}
         />
         {rightSlot}
       </View>
