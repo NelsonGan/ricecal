@@ -994,23 +994,27 @@ export default function FoodDetail() {
           </Tappable>
         ) : null}
 
-        <Divider />
-
-        {/* Only when there is something under it. This used to be shown for
-            every dish so that "nobody recorded it" was still an answer — but
-            most of the catalogue has none of these columns, so most rows grew
-            a control that opened three dashes. */}
+        {/* Only when there is something under it, RULE AND ALL. This used to be
+            shown for every dish so that "nobody recorded it" was still an
+            answer — but most of the catalogue has none of these columns, so
+            most rows grew a control that opened three dashes. The divider was
+            left outside that condition and went on being drawn for them, which
+            is a line across the bottom of the card separating the macros from
+            nothing. */}
         {extras.some((row) => row.value !== undefined) ? (
-          <Tappable
-            className="flex-row items-center justify-between"
-            onPress={() => setShowNutrients((open) => !open)}
-            accessibilityRole="button"
-            accessibilityState={{ expanded: showNutrients }}
-            accessibilityLabel={t('logging:detail.moreNutrients')}
-          >
-            <Text variant="label">{t('logging:detail.moreNutrients')}</Text>
-            <Icon set="ui" name={showNutrients ? 'chevron-up' : 'chevron-down'} size={20} />
-          </Tappable>
+          <>
+            <Divider />
+            <Tappable
+              className="flex-row items-center justify-between"
+              onPress={() => setShowNutrients((open) => !open)}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: showNutrients }}
+              accessibilityLabel={t('logging:detail.moreNutrients')}
+            >
+              <Text variant="label">{t('logging:detail.moreNutrients')}</Text>
+              <Icon set="ui" name={showNutrients ? 'chevron-up' : 'chevron-down'} size={20} />
+            </Tappable>
+          </>
         ) : null}
 
         {showNutrients ? (
