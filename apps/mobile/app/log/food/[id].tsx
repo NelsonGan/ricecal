@@ -76,6 +76,101 @@ const FIGURES = ['kcal', 'carbs', 'protein', 'fat'] as const
  * was no way to change your mind about any of them except by changing them
  * back.
  */
+/**
+ * The calorie total: a heading that becomes a caret in the same place.
+ *
+ * A component rather than the branch it used to be inline, and the reason is
+ * `useNumpadField`. The hook reads which `NumpadHost` is nearest above it, and
+ * `Screen` is what provides one — so called up in the route, which RENDERS the
+ * screen rather than sitting inside it, it found no host and quietly left the
+ * field on the system keyboard. That is the failure the pad exists to remove,
+ * wearing the pad's own fallback as a disguise. Anything asking for the pad has
+ * to be rendered under the screen, not around it.
+ */
+function KcalFigure({
+  editing,
+  typed,
+  onChangeText,
+  onDone,
+  total,
+  label,
+  onPress,
+}: {
+  editing: boolean
+  /** What has been typed so far. Empty means the total below is still showing. */
+  typed: string
+  onChangeText: (value: string) => void
+  onDone: () => void
+  /** What the app worked out, shown as the placeholder while the field is empty. */
+  total: number
+  label: string
+  /** Absent before the entry exists, which is what makes the figure a heading. */
+  onPress?: () => void
+}) {
+  const colors = useThemeColors()
+
+  /**
+   * Whole numbers only: this figure is a calorie count, and 220.5 kcal is a
+   * precision nobody has about a plate of food. The three macros beside it are
+   * `MacroBar`'s and ask for the pad themselves.
+   */
+  const numpad = useNumpadField({
+    enabled: editing,
+    value: typed,
+    onChangeText,
+    decimal: false,
+    replaceFirst: true,
+    label,
+    onBlur: onDone,
+  })
+
+  if (!editing) {
+    return (
+      <Tappable
+        onPress={onPress}
+        accessibilityRole={onPress ? 'button' : undefined}
+        accessibilityLabel={onPress ? label : undefined}
+      >
+        <Text variant="displayMd">{total.toLocaleString()}</Text>
+      </Tappable>
+    )
+  }
+
+  return (
+    // The number's own face and place, with a caret in it. A bordered field
+    // here made a tap on the total look like a form had opened over the card.
+    <TextInput
+      value={typed}
+      onChangeText={onChangeText}
+      onSubmitEditing={onDone}
+      placeholder={String(total)}
+      placeholderTextColor={colors.faint}
+      // Does nothing while the pad is up, and is the fallback if a platform
+      // ever declines to suppress the keyboard.
+      keyboardType="number-pad"
+      returnKeyType="done"
+      autoFocus
+      selectTextOnFocus
+      accessibilityLabel={label}
+      /* No `leading-*` here, unlike the `Text` this replaces. `displayMd` sets
+         a 39pt line on a 32pt Baloo ExtraBold, which `Text` renders happily
+         because it never clips — a glyph taller than its line box simply
+         overflows it. A `TextInput` is a native field that crops to its line
+         box instead, so the same 39 sliced the tops off the digits and left the
+         caret hanging below them. Letting the font choose its own line box is
+         the fix; the row's pinned height is what keeps the two states the same
+         size. */
+      className="min-w-[120px] font-display text-[32px] text-heading"
+      /* And the padding UIKit gives a text field by default, which is space the
+         `Text` does not take. */
+      style={{ paddingVertical: 0, paddingHorizontal: 0 }}
+      cursorColor={colors.pandan}
+      selectionColor={colors.pandan}
+      {...numpad}
+    />
+  )
+}
+
 export default function FoodDetail() {
   const { t } = useTranslation(['logging', 'common'])
   const goBack = useBack('/today')
@@ -212,23 +307,6 @@ export default function FoodDetail() {
    * and it asked the user to read the same numbers twice to change one.
    */
   const [editing, setEditing] = useState<'kcal' | 'carbs' | 'protein' | 'fat' | null>(null)
-
-  /**
-   * The calorie total, typed on the app's own pad.
-   *
-   * Whole numbers only: this figure is a calorie count, and 220.5 kcal is a
-   * precision nobody has about a plate of food. The three macros beside it are
-   * `MacroBar`'s and ask for the pad themselves.
-   */
-  const kcalPad = useNumpadField({
-    enabled: editing === 'kcal',
-    value: typed.kcal,
-    onChangeText: (value) => setTyped((current) => ({ ...current, kcal: value })),
-    decimal: false,
-    replaceFirst: true,
-    label: t('logging:detail.editKcal'),
-    onBlur: () => setEditing(null),
-  })
 
   /** The title, while it is being retyped. */
   const [renaming, setRenaming] = useState(false)
@@ -939,47 +1017,15 @@ export default function FoodDetail() {
           {/* Tap the number to type your own. An entry the app got close but
               not right is corrected here, on the figure being read, rather
               than in a form underneath that repeats all four of them. */}
-          {editing === 'kcal' ? (
-            // The number's own face and place, with a caret in it. A bordered
-            // field here made a tap on the total look like a form had opened
-            // over the card.
-            <TextInput
-              value={typed.kcal}
-              onChangeText={(value) => setTyped((current) => ({ ...current, kcal: value }))}
-              onSubmitEditing={() => setEditing(null)}
-              placeholder={String(macros.kcal)}
-              placeholderTextColor={colors.faint}
-              keyboardType="number-pad"
-              returnKeyType="done"
-              autoFocus
-              selectTextOnFocus
-              accessibilityLabel={t('logging:detail.editKcal')}
-              /* No `leading-*` here, unlike the `Text` this replaces.
-                 `displayMd` sets a 39pt line on a 32pt Baloo ExtraBold, which
-                 `Text` renders happily because it never clips — a glyph taller
-                 than its line box simply overflows it. A `TextInput` is a
-                 native field that crops to its line box instead, so the same
-                 39 sliced the tops off the digits and left the caret hanging
-                 below them. Letting the font choose its own line box is the
-                 fix; the row's pinned height is what keeps the two states the
-                 same size. */
-              className="min-w-[120px] font-display text-[32px] text-heading"
-              /* And the padding UIKit gives a text field by default, which is
-                 space the `Text` does not take. */
-              style={{ paddingVertical: 0, paddingHorizontal: 0 }}
-              cursorColor={colors.pandan}
-              selectionColor={colors.pandan}
-              {...kcalPad}
-            />
-          ) : (
-            <Tappable
-              onPress={existing ? () => setEditing('kcal') : undefined}
-              accessibilityRole={existing ? 'button' : undefined}
-              accessibilityLabel={existing ? t('logging:detail.editKcal') : undefined}
-            >
-              <Text variant="displayMd">{macros.kcal.toLocaleString()}</Text>
-            </Tappable>
-          )}
+          <KcalFigure
+            editing={editing === 'kcal'}
+            typed={typed.kcal}
+            onChangeText={(value) => setTyped((current) => ({ ...current, kcal: value }))}
+            onDone={() => setEditing(null)}
+            total={macros.kcal}
+            label={t('logging:detail.editKcal')}
+            onPress={existing ? () => setEditing('kcal') : undefined}
+          />
           <Text variant="overline">{t('logging:detail.total')}</Text>
         </View>
 
