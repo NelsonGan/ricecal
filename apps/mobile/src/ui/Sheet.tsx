@@ -359,8 +359,20 @@ export function SheetSurface({
              Stacked, they left 54pt of blank surface under the last thing in the
              sheet — invisible under a full-width button, and an obvious band of
              nothing under anything else, like the picture picker's grid. The
-             indicator's own inset already clears the indicator. */
-            style={[panel, { paddingBottom: Math.max(insets.bottom, spacing.gutter) }]}
+             indicator's own inset already clears the indicator.
+
+             Plus the number pad, on a CAPPED sheet only. `KeyboardAvoidingView`
+             pads such a panel up off the bottom edge when a keyboard opens, and
+             the pad is not a keyboard — without this the panel would sit under
+             our own keys. At full height the list above insets instead, and
+             adding it here as well would count the pad twice. */
+            style={[
+              panel,
+              {
+                paddingBottom:
+                  Math.max(insets.bottom, spacing.gutter) + (fullHeight ? 0 : numpad.height),
+              },
+            ]}
             onPress={(event) => event.stopPropagation()}
             accessibilityViewIsModal
             accessible={false}

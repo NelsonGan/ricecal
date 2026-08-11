@@ -13,9 +13,6 @@ import { Text } from './Text'
  */
 const NUMERIC = new Set<TextInputProps['keyboardType']>(['number-pad', 'decimal-pad', 'numeric'])
 
-/** For an uncontrolled numeric field, which the pad has nothing to write to. */
-const noop = () => {}
-
 export type TextFieldProps = Omit<TextInputProps, 'style' | 'className'> & {
   label?: string
   /** Shown under the field, in hibiscus, and flips the border. */
@@ -77,9 +74,13 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
    * prop was actually for: the first key stands in for the whole value.
    */
   const numpad = useNumpadField({
-    enabled: editable && NUMERIC.has(keyboardType),
+    // `onChangeText` is part of it because the pad has nowhere to write without
+    // one. An uncontrolled numeric field is not a shape this app uses, and if
+    // one appears it should fall back to the platform's keyboard rather than
+    // open a pad whose keys do nothing.
+    enabled: editable && NUMERIC.has(keyboardType) && Boolean(onChangeText),
     value: value ?? '',
-    onChangeText: onChangeText ?? noop,
+    onChangeText: onChangeText ?? (() => {}),
     decimal: keyboardType !== 'number-pad',
     label,
     replaceFirst: Boolean(selectTextOnFocus),

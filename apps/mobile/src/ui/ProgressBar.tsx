@@ -134,7 +134,7 @@ export function MacroBar({
   // another, and with the pad up the row being typed into is the only thing
   // distinguishing them that is still on screen.
   const numpad = useNumpadField({
-    enabled: editing,
+    enabled: editing && Boolean(onChangeAmount),
     value: editingValue,
     onChangeText: onChangeAmount ?? (() => {}),
     label: amountLabel ?? label,

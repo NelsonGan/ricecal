@@ -205,9 +205,15 @@ export function Screen({
   const lift = useAnimatedStyle(() => ({
     transform: [
       {
-        translateY: scroll
-          ? Math.min(keyboard.height.value - numpad.offset.value + insets.bottom, 0)
-          : 0,
+        // The keyboard's share is the scrolling screen's only — see above, the
+        // shell pads for it otherwise. The PAD's share is always this view's,
+        // on both, because the shell pads for a keyboard and the pad is not
+        // one: without it, a footer on a screen that does not scroll would sit
+        // under our own keys.
+        translateY: Math.min(
+          (scroll ? keyboard.height.value : 0) - numpad.offset.value + insets.bottom,
+          0,
+        ),
       },
     ],
   }))
