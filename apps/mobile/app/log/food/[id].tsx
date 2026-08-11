@@ -720,6 +720,13 @@ export default function FoodDetail() {
            GOCHUJANG SAUCE"). Everything else on this screen is the catalogue
            row's; the title is what the user just tapped. */
         title={name.trim() || existing?.foodName || food.name}
+        /* Two lines, and this is the one screen that asks for them. A dish
+           name here is whatever the model or the user wrote — "Korean fried
+           chicken with rice and sides" — and on one line that truncates to
+           three words and an ellipsis, which is a meal nobody can recognise
+           on the screen for checking it. The bar only grows when the name
+           actually wraps, so a short one sits exactly where it did. */
+        titleLines={2}
         // Tapping the title renames THIS entry — the model's guess at a dish
         // is right about the food and wrong about the words often enough that
         // correcting it should not require re-describing the meal. It stages
