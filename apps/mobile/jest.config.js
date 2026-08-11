@@ -26,6 +26,7 @@ const PACKAGES_NEEDING_TRANSFORM = [
   'victory-native',
   'react-native-nitro-modules',
   'react-native-mmkv',
+  'react-native-keyboard-controller',
   '@ricecal',
 ].join('|')
 

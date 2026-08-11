@@ -127,13 +127,14 @@ export const logging = {
   },
 
   /**
-   * Typing the meal instead of photographing it. The examples in the
-   * placeholder are doing real work: they tell the user that a whole meal with
-   * its sides belongs in ONE box, which is not obvious from an empty field.
+   * Typing the meal instead of photographing it. The example in the placeholder
+   * is doing real work, and it is the only instruction there is: it tells the
+   * user that a whole meal with its sides belongs in ONE box, which is not
+   * obvious from an empty field. A hint line under the field used to say the
+   * same thing in the abstract, which is the shape of copy people skip.
    */
   describe: {
     placeholder: 'Nasi lemak with fried chicken and a teh tarik',
-    hint: 'Say what you ate, sides and drinks included. Amounts help: "2 roti canai", "half a plate".',
     send: 'Log this meal',
   },
 

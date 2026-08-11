@@ -11,6 +11,7 @@ import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { type ReactNode, useEffect } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import {
@@ -55,47 +56,58 @@ export default Sentry.wrap(function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        {/* Above the navigator so every screen and every Modal inherits the
+      {/* The one thing in the app that watches the keyboard. It has to sit
+          above every screen because it is a native measurement rather than a
+          component: `Screen` and `Sheet` read the position it publishes, and
+          on Android it is what takes the window edge-to-edge so a keyboard
+          moves what we say it moves instead of resizing the window under us.
+
+          Outside `SafeAreaProvider` deliberately. Nothing here reads an inset,
+          and the edge-to-edge switch it performs on Android is what the inset
+          provider then has to report — so it has to have happened first. */}
+      <KeyboardProvider>
+        <SafeAreaProvider>
+          {/* Above the navigator so every screen and every Modal inherits the
             palette — the variable scope follows the React tree, not the native
             view hierarchy. */}
-        <ThemeProvider>
-          <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
-            {/* Inside the query provider, because signing in and out clears the
+          <ThemeProvider>
+            <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+              {/* Inside the query provider, because signing in and out clears the
                 cache — one account's diary must never appear under another's
                 name, even for a frame. */}
-            <SessionProvider>
-              {/* Which day the diary is showing, and snaps whose dish is not
+              <SessionProvider>
+                {/* Which day the diary is showing, and snaps whose dish is not
                   known yet. Both are the client's own state: nothing to fetch,
                   nothing to invalidate. */}
-              <SelectedDateProvider>
-                {/* Above the navigator because the index route reads it to
+                <SelectedDateProvider>
+                  {/* Above the navigator because the index route reads it to
                     decide where a launch belongs, and the questions are answered
                     before there is an account to write them to. Backed by MMKV,
                     so it survives the app being killed mid-flow. */}
-                <OnboardingDraftScope>
-                  <PendingSnapProvider>
-                    {/* Entries with a fix-by-typing correction in flight —
+                  <OnboardingDraftScope>
+                    <PendingSnapProvider>
+                      {/* Entries with a fix-by-typing correction in flight —
                         same shape as pending snaps: the work outlives the
                         screen that started it. */}
-                    <RefiningProvider>
-                      {/* Outside the navigator so a toast survives navigation — a
+                      <RefiningProvider>
+                        {/* Outside the navigator so a toast survives navigation — a
                           "saved" confirmation usually fires as the screen that
                           triggered it pops. */}
-                      <ToastProvider offset={NAV_BAR_HEIGHT}>
-                        {/* Under the toast because its one job on failure is to
+                        <ToastProvider offset={NAV_BAR_HEIGHT}>
+                          {/* Under the toast because its one job on failure is to
                             say the link had expired. Renders nothing. */}
-                        <LoginLinkHandler />
-                        <RootStack />
-                      </ToastProvider>
-                    </RefiningProvider>
-                  </PendingSnapProvider>
-                </OnboardingDraftScope>
-              </SelectedDateProvider>
-            </SessionProvider>
-          </PersistQueryClientProvider>
-        </ThemeProvider>
-      </SafeAreaProvider>
+                          <LoginLinkHandler />
+                          <RootStack />
+                        </ToastProvider>
+                      </RefiningProvider>
+                    </PendingSnapProvider>
+                  </OnboardingDraftScope>
+                </SelectedDateProvider>
+              </SessionProvider>
+            </PersistQueryClientProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   )
 })

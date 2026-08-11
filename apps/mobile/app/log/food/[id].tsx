@@ -43,7 +43,6 @@ import {
   Stepper,
   Tappable,
   Text,
-  TextField,
   useToast,
 } from '@/ui'
 
@@ -719,12 +718,35 @@ export default function FoodDetail() {
            GOCHUJANG SAUCE"). Everything else on this screen is the catalogue
            row's; the title is what the user just tapped. */
         title={name.trim() || existing?.foodName || food.name}
+        /* Two lines, and this is the one screen that asks for them. A dish
+           name here is whatever the model or the user wrote — "Korean fried
+           chicken with rice and sides" — and on one line that truncates to
+           three words and an ellipsis, which is a meal nobody can recognise
+           on the screen for checking it. The bar only grows when the name
+           actually wraps, so a short one sits exactly where it did. */
+        titleLines={2}
         // Tapping the title renames THIS entry — the model's guess at a dish
         // is right about the food and wrong about the words often enough that
         // correcting it should not require re-describing the meal. It stages
         // `display_label`, so the catalogue row underneath is untouched and
         // every other log of the same dish keeps its own name.
         onPressTitle={existing ? () => setRenaming(true) : undefined}
+        /* And it is retyped where it sits, the way a figure on the totals card
+           is: the heading becomes a caret in the same place, at the same size,
+           and goes back to being a heading when the keyboard closes. Nothing
+           is written either way — the name stages like every other edit on
+           this screen and Save commits it. */
+        titleEdit={
+          renaming
+            ? {
+                value: name,
+                onChangeText: setName,
+                onDone: commitName,
+                label: t('logging:detail.nameField'),
+                maxLength: 120,
+              }
+            : undefined
+        }
         onBack={leave}
         backLabel={t('common:a11y.back')}
         /* Delete lives up here rather than in a card at the foot of the screen.
@@ -755,24 +777,6 @@ export default function FoodDetail() {
           ) : undefined
         }
       />
-
-      {renaming ? (
-        <Card>
-          {/* Closed on the way out, whichever way out that is — but nothing is
-              written here either way: the name is staged like everything else,
-              and Save is what commits it. */}
-          <TextField
-            label={t('logging:detail.nameField')}
-            value={name}
-            onChangeText={setName}
-            maxLength={120}
-            autoFocus
-            returnKeyType="done"
-            onBlur={commitName}
-            onSubmitEditing={commitName}
-          />
-        </Card>
-      ) : null}
 
       {/* Always live, including before the entry exists. Most of the catalogue
           has no drawing, so a dish being added from the list arrives blank — and
