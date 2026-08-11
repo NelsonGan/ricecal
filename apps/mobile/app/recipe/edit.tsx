@@ -1,4 +1,3 @@
-import { Image } from 'expo-image'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -25,6 +24,7 @@ import {
   ReadingRecipe,
   StepsField,
 } from '@/features/recipes'
+import { MealPhoto } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
 import {
@@ -840,14 +840,7 @@ function RecipePicture({
         // which did not change would read as the camera having done nothing.
         <ActivityIndicator />
       ) : photo ? (
-        <Image
-          source={photo}
-          style={{ flex: 1, width: '100%' }}
-          contentFit="cover"
-          // See `ItemRow`: the bucket is private, so a stored photo is always
-          // one resolution behind the screen it belongs to.
-          transition={180}
-        />
+        <MealPhoto source={photo} />
       ) : resolvingPhoto ? (
         /* This recipe HAS a photograph and it is still being signed for.
            Without this the box drew the drawing first and then replaced it
