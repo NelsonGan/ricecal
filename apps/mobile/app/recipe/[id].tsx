@@ -1,4 +1,3 @@
-import { Image } from 'expo-image'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -15,6 +14,7 @@ import {
   useSelectedDate,
 } from '@/data'
 import { RecipeSteps, ShareSheet } from '@/features/recipes'
+import { MealPhoto } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { energyShare } from '@/lib/nutrition'
 import { useThemeColors } from '@/theme/useTheme'
@@ -213,14 +213,7 @@ export default function RecipeDetailScreen() {
         )}
       >
         {photo ? (
-          <Image
-            source={photo}
-            style={{ flex: 1, width: '100%' }}
-            contentFit="cover"
-            // See `ItemRow`: the bucket is private, so a stored photo is
-            // always one resolution behind the screen it belongs to.
-            transition={180}
-          />
+          <MealPhoto source={photo} />
         ) : resolvingPhoto ? (
           <Skeleton width="100%" height={260} rounded={false} className="bg-line" />
         ) : recipe.icon ? (
