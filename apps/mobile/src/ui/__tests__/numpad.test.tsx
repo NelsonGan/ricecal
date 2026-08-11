@@ -3,6 +3,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { fireEvent, render, screen, userEvent, waitFor } from '../../test-utils'
 import { NumpadHost, NumpadProvider } from '../Numpad'
+import { Text } from '../Text'
 import { TextField } from '../TextField'
 
 /**
@@ -30,7 +31,7 @@ function Harness({
 }: {
   label?: string
   initial?: string
-  keyboardType?: 'decimal-pad' | 'number-pad' | 'default'
+  keyboardType?: 'decimal-pad' | 'number-pad' | 'numeric' | 'default'
   selectTextOnFocus?: boolean
 }) {
   const [value, setValue] = useState(initial)
@@ -161,6 +162,38 @@ describe('Numpad', () => {
     expect(screen.getByLabelText('Amount').props.showSoftInputOnFocus).toBe(false)
   })
 
+  // All three of React Native's numeric types, because the set they are checked
+  // against is the only thing deciding which fields lose the system keyboard.
+  // Side by side in one render rather than one after another: `rerender` and
+  // `unmount` both leave RNTL's `screen` pointing at nothing, and every test
+  // after the one that called them fails on an empty tree.
+  it('takes every keyboard type that means a number', async () => {
+    function Every() {
+      const [value, setValue] = useState('')
+      return (
+        <SafeAreaProvider initialMetrics={METRICS}>
+          <NumpadProvider labels={LABELS}>
+            <NumpadHost>
+              {(['decimal-pad', 'number-pad', 'numeric'] as const).map((keyboardType) => (
+                <TextField
+                  key={keyboardType}
+                  label={keyboardType}
+                  value={value}
+                  onChangeText={setValue}
+                  keyboardType={keyboardType}
+                />
+              ))}
+            </NumpadHost>
+          </NumpadProvider>
+        </SafeAreaProvider>
+      )
+    }
+    await render(<Every />)
+    for (const keyboardType of ['decimal-pad', 'number-pad', 'numeric']) {
+      expect(screen.getByLabelText(keyboardType).props.showSoftInputOnFocus).toBe(false)
+    }
+  })
+
   it('leaves a field that is not a number alone', async () => {
     await render(<Harness keyboardType="default" />)
     expect(screen.getByLabelText('Amount').props.showSoftInputOnFocus).toBe(true)
@@ -175,6 +208,39 @@ describe('Numpad', () => {
     // The button asks the field to blur, and the blur is what closes the pad —
     // the same route tapping away from a keyboard takes.
     fireEvent(screen.getByLabelText('Amount'), 'blur')
+    await waitFor(() => expect(screen.queryByRole('button', { name: '7' })).toBeNull())
+  })
+
+  /**
+   * The calorie total on a logged entry swaps its input back for a heading the
+   * moment the edit ends, and an unmount fires no blur. Left open, the pad
+   * would go on driving a field that is no longer on screen.
+   */
+  it('closes when the field it is driving unmounts', async () => {
+    function Vanishing() {
+      const [value, setValue] = useState('')
+      const [editing, setEditing] = useState(true)
+      return (
+        <SafeAreaProvider initialMetrics={METRICS}>
+          <NumpadProvider labels={LABELS}>
+            <NumpadHost>
+              {editing ? (
+                <TextField
+                  label="Amount"
+                  value={value}
+                  onChangeText={setValue}
+                  keyboardType="decimal-pad"
+                />
+              ) : null}
+              <Text onPress={() => setEditing(false)}>Stop</Text>
+            </NumpadHost>
+          </NumpadProvider>
+        </SafeAreaProvider>
+      )
+    }
+    await render(<Vanishing />)
+    await openPad()
+    await user.press(screen.getByText('Stop'))
     await waitFor(() => expect(screen.queryByRole('button', { name: '7' })).toBeNull())
   })
 
