@@ -23,7 +23,7 @@ import {
   useUpdateEntry,
   useUpdateIngredient,
 } from '@/data'
-import { FixSheet, IconPicker } from '@/features/logging'
+import { FixSheet, IconPicker, RenameSheet } from '@/features/logging'
 import { MacroBars } from '@/features/shared'
 import { useBack, useDismissTo } from '@/lib/navigation'
 import { entryTotals } from '@/lib/nutrition'
@@ -44,7 +44,6 @@ import {
   Stepper,
   Tappable,
   Text,
-  TextField,
   useToast,
 } from '@/ui'
 
@@ -764,24 +763,6 @@ export default function FoodDetail() {
         }
       />
 
-      {renaming ? (
-        <Card>
-          {/* Closed on the way out, whichever way out that is — but nothing is
-              written here either way: the name is staged like everything else,
-              and Save is what commits it. */}
-          <TextField
-            label={t('logging:detail.nameField')}
-            value={name}
-            onChangeText={setName}
-            maxLength={120}
-            autoFocus
-            returnKeyType="done"
-            onBlur={commitName}
-            onSubmitEditing={commitName}
-          />
-        </Card>
-      ) : null}
-
       {/* Always live, including before the entry exists. Most of the catalogue
           has no drawing, so a dish being added from the list arrives blank — and
           picking one then is the natural moment, not after saving and coming back.
@@ -1178,6 +1159,22 @@ export default function FoodDetail() {
           submitting={sending}
         />
       ) : null}
+
+      {/* The title, retyped over the whole screen with the keyboard up. It was
+          a card under the app bar, which put the field at the top and the
+          keyboard at the bottom with half the screen's controls stranded in
+          between. Nothing is written here either way: the name stages like
+          every other edit and Save commits it, so closing by any route keeps
+          what was typed. */}
+      <RenameSheet
+        visible={renaming}
+        onClose={commitName}
+        value={name}
+        onChangeText={setName}
+        placeholder={existing?.foodName ?? food.name}
+        label={t('logging:detail.nameField')}
+        closeLabel={t('common:action.done')}
+      />
 
       <ConfirmSheet
         visible={confirmDelete}
