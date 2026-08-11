@@ -27,14 +27,13 @@ export type StepsFieldProps = {
  *
  * THE EDITOR IS A SHEET, and that is not decoration. A multiline field at the
  * bottom of a long form was the case the screen shell handled worst: the box
- * stayed under the keyboard however many times it was tapped, because the
- * shell's own padding was shrinking the scroll view out from under the inset
- * `automaticallyAdjustKeyboardInsets` had just measured, and the reveal it had
- * just done was undone with it. `Screen` leaves that to the native side alone
- * now and the reveal works, but the sheet stays: it is the shape CLAUDE.md
- * prescribes for a sheet with typing in it, the same one the describe panel and
- * the fix sheet use, and it is the only one that puts the field at the TOP of
- * the screen with the keyboard covering nothing but empty panel below it.
+ * stayed under the keyboard however many times it was tapped, because two
+ * mechanisms were insetting for one keyboard and each undid the other's work.
+ * `Screen` has one owner now and the reveal is reliable, but the sheet stays:
+ * it is the shape CLAUDE.md prescribes for a sheet with typing in it, the same
+ * one the describe panel and the fix sheet use, and it is the only one that
+ * puts the field at the TOP of the screen with the keyboard covering nothing
+ * but empty panel below it.
  *
  * It also buys the room the field always wanted. Six steps in a 120pt box is a
  * two-line window onto a method.
