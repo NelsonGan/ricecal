@@ -23,7 +23,7 @@ import {
   useUpdateEntry,
   useUpdateIngredient,
 } from '@/data'
-import { FixSheet, IconPicker, RenameSheet } from '@/features/logging'
+import { FixSheet, IconPicker } from '@/features/logging'
 import { MacroBars } from '@/features/shared'
 import { useBack, useDismissTo } from '@/lib/navigation'
 import { entryTotals } from '@/lib/nutrition'
@@ -732,6 +732,22 @@ export default function FoodDetail() {
         // `display_label`, so the catalogue row underneath is untouched and
         // every other log of the same dish keeps its own name.
         onPressTitle={existing ? () => setRenaming(true) : undefined}
+        /* And it is retyped where it sits, the way a figure on the totals card
+           is: the heading becomes a caret in the same place, at the same size,
+           and goes back to being a heading when the keyboard closes. Nothing
+           is written either way — the name stages like every other edit on
+           this screen and Save commits it. */
+        titleEdit={
+          renaming
+            ? {
+                value: name,
+                onChangeText: setName,
+                onDone: commitName,
+                label: t('logging:detail.nameField'),
+                maxLength: 120,
+              }
+            : undefined
+        }
         onBack={leave}
         backLabel={t('common:a11y.back')}
         /* Delete lives up here rather than in a card at the foot of the screen.
@@ -1159,22 +1175,6 @@ export default function FoodDetail() {
           submitting={sending}
         />
       ) : null}
-
-      {/* The title, retyped over the whole screen with the keyboard up. It was
-          a card under the app bar, which put the field at the top and the
-          keyboard at the bottom with half the screen's controls stranded in
-          between. Nothing is written here either way: the name stages like
-          every other edit and Save commits it, so closing by any route keeps
-          what was typed. */}
-      <RenameSheet
-        visible={renaming}
-        onClose={commitName}
-        value={name}
-        onChangeText={setName}
-        placeholder={existing?.foodName ?? food.name}
-        label={t('logging:detail.nameField')}
-        closeLabel={t('common:action.done')}
-      />
 
       <ConfirmSheet
         visible={confirmDelete}
