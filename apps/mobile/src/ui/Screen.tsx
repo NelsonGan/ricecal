@@ -163,6 +163,10 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    * already. Pass `useHeaderHeight()` only if a header overlaps this view —
    * `insets.top` is never the right answer, and floats the footer a status bar
    * clear of the keyboard.
+   *
+   * Only reaches the shell's own keyboard avoidance, which is to say only a
+   * screen with `scroll` off. A scrolling one is inset natively against the
+   * real keyboard frame and has nothing to correct.
    */
   keyboardOffset?: number
   className?: string
