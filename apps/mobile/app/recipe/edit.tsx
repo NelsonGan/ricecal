@@ -806,8 +806,8 @@ function RecipePicture({
   onPress: () => void
 }) {
   const { t } = useTranslation('recipes')
-  const { data: signedUrl, isLoading: signing } = useMealPhotoUrl(photoPath ?? undefined)
-  const photo = storedImageSource(photoPath ?? undefined, signedUrl, localPhoto ?? undefined)
+  const { data: photoUrl, isLoading: resolvingPhoto } = useMealPhotoUrl(photoPath ?? undefined)
+  const photo = storedImageSource(photoPath ?? undefined, photoUrl, localPhoto ?? undefined)
   /**
    * The box is tall when a PHOTOGRAPH is in it, and the test has to agree with
    * what the body below actually draws — the photo wins there, so it wins here.
@@ -818,11 +818,11 @@ function RecipePicture({
    * can carry both, and that row drew its photograph inside the short box —
    * which is the letterboxing this height exists to stop.
    *
-   * `signing` counts as having one: it means the recipe HAS a photograph and
+   * `resolvingPhoto` counts as having one: it means the recipe HAS a photograph and
    * we are waiting on a URL for it. Left out, the box opens short and grows by
    * 130pt under the reader a moment later.
    */
-  const tall = Boolean(photo || signing || attaching)
+  const tall = Boolean(photo || resolvingPhoto || attaching)
 
   return (
     <Tappable
@@ -845,10 +845,10 @@ function RecipePicture({
           style={{ flex: 1, width: '100%' }}
           contentFit="cover"
           // See `ItemRow`: the bucket is private, so a stored photo is always
-          // one signing request behind the screen it belongs to.
+          // one resolution behind the screen it belongs to.
           transition={180}
         />
-      ) : signing ? (
+      ) : resolvingPhoto ? (
         /* This recipe HAS a photograph and it is still being signed for.
            Without this the box drew the drawing first and then replaced it
            with the photograph — the largest thing on the screen changing into

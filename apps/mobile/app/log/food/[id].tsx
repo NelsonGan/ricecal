@@ -229,7 +229,7 @@ export default function FoodDetail() {
   // `isLoading` rather than `isPending`, for the reason the ingredients query
   // above gives: an entry with no photo disables this one, and a disabled query
   // is pending forever.
-  const { data: heroUrl, isLoading: signing } = useMealPhotoUrl(existing?.photoPath)
+  const { data: heroUrl, isLoading: resolvingPhoto } = useMealPhotoUrl(existing?.photoPath)
 
   /**
    * A typed figure as a number, and `null` for a field holding nothing.
@@ -790,13 +790,13 @@ export default function FoodDetail() {
           // 130px was sized for an icon and cropped the meal to a letterbox
           // strip. Icons and the empty state keep the short box.
           //
-          // `signing` counts as having one, because it means the entry HAS a
+          // `resolvingPhoto` counts as having one, because it means the entry HAS a
           // photograph and we are waiting on a URL for it. Left out, the box
           // opened short and grew by 130px under the reader a moment later.
-          (hero || signing) && !icon ? 'h-[260px]' : 'h-[130px]',
+          (hero || resolvingPhoto) && !icon ? 'h-[260px]' : 'h-[130px]',
           // Dashed while there is nothing in it: a solid frame around an empty
           // box reads as a picture that failed to load.
-          hero || signing || shownIcon ? 'border-line' : 'border-line border-dashed',
+          hero || resolvingPhoto || shownIcon ? 'border-line' : 'border-line border-dashed',
         )}
         onPress={() => setPickingIcon(true)}
         accessibilityRole="button"
@@ -816,10 +816,10 @@ export default function FoodDetail() {
             contentFit="cover"
             accessibilityLabel={t('logging:camera.photoOf', { food: food.name })}
             // See `ItemRow`: the bucket is private, so a stored plate is always
-            // one signing request behind the screen it belongs to.
+            // one resolution behind the screen it belongs to.
             transition={180}
           />
-        ) : signing && !icon ? (
+        ) : resolvingPhoto && !icon ? (
           /* This entry HAS a photograph and it is still being signed for.
              Without this the box drew the dish's illustration first and then
              replaced it with the photograph — the largest thing on the screen

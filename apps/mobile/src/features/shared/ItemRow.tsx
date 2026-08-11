@@ -86,8 +86,8 @@ export function ItemRow({
   onPress,
   className,
 }: ItemRowProps) {
-  const { data: signedUrl, isLoading: signing } = useMealPhotoUrl(photoPath)
-  const photo = storedImageSource(photoPath, signedUrl, photoUri)
+  const { data: photoUrl, isLoading: resolving } = useMealPhotoUrl(photoPath)
+  const photo = storedImageSource(photoPath, photoUrl, photoUri)
 
   const tile = (
     <View className="h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-tile bg-track">
@@ -100,23 +100,22 @@ export function ItemRow({
           style={{ flex: 1, width: '100%', opacity: busy ? 0.55 : 1 }}
           contentFit="cover"
           /**
-           * Faded in, because a plate is always at least one request late.
+           * Faded in, because a plate can still be a moment late.
            *
-           * The bucket is private and signed URLs are deliberately kept OUT of
-           * the persisted cache — they expire within the hour and this cache
-           * lives for a week — so every launch re-signs them, and a day of
-           * snapped meals drew its rows as grey squares and then hard-cut to
-           * photographs a moment later. The rows themselves are not late any
-           * more; this is the last thing on the list that was, and 180ms of
-           * cross-fade turns a row of pops into the picture arriving.
+           * It used to be late by a request. Signed URLs are deliberately kept
+           * OUT of the persisted cache — they expire within the hour and this
+           * cache lives for a week — so every launch re-signed them, and a day
+           * of snapped meals drew its rows as grey squares and then hard-cut to
+           * photographs once the `photos` function answered.
            *
-           * Shorter than it used to be, now that the bytes come off the disk
-           * cache and only the signature is fetched — but not gone, which is
-           * why the fade stays.
+           * A launch now asks the disk before it asks the network and usually
+           * finds the picture there, so what is left to wait for is a local
+           * stat rather than a round trip. The fade stays for the launch that
+           * does have to fetch, and for the plate this device has never seen.
            */
           transition={180}
         />
-      ) : signing ? (
+      ) : resolving ? (
         // Not an icon, and not nothing: a snapped row's `icon` is undefined by
         // design — the view suppresses it while a photo exists — so the choice
         // here is between a pulse and a bare grey square that gives no reason
