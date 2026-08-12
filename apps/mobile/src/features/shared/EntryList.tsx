@@ -14,8 +14,8 @@ import { storedImageSource, useMealPhotoUrl, useRefiningEntries } from '@/data'
 import { sumMacros } from '@/lib/nutrition'
 import { portionLabel } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
-import { Card, Icon, IconButton, Text } from '@/ui'
-import { ItemRow } from './ItemRow'
+import { Card, cn, Icon, IconButton, Text } from '@/ui'
+import { ItemRow, ROW_TILE, ROW_TILE_ICON } from './ItemRow'
 import { MealPhoto } from './MealPhoto'
 import { SwipeRow } from './SwipeRow'
 
@@ -317,14 +317,19 @@ function AnalysingRow({
       accessibilityLabel={label}
       accessibilityState={{ busy: true }}
     >
-      {/* Same 56pt tile as ItemRow, so the row sits flush in the list. */}
-      <View className="h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-tile bg-track">
+      {/* ItemRow's own tile, so this row sits flush with the ones around it. */}
+      <View
+        className={cn(
+          ROW_TILE,
+          'items-center justify-center overflow-hidden rounded-tile bg-track',
+        )}
+      >
         {photo ? (
           // Dimmed the whole time rather than only while busy: this row IS the
           // busy one, and the plate under it has no dish yet.
           <MealPhoto source={photo} dimmed />
         ) : (
-          <Icon set="system" name={typed ? 'sparkle' : 'camera'} size={40} />
+          <Icon set="system" name={typed ? 'sparkle' : 'camera'} size={ROW_TILE_ICON} />
         )}
       </View>
 
