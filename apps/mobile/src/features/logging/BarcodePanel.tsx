@@ -5,18 +5,20 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { type BarcodeResult, useBarcodeLookup } from '@/data'
-import { Button, Icon, Spinner, Text, TextField } from '@/ui'
+import { Button, Icon, Spinner, Text } from '@/ui'
+import { VIEWFINDER_HEIGHT } from './InlineCamera'
 
 /**
- * How tall the scanning window is.
+ * How tall the scanning window is: exactly the food viewfinder's height.
  *
- * Shorter than the food viewfinder (310), because a barcode needs a strip and a
- * plate needs a frame: the useful area is a band across the middle of the
- * screen, and the rest of the height would only be more of the shelf. It also
- * leaves room under it for the state line, which in this panel is the part that
- * matters — a scanner with no feedback is indistinguishable from a broken one.
+ * It was shorter (220), on the reasoning that a barcode needs a strip where a
+ * plate needs a frame. What that missed is that the two panels live in the same
+ * sheet and a person moves between them — a camera that changes size when you
+ * switch tab reads as a different camera, and the smaller one reads as the
+ * lesser feature. Aiming at a barcode is also easier with more of the shelf in
+ * view, not less.
  */
-const WINDOW_HEIGHT = 220
+const WINDOW_HEIGHT = VIEWFINDER_HEIGHT
 
 /**
  * The symbologies a food packet can carry.
@@ -61,14 +63,6 @@ export function BarcodePanel({ onFound, onDescribe }: BarcodePanelProps) {
 
   const [result, setResult] = useState<BarcodeResult | null>(null)
   const [failed, setFailed] = useState(false)
-  /**
-   * The code being looked up, or the last one that came back unknown.
-   *
-   * A simulator has no camera, so the only way to walk this flow there is to
-   * type a code — which is also the honest fallback on a phone whose camera
-   * cannot read a scuffed packet. Same field, both cases.
-   */
-  const [typed, setTyped] = useState('')
 
   /**
    * `CameraView` fires this many times a second while a code is in frame, and
@@ -164,33 +158,13 @@ export function BarcodePanel({ onFound, onDescribe }: BarcodePanelProps) {
         hasCamera={hasCamera}
       />
 
-      {/* Always available, not only after a miss. A code that will not scan is
-          the ordinary reason someone types one, and hiding the field until the
-          camera has failed twice makes the fallback feel like a punishment. */}
-      <View className="flex-row items-end gap-2">
-        <TextField
-          className="flex-1"
-          label={t('logging:barcode.typeLabel')}
-          placeholder={t('logging:barcode.typePlaceholder')}
-          keyboardType="number-pad"
-          // GTIN-14 is the longest a barcode gets. The pad reads this too:
-          // with the system keyboard suppressed there is no `TextInput`
-          // typing for the platform to cap, and the pad defaults to eight —
-          // enough for a calorie total, five short of an EAN-13.
-          maxLength={14}
-          value={typed}
-          onChangeText={setTyped}
-          onSubmitEditing={() => typed.trim() && void submit(typed.trim())}
-        />
-        <Button
-          variant="secondary"
-          disabled={typed.trim().length < 8 || lookup.isPending}
-          onPress={() => void submit(typed.trim())}
-        >
-          {t('logging:barcode.lookUp')}
-        </Button>
-      </View>
-
+      {/* No field to type a code into, and no button to look one up. Scanning
+          IS the feature: the camera fires `onBarcodeScanned` many times a
+          second and the answer arrives without anybody pressing anything, so a
+          number pad and a Look up button next to a working scanner are two
+          controls asking to do what already happened. They were there because a
+          simulator has no camera and typing was the only way to walk the flow —
+          which is a reason to test on a phone, not a reason to ship a form. */}
       {result?.status === 'unknown' ? (
         <Button variant="secondary" fullWidth onPress={onDescribe}>
           {t('logging:barcode.describeInstead')}
@@ -225,7 +199,8 @@ function StateLine({
   if (failed) return <Text variant="meta">{t('logging:barcode.failed')}</Text>
   if (unknown) return <Text variant="meta">{t('logging:barcode.unknown')}</Text>
   // A simulator has no camera and never will, so telling the user to point it
-  // at something would be a lie. The typed field below is the whole panel there.
+  // at something would be a lie. There is nothing else this panel can offer
+  // there, which is the honest thing to say.
   return (
     <Text variant="meta">{t(hasCamera ? 'logging:barcode.aim' : 'logging:barcode.noCamera')}</Text>
   )

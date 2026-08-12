@@ -20,7 +20,7 @@ import { Button, Icon, IconButton, Squish, Text } from '@/ui'
  * which is where a camera puts it anyway. The sheet is the same size it was; the
  * picture in it is a third bigger.
  */
-const VIEWFINDER_HEIGHT = 310
+export const VIEWFINDER_HEIGHT = 310
 
 /**
  * The strip along the bottom of the box the controls sit in.

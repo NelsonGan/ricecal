@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 
 import {
   dateKey,
+  ENTRY_FOOD_ID,
   useActivityDay,
   useDayLog,
   usePendingSnaps,
@@ -349,7 +350,13 @@ export default function TodayScreen() {
           onPressEntry={(entry) =>
             router.push({
               pathname: '/log/food/[id]',
-              params: { id: entry.foodId, entryId: entry.id },
+              // A `[id]` segment cannot be filled with `undefined`, and an
+              // entry's `food_id` is null whenever the scan did not land on a
+              // catalogue row — an estimate, an archetype, a rebuilt plate, a
+              // typed meal, a recipe. Every one of those went to `+not-found`
+              // rather than opening. The placeholder says "read it off the
+              // entry", which the entry can answer.
+              params: { id: entry.foodId ?? ENTRY_FOOD_ID, entryId: entry.id },
             })
           }
           // A snap that could not be read is dropped as it is handed over:

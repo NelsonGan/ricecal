@@ -119,6 +119,9 @@ export { SessionProvider, useSession, useUserId } from './session'
 export { useMealTimes, useSettings, useUpdateMealTime, useUpdateSettings } from './settings'
 export { type DescribeInput, useDescribeFood, useSnapFood } from './snap'
 export {
+  ENTRY_FOOD_ID,
+  ENTRY_SERVING_ID,
+  foodFromEntry,
   type LogSnapshot,
   snapshotColumns,
   snapshotFromEntry,
