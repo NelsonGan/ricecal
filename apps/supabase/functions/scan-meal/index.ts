@@ -10,9 +10,9 @@
 //
 // Once the caller is authenticated and the body parses, this function does not
 // return an HTTP error: any failure in tiers 1-4 falls to the archetype floor,
-// and a floor failure still answers 200 with `ok: false` so the client can
-// keep its pending row and retry. The numbers the user sees always come from
-// a `foods` row — an LLM figure is never averaged with a catalogue figure.
+// and a floor failure still answers 200 with `ok: false` so the client can keep
+// its pending row and retry. Whichever tier answers, the numbers are that
+// tier's alone — an LLM figure is never averaged with a catalogue figure.
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'

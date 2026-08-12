@@ -390,7 +390,7 @@ function Shimmer({ children }: { children: ReactNode }) {
   return <Reanimated.View style={style}>{children}</Reanimated.View>
 }
 
-/** "8:20 am". Locale-independent on purpose: the mock data is Malaysian. */
+/** "8:20 am". Locale-independent on purpose: the interface is English. */
 function formatTime(iso: string): string {
   const date = new Date(iso)
   const hours = date.getHours()
