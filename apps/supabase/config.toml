@@ -518,12 +518,10 @@ verify_jwt = false
 import_map = "./functions/barcode/deno.json"
 entrypoint = "./functions/barcode/index.ts"
 
-# The client's door to the catalogue, which lives in Cloudflare D1 now. Same
-# auth pattern as the others — it inspects the Authorization header itself.
-# Secrets it reads: CATALOGUE_URL and CATALOGUE_TOKEN, the Worker's address and
-# the shared token the client must never hold.
-[functions.catalogue]
-enabled = true
-verify_jwt = false
-import_map = "./functions/catalogue/deno.json"
-entrypoint = "./functions/catalogue/index.ts"
+# There is no `catalogue` function any more. The app carries the user's own
+# JWT and reads the Worker directly, so the hop was removed along with the
+# shared secret it existed to hold. Its block stayed here for one commit after
+# the directory went, and every push to main failed with "failed to bundle
+# function: exit status 1" — the deploy bundles whatever config.toml declares,
+# so a stale entrypoint is not an unused setting but a build error. Deleting a
+# function means deleting BOTH.
