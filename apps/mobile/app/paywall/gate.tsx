@@ -5,11 +5,19 @@ import { PurchasesUnavailable, purchasePlan, purchasesAvailable } from '@/data/p
 import { CheckList } from '@/features/shared'
 import { Button, Card, Icon, type IconProps, Screen, Squish, Text, useToast } from '@/ui'
 
-type Feature = 'photo' | 'voice'
+/**
+ * The gated ways in. `voice` was one until the route that recorded a sentence
+ * was deleted; `describe` is the same cascade reached by typing, and is what
+ * the copy bundle now names. `EntrySource` still carries 'voice' and should —
+ * that is a database enum with rows behind it, not a screen.
+ */
+type Feature = 'photo' | 'describe'
 
 const HERO: Record<Feature, IconProps> = {
   photo: { set: 'system', name: 'camera' },
-  voice: { set: 'system', name: 'microphone' },
+  // The same sparkle the Describe button carries in the log sheet, so the gate
+  // and the control it is gating look like one feature.
+  describe: { set: 'system', name: 'sparkle' },
 }
 
 /**

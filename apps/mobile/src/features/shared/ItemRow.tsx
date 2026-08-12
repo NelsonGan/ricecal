@@ -39,6 +39,13 @@ export const ROW_TILE_ICON = 52
  * and a grey square says that less clearly than a plate does. Kept deliberately
  * neutral: a cream outline reads as a gap where a photograph goes, where a
  * colourful drawing would compete with the real plates around it.
+ *
+ * There was also a `textOnly` prop that dropped the tile, for catalogue search
+ * results where a drawing was the rare exception and a column of identical
+ * plates indented every dish name for the sake of the few that had one. That
+ * was true at 35% icon coverage; `icon-match.ts` took it to 73.5%, so the
+ * majority row now has a picture and the exception is the blank. Both callers
+ * pass the food's own icon instead, and the prop is gone.
  */
 const PLACEHOLDER_ICON = { set: 'food', name: 'empty-plate' } as const
 
@@ -53,15 +60,6 @@ export type ItemRowProps = {
    * photo falls back to `PLACEHOLDER_ICON`.
    */
   icon?: IconRef
-  /**
-   * Drops the tile entirely rather than drawing the placeholder.
-   *
-   * For a list where NO row has a picture — search results out of the catalogue
-   * — a column of identical plates is 72pt of the same thing on every row, and
-   * it indents the one thing being read. A logged row keeps its tile, because
-   * its neighbours have photographs and a ragged left edge is worse.
-   */
-  textOnly?: boolean
   /**
    * A photo to show in place of the illustration, as a local `file://` uri —
    * a plate that has been snapped but not uploaded yet.
@@ -110,7 +108,6 @@ export function ItemRow({
   unit,
   valueTone = 'ink',
   busy = false,
-  textOnly = false,
   trailing,
   onPress,
   className,
@@ -149,7 +146,7 @@ export function ItemRow({
 
   const body = (
     <>
-      {textOnly ? null : tile}
+      {tile}
 
       <View className="min-w-0 flex-1 gap-0.5">
         {/* Two lines, which the tile pays for. A dish name is the longest thing

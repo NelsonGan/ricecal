@@ -963,7 +963,7 @@ const FORM_HEADS = new Set([
   'dumplings',
 ])
 
-export function normaliseName(name: unknown): string {
+function normaliseName(name: unknown): string {
   return ` ${String(name ?? '')
     .toLowerCase()
     .normalize('NFD')

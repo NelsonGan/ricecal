@@ -994,14 +994,20 @@ Break these and the feature is wrong in ways tests may not catch.
   hand-written migration has to restate a function, copy the block out of
   `schemas/` verbatim rather than retyping it. Only what is between the `$$`
   markers counts — a note above the `create` is free.
-- **The two halves of the catalogue deploy separately, and a Worker change is
-  the half that ships by itself.** `apps/cloudflare/workers/catalogue` deploys
-  from `cloudflare.yml` on a merge to main; the Supabase functions still deploy
-  by hand with the Supabase CLI. So a change to the shape one returns and the
-  other reads is two deploys with a window between them. Merge the Worker
-  FIRST: an edge function reading a field that has not arrived yet gets
-  `undefined`, where a Worker returning a field nobody reads is harmless. Same
-  ordering as the D1 schema against the Worker, and for the same reason.
+- **Deploy the SCHEMA first, then the code that reads it. Always.** The chain is
+  `D1 schema → the Worker → the edge functions → the app`, each arrow meaning
+  "is read by", and it has to be extended from the end nothing points at yet.
+  Deployed in that order every intermediate state has something existing that
+  nobody asks for, which is invisible; deployed against it, every intermediate
+  state has something asked for that does not exist, which is an error on a live
+  request — and not only for the new field. A Worker deployed ahead of its
+  column answers EVERY request with a D1 error; an edge function ahead of the
+  Worker reads `undefined` and prices a meal off a missing number. Only the
+  first arrow is automatic (`cloudflare.yml` runs the schema job before the
+  deploy job and stops if it fails); the rest is several deploys with a window
+  between each, so make every step backwards compatible rather than merely
+  quick. **Removing runs backwards**: stop reading it everywhere, ship that,
+  then drop the column. Full version in `apps/cloudflare/README.md`.
 - **The Supabase CLI's remote endpoints move.** On 2.111.0, `functions deploy`
   and `gen types --project-id` both answer 404 when handed a project ref that
   does not exist — which is indistinguishable from the endpoint being gone.
