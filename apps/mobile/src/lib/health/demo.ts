@@ -190,6 +190,8 @@ function hoursFor(date: LocalDate, steps: number, distanceM: number): HourReadin
 
 export const demoHealth: HealthProvider = {
   id: 'demo',
+  // Nothing to ask anybody for.
+  readTypes: ['demo'],
 
   // Always. It is generated locally and needs nothing from the platform, which
   // is the entire point of it.
@@ -279,7 +281,30 @@ export const demoHealth: HealthProvider = {
       }
     }
 
-    return { days, workouts, hours, deviceName: 'Demo watch' }
+    /**
+     * NO WEIGH-INS, and this is the one place the demo provider deliberately
+     * declines to demonstrate something.
+     *
+     * Everything else here is generated because the alternative is a feature
+     * nobody can look at on a simulator. Weight is different in a way that
+     * breaks the trade: a weigh-in is not a statistic beside the diary, it is an
+     * INPUT TO THE CALORIE BUDGET. `weight_logs` is what `current_weight_kg`
+     * reads and what the recompute trigger fires on, so a generated 72 kg would
+     * quietly rewrite a real user's daily target — on their real account, in a
+     * table `useClearDemoActivity` would then have to learn to clean up, and
+     * against a number they never entered.
+     *
+     * The rest of the demo is contained: `activity_days` and its neighbours are
+     * read by the Activity screens and nothing else, and every row carries
+     * `provider = 'demo'` so a disconnect removes them. A weight row has no such
+     * boundary — it is the same table the user's own weigh-ins live in, feeding
+     * the same budget.
+     *
+     * Nothing is lost by leaving it out. Weight already has a way in that works
+     * on a simulator, which is the field on the Trends tab, so this would be
+     * generating data for a chart a developer can fill in by typing.
+     */
+    return { days, workouts, hours, weights: [], deviceName: 'Demo watch' }
   },
 }
 

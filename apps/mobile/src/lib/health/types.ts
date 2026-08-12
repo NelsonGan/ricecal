@@ -73,10 +73,33 @@ export type HourReading = {
   distanceM: number | null
 }
 
+/**
+ * One day's weigh-in, as the store reported it.
+ *
+ * ONE PER LOCAL DAY, and the day's LAST reading when there were several — which
+ * is the same rule `weight_logs` has always applied to a user weighing
+ * themselves twice before breakfast. A scale that syncs three times in a morning
+ * is the ordinary case, not an edge one.
+ *
+ * Kilograms and a percentage, because that is what the database stores. The
+ * conversion happens in each provider rather than here: the two stores disagree
+ * about what a percentage is (HealthKit's `%` unit is a FRACTION, Health
+ * Connect's is already 0–100), and a shape that carried the provider's own units
+ * would push that disagreement into the sync, where there is nothing left to
+ * tell the two apart.
+ */
+export type WeightReading = {
+  date: LocalDate
+  kg: number
+  /** 0–100. Null when the store has no reading, which is most of them. */
+  bodyFatPct: number | null
+}
+
 export type HealthReading = {
   days: ActivityDayReading[]
   workouts: WorkoutReading[]
   hours: HourReading[]
+  weights: WeightReading[]
   /** "Apple Watch Series 9", "Galaxy Watch". Null until a sample names one. */
   deviceName: string | null
 }
@@ -131,6 +154,24 @@ export type ReadOptions = {
 
 export interface HealthProvider {
   readonly id: ProviderId
+
+  /**
+   * The store's own names for everything this provider will read.
+   *
+   * Declared rather than inferred from `requestAccess`, because the two mean
+   * different things: what comes back from a request is what was GRANTED on
+   * Android and merely what was asked for on iOS. This is the ask, on both.
+   *
+   * It exists so the sync can notice that the list has GROWN since this device
+   * last saw a permission sheet. A connection is made once and a permission
+   * sheet is shown once, so a release that starts reading a new type would
+   * otherwise never be authorised for it on any existing install: the
+   * incremental pass does not request access, so the new type stays
+   * undetermined, reads return nothing, and the feature is silently dead for
+   * everybody who was already connected. That is the failure this directory
+   * keeps meeting — a refusal the user was never offered the chance to make.
+   */
+  readonly readTypes: readonly string[]
 
   isAvailable(): Promise<Availability>
 

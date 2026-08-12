@@ -64,13 +64,50 @@ a different app.
 | Stand hours | `appleStandTime` | — **nothing** | the Stand tile, Apple only |
 | Workouts | `HKWorkout` | `ExerciseSession` | the session list and detail |
 | Heart rate | `heartRate` samples | `HeartRate` samples | zones and averages on a workout |
+| Body weight | `bodyMass` | `Weight` | **the calorie budget**, and the weight chart |
+| Body fat | `bodyFatPercentage` | `BodyFat` | stored beside a weigh-in |
 
-Both are read through an **aggregate** API rather than by summing raw samples —
-`queryStatisticsCollectionForQuantity` on iOS, `aggregateGroupByPeriod` on
-Android. That is not a performance choice. Both stores deduplicate across
-sources inside the aggregate, and summing samples on a phone that has an iPhone
-*and* a Watch writing step counts produces double the steps. It is the classic
-"12,000 in the app, 6,000 in Health" bug.
+The last two are not movement, and they are the one place this list reaches
+past what the Activity tab draws. A weigh-in is an INPUT to the budget rather
+than a statistic beside it: `weight_logs` is what `current_weight_kg` reads and
+what the recompute trigger fires on, so a user whose scale writes to their
+health store gets a target that follows their weight without typing anything.
+That is a different kind of justification from the rest of the table, which is
+why it is written down rather than left to look like scope creep.
+
+Everything above the line is read through an **aggregate** API rather than by
+summing raw samples — `queryStatisticsCollectionForQuantity` on iOS,
+`aggregateGroupByPeriod` on Android. That is not a performance choice. Both
+stores deduplicate across sources inside the aggregate, and summing samples on a
+phone that has an iPhone *and* a Watch writing step counts produces double the
+steps. It is the classic "12,000 in the app, 6,000 in Health" bug.
+
+**The two body measurements are read as SAMPLES instead**, and the reason the
+aggregate is mandatory elsewhere is exactly the reason it is wrong here. Weight
+is a discrete quantity: nobody adds up three weigh-ins, so two apps reporting
+the same one is a value repeated rather than a value doubled, and the
+double-counting the aggregate exists to prevent cannot happen. What the
+aggregate would cost is the answer itself — `cumulativeSum` over a Saturday's
+three weigh-ins is 217 kg, and Health Connect's `WEIGHT_AVG` / `WEIGHT_MIN` /
+`WEIGHT_MAX` are none of them the number wanted. A day's weight is its LAST
+reading, which is the rule `weight_logs` has always applied to somebody weighing
+themselves twice before breakfast, so both providers read ascending and keep the
+last sample per local day.
+
+**A percentage means different things on the two platforms.** HealthKit's `%`
+unit is a FRACTION — 22% body fat reads as `0.22` — while Health Connect's
+`BodyFat.percentage` is already `22`. Converting on both sides gives 2,200 on
+one of them, and `body_fat_pct` is checked `between 1 and 75`, so the figure
+would be dropped and body fat would silently never appear. `asPercent` in
+`apple.ts` normalises it, branching on 1 rather than on the platform, because 1%
+body fat is not a body and the whole plausible range is therefore unambiguous.
+
+**A reading the user typed is never overwritten by a synced one.** Both authors
+write `weight_logs`, one row per day, so they compete for the same key — and the
+rolling window means the sync competes once a minute for as long as the app is
+open. The rule lives in `sync_weight_readings` rather than in this directory,
+because it is a `WHERE` on an `ON CONFLICT DO UPDATE` and PostgREST's `.upsert()`
+cannot express one. See the header of `schemas/40_weight_logs.sql`.
 
 ### What Apple will not tell us
 
@@ -149,14 +186,24 @@ on iOS 26.5:
 | Resting Energy | yes | |
 | Walking + Running Distance | yes | entered in km, stored in metres |
 | Flights Climbed | yes | |
+| Weight | yes | entered in the device's unit, read back in kg |
+| Body Fat Percentage | yes | typed as `22`, read back as `0.22` — see `asPercent` |
 | Exercise Minutes | **no** | derived; "Apple Watch automatically tracks and logs" |
 | Stand Minutes / Stand Hours | **no** | derived, same reason |
 | Workouts | **no** | Health has no way to create an `HKWorkout` |
 
-So a simulator can exercise the budget, the steps screen and the energy balance
-end to end on genuinely real HealthKit reads, and cannot exercise the Exercise
-or Stand tiles, the session list, or heart-rate zones — those need a device with
-a watch, or the demo provider.
+So a simulator can exercise the budget, the steps screen, the energy balance and
+weight syncing end to end on genuinely real HealthKit reads, and cannot exercise
+the Exercise or Stand tiles, the session list, or heart-rate zones — those need a
+device with a watch, or the demo provider.
+
+Weight is the useful one to seed by hand, because **the demo provider
+deliberately generates none**. Everything else it invents is confined to the
+activity tables, which nothing but the Activity screens read and which a
+disconnect deletes by `provider = 'demo'`. A weigh-in has no such boundary: it
+lands in the same table the user's own readings live in and moves their real
+calorie target. Two entries a week apart in the Health app demonstrate the whole
+feature without that.
 
 Two consequences worth knowing when seeding: entries default to *now*, so
 several step samples at different times need the time wheel; and fewer than
