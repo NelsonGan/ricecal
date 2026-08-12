@@ -39,7 +39,10 @@ Deno.test('a flavour never outranks the food it flavours', () => {
 Deno.test('a preparation word does not steal the food', () => {
   eq(matchIcon('Light Tuna in water'), 'fish')
   eq(matchIcon('Pork, cured, ham and water product'), 'pork-belly')
-  eq(matchIcon('Soup, beef broth, prepared with water'), 'beef-slices')
+  // A bowl of soup, now that there is a drawing of one. It answered
+  // `beef-slices` before the second sheet arrived, which was the best available
+  // rather than the right one.
+  eq(matchIcon('Soup, beef broth, prepared with water'), 'soup-bowl')
   eq(matchIcon('Mineral water'), 'water-bottle', 'a named drink still resolves')
 })
 
@@ -50,7 +53,17 @@ Deno.test('a null entry suppresses the shorter match', () => {
 
 Deno.test('word boundaries are respected', () => {
   eq(matchIcon('Creamer, non-dairy'), null, 'cream must not fire inside creamer')
-  eq(matchIcon('Hamburger bun'), 'bun', 'ham must not fire inside hamburger')
+  // `ham` is a whole word here and must not fire inside another one. Checked
+  // against "graham" rather than "hamburger", which is now itself a phrase.
+  eq(matchIcon('Graham crackers'), 'crackers')
+  eq(matchIcon('Sliced honey ham'), 'ham-slices', 'and does fire when it is the word')
+})
+
+Deno.test('a flavour word does not beat the food it is written on', () => {
+  eq(matchIcon('UHT Full Cream Milk'), 'milk-carton')
+  eq(matchIcon('Sour cream'), 'cream-tub', 'still wins when it is the food')
+  eq(matchIcon('Mango yogurt'), 'yogurt')
+  eq(matchIcon('Caramel latte'), 'coffee')
 })
 
 Deno.test('nothing is not a failure', () => {
