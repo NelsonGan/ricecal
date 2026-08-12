@@ -1,0 +1,122 @@
+[
+  {
+    "q": "nasi lemak",
+    "want": "Nasi Lemak"
+  },
+  {
+    "q": "char kuey teow",
+    "want": "Char Kuey Teow"
+  },
+  {
+    "q": "char kway teow",
+    "want": "Char Kuey Teow"
+  },
+  {
+    "q": "char kuay teo",
+    "want": "Char Kuey Teow"
+  },
+  {
+    "q": "teh tarik",
+    "want": "Teh Tarik"
+  },
+  {
+    "q": "roti canai",
+    "want": "Roti Canai"
+  },
+  {
+    "q": "chicken rice",
+    "want": "Chicken Rice"
+  },
+  {
+    "q": "nasi goreng",
+    "want": "Nasi Goreng"
+  },
+  {
+    "q": "mee goreng",
+    "want": "Mee Goreng"
+  },
+  {
+    "q": "bak kut teh",
+    "want": "Bak Kut Teh"
+  },
+  {
+    "q": "cendol",
+    "want": "Cendol"
+  },
+  {
+    "q": "satay ayam",
+    "want": "Satay Ayam"
+  },
+  {
+    "q": "rendang",
+    "want": "Rendang"
+  },
+  {
+    "q": "laksa",
+    "want": "Laksa"
+  },
+  {
+    "q": "kopi o",
+    "want": "Kopi O"
+  },
+  {
+    "q": "milo ais",
+    "want": "Milo Ais"
+  },
+  {
+    "q": "curry puff",
+    "want": "Curry Puff"
+  },
+  {
+    "q": "kueh salat",
+    "want": "Kuih Seri Muka"
+  },
+  {
+    "q": "orh luak",
+    "want": "Oyster Omelette"
+  },
+  {
+    "q": "pho bo",
+    "want": "Pho Bo"
+  },
+  {
+    "q": "kimchi jjigae",
+    "want": "Kimchi Jjigae"
+  },
+  {
+    "q": "pad thai",
+    "want": "Pad Thai"
+  },
+  {
+    "q": "nasi lemk",
+    "want": "Nasi Lemak"
+  },
+  {
+    "q": "ayam gorng",
+    "want": "Ayam Goreng"
+  },
+  {
+    "q": "a plate of nasi lemak with fried chicken",
+    "want": "Nasi Lemak"
+  },
+  {
+    "q": "milk",
+    "want": "Milk"
+  },
+  {
+    "q": "white rice",
+    "want": "Rice"
+  },
+  {
+    "q": "chicken breast",
+    "want": "Chicken"
+  },
+  {
+    "q": "egg",
+    "want": "Egg"
+  },
+  {
+    "q": "banana",
+    "want": "Banana"
+  }
+]
