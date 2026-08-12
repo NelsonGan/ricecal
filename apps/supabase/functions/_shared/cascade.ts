@@ -75,8 +75,6 @@ export type FoodRow = {
   /** The portion these numbers are per, and what it weighs when known. */
   servingLabel: string
   servingGrams: number | null
-  is_estimate: boolean
-  is_archetype: boolean
   /** Soft too. The cascade only ever picks a row's default serving. */
   serving_id: string | null
 }
@@ -265,8 +263,6 @@ const asFood = (r: SearchRow): FoodRow => ({
   place: r.place ?? null,
   servingLabel: r.serving_label ?? '1 serving',
   servingGrams: rowGrams(r),
-  is_estimate: false,
-  is_archetype: false,
   serving_id: r.default_serving_id,
 })
 
@@ -408,8 +404,6 @@ function estimateRow(input: {
     place: null,
     servingLabel: '1 serving',
     servingGrams: null,
-    is_estimate: true,
-    is_archetype: false,
     serving_id: null,
   }
 }
@@ -1024,8 +1018,6 @@ export async function resolveByArchetype(
     place: null,
     servingLabel: '1 serving',
     servingGrams: null,
-    is_estimate: false,
-    is_archetype: true,
     serving_id: null,
   })
 
@@ -1130,8 +1122,6 @@ export type WrittenEntry = {
   /** What the row will show. The client announces it from the background. */
   kcal: number
   tier: number
-  isEstimate: boolean
-  isArchetype: boolean
   ingredients: Array<{ name: string; kcal: number; quantity: number }>
 }
 
@@ -1222,8 +1212,6 @@ export async function writeEntry(
       ? ingredients.reduce((sum, part) => sum + part.kcal, 0)
       : Math.round(resolved.food.kcal * resolved.quantity),
     tier: resolved.tier,
-    isEstimate: resolved.food.is_estimate,
-    isArchetype: resolved.food.is_archetype,
     ingredients,
   }
 }
