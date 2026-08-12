@@ -33,7 +33,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { basename, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { normalize } from '../../catalogue-worker/src/text.ts'
+import { normalize } from '../../cloudflare/workers/catalogue/src/text.ts'
 import { d1, d1batch, n, q } from './lib/d1.mjs'
 import { expand, shapeFiles } from './lib/food-shape.mjs'
 

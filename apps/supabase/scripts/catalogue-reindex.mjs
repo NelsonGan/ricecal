@@ -5,7 +5,7 @@
  *   pnpm foods:reindex --all      rebuild the full-text indexes from scratch
  *   pnpm foods:reindex --check    say what is stale and change nothing
  *
- * `apps/catalogue-worker/schema.sql` creates the tables. This fills in the
+ * `apps/cloudflare/d1/food-catalogue/schema.sql` creates the tables. This fills in the
  * three things that are computed rather than stored by the loader:
  *
  *   food.name_norm         what the exact-name search arm compares against
@@ -26,7 +26,7 @@
  * or the arm silently matches nothing.
  */
 
-import { normalize } from '../../catalogue-worker/src/text.ts'
+import { normalize } from '../../cloudflare/workers/catalogue/src/text.ts'
 import { d1, d1batch, q } from './lib/d1.mjs'
 
 const args = process.argv.slice(2)

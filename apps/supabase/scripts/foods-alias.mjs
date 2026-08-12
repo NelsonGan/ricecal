@@ -22,7 +22,7 @@
 
 import { readFileSync } from 'node:fs'
 
-import { normalize } from '../../catalogue-worker/src/text.ts'
+import { normalize } from '../../cloudflare/workers/catalogue/src/text.ts'
 import { d1, d1batch, q } from './lib/d1.mjs'
 
 const args = process.argv.slice(2)

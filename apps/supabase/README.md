@@ -53,7 +53,7 @@ made the next diff emit `DROP TRIGGER` for it. It stays declarative, in
 **The catalogue is not in this database.** `foods`, `food_servings`,
 `food_aliases` and `food_sources` were here once; the catalogue is in Cloudflare
 D1 now, under different names — see the top of the root `CLAUDE.md` for why, and
-`apps/catalogue-worker/schema.sql` for what replaced them. Nothing in Postgres
+`apps/cloudflare/d1/food-catalogue/schema.sql` for what replaced them. Nothing in Postgres
 joins to it, no migration creates it, and the loader that used to fill those
 tables (`import_foods`, `load_catalogue_batch`, `import-catalogue.sql`) went
 with them.
@@ -76,8 +76,10 @@ pnpm foods:dupes --since research:x  # the near-duplicates exact matching cannot
 pnpm foods:reindex                   # derived columns and the full-text index
 ```
 
-`apps/catalogue-worker/schema.sql` is the shape, applied by hand with
-`wrangler d1 execute --file`. It is a schema rather than a migration chain
+`apps/cloudflare/d1/food-catalogue/schema.sql` is the shape, applied by CI on a
+merge to main (`.github/workflows/cloudflare.yml`, before the Worker that reads
+it) and by `wrangler d1 execute --file` when you need it sooner. It is a schema
+rather than a migration chain
 because the catalogue is DISPOSABLE in a way the diary is not: an entry carries
 its own numbers, so every row over there can be dropped and rebuilt from
 `apps/supabase/data/foods` and the barcode dump without touching a diary.

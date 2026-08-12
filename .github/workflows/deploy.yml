@@ -24,11 +24,22 @@ run-name: >-
   ${{ github.event_name == 'pull_request' && format('PR Preview · #{0}', github.event.number)
    || github.event_name == 'workflow_dispatch' && format('Manual · {0}/{1}', github.event.inputs.platform, github.event.inputs.profile)
    || github.ref == 'refs/heads/main' && 'Production Release'
+   || github.ref == 'refs/heads/preview' && 'Preview · EAS Update'
    || format('Branch · {0}', github.ref_name) }}
 
 on:
   push:
-    branches: [main]
+    branches: [main, preview]
+    # A Worker-only commit changes no JS, so there is nothing here to build or
+    # publish — and left unfiltered it would archive and SUBMIT a new binary to
+    # the stores for a change the app never sees. `.github/workflows/cloudflare.yml`
+    # is what runs instead.
+    #
+    # Push only, deliberately. A pull_request filtered the same way would let a
+    # Cloudflare-only PR merge without `pnpm check` ever running on it, and that
+    # job also covers the Worker's own lint and the scripts that import from it.
+    paths-ignore:
+      - 'apps/cloudflare/**'
   pull_request:
   workflow_dispatch:
     inputs:
@@ -238,11 +249,57 @@ jobs:
               await github.rest.issues.createComment({ owner, repo, issue_number, body });
             }
 
+  # The `preview` branch's half of the two-track deploy: the same commit that
+  # deploys `ricecal-catalogue-preview` publishes the JS that talks to it. No
+  # build and no submit — an OTA update onto the `preview` channel, which the
+  # internal-distribution build from the `preview` EAS profile already listens
+  # on.
+  #
+  # `--environment preview` for the same reason the PR job passes
+  # `--environment development`: EXPO_PUBLIC_* values are inlined by Babel at
+  # export time, so they come from what THIS step can see. That environment is
+  # also where EXPO_PUBLIC_CATALOGUE_URL points at the preview Worker, which is
+  # the whole point of the pairing — omit the flag and the bundle ships with
+  # eight undefined keys and throws on launch.
+  preview-update:
+    name: Preview · EAS Update
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/preview'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Set up EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Publish preview update
+        working-directory: apps/mobile
+        run: |
+          eas update \
+            --branch preview \
+            --environment preview \
+            --message "${GITHUB_SHA:0:7}" \
+            --non-interactive
+
   plan:
     name: Production · Plan
     needs: test
+    # Main only. `preview` reaches the job above instead, and a store submit is
+    # not something a second long-lived branch should be able to reach at all.
     if: >-
-      github.event_name == 'push'
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
       || (github.event_name == 'workflow_dispatch' && github.event.inputs.profile != 'development')
     runs-on: ubuntu-latest
     outputs:

@@ -62,7 +62,7 @@ async function statsFor(userId: string, foodIds: string[]): Promise<Map<string, 
  * 48,000 searchable rows and `ilike '%kopi%'` matches "Kopi O" and "Non-Dairy
  * Coffee Whitener" equally well. The Worker fuses four arms — exact name, exact
  * alias, full text, trigram — which is also what makes "char kway teow" and
- * "teh tarek" find anything at all. See `apps/catalogue-worker/src/index.ts`.
+ * "teh tarek" find anything at all. See `apps/cloudflare/workers/catalogue/src/index.ts`.
  *
  * An empty query returns nothing rather than the first fifty rows of the
  * catalogue, and it returns it WITHOUT asking: fifty arbitrary dishes out of
