@@ -91,24 +91,49 @@ export async function token() {
   return access
 }
 
+/**
+ * How long to wait after the model provider throttles, per attempt.
+ *
+ * OpenRouter's shared pool rate-limits under a grading run, and the function
+ * answers 200 with the provider's 429 inside it — so it looks like a bad recipe
+ * rather than a call that never happened. Three cases in one pass came back
+ * that way and were scored as failures. Waiting is free here; these are batch
+ * scripts, and a run that mislabels noise as a regression is worse than a slow
+ * one.
+ */
+const THROTTLE_BACKOFF_MS = [3000, 8000, 20000]
+
+const throttled = (body) => /\b429\b|rate.?limit/i.test(JSON.stringify(body ?? ''))
+
 /** POST to an edge function, with the app's own headers. */
 export async function invoke(fn, body) {
   const c = await config()
-  const jwt = await token()
-  const res = await fetch(`${c.url}/functions/v1/${fn}`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${jwt}`,
-      apikey: c.anon,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  })
-  const text = await res.text()
-  try {
-    return { status: res.status, body: JSON.parse(text) }
-  } catch {
-    return { status: res.status, body: { raw: text.slice(0, 500) } }
+
+  for (let attempt = 0; ; attempt++) {
+    const jwt = await token()
+    const res = await fetch(`${c.url}/functions/v1/${fn}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+        apikey: c.anon,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+    const text = await res.text()
+    let parsed
+    try {
+      parsed = JSON.parse(text)
+    } catch {
+      parsed = { raw: text.slice(0, 500) }
+    }
+
+    if (attempt >= THROTTLE_BACKOFF_MS.length || !throttled(parsed)) {
+      return { status: res.status, body: parsed }
+    }
+    const wait = THROTTLE_BACKOFF_MS[attempt]
+    process.stderr.write(`  … model throttled, waiting ${wait / 1000}s\n`)
+    await new Promise((resolve) => setTimeout(resolve, wait))
   }
 }
 
@@ -162,6 +187,9 @@ export const scanText = (text, logDate = today()) =>
 
 export const refine = (foodLogId, instruction) =>
   invoke('scan-refine', { food_log_id: foodLogId, instruction })
+
+/** A recipe form filled in from words. Writes nothing — the draft is the answer. */
+export const readRecipe = (text) => invoke('recipes', { action: 'read', text })
 
 export const search = (q, limit = 20) => invoke('catalogue', { action: 'search', q, limit })
 

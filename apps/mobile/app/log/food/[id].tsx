@@ -1008,7 +1008,12 @@ export default function FoodDetail() {
             // "pieces" — a plate and a piece are different amounts of food.
             // Cleaned of the count and the import's measurement detail, which
             // the number to its left is already saying.
-            unit={servingUnit(serving.label) ?? t('logging:detail.servingWord')}
+            // `serving?.label`, not `serving.label`. `find(...) ?? servings[0]`
+            // is `Serving` to the compiler and `undefined` at runtime when the
+            // list is empty, because `noUncheckedIndexedAccess` is off — and
+            // reading `.label` off it crashed the whole screen. `toFood`
+            // guarantees a portion now, so this is the belt to that braces.
+            unit={servingUnit(serving?.label) ?? t('logging:detail.servingWord')}
           />
 
           <View className="flex-row flex-wrap gap-2">
