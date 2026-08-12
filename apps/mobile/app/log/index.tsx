@@ -1,5 +1,5 @@
 import { subDays } from 'date-fns'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
@@ -7,14 +7,13 @@ import { View } from 'react-native'
 import {
   dateKey,
   type LogSnapshot,
+  packetFoodId,
   snapshotFromEntry,
-  snapshotFromFood,
   snapshotFromRecipe,
   useDay,
   useDayLog,
   useDescribeFood,
   useLogFood,
-  useRecentFoods,
   useSelectedDate,
   useSnapFood,
   useTargets,
@@ -27,11 +26,9 @@ import {
   QuickAction,
 } from '@/features/logging'
 import { RecipePanel } from '@/features/recipes'
-import { ItemRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { sumMacros } from '@/lib/nutrition'
-import { useThemeColors } from '@/theme/useTheme'
-import { Icon, IconButton, SheetSurface, Tappable, Text } from '@/ui'
+import { Icon, SheetSurface, Tappable, Text } from '@/ui'
 
 /**
  * Which of the five quick actions has its panel open below the row, if any.
@@ -40,6 +37,12 @@ import { Icon, IconButton, SheetSurface, Tappable, Text } from '@/ui'
  * opening the camera has to put search away, and the other way round.
  */
 type Panel = 'camera' | 'barcode' | 'describe' | 'search' | 'recipes' | null
+
+const PANELS = ['camera', 'barcode', 'describe', 'search', 'recipes'] as const
+
+/** A route param is whatever was in the URL, so it is checked before it is used. */
+const isPanel = (value: string | undefined): value is NonNullable<Panel> =>
+  PANELS.includes(value as (typeof PANELS)[number])
 
 /**
  * L2 QUICK SELECTOR, and L3's backdrop.
@@ -64,20 +67,24 @@ export default function LogSheet() {
   const { selectedDate } = useSelectedDate()
   const day = useDayLog(selectedDate)
   const { data: targets } = useTargets()
-  const colors = useThemeColors()
+  /**
+   * Which panel to open with, for the routes that arrive knowing.
+   *
+   * The scan flow is the one that needs it: a packet nothing could identify
+   * offers "Scan again", and what that has to mean is the day with the
+   * viewfinder already open on it — not the sheet as if the user had just
+   * pressed the log button and had to find Scan for themselves.
+   */
+  const { panel: opening } = useLocalSearchParams<{ panel?: string }>()
+
   // The viewfinder, the search field and the recipe list all live inside this
   // sheet rather than in a screen of their own, so the day stays visible behind
   // them and nothing has to be dismissed twice. See the `Panel` union above.
-  const [panel, setPanel] = useState<Panel>(null)
+  const [panel, setPanel] = useState<Panel>(() => (isPanel(opening) ? opening : null))
   const toggle = (next: NonNullable<Panel>) =>
     setPanel((current) => (current === next ? null : next))
 
   const left = (targets?.kcal ?? 0) - sumMacros(day.entries).kcal
-
-  // The last three dishes logged at this meal, newest first. Recency rather than
-  // frequency: what someone had for breakfast this week is a better guess at
-  // what is on the plate than what they have had most often since installing.
-  const { data: recent = [] } = useRecentFoods()
 
   // Yesterday is a second day query. Cheap, cached, and the only way to offer
   // "repeat" without keeping every day in memory the way the mock store did.
@@ -127,12 +134,14 @@ export default function LogSheet() {
 
   return (
     /**
-     * Full height whenever a panel raises the keyboard, which is search,
-     * describe and recipes. A capped sheet is padded up off the bottom edge by
-     * `KeyboardAvoidingView`, and the strip left behind shows the scrim through
-     * the curve of the keyboard's top corners — the panel stops reading as
-     * attached to the bottom of the screen. Full height keeps it where it is and
-     * lets the body inset itself instead.
+     * Capped with nothing open, full height with anything open. Two separate
+     * reasons land on the same rule.
+     *
+     * Search, describe and recipes RAISE THE KEYBOARD. A capped sheet is padded
+     * up off the bottom edge by `KeyboardAvoidingView`, and the strip left
+     * behind shows the scrim through the curve of the keyboard's top corners —
+     * the panel stops reading as attached to the bottom of the screen. Full
+     * height keeps it where it is and lets the body inset itself instead.
      *
      * And describe is not scrollable. Its content is a field, a hint and a
      * button, so there is nothing to scroll — but a scroll view scrolls ITSELF
@@ -141,21 +150,16 @@ export default function LogSheet() {
      * carries the field off the top of the panel. With nothing to scroll there
      * is no scroll to get wrong.
      *
-     * Scan is full height AND scrollable, which looks like a contradiction of
-     * that and is not. The overshoot above is a property of the SYSTEM
-     * keyboard, whose height is not known until it has finished opening; the
-     * code field opens the app's own `Numpad`, whose height is a constant this
-     * app owns, so `revealForNumpad` computes the scroll exactly and lands the
-     * field just above the keys. Without the scroll the pad simply covers the
-     * field and the Look up button, because the viewfinder above them is 220pt
-     * of content that has to stay where it is.
+     * Snap and Scan raise no keyboard at all, and are full height because they
+     * are the same gesture into the same viewfinder: a sheet that is one height
+     * for the camera and another for the scanner reads as two different
+     * features when you switch between them. Which panel is open should not
+     * change the size of the thing it is in.
      */
     <SheetSurface
       onClose={() => goBack()}
       scrollable={panel !== 'describe'}
-      fullHeight={
-        panel === 'search' || panel === 'describe' || panel === 'recipes' || panel === 'barcode'
-      }
+      fullHeight={panel !== null}
     >
       {/* The heading is rendered here rather than through `title` so the
           remaining count can sit on the same line, right aligned, the way the
@@ -243,12 +247,17 @@ export default function LogSheet() {
         />
       ) : null}
       {panel === 'barcode' ? (
-        // Unlike the shutter, this does NOT close the sheet and write a row. A
-        // scanned packet is a catalogue row with portions on it — "1 sachet",
-        // "half the packet" — and how much of it was eaten is the question the
-        // detail screen exists to ask. Snapping a plate has already answered
-        // that question by photographing one plate.
-        <BarcodePanel onFound={openFood} onDescribe={() => setPanel('describe')} />
+        /* Unlike the shutter, this does NOT close the sheet and write a row. A
+           scanned packet is a catalogue row with portions on it — "1 sachet",
+           "half the packet" — and how much of it was eaten is the question the
+           detail screen exists to ask. Snapping a plate has already answered
+           that question by photographing one plate.
+
+           And it leaves on the CODE, before anything has been looked up. The
+           packet travels as an id of its own (`packetFoodId`) and the detail
+           screen resolves it, which is what took the waiting off the
+           viewfinder — see the header of `BarcodePanel`. */
+        <BarcodePanel onScanned={(code) => openFood(packetFoodId(code))} />
       ) : null}
       {panel === 'search' ? <FoodSearchPanel autoFocus onPick={openFood} /> : null}
       {panel === 'recipes' ? (
@@ -264,69 +273,37 @@ export default function LogSheet() {
         />
       ) : null}
 
-      {/* Both suggestion blocks are put away while search is open — they are for
-          someone who has not decided yet, and the results under the field are the
-          answer to someone who has — and each one is absent entirely when it has
-          nothing in it. A heading over an empty space and a line saying nothing
-          has been logged are both the sheet taking up room to tell the user it
-          cannot help; the three buttons above already say what to do next. */}
-      {/* The suggestion blocks are for somebody who has not decided yet, and a
-          panel that is open is the answer of somebody who has. */}
-      {panel === 'search' ||
-      panel === 'describe' ||
-      panel === 'recipes' ||
-      panel === 'barcode' ? null : (
-        <>
-          {recent.length ? (
-            <View className="gap-3 pt-1">
-              <Text variant="overline">{t('logging:selector.recent')}</Text>
+      {/* Repeat yesterday, and nothing else under the row.
 
-              {recent.map((food) => (
-                <ItemRow
-                  key={food.id}
-                  title={food.name}
-                  icon={food.icon}
-                  value={food.macros.kcal}
-                  unit="kcal"
-                  // The portion, not a count of how often it has been logged:
-                  // this list is ordered by when, and "3 times" answered a
-                  // question it is no longer sorted by.
-                  detail={food.servingLabel}
-                  trailing={
-                    <IconButton
-                      size="sm"
-                      variant="primary"
-                      accessibilityLabel={t('common:action.add')}
-                      onPress={() => add(snapshotFromFood(food))}
-                    >
-                      {/* Tinted to the role: the plus illustration carries its
-                          own gold, which on a pandan button reads as a third
-                          colour. */}
-                      <Icon set="ui" name="plus" size={18} tintColor={colors.onPandan} />
-                    </IconButton>
-                  }
-                />
-              ))}
-            </View>
-          ) : null}
+          There was a LAST LOGGED list here — the three most recent dishes, each
+          with an add button. It went because of what it was: a guess at what
+          somebody is about to eat, assembled from what they ate before, sitting
+          between the five ways of saying it and the day behind the sheet. The
+          buttons above already answer "what do I do next", and every open of
+          this sheet paid for the guess with a query and a round trip per dish
+          in it.
 
-          {yesterdayEntries.length ? (
-            <Tappable
-              onPress={repeatYesterday}
-              className="flex-row items-center justify-center gap-2 rounded-tile border-[3px] border-line border-dashed p-3"
-              accessibilityRole="button"
-              accessibilityLabel={`${t('logging:selector.repeatYesterday')}, ${
-                sumMacros(yesterdayEntries).kcal
-              } ${t('common:unit.kcal')}`}
-            >
-              <Icon set="ui" name="refresh" size={20} />
-              <Text variant="label" className="text-muted">
-                {t('logging:selector.repeatYesterday')}
-              </Text>
-            </Tappable>
-          ) : null}
-        </>
-      )}
+          This one stays because it is not a guess. Yesterday's meals are a fact,
+          and repeating them is one tap for a whole day of eating that somebody
+          having the same breakfast every morning will actually use. It is absent
+          entirely when yesterday was empty, rather than saying so, and put away
+          while a panel is open — a panel is the answer of somebody who has
+          already decided. */}
+      {panel === null && yesterdayEntries.length ? (
+        <Tappable
+          onPress={repeatYesterday}
+          className="flex-row items-center justify-center gap-2 rounded-tile border-[3px] border-line border-dashed p-3"
+          accessibilityRole="button"
+          accessibilityLabel={`${t('logging:selector.repeatYesterday')}, ${
+            sumMacros(yesterdayEntries).kcal
+          } ${t('common:unit.kcal')}`}
+        >
+          <Icon set="ui" name="refresh" size={20} />
+          <Text variant="label" className="text-muted">
+            {t('logging:selector.repeatYesterday')}
+          </Text>
+        </Tappable>
+      ) : null}
     </SheetSurface>
   )
 }

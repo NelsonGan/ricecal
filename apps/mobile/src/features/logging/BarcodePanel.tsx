@@ -1,11 +1,10 @@
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as Device from 'expo-device'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { type BarcodeResult, useBarcodeLookup } from '@/data'
-import { Button, Icon, Spinner, Text } from '@/ui'
+import { Button, Icon, Text } from '@/ui'
 import { VIEWFINDER_HEIGHT } from './InlineCamera'
 
 /**
@@ -36,10 +35,8 @@ const WINDOW_HEIGHT = VIEWFINDER_HEIGHT
 const BARCODE_TYPES = ['ean13', 'ean8', 'upc_a', 'upc_e'] as const
 
 export type BarcodePanelProps = {
-  /** A product was identified. The host decides what happens to it. */
-  onFound: (foodId: string) => void
-  /** The user gave up on a packet nothing knows: hand them to Describe. */
-  onDescribe: () => void
+  /** A code was read. Whether anything knows it is not this panel's business. */
+  onScanned: (code: string) => void
 }
 
 /**
@@ -47,57 +44,41 @@ export type BarcodePanelProps = {
  *
  * The fourth way into the catalogue, and the only exact one. Snap and Describe
  * ask a model what something is; search asks the user to spell it. A barcode IS
- * the product, so this panel has no ranking, no candidates and no confidence —
- * it either knows the packet or it does not, and saying which is most of the
- * work here.
+ * the product, so there is no ranking, no candidates and no confidence here.
  *
- * The lookup is two-stage and the panel shows the difference, because the two
- * feel different: the catalogue answers in tens of milliseconds, and Open Food
- * Facts takes a second or two over a mobile connection. Without a "looking this
- * one up" state the second case reads as a scanner that missed.
+ * THIS PANEL DOES NOT LOOK ANYTHING UP, and that is the whole shape of it now.
+ * It used to: it awaited the lookup, put a spinner over the viewfinder, and
+ * said which of four things was happening in a line underneath — aiming,
+ * looking up, we do not know this packet, something went wrong. Three of those
+ * four states were a person standing in a shop watching a camera not move,
+ * because the answer can take a round trip to Open Food Facts, and the one time
+ * it worked the sheet then vanished into a different screen anyway.
+ *
+ * So the code IS the answer as far as this panel is concerned. It reads one and
+ * leaves immediately, and the page it hands the code to does the lookup and
+ * owns every way that can turn out. What the user sees is a viewfinder that
+ * becomes a product, rather than a viewfinder that thinks about it first.
  */
-export function BarcodePanel({ onFound, onDescribe }: BarcodePanelProps) {
+export function BarcodePanel({ onScanned }: BarcodePanelProps) {
   const { t } = useTranslation(['logging', 'common'])
   const [permission, requestPermission] = useCameraPermissions()
-  const lookup = useBarcodeLookup()
-
-  const [result, setResult] = useState<BarcodeResult | null>(null)
-  const [failed, setFailed] = useState(false)
 
   /**
    * `CameraView` fires this many times a second while a code is in frame, and
-   * it will happily fire again for the same packet after an answer. A ref
-   * rather than state: the callback is handed to the native view once, and a
-   * stale closure over `useState` would let every frame through.
+   * a navigation is not instant — several more frames arrive before this panel
+   * is off screen. A ref rather than state: the callback is handed to the
+   * native view once, and a stale closure over `useState` would let every one
+   * of them through.
    */
-  const busy = useRef(false)
+  const done = useRef(false)
 
-  const submit = useCallback(
-    async (code: string) => {
-      if (busy.current) return
-      busy.current = true
-      setFailed(false)
-      setResult(null)
-      try {
-        const answer = await lookup.mutateAsync(code)
-        setResult(answer)
-        if (answer.status === 'found') {
-          onFound(answer.food.id)
-          return
-        }
-      } catch {
-        // The transport, or a session that expired mid-scan. Distinct from "no
-        // such product", and the user can do something about it: point the
-        // camera again.
-        setFailed(true)
-      } finally {
-        // Only unlocked on a miss. A hit has already handed the packet to the
-        // host, and unlocking would let the next frame scan the same box again
-        // behind a screen that has moved on.
-        busy.current = false
-      }
+  const scanned = useCallback(
+    (code: string) => {
+      if (done.current || !code) return
+      done.current = true
+      onScanned(code)
     },
-    [lookup, onFound],
+    [onScanned],
   )
 
   const hasCamera = Device.isDevice
@@ -130,7 +111,7 @@ export function BarcodePanel({ onFound, onDescribe }: BarcodePanelProps) {
             style={{ position: 'absolute', inset: 0 }}
             facing="back"
             barcodeScannerSettings={{ barcodeTypes: [...BARCODE_TYPES] }}
-            onBarcodeScanned={({ data }) => void submit(data)}
+            onBarcodeScanned={({ data }) => scanned(data)}
           />
         ) : (
           <Icon set="system" name="barcode" size={110} />
@@ -144,64 +125,16 @@ export function BarcodePanel({ onFound, onDescribe }: BarcodePanelProps) {
           pointerEvents="none"
           className="absolute inset-x-8 h-[86px] rounded-2xl border-2 border-surface/80"
         />
-        {lookup.isPending ? (
-          <View className="absolute inset-x-0 bottom-3 items-center">
-            <Spinner />
-          </View>
-        ) : null}
       </View>
 
-      <StateLine
-        pending={lookup.isPending}
-        failed={failed}
-        unknown={result?.status === 'unknown'}
-        hasCamera={hasCamera}
-      />
-
-      {/* No field to type a code into, and no button to look one up. Scanning
-          IS the feature: the camera fires `onBarcodeScanned` many times a
-          second and the answer arrives without anybody pressing anything, so a
-          number pad and a Look up button next to a working scanner are two
-          controls asking to do what already happened. They were there because a
-          simulator has no camera and typing was the only way to walk the flow —
-          which is a reason to test on a phone, not a reason to ship a form. */}
-      {result?.status === 'unknown' ? (
-        <Button variant="secondary" fullWidth onPress={onDescribe}>
-          {t('logging:barcode.describeInstead')}
-        </Button>
-      ) : null}
+      {/* One line, and only one thing it can say. A simulator has no camera and
+          never will, so telling the user to point it at something would be a
+          lie; there is nothing else this panel can offer there, which is the
+          honest thing to say. Every other state this line used to carry now
+          belongs to the page the scan lands on. */}
+      <Text variant="meta">
+        {t(hasCamera ? 'logging:barcode.aim' : 'logging:barcode.noCamera')}
+      </Text>
     </View>
-  )
-}
-
-/**
- * One line, saying which of four things is true.
- *
- * Split out because the branch is the interesting part and it was four nested
- * ternaries inside the layout. The order matters: a failure and a miss can both
- * be on screen after a pending, and the most recent thing that happened is what
- * the line should say.
- */
-function StateLine({
-  pending,
-  failed,
-  unknown,
-  hasCamera,
-}: {
-  pending: boolean
-  failed: boolean
-  unknown: boolean
-  hasCamera: boolean
-}) {
-  const { t } = useTranslation(['logging'])
-
-  if (pending) return <Text variant="meta">{t('logging:barcode.looking')}</Text>
-  if (failed) return <Text variant="meta">{t('logging:barcode.failed')}</Text>
-  if (unknown) return <Text variant="meta">{t('logging:barcode.unknown')}</Text>
-  // A simulator has no camera and never will, so telling the user to point it
-  // at something would be a lie. There is nothing else this panel can offer
-  // there, which is the honest thing to say.
-  return (
-    <Text variant="meta">{t(hasCamera ? 'logging:barcode.aim' : 'logging:barcode.noCamera')}</Text>
   )
 }

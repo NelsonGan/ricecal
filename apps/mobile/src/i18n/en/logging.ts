@@ -119,34 +119,37 @@ export const logging = {
     search: 'Search',
     scan: 'Scan',
     /**
-     * The last few dishes logged at this meal, newest first. No empty-state copy
-     * for this or for the repeat button: each block is simply absent when it has
-     * nothing in it, rather than saying so.
+     * No empty-state copy for the repeat button: it is simply absent when
+     * yesterday had nothing in it, rather than saying so.
      */
-    recent: 'LAST LOGGED',
     repeatYesterday: 'Repeat yesterday',
   },
 
   /**
-   * The barcode scanner.
+   * The barcode scanner, and the page a scan lands on.
    *
-   * The copy carries most of the design here. A scanner that says nothing is
-   * indistinguishable from one that is broken, so there is a line under the
-   * window at all times and it says which of four things is happening — aiming,
-   * looking up, we do not know this packet, or something went wrong.
+   * The viewfinder itself now says one thing and only one: point the camera. It
+   * used to carry four lines under the window — aiming, looking up, we do not
+   * know this packet, something went wrong — because the lookup happened there
+   * and the user watched it. A scan leaves the sheet the moment a code is read,
+   * so three of those four belong to the page it leaves for.
    *
    * "We do not have this one yet" rather than "not found": the packet exists,
-   * the catalogue is what is missing, and the difference matters because the
-   * next thing offered is Describe rather than an apology.
+   * it is in the user's hand, and OUR RECORD of it is what is missing. The
+   * difference matters because the next thing offered is Describe rather than
+   * an apology.
    */
   barcode: {
     permissionTitle: 'Let RiceCal use the camera',
     permissionBody: 'The camera reads the barcode on the packet. Nothing is recorded or uploaded.',
     aim: 'Point the camera at the barcode on the packet.',
     noCamera: 'This device has no camera, so there is nothing to scan with here.',
-    looking: 'Looking this one up...',
+    missTitle: 'New packet',
     unknown: 'We do not have this one yet. Describe it instead and we will work it out.',
-    failed: 'That did not go through. Try the packet again.',
+    failedTitle: 'No answer',
+    failed:
+      'We could not reach the catalogue just now. The packet may be fine; the connection was not.',
+    tryAgain: 'Scan again',
     describeInstead: 'Describe it instead',
   },
 
