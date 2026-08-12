@@ -71,15 +71,19 @@ export default function TodayScreen() {
 
   const { selectedDate, todayKey } = useSelectedDate()
   const day = useDayLog(selectedDate)
-  const { data: targets, isPending: targetsPending } = useTargets()
+  const { data: targets, isPending: targetsPending, isPaused: targetsPaused } = useTargets()
   const streak = useStreak()
   const removeEntry = useRemoveEntry()
   const pending = usePendingSnaps()
   const setWater = useSetWater(selectedDate)
   // The day's movement, if a health store is connected. Null on every account
   // that has not connected one, which is what keeps `burned` at zero below.
-  const { data: activity, isPending: activityPending } = useActivityDay(selectedDate)
-  const { data: settings, isPending: settingsPending } = useSettings()
+  const {
+    data: activity,
+    isPending: activityPending,
+    isPaused: activityPaused,
+  } = useActivityDay(selectedDate)
+  const { data: settings, isPending: settingsPending, isPaused: settingsPaused } = useSettings()
 
   /**
    * EVERYTHING UNDER THE STRIP WAITS TOGETHER.
@@ -107,7 +111,40 @@ export default function TodayScreen() {
    * same query, because the ring and the dot under it describe one day and must
    * not disagree about it.
    */
-  const loading = day.isPending || targetsPending || activityPending || settingsPending
+  const waiting = day.isPending || targetsPending || activityPending || settingsPending
+
+  /**
+   * And a wait that cannot end is not a wait.
+   *
+   * `offlineFirst` PAUSES a query with nothing cached rather than failing it, so
+   * every flag above stays true for as long as the phone is offline and the
+   * placeholders above would sit there until it is not. Which is the right
+   * answer for a day already on this phone — a persisted day is not pending at
+   * all, and the screen draws it without asking anybody — and no answer for one
+   * that never made it here.
+   *
+   * Said once, over the whole region, for the same reason the wait is: these
+   * queries are one sentence about one day, and "we could not read your
+   * movement" over a fully drawn ring is the same disagreement the gate exists
+   * to prevent. The strip stays above it, so the way out is to pick a day the
+   * phone already has.
+   *
+   * The two flags are paired PER QUERY rather than or-ed across the four, and
+   * that is not tidiness. `isPaused` is about a request, `isPending` about
+   * data, and they come apart in the ordinary case: a query that has its answer
+   * from disk and cannot refetch is paused and NOT pending. Compared loosely,
+   * one such query plus one genuinely in flight reads as stalled, and the
+   * screen would say the day is not on this phone over a day that was seconds
+   * from arriving. `blocked` is the whole condition: nothing to draw, and
+   * nothing on its way.
+   */
+  const blocked = (isPending: boolean, isPaused: boolean) => isPending && isPaused
+  const stalled =
+    blocked(day.isPending, day.isPaused) ||
+    blocked(targetsPending, targetsPaused) ||
+    blocked(activityPending, activityPaused) ||
+    blocked(settingsPending, settingsPaused)
+  const loading = waiting && !stalled
   /**
    * Whether the summary is showing the allowance rather than what is left.
    *
@@ -193,6 +230,35 @@ export default function TodayScreen() {
       },
     })
   }, [justAdded, toast, t, removeEntry])
+
+  /**
+   * A day this phone has never seen, with no way to ask for it.
+   *
+   * The strip comes too, so the answer to it is on screen: the days already
+   * saved here are one tap away. No retry and no spinner — react-query resumes
+   * a paused query by itself, and this screen redraws when it lands.
+   *
+   * No streak badge either. `logging_streak()` is a request like any other, and
+   * a confident "0 day streak" is the wrong sentence about somebody who is
+   * merely out of signal.
+   */
+  if (stalled) {
+    return (
+      // Plain `Screen`: nothing here swipes, so this one does not need
+      // gesture-handler's scroll view the way the day below does.
+      <Screen>
+        <ScreenTitle title={title} />
+        <WeekPicker />
+        <Card>
+          <EmptyState
+            title={t('common:offline.dayTitle')}
+            description={t('common:offline.dayBody')}
+            icon={{ set: 'ui', name: 'offline' }}
+          />
+        </Card>
+      </Screen>
+    )
+  }
 
   return (
     // The one screen with swipeable rows on it, and the one that needs
