@@ -1,9 +1,11 @@
+import { router } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import {
   TREND_RANGES,
   type TrendRange,
+  useReviewPeriods,
   useSettings,
   useTrendSeries,
   useTrendSummary,
@@ -19,7 +21,7 @@ import {
   WeightPanel,
 } from '@/features/progress'
 import { ScreenTitle } from '@/features/shared'
-import { Card, Screen, SegmentedControl, Skeleton } from '@/ui'
+import { Card, Icon, ListRow, Screen, SegmentedControl, Skeleton } from '@/ui'
 
 /**
  * The Trends tab: calories, water and weight, over seven days, thirty days or a
@@ -44,7 +46,7 @@ import { Card, Screen, SegmentedControl, Skeleton } from '@/ui'
  * reading is missing).
  */
 export default function TrendsScreen() {
-  const { t } = useTranslation(['progress', 'common'])
+  const { t } = useTranslation(['progress', 'common', 'reviews'])
 
   const [range, setRange] = useState<TrendRange>('7d')
   const [metric, setMetric] = useState<TrendMetric>('calories')
@@ -53,6 +55,16 @@ export default function TrendsScreen() {
 
   const series = useTrendSeries(range)
   const summary = useTrendSummary(range)
+  /**
+   * Whether there is anything to look back on.
+   *
+   * Both kinds, because a month can qualify on twelve scattered days while
+   * every week inside it falls short of four, and a row that leads to an empty
+   * list is worse than no row. They are the same two queries the list itself
+   * makes, so tapping through to it costs nothing.
+   */
+  const weeks = useReviewPeriods('week')
+  const months = useReviewPeriods('month')
   const { data: settings } = useSettings()
   const updateSettings = useUpdateSettings()
 
@@ -68,6 +80,9 @@ export default function TrendsScreen() {
    */
   const loading = series.isPending || summary.isPending
   const buckets = series.data
+  const hasReviews = [...(weeks.data ?? []), ...(months.data ?? [])].some(
+    (period) => period.qualifies,
+  )
 
   return (
     <Screen>
@@ -121,6 +136,25 @@ export default function TrendsScreen() {
           onEdit={setWeighingIn}
         />
       )}
+
+      {/* At the foot rather than beside the title: a review is a place you go
+          when you have finished reading this screen, and a control up there
+          would compete with the range switch that governs everything under it.
+
+          Absent rather than disabled while there is nothing to open. A row that
+          leads to an empty state is a promise the app cannot keep, and the
+          first review appearing is itself worth noticing. */}
+      {hasReviews ? (
+        <Card contentClassName="gap-0 p-card">
+          <ListRow
+            title={t('reviews:entry.title')}
+            subtitle={t('reviews:entry.subtitle')}
+            leading={<Icon set="ui" name="calendar-view" size={34} />}
+            divider={false}
+            onPress={() => router.push('/reviews')}
+          />
+        </Card>
+      ) : null}
 
       <WeighInSheet
         date={weighingIn}

@@ -161,11 +161,15 @@ name even for a frame; `ToastProvider` outside the navigator so a "saved"
 confirmation survives the screen that fired it popping.
 
 Routes come in two shapes. **Full pages push** — settings, the reports, search,
-the dish detail, one recipe — and carry a chevron in their own `AppBar`.
-**Modals present** — the quick selector, the paywalls — and carry a cross. Every
-screen draws its own title bar; the native header is off everywhere. A tab
-carries a `ScreenTitle` instead, because there is nothing behind it to go back
-to.
+the dish detail, one recipe, the reviews list — and carry a chevron in their own
+`AppBar`. **Modals present** — the quick selector, the paywalls, one review —
+and carry a cross. Every screen draws its own title bar; the native header is
+off everywhere. A tab carries a `ScreenTitle` instead, because there is nothing
+behind it to go back to.
+
+A review is the one page that presents for a REASON rather than by kind: it
+pages sideways, and a pushed screen would spend that gesture on the interactive
+pop instead.
 
 Five tabs — Today, Recipes, Activity, Trends, Me — on the headless
 `expo-router/ui` Tabs rather than a styled navigator, because `NavBar` /
@@ -228,9 +232,13 @@ Read shapes are views, all `security_invoker`:
 `food_log_details`, `food_log_ingredient_details`, `daily_nutrition`,
 `user_food_stats`, `current_daily_goals`, `recipe_details`,
 `recipe_ingredient_details`. Plus `goals_on(date)`,
-`logging_streak()`, `day_marks(from, to)`, and two range families —
-`trend_days` / `trend_series` / `trend_summary` for the diary, and
-`activity_days_range` / `activity_series` / `activity_summary` for movement.
+`logging_streak()`, `day_marks(from, to)`, and three range families —
+`trend_days` / `trend_series` / `trend_summary` for the diary,
+`activity_days_range` / `activity_series` / `activity_summary` for movement, and
+`review_days` / `review_periods` / `review_summary` / `review_series` /
+`review_meals` for a finished week or month. The review family is the one that
+takes DATES rather than a named window, because "the week of 3 August" stopped
+moving when the week ended and `local_today()` has no name for it.
 
 `weight_logs` has two authors. `provider` is null for a reading the user typed
 and names a store for one read off Apple Health or Health Connect, and the two
@@ -768,6 +776,52 @@ has no window for `local_today()` to name. `features/logging/week.ts` turns
 those facts into a dot and is unit-tested, because the ORDER is the whole thing:
 ahead-of-today and not-yet-loaded both mean "say nothing", and only then does an
 empty past day mean "missed".
+
+---
+
+## Looking back at a week
+
+A finished week or month, read as a few cards you tap through. A row at the foot
+of Trends leads to `/reviews`, which lists the periods worth opening, and one of
+them opens `/reviews/[id]` — `week-2026-08-03` or `month-2026-07-01`, the kind
+and the first day, from which the server works out the rest.
+
+**Only finished periods, and only ones with enough in them.** Weeks reach three
+months back and months reach six, because a weekly review is about something
+somebody still remembers eating and a monthly one is about a shape only visible
+from a distance. A week qualifies at four logged days and a month at twelve.
+Both rules are in `review_periods`, and `qualifies` is a COLUMN rather than a
+`where`: the list shows the periods that pass, while the comparison chart inside
+a story draws every period either way, since a light week is a fact about the
+weeks around it and hiding it would leave a hole in the chart with nothing to
+explain it.
+
+**How many steps a story has is data.** `reviewSteps` reads the summary: the
+card, the food and the calories always hold, and the body step exists only if
+there was a weigh-in or a watch. A month before the health store was connected
+is three steps rather than four with an empty one at the end — the progress bar
+counts what it is given, and a segment leading to a card of dashes is a promise
+the tap does not keep. Within the body step each card is conditional again, so
+the same screen is weight-and-water for an older month and weight, steps and
+movement for last week.
+
+**Forward is the whole page; back is a strip down its left edge.** Both are
+Pressables in `StoryFrame`, and the shape is the second attempt. The first put
+the two zones UNDER the content, on the reasoning that a plain View never
+becomes a touch responder so a tap on a card would fall through to them. It does
+not: React Native offers an unclaimed touch to the hit view's ANCESTORS, never
+to a sibling that overlaps it, so every tap that landed on a card did nothing —
+and since the empty canvas below the last card still worked, it looked like one
+broken page rather than like most of every page. As an ancestor the same idea
+works, and the share button still wins its own press because a nested Pressable
+claims a touch before the one around it.
+
+**No timer.** Instagram advances itself because a photograph is read in a
+second; these pages are a chart and four figures, and a page that leaves while
+it is being read is worse than no animation at all.
+
+Sharing sends a SENTENCE. The phone holds no image of the card, and rendering
+one would mean a second drawing of it that has to agree with the first.
 
 ---
 
