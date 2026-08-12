@@ -16,7 +16,7 @@ their own area:
 | where | what |
 |---|---|
 | `apps/supabase/README.md` | the declarative schema workflow, the catalogue import, why nothing seeds `foods` |
-| `apps/cloudflare/README.md` | the layout, the two deploy branches, and what a second Worker would take |
+| `apps/cloudflare/README.md` | the layout, where it deploys, and how a PR gets a Worker of its own |
 | `apps/cloudflare/d1/food-catalogue/BARCODE-COVERAGE.md` | why the scanner misses Malaysian packets, measured, and what would actually fix it |
 | `apps/mobile/src/data/README.md` | the data layer, file by file |
 | `apps/mobile/src/ui/README.md` | the design system, and which prop targets which box |
@@ -1153,11 +1153,20 @@ a throwaway Postgres from every migration, runs the pgTAP suite in
 `apps/supabase/tests`, and deno-checks each edge function.
 
 `cloudflare` is the one workflow that both checks and DEPLOYS, and the only one
-scoped by path: it fires on nothing outside `apps/cloudflare`. `deploy.yml`'s
-push trigger ignores that same directory in return, so a Worker change cannot
-archive and submit a new binary for a change the app never sees. The trade is
-that the two filters have to stay opposites — widen one and a commit either runs
-both pipelines or neither.
+scoped by path: it fires on nothing outside `apps/cloudflare`, and deploys only
+on a merge to main. `deploy.yml`'s push trigger ignores that same directory in
+return, so a Worker change cannot archive and submit a new binary for a change
+the app never sees. The trade is that the two filters have to stay opposites —
+widen one and a commit either runs both pipelines or neither.
+
+A PULL REQUEST's Worker is the exception, and it is in `deploy.yml` rather than
+here: `wrangler versions upload --preview-alias pr-N` puts this branch's code at
+a stable URL taking 0% of production traffic, and the PR's `eas update` is
+pointed at it, so the JS and the catalogue behind it come from one commit and
+land in one comment. The URL has to reach the bundle through a pulled
+`.env.local` — `eas update --environment X` ASSIGNS the downloaded values over
+the process, so a URL exported by the workflow is overwritten rather than
+honoured, and the preview goes on reading production while appearing to work.
 
 `supabase-drift` is the interesting one: it diffs the DEPLOYED schema against
 the committed migrations nightly, and it exists because there is no hosted
