@@ -1,4 +1,5 @@
-import { useLocalSearchParams, useNavigation } from 'expo-router'
+import { useQueryClient } from '@tanstack/react-query'
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, BackHandler, Platform, TextInput, View } from 'react-native'
@@ -8,6 +9,8 @@ import {
   type EntryPatch,
   foodFromEntry,
   type IconRef,
+  keys,
+  packetCode,
   removeMealPhoto,
   snapshotFromFood,
   storedImageSource,
@@ -25,7 +28,7 @@ import {
   useUpdateEntry,
   useUpdateIngredient,
 } from '@/data'
-import { FixSheet, IconPicker } from '@/features/logging'
+import { FixSheet, IconPicker, ScannedPacket } from '@/features/logging'
 import { MacroBars, MealPhoto } from '@/features/shared'
 import { useBack, useDismissTo } from '@/lib/navigation'
 import { entryTotals } from '@/lib/nutrition'
@@ -188,6 +191,8 @@ export default function FoodDetail() {
    */
   const finish = useDismissTo('/today')
   const navigation = useNavigation()
+  const router = useRouter()
+  const queryClient = useQueryClient()
   const colors = useThemeColors()
   const toast = useToast()
   const logFood = useLogFood()
@@ -200,7 +205,16 @@ export default function FoodDetail() {
   // `ENTRY_FOOD_ID` is the placeholder a row with no catalogue food behind it
   // travels under, so there is nothing to ask the catalogue for.
   const catalogueId = params.id === ENTRY_FOOD_ID ? undefined : params.id
-  const { data: catalogueFood, isPending } = useFood(catalogueId)
+  const { data: catalogueFood, isPending, isError } = useFood(catalogueId)
+  /**
+   * The code, when this screen was arrived at by scanning a packet.
+   *
+   * The scanner navigates here the moment it reads one, before anything has
+   * been looked up — so unlike every other way in, this screen can be showing a
+   * food that does not exist yet, or one that turns out not to exist at all.
+   * `useFood` resolves it; the branch below is what those two answers look like.
+   */
+  const packet = packetCode(params.id)
 
   // The entry being edited, if this screen was opened from a row. It is on the
   // day in view — the only day whose entries are loaded — which is also the
@@ -496,7 +510,48 @@ export default function FoodDetail() {
     return () => subscription.remove()
   }, [dirty])
 
+  /**
+   * Back to the day with the log sheet open on the panel that answers this.
+   *
+   * "Scan again" cannot mean "back to where you were": where you were is a
+   * viewfinder inside a sheet that was replaced by this screen, so there is
+   * nothing behind it to return to. It means the day, with the scanner already
+   * open — which is what `/log?panel=` is for.
+   *
+   * The packet's own answer is dropped on the way out. A miss caches like
+   * anything else, and without this a rescan of the same box would show the
+   * cached "we do not have this one" without asking anybody — which is right
+   * about the catalogue and wrong about the case that sent the user back here,
+   * a lookup that could not reach it at all.
+   */
+  const reopenLog = (which: 'barcode' | 'describe') => {
+    queryClient.removeQueries({ queryKey: keys.food(params.id) })
+    finish()
+    router.push({ pathname: '/log', params: { panel: which } })
+  }
+  const rescan = () => reopenLog('barcode')
+  const describeInstead = () => reopenLog('describe')
+
   if (!food) {
+    /**
+     * A scanned packet, before the answer and when the answer is nothing.
+     *
+     * Everything else that reaches this screen has been picked off a list, so
+     * the food is already in hand and this branch is a blank frame nobody sees.
+     * A scan is the exception, and the three ways it can end are the whole
+     * reason the viewfinder no longer waits — see `ScannedPacket`.
+     */
+    if (packet) {
+      return (
+        <ScannedPacket
+          state={isPending ? 'looking' : isError ? 'failed' : 'missing'}
+          onRetry={rescan}
+          onDescribe={describeInstead}
+          onBack={() => goBack()}
+        />
+      )
+    }
+
     return (
       <Screen>
         <AppBar

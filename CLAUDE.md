@@ -15,6 +15,7 @@ their own area:
 | where | what |
 |---|---|
 | `apps/supabase/README.md` | the declarative schema workflow, the catalogue import, why nothing seeds `foods` |
+| `apps/catalogue-worker/BARCODE-COVERAGE.md` | why the scanner misses Malaysian packets, measured, and what would actually fix it |
 | `apps/mobile/src/data/README.md` | the data layer, file by file |
 | `apps/mobile/src/ui/README.md` | the design system, and which prop targets which box |
 | `apps/mobile/src/lib/health/README.md` | what each health store actually gives you, and what Android is missing |
@@ -335,12 +336,41 @@ the user to spell it; a barcode IS the product, so there is no ranking, no
 candidates and no confidence — one row or none.
 
 ```
-scan → lookup_barcode(code)      hit  → food detail, one tap to log
-                                 miss ↓
-     → functions/barcode          Open Food Facts, live, for that GTIN
-                                  hit  → written as service_role, returned
-                                  miss → "we do not have this one yet" + Describe
+camera reads a code → LEAVE IMMEDIATELY for /log/food/packet:<code>
+                    ↓
+  functions/barcode   D1 by barcode          hit  → the product, priced
+                      Open Food Facts, live  hit  → written back, returned
+                                             miss → "we do not have this one yet"
+                                                    + Describe + Scan again
 ```
+
+**The viewfinder does not wait for the answer**, and that is the whole shape of
+this flow. It used to: the panel awaited the lookup, put a spinner over the
+camera and said which of four things was happening underneath. Three of those
+four states were a person standing in a shop watching a camera not move — the
+live fallback allows six seconds for Open Food Facts — and the one state that
+worked then replaced the sheet with a different screen anyway. So the code IS
+the answer as far as the scanner is concerned, and the page it hands the code to
+owns every way the lookup can turn out: a skeleton of the product page while it
+waits, the product when it lands, and a screen with Describe and Scan again on
+it when nothing knows the packet.
+
+A packet reaches that page under an id of its own, `packet:<code>`. A packaged
+product lives in D1's `product` table keyed by the barcode and has no `foods.id`
+at all, so before this the scanner had nothing to put in the `[id]` segment and
+the app answered a correctly identified packet with its own "page not found".
+`packetFoodId` mints the placeholder, `useFood` knows to resolve it through the
+scanner's endpoint rather than the catalogue's, and `snapshotFromFood` drops it
+again before it can reach `food_logs.food_id` — which is a uuid column, so a
+placeholder arriving there is not a dangling reference but a 22P02 on the last
+tap of the flow. It is the same treatment `ENTRY_FOOD_ID` gets, for the same
+reason.
+
+"Scan again" goes to the day with the scanner already open (`/log?panel=`),
+because where the user was is a viewfinder inside a sheet this screen replaced,
+and there is nothing behind it to go back to. It drops the packet's cached
+answer on the way, or a rescan after a lookup that could not reach the catalogue
+would be answered from the cached failure without asking anybody.
 
 Codes are stored as **GTIN-14**, zero-padded, because one packet has four
 spellings (UPC-E, EAN-8, UPC-A, EAN-13) and an American scanner drops the
@@ -349,8 +379,8 @@ exists in SQL and again in the edge function, deliberately duplicated and
 separately tested, because the function has to normalize before it can ask
 Open Food Facts anything.
 
-The live fallback is what makes the stored slice an acceptable trade. The app
-holds ~25,000 packaged products; Open Food Facts has 4.7 million, and the ones
+The live fallback is what makes the stored slice an acceptable trade. D1 holds
+3.2 million packaged products; Open Food Facts has 4.7 million, and the ones
 anybody actually scans get written into the catalogue permanently the first time
 they are scanned — so the second person to scan that packet gets the index probe.
 The check digit is deliberately **not** validated: real packets and OFF both
@@ -359,6 +389,13 @@ carry codes that fail it, and a lookup that refuses to try is worse than a miss.
 A product with no macro panel is never written. `foods.carbs_g` and its
 neighbours are `not null`, so the only way to store one is to fabricate zeros,
 and "0 g protein" against a tin of tuna is worse than not having it.
+
+**And Malaysia is the thin part of all of it.** Of those 3.2 million rows, 4,333
+carry a GS1 Malaysia prefix — fewer than Thailand, and 0.13% of the catalogue.
+That is not a filter in this repo: the pipeline takes every OFF product with a
+panel and a code, and 4,333 is 96.5% of every Malaysian-prefix row Open Food
+Facts has that is usable at all. The source is the ceiling.
+`apps/catalogue-worker/BARCODE-COVERAGE.md` is the measurement and the options.
 
 ### The cascade
 
