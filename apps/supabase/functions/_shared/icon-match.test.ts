@@ -1,5 +1,5 @@
 import { assertEquals as eq } from 'jsr:@std/assert@1'
-import { iconFor, matchIcon, TABLE } from './icon-match.ts'
+import { iconFor, matchIcon, TABLE, WEAK_PHRASES } from './icon-match.ts'
 import { ICON_NAMES } from './icons.generated.ts'
 
 // The one failure on this path with no symptom. `icon_name` is free text in D1
@@ -46,8 +46,12 @@ Deno.test('a preparation word does not steal the food', () => {
   eq(matchIcon('Mineral water'), 'water-bottle', 'a named drink still resolves')
 })
 
-Deno.test('a null entry suppresses the shorter match', () => {
-  eq(matchIcon('Caesar salad dressing'), null, 'a bottle of dressing is not greens')
+// This was `null` until there was a drawing of a dressing bottle to point at.
+// The bug it guards against is unchanged: a bottle of dressing must not inherit
+// the salad's greens.
+Deno.test('a dressing is a bottle, not a plate of greens', () => {
+  eq(matchIcon('Caesar salad dressing'), 'salad-dressing')
+  eq(matchIcon('Salad dressing, caesar, low calorie'), 'salad-dressing')
   eq(matchIcon('Garden salad'), 'vegetables')
 })
 
@@ -77,4 +81,40 @@ Deno.test('iconFor resolves the set a drawing lives in', () => {
   eq(iconFor('Nasi lemak bungkus'), { set: 'dishes', name: 'nasi-lemak' })
   eq(iconFor('UHT Full Cream Milk'), { set: 'food', name: 'milk-carton' })
   eq(iconFor('Kellogg Special K'), null)
+})
+
+// Composition tables write "Head, qualifier, qualifier", and scanning the whole
+// string lets a qualifier win on length alone.
+Deno.test('a form declared first wins over what qualifies it', () => {
+  eq(matchIcon('Soup, vegetable chicken, canned'), 'soup-bowl')
+  eq(matchIcon('Cookie, vanilla sandwich, reduced fat'), 'biscuit-stack')
+  eq(matchIcon('Pastry, made with bean paste and salted egg yolk'), 'pie-slice')
+  eq(matchIcon('Pickles, cucumber, dill'), 'pickles')
+})
+
+// The restriction that makes the rule above safe. A head noun does not always
+// outrank what follows it: preferring it everywhere turned 401 steaks into
+// slices, because "beef" is an ingredient the rest of the name refines where a
+// soup is a shape the drawing is about.
+Deno.test('an ingredient head does not outrank its own qualifier', () => {
+  eq(matchIcon('Beef, round, bottom round, steak, separable lean'), 'beef-steak')
+  eq(matchIcon('Beef, chuck, arm pot roast, boneless'), 'beef-slices')
+})
+
+Deno.test('a longer compound beats a longer single word', () => {
+  eq(matchIcon('Chocolate chips'), 'chocolate-bar', 'not a crisp')
+  eq(matchIcon('Valmer sandwich biscuits'), 'biscuit-stack', 'not a sandwich')
+  eq(matchIcon('Oyster Sauce'), 'sauce-bottle', 'not an oyster')
+  eq(matchIcon('Grapefruit juice, 100%'), 'fruit-juice', 'the fruit is the flavour')
+  eq(matchIcon('Pur beurre de cacahuete'), 'peanuts', 'French peanut butter')
+  eq(matchIcon('Veritable petit beurre'), 'biscuit-stack', 'a petit-beurre is a biscuit')
+})
+
+// A weak phrase is only weak by being partitioned out of the same key list, so
+// one that is not a key does nothing at all and says nothing about it. `sesame`
+// sat here inert after its drawing turned out to be beans and was renamed.
+Deno.test('every weak phrase is a real table entry', () => {
+  for (const phrase of WEAK_PHRASES) {
+    if (!(phrase in TABLE)) throw new Error(`"${phrase}" is weak but maps to nothing`)
+  }
 })

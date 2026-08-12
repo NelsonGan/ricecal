@@ -73,6 +73,29 @@ if (bad.length) {
   process.exit(1)
 }
 
+// -- Every drawing already in the catalogue still resolves -------------------
+//
+// `icon_set` and `icon_name` are two columns and nothing in D1 ties them
+// together, so an update that touches one and not the other leaves a pair that
+// names no file. It renders as an empty plate, which is indistinguishable from
+// a row that never had a drawing — the same silent failure the table check
+// above exists for, arrived at from the other direction. This caught 122 rows
+// left behind by a correction pass that rewrote the name and forgot the set.
+const live = await d1('select icon_set, icon_name from food where icon_name is not null')
+const stale = live.filter((r) => SET_OF.get(r.icon_name) !== r.icon_set)
+if (stale.length) {
+  const seen = new Map()
+  for (const r of stale) {
+    const k = `${r.icon_set}/${r.icon_name} is really in ${SET_OF.get(r.icon_name) ?? '(no set)'}`
+    seen.set(k, (seen.get(k) ?? 0) + 1)
+  }
+  process.stderr.write(`${stale.length} rows carry an icon that resolves to nothing:\n`)
+  for (const [k, n] of [...seen].sort((a, b) => b[1] - a[1])) {
+    process.stderr.write(`  ${String(n).padStart(5)}  ${k}\n`)
+  }
+  process.exit(1)
+}
+
 const where = ['icon_name is null']
 if (SOURCE) where.push(`source_id = ${q(SOURCE)}`)
 if (GREP) where.push(`name like ${q(`%${GREP}%`)}`)

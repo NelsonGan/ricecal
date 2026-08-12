@@ -1,25 +1,34 @@
 # Icons worth drawing next
 
-Measured 12 August 2026 against the live D1 catalogue, after
-`pnpm foods:icons` took coverage from 34.8% to 61.1%.
+**All 100 below are drawn.** They were cut from four sheets on 12 August 2026
+and took catalogue coverage from 61.1% to **73.5%** — 35,259 of 47,940 rows.
+The list is kept as the record of what was asked for and why, and as the shape
+the next round should take.
 
-**18,639 of 47,940 catalogue rows still have no drawing.** Most of those are
-brands and flavours that no illustration would help — "Kellogg's Corn Flakes
-Original 500g" is a name, not a food. What follows is the part that a drawing
-WOULD answer, ranked by how many rows each one closes.
+**12,681 rows still have no drawing**, and most of them never will: they are
+brands, flavours and pack sizes that no illustration answers. "Kellogg's Corn
+Flakes Original 500g" is a name, not a food.
 
-The top 83 close **5,577 rows**, which would take coverage from 61.1% to about
-**72.7%**. The ranking is exclusive: a row is claimed by the first concept that
-matches it, so the counts add up rather than overlapping.
+What is left worth drawing is a long tail rather than another hundred. The
+biggest remaining clusters are protein drinks, cooking oils, squash and
+cordials, and cheeses by variety. Each is worth tens of rows, not hundreds, so
+the next round should be sized by what a person would actually notice missing
+rather than by what closes the most rows.
 
 Naming follows the set already in `assets/icons`: kebab-case, and `dishes` is
 for prepared Malaysian and regional food while `food` is ingredients, packaged
-goods and drinks. Adding one is `sync-icons.mjs`, then a phrase in
-`functions/_shared/icon-match.ts` pointing at it.
+goods and drinks. Adding one is `slice-icon-sheet.py` (or `sync-icons.mjs` for
+a single file), then `sync-icons.mjs --registry-only`, then a phrase in
+`functions/_shared/icon-match.ts` pointing at it — an icon nothing points at is
+a file nothing draws.
+
+Two of the hundred were renamed on inspection, and the names below are the ones
+that shipped: `sesame-seeds` was a pile of beans and became `soy-beans`, and
+`pau-kaya` had a savoury filling and became `pau-daging`.
 
 ---
 
-## Ranked by rows they would close
+## What each one closed
 
 | # | icon | set | rows | the drawing |
 |---|---|---|---|---|
@@ -61,7 +70,7 @@ goods and drinks. Adding one is `sync-icons.mjs`, then a phrase in
 | 36 | `oyster` | food | 48 | An open oyster on the half shell |
 | 37 | `herbs` | food | 48 | A sprig of green herbs |
 | 38 | `popcorn` | food | 48 | A striped tub of popcorn |
-| 39 | `sesame-seeds` | food | 47 | A scatter of pale sesame seeds |
+| 39 | `soy-beans` | food | 47 | A scatter of pale and black soy beans |
 | 40 | `french-fries` | food | 46 | A carton of straight-cut fries |
 | 41 | `quinoa` | food | 44 | A small bowl of quinoa |
 | 42 | `pepper-grinder` | food | 41 | A pepper mill |
@@ -131,7 +140,7 @@ gets when they type "pisang goreng" into Describe.
 | 10 | `pisang-goreng` | dishes | Battered fried banana fritters |
 | 11 | `nasi-tomato` | dishes | Orange tomato rice on a plate |
 | 12 | `tauhu-bakar` | dishes | Grilled tofu with peanut sauce |
-| 13 | `pau-kaya` | dishes | A steamed bun cut to show filling |
+| 13 | `pau-daging` | dishes | A steamed bun cut to show a savoury filling |
 | 14 | `bak-chang` | dishes | A wrapped glutinous rice dumpling |
 | 15 | `banh-mi` | dishes | A Vietnamese filled baguette |
 | 16 | `roti-jala` | dishes | Lacy net pancakes folded |
