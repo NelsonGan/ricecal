@@ -60,8 +60,41 @@ route needs the shared secret, which a preview version does not hold.
 The one thing this costs: **the schema is applied on merge only.** A PR's
 version reads the database production is serving, so a migration in that PR is
 not in effect while it is being previewed. A PR that adds a column and reads it
-will fail against the live schema, which is the honest signal — deploy order is
-schema-then-code for exactly this reason.
+will fail against the live schema — which is the honest signal, and which is
+what the rule below exists for.
+
+## SCHEMA FIRST, THEN THE CODE THAT READS IT
+
+**Always.** Every deploy here is a change to one link in a chain, and the chain
+has to be extended from the end nothing is pointing at yet:
+
+```
+D1 schema  →  the Worker  →  the Supabase edge functions  →  the app
+```
+
+Each arrow is "is read by". Deploy in that order and every intermediate state is
+one where something exists that nobody is asking for yet, which is invisible.
+Deploy against it and every intermediate state is one where something is being
+asked for that does not exist yet, which is an error on a live request.
+
+- A **column** added before the Worker that selects it is simply unread. A
+  Worker deployed first answers every request with a D1 error, including the
+  requests that have nothing to do with the new column.
+- A **field** the Worker starts returning before the edge functions read it is
+  ignored. The other way round, `undefined` reaches the cascade and a scan
+  silently prices a meal off a missing number.
+- The same again for the app: a shape the server has not started returning yet
+  is a crash on a screen somebody is already looking at.
+
+CI does the first arrow for you — `cloudflare.yml` runs the schema job before
+the deploy job and will not deploy if it fails. **The rest is manual**, because
+the Supabase functions deploy with the Supabase CLI and the app ships through
+EAS, so a change spanning those is several deploys with a window between each.
+Merge and deploy them in the order above, and make each step backwards
+compatible so the window is survivable rather than merely short.
+
+Removing something runs the chain **backwards**: stop reading it everywhere
+first, ship that, and only then drop the column.
 
 ## Pointing a bundle at a PR's Worker
 

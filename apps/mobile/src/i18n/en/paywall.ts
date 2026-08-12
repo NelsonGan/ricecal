@@ -62,9 +62,16 @@ export const paywall = {
         offline: 'Works offline for saved foods',
       },
     },
-    voice: {
-      title: 'Voice logging is a Pro feature',
-      body: 'Say what you ate and we work out the rest.',
+    /**
+     * Describe, which is what voice logging became. The route that recorded a
+     * sentence is gone; the cascade behind it never was, and reads a typed one
+     * through the same endpoint. The perks are unchanged because they were
+     * always about what the model does with the sentence rather than how it
+     * arrived.
+     */
+    describe: {
+      title: 'Describing a meal is a Pro feature',
+      body: 'Write down what you ate and we work out the rest.',
       perks: {
         multiItem: 'Several dishes in one sentence',
         portion: 'Portion words like "half a plate"',
@@ -81,7 +88,10 @@ export const paywall = {
     title: 'You are in. Jom makan.',
     body: 'Trial active for 3 days. Everything is unlocked, nothing to set up.',
     perks: {
-      log: 'Log by photo or voice',
+      // What the app can actually do. It said "photo or voice" while voice
+      // logging was a route, and went on saying it after that route was
+      // deleted — a promise made to somebody at the moment they pay.
+      log: 'Log by photo, by barcode or in your own words',
       database: 'Full local food database',
     },
     manageNote: 'Manage or cancel any time in Profile, Subscription.',
