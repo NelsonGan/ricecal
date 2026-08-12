@@ -128,6 +128,7 @@ export {
   snapshotFromEntry,
   snapshotFromFood,
   snapshotFromRecipe,
+  withCataloguePortions,
 } from './snapshot'
 export { useSubscription } from './subscription'
 export { useTrendSeries, useTrendSummary } from './trends'
