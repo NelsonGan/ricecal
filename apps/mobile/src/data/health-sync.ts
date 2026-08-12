@@ -1,6 +1,8 @@
+import type { QueryClient } from '@tanstack/react-query'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState } from 'react-native'
+import { createMMKV } from 'react-native-mmkv'
 
 import type { HealthProvider, HealthReading, ProviderId } from '@/lib/health'
 import { providerFor } from '@/lib/health'
@@ -212,6 +214,35 @@ async function persist(
       if (error) throw error
     }
   }
+
+  /**
+   * Weigh-ins go through a FUNCTION rather than an upsert, and that is the one
+   * asymmetry in this file worth reading twice.
+   *
+   * The three tables above are the sync's own: nothing else writes them, so an
+   * upsert onto their key is unambiguous and re-running it is free. Weight is
+   * not like that. `weight_logs` is shared with the user, who types into it from
+   * the Trends tab, and one row per day means the two authors compete for the
+   * same key — with the rolling window re-reading the last seven days on every
+   * foreground, so the sync gets to compete once a minute for as long as the app
+   * is open.
+   *
+   * A READING THE USER TYPED ALWAYS WINS. That is a WHERE on the DO UPDATE,
+   * which PostgREST's `.upsert()` cannot express, so `sync_weight_readings` owns
+   * it — see the header on `schemas/40_weight_logs.sql` for why it also drops
+   * out-of-range readings instead of raising on them.
+   */
+  if (reading.weights.length > 0) {
+    const { error } = await supabase.rpc('sync_weight_readings', {
+      p_provider: provider,
+      p_readings: reading.weights.map((weigh) => ({
+        measured_on: weigh.date,
+        weight_kg: weigh.kg,
+        body_fat_pct: weigh.bodyFatPct,
+      })),
+    })
+    if (error) throw error
+  }
 }
 
 /**
@@ -335,6 +366,86 @@ async function noteSync(
   if (error) throw error
 }
 
+/**
+ * What a sync can have moved.
+ *
+ * Shared by the connect and the incremental pass because they write exactly the
+ * same tables — the only difference between them is how far back they read, and
+ * a list that drifted between the two would mean a screen that refreshes after
+ * one kind of sync and not the other.
+ *
+ * The weight three are here for a reason that is easy to miss: a synced weigh-in
+ * fires `weight_logs_sync_daily_goals` in the database, which rewrites
+ * `daily_goals`. So a sync can change the user's calorie target without anything
+ * in the app having asked it to, and a stale `keys.goals` would leave Today
+ * showing a budget the server has already replaced.
+ */
+function invalidateAfterSync(queryClient: QueryClient, userId: string): void {
+  queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+  queryClient.invalidateQueries({ queryKey: keys.healthConnection(userId) })
+  // The budget on Today is goal + burned now. A connect that did not move it
+  // would look like it had not worked.
+  queryClient.invalidateQueries({ queryKey: keys.dayAll(userId) })
+  // Movement extends the budget, so it moves the week strip's dots too.
+  queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
+  // And a weigh-in that arrived from a scale is a new point on the chart, a new
+  // "current weight" on Me and the goals screen, and a recomputed target.
+  queryClient.invalidateQueries({ queryKey: keys.weighIns(userId) })
+  queryClient.invalidateQueries({ queryKey: keys.goals(userId) })
+  queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+}
+
+/**
+ * What each provider was last asked to read, ON THIS DEVICE.
+ *
+ * MMKV rather than `health_connections.permissions`, and the difference is the
+ * point: a permission is granted to an INSTALL, while that column belongs to an
+ * account. The same account on a new phone has been asked nothing.
+ *
+ * WHY THIS EXISTS AT ALL
+ *
+ * A connection is made once. The incremental pass deliberately does not ask for
+ * access — it runs on every foreground, and a permission sheet that appeared
+ * every time somebody opened the app would be intolerable. So when a release
+ * starts reading a type the last one did not, nobody who was already connected
+ * is ever asked for it: on iOS the type stays `notDetermined` and reads return
+ * nothing, on Android it is simply absent. The feature is then silently dead for
+ * every existing install while working perfectly on a fresh one, which is the
+ * worst shape a bug can have.
+ *
+ * Weight was the first release to do this, and it was caught because the
+ * developer's own account was already connected with the previous list.
+ *
+ * The stored value is the LIST ITSELF rather than a version number somebody has
+ * to remember to bump. Adding a type therefore re-asks exactly once, on each
+ * device, with no second thing to keep in step.
+ */
+const asked = createMMKV({ id: 'ricecal-health-permissions' })
+
+const fingerprint = (types: readonly string[]): string => [...types].sort().join(',')
+
+const askedKey = (provider: ProviderId) => `asked.${provider}`
+
+/**
+ * Ask for anything this device has not been asked for, once.
+ *
+ * Stamped WHATEVER THE ANSWER. A refusal is a decision, and re-opening the
+ * sheet on the next foreground because the user said no is the behaviour that
+ * makes people uninstall an app. The next change to the read list asks again,
+ * which is the only time there is a new question to put.
+ */
+async function ensureAccess(userId: string, provider: HealthProvider): Promise<void> {
+  const want = fingerprint(provider.readTypes)
+  if (asked.getString(askedKey(provider.id)) === want) return
+
+  const access = await provider.requestAccess()
+  asked.set(askedKey(provider.id), want)
+
+  // Recorded so the screens that explain a gap are explaining the current
+  // grant rather than the one from before the list grew.
+  await noteSync(userId, provider.id, { permissions: access.permissions })
+}
+
 export type ConnectResult = {
   granted: boolean
   /** Days written. Zero after a granted-looking connect means iOS said no. */
@@ -364,6 +475,9 @@ export function useConnectHealth() {
       const provider = providerFor(id)
 
       const access = await provider.requestAccess()
+      // Stamped here too, so the sync that follows a connect does not turn
+      // straight round and ask again for the list it was just granted.
+      asked.set(askedKey(id), fingerprint(provider.readTypes))
       if (!access.granted) return { granted: false, days: 0 }
 
       const from = daysAgo(BACKFILL_DAYS)
@@ -385,15 +499,7 @@ export function useConnectHealth() {
       return { granted: true, days }
     },
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.healthConnection(userId) })
-      // The budget on Today is goal + burned now. A connect that did not move it
-      // would look like it had not worked.
-      queryClient.invalidateQueries({ queryKey: keys.dayAll(userId) })
-      // Movement extends the budget, so it moves the week strip's dots too.
-      queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
-    },
+    onSuccess: () => invalidateAfterSync(queryClient, userId),
   })
 }
 
@@ -414,6 +520,12 @@ export function useSyncHealth() {
       const availability = await provider.isAvailable()
       if (!availability.ok) return 0
 
+      // Before the read, because a type this device has never been asked about
+      // returns nothing rather than failing — see `ensureAccess`. Almost always
+      // a no-op: it touches the platform only on the first pass after the read
+      // list has changed.
+      await ensureAccess(userId, provider)
+
       const from = daysAgo(WINDOW_DAYS - 1)
       const to = dateKey(new Date())
 
@@ -427,13 +539,7 @@ export function useSyncHealth() {
       return days
     },
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.healthConnection(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.dayAll(userId) })
-      // Movement extends the budget, so it moves the week strip's dots too.
-      queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
-    },
+    onSuccess: () => invalidateAfterSync(queryClient, userId),
   })
 }
 

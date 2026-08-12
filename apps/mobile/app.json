@@ -39,12 +39,27 @@
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_DISTANCE",
         "android.permission.health.READ_EXERCISE",
-        "android.permission.health.READ_HEART_RATE"
+        "android.permission.health.READ_HEART_RATE",
+        "android.permission.health.READ_WEIGHT",
+        "android.permission.health.READ_BODY_FAT"
       ],
       "blockedPermissions": ["com.google.android.gms.permission.AD_ID"]
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#F6F8F7",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#111716"
+          }
+        }
+      ],
       "expo-status-bar",
       "expo-secure-store",
       "expo-localization",
@@ -91,8 +106,8 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "RiceCal reads your steps, workouts and calories burned so your movement can extend each day's calorie budget.",
-          "NSHealthUpdateUsageDescription": "RiceCal never writes to Apple Health. It only reads your activity.",
+          "NSHealthShareUsageDescription": "RiceCal reads your steps, workouts and calories burned so your movement can extend each day's calorie budget, and your weight so your target follows it.",
+          "NSHealthUpdateUsageDescription": "RiceCal never writes to Apple Health. It only reads what you have already recorded there.",
           "background": false
         }
       ],

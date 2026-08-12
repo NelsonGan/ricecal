@@ -996,6 +996,7 @@ export type Database = {
           body_fat_pct: number | null
           created_at: string
           measured_on: string
+          provider: Database['public']['Enums']['health_provider'] | null
           updated_at: string
           user_id: string
           weight_kg: number
@@ -1004,6 +1005,7 @@ export type Database = {
           body_fat_pct?: number | null
           created_at?: string
           measured_on: string
+          provider?: Database['public']['Enums']['health_provider'] | null
           updated_at?: string
           user_id: string
           weight_kg: number
@@ -1012,6 +1014,7 @@ export type Database = {
           body_fat_pct?: number | null
           created_at?: string
           measured_on?: string
+          provider?: Database['public']['Enums']['health_provider'] | null
           updated_at?: string
           user_id?: string
           weight_kg?: number
@@ -1526,6 +1529,13 @@ export type Database = {
       set_recipe_public: {
         Args: { p_public: boolean; p_recipe_id: string }
         Returns: Database['public']['Enums']['recipe_review']
+      }
+      sync_weight_readings: {
+        Args: {
+          p_provider: Database['public']['Enums']['health_provider']
+          p_readings: Json
+        }
+        Returns: number
       }
       trend_days: {
         Args: { p_range: string; p_user_id?: string }

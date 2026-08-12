@@ -32,6 +32,11 @@ export const CONNECT_READ_TYPES = [
   'Distance',
   'ExerciseSession',
   'HeartRate',
+  // Not movement. A weigh-in is an input to the calorie budget rather than a
+  // statistic beside it, so a scale that writes here moves the user's target
+  // without them typing anything.
+  'Weight',
+  'BodyFat',
 ] as const
 
 export type ConnectReadType = (typeof CONNECT_READ_TYPES)[number]
@@ -49,11 +54,11 @@ export const isConnectReadType = (value: string): value is ConnectReadType =>
 /**
  * The permission that reads each record type.
  *
- * Written out rather than derived from the type name. Five of the six ARE the
- * name in screaming snake case, which is what makes a derivation tempting; the
- * sixth is not — `ExerciseSession` is read by `READ_EXERCISE` — so a clever
- * version would be right five times and silently wrong about workouts, which
- * is the half of the feature with a screen of its own.
+ * Written out rather than derived from the type name. Seven of the eight ARE
+ * the name in screaming snake case, which is what makes a derivation tempting;
+ * the eighth is not — `ExerciseSession` is read by `READ_EXERCISE` — so a
+ * clever version would be right seven times and silently wrong about workouts,
+ * which is the half of the feature with a screen of its own.
  */
 const READ_PERMISSION: Record<ConnectReadType, string> = {
   ActiveCaloriesBurned: 'android.permission.health.READ_ACTIVE_CALORIES_BURNED',
@@ -62,6 +67,8 @@ const READ_PERMISSION: Record<ConnectReadType, string> = {
   Distance: 'android.permission.health.READ_DISTANCE',
   ExerciseSession: 'android.permission.health.READ_EXERCISE',
   HeartRate: 'android.permission.health.READ_HEART_RATE',
+  Weight: 'android.permission.health.READ_WEIGHT',
+  BodyFat: 'android.permission.health.READ_BODY_FAT',
 }
 
 /**
