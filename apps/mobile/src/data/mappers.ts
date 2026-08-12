@@ -72,7 +72,23 @@ export function toServings(json: FoodDetailsRow['servings']): Serving[] {
 export type FoodStats = { timesLogged: number }
 
 export function toFood(row: FoodDetailsRow, stats?: FoodStats | undefined): Food {
-  const servings = toServings(row.servings)
+  const parsed = toServings(row.servings)
+  // NEVER EMPTY. `toServings` drops anything without a string id and label, so
+  // a row whose portions are missing or malformed arrives here as `[]` — and
+  // every screen that shows a food reads `servings[0]`, which is `Serving`
+  // rather than `Serving | undefined` because `noUncheckedIndexedAccess` is
+  // off. The compiler cannot see it; the app crashes with "cannot get label of
+  // undefined" on the food detail page, after a scan that looked like it
+  // worked.
+  //
+  // The fallback is the portion the row's own macros are quoted per, which is
+  // what a single-serving food would have had anyway. A dish with one portion
+  // and a dish whose portions failed to parse look the same on screen, and that
+  // is the right trade: the numbers are still the row's.
+  const servings: Serving[] = parsed.length
+    ? parsed
+    : [{ id: `${row.id ?? 'food'}:base`, label: row.serving_label ?? '1 serving', factor: 1 }]
+
   return {
     id: row.id ?? '',
     name: row.name ?? '',

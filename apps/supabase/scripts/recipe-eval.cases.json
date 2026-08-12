@@ -1,0 +1,116 @@
+[
+  {
+    "name": "nasi lemak, a dish that is several dishes",
+    "text": "nasi lemak with sambal, fried anchovies, peanuts, cucumber and a boiled egg, feeds 4",
+    "servings": [4, 4],
+    "per_serving": [450, 1050],
+    "ingredients": [6, 14],
+    "steps": [5, 12],
+    "name_has": ["nasi lemak"],
+    "must_mention": ["coconut", "rice", "anchov"]
+  },
+  {
+    "name": "rendang, which is defined by its reduction",
+    "text": "beef rendang, about 1kg of beef, feeds 6",
+    "servings": [6, 6],
+    "per_serving": [350, 800],
+    "ingredients": [6, 16],
+    "steps": [4, 12],
+    "name_has": ["rendang"],
+    "must_mention": ["coconut", "beef"]
+  },
+  {
+    "name": "kari ayam, the everyday pot",
+    "text": "chicken curry the way my mum makes it, with potatoes, feeds 5",
+    "servings": [5, 5],
+    "per_serving": [300, 700],
+    "ingredients": [6, 14],
+    "steps": [4, 12],
+    "must_mention": ["chicken", "potato"]
+  },
+  {
+    "name": "carbonara, which must not have cream in it",
+    "text": "spaghetti carbonara for 2",
+    "servings": [2, 2],
+    "per_serving": [450, 950],
+    "ingredients": [4, 10],
+    "steps": [4, 12],
+    "name_has": ["carbonara"],
+    "name_lacks": ["nasi", "goreng", "mee"],
+    "must_mention": ["egg"],
+    "must_not": ["cream", "krim"]
+  },
+  {
+    "name": "a dish from nowhere near Malaysia keeps its own name",
+    "text": "beef tacos with salsa and coriander, makes 8 tacos",
+    "per_serving": [120, 500],
+    "ingredients": [5, 14],
+    "steps": [4, 12],
+    "name_has": ["taco"],
+    "name_lacks": ["nasi", "goreng", "kampung"]
+  },
+  {
+    "name": "coq au vin, named with no amounts at all",
+    "text": "Coq au vin, feeds 6",
+    "servings": [6, 6],
+    "per_serving": [350, 800],
+    "ingredients": [6, 17],
+    "steps": [4, 12],
+    "name_has": ["coq au vin"],
+    "must_mention": ["wine", "chicken"]
+  },
+  {
+    "name": "thai green curry stays thai",
+    "text": "green curry with chicken and aubergine, feeds 4",
+    "servings": [4, 4],
+    "per_serving": [250, 800],
+    "ingredients": [5, 16],
+    "steps": [4, 12],
+    "name_lacks": ["kari hijau", "nasi"],
+    "must_mention": ["coconut", "curry paste|chilli|chili"]
+  },
+  {
+    "name": "stated amounts are used exactly",
+    "text": "fried rice with 500g cooked rice, 3 eggs, 2 tablespoons oil, feeds 3",
+    "servings": [3, 3],
+    "per_serving": [300, 750],
+    "ingredients": [4, 10],
+    "steps": [4, 12],
+    "must_mention": ["rice", "egg", "oil"]
+  },
+  {
+    "name": "baking needs an oven temperature",
+    "text": "banana bread with 3 ripe bananas, makes 10 slices",
+    "per_serving": [150, 400],
+    "ingredients": [5, 12],
+    "steps": [4, 12],
+    "name_has": ["banana"],
+    "must_mention": ["flour", "banana", "bake|oven"]
+  },
+  {
+    "name": "moussaka, the pot that used to come back light",
+    "text": "Moussaka, feeds 8",
+    "servings": [8, 8],
+    "per_serving": [350, 800],
+    "ingredients": [7, 18],
+    "steps": [5, 12],
+    "name_has": ["moussaka"],
+    "must_mention": ["aubergine|eggplant|terung"]
+  },
+  {
+    "name": "a soup, where the liquid is most of the weight",
+    "text": "bak kut teh with pork ribs, feeds 4",
+    "servings": [4, 4],
+    "per_serving": [250, 900],
+    "ingredients": [5, 14],
+    "steps": [4, 12],
+    "name_has": ["bak kut teh"],
+    "must_mention": ["pork"]
+  },
+  {
+    "name": "not a recipe at all",
+    "text": "remind me to buy milk tomorrow",
+    "per_serving": [0, 0],
+    "expect_no_food": true
+  }
+]
