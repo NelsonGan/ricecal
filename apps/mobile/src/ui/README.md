@@ -100,7 +100,7 @@ node scripts/sync-icons.mjs
 ```
 
 That script downscales and quantises (37 MB → 5.7 MB) and needs the design
-system checked out at `.secrets/design-system`. The processed PNGs are
+system checked out at `.secrets/RiceCal Design System`. The processed PNGs are
 committed, so CI and EAS never run it.
 
 ## Adding a colour role
