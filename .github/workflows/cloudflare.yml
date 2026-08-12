@@ -4,15 +4,10 @@ name: Cloudflare
 # something under there changes — an app-only commit never fires it, and a
 # Cloudflare-only commit never waits on a 40-minute native build.
 #
-# Two long-lived branches, two deploy targets:
-#
-#   main      → `ricecal-catalogue`          the Worker the store builds talk to
-#   preview   → `ricecal-catalogue-preview`  what the `preview` EAS channel talks to
-#
-# Both bind the SAME D1 database. There is one copy of the catalogue and it is
-# read-only over HTTP, so a preview Worker pointed at a stub would prove nothing
-# about a change to how 3.2 million packets are queried. See the `env.preview`
-# block in the Worker's wrangler.jsonc.
+# Deploys on a merge to main, and nowhere else. A PULL REQUEST's Worker is not
+# here: `deploy.yml` uploads a version of the same script under a per-PR alias
+# and points that PR's app bundle at it, because the two halves of a preview
+# have to come from one commit and be reported in one comment.
 #
 # The matrix is discovered from the filesystem rather than listed here, so a
 # second Worker is a directory under `apps/cloudflare/workers/` and no edit to
@@ -21,12 +16,11 @@ name: Cloudflare
 run-name: >-
   ${{ github.event_name == 'pull_request' && format('Cloudflare · PR #{0}', github.event.number)
    || github.ref == 'refs/heads/main' && 'Cloudflare · Production deploy'
-   || github.ref == 'refs/heads/preview' && 'Cloudflare · Preview deploy'
    || format('Cloudflare · {0}', github.ref_name) }}
 
 on:
   push:
-    branches: [main, preview]
+    branches: [main]
     paths:
       - 'apps/cloudflare/**'
       - '.github/workflows/cloudflare.yml'
@@ -50,7 +44,6 @@ jobs:
     timeout-minutes: 5
     outputs:
       workers: ${{ steps.find.outputs.workers }}
-      environment: ${{ steps.find.outputs.environment }}
     steps:
       - uses: actions/checkout@v4
 
@@ -68,17 +61,6 @@ jobs:
             exit 1
           fi
           echo "workers=$workers" >> "$GITHUB_OUTPUT"
-
-          # Which wrangler environment this ref deploys to. A branch that is
-          # neither main nor preview reaches the check job and stops there, so
-          # the value is only ever read by a job that is already gated on those
-          # two.
-          if [ "${{ github.ref }}" = "refs/heads/preview" ]; then
-            echo "environment=preview" >> "$GITHUB_OUTPUT"
-          else
-            echo "environment=production" >> "$GITHUB_OUTPUT"
-          fi
-
           echo "Workers: $workers"
 
   check:
@@ -113,9 +95,9 @@ jobs:
   # that reads it is simply unread. Same ordering, and the same reason, as
   # deploying the Worker before the edge functions that call it.
   #
-  # PRODUCTION ONLY. Preview shares this database, so a schema change on the
-  # preview branch would otherwise reach the rows production is serving before
-  # anybody had merged it.
+  # Merged work only. A PR's Worker version shares this database — versions
+  # inherit their bindings — so applying a schema from an unmerged branch would
+  # reach the rows production is serving before anybody had approved it.
   schema:
     name: Cloudflare · D1 schema
     needs: check
@@ -155,20 +137,11 @@ jobs:
           done
 
   deploy:
-    name: Cloudflare · Deploy ${{ matrix.worker }} (${{ needs.plan.outputs.environment }})
+    name: Cloudflare · Deploy ${{ matrix.worker }}
     needs: [plan, check, schema]
-    # Spelled out rather than left to the default gate, because `schema` is
-    # SKIPPED on the preview branch and a skipped `needs` takes the job that
-    # waits on it down with it. `!cancelled()` is what lets this be evaluated at
-    # all once a dependency has not succeeded; the two result checks are then
-    # what actually stop a deploy after a failure.
     if: >-
-      !cancelled()
-      && needs.plan.result == 'success'
-      && needs.check.result == 'success'
-      && (needs.schema.result == 'success' || needs.schema.result == 'skipped')
-      && github.event_name != 'pull_request'
-      && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/preview')
+      github.event_name != 'pull_request'
+      && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -192,9 +165,4 @@ jobs:
 
       - name: Deploy
         working-directory: apps/cloudflare/workers/${{ matrix.worker }}
-        run: |
-          if [ "${{ needs.plan.outputs.environment }}" = "preview" ]; then
-            pnpm exec wrangler deploy --env preview
-          else
-            pnpm exec wrangler deploy
-          fi
+        run: pnpm exec wrangler deploy
