@@ -7,7 +7,7 @@
  *
  * This is a developer tool, not a build step. The processed PNGs are committed,
  * so CI and EAS never run it — which is why it is allowed to depend on the
- * design system living at `.secrets/design-system` (gitignored) and on a
+ * design system living at `.secrets/RiceCal Design System` (gitignored) and on a
  * pngquant binary fetched through npx.
  *
  * Two transforms, both load-bearing:
@@ -36,7 +36,7 @@ import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const APP = join(here, '..')
-const SOURCE = join(APP, '..', '..', '.secrets', 'design-system', 'icons')
+const SOURCE = join(APP, '..', '..', '.secrets', 'RiceCal Design System', 'icons')
 const DEST = join(APP, 'assets', 'icons')
 const REGISTRY = join(APP, 'src', 'ui', 'icons.generated.ts')
 /**
