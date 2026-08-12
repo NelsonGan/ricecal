@@ -11,6 +11,7 @@ import type {
   HealthReading,
   HourReading,
   LocalDate,
+  WeightReading,
   WorkoutReading,
 } from './types'
 
@@ -39,10 +40,17 @@ import type {
  *
  * WHAT WE ASK FOR, AND WHY IT IS SHORT
  *
- * Seven read types and nothing else. HealthKit's permission sheet lists exactly
+ * Nine read types and nothing else. HealthKit's permission sheet lists exactly
  * what you request, and a calorie diary asking for sleep and cycle tracking
  * because it might want them later is a diary people decline. Nothing is
  * requested for WRITING at all — RiceCal never writes to Health.
+ *
+ * Body mass and body fat are the two that are not about movement. They are here
+ * because a weigh-in is an input to the calorie budget rather than a statistic
+ * beside it: `weight_logs` is what `compute_targets` reads, so a user whose
+ * scale writes to Health gets a budget that follows their weight without them
+ * typing anything. What the app does with them is `sync_weight_readings`, and
+ * the rule there is that a reading the user typed always wins.
  */
 
 const QUANTITY = {
@@ -53,6 +61,8 @@ const QUANTITY = {
   exerciseTime: 'HKQuantityTypeIdentifierAppleExerciseTime',
   standTime: 'HKQuantityTypeIdentifierAppleStandTime',
   heartRate: 'HKQuantityTypeIdentifierHeartRate',
+  bodyMass: 'HKQuantityTypeIdentifierBodyMass',
+  bodyFat: 'HKQuantityTypeIdentifierBodyFatPercentage',
 } as const
 
 const WORKOUT_TYPE = 'HKWorkoutTypeIdentifier'
@@ -163,8 +173,117 @@ async function hourlyTotals(
   return out
 }
 
+/**
+ * The last sample of each local day, for a DISCRETE quantity.
+ *
+ * `dailyTotals` above is the wrong tool for a weight and not merely a
+ * roundabout one: it asks for `cumulativeSum`, and the sum of three weigh-ins
+ * on a Saturday is 217 kg. HealthKit rejects a cumulative statistic over a
+ * discrete type outright, so the mistake surfaces as a thrown query rather than
+ * as a wrong number — but the reason it is wrong is worth stating, because the
+ * two helpers otherwise look interchangeable.
+ *
+ * Samples are asked for ASCENDING and written into the map as they come, so the
+ * last write for a date is the last reading of that day. That is the same rule
+ * `weight_logs` applies to somebody weighing themselves twice before breakfast:
+ * the later number is the one they would recognise as the day's weight.
+ *
+ * Deduplication across sources is not a concern here the way it is for steps. A
+ * scale and a phone writing the same weigh-in twice is one value repeated, not
+ * one value doubled — the failure mode that makes summing raw samples unsafe
+ * simply does not arise for a quantity nobody adds up.
+ */
+async function latestPerDay(
+  hk: HealthKitModule,
+  identifier: string,
+  unit: string,
+  from: LocalDate,
+  to: LocalDate,
+): Promise<Map<LocalDate, number>> {
+  const out = new Map<LocalDate, number>()
+
+  // Ascending so the last sample of a date is the last one written to the map.
+  const options = {
+    filter: { date: { startDate: startOf(from), endDate: endOf(to) } },
+    limit: -1,
+    ascending: true,
+    unit,
+  }
+
+  const samples = await hk.queryQuantitySamples(
+    // biome-ignore lint/suspicious/noExplicitAny: the identifier union is generated per-platform
+    identifier as any,
+    // biome-ignore lint/suspicious/noExplicitAny: same
+    options as any,
+  )
+
+  for (const sample of samples) {
+    if (sample.quantity == null || !sample.startDate) continue
+    out.set(dateKey(new Date(sample.startDate)), sample.quantity)
+  }
+
+  return out
+}
+
+/**
+ * A body-fat figure as a percentage, whichever way the store expressed it.
+ *
+ * `HKUnit.percent()` is documented as a FRACTION — 22% body fat reads as 0.22 —
+ * where Health Connect's `BodyFat.percentage` is already 22. Multiplying blind
+ * would be right on one platform and give 2,200 on the other.
+ *
+ * The branch is on 1 rather than on the platform because 1% body fat is not a
+ * body: the column's own floor is 1, the lowest figure ever measured in a living
+ * person is around 3, and a scale reporting under 1 has therefore reported a
+ * fraction. So the whole plausible range is unambiguous, and this stays correct
+ * if a library version ever starts converting for us.
+ */
+const asPercent = (value: number): number => (value <= 1 ? value * 100 : value)
+
+/**
+ * Weigh-ins, and the body fat recorded alongside them.
+ *
+ * Keyed off the WEIGHT: a day with a body-fat reading and no weight is skipped,
+ * because `weight_logs.weight_kg` is not null and there is no honest row to
+ * write. Body fat is a column on a weigh-in here, not a measurement of its own.
+ *
+ * The whole thing is wrapped, like `readHeartRate`, because a user can grant
+ * movement and decline body measurements — the two sit in different sections of
+ * the permission sheet — and an account with no weigh-ins in Health is the
+ * ordinary case rather than a failure. Neither may cost the caller its steps.
+ */
+async function readWeights(
+  hk: HealthKitModule,
+  from: LocalDate,
+  to: LocalDate,
+): Promise<WeightReading[]> {
+  try {
+    const [mass, fat] = await Promise.all([
+      latestPerDay(hk, QUANTITY.bodyMass, 'kg', from, to),
+      latestPerDay(hk, QUANTITY.bodyFat, '%', from, to),
+    ])
+
+    const out: WeightReading[] = []
+    for (const [date, kg] of mass) {
+      const pct = fat.get(date)
+      out.push({
+        date,
+        // Two places, which is what the column holds. Rounding a scale's own
+        // precision away here would be discarding the one thing it is better at
+        // than the person typing.
+        kg: Math.round(kg * 100) / 100,
+        bodyFatPct: pct == null ? null : Math.round(asPercent(pct) * 10) / 10,
+      })
+    }
+    return out
+  } catch {
+    return []
+  }
+}
+
 export const appleHealth: HealthProvider = {
   id: 'apple_health',
+  readTypes: APPLE_READ_TYPES,
 
   async isAvailable(): Promise<Availability> {
     if (Platform.OS !== 'ios') return { ok: false, reason: 'wrong-platform' }
@@ -210,7 +329,7 @@ export const appleHealth: HealthProvider = {
 
   async read(from, to, { withHours, age }): Promise<HealthReading> {
     const hk = load()
-    if (!hk) return { days: [], workouts: [], hours: [], deviceName: null }
+    if (!hk) return { days: [], workouts: [], hours: [], weights: [], deviceName: null }
 
     const [active, resting, steps, distance, exercise, standMinutes] = await Promise.all([
       dailyTotals(hk, QUANTITY.activeEnergy, 'kcal', from, to),
@@ -258,15 +377,20 @@ export const appleHealth: HealthProvider = {
       })
     }
 
-    const [workouts, hours] = await Promise.all([
+    const [workouts, hours, weights] = await Promise.all([
       readWorkouts(hk, from, to, age),
       withHours ? readHours(hk, from, to) : Promise.resolve<HourReading[]>([]),
+      // Read for the whole range, not only the hourly window: a weigh-in is one
+      // row a day and the chart draws ninety of them, so there is nothing to be
+      // saved by narrowing it and a gap in the middle to be caused by doing so.
+      readWeights(hk, from, to),
     ])
 
     return {
       days,
       workouts,
       hours,
+      weights,
       // The most recently named piece of hardware, falling back to whichever app
       // wrote the session. `queryWorkoutSamples` is asked for descending order,
       // so the first hit is the newest — a user who has since changed watches

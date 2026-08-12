@@ -201,7 +201,7 @@ auth.users
        │    └── food_log_ingredients   what a scanned plate was made of
        ├── daily_logs ─────── water and a day note
        ├── recipes ────────── home cooking       → recipe_ingredients
-       ├── weight_logs ────── the source of truth for current weight
+       ├── weight_logs ────── the source of truth for current weight, TYPED OR SYNCED
        └── health_connections  which health store, and how far back it has read
             ├── activity_days ───── one day of movement, keyed by local date
             ├── activity_sessions  one workout, keyed by the store's own id
@@ -231,6 +231,10 @@ Read shapes are views, all `security_invoker`:
 `logging_streak()`, `day_marks(from, to)`, and two range families —
 `trend_days` / `trend_series` / `trend_summary` for the diary, and
 `activity_days_range` / `activity_series` / `activity_summary` for movement.
+
+`weight_logs` has two authors. `provider` is null for a reading the user typed
+and names a store for one read off Apple Health or Health Connect, and the two
+are not equal — see the invariant below.
 
 Three things are effective-dated or keyed in a way worth knowing. `daily_goals`
 is one row per change rather than one mutable row, so a target tightened on
@@ -929,6 +933,26 @@ Break these and the feature is wrong in ways tests may not catch.
   stops the recompute permanently, so writing it for a save that merely passed
   through the goals screen freezes a user's target for good. It is set when the
   number differs from what the formula asks for, and not before.
+- **A weigh-in the user typed is never overwritten by a synced one.**
+  `weight_logs` is one row per day and both the person and their health store
+  write it, so they compete for the same key — and the sync re-reads the last
+  seven days on every foreground, so it competes about once a minute for as long
+  as the app is open. `provider is null` means "typed", and
+  `sync_weight_readings` refuses to update a row that says so. It is a function
+  rather than an `.upsert()` because that rule is a `WHERE` on the
+  `ON CONFLICT DO UPDATE` and PostgREST cannot express one. The corollary lives
+  on the client: `useLogWeight` writes `provider: null` EXPLICITLY, because
+  PostgREST updates only the columns a payload names, so omitting it would leave
+  a corrected weigh-in still marked as the scale's and the next foreground would
+  put the scale's number back. The user would watch their own correction undo
+  itself and blame the text field.
+- **A synced weigh-in moves the calorie budget, and that is the point.**
+  `weight_logs_sync_daily_goals` fires on the function's writes like any other,
+  so a scale can change somebody's target with the app closed. Two consequences:
+  anything that writes weight has to invalidate `keys.goals` as well as
+  `keys.weighIns`, and a reading a health store rejects must be DROPPED rather
+  than raised — this runs inside the same pass that writes activity, so one junk
+  5 kg entry in Health would otherwise cost the user their steps too.
 - **Burned calories extend the budget; they never shrink what was eaten.** The
   arithmetic is `goal + active - eaten`, written as an addition on screen. Every
   app in this category has at some point shipped the subtraction, and it turns a
