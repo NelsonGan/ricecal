@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { useLogFood, useSelectedDate } from '@/data'
+import { snapshotFromFood, useLogFood, useSelectedDate } from '@/data'
 import { recogniseDish } from '@/features/logging'
 import { useBack, useDismissTo } from '@/lib/navigation'
 import { Button, Icon, SheetSurface, Spinner, Text } from '@/ui'
@@ -35,8 +35,7 @@ export default function VoiceSheet() {
     try {
       const heard = await recogniseDish()
       await logFood.mutateAsync({
-        foodId: heard.foodId,
-        servingId: heard.servingId,
+        snapshot: snapshotFromFood(heard),
         logDate: selectedDate,
         source: 'voice',
       })

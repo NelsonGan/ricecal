@@ -21,66 +21,28 @@
 
 
 -- ---------------------------------------------------------------------------
--- A dish with its portions attached.
+-- WHERE `food_details` WENT
 --
--- The portion list is aggregated into JSON rather than returned as extra rows
--- because the client wants one object per dish — the search screen renders a
--- row per food, and the food detail screen needs every serving at once. Two
--- round trips or a client-side group-by for something the database can shape
--- once is the kind of thing that ends up duplicated in four places.
+-- There was a view here that joined a dish to its portions and shaped them into
+-- JSON, and `search_foods` returned `setof food_details`. Both are in Cloudflare
+-- D1 now, behind a Worker, and the app reaches them through the `catalogue` edge
+-- function. The shape the Worker returns is deliberately the shape this view
+-- returned: the callers were written against it, and a move of where the data
+-- lives should not become a rewrite of what it looks like.
 -- ---------------------------------------------------------------------------
-create view public.food_details with (security_invoker = on) as
-select
-  f.id,
-  f.slug,
-  f.name,
-  f.brand,
-  f.icon_set,
-  f.icon_name,
-  f.place,
-  f.kcal,
-  f.carbs_g,
-  f.protein_g,
-  f.fat_g,
-  f.fibre_g,
-  f.sugar_g,
-  f.sodium_mg,
-  f.verified,
-  d.id     as default_serving_id,
-  d.label  as serving_label,
-  coalesce(sv.servings, '[]'::jsonb) as servings
-from public.foods f
-left join public.food_servings d
-  on d.food_id = f.id and d.is_default
-left join lateral (
-  select jsonb_agg(
-    jsonb_build_object(
-      'id',      s.id,
-      'slug',    s.slug,
-      'label',   s.label,
-      'factor',  s.factor,
-      'default', s.is_default
-    )
-    order by s.position, s.label
-  ) as servings
-  from public.food_servings s
-  where s.food_id = f.id
-) sv on true;
-
--- service_role too: the scan edge function resolves photos through
--- `search_foods`, which returns rows of this view — and service_role bypasses
--- RLS, not grants.
-grant select on public.food_details to authenticated, service_role;
 
 
 -- ---------------------------------------------------------------------------
 -- A scanned plate's ingredients, with the numbers already worked out.
 --
--- Same arithmetic as food_log_details — the ingredient's catalogue macros x
--- its portion factor x its quantity — so the breakdown a screen renders under
--- an entry uses the same rounding as everything else. The parent entry's own
+-- Same arithmetic as food_log_details — the part's own per-serving macros x its
+-- portion factor x its quantity — so the breakdown a screen renders under an
+-- entry uses the same rounding as everything else. The parent entry's own
 -- macros stay authoritative; these rows explain them, and the scan function
 -- only writes a breakdown whose sum lands within band of the parent.
+--
+-- No joins left. The two this had — into `foods` for the name and macros, into
+-- `food_servings` for the factor — are columns on the row now.
 -- ---------------------------------------------------------------------------
 create view public.food_log_ingredient_details with (security_invoker = on) as
 select
@@ -88,29 +50,20 @@ select
   i.food_log_id,
   i.food_id,
   i.position,
-  coalesce(i.display_label, f.name) as name,
+  coalesce(i.display_label, i.item_name) as name,
   i.quantity,
-  s.label      as serving_label,
-  round(f.kcal      * s.factor * i.quantity)::integer    as kcal,
-  round(f.carbs_g   * s.factor * i.quantity, 1)::numeric as carbs_g,
-  round(f.protein_g * s.factor * i.quantity, 1)::numeric as protein_g,
-  round(f.fat_g     * s.factor * i.quantity, 1)::numeric as fat_g,
+  i.serving_label,
+  round(i.base_kcal      * i.serving_factor * i.quantity)::integer    as kcal,
+  round(i.base_carbs_g   * i.serving_factor * i.quantity, 1)::numeric as carbs_g,
+  round(i.base_protein_g * i.serving_factor * i.quantity, 1)::numeric as protein_g,
+  round(i.base_fat_g     * i.serving_factor * i.quantity, 1)::numeric as fat_g,
   -- What this much of the part weighs. Stored per unit and multiplied here, so
   -- it moves with the stepper the way the calories do. The serving factor is
   -- deliberately absent: the weight describes the ingredient row itself, and
   -- nothing in the app lets an ingredient change the serving it was written
   -- against.
-  --
-  -- LAST in the list, and that is load-bearing rather than tidy. Postgres only
-  -- allows `create or replace view` to APPEND columns, so putting it here is
-  -- what lets the migration replace this view in place — dropping it would take
-  -- `food_log_details` with it (it reads this one), and both would come back
-  -- with whatever grants the diff tool decided to write rather than the ones
-  -- declared below.
-  round(i.grams * i.quantity, 1)::numeric                as grams
-from public.food_log_ingredients i
-join public.foods f         on f.id = i.food_id
-join public.food_servings s on s.id = i.serving_id;
+  round(i.grams * i.quantity, 1)::numeric                             as grams
+from public.food_log_ingredients i;
 
 grant select on public.food_log_ingredient_details to authenticated, service_role;
 
@@ -118,9 +71,13 @@ grant select on public.food_log_ingredient_details to authenticated, service_rol
 -- ---------------------------------------------------------------------------
 -- One logged item, with the numbers already worked out.
 --
--- macros = the dish's per-base-serving values x the portion's factor x how
--- many. Rounded here, once, so that a total and the rows that make it up
--- cannot disagree by a calorie the way two independent roundings would.
+-- macros = the entry's own per-base-serving values x the portion's factor x how
+-- many. Rounded here, once, so that a total and the rows that make it up cannot
+-- disagree by a calorie the way two independent roundings would.
+--
+-- EVERY COLUMN NAME HERE IS THE ONE IT WAS. The screens, the mappers and four
+-- views above this one were written against them, and moving the catalogue out
+-- of this database must not become a rename.
 -- ---------------------------------------------------------------------------
 create view public.food_log_details with (security_invoker = on) as
 select
@@ -132,89 +89,87 @@ select
   e.note,
   e.source,
   e.photo_path,
-
   e.food_id,
   e.scan_id,
   e.suggested_edits,
-  -- The model's specific name wins over a shared estimate row's generic one.
-  -- A hand-logged entry has no display_label, so this is the food's name for
-  -- every row that predates scanning.
-  coalesce(e.display_label, f.name) as food_name,
-  f.brand      as food_brand,
-  -- What the UI badges an entry with: `verified = false` is "an estimate is
-  -- on this row", and the two flags say which kind of guess it was.
-  f.verified   as food_verified,
-  f.is_estimate,
-  f.is_archetype,
-  -- One picture per row, resolved here so that no screen has to know the order.
-  --
-  -- A photo suppresses both icons outright. The check constraint stops an ENTRY
-  -- holding a photo and an icon, but the food underneath can still carry a
-  -- drawing, and returning it next to a photo would hand every consumer the same
-  -- precedence rule to re-derive — and one of them would get it wrong. What the
-  -- client reads is therefore a photo, or an icon, or neither.
-  --
-  -- Below that the entry's own choice wins over the food's, and a row with
-  -- nothing comes back null rather than as a stand-in plate.
-  case when e.photo_path is null then coalesce(e.icon_set,  f.icon_set)  end as icon_set,
-  case when e.photo_path is null then coalesce(e.icon_name, f.icon_name) end as icon_name,
-  f.place,
 
+  coalesce(e.display_label, e.item_name) as food_name,
+  e.item_brand                           as food_brand,
+  -- Three flags that were properties of the catalogue row. Nothing in a diary
+  -- can tell any more, and nothing reads them for more than a badge: an entry
+  -- carries numbers, not a claim about where they came from. Kept as columns so
+  -- the mappers above do not have to change shape.
+  false                                  as food_verified,
+  false                                  as is_estimate,
+  false                                  as is_archetype,
+  -- A photo suppresses both icons outright: the entry's own icon wins over the
+  -- food's, and a photograph wins over either.
+  case when e.photo_path is null then coalesce(e.icon_set,  e.item_icon_set)  end as icon_set,
+  case when e.photo_path is null then coalesce(e.icon_name, e.item_icon_name) end as icon_name,
+  e.item_place                           as place,
   e.serving_id,
-  s.label      as serving_label,
-  s.factor     as serving_factor,
-
-  -- The raw overrides as well as the coalesced figures below. The screen that
-  -- edits them has to show WHICH of the four the user typed — a field seeded
-  -- with the app's own number cannot say whose number it is, and a form that
-  -- cannot tell would clear an override the moment it was saved again.
+  e.serving_label,
+  e.serving_factor,
   e.override_kcal,
   e.override_carbs_g,
   e.override_protein_g,
   e.override_fat_g,
 
-  -- Three sources, in order: what the user typed, what the parts add up to,
-  -- what the dish costs at this portion.
-  --
-  -- THE PARTS COME SECOND FOR A REASON. An entry with a breakdown IS its
-  -- breakdown: doubling the rice on a plate should move the carbs and leave
-  -- the fat alone, and scaling one parent row by one quantity cannot express
-  -- that — it moves all four macros in lockstep, so editing an ingredient
-  -- changed the calories and nothing else. Summing the parts is the only
-  -- reading under which the list on screen and the total above it are the
-  -- same claim.
-  --
-  -- An entry with no ingredients — most of them — falls straight through to
-  -- the third form, which is what this always did.
-  coalesce(e.override_kcal, parts.kcal, round(f.kcal * s.factor * e.quantity)::integer)
-    as kcal,
-  coalesce(e.override_carbs_g, parts.carbs_g,
-           round(f.carbs_g   * s.factor * e.quantity, 1))::numeric            as carbs_g,
-  coalesce(e.override_protein_g, parts.protein_g,
-           round(f.protein_g * s.factor * e.quantity, 1))::numeric            as protein_g,
-  coalesce(e.override_fat_g, parts.fat_g,
-           round(f.fat_g     * s.factor * e.quantity, 1))::numeric            as fat_g,
-  round(f.fibre_g   * s.factor * e.quantity, 1)::numeric   as fibre_g,
-  round(f.sugar_g   * s.factor * e.quantity, 1)::numeric   as sugar_g
-from public.food_logs e
-join public.foods f         on f.id = e.food_id
-join public.food_servings s on s.id = e.serving_id
--- Null for an entry with no ingredients, which is what makes the coalesce
--- above fall through rather than reading a plate of nothing as zero calories.
-left join lateral (
-  select
-    round(sum(i.kcal))::integer  as kcal,
-    round(sum(i.carbs_g), 1)     as carbs_g,
-    round(sum(i.protein_g), 1)   as protein_g,
-    round(sum(i.fat_g), 1)       as fat_g
-  from public.food_log_ingredient_details i
-  where i.food_log_id = e.id
-  having count(*) > 0
-) parts on true;
+  -- THREE SOURCES, IN ORDER, and this is the invariant the client's
+  -- `entryTotals` is a copy of: what the user typed, what the parts add up to,
+  -- what the dish costs at this portion. Only the last of the three changed —
+  -- it reads the row itself now instead of a catalogue join.
+  coalesce(
+    e.override_kcal,
+    (select round(sum(i.base_kcal * i.serving_factor * i.quantity))::integer
+       from public.food_log_ingredients i where i.food_log_id = e.id),
+    round(e.base_kcal * e.serving_factor * e.quantity)::integer
+  )                                      as kcal,
+  coalesce(
+    e.override_carbs_g,
+    (select round(sum(i.base_carbs_g * i.serving_factor * i.quantity), 1)
+       from public.food_log_ingredients i where i.food_log_id = e.id),
+    round(e.base_carbs_g * e.serving_factor * e.quantity, 1)
+  )                                      as carbs_g,
+  coalesce(
+    e.override_protein_g,
+    (select round(sum(i.base_protein_g * i.serving_factor * i.quantity), 1)
+       from public.food_log_ingredients i where i.food_log_id = e.id),
+    round(e.base_protein_g * e.serving_factor * e.quantity, 1)
+  )                                      as protein_g,
+  coalesce(
+    e.override_fat_g,
+    (select round(sum(i.base_fat_g * i.serving_factor * i.quantity), 1)
+       from public.food_log_ingredients i where i.food_log_id = e.id),
+    round(e.base_fat_g * e.serving_factor * e.quantity, 1)
+  )                                      as fat_g,
+  -- No override and no per-part figure for these three: nothing in the app
+  -- lets a user type a fibre correction, and the breakdown does not carry them.
+  round(e.base_fibre_g   * e.serving_factor * e.quantity, 1)       as fibre_g,
+  round(e.base_sugar_g   * e.serving_factor * e.quantity, 1)       as sugar_g,
+  round(e.base_sodium_mg * e.serving_factor * e.quantity)::integer as sodium_mg,
+  round(e.serving_grams  * e.quantity, 1)                          as grams,
+  e.recipe_id,
 
-grant select on public.food_log_details to authenticated;
+  -- THE SNAPSHOT ITSELF, unmultiplied, because one caller wants to COPY an
+  -- entry rather than read it: "repeat yesterday" writes today's row from
+  -- yesterday's, and every figure above has already been through the portion
+  -- and the quantity. Dividing them back out is lossy — they are rounded — and
+  -- a repeat that lands a calorie off the row it copied is a bug nobody can
+  -- explain. These are the columns as stored.
+  e.item_name,
+  e.item_brand,
+  e.base_kcal,
+  e.base_carbs_g,
+  e.base_protein_g,
+  e.base_fat_g,
+  e.base_fibre_g,
+  e.base_sugar_g,
+  e.base_sodium_mg,
+  e.serving_grams as base_serving_grams
+from public.food_logs e;
 
-
+grant select on public.food_log_details to authenticated, service_role;
 
 
 -- ---------------------------------------------------------------------------
@@ -252,25 +207,27 @@ grant select on public.daily_nutrition to authenticated;
 -- Derived rather than counted into a column: a counter needs incrementing on
 -- insert, decrementing on delete, and repairing whenever one of those was
 -- missed.
+--
+-- The exclusions moved. This used to join `foods` and filter out estimate,
+-- archetype and recipe rows: "usual at this time" is a list to log from, and a
+-- shared guess should not become a habit the app reinforces. There is no join
+-- to filter through now, and `food_id is not null` does the same work by a
+-- different route — every one of those three cases writes a null `food_id`,
+-- because none of them is a row in a catalogue this database can see. The name
+-- comes off the entry, which is where a snapshot puts it.
 -- ---------------------------------------------------------------------------
 create view public.user_food_stats with (security_invoker = on) as
 select
   e.user_id,
   e.food_id,
+  max(e.item_name)         as name,
   count(*)::integer        as times_logged,
   max(e.logged_at)         as last_logged_at
 from public.food_logs e
-join public.foods f on f.id = e.food_id
--- Estimate and archetype rows are excluded for the same reason they are
--- excluded from search: "usual at this time" is a list to log from, and a
--- shared guess should not become a habit the app reinforces. Recipes are
--- excluded because this list is joined against catalogue search results, and a
--- recipe is never one of those.
-where not f.is_estimate and not f.is_archetype and not f.is_recipe
+where e.food_id is not null
 group by e.user_id, e.food_id;
 
 grant select on public.user_food_stats to authenticated;
-
 
 -- ---------------------------------------------------------------------------
 -- The budget in force right now, one row per user.

@@ -1,0 +1,221 @@
+{
+  "stats": {
+    "top1": 28,
+    "top5": 30,
+    "total": 30,
+    "medianMs": 135,
+    "slowestMs": 537
+  },
+  "results": [
+    {
+      "q": "nasi lemak",
+      "want": "Nasi Lemak",
+      "rank": 0,
+      "top": "Nasi Lemak",
+      "ms": 537
+    },
+    {
+      "q": "char kuey teow",
+      "want": "Char Kuey Teow",
+      "rank": 0,
+      "top": "Char Kuey Teow",
+      "ms": 145
+    },
+    {
+      "q": "char kway teow",
+      "want": "Char Kuey Teow",
+      "rank": 0,
+      "top": "Char Kuey Teow",
+      "ms": 134
+    },
+    {
+      "q": "char kuay teo",
+      "want": "Char Kuey Teow",
+      "rank": 2,
+      "top": "Konjac Kuay Tiao",
+      "ms": 150
+    },
+    {
+      "q": "teh tarik",
+      "want": "Teh Tarik",
+      "rank": 0,
+      "top": "Teh Tarik",
+      "ms": 128
+    },
+    {
+      "q": "roti canai",
+      "want": "Roti Canai",
+      "rank": 0,
+      "top": "Roti Canai",
+      "ms": 136
+    },
+    {
+      "q": "chicken rice",
+      "want": "Chicken Rice",
+      "rank": 0,
+      "top": "Chicken Rice (Nasi Ayam)",
+      "ms": 147
+    },
+    {
+      "q": "nasi goreng",
+      "want": "Nasi Goreng",
+      "rank": 0,
+      "top": "Rice, Fried (Nasi Goreng)",
+      "ms": 144
+    },
+    {
+      "q": "mee goreng",
+      "want": "Mee Goreng",
+      "rank": 0,
+      "top": "Mee (Wheat Noodle), Fried (Mee Goreng)",
+      "ms": 136
+    },
+    {
+      "q": "bak kut teh",
+      "want": "Bak Kut Teh",
+      "rank": 0,
+      "top": "Bak Kut Teh",
+      "ms": 155
+    },
+    {
+      "q": "cendol",
+      "want": "Cendol",
+      "rank": 0,
+      "top": "Cendol",
+      "ms": 125
+    },
+    {
+      "q": "satay ayam",
+      "want": "Satay Ayam",
+      "rank": 0,
+      "top": "Satay Ayam",
+      "ms": 135
+    },
+    {
+      "q": "rendang",
+      "want": "Rendang",
+      "rank": 0,
+      "top": "Rendang Daging",
+      "ms": 133
+    },
+    {
+      "q": "laksa",
+      "want": "Laksa",
+      "rank": 0,
+      "top": "Laksa",
+      "ms": 124
+    },
+    {
+      "q": "kopi o",
+      "want": "Kopi O",
+      "rank": 0,
+      "top": "Kopi O",
+      "ms": 139
+    },
+    {
+      "q": "milo ais",
+      "want": "Milo Ais",
+      "rank": 0,
+      "top": "Milo Ais",
+      "ms": 127
+    },
+    {
+      "q": "curry puff",
+      "want": "Curry Puff",
+      "rank": 0,
+      "top": "Curry Puff",
+      "ms": 142
+    },
+    {
+      "q": "kueh salat",
+      "want": "Kuih Seri Muka",
+      "rank": 0,
+      "top": "Kuih Seri Muka",
+      "ms": 133
+    },
+    {
+      "q": "orh luak",
+      "want": "Oyster Omelette",
+      "rank": 1,
+      "top": "Oh Chien",
+      "ms": 125
+    },
+    {
+      "q": "pho bo",
+      "want": "Pho Bo",
+      "rank": 0,
+      "top": "Pho Bo",
+      "ms": 130
+    },
+    {
+      "q": "kimchi jjigae",
+      "want": "Kimchi Jjigae",
+      "rank": 0,
+      "top": "Kimchi Jjigae",
+      "ms": 118
+    },
+    {
+      "q": "pad thai",
+      "want": "Pad Thai",
+      "rank": 0,
+      "top": "Pad Thai",
+      "ms": 137
+    },
+    {
+      "q": "nasi lemk",
+      "want": "Nasi Lemak",
+      "rank": 0,
+      "top": "Nasi lemak",
+      "ms": 136
+    },
+    {
+      "q": "ayam gorng",
+      "want": "Ayam Goreng",
+      "rank": 0,
+      "top": "Chicken, Fried (Ayam Goreng)",
+      "ms": 125
+    },
+    {
+      "q": "a plate of nasi lemak with fried chicken",
+      "want": "Nasi Lemak",
+      "rank": 0,
+      "top": "KFC Nasi Lemak Ayam",
+      "ms": 174
+    },
+    {
+      "q": "milk",
+      "want": "Milk",
+      "rank": 0,
+      "top": "Milk",
+      "ms": 124
+    },
+    {
+      "q": "white rice",
+      "want": "Rice",
+      "rank": 0,
+      "top": "White Rice",
+      "ms": 133
+    },
+    {
+      "q": "chicken breast",
+      "want": "Chicken",
+      "rank": 0,
+      "top": "Chicken Breast",
+      "ms": 150
+    },
+    {
+      "q": "egg",
+      "want": "Egg",
+      "rank": 0,
+      "top": "Egg",
+      "ms": 128
+    },
+    {
+      "q": "banana",
+      "want": "Banana",
+      "rank": 0,
+      "top": "Banana, pink banana udang/merah(MY)",
+      "ms": 132
+    }
+  ]
+}

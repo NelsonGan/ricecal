@@ -133,20 +133,64 @@ function shapeIngredients(list: unknown[]): DraftIngredient[] {
  * it is DRAWN, so a "1." in the text would be a second number beside the first,
  * and it would survive into the field the user edits by hand.
  */
-function shapeSteps(raw: unknown): string {
+export function shapeSteps(raw: unknown): string {
   const value = text(raw, 4000)
   if (!value) return ''
 
-  return (
-    value
-      .split('\n')
-      // A sentence end followed by the start of another. Written to need the
-      // capital, so "1.5 kg" and "approx. 20" stay in one piece.
-      .flatMap((line) => line.split(/(?<=[.!?])\s+(?=[A-Z"'(])/))
-      .map((line) => line.replace(/^\s*(?:step\s*)?(?:\d+\s*[.):]|[-*•·])\s*/i, '').trim())
-      .filter(Boolean)
-      .join('\n')
-  )
+  const lines = value
+    .split('\n')
+    // A sentence end followed by the start of another. Written to need the
+    // capital, so "1.5 kg" and "approx. 20" stay in one piece.
+    .flatMap((line) => line.split(/(?<=[.!?])\s+(?=[A-Z"'(])/))
+    .map((line) => line.replace(/^\s*(?:step\s*)?(?:\d+\s*[.):]|[-*•·])\s*/i, '').trim())
+    .filter(Boolean)
+
+  return foldToLimit(lines).join('\n')
+}
+
+/**
+ * The most steps a method may have.
+ *
+ * The prompt asks for four to eight and never more than twelve, and on a dish
+ * cooked in stages it does not hold: a coq au vin came back with seventeen, a
+ * moussaka with fifteen. Relaxing the number made it worse, because the model
+ * reads a ceiling as a target.
+ *
+ * So it is enforced here as well as asked for, the way `foldMealItems` enforces
+ * one meal per photo. The number is not a style preference — this list is read
+ * on a phone propped behind a hot pan, and the failure of a long method is not
+ * that it is wrong but that the cook loses their place in it.
+ */
+const MAX_STEPS = 12
+
+/**
+ * Too many steps, folded into few enough by joining the shortest neighbours.
+ *
+ * MERGED rather than truncated, and that distinction is the whole point: the
+ * steps that overflow are at the END, and the end of a recipe is where the dish
+ * is assembled and served. Cutting there would leave a method that stops
+ * mid-cook. Joining the two shortest adjacent steps costs nothing — "Melt the
+ * butter." and "Stir in the flour." read perfectly well as one line, which is
+ * what the prompt itself tells the model to do when it is running long.
+ *
+ * Shortest-first, repeatedly, so the long steps that carry the times and
+ * temperatures stay on their own lines and the throwaway ones absorb each other.
+ */
+function foldToLimit(lines: string[]): string[] {
+  const out = [...lines]
+  while (out.length > MAX_STEPS) {
+    let at = 0
+    let shortest = Number.POSITIVE_INFINITY
+    for (let i = 0; i < out.length - 1; i++) {
+      const joined = out[i].length + out[i + 1].length
+      if (joined < shortest) {
+        shortest = joined
+        at = i
+      }
+    }
+    out.splice(at, 2, `${out[at].replace(/\s*$/, '')} ${out[at + 1]}`.trim())
+  }
+  return out
 }
 
 function shapeDraft(raw: unknown): RecipeDraft {
@@ -256,17 +300,64 @@ const RECIPE_SHAPE =
   'tinned coconut milk is about 800 kcal; 15 ml of cooking oil is about 120 kcal; ' +
   'one large egg is about 72 kcal; 100 g of raw skinless chicken thigh is about ' +
   '120 kcal. ' +
+  // The one place a full-pot figure is honestly wrong. A nasi lemak that deep
+  // fries its anchovies and peanuts came back at 1,697 kcal a serving, most of
+  // it a litre of frying oil that was poured back into the bottle.
+  'OIL FOR DEEP FRYING IS NOT EATEN. Where a step deep fries, count only the oil ' +
+  'the food takes up, roughly a tenth of its weight, and not the panful it was ' +
+  'fried in: 200 g of anchovies deep fried absorb about 20 ml. Oil that is ' +
+  'stir-fried or sauteed into a dish stays in it and is counted in full. ' +
   'Name each ingredient the way a shopping list does: singular, capitalised, and ' +
   'specific enough to price. "Chicken thigh", "Coconut milk", "Potato". ' +
-  'Six to ten ingredients is a full answer; do not pad it with seasonings you ' +
-  'cannot weigh. ' +
-  // The fat is the part that goes missing, and it is the part that costs. A pot
-  // whose steps say "fry" and whose list has no oil in it is understating the
-  // meal by a few hundred calories.
-  'Include the cooking fat and anything else the dish plainly needs to be that ' +
-  'dish, even when nobody mentioned it. Everything your steps name has to appear ' +
-  'in the list: steps that fry a rempah the ingredients never list describe a ' +
-  'different pot. '
+  // THE LIST IS THE SHOPPING LIST, and this used to say the opposite half of
+  // the time. "Six to ten ingredients is a full answer; do not pad it with
+  // seasonings you cannot weigh" sat here beside "everything your steps name
+  // has to appear in the list", and the two contradicted each other — so the
+  // model wrote the short list and then a method that used things it had not
+  // listed. A rendang came back as beef, coconut milk and oil, whose first step
+  // was "fry the rempah"; a bak kut teh as ribs and a tea bag, seasoned with
+  // salt and pepper that were nowhere; a banana bread with no baking soda,
+  // vanilla or salt in it and steps that folded in all three.
+  //
+  // Both halves of that are wrong. A cook cannot follow a method whose
+  // ingredients are missing, and half of what goes missing carries real
+  // calories — a rempah is chillies, shallots and the oil they fry in, and
+  // leaving it out understates the pot by a few hundred.
+  'THE LIST IS EVERYTHING THE COOKING USES. Write down every ingredient your ' +
+  'steps name, without exception, including the ones that weigh little: the salt, ' +
+  'the pepper, the baking soda, the vanilla, the soy sauce, the stock. If a step ' +
+  'mentions it, it is in the list with an amount. ' +
+  // The last hold-outs, and they hold out because they are obviously free.
+  // Zero calories is not a reason to leave a thing out of a shopping list.
+  'Salt and pepper especially: they carry no calories and they are still ' +
+  'ingredients, so a dish seasoned with them lists them. Season every savoury ' +
+  'dish, and write down what you seasoned it with. ' +
+  'And write down what the dish plainly needs even when nobody mentioned it — the ' +
+  'cooking fat above all, then the aromatics, the spice paste broken into what it ' +
+  'is made of, the sauce assembled at the end. A rendang is not beef and coconut ' +
+  'milk; it is those plus the chillies, shallots, garlic, lemongrass and galangal ' +
+  'that make the rempah. ' +
+  'A real dish runs to eight or more ingredients and often to fifteen. Fewer than ' +
+  'six means you have left something out. ' +
+  'The only things that stay out of the list are water and ice. ' +
+  // The last check, and the one that catches a pot which is internally
+  // consistent and still wrong. A nasi lemak for four came back with 800 g of
+  // rice and 1,200 ml of coconut milk in it — arithmetic that added up
+  // perfectly to 1,808 kcal a serving, because the amounts were for eight or
+  // ten people. The failure is invisible in every figure except the last one.
+  //
+  // The same shape as the size anchors in the meal prompt, and learnt the same
+  // way: a model asked for amounts in the abstract is generous, and generosity
+  // in a calorie app is a diet built on a number twice too big.
+  'LAST, CHECK THE POT AGAINST THE NUMBER OF PEOPLE. One serving is about 100 to ' +
+  '125 g of raw rice, 80 to 100 g of dry noodles, 150 to 250 g of raw meat or ' +
+  'fish, 200 to 300 ml of soup or curry gravy. A coconut milk gravy is santan ' +
+  'topped up with water, not santan alone: 400 ml of tinned coconut milk is ' +
+  'plenty for a pot that feeds six. ' +
+  'Then divide: a main course lands between 400 and 800 kcal a serving, a snack ' +
+  'or a side under 300, a rich braise up to 900. If your pot divides to more ' +
+  'than a thousand, the amounts are for more people than you were told about, ' +
+  'and it is the AMOUNTS that are wrong rather than the number of servings. '
 
 /**
  * How the steps are written, and it is a rule about PLAINNESS.
@@ -281,15 +372,49 @@ const RECIPE_SHAPE =
 const RECIPE_STEPS =
   '"steps" is how the dish is cooked, written straightforwardly: short plain ' +
   'sentences, one action each, in the order they happen, starting with a verb ' +
-  '("Fry the rempah until it darkens."). Three to six of them. ' +
+  '("Fry the rempah until it darkens."). ' +
+  // Four to eight, not three to six. Three steps is what came back for a bak
+  // kut teh — boil everything, simmer, serve — and a dish with parts that are
+  // cooked separately cannot be told in three: a nasi lemak is rice AND sambal
+  // AND the fried things, and each of them is a pot.
+  // A hard ceiling, and it went in, came out and went back. Relaxed to "about
+  // fifteen" the model took it as permission and produced seventeen for a coq
+  // au vin and fifteen for a moussaka. The number is not a style preference:
+  // this list is read on a phone propped against a wall behind a hot pan, and
+  // the failure of a long method is not that it is wrong but that the cook
+  // loses their place in it.
+  'Four to eight of them for a dish cooked in one pot, and TWELVE AT THE ABSOLUTE ' +
+  'MOST for one cooked in stages. Never more than twelve, however many parts the ' +
+  'dish has: combine the small consecutive actions rather than going over. ' +
+  'Each component still gets its own steps rather than being folded into one ' +
+  'line, but "melt the butter" and "stir in the flour" are one step, not two. ' +
+  // The one thing a cook cannot supply themselves. Times were already asked
+  // for; what was missing is that they are REQUIRED wherever heat is applied,
+  // which is where a recipe stops being followable without them.
+  'EVERY STEP THAT COOKS SAYS WHEN IT IS DONE. Anything fried, simmered, boiled, ' +
+  'baked, roasted or steamed carries a time, a temperature or a sign to watch ' +
+  'for: "until the oil separates", "for about two hours, until the meat is ' +
+  'tender", "at 180C for 40 minutes". A step that only says to fry something is ' +
+  'the step a cook cannot follow. Steps that merely add, pour or stir need no cue. ' +
   // Said as a fact about the string rather than as a preference about layout.
   // Asked for "sentences separated by newlines" the model wrote a paragraph
   // about a third of the time, and a paragraph is what the screen then draws.
   'Each step is a separate line: put a \\n between them and nothing else, so the ' +
   '"steps" value reads as one instruction per line. No numbering, no bullets and ' +
   'no headings; the app numbers them itself. ' +
-  'Say the times and temperatures that matter and nothing else. Do not describe ' +
-  'how it tastes or smells, and do not use em dashes or en dashes anywhere.'
+  // A sign to watch for is not flowery writing, and banning "how it smells"
+  // outright took the most useful cue in this kitchen with it: "tumis until
+  // fragrant" is how every Malaysian recipe says the rempah is ready.
+  'A sign the cook can see or smell is exactly what to give ("until fragrant", ' +
+  '"until the oil separates"). What to leave out is the writing ABOUT the food: ' +
+  'no rempah that sings, no gravy that kisses the meat, no telling the cook how ' +
+  'delicious it will be. ' +
+  // A serving suggestion that names food is a shopping list the cook does not
+  // have. Bak kut teh came back "serve with youtiao and chili paste" over an
+  // ingredient list holding neither.
+  'A last step may say how it is served, but only with things in the ingredient ' +
+  'list: do not suggest sides the recipe does not contain. ' +
+  'Do not use em dashes or en dashes anywhere.'
 
 /**
  * Where the cooking is from, said once for both prompts.
@@ -345,6 +470,15 @@ export const DESCRIBE_RECIPE_PROMPT =
   'Use their amounts exactly where they gave one, and their serving count where ' +
   'they gave one. Only estimate what they left out, and keep those estimates ' +
   'ordinary for the dish. ' +
+  // Their amounts are not their whole list, and the model read it as both:
+  // "fried rice with 500g cooked rice, 3 eggs, 2 tablespoons oil" came back as
+  // exactly those three, seasoned with nothing, which is not a dish anybody
+  // cooks. Naming some of a recipe is not the same as naming all of it.
+  'LISTING SOME INGREDIENTS IS NOT LISTING ALL OF THEM. What they wrote down is ' +
+  'fixed; everything else the dish needs is still yours to add. Somebody who ' +
+  'says "fried rice with 500 g of rice, 3 eggs and 2 tablespoons of oil" has ' +
+  'told you three amounts, not that their fried rice has no soy sauce, garlic or ' +
+  'salt in it. ' +
   'If they did not say how many it feeds, read it off the amounts they did give: ' +
   'a kilo of meat feeds 4 to 6. ' +
   RECIPE_STEPS +

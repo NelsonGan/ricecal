@@ -1,0 +1,214 @@
+[
+  {
+    "name": "typed: nasi lemak with fried chicken and teh tarik",
+    "kind": "text",
+    "text": "nasi lemak with fried chicken and teh tarik",
+    "kcal": [550, 1300],
+    "name_has": ["nasi lemak"],
+    "parts": [3, 4]
+  },
+  {
+    "name": "typed: two roti canai with dhal",
+    "kind": "text",
+    "text": "two roti canai with dhal",
+    "kcal": [400, 1000],
+    "name_has": ["roti"],
+    "parts": [2, 3]
+  },
+  {
+    "name": "typed: a bowl of chicken porridge",
+    "kind": "text",
+    "text": "a bowl of chicken porridge",
+    "kcal": [130, 480],
+    "name_has": ["porridge"],
+    "parts": 0
+  },
+  {
+    "name": "typed: 3 sticks of chicken satay (the 720 kcal bug)",
+    "kind": "text",
+    "text": "3 sticks of chicken satay",
+    "kcal": [80, 330],
+    "name_has": ["satay"],
+    "parts": 0
+  },
+  {
+    "name": "typed: half a plate of char kuey teow",
+    "kind": "text",
+    "text": "half a plate of char kuey teow",
+    "kcal": [180, 520],
+    "name_has": ["kuey teow"],
+    "name_lacks": ["half"],
+    "parts": 0
+  },
+  {
+    "name": "typed: 200g grilled chicken breast (stated weight)",
+    "kind": "text",
+    "text": "200g grilled chicken breast",
+    "kcal": [240, 430],
+    "name_has": ["chicken"],
+    "parts": 0
+  },
+  {
+    "name": "typed: roughly 700 calories of fried rice (stated figure)",
+    "kind": "text",
+    "text": "fried rice, roughly 700 calories",
+    "kcal": [620, 790],
+    "parts": 0
+  },
+  {
+    "name": "typed: a can of coke",
+    "kind": "text",
+    "text": "a can of coke",
+    "kcal": [110, 175],
+    "parts": 0
+  },
+  {
+    "name": "typed: large mcdonalds fries",
+    "kind": "text",
+    "text": "large mcdonalds fries",
+    "kcal": [330, 650],
+    "name_has": ["fries"],
+    "parts": 0
+  },
+  {
+    "name": "typed: banana leaf rice with mutton curry",
+    "kind": "text",
+    "text": "banana leaf rice with mutton curry",
+    "kcal": [450, 1250],
+    "parts": [2, 4]
+  },
+  {
+    "name": "typed: mee goreng mamak",
+    "kind": "text",
+    "text": "mee goreng mamak",
+    "kcal": [380, 950],
+    "name_has": ["mee goreng"],
+    "parts": 0
+  },
+  {
+    "name": "typed: two slices of white bread with kaya and butter",
+    "kind": "text",
+    "text": "two slices of white bread with kaya and butter",
+    "kcal": [200, 560],
+    "parts": [2, 3]
+  },
+  {
+    "name": "typed: 3 durian seeds",
+    "kind": "text",
+    "text": "3 durian seeds",
+    "kcal": [80, 380],
+    "name_has": ["durian"],
+    "parts": 0
+  },
+  {
+    "name": "typed: a bowl of curry laksa",
+    "kind": "text",
+    "text": "a bowl of curry laksa",
+    "kcal": [320, 850],
+    "name_has": ["laksa"],
+    "parts": 0
+  },
+  {
+    "name": "typed: not a meal at all",
+    "kind": "text",
+    "text": "hello, how are you doing today",
+    "kcal": [0, 0],
+    "expect_no_food": true
+  },
+  {
+    "name": "typed: chicken rice is one dish, not rice plus chicken",
+    "kind": "text",
+    "text": "chicken rice",
+    "kcal": [350, 800],
+    "name_has": ["chicken rice"],
+    "parts": 0
+  },
+  {
+    "name": "refine: half the rice off a nasi lemak",
+    "kind": "text",
+    "text": "nasi lemak with fried chicken",
+    "kcal": [450, 1200],
+    "parts": [2, 4],
+    "refine": {
+      "text": "I only ate half the rice",
+      "action": "adjust",
+      "kcal": [300, 900]
+    }
+  },
+  {
+    "name": "refine: a stated calorie total rescales",
+    "kind": "text",
+    "text": "a plate of fried rice",
+    "kcal": [350, 950],
+    "refine": {
+      "text": "it was more like 500 calories",
+      "action": "quantity",
+      "kcal": [440, 560]
+    }
+  },
+  {
+    "name": "refine: not a calorie correction at all",
+    "kind": "text",
+    "text": "mee goreng mamak",
+    "kcal": [380, 950],
+    "refine": {
+      "text": "extra spicy",
+      "action": "none",
+      "kcal": [380, 950]
+    }
+  },
+  {
+    "name": "photo: nasi lemak on a banana leaf",
+    "kind": "photo",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Nasi_lemak_on_banana_leaf.jpg/1280px-Nasi_lemak_on_banana_leaf.jpg",
+    "kcal": [300, 1100],
+    "name_has": ["nasi lemak"]
+  },
+  {
+    "name": "photo: char kuey teow, one plate",
+    "kind": "photo",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Malaysian_Char_Kuey_Teow.jpg/1280px-Malaysian_Char_Kuey_Teow.jpg",
+    "kcal": [350, 950]
+  },
+  {
+    "name": "photo: a plate of chicken satay (counted)",
+    "kind": "photo",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Chicken_satay_on_banana_leaf_in_Java.jpg/1280px-Chicken_satay_on_banana_leaf_in_Java.jpg",
+    "kcal": [120, 800],
+    "name_has": ["satay"]
+  },
+  {
+    "name": "photo: roti canai with teh tarik",
+    "kind": "photo",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Roti_canai_and_Teh_Tarik%2C_a_typical_Malaysian_breakfast.jpg/1280px-Roti_canai_and_Teh_Tarik%2C_a_typical_Malaysian_breakfast.jpg",
+    "kcal": [250, 1500],
+    "note": "The widest band here, and it is the honest one. Everything in this plate is settled except how much a roti weighs, and the photograph cannot say: the model has answered 100 g, 180 g and 240 g for the same two rotis, the catalogue prices a roti at about 3.4 kcal/g, and the product of those swings the meal from 940 to 1,700 kcal. The size anchor in the prompt pulled the estimate down but cannot decide it. A tighter band here would be a test of which run it caught."
+  },
+  {
+    "name": "photo: pad thai",
+    "kind": "photo",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Thai-Pad-Thai_2023-06-04.jpg/1280px-Thai-Pad-Thai_2023-06-04.jpg",
+    "kcal": [300, 950]
+  },
+  {
+    "name": "photo: a nutrition facts panel is read, not guessed",
+    "kind": "photo",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/e/e9/FDA_Nutrition_Facts_Label_2016.png",
+    "contentType": "image/png",
+    "kcal": [200, 300],
+    "parts": 0
+  },
+  {
+    "name": "photo: a cat is not a meal",
+    "kind": "photo",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Domestic_Cat_Black_Sitting.jpg/1280px-Domestic_Cat_Black_Sitting.jpg",
+    "kcal": [0, 0],
+    "expect_no_food": true
+  },
+  {
+    "name": "photo: a cup of black coffee",
+    "kind": "photo",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/f/fd/Cup_of_black_coffee.jpg",
+    "kcal": [0, 120]
+  }
+]

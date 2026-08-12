@@ -1,0 +1,221 @@
+{
+  "stats": {
+    "top1": 26,
+    "top5": 30,
+    "total": 30,
+    "medianMs": 327,
+    "slowestMs": 1825
+  },
+  "results": [
+    {
+      "q": "nasi lemak",
+      "want": "Nasi Lemak",
+      "rank": 0,
+      "top": "Nasi Lemak",
+      "ms": 1337
+    },
+    {
+      "q": "char kuey teow",
+      "want": "Char Kuey Teow",
+      "rank": 0,
+      "top": "Char Kuey Teow",
+      "ms": 514
+    },
+    {
+      "q": "char kway teow",
+      "want": "Char Kuey Teow",
+      "rank": 0,
+      "top": "Char Kuey Teow",
+      "ms": 202
+    },
+    {
+      "q": "char kuay teo",
+      "want": "Char Kuey Teow",
+      "rank": 0,
+      "top": "Char Kuey Teow",
+      "ms": 227
+    },
+    {
+      "q": "teh tarik",
+      "want": "Teh Tarik",
+      "rank": 0,
+      "top": "Teh Tarik",
+      "ms": 552
+    },
+    {
+      "q": "roti canai",
+      "want": "Roti Canai",
+      "rank": 0,
+      "top": "Roti Canai",
+      "ms": 536
+    },
+    {
+      "q": "chicken rice",
+      "want": "Chicken Rice",
+      "rank": 1,
+      "top": "Rice, Chicken (Nasi Ayam)",
+      "ms": 1825
+    },
+    {
+      "q": "nasi goreng",
+      "want": "Nasi Goreng",
+      "rank": 0,
+      "top": "Rice, Fried (Nasi Goreng)",
+      "ms": 338
+    },
+    {
+      "q": "mee goreng",
+      "want": "Mee Goreng",
+      "rank": 0,
+      "top": "Mee (Wheat Noodle), Fried (Mee Goreng)",
+      "ms": 367
+    },
+    {
+      "q": "bak kut teh",
+      "want": "Bak Kut Teh",
+      "rank": 0,
+      "top": "Bak Kut Teh",
+      "ms": 213
+    },
+    {
+      "q": "cendol",
+      "want": "Cendol",
+      "rank": 0,
+      "top": "Cendol",
+      "ms": 181
+    },
+    {
+      "q": "satay ayam",
+      "want": "Satay Ayam",
+      "rank": 0,
+      "top": "Satay Ayam",
+      "ms": 484
+    },
+    {
+      "q": "rendang",
+      "want": "Rendang",
+      "rank": 0,
+      "top": "Rendang Daging",
+      "ms": 193
+    },
+    {
+      "q": "laksa",
+      "want": "Laksa",
+      "rank": 0,
+      "top": "Asam Laksa",
+      "ms": 174
+    },
+    {
+      "q": "kopi o",
+      "want": "Kopi O",
+      "rank": 0,
+      "top": "Kopi O",
+      "ms": 323
+    },
+    {
+      "q": "milo ais",
+      "want": "Milo Ais",
+      "rank": 0,
+      "top": "Milo Ais",
+      "ms": 345
+    },
+    {
+      "q": "curry puff",
+      "want": "Curry Puff",
+      "rank": 0,
+      "top": "Curry Puff",
+      "ms": 249
+    },
+    {
+      "q": "kueh salat",
+      "want": "Kuih Seri Muka",
+      "rank": 0,
+      "top": "Kuih Seri Muka",
+      "ms": 223
+    },
+    {
+      "q": "orh luak",
+      "want": "Oyster Omelette",
+      "rank": 1,
+      "top": "Oh Chien",
+      "ms": 236
+    },
+    {
+      "q": "pho bo",
+      "want": "Pho Bo",
+      "rank": 0,
+      "top": "Pho Bo",
+      "ms": 252
+    },
+    {
+      "q": "kimchi jjigae",
+      "want": "Kimchi Jjigae",
+      "rank": 0,
+      "top": "Kimchi Jjigae",
+      "ms": 408
+    },
+    {
+      "q": "pad thai",
+      "want": "Pad Thai",
+      "rank": 0,
+      "top": "Pad Thai",
+      "ms": 451
+    },
+    {
+      "q": "nasi lemk",
+      "want": "Nasi Lemak",
+      "rank": 0,
+      "top": "Nasi Lemak Sotong",
+      "ms": 325
+    },
+    {
+      "q": "ayam gorng",
+      "want": "Ayam Goreng",
+      "rank": 0,
+      "top": "Kepak Ayam Goreng",
+      "ms": 242
+    },
+    {
+      "q": "a plate of nasi lemak with fried chicken",
+      "want": "Nasi Lemak",
+      "rank": 0,
+      "top": "Nasi Lemak Ayam Berempah",
+      "ms": 583
+    },
+    {
+      "q": "milk",
+      "want": "Milk",
+      "rank": 0,
+      "top": "Milk",
+      "ms": 782
+    },
+    {
+      "q": "white rice",
+      "want": "Rice",
+      "rank": 3,
+      "top": "Nasi Putih Sesenduk",
+      "ms": 327
+    },
+    {
+      "q": "chicken breast",
+      "want": "Chicken",
+      "rank": 1,
+      "top": "Ayam Goreng Dada",
+      "ms": 591
+    },
+    {
+      "q": "egg",
+      "want": "Egg",
+      "rank": 0,
+      "top": "Braised Egg in Soy Sauce",
+      "ms": 195
+    },
+    {
+      "q": "banana",
+      "want": "Banana",
+      "rank": 0,
+      "top": "Banana Cue",
+      "ms": 177
+    }
+  ]
+}

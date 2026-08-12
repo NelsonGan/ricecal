@@ -135,4 +135,25 @@ describe('toFood', () => {
     const food = toFood(foodRow({ serving_label: null, servings: [] }))
     expect(food.servingLabel).toBe('1 serving')
   })
+
+  /**
+   * A food ALWAYS has a portion to show, and this is a crash rather than a
+   * cosmetic gap. Every screen that shows a food reads `servings[0]`, which the
+   * compiler types as `Serving` rather than `Serving | undefined` because
+   * `noUncheckedIndexedAccess` is off — so an empty list is invisible until the
+   * food detail page dies with "cannot get label of undefined", after a scan
+   * that appeared to work.
+   *
+   * `toServings` drops anything without a string id and label, so this is not
+   * hypothetical: one malformed portion from the catalogue Worker empties the
+   * list.
+   */
+  it('always offers at least one portion, whatever the row said', () => {
+    for (const servings of [[], null, 'nonsense', [{ label: 'no id' }], [{ id: 7 }]]) {
+      const food = toFood(foodRow({ servings: servings as never }))
+      expect(food.servings.length).toBeGreaterThan(0)
+      expect(typeof food.servings[0].label).toBe('string')
+      expect(food.servings[0].factor).toBe(1)
+    }
+  })
 })

@@ -11,11 +11,12 @@ import type { IconRef, Macros, Recipe, RecipeIngredient, RecipeUnit } from './ty
 /**
  * Home cooking.
  *
- * A recipe is the one thing in this app a user authors, and it is also the one
- * thing that becomes a catalogue row — the database mirrors it into `foods` so
- * that logging it is an ordinary entry. Nothing here writes that mirror or even
- * mentions it, beyond carrying `foodId` and `defaultServingId` so a screen can
- * log a recipe in one insert. See `apps/supabase/schemas/22_recipes.sql`.
+ * A recipe is the one thing in this app a user authors. It used to become a
+ * catalogue row as well — the database mirrored it into `foods` so that logging
+ * it was an ordinary entry against a foreign key — and that mirror is gone with
+ * the catalogue. Logging a pot writes the same snapshot everything else does,
+ * built from `perServing` by `snapshotFromRecipe`. See
+ * `apps/supabase/schemas/22_recipes.sql`.
  *
  * Two writes are RPCs rather than updates, and both for the same reason: they
  * touch columns the client has no grant on. Publishing may only ever move a
@@ -195,12 +196,11 @@ export function useSaveRecipe() {
         : unwrapOne(
             await supabase
               .from('recipes')
-              // `food_id` and `share_slug` are `not null` with no default, so
-              // the generated Insert type demands both — and neither is the
-              // client's to supply. The before-insert trigger mints the mirror
-              // catalogue row and the share link, which is a promise Postgres
-              // can keep and a column type cannot express. This is the narrowest
-              // seam that says so.
+              // `share_slug` is `not null` with no default, so the generated
+              // Insert type demands it — and it is not the client's to supply.
+              // The before-insert trigger mints the link, which is a promise
+              // Postgres can keep and a column type cannot express. This is the
+              // narrowest seam that says so.
               .insert({ ...fields, owner_id: userId } as never)
               .select('id, is_public')
               .single(),

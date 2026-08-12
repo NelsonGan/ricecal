@@ -35,6 +35,7 @@ export {
   useHealthConnection,
   usePrefetchActivityDays,
 } from './activity'
+export { type BarcodeResult, useBarcodeLookup } from './barcodes'
 export { dateKey, today } from './client'
 export {
   type DayView,
@@ -117,6 +118,16 @@ export { SelectedDateProvider, useSelectedDate } from './selected-date'
 export { SessionProvider, useSession, useUserId } from './session'
 export { useMealTimes, useSettings, useUpdateMealTime, useUpdateSettings } from './settings'
 export { type DescribeInput, useDescribeFood, useSnapFood } from './snap'
+export {
+  ENTRY_FOOD_ID,
+  ENTRY_SERVING_ID,
+  foodFromEntry,
+  type LogSnapshot,
+  snapshotColumns,
+  snapshotFromEntry,
+  snapshotFromFood,
+  snapshotFromRecipe,
+} from './snapshot'
 export { useSubscription } from './subscription'
 export { useTrendSeries, useTrendSummary } from './trends'
 export * from './types'

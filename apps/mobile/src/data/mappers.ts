@@ -72,7 +72,23 @@ export function toServings(json: FoodDetailsRow['servings']): Serving[] {
 export type FoodStats = { timesLogged: number }
 
 export function toFood(row: FoodDetailsRow, stats?: FoodStats | undefined): Food {
-  const servings = toServings(row.servings)
+  const parsed = toServings(row.servings)
+  // NEVER EMPTY. `toServings` drops anything without a string id and label, so
+  // a row whose portions are missing or malformed arrives here as `[]` — and
+  // every screen that shows a food reads `servings[0]`, which is `Serving`
+  // rather than `Serving | undefined` because `noUncheckedIndexedAccess` is
+  // off. The compiler cannot see it; the app crashes with "cannot get label of
+  // undefined" on the food detail page, after a scan that looked like it
+  // worked.
+  //
+  // The fallback is the portion the row's own macros are quoted per, which is
+  // what a single-serving food would have had anyway. A dish with one portion
+  // and a dish whose portions failed to parse look the same on screen, and that
+  // is the right trade: the numbers are still the row's.
+  const servings: Serving[] = parsed.length
+    ? parsed
+    : [{ id: `${row.id ?? 'food'}:base`, label: row.serving_label ?? '1 serving', factor: 1 }]
+
   return {
     id: row.id ?? '',
     name: row.name ?? '',
@@ -96,6 +112,9 @@ export function toFood(row: FoodDetailsRow, stats?: FoodStats | undefined): Food
     },
     verified: row.verified ?? false,
     timesLogged: stats?.timesLogged,
+    servingGrams: optionalNumber(row.serving_g),
+    barcode: row.barcode ?? undefined,
+    sourceAttribution: row.source_attribution ?? undefined,
   }
 }
 
@@ -130,9 +149,6 @@ export function toRecipe(row: RecipeRow): Recipe {
       protein: Number(row.serving_protein_g ?? 0),
       fat: Number(row.serving_fat_g ?? 0),
     },
-
-    foodId: row.food_id ?? '',
-    defaultServingId: row.default_serving_id ?? '',
   }
 }
 
@@ -169,11 +185,13 @@ export function toEntry(row: FoodLogRow): Entry {
     source: fromDbSource(row.source ?? 'search'),
     photoPath: row.photo_path ?? undefined,
 
-    foodId: row.food_id ?? '',
+    foodId: row.food_id ?? undefined,
+    recipeId: row.recipe_id ?? undefined,
     foodName: row.food_name ?? '',
+    brand: row.food_brand ?? undefined,
     icon: toIcon(row.icon_set, row.icon_name),
     place: row.place ?? 'hawker',
-    servingId: row.serving_id ?? '',
+    servingId: row.serving_id ?? undefined,
     servingLabel: row.serving_label ?? '',
     servingFactor: Number(row.serving_factor ?? 1),
 
@@ -183,6 +201,31 @@ export function toEntry(row: FoodLogRow): Entry {
       protein: Number(row.protein_g ?? 0),
       fat: Number(row.fat_g ?? 0),
     },
+
+    // Per one base serving, for the one caller that copies an entry instead of
+    // reading it. `base_kcal` is what the view exposes unmultiplied; `kcal`
+    // above is the same figure through the portion and the quantity.
+    base: {
+      kcal: Number(row.base_kcal ?? 0),
+      carbs: Number(row.base_carbs_g ?? 0),
+      protein: Number(row.base_protein_g ?? 0),
+      fat: Number(row.base_fat_g ?? 0),
+    },
+    baseExtras: {
+      ...(row.base_fibre_g === null || row.base_fibre_g === undefined
+        ? {}
+        : { fibre: Number(row.base_fibre_g) }),
+      ...(row.base_sugar_g === null || row.base_sugar_g === undefined
+        ? {}
+        : { sugar: Number(row.base_sugar_g) }),
+      ...(row.base_sodium_mg === null || row.base_sodium_mg === undefined
+        ? {}
+        : { sodium: Number(row.base_sodium_mg) }),
+    },
+    baseServingGrams:
+      row.base_serving_grams === null || row.base_serving_grams === undefined
+        ? undefined
+        : Number(row.base_serving_grams),
 
     // Only the fields that were actually typed. The macros above are what to
     // SHOW; these are what the editor needs to know it must not clear.
