@@ -248,7 +248,5 @@ export function toEntry(row: FoodLogRow): Entry {
     suggestedEdits: Array.isArray(row.suggested_edits)
       ? row.suggested_edits.filter((edit): edit is string => typeof edit === 'string')
       : undefined,
-    isEstimate: row.is_estimate ?? false,
-    isArchetype: row.is_archetype ?? false,
   }
 }

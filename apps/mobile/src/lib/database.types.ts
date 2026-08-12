@@ -16,10 +16,30 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: '14.5'
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -1043,13 +1063,10 @@ export type Database = {
           food_brand: string | null
           food_id: string | null
           food_name: string | null
-          food_verified: boolean | null
           grams: number | null
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
           id: string | null
-          is_archetype: boolean | null
-          is_estimate: boolean | null
           item_brand: string | null
           item_name: string | null
           kcal: number | null
@@ -1090,13 +1107,10 @@ export type Database = {
           food_brand?: string | null
           food_id?: string | null
           food_name?: never
-          food_verified?: never
           grams?: never
           icon_name?: never
           icon_set?: never
           id?: string | null
-          is_archetype?: never
-          is_estimate?: never
           item_brand?: string | null
           item_name?: string | null
           kcal?: never
@@ -1137,13 +1151,10 @@ export type Database = {
           food_brand?: string | null
           food_id?: string | null
           food_name?: never
-          food_verified?: never
           grams?: never
           icon_name?: never
           icon_set?: never
           id?: string | null
-          is_archetype?: never
-          is_estimate?: never
           item_brand?: string | null
           item_name?: string | null
           kcal?: never
@@ -1725,6 +1736,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       activity_level: ['sedentary', 'light', 'on_feet', 'very_active'],
