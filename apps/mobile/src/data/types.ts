@@ -207,13 +207,6 @@ export type Entry = {
    * "Half portion"), offered as chips over the fix-by-typing box.
    */
   suggestedEdits?: string[]
-  /**
-   * The numbers on this row are a guess, not a catalogue figure: a tier-4
-   * model estimate or a tier-5 archetype fallback. What the UI badges — an
-   * estimate has to be obvious and easy to correct.
-   */
-  isEstimate: boolean
-  isArchetype: boolean
 }
 
 /** 'g' | 'ml' | 'piece'. What an ingredient's amount is counted in. */

@@ -520,8 +520,6 @@ Deno.serve(async (req: Request) => {
           name: interpretation.name,
           quantity: rebuilt.quantity,
           kcal: rebuilt.kcal,
-          isEstimate: true,
-          isArchetype: false,
           ingredients: rebuilt.ingredients,
         },
       })
@@ -596,8 +594,6 @@ Deno.serve(async (req: Request) => {
           name: interpretation.name,
           quantity,
           kcal: Math.round(target * quantity),
-          isEstimate: true,
-          isArchetype: false,
           ingredients: [],
         },
       })
@@ -661,8 +657,6 @@ Deno.serve(async (req: Request) => {
           name: resolved.displayLabel ?? resolved.food.name,
           quantity: resolved.quantity,
           tier: resolved.tier,
-          isEstimate: resolved.food.is_estimate,
-          isArchetype: resolved.food.is_archetype,
           ingredients,
         },
       })

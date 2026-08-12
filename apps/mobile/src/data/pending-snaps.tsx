@@ -310,7 +310,5 @@ export function pendingAsEntry(snap: PendingSnap): Entry {
     // answer that has not arrived. Nothing repeats a pending snap — the copy
     // path reads real entries — so these are never written anywhere.
     base: { kcal: 0, carbs: 0, protein: 0, fat: 0 },
-    isEstimate: false,
-    isArchetype: false,
   }
 }
