@@ -17,7 +17,7 @@
  * INPUT
  *
  * A JSON array of dishes, or an object with a `foods` array and an optional
- * `source` every dish in the file inherits. One dish:
+ * `source` and `source_id` every dish in the file inherits. One dish:
  *
  *   {
  *     "name":      "Nasi Lemak Ayam Goreng",   // required, the local spelling
@@ -136,7 +136,7 @@ const num = (v) => (v === null || v === undefined || v === '' ? null : Number(v)
  * Postgres loader this is the only gate a row passes through — which is an
  * argument for reading the rejections, not for adding more of them here.
  */
-function shape(raw, fileSource) {
+function shape(raw, fileSource, fileSourceId) {
   const reject = (reason) => ({ ok: false, reason, name: raw?.name ?? '(unnamed)' })
 
   if (!raw || typeof raw !== 'object') return reject('not an object')
@@ -222,7 +222,7 @@ function shape(raw, fileSource) {
       // silently keeping it would put a blank square on the row, which is the
       // failure `foods.icon_set` was made nullable to avoid.
       return {
-        ...shape({ ...raw, icon: null }, fileSource),
+        ...shape({ ...raw, icon: null }, fileSource, fileSourceId),
         name,
         warning: `no icon "${raw.icon}" — imported without one`,
       }
@@ -285,11 +285,16 @@ function shape(raw, fileSource) {
       // no way back to the payload that produced them is not an audit trail.
       // Keeping only the second loses the citation, which is worse.
       source: [raw.source, fileSource].filter(Boolean).join(' · ') || 'research',
-      // The registry key, so the row can be attributed and ranked. Every dish in
-      // these payloads was written down by a researcher, whatever the citation
-      // beside it says — the citation names where the FIGURE came from, and this
-      // names who wrote the row.
-      source_id: 'research',
+      // The registry key, which decides how the row is attributed and how it
+      // ranks — see SOURCES in `catalogue-import.mjs`. Distinct from `source`
+      // above: that names where the FIGURE came from, a citation, and this
+      // names who wrote the row down.
+      //
+      // A payload may declare one for the whole file (`"source_id":
+      // "chain_menu_my"`), because a round of chain menus is not the same kind
+      // of row as a round of researched dishes and should not rank as one.
+      // Researched is the default because it is the weakest honest claim.
+      source_id: fileSourceId ?? 'research',
       name_norm: nameNorm,
       // Rows of their own, which is what makes a second romanization findable.
       // There used to be a `search_text` bag beside this holding the same words
@@ -336,10 +341,11 @@ export function shapeFiles(paths) {
     const parsed = JSON.parse(readFileSync(file, 'utf8'))
     const list = Array.isArray(parsed) ? parsed : (parsed.foods ?? [])
     const fileSource = Array.isArray(parsed) ? null : parsed.source
+    const fileSourceId = Array.isArray(parsed) ? null : parsed.source_id
     const name = file.split('/').pop()
 
     for (const raw of list) {
-      const result = shape(raw, fileSource)
+      const result = shape(raw, fileSource, fileSourceId)
       if (result.warning) warnings.push(`${name}: ${result.name} — ${result.warning}`)
       if (result.ok) rows.push({ ...result.row, file: name })
       else rejected.push({ file: name, name: result.name, reason: result.reason })

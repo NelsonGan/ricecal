@@ -44,6 +44,19 @@ async function run(args) {
   return stdout
 }
 
+/**
+ * Every statement in a wrangler answer reported success.
+ *
+ * A failing statement usually takes wrangler's exit code with it, and
+ * `execFile` rejects on that — but not always, and the case where it does not
+ * is the dangerous one: a batch of four hundred inserts that half applied,
+ * reported nothing, and left the caller believing the load finished.
+ */
+function assertOk(stdout) {
+  const failed = sliceJson(stdout).find((r) => r.success === false)
+  if (failed) throw new Error(`D1 error: ${JSON.stringify(failed).slice(0, 400)}`)
+}
+
 /** One query, returning its rows. Remote by default — that is the live one. */
 export async function d1(sql, { local = false } = {}) {
   const stdout = await run([
@@ -55,10 +68,8 @@ export async function d1(sql, { local = false } = {}) {
     '--command',
     sql,
   ])
-  const parsed = sliceJson(stdout)
-  const failed = parsed.find((r) => r.success === false)
-  if (failed) throw new Error(`D1 error: ${JSON.stringify(failed).slice(0, 400)}`)
-  return parsed.flatMap((r) => r.results ?? [])
+  assertOk(stdout)
+  return sliceJson(stdout).flatMap((r) => r.results ?? [])
 }
 
 /** The first row of a query, or null. */
@@ -79,15 +90,17 @@ export async function d1batch(statements, { local = false, onProgress } = {}) {
 
   const flush = async () => {
     if (!chunk.length) return
-    await run([
-      'd1',
-      'execute',
-      DATABASE,
-      local ? '--local' : '--remote',
-      '--json',
-      '--command',
-      chunk.join('\n'),
-    ])
+    assertOk(
+      await run([
+        'd1',
+        'execute',
+        DATABASE,
+        local ? '--local' : '--remote',
+        '--json',
+        '--command',
+        chunk.join('\n'),
+      ]),
+    )
     done += chunk.length
     onProgress?.(done, statements.length)
     chunk = []

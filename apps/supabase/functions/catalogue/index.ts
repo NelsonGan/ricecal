@@ -77,7 +77,15 @@ Deno.serve(async (req: Request) => {
 
     case 'food': {
       if (!body.id) return json({ ok: false, error: 'id is required' }, 400)
-      return json({ ok: true, food: await getFood(body.id) })
+      const food = await getFood(body.id)
+      // Same distinction the search arm makes: `undefined` is an unreachable
+      // catalogue and `null` is a dish it does not have. Answering 200 with
+      // `food: null` for both tells the detail screen a dish was deleted when
+      // the Worker is merely down.
+      if (food === undefined) {
+        return json({ ok: false, error: 'the catalogue is unreachable' }, 502)
+      }
+      return json({ ok: true, food })
     }
 
     case 'barcode': {

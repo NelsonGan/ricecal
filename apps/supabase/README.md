@@ -101,7 +101,11 @@ change that can silently make the app worse, because nothing errors and "nasi
 lemak" just starts returning something else. `pnpm foods:gate --save before`
 records thirty queries and where the dish a Malaysian means by each one lands;
 `--against before` prints only what MOVED. Adding 300,000 packaged rows moved
-nothing; adding 709 Southeast Asian dishes moved one query, upwards.
+nothing, and neither did 709 Southeast Asian dishes.
+
+Grade AFTER any `foods:reindex --all`, not between the load and the reindex: a
+full rebuild reassigns rowids, an FTS arm breaks bm25 ties by rowid, and two
+rows a hair apart can swap places with no data change at all.
 
 The `auth` schema is **not** in that list. The diff tracks triggers on
 `auth.users` perfectly well, and putting `on_auth_user_created` in a migration

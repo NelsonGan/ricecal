@@ -165,7 +165,8 @@ export const refine = (foodLogId, instruction) =>
 
 export const search = (q, limit = 20) => invoke('catalogue', { action: 'search', q, limit })
 
-export const details = (ids) => invoke('catalogue', { action: 'details', ids })
+/** One dish by id. The action is `food`, singular — there is no batch form. */
+export const food = (id) => invoke('catalogue', { action: 'food', id })
 
 export const barcodeLookup = (code) => invoke('barcode', { code })
 
