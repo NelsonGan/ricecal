@@ -1,11 +1,12 @@
 import { Redirect } from 'expo-router'
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { useProfile, useSession } from '@/data'
 import { signOut } from '@/data/auth'
 import { isComplete, useOnboardingDraft } from '@/features/onboarding'
-import { Spinner } from '@/ui'
+import { EmptyState, Spinner } from '@/ui'
 
 /**
  * The entry point decides between onboarding, the account step and the app.
@@ -37,7 +38,7 @@ import { Spinner } from '@/ui'
  */
 export default function Index() {
   const { session, loading } = useSession()
-  const { data: profile, isPending, isSuccess } = useProfile()
+  const { data: profile, isPending, isPaused, isSuccess } = useProfile()
   const { draft } = useOnboardingDraft()
   const answered = isComplete(draft)
 
@@ -73,12 +74,36 @@ export default function Index() {
 
   // The profile query only runs once there is a session, so this wait is the
   // one round trip between launching and knowing where the user belongs.
-  if (isPending) return <Loading />
+  //
+  // Unless there is no connection to make it over, and no answer saved from a
+  // previous launch to use instead. `offlineFirst` PAUSES such a query rather
+  // than failing it, and a paused query is pending for as long as the phone is
+  // offline — so a spinner here is one that will still be turning tomorrow. It
+  // needs no retry: react-query resumes the moment a connection returns, and
+  // this screen redirects itself.
+  if (isPending) return isPaused ? <Offline /> : <Loading />
 
   // Held here until the sign-out lands, rather than redirected on: the
   // onboarding screens need no session, so falling through would drop the user
   // into the middle of the flow and skip the welcome screen entirely.
   if (abandoned) return <Loading />
+
+  /**
+   * A read that FAILED says nothing about where this user belongs.
+   *
+   * The comment above already draws the line — only a successful select with no
+   * row means the account is gone — but the line was drawn for `signOut` alone,
+   * and everything past this point reads `profile` as though the answer had
+   * arrived. Undefined because the request failed then took the SAME branch as
+   * a genuine `onboarded_at: null`, so a request that dropped on a bad
+   * connection walked a returning user into the onboarding questions.
+   *
+   * The same wait as the paused case, and for the same reason: react-query
+   * refetches this on reconnect and on the next foreground, and the redirect
+   * happens then. Not reachable while there is a persisted profile to answer
+   * from, which after the fix in `SessionProvider` is the ordinary case.
+   */
+  if (!isSuccess) return <Offline />
 
   if (!profile?.onboarded_at) return <Redirect href={answered ? '/finish' : '/about'} />
 
@@ -89,6 +114,24 @@ function Loading() {
   return (
     <View className="flex-1 items-center justify-center bg-canvas">
       <Spinner />
+    </View>
+  )
+}
+
+/**
+ * Not a `Screen`: this route is a redirect and has no chrome of its own, and
+ * borrowing a title bar would give the user a back chevron to nowhere.
+ */
+function Offline() {
+  const { t } = useTranslation('common')
+
+  return (
+    <View className="flex-1 items-center justify-center bg-canvas">
+      <EmptyState
+        title={t('offline.title')}
+        description={t('offline.body')}
+        icon={{ set: 'ui', name: 'offline' }}
+      />
     </View>
   )
 }

@@ -69,7 +69,14 @@ export function useDay(date: string) {
  * day for as long as its request was out. `isPending` is the one bit that says
  * which of the two this is.
  */
-export type DayView = DayLog & { isPending: boolean }
+/**
+ * `isPaused` is the other half of that bit, and it is the half that matters
+ * offline: `offlineFirst` holds a query with no cached day rather than failing
+ * it, so `isPending` stays true for as long as the phone has no connection. A
+ * screen that reads pending as "an answer is coming" draws a skeleton nothing
+ * is ever going to replace.
+ */
+export type DayView = DayLog & { isPending: boolean; isPaused: boolean }
 
 /**
  * The pending rows whose meal has NOT turned up yet.
@@ -130,11 +137,16 @@ export function unclaimedSnaps<S extends { loggedAt: string; text?: string; stat
  * in its meal rather than at the end.
  */
 export function useDayLog(date: string): DayView {
-  const { data, isPending } = useDay(date)
+  const { data, isPending, isPaused } = useDay(date)
   const { snaps, remove } = usePendingSnaps()
 
   const view = useMemo((): DayView & { settled: string[] } => {
-    const base = { ...(data ?? { date, entries: [], waterGlasses: 0 }), isPending, settled: [] }
+    const base = {
+      ...(data ?? { date, entries: [], waterGlasses: 0 }),
+      isPending,
+      isPaused,
+      settled: [],
+    }
     const mine = snaps.filter((snap) => snap.logDate === date)
     if (mine.length === 0) return base
 
@@ -164,13 +176,17 @@ export function useDayLog(date: string): DayView {
        * fetch, and a screen that hid the day behind a skeleton until the query
        * answered would take the photograph off the day it was just added to —
        * which is the one moment the user is watching that row.
+       *
+       * `isPaused` goes with it, and for the same reason: a day with a snap on
+       * it has something to draw, whether or not the query behind it can run.
        */
       isPending: false,
+      isPaused: false,
       entries: [...base.entries, ...unresolved.map(pendingAsEntry)].sort((a, b) =>
         a.loggedAt.localeCompare(b.loggedAt),
       ),
     }
-  }, [data, snaps, date, isPending])
+  }, [data, snaps, date, isPending, isPaused])
 
   // Swept after render rather than during it: `remove` sets state on another
   // provider, and the list this hook returns is already correct without it.

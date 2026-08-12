@@ -1,3 +1,5 @@
+import '@/i18n'
+
 import { render, screen, waitFor } from '@/test-utils'
 import Index from '../index'
 
@@ -38,10 +40,21 @@ jest.mock('@/features/onboarding', () => ({
 
 const session = { user: { id: 'user-1' } }
 
-/** What `useProfile` looks like in each of its three states. */
-const loaded = (profile: unknown) => ({ data: profile, isPending: false, isSuccess: true })
-const pending = { data: undefined, isPending: true, isSuccess: false }
-const failed = { data: undefined, isPending: false, isSuccess: false }
+/** What `useProfile` looks like in each of its four states. */
+const loaded = (profile: unknown) => ({
+  data: profile,
+  isPending: false,
+  isPaused: false,
+  isSuccess: true,
+})
+const pending = { data: undefined, isPending: true, isPaused: false, isSuccess: false }
+const failed = { data: undefined, isPending: false, isPaused: false, isSuccess: false }
+/**
+ * Held by `offlineFirst` for want of a connection, with nothing saved from a
+ * previous launch to answer from. Pending, like the row above, and unlike it
+ * never going to stop being pending.
+ */
+const paused = { data: undefined, isPending: true, isPaused: true, isSuccess: false }
 
 beforeEach(() => {
   jest.clearAllMocks()
@@ -106,6 +119,29 @@ it('signs out a session whose account has been deleted', async () => {
   expect(screen.queryByText(/^redirect:/)).toBeNull()
 })
 
+/**
+ * The launch this app used to answer with a spinner that had nothing to wait
+ * for. Saying so is the whole fix: there is no retry, because react-query
+ * resumes the query itself and this screen then redirects.
+ */
+it('says so rather than spinning when the profile cannot be fetched or recalled', async () => {
+  mockProfile.mockReturnValue(paused)
+
+  await render(<Index />)
+
+  expect(screen.getByText('Waiting for a connection')).toBeTruthy()
+  expect(screen.queryByText(/^redirect:/)).toBeNull()
+})
+
+/** And a paused profile is not a deleted account. */
+it('does not sign out over a profile it could not ask for', async () => {
+  mockProfile.mockReturnValue(paused)
+
+  await render(<Index />)
+
+  expect(mockSignOut).not.toHaveBeenCalled()
+})
+
 it('does not sign out over a profile that has not loaded yet', async () => {
   mockProfile.mockReturnValue(pending)
 
@@ -123,4 +159,19 @@ it('does not sign out over a profile the app failed to read', async () => {
   await render(<Index />)
 
   expect(mockSignOut).not.toHaveBeenCalled()
+})
+
+/**
+ * And it does not answer the OTHER question either. Undefined-because-it-failed
+ * took the same branch as a genuine `onboarded_at: null`, so one dropped request
+ * sent a returning user into the questions — which end on "we could not save
+ * your answers" for an account that finished them months ago.
+ */
+it('does not read a failed profile request as an account that never onboarded', async () => {
+  mockProfile.mockReturnValue(failed)
+
+  await render(<Index />)
+
+  expect(screen.queryByText(/^redirect:/)).toBeNull()
+  expect(screen.getByText('Waiting for a connection')).toBeTruthy()
 })
