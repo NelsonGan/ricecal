@@ -6,6 +6,7 @@ or scan a barcode — and get calories and macros back.
 ```
 apps/mobile      Expo / React Native app (expo-router, NativeWind, react-query)
 apps/supabase    Postgres schema, RLS, pgTAP tests, Deno edge functions
+apps/cloudflare  workers/ and d1/, one directory per Worker and per database
 packages/shared  the few constants both sides need
 ```
 
@@ -15,7 +16,8 @@ their own area:
 | where | what |
 |---|---|
 | `apps/supabase/README.md` | the declarative schema workflow, the catalogue import, why nothing seeds `foods` |
-| `apps/catalogue-worker/BARCODE-COVERAGE.md` | why the scanner misses Malaysian packets, measured, and what would actually fix it |
+| `apps/cloudflare/README.md` | the layout, the two deploy branches, and what a second Worker would take |
+| `apps/cloudflare/d1/food-catalogue/BARCODE-COVERAGE.md` | why the scanner misses Malaysian packets, measured, and what would actually fix it |
 | `apps/mobile/src/data/README.md` | the data layer, file by file |
 | `apps/mobile/src/ui/README.md` | the design system, and which prop targets which box |
 | `apps/mobile/src/lib/health/README.md` | what each health store actually gives you, and what Android is missing |
@@ -35,7 +37,7 @@ one projection of a budget that does not exist yet because onboarding has not
 finished.
 
 **The catalogue is NOT in Postgres.** It is in Cloudflare D1, behind the Worker
-in `apps/catalogue-worker` — `product` holds 3.2 million barcoded packets, and
+in `apps/cloudflare/workers/catalogue` — `product` holds 3.2 million barcoded packets, and
 `food`, `food_serving` and `food_alias` hold ~48,000 searchable dishes. It left
 because the barcode layer made the catalogue's size the diary's problem: it
 crossed a plan ceiling once and took the whole database read-only mid-load.
@@ -246,8 +248,9 @@ rather than structure, and the `auth` trigger, which the diff sees too well.
 
 ## The catalogue, and what is in it
 
-It is in Cloudflare D1, behind the Worker in `apps/catalogue-worker`:
-`schema.sql` is the shape, `src/index.ts` is every query.
+It is in Cloudflare D1, behind the Worker in `apps/cloudflare/workers/catalogue`:
+`../../d1/food-catalogue/schema.sql` is the shape, `src/index.ts` is every query.
+Both deploy from CI on `main`, schema first — `apps/cloudflare/README.md`.
 
 **Two tables, and their sizes are opposite on purpose.**
 
@@ -402,7 +405,7 @@ carry a GS1 Malaysia prefix — fewer than Thailand, and 0.13% of the catalogue.
 That is not a filter in this repo: the pipeline takes every OFF product with a
 panel and a code, and 4,333 is 96.5% of every Malaysian-prefix row Open Food
 Facts has that is usable at all. The source is the ceiling.
-`apps/catalogue-worker/BARCODE-COVERAGE.md` is the measurement and the options.
+`apps/cloudflare/d1/food-catalogue/BARCODE-COVERAGE.md` is the measurement and the options.
 
 ### The cascade
 
@@ -848,6 +851,24 @@ Break these and the feature is wrong in ways tests may not catch.
   the same three cases the old `is_estimate`/`is_archetype`/`is_recipe` flags
   did. `serving_id` is TEXT, not a uuid: D1 keys a portion `(food_id, slug)` and
   the Worker names one `"<food id>:<slug>"`.
+  So **a screen editing a saved entry prices it from the entry, never from the
+  catalogue.** `app/log/food/[id].tsx` fetches the food anyway, but only for the
+  portions it can offer — `withCataloguePortions`, which declines a list that
+  disagrees with the entry about the size the entry is already at. Letting the
+  catalogue win showed a soy milk logged at 108 kcal off its own nutrition panel
+  as 511, priced from an unrelated row while wearing the entry's own name and
+  photograph, with Today still showing 108. The bad id was the narrow cause; the
+  wide one is that any entry whose row has since been re-costed disagreed the
+  same way, silently.
+- **Changing a portion writes THREE columns, not one.** `serving_label` and
+  `serving_factor` are what the day counts; `serving_id` is a soft note that
+  nothing in Postgres can resolve, because `food_servings` is in D1 and no view
+  joins to it. It was enough when the catalogue was local and `food_log_details`
+  joined for the factor. Writing the id alone now changes what a row CLAIMS its
+  portion is and nothing about its arithmetic: switching a nasi lemak to Large
+  previewed 975 kcal, saved, and left a row labelled "1 serving" still counting
+  650. `snapshotColumns` writes all three on insert; `EntryPatch` carries all
+  three on update.
 - **An LLM figure is never averaged with a catalogue figure**, and the nutrition
   call is never told the vision call's guess — anchored, the model answered
   450 kcal for a plate of apple slices, and 120 without.
@@ -868,7 +889,7 @@ Break these and the feature is wrong in ways tests may not catch.
   own Supabase JWT now and the Worker verifies it against a public key, so the
   first half is satisfied by different means and the second is unchanged and
   absolute. Nothing but our own server, holding the shared secret, reaches
-  `/product`. See `apps/catalogue-worker/src/auth.ts` for what a token has to
+  `/product`. See `apps/cloudflare/workers/catalogue/src/auth.ts` for what a token has to
   survive — including `alg` being pinned to ES256, without which `alg: none` and
   an HMAC over the public key are both accepted forgeries.
 - **A barcode is a GTIN-14, at both ends.** Normalized where it is stored and
@@ -973,12 +994,14 @@ Break these and the feature is wrong in ways tests may not catch.
   hand-written migration has to restate a function, copy the block out of
   `schemas/` verbatim rather than retyping it. Only what is between the `$$`
   markers counts — a note above the `create` is free.
-- **The two halves of the catalogue can disagree, and only one of them is
-  versioned.** `apps/catalogue-worker` deploys with `wrangler` and the Supabase
-  functions deploy with the Supabase CLI, so a change to the shape one returns
-  and the other reads is two deploys with a window between them. Deploy the
-  Worker FIRST: an edge function reading a field that has not arrived yet gets
-  `undefined`, where a Worker returning a field nobody reads is harmless.
+- **The two halves of the catalogue deploy separately, and a Worker change is
+  the half that ships by itself.** `apps/cloudflare/workers/catalogue` deploys
+  from `cloudflare.yml` on a merge to main; the Supabase functions still deploy
+  by hand with the Supabase CLI. So a change to the shape one returns and the
+  other reads is two deploys with a window between them. Merge the Worker
+  FIRST: an edge function reading a field that has not arrived yet gets
+  `undefined`, where a Worker returning a field nobody reads is harmless. Same
+  ordering as the D1 schema against the Worker, and for the same reason.
 - **The Supabase CLI's remote endpoints move.** On 2.111.0, `functions deploy`
   and `gen types --project-id` both answer 404 when handed a project ref that
   does not exist — which is indistinguishable from the endpoint being gone.
@@ -1128,6 +1151,13 @@ Worth knowing before wondering where the handler went.
 every push. Two more workflows guard the database. `supabase-migrations` rebuilds
 a throwaway Postgres from every migration, runs the pgTAP suite in
 `apps/supabase/tests`, and deno-checks each edge function.
+
+`cloudflare` is the one workflow that both checks and DEPLOYS, and the only one
+scoped by path: it fires on nothing outside `apps/cloudflare`. `deploy.yml`'s
+push trigger ignores that same directory in return, so a Worker change cannot
+archive and submit a new binary for a change the app never sees. The trade is
+that the two filters have to stay opposites — widen one and a commit either runs
+both pipelines or neither.
 
 `supabase-drift` is the interesting one: it diffs the DEPLOYED schema against
 the committed migrations nightly, and it exists because there is no hosted

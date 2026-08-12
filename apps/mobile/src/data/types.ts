@@ -440,7 +440,7 @@ export type RecipeIngredientRow = Database['public']['Views']['recipe_ingredient
  * to generate it from: `food_details` was a view over `foods` and
  * `food_servings`, and both are in Cloudflare D1 now. The Worker shapes its
  * answer to match what that view returned — see `foodDetails` in
- * `apps/catalogue-worker/src/index.ts` — so `toFood` did not have to change.
+ * `apps/cloudflare/workers/catalogue/src/index.ts` — so `toFood` did not have to change.
  *
  * Every field is nullable for the same reason the generated view types were:
  * this comes off a network hop with no schema to prove it, and `toFood`

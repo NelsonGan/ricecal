@@ -42,7 +42,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { normalize } from '../../../catalogue-worker/src/text.ts'
+import { normalize } from '../../../cloudflare/workers/catalogue/src/text.ts'
 
 const REPO_ROOT = fileURLToPath(new URL('../../../..', import.meta.url))
 const ICON_ROOT = `${REPO_ROOT}apps/mobile/assets/icons`
