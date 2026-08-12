@@ -210,7 +210,6 @@ function useRecogniseMeal() {
           pending.remove(id)
           queryClient.invalidateQueries({ queryKey: keys.day(userId, logDate) })
           queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
-          queryClient.invalidateQueries({ queryKey: keys.recentFoodsAll(userId) })
           queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
           queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
           // Movement is measured against what was eaten: the balance chart, the
