@@ -40,7 +40,7 @@
  * ALIASES, so `siew yoke fan` remains a thing a person can type.
  */
 
-import { normalize } from '../../catalogue-worker/src/text.ts'
+import { normalize } from '../../cloudflare/workers/catalogue/src/text.ts'
 import { d1, d1batch, q } from './lib/d1.mjs'
 
 const args = process.argv.slice(2)
