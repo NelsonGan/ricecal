@@ -46,9 +46,65 @@ jobs:
       - run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
       - name: Diff remote schema against migrations
         run: |
-          supabase db diff --linked -f drift
-          if [ -n "$(ls supabase/migrations/*drift* 2>/dev/null)" ]; then
+          # Three attempts with a widening gap, because the diff opens ~27
+          # parallel connections to read the remote catalog and one of them
+          # times out often enough that a single retry does not cover it.
+          #
+          # A flaky red here is worse than a slow green. This job is supposed to
+          # mean "somebody edited the database by hand", and a detector that
+          # cries wolf is one nobody reads — which is exactly how it came to sit
+          # red for days on a stale password without anyone noticing.
+          for attempt in 1 2 3; do
+            rm -f supabase/migrations/*drift*
+            if supabase db diff --linked -f drift; then
+              break
+            fi
+            if [ "$attempt" = 3 ]; then
+              echo "::error::Could not read the remote schema after three attempts"
+              exit 1
+            fi
+            echo "Diff attempt $attempt failed, retrying in $((attempt * 30))s…"
+            sleep $((attempt * 30))
+          done
+
+          [ -n "$(ls supabase/migrations/*drift* 2>/dev/null)" ] || exit 0
+
+          echo "Raw diff against the remote:"
+          cat supabase/migrations/*drift*
+
+          # WHAT IS IGNORED, AND WHY IT IS NOT A LOOPHOLE.
+          #
+          # The shadow database is built from the Supabase base image, and that
+          # image is not identical to a live project's baseline. Two differences
+          # come out of it every single run and neither is anybody's edit:
+          #
+          #   pg_net              installed in the image, absent from the live
+          #                       project, declared by no migration of ours.
+          #   sequence privileges the image grants UPDATE on public sequences to
+          #                       anon/authenticated/service_role; the live
+          #                       project has them revoked.
+          #
+          # They are matched as WHOLE STATEMENTS rather than by keyword, so a
+          # real `drop extension` or a real privilege change still turns this
+          # red. The raw diff is printed above either way — this filter decides
+          # the exit code, not what a human gets to see.
+          # `|| true` is not decoration. The step runs under `bash -e`, and a
+          # grep that selects nothing exits 1 — so the moment this filter works
+          # perfectly and removes every line, it takes the whole job down with
+          # it. The good case looked exactly like the bad one.
+          UNEXPLAINED=$(
+            cat supabase/migrations/*drift* \
+              | grep -vE '^\s*--' \
+              | grep -vE '^\s*$' \
+              | grep -vxF 'DROP EXTENSION pg_net;' \
+              | grep -vxE 'ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE UPDATE ON SEQUENCES FROM (anon|authenticated|service_role);' \
+              || true
+          )
+
+          if [ -n "$UNEXPLAINED" ]; then
             echo "::error::Remote schema has drifted from migrations"
-            cat supabase/migrations/*drift*
+            echo "$UNEXPLAINED"
             exit 1
           fi
+
+          echo "No drift: everything in the diff is known base-image noise."

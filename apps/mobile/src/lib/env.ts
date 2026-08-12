@@ -9,6 +9,7 @@ import { z } from 'zod'
 const raw = {
   EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
   EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+  EXPO_PUBLIC_CATALOGUE_URL: process.env.EXPO_PUBLIC_CATALOGUE_URL,
   EXPO_PUBLIC_RC_IOS_KEY: process.env.EXPO_PUBLIC_RC_IOS_KEY,
   EXPO_PUBLIC_RC_ANDROID_KEY: process.env.EXPO_PUBLIC_RC_ANDROID_KEY,
   EXPO_PUBLIC_MIXPANEL_TOKEN: process.env.EXPO_PUBLIC_MIXPANEL_TOKEN,
@@ -27,6 +28,13 @@ export const PLACEHOLDER = 'REPLACE_ME'
 const schema = z.object({
   EXPO_PUBLIC_SUPABASE_URL: z.string().min(1),
   EXPO_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+  /**
+   * The food catalogue Worker. A hostname, not a credential: the app reaches it
+   * with the user's own Supabase JWT, and the Worker verifies that against a
+   * public key. Nothing here is worth hiding, which is the whole reason the
+   * edge function in front of it could go.
+   */
+  EXPO_PUBLIC_CATALOGUE_URL: z.string().min(1),
   EXPO_PUBLIC_RC_IOS_KEY: z.string().min(1),
   EXPO_PUBLIC_RC_ANDROID_KEY: z.string().min(1),
   EXPO_PUBLIC_MIXPANEL_TOKEN: z.string().min(1),

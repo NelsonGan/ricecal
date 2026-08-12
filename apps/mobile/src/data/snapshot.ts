@@ -50,6 +50,19 @@ export type LogSnapshot = {
 }
 
 /**
+ * An id, unless it is one this app invented to fill a route with.
+ *
+ * There are three of those — `ENTRY_FOOD_ID`, `ENTRY_SERVING_ID` and anything
+ * under `packet:` — and they exist so a food with no catalogue row behind it
+ * can still be addressed and selected. None of them means anything to anybody
+ * else, so this is where they stop.
+ */
+function catalogueId(id: string | undefined): string | undefined {
+  if (!id || id === ENTRY_FOOD_ID || id === ENTRY_SERVING_ID) return undefined
+  return packetCode(id) === undefined ? id : undefined
+}
+
+/**
  * A dish out of the catalogue, at the portion the user chose.
  *
  * The serving is looked up by id rather than taken on trust, because the id
@@ -60,12 +73,12 @@ export type LogSnapshot = {
 export function snapshotFromFood(food: Food, servingId?: string): LogSnapshot {
   const serving = food.servings.find((s) => s.id === servingId) ?? food.servings[0]
   return {
-    // The placeholders `foodFromEntry` mints are for routing and for a
-    // controlled selection, and neither is a catalogue id. `food_id` is a uuid
-    // column, so one reaching a write is not a bad reference — it is a 22P02
-    // that fails the save.
-    foodId: food.id === ENTRY_FOOD_ID ? undefined : food.id,
-    servingId: serving?.id === ENTRY_SERVING_ID ? undefined : serving?.id,
+    // The placeholders minted for routing — `foodFromEntry`'s, and the scanned
+    // packet's — are for a `[id]` segment and a controlled selection, and
+    // neither is a catalogue id. `food_id` is a uuid column, so one reaching a
+    // write is not a bad reference: it is a 22P02 that fails the save.
+    foodId: catalogueId(food.id),
+    servingId: catalogueId(serving?.id),
     name: food.name,
     brand: food.brand,
     icon: food.icon,
@@ -210,6 +223,28 @@ export const ENTRY_FOOD_ID = 'entry'
 
 /** The same, for the single portion `foodFromEntry` synthesises. */
 export const ENTRY_SERVING_ID = 'entry:base'
+
+/**
+ * The id a SCANNED PACKET travels under, for the same reason and with a
+ * different answer behind it.
+ *
+ * A packaged product lives in D1's `product` table, keyed by the barcode. It
+ * has no `foods.id` and never will — the barcode IS its key — so the scanner
+ * had nothing to put in the `[id]` segment and the app said "page not found"
+ * on a packet it had just identified correctly.
+ *
+ * Carrying the code instead makes the food detail screen work unchanged: the
+ * route is addressable, `useFood` knows to ask the scanner's endpoint rather
+ * than the catalogue's, and the answer caches under the packet like any other
+ * dish, so backing out and opening it again is free.
+ */
+const PACKET_PREFIX = 'packet:'
+
+export const packetFoodId = (code: string) => `${PACKET_PREFIX}${code}`
+
+/** The code back out of a route param, or undefined for an ordinary dish. */
+export const packetCode = (id: string | undefined) =>
+  id?.startsWith(PACKET_PREFIX) ? id.slice(PACKET_PREFIX.length) : undefined
 
 /** The snapshot as `food_logs` columns. One place, so the names cannot drift. */
 export function snapshotColumns(snapshot: LogSnapshot) {

@@ -280,7 +280,24 @@ get filled in rather than rewritten.
 
 ## Function secrets
 
-Four of them belong to R2 and are read by `functions/_shared/r2.ts`:
+Two belong to the catalogue and are read by `functions/_shared/catalogue.ts`:
+**`CATALOGUE_URL`** and **`CATALOGUE_TOKEN`**, the Cloudflare Worker in front of
+D1 and the shared secret it expects. The same token is set on the Worker side
+with `wrangler secret put CATALOGUE_TOKEN`, and the two must match or every
+catalogue read from a function answers 401 — which the scan cascade turns into
+an archetype rather than an error, so the symptom is dull scans and not a
+failure.
+
+Only the SERVER uses these. The app reads the catalogue directly now, carrying
+the signed-in user's JWT, which the Worker verifies against the project's public
+key; there is no client-side equivalent of this token and there must never be.
+
+```sh
+supabase secrets set --workdir apps \
+  CATALOGUE_URL=https://ricecal-catalogue.<subdomain>.workers.dev CATALOGUE_TOKEN=...
+```
+
+Four more belong to R2 and are read by `functions/_shared/r2.ts`:
 `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`. The
 credentials are an R2 API token scoped to the one bucket — not an account-wide
 key — and they never leave the server: the client is handed a URL that expires,
@@ -297,7 +314,7 @@ words rather than failing at the tap, and a local stack still starts, still
 resets and still scans — mock AI never reads the photo, so only the upload and
 the tiles need Cloudflare to exist.
 
-A fifth is optional and local-only: **`R2_ENDPOINT`** overrides the Cloudflare
+A fifth R2 value is optional and local-only: **`R2_ENDPOINT`** overrides the Cloudflare
 host, so a developer can point the same signing code at any S3 — the one the
 local stack already runs beside it, say. Set it and an upload can be walked on
 the simulator without Cloudflare credentials, which is the difference between

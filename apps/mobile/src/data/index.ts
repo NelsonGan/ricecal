@@ -35,7 +35,6 @@ export {
   useHealthConnection,
   usePrefetchActivityDays,
 } from './activity'
-export { type BarcodeResult, useBarcodeLookup } from './barcodes'
 export { dateKey, today } from './client'
 export {
   type DayView,
@@ -54,7 +53,7 @@ export {
   useRemoveEntry,
   useUpdateEntry,
 } from './entries'
-export { useFood, useFoodSearch, useRecentFoods } from './foods'
+export { useFood, useFoodSearch } from './foods'
 export { type GoalsInput, useSetTargets, useTargets } from './goals'
 export {
   type ConnectResult,
@@ -123,6 +122,8 @@ export {
   ENTRY_SERVING_ID,
   foodFromEntry,
   type LogSnapshot,
+  packetCode,
+  packetFoodId,
   snapshotColumns,
   snapshotFromEntry,
   snapshotFromFood,

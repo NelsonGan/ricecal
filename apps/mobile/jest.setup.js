@@ -10,6 +10,10 @@
 // RevenueCat and Google), and the client makes no request unless a query runs.
 process.env.EXPO_PUBLIC_SUPABASE_URL ??= 'https://replace-me.supabase.co'
 process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??= 'REPLACE_ME'
+// A real URL for the same reason, one step removed: `catalogueGet` builds a
+// request from it, and a test that reaches the catalogue should fail on the
+// fetch it mocked rather than on parsing "REPLACE_ME" as a host.
+process.env.EXPO_PUBLIC_CATALOGUE_URL ??= 'https://replace-me.workers.dev'
 process.env.EXPO_PUBLIC_RC_IOS_KEY ??= 'REPLACE_ME'
 process.env.EXPO_PUBLIC_RC_ANDROID_KEY ??= 'REPLACE_ME'
 process.env.EXPO_PUBLIC_MIXPANEL_TOKEN ??= 'REPLACE_ME'
