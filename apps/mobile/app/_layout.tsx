@@ -233,6 +233,11 @@ function RootStack() {
           shared recipe is a link and a link is opened cold. See
           `recipe/_layout.tsx`. */}
       <Stack.Screen name="recipe" />
+      {/* The reviews push, and the group holds both the list and one review.
+          The story inside it presents full screen rather than pushing, because
+          a horizontal swipe there means "next step" and a pushed screen would
+          spend that gesture going back. See `reviews/_layout.tsx`. */}
+      <Stack.Screen name="reviews" />
       <Stack.Screen name="paywall/index" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/gate" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/welcome" options={{ presentation: 'fullScreenModal' }} />

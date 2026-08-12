@@ -381,6 +381,135 @@ export type TrendSummary = {
   weighIns: number
 }
 
+/**
+ * A review is of a finished WEEK or a finished MONTH.
+ *
+ * The kind travels with every request and back with every answer, because a
+ * period is identified by its first day and `2026-08-03` is a Monday and the
+ * third of a month at the same time. It is also what the server works the
+ * period's END out of, so nothing on this side ever has to know how long
+ * February is.
+ */
+export type ReviewKind = 'week' | 'month'
+
+export const REVIEW_KINDS = ['week', 'month'] as const satisfies readonly ReviewKind[]
+
+/**
+ * One row of the reviews list, and one bar of the comparison chart inside a
+ * story.
+ *
+ * `qualifies` is the whole reason both readers share a type. The list shows the
+ * periods that have enough logged in them to be worth opening; the chart draws
+ * every period either way, because a light week is a fact about the month it
+ * sits in and hiding it would leave a hole in the chart with nothing to explain
+ * it.
+ */
+export type ReviewPeriod = {
+  kind: ReviewKind
+  /** First day, which is the period's identity and what a route carries. */
+  start: string
+  end: string
+  days: number
+  daysLogged: number
+  /** Enough logged to be worth a review. Decided in SQL; see `review_periods`. */
+  qualifies: boolean
+
+  /** Averaged over the days WITH food. Null when none had any. */
+  kcal: number | null
+  /** Against the reading the period opened at. Null with no weigh-in in it. */
+  weightChange: number | null
+
+  /**
+   * The sparkline: a week's seven days, or a month's four or five weeks.
+   *
+   * A null entry is a day nothing was logged on, and it draws as a gap. That is
+   * the point of drawing it at all — the figure beside it is an average, and an
+   * average cannot show that Tuesday is missing.
+   */
+  marks: (number | null)[]
+}
+
+/** One review period folded to the figures its four steps put in headlines. */
+export type ReviewSummary = {
+  kind: ReviewKind
+  start: string
+  end: string
+  days: number
+  daysLogged: number
+  daysUnderGoal: number
+  /** Consecutive logged days ending on the period's LAST day, not on today. */
+  streakDays: number
+
+  kcal: number | null
+  kcalGoal: number | null
+  carbs: number | null
+  protein: number | null
+  fat: number | null
+  lightestOn: string | null
+  lightestKcal: number | null
+  heaviestOn: string | null
+  heaviestKcal: number | null
+
+  /** Rows, not days: how many plates, and how many came out of a pot at home. */
+  entries: number
+  homeCooked: number
+
+  water: number
+  waterGoalDays: number
+
+  weightLast: number | null
+  weightChange: number | null
+  weighIns: number
+
+  /** Every figure below is null or zero for a period before the watch arrived. */
+  activeDays: number
+  activeKcal: number | null
+  steps: number | null
+  stepGoalDays: number
+  stepGoal: number | null
+  distanceM: number
+  exerciseMinutes: number
+  sessions: number
+}
+
+/**
+ * One column of the charts inside a story: a day of a week, a week of a month.
+ *
+ * Every field here is a mark on one of them, and nothing else. `daysLogged` is
+ * the block on the share card, the macros are the stack on the calorie chart,
+ * `weight` is where the line lands and `steps` is the bar under it.
+ */
+export type ReviewBucket = {
+  start: string
+  daysLogged: number
+
+  kcal: number | null
+  carbs: number | null
+  protein: number | null
+  fat: number | null
+  /** The newest reading in the column. Null where nobody weighed in. */
+  weight: number | null
+  /** Averaged over the days the watch HAS. Null where it has none. */
+  steps: number | null
+}
+
+/**
+ * One dish of a review period, folded across every time it was eaten.
+ *
+ * The name is the identity: `review_meals` groups on the folded name, so two
+ * of these can never say the same thing and a list of them needs no other key.
+ */
+export type ReviewMeal = {
+  name: string
+  icon?: IconRef
+  times: number
+  /** What one of them cost, averaged. Not the total across the period. */
+  kcal: number
+  carbs: number
+  protein: number
+  fat: number
+}
+
 /** A day as the screens read it: its entries and its water. */
 export type DayLog = {
   date: string
