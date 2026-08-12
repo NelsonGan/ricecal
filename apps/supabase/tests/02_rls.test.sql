@@ -13,7 +13,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(19);
+select plan(18);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -23,40 +23,28 @@ values
   (:'user_a', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'a@example.test', '{}'::jsonb, '{}'::jsonb, now(), now()),
   (:'user_b', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'b@example.test', '{}'::jsonb, '{}'::jsonb, now(), now());
 
--- Two catalogue dishes to log against. Nothing seeds `foods` any more, so the
--- fixture is local to this transaction and rolls back with it.
--- `icon_set` alongside `icon_name`: the pair is optional but indivisible, and the
--- set no longer defaults to `dishes` to supply the missing half.
-insert into public.foods (slug, name, icon_set, icon_name, kcal, carbs_g, protein_g, fat_g)
+-- Two entries to hide from each other. These used to be foreign keys into two
+-- fixture `foods` rows; the catalogue is in Cloudflare D1 now, so an entry
+-- states its own numbers. See the header of `schemas/30_food_logs.sql`.
+
+insert into public.food_logs
+  (user_id, log_date, item_name, item_icon_set, item_icon_name,
+   base_kcal, base_carbs_g, base_protein_g, base_fat_g, serving_label, serving_factor)
 values
-  ('fixture-nasi-lemak', 'Nasi lemak ayam berempah', 'dishes', 'nasi-lemak', 640, 78, 27, 25),
-  ('fixture-roti-canai', 'Roti canai',               'dishes', 'roti-canai', 301, 39,  6, 13);
-
-insert into public.food_servings (food_id, slug, label, factor, is_default)
-select f.id, 'plate', '1 plate', 1, true
-from public.foods f
-where f.slug in ('fixture-nasi-lemak', 'fixture-roti-canai');
-
--- A logs a plate; B logs one too.
-insert into public.food_logs (user_id, log_date, food_id, serving_id)
-select :'user_a', current_date, f.id, s.id
-from public.foods f join public.food_servings s on s.food_id = f.id and s.is_default
-where f.slug = 'fixture-nasi-lemak';
-
-insert into public.food_logs (user_id, log_date, food_id, serving_id)
-select :'user_b', current_date, f.id, s.id
-from public.foods f join public.food_servings s on s.food_id = f.id and s.is_default
-where f.slug = 'fixture-roti-canai';
+  (:'user_a', current_date, 'Nasi lemak ayam berempah', 'dishes', 'nasi-lemak',
+   640, 78, 27, 25, '1 plate', 1),
+  (:'user_b', current_date, 'Roti canai', 'dishes', 'roti-canai',
+   301, 39, 6, 13, '1 plate', 1);
 
 insert into public.weight_logs (user_id, measured_on, weight_kg) values (:'user_a', current_date, 68.0);
 insert into public.weight_logs (user_id, measured_on, weight_kg) values (:'user_b', current_date, 74.0);
 
--- How big the catalogue actually is, captured here as the owner and before any
--- role switch. The assertions below are "a user sees all of it", not "a user
--- sees two rows": on a database where the catalogue import has been run there
--- are ~457,000, and a hard-coded 2 fails while saying nothing about RLS.
-select count(*)::integer as catalogue_size from public.foods \gset
-select count(*)::integer as serving_count from public.food_servings \gset
+-- The sixty tier-5 archetypes, captured as the owner and before any role
+-- switch. The assertion below is "a user sees all of them", not "a user sees
+-- sixty": the seed is the thing that decides how many there are, and a
+-- hard-coded count fails on the next added archetype while saying nothing
+-- about RLS.
+select count(*)::integer as archetype_count from public.archetypes \gset
 
 
 -- AS USER A ------------------------------------------------------------------
@@ -83,12 +71,15 @@ select is(
   'a user sees only their own profile'
 );
 
--- The catalogue is shared and undivided: there are no per-user rows left for a
--- policy to hide, so this is simply everything in the table.
+-- The archetypes are shared and undivided: there are no per-user rows for a
+-- policy to hide, so this is simply everything in the table. It is the last
+-- shared reference table left in this database — the catalogue itself is in
+-- Cloudflare D1, reached through the `catalogue` edge function, and no RLS
+-- policy here has anything to say about it.
 select is(
-  (select count(*)::integer from public.foods),
-  :catalogue_size,
-  'a user sees the whole shared catalogue'
+  (select count(*)::integer from public.archetypes),
+  :archetype_count,
+  'a user sees the whole archetype list'
 );
 
 -- The views are `security_invoker`, so the table policies filter them. A view
@@ -109,11 +100,10 @@ select is(
 -- of each policy exists to stop.
 select throws_ok(
   format(
-    $q$insert into public.food_logs (user_id, log_date, food_id, serving_id)
-       select %L, current_date, f.id, s.id
-       from public.foods f join public.food_servings s
-         on s.food_id = f.id and s.is_default
-       where f.slug = 'fixture-roti-canai'$q$,
+    $q$insert into public.food_logs
+         (user_id, log_date, item_name, base_kcal, base_carbs_g, base_protein_g,
+          base_fat_g, serving_label, serving_factor)
+       values (%L, current_date, 'Roti canai', 301, 39, 6, 13, '1 plate', 1)$q$,
     :'user_b'
   ),
   '42501',
@@ -144,23 +134,23 @@ select throws_ok(
   'a user cannot grant themselves a subscription'
 );
 
--- The catalogue is read-only to clients for the same reason and by the same
+-- The archetypes are read-only to clients for the same reason and by the same
 -- mechanism: no insert GRANT at all, so this is a privilege error rather than a
--- policy miss. Users do not create dishes, and a policy added later by mistake
--- could not make them able to.
+-- policy miss. A user who could write one could change what every failed scan
+-- in the app falls back to.
 select throws_ok(
-  $q$insert into public.foods (slug, name, kcal) values ('fake', 'Fake', 1)$q$,
+  $q$insert into public.archetypes (slug, name, kcal, carbs_g, protein_g, fat_g)
+     values ('fake', 'Fake', 1, 0, 0, 0)$q$,
   '42501',
   null,
-  'a user cannot insert into the catalogue'
+  'a user cannot insert an archetype'
 );
 
 select throws_ok(
-  $q$insert into public.food_servings (food_id, slug, label, factor)
-     select f.id, 'huge', 'Enormous', 9 from public.foods f limit 1$q$,
+  $q$update public.archetypes set kcal = 1$q$,
   '42501',
   null,
-  'nor invent a portion for a dish in it'
+  'nor rewrite the figure an existing one carries'
 );
 
 reset role;
@@ -178,18 +168,12 @@ select is(
   'the other user sees only their own log'
 );
 
--- Both users see the same catalogue. There is nothing user-scoped left in it,
+-- Both users see the same archetypes. There is nothing user-scoped in them,
 -- which is the point: one set of rows, one policy, no divergence to test for.
 select is(
-  (select count(*)::integer from public.foods),
-  :catalogue_size,
-  'the other user sees the same catalogue'
-);
-
-select is(
-  (select count(*)::integer from public.food_servings),
-  :serving_count,
-  'and the same portions'
+  (select count(*)::integer from public.archetypes),
+  :archetype_count,
+  'the other user sees the same archetypes'
 );
 
 reset role;
@@ -209,7 +193,7 @@ select is(
 -- inherits from PUBLIC. Every schema file that declares one of these revokes
 -- that, and for a while none of those revokes reached a migration — so the
 -- database allowed what the source said it forbade, and only a second lock
--- (no grant on `foods`) was stopping anyone.
+-- (no grant on the table) was stopping anyone.
 --
 -- Asserted here because it is invisible: the app works either way, and the
 -- functions do not fail until someone widens a table grant somewhere else.
@@ -219,8 +203,7 @@ select is(
    from pg_catalog.pg_proc p
    join pg_catalog.pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
-     and p.proname in ('upsert_estimate_food', 'estimate_food_backlog',
-                       'seed_archetype_foods', 'set_ingredient_quantity',
+     and p.proname in ('seed_archetype_foods', 'set_ingredient_quantity',
                        'remove_ingredient')
      and pg_catalog.has_function_privilege('public', p.oid, 'EXECUTE')),
   0,

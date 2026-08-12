@@ -122,6 +122,20 @@ export type Food = {
   verified: boolean
   /** How often this user has logged it. From `user_food_stats`, when joined. */
   timesLogged?: number
+  /**
+   * What one base serving weighs, when the catalogue knows. Grams, with
+   * millilitres counted as grams — the same convention the whole app uses.
+   */
+  servingGrams?: number
+  /** GTIN-14. Present only for a packaged product with a barcode on it. */
+  barcode?: string
+  /**
+   * Who to credit for these numbers, when a licence requires it. Open Food Facts
+   * is ODbL and serving its facts through an app is a "Produced Work", so the
+   * detail screen prints this — it travels with the row rather than living in a
+   * component, because a licence nobody can find is a licence nobody honours.
+   */
+  sourceAttribution?: string
 }
 
 /**
@@ -159,17 +173,32 @@ export type Entry = {
   /** Restored from storage: still working, but past the point of a progress bar. */
   restored?: boolean
 
-  foodId: string
+  /**
+   * Where this entry came from, when it came from anywhere. Both are soft: an
+   * estimate the scan invented references no catalogue row, and a plate
+   * corrected until it is nothing in particular references none either.
+   */
+  foodId?: string
+  recipeId?: string
   foodName: string
+  brand?: string
   /** Absent for most of the catalogue: there are far more foods than drawings. */
   icon?: IconRef
   place: Place
-  servingId: string
+  servingId?: string
   servingLabel: string
   servingFactor: number
 
-  /** Already costed by the view: the dish's macros x factor x quantity. */
+  /** Already costed by the view: the entry's macros x factor x quantity. */
   macros: Macros
+  /**
+   * The snapshot as stored, per one base serving, before the portion and the
+   * quantity. Read by exactly one caller — "repeat yesterday", which copies an
+   * entry rather than reading it. See `snapshotFromEntry`.
+   */
+  base: Macros
+  baseExtras?: ExtraNutrients
+  baseServingGrams?: number
 
   /** Set when this entry came from a photo scan. */
   scanId?: string
@@ -239,16 +268,8 @@ export type Recipe = {
   ingredientCount: number
   /** The whole pot. */
   total: Macros
-  /** One serving of it — what a log of this recipe costs. */
+  /** One serving of it — what a log of this recipe costs, and the snapshot's base. */
   perServing: Macros
-
-  /**
-   * The mirror catalogue row and its base portion, which is what logging a
-   * recipe writes against. Carried on the recipe so that "add to today" is one
-   * insert rather than a lookup and an insert.
-   */
-  foodId: string
-  defaultServingId: string
 }
 
 export type Targets = {
@@ -412,7 +433,44 @@ export type Subscription = Tables<'subscriptions'>
 export type RecipeRow = Database['public']['Views']['recipe_details']['Row']
 export type RecipeIngredientRow = Database['public']['Views']['recipe_ingredient_details']['Row']
 
-export type FoodDetailsRow = Database['public']['Views']['food_details']['Row']
+/**
+ * One catalogue food, as the `catalogue` edge function hands it back.
+ *
+ * Written out rather than generated, because there is no longer a Postgres view
+ * to generate it from: `food_details` was a view over `foods` and
+ * `food_servings`, and both are in Cloudflare D1 now. The Worker shapes its
+ * answer to match what that view returned — see `foodDetails` in
+ * `apps/catalogue-worker/src/index.ts` — so `toFood` did not have to change.
+ *
+ * Every field is nullable for the same reason the generated view types were:
+ * this comes off a network hop with no schema to prove it, and `toFood`
+ * coalesces once at the edge so nothing inland writes `?? 0`.
+ */
+export type FoodDetailsRow = {
+  id: string | null
+  slug?: string | null
+  name: string | null
+  brand: string | null
+  icon_set: string | null
+  icon_name: string | null
+  place: Place | null
+  kcal: number | null
+  carbs_g: number | string | null
+  protein_g: number | string | null
+  fat_g: number | string | null
+  fibre_g: number | string | null
+  sugar_g: number | string | null
+  sodium_mg: number | string | null
+  verified: boolean | null
+  barcode: string | null
+  source_attribution: string | null
+  /** The default portion, lifted onto the food. */
+  default_serving_id: string | null
+  serving_label: string | null
+  serving_g: number | string | null
+  /** `[{ id, label, factor }, …]`, which is what `toServings` reads. */
+  servings: unknown
+}
 export type FoodLogRow = Database['public']['Views']['food_log_details']['Row']
 export type DailyNutritionRow = Database['public']['Views']['daily_nutrition']['Row']
 export type CurrentGoalsRow = Database['public']['Views']['current_daily_goals']['Row']

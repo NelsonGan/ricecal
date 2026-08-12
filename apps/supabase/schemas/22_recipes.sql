@@ -6,26 +6,25 @@
 -- everybody can answer "what went in, and how many does it feed". A recipe is
 -- those two answers, entered once, and every future log of it is one tap.
 --
--- WHY A RECIPE IS ALSO A `foods` ROW
+-- WHERE THE MIRROR WENT
 --
--- `food_logs.food_id` is not null and references `foods`, and that invariant is
--- load-bearing everywhere downstream — the day view, the trends families, the
--- week strip's dots and the reports all read a logged entry as a catalogue row
--- times a portion times a quantity. A recipe that could not be a `foods` row
--- could not be logged without a second shape for all of them.
+-- A recipe used to be copied into a `foods` row — `is_recipe`, priced per
+-- serving, carrying the portions the detail screen offers — rebuilt by triggers
+-- on every write. It existed for ONE reason: `food_logs.food_id` was not null
+-- and referenced `foods`, so a recipe that could not be a catalogue row could
+-- not be logged without a second shape for the day view, the trends, the week
+-- strip and the reports.
 --
--- So each recipe MIRRORS into one: `foods.is_recipe`, priced per serving, with
--- the portions the detail screen offers (half, one, two, the whole pot). The
--- mirror is derived and never authored — the triggers below rebuild it from the
--- recipe and its ingredients on every write, and they are the only writer.
--- Correcting a recipe therefore corrects every entry logged from it, which is
--- the same property `foods` has always had and is the one people expect here:
--- realising the pot was six servings rather than four should move last week's
--- diary, because it was always six.
+-- The catalogue is in Cloudflare D1 now and that foreign key is gone. An entry
+-- carries its own numbers, so logging a pot writes the same snapshot every
+-- other entry writes, taken from `recipe_details` — which already computed the
+-- per-serving figures the mirror was built out of.
 --
--- No client gains a grant on `foods`. The triggers are `security definer`, so
--- the DATABASE writes the catalogue on the user's behalf, which is a different
--- thing from the client being able to.
+-- What that costs is the property people expect here: correcting a recipe no
+-- longer moves last week's diary, because realising the pot was six servings
+-- rather than four does not reach entries that already took their copy. It is
+-- the same trade `food_logs` makes with the catalogue at large, for the same
+-- reason, and `food_logs.recipe_id` is the provenance a re-snapshot would need.
 --
 -- THREE KINDS OF ROW, ONE TABLE
 --
@@ -43,11 +42,6 @@ create table public.recipes (
 
   -- Null means the RiceCal kitchen. See the header.
   owner_id      uuid references auth.users (id) on delete cascade,
-
-  -- The mirror. Not null, and filled by the before-insert trigger rather than
-  -- by the caller — a recipe without one could not be logged, so it is not a
-  -- state this table is allowed to hold even briefly.
-  food_id       uuid not null references public.foods (id) on delete restrict,
 
   name          text not null check (char_length(trim(name)) between 1 and 120),
 
@@ -107,11 +101,7 @@ create table public.recipes (
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
 
-  constraint recipes_share_slug_key unique (share_slug),
-  -- One mirror per recipe and one recipe per mirror. Without this a bug in the
-  -- sync trigger could point two recipes at one catalogue row and each would
-  -- overwrite the other's calories.
-  constraint recipes_food_id_key unique (food_id)
+  constraint recipes_share_slug_key unique (share_slug)
 );
 
 create index recipes_owner_idx on public.recipes (owner_id, created_at desc);
@@ -193,9 +183,10 @@ create table public.recipe_ingredients (
   -- from there, whatever the cook typed when it was not.
   name          text not null check (char_length(trim(name)) between 1 and 120),
 
-  -- The catalogue row it came from, when it came from one. `set null` so
-  -- correcting the catalogue never deletes somebody's ingredient.
-  food_id       uuid references public.foods (id) on delete set null,
+  -- The catalogue row it came from, when it came from one. Unconstrained: the
+  -- catalogue is in another database, and this was never more than provenance
+  -- anyway — the numbers are copied onto this row, not joined from there.
+  food_id       uuid,
 
   amount        numeric(9, 2) not null check (amount > 0 and amount <= 100000),
   unit          public.recipe_unit not null default 'g',
@@ -218,120 +209,24 @@ create index recipe_ingredients_recipe_idx
 
 
 -- ---------------------------------------------------------------------------
--- Rebuilding the mirror.
+-- WHERE `recipe_sync_food` WENT
 --
--- One function, called from every trigger below, because the mirror is a pure
--- function of the recipe and its ingredients: there is no incremental update to
--- get wrong, only a recompute to run at the right moments.
+-- A recipe was rebuilt into a `foods` row on every write of it or its
+-- ingredients — one function, called from four triggers, because the mirror was
+-- a pure function of the recipe and there was no incremental update to get
+-- wrong. It offered the portions the detail screen shows: half, one, two and
+-- the whole pot, the last two created only where they meant something.
 --
--- The portions are the ones the detail screen offers. `two` and `pot` are
--- created only where they mean something — on a one-serving recipe the whole
--- pot IS one serving, and offering both would be two chips for the same
--- amount of food — and they are deleted when a change of `servings` takes that
--- meaning away.
---
--- SECURITY DEFINER because `authenticated` holds no write grant on `foods` or
--- `food_servings` at all. It takes a recipe id and reads the owner from the
--- row, so there is nothing here for a caller to point at somebody else's data.
+-- All of it is gone with the mirror. `recipe_details` computes the per-serving
+-- figures directly from the ingredient list, which is what the mirror was built
+-- out of in the first place, and the portions are the detail screen's to offer
+-- against a snapshot rather than a catalogue row's to hold.
 -- ---------------------------------------------------------------------------
-
-create or replace function public.recipe_sync_food(p_recipe_id uuid)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  r          public.recipes;
-  v_total    record;
-  v_servings numeric;
-begin
-  select * into r from public.recipes where id = p_recipe_id;
-  if r.id is null then
-    return;
-  end if;
-
-  v_servings := greatest(r.servings, 1);
-
-  select
-    coalesce(sum(i.kcal_per_unit      * i.amount), 0) as kcal,
-    coalesce(sum(i.carbs_g_per_unit   * i.amount), 0) as carbs_g,
-    coalesce(sum(i.protein_g_per_unit * i.amount), 0) as protein_g,
-    coalesce(sum(i.fat_g_per_unit     * i.amount), 0) as fat_g
-  into v_total
-  from public.recipe_ingredients i
-  where i.recipe_id = r.id;
-
-  update public.foods set
-    name      = r.name,
-    icon_set  = r.icon_set,
-    icon_name = r.icon_name,
-    -- Per serving, which is what one entry against this row means. Clamped to
-    -- the column's own range so a mistyped ingredient cannot make the recipe
-    -- unsaveable — the number is visibly wrong on screen either way, and a
-    -- check-constraint violation on a trigger reads to the user as "saving
-    -- failed" with nothing to fix.
-    kcal      = least(round(v_total.kcal / v_servings), 10000),
-    -- Clamped for the same reason kcal is, and it is not optional: `foods`
-    -- holds these as numeric(6, 1) while an ingredient may be 100000 units of
-    -- something at 999999.9999 g of carbohydrate each. One fat-fingered amount
-    -- overflows the column INSIDE this trigger, and a numeric overflow raised
-    -- from a trigger reaches the user as "saving failed" with nothing on screen
-    -- to correct. A visibly absurd number they can fix is the better failure.
-    carbs_g   = least(round(v_total.carbs_g   / v_servings, 1), 99999.9),
-    protein_g = least(round(v_total.protein_g / v_servings, 1), 99999.9),
-    fat_g     = least(round(v_total.fat_g     / v_servings, 1), 99999.9),
-    is_recipe = true,
-    place     = 'home'
-  where id = r.food_id;
-
-  -- One serving is the base portion and is always factor 1: the macros above
-  -- are quoted per serving, so this is the row they describe.
-  insert into public.food_servings (food_id, slug, label, factor, is_default, position)
-  values (r.food_id, 'serving', '1 serving', 1.0, true, 0)
-  on conflict (food_id, slug) do update set label = excluded.label, factor = 1.0;
-
-  insert into public.food_servings (food_id, slug, label, factor, is_default, position)
-  values (r.food_id, 'half', 'Half', 0.5, false, 1)
-  on conflict (food_id, slug) do update set factor = 0.5;
-
-  if r.servings >= 2 then
-    insert into public.food_servings (food_id, slug, label, factor, is_default, position)
-    values (r.food_id, 'two', '2 servings', 2.0, false, 2)
-    on conflict (food_id, slug) do update set factor = 2.0;
-  else
-    delete from public.food_servings where food_id = r.food_id and slug = 'two';
-  end if;
-
-  -- Strictly greater than TWO, not than one: on a recipe that feeds two, the
-  -- whole pot IS the '2 servings' portion above, and two rows with the same
-  -- factor are the same amount of food said twice.
-  if r.servings > 2 then
-    insert into public.food_servings (food_id, slug, label, factor, is_default, position)
-    values (r.food_id, 'pot', 'Whole pot', r.servings, false, 3)
-    on conflict (food_id, slug) do update set factor = excluded.factor;
-  else
-    delete from public.food_servings where food_id = r.food_id and slug = 'pot';
-  end if;
-end;
-$$;
-
-comment on function public.recipe_sync_food is
-  'Rebuilds a recipe''s mirror `foods` row and its portions from the recipe and '
-  'its ingredients. Called by the recipe triggers; the mirror is derived data '
-  'and this is its only writer.';
-
-revoke execute on function public.recipe_sync_food from public, anon, authenticated;
-grant execute on function public.recipe_sync_food to service_role;
 
 
 -- ---------------------------------------------------------------------------
--- Everything a recipe needs settled before it exists: its mirror row, its
--- share link and the name to credit.
---
--- The mirror is created HERE rather than in an after-insert trigger because
--- `food_id` is not null — there is no moment at which a recipe is allowed to
--- exist without one.
+-- Everything a recipe needs settled before it exists: its share link and the
+-- name to credit.
 --
 -- The share slug is minted from the name plus eight hex characters. Random
 -- rather than sequential so a link cannot be guessed by counting, and appended
@@ -348,14 +243,6 @@ as $$
 declare
   v_stem text;
 begin
-  if new.food_id is null then
-    insert into public.foods (slug, name, place, kcal, carbs_g, protein_g, fat_g,
-                              icon_set, icon_name, verified, is_recipe, source)
-    values ('recipe-' || pg_catalog.gen_random_uuid()::text, new.name, 'home',
-            0, 0, 0, 0, new.icon_set, new.icon_name, false, true, 'recipe')
-    returning id into new.food_id;
-  end if;
-
   if new.share_slug is null then
     -- `search_normalize` folds accents and case; the rest turns what is left
     -- into link-safe words. A name that is entirely punctuation leaves nothing,
@@ -381,6 +268,10 @@ begin
   return new;
 end;
 $$;
+
+-- Stated here and applied by a hand-written migration: `db diff` does not
+-- carry grants, so a revoke that only lives in a schema file never happens.
+revoke execute on function public.recipes_before_insert from public, anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- An edit sends a published recipe back to the reviewer.
@@ -464,45 +355,6 @@ create trigger profiles_sync_recipe_author
   after update of display_name on public.profiles
   for each row execute function public.profiles_sync_recipe_author();
 
-create or replace function public.recipes_after_write()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-  perform public.recipe_sync_food(new.id);
-  return null;
-end;
-$$;
-
--- ---------------------------------------------------------------------------
--- A deleted recipe takes its mirror with it — unless somebody has eaten it.
---
--- `food_logs.food_id` is `on delete restrict`, so a mirror that has been logged
--- cannot go, and should not: the diary is a record of what was eaten and a
--- recipe deleted today did not un-feed anybody last Tuesday. What is left
--- behind is an ordinary catalogue row that nothing can find — it is excluded
--- from search, and the recipe that pointed at it is gone — which is exactly the
--- shape of a historical entry.
--- ---------------------------------------------------------------------------
-create or replace function public.recipes_after_delete()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-  if exists (select 1 from public.food_logs e where e.food_id = old.food_id) then
-    return null;
-  end if;
-
-  delete from public.food_servings where food_id = old.food_id;
-  delete from public.foods where id = old.food_id;
-  return null;
-end;
-$$;
-
 create or replace function public.recipe_ingredients_after_write()
 returns trigger
 language plpgsql
@@ -512,11 +364,17 @@ as $$
 declare
   v_recipe_id uuid := coalesce(new.recipe_id, old.recipe_id);
 begin
-  perform public.recipe_sync_food(v_recipe_id);
+  -- This used to rebuild the mirror as well. What is left is the half that
+  -- matters: changing what went into a published pot sends it back to the
+  -- reviewer, because the ingredient list is part of what was approved.
   perform public.recipe_mark_for_review(v_recipe_id);
   return null;
 end;
 $$;
+
+-- Stated here and applied by a hand-written migration: `db diff` does not
+-- carry grants, so a revoke that only lives in a schema file never happens.
+revoke execute on function public.recipe_ingredients_after_write from public, anon, authenticated;
 
 create trigger recipes_before_insert
   before insert on public.recipes
@@ -526,22 +384,9 @@ create trigger recipes_set_updated_at
   before update on public.recipes
   for each row execute function public.set_updated_at();
 
--- `of` the columns the mirror is built from, and nothing else. Without the
--- column list, publishing a recipe or bumping its saved count would rebuild the
--- catalogue row and its four portions for no reason — the same discipline
--- `profiles_sync_daily_goals` follows, and the same failure if a column is
--- added to the formula and not to this list.
-create trigger recipes_sync_food
-  after update of name, icon_set, icon_name, servings on public.recipes
-  for each row execute function public.recipes_after_write();
-
-create trigger recipes_sync_food_insert
-  after insert on public.recipes
-  for each row execute function public.recipes_after_write();
-
-create trigger recipes_after_delete
-  after delete on public.recipes
-  for each row execute function public.recipes_after_delete();
+-- Three triggers stood here — two rebuilding the mirror on insert and on the
+-- columns it was built from, one deleting it with the recipe unless somebody
+-- had eaten it. Nothing to rebuild and nothing to delete.
 
 -- Ordered before `recipes_set_updated_at` and after nothing: Postgres runs
 -- before-row triggers in name order, and neither of these reads the other's
@@ -550,7 +395,10 @@ create trigger recipes_reset_review
   before update of name, steps, servings on public.recipes
   for each row execute function public.recipes_reset_review();
 
-create trigger recipe_ingredients_sync_food
+-- Renamed from `recipe_ingredients_sync_food`, which is what it did until the
+-- mirror went. A trigger whose name says it syncs a catalogue row is a trap for
+-- whoever next goes looking for where that happens.
+create trigger recipe_ingredients_after_write
   after insert or update or delete on public.recipe_ingredients
   for each row execute function public.recipe_ingredients_after_write();
 

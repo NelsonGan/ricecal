@@ -16,7 +16,20 @@ const near = (got: number, want: number, what: string) => {
   if (Math.abs(got - want) > 1) throw new Error(`${what}: expected ~${want}, got ${got}`)
 }
 
-const row = (name: string, kcal: number, serving_label: string | null): SearchRow => ({
+/**
+ * A catalogue row.
+ *
+ * `serving_grams` is the weight the CATALOGUE states for its own portion, and
+ * it is separate from the label on purpose — that is the whole subject of the
+ * last two tests here. Null means the row only ever said its portion in words,
+ * which is what every Postgres-era row did.
+ */
+const row = (
+  name: string,
+  kcal: number,
+  serving_label: string | null,
+  serving_grams: number | null = null,
+): SearchRow => ({
   id: name,
   name,
   brand: null,
@@ -24,8 +37,13 @@ const row = (name: string, kcal: number, serving_label: string | null): SearchRo
   carbs_g: null,
   protein_g: null,
   fat_g: null,
+  fibre_g: null,
+  sugar_g: null,
+  sodium_mg: null,
+  place: null,
   default_serving_id: 'serving',
   serving_label,
+  serving_grams,
 })
 
 Deno.test('priceRow converts a row priced by weight to the weight asked for', () => {
@@ -102,4 +120,24 @@ Deno.test('bestFit falls back to the old band when nothing was weighed', () => {
 Deno.test('bestFit returns nothing rather than the wrong thing', () => {
   eq(bestFit([], 30, 65), null, 'no rows at all')
   eq(bestFit([row('Whole roast chicken', 2228, '1 chicken')], 45, 90), null, 'nothing close')
+})
+
+Deno.test('priceRow reads the weight the catalogue STATES, not just the label', () => {
+  // The benefit of the move to D1 that went unclaimed for a while. A curated
+  // Malaysian dish states its portion in words — "1 plate" — and carries the
+  // weight in a column beside it, so reading the label alone answered null and
+  // switched the whole weight path off for exactly the rows that had the
+  // number. Half a plate of char kuey teow was logged as a whole one.
+  const ckt = priceRow(row('Char Kuey Teow', 655, '1 plate', 300), 150)
+  near(ckt.kcal, 327.5, 'half of a 300 g plate')
+  eq(ckt.byWeight, true, 'the stated weight is a weight')
+})
+
+Deno.test('priceRow still falls back to the label when there is no stated weight', () => {
+  const fried = priceRow(row('Chicken, fried', 240, '100 g', null), 60)
+  near(fried.kcal, 144, 'recovered from the label')
+  eq(fried.byWeight, true, 'a label can carry a weight too')
+
+  const plate = priceRow(row('Mystery plate', 500, '1 plate', null), 200)
+  eq(plate.byWeight, false, 'no weight anywhere, so the unit count is all there is')
 })

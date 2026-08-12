@@ -506,3 +506,24 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/scan-refine/deno.json"
 entrypoint = "./functions/scan-refine/index.ts"
+
+# The barcode fallback: one product from Open Food Facts, live, when the
+# catalogue has never seen the code. Same auth pattern as the others — it
+# inspects the Authorization header itself. Reads no secrets of its own; it
+# needs SUPABASE_SERVICE_ROLE_KEY, which the platform injects, because the
+# whole point of it is writing a catalogue row no client may write.
+[functions.barcode]
+enabled = true
+verify_jwt = false
+import_map = "./functions/barcode/deno.json"
+entrypoint = "./functions/barcode/index.ts"
+
+# The client's door to the catalogue, which lives in Cloudflare D1 now. Same
+# auth pattern as the others — it inspects the Authorization header itself.
+# Secrets it reads: CATALOGUE_URL and CATALOGUE_TOKEN, the Worker's address and
+# the shared token the client must never hold.
+[functions.catalogue]
+enabled = true
+verify_jwt = false
+import_map = "./functions/catalogue/deno.json"
+entrypoint = "./functions/catalogue/index.ts"

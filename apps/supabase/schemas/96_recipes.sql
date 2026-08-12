@@ -45,9 +45,10 @@ grant select on public.recipe_ingredient_details to authenticated, service_role;
 --
 -- Both figures, because both are read on the same screen and they answer
 -- different questions — "is this pot worth cooking" and "what do I log". The
--- per-serving numbers are the ones the mirror `foods` row carries, computed the
--- same way here rather than joined off it, so a mirror that has drifted shows
--- up as a discrepancy instead of hiding behind the view.
+-- per-serving numbers used to be computed here AND carried on a mirror `foods`
+-- row, deliberately by two routes so a drifted mirror showed up as a
+-- discrepancy rather than hiding behind the view. There is no mirror now, and
+-- this is the one place they are worked out.
 --
 -- `is_official` is the absence of an owner. `is_mine` is what the list tabs
 -- split on, and it is computed here so no screen has to hold the session's user
@@ -57,7 +58,6 @@ create view public.recipe_details with (security_invoker = on) as
 select
   r.id,
   r.owner_id,
-  r.food_id,
   r.name,
   r.photo_path,
   r.icon_set,
@@ -89,13 +89,13 @@ select
   round(coalesce(t.kcal, 0)      / greatest(r.servings, 1))::integer    as serving_kcal,
   round(coalesce(t.carbs_g, 0)   / greatest(r.servings, 1), 1)::numeric as serving_carbs_g,
   round(coalesce(t.protein_g, 0) / greatest(r.servings, 1), 1)::numeric as serving_protein_g,
-  round(coalesce(t.fat_g, 0)     / greatest(r.servings, 1), 1)::numeric as serving_fat_g,
-
-  -- The base portion of the mirror, so a screen can log a recipe without a
-  -- second round trip to `food_details` for an id it is about to use once.
-  d.id                                 as default_serving_id
+  round(coalesce(t.fat_g, 0)     / greatest(r.servings, 1), 1)::numeric as serving_fat_g
+  -- `food_id` and `default_serving_id` were here, so a screen could log a pot
+  -- through the catalogue without a second round trip for two ids it used once.
+  -- There is no mirror to name and no portion row to point at: a pot is logged
+  -- from `serving_kcal` and the three macros beside it, which this view has
+  -- always computed.
 from public.recipes r
-left join public.food_servings d on d.food_id = r.food_id and d.is_default
 left join lateral (
   select
     count(*)::integer                     as ingredient_count,

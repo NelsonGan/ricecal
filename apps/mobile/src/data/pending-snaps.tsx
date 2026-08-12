@@ -298,16 +298,18 @@ export function pendingAsEntry(snap: PendingSnap): Entry {
     status: snap.status,
     restored: snap.restored,
 
-    foodId: '',
     // A typed meal wears its own words until the cascade names it. A snapped
     // one has the photograph, and a name here would be a guess.
     foodName: snap.text ?? '',
     icon: { set: 'system', name: snap.text ? 'sparkle' : 'camera' } as Entry['icon'],
     place: 'home',
-    servingId: '',
     servingLabel: '',
     servingFactor: 1,
     macros: { kcal: 0, carbs: 0, protein: 0, fat: 0 },
+    // Zero for the same reason `macros` is: this row is a placeholder for an
+    // answer that has not arrived. Nothing repeats a pending snap — the copy
+    // path reads real entries — so these are never written anywhere.
+    base: { kcal: 0, carbs: 0, protein: 0, fat: 0 },
     isEstimate: false,
     isArchetype: false,
   }

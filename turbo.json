@@ -1,6 +1,19 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalPassThroughEnv": ["SUPABASE_PROJECT_ID"],
+  "globalPassThroughEnv": [
+    "SUPABASE_PROJECT_ID",
+    "SUPABASE_ACCESS_TOKEN",
+    // The Cloudflare Worker that serves the food catalogue, and the shared token
+    // the Supabase functions call it with. Read by the search gate; the app
+    // itself never sees the token, which is the whole reason the `catalogue`
+    // edge function exists.
+    "CATALOGUE_URL",
+    "CATALOGUE_TOKEN",
+    // Which D1 database the catalogue scripts talk to. Named rather than
+    // hardcoded so a rehearsal can point at a copy, since D1 has no equivalent
+    // of the local Supabase stack to practise a load against.
+    "CATALOGUE_D1"
+  ],
   "tasks": {
     "typecheck": {
       "dependsOn": ["^typecheck"]

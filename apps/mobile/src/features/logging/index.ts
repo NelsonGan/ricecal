@@ -1,3 +1,4 @@
+export { BarcodePanel, type BarcodePanelProps } from './BarcodePanel'
 export { DescribePanel, type DescribePanelProps } from './DescribePanel'
 export { FixSheet, type FixSheetProps } from './FixSheet'
 export { FoodSearchPanel, type FoodSearchPanelProps } from './FoodSearchPanel'

@@ -117,6 +117,7 @@ export const logging = {
     snap: 'Snap',
     describe: 'Describe',
     search: 'Search',
+    scan: 'Scan',
     /**
      * The last few dishes logged at this meal, newest first. No empty-state copy
      * for this or for the repeat button: each block is simply absent when it has
@@ -124,6 +125,32 @@ export const logging = {
      */
     recent: 'LAST LOGGED',
     repeatYesterday: 'Repeat yesterday',
+  },
+
+  /**
+   * The barcode scanner.
+   *
+   * The copy carries most of the design here. A scanner that says nothing is
+   * indistinguishable from one that is broken, so there is a line under the
+   * window at all times and it says which of four things is happening — aiming,
+   * looking up, we do not know this packet, or something went wrong.
+   *
+   * "We do not have this one yet" rather than "not found": the packet exists,
+   * the catalogue is what is missing, and the difference matters because the
+   * next thing offered is Describe rather than an apology.
+   */
+  barcode: {
+    permissionTitle: 'Let RiceCal use the camera',
+    permissionBody: 'The camera reads the barcode on the packet. Nothing is recorded or uploaded.',
+    aim: 'Point the camera at the barcode on the packet.',
+    noCamera: 'This device has no camera. Type the number under the barcode instead.',
+    looking: 'Looking this one up...',
+    unknown: 'We do not have this one yet. Describe it instead and we will work it out.',
+    failed: 'That did not go through. Try the packet again.',
+    typeLabel: 'Or type the number',
+    typePlaceholder: '9556001110015',
+    lookUp: 'Look up',
+    describeInstead: 'Describe it instead',
   },
 
   /**

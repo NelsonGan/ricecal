@@ -1,9 +1,9 @@
 -- ---------------------------------------------------------------------------
--- Recipes: the mirror, and who can see whose cooking.
+-- Recipes: what a pot costs, and who can see whose cooking.
 --
--- Two things are being checked here and they fail in opposite ways. The mirror
--- fails LOUDLY — a recipe whose `foods` row is wrong logs the wrong calories,
--- and the assertions on it are ordinary arithmetic. Visibility fails QUIETLY,
+-- Two things are being checked here and they fail in opposite ways. The
+-- arithmetic fails LOUDLY — a recipe priced wrong logs the wrong calories, and
+-- the assertions on it are ordinary sums. Visibility fails QUIETLY,
 -- by returning more rows than it should, which is why the second half runs as
 -- `authenticated` with a forged JWT claim exactly as 02_rls does. Run as
 -- `postgres` every one of those assertions passes while proving nothing.
@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(34);
+select plan(26);
 
 \set cook  '33333333-3333-3333-3333-333333333333'
 \set other '44444444-4444-4444-4444-444444444444'
@@ -35,34 +35,13 @@ values (:'cook', 'fixture-pot-a', 6, 'Fry the rempah until it darkens.',
         'meals/33333333-3333-3333-3333-333333333333/fixture.jpg');
 
 select id as recipe_id from public.recipes where name = 'fixture-pot-a' \gset
-select food_id as mirror_id from public.recipes where id = :'recipe_id' \gset
-
-select is(
-  (select is_recipe from public.foods where id = :'mirror_id'),
-  true,
-  'a new recipe mints its mirror catalogue row'
-);
-
-select is(
-  (select count(*)::integer from public.food_servings
-   where food_id = :'mirror_id' and is_default and factor = 1),
-  1,
-  'and exactly one base portion, at factor 1'
-);
-
--- Six servings, so the whole pot is a portion and two servings is a portion.
-select is(
-  (select count(*)::integer from public.food_servings where food_id = :'mirror_id'),
-  4,
-  'a pot that feeds several offers half, one, two and the whole pot'
-);
-
-select is(
-  (select factor::numeric from public.food_servings
-   where food_id = :'mirror_id' and slug = 'pot'),
-  6::numeric,
-  'and the whole pot is as many servings as the recipe says'
-);
+-- THE MIRROR IS GONE, and four assertions went with it: that a new recipe
+-- minted a `foods` row, that the row had exactly one base portion at factor 1,
+-- that a pot feeding several offered half/one/two/whole, and that a pot feeding
+-- two did not also offer itself whole. All four were about a catalogue row this
+-- database no longer has — see the header of `schemas/22_recipes.sql`. What
+-- they protected is now unspellable rather than asserted: there is no second
+-- copy of a recipe's figures to drift from the first.
 
 -- 1 kg of beef at 1.64 kcal/g, 400 ml of santan at 1.95 kcal/ml: 2,420 kcal in
 -- the pot, 403 in a serving of six.
@@ -84,61 +63,33 @@ select is(
   'and a serving is that divided by how many it feeds'
 );
 
-select is(
-  (select kcal from public.foods where id = :'mirror_id'),
-  403,
-  'the mirror carries the per-serving figure, which is what a log of it costs'
-);
-
--- Realising it was four servings and not six has to move every log of it, past
--- ones included. That is the whole reason the mirror is recomputed rather than
--- snapshotted.
+-- Realising it was four servings and not six reprices the pot. It no longer
+-- moves PAST logs of it, and that is the trade the mirror's removal made: an
+-- entry took its copy when it was written. `food_logs.recipe_id` is what a
+-- re-snapshot job would join on.
 update public.recipes set servings = 4 where id = :'recipe_id';
 
 select is(
-  (select kcal from public.foods where id = :'mirror_id'),
+  (select serving_kcal from public.recipe_details where id = :'recipe_id'),
   605,
-  'changing how many it feeds reprices the mirror'
+  'changing how many it feeds reprices a serving'
 );
 
-select is(
-  (select factor::numeric from public.food_servings
-   where food_id = :'mirror_id' and slug = 'pot'),
-  4::numeric,
-  'and moves the whole-pot portion with it'
-);
-
--- On a pot that feeds two, "2 servings" and "the whole pot" are the same amount
--- of food, and two portions with the same factor say it twice.
-update public.recipes set servings = 2 where id = :'recipe_id';
-
-select is(
-  (select count(*)::integer from public.food_servings
-   where food_id = :'mirror_id' and slug = 'pot'),
-  0,
-  'a pot that feeds two does not also offer itself whole'
-);
-
-update public.recipes set servings = 4 where id = :'recipe_id';
-
--- A recipe is a catalogue row so it can be logged, and for no other reason. If
--- it turned up in search, every user would be reading every other user's
--- cooking — the policy on `foods` is `true` and always has been.
-select is(
-  (select count(*)::integer from public.search_foods('rendang daging')),
-  0,
-  'a recipe is never a search result'
-);
-
-insert into public.food_logs (user_id, log_date, food_id, serving_id)
-select :'cook', current_date, :'mirror_id', s.id
-from public.food_servings s where s.food_id = :'mirror_id' and s.is_default;
+-- Logging a pot is an ordinary entry carrying the recipe's per-serving figures,
+-- which is exactly what `snapshotFromRecipe` builds on the client.
+insert into public.food_logs
+  (user_id, log_date, recipe_id, item_name, base_kcal, base_carbs_g,
+   base_protein_g, base_fat_g, serving_label, serving_factor)
+select :'cook', current_date, r.id, r.name,
+       r.serving_kcal, r.serving_carbs_g, r.serving_protein_g, r.serving_fat_g,
+       '1 serving', 1
+from public.recipe_details r where r.id = :'recipe_id';
 
 select is(
   (select kcal from public.food_log_details
-   where user_id = :'cook' and food_id = :'mirror_id'),
+   where user_id = :'cook' and recipe_id = :'recipe_id'),
   605,
-  'and a logged serving of it costs what the recipe says'
+  'and a logged serving of it costs what the recipe said at the time'
 );
 
 
