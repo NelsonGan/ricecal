@@ -2,8 +2,8 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { Recipe } from '@/data'
-import { ItemRow } from '@/features/shared'
-import { Badge } from '@/ui'
+import { ItemRow, ROW_TEXT_INDENT } from '@/features/shared'
+import { Badge, cn } from '@/ui'
 
 export type RecipeRowProps = {
   recipe: Recipe
@@ -59,10 +59,9 @@ export function RecipeRow({ recipe, onPress }: RecipeRowProps) {
 
           Indented to the row's text column so it reads as belonging to the
           recipe above it rather than to the gap between two of them, which is
-          what it looked like once the rows lost their cards. 56pt tile plus the
-          12pt gap. */}
+          what it looked like once the rows lost their cards. */}
       {recipe.isMine && recipe.isPublic ? (
-        <View className="flex-row pl-[68px]">
+        <View className={cn('flex-row', ROW_TEXT_INDENT)}>
           <ReviewBadge recipe={recipe} />
         </View>
       ) : null}

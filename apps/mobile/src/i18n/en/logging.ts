@@ -113,7 +113,7 @@ export const logging = {
 
   selector: {
     title: 'Log a dish',
-    remaining: '{{count}} left',
+    remaining: '{{count}} kcal left',
     snap: 'Snap',
     describe: 'Describe',
     search: 'Search',

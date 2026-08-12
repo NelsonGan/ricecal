@@ -5,7 +5,7 @@ import { View } from 'react-native'
 
 import { type RecipeShelf, useRecipes } from '@/data'
 import { RecipeRow } from '@/features/recipes'
-import { ScreenTitle } from '@/features/shared'
+import { ROW_TILE, ScreenTitle } from '@/features/shared'
 import { useDebouncedValue } from '@/lib/use-debounce'
 import { useThemeColors } from '@/theme/useTheme'
 import {
@@ -94,7 +94,7 @@ export default function RecipesScreen() {
         <Card>
           {SKELETON_ROWS.map((id) => (
             <View key={id} className="flex-row items-center gap-3">
-              <Skeleton className="h-[56px] w-[56px]" />
+              <Skeleton className={ROW_TILE} />
               <View className="flex-1 gap-2">
                 <Skeleton className="h-4 w-2/3" />
                 <Skeleton className="h-3 w-2/5" />

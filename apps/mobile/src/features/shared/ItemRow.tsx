@@ -11,26 +11,55 @@ const valueTones = {
   hibiscus: 'text-hibiscus-ink',
 } as const
 
+/**
+ * The picture tile, and the indent owed to anything that lines up with the
+ * text beside it.
+ *
+ * Exported because four places have to agree on one number: this row, the
+ * analysing row that stands in for it mid-scan, the review badge that indents
+ * to a recipe's text column, and the recipes skeleton. They drifted once
+ * already — 56pt in one place and 48 in another — which is what the note on
+ * `ItemRow` is about.
+ *
+ * Literal class strings rather than a number interpolated into one: NativeWind
+ * compiles the stylesheet from the source text, so a class it cannot read
+ * before the app runs produces no style at all.
+ */
+export const ROW_TILE = 'h-[72px] w-[72px]'
+/** Tile plus the row's `gap-3`. */
+export const ROW_TEXT_INDENT = 'pl-[84px]'
+export const ROW_TILE_ICON = 52
+
+/**
+ * What a row shows when it has neither a photograph nor a drawing of its own.
+ *
+ * The tile used to stay empty, on the reasoning that one stand-in plate beside
+ * a thousand different dishes says nothing about any of them. It says one
+ * useful thing, though — that this row is food and its picture is missing —
+ * and a grey square says that less clearly than a plate does. Kept deliberately
+ * neutral: a cream outline reads as a gap where a photograph goes, where a
+ * colourful drawing would compete with the real plates around it.
+ */
+const PLACEHOLDER_ICON = { set: 'food', name: 'empty-plate' } as const
+
 export type ItemRowProps = {
   /** The dish, the thing. */
   title: string
   /** "1 plate", "8:20 am", "Mamak · 1 piece". */
   detail?: string
   /**
-   * Optional, because most of the catalogue has no drawing: there are hundreds of
-   * megabytes of imported foods and a few dozen illustrations. With neither an
-   * icon nor a photo the tile stays an empty square, which keeps every row the
-   * same shape and the names in one column — better than the same stand-in plate
-   * beside a thousand different dishes.
+   * Optional, because most of the catalogue has no drawing: millions of imported
+   * foods against a few hundred illustrations. A row with neither an icon nor a
+   * photo falls back to `PLACEHOLDER_ICON`.
    */
   icon?: IconRef
   /**
-   * Drops the tile entirely rather than leaving it empty.
+   * Drops the tile entirely rather than drawing the placeholder.
    *
-   * For a list where NO row has a picture — search results out of the catalogue —
-   * a column of empty squares is 56pt of nothing on every row, and it indents the
-   * one thing being read. A logged row keeps its tile even when empty, because its
-   * neighbours have photos and a ragged left edge is worse.
+   * For a list where NO row has a picture — search results out of the catalogue
+   * — a column of identical plates is 72pt of the same thing on every row, and
+   * it indents the one thing being read. A logged row keeps its tile, because
+   * its neighbours have photographs and a ragged left edge is worse.
    */
   textOnly?: boolean
   /**
@@ -42,8 +71,8 @@ export type ItemRowProps = {
    * The same, for a photo already in the bucket. Resolved to a signed URL here
    * rather than by every caller: the bucket is private, so a stored photo is
    * always one query away from being renderable, and doing it in the row keeps
-   * that fact in one place. `icon` stays required as the fallback, so a row is
-   * never blank if the object has gone.
+   * that fact in one place. An object that has gone falls back to the icon, and
+   * then to the placeholder, so a row is never blank.
    */
   photoPath?: string
   /** The number on the right. */
@@ -90,7 +119,9 @@ export function ItemRow({
   const photo = storedImageSource(photoPath, photoUrl, photoUri)
 
   const tile = (
-    <View className="h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-tile bg-track">
+    <View
+      className={cn(ROW_TILE, 'items-center justify-center overflow-hidden rounded-tile bg-track')}
+    >
       {photo ? (
         <MealPhoto source={photo} dimmed={busy} />
       ) : resolving ? (
@@ -100,9 +131,9 @@ export function ItemRow({
         // for itself.
         // `bg-line` rather than the skeleton's own `bg-track`, which is what
         // the tile behind it already is — track on track does not pulse.
-        <Skeleton width="100%" height={56} rounded={false} className="bg-line" />
-      ) : busy || !icon ? null : (
-        <Icon {...icon} size={40} />
+        <Skeleton width="100%" height={72} rounded={false} className="bg-line" />
+      ) : busy ? null : (
+        <Icon {...(icon ?? PLACEHOLDER_ICON)} size={ROW_TILE_ICON} />
       )}
       {/* Over the photo rather than beside it: the thing being worked on is the
           picture, and the row has no spare width at this size. With no photo the
@@ -121,7 +152,12 @@ export function ItemRow({
       {textOnly ? null : tile}
 
       <View className="min-w-0 flex-1 gap-0.5">
-        <Text variant="bodyStrong" numberOfLines={1}>
+        {/* Two lines, which the tile pays for. A dish name is the longest thing
+            on the row and the tile took width from it — "Char kuey teow with
+            prawns" truncated to "Char kuey teow wi…", which is the half that
+            says least. Both lines plus the detail come to 69pt against a 72pt
+            tile, so a wrapped title costs no height and the rows stay even. */}
+        <Text variant="bodyStrong" numberOfLines={2}>
           {title}
         </Text>
         {detail ? (
