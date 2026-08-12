@@ -4,10 +4,8 @@
     python3 scripts/slice-icon-sheet.py sheet.png --names names.txt --check
     python3 scripts/slice-icon-sheet.py sheet.png --names names.txt --write
 
-The four sheets already cut are recorded in `scripts/icon-sheets/*.txt`, one
-`set/name` per line in the sheet's own reading order. They are kept because a
-sheet may have to be re-cut — a bleeding edge found later, a rename — and the
-mapping from grid cell to filename is not recoverable from the PNGs.
+`--names` is one `set/name` per line in the sheet's own reading order, written
+per sheet and thrown away after.
 
 `sync-icons.mjs` imports the design system, whose sheets are already
 transparent and already padded, so it only has to `sips -Z 192` each file. A
