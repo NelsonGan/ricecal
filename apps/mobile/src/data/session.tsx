@@ -1,9 +1,17 @@
-import type { Session } from '@supabase/supabase-js'
+import { AuthRetryableFetchError, type Session } from '@supabase/supabase-js'
 import { useQueryClient } from '@tanstack/react-query'
-import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react'
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { AppState } from 'react-native'
 
-import { supabase } from '@/lib/supabase'
+import { storedSession, supabase } from '@/lib/supabase'
 import { clearImageCache } from './photos'
 
 /**
@@ -37,26 +45,71 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const queryClient = useQueryClient()
 
+  /**
+   * Which account the query cache holds, as far as this provider has been told.
+   * `undefined` until the first auth event — see the clearing rule below.
+   */
+  const cacheOwner = useRef<string | null | undefined>(undefined)
+
   useEffect(() => {
     let active = true
 
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data, error }) => {
       if (!active) return
-      setSession(data.session)
+      // An ERROR here is not an answer. A refresh that could not be sent leaves
+      // the session on disk and reports null, which is the same shape as having
+      // no account at all — see `storedSession`. Anything that is not a network
+      // failure (a revoked token, a deleted user) really did answer, and the
+      // null stands.
+      setSession(
+        data.session ?? (error instanceof AuthRetryableFetchError ? storedSession() : null),
+      )
       setLoading(false)
     })
 
     const { data: subscription } = supabase.auth.onAuthStateChange((event, next) => {
-      setSession(next)
+      // Same fallback, because the initial event travels the same road: supabase
+      // catches the failed load and announces `INITIAL_SESSION, null`, which
+      // would otherwise undo the line above a tick later. Only that event — the
+      // rest say what they mean, and a sign-out has already emptied the storage
+      // this reads by the time it fires.
+      const resolved = next ?? (event === 'INITIAL_SESSION' ? storedSession() : null)
+      setSession(resolved)
       setLoading(false)
 
-      // Whoever signed in last is not who the cache is about. Clearing on both
-      // edges is what stops one account's diary appearing for a moment under
-      // another's name — the alternative is remembering to invalidate every
-      // key that will ever exist.
-      if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
-        queryClient.clear()
-      }
+      /**
+       * Whoever signed in last is not who the cache is about — but a cold start
+       * is not a change of person, and it used to be treated as one.
+       *
+       * `_recoverAndRefresh` announces `SIGNED_IN` on EVERY launch that finds a
+       * usable session in the keychain, and clearing on the event itself made
+       * that a race against the rehydration MMKV performs alongside it. The
+       * restore is the one that usually wins, which is why nothing looked
+       * broken: measured on a warm simulator the cache was already 108 queries
+       * deep before the FIRST auth event arrived. That is also what makes the
+       * loser expensive — whenever auth init is the slower of the two (a cold
+       * keychain, a real handset, a larger cache to read back), that `SIGNED_IN`
+       * lands on a fully restored cache and empties it, and the persister then
+       * writes the empty result back over the disk copy. Online the refetch
+       * beats the eye. Offline there is no refetch: every query is left with no
+       * data, `offlineFirst` pauses it for want of a connection, and the screen
+       * waits on something that is never coming.
+       *
+       * So the trigger is the IDENTITY changing, not the event. `undefined`
+       * means no event has arrived yet and is deliberately not `null`: the
+       * restored cache belongs to whoever was signed in when the app was
+       * killed, and the first event is about that same person.
+       *
+       * The leaving edge is kept as an event regardless of that comparison. It
+       * is the half that carries the rule — one account's diary must never
+       * appear under another's name — and a SIGNED_OUT arriving FIRST, before
+       * this provider has been told who it is looking at, would otherwise be
+       * read as no change at all.
+       */
+      const nextUserId = resolved?.user.id ?? null
+      const changed = cacheOwner.current !== undefined && cacheOwner.current !== nextUserId
+      cacheOwner.current = nextUserId
+      if (changed || event === 'SIGNED_OUT') queryClient.clear()
 
       // The pictures are not in that cache. They are on disk, in expo-image's,
       // filed under a key that no longer rotates — so unlike every other trace
