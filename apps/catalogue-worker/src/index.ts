@@ -4,7 +4,7 @@
  * The food catalogue used to be four tables in the same Postgres as the diary,
  * which is what made every entry's calories a join and every catalogue reload a
  * risk to the diary. It lives here now: 3.2 million packaged products keyed by
- * barcode, and ~47,000 dishes with a full-text index over their names and
+ * barcode, and ~48,000 dishes with a full-text index over their names and
  * aliases.
  *
  * WHY A WORKER AND NOT A DIRECT CONNECTION
@@ -163,7 +163,7 @@ async function search(env: Env, q: string, limit: number): Promise<unknown[]> {
   // to the database and one.
   // Both exact arms match against a stored NORMALIZED column, not against
   // `lower(name)`. That was two bugs in one expression: no index can serve it,
-  // so each arm scanned its whole table on every search (47,000 rows and 25,000
+  // so each arm scanned its whole table on every search (48,000 rows and 25,000
   // rows, before the two FTS arms had done anything at all), and `lower()` is
   // not the folding the query went through — so "Chicken Rice (Nasi Ayam)"
   // could not be reached by typing its own words, because the brackets survive

@@ -6,9 +6,9 @@ import { useEffect, useState } from 'react'
  * Not the same job as `useDeferredValue`, which is what search used before.
  * That one keeps the *input* responsive by letting React render the list at a
  * lower priority — but it still renders it for every keystroke, and a query
- * hook downstream still fires a request for every keystroke. Against a
- * 457,000-row catalogue that is one `search_foods` round trip per character,
- * and the results visibly thrash as the shorter prefixes resolve out of order.
+ * hook downstream still fires a request for every keystroke. That is one round
+ * trip to the catalogue Worker per character, and the results visibly thrash as
+ * the shorter prefixes resolve out of order.
  *
  * Debouncing moves the decision earlier: no query exists until the typing
  * pauses, so there is nothing to race.

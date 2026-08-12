@@ -181,9 +181,8 @@ export default function LogSheet() {
           selected={panel === 'camera'}
           onPress={() => toggle('camera')}
         />
-        {/* No "Say". Dictation is off until it does something — `log/voice` is
-            still routable, and nothing points at it. Typing, though, is the
-            same recognition without the microphone, so it is here. */}
+        {/* No "Say". Dictation would be typing without the keyboard, and typing
+            already reaches the same cascade. */}
         <QuickAction
           label={t('logging:selector.describe')}
           icon={{ set: 'system', name: 'sparkle' }}

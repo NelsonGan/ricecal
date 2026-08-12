@@ -13,7 +13,7 @@
  * is correct, and leaves the name unfindable.
  *
  * An alias is a ROW rather than a word in a bag, and that is what makes it worth
- * adding: the search fuses five arms and one of them matches aliases exactly,
+ * adding: the search fuses four arms and one of them matches aliases exactly,
  * the way it matches a name. A second romanization added here ranks like a name,
  * not like one word among fifty.
  *

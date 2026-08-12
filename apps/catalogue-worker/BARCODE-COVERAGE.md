@@ -47,10 +47,11 @@ disk, not a filter.
 
 The pipeline is not the problem, and it is worth being explicit about why,
 because the obvious next move is to go and load more of Open Food Facts. There
-is nothing left to load. `sources/open_food_facts.py` already takes **every**
-product in the dump with a name, a code and a full macro panel — 3.2 million of
-them — and the `searchable` flag is what keeps the American supermarket half out
-of a Malaysian name search. The cut that used to throw packets away is gone.
+is nothing left to load. `sources/open_food_facts.py` in the sibling
+`ricecal-food-database` repo already takes **every** product in the dump with a
+name, a code and a full macro panel — 3.2 million of them — and keeping them in
+`product` rather than `food` is what keeps the American supermarket half out of
+a Malaysian name search. The cut that used to throw packets away is gone.
 
 ## And the rows we do hold are thin
 

@@ -166,10 +166,10 @@ function OnboardingDraftScope({ children }: { children: ReactNode }) {
  * - **Full pages push.** Settings, the progress reports and the gallery slide in
  *   from the right, keep the screen behind them on the stack, and pop with the
  *   edge swipe. They carry a chevron in their own `AppBar`.
- * - **Modals present.** The quick selector, the voice sheet and the paywalls come
- *   up over the app and are dismissed rather than navigated back from — a cross in
- *   the `AppBar`, plus the native pull-down. Search and the dish used to be here
- *   and are pages now: both are somewhere you go, work, and come back from.
+ * - **Modals present.** The quick selector and the paywalls come up over the app
+ *   and are dismissed rather than navigated back from — a cross in the `AppBar`,
+ *   plus the native pull-down. Search and the dish used to be here and are pages
+ *   now: both are somewhere you go, work, and come back from.
  *
  * `animation` is left at the platform default rather than forced to
  * `slide_from_right`: setting it globally also reaches the `presentation: modal`
@@ -211,10 +211,6 @@ function RootStack() {
           landed the user on a different tab. One dismissal, from the handle. */}
       <Stack.Screen
         name="log/index"
-        options={{ presentation: 'transparentModal', animation: 'fade', gestureEnabled: false }}
-      />
-      <Stack.Screen
-        name="log/voice"
         options={{ presentation: 'transparentModal', animation: 'fade', gestureEnabled: false }}
       />
       {/* Search pushes. It is a place you go and come back from, not something

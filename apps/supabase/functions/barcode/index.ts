@@ -1,11 +1,8 @@
 // The barcode endpoint: what to do when the catalogue has never seen a packet.
 //
-// Most scans never reach here. `lookup_barcode` answers from the catalogue in
-// one index probe, and the client only invokes this function when that comes
-// back empty — which is the whole design of the packaged half of the catalogue.
-// Open Food Facts holds ~4.7 million products and the app stores ~25,000 of
-// them: the Southeast Asian shelves plus the few thousand things the whole
-// world scans. Everything else lives one request away, here.
+// Most scans never reach the live fallback. The catalogue holds 3.2 million
+// packaged products and answers a code in one index probe; Open Food Facts
+// holds ~4.7 million, so everything else lives one request away, here.
 //
 // THE ROW IS WRITTEN, NOT JUST RETURNED
 //

@@ -72,9 +72,6 @@ export async function d1(sql, { local = false } = {}) {
   return sliceJson(stdout).flatMap((r) => r.results ?? [])
 }
 
-/** The first row of a query, or null. */
-export const d1one = async (sql, opts) => (await d1(sql, opts))[0] ?? null
-
 /**
  * Many statements, in chunks small enough to survive an argument list.
  *

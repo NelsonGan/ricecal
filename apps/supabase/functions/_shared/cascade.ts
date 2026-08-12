@@ -4,9 +4,9 @@
 //   2. component breakdown  — composite plates FIRST: each visible part to its
 //                             own catalogue row, summed into one parent entry
 //                             with the parts attached as ingredients
-//   1. catalogue match      — search_foods + a verifier pick, kcal band check
+//   1. catalogue match      — a search + a verifier pick, kcal band check
 //   3. nearest dish, rescaled — right identity, wrong amount: adjust quantity
-//   4. LLM nutrition        — a shared, deduped `is_estimate` food row
+//   4. LLM nutrition        — numbers only, Atwater-checked; no row is written
 //   5. archetype            — classification over seeded rows; the terminal
 //                             "mixed meal" is a hardcoded id needing no model
 //
@@ -208,7 +208,7 @@ async function search(
   // `_mode` no longer selects anything. It existed because forgiving matching
   // in Postgres — fuzzy names, any-term full text — cost over a second per call
   // against half a million rows, enough that a five-component plate tripped the
-  // 8s statement timeout and lost its breakdown. Over 47,000 rows with an FTS
+  // 8s statement timeout and lost its breakdown. Over 48,000 rows with an FTS
   // index there is one path and it answers in tens of milliseconds, so the
   // distinction has no work left to do. The parameter stays so the call sites
   // that document WHY they wanted recall still read as they did.
@@ -433,9 +433,9 @@ async function recordMisses(db: SupabaseClient, scanId: string, queries: string[
  * catalogue the weight is what makes a row comparable at all: search ranks by
  * NAME, so "white rice" can top-rank rice flour at 578 kcal, and a row priced
  * per 100 g or per ten sticks says nothing about one scoop or one skewer until
- * it is converted. And when no hit fits, the model's figures PRICE a fallback
- * `is_estimate` row for that component — so one unsearchable side dish no
- * longer kills the breakdown.
+ * it is converted. And when no hit fits, the model's figures PRICE that
+ * component as an estimate — so one unsearchable side dish no longer kills the
+ * breakdown.
  *
  * Everything here is per SINGLE unit, with the count carried in the
  * ingredient's quantity. Two wings are a 125 kcal row at quantity 2, not a 250
