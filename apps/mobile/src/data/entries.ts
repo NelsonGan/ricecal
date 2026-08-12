@@ -5,21 +5,28 @@ import { unwrap, unwrapOne } from './client'
 import { keys } from './keys'
 import { removeMealPhoto } from './photos'
 import { useUserId } from './session'
+import { type LogSnapshot, snapshotColumns } from './snapshot'
 import type { DayLog, EntrySource, IconRef } from './types'
 import { toDbSource } from './types'
 
 /**
  * Writes to `food_logs`.
  *
- * An entry is a foreign key and a quantity — no macros are copied, because
- * correcting a dish has to correct every log that used it. Everything these
- * mutations touch is invalidated by day, since that is the only shape anything
- * reads.
+ * An entry used to be a foreign key and a quantity, with no macros copied,
+ * because correcting a dish had to correct every log that used it. The
+ * catalogue is in another database now and the numbers travel with the entry
+ * instead — see `snapshot.ts`, which is where every write path's copy of them
+ * is built. Everything these mutations touch is invalidated by day, since that
+ * is the only shape anything reads.
  */
 
 export type LogInput = {
-  foodId: string
-  servingId: string
+  /**
+   * What this entry IS: the name, the numbers and the portion, taken at the
+   * moment of logging. Built by one of the three builders in `snapshot.ts` —
+   * never assembled at a call site, because the portion is easy to count twice.
+   */
+  snapshot: LogSnapshot
   quantity?: number
   note?: string
   source?: EntrySource
@@ -48,8 +55,7 @@ export function useLogFood() {
           .from('food_logs')
           .insert({
             user_id: userId,
-            food_id: input.foodId,
-            serving_id: input.servingId,
+            ...snapshotColumns(input.snapshot),
             quantity: input.quantity ?? 1,
             note: input.note,
             source: toDbSource(input.source ?? 'search'),

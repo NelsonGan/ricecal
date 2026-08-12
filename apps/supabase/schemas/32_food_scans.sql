@@ -42,11 +42,12 @@ create table public.food_scan_items (
   described_text text check (char_length(described_text) <= 500),
 
   -- Where the cascade landed. `resolved_tier` is 1..5; the food is the row the
-  -- entry points at, and `catalogue_kcal` is that row's figure at the time —
-  -- the estimate row is expected to be corrected later, and the comparison
-  -- only means anything against the number that was actually accepted.
+  -- entry points at, and `catalogue_kcal` is that row's figure at the time.
   resolved_tier    smallint check (resolved_tier between 1 and 5),
-  resolved_food_id uuid references public.foods (id) on delete set null,
+  -- Unconstrained, and null whenever the cascade did not land on a catalogue
+  -- row — which is every tier below the dish match. The catalogue is in another
+  -- database; this is a note about where an answer came from, not a reference.
+  resolved_food_id uuid,
   catalogue_kcal   integer,
   quantity         numeric(6, 2),
   food_log_id      uuid references public.food_logs (id) on delete set null,
@@ -80,147 +81,60 @@ grant select, insert, delete on public.food_scan_misses to service_role;
 
 
 -- ---------------------------------------------------------------------------
--- Tier 4's write path: one estimate row per normalized name AND size, made
--- here rather than in the edge function because the dedup rule IS
--- `search_normalize`, and reimplementing that in TypeScript would fork the
--- definition. `on conflict` over the partial unique index turns two users
--- estimating the same dish concurrently into one shared row instead of a race.
+-- The same backlog for packaged goods.
 --
--- Existing macros are NOT updated on conflict: the row may have been corrected
--- by a curator since it was first written, and a later scan's opinion must not
--- undo that. What it gets is reused, which is the point.
+-- A barcode that resolves to nothing is a more actionable miss than a dish
+-- query is: there is no ambiguity about what was wanted, the code names one
+-- product exactly, and the fix is either to import it or to notice that Open
+-- Food Facts does not have it either. `found` records which of those happened,
+-- because "the catalogue was missing it and the live lookup filled it in" and
+-- "nobody anywhere knows this packet" are different problems and only the
+-- second one needs a human.
 --
--- SIZE IS PART OF THE IDENTITY.
---
--- Dedup on the name alone made "nasi lemak" one row, and a 366 kcal row is not
--- the plate a 780 kcal photo is of. The entry then had two ways to be wrong:
--- log the reused figure and be 400 kcal light, or absorb the difference into
--- `quantity` and tell the user they ate two plates when they photographed one.
--- Both were happening. So a request whose calories are not the size of the row
--- that bears the name gets its OWN row, named with the size it is for, and the
--- entry above it stays at one portion — which is what one photo of one plate
--- means. The suffix is only ever seen in the curation backlog: a scanned entry
--- wears the model's `display_label`.
+-- Written by the `barcode` edge function, which is the only thing that learns
+-- the answer — the client's `lookup_barcode` is `stable` and cannot write.
 -- ---------------------------------------------------------------------------
-create or replace function public.upsert_estimate_food(
-  p_name      text,
-  p_kcal      integer,
-  p_carbs_g   numeric,
-  p_protein_g numeric,
-  p_fat_g     numeric,
-  p_fibre_g   numeric default null,
-  p_sugar_g   numeric default null,
-  p_sodium_mg integer default null
-)
-returns uuid
-language plpgsql
-set search_path = ''
-as $$
-declare
-  v_name text := left(trim(p_name), 120);
-  v_norm text := public.search_normalize(p_name);
-  -- The bucket a size-tagged name rounds to, scaled to what is being priced:
-  -- 50 kcal is a rounding error on a plate and most of a satay stick, and a
-  -- flat step meant a 64 kcal skewer reusing an 85 kcal row.
-  v_step  integer := case when p_kcal < 200 then 10 when p_kcal < 500 then 25 else 50 end;
-  -- Half a bucket: inside this the reused figure and the requested one round
-  -- to the same tag, so the entry above can stay at exactly one portion.
-  v_slack integer := greatest(5, v_step / 2);
-  v_id   uuid;
-  v_kcal integer;
-begin
-  if v_norm = '' then
-    raise exception 'estimate name normalizes to nothing usable';
-  end if;
+create table public.barcode_misses (
+  id          uuid primary key default gen_random_uuid(),
+  -- GTIN-14. Not a foreign key to anything: the whole point of a row here is
+  -- that no food has this code.
+  code        text not null check (code ~ '^[0-9]{14}$'),
+  -- True when the live Open Food Facts lookup rescued it and wrote a row.
+  found       boolean not null default false,
+  created_at  timestamptz not null default now()
+);
 
-  select f.id, f.kcal into v_id, v_kcal from public.foods f
-  where f.is_estimate and f.name_norm = v_norm;
+create index barcode_misses_code_idx on public.barcode_misses (code);
 
-  -- The row that owns this name is for a different-sized plate. Move to a
-  -- size-tagged name, rounded to the bucket so that the same plate
-  -- photographed twice lands on one row rather than two a few calories apart.
-  if v_id is not null and abs(v_kcal - p_kcal) > v_slack then
-    v_name := left(v_name, 108) || ' (' ||
-              (greatest(1, round(p_kcal::numeric / v_step)) * v_step) || ' kcal)';
-    v_norm := public.search_normalize(v_name);
+alter table public.barcode_misses enable row level security;
 
-    select f.id, f.kcal into v_id, v_kcal from public.foods f
-    where f.is_estimate and f.name_norm = v_norm;
-  end if;
-
-  if v_id is null then
-    insert into public.foods
-      (slug, name, place, kcal, carbs_g, protein_g, fat_g, fibre_g, sugar_g,
-       sodium_mg, verified, is_estimate, source)
-    values
-      ('estimate-' || replace(v_norm, ' ', '-'),
-       v_name, 'home',
-       p_kcal, p_carbs_g, p_protein_g, p_fat_g, p_fibre_g, p_sugar_g,
-       p_sodium_mg, false, true, 'llm estimate')
-    on conflict (name_norm) where is_estimate do nothing
-    returning id into v_id;
-
-    -- Lost the race, or the slug collided with a differently-spelled name that
-    -- normalizes the same: either way the row exists now, so reuse it.
-    if v_id is null then
-      select f.id into v_id from public.foods f
-      where f.is_estimate and f.name_norm = v_norm;
-    end if;
-
-    if v_id is not null then
-      insert into public.food_servings (food_id, slug, label, factor, is_default, position)
-      values (v_id, 'serving', '1 serving', 1.0, true, 0)
-      on conflict (food_id, slug) do nothing;
-    end if;
-  end if;
-
-  return v_id;
-end;
-$$;
-
-comment on function public.upsert_estimate_food is
-  'Reuse-or-create an estimate row, deduped on the normalized name AND the '
-  'portion size it is for. Returns the food id. service_role only.';
-
-revoke execute on function public.upsert_estimate_food from public, anon, authenticated;
-grant execute on function public.upsert_estimate_food to service_role;
+grant select, insert, delete on public.barcode_misses to service_role;
 
 
 -- ---------------------------------------------------------------------------
--- The curation backlog: estimate rows ranked by how many entries reference
--- them. The top of this list is the estimate most worth replacing with a real
--- catalogue row — correcting it corrects every log that used it, which is the
--- whole reason estimates are shared rows rather than inline macros.
+-- WHERE TIER 4's WRITE PATH WENT
+--
+-- `upsert_estimate_food` made one shared `foods` row per normalized name AND
+-- size, so that two people photographing the same unlisted dish landed on one
+-- estimate — and so that correcting it corrected every log that had used it.
+-- That sharing was the whole argument for estimates being rows rather than
+-- inline macros, and `estimate_food_backlog` ranked them by how many entries
+-- referenced each, which was the catalogue-widening list.
+--
+-- Both are gone with the catalogue. An entry carries its own numbers now, so an
+-- estimate is just numbers: the cascade writes them straight onto the row with
+-- a null `food_id` and there is nothing to create, dedupe or race over.
+--
+-- What is lost is real and worth naming: a corrected estimate no longer
+-- corrects the diaries that used it, and there is no backlog ranked by
+-- reference count. `food_scan_misses` is still the catalogue-widening list,
+-- and it was always the better one — it records what was ASKED FOR and not
+-- found, rather than what we guessed at afterwards.
+--
+-- The size-in-the-identity rule that function carried is worth remembering if
+-- anything like it is ever rebuilt. Dedup on the name alone made "nasi lemak"
+-- one row, and a 366 kcal row is not the plate a 780 kcal photo is of: the
+-- entry then had two ways to be wrong, log the reused figure and be 400 kcal
+-- light, or absorb the difference into `quantity` and tell somebody they ate
+-- two plates when they photographed one. Both were happening.
 -- ---------------------------------------------------------------------------
-create or replace function public.estimate_food_backlog(p_limit integer default 100)
-returns table (
-  food_id    uuid,
-  name       text,
-  kcal       integer,
-  log_count  bigint,
-  last_used  timestamptz
-)
-language sql
-stable
-set search_path = ''
-as $$
-  select
-    f.id,
-    f.name,
-    f.kcal,
-    count(e.id) as log_count,
-    max(e.logged_at) as last_used
-  from public.foods f
-  left join public.food_logs e on e.food_id = f.id
-  where f.is_estimate
-  group by f.id, f.name, f.kcal
-  order by count(e.id) desc, max(e.logged_at) desc nulls last
-  limit greatest(1, least(coalesce(p_limit, 100), 1000));
-$$;
-
-comment on function public.estimate_food_backlog is
-  'Estimate rows ranked by referencing log count — the catalogue-widening '
-  'backlog. service_role only.';
-
-revoke execute on function public.estimate_food_backlog from public, anon, authenticated;
-grant execute on function public.estimate_food_backlog to service_role;

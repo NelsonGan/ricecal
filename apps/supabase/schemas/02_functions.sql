@@ -33,10 +33,10 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Search text.
 --
--- The query reaching `search_foods` is whatever the user typed, or whatever a
--- vision model wrote after looking at a photo: "char kuey teow with prawns",
--- "nasi lemak bungkus", mixing English with Malay and misspelling both. These
--- two functions are what make that comparable to a catalogue row.
+-- This was the catalogue's, and the catalogue has left. What kept it is the one
+-- caller that never searched anything: `recipes_before_insert` mints a share
+-- slug out of a recipe's name, and "Ayam Masak Merah" has to become
+-- `ayam-masak-merah` by the same rule every time or a link stops opening.
 -- ---------------------------------------------------------------------------
 
 -- Canonical form for matching: lowercase, accent-folded, punctuation collapsed
@@ -72,94 +72,44 @@ comment on function public.search_normalize is
   'it writes a token the query form can never produce.';
 
 
--- Free text to a tsquery, ORing the terms.
+-- WHERE THE TEXT-SEARCH HELPERS WENT
 --
--- `websearch_to_tsquery` ANDs every term, which is wrong here: "a plate of nasi
--- lemak with fried chicken" would require all six words to appear and match
--- nothing at all. ORing them and letting `ts_rank_cd` reward the rows that match
--- more of them is the behaviour wanted — the dish name carries the match and the
--- surrounding narration is free to miss.
+-- `search_tsquery` and `search_tsquery_all` turned free text into an OR-ed and
+-- an AND-ed tsquery, and existed for `search_foods` and nothing else. The
+-- catalogue is in Cloudflare D1 now, where the equivalent is FTS5 — see
+-- `apps/catalogue-worker/src/index.ts`, which carries the same stopword list
+-- and the same rule about ORing terms so that a dish name can carry the match
+-- while the narration around it is free to miss.
 --
--- The stopword list deliberately excludes anything that can distinguish a food:
--- "iced", "fried" and "hot" all stay. Returns null when nothing usable is left,
--- which the caller reads as "this arm has no opinion".
-create or replace function public.search_tsquery(txt text)
-returns tsquery
-language sql
-immutable
-parallel safe
-set search_path = ''
-as $$
-  select to_tsquery('pg_catalog.simple', string_agg(quote_literal(tok), ' | '))
-  from unnest(string_to_array(public.search_normalize(txt), ' ')) as tok
-  where tok <> ''
-    and length(tok) >= 2
-    and tok <> all (array[
-      'a','an','the','of','with','and','or','in','on','at','to','for','some',
-      'this','that','it','is','are','plus','served','side','plate','bowl','cup',
-      'glass','serving','portion','piece','pieces','order','dish','meal','food'
-    ]);
-$$;
+-- `food_name_norm` and `foods_set_search` went with them. Both were about
+-- keeping `foods.name_norm` and `foods.search_text` in step with a row in a
+-- table that is not here.
 
-comment on function public.search_tsquery is
-  'OR-semantics tsquery over normalized, stopword-filtered terms. Null when the '
-  'query holds no usable term.';
-
-
--- The same query, ANDed.
+-- ---------------------------------------------------------------------------
+-- One barcode, one spelling.
 --
--- ORing terms is right for a person narrating their lunch and wrong for a
--- machine naming an ingredient, where it is also ruinously expensive: "steamed
--- white rice" ORed matches 19,751 rows, and ranking them means pulling 14,463
--- heap blocks — 118ms warm and over nine seconds cold, which on a plate with
--- five components was enough to hit the statement timeout and lose the whole
--- ingredient breakdown. ANDed the same query matches 11 rows in 12 blocks and
--- runs in 44ms, and the rows it returns are the ones that are actually about
--- steamed white rice.
+-- A packet carries one of four symbologies and a scanner reports what it saw:
+-- UPC-E (8), EAN-8 (8), UPC-A (12), EAN-13 (13). The first two are different
+-- things of the same length, and a UPC-A is an EAN-13 with a leading zero that
+-- American scanners drop. So the same product read twice can hand back two
+-- different strings, and matching them literally would put one product in two
+-- catalogue rows and make a lookup depend on which packet the user happened to
+-- be holding.
 --
--- Same tokens and same stopwords as its OR twin, so the two agree about what
--- the query even is. Null when nothing usable is left.
-create or replace function public.search_tsquery_all(txt text)
-returns tsquery
-language sql
-immutable
-parallel safe
-set search_path = ''
-as $$
-  select to_tsquery('pg_catalog.simple', string_agg(quote_literal(tok), ' & '))
-  from unnest(string_to_array(public.search_normalize(txt), ' ')) as tok
-  where tok <> ''
-    and length(tok) >= 2
-    and tok <> all (array[
-      'a','an','the','of','with','and','or','in','on','at','to','for','some',
-      'this','that','it','is','are','plus','served','side','plate','bowl','cup',
-      'glass','serving','portion','piece','pieces','order','dish','meal','food'
-    ]);
-$$;
-
-comment on function public.search_tsquery_all is
-  'AND-semantics tsquery over the same terms as search_tsquery. Every term has '
-  'to appear: precise, and cheap enough for a caller making one query per '
-  'ingredient. Null when the query holds no usable term.';
-
-
--- Keeps the two search columns on `foods` in step with the row.
+-- GTIN-14 is the superset every one of them zero-pads into, so that is what is
+-- stored and that is what a lookup asks for. Both ends of the comparison go
+-- through here.
 --
--- `name_norm` is always derived. `search_text` is not: the catalogue loader
--- supplies it with aliases, romanizations and translations the name itself does
--- not contain ("char koay teow", "炒粿條", "CKT"), and clobbering that on every
--- update would throw the alias coverage away. It is only filled in when a writer
--- left it empty, which is what a hand-inserted dish does.
--- The rule itself is a function rather than the trigger's own arithmetic,
--- because `import_foods` has to apply it BEFORE inserting: it dedupes a payload
--- against `foods.name_norm`, and a second copy of this expression would
--- eventually disagree with the column it is being compared to.
+-- WHAT IT DOES NOT DO is validate the check digit. It is tempting — the last
+-- digit is a checksum and a mistyped code fails it — but Open Food Facts holds
+-- hundreds of thousands of codes that fail it: in-store codes, weighted-item
+-- codes, and plain typos on real products that are nonetheless the code printed
+-- on the packet. Refusing to look those up would be refusing the answer we
+-- have. Length is checked, because a 3-digit "barcode" is a misread.
 --
--- The brand is prepended only when the name does not already carry it.
--- Catalogue names often do ("KFC Chicken Rice" with brand "KFC"), and
--- concatenating unconditionally produced "kfc kfc chicken rice" — a longer
--- string that scores every trigram comparison lower for no added meaning.
-create or replace function public.food_name_norm(p_name text, p_brand text)
+-- Returns null for anything unusable, which every caller reads as "not a
+-- barcode" rather than as "no such product".
+create or replace function public.gtin14(code text)
 returns text
 language sql
 immutable
@@ -167,38 +117,27 @@ parallel safe
 set search_path = ''
 as $$
   select case
-    when b <> '' and n not like b || '%' then b || ' ' || n
-    else n
+    when d is null or length(d) < 8 or length(d) > 14 then null
+    -- All zeros is what a failed read produces, and it is not a product.
+    when d ~ '^0+$' then null
+    else lpad(d, 14, '0')
   end
-  from (
-    select public.search_normalize(p_name)                as n,
-           public.search_normalize(coalesce(p_brand, '')) as b
-  ) t;
+  from (select nullif(regexp_replace(coalesce(code, ''), '[^0-9]', '', 'g'), '') as d) t;
 $$;
 
-comment on function public.food_name_norm is
-  'The value foods_set_search writes to name_norm for a given (name, brand). '
-  'Exposed so the JSON loader can dedupe on the same rule the index uses.';
+comment on function public.gtin14 is
+  'Any barcode spelling (UPC-E, EAN-8, UPC-A, EAN-13) as a zero-padded GTIN-14, '
+  'or null when the input is not a usable code. The check digit is deliberately '
+  'not validated: real packets and Open Food Facts both carry codes that fail '
+  'it, and a lookup that refuses to try is worse than one that misses.';
 
--- Only the roles that can write `foods` need it: the trigger runs as its
--- invoker, and the loader is the only other caller.
-revoke execute on function public.food_name_norm from public, anon, authenticated;
-grant execute on function public.food_name_norm to service_role;
-
-create or replace function public.foods_set_search()
-returns trigger
-language plpgsql
-set search_path = ''
-as $$
-begin
-  new.name_norm := public.food_name_norm(new.name, new.brand);
-  if coalesce(trim(new.search_text), '') = '' then
-    new.search_text := new.name_norm;
-  end if;
-  return new;
-end;
-$$;
-
+-- A pure string formatter with nothing behind it, and the client has a real use
+-- for it: normalizing a scanned code before asking. Stated explicitly rather
+-- than left at the default, because the default is PUBLIC — and a revoke that
+-- only exists in a schema file is a revoke that never happened (see the note on
+-- function grants in CLAUDE.md).
+revoke execute on function public.gtin14 from public, anon;
+grant execute on function public.gtin14 to authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
 -- The calorie budget.

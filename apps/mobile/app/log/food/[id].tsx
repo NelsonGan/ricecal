@@ -4,9 +4,12 @@ import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, BackHandler, Platform, TextInput, View } from 'react-native'
 
 import {
+  ENTRY_FOOD_ID,
   type EntryPatch,
+  foodFromEntry,
   type IconRef,
   removeMealPhoto,
+  snapshotFromFood,
   storedImageSource,
   uploadMealPhoto,
   useDayLog,
@@ -194,7 +197,10 @@ export default function FoodDetail() {
   const { selectedDate } = useSelectedDate()
 
   const params = useLocalSearchParams<{ id: string; entryId?: string }>()
-  const { data: food, isPending } = useFood(params.id)
+  // `ENTRY_FOOD_ID` is the placeholder a row with no catalogue food behind it
+  // travels under, so there is nothing to ask the catalogue for.
+  const catalogueId = params.id === ENTRY_FOOD_ID ? undefined : params.id
+  const { data: catalogueFood, isPending } = useFood(catalogueId)
 
   // The entry being edited, if this screen was opened from a row. It is on the
   // day in view — the only day whose entries are loaded — which is also the
@@ -213,6 +219,17 @@ export default function FoodDetail() {
   const { data: ingredients = [], isLoading: partsLoading } = useEntryIngredients(
     existing?.scanId ? existing.id : undefined,
   )
+
+  /**
+   * The food this screen is about — from the catalogue when there is one, and
+   * from the ENTRY when there is not.
+   *
+   * Null `food_id` is ordinary now: an estimate, an archetype, a plate rebuilt
+   * from its own parts, a typed meal and a recipe are none of them catalogue
+   * rows, which between them is most of what a scan writes. The entry carries
+   * its own numbers, so it can answer everything below — see `foodFromEntry`.
+   */
+  const food = catalogueFood ?? (existing ? foodFromEntry(existing) : null)
   const refineEntry = useRefineEntry()
   const updateIngredient = useUpdateIngredient()
   const removeIngredient = useRemoveIngredient()
@@ -433,7 +450,12 @@ export default function FoodDetail() {
     if (!existing || seededId === existing.id) return
     setSeededId(existing.id)
     setQuantity(existing.quantity)
-    setServingId(existing.servingId)
+    // Empty rather than undefined: this drives a controlled selection, and
+    // `chosen` below falls back to the base serving. An entry whose portion was
+    // never a catalogue row — a scan estimate, a rebuilt plate — has no
+    // `servingId` at all now, and that is not a reason to leave the picker
+    // holding the previous entry's choice.
+    setServingId(existing.servingId ?? '')
     setName(existing.foodName)
     setPartEdits({})
     setTyped({
@@ -622,8 +644,7 @@ export default function FoodDetail() {
 
   const addToDiary = () => {
     logFood.mutate({
-      foodId: food.id,
-      servingId: chosen,
+      snapshot: snapshotFromFood(food, chosen),
       quantity,
       logDate: selectedDate,
       // Only what was actually chosen. `shownIcon` would write the food's own
@@ -987,7 +1008,12 @@ export default function FoodDetail() {
             // "pieces" — a plate and a piece are different amounts of food.
             // Cleaned of the count and the import's measurement detail, which
             // the number to its left is already saying.
-            unit={servingUnit(serving.label) ?? t('logging:detail.servingWord')}
+            // `serving?.label`, not `serving.label`. `find(...) ?? servings[0]`
+            // is `Serving` to the compiler and `undefined` at runtime when the
+            // list is empty, because `noUncheckedIndexedAccess` is off — and
+            // reading `.label` off it crashed the whole screen. `toFood`
+            // guarantees a portion now, so this is the belt to that braces.
+            unit={servingUnit(serving?.label) ?? t('logging:detail.servingWord')}
           />
 
           <View className="flex-row flex-wrap gap-2">

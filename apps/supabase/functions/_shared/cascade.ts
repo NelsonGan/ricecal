@@ -19,6 +19,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import { type CatalogueFood, searchFoods } from './catalogue.ts'
 import {
   type Archetype,
   classifyArchetype,
@@ -41,20 +42,43 @@ import {
 export const TERMINAL_ARCHETYPE_ID = 'a0000000-0000-4000-8000-000000000000'
 
 /**
- * "Within ~25%". Used for the one comparison that is still worth making
- * against the model's band: whether a decomposed plate's parts add up to the
- * entry above them. A breakdown that does not sum to the total is worse than
- * no breakdown, so that check stays strict.
+ * A food, as everything downstream of resolution needs it.
+ *
+ * THIS USED TO BE A POINTER. It carried `id` and `serving_id` and nothing else,
+ * because the entry it became referenced a catalogue row in the same database
+ * and `food_log_details` joined the numbers back at read time.
+ *
+ * The catalogue is in Cloudflare D1 now, so there is no join to make and no
+ * foreign key to keep: an entry carries its own numbers. That makes this the
+ * SNAPSHOT — everything a logged row needs to state what it was worth, filled
+ * in once at resolution and written verbatim.
+ *
+ * Two consequences worth knowing. `id` is nullable, because a tier-4 estimate
+ * is no longer a shared row that had to be created before it could be
+ * referenced — it is just numbers, and numbers do not need an id. And the
+ * macros ride along, which deleted three separate round trips that existed only
+ * to read back what the resolver already knew.
  */
-const BAND_SLACK = 0.25
-
 export type FoodRow = {
-  id: string
+  /** Soft reference into the catalogue, for provenance. Null for an estimate. */
+  id: string | null
   name: string
+  /** Per ONE base serving, exactly as the catalogue quotes them. */
   kcal: number
+  carbs: number
+  protein: number
+  fat: number
+  fibre: number | null
+  sugar: number | null
+  sodium: number | null
+  place: string | null
+  /** The portion these numbers are per, and what it weighs when known. */
+  servingLabel: string
+  servingGrams: number | null
   is_estimate: boolean
   is_archetype: boolean
-  serving_id: string
+  /** Soft too. The cascade only ever picks a row's default serving. */
+  serving_id: string | null
 }
 
 export type Ingredient = {
@@ -147,50 +171,108 @@ export type SearchRow = {
   carbs_g: number | null
   protein_g: number | null
   fat_g: number | null
+  fibre_g: number | null
+  sugar_g: number | null
+  sodium_mg: number | null
+  place: string | null
   default_serving_id: string | null
   serving_label: string | null
+  serving_grams: number | null
 }
 
 /**
- * search_foods via RPC, shaped to what the cascade needs.
+ * The catalogue search, shaped to what the cascade needs.
  *
- * Two modes, and the default is the strict one. Forgiving matching — fuzzy
- * names, any-term full text — is built for a person typing, and it costs over
- * a second per call (nine on a cold cache) because a loose query matches tens
- * of thousands of rows. A plate with five components makes five calls, which
- * used to trip the 8s statement timeout: the component stage threw, the plate
- * lost its breakdown, and the tier below rescaled one photo into two servings.
- * Strict matching answers the same question in ~40ms, and every query on this
- * path was written by a model that spells.
- *
- * The dish tier is the one that reaches for `forgiving`, and only after strict
- * has come back empty — there its recall is worth the second, and the verifier
- * call downstream is there to throw out what the looser net drags in.
+ * This carries the MACROS now, not just the calories, and that is the change
+ * that paid for itself three times over in this file. Every tier used to read
+ * back `carbs_g, protein_g, fat_g` from `foods` in a separate query after it had
+ * already chosen the row — because the row it chose was a pointer and the
+ * numbers were somebody else's to hold. They arrive with the answer now, so a
+ * component plate that made five searches and then one more round trip to price
+ * its parent makes five.
  */
 async function search(
-  db: SupabaseClient,
   q: string,
   limit: number,
-  mode: 'strict' | 'forgiving' = 'strict',
+  _mode: 'strict' | 'forgiving' = 'strict',
 ): Promise<SearchRow[]> {
-  const { data, error } = await db.rpc('search_foods', {
-    q,
-    match_limit: limit,
-    p_fuzzy: mode === 'forgiving',
-  })
-  if (error) throw error
-  return ((data ?? []) as SearchRow[]).filter(
-    (r) => r.id && r.default_serving_id && r.kcal !== null,
-  )
+  // No `db`. This was an RPC against `search_foods` and took a client; the
+  // catalogue is in D1 behind a Worker now, so it is an HTTP call and the
+  // parameter was left behind describing a dependency that no longer exists.
+  // `?? []` on purpose: an unreachable catalogue and an empty one are the same
+  // thing to the cascade, which has four more tiers below this one and a floor
+  // that needs no network at all. The DISTINCTION matters to the person typing
+  // in the search panel, and the `catalogue` function is where it is made.
+  const foods = (await searchFoods(q, limit)) ?? []
+
+  // `_mode` no longer selects anything. It existed because forgiving matching
+  // in Postgres — fuzzy names, any-term full text — cost over a second per call
+  // against half a million rows, enough that a five-component plate tripped the
+  // 8s statement timeout and lost its breakdown. Over 47,000 rows with an FTS
+  // index there is one path and it answers in tens of milliseconds, so the
+  // distinction has no work left to do. The parameter stays so the call sites
+  // that document WHY they wanted recall still read as they did.
+  // The Worker already shapes a food the way `food_details` did, including
+  // `default_serving_id` and the default portion's label and weight — so this
+  // renames rather than derives. Deriving it here as well is how the two ends
+  // of one seam start disagreeing about which portion is the base.
+  return foods
+    .map(
+      (f: CatalogueFood): SearchRow => ({
+        id: f.id,
+        name: f.name,
+        brand: f.brand,
+        kcal: f.kcal,
+        carbs_g: f.carbs_g,
+        protein_g: f.protein_g,
+        fat_g: f.fat_g,
+        fibre_g: f.fibre_g,
+        sugar_g: f.sugar_g,
+        sodium_mg: f.sodium_mg,
+        place: f.place,
+        default_serving_id: f.default_serving_id,
+        serving_label: f.serving_label,
+        serving_grams: f.serving_g,
+      }),
+    )
+    .filter((r) => r.id && r.serving_label && r.kcal !== null)
 }
+
+/**
+ * What one serving of a row weighs — the STATED weight first, and the label
+ * only as a fallback.
+ *
+ * This is the whole benefit of the catalogue carrying `food_servings.grams`,
+ * and it went unclaimed for a while: `servingGrams` recovers a weight by
+ * reading the label with a regex, so it answers for "100 g" and "1 bowl (400
+ * g)" and gives up on "1 plate" — which is how nearly every curated Malaysian
+ * dish states its portion. The rows have had the number all along.
+ *
+ * What that cost was the weight path switching itself off exactly where it was
+ * most wanted. "Half a plate of char kuey teow" reached the cascade with the
+ * model's own 180 g against a row that weighs 300, which is 0.6 of a serving
+ * and arithmetic; with no row weight it fell through to the calorie ratio,
+ * which was inside the wide gate, and a half plate was logged as a whole one.
+ */
+const rowGrams = (row: SearchRow): number | null =>
+  row.serving_grams ?? servingGrams(row.serving_label)
 
 const asFood = (r: SearchRow): FoodRow => ({
   id: r.id,
   name: r.name,
   kcal: r.kcal,
+  carbs: Number(r.carbs_g ?? 0),
+  protein: Number(r.protein_g ?? 0),
+  fat: Number(r.fat_g ?? 0),
+  fibre: r.fibre_g ?? null,
+  sugar: r.sugar_g ?? null,
+  sodium: r.sodium_mg ?? null,
+  place: r.place ?? null,
+  servingLabel: r.serving_label ?? '1 serving',
+  servingGrams: rowGrams(r),
   is_estimate: false,
   is_archetype: false,
-  serving_id: r.default_serving_id as string,
+  serving_id: r.default_serving_id,
 })
 
 /**
@@ -220,7 +302,7 @@ type Priced = {
 }
 
 export const priceRow = (row: SearchRow, grams: number | null): Priced => {
-  const perServing = servingGrams(row.serving_label)
+  const perServing = rowGrams(row)
   const units = servingUnitCount(row.serving_label)
   if (grams && perServing) {
     return { row, kcal: (row.kcal / perServing) * grams, byWeight: true, units }
@@ -293,51 +375,48 @@ export function bestFit(rows: SearchRow[], grams: number | null, kcal: number): 
 }
 
 /**
- * Reuse-or-create a shared estimate row and hand back what an entry needs to
- * point at it. Used for a part the catalogue cannot answer at all, and for one
- * it answers only in tens.
+ * A food the catalogue could not answer for, as numbers rather than as a row.
+ *
+ * This used to be a WRITE. `upsert_estimate_food` created a shared `foods` row
+ * deduped on name and size, and handed back an id for the entry to point at, so
+ * that two people who both photographed an unlisted dish shared one estimate.
+ *
+ * That sharing was never worth much — a guess reused is still a guess — and it
+ * cost the one thing that mattered: a client-facing table the scan pipeline
+ * wrote to, in a catalogue no client may write. With the catalogue in D1 there
+ * is nowhere to put such a row and nothing that needs one, because an entry
+ * carries its own numbers. So this is now pure: no id, no round trip, no
+ * failure mode. It cannot return null any more, and every caller's null branch
+ * went with it.
  */
-async function estimateRow(
-  db: SupabaseClient,
-  input: {
-    name: string
-    kcal: number
-    carbs: number
-    protein: number
-    fat: number
-    /** Only a photographed panel knows these; a guess leaves them null. */
-    fibre?: number | null
-    sugar?: number | null
-    sodium?: number | null
-  },
-): Promise<FoodRow | null> {
-  const { data: id } = await db.rpc('upsert_estimate_food', {
-    p_name: input.name,
-    p_kcal: Math.round(input.kcal),
-    p_carbs_g: input.carbs,
-    p_protein_g: input.protein,
-    p_fat_g: input.fat,
-    p_fibre_g: input.fibre ?? null,
-    p_sugar_g: input.sugar ?? null,
-    p_sodium_mg: input.sodium ?? null,
-  })
-  if (!id) return null
-
-  const [{ data: food }, { data: serving }] = await Promise.all([
-    db
-      .from('foods')
-      .select('id, name, kcal')
-      .eq('id', id as string)
-      .single(),
-    db
-      .from('food_servings')
-      .select('id')
-      .eq('food_id', id as string)
-      .eq('is_default', true)
-      .single(),
-  ])
-  if (!food || !serving) return null
-  return { ...food, is_estimate: true, is_archetype: false, serving_id: serving.id }
+function estimateRow(input: {
+  name: string
+  kcal: number
+  carbs: number
+  protein: number
+  fat: number
+  /** Only a photographed panel knows these; a guess leaves them null. */
+  fibre?: number | null
+  sugar?: number | null
+  sodium?: number | null
+}): FoodRow {
+  return {
+    id: null,
+    name: input.name,
+    kcal: Math.round(input.kcal),
+    carbs: input.carbs,
+    protein: input.protein,
+    fat: input.fat,
+    fibre: input.fibre ?? null,
+    sugar: input.sugar ?? null,
+    sodium: input.sodium ?? null,
+    place: null,
+    servingLabel: '1 serving',
+    servingGrams: null,
+    is_estimate: true,
+    is_archetype: false,
+    serving_id: null,
+  }
 }
 
 async function recordMisses(db: SupabaseClient, scanId: string, queries: string[]) {
@@ -371,6 +450,31 @@ async function resolveByComponents(
 ): Promise<Resolved | null> {
   if (item.components.length < 2) return null
 
+  /**
+   * How many of the WHOLE described thing there were.
+   *
+   * The prompt asks for multiplicity on the components when there are
+   * components, and the item's own count is meant to be 1 there. It is not
+   * always: "two roti canai with dhal" came back as one item at count 2 with
+   * both parts priced for a single plate, and this stage read only the parts —
+   * so the count vanished, twice over. The breakdown would have logged two
+   * plates at the price of one, and before it got that far the band check below
+   * compared a one-plate total against bounds drawn for two and threw the
+   * breakdown away as "the main food is missing".
+   *
+   * Folding it into every part is the literal reading of an item count beside a
+   * list of parts — that many of this whole meal — and it is the only reading
+   * that keeps the parent equal to the sum of its parts, which is what
+   * `food_log_details` requires: the parts branch of its coalesce does not
+   * multiply by the entry's own quantity, so multiplicity that is not in an
+   * ingredient row is multiplicity nothing downstream will ever see.
+   *
+   * It reads a count BELOW one too, which is how a part portion of a described
+   * plate arrives: "half a nasi lemak with fried chicken" is count 0.5, and
+   * halving every part is what makes that half reach the diary.
+   */
+  const meals = item.count > 0 ? item.count : 1
+
   const parts: Array<{
     food: FoodRow
     quantity: number
@@ -392,7 +496,7 @@ async function resolveByComponents(
     const q = usable(component.name)
     if (!q) continue
     const look = (mode: 'strict' | 'forgiving') =>
-      search(db, q, 5, mode).catch((error) => {
+      search(q, 5, mode).catch((error) => {
         // PostgREST hands back a plain object, which `String()` renders as
         // "[object Object]" — the least useful thing a trace can say.
         const message = `[cascade] components: ${mode} search "${q}" failed: ${describe(error)}`
@@ -428,10 +532,10 @@ async function resolveByComponents(
       // supports. Where the two disagree the catalogue wins, silently.
       parts.push({
         food: asFood(fit.row),
-        quantity: component.count,
+        quantity: component.count * meals,
         label: component.name.slice(0, 120),
         grams: component.grams,
-        kcal: fit.row.kcal * component.count,
+        kcal: fit.row.kcal * component.count * meals,
       })
       continue
     }
@@ -448,23 +552,21 @@ async function resolveByComponents(
       const scale = fit.row.kcal > 0 ? fit.kcal / fit.row.kcal : 1
       const share = (value: number | null) =>
         value === null ? 0 : Math.round(Number(value) * scale * 10) / 10
-      const unitRow = await estimateRow(db, {
+      const unitRow = estimateRow({
         name: component.name,
         kcal: perUnit,
         carbs: share(fit.row.carbs_g),
         protein: share(fit.row.protein_g),
         fat: share(fit.row.fat_g),
       })
-      if (unitRow) {
-        parts.push({
-          food: unitRow,
-          quantity: component.count,
-          label: component.name.slice(0, 120),
-          grams: component.grams,
-          kcal: unitRow.kcal * component.count,
-        })
-        continue
-      }
+      parts.push({
+        food: unitRow,
+        quantity: component.count * meals,
+        label: component.name.slice(0, 120),
+        grams: component.grams,
+        kcal: unitRow.kcal * component.count * meals,
+      })
+      continue
     }
 
     if (!rows.length) await recordMisses(db, scanId, [q])
@@ -492,23 +594,24 @@ async function resolveByComponents(
             fat: Number(component.fat_g ?? 0),
           }
         : defaultMacros(component.kcal)
-    const guess = await estimateRow(db, {
+    const guess = estimateRow({
       name: component.name,
       kcal: component.kcal,
       carbs: macros.carbs,
       protein: macros.protein,
       fat: macros.fat,
     })
-    if (!guess) continue
-    // Priced for ONE, so the count is the quantity here too. The size-aware
-    // dedup is what makes that safe: a row that came back priced for a
-    // different-sized version of this part would not have been reused.
+    // Priced for ONE, so the count is the quantity here too. That used to need
+    // an argument — the shared row was deduped on name AND size, so a part
+    // priced for a different-sized version of itself would not have been
+    // reused. Nothing is shared now, so the row is this part at this size by
+    // construction.
     parts.push({
       food: guess,
-      quantity: component.count,
+      quantity: component.count * meals,
       label: component.name.slice(0, 120),
       grams: component.grams,
-      kcal: guess.kcal * component.count,
+      kcal: guess.kcal * component.count * meals,
     })
   }
   if (parts.length < 2) {
@@ -552,81 +655,47 @@ async function resolveByComponents(
     trace?.push(message)
     return null
   }
-  // Macros summed from the resolved rows at their quantities, fetched in one
-  // read so the parent's split matches the parts exactly.
-  const { data: macroRows } = await db
-    .from('foods')
-    .select('id, carbs_g, protein_g, fat_g')
-    .in(
-      'id',
-      parts.map((part) => part.food.id),
-    )
+  // Macros summed off the parts themselves. This was a sixth round trip until
+  // the resolved rows started carrying their own numbers: the parts were
+  // pointers, so the only way to add up what they were made of was to go and
+  // read the rows back by id.
   for (const part of parts) {
-    const row = (macroRows ?? []).find((m) => m.id === part.food.id)
-    sum.carbs += Number(row?.carbs_g ?? 0) * part.quantity
-    sum.protein += Number(row?.protein_g ?? 0) * part.quantity
-    sum.fat += Number(row?.fat_g ?? 0) * part.quantity
+    sum.carbs += part.food.carbs * part.quantity
+    sum.protein += part.food.protein * part.quantity
+    sum.fat += part.food.fat * part.quantity
   }
   if (sum.kcal <= 0) return null
 
-  // The parent: a shared estimate row for the whole plate, priced by the
-  // catalogue sum — never by the model. Deduped on the normalized name, so
-  // "korean fried chicken rice" is one row across users.
-  const { data: parentId, error } = await db.rpc('upsert_estimate_food', {
-    p_name: item.name,
-    p_kcal: Math.round(sum.kcal),
-    p_carbs_g: Math.round(sum.carbs * 10) / 10,
-    p_protein_g: Math.round(sum.protein * 10) / 10,
-    p_fat_g: Math.round(sum.fat * 10) / 10,
-    p_fibre_g: null,
-    p_sugar_g: null,
-    p_sodium_mg: null,
+  // The parent: the whole plate, priced by the catalogue sum — never by the
+  // model.
+  //
+  // The drift check that used to live here is gone, and its absence is the
+  // point. The parent was a SHARED row deduped on the normalized name, so
+  // "korean fried chicken rice" resolved to one row across users — and a reuse
+  // brought back somebody else's figure. That is what `quantity` absorbed
+  // (rule 12: adjust the amount, never the macros) and what dropped the
+  // breakdown when the two were too far apart to reconcile. Nothing is shared
+  // now, so the parent IS the sum of these parts, at quantity 1, and a
+  // breakdown that does not add up to its own total is unspellable.
+  const parent = estimateRow({
+    name: item.name,
+    kcal: sum.kcal,
+    carbs: Math.round(sum.carbs * 10) / 10,
+    protein: Math.round(sum.protein * 10) / 10,
+    fat: Math.round(sum.fat * 10) / 10,
   })
-  if (error || !parentId) {
-    const message = `[cascade] components: parent upsert failed: ${error?.message ?? 'no id'}`
-    console.error(message)
-    trace?.push(message)
-    return null
-  }
-
-  const [{ data: parent }, { data: serving }] = await Promise.all([
-    db
-      .from('foods')
-      .select('id, name, kcal')
-      .eq('id', parentId as string)
-      .single(),
-    db
-      .from('food_servings')
-      .select('id')
-      .eq('food_id', parentId as string)
-      .eq('is_default', true)
-      .single(),
-  ])
-  if (!parent || !serving) return null
-
-  // A reused row may carry a different figure. Small drift becomes quantity
-  // (rule 12 — adjust the amount, never the macros); large drift keeps the
-  // entry but drops the parts, because a breakdown that does not sum to the
-  // total is worse than none.
-  const quantity = parent.kcal > 0 ? clampQuantity(sum.kcal / parent.kcal) : 1
-  const settled = parent.kcal * quantity
-  const ingredients: Ingredient[] | undefined =
-    Math.abs(settled - sum.kcal) / sum.kcal <= BAND_SLACK
-      ? parts.map((part) => ({
-          food: part.food,
-          quantity: part.quantity,
-          displayLabel:
-            part.label.toLowerCase() === part.food.name.toLowerCase() ? null : part.label,
-          grams: part.grams,
-        }))
-      : undefined
 
   return {
     tier: 2,
-    food: { ...parent, is_estimate: true, is_archetype: false, serving_id: serving.id },
-    quantity,
+    food: parent,
+    quantity: 1,
     displayLabel: item.name,
-    ingredients,
+    ingredients: parts.map((part) => ({
+      food: part.food,
+      quantity: part.quantity,
+      displayLabel: part.label.toLowerCase() === part.food.name.toLowerCase() ? null : part.label,
+      grams: part.grams,
+    })),
   }
 }
 
@@ -671,9 +740,9 @@ async function resolveByCount(
   let q = queries[0]
   for (const candidate of queries) {
     q = candidate
-    rows = await search(db, candidate, 5, 'strict').catch(() => [] as SearchRow[])
+    rows = await search(candidate, 5, 'strict').catch(() => [] as SearchRow[])
     if (!rows.length) {
-      rows = await search(db, candidate, 5, 'forgiving').catch(() => [] as SearchRow[])
+      rows = await search(candidate, 5, 'forgiving').catch(() => [] as SearchRow[])
     }
     if (rows.length) break
   }
@@ -700,22 +769,44 @@ async function resolveByCount(
   const share = (value: number | null) =>
     value === null ? 0 : Math.round(Number(value) * scale * 10) / 10
   const unitRow = fit
-    ? await estimateRow(db, {
+    ? estimateRow({
         name: item.name,
         kcal: Math.max(1, Math.round(fit.kcal)),
         carbs: share(fit.row.carbs_g),
         protein: share(fit.row.protein_g),
         fat: share(fit.row.fat_g),
       })
-    : await estimateRow(db, { name: item.name, kcal: perUnit, ...defaultMacros(perUnit) })
-  if (!unitRow) {
-    trace?.push(`[cascade] count: no per-unit row for "${item.name}"`)
-    return null
+    : estimateRow({ name: item.name, kcal: perUnit, ...defaultMacros(perUnit) })
+  if (!fit) {
+    // Worth recording: this is the tier where the catalogue had nothing at any
+    // size and the count is priced from the model alone, which is the weakest
+    // answer this path can give and the one a trace should be able to explain.
+    trace?.push(`[cascade] count: no catalogue row for "${item.name}", priced from the model`)
   }
   if (!rows.length) await recordMisses(db, scanId, [q])
 
   return { tier: fit ? 3 : 4, food: unitRow, quantity: item.count, displayLabel: item.name }
 }
+
+/**
+ * How far two estimates of the same portion may differ before the row is
+ * treated as a different SIZE of the dish rather than the same size.
+ *
+ * The model's grams for a plate and the catalogue's grams for its own serving
+ * are two independent guesses at one number, and neither was weighed. Held to
+ * within 15% of each other, ordinary disagreement between them read as a size
+ * mismatch: a plate of mee goreng mamak the catalogue prices at 657 kcal for
+ * 400 g was rescaled to 1.25 servings and logged at 821 — against a band the
+ * same model had put at 490-630, so its own two answers disagreed and the
+ * weaker one won by a third.
+ *
+ * A genuine size mismatch, which is what this test exists to catch, is not
+ * subtle: a per-100 g row against a plateful, a whole cake against a slice, a
+ * bag of ten against one. Those are factors of two and up and clear this window
+ * easily, while a half portion (0.5) still falls outside it.
+ */
+const SAME_PORTION_LOW = 0.7
+const SAME_PORTION_HIGH = 1.4
 
 /** Tiers 1 and 3: the dish-level catalogue match. */
 async function resolveByDish(
@@ -723,6 +814,7 @@ async function resolveByDish(
   scanId: string,
   item: VisionItem,
   mock: MockSteer | undefined,
+  trace?: string[],
 ): Promise<Resolved | null> {
   const llmMid = (item.kcal_low + item.kcal_high) / 2
 
@@ -740,8 +832,8 @@ async function resolveByDish(
     // the default: "nasi lemak ayam goreng" needs every-term matching relaxed
     // to reach "PappaRich Nasi Lemak Ayam Rendang", and that is worth a second
     // once per scan — but not five times over, once per ingredient.
-    candidates = await search(db, q, 5)
-    if (!candidates.length) candidates = await search(db, q, 5, 'forgiving')
+    candidates = await search(q, 5)
+    if (!candidates.length) candidates = await search(q, 5, 'forgiving')
     if (candidates.length) break
     missed.push(q)
   }
@@ -771,8 +863,8 @@ async function resolveByDish(
   // the band it divides covers every unit on the table. Weighing one durian
   // against a 100 g row and logging that would put three of them on the diary
   // as a third of one.
-  const rowGrams = servingGrams(chosen.serving_label)
-  const byWeight = item.grams && rowGrams ? (item.grams * item.count) / rowGrams : null
+  const servingWeight = rowGrams(chosen)
+  const byWeight = item.grams && servingWeight ? (item.grams * item.count) / servingWeight : null
 
   // A row the verifier says IS this dish, at one portion.
   //
@@ -783,11 +875,22 @@ async function resolveByDish(
   // fell through to the model's own figure — the bad number rejecting the good
   // one. Within a factor of two and a half either way the row is simply taken.
   const ratio = chosen.kcal > 0 ? llmMid / chosen.kcal : 1
+
+  // The whole sizing decision, in one line, because it is the one thing about a
+  // scan that cannot be reconstructed afterwards. The entry records the portion
+  // it landed on and nothing about how: a plate logged at one serving looks
+  // identical whether the weights agreed, the weights were missing, or the
+  // calorie ratio was the only evidence there was. Three different bugs.
+  trace?.push(
+    `[cascade] dish "${chosen.name}": model ${item.grams ?? '?'}g x${item.count} vs row ` +
+      `${servingWeight ?? '?'}g — byWeight ${byWeight === null ? 'n/a' : byWeight.toFixed(2)}, ` +
+      `ratio ${ratio.toFixed(2)} (${llmMid} vs ${chosen.kcal})`,
+  )
   // A weight settles it before the calorie ratio gets a say. "100 g" of a dish
   // against a 450 g plate of it is 4.5 servings whatever either party thinks
   // the plate costs, and the ratio would have called the same row a size
   // mismatch or a match depending on a number the model is bad at.
-  if (byWeight !== null && (byWeight < 0.85 || byWeight > 1.15)) {
+  if (byWeight !== null && (byWeight < SAME_PORTION_LOW || byWeight > SAME_PORTION_HIGH)) {
     return {
       tier: 3,
       food: asFood(chosen),
@@ -828,10 +931,7 @@ async function resolveByDish(
  * people photographing the same packet get the same row, and the next scan of
  * it needs no model call at all.
  */
-export async function resolveByLabel(
-  db: SupabaseClient,
-  label: NutritionLabel,
-): Promise<Resolved | null> {
+export async function resolveByLabel(label: NutritionLabel): Promise<Resolved | null> {
   // A close-up of the panel alone has no product name in it, and the row must
   // not be called after the table or after the model's way of shrugging. Two
   // shapes to catch: the heading copied out as if it were the food
@@ -843,7 +943,7 @@ export async function resolveByLabel(
     /^(nutrition|nutritional)\s*(facts|information|panel)?$|\b(unidentified|unknown|unnamed|generic)\b/i
   const name = unnamed.test(label.name.trim()) ? 'Packaged food' : label.name
 
-  const food = await estimateRow(db, {
+  const food = estimateRow({
     name,
     kcal: label.kcal,
     carbs: Math.round(label.carbs_g * 10) / 10,
@@ -855,15 +955,13 @@ export async function resolveByLabel(
     sugar: label.sugar_g,
     sodium: label.sodium_mg,
   })
-  if (!food) return null
   // One serving, as the panel defines a serving. Somebody who ate two of them
   // says so with the stepper — which is now counting the packet's own unit.
   return { tier: 1, food, quantity: 1, displayLabel: name }
 }
 
-/** Tier 4: validated model nutrition into a shared, deduped estimate row. */
+/** Tier 4: validated model nutrition, kept as the entry's own numbers. */
 async function resolveByEstimate(
-  db: SupabaseClient,
   item: VisionItem,
   mock: MockSteer | undefined,
 ): Promise<Resolved | null> {
@@ -904,36 +1002,18 @@ async function resolveByEstimate(
   }
   if (!nutrition) return null
 
-  const { data: foodId, error } = await db.rpc('upsert_estimate_food', {
-    p_name: item.name,
-    p_kcal: nutrition.kcal,
-    p_carbs_g: nutrition.carbs_g,
-    p_protein_g: nutrition.protein_g,
-    p_fat_g: nutrition.fat_g,
-    p_fibre_g: nutrition.fibre_g,
-    p_sugar_g: nutrition.sugar_g,
-    p_sodium_mg: nutrition.sodium_mg,
-  })
-  if (error || !foodId) return null
-
-  const [{ data: food }, { data: serving }] = await Promise.all([
-    db
-      .from('foods')
-      .select('id, name, kcal')
-      .eq('id', foodId as string)
-      .single(),
-    db
-      .from('food_servings')
-      .select('id')
-      .eq('food_id', foodId as string)
-      .eq('is_default', true)
-      .single(),
-  ])
-  if (!food || !serving) return null
-
   return {
     tier: 4,
-    food: { ...food, is_estimate: true, is_archetype: false, serving_id: serving.id },
+    food: estimateRow({
+      name: item.name,
+      kcal: nutrition.kcal,
+      carbs: nutrition.carbs_g,
+      protein: nutrition.protein_g,
+      fat: nutrition.fat_g,
+      fibre: nutrition.fibre_g,
+      sugar: nutrition.sugar_g,
+      sodium: nutrition.sodium_mg,
+    }),
     quantity: 1,
     displayLabel: item.name,
   }
@@ -945,14 +1025,36 @@ export async function resolveByArchetype(
   item: VisionItem | null,
   mock: MockSteer | undefined,
 ): Promise<Resolved> {
-  let archetype: Archetype | null = null
+  // `public.archetypes`, not the catalogue, and that is the whole reason the
+  // table exists: this tier is where a scan lands when the catalogue, the model
+  // or the network has failed it. Reading the sixty rows over HTTP from D1 would
+  // make the fallback for "the network failed" another network call.
+  //
+  // Every archetype is quoted per "1 serving" with no stated weight, which is
+  // why nothing here reads a serving label — there is one and it is a constant.
+  const columns = 'id, slug, name, kcal, carbs_g, protein_g, fat_g'
+  const snapshot = (row: Archetype): FoodRow => ({
+    id: row.id,
+    name: row.name,
+    kcal: row.kcal,
+    carbs: Number(row.carbs_g ?? 0),
+    protein: Number(row.protein_g ?? 0),
+    fat: Number(row.fat_g ?? 0),
+    fibre: null,
+    sugar: null,
+    sodium: null,
+    place: null,
+    servingLabel: '1 serving',
+    servingGrams: null,
+    is_estimate: false,
+    is_archetype: true,
+    serving_id: null,
+  })
 
+  let archetype: Archetype | null = null
   if (item) {
     try {
-      const { data } = await db
-        .from('foods')
-        .select('id, slug, name, kcal')
-        .eq('is_archetype', true)
+      const { data } = await db.from('archetypes').select(columns)
       if (data?.length) archetype = await classifyArchetype(item, data as Archetype[], mock)
     } catch {
       archetype = null
@@ -961,37 +1063,16 @@ export async function resolveByArchetype(
 
   let food: FoodRow
   if (archetype) {
-    const { data: serving } = await db
-      .from('food_servings')
-      .select('id')
-      .eq('food_id', archetype.id)
-      .eq('is_default', true)
-      .single()
-    food = {
-      id: archetype.id,
-      name: archetype.name,
-      kcal: archetype.kcal,
-      is_estimate: false,
-      is_archetype: true,
-      serving_id: serving?.id ?? '',
-    }
+    food = snapshot(archetype)
   } else {
     // The terminal row: hardcoded id, no model call, no search.
     const { data: terminal } = await db
-      .from('foods')
-      .select('id, name, kcal, food_servings(id, is_default)')
+      .from('archetypes')
+      .select(columns)
       .eq('id', TERMINAL_ARCHETYPE_ID)
       .single()
     if (!terminal) throw new Error('terminal archetype row missing — run seed_archetype_foods()')
-    const servings = terminal.food_servings as Array<{ id: string; is_default: boolean }>
-    food = {
-      id: terminal.id,
-      name: terminal.name,
-      kcal: terminal.kcal,
-      is_estimate: false,
-      is_archetype: true,
-      serving_id: servings.find((s) => s.is_default)?.id ?? '',
-    }
+    food = snapshot(terminal as Archetype)
   }
 
   // The model's range is still better portion evidence than nothing: scale
@@ -1048,13 +1129,13 @@ export async function resolveItem(
   }
   resolved =
     resolved ??
-    (await resolveByDish(db, scanId, item, mock).catch((error) => {
+    (await resolveByDish(db, scanId, item, mock, trace).catch((error) => {
       note('dish stage threw', error)
       return null
     }))
   resolved =
     resolved ??
-    (await resolveByEstimate(db, item, mock).catch((error) => {
+    (await resolveByEstimate(item, mock).catch((error) => {
       note('estimate stage threw', error)
       return null
     }))
@@ -1063,8 +1144,9 @@ export async function resolveItem(
 
 export type WrittenEntry = {
   id: string
-  foodId: string
-  servingId: string
+  /** Both soft references into a catalogue elsewhere, and null for an estimate. */
+  foodId: string | null
+  servingId: string | null
   name: string
   quantity: number
   /** What the row will show. The client announces it from the background. */
@@ -1110,8 +1192,28 @@ export async function writeEntry(
     .from('food_logs')
     .insert({
       user_id: input.userId,
+      // Soft now: no foreign key, and null for a tier-4 estimate. Kept for
+      // provenance and for a future job that re-snapshots against the
+      // catalogue, not for anything that reads this row today.
       food_id: resolved.food.id,
       serving_id: resolved.food.serving_id,
+      // The snapshot. This is what the entry is worth, and it is the ONLY thing
+      // that says so — `food_log_details` has no catalogue left to join.
+      item_name: resolved.food.name,
+      item_place: resolved.food.place,
+      base_kcal: Math.round(resolved.food.kcal),
+      base_carbs_g: resolved.food.carbs,
+      base_protein_g: resolved.food.protein,
+      base_fat_g: resolved.food.fat,
+      base_fibre_g: resolved.food.fibre,
+      base_sugar_g: resolved.food.sugar,
+      base_sodium_mg: resolved.food.sodium,
+      serving_label: resolved.food.servingLabel,
+      // Always the base serving. The cascade picks a food, never a portion of
+      // one — the size it decided on is carried by `quantity`, which is what
+      // the stepper beside the entry adjusts.
+      serving_factor: 1,
+      serving_grams: resolved.food.servingGrams,
       log_date: input.logDate,
       quantity: resolved.quantity,
       source: input.source,
@@ -1160,6 +1262,13 @@ export async function writeIngredients(
       food_log_id: foodLogId,
       food_id: ingredient.food.id,
       serving_id: ingredient.food.serving_id,
+      item_name: ingredient.food.name,
+      base_kcal: Math.round(ingredient.food.kcal),
+      base_carbs_g: ingredient.food.carbs,
+      base_protein_g: ingredient.food.protein,
+      base_fat_g: ingredient.food.fat,
+      serving_label: ingredient.food.servingLabel,
+      serving_factor: 1,
       quantity: ingredient.quantity,
       display_label: ingredient.displayLabel,
       grams: ingredient.grams,

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
+  snapshotFromRecipe,
   storedImageSource,
   useDeleteRecipe,
   useLogFood,
@@ -134,8 +135,7 @@ export default function RecipeDetailScreen() {
 
   const addToDay = () => {
     logFood.mutate({
-      foodId: recipe.foodId,
-      servingId: recipe.defaultServingId,
+      snapshot: snapshotFromRecipe(recipe),
       quantity,
       logDate: selectedDate,
       source: 'quickAdd',

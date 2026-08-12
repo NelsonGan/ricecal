@@ -142,7 +142,7 @@ Deno.serve(async (req: Request) => {
     // A photographed nutrition panel: the numbers are printed in the picture,
     // so nothing here has to be guessed and nothing below this line runs.
     if (vision?.label) {
-      const resolved = await resolveByLabel(db, vision.label)
+      const resolved = await resolveByLabel(vision.label)
       if (resolved) {
         const entry = await writeEntry(db, {
           userId,

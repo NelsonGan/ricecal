@@ -209,68 +209,50 @@ select is(
 
 -- 4. LOGGING -----------------------------------------------------------------
 
--- The dishes to log against. These used to come from a seed migration, which
--- `simplify_scope` deleted along with user-created foods -- nothing populates
--- `foods` any more except the catalogue import, and a test may not depend on
--- whether someone has run that. Fixtures are local to this transaction and roll
--- back with it, the same way 00_catalogue and 02_rls already do theirs.
--- `icon_set` alongside `icon_name`: the pair is optional but indivisible, and the
--- set no longer defaults to `dishes` to supply the missing half.
-insert into public.foods (slug, name, icon_set, icon_name, place, kcal, carbs_g, protein_g, fat_g)
+-- The entries to total. These used to be foreign keys into three fixture
+-- `foods` rows, and the catalogue is in Cloudflare D1 now — so an entry states
+-- its own numbers and a fixture is just an insert. See the header of
+-- `schemas/30_food_logs.sql`.
+
+insert into public.food_logs
+  (user_id, log_date, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g,
+   serving_label, serving_factor, quantity)
 values
-  ('fixture-nasi-lemak-ayam', 'Nasi lemak ayam', 'dishes', 'nasi-lemak', 'mamak',    640, 78, 27, 25),
-  ('fixture-teh-tarik',       'Teh tarik',       'dishes', 'teh-tarik',  'kopitiam', 135, 21,  3,  4),
-  ('fixture-roti-canai',      'Roti canai',      'dishes', 'roti-canai', 'mamak',    301, 39,  6, 13);
-
-insert into public.food_servings (food_id, slug, label, factor, is_default)
-select f.id, 'plate', '1 plate', 1, true
-from public.foods f
-where f.slug in ('fixture-nasi-lemak-ayam', 'fixture-teh-tarik', 'fixture-roti-canai');
-
-insert into public.food_logs (user_id, log_date, food_id, serving_id, quantity)
-select :'user_a', current_date, f.id, s.id, 1
-from public.foods f
-join public.food_servings s on s.food_id = f.id and s.is_default
-where f.slug = 'fixture-nasi-lemak-ayam';
-
-insert into public.food_logs (user_id, log_date, food_id, serving_id, quantity)
-select :'user_a', current_date, f.id, s.id, 2
-from public.foods f
-join public.food_servings s on s.food_id = f.id and s.is_default
-where f.slug = 'fixture-teh-tarik';
+  (:'user_a', current_date, 'Nasi lemak ayam', 640, 78, 27, 25, '1 plate', 1, 1),
+  (:'user_a', current_date, 'Teh tarik',       135, 21,  3,  4, '1 glass', 1, 2);
 
 -- 640 for the plate, 2 x 135 for the teh tarik.
 select is(
   (select kcal from public.daily_nutrition where user_id = :'user_a' and log_date = current_date),
   910,
-  'daily_nutrition totals the day from the catalogue and the quantity'
+  'daily_nutrition totals the day from the entry and the quantity'
 );
 
--- The two-column foreign key is the only thing stopping a plate of nasi lemak
--- being measured in cups of teh tarik.
-select throws_ok(
-  format(
-    $q$insert into public.food_logs (user_id, log_date, food_id, serving_id)
-       values (%L, current_date,
-         (select id from public.foods where slug = 'fixture-nasi-lemak-ayam'),
-         (select s.id from public.food_servings s
-            join public.foods f on f.id = s.food_id
-           where f.slug = 'fixture-teh-tarik' and s.is_default))$q$,
-    :'user_a'
-  ),
-  '23503',
-  null,
-  'a portion from a different dish is rejected by the composite foreign key'
+-- The portion is part of the entry, so it scales the entry's own figures. This
+-- replaces a test of the composite foreign key that guaranteed a serving
+-- belonged to its food — the thing it protected against, a plate of nasi lemak
+-- measured in cups of teh tarik, is now unspellable rather than rejected.
+insert into public.food_logs
+  (user_id, log_date, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g,
+   serving_label, serving_factor, quantity)
+-- Thirty days back, so it lands outside both the day total above and the two
+-- consecutive days the streak test below counts.
+values (:'user_a', current_date - 30, 'Nasi lemak ayam', 640, 78, 27, 25, 'Half', 0.5, 1);
+
+select is(
+  (select kcal from public.food_log_details
+    where user_id = :'user_a' and log_date = current_date - 30),
+  320,
+  'the portion factor scales the entry''s own base figures'
 );
 
 
 -- 5. STREAK ------------------------------------------------------------------
 
-insert into public.food_logs (user_id, log_date, food_id, serving_id)
-select :'user_a', current_date - 1, f.id, s.id
-from public.foods f
-join public.food_servings s on s.food_id = f.id and s.is_default
-where f.slug = 'fixture-roti-canai';
+insert into public.food_logs
+  (user_id, log_date, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g,
+   serving_label, serving_factor)
+values (:'user_a', current_date - 1, 'Roti canai', 301, 39, 6, 13, '1 piece', 1);
 
 select is(
   (select current_days from public.logging_streak(:'user_a')),

@@ -132,6 +132,27 @@ for (const set of Object.keys(ICON_NAMES) as IconSet[]) {
 export const ICON_LIST: string = [...SET_OF.keys()].join(', ')
 
 /**
+ * An icon id that has turned up somewhere it does not belong, unslugged.
+ *
+ * The prompt fences the list off (see ICON_INSTRUCTION) and the fence is not
+ * airtight: the ids are the largest block of text in the prompt and a model
+ * reads a long list of names as the vocabulary it should answer in. This is the
+ * belt, and it can afford to be blunt because it only fires on an EXACT member
+ * of a list we wrote — "chicken-rice" is one of ours and becomes "chicken
+ * rice", while a real hyphenated food name is left alone because it is not in
+ * the list.
+ *
+ * Only worth doing for text that is about to be searched. A hyphen costs
+ * nothing in the catalogue's own matching, which folds punctuation at both
+ * ends; what it costs is the EXACT-name arm, which compares whole strings, and
+ * the misses backlog, which is read by a person.
+ */
+export function unslug(text: string): string {
+  const trimmed = text.trim()
+  return SET_OF.has(trimmed.toLowerCase()) ? trimmed.replaceAll('-', ' ') : trimmed
+}
+
+/**
  * The model's answer as a real icon, or nothing.
  *
  * Nothing is a perfectly good outcome and the callers treat it as one: a row
@@ -244,10 +265,20 @@ export const ICON_INSTRUCTION =
   'value is an image FILENAME, not words: it is one of the fixed ids below, ' +
   'copied character for character, or null. ' +
   // Said before the list, because after it is too late.
-  'These ids are not names of anything. Never copy one into "name", into an ' +
-  'ingredient, into the steps or into any other field: they are hyphenated ' +
-  'because they are filenames, and the food is still called what a person calls ' +
-  'it. ' +
+  //
+  // The fields are ENUMERATED rather than covered by "any other field", which
+  // is what this used to say. The leak had simply moved: names came back clean
+  // and the SEARCH fields came back slugged — "chicken-rice",
+  // "banana-leaf-rice", "kaya-toast", on every typed meal — because a query
+  // reads to a model as more filename-like than a name does. It searched anyway,
+  // since the catalogue folds punctuation, so nothing looked broken; what it
+  // cost was the exact-name arm, which cannot match a slug, and a backlog of
+  // hyphenated nonsense in the misses table.
+  'These ids are not names of anything, and they are not search terms. Never ' +
+  'copy one into "name", "specific_query", "generic_query", a component name, an ' +
+  'ingredient, the steps, or any other field: they are hyphenated because they ' +
+  'are filenames. Everywhere else the food is called what a person calls it, in ' +
+  'ordinary words with spaces — "chicken rice", never "chicken-rice". ' +
   'Choose the id that is the dish itself, or failing that its main ingredient. ' +
   'Answer null when nothing in the list is either; a wrong picture is worse ' +
   `than none. The ids: ${ICON_LIST}.`

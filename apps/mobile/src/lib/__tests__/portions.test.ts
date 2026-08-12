@@ -20,6 +20,17 @@ describe('servingUnit', () => {
     expect(servingUnit('10 pieces')).toBe('pieces')
   })
 
+  // The number in front of a unit of MEASURE is the portion, not a count of
+  // portions. Stripped, "100 g" became "g" under a jar of Marmite on the diary
+  // — and per-100g is how most of the imported catalogue quotes itself, so this
+  // went from an edge case to the common one when the catalogue grew.
+  it('keeps the number when the unit is a measurement', () => {
+    expect(servingUnit('100 g')).toBe('100 g')
+    expect(servingUnit('30 g')).toBe('30 g')
+    expect(servingUnit('250 ml')).toBe('250 ml')
+    expect(servingUnit('1.5 oz')).toBe('1.5 oz')
+  })
+
   it('drops preparation detail and parenthetical measurements', () => {
     expect(servingUnit('1.0 cup, loosely packed')).toBe('cup')
     expect(servingUnit('1 medium (3-3/4" long)')).toBe('medium')
