@@ -1,0 +1,1100 @@
+{
+  "tally": {
+    "inserted": 156
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "hainanese-chicken-rice-steamed-sg",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Hainanese Steamed Chicken"
+    },
+    {
+      "idx": 2,
+      "slug": "hainanese-chicken-rice-roasted-sg",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Hainanese Chicken Rice, Steamed (SG)"
+    },
+    {
+      "idx": 3,
+      "slug": "chilli-crab-whole-crab-sg",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chilli Crab"
+    },
+    {
+      "idx": 4,
+      "slug": "black-pepper-crab-whole-crab-sg",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Black Pepper Crab"
+    },
+    {
+      "idx": 5,
+      "slug": "white-pepper-crab",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Spices, pepper, white"
+    },
+    {
+      "idx": 6,
+      "slug": "salted-egg-crab",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Salted Egg Squid"
+    },
+    {
+      "idx": 7,
+      "slug": "creamy-butter-crab",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Almond butter, creamy"
+    },
+    {
+      "idx": 8,
+      "slug": "crab-bee-hoon-soup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 9,
+      "slug": "fried-mantou-plain",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Jumbo Fried Mantou"
+    },
+    {
+      "idx": 10,
+      "slug": "sambal-stingray-hawker-bbq",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 11,
+      "slug": "bbq-chicken-wings-hawker-sg",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 12,
+      "slug": "grilled-sotong-with-sambal-bbq",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "bbq-seafood-platter-singapore",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "teochew-bak-kut-teh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bak Kut Teh"
+    },
+    {
+      "idx": 15,
+      "slug": "teochew-bak-kut-teh-set-with-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Teochew Bak Kut Teh"
+    },
+    {
+      "idx": 16,
+      "slug": "braised-pig-trotter-singapore",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Song Fa Braised Pig Trotter"
+    },
+    {
+      "idx": 17,
+      "slug": "itek-tim-salted-vegetable-duck-soup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 18,
+      "slug": "teochew-braised-duck-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Braised Duck"
+    },
+    {
+      "idx": 19,
+      "slug": "kway-chap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 20,
+      "slug": "tau-yu-bak-braised-pork-belly",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 21,
+      "slug": "sio-bak-roast-pork-belly",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 22,
+      "slug": "sio-bak-rice-sg",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 23,
+      "slug": "char-kway-teow-singapore-style",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 24,
+      "slug": "fried-carrot-cake-black-chai-tow-kway",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Fried Carrot Cake, White (Chai Tow Kway)"
+    },
+    {
+      "idx": 25,
+      "slug": "fried-carrot-cake-white-chai-tow-kway",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Fried Carrot Cake, Black (Chai Tow Kway)"
+    },
+    {
+      "idx": 26,
+      "slug": "chwee-kueh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 27,
+      "slug": "satay-bee-hoon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sang Har Bee Hoon"
+    },
+    {
+      "idx": 28,
+      "slug": "prawn-noodle-soup-hae-mee-singapore",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 29,
+      "slug": "big-prawn-noodle-soup-sg",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 30,
+      "slug": "mee-pok-ta",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 31,
+      "slug": "mee-kia-dry-with-minced-pork",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 32,
+      "slug": "sliced-fish-soup-with-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 33,
+      "slug": "sliced-fish-bee-hoon-soup-clear",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Fish Slice Bee Hoon Soup"
+    },
+    {
+      "idx": 34,
+      "slug": "mee-rebus-singapore-style",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mee Siam Singapore Style"
+    },
+    {
+      "idx": 35,
+      "slug": "mee-siam-singapore-style",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mee Rebus Singapore Style"
+    },
+    {
+      "idx": 36,
+      "slug": "indian-mee-goreng-singapore",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tahu Goreng Singapore"
+    },
+    {
+      "idx": 37,
+      "slug": "moonlight-hor-fun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 38,
+      "slug": "san-lou-bee-hoon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sang Har Bee Hoon"
+    },
+    {
+      "idx": 39,
+      "slug": "bee-tai-mak-dry",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 40,
+      "slug": "nasi-lemak-singapore-chicken-wing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 41,
+      "slug": "nasi-padang-singapore-three-dishes",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 42,
+      "slug": "sup-tulang-merah",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mee Sup Tulang"
+    },
+    {
+      "idx": 43,
+      "slug": "tahu-goreng-singapore",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Indian Mee Goreng Singapore"
+    },
+    {
+      "idx": 44,
+      "slug": "singapore-mutton-briyani",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Singapore Chicken Briyani"
+    },
+    {
+      "idx": 45,
+      "slug": "singapore-chicken-briyani",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Singapore Mutton Briyani"
+    },
+    {
+      "idx": 46,
+      "slug": "roti-prata-kosong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Roti Bakar Kosong"
+    },
+    {
+      "idx": 47,
+      "slug": "roti-prata-egg",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Roti Prata Onion"
+    },
+    {
+      "idx": 48,
+      "slug": "roti-prata-onion",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Roti Prata Egg"
+    },
+    {
+      "idx": 49,
+      "slug": "roti-prata-cheese",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Roti Cheese"
+    },
+    {
+      "idx": 50,
+      "slug": "prata-bomb",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 51,
+      "slug": "tissue-prata",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 52,
+      "slug": "plaster-prata",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 53,
+      "slug": "roti-prata-with-fish-curry",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Fish curry with rice"
+    },
+    {
+      "idx": 54,
+      "slug": "murtabak-mutton-singapore",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Murtabak Chicken Singapore"
+    },
+    {
+      "idx": 55,
+      "slug": "murtabak-chicken-singapore",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Murtabak Mutton Singapore"
+    },
+    {
+      "idx": 56,
+      "slug": "kaya-toast-set-with-eggs-and-kopi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 57,
+      "slug": "kaya-toast-thick-cut-singapore",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 58,
+      "slug": "french-toast-with-kaya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ya Kun French Toast"
+    },
+    {
+      "idx": 59,
+      "slug": "peanut-butter-toast-kopitiam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 60,
+      "slug": "kueh-tutu-peanut",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kueh Tutu, Coconut"
+    },
+    {
+      "idx": 61,
+      "slug": "kueh-tutu-coconut",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kueh Tutu, Peanut"
+    },
+    {
+      "idx": 62,
+      "slug": "soon-kueh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 63,
+      "slug": "png-kueh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 64,
+      "slug": "ku-chai-kueh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 65,
+      "slug": "min-jiang-kueh-peanut",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Min Jiang Kueh, Red Bean"
+    },
+    {
+      "idx": 66,
+      "slug": "min-jiang-kueh-red-bean",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Min Jiang Kueh, Peanut"
+    },
+    {
+      "idx": 67,
+      "slug": "tau-huay-with-syrup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 68,
+      "slug": "tau-huay-with-gula-melaka",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 69,
+      "slug": "tau-suan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 70,
+      "slug": "ice-kachang-singapore-with-attap-chee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 71,
+      "slug": "ice-jelly-with-longan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 72,
+      "slug": "chin-chow-with-longan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 73,
+      "slug": "mango-sago-pomelo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ah Chew Mango Sago Pomelo"
+    },
+    {
+      "idx": 74,
+      "slug": "hotplate-tofu-with-minced-pork",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Steamed Tofu with Minced Pork"
+    },
+    {
+      "idx": 75,
+      "slug": "fish-head-curry-singapore-whole-head",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Fish Head Curry"
+    },
+    {
+      "idx": 76,
+      "slug": "curry-fish-head-set-with-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Fish curry with rice"
+    },
+    {
+      "idx": 77,
+      "slug": "claypot-frog-leg-porridge",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 78,
+      "slug": "broccoli-with-scallop",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 79,
+      "slug": "ngoh-hiang-platter-singapore",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 80,
+      "slug": "popiah-singapore-style",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mee Siam Singapore Style"
+    },
+    {
+      "idx": 81,
+      "slug": "rojak-singapore-chinese-style",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 82,
+      "slug": "otak-otak-singapore-banana-leaf",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 83,
+      "slug": "sweet-and-sour-pork-cai-fan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sweet and sour pork"
+    },
+    {
+      "idx": 84,
+      "slug": "luncheon-meat-fried-slices",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Luncheon slices, meatless"
+    },
+    {
+      "idx": 85,
+      "slug": "curry-vegetables-cai-fan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Vegetable curry"
+    },
+    {
+      "idx": 86,
+      "slug": "steamed-egg-with-minced-pork",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Steamed Tofu with Minced Pork"
+    },
+    {
+      "idx": 87,
+      "slug": "cai-fan-four-dishes",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 88,
+      "slug": "kopi-siew-dai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kopi C Siew Dai"
+    },
+    {
+      "idx": 89,
+      "slug": "kopi-c-siew-dai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kopi Siew Dai"
+    },
+    {
+      "idx": 90,
+      "slug": "kopi-o-siew-dai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kopi Siew Dai"
+    },
+    {
+      "idx": 91,
+      "slug": "teh-siew-dai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Teh C Siew Dai"
+    },
+    {
+      "idx": 92,
+      "slug": "teh-c-siew-dai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Teh Siew Dai"
+    },
+    {
+      "idx": 93,
+      "slug": "kopi-gah-dai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kopi Siew Dai"
+    },
+    {
+      "idx": 94,
+      "slug": "kopi-peng-siew-dai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kopi Siew Dai"
+    },
+    {
+      "idx": 95,
+      "slug": "teh-peng-siew-dai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Teh Siew Dai"
+    },
+    {
+      "idx": 96,
+      "slug": "ice-cream-wafer-sandwich-street-cart",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ice cream sandwich"
+    },
+    {
+      "idx": 97,
+      "slug": "milo-peng-singapore",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 98,
+      "slug": "horlicks-dinosaur",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 99,
+      "slug": "bandung-peng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 100,
+      "slug": "ya-kun-kaya-toast",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ya Kun Kaya Toast Set"
+    },
+    {
+      "idx": 101,
+      "slug": "ya-kun-kaya-toast-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ya Kun Kaya Toast"
+    },
+    {
+      "idx": 102,
+      "slug": "ya-kun-french-toast",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ya Kun Kaya Toast"
+    },
+    {
+      "idx": 103,
+      "slug": "ya-kun-thick-toast-with-kaya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Toast Box Thick Toast with Kaya"
+    },
+    {
+      "idx": 104,
+      "slug": "toast-box-kaya-butter-toast",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kaya Butter Toast"
+    },
+    {
+      "idx": 105,
+      "slug": "toast-box-thick-toast-with-kaya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ya Kun Thick Toast with Kaya"
+    },
+    {
+      "idx": 106,
+      "slug": "toast-box-nasi-lemak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Lemak"
+    },
+    {
+      "idx": 107,
+      "slug": "toast-box-curry-chicken-with-bread",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 108,
+      "slug": "toast-box-laksa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 109,
+      "slug": "toast-box-kopi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 110,
+      "slug": "old-chang-kee-curry-puff",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Old Chang Kee Sardine Puff"
+    },
+    {
+      "idx": 111,
+      "slug": "old-chang-kee-sotong-head",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 112,
+      "slug": "old-chang-kee-chicken-wing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 113,
+      "slug": "old-chang-kee-fishball-stick",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 114,
+      "slug": "old-chang-kee-sardine-puff",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Old Chang Kee Curry Puff"
+    },
+    {
+      "idx": 115,
+      "slug": "breadtalk-flosss-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Fire Floss Bun"
+    },
+    {
+      "idx": 116,
+      "slug": "yong-tau-foo-with-laksa-gravy",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 117,
+      "slug": "breadtalk-cheese-sausage-roll",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cheese Sausage Bun"
+    },
+    {
+      "idx": 118,
+      "slug": "killiney-kaya-toast-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ya Kun Kaya Toast Set"
+    },
+    {
+      "idx": 119,
+      "slug": "killiney-curry-chicken-bee-hoon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 120,
+      "slug": "killiney-mee-siam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mee Siam"
+    },
+    {
+      "idx": 121,
+      "slug": "crystal-jade-xiao-long-bao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Xiao Long Bao"
+    },
+    {
+      "idx": 122,
+      "slug": "crystal-jade-la-mian-with-pork-ribs",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 123,
+      "slug": "crystal-jade-steamed-char-siew-bao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 124,
+      "slug": "din-tai-fung-pork-chop-fried-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 125,
+      "slug": "din-tai-fung-hot-and-sour-soup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Soup, hot and sour"
+    },
+    {
+      "idx": 126,
+      "slug": "din-tai-fung-shrimp-and-pork-wontons",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 127,
+      "slug": "tim-ho-wan-baked-bbq-pork-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 128,
+      "slug": "tim-ho-wan-prawn-cheong-fun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 129,
+      "slug": "tim-ho-wan-har-gow",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 130,
+      "slug": "paradise-dynasty-xiao-long-bao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 131,
+      "slug": "paradise-dynasty-la-mian-with-pork",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 132,
+      "slug": "song-fa-bak-kut-teh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bak Kut Teh"
+    },
+    {
+      "idx": 133,
+      "slug": "song-fa-braised-pig-trotter",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Braised Pig Trotter, Singapore"
+    },
+    {
+      "idx": 134,
+      "slug": "song-fa-you-tiao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 135,
+      "slug": "jumbo-chilli-crab",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chilli Crab"
+    },
+    {
+      "idx": 136,
+      "slug": "jumbo-black-pepper-crab",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Black Pepper Crab"
+    },
+    {
+      "idx": 137,
+      "slug": "jumbo-fried-mantou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Fried Mantou, Plain"
+    },
+    {
+      "idx": 138,
+      "slug": "long-john-silver-s-fish-and-chips",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Long John Silver's Chicken and Fish Platter"
+    },
+    {
+      "idx": 139,
+      "slug": "long-john-silver-s-chicken-and-fish-platter",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Long John Silver's Fish and Chips"
+    },
+    {
+      "idx": 140,
+      "slug": "mr-bean-soya-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 141,
+      "slug": "mr-bean-pancake-chocolate",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pancakes, chocolate"
+    },
+    {
+      "idx": 142,
+      "slug": "mr-bean-beancurd",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 143,
+      "slug": "liho-brown-sugar-pearl-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Brown Sugar Pearl Milk Tea"
+    },
+    {
+      "idx": 144,
+      "slug": "liho-cheese-tea-green-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 145,
+      "slug": "koi-macchiato-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 146,
+      "slug": "koi-golden-bubble-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KOI Thé Bubble Milk Tea"
+    },
+    {
+      "idx": 147,
+      "slug": "gong-cha-brown-sugar-pearl-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Brown Sugar Pearl Milk Tea"
+    },
+    {
+      "idx": 148,
+      "slug": "ah-chew-steamed-milk-with-egg-white",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 149,
+      "slug": "ah-chew-mango-sago-pomelo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mango Sago Pomelo"
+    },
+    {
+      "idx": 150,
+      "slug": "ah-chew-durian-sago",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 1,
+      "slug": "swee-choon-mee-suah-kueh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 2,
+      "slug": "swee-choon-salted-egg-custard-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 3,
+      "slug": "encik-tan-nasi-lemak-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 4,
+      "slug": "encik-tan-mee-siam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 5,
+      "slug": "fun-toast-kaya-toast-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "heavenly-wang-kaya-toast-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    }
+  ]
+}

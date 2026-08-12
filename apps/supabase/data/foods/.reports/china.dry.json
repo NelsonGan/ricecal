@@ -1,0 +1,1556 @@
+{
+  "tally": {
+    "skipped_slug": 59,
+    "inserted": 162
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "dan-dan-mian",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 2,
+      "slug": "chongqing-xiaomian",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 3,
+      "slug": "shuizhu-yu",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 4,
+      "slug": "shuizhu-niurou",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 5,
+      "slug": "fuqi-feipian",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "huiguorou",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 7,
+      "slug": "yuxiang-rousi",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 8,
+      "slug": "yuxiang-qiezi",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 9,
+      "slug": "laziji",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 10,
+      "slug": "maoxuewang",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 11,
+      "slug": "suanla-fen",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 12,
+      "slug": "ganguo-jipian",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "ganguo-huacai",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "mala-xiang-guo",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 15,
+      "slug": "chongqing-hotpot-mala-broth",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 16,
+      "slug": "hotpot-beef-tripe",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 17,
+      "slug": "hotpot-luncheon-meat",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 18,
+      "slug": "hotpot-wide-sweet-potato-noodle",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 19,
+      "slug": "hotpot-duck-blood",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 20,
+      "slug": "hotpot-beef-slices",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 21,
+      "slug": "hotpot-sesame-oil-dip-bowl",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 22,
+      "slug": "zhong-shui-jiao",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 23,
+      "slug": "hongyou-chaoshou",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 24,
+      "slug": "tianshui-mian",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 25,
+      "slug": "kou-shui-ji",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 26,
+      "slug": "bang-bang-ji",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 27,
+      "slug": "chuanchuan-xiang",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 28,
+      "slug": "sichuan-suancai-yu",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 29,
+      "slug": "ganbian-sijidou",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 30,
+      "slug": "suanla-tudousi",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 31,
+      "slug": "mala-xiaolongxia",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 32,
+      "slug": "sichuan-liangmian",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 33,
+      "slug": "leshan-bobo-ji",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 34,
+      "slug": "gongbao-xiaren",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 35,
+      "slug": "sichuan-mala-yabo",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 36,
+      "slug": "ganbian-niurou-si",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 37,
+      "slug": "duojiao-yutou",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 38,
+      "slug": "xiaochao-rou",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 39,
+      "slug": "changsha-chou-doufu",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 40,
+      "slug": "mao-shi-hong-shao-rou",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 41,
+      "slug": "la-wei-he-zheng",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 42,
+      "slug": "changsha-mifen",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 43,
+      "slug": "changde-niurou-fen",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 44,
+      "slug": "hunan-kouwei-xia",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 45,
+      "slug": "hunan-la-rou-chao-qincai",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 46,
+      "slug": "wenchang-chicken",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 47,
+      "slug": "shao-ru-ge",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 48,
+      "slug": "chaozhou-lushui-goose",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 49,
+      "slug": "chaozhou-niuwan-fen",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 50,
+      "slug": "chaozhou-haolie",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 51,
+      "slug": "chaozhou-beef-hotpot-serving",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 52,
+      "slug": "chaozhou-dong-xie",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 53,
+      "slug": "mei-cai-kou-rou",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 54,
+      "slug": "gan-chao-niu-he",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 55,
+      "slug": "guangdong-lao-huo-tang",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 56,
+      "slug": "bozai-fan-with-chicken-and-mushroom",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 57,
+      "slug": "guangzhou-zhaliang",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 58,
+      "slug": "hakka-niang-ku-gua",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 59,
+      "slug": "hakka-sanbeiya",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 60,
+      "slug": "bai-qie-ji",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 61,
+      "slug": "ting-zai-zhou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 62,
+      "slug": "chaozhou-sha-guo-zhou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chaozhou Fen Guo"
+    },
+    {
+      "idx": 63,
+      "slug": "guangdong-bai-zhuo-xia",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 64,
+      "slug": "shunde-yu-sheng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 65,
+      "slug": "chaozhou-fen-guo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chaozhou Sha Guo Zhou"
+    },
+    {
+      "idx": 66,
+      "slug": "jiang-cong-ju-xie",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 67,
+      "slug": "chaozhou-lushui-doufu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chaozhou Lushui Goose"
+    },
+    {
+      "idx": 68,
+      "slug": "sheng-jian-bao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 69,
+      "slug": "xie-fen-xiaolongbao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 70,
+      "slug": "tang-bao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 71,
+      "slug": "shanghai-xiao-huntun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Shanghai Da Huntun"
+    },
+    {
+      "idx": 72,
+      "slug": "shanghai-da-huntun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Shanghai Xiao Huntun"
+    },
+    {
+      "idx": 73,
+      "slug": "yangchun-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 74,
+      "slug": "cong-you-ban-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 75,
+      "slug": "shizi-tou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 76,
+      "slug": "songshu-guiyu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 77,
+      "slug": "shanghai-hongshao-tipang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 78,
+      "slug": "da-zha-xie",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 79,
+      "slug": "shanghai-cu-chao-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 80,
+      "slug": "xi-hu-cu-yu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 81,
+      "slug": "dongpo-rou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 82,
+      "slug": "longjing-xiaren",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 83,
+      "slug": "nanjing-yan-shui-ya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 84,
+      "slug": "wuxi-pai-gu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 85,
+      "slug": "ba-bao-fan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 86,
+      "slug": "pai-gu-nian-gao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 87,
+      "slug": "luo-bo-si-su-bing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 88,
+      "slug": "peking-duck-with-pancakes",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 89,
+      "slug": "beijing-zhajiang-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 90,
+      "slug": "jianbing-guozi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 91,
+      "slug": "luzhu-huoshao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 92,
+      "slug": "douzhi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 93,
+      "slug": "zhu-rou-jiu-cai-jiaozi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 94,
+      "slug": "yang-rou-jiaozi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 95,
+      "slug": "san-xian-jiaozi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 96,
+      "slug": "guo-tie",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 97,
+      "slug": "zhu-rou-da-cong-baozi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 98,
+      "slug": "goubuli-baozi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 99,
+      "slug": "hua-juan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 100,
+      "slug": "dao-xiao-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Dan Dan Mian"
+    },
+    {
+      "idx": 101,
+      "slug": "youpo-che-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 102,
+      "slug": "biang-biang-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ban Mian"
+    },
+    {
+      "idx": 103,
+      "slug": "rou-jia-mo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Niu Rou Jia Mo"
+    },
+    {
+      "idx": 104,
+      "slug": "liang-pi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 105,
+      "slug": "yang-rou-pao-mo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 106,
+      "slug": "hu-la-tang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tang Hu Lu"
+    },
+    {
+      "idx": 107,
+      "slug": "tang-hu-lu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Hu La Tang"
+    },
+    {
+      "idx": 108,
+      "slug": "jing-jiang-rou-si",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 109,
+      "slug": "beijing-chao-gan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 110,
+      "slug": "ba-si-di-gua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 111,
+      "slug": "jiu-zhuan-da-chang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 112,
+      "slug": "cong-bao-yang-rou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 113,
+      "slug": "guo-bao-rou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 114,
+      "slug": "di-san-xian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 115,
+      "slug": "suan-cai-bai-rou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 116,
+      "slug": "dongbei-baicai-jiaozi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 117,
+      "slug": "kao-leng-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 118,
+      "slug": "dongbei-luan-dun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 119,
+      "slug": "da-pan-ji",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 120,
+      "slug": "xinjiang-ban-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ban Mian"
+    },
+    {
+      "idx": 121,
+      "slug": "yang-rou-chuan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 122,
+      "slug": "xinjiang-nang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 123,
+      "slug": "zhua-fan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 124,
+      "slug": "xinjiang-kao-baozi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 125,
+      "slug": "lanzhou-beef-noodle",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 126,
+      "slug": "niu-rou-jia-mo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Rou Jia Mo"
+    },
+    {
+      "idx": 127,
+      "slug": "ding-ding-chao-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 128,
+      "slug": "guo-qiao-mi-xian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Xiao Guo Mi Xian"
+    },
+    {
+      "idx": 129,
+      "slug": "xiao-guo-mi-xian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Guo Qiao Mi Xian"
+    },
+    {
+      "idx": 130,
+      "slug": "guilin-mi-fen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 131,
+      "slug": "luo-si-fen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 132,
+      "slug": "guizhou-suan-tang-yu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 133,
+      "slug": "yunnan-ru-bing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 134,
+      "slug": "yunnan-qi-guo-ji",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 135,
+      "slug": "xizhou-baba",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 136,
+      "slug": "guangxi-lao-you-fen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 137,
+      "slug": "guizhou-chang-wang-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 138,
+      "slug": "fo-tiao-qiang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 139,
+      "slug": "xiamen-sha-cha-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 140,
+      "slug": "fuzhou-rou-yan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 141,
+      "slug": "mian-xian-hu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Dao Xiao Mian"
+    },
+    {
+      "idx": 142,
+      "slug": "tu-sun-dong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 143,
+      "slug": "fuzhou-li-zhi-rou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 144,
+      "slug": "shaobing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 145,
+      "slug": "chun-juan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 146,
+      "slug": "ci-ba",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 147,
+      "slug": "ma-la-tang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Hu La Tang"
+    },
+    {
+      "idx": 148,
+      "slug": "kao-hong-shu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 149,
+      "slug": "ji-dan-guan-bing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Dan Bing"
+    },
+    {
+      "idx": 150,
+      "slug": "jiaxing-rou-zong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 1,
+      "slug": "jian-shui-zong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Zhong Shui Jiao"
+    },
+    {
+      "idx": 2,
+      "slug": "lu-da-gun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 3,
+      "slug": "wan-dou-huang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 4,
+      "slug": "wuhan-re-gan-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 5,
+      "slug": "doufu-nao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "gui-ling-gao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 7,
+      "slug": "sha-qi-ma",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 8,
+      "slug": "mooncake-five-kernel",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 9,
+      "slug": "suan-mei-tang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 10,
+      "slug": "ju-hua-cha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 11,
+      "slug": "wang-lao-ji-herbal-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 12,
+      "slug": "zhi-ma-hu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "ba-bao-zhou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "bing-fen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 15,
+      "slug": "haidilao-mala-soup-base",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Haidilao Mushroom Soup Base"
+    },
+    {
+      "idx": 16,
+      "slug": "haidilao-tomato-soup-base",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Haidilao Mala Soup Base"
+    },
+    {
+      "idx": 17,
+      "slug": "haidilao-mushroom-soup-base",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Haidilao Mala Soup Base"
+    },
+    {
+      "idx": 18,
+      "slug": "haidilao-hand-pulled-noodle",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 19,
+      "slug": "haidilao-prawn-paste",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Prawn Paste (Hay-Ko)"
+    },
+    {
+      "idx": 20,
+      "slug": "haidilao-sesame-dipping-sauce",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 21,
+      "slug": "haidilao-sliced-lamb",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 22,
+      "slug": "haidilao-fried-milk-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 23,
+      "slug": "xiaolongkan-mala-hotpot-broth",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 24,
+      "slug": "xiaolongkan-beef-tripe-plate",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 25,
+      "slug": "xiaolongkan-fresh-beef-slices",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 26,
+      "slug": "yang-guo-fu-malatang-bowl",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Yang Guo Fu Sesame Malatang"
+    },
+    {
+      "idx": 27,
+      "slug": "yang-guo-fu-sesame-malatang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Yang Guo Fu Malatang Bowl"
+    },
+    {
+      "idx": 28,
+      "slug": "zhen-kungfu-steamed-pork-rib-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 29,
+      "slug": "zhen-kungfu-mushroom-chicken-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 30,
+      "slug": "zhen-kungfu-herbal-soup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 31,
+      "slug": "yonghe-king-you-tiao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 32,
+      "slug": "yonghe-king-sweet-soy-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 33,
+      "slug": "yonghe-king-braised-beef-noodle",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 34,
+      "slug": "mixue-jasmine-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Jasmine Green Milk Tea"
+    },
+    {
+      "idx": 35,
+      "slug": "mixue-kiwi-fruit-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 36,
+      "slug": "heytea-grape-cheese-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "HeyTea Cheese Tea"
+    },
+    {
+      "idx": 37,
+      "slug": "heytea-brown-sugar-boba-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tiger Sugar Brown Sugar Boba Milk"
+    },
+    {
+      "idx": 38,
+      "slug": "heytea-mango-boba",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 39,
+      "slug": "nayuki-strawberry-cheese-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 40,
+      "slug": "nayuki-oolong-boba-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 41,
+      "slug": "nayuki-grape-fruit-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 42,
+      "slug": "luckin-coffee-velvet-latte",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Luckin Coffee Iced Latte"
+    },
+    {
+      "idx": 43,
+      "slug": "luckin-coffee-americano",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "ZUS Americano"
+    },
+    {
+      "idx": 44,
+      "slug": "luckin-coffee-jasmine-latte",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Luckin Coffee Iced Latte"
+    },
+    {
+      "idx": 45,
+      "slug": "lao-xiang-ji-chicken-soup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Lao Xiang Ji Chicken Rice Set"
+    },
+    {
+      "idx": 46,
+      "slug": "lao-xiang-ji-chicken-rice-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Lao Xiang Ji Chicken Soup"
+    },
+    {
+      "idx": 47,
+      "slug": "lao-xiang-ji-steamed-egg",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 48,
+      "slug": "tai-er-suan-cai-yu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 49,
+      "slug": "tai-er-sweet-potato-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 50,
+      "slug": "jiumaojiu-shanxi-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 51,
+      "slug": "jiumaojiu-braised-beef-noodle",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 52,
+      "slug": "xibei-youmian-cun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 53,
+      "slug": "xibei-roasted-lamb-chops",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 54,
+      "slug": "xibei-sour-soup-dumplings",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 55,
+      "slug": "wallace-golden-fried-chicken",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "AllAce Fried Chicken"
+    },
+    {
+      "idx": 56,
+      "slug": "wallace-egg-tart",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Egg Tart"
+    },
+    {
+      "idx": 57,
+      "slug": "dicos-spicy-chicken-burger",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "McDonald's Spicy Chicken Leg Burger"
+    },
+    {
+      "idx": 58,
+      "slug": "dicos-crispy-chicken-roll",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 59,
+      "slug": "dicos-egg-tart",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Egg Tart"
+    },
+    {
+      "idx": 60,
+      "slug": "kfc-dragon-twister",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 61,
+      "slug": "kfc-preserved-egg-congee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 62,
+      "slug": "mcdonald-s-taro-pie",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "McDonald's Apple Pie"
+    },
+    {
+      "idx": 63,
+      "slug": "mcdonald-s-spicy-chicken-leg-burger",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Spicy Chicken McWrap"
+    },
+    {
+      "idx": 64,
+      "slug": "pizza-hut-durian-pizza",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 65,
+      "slug": "pizza-hut-peking-duck-pizza",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Duck, Peking"
+    },
+    {
+      "idx": 66,
+      "slug": "shaxian-snacks-shaxian-ban-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Shaxian Bian Rou"
+    },
+    {
+      "idx": 67,
+      "slug": "shaxian-snacks-shaxian-bian-rou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Shaxian Ban Mian"
+    },
+    {
+      "idx": 68,
+      "slug": "shaxian-snacks-shaxian-zheng-jiao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 69,
+      "slug": "bao-du",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 70,
+      "slug": "xian-rou-yue-bing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Xian Bing"
+    },
+    {
+      "idx": 71,
+      "slug": "xian-bing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Xian Rou Yue Bing"
+    }
+  ]
+}

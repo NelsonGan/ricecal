@@ -1,0 +1,785 @@
+{
+  "tally": {
+    "inserted": 111
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "ikan-kembung-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Keli Bakar"
+    },
+    {
+      "idx": 2,
+      "slug": "ikan-kembung-sumbat",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Kembung Bakar"
+    },
+    {
+      "idx": 3,
+      "slug": "ikan-kembung-masak-taucu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Masak Taucu"
+    },
+    {
+      "idx": 4,
+      "slug": "ikan-kembung-goreng-kunyit",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ketam Goreng Kunyit"
+    },
+    {
+      "idx": 5,
+      "slug": "ikan-selar-kuning-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Selayang Goreng"
+    },
+    {
+      "idx": 6,
+      "slug": "ikan-selar-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Bakar Set"
+    },
+    {
+      "idx": 7,
+      "slug": "ikan-cencaru-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Bakar"
+    },
+    {
+      "idx": 8,
+      "slug": "ikan-cencaru-sumbat-udang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Cencaru Sumbat"
+    },
+    {
+      "idx": 9,
+      "slug": "ikan-bawal-putih-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bawang Putih Goreng"
+    },
+    {
+      "idx": 10,
+      "slug": "ikan-bawal-putih-kukus",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Bawal Putih Goreng"
+    },
+    {
+      "idx": 11,
+      "slug": "ikan-bawal-hitam-masak-taucu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Masak Taucu"
+    },
+    {
+      "idx": 12,
+      "slug": "ikan-bawal-hitam-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Bakar"
+    },
+    {
+      "idx": 13,
+      "slug": "ikan-bawal-emas-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Bawal Putih Goreng"
+    },
+    {
+      "idx": 14,
+      "slug": "siakap-kukus-limau",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 15,
+      "slug": "siakap-tiga-rasa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 16,
+      "slug": "siakap-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 17,
+      "slug": "siakap-masak-asam-pedas",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 18,
+      "slug": "ikan-merah-stim-limau",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 19,
+      "slug": "ikan-merah-goreng-cili-kicap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 20,
+      "slug": "kepala-ikan-merah-masak-asam-pedas",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Baung Masak Asam Pedas"
+    },
+    {
+      "idx": 21,
+      "slug": "ikan-merah-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Bakar"
+    },
+    {
+      "idx": 22,
+      "slug": "gulai-ikan-tenggiri",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Gulai Ikan"
+    },
+    {
+      "idx": 23,
+      "slug": "ikan-tenggiri-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Bakar"
+    },
+    {
+      "idx": 24,
+      "slug": "ikan-tenggiri-masak-lemak-nenas",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 25,
+      "slug": "ikan-tenggiri-sambal-tumis",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Tongkol Sambal Tumis"
+    },
+    {
+      "idx": 26,
+      "slug": "ikan-pari-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Bakar"
+    },
+    {
+      "idx": 27,
+      "slug": "ikan-pari-masak-lemak-cili-api",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Masak Lemak Cili Api Ikan"
+    },
+    {
+      "idx": 28,
+      "slug": "ikan-pari-goreng-berempah",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Goreng Berempah"
+    },
+    {
+      "idx": 29,
+      "slug": "ikan-patin-masak-lemak-cili-api",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Masak Lemak Cili Api Ikan"
+    },
+    {
+      "idx": 30,
+      "slug": "ikan-patin-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Goreng"
+    },
+    {
+      "idx": 31,
+      "slug": "sup-ikan-patin",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sup Ikan"
+    },
+    {
+      "idx": 32,
+      "slug": "ikan-keli-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Goreng"
+    },
+    {
+      "idx": 33,
+      "slug": "ikan-keli-masak-lemak-cili-api",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Masak Lemak Cili Api Ikan"
+    },
+    {
+      "idx": 34,
+      "slug": "ikan-keli-salai-masak-lemak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Keli Masak Lemak Cili Api"
+    },
+    {
+      "idx": 35,
+      "slug": "ikan-haruan-masak-halia",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Haruan Masak Kunyit"
+    },
+    {
+      "idx": 36,
+      "slug": "sup-ikan-haruan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sup Ikan"
+    },
+    {
+      "idx": 37,
+      "slug": "ikan-haruan-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Goreng"
+    },
+    {
+      "idx": 38,
+      "slug": "ikan-haruan-masak-kunyit",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Haruan Masak Halia"
+    },
+    {
+      "idx": 39,
+      "slug": "ikan-tilapia-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Bakar"
+    },
+    {
+      "idx": 40,
+      "slug": "ikan-tilapia-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Goreng"
+    },
+    {
+      "idx": 41,
+      "slug": "ikan-tilapia-tiga-rasa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 42,
+      "slug": "ikan-tilapia-kukus-halia",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Masin Kukus Halia"
+    },
+    {
+      "idx": 43,
+      "slug": "ikan-jenahak-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Bakar"
+    },
+    {
+      "idx": 44,
+      "slug": "ikan-jenahak-kukus",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Jenahak Bakar"
+    },
+    {
+      "idx": 45,
+      "slug": "ikan-sardin-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Goreng"
+    },
+    {
+      "idx": 46,
+      "slug": "sardin-dalam-tin",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sardine, Canned (Sardine Dalam Tin)"
+    },
+    {
+      "idx": 47,
+      "slug": "sup-ikan-bilis",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sup Ikan"
+    },
+    {
+      "idx": 48,
+      "slug": "ikan-bilis-goreng-kacang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Bilis Goreng"
+    },
+    {
+      "idx": 49,
+      "slug": "ikan-masin-bergedil",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 50,
+      "slug": "ikan-masin-kukus-halia",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Tilapia Kukus Halia"
+    },
+    {
+      "idx": 51,
+      "slug": "sambal-ikan-masin",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Masin Bambangan"
+    },
+    {
+      "idx": 52,
+      "slug": "ikan-kurau-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Goreng"
+    },
+    {
+      "idx": 53,
+      "slug": "ikan-kurau-kukus",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Empurau Kukus"
+    },
+    {
+      "idx": 54,
+      "slug": "ikan-tongkol-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Goreng"
+    },
+    {
+      "idx": 55,
+      "slug": "ikan-tongkol-sambal-tumis",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Tenggiri Sambal Tumis"
+    },
+    {
+      "idx": 56,
+      "slug": "ikan-aya-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Bakar"
+    },
+    {
+      "idx": 57,
+      "slug": "ikan-selayang-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Goreng"
+    },
+    {
+      "idx": 58,
+      "slug": "ikan-gelama-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Gelama Masin Goreng"
+    },
+    {
+      "idx": 59,
+      "slug": "ikan-gelama-masin-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Masin Goreng"
+    },
+    {
+      "idx": 60,
+      "slug": "ikan-duri-masak-lemak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Masak Lemak Cili Api Ikan"
+    },
+    {
+      "idx": 61,
+      "slug": "ikan-baung-masak-tempoyak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 62,
+      "slug": "ikan-baung-masak-asam-pedas",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Asam Pedas"
+    },
+    {
+      "idx": 63,
+      "slug": "ikan-lampam-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Goreng"
+    },
+    {
+      "idx": 64,
+      "slug": "ikan-tembakul-masak-lemak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Duri Masak Lemak"
+    },
+    {
+      "idx": 65,
+      "slug": "ikan-kerapu-stim",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 66,
+      "slug": "udang-goreng-tepung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Udang Goreng"
+    },
+    {
+      "idx": 67,
+      "slug": "udang-masak-lemak-cili-api",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Masak Lemak Cili Api Udang"
+    },
+    {
+      "idx": 68,
+      "slug": "udang-galah-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 69,
+      "slug": "udang-harimau-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 70,
+      "slug": "udang-masak-halia",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ayam Masak Halia"
+    },
+    {
+      "idx": 71,
+      "slug": "udang-masak-kicap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Daging Masak Kicap"
+    },
+    {
+      "idx": 72,
+      "slug": "udang-goreng-telur-masin",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ketam Goreng Telur Masin"
+    },
+    {
+      "idx": 73,
+      "slug": "udang-sos-cili",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 74,
+      "slug": "udang-goreng-bawang-putih",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bawang Putih Goreng"
+    },
+    {
+      "idx": 75,
+      "slug": "udang-masak-merah",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kuah Masak Merah"
+    },
+    {
+      "idx": 76,
+      "slug": "udang-galah-masak-lemak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Masak Lemak Cili Api Udang"
+    },
+    {
+      "idx": 77,
+      "slug": "sambal-udang-kering",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sambal Udang"
+    },
+    {
+      "idx": 78,
+      "slug": "sup-udang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 79,
+      "slug": "sotong-kangkung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kari Sotong"
+    },
+    {
+      "idx": 80,
+      "slug": "sotong-sumbat",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 81,
+      "slug": "sotong-goreng-kunyit",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Goreng Kunyit"
+    },
+    {
+      "idx": 82,
+      "slug": "sotong-masak-lemak-cili-api",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Masak Lemak Cili Api"
+    },
+    {
+      "idx": 83,
+      "slug": "sotong-sambal-petai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sambal Sotong"
+    },
+    {
+      "idx": 84,
+      "slug": "sotong-goreng-mentega",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mee Goreng Sotong"
+    },
+    {
+      "idx": 85,
+      "slug": "kerang-goreng-sambal",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sambal Goreng Jawa"
+    },
+    {
+      "idx": 86,
+      "slug": "kerang-masak-lemak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kupang Masak Lemak"
+    },
+    {
+      "idx": 87,
+      "slug": "lala-masak-halia",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ayam Masak Halia"
+    },
+    {
+      "idx": 88,
+      "slug": "lala-goreng-bawang-putih",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bawang Putih Goreng"
+    },
+    {
+      "idx": 89,
+      "slug": "sup-lala",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 90,
+      "slug": "siput-sedut-masak-lemak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 91,
+      "slug": "ketam-goreng-kunyit",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ayam Goreng Kunyit"
+    },
+    {
+      "idx": 92,
+      "slug": "ketam-goreng-telur-masin",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Udang Goreng Telur Masin"
+    },
+    {
+      "idx": 93,
+      "slug": "tiram-goreng-tepung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Udang Goreng Tepung"
+    },
+    {
+      "idx": 94,
+      "slug": "tiram-segar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 95,
+      "slug": "kupang-masak-lemak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kerang Masak Lemak"
+    },
+    {
+      "idx": 96,
+      "slug": "kupang-bakar-keju",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kerang Bakar"
+    },
+    {
+      "idx": 97,
+      "slug": "sup-ketam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 98,
+      "slug": "fish-maw-soup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 99,
+      "slug": "fish-head-steamboat",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Steamboat"
+    },
+    {
+      "idx": 100,
+      "slug": "sup-ikan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mee Sup Ikan"
+    },
+    {
+      "idx": 101,
+      "slug": "sup-kepala-ikan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sup Ikan"
+    },
+    {
+      "idx": 102,
+      "slug": "ikan-bakar-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Bakar"
+    },
+    {
+      "idx": 103,
+      "slug": "nasi-campur-ikan-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Goreng Ikan Masin"
+    },
+    {
+      "idx": 104,
+      "slug": "telur-ikan-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Goreng"
+    },
+    {
+      "idx": 105,
+      "slug": "kerabu-ikan-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Kerabu Ikan Bakar"
+    },
+    {
+      "idx": 106,
+      "slug": "asam-rebus-ikan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 107,
+      "slug": "ikan-celup-tepung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Udang Celup Tepung"
+    },
+    {
+      "idx": 108,
+      "slug": "sata-ikan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Satay Ikan Sarawak"
+    },
+    {
+      "idx": 109,
+      "slug": "gulai-kepala-ikan-masak-lemak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Gulai Lemak Ikan Masin"
+    },
+    {
+      "idx": 110,
+      "slug": "ikan-sepat-masin-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Masin Goreng"
+    },
+    {
+      "idx": 111,
+      "slug": "kepah-masak-lemak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kuah Masak Lemak"
+    }
+  ]
+}

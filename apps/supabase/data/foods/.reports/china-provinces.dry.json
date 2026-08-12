@@ -1,0 +1,1135 @@
+{
+  "tally": {
+    "inserted": 161
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "shaoxing-chou-doufu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 2,
+      "slug": "shaoxing-zheng-san-xian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 3,
+      "slug": "wenzhou-yu-wan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Wenzhou Yu Bing"
+    },
+    {
+      "idx": 4,
+      "slug": "wenzhou-qiao-yu-tang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 5,
+      "slug": "wenzhou-jiang-xiang-ya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "wenzhou-yu-bing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Wenzhou Yu Wan"
+    },
+    {
+      "idx": 7,
+      "slug": "wenzhou-deng-zhan-gao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 8,
+      "slug": "wenzhou-chao-fen-gan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 9,
+      "slug": "jinhua-huo-tui",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 10,
+      "slug": "jinhua-su-bing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 11,
+      "slug": "xue-cai-da-tang-huang-yu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 12,
+      "slug": "zhoushan-qing-zheng-dai-yu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "ningbo-chao-nian-gao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "pian-er-chuan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 15,
+      "slug": "cong-bao-hui",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cong Bao Shan"
+    },
+    {
+      "idx": 16,
+      "slug": "cong-bao-shan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cong Bao Hui"
+    },
+    {
+      "idx": 17,
+      "slug": "song-sao-yu-geng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 18,
+      "slug": "jiao-hua-ji",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 19,
+      "slug": "xi-hu-niu-rou-geng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 20,
+      "slug": "hangzhou-you-men-sun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 21,
+      "slug": "taizhou-jiang-tang-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tou Tang Mian"
+    },
+    {
+      "idx": 22,
+      "slug": "quzhou-la-ya-tou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 23,
+      "slug": "sanxia-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 24,
+      "slug": "aozao-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 25,
+      "slug": "tou-tang-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Taizhou Jiang Tang Mian"
+    },
+    {
+      "idx": 26,
+      "slug": "xie-fen-doufu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 27,
+      "slug": "biluochun-xia-ren",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 28,
+      "slug": "cang-shu-yang-rou-tang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Shuan Yang Rou"
+    },
+    {
+      "idx": 29,
+      "slug": "su-shi-xun-yu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 30,
+      "slug": "mi-zhi-huo-fang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 31,
+      "slug": "san-ding-bao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 32,
+      "slug": "qian-ceng-you-gao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 33,
+      "slug": "da-zhu-gan-si",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 34,
+      "slug": "wensi-doufu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 35,
+      "slug": "qing-dun-shizi-tou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Shizi Tou"
+    },
+    {
+      "idx": 36,
+      "slug": "san-tao-ya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 37,
+      "slug": "zhenjiang-yao-rou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Fen Zheng Yang Rou"
+    },
+    {
+      "idx": 38,
+      "slug": "zhenjiang-guo-gai-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 39,
+      "slug": "ping-qiao-doufu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 40,
+      "slug": "huai-an-cha-san",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 41,
+      "slug": "ruan-dou-chang-yu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 42,
+      "slug": "xuzhou-di-guo-ji",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 43,
+      "slug": "nanjing-ya-xue-fen-si-tang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 44,
+      "slug": "huangqiao-shao-bing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 45,
+      "slug": "henan-hui-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 46,
+      "slug": "luoyang-niu-rou-tang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Luoyang Lian Tang Rou Pian"
+    },
+    {
+      "idx": 47,
+      "slug": "luoyang-bu-tang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Luoyang Niu Rou Tang"
+    },
+    {
+      "idx": 48,
+      "slug": "luoyang-mu-dan-yan-cai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 49,
+      "slug": "luoyang-lian-tang-rou-pian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Luoyang Niu Rou Tang"
+    },
+    {
+      "idx": 50,
+      "slug": "luoyang-jiang-mian-tiao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 51,
+      "slug": "kaifeng-guan-tang-baozi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 52,
+      "slug": "kaifeng-tong-zi-ji",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 53,
+      "slug": "kaifeng-xing-ren-cha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 54,
+      "slug": "dao-kou-shao-ji",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kou Shui Ji"
+    },
+    {
+      "idx": 55,
+      "slug": "huang-he-li-yu-bei-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 56,
+      "slug": "henan-zheng-mian-tiao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 57,
+      "slug": "anyang-bian-fen-cai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 58,
+      "slug": "henan-hong-men-yang-rou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 59,
+      "slug": "lu-rou-huo-shao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Weifang Rou Huo Shao"
+    },
+    {
+      "idx": 60,
+      "slug": "er-duo-yan-zha-gao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 61,
+      "slug": "tianjin-da-ma-hua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 62,
+      "slug": "tianjin-guo-ba-cai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 63,
+      "slug": "tianjin-lao-doufu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 64,
+      "slug": "mian-cha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mi Cha"
+    },
+    {
+      "idx": 65,
+      "slug": "shi-tou-men-kan-su-bao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 66,
+      "slug": "tangshan-chao-ge-zha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 67,
+      "slug": "hebei-qiao-mian-he-lao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 68,
+      "slug": "zheng-ding-ba-da-wan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 69,
+      "slug": "cangzhou-huo-guo-ji",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 70,
+      "slug": "baoding-bai-rou-zhao-huo-shao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 71,
+      "slug": "chengde-he-ye-ji",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 72,
+      "slug": "anguo-yao-shan-ji-tang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 73,
+      "slug": "yanbian-leng-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kao Leng Mian"
+    },
+    {
+      "idx": 74,
+      "slug": "yanbian-kao-rou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 75,
+      "slug": "ming-tai-yu-hui",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 76,
+      "slug": "da-la-pi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 77,
+      "slug": "sha-guo-bai-rou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Guo Bao Rou"
+    },
+    {
+      "idx": 78,
+      "slug": "harbin-hong-chang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 79,
+      "slug": "harbin-da-lie-ba",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 80,
+      "slug": "ma-die-er-bing-gun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 81,
+      "slug": "harbin-su-bo-tang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 82,
+      "slug": "zhu-rou-dun-fen-tiao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 83,
+      "slug": "xiao-ji-dun-mo-gu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 84,
+      "slug": "tie-guo-dun-da-e",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Guo Tie"
+    },
+    {
+      "idx": 85,
+      "slug": "dongbei-fan-bao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 86,
+      "slug": "fuding-rou-pian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 87,
+      "slug": "guang-bing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ji Dan Guan Bing"
+    },
+    {
+      "idx": 88,
+      "slug": "ningde-yu-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 89,
+      "slug": "putian-lu-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 90,
+      "slug": "xing-hua-chao-mi-fen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 91,
+      "slug": "putian-hong-gu-tang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 92,
+      "slug": "zhangzhou-mian-hu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 93,
+      "slug": "shaxian-dun-tang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 94,
+      "slug": "jiang-mu-ya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mi Jiang"
+    },
+    {
+      "idx": 95,
+      "slug": "si-guo-tang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 96,
+      "slug": "min-nan-xian-fan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 97,
+      "slug": "changting-hetian-ji",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 98,
+      "slug": "guiyang-si-wa-wa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 99,
+      "slug": "lian-ai-doufu-guo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 100,
+      "slug": "huaxi-niu-rou-fen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Wuhan Niu Rou Fen"
+    },
+    {
+      "idx": 101,
+      "slug": "xingyi-yang-rou-fen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Fen Zheng Yang Rou"
+    },
+    {
+      "idx": 102,
+      "slug": "zhe-er-gen-chao-la-rou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 103,
+      "slug": "dong-zu-suan-yu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 104,
+      "slug": "miao-jia-la-rou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Rou Jia Mo"
+    },
+    {
+      "idx": 105,
+      "slug": "niu-bie-tang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 106,
+      "slug": "dai-zu-bo-luo-fan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 107,
+      "slug": "xiang-mao-cao-kao-yu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 108,
+      "slug": "dai-zu-bao-shao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 109,
+      "slug": "dai-zu-sa-pie",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 110,
+      "slug": "yunnan-wan-dou-liang-fen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 111,
+      "slug": "bai-zu-sha-guo-yu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sha Guo Bai Rou"
+    },
+    {
+      "idx": 112,
+      "slug": "ru-shan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 113,
+      "slug": "lijiang-baba",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 114,
+      "slug": "hani-zhu-tong-fan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 115,
+      "slug": "wa-zu-ji-rou-lan-fan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 116,
+      "slug": "jian-shou-qing-chao-la-rou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 117,
+      "slug": "you-ji-zong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 118,
+      "slug": "niu-gan-jun-huo-guo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 119,
+      "slug": "xuanwei-huo-tui",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 120,
+      "slug": "kai-shui-bai-cai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 121,
+      "slug": "ba-bao-ya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 122,
+      "slug": "xiang-su-ya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 123,
+      "slug": "kao-ru-zhu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 124,
+      "slug": "kong-fu-yi-pin-guo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 125,
+      "slug": "qufu-shen-xian-ya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 126,
+      "slug": "bing-tang-yan-wo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 127,
+      "slug": "hong-shao-bao-yu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Hong Shao Rou"
+    },
+    {
+      "idx": 128,
+      "slug": "huang-men-yu-du",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 129,
+      "slug": "fu-rong-ji-pian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 130,
+      "slug": "nai-you-zha-gao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 131,
+      "slug": "xi-hong-shi-chao-ji-dan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 132,
+      "slug": "pai-huang-gua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 133,
+      "slug": "lao-cu-hua-sheng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 134,
+      "slug": "liang-ban-mu-er",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 135,
+      "slug": "suan-la-tang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Suan Mei Tang"
+    },
+    {
+      "idx": 136,
+      "slug": "tang-cu-li-ji",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tang Cu Li Yu"
+    },
+    {
+      "idx": 137,
+      "slug": "tang-cu-pai-gu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pai Gu Ou Tang"
+    },
+    {
+      "idx": 138,
+      "slug": "hong-shao-pai-gu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 139,
+      "slug": "qing-jiao-rou-si",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Jing Jiang Rou Si"
+    },
+    {
+      "idx": 140,
+      "slug": "zi-ran-yang-rou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Yang Rou Chuan"
+    },
+    {
+      "idx": 141,
+      "slug": "wanzhou-kao-yu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Wenzhou Yu Wan"
+    },
+    {
+      "idx": 142,
+      "slug": "zigong-leng-chi-tu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 143,
+      "slug": "yi-bin-ran-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 144,
+      "slug": "chengdu-fei-chang-fen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 145,
+      "slug": "chuan-bei-liang-fen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 146,
+      "slug": "chengdu-san-da-pao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 147,
+      "slug": "mianyang-mi-fen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 148,
+      "slug": "leshan-qiao-jiao-niu-rou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 149,
+      "slug": "weifang-rou-huo-shao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Lu Rou Huo Shao"
+    },
+    {
+      "idx": 150,
+      "slug": "qingdao-chao-ge-la",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 1,
+      "slug": "zhanjiang-kao-hao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 2,
+      "slug": "daliang-chao-xian-nai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 3,
+      "slug": "zhaoqing-guo-zheng-zong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 4,
+      "slug": "changsha-tang-you-ba-zi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 5,
+      "slug": "yongzhou-xue-ya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "wuwei-xun-ya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 7,
+      "slug": "shao-er-kuai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 8,
+      "slug": "beijing-lao-suan-nai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 9,
+      "slug": "pu-er-cha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 10,
+      "slug": "longjing-cha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cháo Lòng"
+    },
+    {
+      "idx": 11,
+      "slug": "tie-guan-yin-cha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    }
+  ]
+}

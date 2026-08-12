@@ -1,0 +1,1183 @@
+{
+  "tally": {
+    "shaped": 234,
+    "inserted": 0,
+    "skipped": 234,
+    "rejected": 0
+  },
+  "rejected": [],
+  "warnings": [],
+  "skipped": [
+    {
+      "slug": "ayam-pop",
+      "name": "Ayam Pop",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "dendeng-balado",
+      "name": "Dendeng Balado",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "dendeng-lambok",
+      "name": "Dendeng Lambok",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "perkedel-kentang",
+      "name": "Perkedel Kentang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sambal-ijo-padang",
+      "name": "Sambal Ijo Padang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "telur-dadar-padang",
+      "name": "Telur Dadar Padang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "gulai-cubadak",
+      "name": "Gulai Cubadak",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "gulai-kepala-ikan-kakap",
+      "name": "Gulai Kepala Ikan Kakap",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ayam-bakar-padang",
+      "name": "Ayam Bakar Padang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ayam-gulai-padang",
+      "name": "Ayam Gulai Padang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "paru-goreng-balado",
+      "name": "Paru Goreng Balado",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "rendang-telur",
+      "name": "Rendang Telur",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sate-padang",
+      "name": "Sate Padang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "asam-padeh-ikan-tongkol",
+      "name": "Asam Padeh Ikan Tongkol",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "itiak-lado-mudo",
+      "name": "Itiak Lado Mudo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ayam-balado",
+      "name": "Ayam Balado",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "udang-balado",
+      "name": "Udang Balado",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "teh-talua",
+      "name": "Teh Talua",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "rawon",
+      "name": "Rawon",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "garang-asem-ayam",
+      "name": "Garang Asem Ayam",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "tahu-gimbal",
+      "name": "Tahu Gimbal",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "nasi-gandul",
+      "name": "Nasi Gandul",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "brongkos",
+      "name": "Brongkos",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mangut-lele",
+      "name": "Mangut Lele",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "botok-tempe",
+      "name": "Botok Tempe",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "urap-sayur",
+      "name": "Urap Sayur",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "gudangan",
+      "name": "Gudangan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sambal-goreng-krecek",
+      "name": "Sambal Goreng Krecek",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "tempe-mendoan",
+      "name": "Tempe Mendoan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "tahu-petis",
+      "name": "Tahu Petis",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sego-megono",
+      "name": "Sego Megono",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "nasi-bogana",
+      "name": "Nasi Bogana",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "soto-betawi",
+      "name": "Soto Betawi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "soto-sokaraja",
+      "name": "Soto Sokaraja",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sate-ayam-madura",
+      "name": "Sate Ayam Madura",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "lontong-opor",
+      "name": "Lontong Opor",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sego-tumpang",
+      "name": "Sego Tumpang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "nasi-ayam-semarang",
+      "name": "Nasi Ayam Semarang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "tahu-tek",
+      "name": "Tahu Tek",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "tahu-telor-surabaya",
+      "name": "Tahu Telor Surabaya",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "lontong-kupang",
+      "name": "Lontong Kupang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "nasi-krawu",
+      "name": "Nasi Krawu",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "nasi-boran-lamongan",
+      "name": "Nasi Boran Lamongan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "semanggi-suroboyo",
+      "name": "Semanggi Suroboyo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ayam-lodho",
+      "name": "Ayam Lodho",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "timlo-solo",
+      "name": "Timlo Solo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "selat-solo",
+      "name": "Selat Solo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "tengkleng-solo",
+      "name": "Tengkleng Solo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sate-kere",
+      "name": "Sate Kere",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bakmi-jawa-godhog",
+      "name": "Bakmi Jawa Godhog",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "nasi-goreng-magelangan",
+      "name": "Nasi Goreng Magelangan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sosis-solo",
+      "name": "Sosis Solo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "lumpia-semarang",
+      "name": "Lumpia Semarang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "nasi-tiwul",
+      "name": "Nasi Tiwul",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "pindang-serani",
+      "name": "Pindang Serani",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "karedok",
+      "name": "Karedok",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "nasi-tutug-oncom",
+      "name": "Nasi Tutug Oncom",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ayam-bakakak",
+      "name": "Ayam Bakakak",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "gepuk-sunda",
+      "name": "Gepuk Sunda",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "pepes-ikan-mas",
+      "name": "Pepes Ikan Mas",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "colenak",
+      "name": "Colenak",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "surabi-bandung-oncom",
+      "name": "Surabi Bandung Oncom",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "es-goyobod",
+      "name": "Es Goyobod",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "misro",
+      "name": "Misro",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "cuanki",
+      "name": "Cuanki",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "cimol",
+      "name": "Cimol",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "soto-bandung",
+      "name": "Soto Bandung",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "doclang",
+      "name": "Doclang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "laksa-bogor",
+      "name": "Laksa Bogor",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "toge-goreng-bogor",
+      "name": "Toge Goreng Bogor",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "asinan-bogor",
+      "name": "Asinan Bogor",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ayam-goreng-lengkuas",
+      "name": "Ayam Goreng Lengkuas",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sambal-terasi",
+      "name": "Sambal Terasi",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "lalapan-sunda",
+      "name": "Lalapan Sunda",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "peuyeum-bandung",
+      "name": "Peuyeum Bandung",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kerak-telor",
+      "name": "Kerak Telor",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "soto-tangkar",
+      "name": "Soto Tangkar",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "gabus-pucung",
+      "name": "Gabus Pucung",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "nasi-ulam-betawi",
+      "name": "Nasi Ulam Betawi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "laksa-betawi",
+      "name": "Laksa Betawi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ketupat-sayur-betawi",
+      "name": "Ketupat Sayur Betawi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bir-pletok",
+      "name": "Bir Pletok",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kue-rangi",
+      "name": "Kue Rangi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "es-selendang-mayang",
+      "name": "Es Selendang Mayang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "nasi-jinggo",
+      "name": "Nasi Jinggo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "tipat-cantok",
+      "name": "Tipat Cantok",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "serombotan",
+      "name": "Serombotan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sambal-matah",
+      "name": "Sambal Matah",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ayam-sisit",
+      "name": "Ayam Sisit",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ikan-mesambel-matah",
+      "name": "Ikan Mesambel Matah",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sate-kakul",
+      "name": "Sate Kakul",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "rujak-kuah-pindang",
+      "name": "Rujak Kuah Pindang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bubur-mengguh",
+      "name": "Bubur Mengguh",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "laklak-bali",
+      "name": "Laklak Bali",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "nasi-tepeng",
+      "name": "Nasi Tepeng",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "babi-kecap-bali",
+      "name": "Babi Kecap Bali",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "klappertaart",
+      "name": "Klappertaart",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "panada",
+      "name": "Panada",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "nasi-kuning-manado",
+      "name": "Nasi Kuning Manado",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ayam-woku",
+      "name": "Ayam Woku",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mie-cakalang",
+      "name": "Mie Cakalang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sambal-roa",
+      "name": "Sambal Roa",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "perkedel-nike",
+      "name": "Perkedel Nike",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "tinorangsak",
+      "name": "Tinorangsak",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sop-saudara",
+      "name": "Sop Saudara",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "es-pisang-ijo",
+      "name": "Es Pisang Ijo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "barongko",
+      "name": "Barongko",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "jalangkote",
+      "name": "Jalangkote",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "pisang-epe",
+      "name": "Pisang Epe",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mie-titi",
+      "name": "Mie Titi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kapurung",
+      "name": "Kapurung",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sop-ubi",
+      "name": "Sop Ubi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "songkolo-bagadang",
+      "name": "Songkolo Bagadang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ayam-palekko",
+      "name": "Ayam Palekko",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "burasa",
+      "name": "Burasa",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "es-palu-butung",
+      "name": "Es Palu Butung",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kue-putu-cangkir",
+      "name": "Kue Putu Cangkir",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bihun-bebek-medan",
+      "name": "Bihun Bebek Medan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "saksang",
+      "name": "Saksang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "arsik-ikan-mas",
+      "name": "Arsik Ikan Mas",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mie-gomak",
+      "name": "Mie Gomak",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "soto-medan",
+      "name": "Soto Medan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "lontong-medan",
+      "name": "Lontong Medan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mie-balap-medan",
+      "name": "Mie Balap Medan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "naniura",
+      "name": "Naniura",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "manuk-napinadar",
+      "name": "Manuk Napinadar",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "dali-ni-horbo",
+      "name": "Dali ni Horbo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sop-sumsum-sapi",
+      "name": "Sop Sumsum Sapi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bolu-meranti",
+      "name": "Bolu Meranti",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "pancake-durian-medan",
+      "name": "Pancake Durian Medan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sate-kerang-medan",
+      "name": "Sate Kerang Medan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kuah-beulangong",
+      "name": "Kuah Beulangong",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ayam-tangkap",
+      "name": "Ayam Tangkap",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sie-reuboh",
+      "name": "Sie Reuboh",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kuah-pliek-u",
+      "name": "Kuah Pliek U",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "timphan",
+      "name": "Timphan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kopi-sanger",
+      "name": "Kopi Sanger",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mie-kepiting-aceh",
+      "name": "Mie Kepiting Aceh",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "laksan-palembang",
+      "name": "Laksan Palembang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "celimpungan",
+      "name": "Celimpungan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "burgo",
+      "name": "Burgo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "pempek-kulit",
+      "name": "Pempek Kulit",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "pempek-tahu",
+      "name": "Pempek Tahu",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "pempek-keriting",
+      "name": "Pempek Keriting",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "pempek-pistel",
+      "name": "Pempek Pistel",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "martabak-har",
+      "name": "Martabak HAR",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ragit-palembang",
+      "name": "Ragit Palembang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kemplang-palembang",
+      "name": "Kemplang Palembang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "es-kacang-merah",
+      "name": "Es Kacang Merah",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "seruit-lampung",
+      "name": "Seruit Lampung",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "tempoyak-ikan-patin",
+      "name": "Tempoyak Ikan Patin",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "pendap-bengkulu",
+      "name": "Pendap Bengkulu",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mie-lendir-batam",
+      "name": "Mie Lendir Batam",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "gulai-belacan-riau",
+      "name": "Gulai Belacan Riau",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bolu-kemojo",
+      "name": "Bolu Kemojo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ketupat-kandangan",
+      "name": "Ketupat Kandangan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ayam-cincane",
+      "name": "Ayam Cincane",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "jagung-bose",
+      "name": "Jagung Bose",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "rumpu-rampe",
+      "name": "Rumpu Rampe",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ikan-bakar-manokwari",
+      "name": "Ikan Bakar Manokwari",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sagu-lempeng",
+      "name": "Sagu Lempeng",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kohu-kohu",
+      "name": "Kohu-Kohu",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "tempe-goreng-tepung",
+      "name": "Tempe Goreng Tepung",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "singkong-goreng",
+      "name": "Singkong Goreng",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "molen-pisang",
+      "name": "Molen Pisang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "tahu-bulat",
+      "name": "Tahu Bulat",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "cilor",
+      "name": "Cilor",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "odading",
+      "name": "Odading",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "cakwe",
+      "name": "Cakwe",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "martabak-manis",
+      "name": "Martabak Manis",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kue-putu-bambu",
+      "name": "Kue Putu Bambu",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kue-cucur",
+      "name": "Kue Cucur",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kue-bugis",
+      "name": "Kue Bugis",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "lupis-ketan",
+      "name": "Lupis Ketan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "wajik-ketan",
+      "name": "Wajik Ketan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "apem",
+      "name": "Apem",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kue-mangkok",
+      "name": "Kue Mangkok",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kue-talam-ubi",
+      "name": "Kue Talam Ubi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "nastar",
+      "name": "Nastar",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kastengel",
+      "name": "Kastengel",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "rengginang",
+      "name": "Rengginang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "es-cincau-hijau",
+      "name": "Es Cincau Hijau",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "es-kelapa-muda",
+      "name": "Es Kelapa Muda",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "es-dawet-ayu-banjarnegara",
+      "name": "Es Dawet Ayu Banjarnegara",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sekoteng",
+      "name": "Sekoteng",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "wedang-uwuh",
+      "name": "Wedang Uwuh",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "stmj",
+      "name": "STMJ",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sarabba",
+      "name": "Sarabba",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "jamu-temulawak",
+      "name": "Jamu Temulawak",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "es-oyen",
+      "name": "Es Oyen",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "es-tebu",
+      "name": "Es Tebu",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "teh-poci-gula-batu",
+      "name": "Teh Poci Gula Batu",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sambal-bawang",
+      "name": "Sambal Bawang",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "sambal-kecap",
+      "name": "Sambal Kecap",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sambal-pecel",
+      "name": "Sambal Pecel",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "serundeng-kelapa",
+      "name": "Serundeng Kelapa",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "abon-sapi",
+      "name": "Abon Sapi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kering-tempe",
+      "name": "Kering Tempe",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sambal-goreng-ati-kentang",
+      "name": "Sambal Goreng Ati Kentang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bawang-goreng",
+      "name": "Bawang Goreng",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "hokben-chicken-teriyaki",
+      "name": "HokBen Chicken Teriyaki",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "hokben-shrimp-roll",
+      "name": "HokBen Shrimp Roll",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "hokben-tori-ball",
+      "name": "HokBen Tori Ball",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "hokben-chicken-karaage",
+      "name": "HokBen Chicken Karaage",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "hokben-egg-chicken-roll",
+      "name": "HokBen Egg Chicken Roll",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kfc-indonesia-nasi",
+      "name": "KFC Indonesia Nasi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kfc-indonesia-perkedel",
+      "name": "KFC Indonesia Perkedel",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kfc-indonesia-original-recipe-chicken",
+      "name": "KFC Indonesia Original Recipe Chicken",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kfc-indonesia-bubur-ayam",
+      "name": "KFC Indonesia Bubur Ayam",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mcdonald-s-bubur-ayam",
+      "name": "McDonald's Bubur Ayam",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mcdonald-s-nasi-uduk",
+      "name": "McDonald's Nasi Uduk",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mcdonald-s-panas-special",
+      "name": "McDonald's PaNas Special",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "richeese-factory-fire-chicken",
+      "name": "Richeese Factory Fire Chicken",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "richeese-factory-fire-wings",
+      "name": "Richeese Factory Fire Wings",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "es-teler-77-mie-ayam",
+      "name": "Es Teler 77 Mie Ayam",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "es-teler-77-siomay",
+      "name": "Es Teler 77 Siomay",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bakmi-gm-nasi-goreng",
+      "name": "Bakmi GM Nasi Goreng",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "solaria-chicken-cordon-bleu",
+      "name": "Solaria Chicken Cordon Bleu",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "chatime-brown-sugar-pearl-milk-tea",
+      "name": "Chatime Brown Sugar Pearl Milk Tea",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mixue-boba-milk-tea",
+      "name": "Mixue Boba Milk Tea",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "kfc-indonesia-colonel-burger",
+      "name": "KFC Indonesia Colonel Burger",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kfc-indonesia-twisty",
+      "name": "KFC Indonesia Twisty",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kfc-indonesia-soup-sayur",
+      "name": "KFC Indonesia Soup Sayur",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mcdonald-s-panas-1",
+      "name": "McDonald's PaNas 1",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mcdonald-s-ayam-krispy-mcd",
+      "name": "McDonald's Ayam Krispy McD",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mcdonald-s-taro-coconut-pie",
+      "name": "McDonald's Taro Coconut Pie",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bakmi-gm-bakmi-ayam-cah-jamur",
+      "name": "Bakmi GM Bakmi Ayam Cah Jamur",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bakmi-gm-nasi-ayam-cah-jamur",
+      "name": "Bakmi GM Nasi Ayam Cah Jamur",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bakmi-gm-pangsit-kuah",
+      "name": "Bakmi GM Pangsit Kuah",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "hokben-kani-roll",
+      "name": "HokBen Kani Roll",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "hokben-nasi",
+      "name": "HokBen Nasi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "richeese-factory-saus-keju",
+      "name": "Richeese Factory Saus Keju",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "solaria-fu-yung-hai",
+      "name": "Solaria Fu Yung Hai",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "a-w-curly-fries",
+      "name": "A&W Curly Fries",
+      "why": "a row with this name is already in the catalogue"
+    }
+  ],
+  "inserted": []
+}

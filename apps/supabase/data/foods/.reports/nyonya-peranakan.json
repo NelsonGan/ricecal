@@ -1,0 +1,792 @@
+{
+  "tally": {
+    "inserted": 112
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "babi-pongteh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 2,
+      "slug": "ayam-buah-keluak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ayam Buah Keluak Rice Set"
+    },
+    {
+      "idx": 3,
+      "slug": "babi-buah-keluak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ayam Buah Keluak"
+    },
+    {
+      "idx": 4,
+      "slug": "itik-tim",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 5,
+      "slug": "kari-kapitan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "ayam-sioh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 7,
+      "slug": "babi-sioh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 8,
+      "slug": "itik-sioh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 9,
+      "slug": "hati-babi-bungkus",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 10,
+      "slug": "jiu-hu-char",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Jiu Hu Eng Chai"
+    },
+    {
+      "idx": 11,
+      "slug": "kerabu-bok-nee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 12,
+      "slug": "sambal-belimbing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "chap-chye",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "chap-chye-masak-titek",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 15,
+      "slug": "ikan-cili-garam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 16,
+      "slug": "udang-masak-nanas",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sotong Masak Nanas"
+    },
+    {
+      "idx": 17,
+      "slug": "sambal-petai-udang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sambal Udang Petai"
+    },
+    {
+      "idx": 18,
+      "slug": "otak-otak-melaka",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 19,
+      "slug": "otak-otak-muar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Otak Otak"
+    },
+    {
+      "idx": 20,
+      "slug": "otak-otak-penang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 21,
+      "slug": "nyonya-laksa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 22,
+      "slug": "asam-laksa-penang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Asam Laksa"
+    },
+    {
+      "idx": 23,
+      "slug": "katong-laksa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 24,
+      "slug": "mee-siam-nyonya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mee Siam"
+    },
+    {
+      "idx": 25,
+      "slug": "popiah-nyonya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Popiah Goreng Nyonya"
+    },
+    {
+      "idx": 26,
+      "slug": "roti-babi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 27,
+      "slug": "acar-awak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 28,
+      "slug": "telur-cincalok",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 29,
+      "slug": "sambal-timun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 30,
+      "slug": "bakwan-kepiting",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 31,
+      "slug": "perut-ikan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Percik"
+    },
+    {
+      "idx": 32,
+      "slug": "gulai-tumis-nyonya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 33,
+      "slug": "enche-kabin",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 34,
+      "slug": "hong-bak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 35,
+      "slug": "babi-assam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 36,
+      "slug": "babi-chin",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 37,
+      "slug": "ayam-kleo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 38,
+      "slug": "kuah-lada",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 39,
+      "slug": "jiu-hu-eng-chai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Jiu Hu Char"
+    },
+    {
+      "idx": 40,
+      "slug": "acar-ikan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 41,
+      "slug": "sambal-nanas-nyonya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sambal Goreng Nyonya"
+    },
+    {
+      "idx": 42,
+      "slug": "sambal-goreng-nyonya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sambal Nanas Nyonya"
+    },
+    {
+      "idx": 43,
+      "slug": "udang-goreng-assam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mee Goreng Udang"
+    },
+    {
+      "idx": 44,
+      "slug": "nasi-ulam-nyonya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Ulam"
+    },
+    {
+      "idx": 45,
+      "slug": "nyonya-chang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 46,
+      "slug": "popiah-goreng-nyonya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Popiah Nyonya"
+    },
+    {
+      "idx": 47,
+      "slug": "sotong-masak-nanas",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Udang Masak Nanas"
+    },
+    {
+      "idx": 48,
+      "slug": "terung-masak-lemak-nyonya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 49,
+      "slug": "ikan-chuan-chuan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 50,
+      "slug": "nasi-peranakan-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 51,
+      "slug": "curry-debal",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 52,
+      "slug": "curry-feng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 53,
+      "slug": "semur",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 54,
+      "slug": "sugee-cake",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 55,
+      "slug": "pang-susi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 56,
+      "slug": "cincalok-sambal-kristang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 57,
+      "slug": "seybak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 58,
+      "slug": "prawn-bostador",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 59,
+      "slug": "vinho-d-alhos",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 60,
+      "slug": "ikan-bakar-portugis",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Udang Bakar Portugis"
+    },
+    {
+      "idx": 61,
+      "slug": "ikan-panggang-portugis",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Bakar Portugis"
+    },
+    {
+      "idx": 62,
+      "slug": "kari-kambing-kristang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kari Kambing"
+    },
+    {
+      "idx": 63,
+      "slug": "kari-ikan-kristang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kari Kambing Kristang"
+    },
+    {
+      "idx": 64,
+      "slug": "sambal-sotong-portugis",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sambal Sotong"
+    },
+    {
+      "idx": 65,
+      "slug": "ketam-masak-sambal-portugis",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 66,
+      "slug": "udang-bakar-portugis",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Bakar Portugis"
+    },
+    {
+      "idx": 67,
+      "slug": "bebinca-eurasia",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 68,
+      "slug": "sugee-cookies",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 69,
+      "slug": "rojak-penang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 70,
+      "slug": "apom-manis",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 71,
+      "slug": "apom-berkuah",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 72,
+      "slug": "ban-chang-kuih",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "(Kuih Bawang)"
+    },
+    {
+      "idx": 73,
+      "slug": "heong-peah",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 74,
+      "slug": "ais-tingkap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 75,
+      "slug": "penang-cendol",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cendol Durian Penang"
+    },
+    {
+      "idx": 76,
+      "slug": "cendol-durian-penang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cendol Durian"
+    },
+    {
+      "idx": 77,
+      "slug": "penang-koay-teow-th-ng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 78,
+      "slug": "penang-lam-mee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Loh Mee Penang"
+    },
+    {
+      "idx": 79,
+      "slug": "penang-popiah",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Popiah"
+    },
+    {
+      "idx": 80,
+      "slug": "popiah-melaka",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Popiah"
+    },
+    {
+      "idx": 81,
+      "slug": "cendol-melaka",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cendol"
+    },
+    {
+      "idx": 82,
+      "slug": "durian-puff",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pulut Durian"
+    },
+    {
+      "idx": 83,
+      "slug": "puding-gula-melaka",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sago Gula Melaka"
+    },
+    {
+      "idx": 84,
+      "slug": "coconut-shake-melaka",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Coconut Shake"
+    },
+    {
+      "idx": 85,
+      "slug": "kuih-tapak-kuda",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 86,
+      "slug": "kuih-kosui",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "(Kuih Kasui)"
+    },
+    {
+      "idx": 87,
+      "slug": "kuih-bakar-pandan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kuih Bakar"
+    },
+    {
+      "idx": 88,
+      "slug": "kuih-ee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 89,
+      "slug": "kuih-talam-gula-melaka",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kuih Keria Gula Melaka"
+    },
+    {
+      "idx": 90,
+      "slug": "kuih-kapit-nyonya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "(Kuih Kapit)"
+    },
+    {
+      "idx": 91,
+      "slug": "kuih-bangkit-nyonya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "(Kuih Bangkit)"
+    },
+    {
+      "idx": 92,
+      "slug": "tart-nenas-nyonya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 93,
+      "slug": "nyonya-kuih-platter",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 94,
+      "slug": "lauk-pindang-chetti",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 95,
+      "slug": "ikan-masak-nanas-chetti",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 96,
+      "slug": "kari-ikan-parang-chetti",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 97,
+      "slug": "nasi-kembuli",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Kebuli"
+    },
+    {
+      "idx": 98,
+      "slug": "puttu-chetti",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 99,
+      "slug": "kuih-kanda-kasturi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "(Kuih Kasturi)"
+    },
+    {
+      "idx": 100,
+      "slug": "kuih-cara-berlauk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cara Berlauk"
+    },
+    {
+      "idx": 101,
+      "slug": "kuih-cara-manis",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cara Manis"
+    },
+    {
+      "idx": 102,
+      "slug": "kerabu-timun-nanas",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kerabu Timun"
+    },
+    {
+      "idx": 103,
+      "slug": "ayam-buah-keluak-rice-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ayam Buah Keluak"
+    },
+    {
+      "idx": 104,
+      "slug": "nyonya-chicken-curry",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chicken curry"
+    },
+    {
+      "idx": 105,
+      "slug": "sayur-lodeh-nyonya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sayur Lodeh"
+    },
+    {
+      "idx": 106,
+      "slug": "nyonya-steamed-fish",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Fish, cod, steamed"
+    },
+    {
+      "idx": 107,
+      "slug": "nyonya-fried-bee-hoon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 108,
+      "slug": "satay-celup-sauce",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Satay Celup"
+    },
+    {
+      "idx": 109,
+      "slug": "asam-pedas-nyonya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Asam Pedas Ayam"
+    },
+    {
+      "idx": 110,
+      "slug": "ikan-goreng-cili-nyonya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Goreng"
+    },
+    {
+      "idx": 111,
+      "slug": "nyonya-pork-satay",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 112,
+      "slug": "kuih-sarang-semut-nyonya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    }
+  ]
+}

@@ -1,0 +1,281 @@
+{
+  "tally": {
+    "inserted": 39
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "kenny-rogers-roasters-krr-whole-roasted-chicken",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Roasted Chicken Salad"
+    },
+    {
+      "idx": 2,
+      "slug": "kenny-rogers-roasters-krr-whole-chicken-black-pepper",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Quarter Chicken Black Pepper Wing"
+    },
+    {
+      "idx": 3,
+      "slug": "kenny-rogers-roasters-krr-quarter-chicken-black-pepper-drumstick",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Quarter Chicken Black Pepper Wing"
+    },
+    {
+      "idx": 4,
+      "slug": "kenny-rogers-roasters-krr-quarter-chicken-black-pepper-wing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Quarter Chicken Black Pepper Drumstick"
+    },
+    {
+      "idx": 5,
+      "slug": "kenny-rogers-roasters-krr-quarter-chicken-original-drumstick",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Quarter Chicken Original Wing"
+    },
+    {
+      "idx": 6,
+      "slug": "kenny-rogers-roasters-krr-quarter-chicken-original-wing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Quarter Chicken Original Drumstick"
+    },
+    {
+      "idx": 7,
+      "slug": "kenny-rogers-roasters-krr-half-chicken-original",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kenny Rogers Half Chicken"
+    },
+    {
+      "idx": 8,
+      "slug": "kenny-rogers-roasters-krr-coleslaw",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Whole Roasted Chicken"
+    },
+    {
+      "idx": 9,
+      "slug": "kenny-rogers-roasters-krr-macaroni-and-cheese",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Chicken Macaroni Cheese"
+    },
+    {
+      "idx": 10,
+      "slug": "kenny-rogers-roasters-krr-mashed-potato-and-gravy",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Potato Salad"
+    },
+    {
+      "idx": 11,
+      "slug": "kenny-rogers-roasters-krr-garlic-parsley-potato",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Potato Salad"
+    },
+    {
+      "idx": 12,
+      "slug": "kenny-rogers-roasters-krr-aromatic-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "kenny-rogers-roasters-krr-golden-corn-and-carrot",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "kenny-rogers-roasters-krr-bbq-baked-beans",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 15,
+      "slug": "kenny-rogers-roasters-krr-potato-salad",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Roasted Chicken Salad"
+    },
+    {
+      "idx": 16,
+      "slug": "kenny-rogers-roasters-krr-crisp-garden-salad",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Roasted Chicken Salad"
+    },
+    {
+      "idx": 17,
+      "slug": "kenny-rogers-roasters-krr-texas-tortilla-wrap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Island Tortilla Wrap"
+    },
+    {
+      "idx": 18,
+      "slug": "kenny-rogers-roasters-krr-island-tortilla-wrap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Texas Tortilla Wrap"
+    },
+    {
+      "idx": 19,
+      "slug": "kenny-rogers-roasters-krr-roasted-chicken-salad",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Whole Roasted Chicken"
+    },
+    {
+      "idx": 20,
+      "slug": "kenny-rogers-roasters-krr-beef-bolognaise",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 21,
+      "slug": "kenny-rogers-roasters-krr-chicken-macaroni-cheese",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Macaroni and Cheese"
+    },
+    {
+      "idx": 22,
+      "slug": "kenny-rogers-roasters-krr-chicken-meatballs",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Quarter Chicken Meal"
+    },
+    {
+      "idx": 23,
+      "slug": "kenny-rogers-roasters-krr-garlic-toasties",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KRR Garlic Parsley Potato"
+    },
+    {
+      "idx": 24,
+      "slug": "kenny-rogers-roasters-krr-quarter-chicken-meal",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kenny Rogers Quarter Chicken"
+    },
+    {
+      "idx": 25,
+      "slug": "the-chicken-rice-shop-tcrs-pro-tein-power-pack",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "TCRS ABS-olutely Fuel Pack"
+    },
+    {
+      "idx": 26,
+      "slug": "the-chicken-rice-shop-tcrs-abs-olutely-fuel-pack",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "TCRS PRO-tein Power Pack"
+    },
+    {
+      "idx": 27,
+      "slug": "ipoh-steamed-chicken-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chicken Rice Shop Steamed Chicken Rice"
+    },
+    {
+      "idx": 28,
+      "slug": "kampung-fried-chicken",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Korean Fried Chicken"
+    },
+    {
+      "idx": 29,
+      "slug": "taugeh-oyster-sauce",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Oyster sauce"
+    },
+    {
+      "idx": 30,
+      "slug": "chicken-rice-herbal-soup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chicken Rice Soup"
+    },
+    {
+      "idx": 31,
+      "slug": "secret-recipe-chicken-cordon-bleu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Secret Recipe Chicken Chop"
+    },
+    {
+      "idx": 32,
+      "slug": "secret-recipe-fish-and-chips",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 33,
+      "slug": "secret-recipe-beef-lasagna",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Secret Recipe Chicken Lasagna"
+    },
+    {
+      "idx": 34,
+      "slug": "secret-recipe-chicken-lasagna",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Secret Recipe Chicken Chop"
+    },
+    {
+      "idx": 35,
+      "slug": "secret-recipe-marble-cheesecake",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Secret Recipe Cheesecake"
+    },
+    {
+      "idx": 36,
+      "slug": "secret-recipe-vanilla-cheese-cake",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Secret Recipe Cheesecake"
+    },
+    {
+      "idx": 37,
+      "slug": "secret-recipe-black-forest",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 38,
+      "slug": "secret-recipe-durian-cake",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Secret Recipe Cheesecake"
+    },
+    {
+      "idx": 39,
+      "slug": "secret-recipe-mango-delight",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    }
+  ]
+}

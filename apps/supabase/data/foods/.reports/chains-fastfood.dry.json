@@ -1,0 +1,527 @@
+{
+  "tally": {
+    "inserted": 63,
+    "skipped_slug": 11
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "kfc-zinger-stacker",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 2,
+      "slug": "kfc-zinger-cheezy",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Zinger Cheezilla"
+    },
+    {
+      "idx": 3,
+      "slug": "kfc-zinger-cheezilla",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Zinger Cheezy"
+    },
+    {
+      "idx": 4,
+      "slug": "kfc-zinger-double-down",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 5,
+      "slug": "kfc-colonel-stacker",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KFC Colonel Burger"
+    },
+    {
+      "idx": 6,
+      "slug": "kfc-cheezy-o-r-deluxe",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 7,
+      "slug": "kfc-cheezy-twister",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cheezy Egg Twister"
+    },
+    {
+      "idx": 8,
+      "slug": "kfc-crispy-fillet-burger",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 9,
+      "slug": "kfc-k-seaweed-rice-twister",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 10,
+      "slug": "kfc-nuggets-9-pieces",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KFC Nuggets"
+    },
+    {
+      "idx": 11,
+      "slug": "kfc-cereal-cheezy-fries",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 12,
+      "slug": "kfc-cheezy-popcorn-bowl",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "kfc-loaded-potato-bowl",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "kfc-nasi-lemak-rice-portion",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 15,
+      "slug": "kfc-colonel-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KFC Colonel Burger"
+    },
+    {
+      "idx": 16,
+      "slug": "kfc-cheezy-wedges",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 17,
+      "slug": "kfc-zinger-riser",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KFC Zinger Burger"
+    },
+    {
+      "idx": 18,
+      "slug": "kfc-zinger-porridge",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 19,
+      "slug": "kfc-cheezy-egg-twister",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cheezy Twister"
+    },
+    {
+      "idx": 20,
+      "slug": "kfc-hashbrown",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 21,
+      "slug": "kfc-nasi-kari-padu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 22,
+      "slug": "kfc-original-recipe-chicken-breast",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KFC Original Recipe Chicken"
+    },
+    {
+      "idx": 23,
+      "slug": "kfc-original-recipe-chicken-thigh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KFC Original Recipe Chicken"
+    },
+    {
+      "idx": 24,
+      "slug": "kfc-original-recipe-chicken-drumstick",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KFC Original Recipe Chicken"
+    },
+    {
+      "idx": 25,
+      "slug": "kfc-original-recipe-chicken-wing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KFC Original Recipe Chicken"
+    },
+    {
+      "idx": 26,
+      "slug": "texas-chicken-classic-burger",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Texas Fish Burger"
+    },
+    {
+      "idx": 27,
+      "slug": "texas-chicken-mexicana-burger",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mexicana Wrap"
+    },
+    {
+      "idx": 28,
+      "slug": "texas-chicken-spicy-tex-supreme",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 29,
+      "slug": "texas-chicken-zesty-crunch-burger",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Texas Fish Burger"
+    },
+    {
+      "idx": 30,
+      "slug": "texas-chicken-texas-fish-burger",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Classic Burger"
+    },
+    {
+      "idx": 31,
+      "slug": "texas-chicken-mexicana-wrap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mexicana Burger"
+    },
+    {
+      "idx": 32,
+      "slug": "texas-chicken-tender-wrap-original",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Texas Chicken Tenders"
+    },
+    {
+      "idx": 33,
+      "slug": "texas-chicken-texas-coleslaw",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Texas Chicken Fried Chicken"
+    },
+    {
+      "idx": 34,
+      "slug": "texas-chicken-texas-fries-regular",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Texas Fries Large"
+    },
+    {
+      "idx": 35,
+      "slug": "texas-chicken-texas-fries-large",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Texas Chicken Fried Chicken"
+    },
+    {
+      "idx": 36,
+      "slug": "texas-chicken-jalapeno-bombers",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 37,
+      "slug": "texas-chicken-texas-nuggets-8-pieces",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 38,
+      "slug": "texas-chicken-buttermilk-rice-bowl",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 39,
+      "slug": "texas-chicken-chicken-bizzkitt",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 40,
+      "slug": "mcdonald-s-mcspicy",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Double McSpicy"
+    },
+    {
+      "idx": 41,
+      "slug": "mcdonald-s-mcspicy-with-cheese",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "McSpicy"
+    },
+    {
+      "idx": 42,
+      "slug": "mcdonald-s-double-mcspicy",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "McSpicy"
+    },
+    {
+      "idx": 43,
+      "slug": "mcdonald-s-mccrispy",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 44,
+      "slug": "mcdonald-s-chicken-mcnuggets-9-pieces",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chicken McNuggets 20 Pieces"
+    },
+    {
+      "idx": 45,
+      "slug": "mcdonald-s-chicken-mcnuggets-20-pieces",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chicken McNuggets 9 Pieces"
+    },
+    {
+      "idx": 46,
+      "slug": "mcdonald-s-fries-large",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "McDonald's Fries"
+    },
+    {
+      "idx": 47,
+      "slug": "mcdonald-s-hot-milo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "McDonald's Iced MILO"
+    },
+    {
+      "idx": 48,
+      "slug": "mcdonald-s-iced-milo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "McDonald's Hot MILO"
+    },
+    {
+      "idx": 49,
+      "slug": "mcdonald-s-strawberry-sundae",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 50,
+      "slug": "mcdonald-s-hot-fudge-sundae",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 51,
+      "slug": "mcdonald-s-big-breakfast",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 52,
+      "slug": "mcdonald-s-sausage-mcmuffin",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 53,
+      "slug": "mcdonald-s-mcwings-4-pieces",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 54,
+      "slug": "mcdonald-s-double-quarter-pounder-with-cheese",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 55,
+      "slug": "mcdonald-s-spicy-chicken-mcwrap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "McDonald's Spicy Chicken McDeluxe"
+    },
+    {
+      "idx": 56,
+      "slug": "mcdonald-s-strawberry-oreo-mcflurry",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "McDonald's McFlurry Oreo"
+    },
+    {
+      "idx": 57,
+      "slug": "mcdonald-s-triple-cheeseburger",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "McDonald's Cheeseburger"
+    },
+    {
+      "idx": 58,
+      "slug": "mcdonald-s-double-filet-o-fish",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "McDONALD'S, FILET-O-FISH"
+    },
+    {
+      "idx": 59,
+      "slug": "mcdonald-s-hamburger",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 60,
+      "slug": "burger-king-whopper-jr",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Whopper Jr (Burger King)"
+    },
+    {
+      "idx": 61,
+      "slug": "burger-king-cheeseburger",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 62,
+      "slug": "burger-king-double-cheeseburger",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 63,
+      "slug": "burger-king-bbq-rodeo-burger",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 64,
+      "slug": "burger-king-bk-chicken-burger",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Burger King Chicken Royale"
+    },
+    {
+      "idx": 65,
+      "slug": "burger-king-nuggets-10-pieces",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 66,
+      "slug": "burger-king-chicken-fries-9-pieces",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "BK Chicken Burger"
+    },
+    {
+      "idx": 67,
+      "slug": "burger-king-bacon-king",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "BURGER KING, Hamburger"
+    },
+    {
+      "idx": 68,
+      "slug": "a-w-coney-dog",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 69,
+      "slug": "a-w-chicken-sandwich",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "CHICK-FIL-A, chicken sandwich"
+    },
+    {
+      "idx": 70,
+      "slug": "a-w-cheese-burger",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cheese Burger (Burger Keju)"
+    },
+    {
+      "idx": 71,
+      "slug": "a-w-papa-burger",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 72,
+      "slug": "a-w-root-beer",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 73,
+      "slug": "a-w-rb-float",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "A&W Root Beer Float"
+    },
+    {
+      "idx": 74,
+      "slug": "a-w-vanilla-soft-serve-cone",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ice cream cone, soft serve, vanilla"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "lavash-bread": ["armenian lavash", "լավաշ", "lavash armenian", "lavaş"],
+  "lahmacun": ["lahmajoun", "լահմաջո", "armenian lahmajoun", "lahmajo", "lahmejun"],
+  "laban-arab": ["ayran", "airan", "tan", "թան", "azerbaijani ayran", "armenian tan"],
+  "yaprak-sarma": [
+    "yarpaq dolmasi",
+    "yarpaq dolması",
+    "azerbaijani grape leaf dolma",
+    "tolma",
+    "տոլմա",
+    "armenian tolma"
+  ],
+  "warak-enab": ["dolma yarpaq", "caucasian grape leaf dolma"],
+  "baklava-walnut": ["armenian pakhlava", "պախլավա", "pakhlava armenian"],
+  "su-boregi": ["sou boereg", "sou beoreg", "armenian cheese boereg", "su boreg"],
+  "sha-phaley": ["shabhaley", "shabhale", "shapale", "ཤ་བག་ལེབ།", "tibetan meat pastry"],
+  "ting-momo": ["tingmo", "timmo", "ཏིང་མོག", "tibetan steamed bread"],
+  "po-cha": ["suja", "ja suja", "bhutanese butter tea", "sutey cha", "bod ja"],
+  "thenthuk": ["then thuk", "thentuk", "འཐེན་ཐུག", "tibetan hand pulled noodle soup"],
+  "tsampa": ["རྩམ་པ།", "tsamba", "pak tsampa", "roasted barley flour"],
+  "dresil": ["འབྲས་སིལ།", "desi rice", "tibetan sweet rice", "dre si"],
+  "chura-kampo": ["chhurpi", "churpi", "dried yak cheese", "durkha"],
+  "sho": ["tibetan yoghurt", "ཞོ", "sho yoghurt"],
+  "aaruul": ["аруул", "aarul", "mongolian dried curd", "khurut", "aaruul mongolian"],
+  "feng-gan-niu-rou-gan": ["borts", "борц", "mongolian dried beef", "borts mongolian"],
+  "masor-tenga": ["মাছৰ টেঙা", "machor tenga", "assamese sour fish curry", "masor tenga assam"],
+  "choila": ["छोयला", "chhoyla", "newari choila", "kukhura choila", "buff choila"]
+}

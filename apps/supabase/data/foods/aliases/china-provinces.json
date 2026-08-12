@@ -1,0 +1,53 @@
+{
+  "mei-cai-kou-rou": [
+    "mei gan cai kou rou",
+    "梅干菜扣肉",
+    "shaoxing kou rou",
+    "gan cai men rou",
+    "shaoxing dried mustard green pork belly"
+  ],
+  "tang-yuan": ["ningbo tangyuan", "宁波汤圆", "寧波湯圓", "ningbo black sesame tangyuan"],
+  "jianbing-guozi": [
+    "tianjin jianbing",
+    "天津煎饼馃子",
+    "jianbing guozi tianjin",
+    "mung bean crepe tianjin"
+  ],
+  "ding-bian-hu": ["fuzhou ding bian hu", "鼎边糊", "guo bian hu", "锅边糊", "nanping guo bian hu"],
+  "popiah": ["run bing", "润饼", "潤餅", "quanzhou run bing", "minnan runbing"],
+  "ngoh-hiang": [
+    "wu xiang juan",
+    "五香卷",
+    "zhangzhou wu xiang juan",
+    "fujian five spice roll",
+    "minnan wuxiang"
+  ],
+  "wu-tau-kau-yoke": [
+    "li pu yu tou kou rou",
+    "荔浦芋头扣肉",
+    "guangxi taro pork belly",
+    "yu tou kou rou"
+  ],
+  "shaxian-snacks-shaxian-ban-mian": [
+    "fuzhou ban mian",
+    "拌面",
+    "拌麵",
+    "fujian peanut sauce dry noodles"
+  ],
+  "hu-la-tang": [
+    "henan hu la tang",
+    "逍遥镇胡辣汤",
+    "xiaoyao zhen hu la tang",
+    "zhoukou hu la tang"
+  ],
+  "suan-cai-bai-rou": [
+    "suan cai dun fen tiao",
+    "酸菜炖粉条",
+    "dongbei pickled cabbage with vermicelli"
+  ],
+  "foochow-fish-ball": ["fuzhou yu wan", "福州鱼丸", "福州魚丸", "fuzhou stuffed fish ball"],
+  "tang-bao": ["xiaolong tangbao", "小笼汤包", "小籠湯包", "jingjiang crab soup dumpling"],
+  "guo-bao-rou": ["harbin guo bao rou", "锅包肉", "鍋包肉", "heilongjiang sweet sour pork"],
+  "goubuli-baozi": ["tianjin goubuli", "狗不理包子", "tianjin steamed pork bun"],
+  "songshu-guiyu": ["suzhou song shu gui yu", "松鼠桂鱼", "squirrel mandarin fish suzhou"]
+}

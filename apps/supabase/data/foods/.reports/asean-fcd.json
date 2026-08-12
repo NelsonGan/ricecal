@@ -1,0 +1,1473 @@
+{
+  "tally": {
+    "updated": 192,
+    "skipped_name": 11,
+    "inserted": 6
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "bread-wholewheat",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 2,
+      "slug": "corn-flakes",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 3,
+      "slug": "corn-flakes-sugar-coated",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 4,
+      "slug": "macaroni-dried-makaroni-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 5,
+      "slug": "noodle-rice-fermented-fresh",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "noodle-rice-vermicelli-dried",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 7,
+      "slug": "noodle-rice-fresh-kuih-teow",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 8,
+      "slug": "rice-red-undermilled-raw",
+      "outcome": "skipped_name",
+      "detail": "catalogue already has \"Rice, red, undermilled, raw\"",
+      "nearest": null
+    },
+    {
+      "idx": 9,
+      "slug": "rice-parboiled-raw-g-o-a-vn",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 10,
+      "slug": "coleus-tuber-raw-ubi-kembili-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 11,
+      "slug": "sago-flour-sagu-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 12,
+      "slug": "yam-spiny-fresh-raw-tugi-ph-khoai-m-n-vn",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "bambara-groundnut-boiled",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "bean-hyacinth-dried-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 15,
+      "slug": "broad-bean-seed-dried-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 16,
+      "slug": "cashew-nut-baked",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 17,
+      "slug": "cashew-nut-fresh-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 18,
+      "slug": "chestnut-roasted-lak-my-kastanyas",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 19,
+      "slug": "jackfruit-seed-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 20,
+      "slug": "job-s-tears-seed-whole",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 21,
+      "slug": "mungbean-noodle-dried-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 22,
+      "slug": "pea-seed-dried-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 23,
+      "slug": "rice-bean-seed-dried-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 24,
+      "slug": "soybean-curd-white-hard",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 25,
+      "slug": "soybean-flour-defated",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 26,
+      "slug": "soybean-flour-full-fat",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 27,
+      "slug": "soybean-paste-black",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 28,
+      "slug": "soybean-young-seed-boiled",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 29,
+      "slug": "tamarind-seed-roasted",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 30,
+      "slug": "w-raw-inged-bean-seed-dried",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Rice bean, seed, dried, raw"
+    },
+    {
+      "idx": 31,
+      "slug": "asparagus-canned-asparagus-dalam-tin-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 32,
+      "slug": "broccoli-fresh-raw-brokoli-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 33,
+      "slug": "flowering-white-cabbage",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 34,
+      "slug": "cassia-flower-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 35,
+      "slug": "cassia-leaf-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 36,
+      "slug": "cassia-tender-tip-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 37,
+      "slug": "coriander-leaf-raw-dahon-ph",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 38,
+      "slug": "corn-baby",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 39,
+      "slug": "d111-cucumber-long",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 40,
+      "slug": "cucumber-small",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 41,
+      "slug": "eggplant-brinjal-pickled",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 42,
+      "slug": "eggplant-brinjal-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 43,
+      "slug": "fennel",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 44,
+      "slug": "fern-leaf-raw-tukod-langit-dahon-ph",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 45,
+      "slug": "horseradish-leaf-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 46,
+      "slug": "horseradish-tree-leaf-raw-kelor-remunggai-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 47,
+      "slug": "kale-chinese-raw",
+      "outcome": "skipped_name",
+      "detail": "catalogue already has \"Kale, Chinese, raw\"",
+      "nearest": null
+    },
+    {
+      "idx": 48,
+      "slug": "mushroom-abalone-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 49,
+      "slug": "onion-flower",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 50,
+      "slug": "parkia-seed-raw-petai-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 51,
+      "slug": "p-pumpkin-raw-kalabasa-bunga-ph",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "VND85,MYD205,P Pumpkin, raw Kalabasa bunga(PH)"
+    },
+    {
+      "idx": 52,
+      "slug": "rhubarb-raw-tai-wong-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 53,
+      "slug": "roselle-red-sorrel-leaf-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 54,
+      "slug": "squash-pumpkin-flower-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 55,
+      "slug": "tamarind-young-leaf-raw",
+      "outcome": "skipped_name",
+      "detail": "catalogue already has \"Tamarind, young leaf, raw\"",
+      "nearest": null
+    },
+    {
+      "idx": 56,
+      "slug": "tomato-cherry-small-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 57,
+      "slug": "banana-pink-banana-udang-merah-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 58,
+      "slug": "banana-pisang-kari-pisang-kari-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 59,
+      "slug": "bilimbi-fruit-masam-buluh-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 60,
+      "slug": "durian-assorted",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 61,
+      "slug": "fig-fresh",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 62,
+      "slug": "gooseberry-indian",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 63,
+      "slug": "jackfruit-in-syrup-canned",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 64,
+      "slug": "lancet-langsium-langsat",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 65,
+      "slug": "litchi-in-syrup-canned",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 66,
+      "slug": "longan-dried",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 67,
+      "slug": "longan-in-syrup-canned",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 68,
+      "slug": "malay-apple-red-th",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 69,
+      "slug": "mango-okrong-variety-ripe",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 70,
+      "slug": "mango-tub-ped-variety-ripe",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 71,
+      "slug": "melon-honeydew-d-a-hang",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 72,
+      "slug": "muskmelon",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 73,
+      "slug": "pineapple-dried",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 74,
+      "slug": "pomegranate-granada-ph-qu",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 75,
+      "slug": "prune-dried-prun-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 76,
+      "slug": "raisin-kismis-my-pasas-ph",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 77,
+      "slug": "rambai-rambai-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 78,
+      "slug": "rambutan-rambutan-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 79,
+      "slug": "salak-palm",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 80,
+      "slug": "spanish-plum-th",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 81,
+      "slug": "star-apple-green-kaymito-berde-ph-vo",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 82,
+      "slug": "star-gooseberry",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 83,
+      "slug": "tamarind-madras-thorn",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 84,
+      "slug": "toddy-palm-cotyledon",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 85,
+      "slug": "water-chestnut",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 86,
+      "slug": "beef-brain-raw-baka-utak-ph-ac-b-vn",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 87,
+      "slug": "chicken-blood-cooked",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 88,
+      "slug": "chicken-drumstick-raw",
+      "outcome": "skipped_name",
+      "detail": "catalogue already has \"Chicken, drumstick, raw\"",
+      "nearest": null
+    },
+    {
+      "idx": 89,
+      "slug": "chicken-heart-raw-g",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chicken, heart, raw"
+    },
+    {
+      "idx": 90,
+      "slug": "frog-small",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 91,
+      "slug": "pork-brain-raw-baboy-litsunin-utak-ph",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 92,
+      "slug": "pork-kidney-raw-baboy-bato-ph-bcu-doc",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 93,
+      "slug": "pork-leg-deboned-raw-baboy-pata-ph-ch-n",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 94,
+      "slug": "pork-liver-boiled",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 95,
+      "slug": "pork-liver-fried",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 96,
+      "slug": "pork-pancreas-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 97,
+      "slug": "pork-shoulder-broiled",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 98,
+      "slug": "pork-shoulder-fried",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 99,
+      "slug": "rabbit-whole-carcass-raw-arnab-my-th-t-tha",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 100,
+      "slug": "baby-clams-smoked-canned",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 101,
+      "slug": "clam-undulated-surf",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 102,
+      "slug": "crabmeat-mud-boiled-laman-nilaga-ph",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 103,
+      "slug": "eel-swamp-boiled",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 104,
+      "slug": "fish-maw-dried-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 105,
+      "slug": "n-giant-seaperch-steamed",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "THG27N Giant seaperch, steamed"
+    },
+    {
+      "idx": 106,
+      "slug": "gourami-snake-skin-dried",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 107,
+      "slug": "grouper-fried",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 108,
+      "slug": "grouper-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 109,
+      "slug": "grouper-steamed",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 110,
+      "slug": "mackerel-short-bodied-fried",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 111,
+      "slug": "mackerel-spanish-fried",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 112,
+      "slug": "mussel-green-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 113,
+      "slug": "pomfret-black-fried-goreng-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 114,
+      "slug": "pomfret-black-steamed",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 115,
+      "slug": "prawn-fresh-water-giant-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 116,
+      "slug": "prawn-fresh-water-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 117,
+      "slug": "radiated-scallop",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 118,
+      "slug": "sea-horse",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 119,
+      "slug": "shark-fins-dried",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 120,
+      "slug": "shrimp-dried-t-m-kh-vn",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 121,
+      "slug": "shrimp-salted-dried",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 122,
+      "slug": "silver-barb-common-boiled",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 123,
+      "slug": "silver-barb-common-fried",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 124,
+      "slug": "snail-fresh-water-all-speciesec-b-u-ec-nhai-vn",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 125,
+      "slug": "snail-pond-river",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 126,
+      "slug": "snakehead-striped-dried",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 127,
+      "slug": "snapper-red-malabar-boiled",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 128,
+      "slug": "snapper-russell-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 129,
+      "slug": "squid-splendid-dried",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 130,
+      "slug": "squid-splendid-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 131,
+      "slug": "tilapia-all-species-raw-kerisi-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 132,
+      "slug": "trevally-black-banded-fried",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 133,
+      "slug": "trevally-black-banded-raw",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 134,
+      "slug": "egg-duck-boiled-itlog-pugo-nilaga-ph",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 135,
+      "slug": "egg-duck-white",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 136,
+      "slug": "egg-hen-omelet",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 137,
+      "slug": "egg-hen-steamed",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 138,
+      "slug": "egg-quail-in-brine",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 139,
+      "slug": "milk-goat-fluid-full-cream-g",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Milk, goat, fluid, full cream"
+    },
+    {
+      "idx": 140,
+      "slug": "milk-powder-infant-formula-gatas-pulbos-infant",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 141,
+      "slug": "milk-powder-reduced-fat",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 142,
+      "slug": "milk-uht-chocolate-flavour-coklat-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 143,
+      "slug": "yoghurt-s-a-chua-vn",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 144,
+      "slug": "yoghurt-cream-flavour-aprikot-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 145,
+      "slug": "flavours-except-natural",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 146,
+      "slug": "sandwich-spread",
+      "outcome": "skipped_name",
+      "detail": "catalogue already has \"Sandwich Spread\"",
+      "nearest": null
+    },
+    {
+      "idx": 147,
+      "slug": "jelly-w-coconut-cream",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 148,
+      "slug": "toddy-palm-in-heavy-syrup",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 149,
+      "slug": "bird-chilli-small-dried",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 150,
+      "slug": "budu-muslim-fish-sauce",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 1,
+      "slug": "chilli-bird-dried-ground",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 2,
+      "slug": "chilli-fried-in-oil",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 3,
+      "slug": "cumin-seed-jintan-putih-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 4,
+      "slug": "galangal-lengkuas-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 5,
+      "slug": "garlic-fresh",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "holy-basil-leaf-fresh",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 7,
+      "slug": "leech-lime-leaf",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 8,
+      "slug": "lemon-grass-serai-my",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 9,
+      "slug": "marinade-powder-for-chicken",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 10,
+      "slug": "marinade-powder-for-satay",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 11,
+      "slug": "paste-curry-green",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 12,
+      "slug": "paste-curry-panang",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "paste-curry-red",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "paste-curry-yellow-kari",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 15,
+      "slug": "pepper-black-whole-fresh",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 16,
+      "slug": "pepper-green-hot-fresh",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 17,
+      "slug": "pepper-hot-dried",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 18,
+      "slug": "pepper-red-hot-fresh",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 19,
+      "slug": "pepper-white-powder",
+      "outcome": "skipped_name",
+      "detail": "catalogue already has \"Pepper, white, powder\"",
+      "nearest": null
+    },
+    {
+      "idx": 20,
+      "slug": "pepper-yellow-hot-fresh",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 21,
+      "slug": "sauce-oyster",
+      "outcome": "skipped_name",
+      "detail": "catalogue already has \"Sauce, oyster\"",
+      "nearest": null
+    },
+    {
+      "idx": 22,
+      "slug": "sauce-soy-dark",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 23,
+      "slug": "shrimp-ground-with-chilli",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 24,
+      "slug": "sweet-basil-leaf",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 25,
+      "slug": "turmeric-white-fresh",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 26,
+      "slug": "drink-roselle-per-100",
+      "outcome": "skipped_name",
+      "detail": "catalogue already has \"Drink, roselle, per 100\"",
+      "nearest": null
+    },
+    {
+      "idx": 27,
+      "slug": "juice-coconut-per-100",
+      "outcome": "skipped_name",
+      "detail": "catalogue already has \"Juice, coconut, per 100\"",
+      "nearest": null
+    },
+    {
+      "idx": 28,
+      "slug": "burger-beef",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 29,
+      "slug": "burger-fish",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 30,
+      "slug": "french-fries",
+      "outcome": "skipped_name",
+      "detail": "catalogue already has \"French fries\"",
+      "nearest": null
+    },
+    {
+      "idx": 31,
+      "slug": "hot-dog",
+      "outcome": "skipped_name",
+      "detail": "catalogue already has \"Hot Dog\"",
+      "nearest": null
+    },
+    {
+      "idx": 32,
+      "slug": "pizza-seafood-thin-crust",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 33,
+      "slug": "sandwich-chicken",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 34,
+      "slug": "sandwich-ham",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 35,
+      "slug": "porridge-rice-ready-to-eat",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 36,
+      "slug": "rice-and-seasoned-fried-pork",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 37,
+      "slug": "rice-porridge-with-pork",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 38,
+      "slug": "rice-w-pig-leg-and-gravy",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 39,
+      "slug": "baby-clam-fried-with-chilli",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 40,
+      "slug": "custard-egg-baked",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 41,
+      "slug": "custard-mungbean-baked",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 42,
+      "slug": "moon-s-cake-durian-filling",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 43,
+      "slug": "moon-s-cake-five-nuts-filling",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 44,
+      "slug": "taro-ball-in-coconut-milk",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 45,
+      "slug": "taro-in-coconut-milk",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 46,
+      "slug": "bird-nest-in-sealed-bottle",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 47,
+      "slug": "chicken-essence-100-ml",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 48,
+      "slug": "cricket",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 49,
+      "slug": "giant-water-bug",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 50,
+      "slug": "hornet-young",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 51,
+      "slug": "june-beetle",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 52,
+      "slug": "locust",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 53,
+      "slug": "mole-cricket",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 54,
+      "slug": "red-ant",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 55,
+      "slug": "red-ant-egg",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 56,
+      "slug": "red-ant-young-female",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 57,
+      "slug": "silk-worm-pupae",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 58,
+      "slug": "spirulina-dried-th",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 59,
+      "slug": "true-water-beetle",
+      "outcome": "updated",
+      "detail": null,
+      "nearest": null
+    }
+  ]
+}

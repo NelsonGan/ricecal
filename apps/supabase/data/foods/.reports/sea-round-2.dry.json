@@ -1,0 +1,4324 @@
+{
+  "tally": {
+    "shaped": 862,
+    "inserted": 0,
+    "skipped": 167,
+    "rejected": 0
+  },
+  "rejected": [],
+  "warnings": [],
+  "skipped": [
+    {
+      "slug": "nasi-goreng-pattaya",
+      "name": "Nasi Goreng Pattaya",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "lor-mai-kai",
+      "name": "Lor Mai Kai",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bubur-cha-cha",
+      "name": "Bubur Cha Cha",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "pulut-hitam",
+      "name": "Pulut Hitam",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kopi-peng",
+      "name": "Kopi Peng",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "teh-c-peng",
+      "name": "Teh C Peng",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "milo-dinosaur",
+      "name": "Milo Dinosaur",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "breadtalk-fire-floss-bun",
+      "name": "BreadTalk Fire Floss Bun",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "din-tai-fung-xiao-long-bao",
+      "name": "Din Tai Fung Xiao Long Bao",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "gong-cha-taro-milk-tea",
+      "name": "Gong Cha Taro Milk Tea",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "yeo-s-chrysanthemum-tea",
+      "name": "Yeo's Chrysanthemum Tea",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "yeo-s-soy-bean-milk",
+      "name": "Yeo's Soy Bean Milk",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "steamed-pork-ribs-with-black-bean",
+      "name": "Steamed Pork Ribs with Black Bean",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ayam-pop",
+      "name": "Ayam Pop",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "dendeng-balado",
+      "name": "Dendeng Balado",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "perkedel-kentang",
+      "name": "Perkedel Kentang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sambal-ijo-padang",
+      "name": "Sambal Ijo Padang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "rendang-telur",
+      "name": "Rendang Telur",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sate-padang",
+      "name": "Sate Padang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "itiak-lado-mudo",
+      "name": "Itiak Lado Mudo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "teh-talua",
+      "name": "Teh Talua",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "tempe-mendoan",
+      "name": "Tempe Mendoan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "soto-betawi",
+      "name": "Soto Betawi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sate-ayam-madura",
+      "name": "Sate Ayam Madura",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sambal-terasi",
+      "name": "Sambal Terasi",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "kerak-telor",
+      "name": "Kerak Telor",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "soto-tangkar",
+      "name": "Soto Tangkar",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "gabus-pucung",
+      "name": "Gabus Pucung",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "nasi-ulam-betawi",
+      "name": "Nasi Ulam Betawi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "laksa-betawi",
+      "name": "Laksa Betawi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bir-pletok",
+      "name": "Bir Pletok",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kue-rangi",
+      "name": "Kue Rangi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "es-selendang-mayang",
+      "name": "Es Selendang Mayang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "klappertaart",
+      "name": "Klappertaart",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mie-cakalang",
+      "name": "Mie Cakalang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sambal-roa",
+      "name": "Sambal Roa",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "tinorangsak",
+      "name": "Tinorangsak",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sop-saudara",
+      "name": "Sop Saudara",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "es-pisang-ijo",
+      "name": "Es Pisang Ijo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "barongko",
+      "name": "Barongko",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "jalangkote",
+      "name": "Jalangkote",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "pisang-epe",
+      "name": "Pisang Epe",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mie-titi",
+      "name": "Mie Titi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kapurung",
+      "name": "Kapurung",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bihun-bebek-medan",
+      "name": "Bihun Bebek Medan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "saksang",
+      "name": "Saksang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "arsik-ikan-mas",
+      "name": "Arsik Ikan Mas",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mie-gomak",
+      "name": "Mie Gomak",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "lontong-medan",
+      "name": "Lontong Medan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "naniura",
+      "name": "Naniura",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "dali-ni-horbo",
+      "name": "Dali ni Horbo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kuah-beulangong",
+      "name": "Kuah Beulangong",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ayam-tangkap",
+      "name": "Ayam Tangkap",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "laksan-palembang",
+      "name": "Laksan Palembang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "celimpungan",
+      "name": "Celimpungan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "gulai-belacan-riau",
+      "name": "Gulai Belacan Riau",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bolu-kemojo",
+      "name": "Bolu Kemojo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ketupat-kandangan",
+      "name": "Ketupat Kandangan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "jagung-bose",
+      "name": "Jagung Bose",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "rumpu-rampe",
+      "name": "Rumpu Rampe",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sagu-lempeng",
+      "name": "Sagu Lempeng",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kohu-kohu",
+      "name": "Kohu-Kohu",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "martabak-manis",
+      "name": "Martabak Manis",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "wedang-uwuh",
+      "name": "Wedang Uwuh",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "jamu-temulawak",
+      "name": "Jamu Temulawak",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sambal-bawang",
+      "name": "Sambal Bawang",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "sambal-goreng-ati-kentang",
+      "name": "Sambal Goreng Ati Kentang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bawang-goreng",
+      "name": "Bawang Goreng",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "richeese-factory-fire-chicken",
+      "name": "Richeese Factory Fire Chicken",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "chatime-brown-sugar-pearl-milk-tea",
+      "name": "Chatime Brown Sugar Pearl Milk Tea",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mixue-boba-milk-tea",
+      "name": "Mixue Boba Milk Tea",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "koi-pla",
+      "name": "Koi Pla",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "larb-pla-duk",
+      "name": "Larb Pla Duk",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "gaeng-om-neua",
+      "name": "Gaeng Om Neua",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "gaeng-khae-gai",
+      "name": "Gaeng Khae Gai",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "jin-som-mok",
+      "name": "Jin Som Mok",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "nam-prik-kha",
+      "name": "Nam Prik Kha",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "khao-kan-jin",
+      "name": "Khao Kan Jin",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "khua-kling-moo",
+      "name": "Khua Kling Moo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "khua-kling-gai",
+      "name": "Khua Kling Gai",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "gaeng-kua-sapparot-goong",
+      "name": "Gaeng Kua Sapparot Goong",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "oh-aew",
+      "name": "Oh Aew",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mee-hokkien-phuket",
+      "name": "Mee Hokkien Phuket",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "nam-prik-kapi-pla-tu",
+      "name": "Nam Prik Kapi Pla Tu",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "mee-krob",
+      "name": "Mee Krob",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ma-hor",
+      "name": "Ma Hor",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "miang-kham",
+      "name": "Miang Kham",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "khao-chae",
+      "name": "Khao Chae",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "chor-muang",
+      "name": "Chor Muang",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "yam-tua-plu",
+      "name": "Yam Tua Plu",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "yam-som-o",
+      "name": "Yam Som O",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "med-khanun",
+      "name": "Med Khanun",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kai-palo",
+      "name": "Kai Palo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "guay-teow-look-chin-pla",
+      "name": "Guay Teow Look Chin Pla",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "khanom-jeen-sao-nam",
+      "name": "Khanom Jeen Sao Nam",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "yam-mama",
+      "name": "Yam Mama",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "guay-teow-lui-suan",
+      "name": "Guay Teow Lui Suan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "khanom-jeeb-moo",
+      "name": "Khanom Jeeb Moo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "khanom-piak-poon",
+      "name": "Khanom Piak Poon",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "khanom-tom",
+      "name": "Khanom Tom",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "khanom-kluay",
+      "name": "Khanom Kluay",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "nam-tao-hu",
+      "name": "Nam Tao Hu",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "m-150",
+      "name": "M-150",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "oishi-green-tea-honey-lemon",
+      "name": "Oishi Green Tea Honey Lemon",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "jollibee-jolly-spaghetti",
+      "name": "Jollibee Jolly Spaghetti",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "jollibee-yumburger",
+      "name": "Jollibee Yumburger",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "jollibee-chocolate-sundae",
+      "name": "Jollibee Chocolate Sundae",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bonchon-tteokbokki",
+      "name": "Bonchon Tteokbokki",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "pancake-house-classic-pancakes",
+      "name": "Pancake House Classic Pancakes",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "razon-s-halo-halo",
+      "name": "Razon's Halo-Halo",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bagnet",
+      "name": "Bagnet",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "dinengdeng",
+      "name": "Dinengdeng",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "igado",
+      "name": "Igado",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "empanada-ilocos",
+      "name": "Empanada Ilocos",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "dinakdakan",
+      "name": "Dinakdakan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "insarabasab",
+      "name": "Insarabasab",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "poqui-poqui",
+      "name": "Poqui-Poqui",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sinanglaw",
+      "name": "Sinanglaw",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kinunot",
+      "name": "Kinunot",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sinantolan",
+      "name": "Sinantolan",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "tinutungang-manok",
+      "name": "Tinutungang Manok",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "humba",
+      "name": "Humba",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kadyos-baboy-langka",
+      "name": "Kadyos Baboy Langka",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "puso",
+      "name": "Puso",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "ngohiong",
+      "name": "Ngohiong",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "chorizo-de-cebu",
+      "name": "Chorizo de Cebu",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "bam-i",
+      "name": "Bam-i",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "tuslob-buwa",
+      "name": "Tuslob Buwa",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "chicken-sisig",
+      "name": "Chicken Sisig",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "bringhe",
+      "name": "Bringhe",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "longganisang-guagua",
+      "name": "Longganisang Guagua",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "burong-isda",
+      "name": "Burong Isda",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "betute-tugak",
+      "name": "Betute Tugak",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "pinikpikan",
+      "name": "Pinikpikan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "etag",
+      "name": "Etag",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "pinuneg",
+      "name": "Pinuneg",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "tiyula-itum",
+      "name": "Tiyula Itum",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "pastil",
+      "name": "Pastil",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "satti",
+      "name": "Satti",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "beef-kulma",
+      "name": "Beef Kulma",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "palapa",
+      "name": "Palapa",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "sinaing-na-tulingan",
+      "name": "Sinaing na Tulingan",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "adobo-sa-dilaw",
+      "name": "Adobo sa Dilaw",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kesong-puti",
+      "name": "Kesong Puti",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "espasol",
+      "name": "Espasol",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "hardinera",
+      "name": "Hardinera",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "buko-pandan-salad",
+      "name": "Buko Pandan Salad",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "maja-blanca",
+      "name": "Maja Blanca",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "pichi-pichi",
+      "name": "Pichi-Pichi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kalamay",
+      "name": "Kalamay",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "puto-maya",
+      "name": "Puto Maya",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "moron",
+      "name": "Moron",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "inutak",
+      "name": "Inutak",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "masi",
+      "name": "Masi",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "tibok-tibok",
+      "name": "Tibok-Tibok",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "binatog",
+      "name": "Binatog",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "kropek",
+      "name": "Kropek",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "beef-pares",
+      "name": "Beef Pares",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "spanish-bread",
+      "name": "Spanish Bread",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "hopia-ube",
+      "name": "Hopia Ube",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "hopia-hapon",
+      "name": "Hopia Hapon",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "cheese-roll",
+      "name": "Cheese Roll",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "egg-pie",
+      "name": "Egg Pie",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "mongo-bread",
+      "name": "Mongo Bread",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "callos",
+      "name": "Callos",
+      "why": "a row with this name is already in the catalogue"
+    },
+    {
+      "slug": "laswa",
+      "name": "Laswa",
+      "why": "slug is already in the catalogue"
+    },
+    {
+      "slug": "beef-salpicao",
+      "name": "Beef Salpicao",
+      "why": "a row with this name is already in the catalogue"
+    }
+  ],
+  "inserted": [
+    {
+      "slug": "salted-egg-yolk-prawns-zi-char",
+      "name": "Salted Egg Yolk Prawns, Zi Char",
+      "kcal": 520
+    },
+    {
+      "slug": "sambal-kangkong-zi-char",
+      "name": "Sambal Kangkong, Zi Char",
+      "kcal": 200
+    },
+    {
+      "slug": "coffee-pork-ribs-zi-char",
+      "name": "Coffee Pork Ribs, Zi Char",
+      "kcal": 640
+    },
+    {
+      "slug": "butter-cereal-squid-zi-char",
+      "name": "Butter Cereal Squid, Zi Char",
+      "kcal": 520
+    },
+    {
+      "slug": "kailan-with-salted-fish-zi-char",
+      "name": "Kailan with Salted Fish, Zi Char",
+      "kcal": 190
+    },
+    {
+      "slug": "teochew-steamed-pomfret",
+      "name": "Teochew Steamed Pomfret",
+      "kcal": 420
+    },
+    {
+      "slug": "yu-sheng-lo-hei-singapore",
+      "name": "Yu Sheng (Lo Hei), Singapore",
+      "kcal": 260
+    },
+    {
+      "slug": "mui-fan",
+      "name": "Mui Fan",
+      "kcal": 719
+    },
+    {
+      "slug": "seafood-hor-fun-with-egg-gravy",
+      "name": "Seafood Hor Fun with Egg Gravy",
+      "kcal": 640
+    },
+    {
+      "slug": "fried-hong-kong-noodles",
+      "name": "Fried Hong Kong Noodles",
+      "kcal": 693
+    },
+    {
+      "slug": "seafood-claypot-noodles",
+      "name": "Seafood Claypot Noodles",
+      "kcal": 677
+    },
+    {
+      "slug": "xiao-wan-mian-mini-wok-noodles",
+      "name": "Xiao Wan Mian (Mini Wok Noodles)",
+      "kcal": 620
+    },
+    {
+      "slug": "fried-ee-mee-with-seafood",
+      "name": "Fried Ee Mee with Seafood",
+      "kcal": 1010
+    },
+    {
+      "slug": "beef-ball-kway-teow-soup",
+      "name": "Beef Ball Kway Teow Soup",
+      "kcal": 656
+    },
+    {
+      "slug": "claypot-rice-chicken-sg",
+      "name": "Claypot Rice, Chicken (SG)",
+      "kcal": 896
+    },
+    {
+      "slug": "olive-fried-rice",
+      "name": "Olive Fried Rice",
+      "kcal": 620
+    },
+    {
+      "slug": "salted-fish-fried-rice",
+      "name": "Salted Fish Fried Rice",
+      "kcal": 600
+    },
+    {
+      "slug": "fried-rice-with-egg-and-prawn-hawker-sg",
+      "name": "Fried Rice with Egg and Prawn, Hawker (SG)",
+      "kcal": 511
+    },
+    {
+      "slug": "deep-fried-yam-ring-yam-basket",
+      "name": "Deep Fried Yam Ring (Yam Basket)",
+      "kcal": 640
+    },
+    {
+      "slug": "stir-fried-french-beans-with-minced-pork",
+      "name": "Stir Fried French Beans with Minced Pork",
+      "kcal": 260
+    },
+    {
+      "slug": "pig-stomach-peppery-soup-zhu-du-tang",
+      "name": "Pig Stomach Peppery Soup (Zhu Du Tang)",
+      "kcal": 300
+    },
+    {
+      "slug": "roast-meat-platter-siew-mei-singapore",
+      "name": "Roast Meat Platter (Siew Mei), Singapore",
+      "kcal": 620
+    },
+    {
+      "slug": "char-siew-rice-sg",
+      "name": "Char Siew Rice (SG)",
+      "kcal": 605
+    },
+    {
+      "slug": "soya-sauce-chicken-rice",
+      "name": "Soya Sauce Chicken Rice",
+      "kcal": 551
+    },
+    {
+      "slug": "roast-duck-rice-sg",
+      "name": "Roast Duck Rice (SG)",
+      "kcal": 640
+    },
+    {
+      "slug": "hainanese-curry-rice",
+      "name": "Hainanese Curry Rice",
+      "kcal": 780
+    },
+    {
+      "slug": "chicken-rice-chicken-only-half-bird",
+      "name": "Chicken Rice Chicken Only, Half Bird",
+      "kcal": 620
+    },
+    {
+      "slug": "wanton-mee-singapore-dry",
+      "name": "Wanton Mee, Singapore Dry",
+      "kcal": 411
+    },
+    {
+      "slug": "wanton-noodle-soup-singapore",
+      "name": "Wanton Noodle Soup, Singapore",
+      "kcal": 380
+    },
+    {
+      "slug": "fishball-noodles-dry-sg",
+      "name": "Fishball Noodles, Dry (SG)",
+      "kcal": 482
+    },
+    {
+      "slug": "fishball-noodle-soup-sg",
+      "name": "Fishball Noodle Soup (SG)",
+      "kcal": 372
+    },
+    {
+      "slug": "ipoh-hor-fun-singapore-stall",
+      "name": "Ipoh Hor Fun, Singapore Stall",
+      "kcal": 452
+    },
+    {
+      "slug": "curry-chicken-noodle-sg",
+      "name": "Curry Chicken Noodle (SG)",
+      "kcal": 695
+    },
+    {
+      "slug": "lontong-with-sayur-lodeh-sg",
+      "name": "Lontong with Sayur Lodeh (SG)",
+      "kcal": 798
+    },
+    {
+      "slug": "economy-bee-hoon-with-egg-and-luncheon-meat",
+      "name": "Economy Bee Hoon with Egg and Luncheon Meat",
+      "kcal": 560
+    },
+    {
+      "slug": "seafood-white-bee-hoon",
+      "name": "Seafood White Bee Hoon",
+      "kcal": 560
+    },
+    {
+      "slug": "pig-organ-soup-with-rice",
+      "name": "Pig Organ Soup with Rice",
+      "kcal": 450
+    },
+    {
+      "slug": "turtle-soup-herbal",
+      "name": "Turtle Soup, Herbal",
+      "kcal": 280
+    },
+    {
+      "slug": "prawn-noodles-dry-sg",
+      "name": "Prawn Noodles Dry (SG)",
+      "kcal": 461
+    },
+    {
+      "slug": "kopitiam-macaroni-chicken-soup",
+      "name": "Kopitiam Macaroni Chicken Soup",
+      "kcal": 277
+    },
+    {
+      "slug": "vegetarian-bee-hoon-hawker-sg",
+      "name": "Vegetarian Bee Hoon, Hawker (SG)",
+      "kcal": 420
+    },
+    {
+      "slug": "cai-png-with-two-vegetables-and-one-meat",
+      "name": "Cai Png with Two Vegetables and One Meat",
+      "kcal": 580
+    },
+    {
+      "slug": "hawker-western-chicken-cutlet-with-fries",
+      "name": "Hawker Western Chicken Cutlet with Fries",
+      "kcal": 780
+    },
+    {
+      "slug": "siew-mai-4-pieces",
+      "name": "Siew Mai, 4 pieces",
+      "kcal": 180
+    },
+    {
+      "slug": "taukwa-pok",
+      "name": "Taukwa Pok",
+      "kcal": 179
+    },
+    {
+      "slug": "yong-tau-foo-soup-with-mixed-items",
+      "name": "Yong Tau Foo Soup with Mixed Items",
+      "kcal": 297
+    },
+    {
+      "slug": "bee-tai-mak-soup",
+      "name": "Bee Tai Mak Soup",
+      "kcal": 380
+    },
+    {
+      "slug": "nasi-lemak-plain-sg",
+      "name": "Nasi Lemak, Plain (SG)",
+      "kcal": 279
+    },
+    {
+      "slug": "nasi-lemak-with-fried-fish-sg",
+      "name": "Nasi Lemak with Fried Fish (SG)",
+      "kcal": 620
+    },
+    {
+      "slug": "roti-prata-coin-5-pieces",
+      "name": "Roti Prata Coin, 5 pieces",
+      "kcal": 500
+    },
+    {
+      "slug": "roti-prata-planta",
+      "name": "Roti Prata Planta",
+      "kcal": 340
+    },
+    {
+      "slug": "roti-prata-mushroom-and-cheese",
+      "name": "Roti Prata Mushroom and Cheese",
+      "kcal": 420
+    },
+    {
+      "slug": "roti-prata-banana",
+      "name": "Roti Prata Banana",
+      "kcal": 400
+    },
+    {
+      "slug": "roti-prata-with-sugar",
+      "name": "Roti Prata with Sugar",
+      "kcal": 330
+    },
+    {
+      "slug": "roti-prata-with-mutton-curry",
+      "name": "Roti Prata with Mutton Curry",
+      "kcal": 700
+    },
+    {
+      "slug": "nasi-biryani-fish-singapore",
+      "name": "Nasi Biryani Fish, Singapore",
+      "kcal": 780
+    },
+    {
+      "slug": "briyani-rice-plain-sg",
+      "name": "Briyani Rice, Plain (SG)",
+      "kcal": 420
+    },
+    {
+      "slug": "sup-kambing-singapore",
+      "name": "Sup Kambing, Singapore",
+      "kcal": 380
+    },
+    {
+      "slug": "mutton-dalcha",
+      "name": "Mutton Dalcha",
+      "kcal": 320
+    },
+    {
+      "slug": "rojak-india-pasembur-singapore",
+      "name": "Rojak India (Pasembur), Singapore",
+      "kcal": 520
+    },
+    {
+      "slug": "soto-ayam-with-nasi-impit-singapore",
+      "name": "Soto Ayam with Nasi Impit, Singapore",
+      "kcal": 420
+    },
+    {
+      "slug": "nasi-padang-with-beef-rendang-sg",
+      "name": "Nasi Padang with Beef Rendang (SG)",
+      "kcal": 780
+    },
+    {
+      "slug": "nasi-padang-with-ayam-bakar-sg",
+      "name": "Nasi Padang with Ayam Bakar (SG)",
+      "kcal": 680
+    },
+    {
+      "slug": "tahu-telur-singapore",
+      "name": "Tahu Telur, Singapore",
+      "kcal": 520
+    },
+    {
+      "slug": "epok-epok-kentang",
+      "name": "Epok-Epok Kentang",
+      "kcal": 180
+    },
+    {
+      "slug": "devil-s-curry-kari-debal",
+      "name": "Devil's Curry (Kari Debal)",
+      "kcal": 420
+    },
+    {
+      "slug": "kueh-pie-tee-4-pieces",
+      "name": "Kueh Pie Tee, 4 pieces",
+      "kcal": 260
+    },
+    {
+      "slug": "hee-peow-soup-peranakan",
+      "name": "Hee Peow Soup, Peranakan",
+      "kcal": 260
+    },
+    {
+      "slug": "babi-chin-nyonya-braised-pork",
+      "name": "Babi Chin (Nyonya Braised Pork)",
+      "kcal": 360
+    },
+    {
+      "slug": "perut-ikan-nyonya-fish-stomach-curry",
+      "name": "Perut Ikan (Nyonya Fish Stomach Curry)",
+      "kcal": 340
+    },
+    {
+      "slug": "itek-sio",
+      "name": "Itek Sio",
+      "kcal": 380
+    },
+    {
+      "slug": "ju-hu-char",
+      "name": "Ju Hu Char",
+      "kcal": 220
+    },
+    {
+      "slug": "nyonya-achar-pickled-vegetables",
+      "name": "Nyonya Achar, Pickled Vegetables",
+      "kcal": 90
+    },
+    {
+      "slug": "kueh-salat",
+      "name": "Kueh Salat",
+      "kcal": 150
+    },
+    {
+      "slug": "ondeh-ondeh-5-pieces",
+      "name": "Ondeh Ondeh, 5 pieces",
+      "kcal": 250
+    },
+    {
+      "slug": "nyonya-kueh-lapis",
+      "name": "Nyonya Kueh Lapis",
+      "kcal": 145
+    },
+    {
+      "slug": "chendol-singapore",
+      "name": "Chendol, Singapore",
+      "kcal": 593
+    },
+    {
+      "slug": "chendol-with-durian",
+      "name": "Chendol with Durian",
+      "kcal": 650
+    },
+    {
+      "slug": "orh-nee-teochew-yam-paste",
+      "name": "Orh Nee (Teochew Yam Paste)",
+      "kcal": 480
+    },
+    {
+      "slug": "green-bean-soup-lek-tau-thng",
+      "name": "Green Bean Soup (Lek Tau Thng)",
+      "kcal": 240
+    },
+    {
+      "slug": "ice-kacang-with-ice-cream",
+      "name": "Ice Kacang with Ice Cream",
+      "kcal": 380
+    },
+    {
+      "slug": "putu-piring-5-pieces",
+      "name": "Putu Piring, 5 pieces",
+      "kcal": 320
+    },
+    {
+      "slug": "goreng-pisang-singapore",
+      "name": "Goreng Pisang, Singapore",
+      "kcal": 197
+    },
+    {
+      "slug": "goreng-ubi-fried-sweet-potato",
+      "name": "Goreng Ubi (Fried Sweet Potato)",
+      "kcal": 180
+    },
+    {
+      "slug": "kacang-puteh-mixed-cone",
+      "name": "Kacang Puteh, Mixed Cone",
+      "kcal": 280
+    },
+    {
+      "slug": "min-jiang-kueh-coconut",
+      "name": "Min Jiang Kueh, Coconut",
+      "kcal": 210
+    },
+    {
+      "slug": "waffle-with-kaya-singapore",
+      "name": "Waffle with Kaya, Singapore",
+      "kcal": 400
+    },
+    {
+      "slug": "durian-pengat",
+      "name": "Durian Pengat",
+      "kcal": 420
+    },
+    {
+      "slug": "braised-peanuts-kopitiam",
+      "name": "Braised Peanuts, Kopitiam",
+      "kcal": 180
+    },
+    {
+      "slug": "half-boiled-eggs-kopitiam",
+      "name": "Half Boiled Eggs, Kopitiam",
+      "kcal": 160
+    },
+    {
+      "slug": "teh-gah-dai",
+      "name": "Teh Gah Dai",
+      "kcal": 175
+    },
+    {
+      "slug": "bandung",
+      "name": "Bandung",
+      "kcal": 158
+    },
+    {
+      "slug": "sugarcane-juice-with-lemon",
+      "name": "Sugarcane Juice with Lemon",
+      "kcal": 140
+    },
+    {
+      "slug": "kopi-gu-you-coffee-with-butter",
+      "name": "Kopi Gu You (Coffee with Butter)",
+      "kcal": 180
+    },
+    {
+      "slug": "ya-kun-peanut-butter-toast",
+      "name": "Ya Kun Peanut Butter Toast",
+      "kcal": 320
+    },
+    {
+      "slug": "ya-kun-steamed-bread-with-kaya",
+      "name": "Ya Kun Steamed Bread with Kaya",
+      "kcal": 230
+    },
+    {
+      "slug": "ya-kun-soft-boiled-eggs",
+      "name": "Ya Kun Soft Boiled Eggs",
+      "kcal": 160
+    },
+    {
+      "slug": "ya-kun-kopi",
+      "name": "Ya Kun Kopi",
+      "kcal": 120
+    },
+    {
+      "slug": "toast-box-peanut-butter-thick-toast",
+      "name": "Toast Box Peanut Butter Thick Toast",
+      "kcal": 400
+    },
+    {
+      "slug": "toast-box-french-toast",
+      "name": "Toast Box French Toast",
+      "kcal": 420
+    },
+    {
+      "slug": "toast-box-mee-siam",
+      "name": "Toast Box Mee Siam",
+      "kcal": 480
+    },
+    {
+      "slug": "toast-box-half-boiled-eggs",
+      "name": "Toast Box Half Boiled Eggs",
+      "kcal": 160
+    },
+    {
+      "slug": "toast-box-teh",
+      "name": "Toast Box Teh",
+      "kcal": 135
+    },
+    {
+      "slug": "killiney-laksa",
+      "name": "Killiney Laksa",
+      "kcal": 620
+    },
+    {
+      "slug": "killiney-french-toast",
+      "name": "Killiney French Toast",
+      "kcal": 400
+    },
+    {
+      "slug": "killiney-mee-rebus",
+      "name": "Killiney Mee Rebus",
+      "kcal": 540
+    },
+    {
+      "slug": "killiney-peanut-butter-toast",
+      "name": "Killiney Peanut Butter Toast",
+      "kcal": 330
+    },
+    {
+      "slug": "old-chang-kee-curry-o",
+      "name": "Old Chang Kee Curry'O",
+      "kcal": 300
+    },
+    {
+      "slug": "old-chang-kee-prawn-nugget",
+      "name": "Old Chang Kee Prawn Nugget",
+      "kcal": 160
+    },
+    {
+      "slug": "old-chang-kee-chicken-nugget",
+      "name": "Old Chang Kee Chicken Nugget",
+      "kcal": 170
+    },
+    {
+      "slug": "old-chang-kee-sotong-ball",
+      "name": "Old Chang Kee Sotong Ball",
+      "kcal": 130
+    },
+    {
+      "slug": "old-chang-kee-spring-roll",
+      "name": "Old Chang Kee Spring Roll",
+      "kcal": 150
+    },
+    {
+      "slug": "old-chang-kee-yam-puff",
+      "name": "Old Chang Kee Yam Puff",
+      "kcal": 280
+    },
+    {
+      "slug": "old-chang-kee-fried-fish-fillet",
+      "name": "Old Chang Kee Fried Fish Fillet",
+      "kcal": 180
+    },
+    {
+      "slug": "chicken-floss-bun-bakery-sg",
+      "name": "Chicken Floss Bun, Bakery (SG)",
+      "kcal": 290
+    },
+    {
+      "slug": "crystal-jade-siew-mai",
+      "name": "Crystal Jade Siew Mai",
+      "kcal": 220
+    },
+    {
+      "slug": "crystal-jade-egg-tart",
+      "name": "Crystal Jade Egg Tart",
+      "kcal": 195
+    },
+    {
+      "slug": "crystal-jade-wonton-noodle-soup",
+      "name": "Crystal Jade Wonton Noodle Soup",
+      "kcal": 460
+    },
+    {
+      "slug": "din-tai-fung-noodles-with-minced-pork-sauce",
+      "name": "Din Tai Fung Noodles with Minced Pork Sauce",
+      "kcal": 520
+    },
+    {
+      "slug": "din-tai-fung-steamed-chicken-soup",
+      "name": "Din Tai Fung Steamed Chicken Soup",
+      "kcal": 220
+    },
+    {
+      "slug": "din-tai-fung-sweet-and-sour-pork-ribs",
+      "name": "Din Tai Fung Sweet and Sour Pork Ribs",
+      "kcal": 480
+    },
+    {
+      "slug": "tim-ho-wan-beancurd-skin-roll",
+      "name": "Tim Ho Wan Beancurd Skin Roll",
+      "kcal": 300
+    },
+    {
+      "slug": "tim-ho-wan-pan-fried-carrot-cake",
+      "name": "Tim Ho Wan Pan Fried Carrot Cake",
+      "kcal": 260
+    },
+    {
+      "slug": "tim-ho-wan-pork-congee",
+      "name": "Tim Ho Wan Pork Congee",
+      "kcal": 260
+    },
+    {
+      "slug": "song-fa-braised-beancurd-skin",
+      "name": "Song Fa Braised Beancurd Skin",
+      "kcal": 220
+    },
+    {
+      "slug": "song-fa-salted-vegetable",
+      "name": "Song Fa Salted Vegetable",
+      "kcal": 60
+    },
+    {
+      "slug": "jumbo-seafood-jumbo-cereal-prawn",
+      "name": "Jumbo Cereal Prawn",
+      "kcal": 620
+    },
+    {
+      "slug": "jumbo-seafood-jumbo-bamboo-clams-with-garlic",
+      "name": "Jumbo Bamboo Clams with Garlic",
+      "kcal": 320
+    },
+    {
+      "slug": "mr-bean-pancake-peanut",
+      "name": "Mr Bean Pancake, Peanut",
+      "kcal": 250
+    },
+    {
+      "slug": "mr-bean-pancake-red-bean",
+      "name": "Mr Bean Pancake, Red Bean",
+      "kcal": 230
+    },
+    {
+      "slug": "mr-bean-soya-milk-no-sugar",
+      "name": "Mr Bean Soya Milk, No Sugar",
+      "kcal": 83
+    },
+    {
+      "slug": "mr-bean-soya-milk-with-pearls",
+      "name": "Mr Bean Soya Milk with Pearls",
+      "kcal": 280
+    },
+    {
+      "slug": "liho-bubble-milk-tea",
+      "name": "LiHO Bubble Milk Tea",
+      "kcal": 350
+    },
+    {
+      "slug": "liho-taro-milk-tea-with-pearls",
+      "name": "LiHO Taro Milk Tea with Pearls",
+      "kcal": 420
+    },
+    {
+      "slug": "liho-matcha-latte",
+      "name": "LiHO Matcha Latte",
+      "kcal": 280
+    },
+    {
+      "slug": "gong-cha-milk-tea-with-pearls",
+      "name": "Gong Cha Milk Tea with Pearls",
+      "kcal": 440
+    },
+    {
+      "slug": "gong-cha-earl-grey-milk-tea-with-3j",
+      "name": "Gong Cha Earl Grey Milk Tea with 3J",
+      "kcal": 400
+    },
+    {
+      "slug": "gong-cha-honey-green-tea",
+      "name": "Gong Cha Honey Green Tea",
+      "kcal": 106
+    },
+    {
+      "slug": "gong-cha-lemon-black-tea",
+      "name": "Gong Cha Lemon Black Tea",
+      "kcal": 90
+    },
+    {
+      "slug": "gong-cha-milk-tea",
+      "name": "Gong Cha Milk Tea",
+      "kcal": 186
+    },
+    {
+      "slug": "gong-cha-oolong-tea-latte",
+      "name": "Gong Cha Oolong Tea Latte",
+      "kcal": 57
+    },
+    {
+      "slug": "gong-cha-winter-melon-tea",
+      "name": "Gong Cha Winter Melon Tea",
+      "kcal": 200
+    },
+    {
+      "slug": "boost-juice-gym-junkie",
+      "name": "Boost Juice Gym Junkie",
+      "kcal": 370
+    },
+    {
+      "slug": "boost-juice-mango-magic",
+      "name": "Boost Juice Mango Magic",
+      "kcal": 285
+    },
+    {
+      "slug": "boost-juice-all-berry-bang",
+      "name": "Boost Juice All Berry Bang",
+      "kcal": 245
+    },
+    {
+      "slug": "boost-juice-5-a-day-juice",
+      "name": "Boost Juice 5 A Day Juice",
+      "kcal": 160
+    },
+    {
+      "slug": "prima-taste-singapore-laksa-la-mian",
+      "name": "Prima Taste Singapore Laksa La Mian",
+      "kcal": 660
+    },
+    {
+      "slug": "prima-taste-singapore-curry-la-mian",
+      "name": "Prima Taste Singapore Curry La Mian",
+      "kcal": 650
+    },
+    {
+      "slug": "prima-taste-singapore-chilli-crab-la-mian",
+      "name": "Prima Taste Singapore Chilli Crab La Mian",
+      "kcal": 620
+    },
+    {
+      "slug": "koka-instant-noodles-curry",
+      "name": "Koka Instant Noodles, Curry",
+      "kcal": 380
+    },
+    {
+      "slug": "koka-purple-wheat-noodles-spicy-sesame",
+      "name": "Koka Purple Wheat Noodles, Spicy Sesame",
+      "kcal": 320
+    },
+    {
+      "slug": "myojo-mee-goreng-singapore",
+      "name": "Myojo Mee Goreng, Singapore",
+      "kcal": 370
+    },
+    {
+      "slug": "f-n-seasons-ice-lemon-tea",
+      "name": "F&N Seasons Ice Lemon Tea",
+      "kcal": 105
+    },
+    {
+      "slug": "pokka-jasmine-green-tea-unsweetened",
+      "name": "Pokka Jasmine Green Tea, Unsweetened",
+      "kcal": 5
+    },
+    {
+      "slug": "bee-cheng-hiang-bak-kwa-sliced-pork",
+      "name": "Bee Cheng Hiang Bak Kwa, Sliced Pork",
+      "kcal": 230
+    },
+    {
+      "slug": "irvins-salted-egg-fish-skin",
+      "name": "Irvins Salted Egg Fish Skin",
+      "kcal": 280
+    },
+    {
+      "slug": "irvins-salted-egg-potato-chips",
+      "name": "Irvins Salted Egg Potato Chips",
+      "kcal": 270
+    },
+    {
+      "slug": "frozen-roti-prata-supermarket-sg",
+      "name": "Frozen Roti Prata, Supermarket (SG)",
+      "kcal": 250
+    },
+    {
+      "slug": "chicken-rice-bento-convenience-store-sg",
+      "name": "Chicken Rice Bento, Convenience Store (SG)",
+      "kcal": 520
+    },
+    {
+      "slug": "nasi-lemak-ready-meal-convenience-store-sg",
+      "name": "Nasi Lemak Ready Meal, Convenience Store (SG)",
+      "kcal": 560
+    },
+    {
+      "slug": "heh-chee-prawn-roll-3-pieces",
+      "name": "Heh Chee (Prawn Roll), 3 pieces",
+      "kcal": 380
+    },
+    {
+      "slug": "cuttlefish-kangkong",
+      "name": "Cuttlefish Kangkong",
+      "kcal": 320
+    },
+    {
+      "slug": "duck-porridge-teochew",
+      "name": "Duck Porridge, Teochew",
+      "kcal": 380
+    },
+    {
+      "slug": "char-siew-pau-2-pieces",
+      "name": "Char Siew Pau, 2 pieces",
+      "kcal": 380
+    },
+    {
+      "slug": "big-pau-da-bao",
+      "name": "Big Pau (Da Bao)",
+      "kcal": 400
+    },
+    {
+      "slug": "curry-puff-chicken-sg",
+      "name": "Curry Puff, Chicken (SG)",
+      "kcal": 339
+    },
+    {
+      "slug": "fried-chicken-wings-hawker-sg",
+      "name": "Fried Chicken Wings, Hawker (SG)",
+      "kcal": 380
+    },
+    {
+      "slug": "sesame-oil-chicken-singapore",
+      "name": "Sesame Oil Chicken, Singapore",
+      "kcal": 520
+    },
+    {
+      "slug": "bittergourd-soup-with-pork-ribs",
+      "name": "Bittergourd Soup with Pork Ribs",
+      "kcal": 220
+    },
+    {
+      "slug": "gong-gong-sea-snails-boiled",
+      "name": "Gong Gong (Sea Snails), Boiled",
+      "kcal": 180
+    },
+    {
+      "slug": "kueh-bahulu-5-pieces",
+      "name": "Kueh Bahulu, 5 pieces",
+      "kcal": 260
+    },
+    {
+      "slug": "you-mian-soup-with-ikan-bilis",
+      "name": "You Mian Soup with Ikan Bilis",
+      "kcal": 420
+    },
+    {
+      "slug": "fresh-lime-juice-hawker-sg",
+      "name": "Fresh Lime Juice, Hawker (SG)",
+      "kcal": 160
+    },
+    {
+      "slug": "nasi-lemak-with-otah-sg",
+      "name": "Nasi Lemak with Otah (SG)",
+      "kcal": 600
+    },
+    {
+      "slug": "curry-chicken-hawker-sg",
+      "name": "Curry Chicken, Hawker (SG)",
+      "kcal": 450
+    },
+    {
+      "slug": "or-kueh-steamed-yam-cake",
+      "name": "Or Kueh (Steamed Yam Cake)",
+      "kcal": 220
+    },
+    {
+      "slug": "ah-balling-peanut-tang-yuan",
+      "name": "Ah Balling (Peanut Tang Yuan)",
+      "kcal": 320
+    },
+    {
+      "slug": "ice-cream-bread-slice-street-cart",
+      "name": "Ice Cream Bread Slice, Street Cart",
+      "kcal": 260
+    },
+    {
+      "slug": "stir-fried-sweet-potato-leaves",
+      "name": "Stir Fried Sweet Potato Leaves",
+      "kcal": 180
+    },
+    {
+      "slug": "har-gow-4-pieces",
+      "name": "Har Gow, 4 pieces",
+      "kcal": 200
+    },
+    {
+      "slug": "old-chang-kee-chicken-chipolata",
+      "name": "Old Chang Kee Chicken Chipolata",
+      "kcal": 190
+    },
+    {
+      "slug": "old-chang-kee-cheese-sausage",
+      "name": "Old Chang Kee Cheese Sausage",
+      "kcal": 210
+    },
+    {
+      "slug": "crystal-jade-fried-rice-with-diced-chicken",
+      "name": "Crystal Jade Fried Rice with Diced Chicken",
+      "kcal": 620
+    },
+    {
+      "slug": "din-tai-fung-shrimp-and-pork-shao-mai",
+      "name": "Din Tai Fung Shrimp and Pork Shao Mai",
+      "kcal": 300
+    },
+    {
+      "slug": "mcdonald-s-singapore-seaweed-shaker-fries",
+      "name": "McDonald's Singapore Seaweed Shaker Fries",
+      "kcal": 350
+    },
+    {
+      "slug": "polar-puffs-curry-puff",
+      "name": "Polar Puffs Curry Puff",
+      "kcal": 260
+    },
+    {
+      "slug": "bengawan-solo-kueh-lapis-legit",
+      "name": "Bengawan Solo Kueh Lapis Legit",
+      "kcal": 290
+    },
+    {
+      "slug": "bengawan-solo-pandan-chiffon-cake",
+      "name": "Bengawan Solo Pandan Chiffon Cake",
+      "kcal": 190
+    },
+    {
+      "slug": "sour-plum-drink-suan-mei-tang",
+      "name": "Sour Plum Drink (Suan Mei Tang)",
+      "kcal": 120
+    },
+    {
+      "slug": "dendeng-lambok",
+      "name": "Dendeng Lambok",
+      "kcal": 215
+    },
+    {
+      "slug": "telur-dadar-padang",
+      "name": "Telur Dadar Padang",
+      "kcal": 232
+    },
+    {
+      "slug": "gulai-cubadak",
+      "name": "Gulai Cubadak",
+      "kcal": 142
+    },
+    {
+      "slug": "gulai-kepala-ikan-kakap",
+      "name": "Gulai Kepala Ikan Kakap",
+      "kcal": 332
+    },
+    {
+      "slug": "ayam-bakar-padang",
+      "name": "Ayam Bakar Padang",
+      "kcal": 290
+    },
+    {
+      "slug": "ayam-gulai-padang",
+      "name": "Ayam Gulai Padang",
+      "kcal": 283
+    },
+    {
+      "slug": "paru-goreng-balado",
+      "name": "Paru Goreng Balado",
+      "kcal": 178
+    },
+    {
+      "slug": "asam-padeh-ikan-tongkol",
+      "name": "Asam Padeh Ikan Tongkol",
+      "kcal": 210
+    },
+    {
+      "slug": "ayam-balado",
+      "name": "Ayam Balado",
+      "kcal": 275
+    },
+    {
+      "slug": "udang-balado",
+      "name": "Udang Balado",
+      "kcal": 164
+    },
+    {
+      "slug": "rawon",
+      "name": "Rawon",
+      "kcal": 522
+    },
+    {
+      "slug": "garang-asem-ayam",
+      "name": "Garang Asem Ayam",
+      "kcal": 263
+    },
+    {
+      "slug": "tahu-gimbal",
+      "name": "Tahu Gimbal",
+      "kcal": 562
+    },
+    {
+      "slug": "nasi-gandul",
+      "name": "Nasi Gandul",
+      "kcal": 534
+    },
+    {
+      "slug": "brongkos",
+      "name": "Brongkos",
+      "kcal": 350
+    },
+    {
+      "slug": "mangut-lele",
+      "name": "Mangut Lele",
+      "kcal": 344
+    },
+    {
+      "slug": "botok-tempe",
+      "name": "Botok Tempe",
+      "kcal": 189
+    },
+    {
+      "slug": "urap-sayur",
+      "name": "Urap Sayur",
+      "kcal": 146
+    },
+    {
+      "slug": "gudangan",
+      "name": "Gudangan",
+      "kcal": 152
+    },
+    {
+      "slug": "sambal-goreng-krecek",
+      "name": "Sambal Goreng Krecek",
+      "kcal": 173
+    },
+    {
+      "slug": "tahu-petis",
+      "name": "Tahu Petis",
+      "kcal": 94
+    },
+    {
+      "slug": "sego-megono",
+      "name": "Sego Megono",
+      "kcal": 426
+    },
+    {
+      "slug": "nasi-bogana",
+      "name": "Nasi Bogana",
+      "kcal": 557
+    },
+    {
+      "slug": "soto-sokaraja",
+      "name": "Soto Sokaraja",
+      "kcal": 434
+    },
+    {
+      "slug": "lontong-opor",
+      "name": "Lontong Opor",
+      "kcal": 552
+    },
+    {
+      "slug": "sego-tumpang",
+      "name": "Sego Tumpang",
+      "kcal": 440
+    },
+    {
+      "slug": "nasi-ayam-semarang",
+      "name": "Nasi Ayam Semarang",
+      "kcal": 516
+    },
+    {
+      "slug": "tahu-tek",
+      "name": "Tahu Tek",
+      "kcal": 520
+    },
+    {
+      "slug": "tahu-telor-surabaya",
+      "name": "Tahu Telor Surabaya",
+      "kcal": 540
+    },
+    {
+      "slug": "lontong-kupang",
+      "name": "Lontong Kupang",
+      "kcal": 381
+    },
+    {
+      "slug": "nasi-krawu",
+      "name": "Nasi Krawu",
+      "kcal": 581
+    },
+    {
+      "slug": "nasi-boran-lamongan",
+      "name": "Nasi Boran Lamongan",
+      "kcal": 549
+    },
+    {
+      "slug": "semanggi-suroboyo",
+      "name": "Semanggi Suroboyo",
+      "kcal": 283
+    },
+    {
+      "slug": "ayam-lodho",
+      "name": "Ayam Lodho",
+      "kcal": 379
+    },
+    {
+      "slug": "timlo-solo",
+      "name": "Timlo Solo",
+      "kcal": 448
+    },
+    {
+      "slug": "selat-solo",
+      "name": "Selat Solo",
+      "kcal": 420
+    },
+    {
+      "slug": "tengkleng-solo",
+      "name": "Tengkleng Solo",
+      "kcal": 344
+    },
+    {
+      "slug": "sate-kere",
+      "name": "Sate Kere",
+      "kcal": 323
+    },
+    {
+      "slug": "bakmi-jawa-godhog",
+      "name": "Bakmi Jawa Godhog",
+      "kcal": 515
+    },
+    {
+      "slug": "nasi-goreng-magelangan",
+      "name": "Nasi Goreng Magelangan",
+      "kcal": 608
+    },
+    {
+      "slug": "sosis-solo",
+      "name": "Sosis Solo",
+      "kcal": 116
+    },
+    {
+      "slug": "lumpia-semarang",
+      "name": "Lumpia Semarang",
+      "kcal": 190
+    },
+    {
+      "slug": "nasi-tiwul",
+      "name": "Nasi Tiwul",
+      "kcal": 253
+    },
+    {
+      "slug": "pindang-serani",
+      "name": "Pindang Serani",
+      "kcal": 199
+    },
+    {
+      "slug": "karedok",
+      "name": "Karedok",
+      "kcal": 302
+    },
+    {
+      "slug": "nasi-tutug-oncom",
+      "name": "Nasi Tutug Oncom",
+      "kcal": 463
+    },
+    {
+      "slug": "ayam-bakakak",
+      "name": "Ayam Bakakak",
+      "kcal": 506
+    },
+    {
+      "slug": "gepuk-sunda",
+      "name": "Gepuk Sunda",
+      "kcal": 213
+    },
+    {
+      "slug": "pepes-ikan-mas",
+      "name": "Pepes Ikan Mas",
+      "kcal": 236
+    },
+    {
+      "slug": "colenak",
+      "name": "Colenak",
+      "kcal": 302
+    },
+    {
+      "slug": "surabi-bandung-oncom",
+      "name": "Surabi Bandung Oncom",
+      "kcal": 167
+    },
+    {
+      "slug": "es-goyobod",
+      "name": "Es Goyobod",
+      "kcal": 265
+    },
+    {
+      "slug": "misro",
+      "name": "Misro",
+      "kcal": 139
+    },
+    {
+      "slug": "cuanki",
+      "name": "Cuanki",
+      "kcal": 325
+    },
+    {
+      "slug": "cimol",
+      "name": "Cimol",
+      "kcal": 296
+    },
+    {
+      "slug": "soto-bandung",
+      "name": "Soto Bandung",
+      "kcal": 278
+    },
+    {
+      "slug": "doclang",
+      "name": "Doclang",
+      "kcal": 419
+    },
+    {
+      "slug": "laksa-bogor",
+      "name": "Laksa Bogor",
+      "kcal": 472
+    },
+    {
+      "slug": "toge-goreng-bogor",
+      "name": "Toge Goreng Bogor",
+      "kcal": 324
+    },
+    {
+      "slug": "asinan-bogor",
+      "name": "Asinan Bogor",
+      "kcal": 248
+    },
+    {
+      "slug": "ayam-goreng-lengkuas",
+      "name": "Ayam Goreng Lengkuas",
+      "kcal": 326
+    },
+    {
+      "slug": "lalapan-sunda",
+      "name": "Lalapan Sunda",
+      "kcal": 29
+    },
+    {
+      "slug": "peuyeum-bandung",
+      "name": "Peuyeum Bandung",
+      "kcal": 169
+    },
+    {
+      "slug": "ketupat-sayur-betawi",
+      "name": "Ketupat Sayur Betawi",
+      "kcal": 476
+    },
+    {
+      "slug": "nasi-jinggo",
+      "name": "Nasi Jinggo",
+      "kcal": 299
+    },
+    {
+      "slug": "tipat-cantok",
+      "name": "Tipat Cantok",
+      "kcal": 397
+    },
+    {
+      "slug": "serombotan",
+      "name": "Serombotan",
+      "kcal": 228
+    },
+    {
+      "slug": "sambal-matah",
+      "name": "Sambal Matah",
+      "kcal": 92
+    },
+    {
+      "slug": "ayam-sisit",
+      "name": "Ayam Sisit",
+      "kcal": 222
+    },
+    {
+      "slug": "ikan-mesambel-matah",
+      "name": "Ikan Mesambel Matah",
+      "kcal": 299
+    },
+    {
+      "slug": "sate-kakul",
+      "name": "Sate Kakul",
+      "kcal": 183
+    },
+    {
+      "slug": "rujak-kuah-pindang",
+      "name": "Rujak Kuah Pindang",
+      "kcal": 149
+    },
+    {
+      "slug": "bubur-mengguh",
+      "name": "Bubur Mengguh",
+      "kcal": 379
+    },
+    {
+      "slug": "laklak-bali",
+      "name": "Laklak Bali",
+      "kcal": 227
+    },
+    {
+      "slug": "nasi-tepeng",
+      "name": "Nasi Tepeng",
+      "kcal": 394
+    },
+    {
+      "slug": "babi-kecap-bali",
+      "name": "Babi Kecap Bali",
+      "kcal": 381
+    },
+    {
+      "slug": "panada",
+      "name": "Panada",
+      "kcal": 226
+    },
+    {
+      "slug": "nasi-kuning-manado",
+      "name": "Nasi Kuning Manado",
+      "kcal": 541
+    },
+    {
+      "slug": "ayam-woku",
+      "name": "Ayam Woku",
+      "kcal": 299
+    },
+    {
+      "slug": "perkedel-nike",
+      "name": "Perkedel Nike",
+      "kcal": 131
+    },
+    {
+      "slug": "sop-ubi",
+      "name": "Sop Ubi",
+      "kcal": 425
+    },
+    {
+      "slug": "songkolo-bagadang",
+      "name": "Songkolo Bagadang",
+      "kcal": 473
+    },
+    {
+      "slug": "ayam-palekko",
+      "name": "Ayam Palekko",
+      "kcal": 335
+    },
+    {
+      "slug": "burasa",
+      "name": "Burasa",
+      "kcal": 146
+    },
+    {
+      "slug": "es-palu-butung",
+      "name": "Es Palu Butung",
+      "kcal": 321
+    },
+    {
+      "slug": "kue-putu-cangkir",
+      "name": "Kue Putu Cangkir",
+      "kcal": 133
+    },
+    {
+      "slug": "soto-medan",
+      "name": "Soto Medan",
+      "kcal": 514
+    },
+    {
+      "slug": "mie-balap-medan",
+      "name": "Mie Balap Medan",
+      "kcal": 446
+    },
+    {
+      "slug": "manuk-napinadar",
+      "name": "Manuk Napinadar",
+      "kcal": 326
+    },
+    {
+      "slug": "sop-sumsum-sapi",
+      "name": "Sop Sumsum Sapi",
+      "kcal": 382
+    },
+    {
+      "slug": "bolu-meranti",
+      "name": "Bolu Meranti",
+      "kcal": 207
+    },
+    {
+      "slug": "pancake-durian-medan",
+      "name": "Pancake Durian Medan",
+      "kcal": 161
+    },
+    {
+      "slug": "sate-kerang-medan",
+      "name": "Sate Kerang Medan",
+      "kcal": 157
+    },
+    {
+      "slug": "sie-reuboh",
+      "name": "Sie Reuboh",
+      "kcal": 329
+    },
+    {
+      "slug": "kuah-pliek-u",
+      "name": "Kuah Pliek U",
+      "kcal": 284
+    },
+    {
+      "slug": "timphan",
+      "name": "Timphan",
+      "kcal": 151
+    },
+    {
+      "slug": "kopi-sanger",
+      "name": "Kopi Sanger",
+      "kcal": 147
+    },
+    {
+      "slug": "mie-kepiting-aceh",
+      "name": "Mie Kepiting Aceh",
+      "kcal": 609
+    },
+    {
+      "slug": "burgo",
+      "name": "Burgo",
+      "kcal": 341
+    },
+    {
+      "slug": "pempek-kulit",
+      "name": "Pempek Kulit",
+      "kcal": 169
+    },
+    {
+      "slug": "pempek-tahu",
+      "name": "Pempek Tahu",
+      "kcal": 189
+    },
+    {
+      "slug": "pempek-keriting",
+      "name": "Pempek Keriting",
+      "kcal": 110
+    },
+    {
+      "slug": "pempek-pistel",
+      "name": "Pempek Pistel",
+      "kcal": 212
+    },
+    {
+      "slug": "martabak-har",
+      "name": "Martabak HAR",
+      "kcal": 614
+    },
+    {
+      "slug": "ragit-palembang",
+      "name": "Ragit Palembang",
+      "kcal": 397
+    },
+    {
+      "slug": "kemplang-palembang",
+      "name": "Kemplang Palembang",
+      "kcal": 59
+    },
+    {
+      "slug": "es-kacang-merah",
+      "name": "Es Kacang Merah",
+      "kcal": 296
+    },
+    {
+      "slug": "seruit-lampung",
+      "name": "Seruit Lampung",
+      "kcal": 315
+    },
+    {
+      "slug": "tempoyak-ikan-patin",
+      "name": "Tempoyak Ikan Patin",
+      "kcal": 316
+    },
+    {
+      "slug": "pendap-bengkulu",
+      "name": "Pendap Bengkulu",
+      "kcal": 255
+    },
+    {
+      "slug": "mie-lendir-batam",
+      "name": "Mie Lendir Batam",
+      "kcal": 439
+    },
+    {
+      "slug": "ayam-cincane",
+      "name": "Ayam Cincane",
+      "kcal": 361
+    },
+    {
+      "slug": "ikan-bakar-manokwari",
+      "name": "Ikan Bakar Manokwari",
+      "kcal": 296
+    },
+    {
+      "slug": "tempe-goreng-tepung",
+      "name": "Tempe Goreng Tepung",
+      "kcal": 106
+    },
+    {
+      "slug": "singkong-goreng",
+      "name": "Singkong Goreng",
+      "kcal": 188
+    },
+    {
+      "slug": "molen-pisang",
+      "name": "Molen Pisang",
+      "kcal": 130
+    },
+    {
+      "slug": "tahu-bulat",
+      "name": "Tahu Bulat",
+      "kcal": 227
+    },
+    {
+      "slug": "cilor",
+      "name": "Cilor",
+      "kcal": 277
+    },
+    {
+      "slug": "odading",
+      "name": "Odading",
+      "kcal": 201
+    },
+    {
+      "slug": "cakwe",
+      "name": "Cakwe",
+      "kcal": 211
+    },
+    {
+      "slug": "kue-putu-bambu",
+      "name": "Kue Putu Bambu",
+      "kcal": 90
+    },
+    {
+      "slug": "kue-cucur",
+      "name": "Kue Cucur",
+      "kcal": 143
+    },
+    {
+      "slug": "kue-bugis",
+      "name": "Kue Bugis",
+      "kcal": 149
+    },
+    {
+      "slug": "lupis-ketan",
+      "name": "Lupis Ketan",
+      "kcal": 260
+    },
+    {
+      "slug": "wajik-ketan",
+      "name": "Wajik Ketan",
+      "kcal": 166
+    },
+    {
+      "slug": "apem",
+      "name": "Apem",
+      "kcal": 120
+    },
+    {
+      "slug": "kue-mangkok",
+      "name": "Kue Mangkok",
+      "kcal": 110
+    },
+    {
+      "slug": "kue-talam-ubi",
+      "name": "Kue Talam Ubi",
+      "kcal": 122
+    },
+    {
+      "slug": "nastar",
+      "name": "Nastar",
+      "kcal": 55
+    },
+    {
+      "slug": "kastengel",
+      "name": "Kastengel",
+      "kcal": 40
+    },
+    {
+      "slug": "rengginang",
+      "name": "Rengginang",
+      "kcal": 66
+    },
+    {
+      "slug": "es-cincau-hijau",
+      "name": "Es Cincau Hijau",
+      "kcal": 183
+    },
+    {
+      "slug": "es-kelapa-muda",
+      "name": "Es Kelapa Muda",
+      "kcal": 155
+    },
+    {
+      "slug": "es-dawet-ayu-banjarnegara",
+      "name": "Es Dawet Ayu Banjarnegara",
+      "kcal": 260
+    },
+    {
+      "slug": "sekoteng",
+      "name": "Sekoteng",
+      "kcal": 250
+    },
+    {
+      "slug": "stmj",
+      "name": "STMJ",
+      "kcal": 276
+    },
+    {
+      "slug": "sarabba",
+      "name": "Sarabba",
+      "kcal": 257
+    },
+    {
+      "slug": "es-oyen",
+      "name": "Es Oyen",
+      "kcal": 297
+    },
+    {
+      "slug": "es-tebu",
+      "name": "Es Tebu",
+      "kcal": 190
+    },
+    {
+      "slug": "teh-poci-gula-batu",
+      "name": "Teh Poci Gula Batu",
+      "kcal": 70
+    },
+    {
+      "slug": "sambal-kecap",
+      "name": "Sambal Kecap",
+      "kcal": 34
+    },
+    {
+      "slug": "sambal-pecel",
+      "name": "Sambal Pecel",
+      "kcal": 180
+    },
+    {
+      "slug": "serundeng-kelapa",
+      "name": "Serundeng Kelapa",
+      "kcal": 139
+    },
+    {
+      "slug": "abon-sapi",
+      "name": "Abon Sapi",
+      "kcal": 109
+    },
+    {
+      "slug": "kering-tempe",
+      "name": "Kering Tempe",
+      "kcal": 177
+    },
+    {
+      "slug": "hokben-chicken-teriyaki",
+      "name": "HokBen Chicken Teriyaki",
+      "kcal": 612
+    },
+    {
+      "slug": "hokben-shrimp-roll",
+      "name": "HokBen Shrimp Roll",
+      "kcal": 191
+    },
+    {
+      "slug": "hokben-tori-ball",
+      "name": "HokBen Tori Ball",
+      "kcal": 157
+    },
+    {
+      "slug": "hokben-chicken-karaage",
+      "name": "HokBen Chicken Karaage",
+      "kcal": 323
+    },
+    {
+      "slug": "hokben-egg-chicken-roll",
+      "name": "HokBen Egg Chicken Roll",
+      "kcal": 175
+    },
+    {
+      "slug": "kfc-indonesia-nasi",
+      "name": "KFC Indonesia Nasi",
+      "kcal": 170
+    },
+    {
+      "slug": "kfc-indonesia-perkedel",
+      "name": "KFC Indonesia Perkedel",
+      "kcal": 118
+    },
+    {
+      "slug": "kfc-indonesia-original-recipe-chicken",
+      "name": "KFC Indonesia Original Recipe Chicken",
+      "kcal": 290
+    },
+    {
+      "slug": "kfc-indonesia-bubur-ayam",
+      "name": "KFC Indonesia Bubur Ayam",
+      "kcal": 254
+    },
+    {
+      "slug": "mcdonald-s-bubur-ayam",
+      "name": "McDonald's Bubur Ayam",
+      "kcal": 259
+    },
+    {
+      "slug": "mcdonald-s-nasi-uduk",
+      "name": "McDonald's Nasi Uduk",
+      "kcal": 262
+    },
+    {
+      "slug": "mcdonald-s-panas-special",
+      "name": "McDonald's PaNas Special",
+      "kcal": 693
+    },
+    {
+      "slug": "richeese-factory-fire-wings",
+      "name": "Richeese Factory Fire Wings",
+      "kcal": 410
+    },
+    {
+      "slug": "es-teler-77-mie-ayam",
+      "name": "Es Teler 77 Mie Ayam",
+      "kcal": 519
+    },
+    {
+      "slug": "es-teler-77-siomay",
+      "name": "Es Teler 77 Siomay",
+      "kcal": 377
+    },
+    {
+      "slug": "bakmi-gm-nasi-goreng",
+      "name": "Bakmi GM Nasi Goreng",
+      "kcal": 590
+    },
+    {
+      "slug": "solaria-chicken-katsu",
+      "name": "Solaria Chicken Katsu",
+      "kcal": 675
+    },
+    {
+      "slug": "mk-restaurants-mk-suki-talay-nam",
+      "name": "MK Suki Talay Nam",
+      "kcal": 239
+    },
+    {
+      "slug": "mk-restaurants-mk-suki-talay-haeng",
+      "name": "MK Suki Talay Haeng",
+      "kcal": 425
+    },
+    {
+      "slug": "mk-restaurants-mk-kiew-goong-moo-daeng-nam",
+      "name": "MK Kiew Goong Moo Daeng Nam",
+      "kcal": 105
+    },
+    {
+      "slug": "mk-restaurants-mk-bamee-yok-kiew-goong-moo-daeng",
+      "name": "MK Bamee Yok Kiew Goong Moo Daeng",
+      "kcal": 242
+    },
+    {
+      "slug": "mk-restaurants-mk-bamee-yok-ped-yang-moo-krob",
+      "name": "MK Bamee Yok Ped Yang Moo Krob",
+      "kcal": 345
+    },
+    {
+      "slug": "mk-restaurants-mk-bamee-yok-gai-toon",
+      "name": "MK Bamee Yok Gai Toon",
+      "kcal": 617
+    },
+    {
+      "slug": "mk-restaurants-mk-bamee-yok-see-krong-moo",
+      "name": "MK Bamee Yok See Krong Moo",
+      "kcal": 221
+    },
+    {
+      "slug": "mk-restaurants-mk-bamee-yok-ped-yang",
+      "name": "MK Bamee Yok Ped Yang",
+      "kcal": 285
+    },
+    {
+      "slug": "mk-restaurants-mk-har-gow",
+      "name": "MK Har Gow",
+      "kcal": 122
+    },
+    {
+      "slug": "mk-restaurants-mk-look-chin-goong-neung",
+      "name": "MK Look Chin Goong Neung",
+      "kcal": 114
+    },
+    {
+      "slug": "mk-restaurants-mk-see-krong-moo-neung",
+      "name": "MK See Krong Moo Neung",
+      "kcal": 189
+    },
+    {
+      "slug": "mk-restaurants-mk-khanom-jeeb-goong",
+      "name": "MK Khanom Jeeb Goong",
+      "kcal": 113
+    },
+    {
+      "slug": "mk-restaurants-mk-khanom-jeeb-moo",
+      "name": "MK Khanom Jeeb Moo",
+      "kcal": 171
+    },
+    {
+      "slug": "mk-restaurants-mk-cheung-fun-goong",
+      "name": "MK Cheung Fun Goong",
+      "kcal": 95
+    },
+    {
+      "slug": "mk-restaurants-mk-teen-ped-neung",
+      "name": "MK Teen Ped Neung",
+      "kcal": 126
+    },
+    {
+      "slug": "mk-restaurants-mk-khanom-jeeb-poo",
+      "name": "MK Khanom Jeeb Poo",
+      "kcal": 149
+    },
+    {
+      "slug": "mk-restaurants-mk-salapao-sai-moo",
+      "name": "MK Salapao Sai Moo",
+      "kcal": 332
+    },
+    {
+      "slug": "mk-restaurants-mk-salapao-sangkhaya",
+      "name": "MK Salapao Sangkhaya",
+      "kcal": 231
+    },
+    {
+      "slug": "mk-restaurants-mk-salapao-moo-daeng",
+      "name": "MK Salapao Moo Daeng",
+      "kcal": 282
+    },
+    {
+      "slug": "mk-restaurants-mk-hed-enoki-tempura",
+      "name": "MK Hed Enoki Tempura",
+      "kcal": 333
+    },
+    {
+      "slug": "mk-restaurants-mk-gyoza",
+      "name": "MK Gyoza",
+      "kcal": 204
+    },
+    {
+      "slug": "mk-restaurants-mk-tempura-pak",
+      "name": "MK Tempura Pak",
+      "kcal": 472
+    },
+    {
+      "slug": "mk-restaurants-mk-poh-pia-sod",
+      "name": "MK Poh Pia Sod",
+      "kcal": 389
+    },
+    {
+      "slug": "mk-restaurants-mk-tod-mun-poo",
+      "name": "MK Tod Mun Poo",
+      "kcal": 144
+    },
+    {
+      "slug": "mk-restaurants-mk-premium-suki-set",
+      "name": "MK Premium Suki Set",
+      "kcal": 382
+    },
+    {
+      "slug": "mk-restaurants-mk-mixed-suki-set",
+      "name": "MK Mixed Suki Set",
+      "kcal": 376
+    },
+    {
+      "slug": "s-p-cake-chocolate",
+      "name": "S&P Cake Chocolate",
+      "kcal": 380
+    },
+    {
+      "slug": "s-p-puff-sai-gai",
+      "name": "S&P Puff Sai Gai",
+      "kcal": 300
+    },
+    {
+      "slug": "s-p-spaghetti-kee-mao-talay",
+      "name": "S&P Spaghetti Kee Mao Talay",
+      "kcal": 620
+    },
+    {
+      "slug": "s-p-khao-pad-poo",
+      "name": "S&P Khao Pad Poo",
+      "kcal": 560
+    },
+    {
+      "slug": "s-p-khanom-pang-sangkhaya",
+      "name": "S&P Khanom Pang Sangkhaya",
+      "kcal": 260
+    },
+    {
+      "slug": "bar-b-q-plaza-beef-set",
+      "name": "Bar B Q Plaza Beef Set",
+      "kcal": 420
+    },
+    {
+      "slug": "bar-b-q-plaza-seafood-set",
+      "name": "Bar B Q Plaza Seafood Set",
+      "kcal": 260
+    },
+    {
+      "slug": "bar-b-q-plaza-chicken-set",
+      "name": "Bar B Q Plaza Chicken Set",
+      "kcal": 330
+    },
+    {
+      "slug": "bar-b-q-plaza-gon-sauce",
+      "name": "Bar B Q Plaza Gon Sauce",
+      "kcal": 45
+    },
+    {
+      "slug": "yayoi-gyudon",
+      "name": "Yayoi Gyudon",
+      "kcal": 700
+    },
+    {
+      "slug": "yayoi-chicken-teriyaki-set",
+      "name": "Yayoi Chicken Teriyaki Set",
+      "kcal": 720
+    },
+    {
+      "slug": "yayoi-salmon-teriyaki-set",
+      "name": "Yayoi Salmon Teriyaki Set",
+      "kcal": 690
+    },
+    {
+      "slug": "yayoi-curry-katsu",
+      "name": "Yayoi Curry Katsu",
+      "kcal": 880
+    },
+    {
+      "slug": "yayoi-kake-udon",
+      "name": "Yayoi Kake Udon",
+      "kcal": 380
+    },
+    {
+      "slug": "cp-khao-pad-goong",
+      "name": "CP Khao Pad Goong",
+      "kcal": 400
+    },
+    {
+      "slug": "cp-gai-yang",
+      "name": "CP Gai Yang",
+      "kcal": 190
+    },
+    {
+      "slug": "cp-frankfurter-sausage",
+      "name": "CP Frankfurter Sausage",
+      "kcal": 210
+    },
+    {
+      "slug": "cp-khao-kha-moo",
+      "name": "CP Khao Kha Moo",
+      "kcal": 480
+    },
+    {
+      "slug": "cp-tom-yum-goong-ready-meal",
+      "name": "CP Tom Yum Goong Ready Meal",
+      "kcal": 180
+    },
+    {
+      "slug": "cp-fish-sausage",
+      "name": "CP Fish Sausage",
+      "kcal": 105
+    },
+    {
+      "slug": "five-star-gai-tod",
+      "name": "Five Star Gai Tod",
+      "kcal": 290
+    },
+    {
+      "slug": "five-star-peek-gai-tod",
+      "name": "Five Star Peek Gai Tod",
+      "kcal": 350
+    },
+    {
+      "slug": "7-eleven-khao-pad-poo",
+      "name": "7-Eleven Khao Pad Poo",
+      "kcal": 400
+    },
+    {
+      "slug": "7-eleven-khao-kha-moo",
+      "name": "7-Eleven Khao Kha Moo",
+      "kcal": 470
+    },
+    {
+      "slug": "7-eleven-spaghetti-carbonara",
+      "name": "7-Eleven Spaghetti Carbonara",
+      "kcal": 460
+    },
+    {
+      "slug": "7-eleven-salapao-moo-sap",
+      "name": "7-Eleven Salapao Moo Sap",
+      "kcal": 230
+    },
+    {
+      "slug": "7-eleven-khao-niao-gai-tod",
+      "name": "7-Eleven Khao Niao Gai Tod",
+      "kcal": 420
+    },
+    {
+      "slug": "7-eleven-sandwich-tuna",
+      "name": "7-Eleven Sandwich Tuna",
+      "kcal": 280
+    },
+    {
+      "slug": "7-eleven-big-bite-sausage",
+      "name": "7-Eleven Big Bite Sausage",
+      "kcal": 260
+    },
+    {
+      "slug": "cafe-amazon-latte-yen",
+      "name": "Cafe Amazon Latte Yen",
+      "kcal": 190
+    },
+    {
+      "slug": "cafe-amazon-extra-yen",
+      "name": "Cafe Amazon Extra Yen",
+      "kcal": 230
+    },
+    {
+      "slug": "cafe-amazon-green-tea-latte-yen",
+      "name": "Cafe Amazon Green Tea Latte Yen",
+      "kcal": 260
+    },
+    {
+      "slug": "cafe-amazon-mocha-yen",
+      "name": "Cafe Amazon Mocha Yen",
+      "kcal": 280
+    },
+    {
+      "slug": "inthanin-cha-yen",
+      "name": "Inthanin Cha Yen",
+      "kcal": 250
+    },
+    {
+      "slug": "inthanin-latte-yen",
+      "name": "Inthanin Latte Yen",
+      "kcal": 180
+    },
+    {
+      "slug": "black-canyon-khao-pad-kaphrao-gai",
+      "name": "Black Canyon Khao Pad Kaphrao Gai",
+      "kcal": 620
+    },
+    {
+      "slug": "black-canyon-spaghetti-tom-yum-goong",
+      "name": "Black Canyon Spaghetti Tom Yum Goong",
+      "kcal": 560
+    },
+    {
+      "slug": "black-canyon-kafae-boran",
+      "name": "Black Canyon Kafae Boran",
+      "kcal": 220
+    },
+    {
+      "slug": "swensen-s-single-scoop",
+      "name": "Swensen's Single Scoop",
+      "kcal": 200
+    },
+    {
+      "slug": "swensen-s-banana-split",
+      "name": "Swensen's Banana Split",
+      "kcal": 780
+    },
+    {
+      "slug": "swensen-s-sticky-chewy-chocolate",
+      "name": "Swensen's Sticky Chewy Chocolate",
+      "kcal": 620
+    },
+    {
+      "slug": "swensen-s-khao-niao-mamuang-sundae",
+      "name": "Swensen's Khao Niao Mamuang Sundae",
+      "kcal": 560
+    },
+    {
+      "slug": "the-pizza-company-seafood-cocktail-pizza",
+      "name": "The Pizza Company Seafood Cocktail Pizza",
+      "kcal": 250
+    },
+    {
+      "slug": "the-pizza-company-double-cheese-pizza",
+      "name": "The Pizza Company Double Cheese Pizza",
+      "kcal": 280
+    },
+    {
+      "slug": "the-pizza-company-garlic-bread",
+      "name": "The Pizza Company Garlic Bread",
+      "kcal": 280
+    },
+    {
+      "slug": "the-pizza-company-spicy-chicken-wings",
+      "name": "The Pizza Company Spicy Chicken Wings",
+      "kcal": 400
+    },
+    {
+      "slug": "the-pizza-company-spaghetti-tom-yum-goong",
+      "name": "The Pizza Company Spaghetti Tom Yum Goong",
+      "kcal": 540
+    },
+    {
+      "slug": "chester-s-khao-gai-yang",
+      "name": "Chester's Khao Gai Yang",
+      "kcal": 560
+    },
+    {
+      "slug": "chester-s-gai-tod",
+      "name": "Chester's Gai Tod",
+      "kcal": 320
+    },
+    {
+      "slug": "chester-s-chic-burger",
+      "name": "Chester's Chic Burger",
+      "kcal": 450
+    },
+    {
+      "slug": "chester-s-khao-gai-ped",
+      "name": "Chester's Khao Gai Ped",
+      "kcal": 620
+    },
+    {
+      "slug": "kfc-thailand-khao-gai-zabb",
+      "name": "KFC Thailand Khao Gai Zabb",
+      "kcal": 610
+    },
+    {
+      "slug": "kfc-thailand-wing-zabb",
+      "name": "KFC Thailand Wing Zabb",
+      "kcal": 330
+    },
+    {
+      "slug": "mcdonald-s-samurai-pork-burger",
+      "name": "McDonald's Samurai Pork Burger",
+      "kcal": 480
+    },
+    {
+      "slug": "mcdonald-s-thailand-pie-sapparot",
+      "name": "McDonald's Thailand Pie Sapparot",
+      "kcal": 240
+    },
+    {
+      "slug": "mcdonald-s-thailand-cha-yen",
+      "name": "McDonald's Thailand Cha Yen",
+      "kcal": 220
+    },
+    {
+      "slug": "gaeng-nor-mai-isan",
+      "name": "Gaeng Nor Mai Isan",
+      "kcal": 160
+    },
+    {
+      "slug": "tom-saep-neua",
+      "name": "Tom Saep Neua",
+      "kcal": 250
+    },
+    {
+      "slug": "pla-som-tod",
+      "name": "Pla Som Tod",
+      "kcal": 330
+    },
+    {
+      "slug": "jaew-bong",
+      "name": "Jaew Bong",
+      "kcal": 70
+    },
+    {
+      "slug": "tam-kanom-jeen",
+      "name": "Tam Kanom Jeen",
+      "kcal": 280
+    },
+    {
+      "slug": "khao-jee",
+      "name": "Khao Jee",
+      "kcal": 220
+    },
+    {
+      "slug": "suea-rong-hai",
+      "name": "Suea Rong Hai",
+      "kcal": 380
+    },
+    {
+      "slug": "pla-pao",
+      "name": "Pla Pao",
+      "kcal": 420
+    },
+    {
+      "slug": "gaeng-ho",
+      "name": "Gaeng Ho",
+      "kcal": 380
+    },
+    {
+      "slug": "larb-kua-muang",
+      "name": "Larb Kua Muang",
+      "kcal": 380
+    },
+    {
+      "slug": "tam-kanun",
+      "name": "Tam Kanun",
+      "kcal": 230
+    },
+    {
+      "slug": "yam-jin-kai",
+      "name": "Yam Jin Kai",
+      "kcal": 240
+    },
+    {
+      "slug": "moo-hong",
+      "name": "Moo Hong",
+      "kcal": 480
+    },
+    {
+      "slug": "pad-pak-miang-sai-khai",
+      "name": "Pad Pak Miang Sai Khai",
+      "kcal": 220
+    },
+    {
+      "slug": "roti-kaeng",
+      "name": "Roti Kaeng",
+      "kcal": 520
+    },
+    {
+      "slug": "khao-mok-neua",
+      "name": "Khao Mok Neua",
+      "kcal": 640
+    },
+    {
+      "slug": "kai-tod-kamin",
+      "name": "Kai Tod Kamin",
+      "kcal": 400
+    },
+    {
+      "slug": "krathong-thong",
+      "name": "Krathong Thong",
+      "kcal": 260
+    },
+    {
+      "slug": "tod-mun-khao-pod",
+      "name": "Tod Mun Khao Pod",
+      "kcal": 300
+    },
+    {
+      "slug": "nam-prik-long-rue",
+      "name": "Nam Prik Long Rue",
+      "kcal": 340
+    },
+    {
+      "slug": "khao-tang-na-tang",
+      "name": "Khao Tang Na Tang",
+      "kcal": 420
+    },
+    {
+      "slug": "sarim",
+      "name": "Sarim",
+      "kcal": 280
+    },
+    {
+      "slug": "gaeng-phanaeng-moo",
+      "name": "Gaeng Phanaeng Moo",
+      "kcal": 380
+    },
+    {
+      "slug": "gaeng-liang-goong",
+      "name": "Gaeng Liang Goong",
+      "kcal": 150
+    },
+    {
+      "slug": "gaeng-kua-gai",
+      "name": "Gaeng Kua Gai",
+      "kcal": 340
+    },
+    {
+      "slug": "gaeng-som-cha-om-goong",
+      "name": "Gaeng Som Cha-om Goong",
+      "kcal": 220
+    },
+    {
+      "slug": "gaeng-massaman-gai",
+      "name": "Gaeng Massaman Gai",
+      "kcal": 400
+    },
+    {
+      "slug": "gaeng-daeng-gai",
+      "name": "Gaeng Daeng Gai",
+      "kcal": 300
+    },
+    {
+      "slug": "pad-prik-gaeng-gai",
+      "name": "Pad Prik Gaeng Gai",
+      "kcal": 300
+    },
+    {
+      "slug": "pad-ped-moo",
+      "name": "Pad Ped Moo",
+      "kcal": 340
+    },
+    {
+      "slug": "pad-ped-pla-duk",
+      "name": "Pad Ped Pla Duk",
+      "kcal": 380
+    },
+    {
+      "slug": "pad-kaphrao-gai",
+      "name": "Pad Kaphrao Gai",
+      "kcal": 300
+    },
+    {
+      "slug": "pad-kaphrao-moo-krob",
+      "name": "Pad Kaphrao Moo Krob",
+      "kcal": 480
+    },
+    {
+      "slug": "pad-kaphrao-tao-hu",
+      "name": "Pad Kaphrao Tao Hu",
+      "kcal": 260
+    },
+    {
+      "slug": "pad-cha-talay",
+      "name": "Pad Cha Talay",
+      "kcal": 280
+    },
+    {
+      "slug": "pad-prik-thai-dam-moo",
+      "name": "Pad Prik Thai Dam Moo",
+      "kcal": 330
+    },
+    {
+      "slug": "pad-kratiam-prik-thai-goong",
+      "name": "Pad Kratiam Prik Thai Goong",
+      "kcal": 280
+    },
+    {
+      "slug": "pad-pak-ruam-mit",
+      "name": "Pad Pak Ruam Mit",
+      "kcal": 160
+    },
+    {
+      "slug": "pad-makhuea-yao-moo-sap",
+      "name": "Pad Makhuea Yao Moo Sap",
+      "kcal": 300
+    },
+    {
+      "slug": "pad-priew-wan-moo",
+      "name": "Pad Priew Wan Moo",
+      "kcal": 340
+    },
+    {
+      "slug": "kai-pad-khing",
+      "name": "Kai Pad Khing",
+      "kcal": 280
+    },
+    {
+      "slug": "pla-neung-see-ew",
+      "name": "Pla Neung See Ew",
+      "kcal": 380
+    },
+    {
+      "slug": "neua-pad-prik",
+      "name": "Neua Pad Prik",
+      "kcal": 320
+    },
+    {
+      "slug": "pla-tu-tod",
+      "name": "Pla Tu Tod",
+      "kcal": 300
+    },
+    {
+      "slug": "kai-look-kuey",
+      "name": "Kai Look Kuey",
+      "kcal": 320
+    },
+    {
+      "slug": "guay-teow-nam-neua",
+      "name": "Guay Teow Nam Neua",
+      "kcal": 420
+    },
+    {
+      "slug": "guay-teow-neua-toon",
+      "name": "Guay Teow Neua Toon",
+      "kcal": 480
+    },
+    {
+      "slug": "guay-teow-tom-yam-nam",
+      "name": "Guay Teow Tom Yam Nam",
+      "kcal": 450
+    },
+    {
+      "slug": "guay-teow-gai-toon",
+      "name": "Guay Teow Gai Toon",
+      "kcal": 430
+    },
+    {
+      "slug": "guay-teow-ped-toon",
+      "name": "Guay Teow Ped Toon",
+      "kcal": 500
+    },
+    {
+      "slug": "ba-mee-haeng-ped-yang",
+      "name": "Ba Mee Haeng Ped Yang",
+      "kcal": 550
+    },
+    {
+      "slug": "ba-mee-haeng-moo-krob",
+      "name": "Ba Mee Haeng Moo Krob",
+      "kcal": 620
+    },
+    {
+      "slug": "rad-na-talay",
+      "name": "Rad Na Talay",
+      "kcal": 520
+    },
+    {
+      "slug": "rad-na-gai",
+      "name": "Rad Na Gai",
+      "kcal": 500
+    },
+    {
+      "slug": "pad-see-ew-talay",
+      "name": "Pad See Ew Talay",
+      "kcal": 570
+    },
+    {
+      "slug": "khanom-jeen-nam-ya-pa",
+      "name": "Khanom Jeen Nam Ya Pa",
+      "kcal": 380
+    },
+    {
+      "slug": "khanom-jeen-nam-prik",
+      "name": "Khanom Jeen Nam Prik",
+      "kcal": 480
+    },
+    {
+      "slug": "pad-kee-mao-moo",
+      "name": "Pad Kee Mao Moo",
+      "kcal": 600
+    },
+    {
+      "slug": "guay-teow-moo-toon-yaa-jeen",
+      "name": "Guay Teow Moo Toon Yaa Jeen",
+      "kcal": 460
+    },
+    {
+      "slug": "mama-pad",
+      "name": "Mama Pad",
+      "kcal": 520
+    },
+    {
+      "slug": "roti-sai-mai",
+      "name": "Roti Sai Mai",
+      "kcal": 350
+    },
+    {
+      "slug": "naem",
+      "name": "Naem",
+      "kcal": 160
+    },
+    {
+      "slug": "look-chin-ping",
+      "name": "Look Chin Ping",
+      "kcal": 220
+    },
+    {
+      "slug": "gai-ping",
+      "name": "Gai Ping",
+      "kcal": 220
+    },
+    {
+      "slug": "hoy-krang-luak",
+      "name": "Hoy Krang Luak",
+      "kcal": 130
+    },
+    {
+      "slug": "khao-pod-ping",
+      "name": "Khao Pod Ping",
+      "kcal": 260
+    },
+    {
+      "slug": "kluay-ping",
+      "name": "Kluay Ping",
+      "kcal": 200
+    },
+    {
+      "slug": "pa-tong-go",
+      "name": "Pa Tong Go",
+      "kcal": 300
+    },
+    {
+      "slug": "khai-krata",
+      "name": "Khai Krata",
+      "kcal": 380
+    },
+    {
+      "slug": "sakoo-sai-moo",
+      "name": "Sakoo Sai Moo",
+      "kcal": 260
+    },
+    {
+      "slug": "khanom-pang-ping",
+      "name": "Khanom Pang Ping",
+      "kcal": 300
+    },
+    {
+      "slug": "moo-yor",
+      "name": "Moo Yor",
+      "kcal": 190
+    },
+    {
+      "slug": "satay-gai-thai",
+      "name": "Satay Gai Thai",
+      "kcal": 350
+    },
+    {
+      "slug": "khao-kriab-pak-mor",
+      "name": "Khao Kriab Pak Mor",
+      "kcal": 230
+    },
+    {
+      "slug": "kanom-kai-nok-krata",
+      "name": "Kanom Kai Nok Krata",
+      "kcal": 280
+    },
+    {
+      "slug": "khao-lam",
+      "name": "Khao Lam",
+      "kcal": 330
+    },
+    {
+      "slug": "tako",
+      "name": "Tako",
+      "kcal": 220
+    },
+    {
+      "slug": "bua-loy-sai-khai",
+      "name": "Bua Loy Sai Khai",
+      "kcal": 380
+    },
+    {
+      "slug": "ruam-mit",
+      "name": "Ruam Mit",
+      "kcal": 320
+    },
+    {
+      "slug": "nam-kaeng-sai",
+      "name": "Nam Kaeng Sai",
+      "kcal": 280
+    },
+    {
+      "slug": "khanom-sod-sai",
+      "name": "Khanom Sod Sai",
+      "kcal": 230
+    },
+    {
+      "slug": "woon-kati",
+      "name": "Woon Kati",
+      "kcal": 180
+    },
+    {
+      "slug": "khao-niao-dam-piak",
+      "name": "Khao Niao Dam Piak",
+      "kcal": 340
+    },
+    {
+      "slug": "gluay-buat-chee",
+      "name": "Gluay Buat Chee",
+      "kcal": 290
+    },
+    {
+      "slug": "fak-thong-kaeng-buat",
+      "name": "Fak Thong Kaeng Buat",
+      "kcal": 270
+    },
+    {
+      "slug": "bua-loy-puak",
+      "name": "Bua Loy Puak",
+      "kcal": 330
+    },
+    {
+      "slug": "khanom-bah-bin",
+      "name": "Khanom Bah Bin",
+      "kcal": 260
+    },
+    {
+      "slug": "thong-muan",
+      "name": "Thong Muan",
+      "kcal": 280
+    },
+    {
+      "slug": "khanom-tuay-fu",
+      "name": "Khanom Tuay Fu",
+      "kcal": 200
+    },
+    {
+      "slug": "khao-niao-ping",
+      "name": "Khao Niao Ping",
+      "kcal": 320
+    },
+    {
+      "slug": "nam-ma-prao",
+      "name": "Nam Ma Prao",
+      "kcal": 70
+    },
+    {
+      "slug": "nam-manao",
+      "name": "Nam Manao",
+      "kcal": 130
+    },
+    {
+      "slug": "nam-anchan-manao",
+      "name": "Nam Anchan Manao",
+      "kcal": 110
+    },
+    {
+      "slug": "nam-krachiap",
+      "name": "Nam Krachiap",
+      "kcal": 120
+    },
+    {
+      "slug": "nam-bai-toey",
+      "name": "Nam Bai Toey",
+      "kcal": 110
+    },
+    {
+      "slug": "nam-kao-pod",
+      "name": "Nam Kao Pod",
+      "kcal": 210
+    },
+    {
+      "slug": "cha-keow-yen",
+      "name": "Cha Keow Yen",
+      "kcal": 230
+    },
+    {
+      "slug": "kafae-yen",
+      "name": "Kafae Yen",
+      "kcal": 220
+    },
+    {
+      "slug": "kafae-boran-ron",
+      "name": "Kafae Boran Ron",
+      "kcal": 180
+    },
+    {
+      "slug": "nam-oi",
+      "name": "Nam Oi",
+      "kcal": 190
+    },
+    {
+      "slug": "nam-ma-kham",
+      "name": "Nam Ma Kham",
+      "kcal": 150
+    },
+    {
+      "slug": "chao-kuay-nam",
+      "name": "Chao Kuay Nam",
+      "kcal": 160
+    },
+    {
+      "slug": "nam-lamyai",
+      "name": "Nam Lamyai",
+      "kcal": 160
+    },
+    {
+      "slug": "nam-matoom",
+      "name": "Nam Matoom",
+      "kcal": 130
+    },
+    {
+      "slug": "krating-daeng",
+      "name": "Krating Daeng",
+      "kcal": 120
+    },
+    {
+      "slug": "jollibee-chickenjoy-drumstick",
+      "name": "Jollibee Chickenjoy Drumstick",
+      "kcal": 220
+    },
+    {
+      "slug": "jollibee-chickenjoy-thigh",
+      "name": "Jollibee Chickenjoy Thigh",
+      "kcal": 380
+    },
+    {
+      "slug": "jollibee-spicy-chickenjoy-drumstick",
+      "name": "Jollibee Spicy Chickenjoy Drumstick",
+      "kcal": 240
+    },
+    {
+      "slug": "jollibee-spicy-chickenjoy-thigh",
+      "name": "Jollibee Spicy Chickenjoy Thigh",
+      "kcal": 350
+    },
+    {
+      "slug": "jollibee-chickenjoy-gravy",
+      "name": "Jollibee Chickenjoy Gravy",
+      "kcal": 25
+    },
+    {
+      "slug": "jollibee-chicken-sandwich",
+      "name": "Jollibee Chicken Sandwich",
+      "kcal": 609
+    },
+    {
+      "slug": "jollibee-spicy-chicken-sandwich",
+      "name": "Jollibee Spicy Chicken Sandwich",
+      "kcal": 559
+    },
+    {
+      "slug": "jollibee-chicken-tenders",
+      "name": "Jollibee Chicken Tenders",
+      "kcal": 420
+    },
+    {
+      "slug": "jollibee-spaghetti-with-1-pc-chickenjoy",
+      "name": "Jollibee Spaghetti with 1 pc Chickenjoy",
+      "kcal": 860
+    },
+    {
+      "slug": "jollibee-steamed-rice",
+      "name": "Jollibee Steamed Rice",
+      "kcal": 190
+    },
+    {
+      "slug": "jollibee-mashed-potato-with-gravy",
+      "name": "Jollibee Mashed Potato with Gravy",
+      "kcal": 170
+    },
+    {
+      "slug": "jollibee-cheesy-yumburger",
+      "name": "Jollibee Cheesy Yumburger",
+      "kcal": 410
+    },
+    {
+      "slug": "jollibee-champ-burger",
+      "name": "Jollibee Champ Burger",
+      "kcal": 670
+    },
+    {
+      "slug": "jollibee-amazing-aloha-burger",
+      "name": "Jollibee Amazing Aloha Burger",
+      "kcal": 770
+    },
+    {
+      "slug": "jollibee-ube-pie",
+      "name": "Jollibee Ube Pie",
+      "kcal": 310
+    },
+    {
+      "slug": "jollibee-chickenjoy-with-rice",
+      "name": "Jollibee Chickenjoy with Rice",
+      "kcal": 570
+    },
+    {
+      "slug": "jollibee-chicken-nuggets",
+      "name": "Jollibee Chicken Nuggets",
+      "kcal": 300
+    },
+    {
+      "slug": "jollibee-tuna-pie",
+      "name": "Jollibee Tuna Pie",
+      "kcal": 250
+    },
+    {
+      "slug": "mcdonald-s-chicken-mcdo-with-rice",
+      "name": "Chicken McDo with Rice",
+      "kcal": 534
+    },
+    {
+      "slug": "mcdonald-s-mcspaghetti",
+      "name": "McSpaghetti",
+      "kcal": 400
+    },
+    {
+      "slug": "mcdonald-s-burger-mcdo",
+      "name": "Burger McDo",
+      "kcal": 270
+    },
+    {
+      "slug": "mcdonald-s-coke-float",
+      "name": "McDonald's Coke Float",
+      "kcal": 240
+    },
+    {
+      "slug": "chowking-lauriat",
+      "name": "Chowking Lauriat",
+      "kcal": 850
+    },
+    {
+      "slug": "chowking-sweet-and-sour-pork",
+      "name": "Chowking Sweet and Sour Pork",
+      "kcal": 270
+    },
+    {
+      "slug": "chowking-chinese-style-fried-chicken",
+      "name": "Chowking Chinese-Style Fried Chicken",
+      "kcal": 300
+    },
+    {
+      "slug": "chowking-chicken-congee",
+      "name": "Chowking Chicken Congee",
+      "kcal": 260
+    },
+    {
+      "slug": "chowking-asado-siopao",
+      "name": "Chowking Asado Siopao",
+      "kcal": 300
+    },
+    {
+      "slug": "greenwich-pepperoni-pizza",
+      "name": "Greenwich Pepperoni Pizza",
+      "kcal": 220
+    },
+    {
+      "slug": "greenwich-overload-special-pizza",
+      "name": "Greenwich Overload Special Pizza",
+      "kcal": 250
+    },
+    {
+      "slug": "greenwich-ultimate-meaty-spaghetti",
+      "name": "Greenwich Ultimate Meaty Spaghetti",
+      "kcal": 420
+    },
+    {
+      "slug": "greenwich-chicken-alfredo-pasta",
+      "name": "Greenwich Chicken Alfredo Pasta",
+      "kcal": 480
+    },
+    {
+      "slug": "max-s-restaurant-max-s-pancit-canton",
+      "name": "Max's Pancit Canton",
+      "kcal": 480
+    },
+    {
+      "slug": "max-s-restaurant-max-s-caramel-bar",
+      "name": "Max's Caramel Bar",
+      "kcal": 350
+    },
+    {
+      "slug": "max-s-restaurant-max-s-fried-tawilis",
+      "name": "Max's Fried Tawilis",
+      "kcal": 300
+    },
+    {
+      "slug": "mang-inasal-pork-bbq",
+      "name": "Mang Inasal Pork BBQ",
+      "kcal": 160
+    },
+    {
+      "slug": "shakey-s-mojos",
+      "name": "Shakey's Mojos",
+      "kcal": 430
+    },
+    {
+      "slug": "shakey-s-hawaiian-delight-pizza",
+      "name": "Shakey's Hawaiian Delight Pizza",
+      "kcal": 190
+    },
+    {
+      "slug": "shakey-s-carbonara",
+      "name": "Shakey's Carbonara",
+      "kcal": 620
+    },
+    {
+      "slug": "yellow-cab-new-york-s-finest-pizza",
+      "name": "Yellow Cab New York's Finest Pizza",
+      "kcal": 380
+    },
+    {
+      "slug": "yellow-cab-charlie-chan-pasta",
+      "name": "Yellow Cab Charlie Chan Pasta",
+      "kcal": 690
+    },
+    {
+      "slug": "yellow-cab-dear-darla-pizza",
+      "name": "Yellow Cab Dear Darla Pizza",
+      "kcal": 290
+    },
+    {
+      "slug": "bonchon-chicken-bowl-soy-garlic",
+      "name": "Bonchon Chicken Bowl Soy Garlic",
+      "kcal": 740
+    },
+    {
+      "slug": "bonchon-japchae",
+      "name": "Bonchon Japchae",
+      "kcal": 430
+    },
+    {
+      "slug": "army-navy-freedom-fries",
+      "name": "Army Navy Freedom Fries",
+      "kcal": 440
+    },
+    {
+      "slug": "army-navy-fish-burrito",
+      "name": "Army Navy Fish Burrito",
+      "kcal": 640
+    },
+    {
+      "slug": "army-navy-chicken-quesadilla",
+      "name": "Army Navy Chicken Quesadilla",
+      "kcal": 560
+    },
+    {
+      "slug": "zark-s-burgers-zark-s-cheesy-overload-burger",
+      "name": "Zark's Cheesy Overload Burger",
+      "kcal": 780
+    },
+    {
+      "slug": "gerry-s-grill-calamares",
+      "name": "Gerry's Grill Calamares",
+      "kcal": 420
+    },
+    {
+      "slug": "gerry-s-grill-sizzling-bangus-belly",
+      "name": "Gerry's Grill Sizzling Bangus Belly",
+      "kcal": 480
+    },
+    {
+      "slug": "gerry-s-grill-crispy-adobo-flakes",
+      "name": "Gerry's Grill Crispy Adobo Flakes",
+      "kcal": 400
+    },
+    {
+      "slug": "goldilocks-ube-cake",
+      "name": "Goldilocks Ube Cake",
+      "kcal": 290
+    },
+    {
+      "slug": "goldilocks-egg-pie",
+      "name": "Goldilocks Egg Pie",
+      "kcal": 320
+    },
+    {
+      "slug": "goldilocks-butterscotch-bar",
+      "name": "Goldilocks Butterscotch Bar",
+      "kcal": 200
+    },
+    {
+      "slug": "red-ribbon-mango-cake",
+      "name": "Red Ribbon Mango Cake",
+      "kcal": 300
+    },
+    {
+      "slug": "dunkin-bavarian-kreme-donut",
+      "name": "Dunkin' Bavarian Kreme Donut",
+      "kcal": 270
+    },
+    {
+      "slug": "dunkin-choco-butternut-donut",
+      "name": "Dunkin' Choco Butternut Donut",
+      "kcal": 260
+    },
+    {
+      "slug": "7-eleven-siomai-rice",
+      "name": "7-Eleven Siomai Rice",
+      "kcal": 520
+    },
+    {
+      "slug": "7-eleven-big-bite-hotdog",
+      "name": "7-Eleven Big Bite Hotdog",
+      "kcal": 350
+    },
+    {
+      "slug": "ministop-uncle-john-s-fried-chicken",
+      "name": "Ministop Uncle John's Fried Chicken",
+      "kcal": 300
+    },
+    {
+      "slug": "chooks-to-go-roasted-chicken",
+      "name": "Chooks-to-Go Roasted Chicken",
+      "kcal": 420
+    },
+    {
+      "slug": "conti-s-mango-bravo",
+      "name": "Conti's Mango Bravo",
+      "kcal": 450
+    },
+    {
+      "slug": "serenitea-wintermelon-milk-tea",
+      "name": "Serenitea Wintermelon Milk Tea",
+      "kcal": 320
+    },
+    {
+      "slug": "infinitea-okinawa-milk-tea",
+      "name": "Infinitea Okinawa Milk Tea",
+      "kcal": 350
+    },
+    {
+      "slug": "zagu-pearl-shake",
+      "name": "Zagu Pearl Shake",
+      "kcal": 300
+    },
+    {
+      "slug": "cornsilog",
+      "name": "Cornsilog",
+      "kcal": 690
+    },
+    {
+      "slug": "chicksilog",
+      "name": "Chicksilog",
+      "kcal": 700
+    },
+    {
+      "slug": "spamsilog",
+      "name": "Spamsilog",
+      "kcal": 720
+    },
+    {
+      "slug": "porksilog",
+      "name": "Porksilog",
+      "kcal": 730
+    },
+    {
+      "slug": "chorsilog",
+      "name": "Chorsilog",
+      "kcal": 750
+    },
+    {
+      "slug": "dangsilog",
+      "name": "Dangsilog",
+      "kcal": 660
+    },
+    {
+      "slug": "sisigsilog",
+      "name": "Sisigsilog",
+      "kcal": 780
+    },
+    {
+      "slug": "malingsilog",
+      "name": "Malingsilog",
+      "kcal": 700
+    },
+    {
+      "slug": "bacsilog",
+      "name": "Bacsilog",
+      "kcal": 700
+    },
+    {
+      "slug": "pinangat-na-gabi",
+      "name": "Pinangat na Gabi",
+      "kcal": 260
+    },
+    {
+      "slug": "pancit-bato",
+      "name": "Pancit Bato",
+      "kcal": 450
+    },
+    {
+      "slug": "ginataang-langka",
+      "name": "Ginataang Langka",
+      "kcal": 210
+    },
+    {
+      "slug": "binakol",
+      "name": "Binakol",
+      "kcal": 300
+    },
+    {
+      "slug": "linarang",
+      "name": "Linarang",
+      "kcal": 320
+    },
+    {
+      "slug": "tinowang-isda",
+      "name": "Tinowang Isda",
+      "kcal": 220
+    },
+    {
+      "slug": "piaya",
+      "name": "Piaya",
+      "kcal": 190
+    },
+    {
+      "slug": "napoleones",
+      "name": "Napoleones",
+      "kcal": 260
+    },
+    {
+      "slug": "pinasugbo",
+      "name": "Pinasugbo",
+      "kcal": 130
+    },
+    {
+      "slug": "budbud-kabog",
+      "name": "Budbud Kabog",
+      "kcal": 200
+    },
+    {
+      "slug": "danggit",
+      "name": "Danggit",
+      "kcal": 200
+    },
+    {
+      "slug": "kamaru",
+      "name": "Kamaru",
+      "kcal": 210
+    },
+    {
+      "slug": "halabos-na-hipon",
+      "name": "Halabos na Hipon",
+      "kcal": 180
+    },
+    {
+      "slug": "pancit-batil-patung",
+      "name": "Pancit Batil Patung",
+      "kcal": 620
+    },
+    {
+      "slug": "tuguegarao-longganisa",
+      "name": "Tuguegarao Longganisa",
+      "kcal": 230
+    },
+    {
+      "slug": "piyanggang-manok",
+      "name": "Piyanggang Manok",
+      "kcal": 420
+    },
+    {
+      "slug": "curacha-alavar",
+      "name": "Curacha Alavar",
+      "kcal": 380
+    },
+    {
+      "slug": "pancit-pusit",
+      "name": "Pancit Pusit",
+      "kcal": 440
+    },
+    {
+      "slug": "tinapang-bangus",
+      "name": "Tinapang Bangus",
+      "kcal": 320
+    },
+    {
+      "slug": "binignit",
+      "name": "Binignit",
+      "kcal": 330
+    },
+    {
+      "slug": "ginataang-mais",
+      "name": "Ginataang Mais",
+      "kcal": 260
+    },
+    {
+      "slug": "panyalam",
+      "name": "Panyalam",
+      "kcal": 180
+    },
+    {
+      "slug": "puto-lanson",
+      "name": "Puto Lanson",
+      "kcal": 140
+    },
+    {
+      "slug": "latik",
+      "name": "Latik",
+      "kcal": 80
+    },
+    {
+      "slug": "buchi",
+      "name": "Buchi",
+      "kcal": 130
+    },
+    {
+      "slug": "tokneneng",
+      "name": "Tokneneng",
+      "kcal": 130
+    },
+    {
+      "slug": "proben",
+      "name": "Proben",
+      "kcal": 220
+    },
+    {
+      "slug": "chicharon-bulaklak",
+      "name": "Chicharon Bulaklak",
+      "kcal": 400
+    },
+    {
+      "slug": "calamares",
+      "name": "Calamares",
+      "kcal": 340
+    },
+    {
+      "slug": "dynamite-lumpia",
+      "name": "Dynamite Lumpia",
+      "kcal": 130
+    },
+    {
+      "slug": "cheese-stick-lumpia",
+      "name": "Cheese Stick Lumpia",
+      "kcal": 100
+    },
+    {
+      "slug": "ice-scramble",
+      "name": "Ice Scramble",
+      "kcal": 220
+    },
+    {
+      "slug": "mais-na-nilaga",
+      "name": "Mais na Nilaga",
+      "kcal": 160
+    },
+    {
+      "slug": "one-day-old-chicks",
+      "name": "One-Day-Old Chicks",
+      "kcal": 230
+    },
+    {
+      "slug": "ukoy",
+      "name": "Ukoy",
+      "kcal": 210
+    },
+    {
+      "slug": "beef-mami",
+      "name": "Beef Mami",
+      "kcal": 420
+    },
+    {
+      "slug": "siomai-rice",
+      "name": "Siomai Rice",
+      "kcal": 520
+    },
+    {
+      "slug": "pan-de-coco",
+      "name": "Pan de Coco",
+      "kcal": 190
+    },
+    {
+      "slug": "monay",
+      "name": "Monay",
+      "kcal": 180
+    },
+    {
+      "slug": "kalihim",
+      "name": "Kalihim",
+      "kcal": 230
+    },
+    {
+      "slug": "putok",
+      "name": "Putok",
+      "kcal": 250
+    },
+    {
+      "slug": "pianono",
+      "name": "Pianono",
+      "kcal": 170
+    },
+    {
+      "slug": "ube-cheese-pandesal",
+      "name": "Ube Cheese Pandesal",
+      "kcal": 175
+    },
+    {
+      "slug": "buko-pandan-drink",
+      "name": "Buko Pandan Drink",
+      "kcal": 210
+    },
+    {
+      "slug": "melon-juice",
+      "name": "Melon Juice",
+      "kcal": 180
+    },
+    {
+      "slug": "four-seasons-juice",
+      "name": "Four Seasons Juice",
+      "kcal": 150
+    },
+    {
+      "slug": "mango-shake",
+      "name": "Mango Shake",
+      "kcal": 320
+    },
+    {
+      "slug": "avocado-shake",
+      "name": "Avocado Shake",
+      "kcal": 380
+    },
+    {
+      "slug": "ice-candy",
+      "name": "Ice Candy",
+      "kcal": 120
+    },
+    {
+      "slug": "great-taste-white-3-in-1",
+      "name": "Great Taste White 3-in-1",
+      "kcal": 110
+    },
+    {
+      "slug": "zesto-orange-juice-drink",
+      "name": "Zesto Orange Juice Drink",
+      "kcal": 100
+    },
+    {
+      "slug": "chuckie-chocolate-milk",
+      "name": "Chuckie Chocolate Milk",
+      "kcal": 130
+    },
+    {
+      "slug": "ginataang-manok",
+      "name": "Ginataang Manok",
+      "kcal": 420
+    },
+    {
+      "slug": "sinigang-sa-miso",
+      "name": "Sinigang sa Miso",
+      "kcal": 260
+    },
+    {
+      "slug": "pesang-isda",
+      "name": "Pesang Isda",
+      "kcal": 250
+    },
+    {
+      "slug": "sarciadong-isda",
+      "name": "Sarciadong Isda",
+      "kcal": 280
+    },
+    {
+      "slug": "ginisang-ampalaya",
+      "name": "Ginisang Ampalaya",
+      "kcal": 160
+    },
+    {
+      "slug": "ginisang-repolyo",
+      "name": "Ginisang Repolyo",
+      "kcal": 130
+    },
+    {
+      "slug": "ginisang-togue",
+      "name": "Ginisang Togue",
+      "kcal": 150
+    },
+    {
+      "slug": "chicken-pastel",
+      "name": "Chicken Pastel",
+      "kcal": 400
+    },
+    {
+      "slug": "lengua-estofado",
+      "name": "Lengua Estofado",
+      "kcal": 420
+    },
+    {
+      "slug": "pork-asado",
+      "name": "Pork Asado",
+      "kcal": 380
+    },
+    {
+      "slug": "patatim",
+      "name": "Patatim",
+      "kcal": 560
+    },
+    {
+      "slug": "adobong-baka",
+      "name": "Adobong Baka",
+      "kcal": 400
+    },
+    {
+      "slug": "ginataang-hipon",
+      "name": "Ginataang Hipon",
+      "kcal": 330
+    },
+    {
+      "slug": "tortang-giniling",
+      "name": "Tortang Giniling",
+      "kcal": 300
+    },
+    {
+      "slug": "tortang-alamang",
+      "name": "Tortang Alamang",
+      "kcal": 200
+    },
+    {
+      "slug": "sopas",
+      "name": "Sopas",
+      "kcal": 320
+    },
+    {
+      "slug": "baked-macaroni",
+      "name": "Baked Macaroni",
+      "kcal": 520
+    },
+    {
+      "slug": "chicken-macaroni-salad",
+      "name": "Chicken Macaroni Salad",
+      "kcal": 400
+    },
+    {
+      "slug": "buko-salad",
+      "name": "Buko Salad",
+      "kcal": 300
+    },
+    {
+      "slug": "filipino-fruit-salad",
+      "name": "Filipino Fruit Salad",
+      "kcal": 290
+    },
+    {
+      "slug": "arroz-a-la-cubana",
+      "name": "Arroz a la Cubana",
+      "kcal": 640
+    },
+    {
+      "slug": "filipino-spaghetti",
+      "name": "Filipino Spaghetti",
+      "kcal": 520
+    },
+    {
+      "slug": "pritong-tilapia",
+      "name": "Pritong Tilapia",
+      "kcal": 300
+    },
+    {
+      "slug": "inihaw-na-pusit",
+      "name": "Inihaw na Pusit",
+      "kcal": 300
+    },
+    {
+      "slug": "inihaw-na-bangus",
+      "name": "Inihaw na Bangus",
+      "kcal": 400
+    },
+    {
+      "slug": "tuyo",
+      "name": "Tuyo",
+      "kcal": 180
+    },
+    {
+      "slug": "ensaladang-talong",
+      "name": "Ensaladang Talong",
+      "kcal": 90
+    },
+    {
+      "slug": "ensaladang-mangga",
+      "name": "Ensaladang Mangga",
+      "kcal": 90
+    },
+    {
+      "slug": "pinaputok-na-tilapia",
+      "name": "Pinaputok na Tilapia",
+      "kcal": 340
+    },
+    {
+      "slug": "chicken-curry-filipino-style",
+      "name": "Chicken Curry Filipino Style",
+      "kcal": 380
+    },
+    {
+      "slug": "pork-steak-filipino-style",
+      "name": "Pork Steak Filipino Style",
+      "kcal": 400
+    },
+    {
+      "slug": "food-for-the-gods",
+      "name": "Food for the Gods",
+      "kcal": 200
+    }
+  ]
+}

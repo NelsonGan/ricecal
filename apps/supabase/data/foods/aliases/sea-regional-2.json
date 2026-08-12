@@ -1,0 +1,41 @@
+{
+  "jukut-ares": ["ares lombok", "ares sasak", "jukut ares lombok"],
+  "gulai-otak": ["gulai banak", "gulai banak minang", "gulai otak padang"],
+  "ikan-baung-masak-asam-pedas": [
+    "asam pedas baung",
+    "asam pedas baung riau",
+    "asam pedas ikan baung jambi"
+  ],
+  "gulai-tempoyak-ikan-patin": [
+    "tempoyak ikan patin riau",
+    "gulai ikan patin tempoyak",
+    "tempoyak ikan jambi"
+  ],
+  "ayam-bakar-taliwang": ["ayam taliwang", "taliwang chicken lombok", "ayam taliwang lombok"],
+  "nasi-minyak": ["nasi minyak jambi", "nasi minyak melayu jambi"],
+  "durian-cake-lempuk": ["lempuk durian", "lempuk durian riau", "lempok durian"],
+  "roti-jala": ["roti jala riau", "roti jala melayu riau"],
+  "ketoprak-jakarta": ["ketoprak betawi"],
+  "se-i-sapi": ["se'i sapi kupang", "sei sapi ntt", "smoked beef kupang"],
+  "bubur-kampiun": ["bubua kampiun", "bubur kampiun minang"],
+  "ikan-bilih-goreng": ["ikan bilih singkarak", "bilih goreng minang"],
+  "gulai-tunjang": ["gulai tunjang padang", "gulai kikil minang"],
+  "yum-woon-sen": ["yam woon sen", "yum woonsen"],
+  "yum-pla-duk-foo": ["yam pla duk fu", "yam pla duk foo"],
+  "yam-tua-plu": ["yam tua phu", "yum tua phu", "winged bean salad thai"],
+  "khao-yam-pak-tai": ["khao yam satun", "kao yam satun", "khao yam southern thai"],
+  "nam-prik-noom": ["nam prik num", "namprik num"],
+  "tau-suan": ["tao suan", "tao suan thai", "tao suan pathongko"],
+  "khanom-buang": ["khanom bueang", "kanom bueang"],
+  "nam-prik-kapi-pla-tu": ["nam prik kapi set", "namprik kapi pla too"],
+  "bulalo": ["bulalo batangas", "batangas bulalo"],
+  "goto": ["goto batangas", "batangas goto"],
+  "lomi": ["lomi batangas", "batangas lomi"],
+  "pork-tocino": ["tocino pampanga", "tocinong kapampangan"],
+  "razon-s-halo-halo": ["halo halo pampanga", "pampanga style halo halo"],
+  "sinantol": ["sinantolan", "sinantolan quezon", "ginataang santol"],
+  "pancit-chami": ["chami lucban", "chami quezon"],
+  "satti": ["satti zamboanga", "sate zamboanga"],
+  "kalderetang-kambing": ["kalderetang kambing pampanga"],
+  "morcon": ["morcon kapampangan", "morcon pampanga"]
+}

@@ -1,0 +1,2132 @@
+{
+  "source": "research:borneo",
+  "foods": [
+    {
+      "name": "Laksa Sarawak Kering",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 510,
+      "carbs_g": 60,
+      "protein_g": 24,
+      "fat_g": 20,
+      "aliases": [
+        "dry sarawak laksa",
+        "laksa sarawak dry",
+        "kering laksa sarawak",
+        "sarawak laksa kering",
+        "laksa kuching kering"
+      ],
+      "icon": "dishes/laksa",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kolo Mee Ayam",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 520,
+      "carbs_g": 62,
+      "protein_g": 24,
+      "fat_g": 20,
+      "aliases": [
+        "kolok mee ayam",
+        "chicken kolo mee",
+        "干捞面鸡",
+        "kolo mee chicken",
+        "mee kolok ayam sarawak"
+      ],
+      "icon": "dishes/kolo-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kolo Mee Sup",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 450,
+      "carbs_g": 60,
+      "protein_g": 22,
+      "fat_g": 14,
+      "aliases": [
+        "kolo mee soup",
+        "soup kolo mee",
+        "kolok mee sup",
+        "汤面沙捞越",
+        "kolo mee in broth"
+      ],
+      "icon": "dishes/kolo-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kampua Mee Sup",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 400,
+      "carbs_g": 55,
+      "protein_g": 18,
+      "fat_g": 12,
+      "aliases": [
+        "kampua soup",
+        "kampua mee soup",
+        "sibu kampua sup",
+        "干盘面汤",
+        "kampua noodle soup"
+      ],
+      "icon": "dishes/kolo-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Tomato Mee Sarawak",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 620,
+      "carbs_g": 78,
+      "protein_g": 24,
+      "fat_g": 24,
+      "aliases": [
+        "tomato crispy noodle",
+        "mee tomato sarawak",
+        "番茄面",
+        "kuching tomato mee",
+        "crispy noodle tomato gravy"
+      ],
+      "icon": "food/yellow-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Foochow Fried Noodles",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 550,
+      "carbs_g": 66,
+      "protein_g": 22,
+      "fat_g": 22,
+      "aliases": [
+        "chao zhu mien",
+        "炒煮面",
+        "foochow braised fried noodles",
+        "mee goreng foochow",
+        "sibu fried noodles",
+        "cha chu mien"
+      ],
+      "icon": "food/egg-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ding Bian Hu",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 360,
+      "carbs_g": 50,
+      "protein_g": 18,
+      "fat_g": 10,
+      "aliases": [
+        "鼎边糊",
+        "dian mien hu",
+        "ding bien hu",
+        "sibu ding bian hu",
+        "foochow wok edge noodle",
+        "diang miang ngu"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Bien Nuk",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 305,
+      "carbs_g": 34,
+      "protein_g": 16,
+      "fat_g": 12,
+      "aliases": [
+        "bian nyuk",
+        "扁肉",
+        "foochow dumpling soup",
+        "sibu bien nuk",
+        "foochow wonton soup"
+      ],
+      "icon": "food/dumpling",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Manok Kacangma",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 300,
+      "carbs_g": 8,
+      "protein_g": 26,
+      "fat_g": 18,
+      "aliases": [
+        "ayam kacangma",
+        "kacangma chicken",
+        "motherwort chicken",
+        "益母草鸡",
+        "sarawak confinement chicken",
+        "kacang ma"
+      ],
+      "icon": "food/chicken-drumstick",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ayam Masak Ang Chao",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 290,
+      "carbs_g": 10,
+      "protein_g": 26,
+      "fat_g": 16,
+      "aliases": [
+        "foochow red wine chicken",
+        "ang chao chicken",
+        "红糟鸡",
+        "hong zao ji",
+        "red wine lees chicken",
+        "ayam arak merah foochow"
+      ],
+      "icon": "food/chicken-drumstick",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Mee Sapi Sarawak",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 480,
+      "carbs_g": 58,
+      "protein_g": 26,
+      "fat_g": 16,
+      "aliases": [
+        "sarawak beef noodle",
+        "mee sapi kuching",
+        "牛肉面沙捞越",
+        "beef noodle sarawak",
+        "mi sapi"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Umai Ikan",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 165,
+      "carbs_g": 6,
+      "protein_g": 22,
+      "fat_g": 6,
+      "aliases": [
+        "umai",
+        "melanau raw fish salad",
+        "umai sarawak",
+        "sarawak ceviche",
+        "umai ikan mentah",
+        "umai jep"
+      ],
+      "icon": "food/fish-fillet",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Umai Sotong",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 155,
+      "carbs_g": 7,
+      "protein_g": 20,
+      "fat_g": 5,
+      "aliases": [
+        "umai squid",
+        "squid umai",
+        "umai cumi",
+        "melanau squid salad",
+        "umai sotong sarawak"
+      ],
+      "icon": "food/squid-rings",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Umai Udang",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 155,
+      "carbs_g": 6,
+      "protein_g": 21,
+      "fat_g": 5,
+      "aliases": ["umai prawn", "prawn umai", "umai udang sarawak", "melanau prawn salad"],
+      "icon": "food/prawn",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Midin Goreng Belacan",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 145,
+      "carbs_g": 8,
+      "protein_g": 4,
+      "fat_g": 11,
+      "aliases": [
+        "midin belacan",
+        "stir fried midin",
+        "sarawak jungle fern belacan",
+        "paku midin goreng",
+        "midin fern shrimp paste"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Midin Goreng Bawang Putih",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 130,
+      "carbs_g": 7,
+      "protein_g": 3,
+      "fat_g": 10,
+      "aliases": [
+        "midin garlic",
+        "garlic midin",
+        "midin goreng",
+        "sarawak fern garlic",
+        "stenochlaena palustris fried"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Daun Ubi Tumbuk",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 170,
+      "carbs_g": 10,
+      "protein_g": 6,
+      "fat_g": 12,
+      "aliases": [
+        "pounded cassava leaves",
+        "daun ubi tumbuk sarawak",
+        "iban cassava leaf",
+        "ensabi tumbuk",
+        "pucuk ubi tumbuk"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ayam Pansuh",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 290,
+      "carbs_g": 6,
+      "protein_g": 28,
+      "fat_g": 17,
+      "aliases": [
+        "ayam pansoh",
+        "manok pansoh iban",
+        "bamboo chicken",
+        "chicken in bamboo",
+        "pansuh manok",
+        "iban bamboo chicken"
+      ],
+      "icon": "food/chicken-drumstick",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Babi Pansuh",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 330,
+      "carbs_g": 5,
+      "protein_g": 24,
+      "fat_g": 24,
+      "aliases": [
+        "jani pansuh",
+        "pork in bamboo",
+        "bamboo pork",
+        "babi pansoh",
+        "iban bamboo pork"
+      ],
+      "icon": "food/pork-belly",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ikan Pansuh",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 190,
+      "carbs_g": 5,
+      "protein_g": 25,
+      "fat_g": 8,
+      "aliases": [
+        "fish in bamboo",
+        "ikan pansoh",
+        "bamboo fish",
+        "pansuh ikan sarawak",
+        "iban bamboo fish"
+      ],
+      "icon": "food/fish",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Asam Siok",
+      "place": "home",
+      "serving": "1 bamboo tube",
+      "kcal": 425,
+      "carbs_g": 55,
+      "protein_g": 20,
+      "fat_g": 14,
+      "aliases": [
+        "asam siuk",
+        "bidayuh bamboo chicken rice",
+        "nasi ayam buluh",
+        "asam siok bidayuh",
+        "chicken rice in bamboo"
+      ],
+      "icon": "food/rice-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sup Terung Dayak",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 155,
+      "carbs_g": 12,
+      "protein_g": 14,
+      "fat_g": 6,
+      "aliases": [
+        "terung asam soup",
+        "dayak eggplant soup",
+        "sup terung asam sarawak",
+        "sour brinjal soup",
+        "terung dayak"
+      ],
+      "icon": "food/cooking-pot",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sup Ponas Bidayuh",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 180,
+      "carbs_g": 18,
+      "protein_g": 12,
+      "fat_g": 7,
+      "aliases": ["bidayuh hot soup", "sup panas bidayuh", "sup ponas", "bidayuh tapioca soup"],
+      "icon": "food/cooking-pot",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kasam Ensabi",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 90,
+      "carbs_g": 6,
+      "protein_g": 3,
+      "fat_g": 6,
+      "aliases": [
+        "ensabi masam",
+        "fermented mustard greens sarawak",
+        "kasam ensabi iban",
+        "pickled sawi iban",
+        "sayur masam sarawak"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kasam Babi",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 265,
+      "carbs_g": 8,
+      "protein_g": 14,
+      "fat_g": 20,
+      "aliases": [
+        "fermented pork sarawak",
+        "kasam jani",
+        "kayan fermented pork",
+        "dayak fermented pork",
+        "kasam babi sarawak"
+      ],
+      "icon": "food/pork-belly",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kasam Ikan",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 140,
+      "carbs_g": 7,
+      "protein_g": 15,
+      "fat_g": 6,
+      "aliases": [
+        "fermented fish sarawak",
+        "kasam iyak",
+        "pekasam sarawak",
+        "dayak fermented fish"
+      ],
+      "icon": "food/fish",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ikan Terubuk Masin Goreng",
+      "place": "home",
+      "serving": "1 piece",
+      "kcal": 230,
+      "carbs_g": 2,
+      "protein_g": 20,
+      "fat_g": 16,
+      "aliases": [
+        "terubuk masin",
+        "salted toli shad",
+        "ikan terubok masin",
+        "fried salted terubuk",
+        "sarawak salted shad"
+      ],
+      "icon": "food/salted-fish",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nasi Goreng Terubuk Masin",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 570,
+      "carbs_g": 78,
+      "protein_g": 20,
+      "fat_g": 20,
+      "aliases": [
+        "salted terubuk fried rice",
+        "nasi goreng ikan masin terubok",
+        "sarawak salted fish fried rice",
+        "nasi goreng terubok"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Terubuk Bakar",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 210,
+      "carbs_g": 1,
+      "protein_g": 24,
+      "fat_g": 12,
+      "aliases": [
+        "grilled toli shad",
+        "ikan terubuk bakar",
+        "ikan terubok bakar",
+        "grilled terubuk sarawak"
+      ],
+      "icon": "food/grilled-fish",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Telur Ikan Terubuk",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 175,
+      "carbs_g": 3,
+      "protein_g": 18,
+      "fat_g": 10,
+      "aliases": [
+        "terubuk roe",
+        "telur terubok",
+        "toli shad roe",
+        "sarawak shad roe",
+        "telur ikan terubok masin"
+      ],
+      "icon": "food/fish",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Buah Dabai",
+      "place": "hawker",
+      "serving": "10 fruit",
+      "kcal": 160,
+      "carbs_g": 6,
+      "protein_g": 3,
+      "fat_g": 14,
+      "aliases": [
+        "dabai",
+        "sibu olive",
+        "canarium odontophyllum",
+        "buah dabai sarawak",
+        "sarawak olive",
+        "kembayau"
+      ],
+      "icon": "food/avocado",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Dabai Rendam Kicap",
+      "place": "hawker",
+      "serving": "10 fruit",
+      "kcal": 170,
+      "carbs_g": 8,
+      "protein_g": 3,
+      "fat_g": 14,
+      "aliases": [
+        "dabai with soy sauce",
+        "dabai kicap",
+        "soaked dabai",
+        "buah dabai kicap",
+        "dabai rendam"
+      ],
+      "icon": "food/avocado",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sambal Dabai",
+      "place": "home",
+      "serving": "2 tablespoons",
+      "kcal": 100,
+      "carbs_g": 4,
+      "protein_g": 1,
+      "fat_g": 9,
+      "aliases": ["dabai sambal", "sambal buah dabai", "sarawak olive sambal", "sambal dabai sibu"],
+      "icon": "food/sambal-jar",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Linut",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 245,
+      "carbs_g": 60,
+      "protein_g": 0.5,
+      "fat_g": 0.3,
+      "aliases": [
+        "sago porridge sarawak",
+        "linut melanau",
+        "lenot",
+        "sago starch porridge",
+        "linut sarawak"
+      ],
+      "icon": "food/sago",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Cacah Tempoyak",
+      "place": "home",
+      "serving": "2 tablespoons",
+      "kcal": 45,
+      "carbs_g": 6,
+      "protein_g": 1,
+      "fat_g": 2,
+      "aliases": [
+        "ambuyat dip tempoyak",
+        "cacah ambuyat",
+        "fermented durian dip",
+        "cecah tempoyak",
+        "tempoyak sarawak dip"
+      ],
+      "icon": "food/sambal-jar",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Cacah Binjai",
+      "place": "home",
+      "serving": "2 tablespoons",
+      "kcal": 27,
+      "carbs_g": 5,
+      "protein_g": 0.5,
+      "fat_g": 0.5,
+      "aliases": [
+        "binjai dip",
+        "ambuyat dip binjai",
+        "cecah binjai",
+        "sour mango dip ambuyat",
+        "cacah ambuyat binjai"
+      ],
+      "icon": "food/sambal-jar",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Tebaloi",
+      "place": "packaged",
+      "serving": "1 piece",
+      "kcal": 115,
+      "carbs_g": 18,
+      "protein_g": 1.5,
+      "fat_g": 4,
+      "aliases": [
+        "tebaloi melanau",
+        "sago cracker sarawak",
+        "tebaloi sarawak",
+        "sago biscuit melanau",
+        "tebalui"
+      ],
+      "icon": "food/crackers",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kek Lapis Sarawak Masam Manis",
+      "place": "hawker",
+      "serving": "1 slice",
+      "kcal": 355,
+      "carbs_g": 40,
+      "protein_g": 4,
+      "fat_g": 20,
+      "aliases": [
+        "masam manis layer cake",
+        "kek lapis masam manis",
+        "sarawak layer cake sweet sour",
+        "kek masam manis"
+      ],
+      "icon": "dishes/kuih-lapis",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kek Lapis Cikman",
+      "place": "hawker",
+      "serving": "1 slice",
+      "kcal": 360,
+      "carbs_g": 41,
+      "protein_g": 4,
+      "fat_g": 20,
+      "aliases": [
+        "cikman layer cake",
+        "kek lapis cik man",
+        "sarawak layer cake cikman",
+        "kek cikman"
+      ],
+      "icon": "dishes/kuih-lapis",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kek Lapis Pandan Sarawak",
+      "place": "hawker",
+      "serving": "1 slice",
+      "kcal": 345,
+      "carbs_g": 40,
+      "protein_g": 4,
+      "fat_g": 19,
+      "aliases": [
+        "pandan layer cake sarawak",
+        "kek lapis pandan",
+        "sarawak pandan layer cake",
+        "kek lapis daun pandan"
+      ],
+      "icon": "dishes/kuih-lapis",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kek Lapis Horlicks",
+      "place": "hawker",
+      "serving": "1 slice",
+      "kcal": 365,
+      "carbs_g": 42,
+      "protein_g": 5,
+      "fat_g": 20,
+      "aliases": [
+        "horlicks layer cake",
+        "kek lapis horlik",
+        "sarawak horlicks layer cake",
+        "kek lapis sarawak horlicks"
+      ],
+      "icon": "dishes/kuih-lapis",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kek Lapis Coklat Sarawak",
+      "place": "hawker",
+      "serving": "1 slice",
+      "kcal": 375,
+      "carbs_g": 43,
+      "protein_g": 4,
+      "fat_g": 21,
+      "aliases": [
+        "chocolate layer cake sarawak",
+        "kek lapis coklat",
+        "sarawak chocolate layer cake",
+        "kek lapis coklat cheese"
+      ],
+      "icon": "dishes/kuih-lapis",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kuih Cincin Sabah",
+      "place": "packaged",
+      "serving": "1 piece",
+      "kcal": 155,
+      "carbs_g": 22,
+      "protein_g": 1.5,
+      "fat_g": 7,
+      "aliases": [
+        "kuih cincin",
+        "ring cake sabah",
+        "kuih cincin brunei",
+        "kuih sepit cincin",
+        "gula apong ring cake"
+      ],
+      "icon": "food/kuih",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nuba Laya",
+      "place": "home",
+      "serving": "1 parcel",
+      "kcal": 235,
+      "carbs_g": 52,
+      "protein_g": 5,
+      "fat_g": 1,
+      "aliases": [
+        "nuba tinga",
+        "kelabit rice parcel",
+        "lun bawang rice",
+        "nuba laya bario",
+        "mashed rice in leaf"
+      ],
+      "icon": "food/rice-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nasi Bario",
+      "place": "home",
+      "serving": "1 plate",
+      "kcal": 300,
+      "carbs_g": 68,
+      "protein_g": 6,
+      "fat_g": 0.6,
+      "aliases": [
+        "bario rice",
+        "beras bario",
+        "kelabit highland rice",
+        "bario adan rice",
+        "nasi beras bario"
+      ],
+      "icon": "food/rice-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sio Bee Kuching",
+      "place": "kopitiam",
+      "serving": "4 pieces",
+      "kcal": 195,
+      "carbs_g": 14,
+      "protein_g": 12,
+      "fat_g": 10,
+      "aliases": ["sio bee", "kuching siew mai", "烧卖古晋", "sarawak siomai", "sio bee sarawak"],
+      "icon": "dishes/dim-sum",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kuching Siew Pau",
+      "place": "kopitiam",
+      "serving": "1 piece",
+      "kcal": 265,
+      "carbs_g": 32,
+      "protein_g": 9,
+      "fat_g": 11,
+      "aliases": [
+        "siew pau kuching",
+        "烧包",
+        "sarawak baked bun",
+        "siu pau kuching",
+        "baked char siu bun sarawak"
+      ],
+      "icon": "dishes/pau",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kompia Daging",
+      "place": "kopitiam",
+      "serving": "1 piece",
+      "kcal": 225,
+      "carbs_g": 25,
+      "protein_g": 9,
+      "fat_g": 10,
+      "aliases": [
+        "kompia with minced pork",
+        "kompiang daging",
+        "肉光饼",
+        "sibu kompia pork",
+        "kompia isi daging"
+      ],
+      "icon": "food/bun",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Bee Pang",
+      "place": "packaged",
+      "serving": "1 piece",
+      "kcal": 115,
+      "carbs_g": 20,
+      "protein_g": 1.5,
+      "fat_g": 3,
+      "aliases": [
+        "米方",
+        "rice crisp sarawak",
+        "bi pang",
+        "puffed rice cake sarawak",
+        "bee pang sibu"
+      ],
+      "icon": "food/crackers",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ayam Masak Lada Hitam Sarawak",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 290,
+      "carbs_g": 10,
+      "protein_g": 26,
+      "fat_g": 16,
+      "aliases": [
+        "sarawak black pepper chicken",
+        "ayam lada hitam sarawak",
+        "black pepper chicken sarawak",
+        "sarawak pepper chicken"
+      ],
+      "icon": "food/chicken-drumstick",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ketam Lada Hitam Sarawak",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 345,
+      "carbs_g": 14,
+      "protein_g": 32,
+      "fat_g": 18,
+      "aliases": [
+        "sarawak black pepper crab",
+        "ketam lada hitam",
+        "black pepper crab sarawak",
+        "crab sarawak pepper"
+      ],
+      "icon": "food/crab",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Daging Lada Hitam Sarawak",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 305,
+      "carbs_g": 12,
+      "protein_g": 24,
+      "fat_g": 18,
+      "aliases": [
+        "sarawak black pepper beef",
+        "daging lada hitam",
+        "black pepper beef sarawak",
+        "beef sarawak pepper"
+      ],
+      "icon": "food/beef-slices",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Teh C Peng Special Sarawak",
+      "place": "kopitiam",
+      "serving": "1 glass (300 ml)",
+      "kcal": 215,
+      "carbs_g": 38,
+      "protein_g": 5,
+      "fat_g": 5,
+      "aliases": [
+        "teh c peng special",
+        "three layer tea sarawak",
+        "teh c special",
+        "gula apong layered tea",
+        "teh tiga lapis kuching"
+      ],
+      "icon": "dishes/teh-o-ais-limau",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "White Lady Kuching",
+      "place": "hawker",
+      "serving": "1 glass",
+      "kcal": 230,
+      "carbs_g": 44,
+      "protein_g": 4,
+      "fat_g": 4,
+      "aliases": ["white lady drink", "white lady sarawak", "kuching white lady", "air white lady"],
+      "icon": "food/smoothie",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Aiskrim Gula Apong",
+      "place": "hawker",
+      "serving": "1 cone",
+      "kcal": 255,
+      "carbs_g": 38,
+      "protein_g": 4,
+      "fat_g": 10,
+      "aliases": [
+        "gula apong ice cream",
+        "nipah sugar ice cream",
+        "ais krim gula apong",
+        "sarawak gula apong ice cream"
+      ],
+      "icon": "food/ice-cream",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Cendol Gula Apong",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 320,
+      "carbs_g": 52,
+      "protein_g": 4,
+      "fat_g": 11,
+      "aliases": [
+        "cendol sarawak",
+        "gula apong cendol",
+        "chendol gula apong",
+        "sarawak cendol nipah sugar"
+      ],
+      "icon": "dishes/cendol",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ikan Empurau Kukus",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 245,
+      "carbs_g": 4,
+      "protein_g": 30,
+      "fat_g": 12,
+      "aliases": [
+        "empurau",
+        "steamed empurau",
+        "ikan empurau",
+        "sarawak mahseer",
+        "tor tambroides steamed"
+      ],
+      "icon": "food/fish",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Terung Asam Masak Ikan",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 185,
+      "carbs_g": 10,
+      "protein_g": 18,
+      "fat_g": 8,
+      "aliases": [
+        "terung asam sarawak",
+        "dayak sour eggplant fish",
+        "terung dayak masak ikan",
+        "sour brinjal with fish"
+      ],
+      "icon": "food/fish",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sup Paku Kubok",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 110,
+      "carbs_g": 8,
+      "protein_g": 8,
+      "fat_g": 5,
+      "aliases": ["hairy fern soup", "paku kubok", "sup paku sarawak", "dayak fern soup"],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sagu Lemantak",
+      "place": "home",
+      "serving": "1 piece",
+      "kcal": 165,
+      "carbs_g": 40,
+      "protein_g": 0.5,
+      "fat_g": 0.5,
+      "aliases": [
+        "lemantak",
+        "sago pancake melanau",
+        "sagu melanau",
+        "sago cake sarawak",
+        "sagu lemantak sarawak"
+      ],
+      "icon": "food/sago",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nasi Lelapan Sarawak",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 630,
+      "carbs_g": 75,
+      "protein_g": 28,
+      "fat_g": 24,
+      "aliases": [
+        "nasi lalapan sarawak",
+        "nasi lelapan",
+        "sarawak rice with seven sides",
+        "nasi lelapan ayam"
+      ],
+      "icon": "dishes/nasi-campur",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Hinava Bambangan",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 165,
+      "carbs_g": 8,
+      "protein_g": 20,
+      "fat_g": 6,
+      "aliases": [
+        "hinava with bambangan",
+        "hinava gipan",
+        "kadazan raw fish bambangan",
+        "hinava tenggiri bambangan"
+      ],
+      "icon": "food/fish-fillet",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Tuhau",
+      "place": "home",
+      "serving": "2 tablespoons",
+      "kcal": 45,
+      "carbs_g": 4,
+      "protein_g": 0.5,
+      "fat_g": 3,
+      "aliases": [
+        "tuhau sabah",
+        "wild ginger pickle",
+        "etlingera coccinea",
+        "tuhau kadazandusun",
+        "tuhau jeruk"
+      ],
+      "icon": "food/ginger",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sambal Tuhau",
+      "place": "home",
+      "serving": "2 tablespoons",
+      "kcal": 95,
+      "carbs_g": 5,
+      "protein_g": 1,
+      "fat_g": 8,
+      "aliases": [
+        "tuhau sambal",
+        "sambal tumis tuhau",
+        "wild ginger sambal sabah",
+        "sambal tuhau sabah"
+      ],
+      "icon": "food/sambal-jar",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Serunding Tuhau",
+      "place": "packaged",
+      "serving": "2 tablespoons",
+      "kcal": 115,
+      "carbs_g": 6,
+      "protein_g": 2,
+      "fat_g": 9,
+      "aliases": ["tuhau serunding", "crispy tuhau", "tuhau goreng", "shredded wild ginger sabah"],
+      "icon": "food/ginger",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Bosou",
+      "place": "home",
+      "serving": "2 tablespoons",
+      "kcal": 60,
+      "carbs_g": 5,
+      "protein_g": 6,
+      "fat_g": 2,
+      "aliases": [
+        "noonsom",
+        "nonsom",
+        "tonsom",
+        "fermented fish sabah",
+        "bosou sada",
+        "kadazandusun fermented fish"
+      ],
+      "icon": "food/fish",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Bosou Bakas",
+      "place": "home",
+      "serving": "2 tablespoons",
+      "kcal": 90,
+      "carbs_g": 4,
+      "protein_g": 7,
+      "fat_g": 5,
+      "aliases": ["fermented wild boar sabah", "noonsom bakas", "bosou babi hutan", "sinamu bakas"],
+      "icon": "food/pork-belly",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Noonsom Bambangan",
+      "place": "home",
+      "serving": "2 tablespoons",
+      "kcal": 32,
+      "carbs_g": 6,
+      "protein_g": 1,
+      "fat_g": 0.5,
+      "aliases": [
+        "bambangan pickle",
+        "bosou bambangan",
+        "jeruk bambangan",
+        "pickled wild mango sabah",
+        "noonsom bambangan sabah"
+      ],
+      "icon": "food/sambal-jar",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Bambangan Jeruk",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 60,
+      "carbs_g": 12,
+      "protein_g": 1,
+      "fat_g": 1,
+      "aliases": [
+        "bambangan",
+        "wild mango sabah",
+        "mangifera pajang",
+        "jeruk bambangan sabah",
+        "pickled bambangan"
+      ],
+      "icon": "food/papaya",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kerabu Bambangan",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 120,
+      "carbs_g": 14,
+      "protein_g": 2,
+      "fat_g": 6,
+      "aliases": [
+        "bambangan salad",
+        "salad bambangan sabah",
+        "kerabu mangga bambangan",
+        "bambangan kerabu"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Pinasakan Basung",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 170,
+      "carbs_g": 5,
+      "protein_g": 22,
+      "fat_g": 7,
+      "aliases": [
+        "pinasakan",
+        "pinarasakan",
+        "sabah braised fish takob akob",
+        "pinasakan sada",
+        "kadazandusun braised fish"
+      ],
+      "icon": "food/fish",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sup Manuk On Hing",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 260,
+      "carbs_g": 8,
+      "protein_g": 26,
+      "fat_g": 14,
+      "aliases": [
+        "sup manuk on hiing",
+        "chicken soup with rice wine sabah",
+        "ayam masak lihing",
+        "manuk lihing",
+        "kadazan rice wine chicken"
+      ],
+      "icon": "food/chicken-drumstick",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nasi Kombos",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 360,
+      "carbs_g": 58,
+      "protein_g": 5,
+      "fat_g": 12,
+      "aliases": [
+        "kombos",
+        "lotud coconut rice",
+        "nasi kombos sabah",
+        "glutinous rice in coconut sabah"
+      ],
+      "icon": "food/glutinous-rice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sinalau Bakas",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 300,
+      "carbs_g": 1,
+      "protein_g": 24,
+      "fat_g": 22,
+      "aliases": [
+        "sinalau",
+        "smoked wild boar sabah",
+        "bakas",
+        "kadazandusun smoked wild boar",
+        "babi hutan salai sabah"
+      ],
+      "icon": "food/pork-belly",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ngiu Chap Sup",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 470,
+      "carbs_g": 52,
+      "protein_g": 30,
+      "fat_g": 16,
+      "aliases": [
+        "ngiu chap",
+        "牛什",
+        "sabah beef noodle soup",
+        "ngiu chap soup",
+        "beef offal noodle sabah"
+      ],
+      "icon": "dishes/kuey-teow-soup",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ngiu Chap Kering",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 530,
+      "carbs_g": 58,
+      "protein_g": 30,
+      "fat_g": 20,
+      "aliases": [
+        "dry ngiu chap",
+        "ngiu chap dry",
+        "牛什干捞",
+        "sabah dry beef noodle",
+        "ngiu chap kon lou"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sup Ngiu Chap",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 270,
+      "carbs_g": 8,
+      "protein_g": 28,
+      "fat_g": 14,
+      "aliases": ["ngiu chap soup only", "beef offal soup sabah", "sup daging ngiu chap", "牛什汤"],
+      "icon": "food/cooking-pot",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nasi Ngiu Chap",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 545,
+      "carbs_g": 70,
+      "protein_g": 30,
+      "fat_g": 16,
+      "aliases": ["ngiu chap rice", "beef rice sabah", "nasi ngiu chap sabah", "牛什饭"],
+      "icon": "food/plate-rice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sang Nyuk Mian",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 530,
+      "carbs_g": 60,
+      "protein_g": 28,
+      "fat_g": 20,
+      "aliases": [
+        "sang nyuk mien",
+        "生肉面",
+        "raw pork noodle sabah",
+        "tawau pork noodle",
+        "sang yuk mee"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Beaufort Mee",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 580,
+      "carbs_g": 70,
+      "protein_g": 26,
+      "fat_g": 22,
+      "aliases": [
+        "mee beaufort",
+        "beaufort noodles",
+        "保佛面",
+        "smoked noodle beaufort",
+        "beaufort mee sabah"
+      ],
+      "icon": "food/yellow-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Tenom Mee",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 540,
+      "carbs_g": 66,
+      "protein_g": 24,
+      "fat_g": 20,
+      "aliases": ["mee tenom", "tenom noodles", "丹南面", "hakka tenom mee", "tenom mee sabah"],
+      "icon": "food/egg-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Tamparuli Mee",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 565,
+      "carbs_g": 68,
+      "protein_g": 24,
+      "fat_g": 22,
+      "aliases": ["mee tamparuli", "tamparuli noodles", "担布南面", "tamparuli mee sabah"],
+      "icon": "food/egg-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Yu Chap",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 410,
+      "carbs_g": 50,
+      "protein_g": 26,
+      "fat_g": 12,
+      "aliases": [
+        "鱼什",
+        "mixed fish noodle sabah",
+        "yee chap",
+        "fish noodle soup sabah",
+        "yu chap mee"
+      ],
+      "icon": "dishes/kuey-teow-soup",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Mee Sup Kota Belud",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 440,
+      "carbs_g": 55,
+      "protein_g": 24,
+      "fat_g": 14,
+      "aliases": [
+        "mi sup kota belud",
+        "kota belud noodle soup",
+        "mee sup sabah",
+        "sup mee kota belud"
+      ],
+      "icon": "dishes/kuey-teow-soup",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Mee Tauhu Tawau",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 500,
+      "carbs_g": 66,
+      "protein_g": 18,
+      "fat_g": 18,
+      "aliases": ["mi tauhu tawau", "tofu noodle tawau", "豆腐面斗湖", "mee tauhu sabah"],
+      "icon": "food/yellow-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sandakan Spring Noodles",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 505,
+      "carbs_g": 62,
+      "protein_g": 24,
+      "fat_g": 18,
+      "aliases": [
+        "sandakan mee",
+        "spring noodle sandakan",
+        "山打根面",
+        "sandakan springy noodle",
+        "zha rou mee sandakan"
+      ],
+      "icon": "food/egg-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Mee Lohok Semporna",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 490,
+      "carbs_g": 64,
+      "protein_g": 22,
+      "fat_g": 16,
+      "aliases": [
+        "mi lohok",
+        "lohok noodle semporna",
+        "mee lohok sabah",
+        "semporna dark soy noodle"
+      ],
+      "icon": "food/yellow-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Amplang",
+      "place": "packaged",
+      "serving": "1 small packet (30 g)",
+      "kcal": 160,
+      "carbs_g": 18,
+      "protein_g": 4,
+      "fat_g": 8,
+      "aliases": [
+        "amplang sabah",
+        "keropok amplang",
+        "fish cracker sabah",
+        "amplang tenggiri",
+        "kuih amplang"
+      ],
+      "icon": "food/crackers",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kerabu Latok",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 60,
+      "carbs_g": 6,
+      "protein_g": 2,
+      "fat_g": 3,
+      "aliases": [
+        "latok",
+        "sea grapes salad",
+        "anggur laut",
+        "lato sabah",
+        "caulerpa lentillifera salad",
+        "umbai latok"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sagol",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 220,
+      "carbs_g": 4,
+      "protein_g": 20,
+      "fat_g": 14,
+      "aliases": [
+        "sinagol",
+        "bajau minced fish",
+        "sagol pari",
+        "sagol yu",
+        "sinagol sabah",
+        "sagol ikan"
+      ],
+      "icon": "food/fish-fillet",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Tompek",
+      "place": "home",
+      "serving": "1 piece",
+      "kcal": 170,
+      "carbs_g": 30,
+      "protein_g": 1,
+      "fat_g": 5,
+      "aliases": ["tompek bajau", "grated tapioca cake sabah", "tompeq", "bajau tapioca cake"],
+      "icon": "food/tapioca",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Putu Bajau",
+      "place": "home",
+      "serving": "1 piece",
+      "kcal": 160,
+      "carbs_g": 32,
+      "protein_g": 1.5,
+      "fat_g": 3,
+      "aliases": ["putu sabah", "bajau putu", "steamed tapioca cake sabah", "putu ubi kayu bajau"],
+      "icon": "food/tapioca",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Tinuktuk",
+      "place": "home",
+      "serving": "1 tablespoon",
+      "kcal": 34,
+      "carbs_g": 3,
+      "protein_g": 1,
+      "fat_g": 2,
+      "aliases": [
+        "tinuktuk sabah",
+        "dusun ginger chilli paste",
+        "tinuktuk kota marudu",
+        "rungus ginger paste",
+        "sambal tinuktuk"
+      ],
+      "icon": "food/ginger",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "UFO Tart",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 210,
+      "carbs_g": 26,
+      "protein_g": 4,
+      "fat_g": 10,
+      "aliases": [
+        "ufo tart sandakan",
+        "cow dung tart",
+        "tart ufo sabah",
+        "sandakan ufo tart",
+        "flying saucer tart"
+      ],
+      "icon": "food/custard-tart",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sabah Butter Cake",
+      "place": "packaged",
+      "serving": "1 slice",
+      "kcal": 325,
+      "carbs_g": 36,
+      "protein_g": 5,
+      "fat_g": 18,
+      "aliases": [
+        "kek mentega sabah",
+        "sabah butter cake kk",
+        "butter cake sabah",
+        "kek butter sabah"
+      ],
+      "icon": "food/cake-slice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Roti Kahwin",
+      "place": "kopitiam",
+      "serving": "2 slices",
+      "kcal": 285,
+      "carbs_g": 34,
+      "protein_g": 6,
+      "fat_g": 14,
+      "aliases": [
+        "roti kahwin sabah",
+        "kaya butter toast borneo",
+        "roti kawin",
+        "kahwin toast",
+        "roti kahwin sarawak"
+      ],
+      "icon": "dishes/kaya-toast",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kopi Tenom",
+      "place": "kopitiam",
+      "serving": "1 cup (200 ml)",
+      "kcal": 50,
+      "carbs_g": 12,
+      "protein_g": 0.3,
+      "fat_g": 0.1,
+      "aliases": [
+        "tenom coffee",
+        "kopi sabah",
+        "kopi tenom o",
+        "tenom robusta coffee",
+        "kopi o tenom"
+      ],
+      "icon": "dishes/kopi-o",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sabah Tea",
+      "place": "kopitiam",
+      "serving": "1 cup (200 ml)",
+      "kcal": 42,
+      "carbs_g": 10,
+      "protein_g": 0.2,
+      "fat_g": 0.1,
+      "aliases": ["teh sabah", "sabah tea ranau", "kundasang tea", "teh kebun sabah"],
+      "icon": "food/teapot",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ikan Bakar Pasar Filipina",
+      "place": "hawker",
+      "serving": "1 fish",
+      "kcal": 255,
+      "carbs_g": 3,
+      "protein_g": 34,
+      "fat_g": 12,
+      "aliases": [
+        "filipino market grilled fish",
+        "ikan bakar kk",
+        "grilled fish kota kinabalu",
+        "pasar filipina ikan bakar",
+        "todak bakar sabah"
+      ],
+      "icon": "dishes/ikan-bakar",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sotong Bakar Pasar Filipina",
+      "place": "hawker",
+      "serving": "1 squid",
+      "kcal": 200,
+      "carbs_g": 6,
+      "protein_g": 26,
+      "fat_g": 8,
+      "aliases": [
+        "grilled squid kota kinabalu",
+        "sotong bakar kk",
+        "filipino market grilled squid",
+        "sotong panggang sabah"
+      ],
+      "icon": "food/squid-rings",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Udang Bakar Pasar Filipina",
+      "place": "hawker",
+      "serving": "4 prawns",
+      "kcal": 185,
+      "carbs_g": 4,
+      "protein_g": 24,
+      "fat_g": 8,
+      "aliases": [
+        "grilled prawns kota kinabalu",
+        "udang bakar kk",
+        "filipino market grilled prawn",
+        "udang panggang sabah"
+      ],
+      "icon": "food/prawn",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Piaren Ah Manuk",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 310,
+      "carbs_g": 8,
+      "protein_g": 24,
+      "fat_g": 20,
+      "aliases": [
+        "piaren manuk",
+        "iranun chicken curry",
+        "piaren ayam sabah",
+        "iranun coconut chicken"
+      ],
+      "icon": "food/chicken-drumstick",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sayur Manis Goreng",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 140,
+      "carbs_g": 8,
+      "protein_g": 5,
+      "fat_g": 10,
+      "aliases": [
+        "sabah veggie",
+        "cangkuk manis goreng",
+        "sayur manis sabah",
+        "sweet leaf stir fry",
+        "sabah vegetable fried egg"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Butod",
+      "place": "hawker",
+      "serving": "3 grubs",
+      "kcal": 75,
+      "carbs_g": 1,
+      "protein_g": 4,
+      "fat_g": 6,
+      "aliases": ["sago worm sabah", "butod sabah", "ulat sagu", "sago grub", "butud"],
+      "icon": "food/high-protein",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kuih Pinjaram",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 175,
+      "carbs_g": 24,
+      "protein_g": 2,
+      "fat_g": 8,
+      "aliases": [
+        "pinjaram",
+        "kuih penyaram",
+        "kuih cucur sabah",
+        "penyaram brunei",
+        "kuih pinjaram sabah",
+        "malay doughnut sabah"
+      ],
+      "icon": "food/kuih",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kuih Jala",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 125,
+      "carbs_g": 16,
+      "protein_g": 2,
+      "fat_g": 6,
+      "aliases": ["kuih jala sabah", "net cake brunei", "kuih jala brunei", "jala kuih borneo"],
+      "icon": "food/kuih",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Wajid Sabah",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 180,
+      "carbs_g": 30,
+      "protein_g": 2,
+      "fat_g": 6,
+      "aliases": [
+        "wajid",
+        "wajid brunei",
+        "kuih wajid sabah",
+        "glutinous rice gula wajid",
+        "wajik borneo"
+      ],
+      "icon": "food/glutinous-rice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sup Sayur Rebus Kadazan",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 95,
+      "carbs_g": 10,
+      "protein_g": 4,
+      "fat_g": 4,
+      "aliases": [
+        "kadazan boiled vegetable soup",
+        "sup sayur kampung sabah",
+        "sup rebus sayur dusun"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ikan Masin Bambangan",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 185,
+      "carbs_g": 10,
+      "protein_g": 16,
+      "fat_g": 9,
+      "aliases": [
+        "bambangan with salted fish",
+        "bambangan ikan masin sabah",
+        "wild mango salted fish"
+      ],
+      "icon": "food/salted-fish",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nasi Goreng Bosou",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 560,
+      "carbs_g": 76,
+      "protein_g": 20,
+      "fat_g": 19,
+      "aliases": [
+        "bosou fried rice",
+        "nasi goreng noonsom",
+        "sabah fermented fish fried rice",
+        "nasi goreng bosou sabah"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Bihun Goreng Bosou",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 500,
+      "carbs_g": 68,
+      "protein_g": 18,
+      "fat_g": 16,
+      "aliases": [
+        "bosou fried beehoon",
+        "bihun goreng noonsom",
+        "sabah fermented fish beehoon",
+        "mihun goreng bosou"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ayam Kampung Masak Lihing",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 285,
+      "carbs_g": 8,
+      "protein_g": 27,
+      "fat_g": 16,
+      "aliases": [
+        "lihing chicken",
+        "ayam lihing sabah",
+        "rice wine chicken kadazan",
+        "manuk lihing sabah",
+        "chicken cooked with lihing"
+      ],
+      "icon": "food/chicken-drumstick",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nasi Kuning Sabah",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 520,
+      "carbs_g": 72,
+      "protein_g": 18,
+      "fat_g": 17,
+      "aliases": [
+        "nasi kuning kk",
+        "yellow rice sabah",
+        "nasi kuning sabah set",
+        "nasi kuning bugis sabah"
+      ],
+      "icon": "food/plate-rice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ikan Bakar Sarawak Sambal Belacan",
+      "place": "hawker",
+      "serving": "1 fish",
+      "kcal": 270,
+      "carbs_g": 6,
+      "protein_g": 32,
+      "fat_g": 13,
+      "aliases": [
+        "sarawak grilled fish",
+        "ikan bakar kuching",
+        "grilled fish sambal belacan sarawak",
+        "ikan panggang sarawak"
+      ],
+      "icon": "dishes/ikan-bakar",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ensabi Goreng",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 120,
+      "carbs_g": 7,
+      "protein_g": 4,
+      "fat_g": 8,
+      "aliases": [
+        "stir fried ensabi",
+        "sawi iban goreng",
+        "ensabi sarawak",
+        "iban mustard greens fried"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Pucuk Paku Midin Salai",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 165,
+      "carbs_g": 8,
+      "protein_g": 8,
+      "fat_g": 11,
+      "aliases": [
+        "midin with smoked fish",
+        "midin ikan salai",
+        "midin goreng ikan salai",
+        "sarawak fern smoked fish"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sayur Pansuh",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 145,
+      "carbs_g": 12,
+      "protein_g": 5,
+      "fat_g": 8,
+      "aliases": [
+        "sayur pansoh",
+        "bamboo cooked vegetables",
+        "pansuh sayur sarawak",
+        "daun ubi pansuh",
+        "pucuk ubi pansuh"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kek Lapis Sarawak Batik",
+      "place": "hawker",
+      "serving": "1 slice",
+      "kcal": 370,
+      "carbs_g": 42,
+      "protein_g": 4,
+      "fat_g": 21,
+      "aliases": [
+        "batik layer cake sarawak",
+        "kek lapis batik",
+        "kek batik sarawak",
+        "sarawak batik cake"
+      ],
+      "icon": "dishes/kuih-lapis",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sup Ayam Bario",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 210,
+      "carbs_g": 8,
+      "protein_g": 24,
+      "fat_g": 9,
+      "aliases": [
+        "kelabit chicken soup",
+        "sup manuk bario",
+        "bario highland chicken soup",
+        "sup ayam kelabit"
+      ],
+      "icon": "food/cooking-pot",
+      "verified": false,
+      "source": "model_estimate"
+    }
+  ]
+}

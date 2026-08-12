@@ -1,0 +1,841 @@
+{
+  "tally": {
+    "inserted": 119
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "laksa-sarawak-kering",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Laksa Sarawak"
+    },
+    {
+      "idx": 2,
+      "slug": "kolo-mee-ayam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mee Kolok Ayam"
+    },
+    {
+      "idx": 3,
+      "slug": "kolo-mee-sup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kolo Mee"
+    },
+    {
+      "idx": 4,
+      "slug": "kampua-mee-sup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kampua Mee"
+    },
+    {
+      "idx": 5,
+      "slug": "tomato-mee-sarawak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mee Sapi Sarawak"
+    },
+    {
+      "idx": 6,
+      "slug": "foochow-fried-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Seafood Fried Noodles"
+    },
+    {
+      "idx": 7,
+      "slug": "ding-bian-hu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 8,
+      "slug": "bien-nuk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 9,
+      "slug": "manok-kacangma",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 10,
+      "slug": "ayam-masak-ang-chao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 11,
+      "slug": "mee-sapi-sarawak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Wantan Mee Sarawak"
+    },
+    {
+      "idx": 12,
+      "slug": "umai-ikan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "umai-sotong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "umai-udang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 15,
+      "slug": "midin-goreng-belacan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Goreng Belacan"
+    },
+    {
+      "idx": 16,
+      "slug": "midin-goreng-bawang-putih",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 17,
+      "slug": "daun-ubi-tumbuk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 18,
+      "slug": "ayam-pansuh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 19,
+      "slug": "babi-pansuh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 20,
+      "slug": "ikan-pansuh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 21,
+      "slug": "asam-siok",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 22,
+      "slug": "sup-terung-dayak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 23,
+      "slug": "sup-ponas-bidayuh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 24,
+      "slug": "kasam-ensabi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kasam Babi"
+    },
+    {
+      "idx": 25,
+      "slug": "kasam-babi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kasam Ensabi"
+    },
+    {
+      "idx": 26,
+      "slug": "kasam-ikan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kari Ikan"
+    },
+    {
+      "idx": 27,
+      "slug": "ikan-terubuk-masin-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Goreng Terubuk Masin"
+    },
+    {
+      "idx": 28,
+      "slug": "nasi-goreng-terubuk-masin",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Terubuk Masin Goreng"
+    },
+    {
+      "idx": 29,
+      "slug": "terubuk-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 30,
+      "slug": "telur-ikan-terubuk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 31,
+      "slug": "buah-dabai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 32,
+      "slug": "dabai-rendam-kicap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 33,
+      "slug": "sambal-dabai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sambal Daging"
+    },
+    {
+      "idx": 34,
+      "slug": "linut",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 35,
+      "slug": "cacah-tempoyak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 36,
+      "slug": "cacah-binjai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 37,
+      "slug": "tebaloi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 38,
+      "slug": "kek-lapis-sarawak-masam-manis",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kek Lapis Sarawak"
+    },
+    {
+      "idx": 39,
+      "slug": "kek-lapis-cikman",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 40,
+      "slug": "kek-lapis-pandan-sarawak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kek Lapis Sarawak"
+    },
+    {
+      "idx": 41,
+      "slug": "kek-lapis-horlicks",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 42,
+      "slug": "kek-lapis-coklat-sarawak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kek Lapis Sarawak"
+    },
+    {
+      "idx": 43,
+      "slug": "kuih-cincin-sabah",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 44,
+      "slug": "nuba-laya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 45,
+      "slug": "nasi-bario",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 46,
+      "slug": "sio-bee-kuching",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 47,
+      "slug": "kuching-siew-pau",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 48,
+      "slug": "kompia-daging",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kompia"
+    },
+    {
+      "idx": 49,
+      "slug": "bee-pang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 50,
+      "slug": "ayam-masak-lada-hitam-sarawak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ketam Lada Hitam Sarawak"
+    },
+    {
+      "idx": 51,
+      "slug": "ketam-lada-hitam-sarawak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Daging Lada Hitam Sarawak"
+    },
+    {
+      "idx": 52,
+      "slug": "daging-lada-hitam-sarawak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ketam Lada Hitam Sarawak"
+    },
+    {
+      "idx": 53,
+      "slug": "teh-c-peng-special-sarawak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 54,
+      "slug": "white-lady-kuching",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 55,
+      "slug": "aiskrim-gula-apong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 56,
+      "slug": "cendol-gula-apong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 57,
+      "slug": "ikan-empurau-kukus",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 58,
+      "slug": "terung-asam-masak-ikan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 59,
+      "slug": "sup-paku-kubok",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 60,
+      "slug": "sagu-lemantak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 61,
+      "slug": "nasi-lelapan-sarawak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 62,
+      "slug": "hinava-bambangan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 63,
+      "slug": "tuhau",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 64,
+      "slug": "sambal-tuhau",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sambal Tumis"
+    },
+    {
+      "idx": 65,
+      "slug": "serunding-tuhau",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 66,
+      "slug": "bosou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bosou Bakas"
+    },
+    {
+      "idx": 67,
+      "slug": "bosou-bakas",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bosou"
+    },
+    {
+      "idx": 68,
+      "slug": "noonsom-bambangan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 69,
+      "slug": "bambangan-jeruk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 70,
+      "slug": "kerabu-bambangan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 71,
+      "slug": "pinasakan-basung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 72,
+      "slug": "sup-manuk-on-hing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 73,
+      "slug": "nasi-kombos",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 74,
+      "slug": "sinalau-bakas",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 75,
+      "slug": "ngiu-chap-sup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sup Ngiu Chap"
+    },
+    {
+      "idx": 76,
+      "slug": "ngiu-chap-kering",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 77,
+      "slug": "sup-ngiu-chap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ngiu Chap Sup"
+    },
+    {
+      "idx": 78,
+      "slug": "nasi-ngiu-chap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ngiu Chap Sup"
+    },
+    {
+      "idx": 79,
+      "slug": "sang-nyuk-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 80,
+      "slug": "beaufort-mee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 81,
+      "slug": "tenom-mee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 82,
+      "slug": "tamparuli-mee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 83,
+      "slug": "yu-chap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 84,
+      "slug": "mee-sup-kota-belud",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 85,
+      "slug": "mee-tauhu-tawau",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 86,
+      "slug": "sandakan-spring-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 87,
+      "slug": "mee-lohok-semporna",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 88,
+      "slug": "amplang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 89,
+      "slug": "kerabu-latok",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 90,
+      "slug": "sagol",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 91,
+      "slug": "tompek",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 92,
+      "slug": "putu-bajau",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 93,
+      "slug": "tinuktuk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 94,
+      "slug": "ufo-tart",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 95,
+      "slug": "sabah-butter-cake",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 96,
+      "slug": "roti-kahwin",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 97,
+      "slug": "kopi-tenom",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 98,
+      "slug": "sabah-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 99,
+      "slug": "ikan-bakar-pasar-filipina",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Udang Bakar Pasar Filipina"
+    },
+    {
+      "idx": 100,
+      "slug": "sotong-bakar-pasar-filipina",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Udang Bakar Pasar Filipina"
+    },
+    {
+      "idx": 101,
+      "slug": "udang-bakar-pasar-filipina",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sotong Bakar Pasar Filipina"
+    },
+    {
+      "idx": 102,
+      "slug": "piaren-ah-manuk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 103,
+      "slug": "sayur-manis-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Maggi Goreng Sayur"
+    },
+    {
+      "idx": 104,
+      "slug": "butod",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 105,
+      "slug": "kuih-pinjaram",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 106,
+      "slug": "kuih-jala",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 107,
+      "slug": "wajid-sabah",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 108,
+      "slug": "sup-sayur-rebus-kadazan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 109,
+      "slug": "ikan-masin-bambangan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 110,
+      "slug": "nasi-goreng-bosou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Goreng Nanas"
+    },
+    {
+      "idx": 111,
+      "slug": "bihun-goreng-bosou",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bihun Goreng"
+    },
+    {
+      "idx": 112,
+      "slug": "ayam-kampung-masak-lihing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 113,
+      "slug": "nasi-kuning-sabah",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 114,
+      "slug": "ikan-bakar-sarawak-sambal-belacan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sambal Belacan"
+    },
+    {
+      "idx": 115,
+      "slug": "ensabi-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 116,
+      "slug": "pucuk-paku-midin-salai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 117,
+      "slug": "sayur-pansuh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 118,
+      "slug": "kek-lapis-sarawak-batik",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kek Lapis Sarawak"
+    },
+    {
+      "idx": 119,
+      "slug": "sup-ayam-bario",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sup Ayam"
+    }
+  ]
+}
