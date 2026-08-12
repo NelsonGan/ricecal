@@ -40,12 +40,12 @@
  * syrup and right for everything a Malaysian drinks, which is what the ml
  * labels in this catalogue are.
  *
- * CUPS AND SPOONS ARE DELIBERATELY NOT READ. They are 20,000 and 22,000 rows
- * respectively, so the temptation is real — but a cup of cooked rice is 200 g,
- * a cup of oil is 218 g, and a cup of cornflakes is 30 g. Reading them with any
- * single density would put a confident, precisely wrong number where there is
- * currently an honest null, and null has somewhere to go: the per-unit path
- * below handles it exactly as it did before grams existed.
+ * CUPS AND SPOONS ARE DELIBERATELY NOT READ. Between them they are over 9,000
+ * of the catalogue's 70,000 portions, so the temptation is real — but a cup of
+ * cooked rice is 200 g, a cup of oil is 218 g, and a cup of cornflakes is 30 g.
+ * Reading them with any single density would put a confident, precisely wrong
+ * number where there is currently an honest null, and null has somewhere to go:
+ * the per-unit path below handles it exactly as it did before grams existed.
  */
 export function servingGrams(label: string | null | undefined): number | null {
   const text = (label ?? '').trim()

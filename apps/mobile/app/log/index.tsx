@@ -87,7 +87,7 @@ export default function LogSheet() {
   const left = (targets?.kcal ?? 0) - sumMacros(day.entries).kcal
 
   // Yesterday is a second day query. Cheap, cached, and the only way to offer
-  // "repeat" without keeping every day in memory the way the mock store did.
+  // "repeat" without keeping every day in memory.
   const yesterdayKey = dateKey(subDays(new Date(selectedDate), 1))
   const { data: yesterday } = useDay(yesterdayKey)
   const yesterdayEntries = yesterday?.entries ?? []

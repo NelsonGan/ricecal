@@ -14,7 +14,7 @@ import { recipes } from './recipes'
  * feature deletes its file; nothing dangles.
  *
  * Food names are NOT here. "nasi lemak" is data, not copy, and stays in its
- * local spelling in every language, so it lives with the mock food records.
+ * local spelling in every language, so it lives in the catalogue.
  */
 export const en = {
   common,
