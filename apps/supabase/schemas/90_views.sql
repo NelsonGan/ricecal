@@ -95,13 +95,15 @@ select
 
   coalesce(e.display_label, e.item_name) as food_name,
   e.item_brand                           as food_brand,
-  -- Three flags that were properties of the catalogue row. Nothing in a diary
-  -- can tell any more, and nothing reads them for more than a badge: an entry
-  -- carries numbers, not a claim about where they came from. Kept as columns so
-  -- the mappers above do not have to change shape.
-  false                                  as food_verified,
-  false                                  as is_estimate,
-  false                                  as is_archetype,
+  -- `food_verified`, `is_estimate` and `is_archetype` were here, three flags
+  -- that were properties of the catalogue row. They survived the move to D1 as
+  -- constant `false` so the mappers would not have to change shape, and a
+  -- constant is the one kind of column that cannot come back to life: every
+  -- reader downstream was reading a value the view had already decided. So the
+  -- client mapped two of them into fields no screen ever branched on, the third
+  -- was read by nothing at all, and the doc comment on the client type still
+  -- promised a badge that had stopped existing. Anything that needs to exclude
+  -- a guess filters on `food_id is not null`, which is the real test.
   -- A photo suppresses both icons outright: the entry's own icon wins over the
   -- food's, and a photograph wins over either.
   case when e.photo_path is null then coalesce(e.icon_set,  e.item_icon_set)  end as icon_set,
