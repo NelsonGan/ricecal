@@ -26,6 +26,7 @@
     "foods:import": "node --no-warnings apps/supabase/scripts/catalogue-import.mjs",
     "foods:dupes": "node --no-warnings apps/supabase/scripts/foods-dupes.mjs",
     "foods:alias": "node --no-warnings apps/supabase/scripts/foods-alias.mjs",
+    "foods:icons": "node --no-warnings apps/supabase/scripts/foods-icons.mjs",
     "eval:prompts": "deno run -A apps/supabase/scripts/eval-prompts.ts",
     "eval:scan": "node --no-warnings apps/supabase/scripts/scan-eval.mjs",
     "eval:recipe": "node --no-warnings apps/supabase/scripts/recipe-eval.mjs",

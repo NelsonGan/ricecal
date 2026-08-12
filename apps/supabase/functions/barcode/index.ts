@@ -31,6 +31,7 @@ import { createClient } from '@supabase/supabase-js'
 
 import { gtin14 } from '../_shared/barcode.ts'
 import { type CatalogueProduct, cacheProduct, lookupBarcode } from '../_shared/catalogue.ts'
+import { iconFor } from '../_shared/icon-match.ts'
 
 /** Open Food Facts asks that clients identify themselves. */
 const USER_AGENT = 'RiceCal/1.0 (https://ricecal.app; barcode lookup)'
@@ -281,12 +282,24 @@ Deno.serve(async (req: Request) => {
  * learn a second shape because the data moved. The portion is the row's own
  * basis: these products are stored per the serving their numbers are quoted
  * per, so the factor is 1 by definition.
+ *
+ * THE DRAWING IS DERIVED, NOT STORED
+ *
+ * `product` has no icon columns, and giving 3.2 million rows a pair of them to
+ * hold a value computable from the name they already carry would be a migration
+ * and a bulk write for nothing. The searchable half of the catalogue stores its
+ * icon because a person authored it; a packet's is read off its own name here,
+ * so a product cached last year draws the same as one fetched a moment ago and
+ * nothing has to be backfilled.
  */
 function asFood(p: CatalogueProduct, label?: string) {
+  const icon = iconFor(p.name)
   return {
     id: null,
     name: p.name,
     brand: p.brand,
+    icon_set: icon?.set ?? null,
+    icon_name: icon?.name ?? null,
     place: 'packaged',
     kcal: p.kcal,
     carbs_g: p.carbs_g,
