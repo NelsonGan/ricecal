@@ -191,11 +191,6 @@ export const refine = (foodLogId, instruction) =>
 /** A recipe form filled in from words. Writes nothing — the draft is the answer. */
 export const readRecipe = (text) => invoke('recipes', { action: 'read', text })
 
-export const search = (q, limit = 20) => invoke('catalogue', { action: 'search', q, limit })
-
-/** One dish by id. The action is `food`, singular — there is no batch form. */
-export const food = (id) => invoke('catalogue', { action: 'food', id })
-
 export const barcodeLookup = (code) => invoke('barcode', { code })
 
 /** An entry as the diary reads it, through the view rather than off the table. */

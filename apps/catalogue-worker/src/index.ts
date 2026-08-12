@@ -16,20 +16,54 @@
  *
  * WHAT PROTECTS IT
  *
- * A shared secret in `Authorization`, compared in constant time. This endpoint
- * is read-only and the catalogue is not secret — every row is visible to every
- * signed-in user of the app — so the token is here to stop it being used as
- * somebody else's free food API, not to protect the data. The comparison is
- * still constant-time, because a timing oracle on a bearer token is free to
- * avoid and embarrassing to leave in.
+ * Two credentials, for two callers, and which routes each may reach is the
+ * policy in `ROUTES` below.
+ *
+ * A SHARED SECRET in `Authorization` is our own server: the Supabase edge
+ * functions, which reach everything including the write. Compared in constant
+ * time, because a timing oracle on a bearer token is free to avoid and
+ * embarrassing to leave in.
+ *
+ * A USER'S SUPABASE JWT is the app, reading the catalogue directly. It reaches
+ * the two read routes and nothing else. See `auth.ts` for why this is safe now
+ * and would not have been before: the project signs tokens with ES256, so this
+ * Worker verifies against a PUBLIC key and holds nothing that could forge one.
+ *
+ * The catalogue is not secret — every row is visible to every signed-in user —
+ * so neither credential is protecting the data. They are here so that reading
+ * it costs somebody an account, and so that writing it stays impossible from
+ * anywhere but our own server.
  */
 
+import { verifyUser } from './auth.ts'
 import { ftsQuery, gtin14, normalize, trigramQuery } from './text.ts'
 
 export interface Env {
   DB: D1Database
   /** Shared with the Supabase edge functions. Set with `wrangler secret put`. */
   CATALOGUE_TOKEN: string
+  /** The project whose JWTs this Worker will accept. A public URL, not a secret. */
+  SUPABASE_URL: string
+  /** Per-user request cap, so an account is not a licence to scrape. */
+  CATALOGUE_RL: { limit: (options: { key: string }) => Promise<{ success: boolean }> }
+}
+
+/**
+ * Who may reach what.
+ *
+ * `user` means a signed-in person's token is enough; the shared secret works
+ * everywhere. Least privilege rather than symmetry: the app only ever calls the
+ * two read routes, so those are the only two it may call. `/barcode` is a read
+ * too and is deliberately NOT here — the app reaches a packet through the
+ * `barcode` edge function, which also falls back to Open Food Facts and writes
+ * what it finds, and a second door onto half of that is a door to keep shut.
+ */
+const ROUTES: Record<string, 'user' | 'service'> = {
+  '/search': 'user',
+  '/food': 'user',
+  '/barcode': 'service',
+  '/product': 'service',
+  '/health': 'service',
 }
 
 /** Reciprocal Rank Fusion weights, carried over from the Postgres search. */
@@ -219,11 +253,41 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const auth = request.headers.get('authorization') ?? ''
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : ''
-    if (!env.CATALOGUE_TOKEN || !tokenMatches(token, env.CATALOGUE_TOKEN)) {
-      return json({ ok: false, error: 'unauthorized' }, 401)
-    }
-
     const url = new URL(request.url)
+
+    const required = ROUTES[url.pathname]
+    if (!required) return json({ ok: false, error: 'unknown path' }, 404)
+
+    // The shared secret first, and it is checked against EVERY request rather
+    // than only on service routes: our own server calls the read routes too
+    // (the scan cascade searches the catalogue on every plate), and it should
+    // not have to carry a user's token to do it.
+    const isService = Boolean(env.CATALOGUE_TOKEN) && tokenMatches(token, env.CATALOGUE_TOKEN)
+
+    if (!isService) {
+      if (required === 'service') {
+        // 404 rather than 403. A signed-in user has no business knowing that a
+        // write route exists here, and "you are not allowed" is a map.
+        return json({ ok: false, error: 'unknown path' }, 404)
+      }
+
+      const user = token ? await verifyUser(token, env.SUPABASE_URL) : null
+      if (!user) return json({ ok: false, error: 'unauthorized' }, 401)
+
+      /**
+       * Per user, not per IP. An account is what it costs to read the
+       * catalogue, so an account is the thing worth limiting — a phone on
+       * mobile data shares an IP with a whole carrier, and one on wifi changes
+       * IP by walking outside.
+       *
+       * The number is sized for typing, not for browsing: search fires once per
+       * keystroke on a 140 ms debounce, so a person hunting for a dish spends
+       * ten or so in a burst. A hundred a minute is far above anybody real and
+       * far below what makes this an interesting way to copy a database.
+       */
+      const { success } = await env.CATALOGUE_RL.limit({ key: user.id })
+      if (!success) return json({ ok: false, error: 'slow down' }, 429)
+    }
 
     try {
       switch (url.pathname) {
@@ -300,6 +364,10 @@ export default {
           return json({ ok: true, ...row })
         }
 
+        // Unreachable for an unknown path, which `ROUTES` has already turned
+        // away. What it catches is a route added to `ROUTES` and not to this
+        // switch — which would otherwise be an authorised request falling off
+        // the end of the function.
         default:
           return json({ ok: false, error: 'unknown path' }, 404)
       }
