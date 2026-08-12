@@ -12,7 +12,7 @@
  *   `public.gtin14`                          in Postgres, for the client's own use
  *   this file                                the edge function, which must normalize
  *                                            before it can ask Open Food Facts anything
- *   `gtin14` in apps/catalogue-worker        the Worker, in front of D1, where the
+ *   `gtin14` in apps/cloudflare/workers/catalogue        the Worker, in front of D1, where the
  *                                            barcode IS the primary key
  *
  * Each is four lines and each is tested, because what they must not do is

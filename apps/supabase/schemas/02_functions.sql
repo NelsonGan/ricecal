@@ -77,7 +77,7 @@ comment on function public.search_normalize is
 -- `search_tsquery` and `search_tsquery_all` turned free text into an OR-ed and
 -- an AND-ed tsquery, and existed for `search_foods` and nothing else. The
 -- catalogue is in Cloudflare D1 now, where the equivalent is FTS5 — see
--- `apps/catalogue-worker/src/index.ts`, which carries the same stopword list
+-- `apps/cloudflare/workers/catalogue/src/index.ts`, which carries the same stopword list
 -- and the same rule about ORing terms so that a dish name can carry the match
 -- while the narration around it is free to miss.
 --
