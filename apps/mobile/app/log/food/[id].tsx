@@ -27,6 +27,7 @@ import {
   useTargets,
   useUpdateEntry,
   useUpdateIngredient,
+  withCataloguePortions,
 } from '@/data'
 import { FixSheet, IconPicker, ScannedPacket } from '@/features/logging'
 import { MacroBars, MealPhoto } from '@/features/shared'
@@ -235,15 +236,23 @@ export default function FoodDetail() {
   )
 
   /**
-   * The food this screen is about — from the catalogue when there is one, and
-   * from the ENTRY when there is not.
+   * The food this screen is about, and WHICH ONE depends on why we are here.
    *
-   * Null `food_id` is ordinary now: an estimate, an archetype, a plate rebuilt
-   * from its own parts, a typed meal and a recipe are none of them catalogue
-   * rows, which between them is most of what a scan writes. The entry carries
-   * its own numbers, so it can answer everything below — see `foodFromEntry`.
+   * Adding: the catalogue row is the answer, because there is no entry yet and
+   * its numbers are what the new row will snapshot.
+   *
+   * Editing: the ENTRY is the answer, always. It states its own numbers — null
+   * `food_id` is ordinary (an estimate, an archetype, a rebuilt plate, a typed
+   * meal, a recipe), and where it is set it is a note about provenance rather
+   * than a live reference. The catalogue row is still fetched, but only for the
+   * other portions it can offer; see `withCataloguePortions` for what happens
+   * when it cannot offer this entry's own.
+   *
+   * Letting the catalogue win here is what showed a 108 kcal soy milk as 511.
    */
-  const food = catalogueFood ?? (existing ? foodFromEntry(existing) : null)
+  const food = existing
+    ? withCataloguePortions(foodFromEntry(existing), catalogueFood)
+    : (catalogueFood ?? null)
   const refineEntry = useRefineEntry()
   const updateIngredient = useUpdateIngredient()
   const removeIngredient = useRemoveIngredient()
@@ -749,7 +758,26 @@ export default function FoodDetail() {
       logDate: existing.logDate,
       ...(nameChange ? { name: nameChange } : {}),
       ...(quantityChange === undefined ? {} : { quantity: quantityChange }),
-      ...(servingChange ? { servingId: servingChange } : {}),
+      // The portion's own NUMBERS travel with its id, and they have to.
+      //
+      // `serving_id` alone was enough while `foods` and `food_servings` were in
+      // Postgres, because `food_log_details` joined to them for the factor and
+      // the label. The catalogue is in D1 now and an entry carries its own
+      // `serving_factor` and `serving_label`, so an id written by itself changes
+      // what the row CLAIMS its portion is and nothing about what it counts:
+      // switching a nasi lemak to Large previewed 975 kcal, saved, and left a
+      // row still labelled "1 serving" and still counting 650.
+      //
+      // `serving` rather than the staged id, because the id is only a key into
+      // the list this screen is showing — which is the entry's own portion when
+      // the catalogue cannot offer it.
+      ...(servingChange
+        ? {
+            servingId: servingChange,
+            servingLabel: serving?.label ?? existing.servingLabel,
+            servingFactor: serving?.factor ?? existing.servingFactor,
+          }
+        : {}),
       ...(overridesChange ? { overrides: overridesChange } : {}),
       ...(pictureChange ?? {}),
       // What is on the row now, so whichever picture replaces it can delete the

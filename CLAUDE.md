@@ -851,6 +851,24 @@ Break these and the feature is wrong in ways tests may not catch.
   the same three cases the old `is_estimate`/`is_archetype`/`is_recipe` flags
   did. `serving_id` is TEXT, not a uuid: D1 keys a portion `(food_id, slug)` and
   the Worker names one `"<food id>:<slug>"`.
+  So **a screen editing a saved entry prices it from the entry, never from the
+  catalogue.** `app/log/food/[id].tsx` fetches the food anyway, but only for the
+  portions it can offer — `withCataloguePortions`, which declines a list that
+  disagrees with the entry about the size the entry is already at. Letting the
+  catalogue win showed a soy milk logged at 108 kcal off its own nutrition panel
+  as 511, priced from an unrelated row while wearing the entry's own name and
+  photograph, with Today still showing 108. The bad id was the narrow cause; the
+  wide one is that any entry whose row has since been re-costed disagreed the
+  same way, silently.
+- **Changing a portion writes THREE columns, not one.** `serving_label` and
+  `serving_factor` are what the day counts; `serving_id` is a soft note that
+  nothing in Postgres can resolve, because `food_servings` is in D1 and no view
+  joins to it. It was enough when the catalogue was local and `food_log_details`
+  joined for the factor. Writing the id alone now changes what a row CLAIMS its
+  portion is and nothing about its arithmetic: switching a nasi lemak to Large
+  previewed 975 kcal, saved, and left a row labelled "1 serving" still counting
+  650. `snapshotColumns` writes all three on insert; `EntryPatch` carries all
+  three on update.
 - **An LLM figure is never averaged with a catalogue figure**, and the nutrition
   call is never told the vision call's guess — anchored, the model answered
   450 kcal for a plate of apple slices, and 120 without.
