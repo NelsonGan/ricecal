@@ -58,6 +58,7 @@ const NOT_A_MEAL = new Set([
   'microwave',
   'rice-cooker',
   'salt-shaker',
+  'pepper-grinder',
   'spatula',
   'steamer',
   'sugar-spoon',

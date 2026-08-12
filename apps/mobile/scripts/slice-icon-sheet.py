@@ -83,15 +83,75 @@ def flood_background(im: Image.Image, tolerance: int) -> Image.Image:
 
 
 def already_transparent(im: Image.Image) -> bool:
+    """Whether the sheet's border is empty, sampled rather than spot-checked.
+
+    Four corners is not enough. One of these sheets had a single corner pixel at
+    alpha 1 — invisible, and enough to send an already-transparent sheet through
+    the flood fill with a background colour read off that pixel as pure black,
+    which would then have eaten any dark artwork touching the border.
+    """
     w, h = im.size
     px = im.convert("RGBA").load()
-    return all(px[x, y][3] == 0 for x, y in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)))
+    border = [px[x, 0][3] for x in range(w)] + [px[x, h - 1][3] for x in range(w)]
+    border += [px[0, y][3] for y in range(h)] + [px[w - 1, y][3] for y in range(h)]
+    return sum(1 for a in border if a < 8) / len(border) > 0.99
 
 
 def solid_bbox(cell: Image.Image):
     """Content bounds ignoring the soft halo a render leaves around artwork."""
     mask = cell.getchannel("A").point(lambda a: 255 if a > ALPHA_FLOOR else 0)
     return mask.getbbox()
+
+
+def components(im: Image.Image, min_area: int):
+    """Every connected blob of artwork, as (pixels, bbox).
+
+    Cutting a sheet on a uniform grid assumes the generator centred each drawing
+    in its cell, and these were not: measured against a 5x5 split, 48 of the 100
+    had artwork crossing a cell edge. A grid would have shaved a slice off all
+    of them.
+
+    Blobs do not care where the lines are. What they cannot do alone is decide
+    which blob belongs to which icon, since plenty of these drawings are several
+    separate pieces — scattered sesame seeds, a pile of mussels, three dates. So
+    the caller clusters them against the nominal grid positions, which is the
+    one thing about the layout that IS reliable.
+    """
+    w, h = im.size
+    px = im.getchannel("A").load()
+    seen = bytearray(w * h)
+    out = []
+    for sy in range(h):
+        for sx in range(w):
+            if seen[sy * w + sx] or px[sx, sy] <= ALPHA_FLOOR:
+                continue
+            stack = [(sx, sy)]
+            seen[sy * w + sx] = 1
+            blob = []
+            x0 = x1 = sx
+            y0 = y1 = sy
+            while stack:
+                x, y = stack.pop()
+                blob.append((x, y))
+                if x < x0:
+                    x0 = x
+                if x > x1:
+                    x1 = x
+                if y < y0:
+                    y0 = y
+                if y > y1:
+                    y1 = y
+                for dx in (-1, 0, 1):
+                    for dy in (-1, 0, 1):
+                        nx, ny = x + dx, y + dy
+                        if 0 <= nx < w and 0 <= ny < h:
+                            i = ny * w + nx
+                            if not seen[i] and px[nx, ny] > ALPHA_FLOOR:
+                                seen[i] = 1
+                                stack.append((nx, ny))
+            if len(blob) >= min_area:
+                out.append((blob, (x0, y0, x1, y1)))
+    return out
 
 
 def to_icon(cell: Image.Image) -> Image.Image:
@@ -127,6 +187,7 @@ def main() -> None:
     ap.add_argument("--cols", type=int, default=5)
     ap.add_argument("--rows", type=int, default=5)
     ap.add_argument("--tolerance", type=int, default=40)
+    ap.add_argument("--min-area", type=int, default=60, help="ignore blobs smaller than this")
     ap.add_argument("--out", default="assets/icons")
     ap.add_argument("--write", action="store_true")
     args = ap.parse_args()
@@ -143,37 +204,47 @@ def main() -> None:
         print(f"flood-filling background (tolerance {args.tolerance})")
         im = flood_background(im, args.tolerance)
 
-    cw, ch = im.width // args.cols, im.height // args.rows
+    blobs = components(im, args.min_area)
+    print(f"{len(blobs)} blobs of artwork")
+
+    # Each blob joins the nominal grid position its centre is nearest to. The
+    # positions are only used as anchors, never as cut lines.
+    cells: dict[int, list] = {i: [] for i in range(want)}
+    for blob, box in blobs:
+        cx = (box[0] + box[2]) / 2
+        cy = (box[1] + box[3]) / 2
+        c = min(range(args.cols), key=lambda i: abs((i + 0.5) * im.width / args.cols - cx))
+        r = min(range(args.rows), key=lambda i: abs((i + 0.5) * im.height / args.rows - cy))
+        cells[r * args.cols + c].append((blob, box))
+
     problems = []
+    src = im.load()
     for i, label in enumerate(names):
-        r, c = divmod(i, args.cols)
-        cell = im.crop((c * cw, r * ch, (c + 1) * cw, (r + 1) * ch))
-        box = solid_bbox(cell)
-        if box is None:
-            problems.append(f"{label}: cell is empty")
+        group = cells[i]
+        if not group:
+            problems.append(f"{label}: nothing found at this position")
             continue
 
-        # Artwork touching a cell edge means the grid split cut through it, or
-        # two icons are bleeding into one another.
-        touches = []
-        if box[0] <= 1:
-            touches.append("left")
-        if box[1] <= 1:
-            touches.append("top")
-        if box[2] >= cw - 1:
-            touches.append("right")
-        if box[3] >= ch - 1:
-            touches.append("bottom")
-        if touches:
-            problems.append(f"{label}: artwork touches {', '.join(touches)} of its cell")
+        x0 = min(b[1][0] for b in group)
+        y0 = min(b[1][1] for b in group)
+        x1 = max(b[1][2] for b in group)
+        y1 = max(b[1][3] for b in group)
 
-        # Stray specks: a second blob far from the main one is usually a
-        # neighbour's shadow caught by the crop.
-        alpha = cell.getchannel("A").point(lambda a: 255 if a > ALPHA_FLOOR else 0)
-        covered = sum(alpha.histogram()[1:])
-        area = (box[2] - box[0]) * (box[3] - box[1])
-        if area and covered / area < 0.12:
+        # Only this icon's own pixels are copied. Cropping the bounding box
+        # instead would drag in any neighbour that overlaps it, which is exactly
+        # the bleed a grid cut produces.
+        cell = Image.new("RGBA", (x1 - x0 + 1, y1 - y0 + 1), (0, 0, 0, 0))
+        dst = cell.load()
+        for blob, _ in group:
+            for x, y in blob:
+                dst[x - x0, y - y0] = src[x, y]
+
+        area = (x1 - x0 + 1) * (y1 - y0 + 1)
+        covered = sum(len(b[0]) for b in group)
+        if area and covered / area < 0.10:
             problems.append(f"{label}: artwork fills only {covered / area:.0%} of its bounds")
+        if len(group) > 40:
+            problems.append(f"{label}: {len(group)} separate pieces, check it is one drawing")
 
         if args.write:
             icon = to_icon(cell)

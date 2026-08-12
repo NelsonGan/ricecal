@@ -13,7 +13,7 @@ food/cocoa-powder
 food/spices
 food/herbs
 food/pepper-grinder
-food/sesame-seeds
+food/soy-beans
 food/stock-cube
 food/pickles
 food/olives
