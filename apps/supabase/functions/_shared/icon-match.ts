@@ -43,10 +43,11 @@ import type { IconChoice, IconSet } from './icons.ts'
  * business.
  *
  * A value of `null` means STOP, no drawing — the phrase is longer than the one
- * that would otherwise fire, so it wins the ordering and suppresses it. That is
- * how "salad dressing" avoids inheriting the salad's vegetables: a bottle of
- * dressing beside a plate of greens is exactly the wrong-picture case this
- * whole file is trying not to create.
+ * that would otherwise fire, so it wins the ordering and suppresses it. Nothing
+ * uses it today: "salad dressing" needed it until there was a drawing of a
+ * dressing bottle to point at. It stays because the next wrong-picture case
+ * will want it, and because `matchIcon` has to keep treating null as an answer
+ * rather than as a miss.
  *
  * Malay, French and Spanish terms are in because the catalogue is full of them:
  * Malaysian products are often entered by European contributors ("Nouilles
@@ -273,6 +274,7 @@ export const TABLE: Record<string, string | null> = {
   salmon: 'fish',
   mackerel: 'fish',
   sardine: 'fish',
+  sardines: 'fish',
   anchovy: 'fish',
   anchovies: 'fish',
   prawn: 'prawn',
@@ -303,6 +305,7 @@ export const TABLE: Record<string, string | null> = {
   omelet: 'omelette',
   tamagoyaki: 'omelette-roll',
   telur: 'boiled-egg',
+  eggs: 'boiled-egg',
   egg: 'boiled-egg',
 
   // -- Rice, noodles, grains ----------------------------------------------
@@ -391,6 +394,16 @@ export const TABLE: Record<string, string | null> = {
   pastry: 'pie-slice',
   quiche: 'pie-slice',
   cheesecake: 'cheesecake',
+  // A sandwich biscuit is a biscuit. `sandwich` and `biscuits` are the same
+  // length, so without these the insertion order decided it.
+  'sandwich bread': 'bread-loaf',
+  'sandwich loaf': 'bread-loaf',
+  'sandwich biscuit': 'biscuit-stack',
+  'sandwich biscuits': 'biscuit-stack',
+  'sandwich cookie': 'biscuit-stack',
+  'sandwich cookies': 'biscuit-stack',
+  'cracker sandwich': 'crackers',
+  'sandwich cracker': 'crackers',
   sandwich: 'sandwich',
   sandwiches: 'sandwich',
   toastie: 'sandwich',
@@ -427,6 +440,7 @@ export const TABLE: Record<string, string | null> = {
   milk: 'milk-carton',
   lait: 'milk-carton',
   susu: 'milk-carton',
+  skyr: 'yogurt',
   yogurt: 'yogurt',
   yoghurt: 'yogurt',
   yaourt: 'yogurt',
@@ -450,10 +464,17 @@ export const TABLE: Record<string, string | null> = {
   soybeans: 'soy-beans',
   'soy milk': 'soy-milk',
   soymilk: 'soy-milk',
+  cheddar: 'cheese',
+  mozzarella: 'cheese',
+  parmesan: 'cheese',
   cheese: 'cheese',
   fromage: 'cheese',
   queso: 'cheese',
   'peanut butter': 'peanuts',
+  'beurre de cacahuete': 'peanuts',
+  'beurre de cacao': 'chocolate-bar',
+  'petit beurre': 'biscuit-stack',
+  'pate brisee': 'pie-slice',
   butter: 'butter',
   beurre: 'butter',
   'ice cream': 'ice-cream',
@@ -511,6 +532,9 @@ export const TABLE: Record<string, string | null> = {
 
   // -- Sweets and pantry ---------------------------------------------------
   'milk chocolate': 'chocolate-bar',
+  // A chocolate chip is not a crisp, and `chips` is the longer word.
+  'chocolate chips': 'chocolate-bar',
+  'choc chips': 'chocolate-bar',
   chips: 'potato-chips',
   crisps: 'potato-chips',
   popcorn: 'popcorn',
@@ -553,6 +577,8 @@ export const TABLE: Record<string, string | null> = {
   mayonnaise: 'mayonnaise',
   mayo: 'mayonnaise',
   aioli: 'mayonnaise',
+  dressing: 'salad-dressing',
+  vinaigrette: 'salad-dressing',
   mustard: 'mustard',
   moutarde: 'mustard',
   vinegar: 'vinegar',
@@ -560,7 +586,7 @@ export const TABLE: Record<string, string | null> = {
   jam: 'jam-jar',
   marmalade: 'jam-jar',
   confiture: 'jam-jar',
-  tartiner: 'jam-jar',
+  'pate a tartiner': 'chocolate-spread',
   nutella: 'chocolate-spread',
   'chocolate spread': 'chocolate-spread',
   syrup: 'syrup-bottle',
@@ -697,6 +723,7 @@ export const TABLE: Record<string, string | null> = {
   lemon: 'lemon',
   lime: 'lime',
   limau: 'lime',
+  potatoes: 'potato',
   potato: 'potato',
   kentang: 'potato',
   carrots: 'carrot',
@@ -710,6 +737,7 @@ export const TABLE: Record<string, string | null> = {
   garlic: 'garlic',
   ginger: 'ginger',
   halia: 'ginger',
+  mushrooms: 'mushroom',
   mushroom: 'mushroom',
   cendawan: 'mushroom',
   tomatoes: 'tomato',
@@ -718,12 +746,19 @@ export const TABLE: Record<string, string | null> = {
   chilli: 'chilli',
   chili: 'chilli',
   cili: 'chilli',
+  'vegetable soup': 'soup-bowl',
+  'beef soup': 'soup-bowl',
+  'chicken soup': 'soup-bowl',
+  'tomato soup': 'soup-bowl',
+  'mushroom soup': 'soup-bowl',
+  'onion soup': 'soup-bowl',
+  'fish soup': 'soup-bowl',
+  'corn soup': 'soup-bowl',
+  'yoghurt drink': 'yogurt-drink',
+  'yogurt drink': 'yogurt-drink',
   vegetables: 'vegetables',
   vegetable: 'vegetables',
   sayur: 'vegetables',
-  // A bottle of dressing is not a plate of greens. Two words, so it is tried
-  // before `salad` and stops the match dead.
-  'salad dressing': null,
   salad: 'vegetables',
   spinach: 'leafy-greens',
   bayam: 'vegetables',
@@ -748,6 +783,8 @@ export const TABLE: Record<string, string | null> = {
   okra: 'okra',
   bendi: 'okra',
   'bell pepper': 'bell-pepper',
+  'bell peppers': 'bell-pepper',
+  peppers: 'bell-pepper',
   capsicum: 'bell-pepper',
   sprouts: 'bean-sprouts',
   sprouted: 'bean-sprouts',
@@ -826,13 +863,19 @@ const WEAK = new Set([
   'honeydew',
   'grapefruit',
   'pomelo',
+  'cucumber',
+  'timun',
+  'matcha',
+  'vegetable',
+  'vegetables',
+  'sayur',
+  'salad',
   'nuts',
   'nut',
   'hazelnut',
   'pistachio',
   'walnut',
   'pecan',
-  'sesame',
   'bar',
   'bars',
   // "UHT Full Cream Milk" drew a tub of cream, because `cream` is a longer word
@@ -860,7 +903,66 @@ const WEAK_PHRASES = Object.keys(TABLE)
   .sort(bySpecificity)
 const PHRASES = [...STRONG_PHRASES, ...WEAK_PHRASES]
 
+/** Exported so a test can assert each one is a real key. */
+export { WEAK_PHRASES }
+
 /** Lowercased, non-alphanumerics to single spaces, padded for boundary tests. */
+/**
+ * Phrases that describe the SHAPE of the food rather than an ingredient in it.
+ *
+ * Only these are allowed to win from a name's first segment. A bowl of soup is
+ * a bowl of soup whatever is floating in it, and a sandwich cookie is a cookie;
+ * but "Beef, ..., steak" is a steak, so `beef` is deliberately not here.
+ */
+const FORM_HEADS = new Set([
+  'soup',
+  'sup',
+  'broth',
+  'bouillon',
+  'chowder',
+  'cookie',
+  'cookies',
+  'biscuit',
+  'biscuits',
+  'crackers',
+  'cracker',
+  'pastry',
+  'pie',
+  'cake',
+  'sandwich',
+  'pizza',
+  'bread',
+  'bun',
+  'toast',
+  'cereal',
+  'cereals',
+  'candy',
+  'candies',
+  'juice',
+  'beverages',
+  'porridge',
+  'salad',
+  'pudding',
+  'jam',
+  'sauce',
+  'dressing',
+  'syrup',
+  'yogurt',
+  'yoghurt',
+  'cheese',
+  'butter',
+  'margarine',
+  'flour',
+  'oats',
+  'noodles',
+  'noodle',
+  'pasta',
+  'spaghetti',
+  'macaroni',
+  'dumpling',
+  'dumplings',
+])
+
 export function normaliseName(name: unknown): string {
   return ` ${String(name ?? '')
     .toLowerCase()
@@ -880,6 +982,41 @@ export function normaliseName(name: unknown): string {
 export function matchIcon(name: unknown): string | null {
   const text = normaliseName(name)
   if (text.trim().length === 0) return null
+
+  // A FORM DECLARED FIRST WINS.
+  //
+  // Composition tables write "Head, qualifier, qualifier": "Soup, vegetable
+  // chicken, canned", "Cookie, vanilla sandwich", "Pastry, made with bean paste
+  // and salted egg yolk". Scanning the whole string lets a qualifier win on
+  // length alone, and those three were drawn as a chicken, a sandwich and a
+  // boiled egg.
+  //
+  // Restricted to FORM_HEADS, and that restriction is the whole subtlety. A
+  // head noun does not always outrank what follows it: "Beef, round, bottom
+  // round, steak" is a steak, and preferring the head there turned 401 steaks
+  // into slices. The difference is that a soup or a cookie is a SHAPE the
+  // drawing is about, where "beef" is an ingredient the rest of the name goes
+  // on to refine.
+  // The FIRST phrase to match the head decides whether this pass applies at
+  // all. Skipping straight to the form words instead lets a shorter one reach
+  // past a longer phrase that was meant to block it: "Salad dressing, caesar"
+  // has `salad dressing` mapped to nothing on purpose, and scanning only for
+  // form words found `salad` behind it and drew a plate of greens on 60 bottles
+  // of dressing.
+  const comma = String(name).indexOf(',')
+  if (comma > 0) {
+    const head = normaliseName(String(name).slice(0, comma))
+    for (const phrase of PHRASES) {
+      if (!head.includes(` ${phrase} `)) continue
+      return FORM_HEADS.has(phrase) ? TABLE[phrase] : matchBody(text)
+    }
+  }
+
+  return matchBody(text)
+}
+
+/** The ordinary scan: longest phrase first, anywhere in the name. */
+function matchBody(text: string): string | null {
   for (const phrase of PHRASES) {
     // A null value returns here rather than continuing, which is the whole
     // point of it: the longer phrase has already decided there is no drawing,
