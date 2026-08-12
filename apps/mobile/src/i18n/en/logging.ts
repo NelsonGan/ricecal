@@ -179,13 +179,6 @@ export const logging = {
     photoOf: 'Photo of {{food}}',
   },
 
-  voice: {
-    title: 'Say what you ate',
-    hint: 'Try "two roti canai and a teh tarik"',
-    listening: 'Listening',
-    stop: 'Stop',
-  },
-
   added: {
     toast: 'Added, {{kcal}} kcal',
     removedToast: 'Removed from today',

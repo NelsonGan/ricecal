@@ -134,7 +134,7 @@ export async function lookupBarcode(code: string): Promise<CatalogueProduct | nu
  *
  * The `fuzzy` flag the old RPC took is gone. It existed because the trigram
  * arms were expensive enough over half a million Postgres rows to blow a
- * statement timeout on a plate with five components; over 47,000 rows in SQLite
+ * statement timeout on a plate with five components; over 48,000 rows in SQLite
  * with an FTS index they are not, and one code path that behaves the same for
  * a person and for the scan cascade is worth more than the microseconds.
  *

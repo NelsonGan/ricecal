@@ -27,7 +27,7 @@ was to revoke what an earlier one granted by accident — and none of it needed
 replaying, because the deployed project was already at the end of the chain and
 every other database is built from scratch. So the chain was squashed into
 `20260805040853_initial_schema.sql`, which is `schemas/*.sql` concatenated in
-`schema_paths` order plus the two things below, and the remote migration ledger
+`schema_paths` order plus the seed call below, and the remote migration ledger
 was reset to that single version. Nothing about the workflow changed: the next
 change is still `pnpm db:diff <name>`, and the baseline is never edited again.
 
@@ -38,12 +38,6 @@ and it is folded into the foot of that baseline:
 |---|---|
 | the `select seed_archetype_foods()` call | the rows are data, and a diff only ever emits structure |
 
-`seed_food_sources()` is the same exception and lives in the migration that
-introduced `food_sources` (`20260811093504_catalogue_revamp.sql`), for the same
-reason and with the same shape: `foods.source_id` is a foreign key, so the
-registry has to exist before anything can cite it, and a diff will never write
-those eleven rows out.
-
 There used to be a second: the `storage` buckets and their object policies,
 invisible to the diff because it ignores the `storage` schema entirely. Images
 moved to Cloudflare R2 and both buckets were deleted, so that exception is gone
@@ -51,14 +45,18 @@ moved to Cloudflare R2 and both buckets were deleted, so that exception is gone
 since a bucket recreated through the dashboard would still be invisible to
 every other check in the pipeline.
 
-The `auth` schema is **not** in that category — see below.
+The `auth` schema is **not** one of these. The diff tracks triggers on
+`auth.users` perfectly well, and putting `on_auth_user_created` in a migration
+made the next diff emit `DROP TRIGGER` for it. It stays declarative, in
+`16_new_user.sql`.
 
 **The catalogue is not in this database.** `foods`, `food_servings`,
-`food_aliases` and `food_sources` were here once and are in Cloudflare D1 now —
-see the top of the root `CLAUDE.md` for why, and `apps/catalogue-worker` for
-what replaced them. Nothing in Postgres joins to them, no migration creates
-them, and the loader that used to fill them (`import_foods`,
-`load_catalogue_batch`, `import-catalogue.sql`) went with them.
+`food_aliases` and `food_sources` were here once; the catalogue is in Cloudflare
+D1 now, under different names — see the top of the root `CLAUDE.md` for why, and
+`apps/catalogue-worker/schema.sql` for what replaced them. Nothing in Postgres
+joins to it, no migration creates it, and the loader that used to fill those
+tables (`import_foods`, `load_catalogue_batch`, `import-catalogue.sql`) went
+with them.
 
 What is left here of the catalogue is `public.archetypes`: the ~60 generic rows
 the scan cascade lands on when the catalogue, the model or the NETWORK has
@@ -106,11 +104,6 @@ nothing, and neither did 709 Southeast Asian dishes.
 Grade AFTER any `foods:reindex --all`, not between the load and the reindex: a
 full rebuild reassigns rowids, an FTS arm breaks bm25 ties by rowid, and two
 rows a hair apart can swap places with no data change at all.
-
-The `auth` schema is **not** in that list. The diff tracks triggers on
-`auth.users` perfectly well, and putting `on_auth_user_created` in a migration
-made the next diff emit `DROP TRIGGER` for it. It is declarative, in
-`16_new_user.sql`.
 
 ## The tables
 
@@ -194,10 +187,9 @@ against a number that did not exist yet. Retrofitting this is impossible —
 you cannot reconstruct targets that were never recorded.
 
 **The budget is computed in the database.** `compute_targets()` is
-Mifflin-St Jeor with an activity multiplier and a goal delta, the same
-arithmetic that used to live in `src/mock/derive.ts`. A trigger recomputes it
-when the profile or the newest weigh-in changes — and stops dead if
-`is_custom` is set, because overwriting a number the user typed is the worst
+Mifflin-St Jeor with an activity multiplier and a goal delta. A trigger
+recomputes it when the profile or the newest weigh-in changes — and stops dead
+if `is_custom` is set, because overwriting a number the user typed is the worst
 thing it could do.
 
 **Current weight is not on `profiles`.** It is the newest `weight_logs` row.
@@ -209,16 +201,21 @@ gives the weight chart a starting point for free.
 **Age is stored as `birth_date`.** An integer age is wrong within a year of
 being written and nothing would ever correct it.
 
-**Entries reference the catalogue; they do not copy its macros.** Correcting a
-dish corrects every log that used it, including historical ones. A snapshot
-would make history immutable but also permanently wrong, with no way to fix a
-dish entered at double its calories. `food_logs` carries a **composite** foreign
-key `(food_id, serving_id)` so a portion always belongs to its own dish.
+**Entries copy the catalogue's numbers; they do not reference them.** This is
+the reverse of what it was, and the catalogue's move to D1 forced it: a foreign
+key cannot cross into another database. `food_logs` carries `item_name`,
+`base_kcal` and the rest of the snapshot, and `food_log_details` does the same
+arithmetic over the row that it used to do over a join. `food_id` and
+`serving_id` survive as soft references, unconstrained and nullable.
 
-**Macros are per base serving, not per 100 g.** Nobody weighs a roti canai.
-The base is the portion people actually name, so the common case needs no
-arithmetic. The default serving's factor is 1 by definition, and there is a
-test for it.
+What that costs is the property people expect: correcting a dish no longer
+corrects the diaries that used it. What it buys is a catalogue that can be
+truncated and rebuilt without touching anybody's diary.
+
+**Macros are per base serving, not per 100 g.** Nobody weighs a roti canai. The
+base is the portion people actually name, so the common case needs no
+arithmetic, and a default serving's factor is 1 by definition. That rule lives
+in D1 with the catalogue now; what Postgres holds is the result of applying it.
 
 **`log_date` is a `date`; `logged_at` is an instant.** They answer different
 questions. Supper at 00:30 belongs to the day the user thinks it does, which is
@@ -230,13 +227,6 @@ the first eight hours of every Malaysian morning.
 strictly 1:1 with the user, always read together, always written a field at a
 time. Three tables would be three selects, three upserts and three sets of
 policies to keep identical, for a normalisation with no cardinality to model.
-
-**There is one catalogue and users cannot write to it.** `foods` used to carry a
-nullable `owner_id` so a user could keep private dishes in the same table. That
-is gone: every row is shared, `slug` is `not null` and unique because it is real
-identity now, and `authenticated` holds `select` and nothing else. The cost is
-that a photo matching no catalogue row has nowhere to land — see the scanning
-seam below.
 
 **Images are stored as keys, never URLs.** `avatar_path` and `photo_path` hold
 an object key, and that is what made the move to Cloudflare R2 a change of base
@@ -260,21 +250,10 @@ that skipped the resize and would not stop a client that lied.
 
 ## Seams left open
 
-**Calorie scanning.** Most of the shape is here: `entry_source` has a `camera`
-value, `food_logs.photo_path` exists, and the R2 bucket behind the `photos`
-function holds the object, so a scan that resolves to a catalogue row writes an
-ordinary entry and nothing moves. `foods.verified` tells a reviewed dish from a
-guessed one.
-
-The open question is the miss. With no per-user rows, a photo matching nothing
-in the catalogue cannot be logged at all — that has to be answered by widening
-the catalogue or by asking the user to pick from candidates, not by writing a
-private food.
-
 **RevenueCat.** `subscriptions` is the mirror. Nothing writes it until the
 webhook exists; an empty table reads correctly as "no subscription".
 
-**Fibre and sugar** are nullable columns on `foods`, currently unfilled. The
+**Fibre and sugar** are nullable in the catalogue and often unfilled. The
 nutrition screen derives them from carbohydrate; that hack gets deleted as rows
 get filled in rather than rewritten.
 
@@ -344,11 +323,17 @@ bypasses RLS and every query passes.
 
 ### The prompts
 
-`pnpm eval:prompts` (Deno, `scripts/eval-prompts.ts`) grades the two model
-calls that decide something the cascade below them cannot check: what a typed
-meal names and how much of it there was, and whether a correction is a portion
-change, a part change or a different dish. Both are a paragraph of English, and
-both used to be edited on the strength of whichever example was on screen.
+`pnpm eval:prompts` (Deno, `scripts/eval-prompts.ts`) grades the three model
+calls that decide something the code below them cannot check: what a typed meal
+names and how much of it there was, whether a correction is a portion change, a
+part change or a different dish, and what a typed recipe holds. Each is a
+paragraph of English, and each used to be edited on the strength of whichever
+example was on screen.
+
+`pnpm eval:scan` is the other half, and grades what this one cannot: it drives
+the DEPLOYED functions end to end, photographs and all, so the upload, the
+catalogue search, the verifier, the ratio gate and the row that lands in the
+diary are all in scope.
 
 The cases assert the SHAPE of the answer — which action, how many components,
 whether the count matched, whether the calorie band brackets something sane —

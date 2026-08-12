@@ -4,8 +4,8 @@ An implementation of the Beratt design system: a soft, squishy visual language
 for Malaysian eating. English interface, Malay food names, cool gray-green
 neutrals, and buttons that beg to be pressed.
 
-Run the app and open **Design gallery** from the home screen to see every
-component in every state, in both modes, on a real device.
+`app/gallery.tsx` renders every component in every state, in both modes, on a
+real device. Nothing links to it — open `/gallery` directly.
 
 ## Layers
 

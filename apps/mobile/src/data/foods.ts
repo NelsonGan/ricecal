@@ -16,7 +16,7 @@ import type { Food, FoodDetailsRow } from './types'
  * `foods` and its portions used to be tables in the same Postgres the session
  * authenticates against, so a search was an RPC and a dish was a select. They
  * are in Cloudflare D1 now — 3.2 million packaged products keyed by barcode and
- * ~47,000 searchable dishes — behind a Worker.
+ * ~48,000 searchable dishes — behind a Worker.
  *
  * The app reads that Worker DIRECTLY, carrying the signed-in user's own
  * Supabase JWT. It went through an edge function for a while, because the only
@@ -59,14 +59,14 @@ async function statsFor(userId: string, foodIds: string[]): Promise<Map<string, 
  * Search, by name.
  *
  * A ranked search rather than a substring match, because the catalogue is
- * 47,000 searchable rows and `ilike '%kopi%'` matches "Kopi O" and "Non-Dairy
+ * 48,000 searchable rows and `ilike '%kopi%'` matches "Kopi O" and "Non-Dairy
  * Coffee Whitener" equally well. The Worker fuses four arms — exact name, exact
  * alias, full text, trigram — which is also what makes "char kway teow" and
  * "teh tarek" find anything at all. See `apps/catalogue-worker/src/index.ts`.
  *
  * An empty query returns nothing rather than the first fifty rows of the
  * catalogue, and it returns it WITHOUT asking: fifty arbitrary dishes out of
- * 47,000 is not a browse, and the field is focused on mount, so the panel
+ * 48,000 is not a browse, and the field is focused on mount, so the panel
  * renders one keystroke before there is anything to ask about.
  *
  * No place filter. The screen used to offer All / Mamak / Kopitiam / Packaged

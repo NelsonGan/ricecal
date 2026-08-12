@@ -39,10 +39,10 @@ export function FoodSearchPanel({ onPick, autoFocus = false }: FoodSearchPanelPr
   // rather than the `useDeferredValue` that was here before.
   const debouncedQuery = useDebouncedValue(query)
 
-  // The database does the ranking, not just the filtering: `search_foods`
-  // fuses an exact, a full-text and a trigram match. Searching a table the
-  // phone does not hold is the whole point of having moved the catalogue off
-  // it — there are ~460,000 rows in it now.
+  // The Worker does the ranking, not just the filtering: it fuses an exact
+  // name, an exact alias, a full-text and a trigram match over ~48,000
+  // searchable rows. Ranking is the whole reason this is a round trip and not
+  // a filter over something the phone holds.
   const { data, isFetching, isPaused, isError } = useFoodSearch(debouncedQuery)
   const results = data ?? []
 

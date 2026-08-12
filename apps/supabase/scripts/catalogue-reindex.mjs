@@ -19,7 +19,7 @@
  * the full-text indexes, which are CONTENTLESS FTS5 tables and therefore cannot
  * be edited row by row without the original values to hand. Rebuilding them is
  * cheaper to get right than patching them, and the catalogue is small enough
- * (~47,000 searchable rows) that "rebuild" is a minute rather than an outage.
+ * (~48,000 searchable rows) that "rebuild" is a minute rather than an outage.
  *
  * The normalizer is imported from the WORKER's own source rather than
  * reimplemented, because the query and the column have to be folded identically
@@ -93,8 +93,8 @@ async function main() {
 
   // ---- name_norm -----------------------------------------------------------
   //
-  // Through a temp table rather than one UPDATE per row. 47,000 statements is
-  // 47,000 round trips through wrangler; 47,000 rows in multi-row VALUES is a
+  // Through a temp table rather than one UPDATE per row. 48,000 statements is
+  // 48,000 round trips through wrangler; 48,000 rows in multi-row VALUES is a
   // hundred and change, and the UPDATE that reads them is one more.
   const rows = rebuildAll
     ? await d1('select id, name from food')

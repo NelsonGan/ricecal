@@ -5,10 +5,10 @@ import { Platform } from 'react-native'
 import { env, isConfigured } from './env'
 
 /**
- * Each SDK is gated on its key being provisioned. Phase 0 runs against
- * REPLACE_ME placeholders, and calling Purchases.configure or Sentry.init with
- * a bogus key produces noisy runtime failures that look like integration bugs
- * rather than what they are: an account that does not exist yet.
+ * Each SDK is gated on its key being provisioned. Initialising one with a
+ * REPLACE_ME placeholder produces noisy runtime failures that look like
+ * integration bugs rather than what they are: an account that does not exist
+ * yet.
  *
  * Remove a gate only once its key is real — never to "make the warning stop".
  */
@@ -49,18 +49,15 @@ export async function initMixpanel() {
 /**
  * RevenueCat, and why it is not called.
  *
- * The key gate below was never the problem: `Purchases.configure` was already
- * skipped on a placeholder key. The IMPORT was. `react-native-purchases` reaches
- * for its native module at module scope, so merely pulling this file in threw on
- * a build that has no RevenueCat pod — which is every build until the account is
- * provisioned — and it threw from app start, before anything had rendered.
+ * The key gate was never the problem — the IMPORT was.
+ * `react-native-purchases` reaches for its native module at module scope, so
+ * merely pulling this file in threw on any build with no RevenueCat pod, from
+ * app start, before anything had rendered. Hence the dynamic import, and hence
+ * the call being commented out rather than merely gated.
  *
- * So the import is dynamic and the call below is commented out rather than
- * merely gated. `purchases.ts` already imports the SDK lazily at the point of
- * sale for the same reason and says so; this is the last place that did it
- * eagerly. To bring it back once the keys are real: uncomment the call in
- * `initServices` and drop 'RevenueCat' from `disabled` above, or the dev log will
- * keep reporting it as switched off.
+ * To bring it back once the keys are real: uncomment the call in `initServices`
+ * and drop 'RevenueCat' from `disabled` above, or the dev log goes on reporting
+ * it as switched off.
  */
 export async function initPurchases() {
   const apiKey = Platform.OS === 'ios' ? env.EXPO_PUBLIC_RC_IOS_KEY : env.EXPO_PUBLIC_RC_ANDROID_KEY
