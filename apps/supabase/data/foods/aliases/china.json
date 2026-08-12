@@ -1,0 +1,62 @@
+{
+  "yau-char-kwai": ["油条", "油條", "you tiao", "youtiao", "chinese fried dough stick"],
+  "salt-baked-chicken": [
+    "盐焗鸡",
+    "鹽焗雞",
+    "yan ju ji",
+    "hakka salt baked chicken",
+    "dongjiang salt baked chicken"
+  ],
+  "cantonese-steamed-fish": ["清蒸鱼", "清蒸魚", "qing zheng yu", "guangdong steamed fish"],
+  "lei-cha-fan": ["擂茶", "客家擂茶", "hakka lei cha", "thunder tea rice"],
+  "yong-tau-foo": ["客家酿豆腐", "hakka niang doufu", "hakka stuffed tofu"],
+  "hong-shao-rou": ["红烧肉", "紅燒肉", "shanghai hongshao rou", "shanghai red braised pork"],
+  "taiwanese-drunken-chicken": ["醉鸡", "醉雞", "zui ji", "shaoxing drunken chicken"],
+  "taiwanese-scallion-pancake": ["葱油饼", "蔥油餅", "cong you bing", "congyoubing"],
+  "mantou-kukus": ["馒头", "饅頭", "mantou", "steamed mantou"],
+  "abacus-seeds": ["算盘子", "算盤子", "suan pan zi", "hakka abacus seeds"],
+  "zhen-zhu-gai": ["糯米鸡", "糯米雞", "lo mai gai", "nuo mi ji", "lotus leaf glutinous rice"],
+  "peanut-soup": ["花生汤", "花生湯", "huasheng tang", "fuzhou peanut soup"],
+  "foochow-fish-ball": ["福州鱼丸", "福州魚丸", "fuzhou yu wan", "yu wan"],
+  "tang-yuan": ["汤圆", "湯圓", "tangyuan", "tang tuan"],
+  "tau-fu-fah": ["豆花", "豆腐花", "douhua", "dou hua"],
+  "century-egg-and-minced-pork-porridge": [
+    "皮蛋瘦肉粥",
+    "pi dan shou rou zhou",
+    "century egg congee"
+  ],
+  "braised-pork-knuckle-with-ginger": [
+    "猪脚姜",
+    "豬腳薑",
+    "zhu jiao jiang",
+    "ginger vinegar pork trotter"
+  ],
+  "oyster-omelette": ["海蛎煎", "海蠣煎", "hai li jian", "fujian oyster omelette"],
+  "fan-tuan": ["粢饭团", "粢飯糰", "ci fan tuan", "shanghai glutinous rice roll"],
+  "taiwanese-sweet-soy-milk": ["甜豆浆", "甜豆漿", "tian dou jiang", "sweet doujiang"],
+  "steamed-pork-ribs-with-black-bean": [
+    "豉汁蒸排骨",
+    "chi zhi zheng pai gu",
+    "black bean spare ribs dim sum"
+  ],
+  "mooncake-lotus-paste-with-salted-egg-yolk": [
+    "莲蓉蛋黄月饼",
+    "蓮蓉蛋黃月餅",
+    "lian rong dan huang yue bing"
+  ],
+  "mooncake-red-bean-paste": ["豆沙月饼", "豆沙月餅", "dou sha yue bing"],
+  "snowskin-mooncake": ["冰皮月饼", "冰皮月餅", "bing pi yue bing"],
+  "double-skin-milk": ["双皮奶", "雙皮奶", "shuang pi nai", "shunde double skin milk"],
+  "ginger-milk-curd": ["姜撞奶", "薑撞奶", "jiang zhuang nai", "shunde ginger milk"],
+  "deep-fried-fresh-milk": ["炸鲜奶", "炸鮮奶", "zha xian nai", "daliang fried milk"],
+  "hong-kong-claypot-rice-with-lap-cheong": ["腊味煲仔饭", "臘味煲仔飯", "la wei bo zai fan"],
+  "roast-duck": ["烤鸭", "烤鴨", "kao ya", "shao ya"],
+  "ma-po-tofu": ["麻婆豆腐", "ma po dou fu", "mapo doufu"],
+  "kung-po-chicken": ["宫保鸡丁", "宮保雞丁", "gong bao ji ding", "gongbao chicken"],
+  "yong-chow-fried-rice": ["扬州炒饭", "揚州炒飯", "yangzhou chao fan", "yangzhou fried rice"],
+  "gu-lou-yuk": ["咕噜肉", "咕嚕肉", "gu lao rou", "tang cu li ji"],
+  "wu-kok": ["芋角", "wu jiao", "taro dumpling dim sum"],
+  "loh-bak-go": ["萝卜糕", "蘿蔔糕", "luo bo gao", "chinese turnip cake"],
+  "har-kow": ["虾饺", "蝦餃", "xia jiao", "prawn dumpling dim sum"],
+  "dim-sum-siu-mai": ["烧卖", "燒賣", "shao mai", "shaomai"]
+}

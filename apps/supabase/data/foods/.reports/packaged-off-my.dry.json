@@ -1,0 +1,2038 @@
+{
+  "tally": {
+    "inserted": 290
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "100-plus-active-isotonic-drink",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 2,
+      "slug": "7-eleven-nasi-ayam-nyonya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 3,
+      "slug": "7d-dried-mangoes",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mango, dried"
+    },
+    {
+      "idx": 4,
+      "slug": "a1-abalone-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 5,
+      "slug": "a1-hor-fun-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "aducktive-spicy-salted-egg-mushroom-crisp",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 7,
+      "slug": "ah-her-bak-kut-teh-herbal-soup-pack",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Herbal Bak Kut Teh"
+    },
+    {
+      "idx": 8,
+      "slug": "ah-huat-kopi-o",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 9,
+      "slug": "aik-cheong-teh-tarik-3-in-1",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 10,
+      "slug": "amazin-graze-granola",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 11,
+      "slug": "amazin-graze-pink-berry-instant-oatmeal",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 12,
+      "slug": "amazin-graze-wild-strawberry-low-sugar-granola",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "amazin-graze-chocolate-banana-instant-oatmeal",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "amazin-graze-antioxidant-berry-trail-mix",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 15,
+      "slug": "amazin-graze-blueberry-coconut-granola",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 16,
+      "slug": "amazin-graze-chocolate-hazelnut-granola",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 17,
+      "slug": "amazin-graze-nutty-protein-trail-mix",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 18,
+      "slug": "amazin-graze-immunity-booster-trail-mix",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 19,
+      "slug": "ayam-brand-sardines",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 20,
+      "slug": "ayam-brand-mackerel-steaks-with-sweet-chilli",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 21,
+      "slug": "ayam-brand-sardines-in-black-beans",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 22,
+      "slug": "ayam-brand-tuna-chunks-in-oil",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 23,
+      "slug": "ayam-brand-tuna-flakes-in-water",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 24,
+      "slug": "ayam-brand-tuna-light-mayonnaise",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mayonnaise, light"
+    },
+    {
+      "idx": 25,
+      "slug": "ayam-fiesta-chicken-nuggets",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chicken nuggets, NFS"
+    },
+    {
+      "idx": 26,
+      "slug": "ayam-brand-thai-yellow-curry-sauce",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 27,
+      "slug": "ayam-brand-light-coconut-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 28,
+      "slug": "ayam-brand-salmon-mayonnaise",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 29,
+      "slug": "ayam-brand-thai-red-curry-sauce",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 30,
+      "slug": "baker-s-cottage-snow-skin-sakura-mooncake",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 31,
+      "slug": "bangsar-smokehouse-cold-smoked-salmon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 32,
+      "slug": "belvita-breakfast-honey-chocolate",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 33,
+      "slug": "best-fish-roe-dumpling",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 34,
+      "slug": "betagen-cultured-milk-drink-light",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Milk Drink, Cultured"
+    },
+    {
+      "idx": 35,
+      "slug": "betagen-cultured-milk-drink",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Milk Drink, Cultured"
+    },
+    {
+      "idx": 36,
+      "slug": "bika-chicken-flavoured-snacks",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 37,
+      "slug": "bika-keropok-ayam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 38,
+      "slug": "biogreen-o-soy-plus-soy-milk-low-cane-sugar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 39,
+      "slug": "bioport-americano-sweet",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 40,
+      "slug": "boh-green-tea-latte",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chagee Green Tea Latte"
+    },
+    {
+      "idx": 41,
+      "slug": "boh-teh-tarik-original",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 42,
+      "slug": "cadbury-extra-chocolate",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 43,
+      "slug": "camel-natural-baked-almonds",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 44,
+      "slug": "campbell-s-chicken-soup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Gravy, CAMPBELL'S, chicken"
+    },
+    {
+      "idx": 45,
+      "slug": "campbell-s-wild-mushroom-soup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "CAMPBELL'S, Cream of Mushroom Soup, condensed"
+    },
+    {
+      "idx": 46,
+      "slug": "captain-oats-instant-oatmeal",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 47,
+      "slug": "captain-granola-honey-almond",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 48,
+      "slug": "carman-s-super-berry-muesli-bars",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 49,
+      "slug": "cave-nut-peanut-butter-smooth-zero",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 50,
+      "slug": "ced-organic-instant-oats",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 51,
+      "slug": "ced-peanut-butter-creamy",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Peanut butter, creamy"
+    },
+    {
+      "idx": 52,
+      "slug": "ced-peanut-butter-crunchy",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Peanut butter"
+    },
+    {
+      "idx": 53,
+      "slug": "ced-pure-honey",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 54,
+      "slug": "chek-hup-ipoh-white-coffee-3-in-1",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 55,
+      "slug": "cheetos-crunchy-cheese-puffs",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 56,
+      "slug": "chilliz-chicken-curry-paste",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chicken curry"
+    },
+    {
+      "idx": 57,
+      "slug": "cn-loyal-authentic-peanut-paste",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 58,
+      "slug": "coca-cola-sprite",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 59,
+      "slug": "cocon-snow-fall-jelly-with-milk-and-juice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 60,
+      "slug": "cosip-coconut-water",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Coconut water, sweetened"
+    },
+    {
+      "idx": 61,
+      "slug": "csh-butter-sugar-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Butter Sugar Toast"
+    },
+    {
+      "idx": 62,
+      "slug": "daesang-sunchang-ssamjang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 63,
+      "slug": "daisho-edamame",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Edamame"
+    },
+    {
+      "idx": 64,
+      "slug": "daisy-crunchy-peanut-butter",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Peanut butter"
+    },
+    {
+      "idx": 65,
+      "slug": "desa-fresh-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Milk, Cow, Fresh"
+    },
+    {
+      "idx": 66,
+      "slug": "drinho-chrysanthemum-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 67,
+      "slug": "easi-food-mediterranean-chicken-breast-cubes",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 68,
+      "slug": "eb-tempura-chicken-nugget",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 69,
+      "slug": "egano-ganoderma-cafe-latte",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 70,
+      "slug": "emborg-low-fat-fresh-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 71,
+      "slug": "emborg-mild-shredded-cheddar-cheese",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 72,
+      "slug": "eureka-curry-popcorn",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 73,
+      "slug": "ever-eat-soy-sticks",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 74,
+      "slug": "everbest-vegetarian-hong-kong-barbeque-meat",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 75,
+      "slug": "everbest-vegetarian-spiced-duck",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 76,
+      "slug": "100-plus-original-isotonic-drink",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 77,
+      "slug": "f-n-full-cream-condensed-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Milk, Uht, Full Cream"
+    },
+    {
+      "idx": 78,
+      "slug": "f-n-peppermint-chocolate-flavoured-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Milk, Malted (Chocolate Flavour)"
+    },
+    {
+      "idx": 79,
+      "slug": "farm-fresh-skinny-low-fat-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 80,
+      "slug": "farm-fresh-skinny-yogurt",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 81,
+      "slug": "farm-fresh-yarra-chocolate-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 82,
+      "slug": "farmers-union-greek-style-probiotic-yogurt-strawberry",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 83,
+      "slug": "feifan-hotpot-hot-spicy-mala-instant-noodle",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 84,
+      "slug": "nutella-hazelnut-spread",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 85,
+      "slug": "first-pride-chicken-katsu-crispy",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 86,
+      "slug": "fresh-bulk-dried-mango",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mango, dried"
+    },
+    {
+      "idx": 87,
+      "slug": "fresher-chipotle-cranberry-chicken-breast",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 88,
+      "slug": "fruit-tree-mango-nata-de-coco-drink",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 89,
+      "slug": "gardenia-butter-toffee-loaf",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 90,
+      "slug": "gardenia-puazz-savoury-bun-black-pepper",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 91,
+      "slug": "gardenia-guardian-purple-wheat-bread",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 92,
+      "slug": "gardenia-original-classic-jumbo-white-bread",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 93,
+      "slug": "gardenia-toast-em-butter-raisin",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 94,
+      "slug": "gardenia-wholemeal-roll-up-wraps",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 95,
+      "slug": "ghee-heang-phong-pneah",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 96,
+      "slug": "gl-foods-smoked-streaky-bacon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 97,
+      "slug": "glenmarie-keropok-lekor",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Keropok Lekor"
+    },
+    {
+      "idx": 98,
+      "slug": "go-bites-potato-chips-french-cheese",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Potato, french fries, with cheese"
+    },
+    {
+      "idx": 99,
+      "slug": "gogood-strawberry-yoghurt-coated-muesli-bars",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 100,
+      "slug": "gold-fish-peanut-cake",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 101,
+      "slug": "good-lady-b-glucan-mixed-grains-beverage",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 102,
+      "slug": "goodday-banana-flavoured-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 103,
+      "slug": "goodday-strawberry-flavoured-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 104,
+      "slug": "haldiram-s-tandoori-roti",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 105,
+      "slug": "happy-grains-original-mixed-grains",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 106,
+      "slug": "heal-brown-rice-vegan-protein-shake",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 107,
+      "slug": "heal-protein-puffs-thai-tom-yum",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 108,
+      "slug": "hennie-s-chicken-toast",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 109,
+      "slug": "hi-fresh-chicken-eggs-grade-c",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 110,
+      "slug": "hoga-agarwood-premix-coffee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 111,
+      "slug": "home-s-cafe-white-coffee-3-in-1",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 112,
+      "slug": "hosen-mushroom-pieces-and-stems",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 113,
+      "slug": "huat-huat-sweetheart-pastry",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 114,
+      "slug": "hunter-s-gourmet-gourmet-pesto-parmesan-chips",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 115,
+      "slug": "indomie-mi-goreng-original",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 116,
+      "slug": "ina-original-pan-mee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 117,
+      "slug": "indomie-mi-soto",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 118,
+      "slug": "jack-n-jill-roller-coaster-honey-butter",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 119,
+      "slug": "jack-n-jill-calbee-classic-salted",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 120,
+      "slug": "jack-n-jill-jigs-potato-crisps-cheese",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 121,
+      "slug": "jalen-kicap-manis-sweet-soy-sauce",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 122,
+      "slug": "java-curry-curry-roux-spicy",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 123,
+      "slug": "jonetz-crab-tomato-cream-pasta-sauce",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 124,
+      "slug": "jono-chicken-jumbo-sausage",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 125,
+      "slug": "js-meats-chicken-apple-handmade-sausage",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 126,
+      "slug": "julie-s-charm-double-chocolate-sandwich",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 127,
+      "slug": "julie-s-tiramisu-sandwich",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 128,
+      "slug": "kagome-vegetable-juice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mixed vegetable juice"
+    },
+    {
+      "idx": 129,
+      "slug": "kapiti-chocolate-boysenberry-ice-cream",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ice cream, chocolate"
+    },
+    {
+      "idx": 130,
+      "slug": "kara-coconut-cream-extract",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 131,
+      "slug": "alitea-classic-karak-chai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 132,
+      "slug": "kawan-spinach-cheese-croquettes",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 133,
+      "slug": "kellogg-s-corn-flakes",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 134,
+      "slug": "kellogg-s-crunchy-oat-granola",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 135,
+      "slug": "kellogg-s-granola-dark-chocolate",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 136,
+      "slug": "kellogg-s-nutrigrain-choc",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 137,
+      "slug": "kellogg-s-super-berry-granola",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 138,
+      "slug": "kemchho-banana-chips-pepper",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 139,
+      "slug": "kerk-chippy-chips",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 140,
+      "slug": "kewpie-black-vinegar-onion-dressing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 141,
+      "slug": "kewpie-roasted-sesame-dressing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sesame dressing"
+    },
+    {
+      "idx": 142,
+      "slug": "kg-pastry-lotus-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 143,
+      "slug": "kinder-happy-hippo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 144,
+      "slug": "king-cup-tuna-flakes-in-sunflower-oil",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 145,
+      "slug": "kitkat-dark-52-borneo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 146,
+      "slug": "koh-kae-coated-peanuts-chicken-flavour",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 147,
+      "slug": "kokoo-hot-chocolate-with-hazelnut",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 148,
+      "slug": "koukakis-greek-yogurt",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 149,
+      "slug": "lactel-fat-free-yogurt",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 150,
+      "slug": "lactel-greek-style-yogurt",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 1,
+      "slug": "lamee-funkees-snack",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 2,
+      "slug": "lee-kum-kee-ready-sauce-for-black-pepper-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 3,
+      "slug": "lk-fresh-fresh-chicken-egg",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 4,
+      "slug": "lo-sam-seaweed-tofu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 5,
+      "slug": "lotus-s-chocolate-flavoured-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Milk, Malted (Chocolate Flavour)"
+    },
+    {
+      "idx": 6,
+      "slug": "lotus-s-low-fat-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Milk, low fat (1%)"
+    },
+    {
+      "idx": 7,
+      "slug": "love-earth-crispy-chilli-flakes",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 8,
+      "slug": "maggi-big-curry-instant-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 9,
+      "slug": "maggi-cheesy-volcano-instant-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 10,
+      "slug": "maggi-kari-instant-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 11,
+      "slug": "maggi-fusian-sarang-kimchi-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 12,
+      "slug": "maggi-pedas-giler-ayam-instant-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "maggi-asam-laksa-instant-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "magnum-matcha-crumble",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 15,
+      "slug": "marigold-fat-free-yogurt",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 16,
+      "slug": "marigold-reduced-fat-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Milk, reduced fat (2%)"
+    },
+    {
+      "idx": 17,
+      "slug": "marina-meat-balls",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 18,
+      "slug": "massimo-lemon-krunch-bread",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 19,
+      "slug": "meadows-menglembu-groundnuts",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 20,
+      "slug": "mega-vanilla-ice-cream",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ice-Cream, Vanilla"
+    },
+    {
+      "idx": 21,
+      "slug": "mi-sedaap-mi-goreng-perisa-asli-jumbo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 22,
+      "slug": "mighty-white-cream-roll-cookies-and-cream",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 23,
+      "slug": "mighty-white-lava-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 24,
+      "slug": "mili-less-sodium-mock-duck",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 25,
+      "slug": "milo-dairy-free-almond",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 26,
+      "slug": "milo-nuggets",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 27,
+      "slug": "miow-seedless-prunes",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 28,
+      "slug": "mission-ms-chips-barbecue",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 29,
+      "slug": "mission-pizza-crust",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 30,
+      "slug": "mission-protein-wholemeal-wraps",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 31,
+      "slug": "mission-reduced-carb-wraps",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 32,
+      "slug": "moki-shirataki-spaghetti",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 33,
+      "slug": "morris-milk-chips",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 34,
+      "slug": "mybizcuit-nuwafer",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 35,
+      "slug": "naturel-margarine",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Margarine, NFS"
+    },
+    {
+      "idx": 36,
+      "slug": "nature-s-heart-roasted-almonds",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 37,
+      "slug": "naturel-reduced-salt-margarine",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 38,
+      "slug": "nescafe-mocha-can-coffee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Coffee, Cafe Mocha"
+    },
+    {
+      "idx": 39,
+      "slug": "milo-cocoa-malt-beverage",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 40,
+      "slug": "nestle-drumstick-ice-cream-cone",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 41,
+      "slug": "nestle-kitkat-ice-cream",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 42,
+      "slug": "nestle-la-cremeria-summer-berries",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 43,
+      "slug": "milo-3-in-1",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 44,
+      "slug": "milo-boost-up-with-coffee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 45,
+      "slug": "milo-kaw-ready-to-drink",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 46,
+      "slug": "milo-protein-up",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 47,
+      "slug": "nestle-omega-plus-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 48,
+      "slug": "nestum-brown-rice-cereal",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 49,
+      "slug": "new-moon-razor-clams",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 50,
+      "slug": "nhf-chocolate-butter-cookies",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cookie, peanut butter, with chocolate"
+    },
+    {
+      "idx": 51,
+      "slug": "nissin-flavorful-chicken-cup-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 52,
+      "slug": "nissin-signature-chicken-flavour-cup-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 53,
+      "slug": "nona-kaya",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 54,
+      "slug": "nutella-biscuits",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 55,
+      "slug": "nutella-go",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Roti Nutella"
+    },
+    {
+      "idx": 56,
+      "slug": "nutellex-coconut-oil-butter",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Oil, cocoa butter"
+    },
+    {
+      "idx": 57,
+      "slug": "nutrabliss-grains-mix",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 58,
+      "slug": "nutriplus-omega-plus-egg",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 59,
+      "slug": "nutriplus-omega-3-xl-eggs",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 60,
+      "slug": "nuts-enough-ultimate-almond-spread",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 61,
+      "slug": "o-brien-potato-chips",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Potato chips, NFS"
+    },
+    {
+      "idx": 62,
+      "slug": "oatside-oat-milk-drink",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 63,
+      "slug": "oatside-oat-milk-barista-blend",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 64,
+      "slug": "ok-preserved-eggs",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 65,
+      "slug": "oldtown-white-coffee-3-in-1",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "OldTown Iced White Coffee"
+    },
+    {
+      "idx": 66,
+      "slug": "oligo-choco-malt-calcium-drink",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 67,
+      "slug": "organicule-hemp-hearts",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 68,
+      "slug": "pagoda-kacang-menglembu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 69,
+      "slug": "pama-tom-yum-instant-noodle",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 70,
+      "slug": "marigold-peel-fresh-power-juice-powerberries",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 71,
+      "slug": "pepsi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 72,
+      "slug": "pocky-crushed-nuts",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 73,
+      "slug": "pokka-green-tea-jasmine",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Jasmine Green Milk Tea"
+    },
+    {
+      "idx": 74,
+      "slug": "pokka-ice-lemon-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 75,
+      "slug": "prego-pizza-sauce",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 76,
+      "slug": "yogood-glow-parfait-muesli-nuts-chia",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 77,
+      "slug": "pristine-rolled-oats",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 78,
+      "slug": "quaker-3-in-1-oat-cereal-drink",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 79,
+      "slug": "quaker-3-in-1-oat-cereal-drink-mocha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 80,
+      "slug": "quaker-whole-rolled-oatmeal",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 81,
+      "slug": "rainbows-original-spirited-cookies",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 82,
+      "slug": "rotinas-cheese-stick",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Roti Cheese"
+    },
+    {
+      "idx": 83,
+      "slug": "samudra-cheese-stick",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 84,
+      "slug": "samudra-pizza-stick",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 85,
+      "slug": "samyang-rose-flavour-ramen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 86,
+      "slug": "schweppes-tonic-water",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Water, tonic"
+    },
+    {
+      "idx": 87,
+      "slug": "scs-cheese-original-high-calcium",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 88,
+      "slug": "seri-murni-pure-vegetable-oil",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 89,
+      "slug": "sgt-vegetarian-yam-cookies",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 90,
+      "slug": "signature-market-roasted-pistachio-in-shell-salted",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 91,
+      "slug": "simply-natural-organic-roasted-pumpkin-seeds",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 92,
+      "slug": "sin-boon-kee-penang-kopi-o",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 93,
+      "slug": "singlong-hainanese-chicken-rice-mix",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 94,
+      "slug": "snappea-pea-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 95,
+      "slug": "snappea-pea-milk-unsweetened",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Soy milk, unsweetened"
+    },
+    {
+      "idx": 96,
+      "slug": "snek-ku-grain5-wholegrain-seaweed-wasabi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 97,
+      "slug": "snek-ku-samba-samba-bbq-crab",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 98,
+      "slug": "snek-ku-tam-tam-crab-flavoured-snack",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 99,
+      "slug": "snickers-almond-dark-chocolate-bar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 100,
+      "slug": "soyfresh-soya-milk-strawberry",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Strawberry milk, NFS"
+    },
+    {
+      "idx": 101,
+      "slug": "stella-s-chocolate-chips-with-sea-salt-cookie",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cookie, oatmeal, with chocolate chips"
+    },
+    {
+      "idx": 102,
+      "slug": "sunglo-full-cream-greek-yoghurt",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 103,
+      "slug": "sunglo-natural-low-fat-probiotic-greek-yoghurt",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 104,
+      "slug": "sunshine-hokkaido-milk-bread",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 105,
+      "slug": "sunyoung-peanut-choco-sticks",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 106,
+      "slug": "super-white-coffee-3-in-1",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 107,
+      "slug": "tai-sun-roasted-cashew-nuts",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 108,
+      "slug": "tamari-ajiwai-mandarin-orange-jelly",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 109,
+      "slug": "tatawa-blueberry-jam-filled-cookies",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 110,
+      "slug": "tawakkal-beef-jerky",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Beef jerky"
+    },
+    {
+      "idx": 111,
+      "slug": "tc-boy-tuna-solid-in-sunflower-oil",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 112,
+      "slug": "tc-boy-tuna-solid-in-extra-virgin-olive-oil",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 113,
+      "slug": "tcd-tempe-chips",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 114,
+      "slug": "tenten-instant-oatmeal",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 115,
+      "slug": "the-kitchen-sibu-instant-kampua-mee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 116,
+      "slug": "top-baker-roti-burger-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 117,
+      "slug": "top-baker-sandwich-bread",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 118,
+      "slug": "train-haw-jelly",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 119,
+      "slug": "truly-gourmet-garlic-tempeh-chips",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 120,
+      "slug": "twinfish-oatchoco-original",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 121,
+      "slug": "twisties-chachos-cheesy-cheese",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 122,
+      "slug": "tyson-chicken-karaage",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 123,
+      "slug": "tyson-classic-fried-chicken",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 124,
+      "slug": "tyson-grilled-tender-chicken",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 125,
+      "slug": "uncle-saba-s-poppadoms",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 126,
+      "slug": "v-soy-soya-bean-milk-low-sugar-barista",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 127,
+      "slug": "veggie-vegetarian-roasted-chicken",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 128,
+      "slug": "vico-fresh-coconut-water",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Coconut, fresh"
+    },
+    {
+      "idx": 129,
+      "slug": "victoria-crest-chicken-patty",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 130,
+      "slug": "vit-s-kari-persia-instant-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 131,
+      "slug": "vitasoy-almond-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Almond milk, NFS"
+    },
+    {
+      "idx": 132,
+      "slug": "wall-s-choco-almond-fudge",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 133,
+      "slug": "wee-wee-bakery-butterscotch-bread",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 134,
+      "slug": "win-win-sweet-potato-crisps",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sweet potato chips"
+    },
+    {
+      "idx": 135,
+      "slug": "win2-baked-potato-crisp-vegetable-flavour",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 136,
+      "slug": "woh-hup-dried-curry-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 137,
+      "slug": "yogood-cranberry-mango-muesli-bars",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 138,
+      "slug": "yogood-smooth-peanut-butter-no-sugar-added",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 139,
+      "slug": "yong-sheng-pandan-mung-bean-cake",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 140,
+      "slug": "yum-yum-red-bean-potong-ice-cream",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    }
+  ]
+}

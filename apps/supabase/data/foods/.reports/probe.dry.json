@@ -1,0 +1,15 @@
+{
+  "tally": {
+    "inserted": 1
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "zzz-test-probe-item",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    }
+  ]
+}

@@ -1,0 +1,1569 @@
+{
+  "tally": {
+    "inserted": 223
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "pho-bo-tai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pho Bo"
+    },
+    {
+      "idx": 2,
+      "slug": "pho-bo-chin",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pho Bo"
+    },
+    {
+      "idx": 3,
+      "slug": "pho-nam-gau",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Phở Tái Nạm"
+    },
+    {
+      "idx": 4,
+      "slug": "pho-bo-vien",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pho Bo"
+    },
+    {
+      "idx": 5,
+      "slug": "pho-ac-biet",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "pho-tai-nam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Phở Bò Tái"
+    },
+    {
+      "idx": 7,
+      "slug": "pho-bo-ha-noi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Phở Gà Hà Nội"
+    },
+    {
+      "idx": 8,
+      "slug": "pho-bo-sai-gon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 9,
+      "slug": "pho-ga-ha-noi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Phở Bò Hà Nội"
+    },
+    {
+      "idx": 10,
+      "slug": "pho-ga-tron",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pho Ga"
+    },
+    {
+      "idx": 11,
+      "slug": "pho-kho-gia-lai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 12,
+      "slug": "pho-xao-bo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pho Bo"
+    },
+    {
+      "idx": 13,
+      "slug": "pho-cuon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "pho-sot-vang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 15,
+      "slug": "pho-chay",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 16,
+      "slug": "bun-bo-hue-gio-heo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bun Bo Hue"
+    },
+    {
+      "idx": 17,
+      "slug": "bun-rieu-cua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bún Riêu Ốc"
+    },
+    {
+      "idx": 18,
+      "slug": "bun-oc",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bún Riêu Ốc"
+    },
+    {
+      "idx": 19,
+      "slug": "bun-mang-vit",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 20,
+      "slug": "bun-moc",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bún Ốc"
+    },
+    {
+      "idx": 21,
+      "slug": "bun-ca",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 22,
+      "slug": "bun-mam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bún Đậu Mắm Tôm"
+    },
+    {
+      "idx": 23,
+      "slug": "bun-thang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 24,
+      "slug": "bun-cha-ca-quy-nhon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 25,
+      "slug": "bun-bo-nam-bo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 26,
+      "slug": "bun-au-mam-tom",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bún Mắm"
+    },
+    {
+      "idx": 27,
+      "slug": "bun-rieu-oc",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bún Ốc"
+    },
+    {
+      "idx": 28,
+      "slug": "banh-canh-cua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Căn"
+    },
+    {
+      "idx": 29,
+      "slug": "banh-canh-gio-heo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 30,
+      "slug": "banh-canh-cha-ca",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Mì Chả Cá"
+    },
+    {
+      "idx": 31,
+      "slug": "hu-tieu-nam-vang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Hủ Tiếu Nam Vang Khô"
+    },
+    {
+      "idx": 32,
+      "slug": "hu-tieu-nam-vang-kho",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Hủ Tiếu Nam Vang"
+    },
+    {
+      "idx": 33,
+      "slug": "hu-tieu-my-tho",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Hủ Tiếu Mì"
+    },
+    {
+      "idx": 34,
+      "slug": "hu-tieu-mi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Hủ Tiếu Mỹ Tho"
+    },
+    {
+      "idx": 35,
+      "slug": "mi-quang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mì Quảng Gà"
+    },
+    {
+      "idx": 36,
+      "slug": "mi-quang-ga",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mì Quảng"
+    },
+    {
+      "idx": 37,
+      "slug": "cao-lau",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Lau lau"
+    },
+    {
+      "idx": 38,
+      "slug": "mien-ga",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 39,
+      "slug": "mien-luon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 40,
+      "slug": "banh-a-cua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Canh Cua"
+    },
+    {
+      "idx": 41,
+      "slug": "chao-long",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 42,
+      "slug": "chao-ga",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 43,
+      "slug": "chao-vit",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 44,
+      "slug": "sup-cua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 45,
+      "slug": "com-tam-suon-bi-cha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cơm Tấm Bì Chả"
+    },
+    {
+      "idx": 46,
+      "slug": "com-tam-bi-cha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cơm Tấm Sườn Bì Chả"
+    },
+    {
+      "idx": 47,
+      "slug": "com-tam-suon-trung-op-la",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Com Tam Suon Nuong"
+    },
+    {
+      "idx": 48,
+      "slug": "com-ga-hoi-an",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 49,
+      "slug": "com-ga-xoi-mo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Xôi Gà"
+    },
+    {
+      "idx": 50,
+      "slug": "com-chien-duong-chau",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 51,
+      "slug": "com-chien-ca-man",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 52,
+      "slug": "com-hen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 53,
+      "slug": "com-bo-luc-lac",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 54,
+      "slug": "com-chay-cha-bong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 55,
+      "slug": "com-nieu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 56,
+      "slug": "com-binh-dan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 57,
+      "slug": "xoi-man",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 58,
+      "slug": "xoi-xeo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 59,
+      "slug": "xoi-gac",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Xôi Gà"
+    },
+    {
+      "idx": 60,
+      "slug": "xoi-la-cam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 61,
+      "slug": "xoi-vo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 62,
+      "slug": "xoi-lap-xuong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 63,
+      "slug": "xoi-ga",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Xôi Gấc"
+    },
+    {
+      "idx": 64,
+      "slug": "banh-mi-thit-nguoi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Mì Thịt Nướng"
+    },
+    {
+      "idx": 65,
+      "slug": "banh-mi-xiu-mai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Banh Mi"
+    },
+    {
+      "idx": 66,
+      "slug": "banh-mi-cha-ca",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Canh Chả Cá"
+    },
+    {
+      "idx": 67,
+      "slug": "banh-mi-op-la",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Banh Mi"
+    },
+    {
+      "idx": 68,
+      "slug": "banh-mi-heo-quay",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 69,
+      "slug": "banh-mi-pate",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Banh Mi"
+    },
+    {
+      "idx": 70,
+      "slug": "banh-mi-thit-nuong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Hỏi Thịt Nướng"
+    },
+    {
+      "idx": 71,
+      "slug": "banh-mi-cha-lua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Mì Chả Cá"
+    },
+    {
+      "idx": 72,
+      "slug": "banh-mi-chao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Mì Chay"
+    },
+    {
+      "idx": 73,
+      "slug": "banh-mi-chay",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Mì Chảo"
+    },
+    {
+      "idx": 74,
+      "slug": "banh-mi-khong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Mì Bò Kho"
+    },
+    {
+      "idx": 75,
+      "slug": "banh-mi-bo-kho",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Mì Không"
+    },
+    {
+      "idx": 76,
+      "slug": "cha-gio",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chả Giò Chay"
+    },
+    {
+      "idx": 77,
+      "slug": "cha-gio-re",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chả Giò"
+    },
+    {
+      "idx": 78,
+      "slug": "cha-gio-chay",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chả Giò"
+    },
+    {
+      "idx": 79,
+      "slug": "goi-cuon-chay",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Goi Cuon"
+    },
+    {
+      "idx": 80,
+      "slug": "bi-cuon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Cuốn"
+    },
+    {
+      "idx": 81,
+      "slug": "bo-bia-ngot",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 82,
+      "slug": "banh-khot",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Mì Không"
+    },
+    {
+      "idx": 83,
+      "slug": "banh-cuon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Cuốn Chả"
+    },
+    {
+      "idx": 84,
+      "slug": "banh-cuon-cha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Cuốn"
+    },
+    {
+      "idx": 85,
+      "slug": "banh-beo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Banh Xeo"
+    },
+    {
+      "idx": 86,
+      "slug": "banh-bot-loc",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 87,
+      "slug": "banh-nam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 88,
+      "slug": "banh-it-tran",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Tráng Trộn"
+    },
+    {
+      "idx": 89,
+      "slug": "banh-ram-it",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 90,
+      "slug": "banh-can",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Canh Cua"
+    },
+    {
+      "idx": 91,
+      "slug": "banh-trang-tron",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Tráng Nướng"
+    },
+    {
+      "idx": 92,
+      "slug": "banh-trang-nuong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Tráng Trộn"
+    },
+    {
+      "idx": 93,
+      "slug": "banh-goi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 94,
+      "slug": "banh-bao-nhan-thit-trung-cut",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 95,
+      "slug": "pa-te-so",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 96,
+      "slug": "xiu-mai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Mì Xíu Mại"
+    },
+    {
+      "idx": 97,
+      "slug": "banh-hoi-thit-nuong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Mì Thịt Nướng"
+    },
+    {
+      "idx": 98,
+      "slug": "chao-tom",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 99,
+      "slug": "nem-nuong-nha-trang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Tráng Nướng"
+    },
+    {
+      "idx": 100,
+      "slug": "bo-la-lot",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 101,
+      "slug": "thit-nuong-xien",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bun Thit Nuong"
+    },
+    {
+      "idx": 102,
+      "slug": "cha-ca-la-vong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 103,
+      "slug": "com-lam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 104,
+      "slug": "suon-nuong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Com Tam Suon Nuong"
+    },
+    {
+      "idx": 105,
+      "slug": "ga-nuong-ban-on",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 106,
+      "slug": "bo-nuong-lui",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 107,
+      "slug": "ca-nuong-trui",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 108,
+      "slug": "banh-xeo-mien-trung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 109,
+      "slug": "thit-kho-tau",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 110,
+      "slug": "ca-kho-to",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cá Nục Kho"
+    },
+    {
+      "idx": 111,
+      "slug": "canh-chua-ca",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 112,
+      "slug": "ga-kho-gung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 113,
+      "slug": "bo-kho",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Mì Bò Kho"
+    },
+    {
+      "idx": 114,
+      "slug": "suon-xao-chua-ngot",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 115,
+      "slug": "rau-muong-xao-toi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 116,
+      "slug": "au-hu-nhoi-thit",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 117,
+      "slug": "canh-kho-qua-nhoi-thit",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 118,
+      "slug": "trung-chien-thit-bam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 119,
+      "slug": "tom-rim-thit",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 120,
+      "slug": "ga-kho-sa-ot",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 121,
+      "slug": "muc-xao-can",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 122,
+      "slug": "ca-tim-nuong-mo-hanh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bắp Nướng Mỡ Hành"
+    },
+    {
+      "idx": 123,
+      "slug": "canh-cai-thit-bam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 124,
+      "slug": "ca-nuc-kho",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cá Kho Tộ"
+    },
+    {
+      "idx": 125,
+      "slug": "thit-luoc-cuon-banh-trang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 126,
+      "slug": "lau-ca-keo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 127,
+      "slug": "lau-mam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Lau lau"
+    },
+    {
+      "idx": 128,
+      "slug": "goi-ngo-sen-tom-thit",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 129,
+      "slug": "goi-u-u-kho-bo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bò Kho"
+    },
+    {
+      "idx": 130,
+      "slug": "goi-ga-bap-cai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 131,
+      "slug": "goi-xoai-kho-ca",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 132,
+      "slug": "nom-hoa-chuoi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 133,
+      "slug": "goi-buoi-tom",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 134,
+      "slug": "goi-sua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 135,
+      "slug": "oc-len-xao-dua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 136,
+      "slug": "oc-huong-nuong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 137,
+      "slug": "so-huyet-rang-me",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 138,
+      "slug": "ngheu-hap-sa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 139,
+      "slug": "hen-xao-xuc-banh-a",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 140,
+      "slug": "bap-xao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 141,
+      "slug": "bap-nuong-mo-hanh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cà Tím Nướng Mỡ Hành"
+    },
+    {
+      "idx": 142,
+      "slug": "trung-vit-lon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 143,
+      "slug": "chan-ga-nuong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 144,
+      "slug": "banh-mi-nuong-muoi-ot",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Mì Thịt Nướng"
+    },
+    {
+      "idx": 145,
+      "slug": "khoai-lang-ken",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 146,
+      "slug": "xoai-lac",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 147,
+      "slug": "che-ba-mau",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 148,
+      "slug": "che-chuoi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 149,
+      "slug": "che-thai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 150,
+      "slug": "che-au-trang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 1,
+      "slug": "che-au-xanh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 2,
+      "slug": "che-buoi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chè Chuối"
+    },
+    {
+      "idx": 3,
+      "slug": "che-khuc-bach",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 4,
+      "slug": "che-troi-nuoc",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 5,
+      "slug": "che-suong-sa-hat-luu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "che-bap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 7,
+      "slug": "banh-flan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Flan"
+    },
+    {
+      "idx": 8,
+      "slug": "banh-da-lon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Đa Cua"
+    },
+    {
+      "idx": 9,
+      "slug": "banh-chuoi-nuong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Bò Nướng"
+    },
+    {
+      "idx": 10,
+      "slug": "kem-xoi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 11,
+      "slug": "sua-chua-nep-cam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 12,
+      "slug": "sua-chua-anh-a",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "rau-cau-dua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "banh-bo-nuong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Tráng Nướng"
+    },
+    {
+      "idx": 15,
+      "slug": "banh-cam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Căn"
+    },
+    {
+      "idx": 16,
+      "slug": "banh-tieu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 17,
+      "slug": "banh-uc-nong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 18,
+      "slug": "kem-chuoi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chè Chuối"
+    },
+    {
+      "idx": 19,
+      "slug": "ca-phe-en-a",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ca Phe Sua Da"
+    },
+    {
+      "idx": 20,
+      "slug": "ca-phe-trung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 21,
+      "slug": "bac-xiu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 22,
+      "slug": "ca-phe-muoi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 23,
+      "slug": "ca-phe-sua-nong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ca Phe Sua Da"
+    },
+    {
+      "idx": 24,
+      "slug": "ca-phe-cot-dua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 25,
+      "slug": "nuoc-mia",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 26,
+      "slug": "sinh-to-bo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sinh Tố Dâu"
+    },
+    {
+      "idx": 27,
+      "slug": "sinh-to-mang-cau",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 28,
+      "slug": "sinh-to-xoai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sinh Tố Bơ"
+    },
+    {
+      "idx": 29,
+      "slug": "sinh-to-dau",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sinh Tố Bơ"
+    },
+    {
+      "idx": 30,
+      "slug": "tra-a",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 31,
+      "slug": "tra-chanh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 32,
+      "slug": "tra-tac",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 33,
+      "slug": "tra-sen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 34,
+      "slug": "soda-xi-muoi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 35,
+      "slug": "nuoc-sam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 36,
+      "slug": "nuoc-rau-ma",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 37,
+      "slug": "banh-chung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 38,
+      "slug": "banh-tet",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 39,
+      "slug": "banh-gio",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Canh Giò Heo"
+    },
+    {
+      "idx": 40,
+      "slug": "mut-dua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 41,
+      "slug": "mut-gung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 42,
+      "slug": "banh-pia",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 43,
+      "slug": "cu-kieu-tom-kho",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 44,
+      "slug": "nem-chua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 45,
+      "slug": "cha-lua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Mì Chả Lụa"
+    },
+    {
+      "idx": 46,
+      "slug": "gio-thu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 47,
+      "slug": "highlands-coffee-phin-sua-a",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Highlands Coffee Bạc Xỉu Đá"
+    },
+    {
+      "idx": 48,
+      "slug": "highlands-coffee-bac-xiu-a",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Highlands Coffee Phin Sữa Đá"
+    },
+    {
+      "idx": 49,
+      "slug": "highlands-coffee-tra-sen-vang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Highlands Coffee Freeze Trà Xanh"
+    },
+    {
+      "idx": 50,
+      "slug": "highlands-coffee-freeze-tra-xanh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Highlands Coffee Trà Sen Vàng"
+    },
+    {
+      "idx": 51,
+      "slug": "highlands-coffee-banh-mi-que",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Highlands Coffee Bạc Xỉu Đá"
+    },
+    {
+      "idx": 52,
+      "slug": "phuc-long-tra-sua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Phúc Long Trà Đào"
+    },
+    {
+      "idx": 53,
+      "slug": "phuc-long-tra-ao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Phúc Long Trà Sữa"
+    },
+    {
+      "idx": 54,
+      "slug": "phuc-long-ca-phe-sua-a",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ca Phe Sua Da"
+    },
+    {
+      "idx": 55,
+      "slug": "the-coffee-house-tra-ao-cam-sa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "The Coffee House Cà Phê Sữa Đá"
+    },
+    {
+      "idx": 56,
+      "slug": "the-coffee-house-ca-phe-sua-a",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "The Coffee House Trà Đào Cam Sả"
+    },
+    {
+      "idx": 57,
+      "slug": "the-coffee-house-hi-tea-vai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 58,
+      "slug": "trung-nguyen-legend-ca-phe-sua-a",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 59,
+      "slug": "trung-nguyen-g7-ca-phe-hoa-tan-3in1",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 60,
+      "slug": "pho-24-pho-bo-tai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Phở Bò Tái"
+    },
+    {
+      "idx": 61,
+      "slug": "pho-hoa-pho-ac-biet",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Phở Đặc Biệt"
+    },
+    {
+      "idx": 62,
+      "slug": "com-tam-cali-suon-bi-cha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cơm Tấm Sườn Bì Chả"
+    },
+    {
+      "idx": 63,
+      "slug": "banh-mi-huynh-hoa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Banh Mi"
+    },
+    {
+      "idx": 64,
+      "slug": "kichi-kichi-lau-buffet",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 65,
+      "slug": "gogi-house-ba-chi-bo-my-nuong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 66,
+      "slug": "manwah-lau-thai-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 67,
+      "slug": "jollibee-com-ga-gion-vui-ve",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 68,
+      "slug": "lotteria-ga-ran",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 69,
+      "slug": "lotteria-com-ga-sot-cay",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 70,
+      "slug": "lotteria-burger-tom",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 71,
+      "slug": "kfc-viet-nam-com-ga-ran",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Popeyes Việt Nam Cơm Gà Rán"
+    },
+    {
+      "idx": 72,
+      "slug": "mcdonald-s-viet-nam-com-ga-ran",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KFC Việt Nam Cơm Gà Rán"
+    },
+    {
+      "idx": 73,
+      "slug": "popeyes-viet-nam-com-ga-ran",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "KFC Việt Nam Cơm Gà Rán"
+    }
+  ]
+}

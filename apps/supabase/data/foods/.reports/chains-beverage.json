@@ -1,0 +1,904 @@
+{
+  "tally": {
+    "inserted": 128
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "zus-coffee-latte",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "ZUS CEO Latté"
+    },
+    {
+      "idx": 2,
+      "slug": "zus-coffee-flat-white",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Latte"
+    },
+    {
+      "idx": 3,
+      "slug": "zus-coffee-cappuccino",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Coffee, Cappuccino"
+    },
+    {
+      "idx": 4,
+      "slug": "zus-coffee-spanish-latte",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "ZUS Iced Spanish Latté"
+    },
+    {
+      "idx": 5,
+      "slug": "zus-coffee-gula-melaka-latte",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "ZUS Iced Gula Melaka Latté"
+    },
+    {
+      "idx": 6,
+      "slug": "zus-coffee-iced-caramel-macchiato",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Coffee, macchiato"
+    },
+    {
+      "idx": 7,
+      "slug": "zus-coffee-iced-hojicha-latte",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "ZUS Iced Matcha Latté"
+    },
+    {
+      "idx": 8,
+      "slug": "zus-coffee-iced-coconut-latte",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Coffee, Iced Latte"
+    },
+    {
+      "idx": 9,
+      "slug": "zus-coffee-iced-kopi-c",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "ZUS Kopi O Ais"
+    },
+    {
+      "idx": 10,
+      "slug": "zus-coffee-iced-yuzu-americano",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "ZUS Iced Americano"
+    },
+    {
+      "idx": 11,
+      "slug": "zus-coffee-ice-blended-mocha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Coffee Bean Ice Blended Mocha"
+    },
+    {
+      "idx": 12,
+      "slug": "zus-coffee-iced-peach-oolong-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "zus-coffee-butter-croissant",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Almond Croissant"
+    },
+    {
+      "idx": 14,
+      "slug": "zus-coffee-almond-croissant",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Butter Croissant"
+    },
+    {
+      "idx": 15,
+      "slug": "zus-coffee-basque-burnt-cheesecake",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 16,
+      "slug": "zus-coffee-cinnamon-roll",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 17,
+      "slug": "zus-coffee-chicken-slice-sandwich",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 18,
+      "slug": "starbucks-flat-white",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 19,
+      "slug": "starbucks-white-chocolate-mocha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 20,
+      "slug": "starbucks-caramel-frappuccino",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Starbucks Cappuccino"
+    },
+    {
+      "idx": 21,
+      "slug": "starbucks-coffee-frappuccino",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Caramel Frappuccino"
+    },
+    {
+      "idx": 22,
+      "slug": "starbucks-mocha-frappuccino",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Coffee Frappuccino"
+    },
+    {
+      "idx": 23,
+      "slug": "starbucks-vanilla-cream-frappuccino",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Green Tea Cream Frappuccino"
+    },
+    {
+      "idx": 24,
+      "slug": "starbucks-green-tea-cream-frappuccino",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Vanilla Cream Frappuccino"
+    },
+    {
+      "idx": 25,
+      "slug": "starbucks-cold-brew",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Vanilla Sweet Cream Cold Brew"
+    },
+    {
+      "idx": 26,
+      "slug": "starbucks-vanilla-sweet-cream-cold-brew",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cold Brew"
+    },
+    {
+      "idx": 27,
+      "slug": "starbucks-chai-tea-latte",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Starbucks Green Tea Latte"
+    },
+    {
+      "idx": 28,
+      "slug": "starbucks-signature-hot-chocolate",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 29,
+      "slug": "starbucks-butter-croissant",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Almond Croissant"
+    },
+    {
+      "idx": 30,
+      "slug": "starbucks-almond-croissant",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Butter Croissant"
+    },
+    {
+      "idx": 31,
+      "slug": "starbucks-chicken-ham-and-cheese-croissant",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 32,
+      "slug": "starbucks-blueberry-muffin",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 33,
+      "slug": "starbucks-new-york-cheesecake",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 34,
+      "slug": "tealive-okinawa-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Thai Milk Tea"
+    },
+    {
+      "idx": 35,
+      "slug": "tealive-thai-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Taro Milk Tea"
+    },
+    {
+      "idx": 36,
+      "slug": "tealive-taro-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Thai Milk Tea"
+    },
+    {
+      "idx": 37,
+      "slug": "tealive-matcha-latte",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chatto Matcha Latte"
+    },
+    {
+      "idx": 38,
+      "slug": "tealive-honey-green-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 39,
+      "slug": "tealive-passion-fruit-green-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "QQ Passion Fruit Green Tea"
+    },
+    {
+      "idx": 40,
+      "slug": "tealive-brown-sugar-pearl-fresh-milk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tealive Brown Sugar Pearl Milk Tea"
+    },
+    {
+      "idx": 41,
+      "slug": "tealive-chocolate-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Soy milk, chocolate"
+    },
+    {
+      "idx": 42,
+      "slug": "chatime-signature-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tealive Signature Milk Tea"
+    },
+    {
+      "idx": 43,
+      "slug": "chatime-brown-sugar-pearl-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Brown Sugar Pearl Milk Tea"
+    },
+    {
+      "idx": 44,
+      "slug": "chatime-taro-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Thai Milk Tea"
+    },
+    {
+      "idx": 45,
+      "slug": "chatime-thai-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Taro Milk Tea"
+    },
+    {
+      "idx": 46,
+      "slug": "chatime-grass-jelly-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Taro Milk Tea"
+    },
+    {
+      "idx": 47,
+      "slug": "chatime-winter-melon-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 48,
+      "slug": "chatime-qq-passion-fruit-green-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Passion Fruit Green Tea"
+    },
+    {
+      "idx": 49,
+      "slug": "gong-cha-brown-sugar-fresh-milk-with-pearl",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Brown Sugar Pearl Fresh Milk"
+    },
+    {
+      "idx": 50,
+      "slug": "gong-cha-earl-grey-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Gong Cha Pearl Milk Tea"
+    },
+    {
+      "idx": 51,
+      "slug": "gong-cha-taro-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ai-CHA Taro Milk Tea"
+    },
+    {
+      "idx": 52,
+      "slug": "gong-cha-wintermelon-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Oolong Milk Tea"
+    },
+    {
+      "idx": 53,
+      "slug": "gong-cha-milk-foam-black-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Gong Cha Milk Foam Green Tea"
+    },
+    {
+      "idx": 54,
+      "slug": "gong-cha-oolong-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Taro Milk Tea"
+    },
+    {
+      "idx": 55,
+      "slug": "chagee-jasmine-green-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chagee Milk Tea"
+    },
+    {
+      "idx": 56,
+      "slug": "chagee-fruity-oolong-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Osmanthus Oolong Milk Tea"
+    },
+    {
+      "idx": 57,
+      "slug": "chagee-osmanthus-oolong-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Fruity Oolong Milk Tea"
+    },
+    {
+      "idx": 58,
+      "slug": "chagee-white-peach-oolong-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 59,
+      "slug": "chagee-matcha-latte",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chatto Matcha Latte"
+    },
+    {
+      "idx": 60,
+      "slug": "bask-bear-americano",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 61,
+      "slug": "bask-bear-caffe-latte",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bask Bear Iced Latte"
+    },
+    {
+      "idx": 62,
+      "slug": "bask-bear-caramel-macchiato",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 63,
+      "slug": "bask-bear-iced-chocolate",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ice cream bar, chocolate"
+    },
+    {
+      "idx": 64,
+      "slug": "bask-bear-iced-white-coffee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bask Bear Iced Latte"
+    },
+    {
+      "idx": 65,
+      "slug": "coffee-bean-cappuccino",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Coffee, Cappuccino"
+    },
+    {
+      "idx": 66,
+      "slug": "coffee-bean-caffe-mocha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Coffee, Cafe Mocha"
+    },
+    {
+      "idx": 67,
+      "slug": "coffee-bean-original-ice-blended",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Caramel Ice Blended"
+    },
+    {
+      "idx": 68,
+      "slug": "coffee-bean-caramel-ice-blended",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Original Ice Blended"
+    },
+    {
+      "idx": 69,
+      "slug": "coffee-bean-matcha-green-tea-latte",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 70,
+      "slug": "mixue-fresh-lemonade",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 71,
+      "slug": "mixue-strawberry-boom-boom",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 72,
+      "slug": "mixue-brown-sugar-pearl-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tealive Brown Sugar Pearl Milk Tea"
+    },
+    {
+      "idx": 73,
+      "slug": "mixue-sundae-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mixue Sundae"
+    },
+    {
+      "idx": 74,
+      "slug": "llaollao-sanum-frozen-yogurt",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Frozen yogurt sandwich"
+    },
+    {
+      "idx": 75,
+      "slug": "llaollao-mediano-frozen-yogurt-with-toppings",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Grande Frozen Yogurt with Toppings"
+    },
+    {
+      "idx": 76,
+      "slug": "llaollao-grande-frozen-yogurt-with-toppings",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mediano Frozen Yogurt with Toppings"
+    },
+    {
+      "idx": 77,
+      "slug": "baskin-robbins-single-scoop-ice-cream",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ice Cream Cake Slice"
+    },
+    {
+      "idx": 78,
+      "slug": "baskin-robbins-pralines-n-cream-scoop",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Single Scoop Ice Cream"
+    },
+    {
+      "idx": 79,
+      "slug": "baskin-robbins-jamoca-almond-fudge-scoop",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 80,
+      "slug": "baskin-robbins-mint-chocolate-chip-scoop",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 81,
+      "slug": "baskin-robbins-ice-cream-cake-slice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Single Scoop Ice Cream"
+    },
+    {
+      "idx": 82,
+      "slug": "krispy-kreme-original-glazed-doughnut",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chocolate Iced Glazed Doughnut"
+    },
+    {
+      "idx": 83,
+      "slug": "krispy-kreme-chocolate-iced-glazed-doughnut",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chocolate Iced Custard Filled Doughnut"
+    },
+    {
+      "idx": 84,
+      "slug": "krispy-kreme-chocolate-iced-with-sprinkles-doughnut",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chocolate Iced Glazed Doughnut"
+    },
+    {
+      "idx": 85,
+      "slug": "krispy-kreme-glazed-raspberry-filled-doughnut",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Original Glazed Doughnut"
+    },
+    {
+      "idx": 86,
+      "slug": "krispy-kreme-chocolate-iced-custard-filled-doughnut",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chocolate Iced Glazed Doughnut"
+    },
+    {
+      "idx": 87,
+      "slug": "krispy-kreme-cookies-and-kreme-doughnut",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 88,
+      "slug": "krispy-kreme-caramel-kreme-crunch-doughnut",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 89,
+      "slug": "auntie-anne-s-almond-pretzel",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pretzel Dog"
+    },
+    {
+      "idx": 90,
+      "slug": "auntie-anne-s-garlic-pretzel",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pretzel Dog"
+    },
+    {
+      "idx": 91,
+      "slug": "auntie-anne-s-sour-cream-and-onion-pretzel",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Almond Pretzel"
+    },
+    {
+      "idx": 92,
+      "slug": "auntie-anne-s-pretzel-dog",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Almond Pretzel"
+    },
+    {
+      "idx": 93,
+      "slug": "auntie-anne-s-original-pretzel-nuggets",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Auntie Anne's Original Pretzel"
+    },
+    {
+      "idx": 94,
+      "slug": "familymart-tuna-mayo-onigiri",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 95,
+      "slug": "familymart-hokkaido-milk-soft-serve",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Matcha Soft Serve"
+    },
+    {
+      "idx": 96,
+      "slug": "familymart-matcha-soft-serve",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Hokkaido Milk Soft Serve"
+    },
+    {
+      "idx": 97,
+      "slug": "familymart-sweet-potato-soft-serve",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Matcha Soft Serve"
+    },
+    {
+      "idx": 98,
+      "slug": "familymart-oden-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 99,
+      "slug": "familymart-karaage",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 100,
+      "slug": "7-eleven-big-bite-hot-dog",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 101,
+      "slug": "7-eleven-ayam-goreng-berempah",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ayam Goreng Berempah"
+    },
+    {
+      "idx": 102,
+      "slug": "7-eleven-karipap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 103,
+      "slug": "7-eleven-sosej-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sosej Bakar"
+    },
+    {
+      "idx": 104,
+      "slug": "7-eleven-slurpee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 105,
+      "slug": "rotiboy-coffee-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cheese Bun"
+    },
+    {
+      "idx": 106,
+      "slug": "rotiboy-chocolate-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cheese Bun"
+    },
+    {
+      "idx": 107,
+      "slug": "rotiboy-cheese-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Roti Cheese"
+    },
+    {
+      "idx": 108,
+      "slug": "papparoti-signature-coffee-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 109,
+      "slug": "papparoti-choco-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cheese Bun"
+    },
+    {
+      "idx": 110,
+      "slug": "papparoti-cheese-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Choco Bun"
+    },
+    {
+      "idx": 111,
+      "slug": "breadtalk-chicken-floss-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Fire Floss Bun"
+    },
+    {
+      "idx": 112,
+      "slug": "breadtalk-fire-floss-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chicken Floss Bun"
+    },
+    {
+      "idx": 113,
+      "slug": "breadtalk-cheese-sausage-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 114,
+      "slug": "breadtalk-milky-loaf",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 115,
+      "slug": "king-s-confectionery-butter-cake",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Coconut Bun"
+    },
+    {
+      "idx": 116,
+      "slug": "king-s-confectionery-kaya-puff",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Coconut Bun"
+    },
+    {
+      "idx": 117,
+      "slug": "king-s-confectionery-sausage-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Coconut Bun"
+    },
+    {
+      "idx": 118,
+      "slug": "king-s-confectionery-coconut-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sausage Bun"
+    },
+    {
+      "idx": 119,
+      "slug": "king-s-confectionery-egg-tart",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kaya Puff"
+    },
+    {
+      "idx": 120,
+      "slug": "haiwan-bakery-butter-cream-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Marble Butter Cake"
+    },
+    {
+      "idx": 121,
+      "slug": "haiwan-bakery-marble-butter-cake",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Butter Cream Bun"
+    },
+    {
+      "idx": 122,
+      "slug": "bread-history-butter-sugar-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 123,
+      "slug": "bread-history-chicken-floss-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chicken Floss Bun"
+    },
+    {
+      "idx": 124,
+      "slug": "bread-history-cheese-tart",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bread, cheese"
+    },
+    {
+      "idx": 125,
+      "slug": "tous-les-jours-cream-cheese-garlic-bread",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 126,
+      "slug": "tous-les-jours-butter-croissant",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 127,
+      "slug": "tous-les-jours-red-bean-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 128,
+      "slug": "tous-les-jours-mochi-ring-doughnut",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    }
+  ]
+}

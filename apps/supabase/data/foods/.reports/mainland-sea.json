@@ -1,0 +1,1262 @@
+{
+  "tally": {
+    "skipped_slug": 61,
+    "inserted": 118
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "mohinga",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 2,
+      "slug": "mohinga-with-egg-and-fritter",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 3,
+      "slug": "ohn-no-khao-swe",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 4,
+      "slug": "shan-khao-swe",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 5,
+      "slug": "shan-khao-swe-thoke",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "nan-gyi-thoke",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 7,
+      "slug": "khao-swe-thoke",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 8,
+      "slug": "mont-di",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 9,
+      "slug": "rakhine-mont-di",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 10,
+      "slug": "kyay-oh",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 11,
+      "slug": "kyay-oh-thoke",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 12,
+      "slug": "si-chet-khauk-swe",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "kat-kyi-kaik",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "meeshay",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 15,
+      "slug": "panthay-khao-swe",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 16,
+      "slug": "nan-pyar-thoke",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 17,
+      "slug": "lahpet-thoke",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 18,
+      "slug": "tohu-thoke",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 19,
+      "slug": "tohu-nway",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 20,
+      "slug": "shan-tohu-kyaw",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 21,
+      "slug": "gin-thoke",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 22,
+      "slug": "samusa-thoke",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 23,
+      "slug": "nga-phe-thoke",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 24,
+      "slug": "khayan-thee-thoke",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 25,
+      "slug": "tha-khwa-thee-thoke",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 26,
+      "slug": "pe-thoke",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 27,
+      "slug": "danbauk",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 28,
+      "slug": "danbauk-seik",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 29,
+      "slug": "htamin-jaw",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 30,
+      "slug": "ohn-htamin",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 31,
+      "slug": "si-htamin",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 32,
+      "slug": "htamin-thoke",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 33,
+      "slug": "nga-baung-doke",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 34,
+      "slug": "kyet-thar-hin",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 35,
+      "slug": "wet-thar-hin",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 36,
+      "slug": "ame-hnat",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 37,
+      "slug": "wet-thar-dote-htoe",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 38,
+      "slug": "nga-thalauk-paung",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 39,
+      "slug": "chin-baung-kyaw",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 40,
+      "slug": "pe-byouk",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 41,
+      "slug": "balachaung",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 42,
+      "slug": "ngapi-yay",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 43,
+      "slug": "ngapi-kyaw",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 44,
+      "slug": "hin-gyo",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 45,
+      "slug": "chin-ye-hin",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 46,
+      "slug": "palata",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 47,
+      "slug": "nan-bya",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 48,
+      "slug": "e-kya-kway",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 49,
+      "slug": "mont-lin-ma-yar",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 50,
+      "slug": "bein-mont",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 51,
+      "slug": "mont-pyar-thalet",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 52,
+      "slug": "burmese-samusa",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 53,
+      "slug": "bu-thee-kyaw",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 54,
+      "slug": "kyet-thun-kyaw",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 55,
+      "slug": "mont-lone-yay-paw",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 56,
+      "slug": "shwe-yin-aye",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 57,
+      "slug": "mont-let-saung",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 58,
+      "slug": "burmese-faluda",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 59,
+      "slug": "sanwin-makin",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 60,
+      "slug": "kyauk-kyaw",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 61,
+      "slug": "lahpet-yay",
+      "outcome": "skipped_slug",
+      "detail": "slug already in the catalogue",
+      "nearest": null
+    },
+    {
+      "idx": 62,
+      "slug": "num-banh-chok-samlor-khmer",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Num Banh Chok Samlor Kari"
+    },
+    {
+      "idx": 63,
+      "slug": "num-banh-chok-samlor-kari",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Num Banh Chok Samlor Khmer"
+    },
+    {
+      "idx": 64,
+      "slug": "num-banh-chok-chruok",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 65,
+      "slug": "kuy-teav-phnom-penh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 66,
+      "slug": "kuy-teav-cha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 67,
+      "slug": "mi-kola",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 68,
+      "slug": "bai-sach-chrouk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 69,
+      "slug": "bobor-sach-moan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 70,
+      "slug": "bobor-trey",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 71,
+      "slug": "amok-trey",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 72,
+      "slug": "amok-sach-moan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 73,
+      "slug": "amok-kdam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 74,
+      "slug": "samlor-korko",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 75,
+      "slug": "samlor-machu-kroeung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Samlor Machu Trey"
+    },
+    {
+      "idx": 76,
+      "slug": "samlor-machu-trey",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Samlor Machu Kroeung"
+    },
+    {
+      "idx": 77,
+      "slug": "samlor-mchou-banle",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 78,
+      "slug": "samlor-kari-sach-moan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 79,
+      "slug": "cha-kroeung-sach-ko",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cha Kroeung Trey"
+    },
+    {
+      "idx": 80,
+      "slug": "cha-kroeung-trey",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cha Kroeung Sach Ko"
+    },
+    {
+      "idx": 81,
+      "slug": "lok-lak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Lok Lok"
+    },
+    {
+      "idx": 82,
+      "slug": "kdam-chaa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 83,
+      "slug": "prahok-ktis",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 84,
+      "slug": "teuk-kroeung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 85,
+      "slug": "tuk-trey-pa-em",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 86,
+      "slug": "tuk-marij",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 87,
+      "slug": "bok-trop",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 88,
+      "slug": "nom-pang-pate",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 89,
+      "slug": "num-pang-sach-ko",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Num Pang Sach Chrouk"
+    },
+    {
+      "idx": 90,
+      "slug": "num-pang-sach-chrouk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Num Pang Sach Ko"
+    },
+    {
+      "idx": 91,
+      "slug": "twa-ko",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 92,
+      "slug": "ang-dtray-meuk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 93,
+      "slug": "ang-sach-ko",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Num Pang Sach Ko"
+    },
+    {
+      "idx": 94,
+      "slug": "trey-aing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 95,
+      "slug": "trey-chien-chu-am",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 96,
+      "slug": "bai-cha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 97,
+      "slug": "mi-cha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Mì Chả Cá"
+    },
+    {
+      "idx": 98,
+      "slug": "bok-l-hong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 99,
+      "slug": "banh-chao-khmer",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Mì Chảo"
+    },
+    {
+      "idx": 100,
+      "slug": "kralan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 101,
+      "slug": "num-ansom-chek",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Num Ansom Chrouk"
+    },
+    {
+      "idx": 102,
+      "slug": "num-ansom-chrouk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Num Ansom Chek"
+    },
+    {
+      "idx": 103,
+      "slug": "num-plae-ai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 104,
+      "slug": "nom-kroch",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 105,
+      "slug": "num-korng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 106,
+      "slug": "num-chak-kachan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 107,
+      "slug": "nom-treap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 108,
+      "slug": "cha-houy-teuk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 109,
+      "slug": "sangkhya-lapov",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 110,
+      "slug": "teuk-kork",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 111,
+      "slug": "kafe-teuk-doh-ko",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 112,
+      "slug": "teuk-tnaot",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 113,
+      "slug": "lao-larb-moo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Larb Moo"
+    },
+    {
+      "idx": 114,
+      "slug": "lao-larb-pa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Lao Larb Ped"
+    },
+    {
+      "idx": 115,
+      "slug": "lao-larb-ped",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Larb Ped"
+    },
+    {
+      "idx": 116,
+      "slug": "tam-mak-hoong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tam Mak Teng"
+    },
+    {
+      "idx": 117,
+      "slug": "tam-mak-teng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tam Mak Hoong"
+    },
+    {
+      "idx": 118,
+      "slug": "tam-khao-poun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Khao Poun"
+    },
+    {
+      "idx": 119,
+      "slug": "khao-poun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tam Khao Poun"
+    },
+    {
+      "idx": 120,
+      "slug": "khao-poun-nam-jaew",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Khao Poun"
+    },
+    {
+      "idx": 121,
+      "slug": "khao-piak-sen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Khao Piak Khao"
+    },
+    {
+      "idx": 122,
+      "slug": "khao-piak-khao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Khao Piak Sen"
+    },
+    {
+      "idx": 123,
+      "slug": "lao-khao-soi-luang-prabang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 124,
+      "slug": "lao-feu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 125,
+      "slug": "khua-mee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 126,
+      "slug": "or-lam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 127,
+      "slug": "tom-khem",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 128,
+      "slug": "kaeng-nor-mai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 129,
+      "slug": "mok-pa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 130,
+      "slug": "mok-gai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Khao Mok Gai"
+    },
+    {
+      "idx": 131,
+      "slug": "aeb-pa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 132,
+      "slug": "ping-pa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 133,
+      "slug": "ping-sin",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 134,
+      "slug": "sai-gok",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 135,
+      "slug": "ua-si-khai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 136,
+      "slug": "nam-khao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Khao Pad Nam Prik Pao"
+    },
+    {
+      "idx": 137,
+      "slug": "kaipen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 138,
+      "slug": "sien-savanh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 139,
+      "slug": "khao-jee-pate",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Khao Jee Ping"
+    },
+    {
+      "idx": 140,
+      "slug": "khao-jee-ping",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Khao Jee Pate"
+    },
+    {
+      "idx": 141,
+      "slug": "sin-dad",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 142,
+      "slug": "jeow-bong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 143,
+      "slug": "jeow-mak-len",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Jeow Mak Keua"
+    },
+    {
+      "idx": 144,
+      "slug": "jeow-mak-keua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Jeow Mak Len"
+    },
+    {
+      "idx": 145,
+      "slug": "jeow-padaek",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Padaek"
+    },
+    {
+      "idx": 146,
+      "slug": "jeow-mak-phet",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Jeow Mak Len"
+    },
+    {
+      "idx": 147,
+      "slug": "padaek",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Jeow Padaek"
+    },
+    {
+      "idx": 148,
+      "slug": "salad-luang-prabang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 149,
+      "slug": "soup-phak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 150,
+      "slug": "nam-van",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 1,
+      "slug": "khao-niaw-dam-piak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Khao Piak Khao"
+    },
+    {
+      "idx": 2,
+      "slug": "lao-iced-coffee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Coffee, Iced Latte"
+    },
+    {
+      "idx": 3,
+      "slug": "set-ambuyat-brunei",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 4,
+      "slug": "nasi-katok-ayam-penyet",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Ayam Penyet"
+    },
+    {
+      "idx": 5,
+      "slug": "beras-basah",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "soto-brunei",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 7,
+      "slug": "roti-kuning-brunei",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 8,
+      "slug": "udang-sambal-serai-bersantan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 9,
+      "slug": "kuih-mor",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 10,
+      "slug": "kuih-cerorot",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 11,
+      "slug": "hati-buyah",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 12,
+      "slug": "belutak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "htamin-chin",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Si Htamin"
+    },
+    {
+      "idx": 14,
+      "slug": "kaung-nyin-baung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 15,
+      "slug": "a-kyaw-sone",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 16,
+      "slug": "ngapi-htaung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 17,
+      "slug": "rakhine-chin-yay-chet",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 18,
+      "slug": "htoe-mont",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 19,
+      "slug": "mont-kywe-the",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 20,
+      "slug": "burmese-tea-shop-coffee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 21,
+      "slug": "samlor-machu-yuon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Samlor Machu Trey"
+    },
+    {
+      "idx": 22,
+      "slug": "cha-kroeung-sach-chrouk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cha Kroeung Sach Ko"
+    },
+    {
+      "idx": 23,
+      "slug": "kaw-sach-chrouk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bai Sach Chrouk"
+    },
+    {
+      "idx": 24,
+      "slug": "trey-ngeat-chien",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Trey Chien Chu Am"
+    },
+    {
+      "idx": 25,
+      "slug": "num-bai-damnaeb",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 26,
+      "slug": "sup-no-mai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 27,
+      "slug": "khai-ping",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Khao Jee Ping"
+    },
+    {
+      "idx": 28,
+      "slug": "nasi-katok-rendang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Katok"
+    },
+    {
+      "idx": 29,
+      "slug": "shan-khao-swe-kyaw",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Shan Khao Swè"
+    }
+  ]
+}

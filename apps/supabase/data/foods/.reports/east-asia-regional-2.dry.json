@@ -1,0 +1,1289 @@
+{
+  "tally": {
+    "inserted": 183
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "ikameshi-mori-ekiben",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 2,
+      "slug": "gyutan-bento-sendai-ekiben",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 3,
+      "slug": "toge-no-kamameshi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kamameshi"
+    },
+    {
+      "idx": 4,
+      "slug": "masuzushi-toyama",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 5,
+      "slug": "shumai-bento-yokohama",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "daruma-bento-takasaki",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 7,
+      "slug": "kakinoha-zushi-nara",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 8,
+      "slug": "kanimeshi-bento-hokkaido",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 9,
+      "slug": "kashiwa-meshi-kyushu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 10,
+      "slug": "sukiyaki-bento",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sukiyaki Beef"
+    },
+    {
+      "idx": 11,
+      "slug": "hipparidako-meshi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 12,
+      "slug": "gyuniku-domannaka",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "ebi-senryo-chirashi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "sakizuke-kaiseki-course",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kaiseki Course"
+    },
+    {
+      "idx": 15,
+      "slug": "hassun-kaiseki-course",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kaiseki Course"
+    },
+    {
+      "idx": 16,
+      "slug": "mukozuke-kaiseki-course",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kaiseki Course"
+    },
+    {
+      "idx": 17,
+      "slug": "takiawase-kaiseki-course",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kaiseki Course"
+    },
+    {
+      "idx": 18,
+      "slug": "futamono-kaiseki-course",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kaiseki Course"
+    },
+    {
+      "idx": 19,
+      "slug": "yakimono-kaiseki-course",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kaiseki Course"
+    },
+    {
+      "idx": 20,
+      "slug": "su-zakana-kaiseki-course",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Shiizakana Kaiseki Course"
+    },
+    {
+      "idx": 21,
+      "slug": "naka-choko-kaiseki-course",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kaiseki Course"
+    },
+    {
+      "idx": 22,
+      "slug": "shiizakana-kaiseki-course",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Su-zakana Kaiseki Course"
+    },
+    {
+      "idx": 23,
+      "slug": "gohan-tome-wan-ko-no-mono",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 24,
+      "slug": "mizumono-kaiseki-course",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kaiseki Course"
+    },
+    {
+      "idx": 25,
+      "slug": "nodoguro-shioyaki",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 26,
+      "slug": "hotaru-ika-okizuke",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 27,
+      "slug": "hotaru-ika-sumiso-ae",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 28,
+      "slug": "buri-shabu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Buta Shabu"
+    },
+    {
+      "idx": 29,
+      "slug": "kanazawa-jibuni",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 30,
+      "slug": "yude-matsuba-gani",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 31,
+      "slug": "kani-miso-koura-yaki",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 32,
+      "slug": "omicho-kaisen-don",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ootoya Kaisen Don"
+    },
+    {
+      "idx": 33,
+      "slug": "echizen-oroshi-soba",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 34,
+      "slug": "iwagaki-nama",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 35,
+      "slug": "shiroebi-don",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 36,
+      "slug": "hegisoba",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 37,
+      "slug": "noppei-jiru",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 38,
+      "slug": "tofu-champuru",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Fu Champuru"
+    },
+    {
+      "idx": 39,
+      "slug": "somen-champuru",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Fu Champuru"
+    },
+    {
+      "idx": 40,
+      "slug": "papaya-irichi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 41,
+      "slug": "nakami-jiru",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 42,
+      "slug": "inamuduchi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 43,
+      "slug": "jushi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 44,
+      "slug": "hirayachi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 45,
+      "slug": "yushi-dofu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 46,
+      "slug": "chinsuko",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 47,
+      "slug": "mozuku-su",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 48,
+      "slug": "mozuku-tempura",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 49,
+      "slug": "muchi-okinawa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 50,
+      "slug": "agu-buta-shabu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Buta Shabu"
+    },
+    {
+      "idx": 51,
+      "slug": "beniimo-sata-andagi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sata Andagi"
+    },
+    {
+      "idx": 52,
+      "slug": "ohaw-ainu-soup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 53,
+      "slug": "ruibe-frozen-salmon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 54,
+      "slug": "sito-ainu-dumpling",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 55,
+      "slug": "citatap-ainu-mince",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 56,
+      "slug": "kura-sushi-hamachi-nigiri",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Hamachi Nigiri Sushi"
+    },
+    {
+      "idx": 57,
+      "slug": "kura-sushi-unagi-nigiri",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Unagi Nigiri Sushi"
+    },
+    {
+      "idx": 58,
+      "slug": "kura-sushi-ikura-gunkan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Genki Sushi Ikura Gunkan"
+    },
+    {
+      "idx": 59,
+      "slug": "kura-sushi-chawanmushi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sushi King Chawanmushi"
+    },
+    {
+      "idx": 60,
+      "slug": "kura-sushi-warabimochi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Warabimochi"
+    },
+    {
+      "idx": 61,
+      "slug": "hama-sushi-salmon-nigiri",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Salmon Nigiri Sushi"
+    },
+    {
+      "idx": 62,
+      "slug": "hama-sushi-ebi-nigiri",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ebi Nigiri Sushi"
+    },
+    {
+      "idx": 63,
+      "slug": "hama-sushi-chawanmushi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sushiro Chawanmushi"
+    },
+    {
+      "idx": 64,
+      "slug": "hama-sushi-kake-udon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sushiro Kake Udon"
+    },
+    {
+      "idx": 65,
+      "slug": "hama-sushi-karaage",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 66,
+      "slug": "genki-sushi-unagi-nigiri",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Unagi Nigiri Sushi"
+    },
+    {
+      "idx": 67,
+      "slug": "genki-sushi-ikura-gunkan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kura Sushi Ikura Gunkan"
+    },
+    {
+      "idx": 68,
+      "slug": "genki-sushi-miso-soup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 69,
+      "slug": "genki-sushi-matcha-ice-cream",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 70,
+      "slug": "sushiro-chawanmushi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chawanmushi"
+    },
+    {
+      "idx": 71,
+      "slug": "sushiro-kake-udon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Hama Sushi Kake Udon"
+    },
+    {
+      "idx": 72,
+      "slug": "sushiro-uni-gunkan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Uni Gunkan"
+    },
+    {
+      "idx": 73,
+      "slug": "7-eleven-japan-tuna-mayo-onigiri",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 74,
+      "slug": "7-eleven-japan-shiozake-onigiri",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 75,
+      "slug": "7-eleven-japan-tamago-sando",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 76,
+      "slug": "7-eleven-japan-katsu-sando",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 77,
+      "slug": "7-eleven-japan-oden-daikon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 78,
+      "slug": "7-eleven-japan-oden-tamago",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 79,
+      "slug": "7-eleven-japan-oden-chikuwa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 80,
+      "slug": "7-eleven-japan-oden-atsuage",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 81,
+      "slug": "7-eleven-japan-nikuman",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 82,
+      "slug": "7-eleven-japan-warabimochi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 83,
+      "slug": "familymart-mentaiko-cream-pasta",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 84,
+      "slug": "familymart-tamago-sando",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 85,
+      "slug": "familymart-chicken-steak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 86,
+      "slug": "familymart-baumkuchen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Baumkuchen"
+    },
+    {
+      "idx": 87,
+      "slug": "familymart-famima-cafe-latte",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 88,
+      "slug": "lawson-karaage-kun-red",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Lawson Karaage-kun"
+    },
+    {
+      "idx": 89,
+      "slug": "lawson-karaage-kun-cheese",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Lawson Karaage-kun"
+    },
+    {
+      "idx": 90,
+      "slug": "lawson-machi-cafe-cafe-latte",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 91,
+      "slug": "lawson-uchi-cafe-premium-roll",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 92,
+      "slug": "lawson-bran-bread",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 93,
+      "slug": "lawson-egg-sandwich",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Egg sandwich on bagel"
+    },
+    {
+      "idx": 94,
+      "slug": "sinseollo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 95,
+      "slug": "gujeolpan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 96,
+      "slug": "tangpyeongchae",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 97,
+      "slug": "neobiani",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 98,
+      "slug": "jeonbok-cho",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Jeonbok Juk"
+    },
+    {
+      "idx": 99,
+      "slug": "eo-mandu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 100,
+      "slug": "mideodeok-jjim",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 101,
+      "slug": "hwayangjeok",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 102,
+      "slug": "japgwabyeong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 103,
+      "slug": "omija-hwachae",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 104,
+      "slug": "dubu-seon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 105,
+      "slug": "sachal-gamja-jorim",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 106,
+      "slug": "ueong-jorim",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 107,
+      "slug": "deodeok-gui",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 108,
+      "slug": "chwinamul-bap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 109,
+      "slug": "kongbiji-jjigae",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 110,
+      "slug": "kkaennip-jangajji",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 111,
+      "slug": "maneuljjong-jangajji",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 112,
+      "slug": "sachal-beoseot-jeongol",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 113,
+      "slug": "sachal-doenjang-guk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 114,
+      "slug": "ssuk-guk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 115,
+      "slug": "dotorimuk-muchim",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 116,
+      "slug": "pyongyang-onban",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 117,
+      "slug": "kaesong-mandu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 118,
+      "slug": "gangnaengi-guksu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 119,
+      "slug": "injo-gogi-bap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 120,
+      "slug": "dubu-bap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 121,
+      "slug": "kaesong-bossam-kimchi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 122,
+      "slug": "eobok-jaengban",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 123,
+      "slug": "ojingeo-sundae",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 124,
+      "slug": "samgak-gimbap-chamchi-mayo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chamchi Gimbap"
+    },
+    {
+      "idx": 125,
+      "slug": "samgak-gimbap-jeonju-bibim",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Jeonju Bibimbap"
+    },
+    {
+      "idx": 126,
+      "slug": "samgak-gimbap-bulgogi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bulgogi Gimbap"
+    },
+    {
+      "idx": 127,
+      "slug": "pyeonuijeom-dosirak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 128,
+      "slug": "hotbar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 129,
+      "slug": "tteokgalbi-burger",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 130,
+      "slug": "pyeonuijeom-corn-dog",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 131,
+      "slug": "dak-gaseumsal-pack",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 132,
+      "slug": "yakult-korea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 133,
+      "slug": "shin-ramyun-cup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 134,
+      "slug": "yukgaejang-sabalmyeon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Yukgaejang"
+    },
+    {
+      "idx": 135,
+      "slug": "golbaengi-muchim",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 136,
+      "slug": "nogari-gui",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 137,
+      "slug": "dakbal",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 138,
+      "slug": "gopchang-jeongol",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 139,
+      "slug": "mareun-ojingeo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 140,
+      "slug": "jjukkumi-bokkeum",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 141,
+      "slug": "mareun-anju-platter",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 142,
+      "slug": "lau-la-rung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 143,
+      "slug": "bo-mot-nang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 144,
+      "slug": "canh-la-bep",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 145,
+      "slug": "bun-o-buon-ma-thuot",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 146,
+      "slug": "muoi-kien-vang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 147,
+      "slug": "goi-la-kon-tum",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 148,
+      "slug": "bun-num-bo-choc",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 149,
+      "slug": "tung-lo-mo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 150,
+      "slug": "mam-bo-hoc",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 1,
+      "slug": "com-ni-ca-pua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 2,
+      "slug": "banh-bo-thot-not",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 3,
+      "slug": "che-thap-cam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chè Thái"
+    },
+    {
+      "idx": 4,
+      "slug": "che-khoai-deo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chè Khoai Môn"
+    },
+    {
+      "idx": 5,
+      "slug": "che-com",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "che-kho",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 7,
+      "slug": "che-au-en",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chè Đậu Đỏ"
+    },
+    {
+      "idx": 8,
+      "slug": "che-au-o",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chè Đậu Đen"
+    },
+    {
+      "idx": 9,
+      "slug": "che-me-en",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chè Đậu Đen"
+    },
+    {
+      "idx": 10,
+      "slug": "che-ba-ba",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chè Bắp"
+    },
+    {
+      "idx": 11,
+      "slug": "che-khoai-mon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chè Khoai Dẻo"
+    },
+    {
+      "idx": 12,
+      "slug": "che-san",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "che-dua-dam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "che-au-van",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chè Đậu Đỏ"
+    },
+    {
+      "idx": 15,
+      "slug": "che-nep-cam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sữa Chua Nếp Cẩm"
+    },
+    {
+      "idx": 16,
+      "slug": "che-suong-sao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chè Sương Sa Hạt Lựu"
+    },
+    {
+      "idx": 17,
+      "slug": "nhum-bien-nuong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 18,
+      "slug": "goi-ca-trich",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 19,
+      "slug": "banh-canh-ghe",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Căn"
+    },
+    {
+      "idx": 20,
+      "slug": "muc-mot-nang-nuong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 21,
+      "slug": "ca-com-kho",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cá Kho Tộ"
+    },
+    {
+      "idx": 22,
+      "slug": "nuoc-mam-phu-quoc",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 23,
+      "slug": "bun-quay-phu-quoc",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 24,
+      "slug": "khau-nhuc",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 25,
+      "slug": "vit-quay-lang-son",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 26,
+      "slug": "banh-cuon-trung-cao-bang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Cuốn"
+    },
+    {
+      "idx": 27,
+      "slug": "xoi-trung-kien",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 28,
+      "slug": "lau-ca-hoi-sa-pa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 29,
+      "slug": "thit-lon-muoi-chua",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 30,
+      "slug": "banh-chung-en",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bánh Chưng"
+    },
+    {
+      "idx": 31,
+      "slug": "thang-den",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 32,
+      "slug": "chao-au-tau",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 33,
+      "slug": "reu-nuong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    }
+  ]
+}

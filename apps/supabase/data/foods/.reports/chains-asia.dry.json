@@ -1,0 +1,1499 @@
+{
+  "tally": {
+    "inserted": 213
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "sushi-king-kani-salad",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sushi King Salmon Sushi"
+    },
+    {
+      "idx": 2,
+      "slug": "sushi-king-chuka-idako",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sushi King Chuka Kurage"
+    },
+    {
+      "idx": 3,
+      "slug": "sushi-king-chuka-kurage",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sushi King Chuka Idako"
+    },
+    {
+      "idx": 4,
+      "slug": "sushi-king-ebi-fry",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 5,
+      "slug": "sushi-king-chicken-karaage",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sushi King Chicken Katsu Don"
+    },
+    {
+      "idx": 6,
+      "slug": "sushi-king-gyoza",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 7,
+      "slug": "sushi-king-chawanmushi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chawanmushi"
+    },
+    {
+      "idx": 8,
+      "slug": "sushi-king-agedashi-tofu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Agedashi Tofu"
+    },
+    {
+      "idx": 9,
+      "slug": "sushi-king-unagi-kabayaki",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Unagi Kabayaki"
+    },
+    {
+      "idx": 10,
+      "slug": "sushi-king-saba-shioyaki",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Saba Shioyaki"
+    },
+    {
+      "idx": 11,
+      "slug": "sushi-king-california-maki",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "California Maki"
+    },
+    {
+      "idx": 12,
+      "slug": "sushi-king-salmon-mentai-maki",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sushi Mentai Salmon Sushi"
+    },
+    {
+      "idx": 13,
+      "slug": "sushi-king-ebi-tempura-roll",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sushi King Tempura Udon"
+    },
+    {
+      "idx": 14,
+      "slug": "sushi-king-salmon-sashimi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sushi King Salmon Sushi"
+    },
+    {
+      "idx": 15,
+      "slug": "sushi-king-unagi-don",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sushi King Unagi Kabayaki"
+    },
+    {
+      "idx": 16,
+      "slug": "sushi-king-chirashi-don",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chirashi Don"
+    },
+    {
+      "idx": 17,
+      "slug": "sushi-king-beef-sukiyaki-don",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sukiyaki Beef"
+    },
+    {
+      "idx": 18,
+      "slug": "sushi-king-tonkotsu-ramen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tonkotsu Ramen"
+    },
+    {
+      "idx": 19,
+      "slug": "sushi-king-zaru-soba",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Zaru Soba"
+    },
+    {
+      "idx": 20,
+      "slug": "sushi-king-tempura-udon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sushi King Ebi Tempura Roll"
+    },
+    {
+      "idx": 21,
+      "slug": "sushi-king-bento-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 22,
+      "slug": "sakae-sushi-salmon-sushi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sakae Sushi Salmon Don"
+    },
+    {
+      "idx": 23,
+      "slug": "sakae-sushi-unagi-sushi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Unagi Nigiri Sushi"
+    },
+    {
+      "idx": 24,
+      "slug": "sakae-sushi-salmon-don",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sakae Sushi Salmon Sushi"
+    },
+    {
+      "idx": 25,
+      "slug": "sakae-sushi-chicken-teriyaki-don",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chicken Teriyaki Don"
+    },
+    {
+      "idx": 26,
+      "slug": "sakae-sushi-tempura-moriawase",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tempura Moriawase"
+    },
+    {
+      "idx": 27,
+      "slug": "sakae-sushi-chuka-wakame",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 28,
+      "slug": "genki-sushi-salmon-nigiri",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Salmon Nigiri Sushi"
+    },
+    {
+      "idx": 29,
+      "slug": "genki-sushi-aburi-salmon-mentai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sushi Mentai Salmon Sushi"
+    },
+    {
+      "idx": 30,
+      "slug": "genki-sushi-tamago-nigiri",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tamago Nigiri Sushi"
+    },
+    {
+      "idx": 31,
+      "slug": "genki-sushi-ramen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 32,
+      "slug": "kura-sushi-salmon-nigiri",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Salmon Nigiri Sushi"
+    },
+    {
+      "idx": 33,
+      "slug": "kura-sushi-tuna-nigiri",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tuna Nigiri Sushi"
+    },
+    {
+      "idx": 34,
+      "slug": "kura-sushi-shoyu-ramen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Shoyu Ramen"
+    },
+    {
+      "idx": 35,
+      "slug": "sushiro-aburi-salmon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sushiro Salmon Nigiri"
+    },
+    {
+      "idx": 36,
+      "slug": "sushiro-fatty-tuna-nigiri",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tuna Nigiri Sushi"
+    },
+    {
+      "idx": 37,
+      "slug": "sushiro-tamago-nigiri",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tamago Nigiri Sushi"
+    },
+    {
+      "idx": 38,
+      "slug": "ichiban-boshi-chirashi-don",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chirashi Don"
+    },
+    {
+      "idx": 39,
+      "slug": "ichiban-boshi-salmon-teriyaki-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 40,
+      "slug": "ichiban-boshi-ebi-tempura-udon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 41,
+      "slug": "watami-chicken-karaage",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 42,
+      "slug": "watami-gyu-sukiyaki-nabe",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 43,
+      "slug": "watami-grilled-saba",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 44,
+      "slug": "watami-yakitori-skewers",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 45,
+      "slug": "ippudo-hakata-gyoza",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 46,
+      "slug": "ippudo-tsukemen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tsukemen"
+    },
+    {
+      "idx": 47,
+      "slug": "ichiran-kaedama",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 48,
+      "slug": "marugame-kamaage-udon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kamaage Udon"
+    },
+    {
+      "idx": 49,
+      "slug": "marugame-curry-udon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Curry Udon"
+    },
+    {
+      "idx": 50,
+      "slug": "marugame-ontama-bukkake-udon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 51,
+      "slug": "marugame-ebi-tempura",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Marugame Chikuwa Tempura"
+    },
+    {
+      "idx": 52,
+      "slug": "marugame-chikuwa-tempura",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Marugame Ebi Tempura"
+    },
+    {
+      "idx": 53,
+      "slug": "yoshinoya-chicken-teriyaki-don",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chicken Teriyaki Don"
+    },
+    {
+      "idx": 54,
+      "slug": "yoshinoya-curry-gyudon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Yoshinoya Gyudon"
+    },
+    {
+      "idx": 55,
+      "slug": "sukiya-cheese-gyudon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sukiya Gyudon"
+    },
+    {
+      "idx": 56,
+      "slug": "sukiya-curry-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 57,
+      "slug": "mos-burger-spicy-mos-burger",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "MOS Burger Rice Burger"
+    },
+    {
+      "idx": 58,
+      "slug": "mos-burger-ebi-katsu-burger",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 59,
+      "slug": "mos-burger-onion-rings",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "BURGER KING, Onion Rings"
+    },
+    {
+      "idx": 60,
+      "slug": "mos-burger-french-fries",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "BURGER KING, french fries"
+    },
+    {
+      "idx": 61,
+      "slug": "pepper-lunch-salmon-pepper-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pepper Lunch Beef Pepper Rice"
+    },
+    {
+      "idx": 62,
+      "slug": "pepper-lunch-chicken-pepper-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pepper Lunch Beef Pepper Rice"
+    },
+    {
+      "idx": 63,
+      "slug": "pepper-lunch-curry-beef-pepper-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pepper Lunch Beef Pepper Rice"
+    },
+    {
+      "idx": 64,
+      "slug": "pepper-lunch-hamburg-pepper-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pepper Lunch Beef Pepper Rice"
+    },
+    {
+      "idx": 65,
+      "slug": "gyu-kaku-karubi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Gyu-Kaku Gyutan"
+    },
+    {
+      "idx": 66,
+      "slug": "gyu-kaku-gyutan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Gyu-Kaku Karubi"
+    },
+    {
+      "idx": 67,
+      "slug": "gyu-kaku-bibimbap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bibimbap"
+    },
+    {
+      "idx": 68,
+      "slug": "gyu-kaku-garlic-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 69,
+      "slug": "rakuzen-bara-chirashi-don",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bara Chirashi"
+    },
+    {
+      "idx": 70,
+      "slug": "coco-ichibanya-beef-curry",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "CoCo Ichibanya Seafood Curry"
+    },
+    {
+      "idx": 71,
+      "slug": "coco-ichibanya-omelette-curry",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "CoCo Ichibanya Beef Curry"
+    },
+    {
+      "idx": 72,
+      "slug": "coco-ichibanya-seafood-curry",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "CoCo Ichibanya Beef Curry"
+    },
+    {
+      "idx": 73,
+      "slug": "ootoya-saba-shioyaki-teishoku",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 74,
+      "slug": "ootoya-kaisen-don",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 75,
+      "slug": "tenya-ebi-tendon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tenya Tendon"
+    },
+    {
+      "idx": 76,
+      "slug": "tenya-tempura-soba-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tempura Soba"
+    },
+    {
+      "idx": 77,
+      "slug": "katsuya-rosu-katsu-teishoku",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 78,
+      "slug": "katsuya-katsu-curry",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 79,
+      "slug": "sushi-zanmai-chirashi-don",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sushi King Chirashi Don"
+    },
+    {
+      "idx": 80,
+      "slug": "sushi-zanmai-unagi-don",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sushi King Unagi Don"
+    },
+    {
+      "idx": 81,
+      "slug": "sushi-zanmai-tuna-sashimi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tuna Sashimi"
+    },
+    {
+      "idx": 82,
+      "slug": "menya-musashi-black-ramen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Menya Musashi Red Ramen"
+    },
+    {
+      "idx": 83,
+      "slug": "menya-musashi-red-ramen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Menya Musashi Black Ramen"
+    },
+    {
+      "idx": 84,
+      "slug": "menya-musashi-white-ramen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Menya Musashi Red Ramen"
+    },
+    {
+      "idx": 85,
+      "slug": "menya-musashi-tsukemen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Menya Musashi Red Ramen"
+    },
+    {
+      "idx": 86,
+      "slug": "seirock-ya-tonkotsu-ramen",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tonkotsu Ramen"
+    },
+    {
+      "idx": 87,
+      "slug": "seirock-ya-chashu-don",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 88,
+      "slug": "ma-maison-rosu-katsu-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ma Maison Hire Katsu Set"
+    },
+    {
+      "idx": 89,
+      "slug": "ma-maison-hire-katsu-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ma Maison Rosu Katsu Set"
+    },
+    {
+      "idx": 90,
+      "slug": "seoul-garden-bbq-chicken-plate",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 91,
+      "slug": "seoul-garden-beef-bulgogi-plate",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 92,
+      "slug": "seoul-garden-steamboat-bowl",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 93,
+      "slug": "seoul-garden-buffet-one-person",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 94,
+      "slug": "daorae-dwaeji-galbi-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Dwaeji Galbi"
+    },
+    {
+      "idx": 95,
+      "slug": "daorae-haemul-pajeon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Haemul Pajeon"
+    },
+    {
+      "idx": 96,
+      "slug": "sae-ma-eul-yeoltan-bulgogi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 97,
+      "slug": "sae-ma-eul-doenjang-jjigae",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Doenjang Jjigae"
+    },
+    {
+      "idx": 98,
+      "slug": "bulgogi-brothers-woo-samgyup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 99,
+      "slug": "bulgogi-brothers-bulgogi-bibimbap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bulgogi Brothers Japchae"
+    },
+    {
+      "idx": 100,
+      "slug": "bulgogi-brothers-japchae",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bulgogi Brothers Bulgogi Bibimbap"
+    },
+    {
+      "idx": 101,
+      "slug": "yoogane-chicken-galbi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Yoogane Cheese Chicken Galbi"
+    },
+    {
+      "idx": 102,
+      "slug": "yoogane-cheese-chicken-galbi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Yoogane Chicken Galbi"
+    },
+    {
+      "idx": 103,
+      "slug": "yoogane-bokkeumbap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 104,
+      "slug": "jinjja-chicken-yangnyeom-boneless",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "BBQ Chicken Yangnyeom"
+    },
+    {
+      "idx": 105,
+      "slug": "jinjja-chicken-bulgogi-rice-bowl",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 106,
+      "slug": "nol-ja-soy-garlic-chicken",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bonchon Chicken Soy Garlic"
+    },
+    {
+      "idx": 107,
+      "slug": "kong-kitchen-kimchi-jjigae-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kimchi Jjigae"
+    },
+    {
+      "idx": 108,
+      "slug": "dubu-story-sundubu-jjigae-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sundubu Jjigae"
+    },
+    {
+      "idx": 109,
+      "slug": "oiso-bibimbap",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bibimbap"
+    },
+    {
+      "idx": 110,
+      "slug": "oiso-kimchi-fried-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kimchi Fried Rice"
+    },
+    {
+      "idx": 111,
+      "slug": "gyu-nikuya-buffet-one-person",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 112,
+      "slug": "ssam-korean-bbq-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Daorae Korean BBQ Set"
+    },
+    {
+      "idx": 113,
+      "slug": "chir-chir-sconefries",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 114,
+      "slug": "kyochon-salsal-boneless-chicken",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 115,
+      "slug": "bhc-cheeseling-chicken",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 116,
+      "slug": "nene-swicy-chicken",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nene Snow Cheese Chicken"
+    },
+    {
+      "idx": 117,
+      "slug": "mom-s-touch-cajun-fries",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mom's Touch Fried Chicken"
+    },
+    {
+      "idx": 118,
+      "slug": "isaac-toast-bacon-cheese",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Isaac Toast Ham Cheese"
+    },
+    {
+      "idx": 119,
+      "slug": "isaac-toast-sweet-potato",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Isaac Toast Potato"
+    },
+    {
+      "idx": 120,
+      "slug": "paris-baguette-milk-cream-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 121,
+      "slug": "paris-baguette-potato-croquette",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 122,
+      "slug": "tous-les-jours-garlic-bread",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cream Cheese Garlic Bread"
+    },
+    {
+      "idx": 123,
+      "slug": "tous-les-jours-cream-cheese-bun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cream Cheese Garlic Bread"
+    },
+    {
+      "idx": 124,
+      "slug": "din-tai-fung-truffle-xiao-long-bao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Din Tai Fung Xiao Long Bao"
+    },
+    {
+      "idx": 125,
+      "slug": "din-tai-fung-shrimp-fried-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Din Tai Fung Pork Chop Fried Rice"
+    },
+    {
+      "idx": 126,
+      "slug": "din-tai-fung-sesame-sauce-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 127,
+      "slug": "din-tai-fung-vegetable-dumplings",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 128,
+      "slug": "tim-ho-wan-siu-mai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 129,
+      "slug": "tim-ho-wan-steamed-beef-ball",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 130,
+      "slug": "tim-ho-wan-lotus-leaf-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 131,
+      "slug": "tim-ho-wan-tonic-medlar-cake",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 132,
+      "slug": "crystal-jade-dan-dan-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Crystal Jade Zhajiang Mian"
+    },
+    {
+      "idx": 133,
+      "slug": "crystal-jade-zhajiang-mian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Crystal Jade Dan Dan Mian"
+    },
+    {
+      "idx": 134,
+      "slug": "canton-i-wanton-noodle",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 135,
+      "slug": "canton-i-prawn-wanton-soup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Wanton Soup"
+    },
+    {
+      "idx": 136,
+      "slug": "canton-i-beef-hor-fun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Beef Hor Fun"
+    },
+    {
+      "idx": 137,
+      "slug": "dragon-i-xiao-long-bao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Xiao Long Bao"
+    },
+    {
+      "idx": 138,
+      "slug": "dragon-i-la-mian-with-beef-brisket",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Dragon-i La Mian"
+    },
+    {
+      "idx": 139,
+      "slug": "dragon-i-sheng-jian-bao",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sheng Jian Bao"
+    },
+    {
+      "idx": 140,
+      "slug": "nam-heong-ipoh-chicken-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ipoh Steamed Chicken Rice"
+    },
+    {
+      "idx": 141,
+      "slug": "nam-heong-ipoh-white-coffee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 142,
+      "slug": "nam-heong-curry-mee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Curry Mee"
+    },
+    {
+      "idx": 143,
+      "slug": "oldtown-ipoh-hor-fun",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 144,
+      "slug": "wong-kok-cheese-baked-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cheese Baked Rice"
+    },
+    {
+      "idx": 145,
+      "slug": "wong-kok-hong-kong-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Hong Kong Milk Tea"
+    },
+    {
+      "idx": 146,
+      "slug": "wong-kok-luncheon-meat-noodles",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Instant Noodles with Luncheon Meat"
+    },
+    {
+      "idx": 147,
+      "slug": "ah-cheng-laksa-asam-laksa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ah Cheng Laksa Curry Laksa"
+    },
+    {
+      "idx": 148,
+      "slug": "ah-cheng-laksa-curry-laksa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ah Cheng Laksa Asam Laksa"
+    },
+    {
+      "idx": 149,
+      "slug": "sheng-kee-mango-sago-pomelo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mango Sago Pomelo"
+    },
+    {
+      "idx": 150,
+      "slug": "sheng-kee-black-sesame-paste",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 1,
+      "slug": "tsui-wah-hong-kong-milk-tea",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Hong Kong Milk Tea"
+    },
+    {
+      "idx": 2,
+      "slug": "tsui-wah-fish-ball-noodle-soup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Fish Ball Noodle Soup"
+    },
+    {
+      "idx": 3,
+      "slug": "putien-lor-mee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Lor Mee"
+    },
+    {
+      "idx": 4,
+      "slug": "putien-fried-heng-hua-bee-hoon",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 5,
+      "slug": "putien-yanpi-soup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "paradise-dynasty-kung-pao-chicken",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kung pao chicken"
+    },
+    {
+      "idx": 7,
+      "slug": "paradise-dynasty-prawn-fried-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 8,
+      "slug": "beauty-in-the-pot-collagen-broth",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Beauty in the Pot Mala Broth"
+    },
+    {
+      "idx": 9,
+      "slug": "beauty-in-the-pot-mala-broth",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Beauty in the Pot Collagen Broth"
+    },
+    {
+      "idx": 10,
+      "slug": "beauty-in-the-pot-handmade-meatball",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 11,
+      "slug": "hong-tang-grass-jelly-dessert-bowl",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Grass Jelly Dessert"
+    },
+    {
+      "idx": 12,
+      "slug": "hong-tang-taro-ball-dessert",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 13,
+      "slug": "dian-xiao-er-herbal-roast-duck",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 14,
+      "slug": "dian-xiao-er-yam-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 15,
+      "slug": "super-kitchen-chilli-pan-mee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Super Kitchen Soup Pan Mee"
+    },
+    {
+      "idx": 16,
+      "slug": "super-kitchen-soup-pan-mee",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Super Kitchen Chilli Pan Mee"
+    },
+    {
+      "idx": 17,
+      "slug": "jollibee-aloha-yumburger",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Jollibee Yumburger"
+    },
+    {
+      "idx": 18,
+      "slug": "jollibee-chocolate-sundae",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 19,
+      "slug": "chowking-chicken-lauriat",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 20,
+      "slug": "chowking-buchi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 21,
+      "slug": "mang-inasal-pork-bbq-skewer",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 22,
+      "slug": "nando-s-half-chicken",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nando's Whole Chicken"
+    },
+    {
+      "idx": 23,
+      "slug": "nando-s-chicken-butterfly-burger",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 24,
+      "slug": "nando-s-spicy-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 25,
+      "slug": "nando-s-macho-peas",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 26,
+      "slug": "boat-noodle-tom-yum-noodle-bowl",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Boat Noodle Bowl"
+    },
+    {
+      "idx": 27,
+      "slug": "boat-noodle-grilled-pork-skewer",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 28,
+      "slug": "boat-noodle-pandan-chicken",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 29,
+      "slug": "absolute-thai-pineapple-fried-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 30,
+      "slug": "sanook-kitchen-basil-chicken-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 31,
+      "slug": "nakhonkitchen-green-curry-chicken",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Green Curry Chicken"
+    },
+    {
+      "idx": 32,
+      "slug": "nakhonkitchen-phad-thai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 33,
+      "slug": "pho-vietz-beef-pho",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pho Vietz Banh Mi"
+    },
+    {
+      "idx": 34,
+      "slug": "pho-vietz-banh-mi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pho Vietz Beef Pho"
+    },
+    {
+      "idx": 35,
+      "slug": "vietnam-kitchen-bun-cha",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 36,
+      "slug": "saigon-recipe-broken-rice-with-pork",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 37,
+      "slug": "kluang-station-roti-bakar-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 38,
+      "slug": "village-park-nasi-lemak-ayam-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Lemak Ayam Goreng"
+    },
+    {
+      "idx": 39,
+      "slug": "sri-nirwana-banana-leaf-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Banana Leaf Rice"
+    },
+    {
+      "idx": 40,
+      "slug": "line-clear-nasi-kandar-ayam-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Kandar Pelita Ayam Goreng"
+    },
+    {
+      "idx": 41,
+      "slug": "kayu-nasi-kandar-roti-canai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Kandar Pelita Roti Canai"
+    },
+    {
+      "idx": 42,
+      "slug": "kayu-nasi-kandar-nasi-beriani",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Kandar"
+    },
+    {
+      "idx": 43,
+      "slug": "sri-paandi-banana-leaf-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 44,
+      "slug": "mama-kim-sup-tulang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sup Tulang"
+    },
+    {
+      "idx": 45,
+      "slug": "myburgerlab-beauty-and-the-beef",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 46,
+      "slug": "myburgerlab-sweet-potato-fries",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sweet potato fries, NFS"
+    },
+    {
+      "idx": 47,
+      "slug": "marrybrown-nasi-lemak-mb",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Marrybrown Nasi Ayam MB"
+    },
+    {
+      "idx": 48,
+      "slug": "saravana-bhavan-ghee-masala-dosa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 49,
+      "slug": "ponnusamy-chettinad-chicken",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chettinad Pepper Chicken"
+    },
+    {
+      "idx": 50,
+      "slug": "ponnusamy-mutton-kuzhambu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 51,
+      "slug": "bikanervala-chole-bhature",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Chole Bhature"
+    },
+    {
+      "idx": 52,
+      "slug": "bikanervala-rasgulla",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 53,
+      "slug": "barbeque-nation-buffet-one-person",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 54,
+      "slug": "barbeque-nation-chicken-tikka",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 55,
+      "slug": "wow-momo-fried-momo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 56,
+      "slug": "wow-momo-tandoori-momo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 57,
+      "slug": "passions-of-kerala-fish-curry-meal",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kerala Fish Curry"
+    },
+    {
+      "idx": 58,
+      "slug": "kanna-curry-house-banana-leaf-rice",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 59,
+      "slug": "raju-s-chicken-varuval",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 60,
+      "slug": "sangeetha-masala-dosa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 61,
+      "slug": "sangeetha-idli-sambar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Idli Sambar Set"
+    },
+    {
+      "idx": 62,
+      "slug": "suki-ya-shabu-shabu-buffet",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 63,
+      "slug": "yakiniku-like-beef-set",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "HokBen Beef Yakiniku Set"
+    }
+  ]
+}

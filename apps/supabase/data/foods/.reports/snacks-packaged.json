@@ -1,0 +1,92 @@
+{
+  "tally": {
+    "inserted": 12
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "cheezels-cheesy-cheese",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 2,
+      "slug": "jack-n-jill-roller-coaster-hot-and-spicy",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 3,
+      "slug": "snek-ku-keropok-perisa-bawang-biji-cili",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 4,
+      "slug": "snek-ku-keropok-perisa-ayam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 5,
+      "slug": "snek-ku-keropok-perisa-ketam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "keropok-udang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Prawn Crackers (Keropok Udang)"
+    },
+    {
+      "idx": 7,
+      "slug": "tong-garden-kuaci-biji-bunga-matahari",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 8,
+      "slug": "kuaci-biji-tembikai",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 9,
+      "slug": "kacang-tumbuk",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 10,
+      "slug": "white-rabbit-creamy-candy",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 11,
+      "slug": "sotong-kering-snek",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 12,
+      "slug": "sotong-kering",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kerabu Sotong"
+    }
+  ]
+}

@@ -1,0 +1,2098 @@
+{
+  "source": "research:chinese-dishes",
+  "foods": [
+    {
+      "name": "Dry Bak Kut Teh",
+      "place": "hawker",
+      "serving": "1 claypot",
+      "kcal": 545,
+      "carbs_g": 12,
+      "protein_g": 38,
+      "fat_g": 38,
+      "aliases": [
+        "dry bkt",
+        "gan bak kut teh",
+        "干肉骨茶",
+        "bak kut teh kering",
+        "dry pork rib claypot",
+        "klang dry bak kut teh"
+      ],
+      "icon": "dishes/bak-kut-teh",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Herbal Bak Kut Teh",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 420,
+      "carbs_g": 10,
+      "protein_g": 34,
+      "fat_g": 27,
+      "aliases": [
+        "herbal bkt",
+        "black bak kut teh",
+        "药材肉骨茶",
+        "hokkien bak kut teh",
+        "bak kut teh herba",
+        "pork rib herbal soup"
+      ],
+      "icon": "dishes/bak-kut-teh",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chicken Bak Kut Teh",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 300,
+      "carbs_g": 8,
+      "protein_g": 32,
+      "fat_g": 15,
+      "aliases": ["chik kut teh", "chicken bkt", "鸡骨茶", "bak kut teh ayam", "halal bak kut teh"],
+      "icon": "dishes/bak-kut-teh",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Yau Char Kwai",
+      "place": "hawker",
+      "serving": "2 pieces",
+      "kcal": 220,
+      "carbs_g": 24,
+      "protein_g": 4,
+      "fat_g": 12,
+      "aliases": [
+        "you char kway",
+        "yau char kuih",
+        "cakoi",
+        "油炸鬼",
+        "油条",
+        "chinese cruller",
+        "chinese doughnut stick",
+        "yu char kway"
+      ],
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chicken Rice Ball",
+      "place": "hawker",
+      "serving": "3 balls",
+      "kcal": 258,
+      "carbs_g": 42,
+      "protein_g": 4,
+      "fat_g": 8,
+      "aliases": [
+        "nasi ayam bola",
+        "melaka chicken rice ball",
+        "鸡饭粒",
+        "chicken rice balls",
+        "malacca rice ball"
+      ],
+      "icon": "dishes/chicken-rice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Hainanese Steamed Chicken",
+      "place": "hawker",
+      "serving": "1/4 chicken",
+      "kcal": 380,
+      "carbs_g": 0,
+      "protein_g": 34,
+      "fat_g": 27,
+      "aliases": [
+        "pak cham kai",
+        "white cut chicken",
+        "白斩鸡",
+        "steamed chicken hainanese",
+        "ayam kukus hainan",
+        "poached chicken chicken rice"
+      ],
+      "icon": "food/roast-chicken",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Roast Chicken, Chinese Style",
+      "place": "hawker",
+      "serving": "1/4 chicken",
+      "kcal": 420,
+      "carbs_g": 2,
+      "protein_g": 33,
+      "fat_g": 31,
+      "aliases": [
+        "siew kai",
+        "烧鸡",
+        "roasted chicken chicken rice",
+        "ayam panggang cina",
+        "chinese roast chicken quarter"
+      ],
+      "icon": "food/roast-chicken",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Soy Sauce Chicken",
+      "place": "hawker",
+      "serving": "1/4 chicken",
+      "kcal": 400,
+      "carbs_g": 6,
+      "protein_g": 33,
+      "fat_g": 27,
+      "aliases": [
+        "see yau kai",
+        "si yau kai",
+        "豉油鸡",
+        "ayam kicap cina",
+        "soya sauce chicken",
+        "soy chicken"
+      ],
+      "icon": "food/roast-chicken",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chicken Rice, Rice Only",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 328,
+      "carbs_g": 55,
+      "protein_g": 6,
+      "fat_g": 9,
+      "aliases": [
+        "nasi ayam kosong",
+        "chicken rice rice",
+        "鸡油饭",
+        "oily rice",
+        "hainanese rice",
+        "chicken flavoured rice"
+      ],
+      "icon": "food/rice-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chicken Rice Chilli Sauce",
+      "place": "hawker",
+      "serving": "1 tablespoon",
+      "kcal": 30,
+      "carbs_g": 2,
+      "protein_g": 0.4,
+      "fat_g": 2.2,
+      "aliases": [
+        "chilli sauce chicken rice",
+        "sos cili nasi ayam",
+        "鸡饭辣椒",
+        "garlic chilli sauce",
+        "chicken rice chili"
+      ],
+      "icon": "food/chilli",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chicken Rice Soup",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 44,
+      "carbs_g": 3,
+      "protein_g": 3,
+      "fat_g": 2,
+      "aliases": [
+        "sup nasi ayam",
+        "chicken rice broth",
+        "鸡饭汤",
+        "clear chicken soup chicken rice"
+      ],
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Char Siew",
+      "place": "hawker",
+      "serving": "1 serving (100 g)",
+      "kcal": 250,
+      "carbs_g": 9,
+      "protein_g": 20,
+      "fat_g": 15,
+      "aliases": [
+        "char siu",
+        "cha siu",
+        "叉烧",
+        "barbecued pork",
+        "bbq pork chinese",
+        "char siew meat",
+        "chasiu",
+        "char shao"
+      ],
+      "icon": "dishes/char-siu-rice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Siew Yoke",
+      "place": "hawker",
+      "serving": "1 serving (100 g)",
+      "kcal": 398,
+      "carbs_g": 1,
+      "protein_g": 17,
+      "fat_g": 36,
+      "aliases": [
+        "siu yuk",
+        "siew yok",
+        "烧肉",
+        "roast pork belly",
+        "crispy roast pork",
+        "chinese crispy pork",
+        "babi panggang rangup"
+      ],
+      "icon": "food/pork-belly",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Roast Duck",
+      "place": "hawker",
+      "serving": "1/4 duck",
+      "kcal": 480,
+      "carbs_g": 2,
+      "protein_g": 33,
+      "fat_g": 38,
+      "aliases": [
+        "siew ngap",
+        "siu ap",
+        "烧鸭",
+        "itik panggang",
+        "roasted duck quarter",
+        "cantonese roast duck"
+      ],
+      "icon": "dishes/roast-duck-rice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Braised Duck",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 320,
+      "carbs_g": 4,
+      "protein_g": 26,
+      "fat_g": 22,
+      "aliases": [
+        "lor ark",
+        "lor ap",
+        "卤鸭",
+        "teochew braised duck",
+        "itik masak kicap",
+        "braised duck meat"
+      ],
+      "icon": "dishes/roast-duck-rice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Siew Yoke Fan",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 690,
+      "carbs_g": 78,
+      "protein_g": 26,
+      "fat_g": 30,
+      "aliases": [
+        "roast pork rice",
+        "siu yuk fan",
+        "烧肉饭",
+        "nasi babi panggang",
+        "crispy pork belly rice"
+      ],
+      "icon": "food/plate-rice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Siew Lap Fan",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 740,
+      "carbs_g": 78,
+      "protein_g": 34,
+      "fat_g": 32,
+      "aliases": [
+        "mixed roast meat rice",
+        "siu laap fan",
+        "烧腊饭",
+        "roast meat rice",
+        "char siew and siew yoke rice",
+        "combination roast rice"
+      ],
+      "icon": "food/plate-rice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Soy Sauce Chicken Rice",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 605,
+      "carbs_g": 80,
+      "protein_g": 30,
+      "fat_g": 18,
+      "aliases": ["see yau kai fan", "豉油鸡饭", "soya sauce chicken rice", "nasi ayam kicap cina"],
+      "icon": "dishes/chicken-rice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Penang Chee Cheong Fun",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 298,
+      "carbs_g": 52,
+      "protein_g": 6,
+      "fat_g": 7,
+      "aliases": [
+        "chee cheong fun hae ko",
+        "猪肠粉",
+        "prawn paste rice roll",
+        "penang ccf",
+        "chee cheong fun with shrimp paste"
+      ],
+      "icon": "dishes/chee-cheong-fun",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Har Cheong Fun",
+      "place": "hawker",
+      "serving": "3 rolls",
+      "kcal": 240,
+      "carbs_g": 34,
+      "protein_g": 12,
+      "fat_g": 6,
+      "aliases": [
+        "prawn rice roll",
+        "虾肠粉",
+        "steamed rice roll with prawn",
+        "hong kong chee cheong fun",
+        "har cheung fun"
+      ],
+      "icon": "dishes/chee-cheong-fun",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Stuffed Tofu, Yong Tau Foo",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 60,
+      "carbs_g": 3,
+      "protein_g": 5,
+      "fat_g": 3,
+      "aliases": [
+        "yong tau foo tofu",
+        "tauhu sumbat",
+        "酿豆腐",
+        "stuffed beancurd",
+        "ytf tofu",
+        "yong tau fu tofu piece"
+      ],
+      "icon": "dishes/yong-tau-foo",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Stuffed Bitter Gourd, Yong Tau Foo",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 46,
+      "carbs_g": 3,
+      "protein_g": 4,
+      "fat_g": 2,
+      "aliases": [
+        "yong tau foo bitter gourd",
+        "peria sumbat",
+        "酿苦瓜",
+        "ytf bittergourd",
+        "stuffed peria"
+      ],
+      "icon": "dishes/yong-tau-foo",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Stuffed Brinjal, Yong Tau Foo",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 55,
+      "carbs_g": 3,
+      "protein_g": 4,
+      "fat_g": 3,
+      "aliases": [
+        "yong tau foo brinjal",
+        "terung sumbat",
+        "酿茄子",
+        "stuffed eggplant ytf",
+        "stuffed aubergine yong tau foo"
+      ],
+      "icon": "dishes/yong-tau-foo",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Stuffed Chilli, Yong Tau Foo",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 51,
+      "carbs_g": 2,
+      "protein_g": 4,
+      "fat_g": 3,
+      "aliases": [
+        "yong tau foo chilli",
+        "cili sumbat",
+        "酿辣椒",
+        "stuffed chili ytf",
+        "stuffed green chilli"
+      ],
+      "icon": "dishes/yong-tau-foo",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Fu Chuk Roll",
+      "place": "hawker",
+      "serving": "1 roll",
+      "kcal": 90,
+      "carbs_g": 3,
+      "protein_g": 6,
+      "fat_g": 6,
+      "aliases": [
+        "foo chuk",
+        "beancurd skin roll",
+        "腐竹卷",
+        "tauhu kembang roll",
+        "bean curd skin roll yong tau foo",
+        "fu jook roll"
+      ],
+      "icon": "food/fried-tofu-puff",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sar Kok Liew",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 112,
+      "carbs_g": 9,
+      "protein_g": 4,
+      "fat_g": 7,
+      "aliases": [
+        "sar kok liu",
+        "沙葛柳",
+        "fried yam bean roll",
+        "sengkuang roll",
+        "ampang sar kok liew",
+        "fried bangkuang roll"
+      ],
+      "icon": "dishes/yong-tau-foo",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ampang Yong Tau Foo",
+      "place": "hawker",
+      "serving": "1 bowl (8 pieces)",
+      "kcal": 420,
+      "carbs_g": 24,
+      "protein_g": 26,
+      "fat_g": 24,
+      "aliases": [
+        "ampang ytf",
+        "安邦酿豆腐",
+        "braised yong tau foo",
+        "yong tau foo with sauce",
+        "ampang yong tau fu"
+      ],
+      "icon": "dishes/yong-tau-foo",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Fried Fish Ball",
+      "place": "hawker",
+      "serving": "5 pieces",
+      "kcal": 150,
+      "carbs_g": 8,
+      "protein_g": 12,
+      "fat_g": 8,
+      "aliases": [
+        "bebola ikan goreng",
+        "炸鱼丸",
+        "fried fishball",
+        "deep fried fish ball",
+        "fishball goreng"
+      ],
+      "icon": "food/fish-ball",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Claypot Tofu",
+      "place": "hawker",
+      "serving": "1 claypot",
+      "kcal": 380,
+      "carbs_g": 18,
+      "protein_g": 24,
+      "fat_g": 24,
+      "aliases": [
+        "claypot taufu",
+        "煲仔豆腐",
+        "tauhu claypot",
+        "braised beancurd claypot",
+        "clay pot tofu",
+        "tofu pot"
+      ],
+      "icon": "food/tofu",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Steamboat",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 595,
+      "carbs_g": 30,
+      "protein_g": 45,
+      "fat_g": 32,
+      "aliases": [
+        "hot pot",
+        "火锅",
+        "chinese hotpot",
+        "shabu shabu chinese",
+        "steam boat",
+        "lok lok pot"
+      ],
+      "icon": "food/cooking-pot",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kung Po Chicken",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 230,
+      "carbs_g": 8,
+      "protein_g": 15,
+      "fat_g": 15,
+      "aliases": [
+        "kung pao chicken",
+        "gong bao chicken",
+        "宫保鸡丁",
+        "ayam kung pao",
+        "kungpao chicken",
+        "kung pow chicken"
+      ],
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Gu Lou Yuk",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 280,
+      "carbs_g": 24,
+      "protein_g": 12,
+      "fat_g": 15,
+      "aliases": [
+        "sweet and sour pork",
+        "咕噜肉",
+        "gu lou yoke",
+        "sweet sour pork",
+        "babi masam manis",
+        "koo loo yoke"
+      ],
+      "icon": "food/pork-belly",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Fu Yong Egg",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 180,
+      "carbs_g": 4,
+      "protein_g": 11,
+      "fat_g": 13,
+      "aliases": [
+        "foo yong egg",
+        "fu yung hai",
+        "芙蓉蛋",
+        "egg foo young",
+        "telur fu yong",
+        "omelette chinese fu yong"
+      ],
+      "icon": "food/omelette",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Marmite Chicken",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 260,
+      "carbs_g": 14,
+      "protein_g": 17,
+      "fat_g": 15,
+      "aliases": [
+        "ayam marmite",
+        "妈蜜鸡",
+        "marmite chicken chinese",
+        "vegemite chicken",
+        "marmite fried chicken"
+      ],
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Salted Egg Chicken",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 300,
+      "carbs_g": 14,
+      "protein_g": 18,
+      "fat_g": 19,
+      "aliases": [
+        "ayam telur masin",
+        "咸蛋鸡",
+        "salted egg yolk chicken",
+        "salted egg fried chicken",
+        "kam dan gai"
+      ],
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ginger Duck",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 270,
+      "carbs_g": 5,
+      "protein_g": 20,
+      "fat_g": 19,
+      "aliases": [
+        "itik halia",
+        "姜鸭",
+        "jiang ya",
+        "ginger duck claypot",
+        "duck with ginger",
+        "keong ap"
+      ],
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Tau Yew Bak",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 320,
+      "carbs_g": 4,
+      "protein_g": 15,
+      "fat_g": 27,
+      "aliases": [
+        "tau yu bak",
+        "豆油肉",
+        "braised pork belly soy sauce",
+        "babi masak kicap",
+        "lor bak hokkien braised",
+        "soy braised pork"
+      ],
+      "icon": "food/pork-belly",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kam Heong Lala",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 260,
+      "carbs_g": 10,
+      "protein_g": 22,
+      "fat_g": 15,
+      "aliases": [
+        "lala kam heong",
+        "金香啦啦",
+        "golden fragrance clams",
+        "kam heong clams",
+        "lala goreng kam heong"
+      ],
+      "icon": "food/cockles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Three Cup Chicken",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 290,
+      "carbs_g": 10,
+      "protein_g": 22,
+      "fat_g": 18,
+      "aliases": ["san bei ji", "三杯鸡", "ayam tiga cawan", "3 cup chicken", "sam pui kai"],
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ma Po Tofu",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 210,
+      "carbs_g": 6,
+      "protein_g": 13,
+      "fat_g": 15,
+      "aliases": [
+        "mapo tofu",
+        "麻婆豆腐",
+        "mapo taufu",
+        "tauhu ma po",
+        "mabo tofu",
+        "spicy minced pork tofu"
+      ],
+      "icon": "food/tofu",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Taugeh Chicken",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 330,
+      "carbs_g": 10,
+      "protein_g": 32,
+      "fat_g": 18,
+      "aliases": [
+        "nga choy kai",
+        "芽菜鸡",
+        "ipoh bean sprout chicken",
+        "ayam taugeh",
+        "bean sprout chicken",
+        "sitiawan taugeh chicken"
+      ],
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Stir-fried Vegetables with Garlic",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 90,
+      "carbs_g": 6,
+      "protein_g": 3,
+      "fat_g": 6,
+      "aliases": [
+        "sayur goreng bawang putih",
+        "蒜蓉炒菜",
+        "garlic fried vegetables",
+        "stir fry greens",
+        "sayur campur cina",
+        "fried vegetable economy rice"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Choy Sum with Oyster Sauce",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 85,
+      "carbs_g": 6,
+      "protein_g": 3,
+      "fat_g": 5.5,
+      "aliases": [
+        "sawi sos tiram",
+        "蚝油菜心",
+        "choi sum oyster sauce",
+        "blanched choy sum",
+        "kai lan oyster sauce"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Braised Cabbage, Chap Chai",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 112,
+      "carbs_g": 9,
+      "protein_g": 4,
+      "fat_g": 7,
+      "aliases": [
+        "chap chye",
+        "杂菜",
+        "braised mixed vegetables",
+        "kobis masak cina",
+        "chap chai economy rice",
+        "nyonya chap chai"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Har Cheong Gai",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 280,
+      "carbs_g": 10,
+      "protein_g": 20,
+      "fat_g": 18,
+      "aliases": [
+        "prawn paste chicken",
+        "虾酱鸡",
+        "har cheong kai",
+        "ayam sos udang",
+        "shrimp paste fried chicken",
+        "har jeong gai"
+      ],
+      "icon": "food/chicken-wing",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Long Beans with Minced Pork",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 140,
+      "carbs_g": 8,
+      "protein_g": 7,
+      "fat_g": 9,
+      "aliases": [
+        "kacang panjang cincang babi",
+        "肉碎长豆",
+        "french beans minced meat",
+        "long bean fried minced pork",
+        "stir fried long beans"
+      ],
+      "icon": "food/green-beans",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Braised Egg in Soy Sauce",
+      "place": "hawker",
+      "serving": "1 egg",
+      "kcal": 85,
+      "carbs_g": 2,
+      "protein_g": 6.5,
+      "fat_g": 5.5,
+      "aliases": [
+        "lou dan",
+        "卤蛋",
+        "telur kicap cina",
+        "soy sauce egg",
+        "braised egg economy rice",
+        "lor egg"
+      ],
+      "icon": "food/boiled-egg",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Steamed Minced Pork with Salted Fish",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 210,
+      "carbs_g": 2,
+      "protein_g": 16,
+      "fat_g": 15,
+      "aliases": [
+        "ham yu jing yuk beng",
+        "咸鱼蒸肉饼",
+        "salted fish minced pork",
+        "steamed pork patty",
+        "babi cincang kukus ikan masin"
+      ],
+      "icon": "food/salted-fish",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Fried Egg, Chinese Style",
+      "place": "hawker",
+      "serving": "1 egg",
+      "kcal": 120,
+      "carbs_g": 0.5,
+      "protein_g": 6.5,
+      "fat_g": 10,
+      "aliases": [
+        "telur mata kerbau",
+        "煎蛋",
+        "sunny side up chinese",
+        "fried egg economy rice",
+        "chien dan"
+      ],
+      "icon": "food/fried-egg",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chinese Steamed Egg",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 110,
+      "carbs_g": 2,
+      "protein_g": 9,
+      "fat_g": 7,
+      "aliases": [
+        "chawan mushi chinese",
+        "蒸水蛋",
+        "steamed egg custard savoury",
+        "telur kukus cina",
+        "jing sui dan"
+      ],
+      "icon": "food/boiled-egg",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Bitter Gourd with Egg",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 150,
+      "carbs_g": 5,
+      "protein_g": 8,
+      "fat_g": 11,
+      "aliases": [
+        "peria goreng telur",
+        "苦瓜炒蛋",
+        "fu gua chow dan",
+        "bittergourd omelette",
+        "stir fried bitter gourd egg"
+      ],
+      "icon": "food/omelette",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Nam Yue Fried Pork",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 310,
+      "carbs_g": 12,
+      "protein_g": 17,
+      "fat_g": 22,
+      "aliases": [
+        "char yoke",
+        "南乳炸肉",
+        "fermented beancurd fried pork",
+        "nam yu pork",
+        "hakka char yoke",
+        "red fermented bean curd pork"
+      ],
+      "icon": "food/pork-belly",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Salted Egg Squid",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 345,
+      "carbs_g": 18,
+      "protein_g": 24,
+      "fat_g": 20,
+      "aliases": [
+        "sotong telur masin",
+        "咸蛋苏东",
+        "salted egg sotong",
+        "salted egg yolk calamari",
+        "kam dan sotong"
+      ],
+      "icon": "food/squid-rings",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Fried Chicken Wing, Chinese Style",
+      "place": "hawker",
+      "serving": "1 wing",
+      "kcal": 160,
+      "carbs_g": 2,
+      "protein_g": 12,
+      "fat_g": 12,
+      "aliases": [
+        "sayap ayam goreng cina",
+        "炸鸡翅",
+        "hawker fried chicken wing",
+        "chicken wing economy rice",
+        "kai yik"
+      ],
+      "icon": "food/chicken-wing",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Economy Rice",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 650,
+      "carbs_g": 80,
+      "protein_g": 28,
+      "fat_g": 24,
+      "aliases": [
+        "chap fan",
+        "cai png",
+        "杂饭",
+        "economic rice",
+        "mixed rice chinese",
+        "nasi campur cina",
+        "chye png",
+        "economy rice 3 dishes"
+      ],
+      "icon": "dishes/nasi-campur",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Har Kow",
+      "place": "hawker",
+      "serving": "4 pieces",
+      "kcal": 170,
+      "carbs_g": 20,
+      "protein_g": 12,
+      "fat_g": 5,
+      "aliases": [
+        "har gow",
+        "har gau",
+        "虾饺",
+        "prawn dumpling dim sum",
+        "crystal prawn dumpling",
+        "shrimp dumpling",
+        "ha gao",
+        "har kau"
+      ],
+      "icon": "dishes/dim-sum",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Egg Tart",
+      "place": "kopitiam",
+      "serving": "1 tart",
+      "kcal": 200,
+      "carbs_g": 20,
+      "protein_g": 3,
+      "fat_g": 12,
+      "aliases": [
+        "dan tat",
+        "蛋挞",
+        "tart telur",
+        "chinese egg tart",
+        "custard tart dim sum",
+        "egg custard tart"
+      ],
+      "icon": "food/custard-tart",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Steamed Chicken Feet, Dim Sum",
+      "place": "hawker",
+      "serving": "4 pieces",
+      "kcal": 200,
+      "carbs_g": 2,
+      "protein_g": 14,
+      "fat_g": 15,
+      "aliases": [
+        "fung zao",
+        "phoenix claws",
+        "凤爪",
+        "kaki ayam dim sum",
+        "braised chicken feet",
+        "chicken feet dim sum"
+      ],
+      "icon": "dishes/dim-sum",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Wu Kok",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 190,
+      "carbs_g": 18,
+      "protein_g": 4,
+      "fat_g": 11,
+      "aliases": [
+        "woo kok",
+        "芋角",
+        "yam puff",
+        "deep fried taro puff",
+        "keria keladi dim sum",
+        "yam croquette dim sum"
+      ],
+      "icon": "food/yam",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Loh Bak Go",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 190,
+      "carbs_g": 26,
+      "protein_g": 4,
+      "fat_g": 8,
+      "aliases": [
+        "lo bak go",
+        "萝卜糕",
+        "radish cake",
+        "carrot cake chinese",
+        "kuih lobak",
+        "turnip cake",
+        "chai tow kway"
+      ],
+      "icon": "dishes/dim-sum",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Xiao Long Bao",
+      "place": "hawker",
+      "serving": "4 pieces",
+      "kcal": 210,
+      "carbs_g": 20,
+      "protein_g": 10,
+      "fat_g": 10,
+      "aliases": [
+        "siew long pau",
+        "小笼包",
+        "soup dumpling",
+        "shanghai soup dumpling",
+        "xiaolongbao",
+        "siu long bao"
+      ],
+      "icon": "food/dumpling",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Char Siew Sou",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 220,
+      "carbs_g": 20,
+      "protein_g": 6,
+      "fat_g": 13,
+      "aliases": [
+        "char siu sou",
+        "叉烧酥",
+        "bbq pork pastry",
+        "char siew puff",
+        "barbecued pork puff pastry"
+      ],
+      "icon": "dishes/dim-sum",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Fried Wanton",
+      "place": "hawker",
+      "serving": "3 pieces",
+      "kcal": 180,
+      "carbs_g": 14,
+      "protein_g": 7,
+      "fat_g": 11,
+      "aliases": [
+        "fried wonton",
+        "炸云吞",
+        "wantan goreng",
+        "crispy wanton",
+        "deep fried dumpling",
+        "fried wantan"
+      ],
+      "icon": "food/dumpling",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Lai Wong Bao",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 200,
+      "carbs_g": 30,
+      "protein_g": 5,
+      "fat_g": 7,
+      "aliases": [
+        "lai wong pau",
+        "奶黄包",
+        "custard bun",
+        "steamed custard bao",
+        "pau kastard",
+        "salted egg custard bun"
+      ],
+      "icon": "dishes/pau",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Steamed Pork Ribs with Black Bean",
+      "place": "hawker",
+      "serving": "1 small plate",
+      "kcal": 210,
+      "carbs_g": 3,
+      "protein_g": 16,
+      "fat_g": 15,
+      "aliases": [
+        "pai kuat",
+        "豉汁排骨",
+        "steamed spare ribs dim sum",
+        "tulang babi kukus taucu",
+        "black bean pork ribs"
+      ],
+      "icon": "dishes/dim-sum",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ham Sui Kok",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 175,
+      "carbs_g": 22,
+      "protein_g": 3,
+      "fat_g": 8,
+      "aliases": [
+        "haam sui gok",
+        "咸水角",
+        "fried glutinous rice dumpling",
+        "salty water dumpling",
+        "kuih pulut goreng dim sum"
+      ],
+      "icon": "food/glutinous-rice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ma Lai Ko",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 160,
+      "carbs_g": 24,
+      "protein_g": 3,
+      "fat_g": 6,
+      "aliases": [
+        "ma lai koh",
+        "马拉糕",
+        "malay cake dim sum",
+        "steamed sponge cake chinese",
+        "kuih ma lai kou"
+      ],
+      "icon": "food/cake-slice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Lin Yong Bao",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 240,
+      "carbs_g": 42,
+      "protein_g": 5,
+      "fat_g": 6,
+      "aliases": [
+        "lin yung pau",
+        "莲蓉包",
+        "lotus paste bun",
+        "pau kacang lotus",
+        "lotus seed paste bao"
+      ],
+      "icon": "dishes/pau",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Fried Mantou with Condensed Milk",
+      "place": "hawker",
+      "serving": "2 pieces",
+      "kcal": 296,
+      "carbs_g": 38,
+      "protein_g": 6,
+      "fat_g": 13,
+      "aliases": [
+        "man tou goreng",
+        "馒头",
+        "fried bun condensed milk",
+        "mantou",
+        "deep fried mantou",
+        "roti mantao goreng"
+      ],
+      "icon": "food/bun",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Lei Cha Fan",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 420,
+      "carbs_g": 62,
+      "protein_g": 15,
+      "fat_g": 12,
+      "aliases": [
+        "lui cha",
+        "thunder tea rice",
+        "擂茶饭",
+        "hakka lei cha",
+        "pounded tea rice",
+        "nasi lei cha"
+      ],
+      "icon": "food/rice-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Abacus Seeds",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 380,
+      "carbs_g": 48,
+      "protein_g": 12,
+      "fat_g": 15,
+      "aliases": [
+        "suan pan zi",
+        "算盘子",
+        "hakka abacus seeds",
+        "yam abacus beads",
+        "biji sempoa",
+        "abacus beads"
+      ],
+      "icon": "food/yam",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kiam Chai Boey",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 260,
+      "carbs_g": 7,
+      "protein_g": 20,
+      "fat_g": 17,
+      "aliases": [
+        "kiam chye ark",
+        "咸菜鸭",
+        "salted vegetable duck soup",
+        "sayur asin itik",
+        "chai boey",
+        "kiam chai boy"
+      ],
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Wu Tau Kau Yoke",
+      "place": "home",
+      "serving": "1 serving",
+      "kcal": 430,
+      "carbs_g": 16,
+      "protein_g": 18,
+      "fat_g": 33,
+      "aliases": [
+        "kau yoke",
+        "芋头扣肉",
+        "braised pork belly with yam",
+        "hakka kau yuk",
+        "babi masak keladi",
+        "wu tau kau yuk"
+      ],
+      "icon": "food/pork-belly",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kong Bak Pau",
+      "place": "hawker",
+      "serving": "1 piece",
+      "kcal": 300,
+      "carbs_g": 26,
+      "protein_g": 10,
+      "fat_g": 17,
+      "aliases": [
+        "kong bak bao",
+        "扣肉包",
+        "braised pork belly bun",
+        "gua bao",
+        "pau kong bak",
+        "chinese pork belly bun"
+      ],
+      "icon": "dishes/pau",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Oyster Omelette",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 480,
+      "carbs_g": 28,
+      "protein_g": 18,
+      "fat_g": 33,
+      "aliases": [
+        "or chien",
+        "orh luak",
+        "蚝煎",
+        "fried oyster omelette",
+        "telur tiram goreng",
+        "oh chien",
+        "orh jian"
+      ],
+      "icon": "food/omelette",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kee Chang",
+      "place": "home",
+      "serving": "1 piece",
+      "kcal": 175,
+      "carbs_g": 40,
+      "protein_g": 2,
+      "fat_g": 0.3,
+      "aliases": [
+        "kee chang gula melaka",
+        "碱水粽",
+        "alkaline rice dumpling",
+        "kuih chang abu",
+        "plain rice dumpling"
+      ],
+      "icon": "food/glutinous-rice",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Foochow Fish Ball",
+      "place": "hawker",
+      "serving": "5 pieces",
+      "kcal": 190,
+      "carbs_g": 14,
+      "protein_g": 13,
+      "fat_g": 9,
+      "aliases": [
+        "fuzhou fishball",
+        "福州鱼丸",
+        "stuffed fish ball",
+        "bebola ikan foochow",
+        "fish ball with minced pork"
+      ],
+      "icon": "food/fish-ball",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Foochow Red Wine Chicken",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 320,
+      "carbs_g": 10,
+      "protein_g": 28,
+      "fat_g": 18,
+      "aliases": [
+        "ang chao kai",
+        "红糟鸡",
+        "hong zao ji",
+        "red glutinous wine chicken",
+        "ayam arak merah foochow",
+        "sibu red wine chicken"
+      ],
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kompia",
+      "place": "hawker",
+      "serving": "2 pieces",
+      "kcal": 220,
+      "carbs_g": 40,
+      "protein_g": 6,
+      "fat_g": 4,
+      "aliases": ["kompyang", "光饼", "foochow bun", "sibu kompia", "kong pia", "kompia sibu"],
+      "icon": "food/bun",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Teochew Porridge",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 138,
+      "carbs_g": 31,
+      "protein_g": 2.5,
+      "fat_g": 0.3,
+      "aliases": [
+        "muay",
+        "teochew muay",
+        "潮州粥",
+        "plain rice porridge",
+        "bubur nasi putih",
+        "chinese plain congee",
+        "moi"
+      ],
+      "icon": "food/porridge",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Century Egg and Minced Pork Porridge",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 315,
+      "carbs_g": 45,
+      "protein_g": 15,
+      "fat_g": 8,
+      "aliases": [
+        "pei tan chok",
+        "皮蛋瘦肉粥",
+        "century egg congee",
+        "bubur telur pitan",
+        "preserved egg porridge"
+      ],
+      "icon": "food/porridge",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chinese Fish Porridge",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 280,
+      "carbs_g": 42,
+      "protein_g": 18,
+      "fat_g": 4,
+      "aliases": [
+        "yu chok",
+        "鱼片粥",
+        "sliced fish porridge",
+        "bubur ikan cina",
+        "fish congee",
+        "fish slice congee"
+      ],
+      "icon": "food/porridge",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chinese Chicken Porridge",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 290,
+      "carbs_g": 44,
+      "protein_g": 16,
+      "fat_g": 5,
+      "aliases": [
+        "kai chok",
+        "鸡粥",
+        "chicken congee",
+        "bubur ayam cina",
+        "chicken porridge hawker"
+      ],
+      "icon": "food/porridge",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Pork Porridge",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 293,
+      "carbs_g": 42,
+      "protein_g": 16,
+      "fat_g": 6,
+      "aliases": ["chu yok chok", "猪肉粥", "minced pork congee", "bubur babi", "pork congee"],
+      "icon": "food/porridge",
+      "verified": true,
+      "source": "hpb_singapore_hawker_energy_table"
+    },
+    {
+      "name": "Teochew Steamed Fish",
+      "place": "hawker",
+      "serving": "1 fish",
+      "kcal": 320,
+      "carbs_g": 6,
+      "protein_g": 40,
+      "fat_g": 15,
+      "aliases": [
+        "teochew steam fish",
+        "潮州蒸鱼",
+        "steamed fish with salted vegetable",
+        "ikan kukus teochew",
+        "teochew style pomfret"
+      ],
+      "icon": "food/grilled-fish",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chai Poh Omelette",
+      "place": "hawker",
+      "serving": "1 omelette",
+      "kcal": 240,
+      "carbs_g": 4,
+      "protein_g": 13,
+      "fat_g": 19,
+      "aliases": [
+        "chye poh neng",
+        "菜脯蛋",
+        "preserved radish omelette",
+        "telur cai poh",
+        "salted radish omelette"
+      ],
+      "icon": "food/omelette",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Cantonese Steamed Fish",
+      "place": "hawker",
+      "serving": "1 fish",
+      "kcal": 296,
+      "carbs_g": 4,
+      "protein_g": 38,
+      "fat_g": 14,
+      "aliases": [
+        "ching zheng yu",
+        "清蒸鱼",
+        "steamed fish soy ginger",
+        "ikan kukus cina",
+        "steamed whole fish",
+        "steamed grouper cantonese"
+      ],
+      "icon": "food/grilled-fish",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kam Heong Crab",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 380,
+      "carbs_g": 12,
+      "protein_g": 30,
+      "fat_g": 24,
+      "aliases": [
+        "ketam kam heong",
+        "金香蟹",
+        "golden fragrance crab",
+        "kam heong ketam",
+        "dried shrimp curry leaf crab"
+      ],
+      "icon": "food/crab",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Black Pepper Crab",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 420,
+      "carbs_g": 18,
+      "protein_g": 30,
+      "fat_g": 26,
+      "aliases": ["ketam lada hitam", "黑胡椒蟹", "pepper crab", "black pepper ketam"],
+      "icon": "food/crab",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Marmite Prawn",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 380,
+      "carbs_g": 22,
+      "protein_g": 26,
+      "fat_g": 21,
+      "aliases": ["udang marmite", "妈蜜虾", "marmite shrimp", "marmite prawns chinese"],
+      "icon": "food/prawn",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Cereal Prawn",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 455,
+      "carbs_g": 28,
+      "protein_g": 25,
+      "fat_g": 27,
+      "aliases": ["udang cereal", "麦片虾", "oat prawn", "nestum prawn", "cereal butter prawn"],
+      "icon": "food/prawn",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Steamed Scallop with Garlic",
+      "place": "hawker",
+      "serving": "4 pieces",
+      "kcal": 140,
+      "carbs_g": 5,
+      "protein_g": 14,
+      "fat_g": 7,
+      "aliases": [
+        "kekerang kukus bawang putih",
+        "蒜蓉蒸带子",
+        "garlic steamed scallop",
+        "scallop with vermicelli",
+        "steamed scallops chinese"
+      ],
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Salt Baked Chicken",
+      "place": "hawker",
+      "serving": "1/4 chicken",
+      "kcal": 400,
+      "carbs_g": 1,
+      "protein_g": 35,
+      "fat_g": 28,
+      "aliases": [
+        "yim kuk kai",
+        "盐焗鸡",
+        "hakka salt baked chicken",
+        "ayam garam",
+        "salt roasted chicken"
+      ],
+      "icon": "food/roast-chicken",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Yee Sang",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 280,
+      "carbs_g": 26,
+      "protein_g": 8,
+      "fat_g": 16,
+      "aliases": [
+        "yusheng",
+        "lou sang",
+        "捞生",
+        "鱼生",
+        "prosperity toss salad",
+        "lo hei",
+        "raw fish salad cny",
+        "yee sang salmon"
+      ],
+      "icon": "food/vegetables",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Pen Cai",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 550,
+      "carbs_g": 25,
+      "protein_g": 40,
+      "fat_g": 32,
+      "aliases": ["poon choi", "盆菜", "basin dish", "treasure pot", "pun choi", "cny pen cai"],
+      "icon": "food/cooking-pot",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Bak Kwa",
+      "place": "hawker",
+      "serving": "1 piece (50 g)",
+      "kcal": 230,
+      "carbs_g": 18,
+      "protein_g": 12,
+      "fat_g": 12,
+      "aliases": [
+        "bakkwa",
+        "肉干",
+        "dried barbecued meat",
+        "rougan",
+        "chinese pork jerky",
+        "long yok",
+        "bak kua"
+      ],
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Half-Boiled Eggs",
+      "place": "kopitiam",
+      "serving": "2 eggs",
+      "kcal": 148,
+      "carbs_g": 1.5,
+      "protein_g": 12,
+      "fat_g": 10,
+      "aliases": [
+        "telur separuh masak",
+        "半生熟蛋",
+        "soft boiled eggs kopitiam",
+        "half boiled egg",
+        "kopitiam eggs",
+        "soft cooked eggs soy sauce"
+      ],
+      "icon": "dishes/half-boiled-eggs",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kaya Butter Toast",
+      "place": "kopitiam",
+      "serving": "1 set (2 slices)",
+      "kcal": 288,
+      "carbs_g": 34,
+      "protein_g": 6,
+      "fat_g": 14,
+      "aliases": [
+        "roti bakar kaya",
+        "咖椰烤面包",
+        "kaya toast",
+        "kaya butter bread",
+        "toast kaya mentega",
+        "kopitiam kaya toast"
+      ],
+      "icon": "dishes/kaya-toast",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Hainanese Toasted Bread",
+      "place": "kopitiam",
+      "serving": "2 slices",
+      "kcal": 260,
+      "carbs_g": 32,
+      "protein_g": 6,
+      "fat_g": 12,
+      "aliases": [
+        "roti bakar hainan",
+        "海南面包",
+        "hainanese bread",
+        "charcoal toast",
+        "hainan toast",
+        "thick toast kopitiam"
+      ],
+      "icon": "food/toast",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Steamed Bread with Kaya and Butter",
+      "place": "kopitiam",
+      "serving": "1 set",
+      "kcal": 270,
+      "carbs_g": 36,
+      "protein_g": 6,
+      "fat_g": 11,
+      "aliases": [
+        "roti kukus kaya",
+        "蒸面包",
+        "steamed kaya bread",
+        "steam bread kopitiam",
+        "soft steamed toast kaya"
+      ],
+      "icon": "food/bread-loaf",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Butter Sugar Toast",
+      "place": "kopitiam",
+      "serving": "1 set (2 slices)",
+      "kcal": 276,
+      "carbs_g": 34,
+      "protein_g": 5,
+      "fat_g": 13,
+      "aliases": [
+        "roti bakar mentega gula",
+        "牛油糖面包",
+        "butter and sugar toast",
+        "sugar butter bread kopitiam"
+      ],
+      "icon": "food/toast",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Hainanese Chicken Chop",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 680,
+      "carbs_g": 60,
+      "protein_g": 34,
+      "fat_g": 34,
+      "aliases": [
+        "chicken chop hainan",
+        "海南鸡扒",
+        "hainanese chicken cutlet",
+        "chicken chop kopitiam"
+      ],
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Hainanese Pork Chop",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 720,
+      "carbs_g": 62,
+      "protein_g": 32,
+      "fat_g": 38,
+      "aliases": ["pork chop hainan", "海南猪扒", "hainanese pork cutlet", "pork chop kopitiam"],
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Yong Chow Fried Rice",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 600,
+      "carbs_g": 78,
+      "protein_g": 22,
+      "fat_g": 22,
+      "aliases": [
+        "yang chow fried rice",
+        "扬州炒饭",
+        "yong chow chow fan",
+        "nasi goreng cina",
+        "chinese fried rice with char siew"
+      ],
+      "icon": "dishes/nasi-goreng",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Wanton Soup",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 160,
+      "carbs_g": 16,
+      "protein_g": 11,
+      "fat_g": 6,
+      "aliases": ["wantan soup", "云吞汤", "wonton soup", "sup wantan", "dumpling soup chinese"],
+      "icon": "food/dumpling",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chinese Pork Rib Herbal Soup",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 180,
+      "carbs_g": 8,
+      "protein_g": 16,
+      "fat_g": 9,
+      "aliases": [
+        "tong sui pai kuat",
+        "药材排骨汤",
+        "herbal pork rib soup",
+        "sup tulang babi herba",
+        "lotus root pork rib soup",
+        "chinese tonic soup"
+      ],
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Watercress Soup with Pork Ribs",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 150,
+      "carbs_g": 5,
+      "protein_g": 14,
+      "fat_g": 8,
+      "aliases": [
+        "sai yeong choy tong",
+        "西洋菜汤",
+        "watercress pork soup",
+        "sup selada air",
+        "chinese watercress soup"
+      ],
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "ABC Soup",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 160,
+      "carbs_g": 12,
+      "protein_g": 12,
+      "fat_g": 7,
+      "aliases": [
+        "sup abc",
+        "abc汤",
+        "potato carrot tomato soup",
+        "chinese vegetable pork soup",
+        "abc soup chinese"
+      ],
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Steamed Tofu with Minced Pork",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 190,
+      "carbs_g": 6,
+      "protein_g": 14,
+      "fat_g": 12,
+      "aliases": [
+        "tauhu kukus daging cincang",
+        "肉碎蒸豆腐",
+        "minced meat steamed beancurd",
+        "steamed beancurd with minced meat",
+        "yuk sui jing tau foo"
+      ],
+      "icon": "food/tofu",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sweet and Sour Fish Fillet",
+      "place": "hawker",
+      "serving": "1 serving",
+      "kcal": 250,
+      "carbs_g": 22,
+      "protein_g": 16,
+      "fat_g": 11,
+      "aliases": [
+        "ikan masam manis cina",
+        "糖醋鱼",
+        "sweet sour fish",
+        "fried fish fillet sweet sour sauce",
+        "tim shun yu"
+      ],
+      "icon": "food/fish-fillet",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ngoh Hiang",
+      "place": "hawker",
+      "serving": "2 rolls",
+      "kcal": 260,
+      "carbs_g": 16,
+      "protein_g": 12,
+      "fat_g": 16,
+      "aliases": [
+        "五香",
+        "five spice meat roll",
+        "ngo hiang",
+        "beancurd skin meat roll",
+        "gor hiong",
+        "lor bak roll"
+      ],
+      "icon": "food/spring-roll",
+      "verified": false,
+      "source": "model_estimate"
+    }
+  ]
+}

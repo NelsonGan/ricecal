@@ -1,0 +1,32 @@
+{
+  "bubur-pedas": ["bubur pedas sambas", "bubur paddas", "west kalimantan bubur pedas"],
+  "jeow-bong": ["jaew bong", "jeaw bong", "isan chilli paste with buffalo skin"],
+  "kaeng-nor-mai": ["gaeng no mai", "gaeng nor mai sai ya nang", "isan bamboo shoot curry"],
+  "khao-jee-ping": ["khao jee", "khao jee isan", "grilled sticky rice with egg"],
+  "kralan": ["khao lam", "khao larm", "thai bamboo sticky rice"],
+  "mok-pa": ["mok pla", "aep pa", "isan steamed fish parcel"],
+  "nasi-dagang": ["nasi dagang thai", "khao dang", "southern thai nasi dagang"],
+  "papaitan": ["pinapaitan", "pinapaitan baka", "pinapaitan kambing", "ilocano bitter soup"],
+  "satay-telur-puyuh": ["sate telur puyuh", "sate telur puyuh angkringan", "quail egg skewer"],
+  "tempe-mendoan": ["mendoan", "tempe mendoan banyumas", "battered tempe fritter"],
+  "kenny-rogers-roasters-kenny-rogers-muffin": [
+    "corn muffin",
+    "kenny rogers corn muffin",
+    "krr corn muffin"
+  ],
+  "gaeng-om-gai": ["kaeng om gai", "isan chicken herb stew"],
+  "khanom-jeen-nam-ngiao": [
+    "nam ngiao",
+    "kanom jeen nam ngiew",
+    "northern thai tomato pork noodles"
+  ],
+  "gai-yang": ["kai yang", "gai yang isan", "isan grilled chicken"],
+  "som-tam-pla-ra": ["tam pla ra", "tam lao pla ra", "isan papaya salad with pla ra"],
+  "moo-ping": ["moo ping isan", "grilled pork skewer thai", "หมูปิ้ง"],
+  "bicol-express": ["sinilihan", "bicol express baboy"],
+  "laing": ["laing bicol", "pinangat na laing", "taro leaves in coconut milk"],
+  "vigan-longganisa": ["longganisa ilocos", "ilocos longganisa", "longganisang vigan"],
+  "papeda-dengan-ikan-kuah-kuning": ["papeda", "sago porridge papua"],
+  "es-teh-manis": ["es teh warteg", "es teh tawar", "teh es warteg"],
+  "nasi-kucing": ["sego kucing", "nasi kucing angkringan", "angkringan rice packet"]
+}

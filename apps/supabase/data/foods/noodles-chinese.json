@@ -1,0 +1,2011 @@
+{
+  "source": "research:noodles-chinese",
+  "foods": [
+    {
+      "name": "Penang Char Kuey Teow",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 745,
+      "carbs_g": 88,
+      "protein_g": 26,
+      "fat_g": 32,
+      "aliases": [
+        "penang char kway teow",
+        "penang char koay teow",
+        "槟城炒粿条",
+        "char kuay teow penang",
+        "ckt penang",
+        "fried flat rice noodles penang style with prawns and cockles"
+      ],
+      "icon": "dishes/char-kuey-teow",
+      "source": "hawker_sg_published",
+      "verified": true
+    },
+    {
+      "name": "Char Kuey Teow with Duck Egg",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 790,
+      "carbs_g": 88,
+      "protein_g": 29,
+      "fat_g": 36,
+      "aliases": [
+        "char koay teow telur itik",
+        "duck egg char kway teow",
+        "鸭蛋炒粿条",
+        "ckt duck egg",
+        "char kuey teow telur itik"
+      ],
+      "icon": "dishes/char-kuey-teow",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Char Kuey Teow Special",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 850,
+      "carbs_g": 92,
+      "protein_g": 34,
+      "fat_g": 40,
+      "aliases": [
+        "ckt special",
+        "char kway teow special",
+        "特别炒粿条",
+        "char koay teow with big prawns and lap cheong",
+        "char kuey teow istimewa"
+      ],
+      "icon": "dishes/char-kuey-teow",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Char Kuey Teow Kerang",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 700,
+      "carbs_g": 84,
+      "protein_g": 25,
+      "fat_g": 29,
+      "aliases": [
+        "char kway teow with cockles",
+        "血蛤炒粿条",
+        "ckt kerang",
+        "char koay teow see hum",
+        "cockle char kuey teow"
+      ],
+      "icon": "dishes/char-kuey-teow",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Char Kuey Teow Basah",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 640,
+      "carbs_g": 82,
+      "protein_g": 23,
+      "fat_g": 24,
+      "aliases": [
+        "wet char kway teow",
+        "湿炒粿条",
+        "char koay teow basah",
+        "gravy char kuey teow",
+        "ckt basah"
+      ],
+      "icon": "dishes/char-kuey-teow",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Char Kuey Teow Vegetarian",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 540,
+      "carbs_g": 84,
+      "protein_g": 14,
+      "fat_g": 16,
+      "aliases": [
+        "vegetarian char kway teow",
+        "斋炒粿条",
+        "char koay teow sayur",
+        "meatless char kuey teow",
+        "chai char kuey teow"
+      ],
+      "icon": "dishes/char-kuey-teow",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Tomato Kuey Teow",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 620,
+      "carbs_g": 92,
+      "protein_g": 22,
+      "fat_g": 18,
+      "aliases": [
+        "tomato kueh tiaw",
+        "番茄粿条",
+        "sarawak tomato kuey teow",
+        "kuey teow tomato sauce sarawak",
+        "tomato kway teow"
+      ],
+      "icon": "food/flat-rice-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ipoh Char Kuey Teow",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 690,
+      "carbs_g": 84,
+      "protein_g": 26,
+      "fat_g": 27,
+      "aliases": [
+        "ipoh char kway teow",
+        "怡保炒粿条",
+        "ipoh char koay teow with prawns",
+        "ckt ipoh"
+      ],
+      "icon": "dishes/char-kuey-teow",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Char Kuey Teow Bee Hoon Campur",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 660,
+      "carbs_g": 82,
+      "protein_g": 24,
+      "fat_g": 26,
+      "aliases": [
+        "mixed kuey teow and bee hoon",
+        "粿条米粉炒",
+        "char kway teow mixed with vermicelli",
+        "kuey teow mee hoon campur",
+        "ckt bee hoon mix"
+      ],
+      "icon": "dishes/char-kuey-teow",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Penang Hokkien Mee",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 470,
+      "carbs_g": 58,
+      "protein_g": 24,
+      "fat_g": 15,
+      "aliases": [
+        "har mee",
+        "hae mee",
+        "槟城福建面",
+        "penang prawn noodle soup",
+        "prawn mee penang",
+        "penang hokkien prawn mee",
+        "hokkien mee penang soup"
+      ],
+      "icon": "dishes/hokkien-mee",
+      "source": "hawker_my_published",
+      "verified": true
+    },
+    {
+      "name": "Penang Hokkien Mee Kering",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 540,
+      "carbs_g": 62,
+      "protein_g": 26,
+      "fat_g": 20,
+      "aliases": [
+        "dry penang prawn noodle",
+        "har mee kering",
+        "干捞福建面",
+        "dry prawn mee penang",
+        "hokkien mee dry penang"
+      ],
+      "icon": "dishes/hokkien-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "KL Hokkien Mee",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 720,
+      "carbs_g": 82,
+      "protein_g": 28,
+      "fat_g": 30,
+      "aliases": [
+        "kuala lumpur hokkien mee",
+        "吉隆坡福建面",
+        "hokkien char mee kl",
+        "black hokkien noodles",
+        "thick yellow noodles dark soy pork lard",
+        "hokkien mee kl style"
+      ],
+      "icon": "dishes/hokkien-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Hokkien Mee Sarawak",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 560,
+      "carbs_g": 74,
+      "protein_g": 22,
+      "fat_g": 19,
+      "aliases": [
+        "kuching hokkien mee",
+        "古晋福建面",
+        "sarawak fried hokkien noodles",
+        "hokkien mee kuching"
+      ],
+      "icon": "dishes/hokkien-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Fried Hokkien Mee Singapore Style",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 620,
+      "carbs_g": 68,
+      "protein_g": 26,
+      "fat_g": 26,
+      "aliases": [
+        "singapore fried hokkien prawn mee",
+        "新加坡福建炒虾面",
+        "fried hokkien prawn mee",
+        "hokkien mee singapore"
+      ],
+      "icon": "dishes/hokkien-mee",
+      "source": "hawker_sg_published",
+      "verified": true
+    },
+    {
+      "name": "Prawn Mee with Pork Ribs",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 560,
+      "carbs_g": 62,
+      "protein_g": 32,
+      "fat_g": 20,
+      "aliases": [
+        "har mee pai kut",
+        "排骨虾面",
+        "prawn noodle with pork ribs",
+        "pork rib prawn mee",
+        "har mee with ribs"
+      ],
+      "icon": "food/prawn",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Har Mee Kon Lou",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 520,
+      "carbs_g": 58,
+      "protein_g": 28,
+      "fat_g": 18,
+      "aliases": [
+        "dry prawn noodle",
+        "干捞虾面",
+        "prawn mee dry",
+        "har mee dry",
+        "prawn noodles kon lou"
+      ],
+      "icon": "food/prawn",
+      "source": "hawker_sg_published",
+      "verified": true
+    },
+    {
+      "name": "Wantan Mee Kering",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 480,
+      "carbs_g": 62,
+      "protein_g": 24,
+      "fat_g": 15,
+      "aliases": [
+        "dry wanton noodles",
+        "干捞云吞面",
+        "wonton mee dry",
+        "wantan mee dry",
+        "wan tan mee kon lou",
+        "dry wantan noodle"
+      ],
+      "icon": "dishes/wantan-mee",
+      "source": "hawker_sg_published",
+      "verified": true
+    },
+    {
+      "name": "Wantan Mee Sup",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 390,
+      "carbs_g": 52,
+      "protein_g": 20,
+      "fat_g": 11,
+      "aliases": [
+        "wanton noodle soup",
+        "云吞面汤",
+        "wonton mee soup",
+        "wantan mee soup",
+        "wan tan mee sup"
+      ],
+      "icon": "dishes/wantan-mee",
+      "source": "hawker_my_published",
+      "verified": true
+    },
+    {
+      "name": "Wantan Mee Char Siew",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 540,
+      "carbs_g": 64,
+      "protein_g": 30,
+      "fat_g": 18,
+      "aliases": [
+        "char siew wantan mee",
+        "叉烧云吞面",
+        "bbq pork wonton noodles",
+        "wanton mee with char siu",
+        "wantan mee char siu"
+      ],
+      "icon": "dishes/wantan-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Curry Wantan Mee",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 590,
+      "carbs_g": 62,
+      "protein_g": 24,
+      "fat_g": 27,
+      "aliases": [
+        "wantan mee curry",
+        "咖喱云吞面",
+        "curry wanton noodles",
+        "wonton mee with curry gravy",
+        "kari wantan mee"
+      ],
+      "icon": "dishes/curry-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Wantan Mee Kaki Ayam",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 550,
+      "carbs_g": 62,
+      "protein_g": 28,
+      "fat_g": 20,
+      "aliases": [
+        "chicken feet noodles",
+        "凤爪云吞面",
+        "wantan mee with chicken feet",
+        "kai keok mee",
+        "chicken feet wanton mee"
+      ],
+      "icon": "dishes/wantan-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Wantan Mee Sarawak",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 450,
+      "carbs_g": 56,
+      "protein_g": 22,
+      "fat_g": 15,
+      "aliases": [
+        "sarawak wanton mee",
+        "砂拉越云吞面",
+        "kuching wantan mee",
+        "wantan mee with red char siew sauce"
+      ],
+      "icon": "dishes/wantan-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Hong Kong Wantan Mee",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 420,
+      "carbs_g": 52,
+      "protein_g": 22,
+      "fat_g": 12,
+      "aliases": [
+        "hong kong wonton noodle soup",
+        "港式云吞面",
+        "shrimp dumpling noodle soup",
+        "hk wanton mee",
+        "prawn wonton noodles"
+      ],
+      "icon": "dishes/wantan-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sup Wantan",
+      "place": "kopitiam",
+      "serving": "1 bowl (6 dumplings)",
+      "kcal": 150,
+      "carbs_g": 16,
+      "protein_g": 9,
+      "fat_g": 5,
+      "aliases": ["wanton soup", "云吞汤", "wonton soup", "wantan soup", "dumpling soup"],
+      "icon": "food/dumpling",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [{ "label": "10 dumplings", "factor": 1.67 }]
+    },
+    {
+      "name": "Wantan Goreng",
+      "place": "kopitiam",
+      "serving": "5 pieces",
+      "kcal": 260,
+      "carbs_g": 22,
+      "protein_g": 10,
+      "fat_g": 15,
+      "aliases": [
+        "fried wanton",
+        "炸云吞",
+        "fried wonton",
+        "crispy wantan",
+        "deep fried dumplings"
+      ],
+      "icon": "food/dumpling",
+      "verified": false,
+      "source": "model_estimate",
+      "extra_servings": [{ "label": "10 pieces", "factor": 2 }]
+    },
+    {
+      "name": "Shui Kau Mee",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 430,
+      "carbs_g": 52,
+      "protein_g": 24,
+      "fat_g": 14,
+      "aliases": [
+        "sui kow noodles",
+        "水饺面",
+        "prawn dumpling noodle soup",
+        "shui kow mee",
+        "sui gao mee"
+      ],
+      "icon": "food/dumpling",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Pan Mee Sup",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 430,
+      "carbs_g": 58,
+      "protein_g": 20,
+      "fat_g": 12,
+      "aliases": [
+        "pan mee soup",
+        "板面",
+        "ban mee soup",
+        "handmade noodle soup",
+        "pan mian sup",
+        "flat noodle soup with anchovies"
+      ],
+      "icon": "dishes/pan-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chilli Pan Mee",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 630,
+      "carbs_g": 72,
+      "protein_g": 26,
+      "fat_g": 26,
+      "aliases": [
+        "dry chilli pan mee",
+        "辣椒板面",
+        "chilli ban mee",
+        "chili pan mee",
+        "dry pan mee with chilli flakes",
+        "kin kin chilli pan mee"
+      ],
+      "icon": "dishes/pan-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Mee Hoon Kueh",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 410,
+      "carbs_g": 56,
+      "protein_g": 18,
+      "fat_g": 11,
+      "aliases": [
+        "mee hun kueh",
+        "面粉粿",
+        "hand torn noodle soup",
+        "mian fen guo",
+        "mee hoon kuih",
+        "handmade dough noodle soup"
+      ],
+      "icon": "dishes/pan-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Pan Mee Kering",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 520,
+      "carbs_g": 66,
+      "protein_g": 22,
+      "fat_g": 17,
+      "aliases": [
+        "dry pan mee",
+        "干捞板面",
+        "pan mee dry with dark sauce",
+        "dry ban mee",
+        "pan mian kering"
+      ],
+      "icon": "dishes/pan-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ban Mian",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 475,
+      "carbs_g": 62,
+      "protein_g": 22,
+      "fat_g": 14,
+      "aliases": [
+        "ban mien",
+        "板面汤",
+        "ban mee",
+        "handmade noodle soup with egg and anchovies",
+        "banmian"
+      ],
+      "icon": "dishes/pan-mee",
+      "source": "hawker_sg_published",
+      "verified": true
+    },
+    {
+      "name": "Ban Mian Kering",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 530,
+      "carbs_g": 64,
+      "protein_g": 24,
+      "fat_g": 19,
+      "aliases": ["dry ban mian", "干捞板面", "ban mee dry", "dry banmian"],
+      "icon": "dishes/pan-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Pan Mee Ikan Bilis",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 450,
+      "carbs_g": 58,
+      "protein_g": 21,
+      "fat_g": 14,
+      "aliases": [
+        "anchovy pan mee",
+        "江鱼仔板面",
+        "pan mee with anchovies",
+        "ikan bilis ban mee",
+        "handmade pan mee anchovy broth"
+      ],
+      "icon": "dishes/pan-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kolo Mee",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 500,
+      "carbs_g": 58,
+      "protein_g": 22,
+      "fat_g": 19,
+      "aliases": [
+        "kolok mee",
+        "干捞面",
+        "kuching kolo mee",
+        "sarawak kolo mee",
+        "kolo mi",
+        "dry tossed sarawak noodles"
+      ],
+      "icon": "dishes/kolo-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kolo Mee Char Siew",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 560,
+      "carbs_g": 60,
+      "protein_g": 27,
+      "fat_g": 22,
+      "aliases": [
+        "kolo mee with char siu",
+        "叉烧干捞面",
+        "sarawak kolo mee char siew",
+        "kolok mee char siew"
+      ],
+      "icon": "dishes/kolo-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kolo Mee Merah",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 545,
+      "carbs_g": 62,
+      "protein_g": 24,
+      "fat_g": 21,
+      "aliases": [
+        "red kolo mee",
+        "红干捞面",
+        "kolo mee with red char siew oil",
+        "kolok mee merah",
+        "red sauce kolo mee"
+      ],
+      "icon": "dishes/kolo-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kampua Mee",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 380,
+      "carbs_g": 52,
+      "protein_g": 16,
+      "fat_g": 11,
+      "aliases": [
+        "kampua",
+        "干盘面",
+        "sibu kampua mee",
+        "kampua noodles",
+        "foochow kampua",
+        "kam pua mee"
+      ],
+      "icon": "dishes/kolo-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kampua Mee Kicap",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 420,
+      "carbs_g": 56,
+      "protein_g": 17,
+      "fat_g": 13,
+      "aliases": [
+        "dark soy kampua",
+        "黑酱干盘面",
+        "kampua mee with dark soy sauce",
+        "sibu kampua kicap",
+        "black kampua"
+      ],
+      "icon": "dishes/kolo-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Lor Mee",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 480,
+      "carbs_g": 66,
+      "protein_g": 20,
+      "fat_g": 14,
+      "aliases": ["loh mee", "卤面", "braised noodles in thick gravy", "lor mien", "lu mian"],
+      "icon": "dishes/lor-mee",
+      "source": "hawker_sg_published",
+      "verified": true
+    },
+    {
+      "name": "Loh Mee Penang",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 470,
+      "carbs_g": 62,
+      "protein_g": 22,
+      "fat_g": 13,
+      "aliases": [
+        "penang lor mee",
+        "槟城卤面",
+        "penang loh mee with prawn gravy",
+        "lor mee penang"
+      ],
+      "icon": "dishes/lor-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Lam Mee",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 460,
+      "carbs_g": 58,
+      "protein_g": 24,
+      "fat_g": 13,
+      "aliases": [
+        "lum mee",
+        "淋面",
+        "birthday noodles",
+        "hokkien lam mee",
+        "longevity noodle soup"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Curry Mee Penang",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 520,
+      "carbs_g": 54,
+      "protein_g": 22,
+      "fat_g": 24,
+      "aliases": [
+        "penang curry mee",
+        "槟城咖喱面",
+        "curry mee with cockles and cuttlefish",
+        "penang kari mee",
+        "curry noodle penang"
+      ],
+      "icon": "dishes/curry-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Curry Mee Ipoh",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 560,
+      "carbs_g": 58,
+      "protein_g": 24,
+      "fat_g": 26,
+      "aliases": [
+        "ipoh curry mee",
+        "怡保咖喱面",
+        "ipoh curry noodles with chicken and prawn",
+        "kari mee ipoh"
+      ],
+      "icon": "dishes/curry-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Curry Mee Kering",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 620,
+      "carbs_g": 66,
+      "protein_g": 25,
+      "fat_g": 28,
+      "aliases": [
+        "dry curry mee",
+        "干咖喱面",
+        "dry curry noodles",
+        "curry mee dry",
+        "kari mee kering"
+      ],
+      "icon": "dishes/curry-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kari Ayam Mee Hoon",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 500,
+      "carbs_g": 52,
+      "protein_g": 23,
+      "fat_g": 22,
+      "aliases": [
+        "curry chicken bee hoon",
+        "咖喱鸡米粉",
+        "curry chicken vermicelli",
+        "curry mee hoon",
+        "chicken curry noodle soup"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Curry Yee Mee",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 590,
+      "carbs_g": 60,
+      "protein_g": 22,
+      "fat_g": 29,
+      "aliases": ["curry ee mee", "咖喱伊面", "curry yi mee", "yee mee in curry gravy"],
+      "icon": "dishes/curry-mee",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ipoh Kai See Hor Fun",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 430,
+      "carbs_g": 60,
+      "protein_g": 24,
+      "fat_g": 9,
+      "aliases": [
+        "ipoh hor fun",
+        "怡保鸡丝河粉",
+        "shredded chicken hor fun",
+        "kai si hor fun",
+        "ipoh chicken and prawn noodle soup",
+        "ipoh hor fun kai see"
+      ],
+      "icon": "food/flat-rice-noodles",
+      "source": "hawker_sg_published",
+      "verified": true
+    },
+    {
+      "name": "Sar Hor Fun",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 400,
+      "carbs_g": 58,
+      "protein_g": 20,
+      "fat_g": 8,
+      "aliases": [
+        "sar hor fun soup",
+        "沙河粉",
+        "sah hor fun",
+        "flat rice noodle soup cantonese",
+        "sar hoh fun"
+      ],
+      "icon": "food/flat-rice-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Beef Hor Fun",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 580,
+      "carbs_g": 68,
+      "protein_g": 26,
+      "fat_g": 22,
+      "aliases": [
+        "ngau yuk hor fun",
+        "牛肉河粉",
+        "beef kuey teow",
+        "beef chow fun",
+        "hor fun daging"
+      ],
+      "icon": "food/flat-rice-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Hor Fun Goreng",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 640,
+      "carbs_g": 80,
+      "protein_g": 22,
+      "fat_g": 25,
+      "aliases": [
+        "dry fried hor fun",
+        "干炒河粉",
+        "kon chow hor fun",
+        "fried flat rice noodles dark soy",
+        "hor fun kering"
+      ],
+      "icon": "food/flat-rice-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Penang Char Hor Fun",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 610,
+      "carbs_g": 74,
+      "protein_g": 24,
+      "fat_g": 24,
+      "aliases": [
+        "penang char hor fun",
+        "槟城炒河粉",
+        "penang fried hor fun with dark gravy",
+        "char hor fun penang"
+      ],
+      "icon": "food/flat-rice-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kuey Teow Th'ng",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 350,
+      "carbs_g": 48,
+      "protein_g": 20,
+      "fat_g": 7,
+      "aliases": [
+        "koay teow th'ng",
+        "粿条汤",
+        "kuey teow theng",
+        "penang koay teow soup with pork balls",
+        "kuay teow tng"
+      ],
+      "icon": "dishes/kuey-teow-soup",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kuey Teow Th'ng Itik",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 430,
+      "carbs_g": 50,
+      "protein_g": 24,
+      "fat_g": 13,
+      "aliases": [
+        "duck meat koay teow th'ng",
+        "鸭肉粿条汤",
+        "duck kuey teow soup",
+        "koay teow th'ng with duck",
+        "kuey teow theng itik"
+      ],
+      "icon": "dishes/kuey-teow-soup",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Yee Mee Goreng",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 650,
+      "carbs_g": 76,
+      "protein_g": 24,
+      "fat_g": 27,
+      "aliases": [
+        "fried ee mee",
+        "炒伊面",
+        "fried yi mee",
+        "ee fu noodles fried",
+        "yee mee kering"
+      ],
+      "icon": "food/egg-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Yee Mee Basah",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 530,
+      "carbs_g": 64,
+      "protein_g": 22,
+      "fat_g": 20,
+      "aliases": ["wet ee mee", "湿伊面", "yee mee with egg gravy", "wet yee mee", "yi mee basah"],
+      "icon": "food/egg-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Claypot Yee Mee",
+      "place": "kopitiam",
+      "serving": "1 claypot",
+      "kcal": 590,
+      "carbs_g": 66,
+      "protein_g": 26,
+      "fat_g": 24,
+      "aliases": [
+        "claypot ee mee",
+        "煲仔伊面",
+        "claypot yi mee",
+        "yee mee claypot with egg",
+        "pot yee mee"
+      ],
+      "icon": "food/egg-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Yee Mee Sup",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 420,
+      "carbs_g": 54,
+      "protein_g": 18,
+      "fat_g": 15,
+      "aliases": ["ee mee soup", "伊面汤", "yee mee soup", "yi mee sup", "ee fu noodle soup"],
+      "icon": "food/egg-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Kung Fu Chow",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 780,
+      "carbs_g": 88,
+      "protein_g": 28,
+      "fat_g": 34,
+      "aliases": [
+        "kong fu chow",
+        "功夫炒",
+        "sang mee",
+        "crispy fried noodles with egg gravy",
+        "kung fu mee",
+        "cantonese crispy noodle"
+      ],
+      "icon": "food/egg-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Yee Fu Mien",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 560,
+      "carbs_g": 74,
+      "protein_g": 20,
+      "fat_g": 20,
+      "aliases": [
+        "yi fu mian",
+        "伊府面",
+        "ee fu noodles braised",
+        "yee foo mee",
+        "braised ee fu noodles with mushroom and chives"
+      ],
+      "icon": "food/egg-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Fish Head Noodle Soup",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 450,
+      "carbs_g": 44,
+      "protein_g": 30,
+      "fat_g": 17,
+      "aliases": [
+        "mee hoon kepala ikan",
+        "鱼头米粉",
+        "fish head bee hoon",
+        "yu tou mi fen",
+        "fish head mee hoon soup"
+      ],
+      "icon": "food/fish",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Fried Fish Head Mee Hoon",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 560,
+      "carbs_g": 46,
+      "protein_g": 32,
+      "fat_g": 27,
+      "aliases": [
+        "fried fish head bee hoon with milk",
+        "炸鱼头米粉",
+        "fish head noodle with evaporated milk",
+        "creamy fish head bee hoon"
+      ],
+      "icon": "food/fish",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Fish Ball Noodle Soup",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 370,
+      "carbs_g": 52,
+      "protein_g": 20,
+      "fat_g": 8,
+      "aliases": [
+        "fishball noodle soup",
+        "鱼丸面",
+        "yu wan mee",
+        "fish ball mee sup",
+        "fishball mee"
+      ],
+      "icon": "food/fish-ball",
+      "source": "hawker_sg_published",
+      "verified": true
+    },
+    {
+      "name": "Fish Ball Noodle Kering",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 470,
+      "carbs_g": 60,
+      "protein_g": 22,
+      "fat_g": 15,
+      "aliases": [
+        "dry fishball noodles",
+        "干捞鱼丸面",
+        "fishball mee pok dry",
+        "fish ball noodle dry",
+        "mee pok tah"
+      ],
+      "icon": "food/fish-ball",
+      "source": "hawker_sg_published",
+      "verified": true
+    },
+    {
+      "name": "Fish Slice Bee Hoon Soup",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 330,
+      "carbs_g": 38,
+      "protein_g": 26,
+      "fat_g": 8,
+      "aliases": [
+        "sliced fish bee hoon",
+        "鱼片米粉",
+        "fish slice mee hoon",
+        "yu pian mi fen",
+        "fish soup bee hoon"
+      ],
+      "icon": "food/fish-fillet",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Fried Fish Bee Hoon with Milk Soup",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 480,
+      "carbs_g": 44,
+      "protein_g": 28,
+      "fat_g": 21,
+      "aliases": [
+        "milky fish soup bee hoon",
+        "奶白鱼汤米粉",
+        "fried fish slice bee hoon milk",
+        "creamy fish bee hoon"
+      ],
+      "icon": "food/fish-fillet",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Yong Tau Foo Noodle Soup",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 430,
+      "carbs_g": 46,
+      "protein_g": 26,
+      "fat_g": 14,
+      "aliases": [
+        "ytf noodle soup",
+        "酿豆腐面",
+        "yong tau fu mee sup",
+        "yong tofu with noodles",
+        "yong tau foo mee hoon soup"
+      ],
+      "icon": "dishes/yong-tau-foo",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Yong Tau Foo Kering with Noodles",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 500,
+      "carbs_g": 52,
+      "protein_g": 27,
+      "fat_g": 19,
+      "aliases": [
+        "dry yong tau foo noodles",
+        "干捞酿豆腐面",
+        "ytf dry with noodles",
+        "yong tau fu kon lou mee"
+      ],
+      "icon": "dishes/yong-tau-foo",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Pork Noodle Soup",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 480,
+      "carbs_g": 52,
+      "protein_g": 28,
+      "fat_g": 17,
+      "aliases": [
+        "chu yuk fun",
+        "猪肉粉",
+        "pork noodles",
+        "mee hoon babi",
+        "pork organ noodle soup",
+        "chu yook fun"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Claypot Pork Noodle",
+      "place": "kopitiam",
+      "serving": "1 claypot",
+      "kcal": 570,
+      "carbs_g": 56,
+      "protein_g": 30,
+      "fat_g": 24,
+      "aliases": [
+        "claypot chu yuk fun",
+        "煲仔猪肉粉",
+        "claypot pork noodles with raw egg",
+        "pork noodle claypot"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Bak Chor Mee",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 460,
+      "carbs_g": 56,
+      "protein_g": 25,
+      "fat_g": 15,
+      "aliases": [
+        "minced pork noodles",
+        "肉脞面",
+        "bak chor mee dry",
+        "bcm",
+        "minced meat noodles",
+        "mee pok bak chor"
+      ],
+      "icon": "food/noodle-bowl",
+      "source": "hawker_sg_published",
+      "verified": true
+    },
+    {
+      "name": "Bak Chor Mee Sup",
+      "place": "hawker",
+      "serving": "1 bowl",
+      "kcal": 385,
+      "carbs_g": 50,
+      "protein_g": 22,
+      "fat_g": 10,
+      "aliases": ["minced pork noodle soup", "肉脞面汤", "bak chor mee soup", "bcm soup"],
+      "icon": "food/noodle-bowl",
+      "source": "hawker_sg_published",
+      "verified": true
+    },
+    {
+      "name": "Pork Ball Noodle Soup",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 400,
+      "carbs_g": 52,
+      "protein_g": 22,
+      "fat_g": 11,
+      "aliases": [
+        "pork ball mee",
+        "猪肉丸面",
+        "meat ball noodle soup",
+        "chee yoke yuen mee",
+        "pork meatball noodles"
+      ],
+      "icon": "food/meatball",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chee Cheong Fun Ipoh",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 390,
+      "carbs_g": 58,
+      "protein_g": 8,
+      "fat_g": 13,
+      "aliases": [
+        "ipoh chee cheong fun",
+        "怡保猪肠粉",
+        "chee cheong fun with mushroom sauce",
+        "ccf ipoh",
+        "ipoh rice noodle roll"
+      ],
+      "icon": "dishes/chee-cheong-fun",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chee Cheong Fun Penang",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 350,
+      "carbs_g": 56,
+      "protein_g": 7,
+      "fat_g": 10,
+      "aliases": [
+        "penang chee cheong fun",
+        "槟城猪肠粉",
+        "chee cheong fun with hae ko",
+        "prawn paste rice noodle roll",
+        "ccf penang"
+      ],
+      "icon": "dishes/chee-cheong-fun",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chee Cheong Fun with Yong Tau Foo",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 500,
+      "carbs_g": 62,
+      "protein_g": 18,
+      "fat_g": 19,
+      "aliases": [
+        "ccf with yong tau foo",
+        "猪肠粉酿豆腐",
+        "chee cheong fun yong tau fu",
+        "rice noodle roll with stuffed tofu"
+      ],
+      "icon": "dishes/chee-cheong-fun",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chee Cheong Fun Char Siew",
+      "place": "kopitiam",
+      "serving": "1 plate (3 rolls)",
+      "kcal": 330,
+      "carbs_g": 48,
+      "protein_g": 12,
+      "fat_g": 9,
+      "aliases": [
+        "char siu cheung fun",
+        "叉烧肠粉",
+        "hong kong rice noodle roll",
+        "bbq pork cheong fun",
+        "cheung fun char siew"
+      ],
+      "icon": "dishes/chee-cheong-fun",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Claypot Loh Shu Fun",
+      "place": "kopitiam",
+      "serving": "1 claypot",
+      "kcal": 570,
+      "carbs_g": 62,
+      "protein_g": 26,
+      "fat_g": 24,
+      "aliases": [
+        "claypot silver needle noodles",
+        "煲仔老鼠粉",
+        "claypot loh see fun",
+        "rat tail noodles claypot",
+        "loh shu fun claypot with minced pork and egg"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Loh Shu Fun Kering",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 510,
+      "carbs_g": 62,
+      "protein_g": 22,
+      "fat_g": 18,
+      "aliases": [
+        "dry silver needle noodles",
+        "干捞老鼠粉",
+        "loh see fun dry",
+        "rat tail noodles dry",
+        "lao shu fen kering"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Hakka Mee",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 500,
+      "carbs_g": 58,
+      "protein_g": 24,
+      "fat_g": 18,
+      "aliases": [
+        "hakka noodles",
+        "客家面",
+        "hakka mee dry with minced pork",
+        "hakka mian",
+        "kek mee"
+      ],
+      "icon": "food/egg-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Hakka Mee Sup",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 410,
+      "carbs_g": 52,
+      "protein_g": 22,
+      "fat_g": 11,
+      "aliases": ["hakka noodle soup", "客家面汤", "hakka mee soup", "hakka mian sup"],
+      "icon": "food/egg-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Mee Suah Sup Ayam",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 380,
+      "carbs_g": 48,
+      "protein_g": 22,
+      "fat_g": 10,
+      "aliases": [
+        "chicken mee sua",
+        "鸡肉面线",
+        "mee suah chicken soup",
+        "misua soup",
+        "sesame oil chicken mee suah"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Mee Suah Ang Chow",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 450,
+      "carbs_g": 50,
+      "protein_g": 24,
+      "fat_g": 15,
+      "aliases": [
+        "red wine mee sua",
+        "红糟面线",
+        "foochow red wine chicken mee suah",
+        "ang chow mee suah",
+        "red glutinous rice wine noodles"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Mee Suah Telur",
+      "place": "home",
+      "serving": "1 bowl",
+      "kcal": 340,
+      "carbs_g": 46,
+      "protein_g": 15,
+      "fat_g": 9,
+      "aliases": [
+        "mee sua with egg",
+        "面线蛋",
+        "longevity noodles with egg",
+        "misua egg",
+        "birthday mee suah"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Mee Suah Goreng",
+      "place": "home",
+      "serving": "1 plate",
+      "kcal": 480,
+      "carbs_g": 62,
+      "protein_g": 18,
+      "fat_g": 17,
+      "aliases": [
+        "fried mee sua",
+        "炒面线",
+        "fried misua",
+        "mee suah kering",
+        "stir fried wheat vermicelli"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Herbal Chicken Mee Suah",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 430,
+      "carbs_g": 48,
+      "protein_g": 26,
+      "fat_g": 13,
+      "aliases": [
+        "herbal mee sua",
+        "药材鸡面线",
+        "chinese herbal chicken noodle",
+        "tonic chicken mee suah",
+        "herbal soup mee suah"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Tang Hoon Sup",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 290,
+      "carbs_g": 42,
+      "protein_g": 14,
+      "fat_g": 6,
+      "aliases": [
+        "glass noodle soup",
+        "冬粉汤",
+        "tanghoon soup",
+        "sup tang hoon",
+        "vermicelli glass noodle soup",
+        "dong fen soup"
+      ],
+      "icon": "food/glass-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Tang Hoon Goreng",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 430,
+      "carbs_g": 60,
+      "protein_g": 16,
+      "fat_g": 13,
+      "aliases": [
+        "fried glass noodles",
+        "炒冬粉",
+        "tanghoon goreng",
+        "stir fried glass noodles",
+        "fried tang hoon"
+      ],
+      "icon": "food/glass-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Claypot Tang Hoon Udang",
+      "place": "kopitiam",
+      "serving": "1 claypot",
+      "kcal": 490,
+      "carbs_g": 54,
+      "protein_g": 26,
+      "fat_g": 18,
+      "aliases": [
+        "claypot prawn glass noodles",
+        "煲仔虾冬粉",
+        "claypot tanghoon with prawns",
+        "prawn vermicelli claypot",
+        "har mai fun claypot"
+      ],
+      "icon": "food/glass-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Mee Goreng Cina",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 620,
+      "carbs_g": 78,
+      "protein_g": 24,
+      "fat_g": 22,
+      "aliases": [
+        "chinese fried noodles",
+        "炒面",
+        "chow mien chinese style",
+        "fried yellow noodles chinese",
+        "mee goreng chinese"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Chow Mein",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 580,
+      "carbs_g": 72,
+      "protein_g": 24,
+      "fat_g": 20,
+      "aliases": [
+        "chow mien",
+        "炒面",
+        "chao mian",
+        "stir fried egg noodles",
+        "cantonese chow mein"
+      ],
+      "icon": "food/egg-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Mee Hoon Goreng Cina",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 480,
+      "carbs_g": 66,
+      "protein_g": 18,
+      "fat_g": 14,
+      "aliases": [
+        "chinese fried bee hoon",
+        "炒米粉",
+        "chow mai fun",
+        "fried rice vermicelli chinese style",
+        "bee hoon goreng cina"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Seafood Fried Noodles",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 660,
+      "carbs_g": 76,
+      "protein_g": 30,
+      "fat_g": 24,
+      "aliases": [
+        "mee goreng seafood",
+        "海鲜炒面",
+        "seafood chow mein",
+        "fried noodles with prawns and squid",
+        "hoi sin chow mein"
+      ],
+      "icon": "food/egg-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Mee Hailam",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 620,
+      "carbs_g": 80,
+      "protein_g": 24,
+      "fat_g": 21,
+      "aliases": [
+        "hailam mee",
+        "海南面",
+        "hainanese fried noodles",
+        "mee hailam gravy",
+        "hainan mee"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Fried Bee Hoon Singapore Style",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 560,
+      "carbs_g": 72,
+      "protein_g": 20,
+      "fat_g": 20,
+      "aliases": [
+        "singapore fried vermicelli",
+        "星洲炒米",
+        "sing chow mai fun",
+        "curry powder fried bee hoon",
+        "singapore noodles"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Mee Hoon Goreng Ekonomi",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 350,
+      "carbs_g": 52,
+      "protein_g": 10,
+      "fat_g": 11,
+      "aliases": [
+        "economy fried bee hoon",
+        "经济米粉",
+        "economy rice vermicelli breakfast",
+        "plain fried bee hoon",
+        "bihun goreng ekonomi"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Mee Goreng Ekonomi",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 400,
+      "carbs_g": 58,
+      "protein_g": 12,
+      "fat_g": 12,
+      "aliases": [
+        "economy fried noodles",
+        "经济炒面",
+        "economy mee goreng breakfast",
+        "plain fried yellow noodles"
+      ],
+      "icon": "dishes/mee-goreng",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Zha Jiang Mien",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 540,
+      "carbs_g": 68,
+      "protein_g": 22,
+      "fat_g": 19,
+      "aliases": [
+        "zha jiang mian",
+        "炸酱面",
+        "cha cheong mein",
+        "noodles with fermented bean sauce minced pork",
+        "jajangmyeon chinese style"
+      ],
+      "icon": "food/egg-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Ngau Lam Mee",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 470,
+      "carbs_g": 54,
+      "protein_g": 28,
+      "fat_g": 14,
+      "aliases": [
+        "beef brisket noodles",
+        "牛腩面",
+        "ngau lam min",
+        "braised beef noodle soup",
+        "beef noodle soup chinese"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Beef Ball Noodle Soup",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 410,
+      "carbs_g": 52,
+      "protein_g": 23,
+      "fat_g": 12,
+      "aliases": [
+        "ngau yuk yuen mee",
+        "牛肉丸面",
+        "beef ball kuey teow",
+        "beef meatball noodles",
+        "beef ball noodle"
+      ],
+      "icon": "food/meatball",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Duck Noodle Soup",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 470,
+      "carbs_g": 52,
+      "protein_g": 27,
+      "fat_g": 16,
+      "aliases": [
+        "braised duck noodles",
+        "鸭肉面",
+        "mee itik",
+        "duck meat noodle soup",
+        "lor ark mee"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Roast Duck Yee Mee",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 620,
+      "carbs_g": 66,
+      "protein_g": 30,
+      "fat_g": 25,
+      "aliases": [
+        "siew ark yee mee",
+        "烧鸭伊面",
+        "roast duck noodles",
+        "roast duck ee mee",
+        "duck yee mee"
+      ],
+      "icon": "food/egg-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Sang Har Bee Hoon",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 700,
+      "carbs_g": 68,
+      "protein_g": 34,
+      "fat_g": 30,
+      "aliases": [
+        "freshwater prawn bee hoon",
+        "生虾米粉",
+        "sang har mai fun",
+        "river prawn vermicelli with egg gravy",
+        "sang har meen bee hoon"
+      ],
+      "icon": "food/prawn",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Belacan Bee Hoon",
+      "place": "hawker",
+      "serving": "1 plate",
+      "kcal": 490,
+      "carbs_g": 62,
+      "protein_g": 20,
+      "fat_g": 17,
+      "aliases": [
+        "belacan bihun",
+        "峇拉煎米粉",
+        "sarawak belacan bee hoon",
+        "shrimp paste vermicelli",
+        "belacan mee hoon"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Wat Tan Mee",
+      "place": "kopitiam",
+      "serving": "1 plate",
+      "kcal": 570,
+      "carbs_g": 66,
+      "protein_g": 26,
+      "fat_g": 22,
+      "aliases": [
+        "wat dan mee",
+        "滑蛋面",
+        "egg gravy yellow noodles",
+        "wat tan meen",
+        "silky egg noodle gravy"
+      ],
+      "icon": "food/yellow-noodles",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Mee Hoon Sup Cina",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 320,
+      "carbs_g": 44,
+      "protein_g": 16,
+      "fat_g": 8,
+      "aliases": [
+        "chinese bee hoon soup",
+        "米粉汤",
+        "clear vermicelli soup with fish cake",
+        "mee hoon soup chinese",
+        "bee hoon sup"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Lai Fun",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 380,
+      "carbs_g": 56,
+      "protein_g": 15,
+      "fat_g": 9,
+      "aliases": [
+        "lai fun soup",
+        "濑粉",
+        "lai fen",
+        "thick rice noodle soup cantonese",
+        "laai fan"
+      ],
+      "icon": "food/noodle-bowl",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Claypot Bee Hoon Seafood",
+      "place": "kopitiam",
+      "serving": "1 claypot",
+      "kcal": 470,
+      "carbs_g": 48,
+      "protein_g": 28,
+      "fat_g": 17,
+      "aliases": [
+        "claypot seafood vermicelli",
+        "海鲜煲米粉",
+        "seafood bee hoon claypot",
+        "claypot mee hoon seafood"
+      ],
+      "icon": "food/rice-vermicelli",
+      "verified": false,
+      "source": "model_estimate"
+    },
+    {
+      "name": "Tom Yam Mee Hoon Cina",
+      "place": "kopitiam",
+      "serving": "1 bowl",
+      "kcal": 460,
+      "carbs_g": 52,
+      "protein_g": 24,
+      "fat_g": 16,
+      "aliases": [
+        "tom yam bee hoon",
+        "冬炎米粉",
+        "tomyam mee hoon",
+        "tom yum vermicelli soup",
+        "tom yam noodle soup chinese"
+      ],
+      "icon": "dishes/tomyam",
+      "verified": false,
+      "source": "model_estimate"
+    }
+  ]
+}

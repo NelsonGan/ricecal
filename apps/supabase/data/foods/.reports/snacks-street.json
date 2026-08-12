@@ -1,0 +1,736 @@
+{
+  "tally": {
+    "inserted": 104
+  },
+  "rejected": [],
+  "outcomes": [
+    {
+      "idx": 1,
+      "slug": "satay-kajang-ayam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Satay Ayam"
+    },
+    {
+      "idx": 2,
+      "slug": "satay-kajang-daging",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Satay Kajang Ayam"
+    },
+    {
+      "idx": 3,
+      "slug": "satay-kambing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mutton Satay (Satay Daging Kambing)"
+    },
+    {
+      "idx": 4,
+      "slug": "satay-perut",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Maw Satay (Satay Perut Lembu)"
+    },
+    {
+      "idx": 5,
+      "slug": "satay-telur-puyuh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 6,
+      "slug": "satay-hati-ayam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Satay Ayam"
+    },
+    {
+      "idx": 7,
+      "slug": "satay-arnab",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Satay"
+    },
+    {
+      "idx": 8,
+      "slug": "satay-lok-lok",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Satay"
+    },
+    {
+      "idx": 9,
+      "slug": "satay-ikan-sarawak",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 10,
+      "slug": "satay-set-ketupat",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 11,
+      "slug": "ubi-kayu-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 12,
+      "slug": "keledek-goreng-bertepung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Keledek Goreng"
+    },
+    {
+      "idx": 13,
+      "slug": "ubi-kayu-rebus",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ubi Keledek Rebus"
+    },
+    {
+      "idx": 14,
+      "slug": "cekodok-udang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Cekodok Pisang"
+    },
+    {
+      "idx": 15,
+      "slug": "cekodok-ikan-bilis",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 16,
+      "slug": "popiah-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Popiah Goreng Nyonya"
+    },
+    {
+      "idx": 17,
+      "slug": "sotong-celup-tepung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Udang Celup Tepung"
+    },
+    {
+      "idx": 18,
+      "slug": "udang-celup-tepung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sotong Celup Tepung"
+    },
+    {
+      "idx": 19,
+      "slug": "epok-epok-sardin",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 20,
+      "slug": "epok-epok-pusing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 21,
+      "slug": "roti-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 22,
+      "slug": "nugget-goreng-bazar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 23,
+      "slug": "sosej-goreng-bercili",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 24,
+      "slug": "bola-keju-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 25,
+      "slug": "bola-ubi-keju",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 26,
+      "slug": "tempe-goreng-bertepung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Tempe Goreng"
+    },
+    {
+      "idx": 27,
+      "slug": "cendawan-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Mee Goreng Cendawan"
+    },
+    {
+      "idx": 28,
+      "slug": "pisang-goreng-kipas",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pisang Goreng"
+    },
+    {
+      "idx": 29,
+      "slug": "pisang-goreng-madu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Pisang Goreng"
+    },
+    {
+      "idx": 30,
+      "slug": "nangka-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Goreng Nanas"
+    },
+    {
+      "idx": 31,
+      "slug": "durian-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 32,
+      "slug": "kentang-pusing",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 33,
+      "slug": "burger-daging-ramly-biasa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Burger Ayam Ramly Biasa"
+    },
+    {
+      "idx": 34,
+      "slug": "burger-ayam-ramly-biasa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Burger Daging Ramly Biasa"
+    },
+    {
+      "idx": 35,
+      "slug": "burger-ayam-special",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ramly Burger Special"
+    },
+    {
+      "idx": 36,
+      "slug": "burger-ayam-cheese",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "A&W Cheese Burger"
+    },
+    {
+      "idx": 37,
+      "slug": "burger-double-special",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Burger Ayam Special"
+    },
+    {
+      "idx": 38,
+      "slug": "burger-benjo",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 39,
+      "slug": "burger-oblong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 40,
+      "slug": "burger-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 41,
+      "slug": "burger-bakar-cheese-leleh",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 42,
+      "slug": "burger-blackpepper",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 43,
+      "slug": "burger-telur",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 44,
+      "slug": "hotdog-ramly",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 45,
+      "slug": "corn-dog-pasar-malam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Corn Cup Pasar Malam"
+    },
+    {
+      "idx": 46,
+      "slug": "sosej-gulung-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sosej Bakar"
+    },
+    {
+      "idx": 47,
+      "slug": "keropok-losong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 48,
+      "slug": "keropok-keping-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 49,
+      "slug": "keropok-lekor-rangup",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Keropok Lekor"
+    },
+    {
+      "idx": 50,
+      "slug": "keropok-ikan-sira",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 51,
+      "slug": "popcorn-karamel-pasar-malam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Popcorn Chicken Pasar Malam"
+    },
+    {
+      "idx": 52,
+      "slug": "ayam-percik-merah",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ayam Percik"
+    },
+    {
+      "idx": 53,
+      "slug": "ayam-percik-putih",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ayam Percik"
+    },
+    {
+      "idx": 54,
+      "slug": "ayam-bakar-madu",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ayam Bakar"
+    },
+    {
+      "idx": 55,
+      "slug": "sayap-ayam-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ayam Bakar"
+    },
+    {
+      "idx": 56,
+      "slug": "daging-salai-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 57,
+      "slug": "kambing-golek",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 58,
+      "slug": "sotong-bakar-sos-cili",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sotong Bakar Kering"
+    },
+    {
+      "idx": 59,
+      "slug": "sotong-bakar-kering",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sotong Bakar Sos Cili"
+    },
+    {
+      "idx": 60,
+      "slug": "kerang-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 61,
+      "slug": "jagung-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 62,
+      "slug": "popia-basah",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 63,
+      "slug": "roti-boyan",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Roti Bom"
+    },
+    {
+      "idx": 64,
+      "slug": "dim-sum-campur-bazar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 65,
+      "slug": "kebab-ayam-bazar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kebab Daging Bazar"
+    },
+    {
+      "idx": 66,
+      "slug": "kebab-daging-bazar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kebab Ayam Bazar"
+    },
+    {
+      "idx": 67,
+      "slug": "lempeng-kelapa",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 68,
+      "slug": "nasi-kerabu-bungkus",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Kerabu"
+    },
+    {
+      "idx": 69,
+      "slug": "nasi-impit-kuah-kacang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Impit"
+    },
+    {
+      "idx": 70,
+      "slug": "corn-cup-pasar-malam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Corn Dog Pasar Malam"
+    },
+    {
+      "idx": 71,
+      "slug": "jagung-rebus",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 72,
+      "slug": "kacang-rebus",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 73,
+      "slug": "ubi-keledek-rebus",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ubi Kayu Rebus"
+    },
+    {
+      "idx": 74,
+      "slug": "popcorn-chicken-pasar-malam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Popcorn Karamel Pasar Malam"
+    },
+    {
+      "idx": 75,
+      "slug": "ayam-gunting",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 76,
+      "slug": "takoyaki-pasar-malam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 77,
+      "slug": "telur-gulung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 78,
+      "slug": "sosej-bakar",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Sosej Gulung Bakar"
+    },
+    {
+      "idx": 79,
+      "slug": "waffle-pasar-malam",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 80,
+      "slug": "apam-balik-durian",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Apam Balik"
+    },
+    {
+      "idx": 81,
+      "slug": "apam-balik-jagung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Apam Balik"
+    },
+    {
+      "idx": 82,
+      "slug": "muruku",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 83,
+      "slug": "kuaci",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 84,
+      "slug": "kacang-kuda-goreng",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kacang Panjang Goreng"
+    },
+    {
+      "idx": 85,
+      "slug": "kacang-kuda-kukus",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kacang Kuda Goreng"
+    },
+    {
+      "idx": 86,
+      "slug": "kacang-goreng-bergaram",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Peas, Salted, Fried (Kacang Pea, Goreng Bergaram) ;"
+    },
+    {
+      "idx": 87,
+      "slug": "mangga-muda-asam-boi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 88,
+      "slug": "jambu-asam-boi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Air Asam Boi"
+    },
+    {
+      "idx": 89,
+      "slug": "kedondong-asam-boi",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 90,
+      "slug": "buah-potong-campur",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 91,
+      "slug": "nanas-potong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 92,
+      "slug": "tembikai-potong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 93,
+      "slug": "betik-potong",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 94,
+      "slug": "ais-krim-malaysia",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 95,
+      "slug": "aiskrim-gulung",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Aiskrim Gula Apong"
+    },
+    {
+      "idx": 96,
+      "slug": "siew-pau-klang",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Kuching Siew Pau"
+    },
+    {
+      "idx": 97,
+      "slug": "pau-sambal-bilis",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Ikan Bilis Sambal"
+    },
+    {
+      "idx": 98,
+      "slug": "pau-kacang-hijau",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Bubur Kacang Hijau"
+    },
+    {
+      "idx": 99,
+      "slug": "pau-sardin",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 100,
+      "slug": "mantou-kukus",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": null
+    },
+    {
+      "idx": 101,
+      "slug": "roti-tampal",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Roti Tampal Sardin"
+    },
+    {
+      "idx": 102,
+      "slug": "roti-tampal-sardin",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Roti Sardin"
+    },
+    {
+      "idx": 103,
+      "slug": "nasi-lemak-bungkus",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Lemak"
+    },
+    {
+      "idx": 104,
+      "slug": "nasi-goreng-bungkus",
+      "outcome": "inserted",
+      "detail": null,
+      "nearest": "Nasi Goreng Nanas"
+    }
+  ]
+}
