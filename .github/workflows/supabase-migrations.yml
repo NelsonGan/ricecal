@@ -119,6 +119,52 @@ jobs:
             deno check --no-lock --config "$name/deno.json" "$name/index.ts"
           done
 
+      # config.toml is what the deploy bundles, and nothing above reads it: the
+      # typecheck loops over directories on disk, so a block naming a function
+      # that no longer exists is invisible here and fatal there. Deleting
+      # `functions/catalogue` without its block turned every push to main into
+      # "failed to bundle function: exit status 1" — a stale entrypoint is a
+      # build error, not an unused setting.
+      #
+      # The mirror is just as silent: a new function with no block is simply
+      # never deployed, and the symptom is a 404 from an endpoint that is
+      # sitting right there in the repo. So this compares both directions.
+      - name: config.toml and functions/ agree
+        run: |
+          fail=0
+          declared=$({ grep -oE '^\[functions\.[a-z0-9-]+\]' ../config.toml || true; } \
+            | sed 's/^\[functions\.//;s/\]$//' | sort)
+          # `_shared` is library code rather than a function, and it is the one
+          # directory here with no endpoint of its own — hence the index.ts test
+          # rather than a name the list has to be kept in step with.
+          on_disk=$(for name in *; do
+            [ -f "$name/index.ts" ] && echo "$name"
+          done | sort)
+
+          for name in $declared; do
+            if ! echo "$on_disk" | grep -qx "$name"; then
+              echo "::error::config.toml declares [functions.$name], but functions/$name does not exist. The deploy will fail to bundle it."
+              fail=1
+            fi
+          done
+          for name in $on_disk; do
+            if ! echo "$declared" | grep -qx "$name"; then
+              echo "::error::functions/$name has no [functions.$name] block in config.toml, so it is never deployed."
+              fail=1
+            fi
+          done
+
+          # Every path the deploy is pointed at, not just the directory name.
+          for path in $(grep -E '^(entrypoint|import_map) *=' ../config.toml | sed 's/.*= *"//;s/"$//'); do
+            if [ ! -e "../$path" ]; then
+              echo "::error::config.toml points at $path, which does not exist."
+              fail=1
+            fi
+          done
+
+          if [ "$fail" -eq 0 ]; then echo "config.toml and functions/ are in sync"; fi
+          exit $fail
+
       # The shared code that has actual tests. Sizing is the part of the cascade
       # whose mistakes are silent — a serving label read wrong does not throw,
       # it prices the wrong amount of food and writes it to a diary.
