@@ -309,8 +309,15 @@ arms are two rows read now.
 here that can silently make the app worse: nothing errors, "nasi lemak" just
 starts returning something else. `pnpm foods:gate --save before` records thirty
 queries and where the dish a Malaysian means by each lands; `--against before`
-prints only what MOVED. Adding 300,000 packets moved nothing; adding 709
-Singaporean, Indonesian, Thai and Filipino dishes moved one query, upwards.
+prints only what MOVED. Adding 300,000 packets moved nothing, and so did 709
+Singaporean, Indonesian, Thai and Filipino dishes — which is the outcome an
+additive round should have.
+
+One caveat the gate itself taught: a FULL reindex reshuffles near-ties. The
+rowids are reassigned, an FTS arm orders by `bm25` and breaks ties by rowid, and
+RRF fuses positions — so two rows a hair apart can swap. It moved one gate query
+back and forth across rank 1 and 2 with no data change at all. Grade after the
+reindex, not between it and the load.
 
 ## Logging a meal
 

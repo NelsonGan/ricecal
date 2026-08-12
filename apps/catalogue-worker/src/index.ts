@@ -11,7 +11,7 @@
  *
  * A D1 binding only exists inside a Cloudflare Worker. The app's edge functions
  * are Deno on Supabase, so something has to stand between them, and it may as
- * well be the thing that owns the query: the search below is five arms fused by
+ * well be the thing that owns the query: the search below is four arms fused by
  * rank, which is a paragraph of SQL nobody wants to write twice.
  *
  * WHAT PROTECTS IT

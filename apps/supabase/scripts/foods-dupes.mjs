@@ -21,11 +21,15 @@
  * the pair pinned so the planner had ~1,500 rows to scan rather than 15,000
  * squared. SQLite has no trigram similarity — its FTS5 trigram tokenizer
  * matches substrings and does not score — so the comparison came back to the
- * client, which turns out to be the easier place for it: ~20,000 searchable
- * non-packaged names is a couple of megabytes, and Jaccard over trigram sets is
- * a few seconds of plain JavaScript. The pinning survives as `--since`, for the
- * same reason it existed: a duplicate this tool exists to find always has a
- * freshly-written row on at least one side.
+ * client: ~21,000 searchable non-packaged names is a couple of megabytes, and
+ * Jaccard over trigram sets is plain JavaScript with no index to build.
+ *
+ * **The pinning matters more here than it did in Postgres, not less.** There is
+ * no index to fall back on, so a bare `pnpm foods:dupes` really does compare
+ * every row against every other — 230 million pairs, which is minutes rather
+ * than seconds. `--since` cuts it to one round against the catalogue, and it
+ * loses nothing: a duplicate this tool exists to find always has a freshly
+ * written row on at least one side.
  *
  * WHY MERGING IS SAFE HERE
  *
@@ -126,20 +130,28 @@ if (since && !left.length) {
   process.exit(1)
 }
 
-const grams = new Map(all.map((r) => [r.id, trigrams(r.name)]))
-const pairs = []
-const seen = new Set()
+// Trigram sets once per row, and INDEXES rather than ids from here on. The
+// comparison is quadratic — ~21,000 searchable non-packaged rows is 230 million
+// pairs on a full run — so anything done per pair has to be nearly free. An
+// earlier version built a `${a.id}|${b.id}` key for every pair just to check
+// whether it had seen it, which is half a billion string allocations to answer
+// a question two integers already answer.
+const grams = all.map((r) => trigrams(r.name))
+const index = new Map(all.map((r, i) => [r.id, i]))
+const leftIndexes = left.map((r) => index.get(r.id))
+const inLeft = new Set(leftIndexes)
 
-for (const a of left) {
-  const ga = grams.get(a.id)
-  for (const b of all) {
-    if (a.id === b.id) continue
-    const key = a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`
-    if (seen.has(key)) continue
-    const score = jaccard(ga, grams.get(b.id))
-    if (score < MIN) continue
-    seen.add(key)
-    pairs.push({ score, a, b })
+const pairs = []
+
+for (const i of leftIndexes) {
+  const gi = grams[i]
+  for (let j = 0; j < all.length; j++) {
+    if (i === j) continue
+    // When both sides are in the pinned set, only look at the pair once.
+    // Otherwise every pair is reached exactly once anyway.
+    if (inLeft.has(j) && j < i) continue
+    const score = jaccard(gi, grams[j])
+    if (score >= MIN) pairs.push({ score, a: all[i], b: all[j] })
   }
 }
 

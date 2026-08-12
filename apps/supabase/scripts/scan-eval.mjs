@@ -121,15 +121,22 @@ function grade(kase, entry, breakdown) {
   return problems
 }
 
-async function runOne(kase) {
+/**
+ * One case, with everything it writes recorded in `written` as it goes.
+ *
+ * The caller owns the cleanup precisely because this can throw between the
+ * write and the delete — a slow refine, a 429, a case that fails a read. Those
+ * rows land in a real diary on a real project, and a run that died halfway used
+ * to leave its meals there permanently.
+ */
+async function runOne(kase, written) {
   const started = Date.now()
   let scan
-  let photoKey = null
 
   if (kase.kind === 'photo') {
     const bytes = await photoBytes(kase.image)
-    photoKey = await live.upload(bytes, kase.contentType ?? 'image/jpeg')
-    scan = await live.scanPhoto(photoKey)
+    written.photoKey = await live.upload(bytes, kase.contentType ?? 'image/jpeg')
+    scan = await live.scanPhoto(written.photoKey)
   } else {
     scan = await live.scanText(kase.text)
   }
@@ -159,7 +166,8 @@ async function runOne(kase) {
   }
 
   const ids = scan.body.entries.map((e) => e.id)
-  const [row] = await Promise.all([live.entry(ids[0])])
+  written.ids.push(...ids)
+  const row = await live.entry(ids[0])
   const breakdown = await live.parts(ids[0])
   const items = await live.scanItems(scan.body.scanId)
 
@@ -201,11 +209,13 @@ async function runOne(kase) {
     }
   }
 
-  if (!keep) {
-    await Promise.all(ids.map((id) => live.removeEntry(id)))
-    if (photoKey) await live.removePhotos([photoKey])
-  }
   return result
+}
+
+/** Take back everything a case wrote, whether or not it got to the end. */
+async function cleanUp(ids, photoKey) {
+  await Promise.all(ids.map((id) => live.removeEntry(id).catch(() => null)))
+  if (photoKey) await live.removePhotos([photoKey]).catch(() => null)
 }
 
 const all = JSON.parse(await readFile(CASES_FILE, 'utf8'))
@@ -226,10 +236,13 @@ let attempts = 0
 for (const kase of cases) {
   const runs = []
   for (let n = 0; n < repeat; n++) {
+    const written = { ids: [], photoKey: null }
     try {
-      runs.push(await runOne(kase))
+      runs.push(await runOne(kase, written))
     } catch (error) {
       runs.push({ name: kase.name, kind: kase.kind, problems: [`threw: ${error.message}`] })
+    } finally {
+      if (!keep) await cleanUp(written.ids, written.photoKey)
     }
   }
   results.push(...runs)

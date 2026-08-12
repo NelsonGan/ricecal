@@ -49,6 +49,11 @@ const REPO_ROOT = fileURLToPath(new URL('../../..', import.meta.url))
  * `is_local` is MALAYSIAN, not Asian. The neighbours' dishes belong in the
  * catalogue and should not outrank a local row for a local user, which is what
  * setting them local would do.
+ *
+ * A payload picks one with a top-level `"source_id"`, and `research` is the
+ * default because it is the weakest honest claim. An unknown key falls back to
+ * it rather than failing the load: the consequence is a row that ranks a little
+ * low, and refusing 200 dishes over a typo here would be the wrong trade.
  */
 const SOURCES = {
   research: { name: 'RiceCal researched dishes', priority: 60, local: 0 },

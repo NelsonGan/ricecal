@@ -152,12 +152,21 @@ export async function searchFoods(q: string, limit = 50): Promise<CatalogueFood[
   return body ? (body.foods ?? []) : null
 }
 
-/** One dish by id, for a caller that already knows which row it wants. */
-export async function getFood(id: string): Promise<CatalogueFood | null> {
+/**
+ * One dish by id, for a caller that already knows which row it wants.
+ *
+ * `undefined` means the catalogue could not be REACHED and `null` means it was
+ * reached and has no such dish — the same distinction `searchFoods` draws, and
+ * for the same reason. Collapsed into one answer, a Worker that is down, holding
+ * the wrong token or mid-deploy looks exactly like a dish that was deleted, and
+ * the detail screen says "this dish is no longer in the catalogue" over a
+ * catalogue that is fine.
+ */
+export async function getFood(id: string): Promise<CatalogueFood | null | undefined> {
   const body = await call<{ ok: boolean; food: CatalogueFood | null }>(
     `/food?id=${encodeURIComponent(id)}`,
   )
-  return body?.food ?? null
+  return body === null ? undefined : (body.food ?? null)
 }
 
 /**
