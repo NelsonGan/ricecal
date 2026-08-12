@@ -56,10 +56,10 @@ export function useRecipes(shelf: RecipeShelf, query = '') {
           .order('created_at', { ascending: false })
       }
 
-      // `ilike` rather than the `search_foods` machinery. That RPC exists
-      // because the catalogue is ~460,000 rows and substring matching cannot
-      // rank; a shelf of recipes is tens of rows, and ranking tens of rows is
-      // something a person does by reading them.
+      // `ilike` rather than the catalogue's ranked search. That exists because
+      // tens of thousands of dishes cannot be ranked by substring matching; a
+      // shelf of recipes is tens of rows, and ranking tens of rows is something
+      // a person does by reading them.
       if (needle) request = request.ilike('name', `%${needle}%`)
 
       return unwrap(await request.limit(100)).map(toRecipe)

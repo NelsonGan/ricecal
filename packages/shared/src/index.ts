@@ -24,5 +24,3 @@
  * illustrations, no weights and no portions is a plausible-looking screen.
  */
 export const SCHEMA_VERSION = '4'
-
-export const APP_NAME = 'RiceCal'

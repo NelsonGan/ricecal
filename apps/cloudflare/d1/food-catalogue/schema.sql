@@ -31,7 +31,7 @@
 -- that has to order its statements around it.
 
 -- ---------------------------------------------------------------------------
--- The searchable catalogue: ~47,000 dishes and packaged goods people look up
+-- The searchable catalogue: ~48,000 dishes and packaged goods people look up
 -- by typing. Small ON PURPOSE — every row here is a competitor for rank, and
 -- this table is scanned by four search arms on every query.
 -- ---------------------------------------------------------------------------
@@ -69,7 +69,7 @@ create table if not exists food (
   -- A COLUMN rather than an expression, because the exact-name arm of the
   -- search compares a fully normalized query against it, and there is no way to
   -- spell that normalization in SQLite. It ran as `lower(name) = ?` for a
-  -- while, which is two bugs in one line: a full table scan of all 47,000 rows
+  -- while, which is two bugs in one line: a full table scan of all 48,000 rows
   -- on every single search, and a comparison that can never match any name
   -- containing punctuation — "Chicken Rice (Nasi Ayam)" is unreachable by its
   -- own words. Both are gone the moment this is a column with an index on it.
@@ -148,7 +148,7 @@ create table if not exists product (
 --
 -- Both indexes are CONTENTLESS (`content = ''`): FTS5 stores the terms and not
 -- the text, because the text is already in `food` and storing it twice over
--- 47,000 rows buys nothing. The price is that a contentless table cannot look a
+-- 48,000 rows buys nothing. The price is that a contentless table cannot look a
 -- row up by rowid, so `fts_map` carries the rowid → food_id direction, and a
 -- delete needs the original column values — which is why the loader rebuilds
 -- these wholesale rather than editing them in place.

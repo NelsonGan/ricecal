@@ -212,6 +212,43 @@ export function foodFromEntry(entry: {
 }
 
 /**
+ * A saved entry's own food, offering the catalogue's OTHER portions.
+ *
+ * An entry states its own numbers. `base_kcal` and its neighbours are a
+ * SNAPSHOT and `food_id` is only a note about where they came from, so the
+ * catalogue row is not what prices the detail screen — it is fetched for one
+ * thing, the other portions, which an entry cannot know because it only ever
+ * held the size it was logged at.
+ *
+ * Read the other way round, this is the bug it exists to stop. A soy milk
+ * logged off its own nutrition panel at 108 kcal opened at 511, priced from an
+ * unrelated catalogue row while wearing the entry's own name and photograph,
+ * and the day went on showing the 108 the row actually holds. The narrow cause
+ * was a `food_id` that reached the route without belonging to the entry; the
+ * wide one is that ANY entry whose catalogue row has since been re-costed had
+ * the same disagreement, quietly and with no bad id involved.
+ *
+ * The portion list is adopted only when it still contains the portion this
+ * entry was logged at. A row that has been re-cut since — or was never this
+ * entry's row at all — would otherwise drop that portion off the picker, and
+ * the screen would fall through to `servings[0]` and reprice the meal on
+ * arrival, which is the same failure wearing a different hat.
+ */
+export function withCataloguePortions(entry: Food, catalogue: Food | null | undefined): Food {
+  const own = entry.servings[0]
+  const offered = catalogue?.servings ?? []
+  const same = offered.find((option) => option.id === own?.id)
+  // Same portion AND same size. Agreeing about where this entry sits is what
+  // qualifies a row to describe the sizes either side of it; disagreeing means
+  // it is describing a different food, or the same one re-cut since — and also
+  // catches an entry left inconsistent by the bug above, whose `serving_id`
+  // says "large" over a `serving_factor` that was never moved off 1.
+  return same && Math.abs(same.factor - (own?.factor ?? 1)) < 1e-6
+    ? { ...entry, servings: offered }
+    : entry
+}
+
+/**
  * The id a route carries for an entry with no catalogue food behind it.
  *
  * A `[id]` segment cannot be empty and cannot be `undefined`, so an entry that

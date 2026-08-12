@@ -62,9 +62,13 @@ export const paywall = {
         offline: 'Works offline for saved foods',
       },
     },
-    voice: {
-      title: 'Voice logging is a Pro feature',
-      body: 'Say what you ate and we work out the rest.',
+    /**
+     * The perks are about what the model does with a sentence rather than how
+     * the sentence arrived, which is why none of them mentions typing.
+     */
+    describe: {
+      title: 'Describing a meal is a Pro feature',
+      body: 'Write down what you ate and we work out the rest.',
       perks: {
         multiItem: 'Several dishes in one sentence',
         portion: 'Portion words like "half a plate"',
@@ -81,7 +85,9 @@ export const paywall = {
     title: 'You are in. Jom makan.',
     body: 'Trial active for 3 days. Everything is unlocked, nothing to set up.',
     perks: {
-      log: 'Log by photo or voice',
+      // The three ways in, and they have to stay the three ways in: this is a
+      // promise made to somebody at the moment they pay.
+      log: 'Log by photo, by barcode or in your own words',
       database: 'Full local food database',
     },
     manageNote: 'Manage or cancel any time in Profile, Subscription.',

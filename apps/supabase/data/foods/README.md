@@ -1,7 +1,7 @@
 # Researched dishes
 
 One JSON file per research topic. Each is a payload for
-`scripts/import-foods.mjs`, and each stays here after it has been imported —
+`scripts/catalogue-import.mjs`, and each stays here after it has been imported —
 this directory is the provenance record for every catalogue row that did not
 come from USDA or MyFCD. When a figure is later disputed, the file that
 introduced it says who wrote it down and where they got it.
@@ -63,14 +63,15 @@ landed reports skips and writes nothing.
 
 **Macros are per ONE serving, not per 100 g.** `serving` says what that one is,
 in the words a person would use — "1 plate", "1 bowl", "3 pieces", "1 glass
-(250 ml)". This is the decision the whole catalogue is built around
-(`schemas/20_foods.sql`): nobody weighs a roti canai.
+(250 ml)". This is the decision the whole catalogue is built around: nobody
+weighs a roti canai.
 
-**A serving label is 40 characters.** `food_servings.label` is checked, so a
-descriptive one is refused rather than truncated — one round lost 21 rows of 65
-to this before noticing. "1 whole fish (600 g), to share" fits; the explanation
-of who shares it does not. Put the qualification in `aliases` or in an
-`extra_servings` entry instead.
+**A serving label is 40 characters.** `scripts/lib/food-shape.mjs` refuses a
+longer one rather than truncating it — one round lost 21 rows of 65 to this
+before noticing. "1 whole fish (600 g), to share" fits; the explanation of who
+shares it does not. Put the qualification in `aliases` or in an `extra_servings`
+entry instead. D1 has no constraints to speak of, so that shape check is the
+only gate a row passes through.
 
 **The calories have to match the macros.** The loader recomputes
 `4·carbs + 4·protein + 9·fat` and refuses any row more than 25% away from its
@@ -79,8 +80,8 @@ Most rejections are this, and most of those are a portion size that changed
 between writing the calories and writing the macros.
 
 **A `brand` is prefixed onto the name unless the name already carries it in
-full.** `food_name_norm` does the check literally, so a name using a shortened
-form of its own brand gets prefixed anyway — `MOS Teriyaki Chicken Burger` with
+full.** The check is literal, so a name using a shortened form of its own brand
+gets prefixed anyway — `MOS Teriyaki Chicken Burger` with
 brand `MOS Burger` normalizes to `mos burger mos teriyaki chicken burger`.
 Twenty rows read like that. Nothing breaks, because the app shows `name` and
 the dedup is at least consistent with itself, but it is avoidable: write the
@@ -102,14 +103,13 @@ or from MyFCD is verified; a number from a model is not.
 **`fibre_g`, `sugar_g` and `sodium_mg` are nullable and null means unknown.**
 Leave them out. A confident zero is a claim.
 
-**Aliases are ROWS now, not just words in a bag.** They always went into
-`foods.search_text`, where full text reads them as one token among fifty — which
-is why typing a dish's actual second name used to score as a partial hit and
-"kuih salat" lost to rows that merely contained "kuih". The loader writes them to
-`food_aliases` as well, and `search_foods` matches them the way it matches a
-name: exactly, and by trigram. So an alias is worth writing down carefully. The
-Chinese name, the Penang romanization and the abbreviation are each a query
-somebody will type.
+**Aliases are ROWS, not words in a bag.** In a search bag full text reads an
+alias as one token among fifty, which is why a dish's actual second name scored
+as a partial hit and "kuih salat" lost to rows that merely contained "kuih". The
+loader writes them to `food_alias`, and one of the search's four arms matches
+them exactly, the way it matches a name. So an alias is worth writing down
+carefully. The Chinese name, the Penang romanization and the abbreviation are
+each a query somebody will type.
 
 **A serving that states its weight gets a `grams` column for free.** The loader
 reads "1 plate (350 g)", "100 g" and "3.0 oz" out of the label and stores the
@@ -137,17 +137,16 @@ nothing.
 `inserted`, `updated`, `rejected`, and two kinds of skip — `skipped_slug` for
 the same handle, `skipped_name` for the same dish under a different one. Then a
 list of near-matches: rows that went in next to something that already looks
-like them (`char-kway-teow ≈ Char Kuey Teow`). Those are not refused, because
-no similarity threshold separates a second romanization from two dishes sharing
-three words — see the header of `schemas/95_import_foods.sql`.
+like them (`char-kway-teow ≈ Char Kuey Teow`). Those are not refused, because no
+similarity threshold separates a second romanization from two dishes sharing
+three words.
 
 `pnpm foods:dupes` is where that list gets decided. It prints the pairs side by
 side with their calories, and marks `!!` when the two figures agree to within
 8% — which is what one dish written twice by two researchers looks like, since
-they reasoned from the same ingredients. `--merge <keep> <drop>` folds the
-dropped row's names into the kept row's `search_text` and deletes it, so the
-name that goes away still finds the dish. It refuses if anything has been
-logged against the row being dropped.
+they reasoned from the same ingredients. `--merge <keep> <drop>` moves the
+dropped row's names and aliases onto the kept row as `food_alias` rows and then
+deletes it, so the name that goes away still finds the dish.
 
 Similarity alone will not tell you. Measured on this catalogue,
 `Siew Yoke Rice` / `Siew Yoke Fan` — the same dish — scores 0.53, while
@@ -155,6 +154,6 @@ Similarity alone will not tell you. Measured on this catalogue,
 0.61. Read the pair.
 
 When the right answer is "the dish is already there but nobody types that
-name", use `pnpm foods:alias` rather than writing a second row. It only widens
-`search_text`, never `name` or `name_norm`, so it cannot change what a future
-payload is considered a duplicate of.
+name", use `pnpm foods:alias` rather than writing a second row. It only adds
+`food_alias` rows, never touching `name` or `name_norm`, so it cannot change
+what a future payload is considered a duplicate of.

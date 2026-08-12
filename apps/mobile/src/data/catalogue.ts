@@ -14,7 +14,7 @@ import { supabase } from '@/lib/supabase'
  *
  * The Worker verifies the user's own Supabase JWT now, against the public key
  * the project publishes. So the phone still holds no secret, and the hop is
- * gone. See `apps/catalogue-worker/src/auth.ts`.
+ * gone. See `apps/cloudflare/workers/catalogue/src/auth.ts`.
  *
  * WHAT THIS FILE HAS TO GET RIGHT
  *

@@ -13,7 +13,7 @@
  * is correct, and leaves the name unfindable.
  *
  * An alias is a ROW rather than a word in a bag, and that is what makes it worth
- * adding: the search fuses five arms and one of them matches aliases exactly,
+ * adding: the search fuses four arms and one of them matches aliases exactly,
  * the way it matches a name. A second romanization added here ranks like a name,
  * not like one word among fifty.
  *
@@ -22,7 +22,7 @@
 
 import { readFileSync } from 'node:fs'
 
-import { normalize } from '../../catalogue-worker/src/text.ts'
+import { normalize } from '../../cloudflare/workers/catalogue/src/text.ts'
 import { d1, d1batch, q } from './lib/d1.mjs'
 
 const args = process.argv.slice(2)

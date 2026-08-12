@@ -16,7 +16,7 @@
  * 457,000 names to answer a question about 200, and two runs at once would each
  * conclude the same new dish was new.
  *
- * Neither argument survived the move. The searchable catalogue is ~47,000 rows
+ * Neither argument survived the move. The searchable catalogue is ~48,000 rows
  * — the three million packaged products are in `product`, which nothing here
  * touches — so "pull every slug and normalized name" is one query and a couple
  * of megabytes. And D1 has no stored procedures to put the check inside the
@@ -33,7 +33,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { basename, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { normalize } from '../../catalogue-worker/src/text.ts'
+import { normalize } from '../../cloudflare/workers/catalogue/src/text.ts'
 import { d1, d1batch, n, q } from './lib/d1.mjs'
 import { expand, shapeFiles } from './lib/food-shape.mjs'
 

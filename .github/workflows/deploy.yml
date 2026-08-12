@@ -3,9 +3,16 @@ name: CI / CD
 # Adapted from the money2time workflow of the same name. Three paths, one file:
 #
 # - **push to main** → production build for both platforms, then submit.
-# - **pull_request** → `eas update` onto a per-PR branch, with a QR comment.
+# - **pull_request** → a Worker version under a per-PR alias, then an
+#   `eas update` pointed at it, reported in one QR comment.
 # - **workflow_dispatch** → one platform, any profile; `development` takes the
 #   cloud dev-client path instead of the store one.
+#
+# The PR pair is the part worth keeping together: a preview is only a preview if
+# the JS and the catalogue behind it come from the same commit. The PRODUCTION
+# Worker deploy is not here — it lives in `cloudflare.yml`, which runs on main
+# when `apps/cloudflare/**` changes, and putting it here too would deploy it
+# twice on every merge.
 #
 # Differences from money2time, all forced by this repo rather than chosen:
 #
@@ -13,9 +20,10 @@ name: CI / CD
 #   `eas.json` and `app.json` live, and the CLI reads the current directory
 #   rather than walking up; run it from the root and it writes a stub app.json
 #   there and fails).
-# - No Worker preview job. money2time points each PR's bundle at a per-branch
-#   Cloudflare Worker; RiceCal's backend is Supabase and there is nothing
-#   per-branch to deploy.
+# - The Worker URL reaches the bundle through a pulled `.env.local` rather than
+#   the step's `env:`. money2time can export it because its update command names
+#   no environment; ours does, and a named environment overwrites the export.
+#   See the note on the pull step.
 # - No `APP_VARIANT` on the update step. money2time gates `expo-updates` off for
 #   store builds and so has to force it on when publishing; here updates are on
 #   for every profile.
@@ -29,6 +37,16 @@ run-name: >-
 on:
   push:
     branches: [main]
+    # A Worker-only commit changes no JS, so there is nothing here to build or
+    # publish — and left unfiltered it would archive and SUBMIT a new binary to
+    # the stores for a change the app never sees. `.github/workflows/cloudflare.yml`
+    # is what runs instead.
+    #
+    # Push only, deliberately. A pull_request filtered the same way would let a
+    # Cloudflare-only PR merge without `pnpm check` ever running on it, and that
+    # job also covers the Worker's own lint and the scripts that import from it.
+    paths-ignore:
+      - 'apps/cloudflare/**'
   pull_request:
   workflow_dispatch:
     inputs:
@@ -127,9 +145,90 @@ jobs:
               }
             }
 
+  # A PR's own Worker, so the bundle below talks to the catalogue code in the
+  # same commit rather than to production's.
+  #
+  # `versions upload --preview-alias` rather than a second Worker or a named
+  # environment: a version takes 0% of production traffic, INHERITS every
+  # binding from wrangler.jsonc, and is addressable at a stable per-PR URL. So
+  # the preview reads the real 3.2 million packets, there is no second script to
+  # keep in step, and nothing to tear down when the PR closes.
+  #
+  # Sharing the database is safe in the direction that matters: a user's token
+  # reaches `/search` and `/food` and nothing else, and the write route needs the
+  # shared secret, which a preview version does not hold.
+  worker-preview:
+    name: PR Preview · Worker
+    needs: test
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      # A PR that does not touch the Worker skips the upload and falls back to
+      # production, so its EAS preview still searches against a live catalogue
+      # rather than failing on a URL that was never uploaded.
+      url: ${{ steps.worker.outputs.url || 'https://ricecal-catalogue.nelson-ganlw.workers.dev' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Depth 2 so the merge commit's base parent exists for the diff below.
+          fetch-depth: 2
+
+      # Only a PR that changes the Worker needs one. Skipping the rest keeps an
+      # app-only PR — and a fork PR, whose run gets no Cloudflare secrets — from
+      # failing the EAS preview that waits on this job.
+      - name: Detect Worker changes
+        id: changes
+        run: |
+          # A PR run checks out the merge commit, so parent 1 is the base branch
+          # and this diff is exactly what the PR changes.
+          if git diff --name-only HEAD^1 HEAD | grep -qE '^apps/cloudflare/'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: pnpm/action-setup@v4
+        if: steps.changes.outputs.changed == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.changes.outputs.changed == 'true'
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        if: steps.changes.outputs.changed == 'true'
+        run: pnpm install --frozen-lockfile --filter "./apps/cloudflare/workers/catalogue..."
+
+      # `catalogue` by name, and only it. It is the one Worker the app talks to,
+      # so it is the one whose URL a bundle can be pointed at; a second Worker
+      # under `workers/` would be checked and deployed by cloudflare.yml like any
+      # other and simply have no preview of its own.
+      - name: Upload a version under this PR's alias
+        if: steps.changes.outputs.changed == 'true'
+        id: worker
+        working-directory: apps/cloudflare/workers/catalogue
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -o pipefail
+          # A stable alias per PR, so the URL survives a second push and the
+          # comment above never goes stale.
+          alias="pr-${{ github.event.number }}"
+          out=$(pnpm exec wrangler versions upload --preview-alias "$alias" 2>&1 | tee /dev/stderr)
+          url=$(printf '%s\n' "$out" | grep -oE "https://${alias}-[a-z0-9.-]+\.workers\.dev" | head -n1)
+          if [ -z "$url" ]; then
+            echo "::error::Could not parse the aliased Worker preview URL from wrangler output"
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
   pr-update:
     name: PR Preview · EAS Update
-    needs: test
+    needs: [test, worker-preview]
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -167,27 +266,53 @@ jobs:
           clean="${clean//\`/}"
           echo "text=${clean}" >> "$GITHUB_OUTPUT"
 
-      # `--environment` is not optional here, and its absence is quiet.
+      # The environment is PULLED to a file rather than named on the update
+      # command, and that swap is what makes the next step possible at all.
       #
       # EXPO_PUBLIC_ values are inlined into the bundle by Babel at export time,
       # so they are decided by what this step's process can see — the device and
-      # the native build have no say. There is no .env.local on a runner, and
-      # `eas update` pulls the server-side EAS variables only when told which
-      # environment to read; unlike `eas build` it has no profile to take
-      # `environment` from. Without the flag the export succeeds with all eight
-      # keys undefined, and the app throws src/lib/env.ts's "Missing environment
-      # variables" on launch, pointing at a .env.local that only exists locally.
+      # the native build have no say. `eas update --environment development`
+      # supplies them, but it does so by ASSIGNING the downloaded values over the
+      # process: a URL exported by this workflow is overwritten rather than
+      # honoured, silently, and the PR preview goes on talking to production
+      # while appearing to work. Measured, not assumed — the same variable set
+      # in a step's `env:` came back as the EAS one.
+      #
+      # Pulled to `.env.local` there is exactly one source for the export to
+      # read and no precedence left to get wrong. Skipping it entirely is not an
+      # option: the export succeeds with all nine keys undefined and the app
+      # throws src/lib/env.ts's "Missing environment variables" on launch.
       #
       # `development` rather than `preview` because the QR is scanned by a
       # development build, whose native side was built with that same
       # environment — the Google iOS client id reaches Info.plist as a URL
       # scheme, so JS pointing at another project would half-work.
+      - name: Pull the development environment
+        working-directory: apps/mobile
+        run: eas env:pull development --non-interactive
+
+      - name: Point this PR's bundle at this PR's Worker
+        working-directory: apps/mobile
+        env:
+          # Through an env var rather than inlined: this is a URL parsed out of
+          # another job's stdout.
+          WORKER_URL: ${{ needs.worker-preview.outputs.url }}
+        run: |
+          set -euo pipefail
+          # Rewrite in place rather than exporting: see the note above for why an
+          # exported value does not survive.
+          sed -i.bak "s|^EXPO_PUBLIC_CATALOGUE_URL=.*|EXPO_PUBLIC_CATALOGUE_URL=${WORKER_URL}|" .env.local
+          rm -f .env.local.bak
+          # Say which one it ended up on. The failure this replaced was invisible
+          # precisely because nothing ever printed the value it used.
+          grep '^EXPO_PUBLIC_CATALOGUE_URL=' .env.local
+
       - name: Publish PR update
         id: preview
         uses: expo/expo-github-action/preview@v8
         with:
           working-directory: apps/mobile
-          command: eas update --branch pr-${{ github.event.number }} --message "${{ steps.message.outputs.text }}" --environment development
+          command: eas update --branch pr-${{ github.event.number }} --message "${{ steps.message.outputs.text }}"
           comment: false
 
       - name: Comment QR code and link
@@ -199,6 +324,12 @@ jobs:
             const branch = `${{ steps.preview.outputs.branchName }}`;
             const runtime = `${{ steps.preview.outputs.runtimeVersion }}`;
             const commit = context.payload.pull_request.head.sha.slice(0, 7);
+            // Which catalogue this build is actually reading. Worth a row of its
+            // own: a preview pointed at the wrong Worker looks exactly like one
+            // pointed at the right Worker until somebody searches for a dish
+            // only this branch knows about.
+            const workerUrl = `${{ needs.worker-preview.outputs.url }}`;
+            const ownWorker = workerUrl.includes('.workers.dev') && /\/\/pr-\d+-/.test(workerUrl);
             const publishedAt = new Date().toLocaleString('en-US', {
               timeZone: 'Asia/Kuala_Lumpur',
               dateStyle: 'medium',
@@ -222,6 +353,7 @@ jobs:
               `| **Branch** | \`${branch}\` |`,
               `| **Runtime** | \`${runtime}\` |`,
               `| **Commit** | \`${commit}\` |`,
+              `| **Catalogue** | ${ownWorker ? `[this PR’s Worker ↗](${workerUrl})` : 'production (this PR does not change it)'} |`,
               `| **Published** | ${publishedAt} |`,
               '',
               '</td>',
@@ -242,7 +374,7 @@ jobs:
     name: Production · Plan
     needs: test
     if: >-
-      github.event_name == 'push'
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
       || (github.event_name == 'workflow_dispatch' && github.event.inputs.profile != 'development')
     runs-on: ubuntu-latest
     outputs:

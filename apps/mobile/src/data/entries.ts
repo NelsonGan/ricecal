@@ -95,7 +95,18 @@ export type EntryPatch = {
   id: string
   logDate: string
   quantity?: number
+  /**
+   * A different portion, and all three columns of it.
+   *
+   * The id alone is a dangling note: nothing in Postgres can resolve it, since
+   * `food_servings` is in D1 and no view joins to it. What the entry counts is
+   * `base_* x serving_factor x quantity`, so a caller that sends the id and
+   * keeps the factor has changed the row's label and not its arithmetic — which
+   * reads, on the day, as a portion change that silently did nothing.
+   */
   servingId?: string
+  servingLabel?: string
+  servingFactor?: number
   note?: string | null
   /**
    * What THIS entry is called. Written to `display_label`, which sits over the
@@ -147,6 +158,8 @@ export function useUpdateEntry() {
       id,
       quantity,
       servingId,
+      servingLabel,
+      servingFactor,
       note,
       name,
       icon,
@@ -170,6 +183,12 @@ export function useUpdateEntry() {
           .update({
             ...(quantity === undefined ? {} : { quantity }),
             ...(servingId === undefined ? {} : { serving_id: servingId }),
+            // The two that make a portion change count for anything. Sent
+            // separately from the id rather than folded into it, because
+            // `serving_id` is nullable and soft while these two are what the
+            // day's arithmetic reads.
+            ...(servingLabel === undefined ? {} : { serving_label: servingLabel }),
+            ...(servingFactor === undefined ? {} : { serving_factor: servingFactor }),
             ...(note === undefined ? {} : { note }),
             ...(name === undefined ? {} : { display_label: name }),
             // Both columns together: a check constraint refuses half an icon,

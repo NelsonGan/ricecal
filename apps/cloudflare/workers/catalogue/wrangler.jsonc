@@ -31,4 +31,10 @@
       "database_id": "2b49b52a-f908-41c0-8433-c6933fb19c65"
     }
   ]
+  // No named environments, deliberately. A PR gets a VERSION of this same
+  // Worker under an alias (`wrangler versions upload --preview-alias pr-42`),
+  // which takes 0% of production traffic and inherits every binding above — so
+  // a preview reads the real 3.2 million packets, and there is no second script
+  // to keep in step, no second set of bindings to forget, and nothing to delete
+  // when the PR closes.
 }

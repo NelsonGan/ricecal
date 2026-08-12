@@ -4,9 +4,9 @@
 //   2. component breakdown  — composite plates FIRST: each visible part to its
 //                             own catalogue row, summed into one parent entry
 //                             with the parts attached as ingredients
-//   1. catalogue match      — search_foods + a verifier pick, kcal band check
+//   1. catalogue match      — a search + a verifier pick, kcal band check
 //   3. nearest dish, rescaled — right identity, wrong amount: adjust quantity
-//   4. LLM nutrition        — a shared, deduped `is_estimate` food row
+//   4. LLM nutrition        — numbers only, Atwater-checked; no row is written
 //   5. archetype            — classification over seeded rows; the terminal
 //                             "mixed meal" is a hardcoded id needing no model
 //
@@ -143,9 +143,11 @@ export const refineQuantity = (q: number): number =>
   Math.round(Math.min(10, Math.max(0.25, q)) * 20) / 20
 
 /**
- * Requirement 14: skip retrieval when a query normalizes to nothing usable.
- * A TS approximation of `search_normalize` — the database's own version still
- * decides matching; this only decides whether a round trip is worth making.
+ * A query, folded the way the catalogue folds it, or the empty string when
+ * there is nothing left worth asking about.
+ *
+ * An approximation of the Worker's own `normalize` — that one still decides
+ * what matches; this only decides whether a round trip is worth making.
  */
 const usable = (q: string | null | undefined): string => {
   const norm = (q ?? '')
@@ -191,27 +193,20 @@ export type SearchRow = {
  * component plate that made five searches and then one more round trip to price
  * its parent makes five.
  */
-async function search(
-  q: string,
-  limit: number,
-  _mode: 'strict' | 'forgiving' = 'strict',
-): Promise<SearchRow[]> {
-  // No `db`. This was an RPC against `search_foods` and took a client; the
-  // catalogue is in D1 behind a Worker now, so it is an HTTP call and the
-  // parameter was left behind describing a dependency that no longer exists.
+async function search(q: string, limit: number): Promise<SearchRow[]> {
   // `?? []` on purpose: an unreachable catalogue and an empty one are the same
   // thing to the cascade, which has four more tiers below this one and a floor
   // that needs no network at all. The DISTINCTION matters to the person typing
-  // in the search panel, and the `catalogue` function is where it is made.
+  // in the search panel, and `data/catalogue.ts` is where it is made.
+  //
+  // There used to be a strict/forgiving mode here, because forgiving matching
+  // in Postgres cost over a second against half a million rows — enough that a
+  // five-component plate tripped the 8s statement timeout and lost its
+  // breakdown. The Worker fuses all four arms in one round trip, so there is
+  // one path now, and the retry that used to follow a miss was re-asking an
+  // identical question.
   const foods = (await searchFoods(q, limit)) ?? []
 
-  // `_mode` no longer selects anything. It existed because forgiving matching
-  // in Postgres — fuzzy names, any-term full text — cost over a second per call
-  // against half a million rows, enough that a five-component plate tripped the
-  // 8s statement timeout and lost its breakdown. Over 47,000 rows with an FTS
-  // index there is one path and it answers in tens of milliseconds, so the
-  // distinction has no work left to do. The parameter stays so the call sites
-  // that document WHY they wanted recall still read as they did.
   // The Worker already shapes a food the way `food_details` did, including
   // `default_serving_id` and the default portion's label and weight — so this
   // renames rather than derives. Deriving it here as well is how the two ends
@@ -433,9 +428,9 @@ async function recordMisses(db: SupabaseClient, scanId: string, queries: string[
  * catalogue the weight is what makes a row comparable at all: search ranks by
  * NAME, so "white rice" can top-rank rice flour at 578 kcal, and a row priced
  * per 100 g or per ten sticks says nothing about one scoop or one skewer until
- * it is converted. And when no hit fits, the model's figures PRICE a fallback
- * `is_estimate` row for that component — so one unsearchable side dish no
- * longer kills the breakdown.
+ * it is converted. And when no hit fits, the model's figures PRICE that
+ * component as an estimate — so one unsearchable side dish no longer kills the
+ * breakdown.
  *
  * Everything here is per SINGLE unit, with the count carried in the
  * ingredient's quantity. Two wings are a 125 kcal row at quantity 2, not a 250
@@ -491,31 +486,19 @@ async function resolveByComponents(
   //
   // One at a time, deliberately. Fired together, five of these contend for a
   // small instance and four of the five time out; run in turn each gets the
-  // whole box and the strict mode answers in tens of milliseconds.
+  // whole box and a search answers in tens of milliseconds.
   for (const component of item.components) {
     const q = usable(component.name)
     if (!q) continue
-    const look = (mode: 'strict' | 'forgiving') =>
-      search(q, 5, mode).catch((error) => {
-        // PostgREST hands back a plain object, which `String()` renders as
-        // "[object Object]" — the least useful thing a trace can say.
-        const message = `[cascade] components: ${mode} search "${q}" failed: ${describe(error)}`
-        console.error(message)
-        trace?.push(message)
-        return [] as SearchRow[]
-      })
 
-    // Strict first, then the slow net if it caught nothing. A part is named
-    // the way it sits on the plate — "satay skewer", "kerabu (blue rice)" —
-    // and the catalogue names it "Satay, chicken", so requiring every term
-    // misses rows that exist. Missing one means pricing that part from the
-    // model's own guess, which for satay was double what a stick weighs in at.
-    //
-    // Not for a long phrase, though: "soft drink medium cup" has no catalogue
-    // answer under any matching rule, and the fuzzy arm spends seconds (and
-    // sometimes the whole statement timeout) proving it.
-    let rows = await look('strict')
-    if (!rows.length && q.split(' ').length <= 3) rows = await look('forgiving')
+    const rows = await search(q, 5).catch((error) => {
+      // A PostgREST error is a plain object, which `String()` renders as
+      // "[object Object]" — the least useful thing a trace can say.
+      const message = `[cascade] components: search "${q}" failed: ${describe(error)}`
+      console.error(message)
+      trace?.push(message)
+      return [] as SearchRow[]
+    })
 
     // The catalogue row that best describes ONE of this part, at this weight.
     // Catalogue servings are whatever the source recorded — "Chicken Satay
@@ -740,10 +723,7 @@ async function resolveByCount(
   let q = queries[0]
   for (const candidate of queries) {
     q = candidate
-    rows = await search(candidate, 5, 'strict').catch(() => [] as SearchRow[])
-    if (!rows.length) {
-      rows = await search(candidate, 5, 'forgiving').catch(() => [] as SearchRow[])
-    }
+    rows = await search(candidate, 5).catch(() => [] as SearchRow[])
     if (rows.length) break
   }
 
@@ -826,20 +806,18 @@ async function resolveByDish(
 
   let candidates: SearchRow[] = []
   const missed: string[] = []
+  // Specific first, then generic, then the head noun — the queries are already
+  // ordered that way, so the first that answers is the most specific one the
+  // catalogue holds.
   for (const q of queries) {
-    // Strict first, which is nearly free and, for a dish the catalogue holds
-    // under that name, enough. The forgiving pass is the fallback rather than
-    // the default: "nasi lemak ayam goreng" needs every-term matching relaxed
-    // to reach "PappaRich Nasi Lemak Ayam Rendang", and that is worth a second
-    // once per scan — but not five times over, once per ingredient.
     candidates = await search(q, 5)
-    if (!candidates.length) candidates = await search(q, 5, 'forgiving')
     if (candidates.length) break
     missed.push(q)
   }
   await recordMisses(db, scanId, missed)
 
-  // Requirement 13: zero rows and "verifier said none" are ONE outcome.
+  // Zero rows and "the verifier rejected all of them" are ONE outcome: this
+  // tier has no answer, so fall through rather than settling for a near miss.
   let chosen: SearchRow | null = null
   if (candidates.length) {
     const idx = await pickCandidate(item, candidates, mock).catch(() => null)
@@ -926,10 +904,10 @@ async function resolveByDish(
  * catalogue guess would be the app overruling the only measured figure in the
  * room.
  *
- * It still lands in a `foods` row like everything else, because that is what an
- * entry can point at, and the row is shared and deduped by name and size: two
- * people photographing the same packet get the same row, and the next scan of
- * it needs no model call at all.
+ * The figures land on the entry the way every other tier's do, through
+ * `estimateRow`. Nothing is written to the catalogue and nothing is shared with
+ * the next person to photograph the same packet — a panel read once is this
+ * meal's evidence, not everybody's.
  */
 export async function resolveByLabel(label: NutritionLabel): Promise<Resolved | null> {
   // A close-up of the panel alone has no product name in it, and the row must

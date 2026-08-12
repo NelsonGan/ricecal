@@ -1,14 +1,14 @@
-// The entire Phase 0 server surface, with zero business logic.
-//
-// Three things are proven here, each of which a real feature will later depend
-// on, and none of which is worth discovering is broken at that point:
+// A smoke test for the three things every other function here depends on, with
+// zero business logic of its own:
 //
 //   1. Auth passthrough  — the caller's JWT reaches the function and resolves
 //                          to a user, with no custom authorizer in between.
 //   2. Secrets           — a value set via `supabase secrets set` is readable
 //                          at runtime.
-//   3. R2 presigning     — a presigned PUT URL can be minted, so the photo
-//                          upload path works before any photo feature exists.
+//   3. R2 presigning     — a presigned PUT URL can be minted.
+//
+// When a deploy goes wrong this says which of the three broke, which is the
+// question the scan and photo endpoints cannot answer about themselves.
 //
 // `verify_jwt = false` in config.toml is deliberate: this function inspects the
 // Authorization header itself so it can report *why* auth failed, rather than

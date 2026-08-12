@@ -5,7 +5,7 @@
  *   pnpm foods:reindex --all      rebuild the full-text indexes from scratch
  *   pnpm foods:reindex --check    say what is stale and change nothing
  *
- * `apps/catalogue-worker/schema.sql` creates the tables. This fills in the
+ * `apps/cloudflare/d1/food-catalogue/schema.sql` creates the tables. This fills in the
  * three things that are computed rather than stored by the loader:
  *
  *   food.name_norm         what the exact-name search arm compares against
@@ -19,14 +19,14 @@
  * the full-text indexes, which are CONTENTLESS FTS5 tables and therefore cannot
  * be edited row by row without the original values to hand. Rebuilding them is
  * cheaper to get right than patching them, and the catalogue is small enough
- * (~47,000 searchable rows) that "rebuild" is a minute rather than an outage.
+ * (~48,000 searchable rows) that "rebuild" is a minute rather than an outage.
  *
  * The normalizer is imported from the WORKER's own source rather than
  * reimplemented, because the query and the column have to be folded identically
  * or the arm silently matches nothing.
  */
 
-import { normalize } from '../../catalogue-worker/src/text.ts'
+import { normalize } from '../../cloudflare/workers/catalogue/src/text.ts'
 import { d1, d1batch, q } from './lib/d1.mjs'
 
 const args = process.argv.slice(2)
@@ -93,8 +93,8 @@ async function main() {
 
   // ---- name_norm -----------------------------------------------------------
   //
-  // Through a temp table rather than one UPDATE per row. 47,000 statements is
-  // 47,000 round trips through wrangler; 47,000 rows in multi-row VALUES is a
+  // Through a temp table rather than one UPDATE per row. 48,000 statements is
+  // 48,000 round trips through wrangler; 48,000 rows in multi-row VALUES is a
   // hundred and change, and the UPDATE that reads them is one more.
   const rows = rebuildAll
     ? await d1('select id, name from food')

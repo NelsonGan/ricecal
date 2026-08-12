@@ -4,8 +4,8 @@ An implementation of the Beratt design system: a soft, squishy visual language
 for Malaysian eating. English interface, Malay food names, cool gray-green
 neutrals, and buttons that beg to be pressed.
 
-Run the app and open **Design gallery** from the home screen to see every
-component in every state, in both modes, on a real device.
+`app/gallery.tsx` renders every component in every state, in both modes, on a
+real device. Nothing links to it — open `/gallery` directly.
 
 ## Layers
 
@@ -100,8 +100,12 @@ node scripts/sync-icons.mjs
 ```
 
 That script downscales and quantises (37 MB → 5.7 MB) and needs the design
-system checked out at `.secrets/design-system`. The processed PNGs are
+system checked out at `.secrets/RiceCal Design System`. The processed PNGs are
 committed, so CI and EAS never run it.
+
+`ICON-BACKLOG.md` beside this file is which drawing to add next, measured
+against the catalogue: 100 of them, ranked by how many food rows each one would
+stop rendering as an empty plate.
 
 ## Adding a colour role
 
