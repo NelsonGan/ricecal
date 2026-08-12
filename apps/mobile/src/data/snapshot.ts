@@ -60,8 +60,12 @@ export type LogSnapshot = {
 export function snapshotFromFood(food: Food, servingId?: string): LogSnapshot {
   const serving = food.servings.find((s) => s.id === servingId) ?? food.servings[0]
   return {
-    foodId: food.id,
-    servingId: serving?.id,
+    // The placeholders `foodFromEntry` mints are for routing and for a
+    // controlled selection, and neither is a catalogue id. `food_id` is a uuid
+    // column, so one reaching a write is not a bad reference — it is a 22P02
+    // that fails the save.
+    foodId: food.id === ENTRY_FOOD_ID ? undefined : food.id,
+    servingId: serving?.id === ENTRY_SERVING_ID ? undefined : serving?.id,
     name: food.name,
     brand: food.brand,
     icon: food.icon,
@@ -136,6 +140,76 @@ export function snapshotFromEntry(entry: {
     servingGrams: entry.baseServingGrams,
   }
 }
+
+/**
+ * An entry as the `Food` the detail screen wants, for an entry that has no
+ * catalogue row behind it.
+ *
+ * This is the OTHER direction from `snapshotFromEntry`, and it exists because
+ * `food_id` became nullable and null became ordinary. A tier-4 estimate, a
+ * tier-5 archetype, a plate rebuilt from its own parts, a typed meal and a
+ * recipe are none of them catalogue rows — which is most of what a scan
+ * produces — and the detail screen was written when every entry had a food
+ * behind it. Opening one of those went to `+not-found`, because
+ * `router.push({ params: { id: undefined } })` cannot fill a `[id]` segment.
+ *
+ * The entry already holds everything the screen reads off a food: the numbers
+ * per base serving, the portion, the name, the drawing. The one thing it cannot
+ * hold is the OTHER portions — a catalogue food offers "half plate", "large",
+ * and an entry knows only the size it was logged at. So there is exactly one
+ * serving here, which is the honest answer: the stepper still changes how many,
+ * and the portion picker has nothing to pick between.
+ */
+export function foodFromEntry(entry: {
+  foodId?: string
+  foodName: string
+  brand?: string
+  icon?: IconRef
+  place?: Place
+  base: Macros
+  baseExtras?: ExtraNutrients
+  servingId?: string
+  servingLabel: string
+  servingFactor: number
+  baseServingGrams?: number
+}): Food {
+  return {
+    // The screen keys its portion picker off the serving id, so this row needs
+    // one even when nothing in a catalogue issued it.
+    id: entry.foodId ?? ENTRY_FOOD_ID,
+    name: entry.foodName,
+    brand: entry.brand,
+    icon: entry.icon,
+    place: entry.place ?? 'hawker',
+    servingLabel: entry.servingLabel,
+    servings: [
+      {
+        id: entry.servingId ?? ENTRY_SERVING_ID,
+        label: entry.servingLabel,
+        factor: entry.servingFactor,
+      },
+    ],
+    macros: entry.base,
+    extras: entry.baseExtras ?? {},
+    // Nothing here was published by anybody: these are the scan's own figures,
+    // and a verified badge over them would be the app vouching for its guess.
+    verified: false,
+    servingGrams: entry.baseServingGrams,
+  }
+}
+
+/**
+ * The id a route carries for an entry with no catalogue food behind it.
+ *
+ * A `[id]` segment cannot be empty and cannot be `undefined`, so an entry that
+ * points at nothing still needs something to put there. It is deliberately not
+ * a plausible id: `useFood` skips it, and anything that reaches the catalogue
+ * with it would be a bug rather than a miss.
+ */
+export const ENTRY_FOOD_ID = 'entry'
+
+/** The same, for the single portion `foodFromEntry` synthesises. */
+export const ENTRY_SERVING_ID = 'entry:base'
 
 /** The snapshot as `food_logs` columns. One place, so the names cannot drift. */
 export function snapshotColumns(snapshot: LogSnapshot) {

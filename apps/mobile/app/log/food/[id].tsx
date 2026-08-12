@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, BackHandler, Platform, TextInput, View } from 'react-native'
 
 import {
+  ENTRY_FOOD_ID,
   type EntryPatch,
+  foodFromEntry,
   type IconRef,
   removeMealPhoto,
   snapshotFromFood,
@@ -195,7 +197,10 @@ export default function FoodDetail() {
   const { selectedDate } = useSelectedDate()
 
   const params = useLocalSearchParams<{ id: string; entryId?: string }>()
-  const { data: food, isPending } = useFood(params.id)
+  // `ENTRY_FOOD_ID` is the placeholder a row with no catalogue food behind it
+  // travels under, so there is nothing to ask the catalogue for.
+  const catalogueId = params.id === ENTRY_FOOD_ID ? undefined : params.id
+  const { data: catalogueFood, isPending } = useFood(catalogueId)
 
   // The entry being edited, if this screen was opened from a row. It is on the
   // day in view — the only day whose entries are loaded — which is also the
@@ -214,6 +219,17 @@ export default function FoodDetail() {
   const { data: ingredients = [], isLoading: partsLoading } = useEntryIngredients(
     existing?.scanId ? existing.id : undefined,
   )
+
+  /**
+   * The food this screen is about — from the catalogue when there is one, and
+   * from the ENTRY when there is not.
+   *
+   * Null `food_id` is ordinary now: an estimate, an archetype, a plate rebuilt
+   * from its own parts, a typed meal and a recipe are none of them catalogue
+   * rows, which between them is most of what a scan writes. The entry carries
+   * its own numbers, so it can answer everything below — see `foodFromEntry`.
+   */
+  const food = catalogueFood ?? (existing ? foodFromEntry(existing) : null)
   const refineEntry = useRefineEntry()
   const updateIngredient = useUpdateIngredient()
   const removeIngredient = useRemoveIngredient()
