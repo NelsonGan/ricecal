@@ -6,6 +6,10 @@ import { View } from 'react-native'
 
 import {
   dateKey,
+  type LogSnapshot,
+  snapshotFromEntry,
+  snapshotFromFood,
+  snapshotFromRecipe,
   useDay,
   useDayLog,
   useDescribeFood,
@@ -15,7 +19,13 @@ import {
   useSnapFood,
   useTargets,
 } from '@/data'
-import { DescribePanel, FoodSearchPanel, InlineCamera, QuickAction } from '@/features/logging'
+import {
+  BarcodePanel,
+  DescribePanel,
+  FoodSearchPanel,
+  InlineCamera,
+  QuickAction,
+} from '@/features/logging'
 import { RecipePanel } from '@/features/recipes'
 import { ItemRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
@@ -24,12 +34,12 @@ import { useThemeColors } from '@/theme/useTheme'
 import { Icon, IconButton, SheetSurface, Tappable, Text } from '@/ui'
 
 /**
- * Which of the four quick actions has its panel open below the row, if any.
+ * Which of the five quick actions has its panel open below the row, if any.
  *
  * A union rather than a flag each, because they share the space under the row:
  * opening the camera has to put search away, and the other way round.
  */
-type Panel = 'camera' | 'describe' | 'search' | 'recipes' | null
+type Panel = 'camera' | 'barcode' | 'describe' | 'search' | 'recipes' | null
 
 /**
  * L2 QUICK SELECTOR, and L3's backdrop.
@@ -92,16 +102,21 @@ export default function LogSheet() {
   const openFood = (foodId: string) =>
     router.replace({ pathname: '/log/food/[id]', params: { id: foodId } })
 
-  const add = (foodId: string, servingId: string) => {
-    logFood.mutate({ foodId, servingId, logDate: selectedDate, source: 'quickAdd' })
+  // Takes the snapshot rather than a food, because one of the two things this
+  // sheet adds is a recipe and the other is a catalogue dish. They build one
+  // the same way and nothing downstream needs to know which it was.
+  const add = (snapshot: LogSnapshot) => {
+    logFood.mutate({ snapshot, logDate: selectedDate, source: 'quickAdd' })
     goBack()
   }
 
   const repeatYesterday = () => {
     for (const entry of yesterdayEntries) {
       logFood.mutate({
-        foodId: entry.foodId,
-        servingId: entry.servingId,
+        // A copy of yesterday's snapshot, not a fresh lookup. The dish may have
+        // been corrected in the catalogue since, and "repeat" means the same
+        // meal rather than today's opinion of it.
+        snapshot: snapshotFromEntry(entry),
         quantity: entry.quantity,
         logDate: selectedDate,
         source: 'quickAdd',
@@ -125,11 +140,22 @@ export default function LogSheet() {
      * open, before the keyboard's real height is known, it overshoots and
      * carries the field off the top of the panel. With nothing to scroll there
      * is no scroll to get wrong.
+     *
+     * Scan is full height AND scrollable, which looks like a contradiction of
+     * that and is not. The overshoot above is a property of the SYSTEM
+     * keyboard, whose height is not known until it has finished opening; the
+     * code field opens the app's own `Numpad`, whose height is a constant this
+     * app owns, so `revealForNumpad` computes the scroll exactly and lands the
+     * field just above the keys. Without the scroll the pad simply covers the
+     * field and the Look up button, because the viewfinder above them is 220pt
+     * of content that has to stay where it is.
      */
     <SheetSurface
       onClose={() => goBack()}
       scrollable={panel !== 'describe'}
-      fullHeight={panel === 'search' || panel === 'describe' || panel === 'recipes'}
+      fullHeight={
+        panel === 'search' || panel === 'describe' || panel === 'recipes' || panel === 'barcode'
+      }
     >
       {/* The heading is rendered here rather than through `title` so the
           remaining count can sit on the same line, right aligned, the way the
@@ -160,6 +186,20 @@ export default function LogSheet() {
           tone="kaya"
           selected={panel === 'describe'}
           onPress={() => toggle('describe')}
+        />
+        {/* The only exact way in. Everything on either side of it asks a model
+            or asks the user to spell something; a barcode IS the product, and
+            for a packet that is both faster and righter than a photograph of
+            it. It sits beside Snap because the two are the same gesture — point
+            the phone at the thing — and the catalogue behind it is the reason
+            the packaged half of the database could stop being a search
+            problem. */}
+        <QuickAction
+          label={t('logging:selector.scan')}
+          icon={{ set: 'system', name: 'barcode' }}
+          tone="hibiscus"
+          selected={panel === 'barcode'}
+          onPress={() => toggle('barcode')}
         />
         <QuickAction
           label={t('logging:selector.search')}
@@ -202,6 +242,14 @@ export default function LogSheet() {
           }}
         />
       ) : null}
+      {panel === 'barcode' ? (
+        // Unlike the shutter, this does NOT close the sheet and write a row. A
+        // scanned packet is a catalogue row with portions on it — "1 sachet",
+        // "half the packet" — and how much of it was eaten is the question the
+        // detail screen exists to ask. Snapping a plate has already answered
+        // that question by photographing one plate.
+        <BarcodePanel onFound={openFood} onDescribe={() => setPanel('describe')} />
+      ) : null}
       {panel === 'search' ? <FoodSearchPanel autoFocus onPick={openFood} /> : null}
       {panel === 'recipes' ? (
         // `replace` for the same reason `openFood` does it: a push from inside a
@@ -209,7 +257,7 @@ export default function LogSheet() {
         // recipe would come up as a second modal stacked on this sheet.
         <RecipePanel
           autoFocus
-          onLog={(recipe) => add(recipe.foodId, recipe.defaultServingId)}
+          onLog={(recipe) => add(snapshotFromRecipe(recipe))}
           onOpen={(recipe) =>
             router.replace({ pathname: '/recipe/[id]', params: { id: recipe.id } })
           }
@@ -224,7 +272,10 @@ export default function LogSheet() {
           cannot help; the three buttons above already say what to do next. */}
       {/* The suggestion blocks are for somebody who has not decided yet, and a
           panel that is open is the answer of somebody who has. */}
-      {panel === 'search' || panel === 'describe' || panel === 'recipes' ? null : (
+      {panel === 'search' ||
+      panel === 'describe' ||
+      panel === 'recipes' ||
+      panel === 'barcode' ? null : (
         <>
           {recent.length ? (
             <View className="gap-3 pt-1">
@@ -246,7 +297,7 @@ export default function LogSheet() {
                       size="sm"
                       variant="primary"
                       accessibilityLabel={t('common:action.add')}
-                      onPress={() => add(food.id, food.servings[0]?.id ?? '')}
+                      onPress={() => add(snapshotFromFood(food))}
                     >
                       {/* Tinted to the role: the plus illustration carries its
                           own gold, which on a pandan button reads as a third

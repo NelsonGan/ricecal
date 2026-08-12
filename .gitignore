@@ -59,3 +59,7 @@ deno.lock
 # simulated bucket and writes one of these next to the CWD; every real command
 # here needs `--remote`, and nothing in this directory is ever the truth.
 .wrangler/
+
+# Photographs the scan eval fetches from their source URLs. The cases carry
+# the URL; this is only the copy.
+apps/supabase/data/scan-eval/.cache/

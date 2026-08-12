@@ -43,7 +43,6 @@ import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 import {
-  clampQuantity,
   refineQuantity,
   resolveByArchetype,
   resolveItem,
@@ -69,10 +68,14 @@ type RefineRequest = {
 const REMOVES_THE_PART = 0.6
 
 /**
- * The entry this function reasons over: the row, the dish behind it, the
- * portion it is measured in, and the parts hanging off it. Exactly the select
- * below, named — see the note there for why it is declared rather than
- * inferred.
+ * The entry this function reasons over: the row, the dish it holds, the portion
+ * it is measured in, and the parts hanging off it. Exactly the select below,
+ * named — see the note there for why it is declared rather than inferred.
+ *
+ * The dish and the portion used to be two JOINS, into `foods` and
+ * `food_servings`. They are columns on the entry now, which is the same
+ * information with one fewer thing that can be missing: an entry whose food had
+ * been deleted from under it came back with a null relation and threw here.
  */
 type RefineEntry = {
   id: string
@@ -80,21 +83,19 @@ type RefineEntry = {
   quantity: number
   scan_id: string | null
   display_label: string | null
-  food_id: string
-  serving_id: string
-  foods: {
-    name: string
-    kcal: number
-    carbs_g: number | null
-    protein_g: number | null
-    fat_g: number | null
-  }
-  food_servings: { label: string; factor: number }
+  food_id: string | null
+  item_name: string | null
+  base_kcal: number | null
+  base_carbs_g: number | string | null
+  base_protein_g: number | string | null
+  base_fat_g: number | string | null
+  serving_label: string | null
+  serving_factor: number | null
   food_log_ingredients: Array<{
     id: string
     quantity: number
     display_label: string | null
-    foods: { name: string }
+    item_name: string | null
   }>
 }
 
@@ -129,7 +130,6 @@ async function rebuildFromParts(
   entryId: string,
   name: string,
 ): Promise<{
-  foodId: string
   quantity: number
   kcal: number
   ingredients: Array<{ name: string; kcal: number; quantity: number }>
@@ -157,52 +157,46 @@ async function rebuildFromParts(
   if (sum.kcal <= 0) return null
 
   const round1 = (value: number) => Math.round(value * 10) / 10
-  const { data: parentId, error } = await db.rpc('upsert_estimate_food', {
-    p_name: name,
-    p_kcal: Math.round(sum.kcal),
-    p_carbs_g: round1(sum.carbs),
-    p_protein_g: round1(sum.protein),
-    p_fat_g: round1(sum.fat),
-    p_fibre_g: null,
-    p_sugar_g: null,
-    p_sodium_mg: null,
-  })
-  if (error || !parentId) return null
 
-  const [{ data: parent }, { data: serving }] = await Promise.all([
-    db
-      .from('foods')
-      .select('id, kcal')
-      .eq('id', parentId as string)
-      .single(),
-    db
-      .from('food_servings')
-      .select('id')
-      .eq('food_id', parentId as string)
-      .eq('is_default', true)
-      .single(),
-  ])
-  if (!parent || !serving) return null
-
-  // One plate, one portion — the size-aware dedup means the row that comes
-  // back is priced for this plate, so this is 1 unless something drifted.
-  const quantity = parent.kcal > 0 ? clampQuantity(sum.kcal / parent.kcal) : 1
-
+  // The parent is the sum of these parts, written onto the entry itself.
+  //
+  // It used to be a shared `foods` row upserted on the normalized name, which
+  // meant the figure that came back was not always the figure just computed —
+  // somebody else's plate of the same name may have been priced differently —
+  // and `quantity` existed here to absorb that drift. With the numbers on the
+  // entry there is no other plate to collide with, so this is exactly the sum
+  // at one portion, and `quantity` is 1 by construction.
   const { error: updateError } = await db
     .from('food_logs')
     .update({
-      food_id: parent.id,
-      serving_id: serving.id,
-      quantity,
+      // A plate rebuilt from its own parts is nothing in any catalogue, so both
+      // references are cleared rather than left pointing at whatever the entry
+      // used to be. Leaving `food_id` behind would attribute this total to a
+      // dish that no longer describes it.
+      food_id: null,
+      serving_id: null,
+      item_name: name,
+      item_brand: null,
+      item_place: null,
+      base_kcal: Math.round(sum.kcal),
+      base_carbs_g: round1(sum.carbs),
+      base_protein_g: round1(sum.protein),
+      base_fat_g: round1(sum.fat),
+      base_fibre_g: null,
+      base_sugar_g: null,
+      base_sodium_mg: null,
+      serving_label: '1 serving',
+      serving_factor: 1,
+      serving_grams: null,
+      quantity: 1,
       display_label: name,
     })
     .eq('id', entryId)
   if (updateError) return null
 
   return {
-    foodId: parent.id,
-    quantity,
-    kcal: Math.round(parent.kcal * quantity),
+    quantity: 1,
+    kcal: Math.round(sum.kcal),
     ingredients: rows.map((row) => ({
       name: row.name ?? '',
       kcal: row.kcal ?? 0,
@@ -256,9 +250,10 @@ Deno.serve(async (req: Request) => {
   const { data } = await db
     .from('food_logs')
     .select(
-      'id, user_id, quantity, scan_id, display_label, food_id, serving_id, ' +
-        'foods(name, kcal, carbs_g, protein_g, fat_g), food_servings(label, factor), ' +
-        'food_log_ingredients(id, quantity, display_label, foods(name))',
+      'id, user_id, quantity, scan_id, display_label, food_id, ' +
+        'item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g, ' +
+        'serving_label, serving_factor, ' +
+        'food_log_ingredients(id, quantity, display_label, item_name)',
     )
     .eq('id', body.food_log_id)
     .single()
@@ -268,11 +263,9 @@ Deno.serve(async (req: Request) => {
     return json({ ok: false, error: 'entry not found' }, 404)
   }
 
-  const food = entry.foods
-  const serving = entry.food_servings
   const parts = entry.food_log_ingredients
   const partName = (part: RefineEntry['food_log_ingredients'][number]) =>
-    part.display_label ?? part.foods.name
+    part.display_label ?? part.item_name ?? ''
 
   // The breakdown WITH its numbers. The interpreter is asked for a calorie
   // delta for one part, and it cannot compute a fraction of a portion it has
@@ -292,10 +285,12 @@ Deno.serve(async (req: Request) => {
   try {
     const interpretation = await interpretInstruction(
       {
-        name: entry.display_label ?? food.name,
-        kcal: Math.round(food.kcal * serving.factor * Number(entry.quantity)),
+        name: entry.display_label ?? entry.item_name ?? '',
+        kcal: Math.round(
+          Number(entry.base_kcal ?? 0) * Number(entry.serving_factor ?? 1) * Number(entry.quantity),
+        ),
         quantity: Number(entry.quantity),
-        servingLabel: serving.label,
+        servingLabel: entry.serving_label ?? '1 serving',
         ingredients: parts.map((part) => ({
           name: partName(part),
           quantity: Number(part.quantity),
@@ -385,35 +380,24 @@ Deno.serve(async (req: Request) => {
           Math.round(interpretation.part_kcal ?? before + interpretation.kcal_delta),
         )
         const perUnit = Math.max(1, Math.round(after / held))
-        const { data: swapId } = await db.rpc('upsert_estimate_food', {
-          p_name: interpretation.part,
-          p_kcal: perUnit,
-          p_carbs_g: Math.round((perUnit * 0.5) / 4),
-          p_protein_g: Math.round((perUnit * 0.2) / 4),
-          p_fat_g: Math.round((perUnit * 0.3) / 9),
-          p_fibre_g: null,
-          p_sugar_g: null,
-          p_sodium_mg: null,
-        })
-        const { data: swapServing } = swapId
-          ? await db
-              .from('food_servings')
-              .select('id')
-              .eq('food_id', swapId as string)
-              .eq('is_default', true)
-              .single()
-          : { data: null }
-        if (swapId && swapServing) {
-          await db
-            .from('food_log_ingredients')
-            .update({
-              food_id: swapId as string,
-              serving_id: swapServing.id,
-              quantity: refineQuantity(held),
-              display_label: interpretation.part.slice(0, 120),
-            })
-            .eq('id', swapped.id)
-        }
+        await db
+          .from('food_log_ingredients')
+          .update({
+            // The new food is nothing in any catalogue, so the reference goes
+            // rather than being left pointing at what this part used to be.
+            food_id: null,
+            serving_id: null,
+            item_name: interpretation.part.slice(0, 120),
+            base_kcal: perUnit,
+            base_carbs_g: Math.round((perUnit * 0.5) / 4),
+            base_protein_g: Math.round((perUnit * 0.2) / 4),
+            base_fat_g: Math.round((perUnit * 0.3) / 9),
+            serving_label: '1 serving',
+            serving_factor: 1,
+            quantity: refineQuantity(held),
+            display_label: interpretation.part.slice(0, 120),
+          })
+          .eq('id', swapped.id)
       } else if (match && interpretation.total) {
         // The user said how many there ARE. "Only 3 skewers" sets that part to
         // three and leaves the rest of the plate alone — read as a change it
@@ -504,47 +488,35 @@ Deno.serve(async (req: Request) => {
         // internally honest.
         const added = interpretation.part ?? instruction
         const kcal = Math.round(interpretation.kcal_delta)
-        const { data: addedId } = await db.rpc('upsert_estimate_food', {
-          p_name: added,
-          p_kcal: kcal,
-          p_carbs_g: Math.round((kcal * 0.5) / 4),
-          p_protein_g: Math.round((kcal * 0.2) / 4),
-          p_fat_g: Math.round((kcal * 0.3) / 9),
-          p_fibre_g: null,
-          p_sugar_g: null,
-          p_sodium_mg: null,
+        await db.from('food_log_ingredients').insert({
+          food_log_id: entry.id,
+          food_id: null,
+          serving_id: null,
+          item_name: added.slice(0, 120),
+          base_kcal: kcal,
+          base_carbs_g: Math.round((kcal * 0.5) / 4),
+          base_protein_g: Math.round((kcal * 0.2) / 4),
+          base_fat_g: Math.round((kcal * 0.3) / 9),
+          serving_label: '1 serving',
+          serving_factor: 1,
+          quantity: 1,
+          display_label: added.slice(0, 120),
+          position: parts.length,
         })
-        const { data: addedServing } = addedId
-          ? await db
-              .from('food_servings')
-              .select('id')
-              .eq('food_id', addedId as string)
-              .eq('is_default', true)
-              .single()
-          : { data: null }
-        if (addedId && addedServing) {
-          await db.from('food_log_ingredients').insert({
-            food_log_id: entry.id,
-            food_id: addedId as string,
-            serving_id: addedServing.id,
-            quantity: 1,
-            display_label: added.slice(0, 120),
-            position: parts.length,
-          })
-        }
       }
 
       const rebuilt = await rebuildFromParts(db, entry.id, interpretation.name)
       if (!rebuilt) throw new Error('could not re-price the plate')
 
-      await recordRefine(2, rebuilt.foodId, rebuilt.quantity)
+      // No food id: a plate rebuilt from its own parts is not a catalogue row.
+      await recordRefine(2, null, rebuilt.quantity)
       return json({
         ok: true,
         applied: true,
         action: 'adjust',
         entry: {
           id: entry.id,
-          foodId: rebuilt.foodId,
+          foodId: null,
           name: interpretation.name,
           quantity: rebuilt.quantity,
           kcal: rebuilt.kcal,
@@ -567,50 +539,43 @@ Deno.serve(async (req: Request) => {
       // priced per serving and then multiplied by the quantity again. Added
       // flat, "add a fried egg" to an entry logged at half a plate put half an
       // egg on it: 90 kcal became 45 by the time the quantity had its say.
-      const portionKcal = food.kcal * serving.factor
+      const factor = Number(entry.serving_factor ?? 1)
+      const portionKcal = Number(entry.base_kcal ?? 0) * factor
       const perPortionDelta = interpretation.kcal_delta / Math.max(0.25, Number(entry.quantity))
       const target = Math.max(20, Math.round(portionKcal + perPortionDelta))
       const scale = target / Math.max(1, portionKcal)
       const round1 = (value: number) => Math.round(value * 10) / 10
 
-      const { data: adjustedId, error: adjustError } = await db.rpc('upsert_estimate_food', {
-        p_name: interpretation.name,
-        p_kcal: target,
-        p_carbs_g: round1(Number(food.carbs_g ?? 0) * serving.factor * scale),
-        p_protein_g: round1(Number(food.protein_g ?? 0) * serving.factor * scale),
-        p_fat_g: round1(Number(food.fat_g ?? 0) * serving.factor * scale),
-        p_fibre_g: null,
-        p_sugar_g: null,
-        p_sodium_mg: null,
-      })
-      if (adjustError || !adjustedId) throw adjustError ?? new Error('adjust upsert failed')
-
-      const [{ data: adjustedFood }, { data: adjustedServing }] = await Promise.all([
-        db
-          .from('foods')
-          .select('id, name, kcal')
-          .eq('id', adjustedId as string)
-          .single(),
-        db
-          .from('food_servings')
-          .select('id')
-          .eq('food_id', adjustedId as string)
-          .eq('is_default', true)
-          .single(),
-      ])
-      if (!adjustedFood || !adjustedServing) throw new Error('adjusted row incomplete')
-
-      // Dedup may hand back an earlier variant priced differently; the
-      // quantity absorbs the difference (rule 12 — amount, never macros).
-      const quantity = refineQuantity(
-        (Number(entry.quantity) * target) / Math.max(1, adjustedFood.kcal),
-      )
-
+      // The adjusted figures replace the entry's own, and the quantity does not
+      // move. It used to: the row was a shared estimate deduped on the name, so
+      // an earlier variant priced differently could come back instead, and the
+      // quantity absorbed that (rule 12 — amount, never macros). Nothing is
+      // shared now, so `target` is what this entry is worth per portion and the
+      // portion count the user chose is left exactly where they put it.
+      //
+      // The portion collapses to a plain "1 serving" because these numbers are
+      // no longer per a catalogue serving that a factor scales — the factor is
+      // already IN them, via `portionKcal`. Keeping a "Half" label over a base
+      // that already means half would double the discount at the next read.
+      const quantity = refineQuantity(Number(entry.quantity))
       const { error: updateError } = await db
         .from('food_logs')
         .update({
-          food_id: adjustedFood.id,
-          serving_id: adjustedServing.id,
+          food_id: null,
+          serving_id: null,
+          item_name: interpretation.name,
+          item_brand: null,
+          item_place: null,
+          base_kcal: target,
+          base_carbs_g: round1(Number(entry.base_carbs_g ?? 0) * factor * scale),
+          base_protein_g: round1(Number(entry.base_protein_g ?? 0) * factor * scale),
+          base_fat_g: round1(Number(entry.base_fat_g ?? 0) * factor * scale),
+          base_fibre_g: null,
+          base_sugar_g: null,
+          base_sodium_mg: null,
+          serving_label: '1 serving',
+          serving_factor: 1,
+          serving_grams: null,
           quantity,
           display_label: interpretation.name,
         })
@@ -620,17 +585,17 @@ Deno.serve(async (req: Request) => {
       // The parts list described the pre-adjustment plate.
       await db.from('food_log_ingredients').delete().eq('food_log_id', entry.id)
 
-      await recordRefine(null, adjustedFood.id, quantity)
+      await recordRefine(null, null, quantity)
       return json({
         ok: true,
         applied: true,
         action: 'adjust',
         entry: {
           id: entry.id,
-          foodId: adjustedFood.id,
+          foodId: null,
           name: interpretation.name,
           quantity,
-          kcal: Math.round(adjustedFood.kcal * quantity),
+          kcal: Math.round(target * quantity),
           isEstimate: true,
           isArchetype: false,
           ingredients: [],
@@ -649,6 +614,23 @@ Deno.serve(async (req: Request) => {
         .update({
           food_id: resolved.food.id,
           serving_id: resolved.food.serving_id,
+          // The whole snapshot, because a redescribe is a different food: every
+          // number the entry carries described the dish that was just corrected
+          // away. Leaving any of them behind would put the old plate's macros
+          // under the new plate's name.
+          item_name: resolved.food.name,
+          item_brand: null,
+          item_place: resolved.food.place,
+          base_kcal: Math.round(resolved.food.kcal),
+          base_carbs_g: resolved.food.carbs,
+          base_protein_g: resolved.food.protein,
+          base_fat_g: resolved.food.fat,
+          base_fibre_g: resolved.food.fibre,
+          base_sugar_g: resolved.food.sugar,
+          base_sodium_mg: resolved.food.sodium,
+          serving_label: resolved.food.servingLabel,
+          serving_factor: 1,
+          serving_grams: resolved.food.servingGrams,
           quantity: resolved.quantity,
           display_label: resolved.displayLabel,
           scan_id: scanId,

@@ -8,18 +8,53 @@
 -- answer it can give is the terminal row, whose id is a constant the edge
 -- function carries so that reaching it needs no model call and no query.
 --
+-- WHY THIS IS A TABLE OF ITS OWN
+--
+-- These used to be `foods` rows with `is_archetype`, written by this function
+-- into the catalogue. The catalogue is in Cloudflare D1 now, and putting the
+-- archetypes there with it would have made the fallback for "the network failed"
+-- another network call. They are sixty rows; they stay next to the diary.
+--
 -- The macros are one figure per archetype, chosen as the middle of the range
 -- the catalogue holds for that family of dishes — a deliberate median, not a
 -- model's opinion, so the number a failed scan produces is defensible and
 -- stable. They live in this function rather than in a CSV so that re-running
 -- it is the way to correct one everywhere at once.
 --
+-- There is no serving list any more. Every archetype had the same three
+-- portions ("1 serving", "Half", "Large") and the cascade only ever chose the
+-- first, because a tier-5 answer picks a food and expresses the size as the
+-- quantity beside it. The other two were reachable only from the portion sheet
+-- on an entry already logged, which now offers them from the entry's own
+-- snapshot rather than from a catalogue row.
+--
 -- Seeding is a FUNCTION rather than inserts in this file because schema files
 -- only shape the shadow database during `db diff` — data written here would
 -- never reach a migration. A data migration calls it once, and calling it
--- again is always safe: it upserts on slug and never touches non-archetype
--- rows.
+-- again is always safe: it upserts on slug.
 -- ---------------------------------------------------------------------------
+
+create table if not exists public.archetypes (
+  id         uuid primary key default gen_random_uuid(),
+  slug       text not null unique,
+  name       text not null,
+  kcal       integer not null,
+  carbs_g    numeric(6, 1) not null,
+  protein_g  numeric(6, 1) not null,
+  fat_g      numeric(6, 1) not null
+);
+
+alter table public.archetypes enable row level security;
+
+-- Readable by anyone signed in, and written by nobody but the seed. There is
+-- nothing private here — it is sixty generic dishes — and the client does not
+-- read it at all today; the grant exists so that a future "we could not read
+-- your photo, was it one of these?" does not need a new policy.
+create policy "archetypes: read" on public.archetypes
+  for select to authenticated using (true);
+
+grant select on public.archetypes to authenticated;
+grant select, insert, update, delete on public.archetypes to service_role;
 
 create or replace function public.seed_archetype_foods()
 returns void
@@ -28,7 +63,6 @@ set search_path = ''
 as $$
 declare
   r record;
-  v_food_id uuid;
 begin
   for r in
     select * from (values
@@ -117,36 +151,22 @@ begin
       (null::uuid, 'archetype-fruit',                'Fruit, one serving',         90, 22.0,  1.0,  0.5)
     ) as t (id, slug, name, kcal, carbs_g, protein_g, fat_g)
   loop
-    insert into public.foods (id, slug, name, place, kcal, carbs_g, protein_g, fat_g,
-                              verified, is_archetype, source)
-    values (coalesce(r.id, pg_catalog.gen_random_uuid()), r.slug, r.name, 'home',
-            r.kcal, r.carbs_g, r.protein_g, r.fat_g,
-            false, true, 'archetype median')
+    insert into public.archetypes (id, slug, name, kcal, carbs_g, protein_g, fat_g)
+    values (coalesce(r.id, pg_catalog.gen_random_uuid()), r.slug, r.name,
+            r.kcal, r.carbs_g, r.protein_g, r.fat_g)
     on conflict (slug) do update set
       name       = excluded.name,
       kcal       = excluded.kcal,
       carbs_g    = excluded.carbs_g,
       protein_g  = excluded.protein_g,
-      fat_g      = excluded.fat_g,
-      is_archetype = true
-    returning id into v_food_id;
-
-    -- Portion is the largest error source, so even a fallback row offers the
-    -- one-tap half / large the portion sheet renders.
-    insert into public.food_servings (food_id, slug, label, factor, is_default, position)
-    values
-      (v_food_id, 'serving', '1 serving', 1.0,  true,  0),
-      (v_food_id, 'half',    'Half',      0.5,  false, 1),
-      (v_food_id, 'large',   'Large',     1.5,  false, 2)
-    on conflict (food_id, slug) do update set
-      label = excluded.label, factor = excluded.factor;
+      fat_g      = excluded.fat_g;
   end loop;
 end;
 $$;
 
 comment on function public.seed_archetype_foods is
-  'Upserts the ~60 tier-5 archetype rows and their portions. Idempotent; '
-  'called from a data migration and safe to re-run to correct a figure.';
+  'Upserts the ~60 tier-5 archetype rows. Idempotent; called from a data '
+  'migration and safe to re-run to correct a figure.';
 
 revoke execute on function public.seed_archetype_foods from public, anon, authenticated;
 grant execute on function public.seed_archetype_foods to service_role;

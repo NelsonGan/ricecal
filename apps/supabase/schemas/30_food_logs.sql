@@ -10,27 +10,35 @@
 -- `logged_at` is "when did this happen", which is what orders the rows inside
 -- a meal and prints "8:20 am" on each one.
 --
--- WHY THERE IS NO COPY OF THE MACROS
+-- WHY THE ENTRY CARRIES ITS OWN MACROS
 --
--- An entry is a foreign key and a quantity. The calorie count is derived at
--- read time through `daily_nutrition` / `food_log_details`, so correcting a
--- catalogue row corrects every log that used it. The alternative — snapshot
--- the macros on write — makes history immutable but also makes it permanently
--- wrong, and leaves no way to fix a dish that was entered at double its real
--- calories.
+-- It did not, for most of this app's life. An entry was a foreign key and a
+-- quantity, every calorie was derived at read time through a join, and the
+-- property that bought was worth having: correcting a catalogue row corrected
+-- every log that used it.
+--
+-- The catalogue is in Cloudflare D1 now — 3.2 million barcoded products behind
+-- a Worker — and a foreign key cannot cross into another database. So either
+-- the numbers travel with the entry or a day's total becomes a network call,
+-- and a diary that cannot add up its own day offline is not a diary.
+--
+-- The trade is now the other way round: a dish corrected in the catalogue no
+-- longer corrects the diaries that used it. `food_id` survives as a SOFT
+-- reference, unconstrained, so a future job could re-snapshot entries against
+-- the current catalogue. Not automatic. Recoverable.
+--
+-- What it buys is that the catalogue became disposable — truncatable,
+-- rebuildable, reloadable without touching a diary. That is not hypothetical: a
+-- reload of it took this app down to 6,451 foods once, because the delete had
+-- to cascade through the entries pointing at the rows being replaced.
 --
 -- THE SEAM FOR CALORIE SCANNING
 --
--- A scan resolves to a catalogue row and then writes an ordinary entry against
--- it: `source = 'camera'` and `photo_path` are already here for that, and
--- nothing in this table has to move.
---
--- What it cannot do is invent a dish. `foods` has no per-user rows any more, so
--- a photo that matches nothing in the catalogue has nowhere to land — that case
--- has to be answered by widening the catalogue or by asking the user to pick,
--- not by writing a private food. Making `food_id` nullable with an inline macro
--- block is the other way out, and it costs the property that correcting a dish
--- corrects every log that used it.
+-- A scan resolves to a food and then writes an ordinary entry: `source =
+-- 'camera'` and `photo_path` are already here for that. A photo that matches
+-- nothing in the catalogue no longer has nowhere to land — the cascade's lower
+-- tiers write their estimate straight into these columns with a null `food_id`,
+-- which is what the shared `foods` estimate row used to exist to avoid.
 -- ---------------------------------------------------------------------------
 
 create table public.food_logs (
@@ -46,8 +54,46 @@ create table public.food_logs (
   -- for a field nobody read back. Meal TIMES survive on `meal_times`, where
   -- they mean something — the hours a reminder fires.
 
-  food_id      uuid not null,
-  serving_id   uuid not null,
+  -- Provenance, not a dependency. Both name rows in a catalogue that is not in
+  -- this database, so neither is constrained and neither is required: an
+  -- estimate the cascade invented has no catalogue row to point at, and a plate
+  -- rebuilt from its own parts stops describing whatever it used to be.
+  food_id      uuid,
+  -- Text rather than uuid: a portion in D1 is keyed `(food_id, slug)` and the
+  -- Worker names one `"<food id>:<slug>"`. Left as a uuid it typechecked
+  -- everywhere and rejected every real insert.
+  serving_id   text,
+  -- The pot this came out of, when it was logged from a recipe. Soft for the
+  -- same reason, and it must not stop a recipe being deleted.
+  recipe_id    uuid,
+
+  -- THE SNAPSHOT: what this entry is worth, and the only thing that says so.
+  --
+  -- Per ONE base serving, exactly as the catalogue quotes them, because the
+  -- arithmetic downstream is unchanged — base x factor x quantity — and the
+  -- stepper and the portion sheet keep working without learning anything new.
+  item_name      text not null,
+  item_brand     text,
+  -- The food's own drawing, distinct from `icon_set`/`icon_name` below, which
+  -- are the user's override. The view coalesces them in that order.
+  item_icon_set  public.icon_set,
+  item_icon_name text,
+  item_place     public.food_place,
+
+  base_kcal      integer not null,
+  base_carbs_g   numeric(6, 1) not null,
+  base_protein_g numeric(6, 1) not null,
+  base_fat_g     numeric(6, 1) not null,
+  -- Only a catalogue row or a photographed panel knows these; null is honest.
+  base_fibre_g   numeric(6, 1),
+  base_sugar_g   numeric(6, 1),
+  base_sodium_mg integer,
+
+  -- The portion, as it was chosen. `serving_id` pointed into `food_servings`;
+  -- what it MEANT was these three values, and they are what the row needs.
+  serving_label  text not null,
+  serving_factor numeric(6, 3) not null,
+  serving_grams  numeric(9, 2),
 
   quantity     numeric(6, 2) not null default 1 check (quantity > 0 and quantity <= 100),
 
@@ -125,19 +171,16 @@ create table public.food_logs (
   constraint food_logs_one_picture check (photo_path is null or icon_set is null),
 
   created_at   timestamptz not null default now(),
-  updated_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
 
-  -- The composite reference is the point: a two-column foreign key means the
-  -- serving is guaranteed to belong to the food. Two independent references
-  -- would each be satisfiable while together describing a plate of nasi lemak
-  -- measured in cups of teh tarik.
-  constraint food_logs_food_serving_fkey
-    foreign key (food_id, serving_id)
-    references public.food_servings (food_id, id)
-    on delete restrict,
-
-  constraint food_logs_food_fkey
-    foreign key (food_id) references public.foods (id) on delete restrict
+  -- There were two foreign keys here, and the composite one was the point: a
+  -- two-column reference meant the serving was guaranteed to belong to the
+  -- food, where two independent ones would each be satisfiable while together
+  -- describing a plate of nasi lemak measured in cups of teh tarik.
+  --
+  -- Neither can exist across databases. What replaced them is that the portion
+  -- is no longer a reference at all: `serving_label` and `serving_factor` are
+  -- on this row, so there is no second table for them to disagree with.
 );
 
 -- Every read in this app is "this user, this day" or "this user, this range".
@@ -148,9 +191,10 @@ create index food_logs_user_date_idx
 -- the "usual at this time" list on the log sheet.
 create index food_logs_user_food_idx on public.food_logs (user_id, food_id);
 
--- `on delete restrict` above needs this to avoid a sequential scan of every
--- entry whenever a catalogue row is touched.
-create index food_logs_serving_idx on public.food_logs (serving_id);
+-- There was an index on `serving_id` here, to keep the `on delete restrict`
+-- from sequentially scanning every entry whenever a catalogue row was touched.
+-- Nothing cascades from a catalogue that is not here, and nothing queries by
+-- serving, so it was carrying its own write cost for no read.
 
 -- Backs the estimate-backlog report: "which estimate rows are referenced most"
 -- is a count over this column.

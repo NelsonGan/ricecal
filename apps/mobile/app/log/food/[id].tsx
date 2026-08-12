@@ -7,6 +7,7 @@ import {
   type EntryPatch,
   type IconRef,
   removeMealPhoto,
+  snapshotFromFood,
   storedImageSource,
   uploadMealPhoto,
   useDayLog,
@@ -433,7 +434,12 @@ export default function FoodDetail() {
     if (!existing || seededId === existing.id) return
     setSeededId(existing.id)
     setQuantity(existing.quantity)
-    setServingId(existing.servingId)
+    // Empty rather than undefined: this drives a controlled selection, and
+    // `chosen` below falls back to the base serving. An entry whose portion was
+    // never a catalogue row — a scan estimate, a rebuilt plate — has no
+    // `servingId` at all now, and that is not a reason to leave the picker
+    // holding the previous entry's choice.
+    setServingId(existing.servingId ?? '')
     setName(existing.foodName)
     setPartEdits({})
     setTyped({
@@ -622,8 +628,7 @@ export default function FoodDetail() {
 
   const addToDiary = () => {
     logFood.mutate({
-      foodId: food.id,
-      servingId: chosen,
+      snapshot: snapshotFromFood(food, chosen),
       quantity,
       logDate: selectedDate,
       // Only what was actually chosen. `shownIcon` would write the food's own

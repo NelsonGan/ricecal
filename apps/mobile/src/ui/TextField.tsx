@@ -56,6 +56,11 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
     onChangeText,
     keyboardType,
     selectTextOnFocus,
+    // Read here rather than left in `rest` because the PAD has to honour it
+    // too: with the system keyboard suppressed, a limit only the `TextInput`
+    // knows about is a limit nothing enforces. Still forwarded below, so a
+    // field on the platform's keyboard behaves the same way.
+    maxLength,
     ...rest
   },
   ref,
@@ -83,6 +88,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
     onChangeText: onChangeText ?? (() => {}),
     decimal: keyboardType !== 'number-pad',
     label,
+    maxLength,
     replaceFirst: Boolean(selectTextOnFocus),
     onFocus: () => setFocused(true),
     onBlur: () => setFocused(false),
@@ -122,6 +128,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
           value={value}
           onChangeText={onChangeText}
           keyboardType={keyboardType}
+          maxLength={maxLength}
           selectTextOnFocus={selectTextOnFocus}
           className={cn('flex-1 font-body-bold text-[17px] text-ink', inputClassName)}
           placeholderTextColor={colors.faint}

@@ -31,9 +31,31 @@ const JUNK = new Set([
   'not specified',
 ])
 
+/**
+ * Units where the number in front is the MEASUREMENT, not a count.
+ *
+ * "1 plate" is one of a thing and the quantity beside it already says how many,
+ * so the count comes off. "100 g" is not one hundred of anything — the number
+ * IS the portion, and stripping it leaves "g", which is what a diary row was
+ * showing under a jar of Marmite.
+ *
+ * The distinction only became load-bearing when the catalogue grew: a per-100g
+ * label is how most of a composition table and nearly all of the barcode layer
+ * quote themselves, where the curated local dishes say "1 bungkus".
+ */
+const MEASURES = new Set(['g', 'kg', 'mg', 'ml', 'l', 'oz', 'fl oz', 'cl', 'lb'])
+
 export function servingUnit(raw: string | null | undefined): string | null {
   const label = (raw ?? '').trim().toLowerCase()
   if (!label || JUNK.has(label)) return null
+
+  // A bare measurement keeps its number and is used as written. Checked before
+  // the cleaning below, because every rule down there is about a counted
+  // portion and each one damages this shape.
+  const measured = label.match(/^([\d.]+)\s*([a-z ]+)$/)
+  if (measured && MEASURES.has(measured[2].trim())) {
+    return `${measured[1]} ${measured[2].trim()}`
+  }
 
   const cleaned = label
     // "(8-5/8" dia)", "(includes foods for USDA's ...)" — measurement detail.

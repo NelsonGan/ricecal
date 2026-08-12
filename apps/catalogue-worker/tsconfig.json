@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "es2022",
+    "moduleResolution": "bundler",
+    "lib": ["es2022"],
+    "types": ["@cloudflare/workers-types"],
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    // Imports are written with their `.ts` extension so that Node can run this
+    // source directly. That matters for one module: `src/text.ts` holds the
+    // normalizer, and the catalogue loader in `apps/supabase/scripts` imports it
+    // rather than keeping a second copy — a query folded one way and a column
+    // folded another is a row nobody can find.
+    "allowImportingTsExtensions": true
+  },
+  "include": ["src/**/*.ts"]
+}

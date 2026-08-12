@@ -59,7 +59,16 @@ const ROWS = [
   ['.', '0', 'back'],
 ] as const
 
-/** More digits than any figure in this app: a calorie total, a weight, a portion. */
+/**
+ * More digits than any figure the pad was built for: a calorie total, a weight,
+ * a portion.
+ *
+ * A DEFAULT rather than the limit, since a barcode arrived — 13 digits on a
+ * packet, 14 once padded — and it is typed on this pad whenever a camera cannot
+ * read the label. A field states its own `maxLength` and the pad honours it;
+ * eight remains what a field that says nothing gets, because the fields that
+ * say nothing are all still calorie totals and weights.
+ */
 const MAX_LENGTH = 8
 
 /**
@@ -78,6 +87,8 @@ export type NumpadFieldSpec = {
   decimal: boolean
   /** Named in the pad's header. The field itself may be under the pad. */
   label?: string
+  /** How many characters the field will hold. See `MAX_LENGTH` for the default. */
+  maxLength: number
   /** The first key replaces the value rather than appending to it. */
   replaceFirst: boolean
 }
@@ -240,6 +251,13 @@ export type NumpadFieldOptions = {
   decimal?: boolean
   /** Named in the pad's header, since the field may be under the pad. */
   label?: string
+  /**
+   * The field's own limit, passed straight through from `TextField`'s
+   * `maxLength`. It has to reach the pad because suppressing the system
+   * keyboard also suppresses the platform's enforcement of it: with no
+   * `TextInput` typing, a cap the input alone knows about caps nothing.
+   */
+  maxLength?: number
   /** The first key replaces the value. What `selectTextOnFocus` used to buy. */
   replaceFirst?: boolean
   /** Pass a field's own handlers through; this hook composes rather than replaces. */
@@ -265,6 +283,7 @@ export function useNumpadField({
   value,
   onChangeText,
   decimal = true,
+  maxLength = MAX_LENGTH,
   label,
   replaceFirst = false,
   onFocus,
@@ -276,8 +295,15 @@ export function useNumpadField({
   const input = useRef<TextInput>(null)
 
   // Written on every render, read on every key. See `NumpadFieldSpec`.
-  const field = useRef<NumpadFieldSpec>({ value, onChangeText, decimal, label, replaceFirst })
-  field.current = { value, onChangeText, decimal, label, replaceFirst }
+  const field = useRef<NumpadFieldSpec>({
+    value,
+    onChangeText,
+    decimal,
+    label,
+    maxLength,
+    replaceFirst,
+  })
+  field.current = { value, onChangeText, decimal, label, maxLength, replaceFirst }
 
   // One session object for the life of the field, so `close` can tell whether
   // the pad it is being asked to shut is still this field's.
@@ -462,15 +488,42 @@ function NumpadSurface({ session, context }: { session: Session; context: Numpad
         live.onChangeText(`${base || '0'}.`)
         return
       }
-      if (base.length >= MAX_LENGTH) return
+      if (base.length >= live.maxLength) return
       // "0" is a value, "07" is a typo. Anything else appends.
       live.onChangeText(base === '0' ? key : base + key)
     },
     [session],
   )
 
+  /**
+   * THE WORKLET TAKES TWO NUMBERS, NOT THE CONTEXT.
+   *
+   * This looks like a pointless destructure and it is the difference between
+   * the pad working and the pad silently refusing to type a second digit.
+   *
+   * Reanimated FREEZES every object a worklet closes over, so that the UI
+   * thread can read it without tearing. Written as
+   * `context.height - context.offset.value` the worklet captures `context` —
+   * and `context` holds `session`, which holds the `field` REF that
+   * `useNumpadField` writes the live value into on every render. Frozen, that
+   * write does nothing at all: `field.current = {...}` is a no-op, the pad goes
+   * on reading the value the field had when it was first focused, and every key
+   * appends to it. Which is to say every key REPLACES what came before, because
+   * the value it appends to is the empty string for ever.
+   *
+   * The symptom is that "1" then "2" leaves a field reading "2" — a calorie
+   * total, a weight or a barcode that cannot be typed. In dev Reanimated says so
+   * ("Tried to modify key `current` of an object which has been already passed
+   * to a worklet"); in a release build it is silent.
+   *
+   * So: read the two values out here, on the JS thread, and let the worklet
+   * capture a number and a shared value. Nothing reachable from them owns any
+   * state anybody writes to.
+   */
+  const panelHeight = context.height
+  const panelOffset = context.offset
   const slide = useAnimatedStyle(() => ({
-    transform: [{ translateY: context.height - context.offset.value }],
+    transform: [{ translateY: panelHeight - panelOffset.value }],
   }))
 
   return (

@@ -13,7 +13,7 @@
 // mock through `body.mock`, which is only read in mock mode; it exists so a
 // test can force each tier of the cascade in turn.
 
-import { guessIcon, ICON_INSTRUCTION, type IconChoice, resolveIcon } from './icons.ts'
+import { guessIcon, ICON_INSTRUCTION, type IconChoice, resolveIcon, unslug } from './icons.ts'
 import { reconcile, unfoldCounts } from './portion.ts'
 
 export type Scene = 'single' | 'composite' | 'packaged' | 'unclear'
@@ -353,6 +353,23 @@ const unitGrams = (v: unknown): number | null => {
   return Math.round(n)
 }
 
+/**
+ * How many of the item there were, allowing for less than one of it.
+ *
+ * Whole numbers at one and above, because "1.5 plates" is a calorie figure
+ * pretending to be a count and the kcal band is where that belongs. Below one
+ * it is quarters, and that range exists for a single reason: a fraction of a
+ * serving has nowhere else to live. `grams` is defined to the model as the
+ * weight of ONE whole unit, so it cannot also carry the half, and the calorie
+ * bounds are a check on the answer rather than the answer. "Half a plate of
+ * char kuey teow" put the half in the bounds and in the words, and the diary
+ * logged a whole plate every time.
+ */
+const unitCount = (v: unknown): number => {
+  const n = clampNumber(v, 0.25, 20, 1)
+  return n >= 1 ? Math.round(n) : Math.round(n * 4) / 4
+}
+
 function shapeVision(raw: unknown): Vision {
   const o = (raw ?? {}) as Record<string, unknown>
   const scene: Scene = ['single', 'composite', 'packaged', 'unclear'].includes(o.scene as string)
@@ -405,9 +422,10 @@ function shapeVision(raw: unknown): Vision {
     return [
       {
         name: name.slice(0, 120),
-        specific_query: String(i.specific_query ?? name).trim(),
-        generic_query: String(i.generic_query ?? '').trim(),
-        count: Math.round(clampNumber(i.count, 1, 20, 1)),
+        // `unslug` because the icon list leaks into exactly these two fields.
+        specific_query: unslug(String(i.specific_query ?? name)),
+        generic_query: unslug(String(i.generic_query ?? '')),
+        count: unitCount(i.count),
         // `unfoldCounts` last, because it is the one step that needs the whole
         // list and the band together: a part is only "already totalled" if the
         // parts TOGETHER outrun the meal they are supposed to add up to.
@@ -551,7 +569,15 @@ const COUNT_VS_COMPONENTS =
   'Many of ONE food is the item\'s own "count": 3 durian seeds, 6 dumplings, 2 eggs ' +
   '— leave "components" empty for those. Several DIFFERENT foods are components: ' +
   'rice, the protein, each side, a drink with calories in it. Water, ice and an ' +
-  'empty glass are not food and are never listed. '
+  'empty glass are not food and are never listed. ' +
+  // The two counts are one number in two places, and a model that reaches for
+  // the wrong one loses it: "two roti canai with dhal" came back as ONE item at
+  // count 2 whose parts were both priced for a single plate, so whichever end
+  // read the answer got half the meal or twice the dhal.
+  'THE TWO COUNTS ARE NOT INTERCHANGEABLE. As soon as you list components the ' +
+  'item\'s own "count" is 1, always, and how many there are of each thing lives on ' +
+  'that thing\'s component "count". Two roti canai with a dhal is count 1 with ' +
+  'components roti canai count 2 and dhal count 1 — never count 2 at the top. '
 
 // The breakdown is editable per part, so each part is a control over a number.
 const COMPONENT_FIELDS =
@@ -601,9 +627,25 @@ const SIZE_ANCHORS =
   'each, never count 1 at 120 g and never count 1 at 30 g. Count what you can see and say so. ' +
   'Count whole units, not cut pieces: an egg sliced in half is one egg, an apple in slices ' +
   'is one apple. ' +
+  // Part of a serving is a COUNT below one, and it has to be, because "grams"
+  // is defined above as the weight of one whole unit and cannot also carry the
+  // fraction. Without this there was nowhere to put it: "half a plate of char
+  // kuey teow" arrived with the half in the calorie bounds and in the words,
+  // both of which the app has to disbelieve or ignore, and a whole plate was
+  // logged three times out of three.
+  'LESS THAN ONE of something is a "count" below 1 — half a plate is count 0.5 at the ' +
+  'grams and kcal of a WHOLE plate, a quarter is 0.25. Never shrink "grams" to express ' +
+  'a part portion; grams is always one whole unit. Only for a portion that really is a ' +
+  'fraction of one serving, and never as a way of saying "a small one". ' +
+  // Roti is here because it was the one part the anchors did not cover and the
+  // model doubled it: a photographed mamak breakfast came back with 240 g per
+  // roti canai, which the catalogue then priced at 808 kcal each and put a
+  // 1,981 kcal breakfast in the diary. A flatbread the size of a dinner plate
+  // is thin, and a plate of them is not half a kilogram.
   'Grams for ONE: satay stick 25-35, dumpling 25-35, prawn 10-20, chicken wing piece 35-50, ' +
   'drumstick 90-120, fried chicken thigh 120-160, slice of lap cheong 10-15, boiled egg ' +
-  '50-60, slice of bread 30-40, apple slice 15-20, potato wedge 20-30, prawn cracker 2-4, ' +
+  '50-60, slice of bread 30-40, roti canai or paratha 90-120, chapati 45-60, naan 90-140, ' +
+  'apple slice 15-20, potato wedge 20-30, prawn cracker 2-4, ' +
   'scoop of cooked rice 150-220, drained noodles 200-300, ladle of curry or soup 150-250, ' +
   'spoon of sambal or sauce 15-25, single-patty burger 100-130, medium fries 110-130, ' +
   'canned drink 330. ' +
@@ -796,8 +838,19 @@ export const DESCRIBE_MEAL_PROMPT =
   'not mention, never drop one it does, and never overrule an amount, a size or a ' +
   'calorie figure it states. What it leaves out is yours to fill in — an unstated ' +
   'portion is one ordinary serving as a Malaysian stall or home kitchen serves it. ' +
-  'If the text names no food that was eaten — a greeting, a question, a note to ' +
-  'self — answer {"no_food": true} and nothing else. ' +
+  // Emphatic, and with the consequence spelled out, because the failure is
+  // silent and expensive: one run in three answered "hello, how are you doing
+  // today" with an item, and the cascade's floor — which exists so that a real
+  // meal is never lost — dutifully logged it as a 600 kcal "Mixed meal". There
+  // is nothing downstream that can tell an invented meal from a vague one, so
+  // this sentence is the only place it can be stopped.
+  'FIRST, DECIDE WHETHER THERE IS A MEAL HERE AT ALL. If the text does not say ' +
+  'that someone ate something — a greeting, a question, a note to self, a name, ' +
+  'an empty or nonsense string — answer {"no_food": true} and nothing else. ' +
+  '"hello, how are you", "test", "what can you do", "remind me to buy milk" are ' +
+  'all no_food. Do not fall back to a generic meal, and never return an item you ' +
+  'are unsure is food: an item is written into the diary as calories the person ' +
+  'did not eat, and no_food costs them one tap. ' +
   'Otherwise respond with JSON only, matching: ' +
   itemSchema(true) +
   // ONE MEAL, for the same reason the photo path folds its items: the diary
@@ -814,21 +867,54 @@ export const DESCRIBE_MEAL_PROMPT =
   // the model answered "nasi lemak" with five components — rice, anchovies,
   // peanuts, cucumber, sambal — none of which the person mentioned and every
   // one of which becomes a row they can edit and a search the catalogue runs.
-  'A component is a food the person LISTED. What joins two of them is their ' +
-  'writing: "and", "with", a comma, a number. Nothing else splits. ' +
+  // Written as a COUNTING RULE rather than as advice, because as advice it did
+  // not hold. The paragraph below said all of this in prose and the model went
+  // on decomposing dishes nobody decomposed: "a bowl of chicken porridge" came
+  // back as rice, chicken and broth; "chicken rice" as coconut rice and roast
+  // chicken; "nasi lemak with fried chicken" as six parts including cucumber
+  // and prawn crackers. Every invented part is a row the user can edit, a
+  // search the catalogue runs, and a number that has to add back up to a meal
+  // they did not describe that way.
+  //
+  // A count is checkable, and the model can execute it before it writes
+  // anything: read the sentence, count the foods IN IT, and let that be the
+  // length of the list.
+  'BEFORE ANYTHING ELSE, COUNT THE FOODS THE PERSON WROTE. Components are those ' +
+  'foods and only those, so the list is exactly as long as the count and never ' +
+  'longer. One food written means "components": [] — no exceptions, however many ' +
+  'things that dish arrives with. ' +
+  'What splits two foods is their writing: "and", "with", a comma, a number. ' +
+  'Nothing else splits, and a dish name never splits. ' +
   'A dish name covers everything that normally comes with that dish: "nasi lemak" ' +
   'is ONE food however many things arrive on the plate, "chicken rice" is not rice ' +
-  'plus chicken, "big mac" is not bun plus patty plus sauce. Naming the parts of a ' +
-  'dish the person named as a whole invents a breakdown they did not type. ' +
-  'So "nasi lemak" has no components, "nasi lemak with an extra egg and a milo ais" ' +
-  'has three, and "200g grilled chicken breast" has none. ' +
+  'plus chicken, "chicken porridge" is not rice plus chicken plus broth, "big mac" ' +
+  'is not bun plus patty plus sauce. Naming the parts of a dish the person named ' +
+  'as a whole invents a breakdown they did not type. ' +
+  'So "nasi lemak" has no components, "a bowl of chicken porridge" has none, ' +
+  '"200g grilled chicken breast" has none, "nasi lemak with fried chicken" has ' +
+  'exactly TWO, and "nasi lemak with an extra egg and a milo ais" has three. ' +
+  // A check the model can run on its own answer. The rule above is a rule, and
+  // rules about not doing something are the ones a model most often reads as
+  // advice: "chicken rice" came back as coconut rice plus roast chicken on
+  // three runs out of three with the rule already in place. Re-reading the
+  // sentence and deleting the surplus is an action, and it has a right answer.
+  'BEFORE YOU ANSWER, count the foods in the text again and compare it with the ' +
+  'length of your "components". If the list is longer, you have taken a dish ' +
+  'apart: delete the extra parts and leave the dish whole. ' +
   COMPONENT_FIELDS +
   SIZE_ANCHORS +
   // The three ways a sentence pins a portion down, in the order they override
   // each other.
+  // A size word used to move only the bounds and the hint, and the app can act
+  // on neither: the bounds are a check on an answer and the hint is prose. The
+  // field it has to move is "count", which is the one number that survives into
+  // the logged portion.
   'Size words are about the portion and never about the dish: "small", "large", ' +
-  '"half a plate", "just a bit" move kcal_low/high and "serving_hint", not the ' +
-  'name. A stated weight or volume ("200g chicken breast", "500ml milo") is exact ' +
+  '"half a plate", "just a bit" move "count", kcal_low/high and "serving_hint" ' +
+  'together, and never the name. A fraction of a serving is a "count" below 1 — ' +
+  '"half a plate of char kuey teow" is count 0.5, and its grams stay a whole ' +
+  "plate's. " +
+  'A stated weight or volume ("200g chicken breast", "500ml milo") is exact ' +
   '— price that amount and say it in "serving_hint". A stated calorie figure ("a ' +
   '250 kcal protein bar", "roughly 700 calories") is the answer: put it between ' +
   'bounds a few percent either side of it (700 becomes 660-740) and do not ' +
@@ -908,7 +994,53 @@ export async function describeMeal(text: string, mock: MockSteer | undefined): P
     ],
     2400,
   )
-  return shapeVision(raw)
+  return keepDishesWhole(text, shapeVision(raw))
+}
+
+/**
+ * Anything that can join two foods in a sentence.
+ *
+ * A number counts, because "2 roti canai" is a plural even with nothing else in
+ * the line, and so does a slash — menus are written that way.
+ */
+const JOINS_TWO_FOODS =
+  /(\b(and|with|plus|dan|dengan|serta)\b|[,+&/]|\b(\d+|two|three|four|five|six|seven|eight|nine|ten|a couple|a few)\b)/i
+
+/**
+ * A dish the person named as one thing stays one thing.
+ *
+ * The prompt says this at length and in three registers — a rule, a list of
+ * worked examples, and a re-read-your-answer check — and the model went on
+ * taking dishes apart anyway: "chicken rice" came back as coconut rice plus
+ * roast chicken (plus, on one run, a sambal nobody mentioned), and "a bowl of
+ * chicken porridge" as rice, chicken and broth.
+ *
+ * It matters more than it sounds. Every invented part is a row the user can
+ * edit, a search against the catalogue, and a number that has to add back up —
+ * and the parts are what the entry is PRICED from, so an invented breakdown
+ * replaces a catalogue figure for a real dish with a sum of guesses about
+ * ingredients. It is also just wrong on its face: the rice under a chicken rice
+ * is not coconut rice.
+ *
+ * So on the typed path it is enforced rather than requested, which is possible
+ * here and only here — this is the one path where the app knows exactly what
+ * the person wrote. If their sentence contains nothing that could join two
+ * foods, there was one food in it, and a breakdown is describing a meal they
+ * did not type. Dropping it costs the row its ingredient list and sends it to
+ * the dish tier, which prices the whole plate against the catalogue.
+ *
+ * Deliberately not applied to photographs. There is no sentence to count, and a
+ * photo of a mixed plate genuinely does have parts nobody named.
+ */
+function keepDishesWhole(text: string, vision: Vision): Vision {
+  if (JOINS_TWO_FOODS.test(text)) return vision
+  if (!vision.items.some((item) => item.components.length > 0)) return vision
+
+  console.log(`[describe] "${text}" names one food; dropping an invented breakdown`)
+  return {
+    ...vision,
+    items: vision.items.map((item) => ({ ...item, components: [] })),
+  }
 }
 
 /**
@@ -1412,7 +1544,24 @@ export async function interpretInstruction(
   return shapeInterpretation(raw)
 }
 
-export type Archetype = { id: string; slug: string; name: string; kcal: number }
+/**
+ * One row of `public.archetypes`.
+ *
+ * The macros are here for the SNAPSHOT rather than for the classifier, which is
+ * shown the name and nothing else — a model choosing between "fried rice" and
+ * "noodle soup" has no use for a fat figure, and putting seven numbers a row in
+ * front of it is sixty rows of noise in a prompt whose whole virtue is that it
+ * cannot return a no-match.
+ */
+export type Archetype = {
+  id: string
+  slug: string
+  name: string
+  kcal: number
+  carbs_g: number
+  protein_g: number
+  fat_g: number
+}
 
 /**
  * Tier 5: classification over the fixed archetype list — never search, so it

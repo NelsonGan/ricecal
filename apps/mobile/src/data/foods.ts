@@ -1,21 +1,40 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { supabase } from '@/lib/supabase'
-import { unwrap, unwrapMaybe } from './client'
+import { unwrap } from './client'
 import { keys } from './keys'
 import { type FoodStats, toFood } from './mappers'
 import { useUserId } from './session'
 import type { Food, FoodDetailsRow } from './types'
 
 /**
- * The catalogue.
+ * The catalogue, which is no longer in this database.
  *
- * One kind of row: shared, read-only, the same for every user. Users cannot
- * create dishes, so nothing here filters by owner and nothing writes — the
- * client holds `select` on `foods` and nothing else.
+ * `foods` and its portions used to be tables in the same Postgres the session
+ * authenticates against, so a search was an RPC and a dish was a select. They
+ * are in Cloudflare D1 now — 3.2 million packaged products keyed by barcode and
+ * ~47,000 searchable dishes — behind a Worker holding a shared secret.
+ *
+ * A secret in a phone is not a secret, so the client does not talk to that
+ * Worker. It invokes the `catalogue` edge function, which authenticates the
+ * user the way every other function does and asks on their behalf. One extra
+ * hop, and it buys a catalogue ten times the size that no longer shares a disk
+ * quota with anybody's diary.
+ *
+ * The row shape is unchanged on purpose. `toFood` still reads what
+ * `food_details` used to return, because a move of where the data lives should
+ * not become a rewrite of what it looks like.
  */
 
-const FOOD_COLUMNS = '*'
+/** One call to the catalogue function, unwrapped the way `unwrap` does it. */
+async function catalogue<T>(body: Record<string, unknown>): Promise<T | null> {
+  const { data, error } = await supabase.functions.invoke<{ ok: boolean } & T>('catalogue', {
+    body,
+  })
+  if (error) throw error
+  if (!data?.ok) return null
+  return data as T
+}
 
 /**
  * How often this user has logged each of the given dishes.
@@ -70,12 +89,12 @@ export function useFoodSearch(query: string) {
       const needle = query.trim()
       if (!needle) return []
 
-      const rows = unwrap(
-        await supabase.rpc('search_foods', {
-          q: needle,
-          match_limit: 50,
-        }),
-      ) as FoodDetailsRow[]
+      const result = await catalogue<{ foods: FoodDetailsRow[] }>({
+        action: 'search',
+        q: needle,
+        limit: 50,
+      })
+      const rows = result?.foods ?? []
 
       const stats = await statsFor(
         userId,
@@ -92,14 +111,11 @@ export function useFood(id: string | undefined) {
     queryKey: keys.food(id ?? ''),
     enabled: Boolean(id),
     queryFn: async (): Promise<Food | null> => {
-      const row = unwrapMaybe(
-        await supabase
-          .from('food_details')
-          .select(FOOD_COLUMNS)
-          .eq('id', id as string)
-          .maybeSingle(),
-      ) as FoodDetailsRow | null
-      return row ? toFood(row) : null
+      const result = await catalogue<{ food: FoodDetailsRow | null }>({
+        action: 'food',
+        id,
+      })
+      return result?.food ? toFood(result.food) : null
     },
   })
 }
@@ -141,9 +157,13 @@ export function useRecentFoods(limit = 3) {
       }
       if (ids.length === 0) return []
 
-      const foods = unwrap(
-        await supabase.from('food_details').select(FOOD_COLUMNS).in('id', ids),
-      ) as FoodDetailsRow[]
+      // One call per dish rather than one `in (…)`: the recent list is at most
+      // three, and an endpoint that takes a list is a second shape to keep in
+      // step for no measurable gain at that size.
+      const fetched = await Promise.all(
+        ids.map((id) => catalogue<{ food: FoodDetailsRow | null }>({ action: 'food', id })),
+      )
+      const foods = fetched.flatMap((r) => (r?.food ? [r.food] : []))
 
       const byId = new Map(foods.map((row) => [row.id, row]))
       // Ordered by when they were last eaten, not by whatever order the ids came
