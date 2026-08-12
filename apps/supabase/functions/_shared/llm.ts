@@ -1,9 +1,9 @@
 // The model calls the scan cascade makes, and their mocks.
 //
 // Every function here has the same contract: return a parsed, shape-checked
-// value or throw. The cascade in index.ts treats any throw as "this tier
-// failed, move down" — no model error can surface to the client, because the
-// tier below every model call is one that needs no model.
+// value or throw. `cascade.ts` treats any throw as "this tier failed, move
+// down" — no model error can surface to the client, because the tier below
+// every model call is one that needs no model.
 //
 // MOCKING
 //
@@ -23,9 +23,9 @@ export type Scene = 'single' | 'composite' | 'packaged' | 'unclear'
  *
  * The kcal figure is what makes component resolution work at all: catalogue
  * search ranks by NAME, so "white rice" can top-rank rice flour at 578 kcal.
- * The model's per-portion estimate gives each part a band to match within —
- * and when nothing in the catalogue fits, it prices the fallback estimate
- * row, so a breakdown never dies because one side dish was unsearchable.
+ * The model's per-portion estimate gives each part a band to match within — and
+ * when nothing in the catalogue fits, it prices that part as an estimate, so a
+ * breakdown never dies because one side dish was unsearchable.
  *
  * `kcal` is for ONE of the thing and `count` says how many are on the plate,
  * which is the only shape that makes the breakdown editable. Two chicken wings

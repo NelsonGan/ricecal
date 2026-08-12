@@ -140,7 +140,11 @@ function SearchPanel({ onPick, onOwn }: { onPick: (foodId: string) => void; onOw
         <Card key={food.id}>
           <ItemRow
             title={food.name}
-            textOnly
+            // Same list, same catalogue, same reason as the log sheet's search
+            // results: most rows carry a drawing now. Left text-only here it
+            // would be the one place in the app where picking a food shows less
+            // than picking the same food next door.
+            icon={food.icon}
             detail={food.servingLabel}
             value={food.macros.kcal}
             unit="kcal"

@@ -257,12 +257,3 @@ export async function announceScan(title: string, body: string): Promise<void> {
     console.warn('[notifications] could not announce the finished scan', error)
   }
 }
-
-/** What is actually queued. Used by the reminders screen to show the count. */
-export async function scheduledCount(): Promise<number> {
-  return (await Notifications.getAllScheduledNotificationsAsync()).length
-}
-
-export async function cancelAllReminders(): Promise<void> {
-  await Notifications.cancelAllScheduledNotificationsAsync()
-}

@@ -7,7 +7,7 @@
  *
  * This is a developer tool, not a build step. The processed PNGs are committed,
  * so CI and EAS never run it — which is why it is allowed to depend on the
- * design system living at `.secrets/design-system` (gitignored) and on a
+ * design system living at `.secrets/RiceCal Design System` (gitignored) and on a
  * pngquant binary fetched through npx.
  *
  * Two transforms, both load-bearing:
@@ -36,7 +36,7 @@ import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const APP = join(here, '..')
-const SOURCE = join(APP, '..', '..', '.secrets', 'design-system', 'icons')
+const SOURCE = join(APP, '..', '..', '.secrets', 'RiceCal Design System', 'icons')
 const DEST = join(APP, 'assets', 'icons')
 const REGISTRY = join(APP, 'src', 'ui', 'icons.generated.ts')
 /**
@@ -56,14 +56,31 @@ const EDGE_REGISTRY = join(APP, '..', 'supabase', 'functions', '_shared', 'icons
 const MAX_PX = 192
 const QUALITY = '65-88'
 
-if (!existsSync(SOURCE)) {
-  console.error(`No design system at ${SOURCE}.`)
+/**
+ * Rebuild the registry from what is already committed, importing nothing.
+ *
+ * The design system is not the only way an icon arrives: a sheet cut by
+ * `slice-icon-sheet.py` lands straight in `assets/icons`, already at 192px and
+ * already quantised. Those need the generated map updating and nothing else,
+ * and running the full import for them would be actively destructive — it
+ * starts by deleting `assets/icons` and refilling it from a source that has
+ * never heard of them.
+ *
+ * The registry has ONE writer either way, which is the point: two scripts
+ * emitting the same file is how the app and the edge functions come to disagree
+ * about which drawings exist.
+ */
+const REGISTRY_ONLY = process.argv.includes('--registry-only')
+const FROM = REGISTRY_ONLY ? DEST : SOURCE
+
+if (!existsSync(FROM)) {
+  console.error(`Nothing to read at ${FROM}.`)
   console.error('Icons are committed under assets/icons, so this script is only')
   console.error('needed when the source set changes. Nothing to do.')
   process.exit(1)
 }
 
-const sets = readdirSync(SOURCE).filter((name) => statSync(join(SOURCE, name)).isDirectory())
+const sets = readdirSync(FROM).filter((name) => statSync(join(FROM, name)).isDirectory())
 if (!sets.length) {
   console.error(`No icon sets found under ${SOURCE}`)
   process.exit(1)
@@ -88,9 +105,9 @@ function pngquantBin() {
   return found[0]
 }
 
-const pngquant = pngquantBin()
+const pngquant = REGISTRY_ONLY ? null : pngquantBin()
 
-rmSync(DEST, { recursive: true, force: true })
+if (!REGISTRY_ONLY) rmSync(DEST, { recursive: true, force: true })
 
 /** set -> sorted icon names, used for both the copy and the generated types. */
 const manifest = {}
@@ -98,19 +115,21 @@ let bytes = 0
 
 for (const set of sets.sort()) {
   mkdirSync(join(DEST, set), { recursive: true })
-  const names = readdirSync(join(SOURCE, set))
+  const names = readdirSync(join(FROM, set))
     .filter((f) => f.endsWith('.png'))
     .map((f) => f.replace(/\.png$/, ''))
     .sort()
 
   for (const name of names) {
     const to = join(DEST, set, `${name}.png`)
-    run('sips', ['-Z', String(MAX_PX), join(SOURCE, set, `${name}.png`), '--out', to])
-    // pngquant refuses to overwrite in place without -f, and writes nothing at
-    // all if it cannot hit the quality floor — hence --skip-if-larger off and a
-    // post-check that the file still exists.
-    run(pngquant, ['--quality', QUALITY, '--speed', '3', '-f', '-o', to, to])
-    if (!existsSync(to)) throw new Error(`pngquant dropped ${set}/${name}`)
+    if (!REGISTRY_ONLY) {
+      run('sips', ['-Z', String(MAX_PX), join(SOURCE, set, `${name}.png`), '--out', to])
+      // pngquant refuses to overwrite in place without -f, and writes nothing at
+      // all if it cannot hit the quality floor — hence --skip-if-larger off and a
+      // post-check that the file still exists.
+      run(pngquant, ['--quality', QUALITY, '--speed', '3', '-f', '-o', to, to])
+      if (!existsSync(to)) throw new Error(`pngquant dropped ${set}/${name}`)
+    }
     bytes += statSync(to).size
   }
 

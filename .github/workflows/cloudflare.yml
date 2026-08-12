@@ -1,0 +1,168 @@
+name: Cloudflare
+
+# Self-contained CI for everything under `apps/cloudflare`, and it only runs when
+# something under there changes — an app-only commit never fires it, and a
+# Cloudflare-only commit never waits on a 40-minute native build.
+#
+# Deploys on a merge to main, and nowhere else. A PULL REQUEST's Worker is not
+# here: `deploy.yml` uploads a version of the same script under a per-PR alias
+# and points that PR's app bundle at it, because the two halves of a preview
+# have to come from one commit and be reported in one comment.
+#
+# The matrix is discovered from the filesystem rather than listed here, so a
+# second Worker is a directory under `apps/cloudflare/workers/` and no edit to
+# this file.
+
+run-name: >-
+  ${{ github.event_name == 'pull_request' && format('Cloudflare · PR #{0}', github.event.number)
+   || github.ref == 'refs/heads/main' && 'Cloudflare · Production deploy'
+   || format('Cloudflare · {0}', github.ref_name) }}
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/cloudflare/**'
+      - '.github/workflows/cloudflare.yml'
+  pull_request:
+    paths:
+      - 'apps/cloudflare/**'
+      - '.github/workflows/cloudflare.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: cloudflare-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: Cloudflare · Plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      workers: ${{ steps.find.outputs.workers }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find Workers and resolve the target
+        id: find
+        shell: bash
+        run: |
+          set -euo pipefail
+          # One entry per directory under workers/. `-print0` and `sort -z` so a
+          # name with a space in it cannot silently split into two matrix legs.
+          workers=$(find apps/cloudflare/workers -mindepth 1 -maxdepth 1 -type d -print0 \
+            | sort -z | xargs -0 -n1 basename | jq -Rsc 'split("\n") | map(select(length > 0))')
+          if [ "$workers" = "[]" ]; then
+            echo "No Workers found under apps/cloudflare/workers." >&2
+            exit 1
+          fi
+          echo "workers=$workers" >> "$GITHUB_OUTPUT"
+          echo "Workers: $workers"
+
+  check:
+    name: Cloudflare · Typecheck (${{ matrix.worker }})
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: ${{ fromJSON(needs.plan.outputs.workers) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # Only this Worker's dependency graph, not the whole workspace. The root
+      # install pulls Expo and its native toolchain, which is several minutes
+      # this job has no use for.
+      - name: Install
+        run: pnpm install --frozen-lockfile --filter "./apps/cloudflare/workers/${{ matrix.worker }}..."
+
+      - name: Typecheck
+        working-directory: apps/cloudflare/workers/${{ matrix.worker }}
+        run: pnpm typecheck
+
+  # Schema before code, always. A Worker deployed ahead of the column it selects
+  # answers every request with a D1 error; a column added ahead of the Worker
+  # that reads it is simply unread. Same ordering, and the same reason, as
+  # deploying the Worker before the edge functions that call it.
+  #
+  # Merged work only. A PR's Worker version shares this database — versions
+  # inherit their bindings — so applying a schema from an unmerged branch would
+  # reach the rows production is serving before anybody had approved it.
+  schema:
+    name: Cloudflare · D1 schema
+    needs: check
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # `dlx` rather than a workspace install: applying a schema belongs to no
+      # Worker, and installing one just to borrow its wrangler would tie the
+      # database to whichever package happened to be named here.
+      #
+      # Every statement in a schema.sql is `if not exists`, so this is a no-op
+      # against a database already shaped that way and additive against one that
+      # is not — which is what lets a new table ship with the code that reads it
+      # instead of being remembered separately.
+      - name: Apply every D1 schema
+        shell: bash
+        run: |
+          set -euo pipefail
+          for dir in apps/cloudflare/d1/*/; do
+            [ -f "$dir/schema.sql" ] || continue
+            # The name is declared beside the schema rather than derived from the
+            # directory, so the folder can read as English while the value sent to
+            # Cloudflare stays the literal one.
+            name=$(jq -er '.database_name' "$dir/d1.json")
+            echo "→ $name"
+            pnpm dlx wrangler@4 d1 execute "$name" --remote --yes --file "$dir/schema.sql"
+          done
+
+  deploy:
+    name: Cloudflare · Deploy ${{ matrix.worker }}
+    needs: [plan, check, schema]
+    if: >-
+      github.event_name != 'pull_request'
+      && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      # A second Worker failing should not cancel a first one that was fine.
+      fail-fast: false
+      matrix:
+        worker: ${{ fromJSON(needs.plan.outputs.workers) }}
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile --filter "./apps/cloudflare/workers/${{ matrix.worker }}..."
+
+      - name: Deploy
+        working-directory: apps/cloudflare/workers/${{ matrix.worker }}
+        run: pnpm exec wrangler deploy

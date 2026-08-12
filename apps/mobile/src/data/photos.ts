@@ -96,11 +96,9 @@ function decodeBase64(input: string): Uint8Array {
 
 /**
  * Longest edge (px) a stored meal photo is capped to; never upscales. The one
- * stored copy is what the diary renders AND what the scan function sends to
- * the vision model, and image tokens are billed by resolution — so this cap
- * is the model bill as much as it is the storage bill. Same mechanism as
- * money2time's receipt downscaler; the cap is lower because a receipt is
- * dense small text and a plate of food is shapes and colours.
+ * stored copy is what the diary renders AND what the scan function sends to the
+ * vision model, and image tokens are billed by resolution — so this cap is the
+ * model bill as much as it is the storage bill.
  */
 const PHOTO_MAX_EDGE = 1024
 /**

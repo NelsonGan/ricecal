@@ -1,11 +1,8 @@
 // The barcode endpoint: what to do when the catalogue has never seen a packet.
 //
-// Most scans never reach here. `lookup_barcode` answers from the catalogue in
-// one index probe, and the client only invokes this function when that comes
-// back empty — which is the whole design of the packaged half of the catalogue.
-// Open Food Facts holds ~4.7 million products and the app stores ~25,000 of
-// them: the Southeast Asian shelves plus the few thousand things the whole
-// world scans. Everything else lives one request away, here.
+// Most scans never reach the live fallback. The catalogue holds 3.2 million
+// packaged products and answers a code in one index probe; Open Food Facts
+// holds ~4.7 million, so everything else lives one request away, here.
 //
 // THE ROW IS WRITTEN, NOT JUST RETURNED
 //
@@ -34,6 +31,7 @@ import { createClient } from '@supabase/supabase-js'
 
 import { gtin14 } from '../_shared/barcode.ts'
 import { type CatalogueProduct, cacheProduct, lookupBarcode } from '../_shared/catalogue.ts'
+import { iconFor } from '../_shared/icon-match.ts'
 
 /** Open Food Facts asks that clients identify themselves. */
 const USER_AGENT = 'RiceCal/1.0 (https://ricecal.app; barcode lookup)'
@@ -284,12 +282,24 @@ Deno.serve(async (req: Request) => {
  * learn a second shape because the data moved. The portion is the row's own
  * basis: these products are stored per the serving their numbers are quoted
  * per, so the factor is 1 by definition.
+ *
+ * THE DRAWING IS DERIVED, NOT STORED
+ *
+ * `product` has no icon columns, and giving 3.2 million rows a pair of them to
+ * hold a value computable from the name they already carry would be a migration
+ * and a bulk write for nothing. The searchable half of the catalogue stores its
+ * icon because a person authored it; a packet's is read off its own name here,
+ * so a product cached last year draws the same as one fetched a moment ago and
+ * nothing has to be backfilled.
  */
 function asFood(p: CatalogueProduct, label?: string) {
+  const icon = iconFor(p.name)
   return {
     id: null,
     name: p.name,
     brand: p.brand,
+    icon_set: icon?.set ?? null,
+    icon_name: icon?.name ?? null,
     place: 'packaged',
     kcal: p.kcal,
     carbs_g: p.carbs_g,

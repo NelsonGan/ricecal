@@ -1,8 +1,8 @@
 # The data layer
 
-Everything the screens read and write goes through this folder, and everything
-here goes through Supabase. It replaced `src/mock`, and it kept that folder's
-three rules — the point of them was always that this swap would be cheap.
+Everything the screens read and write goes through this folder. Most of it goes
+to Supabase; the catalogue goes straight to the Cloudflare Worker in front of
+D1, and photographs go to R2 through an edge function.
 
 ## Files
 
@@ -15,26 +15,30 @@ three rules — the point of them was always that this swap would be cheap.
 | `session.tsx` | who is signed in |
 | `auth.ts` | Apple, Google and email sign-in |
 | `profile.ts`, `settings.ts`, `goals.ts` | the account |
-| `day.ts`, `entries.ts`, `foods.ts` | logging |
-| `recipes.ts` | home cooking. Two of its writes are RPCs rather than updates, because publishing may only ever move a recipe to `pending` and saving a copy has to bump a counter on somebody else's row |
-| `weight.ts` | progress |
-| `snap.ts`, `pending-snaps.tsx` | the camera path |
-| `photos.ts` | every image — upload, signed read, delete — through the `photos` edge function, since R2 has no idea who a user is. The bytes are cached against the key and asked for from the disk first, so a signature is only ever fetched for a picture this device has not seen |
+| `day.ts`, `entries.ts` | logging: one day's reads, and the writes to `food_logs` |
+| `catalogue.ts` | the Worker, reached directly with the user's own JWT |
+| `foods.ts` | search and dish detail, over `catalogue.ts` |
+| `barcodes.ts` | a packet by its code, through the `barcode` function |
+| `snapshot.ts` | the numbers an entry carries, built once for every write path |
+| `snap.ts`, `pending-snaps.tsx`, `scan.ts`, `refining.tsx` | the scan path: the call, the row that exists before the answer, the parts a plate resolved to, and the entries with a correction in flight |
+| `recipes.ts` | home cooking. Two writes are RPCs rather than updates, because publishing may only ever move a recipe to `pending` and saving a copy has to bump a counter on somebody else's row |
+| `weight.ts`, `trends.ts` | progress |
+| `activity.ts`, `health-sync.ts` | movement: the read side, and the phone-to-Postgres sync |
+| `photos.ts` | every image — upload, signed read, delete — through the `photos` function, since R2 has no idea who a user is. Bytes are cached against the key and asked for from the disk first, so a signature is only fetched for a picture this device has not seen |
 | `purchases.ts`, `subscription.ts` | money |
 | `selected-date.tsx` | the one piece of genuine client state |
 
-## The three rules, still
+## The three rules
 
 **1. Screens never compute domain numbers.** A calorie total, a macro split and
 a day's budget come from views — `food_log_details`, `daily_nutrition`,
 `current_daily_goals` — so the arithmetic is in one place, and it is the same
-place the reminder and report jobs will read. What is left in
-`src/lib/nutrition.ts` is presentation (a bar's fill, which meal a tap means)
-and one projection: the budget onboarding previews before there is a row to
-read.
+place a reminder or report job will read. What is left in `src/lib/nutrition.ts`
+is presentation (a bar's fill, which meal a tap means) and one projection: the
+budget onboarding previews before there is a row to read.
 
 **2. Every mutation is a hook.** `useLogFood`, `useSetWater`, `useLogWeight`,
-`useUpdateProfile` … each owns what it invalidates, so a screen never has to
+`useUpdateProfile` — each owns what it invalidates, so a screen never has to
 know what its write affects.
 
 **3. Reads go through hooks, not through a client.** No screen imports
@@ -53,35 +57,37 @@ generic covering all three infers the element type of a list and hands back a
 row. That type-checks at the call site and explodes at the first `.map`.
 
 **The budget is the database's.** Nothing here computes `daily_goals`: a
-trigger recomputes it when the profile or the newest weigh-in changes, and
-stops dead if `is_custom` is set. Onboarding writes a body and a weigh-in; the
-budget appears on its own. A screen that finds no row shows an empty state
-rather than a ring against a made-up number.
+trigger recomputes it when the profile or the newest weigh-in changes, and stops
+dead if `is_custom` is set. Onboarding writes a body and a weigh-in; the budget
+appears on its own. A screen that finds no row shows an empty state rather than
+a ring against a made-up number.
 
-**A pending snap is not in the cache.** A photographed plate becomes a row the
-moment the shutter fires, but `food_logs.food_id` is not null and there is no
-dish yet, so it lives in `pending-snaps.tsx` and `useDayLog` merges it in. That
-is also what makes a failed snap survivable: a refetch cannot delete a photo
-the user is about to fix by hand.
+**An entry carries its own numbers.** `food_logs` holds `item_name`,
+`base_kcal` and the rest, because a foreign key cannot cross into D1. Every
+write path builds that snapshot through `snapshot.ts` and no other way — a
+catalogue dish, a packet, a recipe and a scan tier all land in the same columns.
+`food_id` is a nullable, unconstrained note about where the numbers came from,
+and null is ordinary.
 
-**The catalogue is read-only, and there is exactly one of it.** `foods` has no
-per-user rows and `authenticated` holds `select` and nothing else on it, so
-nothing in this folder writes a dish. `useFoodSearch` ranks by name through the `search_foods` RPC
-and never by owner, and `toFood` takes no user — there is no "mine" to compute.
-Rows arrive from an import loader running as `service_role`.
+**A pending snap is not in the cache.** A photographed plate is on the day the
+moment the shutter fires, but there is no row until the server answers, so it
+lives in `pending-snaps.tsx` and `useDayLog` merges it in. That is also what
+makes a failed snap survivable: a refetch cannot delete a photo the user is
+about to fix by hand. `refining.tsx` is the same shape for a correction, which
+outlives the screen that started it in the same way.
 
-## What is knowingly still fake
+**The catalogue is read-only, and there is exactly one of it.** Nothing here
+writes a dish: the app's JWT reaches `/search` and `/food` on the Worker and
+nothing else, and asking for anything further gets a 404. `toFood` takes no
+user — there is no "mine" to compute. Rows arrive from the loader in
+`apps/supabase/scripts`, which holds the shared secret.
 
-- **Recognition.** `recogniseDish` in `src/features/logging/recognise.ts`
-  waits, then picks a catalogue dish by slug. Everything around it is built for
-  a slow, failable call — the row is written first, it is worth zero calories
-  until it settles, and it resolves or fails in place.
-- **The 96% match badge** on the top search hit is a placeholder for a real
-  score, and search is `ilike` rather than the trigram index the schema builds:
-  reaching `similarity()` from PostgREST needs an RPC.
-- **The miss.** `recogniseDish` always resolves to a dish. A real one has to be
-  able to say "nothing in the catalogue looks like this", and with no per-user
-  rows there is nowhere for such a plate to land — that case needs a wider
-  catalogue or a "pick it yourself" path, not a private food.
+**Unreachable is not empty.** `catalogue.ts` throws for anything that is not a
+clean answer, so react-query reaches its error state and the search panel says
+so. Returning `[]` for a Worker that is down tells somebody their dish does not
+exist.
+
+## Still approximate
+
 - **Fibre and sugar** fall back to a proportion of carbohydrate where the
-  catalogue rows are still null.
+  catalogue rows are null.

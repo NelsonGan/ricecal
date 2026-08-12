@@ -1,4 +1,4 @@
-import { APP_NAME, SCHEMA_VERSION } from '@ricecal/shared'
+import { SCHEMA_VERSION } from '@ricecal/shared'
 
 import { isConfigured, PLACEHOLDER } from '@/lib/env'
 
@@ -7,7 +7,6 @@ import { isConfigured, PLACEHOLDER } from '@/lib/env'
 
 describe('workspace resolution', () => {
   it('imports from @ricecal/shared', () => {
-    expect(APP_NAME).toBe('RiceCal')
     // Not pinned to a number: SCHEMA_VERSION is a cache buster and is SUPPOSED
     // to change whenever a persisted shape does. Asserting today's value would
     // make a deliberate bump look like a regression.

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { useFoodSearch } from '@/data'
-import { ItemRow } from '@/features/shared'
+import { ItemRow, ROW_TILE } from '@/features/shared'
 import { useDebouncedValue } from '@/lib/use-debounce'
 import { Card, EmptyState, SearchField, Skeleton } from '@/ui'
 
@@ -39,10 +39,10 @@ export function FoodSearchPanel({ onPick, autoFocus = false }: FoodSearchPanelPr
   // rather than the `useDeferredValue` that was here before.
   const debouncedQuery = useDebouncedValue(query)
 
-  // The database does the ranking, not just the filtering: `search_foods`
-  // fuses an exact, a full-text and a trigram match. Searching a table the
-  // phone does not hold is the whole point of having moved the catalogue off
-  // it — there are ~460,000 rows in it now.
+  // The Worker does the ranking, not just the filtering: it fuses an exact
+  // name, an exact alias, a full-text and a trigram match over ~48,000
+  // searchable rows. Ranking is the whole reason this is a round trip and not
+  // a filter over something the phone holds.
   const { data, isFetching, isPaused, isError } = useFoodSearch(debouncedQuery)
   const results = data ?? []
 
@@ -95,11 +95,13 @@ export function FoodSearchPanel({ onPick, autoFocus = false }: FoodSearchPanelPr
       {state === 'loading' ? (
         <View className="gap-3" accessibilityRole="progressbar">
           {SKELETON_ROWS.map((id) => (
-            // Shaped like the row it replaces — two lines of text and a
-            // trailing number, no tile — so the list does not jump when the
-            // results land.
+            // Shaped like the row it replaces — a tile, two lines of text and a
+            // trailing number — so the list does not jump when the results
+            // land. The tile is part of that shape now: these rows were text
+            // only while a catalogue drawing was rare, and are not any more.
             <Card key={id}>
               <View className="flex-row items-center gap-3">
+                <Skeleton className={ROW_TILE} />
                 <View className="flex-1 gap-2">
                   <Skeleton className="h-4 w-2/3" />
                   <Skeleton className="h-3 w-2/5" />
@@ -140,11 +142,13 @@ export function FoodSearchPanel({ onPick, autoFocus = false }: FoodSearchPanelPr
           <Card key={food.id}>
             <ItemRow
               title={food.name}
-              // Text only. The catalogue is hundreds of megabytes of imported
-              // rows and a few dozen drawings, so a picture here is the exception
-              // by a wide margin — and a column of mostly-empty tiles indents
-              // every dish name for the sake of the rare one that has art.
-              textOnly
+              // The drawing the catalogue carries, and the empty plate when it
+              // has none. These rows were TEXT ONLY on the reasoning that art
+              // was the rare exception — true at 35% coverage, when a column of
+              // mostly-empty tiles indented every dish name for the sake of the
+              // few that had one. `icon-match.ts` took that to 73.5%, so the
+              // majority row now has a picture and the exception is the blank.
+              icon={food.icon}
               value={food.macros.kcal}
               unit="kcal"
               detail={`${t(`logging:search.place.${food.place}`)} · ${food.servingLabel}`}

@@ -113,7 +113,7 @@ export const logging = {
 
   selector: {
     title: 'Log a dish',
-    remaining: '{{count}} left',
+    remaining: '{{count}} kcal left',
     snap: 'Snap',
     describe: 'Describe',
     search: 'Search',
@@ -177,13 +177,6 @@ export const logging = {
     captured: 'The photo you just took',
     /** Alt text on a logged entry's photo. */
     photoOf: 'Photo of {{food}}',
-  },
-
-  voice: {
-    title: 'Say what you ate',
-    hint: 'Try "two roti canai and a teh tarik"',
-    listening: 'Listening',
-    stop: 'Stop',
   },
 
   added: {

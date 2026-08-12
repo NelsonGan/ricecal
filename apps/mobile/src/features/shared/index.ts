@@ -9,7 +9,13 @@
 export { type Bar, BarChart, type BarChartProps } from './BarChart'
 export { CheckList, type CheckListProps } from './CheckList'
 export { EntryList, type EntryListProps, formatTime } from './EntryList'
-export { ItemRow, type ItemRowProps } from './ItemRow'
+export {
+  ItemRow,
+  type ItemRowProps,
+  ROW_TEXT_INDENT,
+  ROW_TILE,
+  ROW_TILE_ICON,
+} from './ItemRow'
 export { MacroBars, type MacroBarsProps } from './MacroBars'
 export { MealPhoto, type MealPhotoProps } from './MealPhoto'
 export { PlanPicker, type PlanPickerProps } from './PlanPicker'

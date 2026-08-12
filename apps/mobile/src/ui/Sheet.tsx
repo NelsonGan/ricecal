@@ -154,8 +154,8 @@ export function Sheet({ visible, onShow, ...rest }: SheetProps) {
 /**
  * The sheet without a window of its own.
  *
- * For a ROUTE that is itself a sheet — the quick selector, the voice sheet —
- * presented by the navigator as a `transparentModal`. Those already have
+ * For a ROUTE that is itself a sheet — the quick selector — presented by the
+ * navigator as a `transparentModal`. Those already have
  * everything `Sheet`'s `Modal` provides, and nesting a second window inside them
  * costs a visible delay: the route transition has to finish before the inner
  * `Modal` starts presenting, and only then does the panel begin its 220ms slide.

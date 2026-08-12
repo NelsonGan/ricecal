@@ -6,6 +6,7 @@ or scan a barcode — and get calories and macros back.
 ```
 apps/mobile      Expo / React Native app (expo-router, NativeWind, react-query)
 apps/supabase    Postgres schema, RLS, pgTAP tests, Deno edge functions
+apps/cloudflare  workers/ and d1/, one directory per Worker and per database
 packages/shared  the few constants both sides need
 ```
 
@@ -15,7 +16,8 @@ their own area:
 | where | what |
 |---|---|
 | `apps/supabase/README.md` | the declarative schema workflow, the catalogue import, why nothing seeds `foods` |
-| `apps/catalogue-worker/BARCODE-COVERAGE.md` | why the scanner misses Malaysian packets, measured, and what would actually fix it |
+| `apps/cloudflare/README.md` | the layout, where it deploys, and how a PR gets a Worker of its own |
+| `apps/cloudflare/d1/food-catalogue/BARCODE-COVERAGE.md` | why the scanner misses Malaysian packets, measured, and what would actually fix it |
 | `apps/mobile/src/data/README.md` | the data layer, file by file |
 | `apps/mobile/src/ui/README.md` | the design system, and which prop targets which box |
 | `apps/mobile/src/lib/health/README.md` | what each health store actually gives you, and what Android is missing |
@@ -34,12 +36,11 @@ without a client. `src/lib/nutrition.ts` holds what is left: presentation, and
 one projection of a budget that does not exist yet because onboarding has not
 finished.
 
-**The catalogue is NOT in Postgres.** `foods`, `food_servings`, `food_aliases`
-and `food_sources` are in Cloudflare D1 — 3.2 million barcoded products and
-~48,000 searchable dishes, behind a Worker (`apps/catalogue-worker`) holding a
-shared secret. They left because the barcode layer made the catalogue's size the
-diary's problem: it crossed a plan ceiling once and took the whole database
-read-only mid-load.
+**The catalogue is NOT in Postgres.** It is in Cloudflare D1, behind the Worker
+in `apps/cloudflare/workers/catalogue` — `product` holds 3.2 million barcoded packets, and
+`food`, `food_serving` and `food_alias` hold ~48,000 searchable dishes. It left
+because the barcode layer made the catalogue's size the diary's problem: it
+crossed a plan ceiling once and took the whole database read-only mid-load.
 
 A foreign key cannot cross into another database, so **an entry carries its own
 numbers**. `food_logs` holds `item_name`, `base_kcal` and the rest of the
@@ -81,7 +82,8 @@ looks like a caching bug and is really a typo.
 **Edge functions own the model.** The client never talks to OpenRouter and never
 sees the key. It uploads a photo (or a sentence) and invokes a function, which
 does everything else and writes the row itself as `service_role` — it has to,
-because some tiers create catalogue rows and no client may do that.
+because a scan also writes `food_scan_items`, which is the pipeline's own
+working notes and is granted to `service_role` alone.
 
 **Images live in Cloudflare R2, behind the `photos` function.** Postgres used to
 own this too: Supabase Storage let the client talk to the bucket and let eight
@@ -246,80 +248,73 @@ rather than structure, and the `auth` trigger, which the diff sees too well.
 
 ## The catalogue, and what is in it
 
-> **It is in Cloudflare D1, not Postgres.** Everything below describes the
-> design, and the design carried over whole — the searchable/barcode split, the
-> five fused arms, the alias rows, the GTIN-14 key. What changed is the engine
-> underneath: `tsvector` and `pg_trgm` became FTS5 with a `unicode61` index and a
-> `trigram` one, `search_foods` became `search()` in
-> `apps/catalogue-worker/src/index.ts` (with `schema.sql` beside it as the shape,
-> applied by hand because the catalogue is disposable in a way the diary is
-> not), and `food_details` became the shape that
-> Worker returns. Read the SQL names below as descriptions of behaviour rather
-> than as objects you can query. The one thing that did NOT carry over is the
-> `is_estimate` / `is_recipe` machinery: estimates are written onto the entry
-> now and recipes have no mirror at all.
+It is in Cloudflare D1, behind the Worker in `apps/cloudflare/workers/catalogue`:
+`../../d1/food-catalogue/schema.sql` is the shape, `src/index.ts` is every query.
+Both deploy from CI on `main`, schema first — `apps/cloudflare/README.md`.
 
-**347,000 rows, and only 47,000 of them can be found by typing.** That split is
-the whole design, and it exists because the catalogue does two jobs that want
-opposite sizes.
+**Two tables, and their sizes are opposite on purpose.**
+
+```
+food          47,940   everything findable by typing
+product    3,228,419   packaged goods, reachable by an exact barcode and nothing else
+```
 
 **Name search wants to be small.** Every row it holds is a competitor for rank.
-It used to hold 464,000, of which 450,000 were USDA Branded — American
+The catalogue held 464,000 once, 450,000 of them USDA Branded — American
 supermarket packaging, imported because it was free — and they made fuzzy
-matching unaffordable: "milk" rechecked 60,934 rows and took 785 ms. The answer
-at the time was to make the trigram index partial on `place <> 'packaged'`, which
-is to say packaged goods became second-class in search, which is a strange thing
-for a calorie app to decide.
+matching unaffordable: "milk" rechecked 60,934 rows and took 785 ms.
 
 **Barcode lookup wants to be enormous.** A code is exact, so a row it will never
 match costs nothing but disk, and the only real failure of a scanner is a packet
 it has never heard of.
 
-`foods.searchable` is what lets both be true. False means the row is reachable by
-`lookup_barcode` and by nothing else: every arm of `search_foods` requires it,
-and the three indexes search rides (`foods_name_norm_idx`,
-`foods_name_norm_trgm_idx`, `foods_search_tsv_idx`) are PARTIAL on it. Three
-hundred thousand packets therefore cost no rank, no index memory and no query
-time — "milk" is scored against the same small set it was before they arrived,
-in 79 ms.
+Two tables is what lets both be true. `product` is a barcode primary key with no
+secondary index, so 3.2 million packets cost search no rank, no index memory and
+no query time.
 
-| | rows | searchable |
+What is in `food`:
+
+| source | rows | |
 |---|---|---|
-| Open Food Facts | ~325,000 | ~25,000 (Southeast Asian shelves + the world's most-scanned) |
-| researched Asian dishes | ~7,100 | all — 49 payload files under `apps/supabase/data/foods` |
-| USDA (Foundation, SR Legacy, FNDDS) | ~13,300 | all — measured generic food |
-| MyFCD | ~1,400 | all — the Malaysian composition table |
-| ASEAN FCD | ~200 | all — the regional table, ten countries, measured |
-| hawker / chain / drinks | ~450 | all — recipe-derived from measured rows |
+| Open Food Facts | 25,440 | Southeast Asian shelves and the world's most-scanned |
+| USDA (Foundation, SR Legacy, FNDDS) | 13,276 | measured generic food |
+| researched Asian dishes | 7,296 | 50 payload files under `apps/supabase/data/foods` |
+| MyFCD | 1,412 | the Malaysian composition table |
+| hawker / chain / drinks | 451 | recipe-derived from measured rows |
+| archetypes | 65 | the tier-5 fallbacks, which also live in Postgres |
 
-Three things now cross from the data factory that used to be thrown away, and
-each removed a workaround:
+Three things ride along with a dish, and each removed a workaround:
 
-- **Aliases are rows** (`food_aliases`), not tokens in `search_text`. A dish's
-  second name is matched the way its name is.
-- **Portions carry their weight** (`food_servings.grams`). `servingGrams` in
+- **Aliases are rows** (`food_alias`), not tokens in a search bag. An alias among
+  fifty words scores like one word; an alias in a table of its own scores like a
+  name.
+- **Portions carry their weight** (`food_serving.grams`). `servingGrams` in
   `_shared/portion.ts` had to recover it from the label with a regex, which is
   why it refuses to read cups and spoons. The cascade reads the STATED weight
   first and the label only as a fallback (`rowGrams` in `cascade.ts`) — reading
   the label alone switched the weight path off for exactly the rows that had the
   number, since a curated Malaysian dish says "1 plate" and carries the 300 g in
   a column beside it.
-- **Provenance is a row** (`food_sources`), carrying the licence and the
-  attribution the detail screen prints. Open Food Facts is ODbL: serving its
-  facts through an app is a Produced Work and attribution is required.
+- **Provenance travels as columns** (`source_id`, `source_name`,
+  `source_attribution`), carrying the licence and the attribution the detail
+  screen prints. Open Food Facts is ODbL: serving its facts through an app is a
+  Produced Work and attribution is required.
 
-`search` fuses FOUR arms with Reciprocal Rank Fusion — exact name, exact alias,
-full text, trigram — and then multiplies a **bounded prior** (locale, popularity,
-verified; capped at 1.35) that can settle a near-tie and can never outrank
-relevance.
+`search()` fuses FOUR arms with Reciprocal Rank Fusion — exact name, exact
+alias, full text, trigram — then multiplies a **bounded prior** (locale,
+popularity, verified; capped at 1.35) that can settle a near-tie and can never
+outrank relevance. The two FTS5 indexes are contentless, and `food_trgm` is the
+one thing that had to be rebuilt rather than ported: `pg_trgm` scored
+similarity, while FTS5's trigram tokenizer only matches substrings, and a
+misspelling is by definition not a substring of the right spelling. The Worker
+splits the QUERY into trigrams and lets bm25 rank by how many a row shares.
 
 **The two exact arms match a stored NORMALIZED column**, `food.name_norm` and
-`food_alias.alias_norm`, each with an index on it. Written as `lower(name) = ?`
-they were two bugs in one expression: no index can serve that, so every search
-full-scanned both tables — 47,000 rows and 25,000 rows before the FTS arms had
-done anything — and `lower()` is not the folding the query went through, so
-"Chicken Rice (Nasi Ayam)" could not be reached by typing its own words. Both
-arms are two rows read now.
+`food_alias.alias_norm`, each indexed. Written as `lower(name) = ?` they were
+two bugs in one expression: no index can serve that, so every search full-scanned
+both tables before the FTS arms had done anything, and `lower()` is not the
+folding the query went through, so "Chicken Rice (Nasi Ayam)" could not be
+reached by typing its own words. Both arms are two rows read now.
 
 **A catalogue load is gated on search quality**, because it is the one change
 here that can silently make the app worse: nothing errors, "nasi lemak" just
@@ -410,7 +405,7 @@ carry a GS1 Malaysia prefix — fewer than Thailand, and 0.13% of the catalogue.
 That is not a filter in this repo: the pipeline takes every OFF product with a
 panel and a code, and 4,333 is 96.5% of every Malaysian-prefix row Open Food
 Facts has that is usable at all. The source is the ceiling.
-`apps/catalogue-worker/BARCODE-COVERAGE.md` is the measurement and the options.
+`apps/cloudflare/d1/food-catalogue/BARCODE-COVERAGE.md` is the measurement and the options.
 
 ### The cascade
 
@@ -464,11 +459,13 @@ Then, in order:
   with three components on it.
 - **Count** — several of one countable thing. Three durian are three, priced per
   unit, counted in the portion where the stepper reaches it.
-- **Tier 1/3, dish** — `search_foods` (specific → generic → head noun), a
+- **Tier 1/3, dish** — the Worker's search (specific → generic → head noun), a
   verifier picks one, a wide ratio gate accepts it. Identity is what a vision
   model is good at; calories are what it is worst at.
-- **Tier 4, estimate** — a second model call, Atwater-checked, written as a
-  shared `is_estimate` row deduped on name **and size**.
+- **Tier 4, estimate** — a second model call, Atwater-checked, kept as numbers
+  on the entry. It used to write a shared catalogue row deduped on name and
+  size; a guess reused is still a guess, and it cost a client-facing table the
+  scan pipeline wrote to.
 - **Tier 5, archetype** — classification over the seeded generic rows, bottoming
   out at a terminal "Mixed meal" at a hardcoded id that needs no model and no
   network.
@@ -605,11 +602,9 @@ Three consequences worth knowing:
   `refineQuantity`, where quarters rounded small corrections back to no change
   at all.
 
-`pnpm eval:prompts` grades the typed-meal prompt and this one against close to
-sixty written-down cases. It imports the prompts rather than copying them — a
-harness with its own copy grades a prompt nobody ships.
-
----
+`pnpm eval:prompts` grades the typed-meal prompt, this one and the recipe
+reader against 68 written-down cases. It imports the prompts rather than
+copying them — a harness with its own copy grades a prompt nobody ships.
 
 ---
 
@@ -856,6 +851,24 @@ Break these and the feature is wrong in ways tests may not catch.
   the same three cases the old `is_estimate`/`is_archetype`/`is_recipe` flags
   did. `serving_id` is TEXT, not a uuid: D1 keys a portion `(food_id, slug)` and
   the Worker names one `"<food id>:<slug>"`.
+  So **a screen editing a saved entry prices it from the entry, never from the
+  catalogue.** `app/log/food/[id].tsx` fetches the food anyway, but only for the
+  portions it can offer — `withCataloguePortions`, which declines a list that
+  disagrees with the entry about the size the entry is already at. Letting the
+  catalogue win showed a soy milk logged at 108 kcal off its own nutrition panel
+  as 511, priced from an unrelated row while wearing the entry's own name and
+  photograph, with Today still showing 108. The bad id was the narrow cause; the
+  wide one is that any entry whose row has since been re-costed disagreed the
+  same way, silently.
+- **Changing a portion writes THREE columns, not one.** `serving_label` and
+  `serving_factor` are what the day counts; `serving_id` is a soft note that
+  nothing in Postgres can resolve, because `food_servings` is in D1 and no view
+  joins to it. It was enough when the catalogue was local and `food_log_details`
+  joined for the factor. Writing the id alone now changes what a row CLAIMS its
+  portion is and nothing about its arithmetic: switching a nasi lemak to Large
+  previewed 975 kcal, saved, and left a row labelled "1 serving" still counting
+  650. `snapshotColumns` writes all three on insert; `EntryPatch` carries all
+  three on update.
 - **An LLM figure is never averaged with a catalogue figure**, and the nutrition
   call is never told the vision call's guess — anchored, the model answered
   450 kcal for a plate of apple slices, and 120 without.
@@ -876,7 +889,7 @@ Break these and the feature is wrong in ways tests may not catch.
   own Supabase JWT now and the Worker verifies it against a public key, so the
   first half is satisfied by different means and the second is unchanged and
   absolute. Nothing but our own server, holding the shared secret, reaches
-  `/product`. See `apps/catalogue-worker/src/auth.ts` for what a token has to
+  `/product`. See `apps/cloudflare/workers/catalogue/src/auth.ts` for what a token has to
   survive — including `alg` being pinned to ES256, without which `alg: none` and
   an HMAC over the public key are both accepted forgeries.
 - **A barcode is a GTIN-14, at both ends.** Normalized where it is stored and
@@ -889,10 +902,11 @@ Break these and the feature is wrong in ways tests may not catch.
   above `limit` 25 failed, which the edge function turned into an empty result
   and the app drew as "No dish by that name". It looked perfect at the small
   limits it was tested with.
-- **An unreachable catalogue is not an empty one.** `searchFoods` returns null
-  for the first and `[]` for the second, and the `catalogue` function answers a
-  null with 502 so the search panel shows its error state. Collapsing the two
-  into `[]` is what made the bug above invisible for an hour.
+- **An unreachable catalogue is not an empty one.** `data/catalogue.ts` throws
+  for anything that is not a clean answer, so react-query reaches its error
+  state and the search panel says something went wrong. Answering `[]` for a
+  Worker that is down tells somebody their dish does not exist, which is what
+  made the bug above invisible for an hour.
 - **A recipe reaches the community only when a reviewer says so.** `is_public`
   and `review_status` are outside the client's column grant, and the community
   query requires `approved`. Every failure in the review leaves the row
@@ -980,12 +994,20 @@ Break these and the feature is wrong in ways tests may not catch.
   hand-written migration has to restate a function, copy the block out of
   `schemas/` verbatim rather than retyping it. Only what is between the `$$`
   markers counts — a note above the `create` is free.
-- **The two halves of the catalogue can disagree, and only one of them is
-  versioned.** `apps/catalogue-worker` deploys with `wrangler` and the Supabase
-  functions deploy with the Supabase CLI, so a change to the shape one returns
-  and the other reads is two deploys with a window between them. Deploy the
-  Worker FIRST: an edge function reading a field that has not arrived yet gets
-  `undefined`, where a Worker returning a field nobody reads is harmless.
+- **Deploy the SCHEMA first, then the code that reads it. Always.** The chain is
+  `D1 schema → the Worker → the edge functions → the app`, each arrow meaning
+  "is read by", and it has to be extended from the end nothing points at yet.
+  Deployed in that order every intermediate state has something existing that
+  nobody asks for, which is invisible; deployed against it, every intermediate
+  state has something asked for that does not exist, which is an error on a live
+  request — and not only for the new field. A Worker deployed ahead of its
+  column answers EVERY request with a D1 error; an edge function ahead of the
+  Worker reads `undefined` and prices a meal off a missing number. Only the
+  first arrow is automatic (`cloudflare.yml` runs the schema job before the
+  deploy job and stops if it fails); the rest is several deploys with a window
+  between each, so make every step backwards compatible rather than merely
+  quick. **Removing runs backwards**: stop reading it everywhere, ship that,
+  then drop the column. Full version in `apps/cloudflare/README.md`.
 - **The Supabase CLI's remote endpoints move.** On 2.111.0, `functions deploy`
   and `gen types --project-id` both answer 404 when handed a project ref that
   does not exist — which is indistinguishable from the endpoint being gone.
@@ -1052,19 +1074,12 @@ Break these and the feature is wrong in ways tests may not catch.
   to suppress the keyboard.
 - **A hosted Postgres does not fail a write when the disk fills. It stops
   accepting them ALL.** Supabase puts a project over its plan's ceiling into
-  read-only, and the free plan's ceiling is 500 MB. Loading three million
-  packaged rows in one transaction crossed it mid-statement: the insert rolled
-  back, but the DELETE that preceded it had already committed, so the catalogue
-  sat at 6,451 rows and the database refused every write including the
+  read-only, and the free plan's ceiling is 500 MB. This is what drove the
+  catalogue out to D1: loading three million packaged rows crossed it
+  mid-statement, and the database then refused every write including the
   `drop table` that would have freed the space. The way out is
   `set default_transaction_read_only = off` on a session, then drop whatever
-  grew. Two lessons stuck. A bulk load COMMITS PER BATCH and measures
-  `pg_database_size` between them, so it stops one chunk early instead of taking
-  the app down (`scripts/load_barcode_layer.py --budget-mb`). And after any
-  delete-and-reload the tables are enormously bloated — `foods` was 247 MB for
-  47,000 rows — so `vacuum (full, analyze)` is part of the job, not an
-  afterthought: it took the database from 420 MB back to 82 MB and turned "no
-  room for anything" into room for 300,000 more rows.
+  grew. The catalogue cannot do this again, but the diary shares the ceiling.
 - **A worklet FREEZES everything it closes over, and the pad's live value was
   reachable from one.** This cost an afternoon and the symptom was absurd: the
   app's own number pad could not type a two-digit number. Press 1, then 2, and
@@ -1130,10 +1145,6 @@ Break these and the feature is wrong in ways tests may not catch.
 
 Worth knowing before wondering where the handler went.
 
-- **Voice.** `app/log/voice.tsx` is routable and complete, but its
-  "transcription" is `recogniseDish` — a fake that picks a dish out of the
-  catalogue by slug — and nothing in the UI points at the route. Typing covers
-  the same ground with real recognition, which is what the sheet offers instead.
 - **RevenueCat** is disabled in `lib/startup.ts` by an explicit list rather than
   by a missing key, so the log does not blame `.env.local` for something a
   comment did.
@@ -1146,6 +1157,22 @@ Worth knowing before wondering where the handler went.
 every push. Two more workflows guard the database. `supabase-migrations` rebuilds
 a throwaway Postgres from every migration, runs the pgTAP suite in
 `apps/supabase/tests`, and deno-checks each edge function.
+
+`cloudflare` is the one workflow that both checks and DEPLOYS, and the only one
+scoped by path: it fires on nothing outside `apps/cloudflare`, and deploys only
+on a merge to main. `deploy.yml`'s push trigger ignores that same directory in
+return, so a Worker change cannot archive and submit a new binary for a change
+the app never sees. The trade is that the two filters have to stay opposites —
+widen one and a commit either runs both pipelines or neither.
+
+A PULL REQUEST's Worker is the exception, and it is in `deploy.yml` rather than
+here: `wrangler versions upload --preview-alias pr-N` puts this branch's code at
+a stable URL taking 0% of production traffic, and the PR's `eas update` is
+pointed at it, so the JS and the catalogue behind it come from one commit and
+land in one comment. The URL has to reach the bundle through a pulled
+`.env.local` — `eas update --environment X` ASSIGNS the downloaded values over
+the process, so a URL exported by the workflow is overwritten rather than
+honoured, and the preview goes on reading production while appearing to work.
 
 `supabase-drift` is the interesting one: it diffs the DEPLOYED schema against
 the committed migrations nightly, and it exists because there is no hosted
@@ -1167,17 +1194,21 @@ of these for a while, one grading Postgres and one grading the Worker off the
 same file, which is what made the move answerable rather than hopeful — D1
 scored 28/30 top-1 against Postgres's 26/30 on identical work.
 
-**`pnpm eval:scan` is the other half of the prompt harness**, and it grades what
-`eval:prompts` cannot. That one imports a prompt, calls the model and checks the
-answer — which says nothing about the upload, the catalogue search, the
-verifier, the ratio gate, the portion sizing or the row that lands in the diary,
-and most of what goes wrong with a scan goes wrong in exactly those. So
-`eval:scan` drives the DEPLOYED functions end to end, photographs and all, with
-the cascade's own `debug: true` trace coming back on every call. It needs a
-session, which is why `.secrets/eval.json` holds a password for a throwaway
-account rather than a token: setting that password revokes every refresh token
-the account holds, so a simulator signed in as it lands back on the welcome
-screen.
+**Three harnesses grade the model paths, and they answer different questions.**
+
+| | what it drives | what it grades |
+|---|---|---|
+| `pnpm eval:prompts` | the prompt alone, imported | the shape of one answer: which action, how many components, whether the band brackets something sane |
+| `pnpm eval:scan` | the DEPLOYED functions, photographs and all | the row that lands in the diary — 27 cases, with the cascade's `debug: true` trace on every call |
+| `pnpm eval:recipe` | the deployed recipe reader | the arithmetic (calories per serving, macros agreeing) and the WRITING (one action a step, imperative, a doneness cue) |
+
+`eval:prompts` says nothing about the upload, the catalogue search, the
+verifier, the ratio gate or the portion sizing, and most of what goes wrong with
+a scan goes wrong in exactly those — which is what the other two are for. The
+two that drive deployed functions need a session, which is why
+`.secrets/eval.json` holds a password for a throwaway account rather than a
+token: setting that password revokes every refresh token the account holds, so a
+simulator signed in as it lands back on the welcome screen.
 
 Use `--repeat` whenever you change something. One pass over these cases is not a
 measurement — the same sentence resolved to tier 1 at 657 kcal, tier 4 at 525

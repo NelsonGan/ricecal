@@ -17,7 +17,7 @@ import { promisify } from 'node:util'
 
 const exec = promisify(execFile)
 
-const WORKER_DIR = fileURLToPath(new URL('../../../catalogue-worker/', import.meta.url))
+const WORKER_DIR = fileURLToPath(new URL('../../../cloudflare/workers/catalogue/', import.meta.url))
 const DATABASE = process.env.CATALOGUE_D1 ?? 'ricecal-d1-food-catalogue'
 
 /**
@@ -71,9 +71,6 @@ export async function d1(sql, { local = false } = {}) {
   assertOk(stdout)
   return sliceJson(stdout).flatMap((r) => r.results ?? [])
 }
-
-/** The first row of a query, or null. */
-export const d1one = async (sql, opts) => (await d1(sql, opts))[0] ?? null
 
 /**
  * Many statements, in chunks small enough to survive an argument list.

@@ -1,5 +1,10 @@
 packages:
   - 'apps/*'
+  # Every Worker is its own package, because each has its own wrangler config
+  # and its own deploy. `apps/cloudflare` itself is not one — it is the folder
+  # the Cloudflare resources are grouped under, and `apps/cloudflare/d1/*` holds
+  # schema rather than code.
+  - 'apps/cloudflare/workers/*'
   - 'packages/*'
 
 # Babel resolves a preset or plugin named in a config by walking node_modules up

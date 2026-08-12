@@ -52,9 +52,9 @@ const settled = <E>(error: E, known = true): E =>
 /**
  * The recognition call. The photo is already in the bucket; everything else —
  * the vision model, the catalogue search, the five-tier fallback — happens
- * inside the `scan-meal` edge function, which also WRITES the entries itself
- * as service_role. It has to: tier 4 creates catalogue rows, which no client
- * is allowed to do.
+ * inside the `scan-meal` edge function, which also WRITES the entries itself as
+ * service_role. It has to: a scan records what the model claimed in
+ * `food_scan_items`, and no client is granted that table.
  *
  * That the function writes the entry ITSELF is why a rejection here is not the
  * same as a failed scan. The work does not stop when the caller stops listening
@@ -99,11 +99,11 @@ async function scanMeal(input: {
  * the fastest. Instead the row goes on the day immediately as a pending snap,
  * the sheet closes, and the slow work happens behind it.
  *
- * The upload comes FIRST, not in parallel with recognition the way the mock
- * flow ran them: the edge function reads the photo out of the bucket, so
- * there is nothing to recognise until the object exists. The ordering also
- * keeps the old invariant — `photo_path` on an entry always names a real
- * object, and an orphaned object from a failed scan is harmless.
+ * The upload comes FIRST rather than in parallel with recognition: the edge
+ * function reads the photo out of the bucket, so there is nothing to recognise
+ * until the object exists. The ordering also keeps `photo_path` on an entry
+ * always naming a real object, and an orphaned object from a failed scan is
+ * harmless.
  *
  * Nothing is cancelled when the caller unmounts — the sheet is gone a frame
  * later by design, and a snap that stopped because the user navigated away

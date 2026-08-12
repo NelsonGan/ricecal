@@ -5,11 +5,14 @@ import { PurchasesUnavailable, purchasePlan, purchasesAvailable } from '@/data/p
 import { CheckList } from '@/features/shared'
 import { Button, Card, Icon, type IconProps, Screen, Squish, Text, useToast } from '@/ui'
 
-type Feature = 'photo' | 'voice'
+/** The gated ways in, each naming a block in the `gate` copy bundle. */
+type Feature = 'photo' | 'describe'
 
 const HERO: Record<Feature, IconProps> = {
   photo: { set: 'system', name: 'camera' },
-  voice: { set: 'system', name: 'microphone' },
+  // The same sparkle the Describe button carries in the log sheet, so the gate
+  // and the control it is gating look like one feature.
+  describe: { set: 'system', name: 'sparkle' },
 }
 
 /**

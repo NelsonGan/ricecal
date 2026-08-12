@@ -77,17 +77,25 @@ export default function LogSheet() {
    */
   const { panel: opening } = useLocalSearchParams<{ panel?: string }>()
 
-  // The viewfinder, the search field and the recipe list all live inside this
-  // sheet rather than in a screen of their own, so the day stays visible behind
-  // them and nothing has to be dismissed twice. See the `Panel` union above.
-  const [panel, setPanel] = useState<Panel>(() => (isPanel(opening) ? opening : null))
+  /**
+   * The viewfinder, the search field and the recipe list all live inside this
+   * sheet rather than in a screen of their own, so the day stays visible behind
+   * them and nothing has to be dismissed twice. See the `Panel` union above.
+   *
+   * Snap is the default, so the log button opens on a camera pointed at the
+   * food. It is what people came to do — the other four are how you log a meal
+   * you are not looking at — and an extra tap to reach it was a tap spent on the
+   * common case. Tapping Snap again closes it, which is what puts "repeat
+   * yesterday" below back within reach.
+   */
+  const [panel, setPanel] = useState<Panel>(() => (isPanel(opening) ? opening : 'camera'))
   const toggle = (next: NonNullable<Panel>) =>
     setPanel((current) => (current === next ? null : next))
 
   const left = (targets?.kcal ?? 0) - sumMacros(day.entries).kcal
 
   // Yesterday is a second day query. Cheap, cached, and the only way to offer
-  // "repeat" without keeping every day in memory the way the mock store did.
+  // "repeat" without keeping every day in memory.
   const yesterdayKey = dateKey(subDays(new Date(selectedDate), 1))
   const { data: yesterday } = useDay(yesterdayKey)
   const yesterdayEntries = yesterday?.entries ?? []
@@ -181,9 +189,8 @@ export default function LogSheet() {
           selected={panel === 'camera'}
           onPress={() => toggle('camera')}
         />
-        {/* No "Say". Dictation is off until it does something — `log/voice` is
-            still routable, and nothing points at it. Typing, though, is the
-            same recognition without the microphone, so it is here. */}
+        {/* No "Say". Dictation would be typing without the keyboard, and typing
+            already reaches the same cascade. */}
         <QuickAction
           label={t('logging:selector.describe')}
           icon={{ set: 'system', name: 'sparkle' }}

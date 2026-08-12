@@ -191,8 +191,6 @@ export const refine = (foodLogId, instruction) =>
 /** A recipe form filled in from words. Writes nothing — the draft is the answer. */
 export const readRecipe = (text) => invoke('recipes', { action: 'read', text })
 
-export const barcodeLookup = (code) => invoke('barcode', { code })
-
 /** An entry as the diary reads it, through the view rather than off the table. */
 export const entry = (id) =>
   rest(`food_log_details?id=eq.${id}&select=*`).then((r) => r.body?.[0] ?? null)
