@@ -63,11 +63,8 @@ export const paywall = {
       },
     },
     /**
-     * Describe, which is what voice logging became. The route that recorded a
-     * sentence is gone; the cascade behind it never was, and reads a typed one
-     * through the same endpoint. The perks are unchanged because they were
-     * always about what the model does with the sentence rather than how it
-     * arrived.
+     * The perks are about what the model does with a sentence rather than how
+     * the sentence arrived, which is why none of them mentions typing.
      */
     describe: {
       title: 'Describing a meal is a Pro feature',
@@ -88,9 +85,8 @@ export const paywall = {
     title: 'You are in. Jom makan.',
     body: 'Trial active for 3 days. Everything is unlocked, nothing to set up.',
     perks: {
-      // What the app can actually do. It said "photo or voice" while voice
-      // logging was a route, and went on saying it after that route was
-      // deleted — a promise made to somebody at the moment they pay.
+      // The three ways in, and they have to stay the three ways in: this is a
+      // promise made to somebody at the moment they pay.
       log: 'Log by photo, by barcode or in your own words',
       database: 'Full local food database',
     },
