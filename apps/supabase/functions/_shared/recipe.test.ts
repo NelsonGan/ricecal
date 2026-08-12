@@ -9,7 +9,13 @@
 // The reviewer half is tested for one property only, and it is the one that
 // matters: nothing but an explicit `approved: true` may come back approved.
 
-import { type DraftIngredient, reviewRecipe, reviewUserMessage, toIngredientRow } from './recipe.ts'
+import {
+  type DraftIngredient,
+  reviewRecipe,
+  reviewUserMessage,
+  shapeSteps,
+  toIngredientRow,
+} from './recipe.ts'
 
 const eq = (got: unknown, want: unknown, what: string) => {
   if (got !== want) throw new Error(`${what}: expected ${want}, got ${got}`)
@@ -113,4 +119,34 @@ Deno.test('reviewRecipe throws rather than answering when the call fails', async
     return
   }
   throw new Error('a failed review returned a verdict')
+})
+
+Deno.test('shapeSteps puts one instruction on each line whatever it is given', () => {
+  const paragraph = 'Fry the rempah until it darkens. Add the beef. Pour in the coconut milk.'
+  eq(shapeSteps(paragraph).split('\n').length, 3, 'a paragraph becomes three lines')
+  // Numbering is taken off: the app draws the numerals, so a "1." in the text
+  // would be a second number beside the first.
+  eq(shapeSteps('1. Rinse the rice\n2. Drain it'), 'Rinse the rice\nDrain it', 'unnumbered')
+})
+
+Deno.test('shapeSteps folds an over-long method down to twelve, keeping the end', () => {
+  // Sixteen steps, the shape a coq au vin comes back in. The prompt asks for
+  // twelve and does not get it on a dish cooked in stages.
+  const many = Array.from({ length: 16 }, (_, i) => `Step number ${i + 1} happens now.`)
+  const folded = shapeSteps(many.join('\n')).split('\n')
+
+  eq(folded.length, 12, 'folded to the limit')
+  // MERGED, not truncated. The last instruction is where a dish is assembled
+  // and served, so cutting there would leave a method that stops mid-cook.
+  eq(folded.at(-1)?.includes('Step number 16'), true, 'the last instruction survives')
+  eq(folded[0].includes('Step number 1'), true, 'and so does the first')
+  // Nothing is lost on the way: every original instruction still appears.
+  for (const step of many) {
+    eq(folded.join(' ').includes(step), true, `"${step}" is still in there`)
+  }
+})
+
+Deno.test('shapeSteps leaves a method that already fits alone', () => {
+  const fine = Array.from({ length: 9 }, (_, i) => `Do thing ${i + 1}.`)
+  eq(shapeSteps(fine.join('\n')).split('\n').length, 9, 'nine stays nine')
 })

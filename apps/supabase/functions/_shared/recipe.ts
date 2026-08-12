@@ -133,20 +133,64 @@ function shapeIngredients(list: unknown[]): DraftIngredient[] {
  * it is DRAWN, so a "1." in the text would be a second number beside the first,
  * and it would survive into the field the user edits by hand.
  */
-function shapeSteps(raw: unknown): string {
+export function shapeSteps(raw: unknown): string {
   const value = text(raw, 4000)
   if (!value) return ''
 
-  return (
-    value
-      .split('\n')
-      // A sentence end followed by the start of another. Written to need the
-      // capital, so "1.5 kg" and "approx. 20" stay in one piece.
-      .flatMap((line) => line.split(/(?<=[.!?])\s+(?=[A-Z"'(])/))
-      .map((line) => line.replace(/^\s*(?:step\s*)?(?:\d+\s*[.):]|[-*•·])\s*/i, '').trim())
-      .filter(Boolean)
-      .join('\n')
-  )
+  const lines = value
+    .split('\n')
+    // A sentence end followed by the start of another. Written to need the
+    // capital, so "1.5 kg" and "approx. 20" stay in one piece.
+    .flatMap((line) => line.split(/(?<=[.!?])\s+(?=[A-Z"'(])/))
+    .map((line) => line.replace(/^\s*(?:step\s*)?(?:\d+\s*[.):]|[-*•·])\s*/i, '').trim())
+    .filter(Boolean)
+
+  return foldToLimit(lines).join('\n')
+}
+
+/**
+ * The most steps a method may have.
+ *
+ * The prompt asks for four to eight and never more than twelve, and on a dish
+ * cooked in stages it does not hold: a coq au vin came back with seventeen, a
+ * moussaka with fifteen. Relaxing the number made it worse, because the model
+ * reads a ceiling as a target.
+ *
+ * So it is enforced here as well as asked for, the way `foldMealItems` enforces
+ * one meal per photo. The number is not a style preference — this list is read
+ * on a phone propped behind a hot pan, and the failure of a long method is not
+ * that it is wrong but that the cook loses their place in it.
+ */
+const MAX_STEPS = 12
+
+/**
+ * Too many steps, folded into few enough by joining the shortest neighbours.
+ *
+ * MERGED rather than truncated, and that distinction is the whole point: the
+ * steps that overflow are at the END, and the end of a recipe is where the dish
+ * is assembled and served. Cutting there would leave a method that stops
+ * mid-cook. Joining the two shortest adjacent steps costs nothing — "Melt the
+ * butter." and "Stir in the flour." read perfectly well as one line, which is
+ * what the prompt itself tells the model to do when it is running long.
+ *
+ * Shortest-first, repeatedly, so the long steps that carry the times and
+ * temperatures stay on their own lines and the throwaway ones absorb each other.
+ */
+function foldToLimit(lines: string[]): string[] {
+  const out = [...lines]
+  while (out.length > MAX_STEPS) {
+    let at = 0
+    let shortest = Number.POSITIVE_INFINITY
+    for (let i = 0; i < out.length - 1; i++) {
+      const joined = out[i].length + out[i + 1].length
+      if (joined < shortest) {
+        shortest = joined
+        at = i
+      }
+    }
+    out.splice(at, 2, `${out[at].replace(/\s*$/, '')} ${out[at + 1]}`.trim())
+  }
+  return out
 }
 
 function shapeDraft(raw: unknown): RecipeDraft {
