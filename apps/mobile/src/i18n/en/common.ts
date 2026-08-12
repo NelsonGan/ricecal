@@ -82,6 +82,19 @@ export const common = {
     action: 'Go to Today',
   },
 
+  /**
+   * Shown where the app has nothing saved to fall back on and cannot ask for
+   * it. Written as a wait rather than a failure: requests resume by themselves
+   * the moment there is a connection, so there is nothing for the user to do
+   * and no retry to offer.
+   */
+  offline: {
+    title: 'Waiting for a connection',
+    body: 'We have not saved this one to your phone yet. It will load as soon as you are online.',
+    dayTitle: 'This day is not on your phone',
+    dayBody: 'Pick a day you have opened before, or come back when you are online.',
+  },
+
   a11y: {
     back: 'Go back',
     close: 'Close',
