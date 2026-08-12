@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import { supabase } from '@/lib/supabase'
 import { lookupPacket } from './barcodes'
+import { catalogueGet } from './catalogue'
 import { unwrap } from './client'
 import { keys } from './keys'
 import { type FoodStats, toFood } from './mappers'
@@ -15,28 +16,19 @@ import type { Food, FoodDetailsRow } from './types'
  * `foods` and its portions used to be tables in the same Postgres the session
  * authenticates against, so a search was an RPC and a dish was a select. They
  * are in Cloudflare D1 now — 3.2 million packaged products keyed by barcode and
- * ~47,000 searchable dishes — behind a Worker holding a shared secret.
+ * ~47,000 searchable dishes — behind a Worker.
  *
- * A secret in a phone is not a secret, so the client does not talk to that
- * Worker. It invokes the `catalogue` edge function, which authenticates the
- * user the way every other function does and asks on their behalf. One extra
- * hop, and it buys a catalogue ten times the size that no longer shares a disk
- * quota with anybody's diary.
+ * The app reads that Worker DIRECTLY, carrying the signed-in user's own
+ * Supabase JWT. It went through an edge function for a while, because the only
+ * credential the Worker understood was a shared secret and a secret in a phone
+ * is not a secret; the Worker verifies user tokens now, so the hop is gone
+ * along with the ~390 ms it cost. See `./catalogue.ts`.
  *
  * The row shape is unchanged on purpose. `toFood` still reads what
  * `food_details` used to return, because a move of where the data lives should
- * not become a rewrite of what it looks like.
+ * not become a rewrite of what it looks like — and it has now survived two
+ * moves on that basis.
  */
-
-/** One call to the catalogue function, unwrapped the way `unwrap` does it. */
-async function catalogue<T>(body: Record<string, unknown>): Promise<T | null> {
-  const { data, error } = await supabase.functions.invoke<{ ok: boolean } & T>('catalogue', {
-    body,
-  })
-  if (error) throw error
-  if (!data?.ok) return null
-  return data as T
-}
 
 /**
  * How often this user has logged each of the given dishes.
@@ -66,21 +58,21 @@ async function statsFor(userId: string, foodIds: string[]): Promise<Map<string, 
 /**
  * Search, by name.
  *
- * The `search_foods` RPC rather than `ilike`, because the catalogue is ~460,000
- * rows and substring matching cannot rank. `ilike '%kopi%'` matches "Kopi O" and
- * "Non-Dairy Coffee Whitener" equally well, so the fifty rows PostgREST returns
- * first are the fifty the user sees. The RPC fuses an exact, a full-text and a
- * trigram arm, which is also what makes "char kway teow" and "teh tarek" find
- * anything at all — see apps/supabase/schemas/91_food_search.sql.
+ * A ranked search rather than a substring match, because the catalogue is
+ * 47,000 searchable rows and `ilike '%kopi%'` matches "Kopi O" and "Non-Dairy
+ * Coffee Whitener" equally well. The Worker fuses four arms — exact name, exact
+ * alias, full text, trigram — which is also what makes "char kway teow" and
+ * "teh tarek" find anything at all. See `apps/catalogue-worker/src/index.ts`.
  *
  * An empty query returns nothing rather than the first fifty rows of the
- * catalogue. Fifty arbitrary dishes out of half a million is not a browse, and
- * the field is focused on mount, so the user is typing anyway.
+ * catalogue, and it returns it WITHOUT asking: fifty arbitrary dishes out of
+ * 47,000 is not a browse, and the field is focused on mount, so the panel
+ * renders one keystroke before there is anything to ask about.
  *
  * No place filter. The screen used to offer All / Mamak / Kopitiam / Packaged
  * chips, but `place` describes where a dish is *typically* eaten, not what the
  * user is looking for — filtering a ranked result set by it mostly hid the
- * right answer. The RPC still accepts `p_place`; nothing passes it.
+ * right answer.
  */
 export function useFoodSearch(query: string) {
   const userId = useUserId()
@@ -91,12 +83,10 @@ export function useFoodSearch(query: string) {
       const needle = query.trim()
       if (!needle) return []
 
-      const result = await catalogue<{ foods: FoodDetailsRow[] }>({
-        action: 'search',
+      const { foods: rows } = await catalogueGet<{ foods: FoodDetailsRow[] }>('/search', {
         q: needle,
         limit: 50,
       })
-      const rows = result?.foods ?? []
 
       const stats = await statsFor(
         userId,
@@ -111,7 +101,7 @@ export function useFoodSearch(query: string) {
 /**
  * One food, whichever kind of thing it turns out to be.
  *
- * A dish is a catalogue row and comes back from the `catalogue` function. A
+ * A dish is a catalogue row and comes straight from the Worker. A
  * SCANNED PACKET is not: it lives in D1's barcode-keyed table, it has no
  * `foods.id`, and the endpoint that knows how to find it is the scanner's —
  * which also falls back to Open Food Facts live and remembers what it gets.
@@ -129,11 +119,10 @@ export function useFood(id: string | undefined) {
     queryFn: async (): Promise<Food | null> => {
       if (code) return lookupPacket(code)
 
-      const result = await catalogue<{ food: FoodDetailsRow | null }>({
-        action: 'food',
-        id,
+      const { food } = await catalogueGet<{ food: FoodDetailsRow | null }>('/food', {
+        id: id ?? '',
       })
-      return result?.food ? toFood(result.food) : null
+      return food ? toFood(food) : null
     },
     // One retry on the packet path, where the app's default is two.
     //

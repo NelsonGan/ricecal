@@ -50,10 +50,25 @@ re-snapshot. The trade runs the other way now: correcting a dish in the
 catalogue no longer corrects the diaries that used it. What it buys is a
 catalogue that can be truncated and rebuilt without touching anybody's diary.
 
-A secret in a phone is not a secret, so the client never calls that Worker. It
-invokes the `catalogue` edge function, which authenticates the user the way
-every other function does and asks on their behalf. The shapes the Worker
-returns are deliberately the shapes `food_details` used to return.
+**The app reads that Worker directly, and the Worker checks who is asking.** It
+went through a `catalogue` edge function for a while, because the only
+credential the Worker understood was a shared secret and a secret in a phone is
+not a secret. What changed is that the project signs its JWTs ASYMMETRICALLY:
+Supabase publishes an ES256 public key, so the Worker verifies a user's own
+token while holding nothing that could forge one. The phone still carries no
+secret, and the hop is gone — measured, a search went from ~420 ms to ~177 ms,
+having previously travelled to Singapore and back before it started.
+
+Two credentials reach that Worker now and `ROUTES` in its `index.ts` is the
+policy. A user's JWT reaches `/search` and `/food` and nothing else; the shared
+secret is our own server (the scan cascade, the barcode function) and reaches
+everything, including the write. A user token asking for anything outside those
+two gets a 404 rather than a 403, because a signed-in person has no business
+knowing the write route is there. An account is also what a rate limit is keyed
+on, since an account is now what it costs to read the catalogue.
+
+The shapes the Worker returns are deliberately the shapes `food_details` used to
+return.
 
 **The client reads through hooks.** Everything in `src/data` is a react-query
 hook, one file per area, and no screen imports `supabase` directly. Every
@@ -853,11 +868,17 @@ Break these and the feature is wrong in ways tests may not catch.
   the model itself bounded at 780-900 kcal was logged at 160. A breakdown far
   outside its own band is dropped, not repaired, and the dish tier prices the
   plate whole.
-- **No client reaches the catalogue directly.** It is in D1 behind a Worker
-  holding a shared secret, and the only door is the `catalogue` edge function,
-  which authenticates the user first. A client that held that token could read
-  the catalogue as fast as it liked from anywhere; a client that could WRITE it
-  could put numbers in front of everybody.
+- **A client may READ the catalogue as itself, and may never write it.** This
+  used to read "no client reaches the catalogue directly", and the rule behind
+  the wording was always about the SHARED SECRET: a client holding that token
+  could read the catalogue as fast as it liked from anywhere, and one that could
+  write it could put numbers in front of everybody. The app carries the user's
+  own Supabase JWT now and the Worker verifies it against a public key, so the
+  first half is satisfied by different means and the second is unchanged and
+  absolute. Nothing but our own server, holding the shared secret, reaches
+  `/product`. See `apps/catalogue-worker/src/auth.ts` for what a token has to
+  survive — including `alg` being pinned to ES256, without which `alg: none` and
+  an HMAC over the public key are both accepted forgeries.
 - **A barcode is a GTIN-14, at both ends.** Normalized where it is stored and
   where it is asked for, so the four spellings of one packet are one key. The
   check digit is not validated, on purpose. `public.gtin14` survives in Postgres
