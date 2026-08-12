@@ -50,6 +50,14 @@ export function useCurrentWeight(): number | undefined {
  * date corrects that day instead, which is what makes the history editable.
  * Writing it also recomputes the budget in the database, which is why the targets
  * are invalidated here.
+ *
+ * `provider: null` IS THE POINT OF THE WRITE, not a default worth leaving out.
+ * Null means "the user typed this", and `sync_weight_readings` refuses to
+ * overwrite a row that says so. Omitting the column would leave a corrected
+ * weigh-in still marked as the scale's — PostgREST only updates the columns the
+ * payload names — and the next foreground would put the scale's number straight
+ * back, once a minute, for as long as the app stayed open. The user would watch
+ * their own correction undo itself.
  */
 export function useLogWeight() {
   const userId = useUserId()
@@ -61,7 +69,7 @@ export function useLogWeight() {
         await supabase
           .from('weight_logs')
           .upsert(
-            { user_id: userId, measured_on: date, weight_kg: kg },
+            { user_id: userId, measured_on: date, weight_kg: kg, provider: null },
             { onConflict: 'user_id,measured_on' },
           )
           .select('measured_on')

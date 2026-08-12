@@ -13,6 +13,7 @@ import type {
   HealthReading,
   HourReading,
   LocalDate,
+  WeightReading,
   WorkoutReading,
 } from './types'
 
@@ -132,6 +133,7 @@ async function daily<T extends string>(
 
 export const healthConnect: HealthProvider = {
   id: 'health_connect',
+  readTypes: CONNECT_READ_TYPES,
 
   async isAvailable(): Promise<Availability> {
     if (Platform.OS !== 'android') return { ok: false, reason: 'wrong-platform' }
@@ -181,10 +183,12 @@ export const healthConnect: HealthProvider = {
        *
        * A permission covers a FAMILY of record classes, and the library answers
        * in record types by reporting every class the granted permission
-       * implies. Granting the six here comes back as eight: `READ_EXERCISE`
-       * drags in `CyclingPedalingCadence` and `READ_STEPS` drags in
-       * `StepsCadence`, neither of which this file reads. Observed on a Pixel
-       * API 36 emulator, not inferred.
+       * implies. Granting the list here comes back longer than it went in:
+       * `READ_EXERCISE` drags in `CyclingPedalingCadence` and `READ_STEPS`
+       * drags in `StepsCadence`, neither of which this file reads. Observed on
+       * a Pixel API 36 emulator, not inferred — which is also why the count is
+       * not written down, since only the platform decides what a permission
+       * implies and it has no reason to tell us when that changes.
        *
        * They are dropped because this list is what `health_connections
        * .permissions` stores and what the Activity screens explain a gap from,
@@ -201,7 +205,7 @@ export const healthConnect: HealthProvider = {
 
   async read(from, to, { withHours, age }): Promise<HealthReading> {
     const hc = load()
-    if (!hc) return { days: [], workouts: [], hours: [], deviceName: null }
+    if (!hc) return { days: [], workouts: [], hours: [], weights: [], deviceName: null }
 
     await hc.initialize()
 
@@ -255,18 +259,92 @@ export const healthConnect: HealthProvider = {
       })
     }
 
-    const [workouts, hours] = await Promise.all([
+    const [workouts, hours, weights] = await Promise.all([
       readWorkouts(hc, from, to, age),
       withHours ? readHours(hc, from, to) : Promise.resolve<HourReading[]>([]),
+      // The whole range, not only the hourly window — see the note in `apple.ts`.
+      readWeights(hc, from, to),
     ])
 
     return {
       days,
       workouts,
       hours,
+      weights,
       deviceName: workouts.find((w) => w.sourceName)?.sourceName ?? null,
     }
   },
+}
+
+/**
+ * Weigh-ins, and the body fat recorded alongside them.
+ *
+ * Records rather than an aggregate, which is the opposite of every other read in
+ * this file. `Weight` does have a `WEIGHT_AVG`/`WEIGHT_MIN`/`WEIGHT_MAX`
+ * aggregate, and none of the three is the number wanted: a day's weight is its
+ * LAST reading, the same rule `weight_logs` has always applied to somebody
+ * weighing themselves twice before breakfast. The dedup-across-sources argument
+ * that makes an aggregate mandatory for steps does not apply to a quantity
+ * nobody adds up — two apps reporting the same weigh-in is one value repeated,
+ * not one value doubled.
+ *
+ * Keyed off the WEIGHT: a day with body fat and no weight is skipped, because
+ * `weight_logs.weight_kg` is not null and there is no honest row to write.
+ *
+ * Both reads are wrapped separately, so a user who granted weight but declined
+ * body measurements still gets their weigh-ins — and either failing costs the
+ * caller nothing else, since this runs beside the reads that fill the Activity
+ * tab.
+ */
+async function readWeights(
+  hc: ConnectModule,
+  from: LocalDate,
+  to: LocalDate,
+): Promise<WeightReading[]> {
+  const mass = new Map<LocalDate, number>()
+  const fat = new Map<LocalDate, number>()
+
+  try {
+    // Ascending, so the last record written for a date is the one left in the
+    // map — the day's final reading.
+    const page = await hc.readRecords('Weight', {
+      timeRangeFilter: between(from, to),
+      ascendingOrder: true,
+    })
+    for (const record of page.records) {
+      const kg = record.weight?.inKilograms
+      if (kg == null) continue
+      mass.set(dateKey(new Date(record.time)), kg)
+    }
+  } catch {
+    return []
+  }
+
+  try {
+    const page = await hc.readRecords('BodyFat', {
+      timeRangeFilter: between(from, to),
+      ascendingOrder: true,
+    })
+    for (const record of page.records) {
+      if (record.percentage == null) continue
+      fat.set(dateKey(new Date(record.time)), record.percentage)
+    }
+  } catch {
+    // Weight without body fat is a complete weigh-in. Nothing to recover.
+  }
+
+  const out: WeightReading[] = []
+  for (const [date, kg] of mass) {
+    const pct = fat.get(date)
+    out.push({
+      date,
+      kg: Math.round(kg * 100) / 100,
+      // Already 0–100 here, unlike HealthKit's fractional `%` — see `asPercent`
+      // in `apple.ts` for the trap that difference sets.
+      bodyFatPct: pct == null ? null : Math.round(pct * 10) / 10,
+    })
+  }
+  return out
 }
 
 async function readWorkouts(
