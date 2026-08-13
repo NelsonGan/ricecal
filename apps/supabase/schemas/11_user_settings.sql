@@ -33,6 +33,11 @@ create table public.user_settings (
   notify_water           boolean not null default true,
   notify_weigh_in        boolean not null default true,
   notify_weekly_report   boolean not null default true,
+  -- The other look back, on the first of the month. Separate from the weekly
+  -- one because they answer different questions and somebody may well want the
+  -- month without the week: one is "how did that week go" and the other is a
+  -- shape only visible from further away.
+  notify_monthly_report  boolean not null default true,
   -- Local wall-clock times, interpreted in profiles.timezone. `time` and not
   -- `timestamptz`: "no notifications after 22:00" is a rule about the user's
   -- clock, and it stays true when they fly somewhere else.

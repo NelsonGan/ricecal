@@ -944,6 +944,7 @@ export type Database = {
           created_at: string
           energy: Database['public']['Enums']['energy_unit']
           language: string
+          notify_monthly_report: boolean
           notify_water: boolean
           notify_weekly_report: boolean
           notify_weigh_in: boolean
@@ -961,6 +962,7 @@ export type Database = {
           created_at?: string
           energy?: Database['public']['Enums']['energy_unit']
           language?: string
+          notify_monthly_report?: boolean
           notify_water?: boolean
           notify_weekly_report?: boolean
           notify_weigh_in?: boolean
@@ -978,6 +980,7 @@ export type Database = {
           created_at?: string
           energy?: Database['public']['Enums']['energy_unit']
           language?: string
+          notify_monthly_report?: boolean
           notify_water?: boolean
           notify_weekly_report?: boolean
           notify_weigh_in?: boolean
@@ -1518,6 +1521,109 @@ export type Database = {
       remove_ingredient: {
         Args: { p_ingredient_id: string }
         Returns: undefined
+      }
+      review_days: {
+        Args: { p_from: string; p_to: string; p_user_id?: string }
+        Returns: {
+          active_kcal: number
+          at: string
+          carbs_g: number
+          distance_m: number
+          entry_count: number
+          exercise_minutes: number
+          fat_g: number
+          goal_kcal: number
+          goal_water: number
+          has_activity: boolean
+          kcal: number
+          protein_g: number
+          resting_kcal: number
+          session_kcal: number
+          session_seconds: number
+          sessions: number
+          step_goal: number
+          steps: number
+          water_glasses: number
+          weight_kg: number
+        }[]
+      }
+      review_end: { Args: { p_kind: string; p_start: string }; Returns: string }
+      review_meals: {
+        Args: {
+          p_kind: string
+          p_limit?: number
+          p_start: string
+          p_user_id?: string
+        }
+        Returns: {
+          carbs_g_avg: number
+          fat_g_avg: number
+          icon_name: string
+          icon_set: Database['public']['Enums']['icon_set']
+          kcal_avg: number
+          name: string
+          protein_g_avg: number
+        }[]
+      }
+      review_periods: {
+        Args: { p_kind: string; p_user_id?: string }
+        Returns: {
+          days: number
+          days_logged: number
+          ends_on: string
+          kcal_avg: number
+          kind: string
+          marks: number[]
+          starts_on: string
+          weight_change: number
+        }[]
+      }
+      review_series: {
+        Args: { p_kind: string; p_start: string; p_user_id?: string }
+        Returns: {
+          bucket_start: string
+          carbs_g_avg: number
+          days_logged: number
+          fat_g_avg: number
+          kcal_avg: number
+          protein_g_avg: number
+          steps_avg: number
+          weight_last: number
+        }[]
+      }
+      review_summary: {
+        Args: { p_kind: string; p_start: string; p_user_id?: string }
+        Returns: {
+          active_days: number
+          active_kcal_avg: number
+          carbs_g_avg: number
+          days: number
+          days_logged: number
+          days_under_goal: number
+          distance_total_m: number
+          ends_on: string
+          exercise_min_total: number
+          fat_g_avg: number
+          heaviest_kcal: number
+          heaviest_on: string
+          kcal_avg: number
+          kcal_goal: number
+          kind: string
+          lightest_kcal: number
+          lightest_on: string
+          protein_g_avg: number
+          sessions: number
+          starts_on: string
+          step_goal: number
+          step_goal_days: number
+          steps_avg: number
+          streak_days: number
+          water_avg: number
+          water_goal_days: number
+          weigh_ins: number
+          weight_change: number
+          weight_last: number
+        }[]
       }
       save_recipe_copy: { Args: { p_recipe_id: string }; Returns: string }
       search_normalize: { Args: { txt: string }; Returns: string }

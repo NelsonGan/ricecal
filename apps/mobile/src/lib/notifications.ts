@@ -33,6 +33,8 @@ export type ReminderCopy = {
   weighInBody: string
   weeklyTitle: string
   weeklyBody: string
+  monthlyTitle: string
+  monthlyBody: string
 }
 
 Notifications.setNotificationHandler({
@@ -174,14 +176,38 @@ export async function rescheduleReminders(
     })
   }
 
+  /**
+   * The two look-backs, and both open the review they are about — see
+   * `data.kind`, which `useReportLinks` routes on.
+   *
+   * MONDAY MORNING, not Sunday evening. A weekly review is of a FINISHED week,
+   * and `review_periods` will not offer one until it is over: fired at seven on
+   * Sunday it linked to the week before last, which is a notice about a week
+   * nobody remembers arriving while the one they are living is still going.
+   */
   if (settings.notify_weekly_report) {
     await Notifications.scheduleNotificationAsync({
       content: { title: copy.weeklyTitle, body: copy.weeklyBody, data: { kind: 'weekly' } },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-        // Sunday evening, looking back at the week that just ended.
-        weekday: 1,
-        hour: 19,
+        // 1 is Sunday in this API, so Monday is 2. The one off-by-one here that
+        // no type can catch, since every weekday is a valid number.
+        weekday: 2,
+        hour: 9,
+        minute: 0,
+        channelId: CHANNEL,
+      },
+    })
+  }
+
+  if (settings.notify_monthly_report) {
+    await Notifications.scheduleNotificationAsync({
+      content: { title: copy.monthlyTitle, body: copy.monthlyBody, data: { kind: 'monthly' } },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.MONTHLY,
+        // The first, for the month that ended yesterday. Same rule as the week.
+        day: 1,
+        hour: 9,
         minute: 0,
         channelId: CHANNEL,
       },

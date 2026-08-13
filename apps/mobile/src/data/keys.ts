@@ -89,6 +89,30 @@ export const keys = {
   trendsAll: (userId: string) => ['trends', userId] as const,
 
   /**
+   * Reviews. The list of finished weeks or months, and the three reads one
+   * story makes of a single period.
+   *
+   * `reviewPeriods` is shared deliberately: Trends asks it whether there is
+   * anything to review, the list draws from it, and a story reads the same rows
+   * as its comparison chart. Three screens, one entry.
+   *
+   * There is NO `reviewsAll`, unlike every other area in this file, and that is
+   * a decision rather than an omission. A review is of a period that has ENDED,
+   * so nothing logged today can move one. The only write that can is a meal
+   * backdated into a finished week, and the default thirty-second stale time
+   * already covers it — the review refetches the next time it is opened. A
+   * prefix here would mean a line in a dozen mutations for a case that repairs
+   * itself.
+   */
+  reviewPeriods: (userId: string, kind: string) => ['reviews', userId, kind, 'periods'] as const,
+  reviewSummary: (userId: string, kind: string, start: string) =>
+    ['reviews', userId, kind, start, 'summary'] as const,
+  reviewSeries: (userId: string, kind: string, start: string) =>
+    ['reviews', userId, kind, start, 'series'] as const,
+  reviewMeals: (userId: string, kind: string, start: string) =>
+    ['reviews', userId, kind, start, 'meals'] as const,
+
+  /**
    * Movement. The same series/summary pair as Trends, plus the two lists the
    * Activity tab needs — a day's sessions, and a day's hours.
    *
