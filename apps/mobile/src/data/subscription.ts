@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
+import { fetchPlanPrices } from './purchases'
 import { useUserId } from './session'
 
 /**
@@ -111,5 +112,24 @@ export function useAiUsage() {
         remaining: Number(row.remaining ?? 0),
       }
     },
+  })
+}
+
+/**
+ * What each plan costs, read from the store through RevenueCat.
+ *
+ * `retry: false` on purpose. The common failure is a build that simply has no
+ * products — a dev-variant bundle id with no App Store Connect app behind it —
+ * and retrying that three times only delays the dash the screen is going to
+ * draw anyway.
+ */
+export function usePlanPrices() {
+  return useQuery({
+    queryKey: keys.planPrices(),
+    queryFn: fetchPlanPrices,
+    retry: false,
+    // A price moves when somebody changes it in a store console, which is not
+    // something worth polling for inside one session.
+    staleTime: 60 * 60 * 1000,
   })
 }

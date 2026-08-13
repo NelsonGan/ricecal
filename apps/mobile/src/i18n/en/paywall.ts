@@ -1,26 +1,25 @@
 export const paywall = {
   /**
-   * Prices are written out here rather than read off the store.
+   * NO PRICES LIVE HERE, and that is the point.
    *
-   * They are the USD list prices, and every store shows the buyer their own
-   * currency at the moment of purchase, so what a Malaysian user is charged is
-   * a RM figure this file never sees. That is a known gap rather than an
-   * oversight: RevenueCat hands back a localised price string per package, and
-   * the screens should read it once the SDK is switched on. Until then these
-   * are the reference prices the products were created with, in one place, so
-   * there is a single line to change per plan.
+   * They used to. It was wrong three ways at once: a Malaysian user read
+   * "$29.99" while being charged RM119.90, Apple and Play disagreed on the
+   * lifetime figure because Apple has no 119.90 price point for a one-time
+   * purchase, and every repricing needed an app release before the paywall
+   * stopped lying. Every price on screen now comes from `usePlanPrices`, which
+   * reads the store's own localised `priceString` through RevenueCat.
+   *
+   * What is left here is the words around the number, and the interpolation
+   * slots those numbers drop into.
    */
   plans: {
     yearly: 'Yearly',
-    yearlyBadge: 'SAVE 49%',
-    yearlyPrice: '$29.90',
-    yearlyPerMonth: '$2.49 a month',
+    /** The percentage is computed from the two live prices, never assumed. */
+    yearlyBadge: 'SAVE {{percent}}%',
     monthly: 'Monthly',
     monthlyBilling: 'Billed every month',
-    monthlyPrice: '$4.90',
     lifetime: 'Lifetime',
     lifetimeBadge: 'PAY ONCE',
-    lifetimePrice: '$119.99',
     lifetimeDetail: 'One payment, yours for good',
   },
 
@@ -38,9 +37,11 @@ export const paywall = {
      * would be false about it — and a sentence assembled from a price and a
      * period word is a sentence no translator can reorder.
      */
-    smallPrintYearly: 'Free for 7 days, then $29.90 a year. Cancel any time.',
-    smallPrintMonthly: 'Free for 7 days, then $4.90 a month. Cancel any time.',
-    smallPrintLifetime: 'One payment of $119.99. No subscription, no renewal.',
+    smallPrintYearly: 'Free for 7 days, then {{price}} a year. Cancel any time.',
+    smallPrintMonthly: 'Free for 7 days, then {{price}} a month. Cancel any time.',
+    smallPrintLifetime: 'One payment of {{price}}. No subscription, no renewal.',
+    /** Shown until the store answers, so the sentence is never half a price. */
+    smallPrintPending: 'Cancel any time.',
     start: 'Start free trial',
     startLifetime: 'Buy lifetime access',
     restore: 'Restore purchase',

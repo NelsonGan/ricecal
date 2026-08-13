@@ -141,6 +141,7 @@ export {
   type Entitlement,
   useAiUsage,
   useEntitlement,
+  usePlanPrices,
   useSubscription,
 } from './subscription'
 export { useTrendSeries, useTrendSummary } from './trends'

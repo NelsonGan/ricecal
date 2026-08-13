@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import type { Plan } from '@/data'
+import { type Plan, usePlanPrices } from '@/data'
 import {
   PurchasesUnavailable,
   purchasePlan,
@@ -43,6 +43,7 @@ export default function IntroPaywall() {
   const router = useRouter()
   const toast = useToast()
   const [plan, setPlan] = useState<Plan>('yearly')
+  const { data: prices } = usePlanPrices()
 
   const lifetime = plan === 'lifetime'
 
@@ -75,6 +76,15 @@ export default function IntroPaywall() {
     await restorePurchases()
     toast.show({ title: t('paywall:hard.restored') })
   }
+
+  const priceString = prices?.[plan]?.priceString
+  const smallPrint = !priceString
+    ? t('paywall:hard.smallPrintPending')
+    : plan === 'lifetime'
+      ? t('paywall:hard.smallPrintLifetime', { price: priceString })
+      : plan === 'yearly'
+        ? t('paywall:hard.smallPrintYearly', { price: priceString })
+        : t('paywall:hard.smallPrintMonthly', { price: priceString })
 
   return (
     <Screen
@@ -124,11 +134,9 @@ export default function IntroPaywall() {
           </Text>
         </View>
         <Text variant="caption" className="text-center text-faint">
-          {lifetime
-            ? t('paywall:hard.smallPrintLifetime')
-            : plan === 'yearly'
-              ? t('paywall:hard.smallPrintYearly')
-              : t('paywall:hard.smallPrintMonthly')}
+          {/* The sentence needs the number, so it waits for it rather than
+              printing half of itself. */}
+          {smallPrint}
         </Text>
         <Text variant="caption" className="text-center text-faint">
           {t('paywall:intro.laterNote')}

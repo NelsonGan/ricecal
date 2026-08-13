@@ -2,7 +2,7 @@ import { format, parseISO } from 'date-fns'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { useCurrentWeight, useStreak, useSubscription, useWeighIns } from '@/data'
+import { useCurrentWeight, usePlanPrices, useStreak, useSubscription, useWeighIns } from '@/data'
 import { StatRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { Button, Card, Icon, Screen, Text } from '@/ui'
@@ -13,6 +13,7 @@ export default function TrialReminder() {
   const router = useRouter()
   const goBack = useBack('/today')
   const { data: subscription } = useSubscription()
+  const { data: prices } = usePlanPrices()
   const { data: weighIns = [] } = useWeighIns()
   const current = useCurrentWeight() ?? 0
   const streak = useStreak()
@@ -87,7 +88,7 @@ export default function TrialReminder() {
             date: subscription?.trial_ends_at
               ? format(parseISO(subscription.trial_ends_at), 'd MMMM')
               : '',
-            price: t('paywall:plans.yearlyPrice'),
+            price: prices?.yearly?.priceString ?? '—',
           })}
         </Text>
       </View>
