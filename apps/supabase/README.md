@@ -138,14 +138,17 @@ are in Cloudflare D1, and nothing above joins to them.
 Read shapes are views, all `security_invoker`: `food_log_details`,
 `food_log_ingredient_details`, `daily_nutrition`, `user_food_stats`,
 `current_daily_goals`, `recipe_details`, `recipe_ingredient_details`.
-Plus `goals_on(date)`, `logging_streak()` and the two range families —
-`trend_days` / `trend_series` / `trend_summary` for the diary, and
-`activity_days_range` / `activity_series` / `activity_summary` for movement.
+Plus `goals_on(date)`, `logging_streak()` and the three range families —
+`trend_days` / `trend_series` / `trend_summary` for the diary,
+`activity_days_range` / `activity_series` / `activity_summary` for movement, and
+`review_days` / `review_periods` / `review_summary` / `review_series` /
+`review_meals` for a finished week or month.
 
-`day_marks(from, to)` sits beside them and is the one that takes DATES rather
-than a named range: it feeds the week strip on Today, which is a calendar week
-and any earlier one swiped back to, so there is no window for `local_today()`
-to name.
+`day_marks(from, to)` and the review family are the ones that take DATES rather
+than a named range, and for the same reason. The week strip on Today is a
+calendar week and any earlier one swiped back to; a review is the week of the
+third of August, which stopped moving when the week ended. Neither is a window
+`local_today()` has a name for.
 
 **The activity tables are the one thing `authenticated` writes in bulk**, and
 they are the only tables in this schema with a background writer. Nothing about

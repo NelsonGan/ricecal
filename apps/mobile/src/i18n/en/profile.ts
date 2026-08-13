@@ -99,6 +99,7 @@ export const profile = {
     water: 'Water every 2 hours',
     weighIn: 'Weigh in on Monday',
     weeklyReport: 'Weekly report',
+    monthlyReport: 'Monthly report',
     denied: 'Reminders need notification permission.',
     blockedTitle: 'Notifications are off',
     blockedBody: 'Turn them on in Settings and these switches will work.',
@@ -113,6 +114,8 @@ export const profile = {
       weighInBody: 'First thing gives the steadiest reading.',
       weeklyTitle: 'Your week in food',
       weeklyBody: 'Seven days of logging, in one screen.',
+      monthlyTitle: 'Your month in food',
+      monthlyBody: 'Four weeks, and what they came to.',
     },
   },
 
