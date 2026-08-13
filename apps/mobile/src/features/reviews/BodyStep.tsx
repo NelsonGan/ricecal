@@ -40,7 +40,10 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
       {hasWeight ? (
         <Shareable title={t('reviews:body.weight')}>
           <Card contentClassName="gap-2 p-card">
-            <Text variant="overline">{t('reviews:body.weight')}</Text>
+            {/* See `CaloriesStep`: sixteen points under every heading. */}
+            <Text variant="overline" className="mb-2">
+              {t('reviews:body.weight')}
+            </Text>
 
             <View className="flex-row items-end justify-between gap-md">
               <View className="flex-row items-baseline gap-2">
@@ -100,7 +103,9 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
       {hasSteps ? (
         <Shareable title={t('reviews:body.steps')}>
           <Card contentClassName="gap-2 p-card">
-            <Text variant="overline">{t('reviews:body.steps')}</Text>
+            <Text variant="overline" className="mb-2">
+              {t('reviews:body.steps')}
+            </Text>
 
             <View className="flex-row items-baseline justify-between gap-md">
               <Text className="font-display text-[30px] leading-[38px] text-ink">
@@ -139,7 +144,7 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
       <Shareable title={t('reviews:body.others')}>
         {/* See `FoodStep`: a `gap-0` card owes its header the space back. */}
         <Card title={t('reviews:body.others')} contentClassName="gap-0 p-card">
-          <View className="mt-1" />
+          <View className="mt-4" />
           <OtherRow
             label={t('reviews:body.water')}
             note={t('reviews:body.waterNote', { count: summary.waterGoalDays })}

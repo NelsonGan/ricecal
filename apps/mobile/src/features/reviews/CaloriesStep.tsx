@@ -55,7 +55,11 @@ export function CaloriesStep({ kind, summary, buckets, periods }: CaloriesStepPr
     <>
       <Shareable title={t('reviews:calories.average')}>
         <Card contentClassName="gap-2 p-card">
-          <Text variant="overline">{t('reviews:calories.average')}</Text>
+          {/* `mb-2` on top of the card's own gap, which is the sixteen points
+              every heading in a story stands off its content by. */}
+          <Text variant="overline" className="mb-2">
+            {t('reviews:calories.average')}
+          </Text>
 
           <View className="flex-row items-end justify-between gap-md">
             <View className="flex-row items-baseline gap-2">
@@ -119,7 +123,10 @@ export function CaloriesStep({ kind, summary, buckets, periods }: CaloriesStepPr
           title={kind === 'week' ? t('reviews:calories.everyDay') : t('reviews:calories.everyWeek')}
           contentClassName="gap-3 p-card"
         >
+          {/* `mt-1` on top of the card's own gap: sixteen points under a
+              heading, the same standoff every card in a story gives its own. */}
           <StackedBars
+            className="mt-1"
             height={118}
             bars={buckets.map((bucket, position) => ({
               key: bucket.start,
@@ -170,6 +177,7 @@ export function CaloriesStep({ kind, summary, buckets, periods }: CaloriesStepPr
             contentClassName="gap-3 p-card"
           >
             <PeriodBars
+              className="mt-1"
               height={104}
               bars={compared.map((period) => ({
                 key: period.start,
