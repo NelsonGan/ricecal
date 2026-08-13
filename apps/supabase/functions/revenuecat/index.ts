@@ -31,6 +31,15 @@ import { createClient } from '@supabase/supabase-js'
 
 import { at, ENTITLEMENT, planOf, type RevenueCatEvent, statusFor } from '../_shared/revenuecat.ts'
 
+/**
+ * A real uuid, not "36 characters of hex and dashes".
+ *
+ * The loose version accepted strings Postgres rejects with 22P02, and a
+ * malformed id therefore answered 500 — which is the retry signal, so
+ * RevenueCat would redeliver the same unparseable event on a backoff for days.
+ */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -73,7 +82,7 @@ Deno.serve(async (req: Request) => {
     console.warn('[revenuecat] event with no account to credit:', appUserId)
     return json({ ok: true, ignored: 'anonymous app_user_id' })
   }
-  if (!/^[0-9a-f-]{36}$/i.test(appUserId)) {
+  if (!UUID.test(appUserId)) {
     console.warn('[revenuecat] app_user_id is not a user id:', appUserId)
     return json({ ok: true, ignored: 'app_user_id is not a uuid' })
   }
@@ -96,6 +105,31 @@ Deno.serve(async (req: Request) => {
 
   const plan = planOf(event.product_id)
   const expires = at(event.expiration_at_ms)
+
+  // OUT-OF-ORDER DELIVERY, guarded in the one direction that costs money.
+  //
+  // RevenueCat retries with a backoff, so a delayed EXPIRATION can arrive
+  // AFTER the RENEWAL that superseded it. Applied blind that takes the app
+  // away from somebody who has just paid for another month, and nothing
+  // afterwards puts it back until their next renewal.
+  //
+  // Only the downgrade is guarded: if the row already knows about a period
+  // ending later than the one this event is about, the event is stale. An
+  // upgrade arriving out of order is self-correcting, and refusing one would
+  // be the same expensive mistake in the other direction.
+  if (status === 'expired' && expires) {
+    const { data: current } = await db
+      .from('subscriptions')
+      .select('current_period_end')
+      .eq('user_id', appUserId)
+      .maybeSingle()
+
+    const known = current?.current_period_end
+    if (known && new Date(known) > new Date(expires)) {
+      console.warn('[revenuecat] ignoring a stale expiration:', expires, '<', known)
+      return json({ ok: true, ignored: 'stale expiration' })
+    }
+  }
 
   const { error } = await db.from('subscriptions').upsert(
     {

@@ -39,6 +39,13 @@ jest.mock('@/lib/supabase', () => ({
 
 jest.mock('../photos', () => ({ clearImageCache: jest.fn() }))
 
+const mockIdentifyPurchaser = jest.fn()
+const mockForgetPurchaser = jest.fn()
+jest.mock('@/lib/revenuecat', () => ({
+  identifyPurchaser: (id: string) => mockIdentifyPurchaser(id),
+  forgetPurchaser: () => mockForgetPurchaser(),
+}))
+
 const sessionFor = (id: string) => ({ user: { id }, access_token: `token-for-${id}` })
 
 /** Reads the context out, so the assertions can be about what the app sees. */
@@ -319,4 +326,47 @@ it('signs out when the refresh was refused rather than undeliverable', async () 
   await mount(new QueryClient())
 
   await waitFor(() => expect(screen.getByText('user:none')).toBeTruthy())
+})
+
+/**
+ * The half of the paywall that lives outside the paywall.
+ *
+ * RevenueCat is configured before anybody has signed in, so it starts
+ * anonymous and has to be TOLD who this is. Left anonymous, a purchase reaches
+ * the webhook as `$RCAnonymousID:...`, there is no account to credit, and
+ * somebody who has paid stays behind the paywall for good.
+ *
+ * The first version keyed this off the same "has the person changed" flag the
+ * cache clearing uses, which is false on a cold start by construction — so it
+ * only ever fired when somebody switched accounts, and the ordinary case of
+ * opening the app and buying something identified nobody.
+ */
+it('tells RevenueCat who is signed in on an ordinary launch', async () => {
+  await mount(primed())
+
+  await emit('SIGNED_IN', sessionFor('user-1'))
+
+  await waitFor(() => expect(mockIdentifyPurchaser).toHaveBeenCalledWith('user-1'))
+})
+
+it('does not repeat itself while the same person stays signed in', async () => {
+  await mount(primed())
+
+  await emit('SIGNED_IN', sessionFor('user-1'))
+  await emit('TOKEN_REFRESHED', sessionFor('user-1'))
+  await emit('TOKEN_REFRESHED', sessionFor('user-1'))
+
+  await waitFor(() => expect(mockIdentifyPurchaser).toHaveBeenCalledTimes(1))
+})
+
+it('follows a change of account, and forgets on the way out', async () => {
+  await mount(primed())
+
+  await emit('SIGNED_IN', sessionFor('user-1'))
+  await emit('SIGNED_IN', sessionFor('user-2'))
+  await waitFor(() => expect(mockIdentifyPurchaser).toHaveBeenCalledWith('user-2'))
+
+  await emit('SIGNED_OUT', null)
+  // Or the next account on this handset inherits the last one's entitlement.
+  await waitFor(() => expect(mockForgetPurchaser).toHaveBeenCalled())
 })

@@ -78,12 +78,19 @@ export default function SubscriptionScreen() {
           </View>
         </View>
 
-        <ProgressBar
-          value={progressOf(TRIAL_DAYS - trialDaysLeft, TRIAL_DAYS)}
-          tone="kaya"
-          height={11}
-          accessibilityLabel={t('profile:subscription.title')}
-        />
+        {/* Only during a trial. Drawn unconditionally it read as a full bar for
+            everybody else, because `trialDaysLeft` is 0 when there is no trial
+            to be left of — which told a paying subscriber their trial was
+            spent, and told somebody who had bought LIFETIME the same thing
+            about a trial they never had. */}
+        {subscription?.status === 'trial' ? (
+          <ProgressBar
+            value={progressOf(TRIAL_DAYS - trialDaysLeft, TRIAL_DAYS)}
+            tone="kaya"
+            height={11}
+            accessibilityLabel={t('profile:subscription.title')}
+          />
+        ) : null}
 
         <Text variant="meta">
           {lifetime

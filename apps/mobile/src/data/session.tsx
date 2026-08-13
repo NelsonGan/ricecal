@@ -51,6 +51,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
    */
   const cacheOwner = useRef<string | null | undefined>(undefined)
 
+  /**
+   * Who this process has told RevenueCat about.
+   *
+   * Deliberately NOT `cacheOwner`. That one answers "has the person changed",
+   * which is false on a cold start by design; this one answers "have we said
+   * anything yet", which is false on exactly the launches where identifying
+   * matters most.
+   */
+  const purchaser = useRef<string | null>(null)
+
   useEffect(() => {
     let active = true
     // Whether supabase has spoken, by either of the two mouths it has — the
@@ -152,14 +162,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (event === 'SIGNED_OUT') void clearImageCache()
 
       // RevenueCat has to be told who this is, or a purchase arrives at the
-      // webhook under an anonymous id with no account to credit. Tied to the
-      // identity changing rather than to the event, for the same reason the
-      // cache clearing above is: `SIGNED_IN` fires on every cold launch, and
-      // calling `logIn` with the id RevenueCat already holds is a wasted round
-      // trip on the startup path.
-      if (changed || cacheOwner.current === null) {
-        if (nextUserId) void identifyPurchaser(nextUserId)
-        else if (event === 'SIGNED_OUT') void forgetPurchaser()
+      // webhook under an anonymous id with no account to credit and is dropped.
+      //
+      // ONCE PER PROCESS FOR WHOEVER IS SIGNED IN, tracked separately from
+      // `cacheOwner` above. It cannot key off `changed` the way the cache
+      // clearing does: `changed` is false on the FIRST event by construction —
+      // a cold start is not a change of person — and that is exactly the
+      // launch where this process has told RevenueCat nothing at all. Keyed
+      // that way it only ever ran when somebody switched accounts, and the
+      // ordinary case of opening the app and buying something never identified
+      // anybody. `logIn` with an id the SDK already holds is a no-op, so
+      // repeating it on each launch costs nothing and is the version that
+      // cannot silently skip.
+      if (nextUserId) {
+        if (purchaser.current !== nextUserId) {
+          purchaser.current = nextUserId
+          void identifyPurchaser(nextUserId)
+        }
+      } else if (event === 'SIGNED_OUT') {
+        purchaser.current = null
+        void forgetPurchaser()
       }
     })
 

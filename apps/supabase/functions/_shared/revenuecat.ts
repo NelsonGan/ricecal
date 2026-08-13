@@ -65,7 +65,6 @@ export function statusFor(
     case 'UNCANCELLATION':
     case 'PRODUCT_CHANGE':
     case 'NON_RENEWING_PURCHASE':
-    case 'TRANSFER':
       return event.period_type === 'TRIAL' ? 'trial' : 'active'
 
     case 'EXPIRATION':
@@ -82,6 +81,16 @@ export function statusFor(
     // two ids being merged, CANCELLATION is covered above. None of them says
     // anything new about entitlement, and answering 200 keeps RevenueCat from
     // retrying something we deliberately ignored.
+    //
+    // TRANSFER is here DELIBERATELY, and it is the one that took thinking
+    // about. It moves a purchase between app_user_ids, and it describes that
+    // move in `transferred_from` / `transferred_to` rather than in
+    // `app_user_id` — which the caller has already fallen back to
+    // `original_app_user_id` to fill in. Granting on it would therefore credit
+    // whichever of the two ends that fallback happened to land on, and half
+    // the time that is the account the subscription just left. Ignoring it
+    // costs the receiving account nothing lasting: the next renewal or restore
+    // says who owns it, in a payload that is unambiguous about it.
     default:
       return null
   }

@@ -7,8 +7,30 @@ import { useToast } from '@/ui'
 /**
  * Which gated thing was reached for. Names a block in the `gate` copy bundle,
  * so adding one is copy plus a line here rather than a new screen.
+ *
+ * Must stay in step with `Feature` in `app/paywall/gate.tsx`, which is the
+ * screen these land on. Nothing typechecks the pair — a router param is a
+ * string as far as the compiler is concerned.
  */
 export type ProFeature = 'photo' | 'describe' | 'log'
+
+export type RequireProOptions = {
+  /**
+   * How to get to the paywall, and it depends on what is calling.
+   *
+   * `push` is right from an ordinary page: the screen underneath is worth
+   * coming back to, and on the food detail screen it is holding a portion the
+   * user has just composed.
+   *
+   * `replace` is required from inside a MODAL. `/log` is a `transparentModal`,
+   * and a push from within one lands on the stack that lives INSIDE that
+   * presentation — the paywall would come up as a second modal stacked on the
+   * sheet, half-covering it, with the sheet's own scrim still over the app.
+   * It is the same trap `openFood` in that file documents, and the same
+   * answer: replace the sheet, so the paywall lands on the stack above Today.
+   */
+  navigate?: 'push' | 'replace'
+}
 
 /**
  * The one place a paid feature is refused.
@@ -33,7 +55,8 @@ export type ProFeature = 'photo' | 'describe' | 'log'
  * call before being refused, or assume unpaid and a paying user is shown a
  * paywall for the app they have already bought.
  */
-export function useRequirePro(): (feature: ProFeature) => boolean {
+export function useRequirePro(options: RequireProOptions = {}): (feature: ProFeature) => boolean {
+  const { navigate = 'push' } = options
   const router = useRouter()
   const toast = useToast()
   const { t } = useTranslation('paywall')
@@ -51,7 +74,9 @@ export function useRequirePro(): (feature: ProFeature) => boolean {
       return false
     }
 
-    router.push({ pathname: '/paywall/gate', params: { feature } })
+    const to = { pathname: '/paywall/gate', params: { feature } } as const
+    if (navigate === 'replace') router.replace(to)
+    else router.push(to)
     return false
   }
 }
