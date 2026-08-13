@@ -13,12 +13,6 @@
         "APP_VARIANT": "development"
       }
     },
-    "development-purchases": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "channel": "development",
-      "environment": "development"
-    },
     "preview": {
       "distribution": "internal",
       "channel": "preview",

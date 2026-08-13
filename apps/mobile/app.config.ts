@@ -48,19 +48,22 @@ const IS_SIMULATOR_VARIANT = process.env.APP_VARIANT === 'simulator'
  * Authentication → URL Configuration on the hosted project) or the link falls
  * back to `site_url` and dev sign-in silently stops working.
  *
- * THE SUFFIX COSTS YOU IN-APP PURCHASES, and there is no way round that. A
- * store keys its products to a bundle id, and `com.nelsongan.ricecal.dev` is
- * not an app in App Store Connect — so StoreKit has nothing to return and
- * RevenueCat reports "none of the products could be fetched", however
- * correctly the products are set up. A StoreKit configuration file does not
- * help either: that is an Xcode SCHEME setting, so it applies to builds
- * launched from Xcode and not to an EAS build installed on a phone.
+ * THE SUFFIX COSTS YOU IN-APP PURCHASES, and that is accepted rather than
+ * solved. A store keys its products to a bundle id, and
+ * `com.nelsongan.ricecal.dev` is not an app in App Store Connect — so StoreKit
+ * has nothing to return and RevenueCat logs "none of the products could be
+ * fetched" on every launch of a dev build. The products are fine; the bundle
+ * id is not one the store knows.
  *
- * The `development-purchases` profile in eas.json is the way round it: the
- * same dev client, without APP_VARIANT, so it carries the real bundle id and
- * can fetch real products. It cannot sit on a device beside the TestFlight
- * build, which is the whole reason this variant exists — so you get
- * coexistence or working purchases, and have to pick per build.
+ * Two things that look like fixes and are not. A StoreKit configuration file
+ * is an Xcode SCHEME setting, so it applies to builds launched from Xcode and
+ * not to an EAS build on a phone. And a dev client built without APP_VARIANT
+ * would fetch products correctly, but it carries the real bundle id and so
+ * REPLACES the TestFlight build on the device, which is the one thing this
+ * variant exists to prevent.
+ *
+ * So the dev build shows a dash where a price goes, and that is the whole
+ * symptom. Use a `preview` build when the prices themselves need looking at.
  */
 const IS_DEV_VARIANT = process.env.APP_VARIANT === 'development'
 
