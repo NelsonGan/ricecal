@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 
 import { supabase } from '@/lib/supabase'
-import { unwrapMaybe, unwrapOne } from './client'
+import { unwrapMaybe } from './client'
 import { keys } from './keys'
 import { fetchPlanPrices } from './purchases'
 import { useUserId } from './session'
@@ -84,36 +84,6 @@ export function useEntitlement(): Entitlement {
     // things to read when you have in fact paid.
     unknown: noAnswer,
   }
-}
-
-export type AiUsage = {
-  used: number
-  monthlyLimit: number
-  remaining: number
-}
-
-/**
- * How many model requests this account has spent this month.
- *
- * The limit lives in Postgres (`ai_monthly_limit`) and travels with the
- * answer rather than being a constant here: a client that hardcoded 3,000
- * while the database enforced something else would be the version that is
- * wrong, and it would be wrong on the screen that tells the user the number.
- */
-export function useAiUsage() {
-  const userId = useUserId()
-
-  return useQuery({
-    queryKey: keys.aiUsage(userId),
-    queryFn: async (): Promise<AiUsage> => {
-      const row = unwrapOne(await supabase.rpc('ai_usage_this_month').single())
-      return {
-        used: Number(row.used ?? 0),
-        monthlyLimit: Number(row.monthly_limit ?? 0),
-        remaining: Number(row.remaining ?? 0),
-      }
-    },
-  })
 }
 
 /**
