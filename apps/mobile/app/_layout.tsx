@@ -246,7 +246,6 @@ function RootStack() {
         options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
       />
       <Stack.Screen name="paywall/index" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="paywall/gate" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/welcome" options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="paywall/reminder" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/ended" options={{ presentation: 'fullScreenModal' }} />

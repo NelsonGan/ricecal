@@ -12,8 +12,19 @@ export const paywall = {
    * What is left here is the words around the number, and the interpolation
    * slots those numbers drop into.
    */
+  /** Offline, or the check itself failed. Not the same as "you have not paid". */
+  couldNotCheck: 'We could not check your subscription. Try again in a moment.',
+
   plans: {
     yearly: 'Yearly',
+    /**
+     * The yearly price divided over twelve months, which is the comparison
+     * somebody makes against the monthly plan. The store hands back a
+     * formatted figure and nothing else, so the unit is added here — without
+     * it the card read "$2.49" under "$29.90" with no clue that the two are
+     * not the same kind of number.
+     */
+    perMonth: '{{price}} a month',
     /** The percentage is computed from the two live prices, never assumed. */
     yearlyBadge: 'SAVE {{percent}}%',
     monthly: 'Monthly',
@@ -95,54 +106,6 @@ export const paywall = {
     lockedEntry: 'Locked',
     resume: 'Continue with Pro',
     browse: 'Keep browsing free',
-  },
-
-  gate: {
-    photo: {
-      title: 'Photo logging is a Pro feature',
-      body: 'Point at your plate and we name every item on it.',
-      perks: {
-        multiItem: 'Multi item plate detection',
-        portion: 'Portion size estimates',
-        offline: 'Works offline for saved foods',
-      },
-    },
-    /**
-     * The perks are about what the model does with a sentence rather than how
-     * the sentence arrived, which is why none of them mentions typing.
-     */
-    describe: {
-      title: 'Describing a meal is a Pro feature',
-      body: 'Write down what you ate and we work out the rest.',
-      perks: {
-        multiItem: 'Several dishes in one sentence',
-        portion: 'Portion words like "half a plate"',
-        offline: 'Works offline for saved foods',
-      },
-    },
-    /**
-     * The plainest of the three, and the one reached most often: searching,
-     * scanning a barcode and opening a dish are all free, so this is the wall
-     * at the very last tap. It does not oversell, because the user has already
-     * seen the dish and the calories and picked their portion.
-     */
-    log: {
-      title: 'Logging a meal is a Pro feature',
-      body: 'Search, scan and browse as much as you like. Saving it to your diary needs Pro.',
-      perks: {
-        multiItem: 'Every way in: photo, words, barcode, search',
-        portion: 'Your whole diary, trends and weekly reviews',
-        offline: 'Recipes you cook at home, logged in one tap',
-      },
-    },
-    whatYouGet: 'WHAT YOU GET',
-    freeNote: 'You can still search and browse the food database for free.',
-    start: 'Try free for 7 days',
-    searchInstead: 'Search instead',
-    /** The way out of the `log` gate, which has no better offer to make. */
-    notNow: 'Not now',
-    /** Offline, or the check itself failed. Not the same as "you have not paid". */
-    couldNotCheck: 'We could not check your subscription. Try again in a moment.',
   },
 
   /**

@@ -151,7 +151,7 @@ export default function LogSheet() {
   // sheet adds is a recipe and the other is a catalogue dish. They build one
   // the same way and nothing downstream needs to know which it was.
   const add = (snapshot: LogSnapshot) => {
-    if (!requirePro('log')) return
+    if (!requirePro()) return
     logFood.mutate({ snapshot, logDate: selectedDate, source: 'quickAdd' })
     goBack()
   }
@@ -265,7 +265,7 @@ export default function LogSheet() {
               // plate is most of what makes the feature legible, so the camera
               // opens for everybody and the paywall arrives at the moment a
               // request would have been sent.
-              if (!requirePro('photo')) return
+              if (!requirePro()) return
               snapFood({ photoUri, logDate: selectedDate })
               goBack()
             }}
@@ -280,7 +280,7 @@ export default function LogSheet() {
         <DescribePanel
           autoFocus
           onSubmit={(text) => {
-            if (!requirePro('describe')) return
+            if (!requirePro()) return
             describeFood({ text, logDate: selectedDate })
             goBack()
           }}

@@ -217,7 +217,7 @@ export default function RecipeFormScreen() {
       return true
     }
     if (error instanceof NotEntitledError) {
-      router.push({ pathname: '/paywall/gate', params: { feature: 'describe' } })
+      router.push('/paywall')
       return true
     }
     return false

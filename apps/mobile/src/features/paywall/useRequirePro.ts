@@ -4,16 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { useEntitlement } from '@/data'
 import { useToast } from '@/ui'
 
-/**
- * Which gated thing was reached for. Names a block in the `gate` copy bundle,
- * so adding one is copy plus a line here rather than a new screen.
- *
- * Must stay in step with `Feature` in `app/paywall/gate.tsx`, which is the
- * screen these land on. Nothing typechecks the pair — a router param is a
- * string as far as the compiler is concerned.
- */
-export type ProFeature = 'photo' | 'describe' | 'log'
-
 export type RequireProOptions = {
   /**
    * How to get to the paywall, and it depends on what is calling.
@@ -26,26 +16,32 @@ export type RequireProOptions = {
    * and a push from within one lands on the stack that lives INSIDE that
    * presentation — the paywall would come up as a second modal stacked on the
    * sheet, half-covering it, with the sheet's own scrim still over the app.
-   * It is the same trap `openFood` in that file documents, and the same
-   * answer: replace the sheet, so the paywall lands on the stack above Today.
    */
   navigate?: 'push' | 'replace'
 }
 
 /**
- * The one place a paid feature is refused.
+ * The one place a paid feature is refused, and it always refuses the same way.
  *
- * WHY A GUARD AND NOT A DISABLED BUTTON. Every one of these controls stays
- * live and pressable for somebody who has not paid, because the point of the
- * paywall is to be reached: a greyed-out shutter tells a user they cannot do
- * something and gives them nowhere to go, while a shutter that opens the
- * paywall tells them what it costs. It is also what the brief asks for — the
- * camera opens and frames the plate, and only the sending is stopped.
+ * ONE PAYWALL, NOT A VARIANT PER BUTTON. There were three: "Photo logging is a
+ * Pro feature", "Describing a meal is a Pro feature", "Logging a meal is a Pro
+ * feature", each with its own hero icon and its own three bullet points about
+ * what that particular button would have done. They were three ways of saying
+ * one thing — this needs Pro — and the differences between them were writing
+ * rather than information. Worse, none of them showed a price: somebody who
+ * had decided to buy still had to get past the explanation to reach the plans.
  *
- * Returns false and navigates when the account may not proceed, so a call site
- * reads as a single early return:
+ * So every refusal goes to the standard paywall, which names the plans and the
+ * prices and gets out of the way.
  *
- *     if (!requirePro('photo')) return
+ * WHY A GUARD AND NOT A DISABLED BUTTON. Every gated control stays live and
+ * pressable, because the point of the paywall is to be reached: a greyed-out
+ * shutter tells a user they cannot do something and gives them nowhere to go,
+ * while a shutter that opens the paywall tells them what it costs.
+ *
+ * Reads as a single early return at the call site:
+ *
+ *     if (!requirePro()) return
  *     snapFood(...)
  *
  * WAITS FOR THE ANSWER rather than assuming one. While the subscription query
@@ -55,14 +51,14 @@ export type RequireProOptions = {
  * call before being refused, or assume unpaid and a paying user is shown a
  * paywall for the app they have already bought.
  */
-export function useRequirePro(options: RequireProOptions = {}): (feature: ProFeature) => boolean {
+export function useRequirePro(options: RequireProOptions = {}): () => boolean {
   const { navigate = 'push' } = options
   const router = useRouter()
   const toast = useToast()
   const { t } = useTranslation('paywall')
   const { entitled, loading, unknown } = useEntitlement()
 
-  return (feature: ProFeature) => {
+  return () => {
     if (entitled) return true
     if (loading) return false
 
@@ -70,13 +66,12 @@ export function useRequirePro(options: RequireProOptions = {}): (feature: ProFea
     // not paid" here would be a lie told to exactly the people most likely to
     // have paid, so it says what actually happened instead.
     if (unknown) {
-      toast.show({ title: t('gate.couldNotCheck'), tone: 'warning' })
+      toast.show({ title: t('couldNotCheck'), tone: 'warning' })
       return false
     }
 
-    const to = { pathname: '/paywall/gate', params: { feature } } as const
-    if (navigate === 'replace') router.replace(to)
-    else router.push(to)
+    if (navigate === 'replace') router.replace('/paywall')
+    else router.push('/paywall')
     return false
   }
 }
