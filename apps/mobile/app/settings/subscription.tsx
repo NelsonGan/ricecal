@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { useAiUsage, useEntitlement, usePlanPrices, useSubscription } from '@/data'
+import { useEntitlement, usePlanPrices, useSubscription } from '@/data'
 import { openManageSubscriptions } from '@/data/purchases'
 import { CheckList } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
@@ -18,7 +18,6 @@ export default function SubscriptionScreen() {
   const router = useRouter()
   const goBack = useBack('/me')
   const { data: subscription } = useSubscription()
-  const { data: usage } = useAiUsage()
   const { data: prices } = usePlanPrices()
   const [confirmCancel, setConfirmCancel] = useState(false)
 
@@ -164,31 +163,6 @@ export default function SubscriptionScreen() {
             label={t('profile:subscription.payment')}
             value={subscription?.store ?? t('profile:subscription.paymentUnknown')}
           />
-        </Card>
-      ) : null}
-
-      {/* The monthly ceiling, with the number on it. The toast that announces
-          the limit deliberately does not name it — it counts REQUESTS, not
-          meals, and a bare figure invites an argument the toast cannot win.
-          This is the screen with room for the sentence underneath. */}
-      {entitled && usage ? (
-        <Card title={t('paywall:limit.title')}>
-          <View className="gap-2">
-            <Row
-              label={t('paywall:limit.used')}
-              value={t('paywall:limit.usage', {
-                used: usage.used.toLocaleString(),
-                limit: usage.monthlyLimit.toLocaleString(),
-              })}
-            />
-            <ProgressBar
-              value={progressOf(usage.used, usage.monthlyLimit)}
-              tone="pandan"
-              height={11}
-              accessibilityLabel={t('paywall:limit.title')}
-            />
-            <Text variant="meta">{t('paywall:limit.note')}</Text>
-          </View>
         </Card>
       ) : null}
 
