@@ -60,8 +60,8 @@ export function FoodSearchPanel({ onPick, autoFocus = false }: FoodSearchPanelPr
    *
    * The skeletons are gated on `isFetching`, not on the `isPending` that was here
    * before. `isPending` means "this key has no data", which is also true of a
-   * query that is not fetching at all — one paused by `networkMode: 'offlineFirst'`
-   * with no connection, which is how a search with no results showed skeletons
+   * query that is not fetching at all — one paused for want of a connection,
+   * which is how a search with no results showed skeletons
    * that never resolved into anything. `isFetching` is about a request being in
    * flight, so it cannot get stuck; and `data === undefined` keeps them up only
    * until THIS query has an answer, including an answer of none.

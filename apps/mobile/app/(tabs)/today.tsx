@@ -116,7 +116,7 @@ export default function TodayScreen() {
   /**
    * And a wait that cannot end is not a wait.
    *
-   * `offlineFirst` PAUSES a query with nothing cached rather than failing it, so
+   * A query with nothing cached is PAUSED rather than sent, so
    * every flag above stays true for as long as the phone is offline and the
    * placeholders above would sit there until it is not. Which is the right
    * answer for a day already on this phone — a persisted day is not pending at
