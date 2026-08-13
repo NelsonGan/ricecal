@@ -12,12 +12,12 @@ export const paywall = {
    */
   plans: {
     yearly: 'Yearly',
-    yearlyBadge: 'SAVE 50%',
-    yearlyPrice: '$29.99',
-    yearlyPerMonth: '$2.50 a month',
+    yearlyBadge: 'SAVE 49%',
+    yearlyPrice: '$29.90',
+    yearlyPerMonth: '$2.49 a month',
     monthly: 'Monthly',
     monthlyBilling: 'Billed every month',
-    monthlyPrice: '$4.99',
+    monthlyPrice: '$4.90',
     lifetime: 'Lifetime',
     lifetimeBadge: 'PAY ONCE',
     lifetimePrice: '$119.99',
@@ -38,8 +38,8 @@ export const paywall = {
      * would be false about it — and a sentence assembled from a price and a
      * period word is a sentence no translator can reorder.
      */
-    smallPrintYearly: 'Free for 7 days, then $29.99 a year. Cancel any time.',
-    smallPrintMonthly: 'Free for 7 days, then $4.99 a month. Cancel any time.',
+    smallPrintYearly: 'Free for 7 days, then $29.90 a year. Cancel any time.',
+    smallPrintMonthly: 'Free for 7 days, then $4.90 a month. Cancel any time.',
     smallPrintLifetime: 'One payment of $119.99. No subscription, no renewal.',
     start: 'Start free trial',
     startLifetime: 'Buy lifetime access',

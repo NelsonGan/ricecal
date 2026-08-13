@@ -111,49 +111,62 @@ export default function SubscriptionScreen() {
           />
         ) : null}
 
-        <Text variant="meta">
-          {lifetime
-            ? t('profile:subscription.neverRenews')
-            : t('profile:subscription.renews', {
-                price: yearly ? t('paywall:plans.yearlyPrice') : t('paywall:plans.monthlyPrice'),
-              })}
-        </Text>
+        {/* Nothing renews for somebody who has not bought anything, and
+            quoting a price beside "Free plan" reads as a charge they are
+            already committed to. */}
+        {entitled ? (
+          <Text variant="meta">
+            {lifetime
+              ? t('profile:subscription.neverRenews')
+              : t('profile:subscription.renews', {
+                  price: yearly ? t('paywall:plans.yearlyPrice') : t('paywall:plans.monthlyPrice'),
+                })}
+          </Text>
+        ) : (
+          <Text variant="meta">{t('profile:subscription.freeBody')}</Text>
+        )}
       </Card>
 
-      <Card title={t('profile:subscription.yourPlan')}>
-        <Row
-          label={t('profile:subscription.plan')}
-          value={
-            lifetime
-              ? t('paywall:plans.lifetime')
-              : yearly
-                ? t('paywall:plans.yearly')
-                : t('paywall:plans.monthly')
-          }
-        />
-        <Row
-          label={t('profile:subscription.perMonth')}
-          value={
-            lifetime
-              ? t('paywall:plans.lifetimePrice')
-              : yearly
-                ? t('paywall:plans.yearlyPerMonth')
-                : t('paywall:plans.monthlyPrice')
-          }
-        />
-        {/* The store holds the card, and never tells us anything about it.
+      {/* The whole card is about a plan, so there is nothing honest to put in
+          it for somebody on none: "Plan: Monthly, Per month: $4.99" described
+          a subscription they had not bought, and "Payment: promotional" leaked
+          how the row got there. */}
+      {entitled ? (
+        <Card title={t('profile:subscription.yourPlan')}>
+          <Row
+            label={t('profile:subscription.plan')}
+            value={
+              lifetime
+                ? t('paywall:plans.lifetime')
+                : yearly
+                  ? t('paywall:plans.yearly')
+                  : t('paywall:plans.monthly')
+            }
+          />
+          <Row
+            label={t('profile:subscription.perMonth')}
+            value={
+              lifetime
+                ? t('paywall:plans.lifetimePrice')
+                : yearly
+                  ? t('paywall:plans.yearlyPerMonth')
+                  : t('paywall:plans.monthlyPrice')
+            }
+          />
+          {/* The store holds the card, and never tells us anything about it.
             What it does tell us is which store the purchase came from. */}
-        <Row
-          label={t('profile:subscription.payment')}
-          value={subscription?.store ?? t('profile:subscription.paymentUnknown')}
-        />
-      </Card>
+          <Row
+            label={t('profile:subscription.payment')}
+            value={subscription?.store ?? t('profile:subscription.paymentUnknown')}
+          />
+        </Card>
+      ) : null}
 
       {/* The monthly ceiling, with the number on it. The toast that announces
           the limit deliberately does not name it — it counts REQUESTS, not
           meals, and a bare figure invites an argument the toast cannot win.
           This is the screen with room for the sentence underneath. */}
-      {usage ? (
+      {entitled && usage ? (
         <Card title={t('paywall:limit.title')}>
           <View className="gap-2">
             <Row
@@ -174,7 +187,9 @@ export default function SubscriptionScreen() {
         </Card>
       ) : null}
 
-      <Card title={t('profile:subscription.included')}>
+      <Card
+        title={entitled ? t('profile:subscription.included') : t('profile:subscription.whatYouGet')}
+      >
         <CheckList
           items={[
             t('profile:subscription.perks.unlimited'),
@@ -184,9 +199,11 @@ export default function SubscriptionScreen() {
         />
       </Card>
 
-      <Button variant="ghost" fullWidth onPress={() => setConfirmCancel(true)}>
-        {t('profile:subscription.cancel')}
-      </Button>
+      {entitled ? (
+        <Button variant="ghost" fullWidth onPress={() => setConfirmCancel(true)}>
+          {t('profile:subscription.cancel')}
+        </Button>
+      ) : null}
 
       <ConfirmSheet
         visible={confirmCancel}
