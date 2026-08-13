@@ -172,13 +172,9 @@ export function StoryFrame({ title, pages, onClose, labels, counter }: StoryFram
                reachable. */
             accessible={false}
           >
-            {/* Three quarters of the gutter and none of the gap, because
-                every card on a page is wrapped in a `Shareable` that carries
-                the other quarter as padding — the margin its captured picture
-                needs. Cards land exactly where they did. */}
             <View
-              className="flex-1 px-3 pt-3"
-              style={{ paddingBottom: insets.bottom + spacing.gutter }}
+              className="flex-1 px-gutter pt-3"
+              style={{ gap: spacing.stack, paddingBottom: insets.bottom + spacing.gutter }}
             >
               {page.node}
             </View>
