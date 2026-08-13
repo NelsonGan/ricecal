@@ -246,7 +246,6 @@ export function useRefineEntry() {
         queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
         queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
         queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
-        queryClient.invalidateQueries({ queryKey: keys.aiUsage(userId) })
         return data
       }
 
@@ -262,7 +261,6 @@ export function useRefineEntry() {
           // there reads as the button not working.
           if (error instanceof AiLimitError) {
             toast.show({ title: i18n.t('paywall:limit.reached'), tone: 'error' })
-            queryClient.invalidateQueries({ queryKey: keys.aiUsage(userId) })
             return
           }
           if (error instanceof NotEntitledError) {
