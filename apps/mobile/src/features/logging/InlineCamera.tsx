@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as Device from 'expo-device'
 import * as ImagePicker from 'expo-image-picker'
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -31,7 +31,38 @@ export const VIEWFINDER_HEIGHT = 310
  */
 const CONTROL_BAND = 84
 
+/**
+ * The symbologies a food packet can carry.
+ *
+ * EAN-13 is the world's retail barcode and what almost every Malaysian packet
+ * has (the GS1 Malaysia prefix is 955, though nothing here reads it — a code is
+ * a key, not a country). UPC-A and UPC-E are the American spellings, on imports.
+ * EAN-8 is the small one, on things too narrow for thirteen digits: a chewing
+ * gum packet, a small tin.
+ *
+ * QR and Data Matrix are deliberately absent. They appear on packaging all the
+ * time — a marketing URL, a batch code — and scanning one would confidently look
+ * up a product code that is not a product code.
+ */
+const BARCODE_TYPES = ['ean13', 'ean8', 'upc_a', 'upc_e'] as const
+
+/** Which of the two things this camera is pointed at. */
+export type CaptureMode = 'meal' | 'barcode'
+
 export type InlineCameraProps = {
+  /**
+   * A plate, or a packet. ONE CAMERA EITHER WAY, which is the whole reason
+   * this is a mode rather than a second component.
+   *
+   * They were two panels with a `CameraView` each, and switching between them
+   * tore one down and started the other: a black frame, a visible pause, and
+   * the sense of having moved to a different feature rather than turned the
+   * same camera to a different job. Sharing the view means the tabs change the
+   * overlay and nothing else.
+   *
+   * Defaults to `meal`, so the recipe editor's picture-taking is unaffected.
+   */
+  mode?: CaptureMode
   /**
    * The shot, as a local `file://` uri — and `undefined` from a device that has no
    * camera, which is every simulator. The host decides what that means: the quick
@@ -43,6 +74,12 @@ export type InlineCameraProps = {
    * entry that already exists.
    */
   onCapture: (photoUri: string | undefined) => void
+  /**
+   * A code was read. Whether anything knows it is not this camera's business —
+   * the page it is handed to does the lookup and owns every way that can turn
+   * out. Required in `barcode` mode and ignored otherwise.
+   */
+  onScanned?: (code: string) => void
 }
 
 /**
@@ -63,7 +100,7 @@ export type InlineCameraProps = {
  * cancels it and the promise never settles — so the sheet closes after a photo
  * comes back, never before.
  */
-export function InlineCamera({ onCapture }: InlineCameraProps) {
+export function InlineCamera({ mode = 'meal', onCapture, onScanned }: InlineCameraProps) {
   const { t } = useTranslation(['logging', 'common'])
   const colors = useThemeColors()
   const [permission, requestPermission] = useCameraPermissions()
@@ -72,6 +109,24 @@ export function InlineCamera({ onCapture }: InlineCameraProps) {
   const [capturing, setCapturing] = useState(false)
   const [facing, setFacing] = useState<'back' | 'front'>('back')
   const camera = useRef<CameraView>(null)
+  const scanning = mode === 'barcode'
+
+  /**
+   * `CameraView` fires a scan many times a second while a code is in frame, and
+   * a navigation is not instant — several more arrive before this is off
+   * screen. A ref rather than state: the callback is handed to the native view
+   * once, and a stale closure over `useState` would let every one of them
+   * through.
+   */
+  const handled = useRef(false)
+  const scanned = useCallback(
+    (code: string) => {
+      if (handled.current || !code) return
+      handled.current = true
+      onScanned?.(code)
+    },
+    [onScanned],
+  )
 
   // A simulator has no camera, so `CameraView` renders black there. Showing the
   // dish illustration instead keeps the sheet reviewable without pretending a
@@ -104,20 +159,25 @@ export function InlineCamera({ onCapture }: InlineCameraProps) {
     return (
       <View className="gap-3 rounded-tile bg-track p-4">
         <View className="flex-row items-center gap-2.5">
-          <Icon set="system" name="camera" size={28} />
+          <Icon set="system" name={scanning ? 'barcode' : 'camera'} size={28} />
           <Text variant="bodyStrong" className="flex-1">
-            {t('logging:camera.permissionTitle')}
+            {t(scanning ? 'logging:barcode.permissionTitle' : 'logging:camera.permissionTitle')}
           </Text>
         </View>
-        <Text variant="meta">{t('logging:camera.permissionBody')}</Text>
+        <Text variant="meta">
+          {t(scanning ? 'logging:barcode.permissionBody' : 'logging:camera.permissionBody')}
+        </Text>
         <Button fullWidth onPress={requestPermission}>
           {t('logging:camera.permissionGrant')}
         </Button>
         {/* The library needs no camera permission, so a denied camera does not
-            have to be the end of the flow. */}
-        <Button variant="secondary" fullWidth onPress={pickFromLibrary}>
-          {t('logging:camera.library')}
-        </Button>
+            have to be the end of the flow — for a PHOTO. There is nothing in a
+            photo library that answers "what is this barcode". */}
+        {scanning ? null : (
+          <Button variant="secondary" fullWidth onPress={pickFromLibrary}>
+            {t('logging:camera.library')}
+          </Button>
+        )}
       </View>
     )
   }
@@ -128,10 +188,10 @@ export function InlineCamera({ onCapture }: InlineCameraProps) {
       style={{ height: VIEWFINDER_HEIGHT }}
     >
       {hasCamera ? (
-        /* Laid out bigger than the box that shows it, so the viewfinder is a
-           CENTRE CROP of what the shutter will actually record. See
-           `photoCropFill` for why the shot is wider than the frame, and why the
-           box is shared with the rows and screens that draw the photo back.
+        /* In MEAL mode, laid out bigger than the box that shows it, so the
+           viewfinder is a CENTRE CROP of what the shutter will actually record.
+           See `photoCropFill` for why the shot is wider than the frame, and why
+           the box is shared with the rows and screens that draw the photo back.
 
            The camera's own `zoom` would drive the lens and take the photograph
            with it, which is the opposite of what this is for. Both platforms
@@ -139,64 +199,99 @@ export function InlineCamera({ onCapture }: InlineCameraProps) {
            on Android), so a view laid out larger shows a proportionally tighter
            crop on either. If a preview is ever seen spilling outside the tile on
            Android, this is what to look at first: a surface-backed child is the
-           one kind that can outlive its parent's clip. */
-        <CameraView ref={camera} style={photoCropFill} facing={facing} />
+           one kind that can outlive its parent's clip.
+
+           In BARCODE mode it fills exactly instead. There is no photograph to
+           keep wider than the frame, and a scanner should read what the user
+           can see: cropping the preview would let a packet just off screen scan
+           and hand back a product they never aimed at. */
+        <CameraView
+          ref={camera}
+          style={scanning ? { position: 'absolute', inset: 0 } : photoCropFill}
+          facing={scanning ? 'back' : facing}
+          barcodeScannerSettings={scanning ? { barcodeTypes: [...BARCODE_TYPES] } : undefined}
+          onBarcodeScanned={scanning ? ({ data }) => scanned(data) : undefined}
+        />
       ) : (
         // Lifted clear of the controls, so the illustration reads as the subject
         // of the frame rather than as something behind the shutter. The padding
         // that lifts it still reaches down over the shutter, so like the framing
         // it takes no touches.
-        <View style={{ paddingBottom: CONTROL_BAND }} pointerEvents="none">
-          <Icon set="food" name="empty-plate" size={132} />
+        <View style={{ paddingBottom: scanning ? 0 : CONTROL_BAND }} pointerEvents="none">
+          {/* Two calls rather than one with the pair interpolated: `Icon` takes
+              set and name as a matched pair, so a computed one does not
+              typecheck — which is the point of it being a pair. */}
+          {scanning ? (
+            <Icon set="system" name="barcode" size={110} />
+          ) : (
+            <Icon set="food" name="empty-plate" size={132} />
+          )}
         </View>
       )}
 
-      <Framing />
+      {/* The band, not a box. It marks the strip the code has to cross, which
+          is how a barcode is aimed — the four corners the meal framing draws
+          would be telling the user to frame something square. Takes no touches:
+          the camera underneath is the whole surface. */}
+      {scanning ? (
+        <View
+          pointerEvents="none"
+          className="absolute inset-x-8 h-[86px] rounded-2xl border-2 border-surface/80"
+        />
+      ) : (
+        <Framing />
+      )}
 
       {/* Over the preview rather than under the box. See `VIEWFINDER_HEIGHT`:
           the height this row used to take below the frame is the height the
-          frame gained. */}
-      <View className="absolute inset-x-0 bottom-0 flex-row items-center justify-between gap-3 px-4 pb-4">
-        {/* `self-center` on both, because `IconButton` sets `self-start` on its
+          frame gained.
+
+          Absent while scanning. A barcode needs no shutter — the code IS the
+          press — and a flip button would point the camera at the user's face,
+          which cannot read a packet. */}
+      {scanning ? null : (
+        <View className="absolute inset-x-0 bottom-0 flex-row items-center justify-between gap-3 px-4 pb-4">
+          {/* `self-center` on both, because `IconButton` sets `self-start` on its
             own box and that quietly beat the row's `items-center`: the two side
             buttons are 61pt to the shutter's 68, so they hung 7pt high. Under
             the frame that read as a wobble in a row of three; on the frame, with
             the shutter's own bottom edge setting the inset, it read as the side
             buttons floating. */}
-        <IconButton
-          className="self-center"
-          variant="neutral"
-          accessibilityLabel={t('logging:camera.library')}
-          onPress={pickFromLibrary}
-          disabled={capturing}
-        >
-          <Icon set="system" name="photo" size={24} />
-        </IconButton>
+          <IconButton
+            className="self-center"
+            variant="neutral"
+            accessibilityLabel={t('logging:camera.library')}
+            onPress={pickFromLibrary}
+            disabled={capturing}
+          >
+            <Icon set="system" name="photo" size={24} />
+          </IconButton>
 
-        <Squish
-          depth={6}
-          radius={24}
-          slabClassName="bg-pandan-slab"
-          className="h-[62px] w-[62px] items-center justify-center bg-pandan"
-          onPress={capture}
-          disabled={capturing}
-          accessibilityRole="button"
-          accessibilityLabel={t('logging:camera.shutter')}
-          accessibilityState={{ busy: capturing }}
-        >
-          <Icon set="system" name="camera" size={32} />
-        </Squish>
+          <Squish
+            depth={6}
+            radius={24}
+            slabClassName="bg-pandan-slab"
+            className="h-[62px] w-[62px] items-center justify-center bg-pandan"
+            onPress={capture}
+            disabled={capturing}
+            accessibilityRole="button"
+            accessibilityLabel={t('logging:camera.shutter')}
+            accessibilityState={{ busy: capturing }}
+          >
+            <Icon set="system" name="camera" size={32} />
+          </Squish>
 
-        <IconButton
-          className="self-center"
-          variant="neutral"
-          accessibilityLabel={t('logging:camera.flip')}
-          onPress={() => setFacing((current) => (current === 'back' ? 'front' : 'back'))}
-          disabled={capturing || !hasCamera}
-        >
-          <Icon set="ui" name="refresh" size={22} tintColor={colors.ink} />
-        </IconButton>
-      </View>
+          <IconButton
+            className="self-center"
+            variant="neutral"
+            accessibilityLabel={t('logging:camera.flip')}
+            onPress={() => setFacing((current) => (current === 'back' ? 'front' : 'back'))}
+            disabled={capturing || !hasCamera}
+          >
+            <Icon set="ui" name="refresh" size={22} tintColor={colors.ink} />
+          </IconButton>
+        </View>
+      )}
     </View>
   )
 }
