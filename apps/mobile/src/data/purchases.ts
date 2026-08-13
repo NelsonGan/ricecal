@@ -104,8 +104,10 @@ export type PlanPrice = {
   priceString: string
   /** The raw figure, for arithmetic that needs it. */
   price: number
-  currencyCode: string
-  /** Yearly only: the same price divided over twelve months. */
+  /**
+   * Yearly only: the same price expressed per month, formatted by the SDK with
+   * the same formatter as `priceString` so the two agree.
+   */
   perMonthString?: string
 }
 
@@ -132,17 +134,6 @@ export function yearlySavingPercent(monthly?: number, annual?: number): number |
   return saving > 0 ? saving : undefined
 }
 
-const perMonth = (price: number, currencyCode: string): string | undefined => {
-  try {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency: currencyCode }).format(
-      price / 12,
-    )
-  } catch {
-    // An unknown currency code should cost the caption, not the screen.
-    return undefined
-  }
-}
-
 /**
  * Reads the current offering and returns what each plan costs.
  *
@@ -159,9 +150,21 @@ export async function fetchPlanPrices(): Promise<PlanPrices> {
   if (!current) throw new Error('No offering is live')
 
   const byLookupKey = (key: string) => current.availablePackages.find((p) => p.identifier === key)
+
+  /**
+   * `pricePerMonthString` comes from the SDK rather than being computed here.
+   *
+   * It was `Intl.NumberFormat(undefined, { currency })` over price/12, which
+   * was wrong in a way that only shows up outside a dollar storefront: asked
+   * for MYR in an en-US locale, Intl renders "MYR 2.49" while the price
+   * directly above it — the store's own string — reads "RM119.90". Two
+   * currencies for one product, on one card. The SDK formats both with the
+   * same formatter, so they agree by construction. It is also the only Intl
+   * call this app had, on a Hermes runtime with no polyfill.
+   */
   const priced = (
     pkg:
-      | { product: { priceString: string; price: number; currencyCode: string } }
+      | { product: { priceString: string; price: number; pricePerMonthString?: string | null } }
       | null
       | undefined,
   ) =>
@@ -169,7 +172,7 @@ export async function fetchPlanPrices(): Promise<PlanPrices> {
       ? {
           priceString: pkg.product.priceString,
           price: pkg.product.price,
-          currencyCode: pkg.product.currencyCode,
+          perMonthString: pkg.product.pricePerMonthString ?? undefined,
         }
       : undefined
 
@@ -177,13 +180,9 @@ export async function fetchPlanPrices(): Promise<PlanPrices> {
   const annual = priced(current.annual ?? byLookupKey('$rc_annual'))
   const lifetime = priced(current.lifetime ?? byLookupKey('$rc_lifetime'))
 
-  const yearly = annual
-    ? { ...annual, perMonthString: perMonth(annual.price, annual.currencyCode) }
-    : undefined
-
   return {
     monthly,
-    yearly,
+    yearly: annual,
     lifetime,
     yearlySavingPercent: yearlySavingPercent(monthly?.price, annual?.price),
   }
