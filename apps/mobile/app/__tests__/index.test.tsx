@@ -50,7 +50,7 @@ const loaded = (profile: unknown) => ({
 const pending = { data: undefined, isPending: true, isPaused: false, isSuccess: false }
 const failed = { data: undefined, isPending: false, isPaused: false, isSuccess: false }
 /**
- * Held by `offlineFirst` for want of a connection, with nothing saved from a
+ * Held for want of a connection, with nothing saved from a
  * previous launch to answer from. Pending, like the row above, and unlike it
  * never going to stop being pending.
  */

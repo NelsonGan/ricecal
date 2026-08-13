@@ -57,14 +57,54 @@ let keychainUnavailable = false
 let seenSession: string | null = null
 
 /**
- * Records the session on its way past and hands the value back unchanged.
+ * The key the session is filed under, as far as this adapter needs to know.
  *
- * Keyed rather than recording everything: supabase keeps a PKCE code verifier
- * under a neighbouring key, and it is a bare string that would parse as no
- * session at all and overwrite this one.
+ * Matched by suffix rather than spelled out: supabase builds it from the project
+ * ref in the URL, and keeps a PKCE code verifier under a neighbouring key that
+ * is a bare string — one that would parse as no session at all and overwrite
+ * this one.
+ */
+const isSessionKey = (key: string) => key.endsWith('-auth-token')
+
+/**
+ * Resolves the first time storage answers about the session, whatever it said.
+ *
+ * Supabase's own startup is not this quick, and cannot be. `_recoverAndRefresh`
+ * reads this key and then, if the access token is within 90 seconds of expiring,
+ * spends up to `AUTO_REFRESH_TICK_DURATION_MS` retrying a refresh with
+ * exponential backoff before `getSession()` answers anybody — and offline every
+ * one of those attempts waits on a request that will not arrive. An hour after
+ * the last launch, which is the life of an access token, that is EVERY launch.
+ *
+ * The read is the part that says where the launch belongs, and it has already
+ * happened by then. See `SessionProvider`, which routes off it and lets the real
+ * answer correct it whenever it comes.
+ */
+let announceRead: () => void = () => {}
+const storageRead = new Promise<void>((resolve) => {
+  announceRead = resolve
+})
+
+/**
+ * Who was signed in according to storage, once storage has been asked.
+ *
+ * Never resolves if nothing ever reads the key — which cannot happen through
+ * supabase's own init, and is why the caller races this against `getSession()`
+ * rather than waiting on it alone.
+ */
+export async function whenStoredSession(): Promise<Session | null> {
+  await storageRead
+  return storedSession()
+}
+
+/**
+ * Records the session on its way past and hands the value back unchanged.
  */
 function remember(key: string, value: string | null): string | null {
-  if (key.endsWith('-auth-token')) seenSession = value
+  if (isSessionKey(key)) {
+    seenSession = value
+    announceRead()
+  }
   return value
 }
 
@@ -73,9 +113,9 @@ function remember(key: string, value: string | null): string | null {
  *
  * For deciding WHERE A LAUNCH BELONGS and nothing else. The access token in it
  * may well be expired — that is the situation it exists for — so it is never a
- * credential, and nothing sends it anywhere. Requests are `offlineFirst` and
- * pause rather than run while there is no connection, and the moment one
- * returns supabase refreshes the token and announces the real session.
+ * credential, and nothing sends it anywhere. Requests pause rather than run
+ * while there is no connection, and the moment one returns supabase refreshes
+ * the token and announces the real session.
  */
 export function storedSession(): Session | null {
   if (!seenSession) return null
@@ -116,6 +156,11 @@ const SecureStoreAdapter = {
         readFailures.add(key)
         console.warn(`[auth] keychain read failed for "${key}", treating as signed out`, error)
       }
+      // Storage has answered, in the only terms this adapter has: there is no
+      // session to be had. Said out loud rather than through `remember`, which
+      // would also forget a session an earlier read had succeeded in getting —
+      // a locked device during a background tick is not a sign-out.
+      if (isSessionKey(key)) announceRead()
       return null
     }
   },

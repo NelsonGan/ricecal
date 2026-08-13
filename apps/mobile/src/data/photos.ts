@@ -409,6 +409,22 @@ function useStoredImageUri(path: string | undefined) {
     enabled: ownKey(path, userId),
     staleTime: (READ_TTL_SECONDS - 300) * 1000,
     gcTime: READ_TTL_SECONDS * 1000,
+    /**
+     * The one query in the app worth RUNNING with no connection.
+     *
+     * `lib/query.ts` pauses a query rather than send a request that cannot
+     * arrive, which is right for every query that has to ask the server — and
+     * wrong for the only one that asks the DISK first. A paused query does not
+     * run its `queryFn` at all, so the local path `resolveStoredImage` would
+     * have returned is never fetched, and a diary of plates this phone has
+     * already downloaded draws as a column of empty tiles the moment it goes
+     * offline.
+     *
+     * What it costs is a doomed round trip per photograph this device has NOT
+     * seen, which is the one case where there was nothing to show anyway.
+     * Nothing waits on it: the row draws, and the tile fills in or does not.
+     */
+    networkMode: 'offlineFirst',
     queryFn: () => resolveStoredImage(path as string),
   })
 }
