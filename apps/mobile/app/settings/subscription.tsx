@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { useAiUsage, useSubscription } from '@/data'
+import { useAiUsage, usePlanPrices, useSubscription } from '@/data'
 import { openManageSubscriptions } from '@/data/purchases'
 import { CheckList } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
@@ -19,6 +19,7 @@ export default function SubscriptionScreen() {
   const goBack = useBack('/me')
   const { data: subscription } = useSubscription()
   const { data: usage } = useAiUsage()
+  const { data: prices } = usePlanPrices()
   const [confirmCancel, setConfirmCancel] = useState(false)
 
   const yearly = subscription?.plan === 'yearly'
@@ -119,7 +120,8 @@ export default function SubscriptionScreen() {
             {lifetime
               ? t('profile:subscription.neverRenews')
               : t('profile:subscription.renews', {
-                  price: yearly ? t('paywall:plans.yearlyPrice') : t('paywall:plans.monthlyPrice'),
+                  price:
+                    (yearly ? prices?.yearly?.priceString : prices?.monthly?.priceString) ?? '—',
                 })}
           </Text>
         ) : (
@@ -146,11 +148,11 @@ export default function SubscriptionScreen() {
           <Row
             label={t('profile:subscription.perMonth')}
             value={
-              lifetime
-                ? t('paywall:plans.lifetimePrice')
+              (lifetime
+                ? prices?.lifetime?.priceString
                 : yearly
-                  ? t('paywall:plans.yearlyPerMonth')
-                  : t('paywall:plans.monthlyPrice')
+                  ? prices?.yearly?.perMonthString
+                  : prices?.monthly?.priceString) ?? '—'
             }
           />
           {/* The store holds the card, and never tells us anything about it.

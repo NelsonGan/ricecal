@@ -69,6 +69,95 @@ export async function purchasePlan(plan: Plan): Promise<void> {
   // reads it — one source of truth for what the user is entitled to.
 }
 
+/**
+ * The three plans, priced by the STORE rather than by this repo.
+ *
+ * WHY NOT A CONSTANT IN THE COPY BUNDLE. It was one, and it was wrong in three
+ * different ways at once: a Malaysian user was shown "$29.99" while being
+ * charged RM119.90, Apple and Play disagreed by nine cents on the lifetime
+ * price because Apple has no 119.90 price point for a one-time purchase, and
+ * every repricing needed an app release to stop the paywall lying. RevenueCat
+ * already hands back `priceString` localised to the user's own storefront, so
+ * the number on the button is the number the store will charge.
+ *
+ * The saving is computed here too. Hardcoded it drifted the moment either
+ * price moved, and it is the one figure on the paywall a user can check.
+ */
+export type PlanPrice = {
+  /** Localised and currency-formatted by the store, e.g. "RM119.90". */
+  priceString: string
+  /** The raw figure, for arithmetic that needs it. */
+  price: number
+  currencyCode: string
+  /** Yearly only: the same price divided over twelve months. */
+  perMonthString?: string
+}
+
+export type PlanPrices = Partial<Record<Plan, PlanPrice>> & {
+  /** Whole percent saved by paying yearly, or undefined if either price is missing. */
+  yearlySavingPercent?: number
+}
+
+const perMonth = (price: number, currencyCode: string): string | undefined => {
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency: currencyCode }).format(
+      price / 12,
+    )
+  } catch {
+    // An unknown currency code should cost the caption, not the screen.
+    return undefined
+  }
+}
+
+/**
+ * Reads the current offering and returns what each plan costs.
+ *
+ * Throws `PurchasesUnavailable` when the SDK is not configured, which is the
+ * ordinary state on a dev-variant build: its bundle id is suffixed `.dev` and
+ * has no App Store Connect app behind it, so StoreKit can return no products
+ * at all. The screens render a dash rather than a wrong number.
+ */
+export async function fetchPlanPrices(): Promise<PlanPrices> {
+  if (!purchasesAvailable()) throw new PurchasesUnavailable()
+
+  const Purchases = (await import('react-native-purchases')).default
+  const current = (await Purchases.getOfferings()).current
+  if (!current) throw new Error('No offering is live')
+
+  const byLookupKey = (key: string) => current.availablePackages.find((p) => p.identifier === key)
+  const priced = (
+    pkg:
+      | { product: { priceString: string; price: number; currencyCode: string } }
+      | null
+      | undefined,
+  ) =>
+    pkg
+      ? {
+          priceString: pkg.product.priceString,
+          price: pkg.product.price,
+          currencyCode: pkg.product.currencyCode,
+        }
+      : undefined
+
+  const monthly = priced(current.monthly ?? byLookupKey('$rc_monthly'))
+  const annual = priced(current.annual ?? byLookupKey('$rc_annual'))
+  const lifetime = priced(current.lifetime ?? byLookupKey('$rc_lifetime'))
+
+  const yearly = annual
+    ? { ...annual, perMonthString: perMonth(annual.price, annual.currencyCode) }
+    : undefined
+
+  return {
+    monthly,
+    yearly,
+    lifetime,
+    yearlySavingPercent:
+      monthly && annual && monthly.price > 0
+        ? Math.round((1 - annual.price / (monthly.price * 12)) * 100)
+        : undefined,
+  }
+}
+
 export async function restorePurchases(): Promise<void> {
   if (!purchasesAvailable()) throw new PurchasesUnavailable()
   const Purchases = (await import('react-native-purchases')).default

@@ -2,7 +2,18 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { Plan } from '@/data'
+import { usePlanPrices } from '@/data'
 import { Badge, cn, Squish, Text } from '@/ui'
+
+/**
+ * What a price reads as before the store has answered.
+ *
+ * A dash rather than a guess, which is the same symbol a stat tile uses for a
+ * missing measurement. The alternative was a figure written in this repo, and
+ * it was wrong for every Malaysian user (shown dollars, charged ringgit) and
+ * wrong again whenever a price moved without an app release.
+ */
+const PENDING = '—'
 
 export type PlanPickerProps = {
   value: Plan
@@ -28,6 +39,11 @@ export type PlanPickerProps = {
  */
 export function PlanPicker({ value, onChange, showLifetime = false, className }: PlanPickerProps) {
   const { t } = useTranslation('paywall')
+  const { data: prices } = usePlanPrices()
+
+  // Computed by the store's own numbers, so it cannot drift from the prices
+  // beside it the way a hardcoded "SAVE 50%" did.
+  const saving = prices?.yearlySavingPercent
 
   return (
     <View className={cn('gap-3', className)} accessibilityRole="radiogroup">
@@ -35,16 +51,16 @@ export function PlanPicker({ value, onChange, showLifetime = false, className }:
         selected={value === 'yearly'}
         onPress={() => onChange('yearly')}
         title={t('plans.yearly')}
-        badge={t('plans.yearlyBadge')}
-        price={t('plans.yearlyPrice')}
-        caption={t('plans.yearlyPerMonth')}
+        badge={saving && saving > 0 ? t('plans.yearlyBadge', { percent: saving }) : undefined}
+        price={prices?.yearly?.priceString ?? PENDING}
+        caption={prices?.yearly?.perMonthString}
       />
       <PlanCard
         selected={value === 'monthly'}
         onPress={() => onChange('monthly')}
         title={t('plans.monthly')}
         detail={t('plans.monthlyBilling')}
-        price={t('plans.monthlyPrice')}
+        price={prices?.monthly?.priceString ?? PENDING}
       />
       {showLifetime ? (
         <PlanCard
@@ -53,7 +69,7 @@ export function PlanPicker({ value, onChange, showLifetime = false, className }:
           title={t('plans.lifetime')}
           badge={t('plans.lifetimeBadge')}
           detail={t('plans.lifetimeDetail')}
-          price={t('plans.lifetimePrice')}
+          price={prices?.lifetime?.priceString ?? PENDING}
         />
       ) : null}
     </View>
