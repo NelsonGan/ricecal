@@ -76,9 +76,6 @@ export function ProPitch({ plan, onPlanChange }: ProPitchProps) {
         <Text variant="title" className="text-center">
           {t('hard.title')}
         </Text>
-        <Text variant="meta" className="text-center">
-          {t('hard.subtitle')}
-        </Text>
       </View>
 
       {/* Every feature, not a highlight reel. See `FEATURES`. */}
