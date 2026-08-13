@@ -145,6 +145,13 @@ export default function RemindersScreen() {
               onValueChange={(value) =>
                 withPermission(value, () => updateSettings.mutate({ notify_weekly_report: value }))
               }
+            />
+            <ToggleRow
+              title={t('profile:reminders.monthlyReport')}
+              value={settings?.notify_monthly_report ?? false}
+              onValueChange={(value) =>
+                withPermission(value, () => updateSettings.mutate({ notify_monthly_report: value }))
+              }
               divider={false}
             />
           </>

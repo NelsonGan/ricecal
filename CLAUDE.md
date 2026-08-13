@@ -786,15 +786,14 @@ of Trends leads to `/reviews`, which lists the periods worth opening, and one of
 them opens `/reviews/[id]` — `week-2026-08-03` or `month-2026-07-01`, the kind
 and the first day, from which the server works out the rest.
 
-**Only finished periods, and only ones with enough in them.** Weeks reach three
-months back and months reach six, because a weekly review is about something
-somebody still remembers eating and a monthly one is about a shape only visible
-from a distance. A week qualifies at four logged days and a month at twelve.
-Both rules are in `review_periods`, and `qualifies` is a COLUMN rather than a
-`where`: the list shows the periods that pass, while the comparison chart inside
-a story draws every period either way, since a light week is a fact about the
-weeks around it and hiding it would leave a hole in the chart with nothing to
-explain it.
+**Only finished periods, and every one of them.** Weeks reach three months back
+and months reach six, because a weekly review is about something somebody still
+remembers eating and a monthly one is about a shape only visible from a
+distance. Nothing is hidden for being thin: there was a sufficiency rule —
+four logged days of a week, twelve of a month, as a `qualifies` column — and it
+hid the weeks whose shape was most worth seeing, while making the route into the
+feature invisible to exactly the person who had not found it yet. The row on
+Trends is always there for the same reason.
 
 **How many steps a story has is data.** `reviewSteps` reads the summary: the
 card, the food and the calories always hold, and the body step exists only if
@@ -805,23 +804,36 @@ the tap does not keep. Within the body step each card is conditional again, so
 the same screen is weight-and-water for an older month and weight, steps and
 movement for last week.
 
-**Forward is the whole page; back is a strip down its left edge.** Both are
-Pressables in `StoryFrame`, and the shape is the second attempt. The first put
-the two zones UNDER the content, on the reasoning that a plain View never
-becomes a touch responder so a tap on a card would fall through to them. It does
-not: React Native offers an unclaimed touch to the hit view's ANCESTORS, never
-to a sibling that overlaps it, so every tap that landed on a card did nothing —
-and since the empty canvas below the last card still worked, it looked like one
-broken page rather than like most of every page. As an ancestor the same idea
-works, and the share button still wins its own press because a nested Pressable
-claims a touch before the one around it.
+**A tap on a card shares it; a tap at either edge steps the story.** Every card
+in a story draws ITSELF into a picture through Skia's `makeImageFromView` and
+offers it in a sheet with a Share button — the preview is that captured file
+rather than a second rendering, so what is on screen is exactly what leaves the
+phone. iOS gets the picture, Android the sentence beside it: React Native's
+`Share` takes `url` on iOS alone, and sharing a file on Android needs a
+content:// provider, a dependency and a rebuild.
+
+Because a card takes its own press, the navigation moved to narrow strips down
+either EDGE, over the top of everything. Those strips are the second arrangement
+of a lesson worth keeping: the first version put them UNDER the content, on the
+reasoning that a plain View never becomes a touch responder so a tap on a card
+would fall through to them. It does not. React Native offers an unclaimed touch
+to the hit view's ANCESTORS, never to a sibling that overlaps it, so every tap
+that landed on a card did nothing — and since the empty canvas below the last
+card still worked, it looked like one broken page rather than like most of every
+page.
 
 **No timer.** Instagram advances itself because a photograph is read in a
 second; these pages are a chart and four figures, and a page that leaves while
 it is being read is worse than no animation at all.
 
-Sharing sends a SENTENCE. The phone holds no image of the card, and rendering
-one would mean a second drawing of it that has to agree with the first.
+**Two reminders open a review**, and they are the only notifications in the app
+that go anywhere. The weekly one fires on MONDAY morning and the monthly on the
+first, both looking back at something that has just finished — a weekly report
+sent on Sunday evening would link to the week before last, since
+`review_periods` will not offer a week until it is over. Both link to
+`week-latest` / `month-latest` rather than to a date, because a reminder is
+scheduled weeks before it fires and cannot name the period it will be about;
+`useReportLinks` routes the tap and the story resolves the id against the list.
 
 ---
 

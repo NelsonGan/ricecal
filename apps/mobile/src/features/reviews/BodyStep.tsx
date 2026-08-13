@@ -6,6 +6,7 @@ import type { ReviewBucket, ReviewKind, ReviewSummary } from '@/data'
 import { showChange, showWeight, TrendLine, type WeightUnit } from '@/features/progress'
 import { BarChart } from '@/features/shared'
 import { Badge, Card, Divider, Icon, Text } from '@/ui'
+import { Shareable } from './ShareableCards'
 
 export type BodyStepProps = {
   kind: ReviewKind
@@ -37,129 +38,135 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
   return (
     <>
       {hasWeight ? (
-        <Card contentClassName="gap-2 p-card">
-          <Text variant="overline">{t('reviews:body.weight')}</Text>
+        <Shareable title={t('reviews:body.weight')}>
+          <Card contentClassName="gap-2 p-card">
+            <Text variant="overline">{t('reviews:body.weight')}</Text>
 
-          <View className="flex-row items-end justify-between gap-md">
-            <View className="flex-row items-baseline gap-2">
-              <Text className="font-display text-[34px] leading-[42px] text-ink">
-                {showWeight(summary.weightLast ?? 0, unit)}
-              </Text>
-              <Text variant="label" className="text-muted">
-                {t(`common:unit.${unit}`)}
-              </Text>
+            <View className="flex-row items-end justify-between gap-md">
+              <View className="flex-row items-baseline gap-2">
+                <Text className="font-display text-[34px] leading-[42px] text-ink">
+                  {showWeight(summary.weightLast ?? 0, unit)}
+                </Text>
+                <Text variant="label" className="text-muted">
+                  {t(`common:unit.${unit}`)}
+                </Text>
+              </View>
+
+              {summary.weightChange === null ? null : (
+                <Badge tone={summary.weightChange <= 0 ? 'pandan' : 'kaya'} className="px-3 py-1.5">
+                  <Icon
+                    set="body"
+                    name={summary.weightChange <= 0 ? 'trend-down' : 'trend-up'}
+                    size={16}
+                  />
+                  <Text
+                    variant="caption"
+                    numberOfLines={1}
+                    className={summary.weightChange <= 0 ? 'text-pandan-ink' : 'text-kaya-ink'}
+                  >
+                    {`${showChange(summary.weightChange, unit)} ${t(`common:unit.${unit}`)}`}
+                  </Text>
+                </Badge>
+              )}
             </View>
 
-            {summary.weightChange === null ? null : (
-              <Badge tone={summary.weightChange <= 0 ? 'pandan' : 'kaya'} className="px-3 py-1.5">
-                <Icon
-                  set="body"
-                  name={summary.weightChange <= 0 ? 'trend-down' : 'trend-up'}
-                  size={16}
-                />
-                <Text
-                  variant="caption"
-                  numberOfLines={1}
-                  className={summary.weightChange <= 0 ? 'text-pandan-ink' : 'text-kaya-ink'}
-                >
-                  {`${showChange(summary.weightChange, unit)} ${t(`common:unit.${unit}`)}`}
-                </Text>
-              </Badge>
-            )}
-          </View>
+            <TrendLine
+              height={78}
+              points={buckets.map((bucket) => ({
+                key: bucket.start,
+                label: '',
+                value: bucket.weight,
+              }))}
+              // What the period opened at, so a line whose first weigh-in is on
+              // Wednesday still starts at the left edge rather than partway
+              // across. Recovered rather than fetched: the change is measured
+              // from exactly that reading, so the last weight less the change IS
+              // it — and where there was no earlier reading the change was
+              // measured from the first one inside the period, which puts the
+              // line's start on its own first point and draws the same shape.
+              carryFrom={
+                summary.weightLast !== null && summary.weightChange !== null
+                  ? summary.weightLast - summary.weightChange
+                  : null
+              }
+              accessibilityLabel={t('reviews:body.weightChart')}
+            />
 
-          <TrendLine
-            height={78}
-            points={buckets.map((bucket) => ({
-              key: bucket.start,
-              label: '',
-              value: bucket.weight,
-            }))}
-            // What the period opened at, so a line whose first weigh-in is on
-            // Wednesday still starts at the left edge rather than partway
-            // across. Recovered rather than fetched: the change is measured
-            // from exactly that reading, so the last weight less the change IS
-            // it — and where there was no earlier reading the change was
-            // measured from the first one inside the period, which puts the
-            // line's start on its own first point and draws the same shape.
-            carryFrom={
-              summary.weightLast !== null && summary.weightChange !== null
-                ? summary.weightLast - summary.weightChange
-                : null
-            }
-            accessibilityLabel={t('reviews:body.weightChart')}
-          />
-
-          <Text variant="meta">{t('reviews:body.weighIns', { count: summary.weighIns })}</Text>
-        </Card>
+            <Text variant="meta">{t('reviews:body.weighIns', { count: summary.weighIns })}</Text>
+          </Card>
+        </Shareable>
       ) : null}
 
       {hasSteps ? (
-        <Card contentClassName="gap-2 p-card">
-          <Text variant="overline">{t('reviews:body.steps')}</Text>
+        <Shareable title={t('reviews:body.steps')}>
+          <Card contentClassName="gap-2 p-card">
+            <Text variant="overline">{t('reviews:body.steps')}</Text>
 
-          <View className="flex-row items-baseline justify-between gap-md">
-            <Text className="font-display text-[30px] leading-[38px] text-ink">
-              {Math.round(summary.steps ?? 0).toLocaleString()}
-            </Text>
-            {summary.stepGoal ? (
-              <Text variant="meta" numberOfLines={1} className="min-w-0 shrink">
-                {t('reviews:body.stepGoal', {
-                  done: summary.stepGoalDays,
-                  total: summary.days,
-                  goal: summary.stepGoal.toLocaleString(),
-                })}
+            <View className="flex-row items-baseline justify-between gap-md">
+              <Text className="font-display text-[30px] leading-[38px] text-ink">
+                {Math.round(summary.steps ?? 0).toLocaleString()}
               </Text>
-            ) : null}
-          </View>
+              {summary.stepGoal ? (
+                <Text variant="meta" numberOfLines={1} className="min-w-0 shrink">
+                  {t('reviews:body.stepGoal', {
+                    done: summary.stepGoalDays,
+                    total: summary.days,
+                    goal: summary.stepGoal.toLocaleString(),
+                  })}
+                </Text>
+              ) : null}
+            </View>
 
-          <BarChart
-            height={78}
-            bars={buckets.map((bucket, position) => ({
-              key: bucket.start,
-              label:
-                kind === 'week'
-                  ? format(parseISO(bucket.start), 'EEEEE')
-                  : t('progress:range.week', { index: position + 1 }),
-              value: Math.round(bucket.steps ?? 0),
-              // Green where the goal was met, grey where it was not, which is
-              // the same reading the Activity tab gives a day.
-              highlight: (bucket.steps ?? 0) >= (summary.stepGoal ?? 0),
-            }))}
-            accessibilityLabel={t('reviews:body.stepsChart')}
-          />
-        </Card>
+            <BarChart
+              height={78}
+              bars={buckets.map((bucket, position) => ({
+                key: bucket.start,
+                label:
+                  kind === 'week'
+                    ? format(parseISO(bucket.start), 'EEEEE')
+                    : t('progress:range.week', { index: position + 1 }),
+                value: Math.round(bucket.steps ?? 0),
+                // Green where the goal was met, grey where it was not, which is
+                // the same reading the Activity tab gives a day.
+                highlight: (bucket.steps ?? 0) >= (summary.stepGoal ?? 0),
+              }))}
+              accessibilityLabel={t('reviews:body.stepsChart')}
+            />
+          </Card>
+        </Shareable>
       ) : null}
 
-      <Card title={t('reviews:body.others')} contentClassName="gap-0 p-card">
-        <OtherRow
-          label={t('reviews:body.water')}
-          note={t('reviews:body.waterNote', { count: summary.waterGoalDays })}
-          value={t('reviews:body.waterValue', { value: summary.water.toFixed(1) })}
-        />
-        {hasSteps ? (
-          <>
-            <Divider className="my-3" />
-            <OtherRow
-              label={t('reviews:body.move')}
-              note={
-                summary.sessions > 0
-                  ? t('reviews:body.moveNote', { count: summary.sessions })
-                  : t('reviews:body.moveNoteNone')
-              }
-              value={summary.exerciseMinutes.toLocaleString()}
-            />
-            <Divider className="my-3" />
-            <OtherRow
-              label={t('reviews:body.burn')}
-              note={t('reviews:body.distanceValue', { value: distanceKm.toFixed(1) })}
-              value={t('reviews:body.burnValue', {
-                value: Math.round(summary.activeKcal ?? 0).toLocaleString(),
-              })}
-            />
-          </>
-        ) : null}
-      </Card>
+      <Shareable title={t('reviews:body.others')}>
+        <Card title={t('reviews:body.others')} contentClassName="gap-0 p-card">
+          <OtherRow
+            label={t('reviews:body.water')}
+            note={t('reviews:body.waterNote', { count: summary.waterGoalDays })}
+            value={t('reviews:body.waterValue', { value: summary.water.toFixed(1) })}
+          />
+          {hasSteps ? (
+            <>
+              <Divider className="my-3" />
+              <OtherRow
+                label={t('reviews:body.move')}
+                note={
+                  summary.sessions > 0
+                    ? t('reviews:body.moveNote', { count: summary.sessions })
+                    : t('reviews:body.moveNoteNone')
+                }
+                value={summary.exerciseMinutes.toLocaleString()}
+              />
+              <Divider className="my-3" />
+              <OtherRow
+                label={t('reviews:body.burn')}
+                note={t('reviews:body.distanceValue', { value: distanceKm.toFixed(1) })}
+                value={t('reviews:body.burnValue', {
+                  value: Math.round(summary.activeKcal ?? 0).toLocaleString(),
+                })}
+              />
+            </>
+          ) : null}
+        </Card>
+      </Shareable>
     </>
   )
 }

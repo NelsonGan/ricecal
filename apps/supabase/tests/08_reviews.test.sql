@@ -1,6 +1,5 @@
 -- ---------------------------------------------------------------------------
--- Reviews: the window, the sufficiency rule, and the arithmetic of a period
--- that has already ended.
+-- Reviews: the window, and the arithmetic of a period that has already ended.
 --
 -- Nothing here is new data, so the risks are all about BOUNDARIES, and every
 -- one of them is quiet:
@@ -8,9 +7,9 @@
 --   1. A period that has not finished. The current week averages the days
 --      lived so far, so a review opened on Tuesday would call it a light week
 --      and be wrong by Sunday. It must not be in the list at all.
---   2. `qualifies`. A week with two days logged has an average that describes
---      two days, and printing it beside "1,240 kcal a day" is a claim about a
---      week nobody ate. The threshold is the only thing standing between those.
+--   2. EVERY period in the window, however thin. There was a sufficiency rule
+--      here and it hid weeks; what is left to prove is that nothing else does,
+--      because a list quietly missing a week looks exactly like a list.
 --   3. A month is not thirty days. `review_end` is the one place that knows it,
 --      and February is the assertion that proves it.
 --   4. Weight change measures from the reading the period OPENED at, which is
@@ -58,8 +57,9 @@ values
 --
 --   last_start = the Monday of the current week, minus seven
 --
--- Four days logged in it, which is exactly the sufficiency threshold, and one
--- of those days is deliberately over budget.
+-- Four days logged in it, one of them deliberately over budget, and the
+-- heaviest deliberately the dish that was eaten ONCE — so an ordering by
+-- repeats and an ordering by calories cannot agree.
 insert into public.food_logs (
   user_id, log_date, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g,
   serving_label, serving_factor, quantity, source, logged_at
@@ -142,27 +142,24 @@ select ok(
 );
 
 
--- Sufficiency -----------------------------------------------------------------
+-- Nothing is hidden -----------------------------------------------------------
+--
+-- Every week in the window comes back, and all but one of them are empty. The
+-- assertion is that the empty ones are PRESENT and say so, rather than being
+-- dropped: a review of a week nobody logged is seven hollow marks, which is a
+-- thing worth seeing.
 
 select is(
-  (select qualifies from public.review_periods('week')
-   where starts_on = date_trunc('week', public.local_today())::date - 7),
-  true,
-  'four logged days is enough to review a week'
-);
-
--- Every other week in the window has nothing in it, and none of them may show
--- up as something worth opening.
-select is(
-  (select count(*)::integer from public.review_periods('week') where qualifies),
-  1,
-  'and a week with nothing logged is not offered'
-);
-
-select is(
-  (select count(*)::integer from public.review_periods('month') where qualifies),
+  (select days_logged from public.review_periods('week')
+   where starts_on = date_trunc('week', public.local_today())::date - 14),
   0,
-  'four days is not enough to review a month'
+  'a week with nothing logged is still offered, and says nothing was'
+);
+
+select is(
+  (select count(*)::integer from public.review_periods('week') where kcal_avg is not null),
+  1,
+  'and only the week with food in it has an average at all'
 );
 
 
@@ -204,10 +201,22 @@ select is(
 -- Meals -----------------------------------------------------------------------
 
 select is(
-  (select times from public.review_meals('week', date_trunc('week', public.local_today())::date - 7, 5)
-   where lower(name) = 'nasi lemak'),
-  2,
+  (select count(*)::integer
+     from public.review_meals('week', date_trunc('week', public.local_today())::date - 7, 5)
+    where lower(name) = 'nasi lemak'),
+  1,
   'two spellings of one dish are one dish'
+);
+
+-- Bak kut teh at 2,400 is the dearest of the four, and the list is ordered by
+-- what one plate cost rather than by how often it was eaten — which is the
+-- whole reason "most logged" became "biggest": the two nasi lemak rows would
+-- have taken the top of this list with the lightest dish in the week.
+select is(
+  (select name from public.review_meals('week', date_trunc('week', public.local_today())::date - 7, 5)
+   limit 1),
+  'Bak kut teh',
+  'the biggest plate is first'
 );
 
 

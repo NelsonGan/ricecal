@@ -20,12 +20,12 @@
 --   being lived has a Sunday nobody has eaten yet, and averaging it in makes
 --   every review of the current week read as a light one until it ends.
 --
---   SUFFICIENCY IS A COLUMN, NOT A FILTER. `qualifies` says whether a period
---   has enough logged days to be worth reviewing, and the rows come back either
---   way. The list shows the ones that qualify; the comparison bars inside a
---   story draw the ones that do not as the light weeks they were. Filtered in
---   SQL, a thin week would leave a hole in that chart with nothing to explain
---   it.
+--   EVERY PERIOD IN THE WINDOW, thin ones included. There was a `qualifies`
+--   column here that said whether a period had enough logged days to be worth
+--   opening, and the list hid the ones that failed it. It is gone: a week you
+--   barely logged is the week you most want to see the shape of, and a list
+--   with holes in it reads as a list that lost something. The comparison bars
+--   inside a story wanted them all along for the same reason.
 --
 -- These sort after 94 by name only; they read `daily_nutrition` (90),
 -- `activity_days` (41) and `weight_logs` (40).
@@ -194,7 +194,6 @@ returns table (
   ends_on         date,
   days            integer,
   days_logged     integer,
-  qualifies       boolean,
   kcal_avg        numeric,
   weight_change   numeric,
   marks           numeric[]
@@ -260,11 +259,6 @@ as $$
     public.review_end(p_kind, f.period),
     f.days,
     f.days_logged,
-    -- ENOUGH TO REVIEW. Four days of a week and twelve of a month, which is
-    -- somewhat over half and somewhat under half on purpose: a week is short
-    -- enough that three missing days make the average a different week's, while
-    -- a month has room to skip a holiday and still describe itself.
-    f.days_logged >= case p_kind when 'week' then 4 else 12 end,
     f.kcal_avg,
     -- Against the reading the period OPENED at, which is the last one before it
     -- began rather than the first one inside it. A user who weighs in on
@@ -290,9 +284,8 @@ $$;
 comment on function public.review_periods is
   'Every finished week (three months back) or month (six months back), newest '
   'first, with the figures the list row prints and a sparkline of the days in '
-  'it. `qualifies` says whether there is enough logged to be worth opening; '
-  'thin periods come back anyway, because the comparison chart inside a story '
-  'draws them.';
+  'it. Thin periods and empty ones come back like any other: the list draws '
+  'them, and so does the comparison chart inside a story.';
 
 
 -- ---------------------------------------------------------------------------
@@ -331,9 +324,6 @@ returns table (
   heaviest_on        date,
   heaviest_kcal      integer,
 
-  entries            integer,
-  home_cooked        integer,
-
   water_avg          numeric,
   water_goal_days    integer,
 
@@ -366,16 +356,6 @@ as $$
     where w.user_id = p_user_id and w.measured_on < p_start
     order by w.measured_on desc
     limit 1
-  ),
-  -- What was eaten, counted over entries rather than over days: "64 meals, 41
-  -- of them cooked at home" is a fact about rows, and `daily_nutrition` has
-  -- already folded them away.
-  meals as (
-    select
-      count(*)::integer                                        as entries,
-      (count(*) filter (where e.recipe_id is not null))::integer as home_cooked
-    from public.food_logs e, span s
-    where e.user_id = p_user_id and e.log_date between s.from_date and s.to_date
   ),
   -- The run of consecutive logged days ending on the last day of the period,
   -- counted back past its start. Gaps and islands, as in `logging_streak()`,
@@ -419,9 +399,6 @@ as $$
     (array_agg(d.at   order by d.kcal desc, d.at) filter (where d.entry_count > 0))[1],
     (array_agg(d.kcal order by d.kcal desc, d.at) filter (where d.entry_count > 0))[1],
 
-    (select m.entries     from meals m),
-    (select m.home_cooked from meals m),
-
     -- Averaged over every day, unlike the calorie figures. A day nobody logged
     -- water on is a day they recorded none, and a hydration average that
     -- skipped it would only ever describe the days that went well.
@@ -451,15 +428,16 @@ as $$
 $$;
 
 -- Deliberately narrower than `trend_summary`. Every column here is drawn by a
--- card in the story, and the four that were not — the step total, the best day,
--- the workout minutes and the first weigh-in — came out again before this
--- shipped: a returned figure nothing reads is one a future reader trusts without
--- checking that it means what its name suggests.
+-- card in the story, and each one that stopped being drawn came out with it —
+-- the step total, the best day, the workout minutes, the first weigh-in, and
+-- then the meal count and what was cooked at home when the line under the food
+-- step went. A returned figure nothing reads is one a future reader trusts
+-- without checking that it means what its name suggests.
 comment on function public.review_summary is
   'One review period folded to a single row: the calorie headline, the macro '
-  'split, the lightest and heaviest day, what was cooked at home, the weigh-ins '
-  'and the movement. The client decides which story steps to draw from which of '
-  'these came back null.';
+  'split, the lightest and heaviest day, the weigh-ins and the movement. The '
+  'client decides which story steps to draw from which of these came back '
+  'null.';
 
 
 -- ---------------------------------------------------------------------------
@@ -544,9 +522,18 @@ comment on function public.review_series is
 -- review is most interesting about, and would split one dish across a catalogue
 -- row, a recipe and a guess that all say "nasi lemak".
 --
--- The macros come back as an average of what was logged rather than as a total,
--- because the row beside the name is "what this dish costs", and somebody who
--- ate it four times wants the plate rather than the fortnight.
+-- HEAVIEST FIRST, and this was "most often first" for about a day. Counting
+-- repeats assumes a diary in which the same dish arrives under the same name,
+-- and this one mostly does not: a scanned plate is named by a model and a
+-- searched one by the catalogue, so a fortnight of eating nasi lemak four times
+-- can be four spellings and four counts of one. Calories need no such
+-- agreement, and "the five biggest plates" is a question a week can answer
+-- honestly however its rows were written.
+--
+-- Still grouped by name rather than listed row by row: where a name DOES repeat,
+-- five identical lines would be a worse answer than four dishes and a fifth.
+-- The macros are averaged over those repeats, because the figure beside a name
+-- is what one of them costs.
 -- ---------------------------------------------------------------------------
 create or replace function public.review_meals(
   p_kind    text,
@@ -558,7 +545,6 @@ returns table (
   name          text,
   icon_set      public.icon_set,
   icon_name     text,
-  times         integer,
   kcal_avg      integer,
   carbs_g_avg   numeric,
   protein_g_avg numeric,
@@ -575,8 +561,8 @@ as $$
     -- The view for the arithmetic, the table beside it for the DRAWING.
     -- `food_log_details` nulls both icon columns whenever an entry has a
     -- photograph, because in the diary the photograph is the better picture.
-    -- This screen shows no photographs, so a camera user's five most-eaten
-    -- dishes would every one of them be the blank plate.
+    -- This screen shows no photographs, so a camera user's five biggest plates
+    -- would every one of them be the blank plate.
     select
       e.*,
       coalesce(f.icon_set,  f.item_icon_set)  as own_icon_set,
@@ -592,22 +578,21 @@ as $$
     (array_agg(e.food_name order by e.logged_at desc))[1],
     (array_agg(e.own_icon_set  order by e.logged_at desc) filter (where e.own_icon_set  is not null))[1],
     (array_agg(e.own_icon_name order by e.logged_at desc) filter (where e.own_icon_name is not null))[1],
-    count(*)::integer,
     round(avg(e.kcal))::integer,
     round(avg(e.carbs_g), 1),
     round(avg(e.protein_g), 1),
     round(avg(e.fat_g), 1)
   from entries e
   group by lower(e.food_name)
-  -- Most often first, and the heavier dish breaks a tie: two things eaten twice
-  -- each, the one worth mentioning is the one that cost something.
-  order by count(*) desc, avg(e.kcal) desc
+  -- The dearest plate first. A tie goes to the one eaten more often, which is
+  -- the difference between a heavy meal and a heavy habit.
+  order by avg(e.kcal) desc, count(*) desc
   limit greatest(p_limit, 0);
 $$;
 
 comment on function public.review_meals is
-  'The dishes of one review period, folded by name and ordered by how often '
-  'they were eaten. Grouped on the name rather than on food_id, because an '
+  'The biggest plates of one review period, folded by name and ordered by what '
+  'one of them cost. Grouped on the name rather than on food_id, because an '
   'estimate, an archetype and a recipe all log a null id and would otherwise '
   'vanish from the one screen that is about what somebody ate.';
 

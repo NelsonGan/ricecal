@@ -34,24 +34,26 @@ export type StoryFrameProps = {
 }
 
 /**
- * How much of the width goes back rather than forward.
+ * The strips down either edge that step the story.
  *
- * Under a third, unlike the stories this borrows from, and the reason is the
- * share button under the card on step one. It is centred, so a back strip much
- * wider than this reaches its left edge and turns half of the only control on
- * the page into a step backwards.
+ * Narrow, and they used to be a third and two thirds of the width. Then every
+ * card became something you tap to share it, and a card that takes its own
+ * press is a card the page behind it never hears about — so the zones moved to
+ * the EDGES, where a story is tapped anyway and where the page gutter means
+ * they overlap only the last few points of a card.
  */
-const BACK_ZONE = 'w-[28%]'
+const EDGE_ZONE = 'w-[15%]'
 
 /**
  * The chrome a review is read through: a title, a segmented progress bar, and
  * pages you tap or swipe between.
  *
  * TWO WAYS THROUGH, and they are the same two every story anywhere has. A tap
- * on the left edge goes back, a tap anywhere else goes on, and a horizontal
- * swipe does what the finger says. The asymmetry is deliberate: forward is what
- * somebody does thirty times and back is what they do once, so forward gets the
- * area you hit without aiming.
+ * on the left edge goes back, a tap on the right edge or anywhere between the
+ * cards goes on, and a horizontal swipe does what the finger says.
+ *
+ * A tap on a CARD does neither: it lifts that card out as a picture to share.
+ * That is why the edges carry the navigation at all — see `EDGE_ZONE`.
  *
  * NO TIMER, and that is the one place this parts company with the stories it
  * borrows from. Instagram advances itself because the content is a photograph
@@ -65,9 +67,9 @@ const BACK_ZONE = 'w-[28%]'
  * charts are already in hand, and mounting one on arrival would draw an empty
  * card for a frame.
  *
- * THE WHOLE PAGE IS THE FORWARD TARGET, as a Pressable wrapped around it, and
- * back is a strip laid over its left edge. That shape is not the obvious one and
- * it is the second attempt: the first put both zones UNDER the content, on the
+ * THE PAGE ITSELF IS A FORWARD TARGET, as a Pressable wrapped around it, with
+ * the two edge strips laid over the top. That shape is not the obvious one and
+ * it is the second attempt: the first put the zones UNDER the content, on the
  * reasoning that a plain View never becomes a touch responder, so a tap on a
  * card would fall through to whatever was beneath it. It does not. React Native
  * offers an unclaimed touch to the hit view's ANCESTORS, never to a sibling that
@@ -75,10 +77,10 @@ const BACK_ZONE = 'w-[28%]'
  * and since the empty canvas below the cards worked, it looked like the last
  * page was broken rather than like most of every page was.
  *
- * As an ancestor the same idea works, and it keeps what made it attractive:
- * nothing inside a page has to know it is inside a story, and the one genuinely
- * interactive thing in one — the share button — still wins its own press,
- * because a nested Pressable claims a touch before the one around it.
+ * As an ancestor it works, and the ordering that follows from it is the whole
+ * arrangement: a card claims its own press for the share sheet, the strips over
+ * the edges claim theirs for the step, and the page underneath catches whatever
+ * is left.
  */
 export function StoryFrame({ title, pages, onClose, labels, counter }: StoryFrameProps) {
   const insets = useSafeAreaInsets()
@@ -135,11 +137,14 @@ export function StoryFrame({ title, pages, onClose, labels, counter }: StoryFram
         }
       />
 
+      {/* Room under the marks. At a couple of points the bar read as part of
+          the first card rather than as chrome above it, which is the one thing
+          a progress bar must not do. */}
       <StepProgress
         total={pages.length}
         current={index + 1}
         accessibilityLabel={labels.progress}
-        className="px-gutter pb-1"
+        className="px-gutter pb-3"
       />
 
       <ScrollView
@@ -158,24 +163,40 @@ export function StoryFrame({ title, pages, onClose, labels, counter }: StoryFram
             style={{ width }}
             className="flex-1"
             onPress={() => goTo(position + 1)}
-            accessibilityRole="button"
-            accessibilityLabel={labels.next}
+            /* NOT an accessibility element, though it is the biggest touch
+               target on the screen. A Pressable with a role collapses its whole
+               subtree into one node, so this page announced itself as a single
+               "Next" button and the cards inside it — each of which is a button
+               that shares itself — could not be reached at all. The two strips
+               below carry the labels instead, and everything between them stays
+               reachable. */
+            accessible={false}
           >
+            {/* Three quarters of the gutter and none of the gap, because
+                every card on a page is wrapped in a `Shareable` that carries
+                the other quarter as padding — the margin its captured picture
+                needs. Cards land exactly where they did. */}
             <View
-              className="flex-1 px-gutter pt-2"
-              style={{ gap: spacing.stack, paddingBottom: insets.bottom + spacing.gutter }}
+              className="flex-1 px-3 pt-3"
+              style={{ paddingBottom: insets.bottom + spacing.gutter }}
             >
               {page.node}
             </View>
 
-            {/* Last, so it lies OVER the cards rather than under them. Under
-                them it would only work on the empty canvas below the last card,
-                which is the trap the header describes. */}
+            {/* Last, so they lie OVER the cards rather than under them. Under
+                them they would only work on the empty canvas below the last
+                card, which is the trap the header describes. */}
             <Pressable
-              className={`absolute inset-y-0 left-0 ${BACK_ZONE}`}
+              className={`absolute inset-y-0 left-0 ${EDGE_ZONE}`}
               onPress={() => goTo(position - 1)}
               accessibilityRole="button"
               accessibilityLabel={labels.previous}
+            />
+            <Pressable
+              className={`absolute inset-y-0 right-0 ${EDGE_ZONE}`}
+              onPress={() => goTo(position + 1)}
+              accessibilityRole="button"
+              accessibilityLabel={labels.next}
             />
           </Pressable>
         ))}

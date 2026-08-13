@@ -12,12 +12,24 @@ import { REVIEW_KINDS, type ReviewKind, type ReviewSummary } from '@/data/types'
  * The kind travels with the date because the date alone cannot carry it — the
  * third of August is a Monday and the first day of a month is a Saturday, and a
  * story that guessed would open the wrong review roughly one week in seven.
+ *
+ * `start` may be `LATEST` instead of a date; see below.
  */
 export function reviewId(kind: ReviewKind, start: string): string {
   return `${kind}-${start}`
 }
 
-const ID = /^(week|month)-(\d{4}-\d{2}-\d{2})$/
+/**
+ * The newest period of its kind, whichever that turns out to be.
+ *
+ * What a report notification links to. One is scheduled weeks ahead of the
+ * Monday it fires on and cannot name the week it will be about, so the link
+ * says "the latest weekly review" and the screen resolves it against the list
+ * when it opens.
+ */
+export const LATEST = 'latest'
+
+const ID = /^(week|month)-(\d{4}-\d{2}-\d{2}|latest)$/
 
 /**
  * The other direction, for a route param.

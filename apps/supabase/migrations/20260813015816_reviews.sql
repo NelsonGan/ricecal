@@ -124,7 +124,6 @@ CREATE FUNCTION public.review_meals (
     name          text,
     icon_set      public.icon_set,
     icon_name     text,
-    times         integer,
     kcal_avg      integer,
     carbs_g_avg   numeric,
     protein_g_avg numeric,
@@ -141,8 +140,8 @@ CREATE FUNCTION public.review_meals (
     -- The view for the arithmetic, the table beside it for the DRAWING.
     -- `food_log_details` nulls both icon columns whenever an entry has a
     -- photograph, because in the diary the photograph is the better picture.
-    -- This screen shows no photographs, so a camera user's five most-eaten
-    -- dishes would every one of them be the blank plate.
+    -- This screen shows no photographs, so a camera user's five biggest plates
+    -- would every one of them be the blank plate.
     select
       e.*,
       coalesce(f.icon_set,  f.item_icon_set)  as own_icon_set,
@@ -158,20 +157,19 @@ CREATE FUNCTION public.review_meals (
     (array_agg(e.food_name order by e.logged_at desc))[1],
     (array_agg(e.own_icon_set  order by e.logged_at desc) filter (where e.own_icon_set  is not null))[1],
     (array_agg(e.own_icon_name order by e.logged_at desc) filter (where e.own_icon_name is not null))[1],
-    count(*)::integer,
     round(avg(e.kcal))::integer,
     round(avg(e.carbs_g), 1),
     round(avg(e.protein_g), 1),
     round(avg(e.fat_g), 1)
   from entries e
   group by lower(e.food_name)
-  -- Most often first, and the heavier dish breaks a tie: two things eaten twice
-  -- each, the one worth mentioning is the one that cost something.
-  order by count(*) desc, avg(e.kcal) desc
+  -- The dearest plate first. A tie goes to the one eaten more often, which is
+  -- the difference between a heavy meal and a heavy habit.
+  order by avg(e.kcal) desc, count(*) desc
   limit greatest(p_limit, 0);
 $function$;
 
-COMMENT ON FUNCTION public.review_meals(text,date,integer,uuid) IS 'The dishes of one review period, folded by name and ordered by how often they were eaten. Grouped on the name rather than on food_id, because an estimate, an archetype and a recipe all log a null id and would otherwise vanish from the one screen that is about what somebody ate.';
+COMMENT ON FUNCTION public.review_meals(text,date,integer,uuid) IS 'The biggest plates of one review period, folded by name and ordered by what one of them cost. Grouped on the name rather than on food_id, because an estimate, an archetype and a recipe all log a null id and would otherwise vanish from the one screen that is about what somebody ate.';
 
 GRANT ALL ON FUNCTION public.review_meals(text, date, integer, uuid) TO authenticated;
 
@@ -185,7 +183,6 @@ CREATE FUNCTION public.review_periods (
     ends_on       date,
     days          integer,
     days_logged   integer,
-    qualifies     boolean,
     kcal_avg      numeric,
     weight_change numeric,
     marks         numeric[]
@@ -251,11 +248,6 @@ CREATE FUNCTION public.review_periods (
     public.review_end(p_kind, f.period),
     f.days,
     f.days_logged,
-    -- ENOUGH TO REVIEW. Four days of a week and twelve of a month, which is
-    -- somewhat over half and somewhat under half on purpose: a week is short
-    -- enough that three missing days make the average a different week's, while
-    -- a month has room to skip a holiday and still describe itself.
-    f.days_logged >= case p_kind when 'week' then 4 else 12 end,
     f.kcal_avg,
     -- Against the reading the period OPENED at, which is the last one before it
     -- began rather than the first one inside it. A user who weighs in on
@@ -278,7 +270,7 @@ CREATE FUNCTION public.review_periods (
   order by f.period desc;
 $function$;
 
-COMMENT ON FUNCTION public.review_periods(text,uuid) IS 'Every finished week (three months back) or month (six months back), newest first, with the figures the list row prints and a sparkline of the days in it. `qualifies` says whether there is enough logged to be worth opening; thin periods come back anyway, because the comparison chart inside a story draws them.';
+COMMENT ON FUNCTION public.review_periods(text,uuid) IS 'Every finished week (three months back) or month (six months back), newest first, with the figures the list row prints and a sparkline of the days in it. Thin periods and empty ones come back like any other: the list draws them, and so does the comparison chart inside a story.';
 
 GRANT ALL ON FUNCTION public.review_periods(text, uuid) TO authenticated;
 
@@ -360,8 +352,6 @@ CREATE FUNCTION public.review_summary (
     lightest_kcal      integer,
     heaviest_on        date,
     heaviest_kcal      integer,
-    entries            integer,
-    home_cooked        integer,
     water_avg          numeric,
     water_goal_days    integer,
     weight_last        numeric,
@@ -392,16 +382,6 @@ CREATE FUNCTION public.review_summary (
     where w.user_id = p_user_id and w.measured_on < p_start
     order by w.measured_on desc
     limit 1
-  ),
-  -- What was eaten, counted over entries rather than over days: "64 meals, 41
-  -- of them cooked at home" is a fact about rows, and `daily_nutrition` has
-  -- already folded them away.
-  meals as (
-    select
-      count(*)::integer                                        as entries,
-      (count(*) filter (where e.recipe_id is not null))::integer as home_cooked
-    from public.food_logs e, span s
-    where e.user_id = p_user_id and e.log_date between s.from_date and s.to_date
   ),
   -- The run of consecutive logged days ending on the last day of the period,
   -- counted back past its start. Gaps and islands, as in `logging_streak()`,
@@ -445,9 +425,6 @@ CREATE FUNCTION public.review_summary (
     (array_agg(d.at   order by d.kcal desc, d.at) filter (where d.entry_count > 0))[1],
     (array_agg(d.kcal order by d.kcal desc, d.at) filter (where d.entry_count > 0))[1],
 
-    (select m.entries     from meals m),
-    (select m.home_cooked from meals m),
-
     -- Averaged over every day, unlike the calorie figures. A day nobody logged
     -- water on is a day they recorded none, and a hydration average that
     -- skipped it would only ever describe the days that went well.
@@ -476,9 +453,12 @@ CREATE FUNCTION public.review_summary (
   from days d;
 $function$;
 
-COMMENT ON FUNCTION public.review_summary(text,date,uuid) IS 'One review period folded to a single row: the calorie headline, the macro split, the lightest and heaviest day, what was cooked at home, the weigh-ins and the movement. The client decides which story steps to draw from which of these came back null.';
+COMMENT ON FUNCTION public.review_summary(text,date,uuid) IS 'One review period folded to a single row: the calorie headline, the macro split, the lightest and heaviest day, the weigh-ins and the movement. The client decides which story steps to draw from which of these came back null.';
 
 GRANT ALL ON FUNCTION public.review_summary(text, date, uuid) TO authenticated;
+
+ALTER TABLE public.user_settings
+  ADD COLUMN notify_monthly_report boolean DEFAULT true NOT NULL;
 -- The revokes the diff does not emit.
 --
 -- Postgres grants EXECUTE to PUBLIC on a newly created function and `anon`
