@@ -19,6 +19,7 @@ import { SessionProvider, useSession } from '../session'
 const authListeners: Array<(event: string, session: unknown) => void> = []
 const mockGetSession = jest.fn()
 const mockStoredSession = jest.fn()
+const mockWhenStoredSession = jest.fn()
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
@@ -33,6 +34,7 @@ jest.mock('@/lib/supabase', () => ({
     },
   },
   storedSession: () => mockStoredSession(),
+  whenStoredSession: () => mockWhenStoredSession(),
 }))
 
 jest.mock('../photos', () => ({ clearImageCache: jest.fn() }))
@@ -79,7 +81,13 @@ beforeEach(() => {
   authListeners.length = 0
   mockGetSession.mockResolvedValue({ data: { session: sessionFor('user-1') }, error: null })
   mockStoredSession.mockReturnValue(null)
+  // Shaped like the real one, which awaits the keychain read and then reports
+  // what it found — so a test that sets one of these has set both.
+  mockWhenStoredSession.mockImplementation(async () => mockStoredSession())
 })
+
+/** A promise that stays out, the way supabase's init does with no connection. */
+const neverAnswers = () => new Promise(() => {})
 
 /**
  * The one that made every other offline fix pointless.
@@ -191,6 +199,110 @@ it('reports no session when the answer really is that there is none', async () =
   await emit('INITIAL_SESSION', null)
 
   await waitFor(() => expect(screen.getByText('user:none')).toBeTruthy())
+})
+
+/**
+ * THE ONE THAT LEFT THE APP ON A SPINNER.
+ *
+ * Everything above is about what supabase ANSWERS with no connection. This is
+ * about how long it takes to answer at all: `_recoverAndRefresh` refreshes an
+ * access token within 90 seconds of expiring — an hour after the last launch,
+ * so ordinarily — and offline that is a backoff loop of at least thirty seconds
+ * before `getSession()` resolves, longer when the requests hang rather than
+ * fail. `loading` was true throughout, so the router's own offline branch and
+ * the diary sitting in MMKV were both below a screen nobody could get past.
+ */
+it('routes off storage while supabase is still trying to refresh', async () => {
+  mockGetSession.mockReturnValue(neverAnswers())
+  mockStoredSession.mockReturnValue(sessionFor('user-1'))
+
+  await mount(new QueryClient())
+
+  await waitFor(() => expect(screen.getByText('user:user-1')).toBeTruthy())
+})
+
+/** And a phone with nobody on it says so, rather than waiting to be told. */
+it('reports no session from storage while supabase is still trying', async () => {
+  mockGetSession.mockReturnValue(neverAnswers())
+
+  await mount(new QueryClient())
+
+  await waitFor(() => expect(screen.getByText('user:none')).toBeTruthy())
+})
+
+/**
+ * Storage is a stand-in, not a verdict. It cannot know about an account deleted
+ * while the app was closed, so the answer that has actually been to the server
+ * lands on top of it whenever it arrives.
+ */
+it('lets supabase overrule the storage answer when it lands', async () => {
+  let answer: (value: unknown) => void = () => {}
+  mockGetSession.mockReturnValue(new Promise((resolve) => (answer = resolve)))
+  mockStoredSession.mockReturnValue(sessionFor('user-1'))
+
+  await mount(new QueryClient())
+  await waitFor(() => expect(screen.getByText('user:user-1')).toBeTruthy())
+
+  await act(async () => {
+    answer({ data: { session: null }, error: new Error('refresh_token_not_found') })
+  })
+
+  await waitFor(() => expect(screen.getByText('user:none')).toBeTruthy())
+})
+
+/** And it does not undo one that got there first. */
+it('does not put storage on top of an answer that already arrived', async () => {
+  let read: (value: unknown) => void = () => {}
+  mockWhenStoredSession.mockReturnValue(new Promise((resolve) => (read = resolve)))
+  mockGetSession.mockResolvedValue({ data: { session: null }, error: null })
+
+  await mount(new QueryClient())
+  await waitFor(() => expect(screen.getByText('user:none')).toBeTruthy())
+
+  // The keychain read landing late, holding what a since-revoked session left
+  // there. The server has already said otherwise.
+  await act(async () => {
+    read(sessionFor('user-1'))
+  })
+
+  expect(screen.getByText('user:none')).toBeTruthy()
+})
+
+/**
+ * An EVENT is supabase speaking too, and it is the mouth a sign-out uses. A
+ * stand-in landing after one would put the account somebody just left back on
+ * screen — so the guard is about both, not only the call.
+ */
+it('does not put storage on top of an event that already arrived', async () => {
+  let read: (value: unknown) => void = () => {}
+  mockWhenStoredSession.mockReturnValue(new Promise((resolve) => (read = resolve)))
+  mockGetSession.mockReturnValue(neverAnswers())
+
+  await mount(new QueryClient())
+  await emit('SIGNED_OUT', null)
+  await waitFor(() => expect(screen.getByText('user:none')).toBeTruthy())
+
+  await act(async () => {
+    read(sessionFor('user-1'))
+  })
+
+  expect(screen.getByText('user:none')).toBeTruthy()
+})
+
+/**
+ * The cache belongs to whoever was signed in when the app was killed, and the
+ * storage answer is about that same person — so it must not read as a change of
+ * account and empty the diary this launch just rehydrated.
+ */
+it('keeps the rehydrated cache when the storage answer is the only one', async () => {
+  mockGetSession.mockReturnValue(neverAnswers())
+  mockStoredSession.mockReturnValue(sessionFor('user-1'))
+
+  const client = primed()
+  await mount(client)
+
+  await waitFor(() => expect(screen.getByText('user:user-1')).toBeTruthy())
+  expect(client.getQueryData(['profile', 'user-1'])).toBeDefined()
 })
 
 /**

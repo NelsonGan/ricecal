@@ -71,8 +71,8 @@ export function useDay(date: string) {
  */
 /**
  * `isPaused` is the other half of that bit, and it is the half that matters
- * offline: `offlineFirst` holds a query with no cached day rather than failing
- * it, so `isPending` stays true for as long as the phone has no connection. A
+ * offline: a query with no cached day is held rather than sent, so `isPending`
+ * stays true for as long as the phone has no connection. A
  * screen that reads pending as "an answer is coming" draws a skeleton nothing
  * is ever going to replace.
  */

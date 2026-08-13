@@ -48,8 +48,42 @@ export const queryClient = new QueryClient({
        * so the cache looks empty on next launch and the bug looks like MMKV.
        */
       gcTime: Number.POSITIVE_INFINITY,
-      // Serve cache first, revalidate when a connection exists.
-      networkMode: 'offlineFirst',
+      /**
+       * PAUSE WHEN THERE IS NO CONNECTION. DO NOT ASK ANYWAY.
+       *
+       * This was `offlineFirst`, which sounds like the offline-tolerant choice
+       * and is the opposite: it fires the FIRST request whatever the connection
+       * and pauses only the retries after it. Every offline branch in this app
+       * keys on a query being PAUSED — the router, Today, the search panel — and
+       * none of them could fire until that doomed first request had failed.
+       *
+       * Which took thirty seconds, because of what a request waits on. Supabase
+       * reads the access token before it sends anything, and a token within 90
+       * seconds of expiring is refreshed first — so a launch an hour after the
+       * last one, offline, queues every query in the app behind a backoff loop
+       * that gives up after `AUTO_REFRESH_TICK_DURATION_MS`. Measured on a cold
+       * launch with no connection: 30 seconds of spinner, then the offline
+       * screen the app could have drawn immediately.
+       *
+       * It also QUIETLY ATE THE DIARY. A query that fails ends `error`, and only
+       * a `success` is written to disk — so an offline launch persisted a
+       * snapshot with the failed queries missing, and the next offline launch
+       * had less to draw from than the one before. The profile went first: it is
+       * the one query whose screen redirects away while it is still in flight,
+       * and losing its last observer cancels the retry that would have paused,
+       * settling it as an error over perfectly good data. Offline worked once.
+       *
+       * Paused, none of that happens: nothing is sent, nothing fails, the cache
+       * stays `success` and goes on being written, and react-query resumes by
+       * itself the moment a connection returns. Cached data is served either
+       * way — the mode gates the REQUEST, never the read.
+       *
+       * The cost is trusting `onlineManager`: a NetInfo that wrongly reports
+       * offline pauses reads until it corrects itself. Mutations below have
+       * always trusted exactly that, so this is one signal for the whole app
+       * rather than a new dependency.
+       */
+      networkMode: 'online',
       staleTime: 30_000,
       retry: 2,
     },
@@ -79,11 +113,11 @@ export const persistOptions = {
      * Two kinds of answer live under that key and neither survives a relaunch
      * intact. A signed URL is a credential with an expiry measured in the
      * hour, and this cache survives for a week, so writing one to disk stores
-     * a string that is wrong by the time anything reads it — with
-     * `offlineFirst` a rehydrated dead URL is even served before the refetch
-     * that would replace it, which renders as a plate that failed to load. A
-     * path into expo-image's own cache is the other, and it belongs to an app
-     * container that a reinstall renumbers and an eviction can empty.
+     * a string that is wrong by the time anything reads it — a rehydrated dead
+     * URL is even served before the refetch that would replace it, which
+     * renders as a plate that failed to load. A path into expo-image's own
+     * cache is the other, and it belongs to an app container that a reinstall
+     * renumbers and an eviction can empty.
      *
      * It costs nothing to leave them out. `resolveStoredImage` asks the disk
      * before it asks the network, so the tile that wants one usually gets it
