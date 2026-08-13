@@ -58,12 +58,13 @@ export function CardStep({ title, summary, buckets, unit }: CardStepProps) {
           the foot of the card: the stat figures leave slack under themselves
           that the top edge does not. */}
       <Card contentClassName="gap-0 p-card pb-6">
-        <View className="gap-1">
-          {/* The heading alone on its line, which is the shape every other card
-              in a story already has — and what leaves the top right corner free
-              for the app's mark when this card is captured. The badge reads
-              better beside the figure it qualifies anyway: "377 under" against
-              "1,723" rather than against the name of the week. */}
+        {/* The heading is a HEADER ROW, not a label on the figure. It shares
+            its line with the app's mark in the captured picture, and a header
+            sitting on what it introduces reads as part of it — hence the space
+            under it, which every card in a story now carries. The badge reads
+            better beside the figure it qualifies anyway: "377 under" against
+            "1,723" rather than against the name of the week. */}
+        <View className="gap-4">
           <Text variant="overline" numberOfLines={1}>
             {title}
           </Text>

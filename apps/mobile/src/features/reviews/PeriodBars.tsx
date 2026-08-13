@@ -17,6 +17,8 @@ export type PeriodBarsProps = {
   bars: readonly PeriodBar[]
   height?: number
   accessibilityLabel?: string
+  /** Layout. Lands on the box the card measures, as everywhere else here. */
+  className?: string
 }
 
 /**
@@ -33,10 +35,10 @@ export type PeriodBarsProps = {
  * zero, 1,770 and 1,880 are two bars the eye reads as identical, which is the
  * one thing this chart exists to tell apart.
  */
-export function PeriodBars({ bars, height = 108, accessibilityLabel }: PeriodBarsProps) {
+export function PeriodBars({ bars, height = 108, accessibilityLabel, className }: PeriodBarsProps) {
   return (
     <View
-      className="flex-row items-end gap-2"
+      className={cn('flex-row items-end gap-2', className)}
       style={{ height }}
       accessible={Boolean(accessibilityLabel)}
       accessibilityRole={accessibilityLabel ? 'image' : undefined}

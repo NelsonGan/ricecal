@@ -49,10 +49,10 @@ export function FoodStep({ summary, meals }: FoodStepProps) {
     <>
       <Shareable title={t('reviews:food.title')}>
         {/* `gap-0` so the rows sit on their own dividers, and the list carries
-            the space the card's header would otherwise have had — a heading
-            hard against its first row is the one thing that gap was for. */}
+            the space under the heading itself — a header hard against its first
+            row reads as part of that row. */}
         <Card title={t('reviews:food.title')} contentClassName="gap-0 p-card">
-          <View className="mt-1">
+          <View className="mt-4">
             {meals.map((meal, index) => {
               const share = energyShare(meal)
 
@@ -105,7 +105,9 @@ export function FoodStep({ summary, meals }: FoodStepProps) {
 
       <Shareable title={t('reviews:food.macros')}>
         <Card title={t('reviews:food.macros')} contentClassName="gap-3 p-card">
-          <View className="h-5 flex-row overflow-hidden rounded-full bg-track">
+          {/* `mt-1` on top of the card's own gap: sixteen points under a
+              heading, which is what every card in a story gives its own. */}
+          <View className="mt-1 h-5 flex-row overflow-hidden rounded-full bg-track">
             {MACROS.map((macro) =>
               split[macro.key] <= 0 ? null : (
                 <View
