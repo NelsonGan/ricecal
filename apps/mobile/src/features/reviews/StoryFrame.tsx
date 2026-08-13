@@ -172,13 +172,9 @@ export function StoryFrame({ title, pages, onClose, labels, counter }: StoryFram
                reachable. */
             accessible={false}
           >
-            {/* No `gap`. Every card on a page is wrapped in a `Shareable` that
-                opens with a band of its own — the room its picture gives the
-                app's mark — and a gap on top of it would space the cards twice.
-                */}
             <View
-              className="flex-1 px-gutter pt-1"
-              style={{ paddingBottom: insets.bottom + spacing.gutter }}
+              className="flex-1 px-gutter pt-4"
+              style={{ gap: spacing.stack, paddingBottom: insets.bottom + spacing.gutter }}
             >
               {page.node}
             </View>
