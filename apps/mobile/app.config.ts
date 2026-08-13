@@ -47,6 +47,20 @@ const IS_SIMULATOR_VARIANT = process.env.APP_VARIANT === 'simulator'
  * Supabase project's redirect allow-list (apps/supabase/config.toml locally,
  * Authentication → URL Configuration on the hosted project) or the link falls
  * back to `site_url` and dev sign-in silently stops working.
+ *
+ * THE SUFFIX COSTS YOU IN-APP PURCHASES, and there is no way round that. A
+ * store keys its products to a bundle id, and `com.nelsongan.ricecal.dev` is
+ * not an app in App Store Connect — so StoreKit has nothing to return and
+ * RevenueCat reports "none of the products could be fetched", however
+ * correctly the products are set up. A StoreKit configuration file does not
+ * help either: that is an Xcode SCHEME setting, so it applies to builds
+ * launched from Xcode and not to an EAS build installed on a phone.
+ *
+ * The `development-purchases` profile in eas.json is the way round it: the
+ * same dev client, without APP_VARIANT, so it carries the real bundle id and
+ * can fetch real products. It cannot sit on a device beside the TestFlight
+ * build, which is the whole reason this variant exists — so you get
+ * coexistence or working purchases, and have to pick per build.
  */
 const IS_DEV_VARIANT = process.env.APP_VARIANT === 'development'
 
