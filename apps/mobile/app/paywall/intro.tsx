@@ -1,10 +1,9 @@
-import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { type Plan, useAwaitEntitlement, usePlanPrices } from '@/data'
+import { type Plan, useAwaitEntitlement } from '@/data'
 import {
   isUserCancelled,
   PurchasesUnavailable,
@@ -12,10 +11,8 @@ import {
   purchasesAvailable,
   restorePurchases,
 } from '@/data/purchases'
-import { CheckList, PlanPicker } from '@/features/shared'
-import { Button, Icon, Screen, Text, useToast } from '@/ui'
-
-const MASCOT = require('../../assets/brand/mascot.png')
+import { ProPitch } from '@/features/paywall'
+import { Button, Screen, Text, useToast } from '@/ui'
 
 /**
  * THE PAYWALL AT THE END OF ONBOARDING.
@@ -45,7 +42,6 @@ export default function IntroPaywall() {
   const toast = useToast()
   const awaitEntitlement = useAwaitEntitlement()
   const [plan, setPlan] = useState<Plan>('yearly')
-  const { data: prices } = usePlanPrices()
 
   const lifetime = plan === 'lifetime'
 
@@ -95,15 +91,6 @@ export default function IntroPaywall() {
     toast.show({ title: t('paywall:hard.restored'), tone: 'success' })
   }
 
-  const priceString = prices?.[plan]?.priceString
-  const smallPrint = !priceString
-    ? t('paywall:hard.smallPrintPending')
-    : plan === 'lifetime'
-      ? t('paywall:hard.smallPrintLifetime', { price: priceString })
-      : plan === 'yearly'
-        ? t('paywall:hard.smallPrintYearly', { price: priceString })
-        : t('paywall:hard.smallPrintMonthly', { price: priceString })
-
   return (
     <Screen
       footer={
@@ -124,42 +111,11 @@ export default function IntroPaywall() {
         </View>
       }
     >
-      <View className="items-center gap-2.5">
-        <Image source={MASCOT} style={{ width: 72, height: 72 }} contentFit="contain" />
-        <Text variant="title" className="text-center">
-          {t('paywall:intro.title')}
-        </Text>
-        <Text variant="meta" className="text-center">
-          {t('paywall:intro.body')}
-        </Text>
-      </View>
+      <ProPitch plan={plan} onPlanChange={setPlan} />
 
-      <CheckList
-        items={[
-          t('paywall:hard.perks.unlimited'),
-          t('paywall:hard.perks.scanning'),
-          t('paywall:hard.perks.database'),
-        ]}
-      />
-
-      <PlanPicker showLifetime value={plan} onChange={setPlan} />
-
-      <View className="items-center gap-1.5">
-        <View className="flex-row items-center gap-2">
-          <Icon set="system" name="shield" size={16} />
-          <Text variant="caption" className="text-pandan-ink">
-            {t('paywall:hard.assurance')}
-          </Text>
-        </View>
-        <Text variant="caption" className="text-center text-faint">
-          {/* The sentence needs the number, so it waits for it rather than
-              printing half of itself. */}
-          {smallPrint}
-        </Text>
-        <Text variant="caption" className="text-center text-faint">
-          {t('paywall:intro.laterNote')}
-        </Text>
-      </View>
+      <Text variant="caption" className="text-center text-faint">
+        {t('paywall:intro.laterNote')}
+      </Text>
     </Screen>
   )
 }
