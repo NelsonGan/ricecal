@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
@@ -14,6 +15,7 @@ const TRIAL_DAYS = 7
 /** U6 SUBSCRIPTION */
 export default function SubscriptionScreen() {
   const { t } = useTranslation(['profile', 'paywall', 'common'])
+  const router = useRouter()
   const goBack = useBack('/me')
   const { data: subscription } = useSubscription()
   const { data: usage } = useAiUsage()
@@ -23,6 +25,17 @@ export default function SubscriptionScreen() {
   // A one-off purchase has no period, no renewal and nothing to switch to, so
   // three things on this screen have to say something else.
   const lifetime = subscription?.plan === 'lifetime'
+
+  /**
+   * Somebody who has never paid, or whose subscription has lapsed.
+   *
+   * They reach this screen from the Me tab like everybody else, and until now
+   * the only thing on it was "Switch to yearly" — which opens the store to
+   * change a subscription that does not exist. This is also the ONLY way back
+   * to `/paywall`: it used to be reachable from the read-only preview screen,
+   * and when that went the standing paywall became a route nothing linked to.
+   */
+  const entitled = subscription?.status === 'trial' || subscription?.status === 'active'
 
   // Whole days left, from the instant the store reported. Not a stored counter:
   // one would need something to decrement it every midnight.
@@ -48,13 +61,19 @@ export default function SubscriptionScreen() {
   return (
     <Screen
       footer={
-        <Button variant="neutral" fullWidth onPress={switchPlan}>
-          {lifetime
-            ? t('profile:subscription.manage')
-            : yearly
-              ? t('profile:subscription.switchMonthly')
-              : t('profile:subscription.switchYearly')}
-        </Button>
+        entitled ? (
+          <Button variant="neutral" fullWidth onPress={switchPlan}>
+            {lifetime
+              ? t('profile:subscription.manage')
+              : yearly
+                ? t('profile:subscription.switchMonthly')
+                : t('profile:subscription.switchYearly')}
+          </Button>
+        ) : (
+          <Button fullWidth onPress={() => router.push('/paywall')}>
+            {t('paywall:ended.resume')}
+          </Button>
+        )
       }
     >
       <AppBar
