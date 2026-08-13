@@ -146,6 +146,9 @@ export const profile = {
     renews: 'Renews at {{price}}.',
     /** Lifetime does not renew, and saying it does would be the app lying. */
     neverRenews: 'Paid once. Nothing renews.',
+    /** The same card for somebody who has never subscribed. */
+    freeBody: 'Search and browse are free. Logging a meal needs Pro.',
+    whatYouGet: 'WHAT YOU GET WITH PRO',
     yourPlan: 'YOUR PLAN',
     plan: 'Plan',
     perMonth: 'Per month',
