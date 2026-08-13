@@ -1,9 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 
+import i18n from '@/i18n'
 import { supabase } from '@/lib/supabase'
+import { useToast } from '@/ui'
 import { keys } from './keys'
 import { useRefiningEntries } from './refining'
+import { AiLimitError, NotEntitledError, refusalFrom } from './refusals'
 import { useUserId } from './session'
 
 /**
@@ -213,6 +216,7 @@ export function useRefineEntry() {
   const userId = useUserId()
   const queryClient = useQueryClient()
   const refining = useRefiningEntries()
+  const toast = useToast()
 
   return useCallback(
     (input: {
@@ -228,7 +232,10 @@ export function useRefineEntry() {
         const { data, error } = await supabase.functions.invoke<RefineResponse>('scan-refine', {
           body: { food_log_id: input.entryId, instruction: input.instruction },
         })
-        if (error) throw error
+        if (error) {
+          const refusal = await refusalFrom(error)
+          throw refusal ?? error
+        }
         if (!data?.ok) throw new Error(data?.error ?? 'refine failed')
         // Refetch BEFORE the loading state lifts, so the row goes straight
         // from "reworking" to its corrected self with no stale frame between.
@@ -239,6 +246,7 @@ export function useRefineEntry() {
         queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
         queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
         queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+        queryClient.invalidateQueries({ queryKey: keys.aiUsage(userId) })
         return data
       }
 
@@ -246,14 +254,25 @@ export function useRefineEntry() {
         .then((data) => {
           if (data.applied === false) input.onNotApplied?.()
         })
-        .catch(() => {
+        .catch((error: unknown) => {
+          // The two refusals ARE announced, unlike everything else here. A
+          // network failure leaves the same words worth sending again, so the
+          // row going back to how it was says enough; being out of budget or
+          // out of subscription does not improve by retrying, and silence
+          // there reads as the button not working.
+          if (error instanceof AiLimitError) {
+            toast.show({ title: i18n.t('paywall:limit.reached'), tone: 'error' })
+            queryClient.invalidateQueries({ queryKey: keys.aiUsage(userId) })
+            return
+          }
+          if (error instanceof NotEntitledError) {
+            toast.show({ title: i18n.t('paywall:limit.notEntitled'), tone: 'warning' })
+          }
           // The entry is untouched on the server; showing it as it was IS the
-          // honest failure state. Not announced, because a network failure is
-          // not the app declining to understand — the row is unchanged and the
-          // same words can simply be sent again.
+          // honest failure state.
         })
         .finally(() => refining.remove(input.entryId))
     },
-    [queryClient, refining, userId],
+    [queryClient, refining, toast, userId],
   )
 }

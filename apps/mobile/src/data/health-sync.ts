@@ -62,22 +62,27 @@ import { useUserId } from './session'
 /**
  * How far back a first connection reads.
  *
- * A month, not a year. The backfill exists so the Activity tab has something in
- * it on the day it is turned on — an empty tab reads as broken rather than as
- * new — and a month of days answers that completely: every range the app draws
- * is 7d, 30d or a rolling average over them, so the twelfth month back was read,
- * written, and then shown on no screen.
+ * A WEEK. It was a year, then a month, and each cut was the same argument
+ * carried further: the backfill exists so the Activity tab has something in it
+ * on the day it is turned on — an empty tab reads as broken rather than as new
+ * — and a week answers that. Nothing about future syncing is affected; the
+ * rolling window below goes on reading forward for as long as the app is
+ * installed.
  *
  * It is also the difference between a connect that finishes while the user is
- * looking at it and one they wait through. This ask now sits INSIDE onboarding,
- * a screen away from an account that is a minute old, and thirteen chunked
- * queries against HealthKit is the wrong thing to put there.
+ * looking at it and one they wait through. This ask sits INSIDE onboarding, a
+ * screen away from an account a minute old, and a week is a single query.
+ *
+ * What it costs is the 30-day range on the Activity tab, which starts its life
+ * three-quarters empty and fills in over the following weeks. That is the
+ * accepted trade: a range that fills up is legible, while a permission screen
+ * somebody waits through during their first minute is not.
  *
  * Deeper history is not lost, only unread: the store still has it, and
  * `backfilled_from` records how far this account has actually gone, so a future
- * screen that wants a year can ask for the part it has not seen.
+ * screen that wants more can ask for the part it has not seen.
  */
-const BACKFILL_DAYS = 30
+const BACKFILL_DAYS = 7
 
 /**
  * How far back every incremental pass re-reads. See the header — this is the
@@ -320,7 +325,7 @@ export async function syncRange(
   for (const chunk of chunks) {
     // Only chunks inside the retention window pay for the hourly read: 24 rows
     // a day to answer a question only ever asked about this month. The backfill
-    // is a month deep now, so in practice every chunk qualifies — the guard
+    // is a week deep now, so in practice every chunk qualifies — the guard
     // stays because it is the incremental pass and any future deeper backfill
     // that it exists for, not the current value of `BACKFILL_DAYS`.
     const withHours = chunk.to >= hourlyFrom

@@ -9,6 +9,7 @@
 // The reviewer half is tested for one property only, and it is the one that
 // matters: nothing but an explicit `approved: true` may come back approved.
 
+import { nullMeter } from './entitlement.ts'
 import {
   type DraftIngredient,
   reviewRecipe,
@@ -102,11 +103,15 @@ Deno.test('reviewRecipe approves on an explicit true and on nothing else', async
   }
 
   for (const answer of [{}, { approved: 'yes' }, { approved: 1 }, { approved: null }, null]) {
-    const verdict = await reviewRecipe(recipe, { review: answer })
+    const verdict = await reviewRecipe(recipe, { review: answer }, nullMeter())
     eq(verdict.approved, false, `${JSON.stringify(answer)} must not approve`)
   }
 
-  eq((await reviewRecipe(recipe, { review: { approved: true } })).approved, true, 'an explicit yes')
+  eq(
+    (await reviewRecipe(recipe, { review: { approved: true } }, nullMeter())).approved,
+    true,
+    'an explicit yes',
+  )
 })
 
 // A failure is not a rejection: the caller turns a throw into "still pending",
@@ -114,7 +119,11 @@ Deno.test('reviewRecipe approves on an explicit true and on nothing else', async
 // was turned down by a reviewer that never read it.
 Deno.test('reviewRecipe throws rather than answering when the call fails', async () => {
   try {
-    await reviewRecipe({ name: 'x', servings: 1, steps: '', ingredients: [] }, { fail: 'review' })
+    await reviewRecipe(
+      { name: 'x', servings: 1, steps: '', ingredients: [] },
+      { fail: 'review' },
+      nullMeter(),
+    )
   } catch {
     return
   }

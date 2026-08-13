@@ -64,7 +64,7 @@ it('walks all four cards and ends on the diary', async () => {
   expect(screen.queryByText('Skip the tour')).toBeNull()
 
   await user.press(screen.getByText('Log my first meal'))
-  expect(mockReplace).toHaveBeenCalledWith('/today')
+  expect(mockReplace).toHaveBeenCalledWith('/paywall/intro')
 })
 
 it('lets the tour be skipped from the first card', async () => {
@@ -72,10 +72,14 @@ it('lets the tour be skipped from the first card', async () => {
 
   await user.press(screen.getByText('Skip the tour'))
 
-  expect(mockReplace).toHaveBeenCalledWith('/today')
+  expect(mockReplace).toHaveBeenCalledWith('/paywall/intro')
 })
 
-it('offers the read-only day only at the end', async () => {
+// Both exits land on the paywall now. The tour used to fork — one button to
+// Today, the other to a read-only preview of it — and the paywall sits between
+// the tour and the app whichever was pressed, with its own "Maybe later"
+// leading to the real Today.
+it('leaves for the paywall however the last card is answered', async () => {
   await render(<Tutorial />)
 
   await user.press(screen.getByText('What happens next?'))
@@ -83,5 +87,5 @@ it('offers the read-only day only at the end', async () => {
   await user.press(screen.getByText('One more thing'))
   await user.press(screen.getByText('Explore first'))
 
-  expect(mockReplace).toHaveBeenCalledWith('/preview')
+  expect(mockReplace).toHaveBeenCalledWith('/paywall/intro')
 })

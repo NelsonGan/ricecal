@@ -25,6 +25,7 @@ import {
   InlineCamera,
   QuickAction,
 } from '@/features/logging'
+import { useRequirePro } from '@/features/paywall'
 import { RecipePanel } from '@/features/recipes'
 import { useBack } from '@/lib/navigation'
 import { sumMacros } from '@/lib/nutrition'
@@ -114,6 +115,8 @@ export default function LogSheet() {
    * portion, done — and the alternative was the flash the user saw: the sheet
    * dismissing before a search screen pushed in behind it.
    */
+  const requirePro = useRequirePro()
+
   const openFood = (foodId: string) =>
     router.replace({ pathname: '/log/food/[id]', params: { id: foodId } })
 
@@ -121,11 +124,13 @@ export default function LogSheet() {
   // sheet adds is a recipe and the other is a catalogue dish. They build one
   // the same way and nothing downstream needs to know which it was.
   const add = (snapshot: LogSnapshot) => {
+    if (!requirePro('log')) return
     logFood.mutate({ snapshot, logDate: selectedDate, source: 'quickAdd' })
     goBack()
   }
 
   const repeatYesterday = () => {
+    if (!requirePro('log')) return
     for (const entry of yesterdayEntries) {
       logFood.mutate({
         // A copy of yesterday's snapshot, not a fresh lookup. The dish may have
@@ -236,6 +241,11 @@ export default function LogSheet() {
         // ignore it. See `useSnapFood`.
         <InlineCamera
           onCapture={(photoUri) => {
+            // The viewfinder is free and the shutter is not. Framing the plate
+            // is most of what makes the feature legible, so the camera opens
+            // for everybody and the paywall arrives at the moment a request
+            // would have been sent.
+            if (!requirePro('photo')) return
             snapFood({ photoUri, logDate: selectedDate })
             goBack()
           }}
@@ -248,6 +258,7 @@ export default function LogSheet() {
         <DescribePanel
           autoFocus
           onSubmit={(text) => {
+            if (!requirePro('describe')) return
             describeFood({ text, logDate: selectedDate })
             goBack()
           }}

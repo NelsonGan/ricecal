@@ -238,6 +238,13 @@ function RootStack() {
           a horizontal swipe there means "next step" and a pushed screen would
           spend that gesture going back. See `reviews/_layout.tsx`. */}
       <Stack.Screen name="reviews" />
+      {/* The one paywall that is not dismissable by gesture: it replaces the
+          tour at the end of onboarding, so there is nothing behind it to swipe
+          back to. "Maybe later" is the way out and it is on the screen. */}
+      <Stack.Screen
+        name="paywall/intro"
+        options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
+      />
       <Stack.Screen name="paywall/index" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/gate" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/welcome" options={{ presentation: 'fullScreenModal' }} />

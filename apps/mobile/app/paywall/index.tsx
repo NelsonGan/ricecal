@@ -65,7 +65,7 @@ export default function HardPaywall() {
       footer={
         <View className="gap-1.5">
           <Button fullWidth onPress={start}>
-            {t('paywall:hard.start')}
+            {plan === 'lifetime' ? t('paywall:hard.startLifetime') : t('paywall:hard.start')}
           </Button>
           <Button variant="ghost" fullWidth onPress={restore}>
             {t('paywall:hard.restore')}
@@ -97,7 +97,7 @@ export default function HardPaywall() {
         ]}
       />
 
-      <PlanPicker value={plan} onChange={setPlan} />
+      <PlanPicker showLifetime value={plan} onChange={setPlan} />
 
       <View className="items-center gap-1.5">
         <View className="flex-row items-center gap-2">
@@ -107,7 +107,11 @@ export default function HardPaywall() {
           </Text>
         </View>
         <Text variant="caption" className="text-center text-faint">
-          {t('paywall:hard.smallPrint')}
+          {plan === 'lifetime'
+            ? t('paywall:hard.smallPrintLifetime')
+            : plan === 'yearly'
+              ? t('paywall:hard.smallPrintYearly')
+              : t('paywall:hard.smallPrintMonthly')}
         </Text>
       </View>
     </Screen>

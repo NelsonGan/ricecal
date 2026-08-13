@@ -10,7 +10,7 @@ import {
   useState,
 } from 'react'
 import { AppState } from 'react-native'
-
+import { forgetPurchaser, identifyPurchaser } from '@/lib/revenuecat'
 import { storedSession, supabase, whenStoredSession } from '@/lib/supabase'
 import { clearImageCache } from './photos'
 
@@ -150,6 +150,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // of an account they do not age out by themselves. See `clearImageCache`
       // for why this is the leaving edge only.
       if (event === 'SIGNED_OUT') void clearImageCache()
+
+      // RevenueCat has to be told who this is, or a purchase arrives at the
+      // webhook under an anonymous id with no account to credit. Tied to the
+      // identity changing rather than to the event, for the same reason the
+      // cache clearing above is: `SIGNED_IN` fires on every cold launch, and
+      // calling `logIn` with the id RevenueCat already holds is a wasted round
+      // trip on the startup path.
+      if (changed || cacheOwner.current === null) {
+        if (nextUserId) void identifyPurchaser(nextUserId)
+        else if (event === 'SIGNED_OUT') void forgetPurchaser()
+      }
     })
 
     return () => {

@@ -48,6 +48,13 @@ import {
   resolveItem,
   writeIngredients,
 } from '../_shared/cascade.ts'
+import {
+  AiLimitReached,
+  createMeter,
+  NotEntitled,
+  nullMeter,
+  requireEntitlement,
+} from '../_shared/entitlement.ts'
 import { interpretInstruction, type MockSteer, mockActive } from '../_shared/llm.ts'
 
 type RefineRequest = {
@@ -235,6 +242,21 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   )
 
+  // Correcting a meal by describing it is a model call like any other, so it
+  // asks the same two questions scan-meal asks, in the same place and for the
+  // same reasons. Editing the portion by hand on the detail screen is NOT
+  // gated: no model is involved, and a subscription that lapses should not
+  // trap somebody's existing diary behind a paywall.
+  try {
+    await requireEntitlement(db, userId)
+  } catch (error) {
+    if (error instanceof NotEntitled) {
+      return json({ ok: false, code: 'not_entitled', error: 'subscription required' }, 402)
+    }
+    throw error
+  }
+  const meter = mockActive() ? nullMeter() : createMeter(db, userId)
+
   // The entry, with enough context for the interpreter. service_role reads it,
   // so ownership is checked explicitly — this function must not be a way to
   // edit someone else's diary.
@@ -299,6 +321,7 @@ Deno.serve(async (req: Request) => {
       },
       instruction,
       mock,
+      meter,
     )
 
     // The eval row for every refine, applied or not: "what people correct" is
@@ -603,7 +626,8 @@ Deno.serve(async (req: Request) => {
       const scanId = entry.scan_id ?? crypto.randomUUID()
       const item = interpretation.item
       const resolved =
-        (await resolveItem(db, scanId, item, mock)) ?? (await resolveByArchetype(db, item, mock))
+        (await resolveItem(db, scanId, item, mock, meter)) ??
+        (await resolveByArchetype(db, item, mock, meter))
 
       const { error } = await db
         .from('food_logs')
@@ -665,6 +689,22 @@ Deno.serve(async (req: Request) => {
     await recordRefine(null, null, null)
     return json({ ok: true, applied: false, reason: interpretation.reason })
   } catch (error) {
+    // Out of budget answers with a code and an HTTP status, unlike every other
+    // failure here. The rest of them are "we could not read that instruction",
+    // which the sheet shows as a reason and the user can reword; this one is
+    // not about the words at all, and rewording will not help.
+    if (error instanceof AiLimitReached) {
+      return json(
+        {
+          ok: false,
+          code: 'ai_limit',
+          used: error.used,
+          limit: error.monthlyLimit,
+          error: error.message,
+        },
+        429,
+      )
+    }
     console.error('[scan-refine] failed:', error)
     return json({
       ok: true,

@@ -62,20 +62,23 @@ export default function TutorialStep() {
    * are still underneath this screen on the stack. Pushing Today over them left
    * an edge swipe on the tab bar that walked back into onboarding, which is what
    * `gestureEnabled: false` on the tabs was already there to catch.
+   *
+   * BOTH BUTTONS GO THE SAME PLACE, which is new. The tour used to fork here —
+   * "log my first meal" to Today, "explore" to a read-only preview of it — and
+   * the paywall now sits between the tour and the app for either answer. Its
+   * own "Maybe later" is the explore path, and it lands on the real Today
+   * rather than a mock of one, so the fork had nothing left to decide.
    */
-  const leave = (to: '/today' | '/preview') => router.replace(to)
+  const leave = () => router.replace('/paywall/intro')
 
   return (
     <Screen
       footer={
         <View className="gap-1.5">
-          <Button
-            fullWidth
-            onPress={() => (last ? leave('/today') : setIndex((current) => current + 1))}
-          >
+          <Button fullWidth onPress={() => (last ? leave() : setIndex((current) => current + 1))}>
             {t(FORWARD[card])}
           </Button>
-          <Button variant="ghost" fullWidth onPress={() => leave(last ? '/preview' : '/today')}>
+          <Button variant="ghost" fullWidth onPress={leave}>
             {last ? t('onboarding:tutorial.adjust.explore') : t('onboarding:tutorial.skip')}
           </Button>
         </View>

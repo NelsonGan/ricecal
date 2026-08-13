@@ -5,6 +5,7 @@ import { unwrap, unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
 import { toIcon, toRecipe, toRecipeIngredient } from './mappers'
 import { removeMealPhoto } from './photos'
+import { refusalFrom } from './refusals'
 import { useUserId } from './session'
 import type { IconRef, Macros, Recipe, RecipeIngredient, RecipeUnit } from './types'
 
@@ -413,7 +414,16 @@ export function useReadRecipe() {
             ? { action: 'read', photo_path: source.photoPath }
             : { action: 'read', text: source.text },
       })
-      if (error) return null
+      // A refusal is thrown rather than folded into `null`. Null means "the
+      // model could not read it", which the form answers by letting the user
+      // fill it in themselves — and telling somebody to type it out by hand is
+      // the wrong answer to "you have not subscribed" and to "you are out of
+      // requests", both of which the caller turns into something actionable.
+      if (error) {
+        const refusal = await refusalFrom(error)
+        if (refusal) throw refusal
+        return null
+      }
 
       const result = data as {
         ok?: boolean

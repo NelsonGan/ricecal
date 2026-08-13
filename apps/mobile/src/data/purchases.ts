@@ -1,6 +1,7 @@
 import { Linking, Platform } from 'react-native'
 
 import { env, isConfigured } from '@/lib/env'
+import { purchasesInitialised } from '@/lib/revenuecat'
 import type { Plan } from './types'
 
 /**
@@ -19,7 +20,11 @@ import type { Plan } from './types'
 
 export function purchasesAvailable(): boolean {
   const key = Platform.OS === 'ios' ? env.EXPO_PUBLIC_RC_IOS_KEY : env.EXPO_PUBLIC_RC_ANDROID_KEY
-  return isConfigured(key)
+  // Both halves matter. The key being real is not enough on a build whose
+  // native module is missing: `configure` never ran, so every call below would
+  // throw at the tap rather than at start, which is the failure this whole
+  // module is shaped to avoid.
+  return isConfigured(key) && purchasesInitialised()
 }
 
 export class PurchasesUnavailable extends Error {
@@ -45,8 +50,18 @@ export async function purchasePlan(plan: Plan): Promise<void> {
   const current = offerings.current
   if (!current) throw new Error('No offering is live')
 
+  // Named packages first, `availablePackages` as the fallback. RevenueCat only
+  // fills `annual` / `monthly` / `lifetime` when the package carries the
+  // matching `$rc_` identifier, and a renamed package would otherwise make the
+  // button do nothing with no way to tell why.
+  const byLookupKey = (key: string) => current.availablePackages.find((p) => p.identifier === key)
+
   const target =
-    plan === 'yearly' ? (current.annual ?? current.availablePackages[0]) : current.monthly
+    plan === 'lifetime'
+      ? (current.lifetime ?? byLookupKey('$rc_lifetime'))
+      : plan === 'yearly'
+        ? (current.annual ?? byLookupKey('$rc_annual'))
+        : (current.monthly ?? byLookupKey('$rc_monthly'))
   if (!target) throw new Error('That plan is not available')
 
   await Purchases.purchasePackage(target)
