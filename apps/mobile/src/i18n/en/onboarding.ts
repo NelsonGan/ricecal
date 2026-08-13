@@ -218,32 +218,4 @@ export const onboarding = {
       email: 'That does not look like an email address.',
     },
   },
-
-  trial: {
-    notConfigured: 'Purchases are not set up in this build yet.',
-    title: 'Start logging with RiceCal Pro',
-    perks: {
-      unlimited: 'Unlimited meal logging',
-      scanning: 'Photo scanning',
-      database: 'Local hawker food database',
-    },
-    yearly: 'Yearly',
-    yearlyBadge: 'SAVE 45%',
-    yearlyPrice: 'RM99.90',
-    yearlyPerMonth: 'RM8.33 a month',
-    monthly: 'Monthly',
-    monthlyPrice: 'RM14.90 a month',
-    assurance: 'No commitment, cancel any time',
-    smallPrint: 'Free for 3 days, then RM99.90 a year.',
-    start: 'Start free trial',
-    later: 'Look around first',
-  },
-
-  viewOnly: {
-    banner: 'Preview mode, logging locked',
-    explainer: 'This is your day. Start your free trial to add to it.',
-    lockedTitle: 'Logging is locked',
-    lockedBody: 'Start your free trial to log your own meals.',
-    unlock: 'Start free trial',
-  },
 } as const

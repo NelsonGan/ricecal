@@ -2,41 +2,76 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { Plan } from '@/data'
+import { usePlanPrices } from '@/data'
 import { Badge, cn, Squish, Text } from '@/ui'
+
+/**
+ * What a price reads as before the store has answered.
+ *
+ * A dash rather than a guess, which is the same symbol a stat tile uses for a
+ * missing measurement. The alternative was a figure written in this repo, and
+ * it was wrong for every Malaysian user (shown dollars, charged ringgit) and
+ * wrong again whenever a price moved without an app release.
+ */
+const PENDING = '—'
 
 export type PlanPickerProps = {
   value: Plan
   onChange: (plan: Plan) => void
+  /**
+   * Whether to offer the one-off purchase.
+   *
+   * Off in the places that are selling a TRIAL — the onboarding step and the
+   * feature gates both lead with "free for 7 days", and lifetime has no trial
+   * to offer. Putting it there would make the button under it lie about one of
+   * the three options.
+   */
+  showLifetime?: boolean
   className?: string
 }
 
 /**
- * Yearly or monthly.
+ * Yearly, monthly, and optionally lifetime.
  *
- * A pair of radio cards rather than `RadioGroup`, because each option carries a
- * price block and a savings badge that a plain label cannot hold. The selection
- * state and the accessibility role are the same either way.
+ * Radio cards rather than `RadioGroup`, because each option carries a price
+ * block and a badge that a plain label cannot hold. The selection state and the
+ * accessibility role are the same either way.
  */
-export function PlanPicker({ value, onChange, className }: PlanPickerProps) {
+export function PlanPicker({ value, onChange, showLifetime = false, className }: PlanPickerProps) {
   const { t } = useTranslation('paywall')
+  const { data: prices } = usePlanPrices()
+
+  // Computed by the store's own numbers, so it cannot drift from the prices
+  // beside it the way a hardcoded "SAVE 50%" did.
+  const saving = prices?.yearlySavingPercent
 
   return (
     <View className={cn('gap-3', className)} accessibilityRole="radiogroup">
       <PlanCard
         selected={value === 'yearly'}
         onPress={() => onChange('yearly')}
-        title={t('hard.yearly')}
-        badge={t('hard.yearlyBadge')}
-        price={t('hard.yearlyPrice')}
-        caption={t('hard.yearlyPerMonth')}
+        title={t('plans.yearly')}
+        badge={saving && saving > 0 ? t('plans.yearlyBadge', { percent: saving }) : undefined}
+        price={prices?.yearly?.priceString ?? PENDING}
+        caption={prices?.yearly?.perMonthString}
       />
       <PlanCard
         selected={value === 'monthly'}
         onPress={() => onChange('monthly')}
-        title={t('hard.monthly')}
-        detail={t('hard.monthlyBilling')}
-        price={t('hard.monthlyPrice')}
+        title={t('plans.monthly')}
+        detail={t('plans.monthlyBilling')}
+        price={prices?.monthly?.priceString ?? PENDING}
       />
+      {showLifetime ? (
+        <PlanCard
+          selected={value === 'lifetime'}
+          onPress={() => onChange('lifetime')}
+          title={t('plans.lifetime')}
+          badge={t('plans.lifetimeBadge')}
+          detail={t('plans.lifetimeDetail')}
+          price={prices?.lifetime?.priceString ?? PENDING}
+        />
+      ) : null}
     </View>
   )
 }

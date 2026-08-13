@@ -25,6 +25,13 @@
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
+import {
+  AiLimitReached,
+  createMeter,
+  NotEntitled,
+  nullMeter,
+  requireEntitlement,
+} from '../_shared/entitlement.ts'
 import { mockActive } from '../_shared/llm.ts'
 import { ownsKey, readObject } from '../_shared/r2.ts'
 import {
@@ -132,6 +139,13 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   )
 
+  // Every request to OpenRouter is metered, both actions, whoever asked. The
+  // ENTITLEMENT check below is narrower and only covers `read`: filling a form
+  // in from a photograph is the same kind of AI convenience the scan is, while
+  // the publish review is a gate the app runs on its own behalf and must go on
+  // running for anybody who can reach the publish button.
+  const meter = mockActive() ? nullMeter() : createMeter(db, userId)
+
   // -- READ: a photograph of the pot, or a description of it, becomes a
   // filled-in form. One action rather than two, because everything after the
   // first model call is identical — the shaping, the per-unit division, the
@@ -155,9 +169,14 @@ Deno.serve(async (req: Request) => {
     }
 
     try {
+      await requireEntitlement(db, userId)
       const draft = described
-        ? await describeRecipe(described, mock)
-        : await readRecipePhoto(mockActive() ? null : await fetchPhoto(photoPath as string), mock)
+        ? await describeRecipe(described, mock, meter)
+        : await readRecipePhoto(
+            mockActive() ? null : await fetchPhoto(photoPath as string),
+            mock,
+            meter,
+          )
 
       // Nothing cookable in it. Not an error — the user pointed the camera at
       // something, or typed something that is not food, and the honest answer
@@ -188,6 +207,25 @@ Deno.serve(async (req: Request) => {
       })
     } catch (error) {
       console.error('[recipes/read]', error)
+      // The two refusals answer with a code and a status, so the form can send
+      // the user to the paywall or say what happened. Everything else here is
+      // "the model could not read it", which the form answers by letting them
+      // fill it in themselves.
+      if (error instanceof NotEntitled) {
+        return json({ ok: false, code: 'not_entitled', error: 'subscription required' }, 402)
+      }
+      if (error instanceof AiLimitReached) {
+        return json(
+          {
+            ok: false,
+            code: 'ai_limit',
+            used: error.used,
+            limit: error.monthlyLimit,
+            error: error.message,
+          },
+          429,
+        )
+      }
       return json({
         ok: false,
         error: error instanceof Error ? error.message : 'could not read the photo',
@@ -228,7 +266,7 @@ Deno.serve(async (req: Request) => {
 
     let verdict: { approved: boolean; reason: string }
     try {
-      verdict = await reviewRecipe(input, mock)
+      verdict = await reviewRecipe(input, mock, meter)
     } catch (error) {
       // The gate failed shut. The recipe stays `pending` and so stays out of
       // the community tab; the client is told to try again rather than told it

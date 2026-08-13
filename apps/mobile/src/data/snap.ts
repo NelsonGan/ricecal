@@ -10,9 +10,11 @@ import {
   scheduleScanNotice,
 } from '@/lib/notifications'
 import { supabase } from '@/lib/supabase'
+import { useToast } from '@/ui'
 import { keys } from './keys'
 import { usePendingSnaps } from './pending-snaps'
 import { uploadMealPhoto } from './photos'
+import { AiLimitError, NotEntitledError, refusalFrom } from './refusals'
 import { useUserId } from './session'
 
 export type SnapInput = {
@@ -77,6 +79,13 @@ async function scanMeal(input: {
     },
   })
   if (error) {
+    // A refusal, before anything else. These are the two 4xx answers the
+    // endpoint gives BEFORE the cascade starts, so nothing was written and
+    // nothing is coming — settled, like the rest of the statuses below, but
+    // carrying which refusal it was so the row can say something better than
+    // "scan failed".
+    const refusal = await refusalFrom(error)
+    if (refusal) throw settled(refusal, true)
     // A STATUS is an answer. This endpoint does not return an HTTP error once
     // the caller is authenticated and the body parses — that is its contract —
     // so a 4xx here means "not signed in" or "not your photo", and no entry is
@@ -113,6 +122,11 @@ function useRecogniseMeal() {
   const userId = useUserId()
   const queryClient = useQueryClient()
   const pending = usePendingSnaps()
+  // The one place this layer reaches for UI. A refusal arrives seconds after
+  // the sheet that started it has closed, so there is no screen left to hand
+  // it back to — and `ToastProvider` sits outside the navigator precisely so a
+  // message can outlive the screen that fired it.
+  const toast = useToast()
 
   return useCallback(
     ({
@@ -217,8 +231,29 @@ function useRecogniseMeal() {
           // through `activity_summary`. Without this a meal logged today left
           // the Activity tab still saying "Not enough logged".
           queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+          // The scan spent somewhere between one and four model requests and
+          // only the server knows how many.
+          queryClient.invalidateQueries({ queryKey: keys.aiUsage(userId) })
         })
         .catch((error: unknown) => {
+          // Out of budget for the month. The user is told, and told what to
+          // do about it, because there is nothing in the app that fixes this.
+          if (error instanceof AiLimitError) {
+            void booked.then(() => cancelScanNotice(notice))
+            pending.fail(id)
+            toast.show({ title: i18n.t('paywall:limit.reached'), tone: 'error' })
+            queryClient.invalidateQueries({ queryKey: keys.aiUsage(userId) })
+            return
+          }
+          // Entitlement lapsed between the tap and the request. The guard in
+          // front of the shutter catches this almost always; this is what is
+          // left when a subscription ends mid-flight.
+          if (error instanceof NotEntitledError) {
+            void booked.then(() => cancelScanNotice(notice))
+            pending.fail(id)
+            toast.show({ title: i18n.t('paywall:limit.notEntitled'), tone: 'warning' })
+            return
+          }
           // The outcome is known and it is no: say so now rather than spinning
           // out the deadline over an answer that already arrived.
           if ((error as { settled?: boolean })?.settled) {
@@ -242,7 +277,7 @@ function useRecogniseMeal() {
 
       return id
     },
-    [pending, queryClient, userId],
+    [pending, queryClient, toast, userId],
   )
 }
 

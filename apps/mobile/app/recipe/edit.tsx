@@ -14,6 +14,7 @@ import {
   useRecipeIngredients,
   useSaveRecipe,
 } from '@/data'
+import { AiLimitError, NotEntitledError } from '@/data/refusals'
 import { IconPicker, InlineCamera } from '@/features/logging'
 import {
   DescribeRecipePanel,
@@ -91,7 +92,7 @@ const DEFAULT_RECIPE_ICON: IconRef = { set: 'food', name: 'cooking-pot' }
  * scan uses, and for the same reason.
  */
 export default function RecipeFormScreen() {
-  const { t } = useTranslation(['recipes', 'common'])
+  const { t } = useTranslation(['recipes', 'common', 'paywall'])
   const router = useRouter()
   const goBack = useBack('/recipes')
   const toast = useToast()
@@ -206,6 +207,23 @@ export default function RecipeFormScreen() {
   const touch = () => setDirty(true)
 
   /**
+   * The two refusals, shown and swallowed. Anything else is re-thrown for the
+   * caller's own "we could not read it" message, which is the ordinary
+   * failure and the one the user can do something about by typing.
+   */
+  const showRefusal = (error: unknown): boolean => {
+    if (error instanceof AiLimitError) {
+      toast.show({ title: t('paywall:limit.reached'), tone: 'error' })
+      return true
+    }
+    if (error instanceof NotEntitledError) {
+      router.push({ pathname: '/paywall/gate', params: { feature: 'describe' } })
+      return true
+    }
+    return false
+  }
+
+  /**
    * A photo of the pot: attach it, then read it.
    *
    * The upload has to finish before the read starts, and both have to finish
@@ -228,6 +246,9 @@ export default function RecipeFormScreen() {
     let draft: ScannedRecipe | null
     try {
       draft = await read.mutateAsync({ photoPath: key })
+    } catch (error) {
+      if (showRefusal(error)) return
+      draft = null
     } finally {
       setReading(null)
     }
@@ -314,6 +335,9 @@ export default function RecipeFormScreen() {
     let draft: ScannedRecipe | null
     try {
       draft = await read.mutateAsync({ text: described })
+    } catch (error) {
+      if (showRefusal(error)) return
+      draft = null
     } finally {
       setReading(null)
     }

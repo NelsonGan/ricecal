@@ -5,6 +5,7 @@ import { unwrap, unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
 import { toIcon, toRecipe, toRecipeIngredient } from './mappers'
 import { removeMealPhoto } from './photos'
+import { refusalFrom } from './refusals'
 import { useUserId } from './session'
 import type { IconRef, Macros, Recipe, RecipeIngredient, RecipeUnit } from './types'
 
@@ -342,6 +343,10 @@ export function usePublishRecipe() {
     onSuccess: (_result, { id }) => {
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.recipe(id) })
+      // Publishing runs the reviewer, which is a model call. Unpublishing does
+      // not, but it is one wasted invalidation against a figure that is only
+      // ever read on one settings screen.
+      queryClient.invalidateQueries({ queryKey: keys.aiUsage(userId) })
     },
   })
 }
@@ -405,7 +410,16 @@ export type RecipeSource = { photoPath: string } | { text: string }
  * good empty form to show.
  */
 export function useReadRecipe() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
   return useMutation({
+    // Reading a pot is a model call like a scan is, so it moves the meter the
+    // subscription screen renders. Fired on settle rather than on success:
+    // a read that came back "nothing cookable in it" still cost a request.
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: keys.aiUsage(userId) })
+    },
     mutationFn: async (source: RecipeSource): Promise<ScannedRecipe | null> => {
       const { data, error } = await supabase.functions.invoke('recipes', {
         body:
@@ -413,7 +427,16 @@ export function useReadRecipe() {
             ? { action: 'read', photo_path: source.photoPath }
             : { action: 'read', text: source.text },
       })
-      if (error) return null
+      // A refusal is thrown rather than folded into `null`. Null means "the
+      // model could not read it", which the form answers by letting the user
+      // fill it in themselves — and telling somebody to type it out by hand is
+      // the wrong answer to "you have not subscribed" and to "you are out of
+      // requests", both of which the caller turns into something actionable.
+      if (error) {
+        const refusal = await refusalFrom(error)
+        if (refusal) throw refusal
+        return null
+      }
 
       const result = data as {
         ok?: boolean

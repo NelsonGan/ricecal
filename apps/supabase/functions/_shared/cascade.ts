@@ -18,8 +18,8 @@
 // catalogue sum of the parts, so the diary and the breakdown cannot disagree.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-
 import { type CatalogueFood, searchFoods } from './catalogue.ts'
+import { AiLimitReached, type Meter } from './entitlement.ts'
 import {
   type Archetype,
   classifyArchetype,
@@ -788,6 +788,7 @@ async function resolveByDish(
   scanId: string,
   item: VisionItem,
   mock: MockSteer | undefined,
+  meter: Meter,
   trace?: string[],
 ): Promise<Resolved | null> {
   const llmMid = (item.kcal_low + item.kcal_high) / 2
@@ -814,7 +815,14 @@ async function resolveByDish(
   // tier has no answer, so fall through rather than settling for a near miss.
   let chosen: SearchRow | null = null
   if (candidates.length) {
-    const idx = await pickCandidate(item, candidates, mock).catch(() => null)
+    // A verifier that failed is "no match", and the tier below takes over — but
+    // not when what failed was the budget. Swallowed here that would be spent
+    // again by the estimate tier and answered with an archetype, which is the
+    // one outcome running out of requests must never produce.
+    const idx = await pickCandidate(item, candidates, mock, meter).catch((error: unknown) => {
+      if (error instanceof AiLimitReached) throw error
+      return null
+    })
     chosen = idx === null ? null : (candidates[idx] ?? null)
   }
   if (!chosen) return null
@@ -936,6 +944,7 @@ export async function resolveByLabel(label: NutritionLabel): Promise<Resolved | 
 async function resolveByEstimate(
   item: VisionItem,
   mock: MockSteer | undefined,
+  meter: Meter,
 ): Promise<Resolved | null> {
   const atwaterOk = (n: Nutrition): boolean => {
     if (n.kcal <= 0) return false
@@ -969,7 +978,7 @@ async function resolveByEstimate(
   // and one that cannot be off by a factor of three.
   let nutrition: Nutrition | null = null
   for (let attempt = 0; attempt < 2 && !nutrition; attempt++) {
-    const candidate = await estimateNutrition(item, mock)
+    const candidate = await estimateNutrition(item, mock, meter)
     if (atwaterOk(candidate) && inBand(candidate)) nutrition = candidate
   }
   if (!nutrition) return null
@@ -996,6 +1005,7 @@ export async function resolveByArchetype(
   db: SupabaseClient,
   item: VisionItem | null,
   mock: MockSteer | undefined,
+  meter: Meter,
 ): Promise<Resolved> {
   // `public.archetypes`, not the catalogue, and that is the whole reason the
   // table exists: this tier is where a scan lands when the catalogue, the model
@@ -1025,7 +1035,7 @@ export async function resolveByArchetype(
   if (item) {
     try {
       const { data } = await db.from('archetypes').select(columns)
-      if (data?.length) archetype = await classifyArchetype(item, data as Archetype[], mock)
+      if (data?.length) archetype = await classifyArchetype(item, data as Archetype[], mock, meter)
     } catch {
       archetype = null
     }
@@ -1073,9 +1083,15 @@ export async function resolveItem(
   scanId: string,
   item: VisionItem,
   mock: MockSteer | undefined,
+  meter: Meter,
   trace?: string[],
 ): Promise<Resolved | null> {
   const note = (stage: string, error: unknown) => {
+    // Running out of budget is not a tier failing. Swallowed here it would be
+    // retried by every tier below and finally answered with an archetype, so
+    // somebody over their limit would get a guessed "Mixed meal" in their
+    // diary rather than being told what happened.
+    if (error instanceof AiLimitReached) throw error
     const message = `[cascade] ${stage}: ${describe(error)}`
     console.error(message)
     trace?.push(message)
@@ -1099,13 +1115,13 @@ export async function resolveItem(
   }
   resolved =
     resolved ??
-    (await resolveByDish(db, scanId, item, mock, trace).catch((error) => {
+    (await resolveByDish(db, scanId, item, mock, meter, trace).catch((error) => {
       note('dish stage threw', error)
       return null
     }))
   resolved =
     resolved ??
-    (await resolveByEstimate(item, mock).catch((error) => {
+    (await resolveByEstimate(item, mock, meter).catch((error) => {
       note('estimate stage threw', error)
       return null
     }))

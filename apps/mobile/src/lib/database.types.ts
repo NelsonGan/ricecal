@@ -43,6 +43,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage: {
+        Row: {
+          created_at: string
+          inferences: number
+          period_start: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          inferences?: number
+          period_start: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          inferences?: number
+          period_start?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       activity_days: {
         Row: {
           active_kcal: number
@@ -1377,6 +1401,26 @@ export type Database = {
       }
     }
     Functions: {
+      ai_monthly_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      ai_usage_this_month: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          monthly_limit: number
+          remaining: number
+          used: number
+        }[]
+      }
+      claim_ai_inference: {
+        Args: { p_count?: number; p_user: string }
+        Returns: {
+          allowed: boolean
+          monthly_limit: number
+          used: number
+        }[]
+      }
       activity_days_range: {
         Args: { p_range: string; p_user_id?: string }
         Returns: {
@@ -1726,7 +1770,7 @@ export type Database = {
       recipe_review: 'pending' | 'approved' | 'rejected'
       recipe_unit: 'g' | 'ml' | 'piece'
       sex: 'female' | 'male'
-      subscription_plan: 'monthly' | 'yearly'
+      subscription_plan: 'monthly' | 'yearly' | 'lifetime'
       subscription_status: 'none' | 'trial' | 'active' | 'expired' | 'billing_retry'
       unit_system: 'metric' | 'imperial'
     }
@@ -1867,7 +1911,7 @@ export const Constants = {
       recipe_review: ['pending', 'approved', 'rejected'],
       recipe_unit: ['g', 'ml', 'piece'],
       sex: ['female', 'male'],
-      subscription_plan: ['monthly', 'yearly'],
+      subscription_plan: ['monthly', 'yearly', 'lifetime'],
       subscription_status: ['none', 'trial', 'active', 'expired', 'billing_retry'],
       unit_system: ['metric', 'imperial'],
     },
