@@ -148,20 +148,15 @@ export const paywall = {
   /**
    * The monthly ceiling on model requests.
    *
-   * Deliberately does NOT name the number. It is a fair-use limit somebody
-   * reaches by scanning a hundred meals a day, and printing "3,000" invites
-   * the reply that they have only logged forty things this week, which counts
-   * requests rather than meals and is a conversation the toast cannot win.
-   * The settings screen shows the figure, where there is room to explain it.
+   * The user is told only when they HIT it. The count itself is not shown
+   * anywhere in the app: it counts requests to the model rather than meals, so
+   * a figure on screen invites the reply that they have only logged forty
+   * things this week, which is true and unanswerable. It is an operational
+   * number, and it lives in the database where it is enforced.
    */
   limit: {
     reached: 'You have reached your monthly scanning limit. Please contact admin.',
     notEntitled: 'Your subscription is not active. Photo and describe need Pro.',
-    /** The settings card, where the count belongs. */
-    title: 'AI USAGE',
-    used: 'This month',
-    usage: '{{used}} of {{limit}}',
-    note: 'Photo scans, described meals and corrections each use one or more requests. The count resets on the first of the month.',
   },
 
   welcome: {

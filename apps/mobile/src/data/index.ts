@@ -137,9 +137,7 @@ export {
   withCataloguePortions,
 } from './snapshot'
 export {
-  type AiUsage,
   type Entitlement,
-  useAiUsage,
   useAwaitEntitlement,
   useEntitlement,
   usePlanPrices,

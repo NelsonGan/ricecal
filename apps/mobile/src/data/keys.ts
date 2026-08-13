@@ -24,14 +24,6 @@ export const keys = {
    * event measured in days.
    */
   planPrices: () => ['plan-prices'] as const,
-  /**
-   * How much of this month's model allowance the account has spent.
-   *
-   * Invalidated by everything that reaches the model — a scan, a typed meal, a
-   * correction — because the figure moves on the server and there is no other
-   * way for this client to learn that it did.
-   */
-  aiUsage: (userId: string) => ['ai-usage', userId] as const,
 
   day: (userId: string, date: string) => ['day', userId, date] as const,
   /**
