@@ -1,23 +1,28 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { useSubscription } from '@/data'
+import { useAiUsage, useSubscription } from '@/data'
 import { openManageSubscriptions } from '@/data/purchases'
 import { CheckList } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { progressOf } from '@/lib/nutrition'
 import { AppBar, Button, Card, ConfirmSheet, Icon, ProgressBar, Screen, Text } from '@/ui'
 
-const TRIAL_DAYS = 3
+/** Matches the introductory offer on both stores: ONE_WEEK / P7D. */
+const TRIAL_DAYS = 7
 
 /** U6 SUBSCRIPTION */
 export default function SubscriptionScreen() {
   const { t } = useTranslation(['profile', 'paywall', 'common'])
   const goBack = useBack('/me')
   const { data: subscription } = useSubscription()
+  const { data: usage } = useAiUsage()
   const [confirmCancel, setConfirmCancel] = useState(false)
 
   const yearly = subscription?.plan === 'yearly'
+  // A one-off purchase has no period, no renewal and nothing to switch to, so
+  // three things on this screen have to say something else.
+  const lifetime = subscription?.plan === 'lifetime'
 
   // Whole days left, from the instant the store reported. Not a stored counter:
   // one would need something to decrement it every midnight.
@@ -44,9 +49,11 @@ export default function SubscriptionScreen() {
     <Screen
       footer={
         <Button variant="neutral" fullWidth onPress={switchPlan}>
-          {yearly
-            ? t('profile:subscription.switchMonthly')
-            : t('profile:subscription.switchYearly')}
+          {lifetime
+            ? t('profile:subscription.manage')
+            : yearly
+              ? t('profile:subscription.switchMonthly')
+              : t('profile:subscription.switchYearly')}
         </Button>
       }
     >
@@ -79,17 +86,34 @@ export default function SubscriptionScreen() {
         />
 
         <Text variant="meta">
-          {t('profile:subscription.renews', {
-            price: yearly ? t('paywall:hard.yearlyPrice') : t('paywall:hard.monthlyPrice'),
-          })}
+          {lifetime
+            ? t('profile:subscription.neverRenews')
+            : t('profile:subscription.renews', {
+                price: yearly ? t('paywall:plans.yearlyPrice') : t('paywall:plans.monthlyPrice'),
+              })}
         </Text>
       </Card>
 
       <Card title={t('profile:subscription.yourPlan')}>
-        <Row label={t('profile:subscription.plan')} value={t('profile:subscription.planPrice')} />
+        <Row
+          label={t('profile:subscription.plan')}
+          value={
+            lifetime
+              ? t('paywall:plans.lifetime')
+              : yearly
+                ? t('paywall:plans.yearly')
+                : t('paywall:plans.monthly')
+          }
+        />
         <Row
           label={t('profile:subscription.perMonth')}
-          value={t('profile:subscription.perMonthPrice')}
+          value={
+            lifetime
+              ? t('paywall:plans.lifetimePrice')
+              : yearly
+                ? t('paywall:plans.yearlyPerMonth')
+                : t('paywall:plans.monthlyPrice')
+          }
         />
         {/* The store holds the card, and never tells us anything about it.
             What it does tell us is which store the purchase came from. */}
@@ -98,6 +122,31 @@ export default function SubscriptionScreen() {
           value={subscription?.store ?? t('profile:subscription.paymentUnknown')}
         />
       </Card>
+
+      {/* The monthly ceiling, with the number on it. The toast that announces
+          the limit deliberately does not name it — it counts REQUESTS, not
+          meals, and a bare figure invites an argument the toast cannot win.
+          This is the screen with room for the sentence underneath. */}
+      {usage ? (
+        <Card title={t('paywall:limit.title')}>
+          <View className="gap-2">
+            <Row
+              label={t('paywall:limit.used')}
+              value={t('paywall:limit.usage', {
+                used: usage.used.toLocaleString(),
+                limit: usage.monthlyLimit.toLocaleString(),
+              })}
+            />
+            <ProgressBar
+              value={progressOf(usage.used, usage.monthlyLimit)}
+              tone="pandan"
+              height={11}
+              accessibilityLabel={t('paywall:limit.title')}
+            />
+            <Text variant="meta">{t('paywall:limit.note')}</Text>
+          </View>
+        </Card>
+      ) : null}
 
       <Card title={t('profile:subscription.included')}>
         <CheckList

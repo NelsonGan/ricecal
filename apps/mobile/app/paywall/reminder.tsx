@@ -87,7 +87,7 @@ export default function TrialReminder() {
             date: subscription?.trial_ends_at
               ? format(parseISO(subscription.trial_ends_at), 'd MMMM')
               : '',
-            price: t('paywall:hard.yearlyPrice'),
+            price: t('paywall:plans.yearlyPrice'),
           })}
         </Text>
       </View>

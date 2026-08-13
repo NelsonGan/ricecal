@@ -1,8 +1,8 @@
 import * as Sentry from '@sentry/react-native'
 import { Mixpanel } from 'mixpanel-react-native'
-import { Platform } from 'react-native'
 
 import { env, isConfigured } from './env'
+import { configurePurchases } from './revenuecat'
 
 /**
  * Each SDK is gated on its key being provisioned. Initialising one with a
@@ -20,8 +20,12 @@ const skipped: string[] = []
 /**
  * Turned off in code rather than for want of a key, so the dev log does not
  * blame `.env.local` for something a comment did.
+ *
+ * Empty now that RevenueCat is live. Kept because the mechanism is the useful
+ * part: a service switched off deliberately should say so rather than look
+ * like a missing key.
  */
-const disabled: string[] = ['RevenueCat']
+const disabled: string[] = []
 
 export function initSentry() {
   if (!isConfigured(env.EXPO_PUBLIC_SENTRY_DSN)) {
@@ -47,32 +51,17 @@ export async function initMixpanel() {
 }
 
 /**
- * RevenueCat, and why it is not called.
- *
- * The key gate was never the problem — the IMPORT was.
- * `react-native-purchases` reaches for its native module at module scope, so
- * merely pulling this file in threw on any build with no RevenueCat pod, from
- * app start, before anything had rendered. Hence the dynamic import, and hence
- * the call being commented out rather than merely gated.
- *
- * To bring it back once the keys are real: uncomment the call in `initServices`
- * and drop 'RevenueCat' from `disabled` above, or the dev log goes on reporting
- * it as switched off.
+ * RevenueCat. The SDK's lifecycle lives in `./revenuecat`, which imports
+ * nothing but the env — see the note there for why it is not in this file.
  */
 export async function initPurchases() {
-  const apiKey = Platform.OS === 'ios' ? env.EXPO_PUBLIC_RC_IOS_KEY : env.EXPO_PUBLIC_RC_ANDROID_KEY
-  if (!isConfigured(apiKey)) {
-    skipped.push('RevenueCat')
-    return
-  }
-  const Purchases = (await import('react-native-purchases')).default
-  Purchases.configure({ apiKey })
+  if (!(await configurePurchases())) skipped.push('RevenueCat')
 }
 
 /** Call once, as early as possible in the root layout. */
 export async function initServices() {
   initSentry()
-  // await initPurchases()
+  await initPurchases()
   await initMixpanel()
 
   if (__DEV__ && skipped.length > 0) {

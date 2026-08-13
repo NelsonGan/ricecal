@@ -14,6 +14,7 @@ import {
   useSaveRecipeCopy,
   useSelectedDate,
 } from '@/data'
+import { useRequirePro } from '@/features/paywall'
 import { RecipeSteps, ShareSheet } from '@/features/recipes'
 import { MealPhoto } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
@@ -66,6 +67,7 @@ export default function RecipeDetailScreen() {
 
   const { selectedDate } = useSelectedDate()
   const logFood = useLogFood()
+  const requirePro = useRequirePro()
   const saveCopy = useSaveRecipeCopy()
   const remove = useDeleteRecipe()
 
@@ -134,6 +136,10 @@ export default function RecipeDetailScreen() {
   ]
 
   const addToDay = () => {
+    // Logging a pot writes a food entry like any other, so it is gated like
+    // any other. Reading the recipe, saving a copy of somebody else's and
+    // editing your own all stay free: none of them puts a row in the diary.
+    if (!requirePro('log')) return
     logFood.mutate({
       snapshot: snapshotFromRecipe(recipe),
       quantity,

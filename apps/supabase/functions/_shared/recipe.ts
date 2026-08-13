@@ -13,6 +13,7 @@
 // that will not parse — leaves the recipe at `pending`, which is invisible in
 // the community tab. Nothing in this file can approve a recipe by accident.
 
+import type { Meter } from './entitlement.ts'
 import { guessIcon, ICON_INSTRUCTION, type IconChoice, resolveIcon } from './icons.ts'
 import { chatJSON, mockActive } from './llm.ts'
 
@@ -509,6 +510,7 @@ export const DESCRIBE_RECIPE_PROMPT =
 export async function readRecipePhoto(
   photoBase64: string | null,
   mock: RecipeMockSteer | undefined,
+  meter: Meter,
 ): Promise<RecipeDraft> {
   if (mockActive()) {
     if (mock?.fail === 'read') throw new Error('mocked recipe read failure')
@@ -569,6 +571,7 @@ export async function readRecipePhoto(
   if (!photoBase64) throw new Error('no photo to read')
 
   const raw = await chatJSON(
+    meter,
     [
       { role: 'system', content: READ_RECIPE_PROMPT },
       {
@@ -596,6 +599,7 @@ export async function readRecipePhoto(
 export async function describeRecipe(
   text_: string,
   mock: RecipeMockSteer | undefined,
+  meter: Meter,
 ): Promise<RecipeDraft> {
   if (mockActive()) {
     if (mock?.fail === 'read') throw new Error('mocked recipe read failure')
@@ -648,6 +652,7 @@ export async function describeRecipe(
   }
 
   const raw = await chatJSON(
+    meter,
     [
       { role: 'system', content: DESCRIBE_RECIPE_PROMPT },
       { role: 'user', content: describeRecipeUserMessage(text_) },
@@ -750,6 +755,7 @@ export const reviewUserMessage = (recipe: ReviewInput): string =>
 export async function reviewRecipe(
   recipe: ReviewInput,
   mock: RecipeMockSteer | undefined,
+  meter: Meter,
 ): Promise<RecipeReview> {
   if (mockActive()) {
     if (mock?.fail === 'review') throw new Error('mocked review failure')
@@ -770,6 +776,7 @@ export async function reviewRecipe(
   }
 
   const raw = (await chatJSON(
+    meter,
     [
       { role: 'system', content: REVIEW_RECIPE_PROMPT },
       { role: 'user', content: reviewUserMessage(recipe) },

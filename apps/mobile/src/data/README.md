@@ -26,7 +26,8 @@ D1, and photographs go to R2 through an edge function.
 | `reviews.ts` | a finished week or month, folded four ways. Read-only, and the one area with no invalidation of its own: a review is of a period that is OVER, so nothing a user does today can move one, and the 30-second stale time covers a meal backdated into last week. `useReviewPeriods` serves three readers — the list, a story's comparison chart, and a story resolving the `week-latest` id a report notification links to |
 | `activity.ts`, `health-sync.ts` | movement: the read side, and the phone-to-Postgres sync |
 | `photos.ts` | every image — upload, signed read, delete — through the `photos` function, since R2 has no idea who a user is. Bytes are cached against the key and asked for from the disk first, so a signature is only fetched for a picture this device has not seen |
-| `purchases.ts`, `subscription.ts` | money |
+| `purchases.ts`, `subscription.ts` | money. `purchases.ts` buys and restores and can never grant; `subscription.ts` reads the mirror the RevenueCat webhook fills, and `useEntitlement` is the ONE answer to "may this account log a meal" that every gate in the app reads |
+| `refusals.ts` | the two ways the server refuses to reach the model, read back off the wire. A non-2xx from `functions.invoke` hides the body inside the error, so telling "you have not paid" from "you have used it all up" is done once here rather than at each of the four call sites |
 | `selected-date.tsx` | the one piece of genuine client state |
 
 ## The three rules

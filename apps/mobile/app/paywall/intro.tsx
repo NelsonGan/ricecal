@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
+
 import type { Plan } from '@/data'
 import {
   PurchasesUnavailable,
@@ -11,31 +12,44 @@ import {
   restorePurchases,
 } from '@/data/purchases'
 import { CheckList, PlanPicker } from '@/features/shared'
-import { useBack } from '@/lib/navigation'
-import { useThemeColors } from '@/theme/useTheme'
-import { Button, Icon, IconButton, Screen, Text, useToast } from '@/ui'
+import { Button, Icon, Screen, Text, useToast } from '@/ui'
 
 const MASCOT = require('../../assets/brand/mascot.png')
 
-/** W1 HARD PAYWALL */
-export default function HardPaywall() {
+/**
+ * THE PAYWALL AT THE END OF ONBOARDING.
+ *
+ * The tour hands over to this rather than to Today, so the offer is made once,
+ * at the moment the user is most ready to hear it: they have answered the
+ * questions, seen their budget and been told how logging works, and the next
+ * thing they were going to do is log something.
+ *
+ * "LATER" IS A REAL WAY OUT and not a dark pattern in reverse. It lands on the
+ * actual app, not a preview of one — everything reads, search works, the
+ * catalogue is open, and the only thing behind the wall is writing an entry.
+ * A user who declines here is not stuck on a sales page, and the app they walk
+ * into is the honest version of what they would be buying.
+ *
+ * There is no close chevron. A modal presented over nothing has nothing to go
+ * back to, and the ghost button says plainly what it does.
+ *
+ * The three plans are all offered here, unlike the feature gates, because this
+ * is the one screen with room to weigh them up. Lifetime has no trial, so the
+ * button and the small print both change when it is selected — a "start free
+ * trial" over a one-off purchase would be a promise the store does not keep.
+ */
+export default function IntroPaywall() {
   const { t } = useTranslation(['paywall', 'common'])
   const router = useRouter()
-  const goBack = useBack('/today')
   const toast = useToast()
-  const colors = useThemeColors()
   const [plan, setPlan] = useState<Plan>('yearly')
 
-  /**
-   * Starts the store's purchase sheet.
-   *
-   * Nothing is written locally on success: RevenueCat's webhook updates
-   * `subscriptions` and the app reads that — the table has no client write
-   * grant, deliberately. Until the SDK key is provisioned this says so rather
-   * than pretending a trial started.
-   */
+  const lifetime = plan === 'lifetime'
+
   const start = async () => {
     if (!purchasesAvailable()) {
+      // Not silently skipped to Today. A build with no store attached should
+      // say so, or this reads as a dead button.
       toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
       return
     }
@@ -43,6 +57,8 @@ export default function HardPaywall() {
       await purchasePlan(plan)
       router.replace('/paywall/welcome')
     } catch (error) {
+      // A cancelled purchase sheet is not a failure worth a message: the user
+      // closed it themselves and knows what happened.
       if (error instanceof PurchasesUnavailable) return
       toast.show({
         title: error instanceof Error ? error.message : t('common:action.retry'),
@@ -65,7 +81,14 @@ export default function HardPaywall() {
       footer={
         <View className="gap-1.5">
           <Button fullWidth onPress={start}>
-            {plan === 'lifetime' ? t('paywall:hard.startLifetime') : t('paywall:hard.start')}
+            {lifetime ? t('paywall:hard.startLifetime') : t('paywall:hard.start')}
+          </Button>
+          {/* `replace`, not `push`. This screen replaced the tour, and the tour
+              replaced the questions, so there is nothing underneath worth
+              keeping — and Today is where the app IS rather than somewhere the
+              user went. */}
+          <Button variant="ghost" fullWidth onPress={() => router.replace('/today')}>
+            {t('paywall:intro.later')}
           </Button>
           <Button variant="ghost" fullWidth onPress={restore}>
             {t('paywall:hard.restore')}
@@ -73,19 +96,13 @@ export default function HardPaywall() {
         </View>
       }
     >
-      {/* `justify-end`, not `items-end`: every squishy control sets
-          `self-start` on its own box, which beats a parent's `align-items`.
-          Justification on a row is not something the child can override. */}
-      <View className="flex-row justify-end">
-        <IconButton size="sm" accessibilityLabel={t('common:a11y.close')} onPress={() => goBack()}>
-          <Icon set="ui" name="close" size={18} tintColor={colors.muted} />
-        </IconButton>
-      </View>
-
       <View className="items-center gap-2.5">
         <Image source={MASCOT} style={{ width: 72, height: 72 }} contentFit="contain" />
         <Text variant="title" className="text-center">
-          {t('paywall:hard.title')}
+          {t('paywall:intro.title')}
+        </Text>
+        <Text variant="meta" className="text-center">
+          {t('paywall:intro.body')}
         </Text>
       </View>
 
@@ -107,11 +124,14 @@ export default function HardPaywall() {
           </Text>
         </View>
         <Text variant="caption" className="text-center text-faint">
-          {plan === 'lifetime'
+          {lifetime
             ? t('paywall:hard.smallPrintLifetime')
             : plan === 'yearly'
               ? t('paywall:hard.smallPrintYearly')
               : t('paywall:hard.smallPrintMonthly')}
+        </Text>
+        <Text variant="caption" className="text-center text-faint">
+          {t('paywall:intro.laterNote')}
         </Text>
       </View>
     </Screen>
