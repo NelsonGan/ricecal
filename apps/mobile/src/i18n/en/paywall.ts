@@ -30,7 +30,6 @@ export const paywall = {
     monthly: 'Monthly',
     monthlyBilling: 'Billed every month',
     lifetime: 'Lifetime',
-    lifetimeBadge: 'PAY ONCE',
     lifetimeDetail: 'One payment, yours for good',
   },
 
