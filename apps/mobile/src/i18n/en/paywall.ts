@@ -35,11 +35,65 @@ export const paywall = {
   },
 
   hard: {
+    /** The bar on the pushed page. The screen's own headline is `title`. */
+    appBar: 'RiceCal Pro',
     title: 'Start logging with RiceCal Pro',
-    perks: {
-      unlimited: 'Unlimited meal logging',
-      scanning: 'Photo scanning',
-      database: 'Local hawker food database',
+    /**
+     * Says outright that there is no free tier, because the alternative is
+     * somebody hunting the screen for the catch. Everything the app does is
+     * listed below it, so the claim is checkable rather than a boast.
+     */
+    subtitle: 'One plan, everything in it. There is no limited free version to compare against.',
+    everything: 'EVERYTHING YOU GET',
+    /**
+     * All of it, in the order somebody meets it: the four ways a meal gets in,
+     * then what the app does with it, then what it does over time.
+     *
+     * Each line is what the feature IS, not what it is called. "Recipes" tells
+     * a reader nothing they could not guess; "enter what went in and how many
+     * it feeds, once" tells them why it is worth having.
+     */
+    features: {
+      snap: {
+        title: 'Snap a plate',
+        body: 'Every dish on it named, sized and priced.',
+      },
+      describe: {
+        title: 'Or just say what you ate',
+        body: '"Nasi lemak with fried chicken and a teh tarik."',
+      },
+      barcode: {
+        title: 'Scan a packet',
+        body: 'Three million barcoded products, read off the label.',
+      },
+      search: {
+        title: 'Search the food database',
+        body: 'Hawker dishes, chains and home cooking from across Asia.',
+      },
+      recipes: {
+        title: 'Save what you cook',
+        body: 'Enter what went in and how many it feeds, once. Then one tap.',
+      },
+      budget: {
+        title: 'A calorie budget that fits you',
+        body: 'Worked out from your body and your goal, and kept up to date.',
+      },
+      health: {
+        title: 'Apple Health and Health Connect',
+        body: 'What you burn is added to what you can eat, never taken off it.',
+      },
+      trends: {
+        title: 'Trends and weight',
+        body: 'Where the week went, and whether it is moving.',
+      },
+      reviews: {
+        title: 'Weekly and monthly reviews',
+        body: 'A finished week, read as a few cards you can share.',
+      },
+      reminders: {
+        title: 'Meal reminders',
+        body: 'At your own mealtimes, in your own timezone.',
+      },
     },
     assurance: 'No commitment, cancel any time',
     /**
