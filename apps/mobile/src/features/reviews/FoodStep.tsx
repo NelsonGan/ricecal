@@ -48,53 +48,58 @@ export function FoodStep({ summary, meals }: FoodStepProps) {
   return (
     <>
       <Shareable title={t('reviews:food.title')}>
+        {/* `gap-0` so the rows sit on their own dividers, and the list carries
+            the space the card's header would otherwise have had — a heading
+            hard against its first row is the one thing that gap was for. */}
         <Card title={t('reviews:food.title')} contentClassName="gap-0 p-card">
-          {meals.map((meal, index) => {
-            const share = energyShare(meal)
+          <View className="mt-1">
+            {meals.map((meal, index) => {
+              const share = energyShare(meal)
 
-            return (
-              <View key={meal.name}>
-                {index > 0 ? <Divider className="my-3" /> : null}
-                <View className="flex-row items-center gap-3">
-                  {/* Spread rather than two named props: `IconRef` is a union of
+              return (
+                <View key={meal.name}>
+                  {index > 0 ? <Divider className="my-3" /> : null}
+                  <View className="flex-row items-center gap-3">
+                    {/* Spread rather than two named props: `IconRef` is a union of
                     set-and-name PAIRS, and splitting it lets a name from one
                     set typecheck against another. */}
-                  {meal.icon ? (
-                    <Icon {...meal.icon} size={38} />
-                  ) : (
-                    <Icon set="food" name="empty-plate" size={38} />
-                  )}
+                    {meal.icon ? (
+                      <Icon {...meal.icon} size={38} />
+                    ) : (
+                      <Icon set="food" name="empty-plate" size={38} />
+                    )}
 
-                  <View className="min-w-0 flex-1 gap-2">
-                    <View className="flex-row items-center gap-2">
-                      <Text variant="label" numberOfLines={1} className="min-w-0 flex-1 text-ink">
-                        {meal.name}
-                      </Text>
-                      <Text variant="label" className="text-ink">
-                        {meal.kcal.toLocaleString()}
-                      </Text>
-                    </View>
+                    <View className="min-w-0 flex-1 gap-2">
+                      <View className="flex-row items-center gap-2">
+                        <Text variant="label" numberOfLines={1} className="min-w-0 flex-1 text-ink">
+                          {meal.name}
+                        </Text>
+                        <Text variant="label" className="text-ink">
+                          {meal.kcal.toLocaleString()}
+                        </Text>
+                      </View>
 
-                    {/* The split as a bar rather than as three percentages: five
+                      {/* The split as a bar rather than as three percentages: five
                       rows of "44/29/27" is a table nobody reads, and the colours
                       are already the ones the rest of the app uses for these
                       three. */}
-                    <View className="h-1.5 flex-row overflow-hidden rounded-full bg-track">
-                      {MACROS.map((macro) =>
-                        share[macro.key] <= 0 ? null : (
-                          <View
-                            key={macro.key}
-                            className={macro.fill}
-                            style={{ flexGrow: share[macro.key], flexBasis: 0 }}
-                          />
-                        ),
-                      )}
+                      <View className="h-1.5 flex-row overflow-hidden rounded-full bg-track">
+                        {MACROS.map((macro) =>
+                          share[macro.key] <= 0 ? null : (
+                            <View
+                              key={macro.key}
+                              className={macro.fill}
+                              style={{ flexGrow: share[macro.key], flexBasis: 0 }}
+                            />
+                          ),
+                        )}
+                      </View>
                     </View>
                   </View>
                 </View>
-              </View>
-            )
-          })}
+              )
+            })}
+          </View>
         </Card>
       </Shareable>
 

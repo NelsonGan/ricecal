@@ -14,6 +14,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { Platform, Pressable, Share, View } from 'react-native'
 
+import { spacing } from '@/theme/tokens'
 import { Button, cn, Sheet, Text } from '@/ui'
 
 /** What a captured card is, once it is a file the OS can be handed. */
@@ -169,18 +170,20 @@ export type ShareableProps = {
 }
 
 /**
- * One card, liftable, with the app's mark over it FOR THE PICTURE ONLY.
+ * One card, liftable, with the app's mark on it FOR THE PICTURE ONLY.
  *
- * A BAND ABOVE THE CARD RATHER THAN A MARGIN AROUND IT. There was a
- * canvas-coloured margin on all four sides once, so the captured card would not
- * sit flush against the edge of the PNG, and it produced a grey block around a
- * white card inside a white sheet — a square with a visible edge, which is the
- * one seam a preview must not have. What is left is height at the TOP and
- * nothing on the other three sides: unfilled, so the sheet shows through it,
- * and enough of it that the mark has somewhere to be that no card's own header
- * has a claim on. Every card is a different shape at the top — a heading alone
- * on two of them, a heading beside a badge on another — and a mark tucked into
- * the corner of the card itself would land on one of them.
+ * ON THE HEADING'S OWN LINE. The mark sits in the card's top padding, right
+ * aligned, level with the heading at the other end of it — a title on the left
+ * and a logo on the right, which is what a card sent to somebody else should
+ * look like. It was a band ABOVE the card for a while, which read as a logo
+ * floating over a picture rather than as part of one; and before that a
+ * canvas-coloured margin on all four sides, which inside a white sheet became a
+ * grey block around a white card, the one seam a preview must not have. The
+ * capture is the card and nothing else now.
+ *
+ * That every card can spare its top right corner is a small thing this feature
+ * had to arrange: `CardStep` used to put a badge there, and its heading now has
+ * the line to itself like every other card's.
  *
  * THE MARK IS NOT ON SCREEN. It is absolutely positioned, so it costs no layout
  * and moves nothing, and it is transparent until the moment of the capture —
@@ -233,21 +236,23 @@ export function Shareable({ title, children, className }: ShareableProps) {
     <Pressable
       ref={view}
       onPress={() => setMarked(true)}
-      className={cn('pt-6', className)}
+      className={cn(className)}
       accessibilityRole="button"
       accessibilityLabel={t('share.card', { card: title })}
     >
       {children}
 
-      {/* In the band above the card, right aligned, clear of whatever that
-          card puts in its own top corner. Absolute, so nothing on the page
-          moves when it appears. */}
+      {/* Level with the heading opposite it. `MARK_TOP` is the card's own top
+          padding less the difference between the mark's height and the line it
+          sits on, so the two read as one row rather than as two things that
+          happen to be near each other. Absolute, so nothing on the page moves
+          when it appears. */}
       <View
         pointerEvents="none"
-        className="absolute top-0.5 right-1 flex-row items-center gap-1.5"
-        style={{ opacity: marked ? 1 : 0 }}
+        className="absolute flex-row items-center gap-1.5"
+        style={{ top: MARK_TOP, right: spacing.card, opacity: marked ? 1 : 0 }}
       >
-        <Image source={MARK} style={{ width: 16, height: 16, borderRadius: 5 }} />
+        <Image source={MARK} style={{ width: 17, height: 17, borderRadius: 5 }} />
         <Text variant="micro">{t('card.brand')}</Text>
       </View>
     </Pressable>
@@ -256,3 +261,11 @@ export function Shareable({ title, children, className }: ShareableProps) {
 
 /** The app icon, at the size a corner of a shared card wants it. */
 const MARK = require('../../../assets/icon.png')
+
+/**
+ * Where the mark's box starts, measured against the card's padding.
+ *
+ * The overline it lines up with is 12pt type on a 15pt line, and the mark is
+ * 17pt tall, so sitting it at the padding exactly would hang it a point below.
+ */
+const MARK_TOP = spacing.card - 1

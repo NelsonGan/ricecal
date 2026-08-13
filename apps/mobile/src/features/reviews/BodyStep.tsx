@@ -137,7 +137,9 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
       ) : null}
 
       <Shareable title={t('reviews:body.others')}>
+        {/* See `FoodStep`: a `gap-0` card owes its header the space back. */}
         <Card title={t('reviews:body.others')} contentClassName="gap-0 p-card">
+          <View className="mt-1" />
           <OtherRow
             label={t('reviews:body.water')}
             note={t('reviews:body.waterNote', { count: summary.waterGoalDays })}

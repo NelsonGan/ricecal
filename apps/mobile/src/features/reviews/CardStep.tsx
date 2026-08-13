@@ -45,36 +45,56 @@ export function CardStep({ title, summary, buckets, unit }: CardStepProps) {
 
   return (
     <Shareable title={title}>
-      <Card contentClassName="gap-md p-card">
-        <View className="flex-row items-center justify-between gap-md">
-          <Text variant="overline" numberOfLines={1} className="min-w-0 flex-1">
+      {/* THREE GROUPS, not five rows, and the gaps between them are SET RATHER
+          THAN EQUAL. The heading belongs to the figure under it and the labels
+          belong to the marks above them, so each group closes up around what it
+          is about — but a uniform gap between the groups does not look uniform,
+          because a 42pt numeral carries TWENTY-TWO points of empty line box
+          under its glyphs and an 11pt label carries three. So the marks take no
+          margin at all — the numeral above them has already paid for it — and
+          the stats take twenty. Measured in the captured picture, the two gaps
+          come out within a point of each other, which is the only measurement
+          that counts here. The extra bottom padding is the same correction at
+          the foot of the card: the stat figures leave slack under themselves
+          that the top edge does not. */}
+      <Card contentClassName="gap-0 p-card pb-6">
+        <View className="gap-1">
+          {/* The heading alone on its line, which is the shape every other card
+              in a story already has — and what leaves the top right corner free
+              for the app's mark when this card is captured. The badge reads
+              better beside the figure it qualifies anyway: "377 under" against
+              "1,723" rather than against the name of the week. */}
+          <Text variant="overline" numberOfLines={1}>
             {title}
           </Text>
-          {delta === null ? null : (
-            <Badge tone={delta >= 0 ? 'pandan' : 'kaya'} className="px-3 py-1.5">
-              <Icon set="body" name={delta >= 0 ? 'trend-down' : 'trend-up'} size={16} />
-              <Text
-                variant="caption"
-                numberOfLines={1}
-                className={delta >= 0 ? 'text-pandan-ink' : 'text-kaya-ink'}
-              >
-                {delta === 0
-                  ? t('reviews:card.onBudget')
-                  : delta > 0
-                    ? t('reviews:card.under', { value: delta.toLocaleString() })
-                    : t('reviews:card.over', { value: Math.abs(delta).toLocaleString() })}
-              </Text>
-            </Badge>
-          )}
-        </View>
 
-        <View className="flex-row items-baseline gap-2">
-          <Text className="font-display text-[46px] leading-[56px] text-ink">
-            {Math.round(average ?? 0).toLocaleString()}
-          </Text>
-          <Text variant="label" className="text-muted">
-            {t('reviews:card.kcalADay')}
-          </Text>
+          <View className="flex-row items-end justify-between gap-md">
+            <View className="flex-row items-baseline gap-2">
+              <Text className="font-display text-[42px] leading-[46px] text-ink">
+                {Math.round(average ?? 0).toLocaleString()}
+              </Text>
+              <Text variant="label" className="text-muted">
+                {t('reviews:card.kcalADay')}
+              </Text>
+            </View>
+
+            {delta === null ? null : (
+              <Badge tone={delta >= 0 ? 'pandan' : 'kaya'} className="px-3 py-1.5">
+                <Icon set="body" name={delta >= 0 ? 'trend-down' : 'trend-up'} size={16} />
+                <Text
+                  variant="caption"
+                  numberOfLines={1}
+                  className={delta >= 0 ? 'text-pandan-ink' : 'text-kaya-ink'}
+                >
+                  {delta === 0
+                    ? t('reviews:card.onBudget')
+                    : delta > 0
+                      ? t('reviews:card.under', { value: delta.toLocaleString() })
+                      : t('reviews:card.over', { value: Math.abs(delta).toLocaleString() })}
+                </Text>
+              </Badge>
+            )}
+          </View>
         </View>
 
         <View className="flex-row items-stretch gap-1.5">
@@ -97,6 +117,7 @@ export function CardStep({ title, summary, buckets, unit }: CardStepProps) {
         </View>
 
         <StatRow
+          className="mt-5"
           size="md"
           stats={[
             {
