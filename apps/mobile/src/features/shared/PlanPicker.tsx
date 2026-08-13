@@ -53,7 +53,11 @@ export function PlanPicker({ value, onChange, showLifetime = false, className }:
         title={t('plans.yearly')}
         badge={saving && saving > 0 ? t('plans.yearlyBadge', { percent: saving }) : undefined}
         price={prices?.yearly?.priceString ?? PENDING}
-        caption={prices?.yearly?.perMonthString}
+        caption={
+          prices?.yearly?.perMonthString
+            ? t('plans.perMonth', { price: prices.yearly.perMonthString })
+            : undefined
+        }
       />
       <PlanCard
         selected={value === 'monthly'}
