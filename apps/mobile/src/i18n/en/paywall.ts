@@ -37,12 +37,6 @@ export const paywall = {
     /** The bar on the pushed page. The screen's own headline is `title`. */
     appBar: 'RiceCal Pro',
     title: 'Start logging with RiceCal Pro',
-    /**
-     * Says outright that there is no free tier, because the alternative is
-     * somebody hunting the screen for the catch. Everything the app does is
-     * listed below it, so the claim is checkable rather than a boast.
-     */
-    subtitle: 'One plan, everything in it. There is no limited free version to compare against.',
     everything: 'EVERYTHING YOU GET',
     /**
      * All of it, in the order somebody meets it: the four ways a meal gets in,
@@ -101,11 +95,16 @@ export const paywall = {
      * would be false about it — and a sentence assembled from a price and a
      * period word is a sentence no translator can reorder.
      */
-    smallPrintYearly: 'Free for 7 days, then {{price}} a year. Cancel any time.',
-    smallPrintMonthly: 'Free for 7 days, then {{price}} a month. Cancel any time.',
+    smallPrintYearly: 'Free for 7 days, then {{price}} a year.',
+    smallPrintMonthly: 'Free for 7 days, then {{price}} a month.',
     smallPrintLifetime: 'One payment of {{price}}. No subscription, no renewal.',
-    /** Shown until the store answers, so the sentence is never half a price. */
-    smallPrintPending: 'Cancel any time.',
+    /**
+     * Shown until the store answers, so the sentence is never half a price.
+     * Deliberately not "cancel any time": the assurance line directly above
+     * already says that, and the two together read as the same promise made
+     * twice by someone worried it was not believed.
+     */
+    smallPrintPending: 'Free for 7 days.',
     start: 'Start free trial',
     startLifetime: 'Buy lifetime access',
     restore: 'Restore purchase',

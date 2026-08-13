@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { type RecipeShelf, useRecipes } from '@/data'
+import { useRequirePro } from '@/features/paywall'
 import { RecipeRow } from '@/features/recipes'
 import { ROW_TILE, ScreenTitle } from '@/features/shared'
 import { useDebouncedValue } from '@/lib/use-debounce'
@@ -39,6 +40,7 @@ const SKELETON_ROWS = ['r1', 'r2', 'r3'] as const
 export default function RecipesScreen() {
   const { t } = useTranslation(['recipes', 'common'])
   const router = useRouter()
+  const requirePro = useRequirePro()
   const colors = useThemeColors()
 
   const [shelf, setShelf] = useState<RecipeShelf>('mine')
@@ -60,7 +62,13 @@ export default function RecipesScreen() {
           <IconButton
             variant="primary"
             accessibilityLabel={t('recipes:new.title')}
-            onPress={() => router.push('/recipe/edit')}
+            onPress={() => {
+              // Writing a recipe is composing something to log later, so it is
+              // gated where logging is. The shelves, the community and
+              // somebody else's recipe all stay readable.
+              if (!requirePro()) return
+              router.push('/recipe/edit')
+            }}
           >
             <Icon set="ui" name="plus" size={22} tintColor={colors.onPandan} />
           </IconButton>
