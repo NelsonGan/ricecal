@@ -398,11 +398,9 @@ export const REVIEW_KINDS = ['week', 'month'] as const satisfies readonly Review
  * One row of the reviews list, and one bar of the comparison chart inside a
  * story.
  *
- * `qualifies` is the whole reason both readers share a type. The list shows the
- * periods that have enough logged in them to be worth opening; the chart draws
- * every period either way, because a light week is a fact about the month it
- * sits in and hiding it would leave a hole in the chart with nothing to explain
- * it.
+ * Every period in the window is one of these, however little was logged in it.
+ * A thin week is the week you most want to see the shape of, and both readers
+ * would rather draw it short than not at all.
  */
 export type ReviewPeriod = {
   kind: ReviewKind
@@ -411,8 +409,6 @@ export type ReviewPeriod = {
   end: string
   days: number
   daysLogged: number
-  /** Enough logged to be worth a review. Decided in SQL; see `review_periods`. */
-  qualifies: boolean
 
   /** Averaged over the days WITH food. Null when none had any. */
   kcal: number | null
@@ -449,10 +445,6 @@ export type ReviewSummary = {
   lightestKcal: number | null
   heaviestOn: string | null
   heaviestKcal: number | null
-
-  /** Rows, not days: how many plates, and how many came out of a pot at home. */
-  entries: number
-  homeCooked: number
 
   water: number
   waterGoalDays: number
@@ -498,12 +490,13 @@ export type ReviewBucket = {
  *
  * The name is the identity: `review_meals` groups on the folded name, so two
  * of these can never say the same thing and a list of them needs no other key.
+ * They arrive heaviest first — see the header on that function for why counting
+ * repeats turned out to be the wrong question.
  */
 export type ReviewMeal = {
   name: string
   icon?: IconRef
-  times: number
-  /** What one of them cost, averaged. Not the total across the period. */
+  /** What one of them cost, averaged over any repeats. Not the period's total. */
   kcal: number
   carbs: number
   protein: number

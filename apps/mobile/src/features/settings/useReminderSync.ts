@@ -36,6 +36,7 @@ export function useReminderSync(): void {
       settings.notify_water,
       settings.notify_weigh_in,
       settings.notify_weekly_report,
+      settings.notify_monthly_report,
       settings.quiet_from,
       settings.quiet_to,
       mealTimes.map((meal) => [meal.meal, meal.at, meal.reminder_enabled]),
@@ -57,6 +58,8 @@ export function useReminderSync(): void {
       weighInBody: t('profile:reminders.push.weighInBody'),
       weeklyTitle: t('profile:reminders.push.weeklyTitle'),
       weeklyBody: t('profile:reminders.push.weeklyBody'),
+      monthlyTitle: t('profile:reminders.push.monthlyTitle'),
+      monthlyBody: t('profile:reminders.push.monthlyBody'),
     })
   }, [userId, settings, mealTimes, t])
 }

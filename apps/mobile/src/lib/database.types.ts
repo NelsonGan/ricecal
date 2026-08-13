@@ -944,6 +944,7 @@ export type Database = {
           created_at: string
           energy: Database['public']['Enums']['energy_unit']
           language: string
+          notify_monthly_report: boolean
           notify_water: boolean
           notify_weekly_report: boolean
           notify_weigh_in: boolean
@@ -961,6 +962,7 @@ export type Database = {
           created_at?: string
           energy?: Database['public']['Enums']['energy_unit']
           language?: string
+          notify_monthly_report?: boolean
           notify_water?: boolean
           notify_weekly_report?: boolean
           notify_weigh_in?: boolean
@@ -978,6 +980,7 @@ export type Database = {
           created_at?: string
           energy?: Database['public']['Enums']['energy_unit']
           language?: string
+          notify_monthly_report?: boolean
           notify_water?: boolean
           notify_weekly_report?: boolean
           notify_weigh_in?: boolean
@@ -1560,7 +1563,6 @@ export type Database = {
           kcal_avg: number
           name: string
           protein_g_avg: number
-          times: number
         }[]
       }
       review_periods: {
@@ -1572,7 +1574,6 @@ export type Database = {
           kcal_avg: number
           kind: string
           marks: number[]
-          qualifies: boolean
           starts_on: string
           weight_change: number
         }[]
@@ -1601,12 +1602,10 @@ export type Database = {
           days_under_goal: number
           distance_total_m: number
           ends_on: string
-          entries: number
           exercise_min_total: number
           fat_g_avg: number
           heaviest_kcal: number
           heaviest_on: string
-          home_cooked: number
           kcal_avg: number
           kcal_goal: number
           kind: string

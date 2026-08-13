@@ -1,5 +1,12 @@
 import type { ReviewSummary } from '@/data/types'
-import { parseReviewId, periodTitle, reviewId, reviewSteps, underGoalShare } from '../period'
+import {
+  LATEST,
+  parseReviewId,
+  periodTitle,
+  reviewId,
+  reviewSteps,
+  underGoalShare,
+} from '../period'
 
 /**
  * How a review is addressed, named, and cut into steps.
@@ -37,9 +44,6 @@ const summary = (over: Partial<ReviewSummary> = {}): ReviewSummary => ({
   heaviestOn: '2026-08-05',
   heaviestKcal: 2200,
 
-  entries: 21,
-  homeCooked: 4,
-
   water: 6,
   waterGoalDays: 3,
 
@@ -70,6 +74,11 @@ describe('the route a review lives at', () => {
     })
   })
 
+  it('takes `latest` in place of a date, which is what a report links to', () => {
+    expect(parseReviewId('week-latest')).toEqual({ kind: 'week', start: LATEST })
+    expect(parseReviewId('month-latest')).toEqual({ kind: 'month', start: LATEST })
+  })
+
   it('refuses anything it did not write', () => {
     expect(parseReviewId(undefined)).toBeNull()
     expect(parseReviewId('')).toBeNull()
@@ -77,6 +86,7 @@ describe('the route a review lives at', () => {
     // halves the other way round.
     expect(parseReviewId('year-2026-01-01')).toBeNull()
     expect(parseReviewId('week-tomorrow')).toBeNull()
+    expect(parseReviewId('week-newest')).toBeNull()
     expect(parseReviewId('2026-08-03-week')).toBeNull()
     // The shape is right and the date is short. Left through, this reaches
     // Postgres as a date literal and errors on the request rather than here.

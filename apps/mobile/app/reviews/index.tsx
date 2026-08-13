@@ -17,10 +17,13 @@ import { AppBar, Card, EmptyState, Screen, SegmentedControl, Skeleton } from '@/
  * from a distance. Both are decided in `review_periods`; nothing here knows a
  * date.
  *
- * ONLY PERIODS WORTH OPENING are listed. A week with two days in it comes back
- * from the server like any other, with `qualifies` false, and is filtered out
- * here rather than there — the story's own comparison chart draws those same
- * rows, so the list is the only reader that wants them gone.
+ * EVERY PERIOD IN THE WINDOW, however little is in it. There was a sufficiency
+ * rule here — four logged days of a week, twelve of a month — and periods that
+ * failed it were dropped. Two things were wrong with that: the week you barely
+ * logged is the week whose shape is worth seeing, and a list that silently
+ * omits some weeks reads as a list that lost them. The sparkline already says
+ * how much of a period was recorded, which is what the rule was trying to
+ * protect against.
  */
 export default function ReviewsScreen() {
   const { t } = useTranslation(['reviews', 'common'])
@@ -31,7 +34,7 @@ export default function ReviewsScreen() {
   const { data: settings } = useSettings()
   const unit = unitFor(settings?.units)
 
-  const listed = (periods.data ?? []).filter((period) => period.qualifies)
+  const listed = periods.data ?? []
 
   return (
     <Screen>

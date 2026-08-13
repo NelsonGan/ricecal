@@ -56,6 +56,18 @@ export const reviews = {
       'A month shows up here once it has finished and you logged at least twelve of its days.',
   },
 
+  /**
+   * Lifting a card out of a story.
+   *
+   * Any card, not just the first one: the sheet shows the picture that will
+   * leave the phone, so the copy is about the picture rather than about which
+   * card it was.
+   */
+  share: {
+    card: 'Share {{card}}',
+    preview: 'The card as it will be sent',
+  },
+
   story: {
     /** The counter beside the title: "2 of 4". */
     step: '{{index}} of {{total}}',
@@ -99,14 +111,10 @@ export const reviews = {
 
   /** Step 2, the food. */
   food: {
-    title: 'WHAT YOU ATE MOST',
-    times: '{{count}}x',
-    once: 'Once',
+    title: 'THE BIGGEST PLATES',
     macros: 'MACROS A DAY',
     grams: '{{value}} g',
     share: '{{value}}% of energy',
-    note: '{{meals}} meals logged, {{home}} of them cooked at home.',
-    noteNoHome: '{{meals}} meals logged.',
   },
 
   /** Step 3, the calories. */

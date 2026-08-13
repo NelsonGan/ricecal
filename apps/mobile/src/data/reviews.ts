@@ -34,7 +34,6 @@ function toPeriod(row: PeriodRow): ReviewPeriod {
     end: row.ends_on,
     days: orZero(row.days),
     daysLogged: orZero(row.days_logged),
-    qualifies: row.qualifies,
 
     kcal: num(row.kcal_avg),
     weightChange: num(row.weight_change),
@@ -63,9 +62,6 @@ function toSummary(row: SummaryRow): ReviewSummary {
     lightestKcal: num(row.lightest_kcal),
     heaviestOn: row.heaviest_on,
     heaviestKcal: num(row.heaviest_kcal),
-
-    entries: orZero(row.entries),
-    homeCooked: orZero(row.home_cooked),
 
     water: orZero(row.water_avg),
     waterGoalDays: orZero(row.water_goal_days),
@@ -103,7 +99,6 @@ function toMeal(row: MealRow): ReviewMeal {
   return {
     name: row.name,
     icon: toIcon(row.icon_set, row.icon_name),
-    times: orZero(row.times),
     kcal: orZero(row.kcal_avg),
     carbs: orZero(row.carbs_g_avg),
     protein: orZero(row.protein_g_avg),
@@ -114,15 +109,10 @@ function toMeal(row: MealRow): ReviewMeal {
 /**
  * Every finished week or month in the window, newest first.
  *
- * Read by three screens and cached under one key, which is the point. Trends
- * asks it whether there is anything to review at all; the list draws the
- * periods that qualify; and a story opened from that list draws the same rows
- * again as the bars of its comparison chart. One request serves all three, and
- * the two that follow the first are instant.
- *
- * Not filtered here. `qualifies` is a column rather than a `where`, so a light
- * week can be absent from the list and still present in the chart — see
- * `ReviewPeriod`.
+ * Read by two screens and cached under one key, which is the point: the list
+ * draws these rows, and a story opened from it draws the same rows again as the
+ * bars of its comparison chart and resolves `week-latest` against the first of
+ * them. One request serves all three uses, and the two that follow are instant.
  */
 export function useReviewPeriods(kind: ReviewKind) {
   const userId = useUserId()
@@ -179,7 +169,7 @@ export function useReviewSeries(kind: ReviewKind, start: string) {
 /** How many dishes the food step lists. Five fill the card without scrolling it. */
 const MEALS_SHOWN = 5
 
-/** What was eaten over the period, by dish, most often first. */
+/** The period's biggest plates, heaviest first. */
 export function useReviewMeals(kind: ReviewKind, start: string) {
   const userId = useUserId()
 

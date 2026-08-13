@@ -16,10 +16,12 @@ import {
   CaloriesStep,
   CardStep,
   FoodStep,
+  LATEST,
   parseReviewId,
   periodShortTitle,
   type ReviewStep,
   reviewSteps,
+  ShareableCards,
   StoryFrame,
   type StoryPage,
 } from '@/features/reviews'
@@ -50,21 +52,36 @@ export default function ReviewStoryScreen() {
   const close = useBack('/reviews')
 
   const period = parseReviewId(id)
+  const kind = period?.kind ?? 'week'
 
   const { data: settings } = useSettings()
   const unit = unitFor(settings?.units)
 
-  // `enabled` rather than an early return: the hooks below have to be called in
-  // the same order on every render, and an unparseable id is a screen state
-  // rather than a different screen.
-  const summary = useReviewSummary(period?.kind ?? 'week', period?.start ?? '')
-  const series = useReviewSeries(period?.kind ?? 'week', period?.start ?? '')
-  const meals = useReviewMeals(period?.kind ?? 'week', period?.start ?? '')
-  const periods = useReviewPeriods(period?.kind ?? 'week')
+  const periods = useReviewPeriods(kind)
+
+  /**
+   * Which period this actually is.
+   *
+   * Usually the date in the route. `LATEST` is the other case, and it is what a
+   * report notification links to: one is scheduled weeks before the Monday it
+   * fires on, so it cannot name the week it will be about. The list is ordered
+   * newest first, so its head IS that week.
+   */
+  const start =
+    period === null ? '' : period.start === LATEST ? (periods.data?.[0]?.start ?? '') : period.start
+
+  // Every hook above the first return, and `enabled` rather than an early exit
+  // inside them: an unparseable id is a screen state rather than a different
+  // screen, and so is a `latest` that has not resolved yet.
+  const summary = useReviewSummary(kind, start)
+  const series = useReviewSeries(kind, start)
+  const meals = useReviewMeals(kind, start)
 
   if (!period) return <Missing />
 
-  const loading = summary.isPending || series.isPending || meals.isPending
+  const resolving = period.start === LATEST && periods.isPending
+  const loading =
+    resolving || (start !== '' && (summary.isPending || series.isPending || meals.isPending))
   const found = summary.data
 
   if (loading) {
@@ -87,11 +104,13 @@ export default function ReviewStoryScreen() {
     )
   }
 
-  // A period with nothing in it has a row of nulls rather than no row, so the
-  // test is on the days rather than on the answer being absent.
-  if (!found || found.daysLogged === 0) return <Missing />
+  // An EMPTY period still gets a review. It used to be turned away here, and
+  // that was the same instinct as the sufficiency rule on the list: a week
+  // nobody logged is a week worth seeing seven hollow blocks for. `reviewSteps`
+  // already drops the steps that would have nothing on them.
+  if (!found) return <Missing />
 
-  const title = periodShortTitle(period.kind, found.start, found.end)
+  const title = periodShortTitle(kind, found.start, found.end)
   const buckets = series.data ?? []
   const dishes = meals.data ?? []
   const steps = reviewSteps(found, dishes.length)
@@ -100,37 +119,45 @@ export default function ReviewStoryScreen() {
     card: <CardStep title={title} summary={found} buckets={buckets} unit={unit} />,
     food: <FoodStep summary={found} meals={dishes} />,
     calories: (
-      <CaloriesStep
-        kind={period.kind}
-        summary={found}
-        buckets={buckets}
-        periods={periods.data ?? []}
-      />
+      <CaloriesStep kind={kind} summary={found} buckets={buckets} periods={periods.data ?? []} />
     ),
-    body: <BodyStep kind={period.kind} summary={found} buckets={buckets} unit={unit} />,
+    body: <BodyStep kind={kind} summary={found} buckets={buckets} unit={unit} />,
   }
 
   const pages: StoryPage[] = steps.map((step) => ({ key: step, node: draw[step] }))
 
   return (
-    <StoryFrame
-      // Keyed by the review, so opening a second one from the first's
-      // comparison chart starts at its first card with the pager wound back.
-      // Expo Router reuses this route when only the params move, and a frame
-      // that survived that would keep the scroll position of the story before
-      // it.
-      key={id}
-      title={title}
-      pages={pages}
-      onClose={close}
-      labels={{
-        close: t('reviews:story.close'),
-        previous: t('reviews:story.previous'),
-        next: t('reviews:story.next'),
-        progress: t('reviews:title'),
-      }}
-      counter={(at, total) => t('reviews:story.step', { index: at + 1, total })}
-    />
+    /* Around the frame rather than inside it, because the pages are elements
+       this screen builds: context reaches them by where they are RENDERED,
+       which is inside the provider either way, and the sentence a share carries
+       is one this screen knows and the frame does not. */
+    <ShareableCards
+      message={t('reviews:card.shareText', {
+        period: title,
+        kcal: Math.round(found.kcal ?? 0).toLocaleString(),
+        done: found.daysLogged,
+        total: found.days,
+      })}
+    >
+      <StoryFrame
+        // Keyed by the review, so opening a second one from the first's
+        // comparison chart starts at its first card with the pager wound back.
+        // Expo Router reuses this route when only the params move, and a frame
+        // that survived that would keep the scroll position of the story before
+        // it.
+        key={id}
+        title={title}
+        pages={pages}
+        onClose={close}
+        labels={{
+          close: t('reviews:story.close'),
+          previous: t('reviews:story.previous'),
+          next: t('reviews:story.next'),
+          progress: t('reviews:title'),
+        }}
+        counter={(at, total) => t('reviews:story.step', { index: at + 1, total })}
+      />
+    </ShareableCards>
   )
 }
 

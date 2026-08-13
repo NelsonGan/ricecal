@@ -1,11 +1,12 @@
 import { format, parseISO } from 'date-fns'
 import { useTranslation } from 'react-i18next'
-import { Share, View } from 'react-native'
+import { View } from 'react-native'
 
 import type { ReviewBucket, ReviewKind, ReviewSummary } from '@/data'
 import { showChange, type WeightUnit } from '@/features/progress'
 import { StatRow } from '@/features/shared'
-import { Badge, Button, Card, cn, Icon, Text } from '@/ui'
+import { Badge, Card, cn, Icon, Text } from '@/ui'
+import { Shareable } from './ShareableCards'
 
 export type CardStepProps = {
   title: string
@@ -29,10 +30,10 @@ export type CardStepProps = {
  * looking back at their own week wants to see first, and it stays true whether
  * the week averaged 1,400 or 2,600.
  *
- * SHARING SENDS A SENTENCE, not a picture. Rendering the card to an image would
- * mean a second drawing of it that has to agree with this one, and the two
- * drift the first time a figure moves. The sentence carries the same three
- * numbers.
+ * There is no Share button, and no wordmark of its own. Every card in a story
+ * is shareable — tap it and it draws itself into a picture — and `Shareable`
+ * puts the app's mark under each one, so this card carrying a second copy said
+ * only that it was the special one.
  */
 export function CardStep({ title, summary, buckets, unit }: CardStepProps) {
   const { t } = useTranslation(['reviews', 'common'])
@@ -42,19 +43,8 @@ export function CardStep({ title, summary, buckets, unit }: CardStepProps) {
   /** Positive is under budget, which is the direction the arrow points. */
   const delta = goal !== null && average !== null ? Math.round(goal - average) : null
 
-  const share = () => {
-    void Share.share({
-      message: t('reviews:card.shareText', {
-        period: title,
-        kcal: Math.round(average ?? 0).toLocaleString(),
-        done: summary.daysLogged,
-        total: summary.days,
-      }),
-    })
-  }
-
   return (
-    <>
+    <Shareable title={title}>
       <Card contentClassName="gap-md p-card">
         <View className="flex-row items-center justify-between gap-md">
           <Text variant="overline" numberOfLines={1} className="min-w-0 flex-1">
@@ -135,19 +125,8 @@ export function CardStep({ title, summary, buckets, unit }: CardStepProps) {
             },
           ]}
         />
-
-        {/* The app's own name, because this card is the one thing here that
-            gets screenshotted and sent to somebody who does not have it. */}
-        <Text variant="overlineSm">{t('reviews:card.brand')}</Text>
       </Card>
-
-      {/* Sized rather than full width, and centred, so it sits clear of the tap
-          zones either side of it. A full-width button under a story's card is
-          also the one control somebody hits while trying to move on. */}
-      <Button variant="primary" size="md" className="self-center" onPress={share}>
-        {t('reviews:story.share')}
-      </Button>
-    </>
+    </Shareable>
   )
 }
 

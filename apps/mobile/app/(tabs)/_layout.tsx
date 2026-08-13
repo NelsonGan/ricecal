@@ -2,7 +2,7 @@ import { Redirect } from 'expo-router'
 import { TabList, TabSlot, Tabs, TabTrigger } from 'expo-router/ui'
 import { useTranslation } from 'react-i18next'
 import { useSession } from '@/data'
-import { useReminderSync } from '@/features/settings'
+import { useReminderSync, useReportLinks } from '@/features/settings'
 import { NavBar, NavItem } from '@/ui'
 
 /**
@@ -59,10 +59,13 @@ export default function TabsLayout() {
 function SignedInTabs() {
   const { t } = useTranslation()
 
-  // Here rather than in the root layout: it needs a session, and this is the
-  // first thing that only renders with one. Rewrites the phone's scheduled
-  // reminders whenever the settings behind them change.
+  // Here rather than in the root layout: they need a session, and this is the
+  // first thing that only renders with one. One rewrites the phone's scheduled
+  // reminders whenever the settings behind them change; the other opens the
+  // review a report notification is about when it is tapped, which has to be
+  // behind the same guard because the route it pushes reads the account.
   useReminderSync()
+  useReportLinks()
 
   return (
     <Tabs>
