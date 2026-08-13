@@ -232,8 +232,6 @@ function useRecogniseMeal() {
           // the Activity tab still saying "Not enough logged".
           queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
           // The scan spent somewhere between one and four model requests and
-          // only the server knows how many.
-          queryClient.invalidateQueries({ queryKey: keys.aiUsage(userId) })
         })
         .catch((error: unknown) => {
           // Out of budget for the month. The user is told, and told what to
@@ -242,7 +240,6 @@ function useRecogniseMeal() {
             void booked.then(() => cancelScanNotice(notice))
             pending.fail(id)
             toast.show({ title: i18n.t('paywall:limit.reached'), tone: 'error' })
-            queryClient.invalidateQueries({ queryKey: keys.aiUsage(userId) })
             return
           }
           // Entitlement lapsed between the tap and the request. The guard in

@@ -978,6 +978,15 @@ toast asking the user to get in touch, never the archetype floor — falling
 through would put a guessed "Mixed meal" in the diary of somebody who was owed
 an explanation.
 
+The COUNT ITSELF IS NOT SHOWN ANYWHERE IN THE APP, and that is deliberate. It
+briefly was, on the subscription screen. It counts requests to the model rather
+than meals — one photographed plate is several — so any figure on screen
+invites the reply that they have only logged forty things this week, which is
+true, and which the number cannot answer. It is an operational limit, so it
+lives where it is enforced: `ai_usage` in Postgres. The only thing a user ever
+sees is the message when they reach it. `ai_usage_this_month()` survives as a
+read for support and a future admin view; nothing in the app calls it.
+
 **Reminders are all local.** A meal reminder is "every day at 08:00 in the
 user's own timezone", which both platforms express as a repeating calendar
 trigger: no server, no push token, nothing to deliver if the phone is offline at
