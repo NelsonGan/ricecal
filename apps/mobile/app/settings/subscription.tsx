@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { useAiUsage, usePlanPrices, useSubscription } from '@/data'
+import { useAiUsage, useEntitlement, usePlanPrices, useSubscription } from '@/data'
 import { openManageSubscriptions } from '@/data/purchases'
 import { CheckList } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
@@ -36,7 +36,10 @@ export default function SubscriptionScreen() {
    * to `/paywall`: it used to be reachable from the read-only preview screen,
    * and when that went the standing paywall became a route nothing linked to.
    */
-  const entitled = subscription?.status === 'trial' || subscription?.status === 'active'
+  // `useEntitlement`, not a second copy of the rule. It exists so that "what
+  // does Pro include" is answered once; comparing statuses here would be the
+  // screen that silently disagrees when that answer changes.
+  const { entitled } = useEntitlement()
 
   // Whole days left, from the instant the store reported. Not a stored counter:
   // one would need something to decrement it every midnight.

@@ -938,6 +938,24 @@ auto-renew was turned off and the user keeps what they paid for until
 `EXPIRATION` follows, so reading it as the end takes the app away from somebody
 who has paid for another three weeks of it.
 
+**Prices come from the store, never from this repo.** `usePlanPrices` reads the
+current offering and uses RevenueCat's localised `priceString`, so a Malaysian
+user sees ringgit because that is what they will be charged. They were strings
+in the copy bundle and were wrong three ways at once: dollars shown to somebody
+billed in ringgit, Apple and Play disagreeing on lifetime because Apple has no
+119.90 price point for a one-time purchase, and every repricing needing an app
+release before the paywall stopped lying. Until the store answers, a price is a
+dash — a plausible wrong number is worse than an obviously absent one. The
+saving on the yearly badge is computed from those two prices for the same
+reason: it is the one figure on that screen a user can check.
+
+**A purchase confirms before our mirror knows about it.** The store answers,
+then RevenueCat, then the webhook writes `subscriptions` — which is what
+`useEntitlement` reads. Navigating on the store's confirmation alone put the
+paywall back in front of somebody one tap after they paid, and it is invisible
+on a fast connection. Every purchase and restore awaits `useAwaitEntitlement`,
+which polls the mirror and gives up rather than blocking for ever.
+
 **What Pro gates is WRITING AN ENTRY, and nothing else.** Search works, the
 catalogue is open, a dish page prices itself, the barcode scanner scans and the
 camera frames the plate. `useRequirePro` is the single guard and it is called at

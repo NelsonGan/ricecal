@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useCallback } from 'react'
 
 import { supabase } from '@/lib/supabase'
 import { unwrapMaybe, unwrapOne } from './client'
@@ -132,4 +133,40 @@ export function usePlanPrices() {
     // something worth polling for inside one session.
     staleTime: 60 * 60 * 1000,
   })
+}
+
+/**
+ * Waits for a just-completed purchase to reach our own mirror of it.
+ *
+ * THE STORE IS NOT THE SOURCE THIS APP READS. A purchase confirms in the
+ * store, RevenueCat hears about it, and only then does the `revenuecat`
+ * webhook write `subscriptions` — which is what `useEntitlement` reads. The
+ * gap is small and it is not zero, so a screen that navigated on the store's
+ * confirmation alone could hand a paying user the paywall again one tap later.
+ * That is the worst first impression this app can make, and it is entirely
+ * invisible in testing on a fast connection.
+ *
+ * So the purchase screens await this before they move on. It polls rather than
+ * assumes, and it gives up rather than blocking for ever: an entitlement that
+ * has not landed in ten seconds will land on its own, and the router and the
+ * gates both recover once it does.
+ */
+const ENTITLEMENT_POLL_ATTEMPTS = 7
+const ENTITLEMENT_POLL_INTERVAL_MS = 1_500
+
+export function useAwaitEntitlement(): () => Promise<boolean> {
+  const queryClient = useQueryClient()
+  const userId = useUserId()
+
+  return useCallback(async () => {
+    for (let attempt = 0; attempt < ENTITLEMENT_POLL_ATTEMPTS; attempt++) {
+      await queryClient.invalidateQueries({ queryKey: keys.subscription(userId) })
+      const row = queryClient.getQueryData<{ status?: string } | null>(keys.subscription(userId))
+      if (ENTITLED.has(row?.status ?? 'none')) return true
+      if (attempt < ENTITLEMENT_POLL_ATTEMPTS - 1) {
+        await new Promise((resolve) => setTimeout(resolve, ENTITLEMENT_POLL_INTERVAL_MS))
+      }
+    }
+    return false
+  }, [queryClient, userId])
 }

@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { type Plan, usePlanPrices } from '@/data'
+import { type Plan, useAwaitEntitlement, usePlanPrices } from '@/data'
 import {
+  isUserCancelled,
   PurchasesUnavailable,
   purchasePlan,
   purchasesAvailable,
@@ -42,6 +43,7 @@ export default function IntroPaywall() {
   const { t } = useTranslation(['paywall', 'common'])
   const router = useRouter()
   const toast = useToast()
+  const awaitEntitlement = useAwaitEntitlement()
   const [plan, setPlan] = useState<Plan>('yearly')
   const { data: prices } = usePlanPrices()
 
@@ -56,11 +58,21 @@ export default function IntroPaywall() {
     }
     try {
       await purchasePlan(plan)
-      router.replace('/paywall/welcome')
+      // The store has confirmed; our own mirror of it has not yet. See
+      // `useAwaitEntitlement` — leaving on the store's word alone can put
+      // the paywall back in front of somebody who has just paid.
+      await awaitEntitlement()
+      router.replace({ pathname: '/paywall/welcome', params: { plan: plan } })
     } catch (error) {
-      // A cancelled purchase sheet is not a failure worth a message: the user
-      // closed it themselves and knows what happened.
-      if (error instanceof PurchasesUnavailable) return
+      // Closing the store's sheet is not a failure worth apologising for; the
+      // user did it deliberately and knows what happened.
+      if (isUserCancelled(error)) return
+      // And a build with no usable SDK should say so rather than go quiet,
+      // which is what this branch did when it swallowed the error.
+      if (error instanceof PurchasesUnavailable) {
+        toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
+        return
+      }
       toast.show({
         title: error instanceof Error ? error.message : t('common:action.retry'),
         tone: 'error',
@@ -73,8 +85,14 @@ export default function IntroPaywall() {
       toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
       return
     }
-    await restorePurchases()
-    toast.show({ title: t('paywall:hard.restored') })
+    const restored = await restorePurchases()
+    if (!restored) {
+      toast.show({ title: t('paywall:hard.nothingToRestore') })
+      return
+    }
+    // Same race as a fresh purchase: the store knows, our mirror does not yet.
+    await awaitEntitlement()
+    toast.show({ title: t('paywall:hard.restored'), tone: 'success' })
   }
 
   const priceString = prices?.[plan]?.priceString
