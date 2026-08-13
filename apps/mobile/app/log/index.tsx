@@ -1,16 +1,12 @@
-import { subDays } from 'date-fns'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
-  dateKey,
   type LogSnapshot,
   packetFoodId,
-  snapshotFromEntry,
   snapshotFromRecipe,
-  useDay,
   useDayLog,
   useDescribeFood,
   useLogFood,
@@ -19,7 +15,7 @@ import {
   useTargets,
 } from '@/data'
 import {
-  BarcodePanel,
+  type CaptureMode,
   DescribePanel,
   FoodSearchPanel,
   InlineCamera,
@@ -29,21 +25,41 @@ import { useRequirePro } from '@/features/paywall'
 import { RecipePanel } from '@/features/recipes'
 import { useBack } from '@/lib/navigation'
 import { sumMacros } from '@/lib/nutrition'
-import { Icon, SheetSurface, Tappable, Text } from '@/ui'
+import { SheetSurface, Tabs, Text } from '@/ui'
 
 /**
- * Which of the five quick actions has its panel open below the row, if any.
+ * Which of the four quick actions has its panel open below the row, if any.
  *
  * A union rather than a flag each, because they share the space under the row:
  * opening the camera has to put search away, and the other way round.
+ *
+ * Scanning a packet is NOT one of them any more. It is a tab inside the camera,
+ * because it was never a different action — it is the same gesture, pointing
+ * the phone at the thing, and a fifth tile made the row of choices longer to
+ * answer a question the user had already answered by reaching for the camera.
  */
-type Panel = 'camera' | 'barcode' | 'describe' | 'search' | 'recipes' | null
+type Panel = 'camera' | 'describe' | 'search' | 'recipes' | null
 
-const PANELS = ['camera', 'barcode', 'describe', 'search', 'recipes'] as const
+const PANELS = ['camera', 'describe', 'search', 'recipes'] as const
 
 /** A route param is whatever was in the URL, so it is checked before it is used. */
 const isPanel = (value: string | undefined): value is NonNullable<Panel> =>
   PANELS.includes(value as (typeof PANELS)[number])
+
+/**
+ * `?panel=barcode` still means something, and it is the reason this mapping
+ * exists rather than a rename.
+ *
+ * A packet nothing could identify offers "Scan again", which has to land on the
+ * day with the scanner live — see `reopenLog` in the food detail screen. That
+ * link predates the tabs and points at a panel that is now a tab, so it resolves
+ * to the camera opened on the barcode side rather than to nothing.
+ */
+const openingPanel = (value: string | undefined): Panel =>
+  value === 'barcode' ? 'camera' : isPanel(value) ? value : 'camera'
+
+const openingMode = (value: string | undefined): CaptureMode =>
+  value === 'barcode' ? 'barcode' : 'meal'
 
 /**
  * L2 QUICK SELECTOR, and L3's backdrop.
@@ -84,22 +100,30 @@ export default function LogSheet() {
    * them and nothing has to be dismissed twice. See the `Panel` union above.
    *
    * Snap is the default, so the log button opens on a camera pointed at the
-   * food. It is what people came to do — the other four are how you log a meal
+   * food. It is what people came to do — the other three are how you log a meal
    * you are not looking at — and an extra tap to reach it was a tap spent on the
-   * common case. Tapping Snap again closes it, which is what puts "repeat
-   * yesterday" below back within reach.
+   * common case. Tapping Snap again closes it.
    */
-  const [panel, setPanel] = useState<Panel>(() => (isPanel(opening) ? opening : 'camera'))
+  const [panel, setPanel] = useState<Panel>(() => openingPanel(opening))
+  /**
+   * Meal or barcode, within the camera. Seeded from the route so "Scan again"
+   * lands on the scanner, and kept while the panel is closed and reopened so
+   * somebody who came to scan does not have to say so twice.
+   */
+  const [captureMode, setCaptureMode] = useState<CaptureMode>(() => openingMode(opening))
+  // Memoised because this screen holds a live camera preview, and a new array
+  // on every render is a new prop on the strip above it.
+  const captureTabs = useMemo(
+    () => [
+      { value: 'meal' as const, label: t('logging:capture.meal') },
+      { value: 'barcode' as const, label: t('logging:capture.barcode') },
+    ],
+    [t],
+  )
   const toggle = (next: NonNullable<Panel>) =>
     setPanel((current) => (current === next ? null : next))
 
   const left = (targets?.kcal ?? 0) - sumMacros(day.entries).kcal
-
-  // Yesterday is a second day query. Cheap, cached, and the only way to offer
-  // "repeat" without keeping every day in memory.
-  const yesterdayKey = dateKey(subDays(new Date(selectedDate), 1))
-  const { data: yesterday } = useDay(yesterdayKey)
-  const yesterdayEntries = yesterday?.entries ?? []
 
   // `replace`, for the same reason `openFood` below does it: this route is a
   // transparentModal, and a paywall pushed from inside one comes up stacked on
@@ -127,24 +151,8 @@ export default function LogSheet() {
   // sheet adds is a recipe and the other is a catalogue dish. They build one
   // the same way and nothing downstream needs to know which it was.
   const add = (snapshot: LogSnapshot) => {
-    if (!requirePro('log')) return
+    if (!requirePro()) return
     logFood.mutate({ snapshot, logDate: selectedDate, source: 'quickAdd' })
-    goBack()
-  }
-
-  const repeatYesterday = () => {
-    if (!requirePro('log')) return
-    for (const entry of yesterdayEntries) {
-      logFood.mutate({
-        // A copy of yesterday's snapshot, not a fresh lookup. The dish may have
-        // been corrected in the catalogue since, and "repeat" means the same
-        // meal rather than today's opinion of it.
-        snapshot: snapshotFromEntry(entry),
-        quantity: entry.quantity,
-        logDate: selectedDate,
-        source: 'quickAdd',
-      })
-    }
     goBack()
   }
 
@@ -166,11 +174,12 @@ export default function LogSheet() {
      * carries the field off the top of the panel. With nothing to scroll there
      * is no scroll to get wrong.
      *
-     * Snap and Scan raise no keyboard at all, and are full height because they
-     * are the same gesture into the same viewfinder: a sheet that is one height
-     * for the camera and another for the scanner reads as two different
-     * features when you switch between them. Which panel is open should not
-     * change the size of the thing it is in.
+     * The camera raises no keyboard at all, and is full height for a different
+     * reason: it now holds two tabs, and a sheet that changed height when you
+     * moved between them would read as two features rather than one camera
+     * doing two jobs. That was the argument for the scanner matching the
+     * viewfinder's height back when they were separate panels; keeping the
+     * sheet one size is the same argument, one level up.
      */
     <SheetSurface
       onClose={() => goBack()}
@@ -206,20 +215,6 @@ export default function LogSheet() {
           selected={panel === 'describe'}
           onPress={() => toggle('describe')}
         />
-        {/* The only exact way in. Everything on either side of it asks a model
-            or asks the user to spell something; a barcode IS the product, and
-            for a packet that is both faster and righter than a photograph of
-            it. It sits beside Snap because the two are the same gesture — point
-            the phone at the thing — and the catalogue behind it is the reason
-            the packaged half of the database could stop being a search
-            problem. */}
-        <QuickAction
-          label={t('logging:selector.scan')}
-          icon={{ set: 'system', name: 'barcode' }}
-          tone="hibiscus"
-          selected={panel === 'barcode'}
-          onPress={() => toggle('barcode')}
-        />
         <QuickAction
           label={t('logging:selector.search')}
           icon={{ set: 'ui', name: 'search' }}
@@ -239,20 +234,44 @@ export default function LogSheet() {
       </View>
 
       {panel === 'camera' ? (
-        // The shutter does not wait for recognition. It writes the row and closes:
-        // the waiting happens on the row itself, where the user can watch it or
-        // ignore it. See `useSnapFood`.
-        <InlineCamera
-          onCapture={(photoUri) => {
-            // The viewfinder is free and the shutter is not. Framing the plate
-            // is most of what makes the feature legible, so the camera opens
-            // for everybody and the paywall arrives at the moment a request
-            // would have been sent.
-            if (!requirePro('photo')) return
-            snapFood({ photoUri, logDate: selectedDate })
-            goBack()
-          }}
-        />
+        <View className="gap-3">
+          {/* Two views of one camera, so the tabs sit ON the panel rather than
+              in the row of actions above it. Meal first because it is what the
+              log button is for; a packet is the exception you reach for. */}
+          <Tabs
+            align="center"
+            options={captureTabs}
+            value={captureMode}
+            onChange={setCaptureMode}
+            accessibilityLabel={t('logging:capture.tabs')}
+          />
+
+          {/* The shutter does not wait for recognition. It writes the row and
+              closes: the waiting happens on the row itself, where the user can
+              watch it or ignore it. See `useSnapFood`.
+
+              Scanning does NOT close the sheet and write a row. A scanned
+              packet is a catalogue row with portions on it — "1 sachet", "half
+              the packet" — and how much was eaten is the question the detail
+              screen exists to ask. Snapping a plate has already answered that
+              by photographing one plate. It also leaves on the CODE, before
+              anything is looked up: the packet travels as an id of its own
+              (`packetFoodId`) and the detail screen resolves it, which is what
+              took the waiting off the viewfinder. */}
+          <InlineCamera
+            mode={captureMode}
+            onCapture={(photoUri) => {
+              // The viewfinder is free and the shutter is not. Framing the
+              // plate is most of what makes the feature legible, so the camera
+              // opens for everybody and the paywall arrives at the moment a
+              // request would have been sent.
+              if (!requirePro()) return
+              snapFood({ photoUri, logDate: selectedDate })
+              goBack()
+            }}
+            onScanned={(code) => openFood(packetFoodId(code))}
+          />
+        </View>
       ) : null}
       {panel === 'describe' ? (
         // Same contract as the shutter: the row is written now and the sheet
@@ -261,24 +280,11 @@ export default function LogSheet() {
         <DescribePanel
           autoFocus
           onSubmit={(text) => {
-            if (!requirePro('describe')) return
+            if (!requirePro()) return
             describeFood({ text, logDate: selectedDate })
             goBack()
           }}
         />
-      ) : null}
-      {panel === 'barcode' ? (
-        /* Unlike the shutter, this does NOT close the sheet and write a row. A
-           scanned packet is a catalogue row with portions on it — "1 sachet",
-           "half the packet" — and how much of it was eaten is the question the
-           detail screen exists to ask. Snapping a plate has already answered
-           that question by photographing one plate.
-
-           And it leaves on the CODE, before anything has been looked up. The
-           packet travels as an id of its own (`packetFoodId`) and the detail
-           screen resolves it, which is what took the waiting off the
-           viewfinder — see the header of `BarcodePanel`. */
-        <BarcodePanel onScanned={(code) => openFood(packetFoodId(code))} />
       ) : null}
       {panel === 'search' ? <FoodSearchPanel autoFocus onPick={openFood} /> : null}
       {panel === 'recipes' ? (
@@ -292,38 +298,6 @@ export default function LogSheet() {
             router.replace({ pathname: '/recipe/[id]', params: { id: recipe.id } })
           }
         />
-      ) : null}
-
-      {/* Repeat yesterday, and nothing else under the row.
-
-          There was a LAST LOGGED list here — the three most recent dishes, each
-          with an add button. It went because of what it was: a guess at what
-          somebody is about to eat, assembled from what they ate before, sitting
-          between the five ways of saying it and the day behind the sheet. The
-          buttons above already answer "what do I do next", and every open of
-          this sheet paid for the guess with a query and a round trip per dish
-          in it.
-
-          This one stays because it is not a guess. Yesterday's meals are a fact,
-          and repeating them is one tap for a whole day of eating that somebody
-          having the same breakfast every morning will actually use. It is absent
-          entirely when yesterday was empty, rather than saying so, and put away
-          while a panel is open — a panel is the answer of somebody who has
-          already decided. */}
-      {panel === null && yesterdayEntries.length ? (
-        <Tappable
-          onPress={repeatYesterday}
-          className="flex-row items-center justify-center gap-2 rounded-tile border-[3px] border-line border-dashed p-3"
-          accessibilityRole="button"
-          accessibilityLabel={`${t('logging:selector.repeatYesterday')}, ${
-            sumMacros(yesterdayEntries).kcal
-          } ${t('common:unit.kcal')}`}
-        >
-          <Icon set="ui" name="refresh" size={20} />
-          <Text variant="label" className="text-muted">
-            {t('logging:selector.repeatYesterday')}
-          </Text>
-        </Tappable>
       ) : null}
     </SheetSurface>
   )

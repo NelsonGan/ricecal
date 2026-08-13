@@ -139,7 +139,7 @@ export default function RecipeDetailScreen() {
     // Logging a pot writes a food entry like any other, so it is gated like
     // any other. Reading the recipe, saving a copy of somebody else's and
     // editing your own all stay free: none of them puts a row in the diary.
-    if (!requirePro('log')) return
+    if (!requirePro()) return
     logFood.mutate({
       snapshot: snapshotFromRecipe(recipe),
       quantity,

@@ -245,8 +245,11 @@ function RootStack() {
         name="paywall/intro"
         options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
       />
-      <Stack.Screen name="paywall/index" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="paywall/gate" options={{ presentation: 'modal' }} />
+      {/* A PAGE, not a modal. It carries ten features, three plans and small
+          print, and it is reached from somewhere worth returning to — so it
+          pushes and wears a back chevron like every other full page here. The
+          onboarding one below still presents, because it replaces the tour and
+          has nothing behind it to go back to. */}
       <Stack.Screen name="paywall/welcome" options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="paywall/reminder" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/ended" options={{ presentation: 'fullScreenModal' }} />

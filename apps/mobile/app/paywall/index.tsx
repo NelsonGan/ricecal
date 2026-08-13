@@ -1,9 +1,9 @@
-import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { type Plan, useAwaitEntitlement, usePlanPrices } from '@/data'
+
+import { type Plan, useAwaitEntitlement } from '@/data'
 import {
   isUserCancelled,
   PurchasesUnavailable,
@@ -11,32 +11,32 @@ import {
   purchasesAvailable,
   restorePurchases,
 } from '@/data/purchases'
-import { CheckList, PlanPicker } from '@/features/shared'
+import { ProPitch } from '@/features/paywall'
 import { useBack } from '@/lib/navigation'
-import { useThemeColors } from '@/theme/useTheme'
-import { Button, Icon, IconButton, Screen, Text, useToast } from '@/ui'
+import { AppBar, Button, Screen, useToast } from '@/ui'
 
-const MASCOT = require('../../assets/brand/mascot.png')
-
-/** W1 HARD PAYWALL */
-export default function HardPaywall() {
+/**
+ * W1 THE PAYWALL.
+ *
+ * A FULL PAGE, not a modal, and the app's own rule is why. A modal is
+ * something you answer and dismiss — the quick selector, a confirmation — and
+ * carries a cross; a page is somewhere you go and come back from, and carries
+ * a chevron. This is a page. It has ten features, three plans and small print
+ * on it, which is more than a sheet's worth, and it is reached from somewhere
+ * worth returning to: the dish that was about to be logged, the recipe that
+ * was about to be saved.
+ *
+ * The sales half is `ProPitch`, shared with the onboarding paywall. What
+ * differs between the two is how you LEAVE, and that is all that lives here.
+ */
+export default function Paywall() {
   const { t } = useTranslation(['paywall', 'common'])
   const router = useRouter()
   const goBack = useBack('/today')
   const toast = useToast()
   const awaitEntitlement = useAwaitEntitlement()
-  const colors = useThemeColors()
   const [plan, setPlan] = useState<Plan>('yearly')
-  const { data: prices } = usePlanPrices()
 
-  /**
-   * Starts the store's purchase sheet.
-   *
-   * Nothing is written locally on success: RevenueCat's webhook updates
-   * `subscriptions` and the app reads that — the table has no client write
-   * grant, deliberately. Until the SDK key is provisioned this says so rather
-   * than pretending a trial started.
-   */
   const start = async () => {
     if (!purchasesAvailable()) {
       toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
@@ -45,16 +45,15 @@ export default function HardPaywall() {
     try {
       await purchasePlan(plan)
       // The store has confirmed; our own mirror of it has not yet. See
-      // `useAwaitEntitlement` — leaving on the store's word alone can put
-      // the paywall back in front of somebody who has just paid.
+      // `useAwaitEntitlement` — leaving on the store's word alone can put the
+      // paywall back in front of somebody who has just paid.
       await awaitEntitlement()
-      router.replace({ pathname: '/paywall/welcome', params: { plan: plan } })
+      router.replace({ pathname: '/paywall/welcome', params: { plan } })
     } catch (error) {
       // Closing the store's sheet is not a failure worth apologising for; the
       // user did it deliberately and knows what happened.
       if (isUserCancelled(error)) return
-      // And a build with no usable SDK should say so rather than go quiet,
-      // which is what this branch did when it swallowed the error.
+      // And a build with no usable SDK should say so rather than go quiet.
       if (error instanceof PurchasesUnavailable) {
         toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
         return
@@ -81,15 +80,6 @@ export default function HardPaywall() {
     toast.show({ title: t('paywall:hard.restored'), tone: 'success' })
   }
 
-  const priceString = prices?.[plan]?.priceString
-  const smallPrint = !priceString
-    ? t('paywall:hard.smallPrintPending')
-    : plan === 'lifetime'
-      ? t('paywall:hard.smallPrintLifetime', { price: priceString })
-      : plan === 'yearly'
-        ? t('paywall:hard.smallPrintYearly', { price: priceString })
-        : t('paywall:hard.smallPrintMonthly', { price: priceString })
-
   return (
     <Screen
       footer={
@@ -103,45 +93,13 @@ export default function HardPaywall() {
         </View>
       }
     >
-      {/* `justify-end`, not `items-end`: every squishy control sets
-          `self-start` on its own box, which beats a parent's `align-items`.
-          Justification on a row is not something the child can override. */}
-      <View className="flex-row justify-end">
-        <IconButton size="sm" accessibilityLabel={t('common:a11y.close')} onPress={() => goBack()}>
-          <Icon set="ui" name="close" size={18} tintColor={colors.muted} />
-        </IconButton>
-      </View>
-
-      <View className="items-center gap-2.5">
-        <Image source={MASCOT} style={{ width: 72, height: 72 }} contentFit="contain" />
-        <Text variant="title" className="text-center">
-          {t('paywall:hard.title')}
-        </Text>
-      </View>
-
-      <CheckList
-        items={[
-          t('paywall:hard.perks.unlimited'),
-          t('paywall:hard.perks.scanning'),
-          t('paywall:hard.perks.database'),
-        ]}
+      <AppBar
+        title={t('paywall:hard.appBar')}
+        onBack={() => goBack()}
+        backLabel={t('common:a11y.back')}
       />
 
-      <PlanPicker showLifetime value={plan} onChange={setPlan} />
-
-      <View className="items-center gap-1.5">
-        <View className="flex-row items-center gap-2">
-          <Icon set="system" name="shield" size={16} />
-          <Text variant="caption" className="text-pandan-ink">
-            {t('paywall:hard.assurance')}
-          </Text>
-        </View>
-        <Text variant="caption" className="text-center text-faint">
-          {/* The sentence needs the number, so it waits for it rather than
-              printing half of itself. */}
-          {smallPrint}
-        </Text>
-      </View>
+      <ProPitch plan={plan} onPlanChange={setPlan} />
     </Screen>
   )
 }

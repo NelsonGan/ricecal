@@ -7,6 +7,7 @@ import {
   storedImageSource,
   useAvatarUrl,
   useCurrentWeight,
+  useEntitlement,
   useHealthConnection,
   useMealTimes,
   useProfile,
@@ -37,6 +38,7 @@ export default function MeScreen() {
   const { data: settings } = useSettings()
   const { data: targets, isPending: targetsPending } = useTargets()
   const { data: subscription } = useSubscription()
+  const { entitled } = useEntitlement()
   const { data: mealTimes } = useMealTimes()
   const streak = useStreak()
   const weight = useCurrentWeight()
@@ -132,12 +134,16 @@ export default function MeScreen() {
       </Card>
 
       <Card>
+        {/* Somebody who has never paid has nothing to manage. The subscription
+            screen is a plan, a renewal date and a way to cancel; for them it
+            was three cards of "none" wrapped around a button to the paywall,
+            so they go straight to the paywall instead. */}
         <ListRow
           title={t('profile:home.pro')}
           subtitle={planLine}
           leading={<Icon set="system" name="crown" size={42} />}
           divider={false}
-          onPress={() => router.push('/settings/subscription')}
+          onPress={() => router.push(entitled ? '/settings/subscription' : '/paywall')}
         />
       </Card>
 
