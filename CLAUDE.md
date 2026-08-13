@@ -108,6 +108,31 @@ first request returns. `SCHEMA_VERSION` in `packages/shared` is the persister's
 cache buster: bump it whenever the shape of anything persisted changes, or old
 data rehydrates into new code.
 
+**A query with no connection is PAUSED, never sent** — `networkMode: 'online'`,
+the same signal that already gates every write. Reading the cache is untouched
+by that; only the request is. The ONE exception is the photo query, and it is
+the exception for the reason given in the invariant below: `resolveStoredImage`
+asks the disk before it asks the server, so it is the only query in the app
+worth running with no connection. Paused, a diary of plates this phone had
+already downloaded drew as a column of empty tiles. It was `offlineFirst` for a
+while, which reads like
+the offline-tolerant setting and is the reverse: it sends the first request
+whatever the connection and pauses only the retries. Nothing in the app is
+written against that. The router, Today and the search panel all key on a query
+being paused, and none of them could say so until the doomed first request had
+failed — which took THIRTY SECONDS, because a request waits on the access token
+and supabase refuses to hand one over until it has finished retrying a refresh
+it cannot send (`AUTO_REFRESH_TICK_DURATION_MS`). A launch with no signal was a
+spinner for all of it.
+
+The quieter half is what that cost the diary. A failed query ends `error`, only a
+`success` is dehydrated, and the persister writes the whole snapshot — so each
+offline launch saved a copy with the failed queries missing, and offline worked
+once and then less. The profile went first, being the one query whose screen
+redirects away while it is still in flight: losing its last observer cancels the
+retry that would have paused, and it settles as an error over data that was
+perfectly good.
+
 ---
 
 ## Launching, and where a user lands
@@ -115,7 +140,18 @@ data rehydrates into new code.
 `app/index.tsx` is a redirect, not a screen, so there is never a back-stack
 entry pointing at nothing. It asks three questions in order — is the keychain
 read still in flight, is there a session, does the profile have `onboarded_at` —
-and the order is the flow. The questions come BEFORE the account, and so the
+and the order is the flow.
+
+The first of those is the KEYCHAIN READ and nothing else, which is a narrower
+wait than it used to be. `SessionProvider` asked supabase, and supabase answers
+that question last: it reads the same key first, then refreshes a token within 90
+seconds of expiring, and only then says who is signed in. Offline that refresh is
+half a minute of backoff, and the whole app was a spinner behind it. So the
+provider races `whenStoredSession()` — which resolves the moment the adapter has
+been asked for the key — against `getSession()`, and lets the real answer land on
+top whenever it arrives. Storage cannot know about a session revoked while the
+app was closed; that corrects itself twice over, from the call and from the
+`SIGNED_OUT` that follows it. The questions come BEFORE the account, and so the
 local draft rather than the session is what says how far they got. The draft is
 in MMKV and outlives the account it was flushed for, which is why a signed-out
 relaunch starts at the top rather than resuming.

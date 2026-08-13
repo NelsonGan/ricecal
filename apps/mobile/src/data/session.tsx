@@ -11,7 +11,7 @@ import {
 } from 'react'
 import { AppState } from 'react-native'
 
-import { storedSession, supabase } from '@/lib/supabase'
+import { storedSession, supabase, whenStoredSession } from '@/lib/supabase'
 import { clearImageCache } from './photos'
 
 /**
@@ -53,9 +53,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true
+    // Whether supabase has spoken, by either of the two mouths it has — the
+    // call below and the events after it. The storage answer is a stand-in
+    // until one of them does and must never land on top of one, since only
+    // they have been to the server. In practice the stand-in is always first,
+    // the keychain read being the first thing supabase's own startup does; the
+    // guard is what makes that ordering a fact rather than an assumption.
+    let answered = false
 
     supabase.auth.getSession().then(({ data, error }) => {
       if (!active) return
+      answered = true
       // An ERROR here is not an answer. A refresh that could not be sent leaves
       // the session on disk and reports null, which is the same shape as having
       // no account at all — see `storedSession`. Anything that is not a network
@@ -67,6 +75,31 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     })
 
+    /**
+     * WHERE THE LAUNCH BELONGS, WITHOUT WAITING FOR A NETWORK.
+     *
+     * The call above is the authoritative answer and it is worth having, but it
+     * is not worth holding the whole app for: offline it takes supabase at
+     * least thirty seconds to give up on the refresh it does first, and a
+     * hanging request rather than a refused one makes that longer still. The
+     * app was a spinner for all of it. Every offline behaviour underneath —
+     * the router's own paused branch, Today reading the diary off the disk —
+     * sits below this flag and so was never reached.
+     *
+     * Storage has the answer before any of that starts, and it is the same
+     * answer in every case but one: a session revoked or deleted while the app
+     * was closed, which storage cannot know about. That case corrects itself
+     * twice over — the call above lands and says so, and `SIGNED_OUT` arrives
+     * from supabase's own recovery — so the cost is a frame of the wrong screen
+     * for somebody signing in again anyway. Nothing here is a credential: the
+     * client goes on minting its own token for every request it sends.
+     */
+    void whenStoredSession().then((stored) => {
+      if (!active || answered) return
+      setSession(stored)
+      setLoading(false)
+    })
+
     const { data: subscription } = supabase.auth.onAuthStateChange((event, next) => {
       // Same fallback, because the initial event travels the same road: supabase
       // catches the failed load and announces `INITIAL_SESSION, null`, which
@@ -74,6 +107,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // rest say what they mean, and a sign-out has already emptied the storage
       // this reads by the time it fires.
       const resolved = next ?? (event === 'INITIAL_SESSION' ? storedSession() : null)
+      answered = true
       setSession(resolved)
       setLoading(false)
 
@@ -92,8 +126,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
        * lands on a fully restored cache and empties it, and the persister then
        * writes the empty result back over the disk copy. Online the refetch
        * beats the eye. Offline there is no refetch: every query is left with no
-       * data, `offlineFirst` pauses it for want of a connection, and the screen
-       * waits on something that is never coming.
+       * data, paused for want of a connection, and the screen waits on
+       * something that is never coming.
        *
        * So the trigger is the IDENTITY changing, not the event. `undefined`
        * means no event has arrived yet and is deliberately not `null`: the

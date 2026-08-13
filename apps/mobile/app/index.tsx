@@ -76,9 +76,9 @@ export default function Index() {
   // one round trip between launching and knowing where the user belongs.
   //
   // Unless there is no connection to make it over, and no answer saved from a
-  // previous launch to use instead. `offlineFirst` PAUSES such a query rather
-  // than failing it, and a paused query is pending for as long as the phone is
-  // offline — so a spinner here is one that will still be turning tomorrow. It
+  // previous launch to use instead. Such a query is PAUSED rather than sent,
+  // and a paused query is pending for as long as the phone is offline — so a
+  // spinner here is one that will still be turning tomorrow. It
   // needs no retry: react-query resumes the moment a connection returns, and
   // this screen redirects itself.
   if (isPending) return isPaused ? <Offline /> : <Loading />
