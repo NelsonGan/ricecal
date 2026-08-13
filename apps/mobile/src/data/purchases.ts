@@ -1,7 +1,7 @@
 import { Linking, Platform } from 'react-native'
 
 import { env, isConfigured } from '@/lib/env'
-import { purchasesInitialised } from '@/lib/revenuecat'
+import { ensurePurchasesConfigured } from '@/lib/revenuecat'
 import type { Plan } from './types'
 
 /**
@@ -18,13 +18,29 @@ import type { Plan } from './types'
  * plainly that purchases are not set up rather than failing at the tap.
  */
 
+/**
+ * Is there a real key in this build?
+ *
+ * SYNCHRONOUS AND KEY-ONLY, deliberately. It briefly also asked whether the
+ * SDK had finished configuring, which made it race the fire-and-forget
+ * `initServices` and answer false for the first moments of a launch. Whether
+ * the SDK is READY is an async question now, awaited inside each call below,
+ * so this one stays what a screen can ask during render.
+ */
 export function purchasesAvailable(): boolean {
   const key = Platform.OS === 'ios' ? env.EXPO_PUBLIC_RC_IOS_KEY : env.EXPO_PUBLIC_RC_ANDROID_KEY
-  // Both halves matter. The key being real is not enough on a build whose
-  // native module is missing: `configure` never ran, so every call below would
-  // throw at the tap rather than at start, which is the failure this whole
-  // module is shaped to avoid.
-  return isConfigured(key) && purchasesInitialised()
+  return isConfigured(key)
+}
+
+/**
+ * Did the user simply close the store's purchase sheet?
+ *
+ * RevenueCat reports it as an ordinary rejection carrying `userCancelled`, so
+ * without this check it lands in the same branch as a declined card and the
+ * screens apologise for something the user did on purpose.
+ */
+export function isUserCancelled(error: unknown): boolean {
+  return (error as { userCancelled?: boolean })?.userCancelled === true
 }
 
 export class PurchasesUnavailable extends Error {
@@ -43,7 +59,7 @@ export class PurchasesUnavailable extends Error {
  * rather than at app start.
  */
 export async function purchasePlan(plan: Plan): Promise<void> {
-  if (!purchasesAvailable()) throw new PurchasesUnavailable()
+  if (!(await ensurePurchasesConfigured())) throw new PurchasesUnavailable()
 
   const Purchases = (await import('react-native-purchases')).default
   const offerings = await Purchases.getOfferings()
@@ -98,6 +114,24 @@ export type PlanPrices = Partial<Record<Plan, PlanPrice>> & {
   yearlySavingPercent?: number
 }
 
+/**
+ * How much cheaper a year is than twelve months, as a whole percent.
+ *
+ * Exported so it can be tested. It is the one figure on the paywall a user can
+ * check against the two prices beside it, so it is computed from those prices
+ * rather than asserted — a hardcoded "SAVE 50%" was already wrong the moment
+ * the monthly price moved from 4.99 to 4.90.
+ *
+ * Undefined rather than zero when it cannot be worked out, so the badge is
+ * absent instead of claiming a saving of nothing.
+ */
+export function yearlySavingPercent(monthly?: number, annual?: number): number | undefined {
+  if (!monthly || !annual || monthly <= 0 || annual <= 0) return undefined
+  const saving = Math.round((1 - annual / (monthly * 12)) * 100)
+  // A yearly plan costing MORE than twelve months has no saving to show.
+  return saving > 0 ? saving : undefined
+}
+
 const perMonth = (price: number, currencyCode: string): string | undefined => {
   try {
     return new Intl.NumberFormat(undefined, { style: 'currency', currency: currencyCode }).format(
@@ -118,7 +152,7 @@ const perMonth = (price: number, currencyCode: string): string | undefined => {
  * at all. The screens render a dash rather than a wrong number.
  */
 export async function fetchPlanPrices(): Promise<PlanPrices> {
-  if (!purchasesAvailable()) throw new PurchasesUnavailable()
+  if (!(await ensurePurchasesConfigured())) throw new PurchasesUnavailable()
 
   const Purchases = (await import('react-native-purchases')).default
   const current = (await Purchases.getOfferings()).current
@@ -151,17 +185,29 @@ export async function fetchPlanPrices(): Promise<PlanPrices> {
     monthly,
     yearly,
     lifetime,
-    yearlySavingPercent:
-      monthly && annual && monthly.price > 0
-        ? Math.round((1 - annual.price / (monthly.price * 12)) * 100)
-        : undefined,
+    yearlySavingPercent: yearlySavingPercent(monthly?.price, annual?.price),
   }
 }
 
-export async function restorePurchases(): Promise<void> {
-  if (!purchasesAvailable()) throw new PurchasesUnavailable()
+/**
+ * The entitlement this app sells. Must match the identifier in RevenueCat and
+ * `ENTITLEMENT` in the `revenuecat` edge function.
+ */
+export const PRO_ENTITLEMENT = 'pro'
+
+/**
+ * Restores purchases, and says whether anything came back.
+ *
+ * The boolean is the point. This returned void, and every caller announced
+ * "Nothing to restore on this account" unconditionally — including on a
+ * SUCCESSFUL restore, which told somebody who had just recovered a paid
+ * subscription that they had never bought one.
+ */
+export async function restorePurchases(): Promise<boolean> {
+  if (!(await ensurePurchasesConfigured())) throw new PurchasesUnavailable()
   const Purchases = (await import('react-native-purchases')).default
-  await Purchases.restorePurchases()
+  const info = await Purchases.restorePurchases()
+  return Boolean(info?.entitlements?.active?.[PRO_ENTITLEMENT])
 }
 
 /**

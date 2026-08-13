@@ -45,8 +45,10 @@ export const paywall = {
     start: 'Start free trial',
     startLifetime: 'Buy lifetime access',
     restore: 'Restore purchase',
+    /** Two outcomes, and they used to share one sentence that assumed failure. */
+    nothingToRestore: 'Nothing to restore on this account',
     notConfigured: 'Purchases are not set up in this build yet.',
-    restored: 'Nothing to restore on this account',
+    restored: 'Your purchase is back',
   },
 
   /**
@@ -165,6 +167,7 @@ export const paywall = {
   welcome: {
     title: 'You are in. Jom makan.',
     body: 'Trial active for 7 days. Everything is unlocked, nothing to set up.',
+    bodyLifetime: 'RiceCal Pro is yours for good. Everything is unlocked, nothing to set up.',
     perks: {
       // The three ways in, and they have to stay the three ways in: this is a
       // promise made to somebody at the moment they pay.
@@ -172,6 +175,7 @@ export const paywall = {
       database: 'Full local food database',
     },
     manageNote: 'Manage or cancel any time in Profile, Subscription.',
+    manageNoteLifetime: 'Paid once. There is nothing to renew or cancel.',
     start: 'Log my first meal',
   },
 } as const

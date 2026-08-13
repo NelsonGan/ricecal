@@ -1,7 +1,13 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { PurchasesUnavailable, purchasePlan, purchasesAvailable } from '@/data/purchases'
+import { useAwaitEntitlement } from '@/data'
+import {
+  isUserCancelled,
+  PurchasesUnavailable,
+  purchasePlan,
+  purchasesAvailable,
+} from '@/data/purchases'
 import { CheckList } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { Button, Card, Icon, type IconProps, Screen, Squish, Text, useToast } from '@/ui'
@@ -42,6 +48,7 @@ export default function FeatureGate() {
   const router = useRouter()
   const goBack = useBack('/today')
   const toast = useToast()
+  const awaitEntitlement = useAwaitEntitlement()
   const params = useLocalSearchParams<{ feature?: string }>()
   const feature: Feature = isFeature(params.feature) ? params.feature : 'photo'
 
@@ -54,9 +61,21 @@ export default function FeatureGate() {
     }
     try {
       await purchasePlan('yearly')
-      router.replace('/paywall/welcome')
+      // The store has confirmed; our own mirror of it has not yet. See
+      // `useAwaitEntitlement` — leaving on the store's word alone can put
+      // the paywall back in front of somebody who has just paid.
+      await awaitEntitlement()
+      router.replace({ pathname: '/paywall/welcome', params: { plan: 'yearly' } })
     } catch (error) {
-      if (error instanceof PurchasesUnavailable) return
+      // Closing the store's sheet is not a failure worth apologising for; the
+      // user did it deliberately and knows what happened.
+      if (isUserCancelled(error)) return
+      // And a build with no usable SDK should say so rather than go quiet,
+      // which is what this branch did when it swallowed the error.
+      if (error instanceof PurchasesUnavailable) {
+        toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
+        return
+      }
       toast.show({
         title: error instanceof Error ? error.message : t('common:action.retry'),
         tone: 'error',

@@ -20,16 +20,26 @@ import { env, isConfigured } from './env'
  * before the dependency landed still starts, and says why in the log.
  */
 
-let ready = false
+let configured: Promise<boolean> | null = null
 
 /**
- * Whether `configure` actually ran.
+ * Whether the SDK is usable, configuring it if nobody has yet.
  *
- * What the rest of the app asks before offering a Buy button. A build where
- * the import failed must not go on offering one that throws at the tap.
+ * ONE PROMISE, SHARED. `initServices` fires this from a `useEffect` and does
+ * not await it, so for a moment after launch the SDK is not configured — and a
+ * synchronous "is it ready" check answered false in that window. That was a
+ * real race with a sticky consequence: `usePlanPrices` runs with `retry: false`
+ * (a build with no products should not retry three times), so one early call
+ * cached "unavailable" and the paywall showed dashes for the rest of the
+ * session on a perfectly good build.
+ *
+ * Awaiting a shared promise removes the window entirely: whoever needs the SDK
+ * first starts the work, everybody else waits on the same result, and
+ * `configure` still runs exactly once.
  */
-export function purchasesInitialised(): boolean {
-  return ready
+export function ensurePurchasesConfigured(): Promise<boolean> {
+  configured ??= configureOnce()
+  return configured
 }
 
 function purchasesApiKey(): string {
@@ -37,7 +47,11 @@ function purchasesApiKey(): string {
 }
 
 /** Answers whether it configured, so the caller can log a skip. */
-export async function configurePurchases(): Promise<boolean> {
+export function configurePurchases(): Promise<boolean> {
+  return ensurePurchasesConfigured()
+}
+
+async function configureOnce(): Promise<boolean> {
   const apiKey = purchasesApiKey()
   if (!isConfigured(apiKey)) return false
 
@@ -49,7 +63,6 @@ export async function configurePurchases(): Promise<boolean> {
     // one. Passing a null id would be the same anonymous state with an extra
     // way to get it wrong.
     Purchases.configure({ apiKey })
-    ready = true
     return true
   } catch (error) {
     if (__DEV__) {
@@ -69,7 +82,7 @@ export async function configurePurchases(): Promise<boolean> {
  * has paid stays behind the paywall for good.
  */
 export async function identifyPurchaser(userId: string): Promise<void> {
-  if (!ready) return
+  if (!(await ensurePurchasesConfigured())) return
   try {
     const Purchases = (await import('react-native-purchases')).default
     await Purchases.logIn(userId)
@@ -83,7 +96,7 @@ export async function identifyPurchaser(userId: string): Promise<void> {
  * inherit the last one's entitlement.
  */
 export async function forgetPurchaser(): Promise<void> {
-  if (!ready) return
+  if (!(await ensurePurchasesConfigured())) return
   try {
     const Purchases = (await import('react-native-purchases')).default
     await Purchases.logOut()
