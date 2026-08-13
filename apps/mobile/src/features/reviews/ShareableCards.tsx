@@ -7,6 +7,7 @@ import {
   type RefObject,
   useCallback,
   useContext,
+  useEffect,
   useRef,
   useState,
 } from 'react'
@@ -25,7 +26,7 @@ type Shot = {
   title: string
 }
 
-type Capture = (view: RefObject<View | null>, title: string) => void
+type Capture = (view: RefObject<View | null>, title: string) => Promise<void>
 
 const CaptureContext = createContext<Capture | null>(null)
 
@@ -83,27 +84,25 @@ export function ShareableCards({ message, children }: ShareableCardsProps) {
   /** The capture still on disk from the last tap, deleted when it is replaced. */
   const written = useRef<string | null>(null)
 
-  const capture = useCallback<Capture>((view, title) => {
-    void (async () => {
-      const image = await makeImageFromView(view as RefObject<never>)
-      if (!image) return
+  const capture = useCallback<Capture>(async (view, title) => {
+    const image = await makeImageFromView(view as RefObject<never>)
+    if (!image) return
 
-      const file = new File(Paths.cache, shotName())
-      file.create({ overwrite: true })
-      file.write(image.encodeToBase64(), { encoding: 'base64' })
+    const file = new File(Paths.cache, shotName())
+    file.create({ overwrite: true })
+    file.write(image.encodeToBase64(), { encoding: 'base64' })
 
-      // Only once the replacement exists, and outside `setShot` — an updater
-      // with a side effect in it runs twice under React's development double
-      // render, and the second delete would be of a file already gone.
-      const stale = written.current
-      written.current = file.uri
-      setShot({ uri: file.uri, width: image.width(), height: image.height(), title })
+    // Only once the replacement exists, and outside `setShot` — an updater with
+    // a side effect in it runs twice under React's development double render,
+    // and the second delete would be of a file already gone.
+    const stale = written.current
+    written.current = file.uri
+    setShot({ uri: file.uri, width: image.width(), height: image.height(), title })
 
-      if (stale) {
-        const old = new File(stale)
-        if (old.exists) old.delete()
-      }
-    })()
+    if (stale) {
+      const old = new File(stale)
+      if (old.exists) old.delete()
+    }
   }, [])
 
   const send = useCallback(async () => {
@@ -169,16 +168,23 @@ export type ShareableProps = {
 }
 
 /**
- * One card, liftable, with the app's mark under it.
+ * One card, liftable, with the app's mark on it FOR THE PICTURE ONLY.
  *
- * THE PADDING IS PART OF THE PICTURE. The capture draws this view and nothing
- * around it, so without a margin the card's rounded corners and the slab under
- * it sit flush against the edge of the PNG and the whole thing reads as a
- * screenshot of something cut off. The page it sits on gives up the same amount
- * of its own gutter, so nothing moves on screen.
+ * Two things this deliberately does not do, and both were tried.
  *
- * `bg-canvas` is the other half of that: an unfilled capture comes out with a
- * transparent surround, and every app it is sent to picks its own colour for it.
+ * NO PADDING AND NO FILL. It had a canvas-coloured margin so the captured card
+ * would not sit flush against the edge of the PNG. What that produced was a
+ * block of canvas around a white card inside a white sheet — a grey square with
+ * a visible edge, which is exactly the seam a preview must not have. The
+ * capture is the card's own box now, so the preview is a card on the sheet's
+ * surface and there is nothing around it to see.
+ *
+ * THE MARK IS NOT ON SCREEN. It is absolutely positioned, so it costs no layout
+ * and moves nothing, and it is transparent until the moment of the capture —
+ * the story is a diary, not an advertisement, and three copies of a logo down a
+ * page of somebody's own week is the wrong side of that. The picture that
+ * leaves the phone is the one place it earns its space, because a week's
+ * calories say nothing about where they came from.
  *
  * A `Pressable` rather than a wrapper with a tap handler, because it has to
  * WIN the press: the page behind it advances the story, and a nested pressable
@@ -189,22 +195,55 @@ export function Shareable({ title, children, className }: ShareableProps) {
   const capture = useContext(CaptureContext)
   const view = useRef<View>(null)
 
+  /**
+   * Whether the mark is showing, which is to say whether a capture is in
+   * flight.
+   *
+   * Toggling it is a render, and a render is not a paint: `makeImageFromView`
+   * reads what is ON THE SCREEN, so asking for the picture in the same tick
+   * returns the card without its mark. Two frames is what it takes for the
+   * toggle to reach the glass — one to commit, one to draw — which is also why
+   * the mark is opacity rather than a mounted child: a layout that changed
+   * would need those frames to settle as well as arrive.
+   */
+  const [marked, setMarked] = useState(false)
+
+  useEffect(() => {
+    if (!marked) return
+    let alive = true
+
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(async () => {
+        if (!alive) return
+        await capture?.(view, title)
+        if (alive) setMarked(false)
+      })
+    })
+
+    return () => {
+      alive = false
+      cancelAnimationFrame(frame)
+    }
+  }, [marked, capture, title])
+
   return (
     <Pressable
       ref={view}
-      onPress={() => capture?.(view, title)}
-      className={cn('gap-2 bg-canvas p-2', className)}
+      onPress={() => setMarked(true)}
+      className={cn(className)}
       accessibilityRole="button"
       accessibilityLabel={t('share.card', { card: title })}
     >
       {children}
 
-      {/* On every card rather than on the one that started as the share card.
-          A picture of a week's calories is worth nothing to whoever receives it
-          if there is no saying where it came from, and each of these leaves the
-          phone on its own. */}
-      <View className="flex-row items-center gap-1.5 self-end">
-        <Image source={MARK} style={{ width: 16, height: 16, borderRadius: 5 }} />
+      {/* In the card's own bottom padding, which every card has and none of
+          them fills. Absolute, so nothing on the page moves when it appears. */}
+      <View
+        pointerEvents="none"
+        className="absolute right-4 bottom-3 flex-row items-center gap-1.5"
+        style={{ opacity: marked ? 1 : 0 }}
+      >
+        <Image source={MARK} style={{ width: 15, height: 15, borderRadius: 5 }} />
         <Text variant="micro">{t('card.brand')}</Text>
       </View>
     </Pressable>
