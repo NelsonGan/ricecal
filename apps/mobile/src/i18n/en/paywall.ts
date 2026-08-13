@@ -136,6 +136,8 @@ export const paywall = {
     freeNote: 'You can still search and browse the food database for free.',
     start: 'Try free for 7 days',
     searchInstead: 'Search instead',
+    /** The way out of the `log` gate, which has no better offer to make. */
+    notNow: 'Not now',
     /** Offline, or the check itself failed. Not the same as "you have not paid". */
     couldNotCheck: 'We could not check your subscription. Try again in a moment.',
   },

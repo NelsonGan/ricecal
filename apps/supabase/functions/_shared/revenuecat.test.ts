@@ -56,6 +56,14 @@ Deno.test('a one-off purchase is active with no period', () => {
   assertEquals(statusFor(event({ type: 'NON_RENEWING_PURCHASE' })), 'active')
 })
 
+Deno.test('TRANSFER is ignored rather than credited to a guess', () => {
+  // It names the two ends in `transferred_from` / `transferred_to`, not in
+  // `app_user_id`, so acting on it would grant the app to whichever end the
+  // caller's fallback landed on — half the time the account that just gave the
+  // subscription up.
+  assertEquals(statusFor(event({ type: 'TRANSFER', period_type: 'NORMAL' })), null)
+})
+
 Deno.test('events that say nothing about entitlement change nothing', () => {
   assertEquals(statusFor(event({ type: 'TEST' })), null)
   assertEquals(statusFor(event({ type: 'SUBSCRIBER_ALIAS' })), null)

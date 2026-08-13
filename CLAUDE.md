@@ -1306,6 +1306,24 @@ Break these and the feature is wrong in ways tests may not catch.
   reads a year and returns nothing — which looks like a broken feature rather
   than an empty device. The Activity tab offers generated data once a connected
   store turns out to have no days in it.
+- **The paywall applies to a local stack too, and nothing seeds a subscription.**
+  `requireEntitlement` runs before the mock-AI branch on purpose — a local stack
+  where the gate did not exist would be the one place every gating bug is
+  invisible — and `handle_new_user` creates a profile, settings and meal times
+  but no `subscriptions` row. So a fresh local account gets 402 `not_entitled`
+  on every scan, described meal and correction, which reads as a broken
+  pipeline. One row fixes it:
+
+  ```sql
+  insert into public.subscriptions (user_id, status, plan)
+  values ('<your uuid>', 'active', 'yearly')
+  on conflict (user_id) do update set status = 'active';
+  ```
+
+  The same applies to the account behind `.secrets/eval.json`: `pnpm eval:scan`
+  and `pnpm eval:recipe` drive the DEPLOYED functions, so that account needs a
+  real entitlement (a promotional one in RevenueCat) or every case fails
+  identically at the first request.
 - **Mock AI** is on whenever `OPENROUTER_API_KEY` is unset (or `MOCK_AI=true`),
   so a local stack scans with no config and production can never mock silently.
   Requests may steer it via `body.mock`, honoured in mock mode only.

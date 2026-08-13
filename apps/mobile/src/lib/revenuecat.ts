@@ -32,7 +32,7 @@ export function purchasesInitialised(): boolean {
   return ready
 }
 
-export function purchasesApiKey(): string {
+function purchasesApiKey(): string {
   return Platform.OS === 'ios' ? env.EXPO_PUBLIC_RC_IOS_KEY : env.EXPO_PUBLIC_RC_ANDROID_KEY
 }
 

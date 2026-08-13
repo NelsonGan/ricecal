@@ -236,8 +236,6 @@ function useRecogniseMeal() {
           queryClient.invalidateQueries({ queryKey: keys.aiUsage(userId) })
         })
         .catch((error: unknown) => {
-          // The outcome is known and it is no: say so now rather than spinning
-          // out the deadline over an answer that already arrived.
           // Out of budget for the month. The user is told, and told what to
           // do about it, because there is nothing in the app that fixes this.
           if (error instanceof AiLimitError) {
@@ -256,6 +254,8 @@ function useRecogniseMeal() {
             toast.show({ title: i18n.t('paywall:limit.notEntitled'), tone: 'warning' })
             return
           }
+          // The outcome is known and it is no: say so now rather than spinning
+          // out the deadline over an answer that already arrived.
           if ((error as { settled?: boolean })?.settled) {
             // A failed scan has nothing to announce, so the booked notice goes
             // too — the row on Today says what happened, and a banner claiming

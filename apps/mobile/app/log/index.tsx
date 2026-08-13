@@ -101,6 +101,11 @@ export default function LogSheet() {
   const { data: yesterday } = useDay(yesterdayKey)
   const yesterdayEntries = yesterday?.entries ?? []
 
+  // `replace`, for the same reason `openFood` below does it: this route is a
+  // transparentModal, and a paywall pushed from inside one comes up stacked on
+  // the sheet rather than over the app.
+  const requirePro = useRequirePro({ navigate: 'replace' })
+
   /**
    * A dish was picked out of the inline search.
    *
@@ -115,8 +120,6 @@ export default function LogSheet() {
    * portion, done — and the alternative was the flash the user saw: the sheet
    * dismissing before a search screen pushed in behind it.
    */
-  const requirePro = useRequirePro()
-
   const openFood = (foodId: string) =>
     router.replace({ pathname: '/log/food/[id]', params: { id: foodId } })
 
