@@ -10,7 +10,7 @@ import {
   useState,
 } from 'react'
 import { AppState } from 'react-native'
-
+import { forgetPurchaser, identifyPurchaser } from '@/lib/revenuecat'
 import { storedSession, supabase, whenStoredSession } from '@/lib/supabase'
 import { clearImageCache } from './photos'
 
@@ -50,6 +50,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
    * `undefined` until the first auth event — see the clearing rule below.
    */
   const cacheOwner = useRef<string | null | undefined>(undefined)
+
+  /**
+   * Who this process has told RevenueCat about.
+   *
+   * Deliberately NOT `cacheOwner`. That one answers "has the person changed",
+   * which is false on a cold start by design; this one answers "have we said
+   * anything yet", which is false on exactly the launches where identifying
+   * matters most.
+   */
+  const purchaser = useRef<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -150,6 +160,29 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // of an account they do not age out by themselves. See `clearImageCache`
       // for why this is the leaving edge only.
       if (event === 'SIGNED_OUT') void clearImageCache()
+
+      // RevenueCat has to be told who this is, or a purchase arrives at the
+      // webhook under an anonymous id with no account to credit and is dropped.
+      //
+      // ONCE PER PROCESS FOR WHOEVER IS SIGNED IN, tracked separately from
+      // `cacheOwner` above. It cannot key off `changed` the way the cache
+      // clearing does: `changed` is false on the FIRST event by construction —
+      // a cold start is not a change of person — and that is exactly the
+      // launch where this process has told RevenueCat nothing at all. Keyed
+      // that way it only ever ran when somebody switched accounts, and the
+      // ordinary case of opening the app and buying something never identified
+      // anybody. `logIn` with an id the SDK already holds is a no-op, so
+      // repeating it on each launch costs nothing and is the version that
+      // cannot silently skip.
+      if (nextUserId) {
+        if (purchaser.current !== nextUserId) {
+          purchaser.current = nextUserId
+          void identifyPurchaser(nextUserId)
+        }
+      } else if (event === 'SIGNED_OUT') {
+        purchaser.current = null
+        void forgetPurchaser()
+      }
     })
 
     return () => {

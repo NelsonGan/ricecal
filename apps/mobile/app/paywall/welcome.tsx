@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -10,6 +10,16 @@ import { Button, Icon, Screen, Squish, Text } from '@/ui'
 export default function WelcomeToPro() {
   const { t } = useTranslation('paywall')
   const router = useRouter()
+  /**
+   * Which plan was just bought.
+   *
+   * Lifetime has no trial and nothing to cancel, and this screen told every
+   * buyer "Trial active for 7 days" regardless — false for a one-off purchase,
+   * and false again for anybody who arrived here by RESTORING a subscription
+   * they bought months ago.
+   */
+  const { plan } = useLocalSearchParams<{ plan?: string }>()
+  const lifetime = plan === 'lifetime'
   const colors = useThemeColors()
 
   /**
@@ -48,7 +58,9 @@ export default function WelcomeToPro() {
         <Text variant="title" className="text-center">
           {t('welcome.title')}
         </Text>
-        <Text className="text-center text-[15px] leading-[23px]">{t('welcome.body')}</Text>
+        <Text className="text-center text-[15px] leading-[23px]">
+          {lifetime ? t('welcome.bodyLifetime') : t('welcome.body')}
+        </Text>
       </View>
 
       <View className="pt-4">
@@ -56,7 +68,7 @@ export default function WelcomeToPro() {
       </View>
 
       <Text variant="caption" className="pt-2 text-center text-faint">
-        {t('welcome.manageNote')}
+        {lifetime ? t('welcome.manageNoteLifetime') : t('welcome.manageNote')}
       </Text>
     </Screen>
   )

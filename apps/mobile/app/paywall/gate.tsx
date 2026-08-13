@@ -1,19 +1,41 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { PurchasesUnavailable, purchasePlan, purchasesAvailable } from '@/data/purchases'
+import { useAwaitEntitlement } from '@/data'
+import {
+  isUserCancelled,
+  PurchasesUnavailable,
+  purchasePlan,
+  purchasesAvailable,
+} from '@/data/purchases'
 import { CheckList } from '@/features/shared'
+import { useBack } from '@/lib/navigation'
 import { Button, Card, Icon, type IconProps, Screen, Squish, Text, useToast } from '@/ui'
 
-/** The gated ways in, each naming a block in the `gate` copy bundle. */
-type Feature = 'photo' | 'describe'
+/**
+ * The gated ways in, each naming a block in the `gate` copy bundle.
+ *
+ * Must stay in step with `ProFeature` in `features/paywall`, which is what
+ * pushes to this route. NOTHING TYPECHECKS THE PAIR — a router param is a
+ * string as far as the compiler is concerned — so a feature added there and
+ * not here arrives with no `HERO` entry, and `<Icon {...undefined}>` renders a
+ * card with a hole in it above three missing copy keys.
+ */
+type Feature = 'photo' | 'describe' | 'log'
 
 const HERO: Record<Feature, IconProps> = {
   photo: { set: 'system', name: 'camera' },
   // The same sparkle the Describe button carries in the log sheet, so the gate
   // and the control it is gating look like one feature.
   describe: { set: 'system', name: 'sparkle' },
+  // The plate, because this is the gate on writing an entry however it was
+  // composed: searched, scanned off a packet, or cooked from a recipe.
+  log: { set: 'food', name: 'empty-plate' },
 }
+
+/** Anything else in the param is a stale link, not a feature. */
+const isFeature = (value: string | undefined): value is Feature =>
+  value === 'photo' || value === 'describe' || value === 'log'
 
 /**
  * W4 FEATURE GATE.
@@ -24,9 +46,11 @@ const HERO: Record<Feature, IconProps> = {
 export default function FeatureGate() {
   const { t } = useTranslation(['paywall', 'common'])
   const router = useRouter()
+  const goBack = useBack('/today')
   const toast = useToast()
-  const params = useLocalSearchParams<{ feature?: Feature }>()
-  const feature: Feature = params.feature ?? 'photo'
+  const awaitEntitlement = useAwaitEntitlement()
+  const params = useLocalSearchParams<{ feature?: string }>()
+  const feature: Feature = isFeature(params.feature) ? params.feature : 'photo'
 
   // Yearly: the gate is the first thing a user sees, and the yearly plan is
   // the one the design leads with.
@@ -37,9 +61,21 @@ export default function FeatureGate() {
     }
     try {
       await purchasePlan('yearly')
-      router.replace('/paywall/welcome')
+      // The store has confirmed; our own mirror of it has not yet. See
+      // `useAwaitEntitlement` — leaving on the store's word alone can put
+      // the paywall back in front of somebody who has just paid.
+      await awaitEntitlement()
+      router.replace({ pathname: '/paywall/welcome', params: { plan: 'yearly' } })
     } catch (error) {
-      if (error instanceof PurchasesUnavailable) return
+      // Closing the store's sheet is not a failure worth apologising for; the
+      // user did it deliberately and knows what happened.
+      if (isUserCancelled(error)) return
+      // And a build with no usable SDK should say so rather than go quiet,
+      // which is what this branch did when it swallowed the error.
+      if (error instanceof PurchasesUnavailable) {
+        toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
+        return
+      }
       toast.show({
         title: error instanceof Error ? error.message : t('common:action.retry'),
         tone: 'error',
@@ -54,9 +90,19 @@ export default function FeatureGate() {
           <Button fullWidth onPress={start}>
             {t('paywall:gate.start')}
           </Button>
-          <Button variant="ghost" fullWidth onPress={() => router.replace('/log/search')}>
-            {t('paywall:gate.searchInstead')}
-          </Button>
+          {/* Not on the `log` gate. That one is reached from search, from a
+              scanned packet or from a recipe, so the user has already found
+              the food and offering to send them looking for it again reads as
+              the app not having followed. */}
+          {feature === 'log' ? (
+            <Button variant="ghost" fullWidth onPress={() => goBack()}>
+              {t('paywall:gate.notNow')}
+            </Button>
+          ) : (
+            <Button variant="ghost" fullWidth onPress={() => router.replace('/log/search')}>
+              {t('paywall:gate.searchInstead')}
+            </Button>
+          )}
         </View>
       }
     >

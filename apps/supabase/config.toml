@@ -499,6 +499,17 @@ verify_jwt = false
 import_map = "./functions/recipes/deno.json"
 entrypoint = "./functions/recipes/index.ts"
 
+# RevenueCat's webhook, and the only writer of `subscriptions`. NOT the same
+# auth pattern as the others: there is no user and no Supabase JWT, so it
+# checks a shared secret instead — REVENUECAT_WEBHOOK_TOKEN, matching the value
+# set in the RevenueCat dashboard. Unset, the function refuses every request
+# rather than accepting them, since this is the table that decides who has paid.
+[functions.revenuecat]
+enabled = true
+verify_jwt = false
+import_map = "./functions/revenuecat/deno.json"
+entrypoint = "./functions/revenuecat/index.ts"
+
 # Fix-by-typing: free-text corrections to a scanned entry. Same auth pattern
 # and the same cascade code (functions/_shared) as scan-meal.
 [functions.scan-refine]

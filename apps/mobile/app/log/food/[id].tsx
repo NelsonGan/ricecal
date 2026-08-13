@@ -30,6 +30,7 @@ import {
   withCataloguePortions,
 } from '@/data'
 import { FixSheet, IconPicker, ScannedPacket } from '@/features/logging'
+import { useRequirePro } from '@/features/paywall'
 import { MacroBars, MealPhoto } from '@/features/shared'
 import { useBack, useDismissTo } from '@/lib/navigation'
 import { entryTotals } from '@/lib/nutrition'
@@ -197,6 +198,7 @@ export default function FoodDetail() {
   const colors = useThemeColors()
   const toast = useToast()
   const logFood = useLogFood()
+  const requirePro = useRequirePro()
   const updateEntry = useUpdateEntry()
   const removeEntry = useRemoveEntry()
   const { data: targets } = useTargets()
@@ -707,6 +709,12 @@ export default function FoodDetail() {
   const hasPhoto = Boolean(shot ?? existing?.photoPath)
 
   const addToDiary = () => {
+    // Composing the row is free; committing it is not. Everything above this
+    // line — the portions, the macros, the picture — is readable by anybody,
+    // which is what "search and everything works" means. Only the write is
+    // Pro, and editing an entry that ALREADY exists is not gated at all: a
+    // lapsed subscription must not lock somebody out of their own diary.
+    if (!requirePro('log')) return
     logFood.mutate({
       snapshot: snapshotFromFood(food, chosen),
       quantity,
@@ -834,6 +842,11 @@ export default function FoodDetail() {
   const sendFix = async () => {
     const text = instruction.trim()
     if (!existing || !text) return
+    // Correcting by describing it is a model call, so it is gated like the
+    // other two — and gated HERE, before `commit()`, or the staged edits would
+    // be written on their way to a paywall that stops the correction. The
+    // server refuses it independently; this is what makes the button honest.
+    if (!requirePro('describe')) return
     setSending(true)
     try {
       await commit()

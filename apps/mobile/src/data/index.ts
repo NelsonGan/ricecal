@@ -136,7 +136,15 @@ export {
   snapshotFromRecipe,
   withCataloguePortions,
 } from './snapshot'
-export { useSubscription } from './subscription'
+export {
+  type AiUsage,
+  type Entitlement,
+  useAiUsage,
+  useAwaitEntitlement,
+  useEntitlement,
+  usePlanPrices,
+  useSubscription,
+} from './subscription'
 export { useTrendSeries, useTrendSummary } from './trends'
 export * from './types'
 export { useCurrentWeight, useDeleteWeighIn, useLogWeight, useWeighIns } from './weight'

@@ -168,8 +168,15 @@ welcome                          the pitch, and the fork for a returning user
   finish                         the one write: profile, first weigh-in, onboarded_at
 8 health        connect the store — a permission that GIVES rather than asks
 9 notifications turns the three meal reminders on, not just the OS permission
-  tutorial                       four cards, then Today
+  tutorial                       four cards, then…
+  paywall/intro                  the offer, with "Maybe later" leading to Today
 ```
+
+The paywall is the last thing rather than a step of its own, and BOTH exits
+from the tour lead to it. It used to fork — one button to Today, the other to a
+read-only preview of the diary — and the preview is gone: "later" now lands on
+the real app, where everything reads and only writing an entry is behind the
+wall. A mock of the app was a worse answer than the app.
 
 Everything from `finish` onwards **replaces** its predecessor and has the edge
 swipe turned off in `(onboarding)/_layout.tsx`. The stack under those screens is
@@ -237,6 +244,7 @@ auth.users
        ├── meal_times ─────── when each meal is, and whether to remind
        ├── daily_goals ────── the budget, effective-dated
        ├── subscriptions ──── read-only mirror of RevenueCat
+       ├── ai_usage ────────── model requests spent, one row per month
        ├── food_logs ──────── what was eaten, WITH ITS OWN NUMBERS
        │    └── food_log_ingredients   what a scanned plate was made of
        ├── daily_logs ─────── water and a day note
@@ -888,12 +896,15 @@ lazily; a top-level import of a Nitro module throws on a dev client built before
 the dependency landed, and the symptom is a white screen rather than a broken
 tab.
 
-**Syncing** — `src/data/health-sync.ts`. A MONTH-deep backfill on connect, then
-the last SEVEN DAYS re-read on every foreground. A month rather than a year
-because every range the app draws is 7d, 30d or an average over them — the
-twelfth month back was read, written and then shown on no screen — and because
-the connect now happens inside onboarding, a screen away from an account a
-minute old. Not a cursor, and that is the
+**Syncing** — `src/data/health-sync.ts`. A WEEK-deep backfill on connect, then
+the last SEVEN DAYS re-read on every foreground. It was a year, then a month,
+then a week, and each cut was the same argument carried further: the backfill
+exists so the Activity tab is not empty on the day it is turned on, and a week
+answers that. Nothing about FORWARD syncing changed; only how far back a first
+connect reaches. What it costs is the 30-day range, which starts three-quarters
+empty and fills in over the following weeks — the accepted trade against a
+permission screen somebody waits through inside onboarding, a screen away from
+an account a minute old. Not a cursor, and that is the
 decision the file is shaped around: health data arrives late and arrives edited
 — a watch out of range writes Tuesday on Wednesday, Strava back-dates an upload,
 Apple recomputes a day when a second source appears. "Everything since the last
@@ -908,10 +919,64 @@ repetition free.
 
 **Entitlement is the store's to decide and RevenueCat's to report.**
 `subscriptions` is a read-only mirror with no client write grant at all, filled
-by webhook; `data/purchases.ts` buys and restores but can never grant. A client
-that could write that table is not a paywall. Every SDK in `lib/startup.ts` is
-gated on its key being real — RevenueCat is additionally disabled in code, and
-says so plainly rather than failing at the tap.
+by the `revenuecat` edge function; `data/purchases.ts` buys and restores but can
+never grant. A client that could write that table is not a paywall. Every SDK in
+`lib/startup.ts` is gated on its key being real.
+
+Three products, on both stores and in RevenueCat: monthly, yearly, and a
+one-off lifetime. The two subscriptions carry a SEVEN-DAY free trial and
+lifetime does not, which is why the button and the small print on
+`paywall/intro.tsx` change with the selection — "start free trial" over a
+one-off purchase is a promise the store does not keep.
+
+**The webhook is the load-bearing part, and it depends on the client.**
+`app_user_id` is the only thing tying a purchase to a row, and it is whatever
+the app told RevenueCat — so `identifyPurchaser` in `lib/revenuecat.ts` has to
+run on sign-in or every purchase arrives as `$RCAnonymousID:...` with no account
+to credit. `CANCELLATION` is deliberately not an ending: in RevenueCat it means
+auto-renew was turned off and the user keeps what they paid for until
+`EXPIRATION` follows, so reading it as the end takes the app away from somebody
+who has paid for another three weeks of it.
+
+**Prices come from the store, never from this repo.** `usePlanPrices` reads the
+current offering and uses RevenueCat's localised `priceString`, so a Malaysian
+user sees ringgit because that is what they will be charged. They were strings
+in the copy bundle and were wrong three ways at once: dollars shown to somebody
+billed in ringgit, Apple and Play disagreeing on lifetime because Apple has no
+119.90 price point for a one-time purchase, and every repricing needing an app
+release before the paywall stopped lying. Until the store answers, a price is a
+dash — a plausible wrong number is worse than an obviously absent one. The
+saving on the yearly badge is computed from those two prices for the same
+reason: it is the one figure on that screen a user can check.
+
+**A purchase confirms before our mirror knows about it.** The store answers,
+then RevenueCat, then the webhook writes `subscriptions` — which is what
+`useEntitlement` reads. Navigating on the store's confirmation alone put the
+paywall back in front of somebody one tap after they paid, and it is invisible
+on a fast connection. Every purchase and restore awaits `useAwaitEntitlement`,
+which polls the mirror and gives up rather than blocking for ever.
+
+**What Pro gates is WRITING AN ENTRY, and nothing else.** Search works, the
+catalogue is open, a dish page prices itself, the barcode scanner scans and the
+camera frames the plate. `useRequirePro` is the single guard and it is called at
+the last tap on each of the five write paths. A greyed-out shutter tells
+somebody they cannot do something and gives them nowhere to go; one that opens
+the paywall tells them what it costs. Editing an entry that ALREADY exists is
+never gated, because a lapsed subscription must not lock somebody out of their
+own diary.
+
+**Every request to OpenRouter is counted, and 3,000 a month is the ceiling.**
+`ai_usage` is one row per account per month — not a counter on `profiles`, which
+would need something to reset it — and `claim_ai_inference` does the check and
+the increment in ONE statement, because a hard limit two concurrent scans can
+both walk through is not one. The meter is threaded to `chatJSON` as a REQUIRED
+argument so a new model call cannot be added without deciding whose budget it
+comes out of; `deno check` in CI is what enforces that. What counts is a
+REQUEST, not a scan: one photographed plate is a vision call, often a verifier
+call, sometimes an estimate, and a retried 429 is another. Running out is a
+toast asking the user to get in touch, never the archetype floor — falling
+through would put a guessed "Mixed meal" in the diary of somebody who was owed
+an explanation.
 
 **Reminders are all local.** A meal reminder is "every day at 08:00 in the
 user's own timezone", which both platforms express as a repeating calendar
@@ -1068,6 +1133,23 @@ Break these and the feature is wrong in ways tests may not catch.
 - **Null is not zero in `activity_days`.** Health Connect has no stand hours at
   all and often no resting energy; a confident zero there is a claim about the
   user rather than about the provider.
+- **A paywall enforced only in the client is enforced only on people running
+  the client.** `useRequirePro` makes the buttons read honestly;
+  `requireEntitlement` in the edge functions is what actually stops the request,
+  and it fails SHUT — a failed read of `subscriptions` refuses, because an
+  outage in one query handing the model to everybody is the expensive direction
+  to be wrong in. The METER fails the other way on purpose: a database blip
+  while claiming budget lets the request through uncounted, since telling
+  somebody who has paid that they are cut off is worse than losing a tally mark.
+- **The meter counts requests to OpenRouter, not scans, and it is claimed
+  BEFORE the request.** Claimed afterwards, an account already over its limit
+  would still get to send the one that put it there. The retry inside
+  `chatJSON` claims again, because OpenRouter bills it again.
+- **Running out of budget is never answered with an archetype.**
+  `AiLimitReached` is rethrown through every `.catch` in the cascade rather than
+  being read as "this tier failed, move down" — otherwise each tier below
+  retries the same refusal and the user is handed a guessed "Mixed meal"
+  instead of being told what happened.
 - **The OpenRouter key never reaches the client**, and neither do the R2
   credentials. A client that could name its own object key, or hold a key that
   does not expire, is a client that can read someone else's plate.
@@ -1242,6 +1324,24 @@ Break these and the feature is wrong in ways tests may not catch.
   reads a year and returns nothing — which looks like a broken feature rather
   than an empty device. The Activity tab offers generated data once a connected
   store turns out to have no days in it.
+- **The paywall applies to a local stack too, and nothing seeds a subscription.**
+  `requireEntitlement` runs before the mock-AI branch on purpose — a local stack
+  where the gate did not exist would be the one place every gating bug is
+  invisible — and `handle_new_user` creates a profile, settings and meal times
+  but no `subscriptions` row. So a fresh local account gets 402 `not_entitled`
+  on every scan, described meal and correction, which reads as a broken
+  pipeline. One row fixes it:
+
+  ```sql
+  insert into public.subscriptions (user_id, status, plan)
+  values ('<your uuid>', 'active', 'yearly')
+  on conflict (user_id) do update set status = 'active';
+  ```
+
+  The same applies to the account behind `.secrets/eval.json`: `pnpm eval:scan`
+  and `pnpm eval:recipe` drive the DEPLOYED functions, so that account needs a
+  real entitlement (a promotional one in RevenueCat) or every case fails
+  identically at the first request.
 - **Mock AI** is on whenever `OPENROUTER_API_KEY` is unset (or `MOCK_AI=true`),
   so a local stack scans with no config and production can never mock silently.
   Requests may steer it via `body.mock`, honoured in mock mode only.
@@ -1271,9 +1371,13 @@ Break these and the feature is wrong in ways tests may not catch.
 
 Worth knowing before wondering where the handler went.
 
-- **RevenueCat** is disabled in `lib/startup.ts` by an explicit list rather than
-  by a missing key, so the log does not blame `.env.local` for something a
-  comment did.
+- **RevenueCat is live now**, and what is left is configuration rather than
+  code: the `pro` entitlement has to exist in the RevenueCat dashboard with the
+  six store products attached, `REVENUECAT_WEBHOOK_TOKEN` has to be set on the
+  edge functions and matched in the dashboard's webhook, and an App Store
+  Connect API key has to be uploaded to RevenueCat before an iOS receipt can be
+  validated. Until the entitlement exists every account reads as `none` and the
+  paywall refuses everybody, including whoever just paid.
 
 ---
 

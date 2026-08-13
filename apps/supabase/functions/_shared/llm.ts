@@ -13,6 +13,7 @@
 // mock through `body.mock`, which is only read in mock mode; it exists so a
 // test can force each tier of the cascade in turn.
 
+import type { Meter } from './entitlement.ts'
 import { guessIcon, ICON_INSTRUCTION, type IconChoice, resolveIcon, unslug } from './icons.ts'
 import { reconcile, unfoldCounts } from './portion.ts'
 
@@ -263,11 +264,21 @@ export function mockActive(): boolean {
  * transient 429 costing the user a catalogue match (and handing them an
  * archetype guess instead) is the expensive way to save 700ms.
  */
-export async function chatJSON(messages: unknown[], maxTokens = 1200): Promise<unknown> {
+export async function chatJSON(
+  meter: Meter,
+  messages: unknown[],
+  maxTokens = 1200,
+): Promise<unknown> {
   const key = Deno.env.get('OPENROUTER_API_KEY')
   if (!key) throw new Error('OPENROUTER_API_KEY not set')
 
   const attempt = async (): Promise<unknown> => {
+    // Before the request, not after: a claim that ran on the way back would
+    // let a refused account still send the one that put it over. The retry
+    // below comes back through here and claims again, which is right — a
+    // retried 429 is a second request and OpenRouter bills it as one.
+    await meter.claim()
+
     const res = await fetch(OPENROUTER_URL, {
       method: 'POST',
       signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
@@ -752,6 +763,7 @@ export const ANALYSE_PHOTO_PROMPT =
 export async function analysePhoto(
   photoBase64: string | null,
   mock: MockSteer | undefined,
+  meter: Meter,
 ): Promise<Vision> {
   if (mockActive()) {
     if (mock?.fail === 'vision' || mock?.fail === 'all') throw new Error('mocked vision failure')
@@ -811,6 +823,7 @@ export async function analysePhoto(
   if (!photoBase64) throw new Error('no photo to analyse')
 
   const raw = await chatJSON(
+    meter,
     [
       { role: 'system', content: ANALYSE_PHOTO_PROMPT },
       {
@@ -955,7 +968,11 @@ export const describeUserMessage = (text: string): string => `The person typed: 
  * will otherwise reach for the average version of the dish it recognises,
  * which is how "half a plate of nasi lemak" comes back as a full one.
  */
-export async function describeMeal(text: string, mock: MockSteer | undefined): Promise<Vision> {
+export async function describeMeal(
+  text: string,
+  mock: MockSteer | undefined,
+  meter: Meter,
+): Promise<Vision> {
   if (mockActive()) {
     if (mock?.fail === 'vision' || mock?.fail === 'all') throw new Error('mocked describe failure')
     if (mock?.vision) return shapeVision(mock.vision)
@@ -988,6 +1005,7 @@ export async function describeMeal(text: string, mock: MockSteer | undefined): P
   }
 
   const raw = await chatJSON(
+    meter,
     [
       { role: 'system', content: DESCRIBE_MEAL_PROMPT },
       { role: 'user', content: describeUserMessage(text) },
@@ -1113,6 +1131,7 @@ export async function pickCandidate(
   item: VisionItem,
   candidates: Candidate[],
   mock: MockSteer | undefined,
+  meter: Meter,
 ): Promise<number | null> {
   if (mockActive()) {
     if (mock?.fail === 'all') throw new Error('mocked pick failure')
@@ -1128,6 +1147,7 @@ export async function pickCandidate(
   }
 
   const raw = await chatJSON(
+    meter,
     [
       {
         role: 'system',
@@ -1190,6 +1210,7 @@ function shapeNutrition(raw: unknown): Nutrition {
 export async function estimateNutrition(
   item: VisionItem,
   mock: MockSteer | undefined,
+  meter: Meter,
 ): Promise<Nutrition> {
   if (mockActive()) {
     if (mock?.fail === 'all' || mock?.fail === 'nutrition')
@@ -1221,6 +1242,7 @@ export async function estimateNutrition(
   }
 
   const raw = await chatJSON(
+    meter,
     [
       {
         role: 'system',
@@ -1454,6 +1476,7 @@ export async function interpretInstruction(
   context: RefineContext,
   instruction: string,
   mock: MockSteer | undefined,
+  meter: Meter,
 ): Promise<Interpretation> {
   if (mockActive()) {
     if (mock?.fail === 'all' || mock?.fail === 'interpret')
@@ -1535,6 +1558,7 @@ export async function interpretInstruction(
   }
 
   const raw = await chatJSON(
+    meter,
     [
       { role: 'system', content: INTERPRET_INSTRUCTION_PROMPT },
       { role: 'user', content: refineUserMessage(context, instruction) },
@@ -1572,6 +1596,7 @@ export async function classifyArchetype(
   item: VisionItem,
   archetypes: Archetype[],
   mock: MockSteer | undefined,
+  meter: Meter,
 ): Promise<Archetype> {
   const bySlug = (slug: string) => archetypes.find((a) => a.slug === slug)
 
@@ -1595,6 +1620,7 @@ export async function classifyArchetype(
   }
 
   const raw = await chatJSON(
+    meter,
     [
       {
         role: 'system',

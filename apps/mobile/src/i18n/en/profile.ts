@@ -144,11 +144,14 @@ export const profile = {
     trialLeft_one: 'Free trial, {{count}} day left',
     trialLeft_other: 'Free trial, {{count}} days left',
     renews: 'Renews at {{price}}.',
+    /** Lifetime does not renew, and saying it does would be the app lying. */
+    neverRenews: 'Paid once. Nothing renews.',
+    /** The same card for somebody who has never subscribed. */
+    freeBody: 'Search and browse are free. Logging a meal needs Pro.',
+    whatYouGet: 'WHAT YOU GET WITH PRO',
     yourPlan: 'YOUR PLAN',
-    plan: 'Yearly',
-    planPrice: 'RM99.90',
+    plan: 'Plan',
     perMonth: 'Per month',
-    perMonthPrice: 'RM8.33',
     payment: 'Payment',
     paymentUnknown: 'Managed by the store',
     paymentValue: 'Card ending {{last4}}',
@@ -164,6 +167,8 @@ export const profile = {
     cancelConfirm: 'Cancel plan',
     switchMonthly: 'Switch to monthly',
     switchYearly: 'Switch to yearly',
+    /** There is nothing to switch a one-off purchase to. */
+    manage: 'Manage in the store',
     switched: 'Plan updated',
   },
 } as const

@@ -79,7 +79,12 @@ create type public.subscription_status as enum (
   'billing_retry'
 );
 
-create type public.subscription_plan as enum ('monthly', 'yearly');
+-- `lifetime` is bought once and never renews, so a row carrying it has a null
+-- `current_period_end` and stays `active` for good. It is a plan rather than a
+-- fourth status because what it changes is what was paid for, not where the
+-- payment has got to: every status question ("is this account entitled", "did
+-- billing fail") has the same answer shape whichever of the three was bought.
+create type public.subscription_plan as enum ('monthly', 'yearly', 'lifetime');
 
 -- The icon sets shipped in src/ui/icons.generated.ts. A catalogue row names an
 -- illustration by (set, name); the set is closed, the name is not, so only the

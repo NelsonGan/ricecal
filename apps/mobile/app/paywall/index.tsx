@@ -3,8 +3,9 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import type { Plan } from '@/data'
+import { type Plan, useAwaitEntitlement, usePlanPrices } from '@/data'
 import {
+  isUserCancelled,
   PurchasesUnavailable,
   purchasePlan,
   purchasesAvailable,
@@ -23,8 +24,10 @@ export default function HardPaywall() {
   const router = useRouter()
   const goBack = useBack('/today')
   const toast = useToast()
+  const awaitEntitlement = useAwaitEntitlement()
   const colors = useThemeColors()
   const [plan, setPlan] = useState<Plan>('yearly')
+  const { data: prices } = usePlanPrices()
 
   /**
    * Starts the store's purchase sheet.
@@ -41,9 +44,21 @@ export default function HardPaywall() {
     }
     try {
       await purchasePlan(plan)
-      router.replace('/paywall/welcome')
+      // The store has confirmed; our own mirror of it has not yet. See
+      // `useAwaitEntitlement` — leaving on the store's word alone can put
+      // the paywall back in front of somebody who has just paid.
+      await awaitEntitlement()
+      router.replace({ pathname: '/paywall/welcome', params: { plan: plan } })
     } catch (error) {
-      if (error instanceof PurchasesUnavailable) return
+      // Closing the store's sheet is not a failure worth apologising for; the
+      // user did it deliberately and knows what happened.
+      if (isUserCancelled(error)) return
+      // And a build with no usable SDK should say so rather than go quiet,
+      // which is what this branch did when it swallowed the error.
+      if (error instanceof PurchasesUnavailable) {
+        toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
+        return
+      }
       toast.show({
         title: error instanceof Error ? error.message : t('common:action.retry'),
         tone: 'error',
@@ -56,16 +71,31 @@ export default function HardPaywall() {
       toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
       return
     }
-    await restorePurchases()
-    toast.show({ title: t('paywall:hard.restored') })
+    const restored = await restorePurchases()
+    if (!restored) {
+      toast.show({ title: t('paywall:hard.nothingToRestore') })
+      return
+    }
+    // Same race as a fresh purchase: the store knows, our mirror does not yet.
+    await awaitEntitlement()
+    toast.show({ title: t('paywall:hard.restored'), tone: 'success' })
   }
+
+  const priceString = prices?.[plan]?.priceString
+  const smallPrint = !priceString
+    ? t('paywall:hard.smallPrintPending')
+    : plan === 'lifetime'
+      ? t('paywall:hard.smallPrintLifetime', { price: priceString })
+      : plan === 'yearly'
+        ? t('paywall:hard.smallPrintYearly', { price: priceString })
+        : t('paywall:hard.smallPrintMonthly', { price: priceString })
 
   return (
     <Screen
       footer={
         <View className="gap-1.5">
           <Button fullWidth onPress={start}>
-            {t('paywall:hard.start')}
+            {plan === 'lifetime' ? t('paywall:hard.startLifetime') : t('paywall:hard.start')}
           </Button>
           <Button variant="ghost" fullWidth onPress={restore}>
             {t('paywall:hard.restore')}
@@ -97,7 +127,7 @@ export default function HardPaywall() {
         ]}
       />
 
-      <PlanPicker value={plan} onChange={setPlan} />
+      <PlanPicker showLifetime value={plan} onChange={setPlan} />
 
       <View className="items-center gap-1.5">
         <View className="flex-row items-center gap-2">
@@ -107,7 +137,9 @@ export default function HardPaywall() {
           </Text>
         </View>
         <Text variant="caption" className="text-center text-faint">
-          {t('paywall:hard.smallPrint')}
+          {/* The sentence needs the number, so it waits for it rather than
+              printing half of itself. */}
+          {smallPrint}
         </Text>
       </View>
     </Screen>

@@ -8,11 +8,19 @@
 // archetype floor are line-for-line the same. Text is not a lesser path with
 // its own arithmetic; it is the same pipeline asked a question in words.
 //
-// Once the caller is authenticated and the body parses, this function does not
-// return an HTTP error: any failure in tiers 1-4 falls to the archetype floor,
-// and a floor failure still answers 200 with `ok: false` so the client can keep
-// its pending row and retry. Whichever tier answers, the numbers are that
-// tier's alone — an LLM figure is never averaged with a catalogue figure.
+// Once the caller is authenticated, the body parses AND the account is allowed
+// to be here, this function does not return an HTTP error: any failure in
+// tiers 1-4 falls to the archetype floor, and a floor failure still answers 200
+// with `ok: false` so the client can keep its pending row and retry. Whichever
+// tier answers, the numbers are that tier's alone — an LLM figure is never
+// averaged with a catalogue figure.
+//
+// The two REFUSALS are the deliberate exception to that, and they sit beside
+// the auth check rather than inside the cascade because they are the same kind
+// of thing: a statement about who is asking, settled before any work starts.
+// Falling to the archetype floor would be wrong twice over — it would write a
+// guessed meal nobody asked for, and it would quietly hand an unsubscribed
+// account the answer the paywall exists to sell.
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
@@ -25,6 +33,13 @@ import {
   type WrittenEntry,
   writeEntry,
 } from '../_shared/cascade.ts'
+import {
+  AiLimitReached,
+  createMeter,
+  NotEntitled,
+  nullMeter,
+  requireEntitlement,
+} from '../_shared/entitlement.ts'
 import {
   analysePhoto,
   describeMeal,
@@ -100,6 +115,24 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   )
+
+  // -- May this account be here at all, and does it have budget left?
+  //
+  // Before the photo is read and before the first model call, because both
+  // cost money and neither is refundable once spent. In mock mode nothing
+  // reaches OpenRouter, so nothing is metered — but the entitlement check
+  // still runs, or a local stack would be the one place the paywall does not
+  // exist and every gating bug would be invisible in development.
+  try {
+    await requireEntitlement(db, userId)
+  } catch (error) {
+    if (error instanceof NotEntitled) {
+      return json({ ok: false, code: 'not_entitled', error: 'subscription required' }, 402)
+    }
+    throw error
+  }
+  const meter = mockActive() ? nullMeter() : createMeter(db, userId)
+
   const scanId = crypto.randomUUID()
   const source = description ? 'text' : 'camera'
   // Stage failures, readable two ways: always in the function logs, and in
@@ -130,9 +163,17 @@ Deno.serve(async (req: Request) => {
     try {
       const photoBase64 = photoPath && !mockActive() ? await fetchPhoto(photoPath) : null
       vision = foldMealItems(
-        description ? await describeMeal(description, mock) : await analysePhoto(photoBase64, mock),
+        description
+          ? await describeMeal(description, mock, meter)
+          : await analysePhoto(photoBase64, mock, meter),
       )
     } catch (error) {
+      // Out of budget is not a model failure and must not become one. Left to
+      // fall through it would reach the archetype floor, which needs a model
+      // call of its own, fail again for the same reason, and hand the user a
+      // terminal "Mixed meal" row where the honest answer is that they are out
+      // of requests for the month.
+      if (error instanceof AiLimitReached) throw error
       const message = `[vision] ${describe(error)}`
       console.error(message)
       trace.push(message)
@@ -193,9 +234,9 @@ Deno.serve(async (req: Request) => {
 
     for (const [index, item] of items.entries()) {
       const resolved = item
-        ? ((await resolveItem(db, scanId, item, mock, trace)) ??
-          (await resolveByArchetype(db, item, mock)))
-        : await resolveByArchetype(db, null, mock)
+        ? ((await resolveItem(db, scanId, item, mock, meter, trace)) ??
+          (await resolveByArchetype(db, item, mock, meter)))
+        : await resolveByArchetype(db, null, mock, meter)
 
       const entry = await writeEntry(db, {
         userId,
@@ -247,6 +288,22 @@ Deno.serve(async (req: Request) => {
       ...(wantDebug ? { trace } : {}),
     })
   } catch (error) {
+    // The account ran out of requests part-way through. A distinct answer from
+    // the failure below it, because there is nothing to retry: the client
+    // drops its pending row and says so rather than leaving a spinner over a
+    // scan that will refuse again.
+    if (error instanceof AiLimitReached) {
+      return json(
+        {
+          ok: false,
+          code: 'ai_limit',
+          used: error.used,
+          limit: error.monthlyLimit,
+          error: error.message,
+        },
+        429,
+      )
+    }
     // Even the cascade's floor failed (database down, terminal row missing).
     // Still not an HTTP error: the client keeps its pending row and retries.
     console.error('[scan-meal] unrecoverable:', error)
