@@ -12,23 +12,81 @@ export const paywall = {
    * What is left here is the words around the number, and the interpolation
    * slots those numbers drop into.
    */
+  /** Offline, or the check itself failed. Not the same as "you have not paid". */
+  couldNotCheck: 'We could not check your subscription. Try again in a moment.',
+
   plans: {
     yearly: 'Yearly',
+    /**
+     * The yearly price divided over twelve months, which is the comparison
+     * somebody makes against the monthly plan. The store hands back a
+     * formatted figure and nothing else, so the unit is added here — without
+     * it the card read "$2.49" under "$29.90" with no clue that the two are
+     * not the same kind of number.
+     */
+    perMonth: '{{price}} a month',
     /** The percentage is computed from the two live prices, never assumed. */
     yearlyBadge: 'SAVE {{percent}}%',
     monthly: 'Monthly',
     monthlyBilling: 'Billed every month',
     lifetime: 'Lifetime',
-    lifetimeBadge: 'PAY ONCE',
     lifetimeDetail: 'One payment, yours for good',
   },
 
   hard: {
+    /** The bar on the pushed page. The screen's own headline is `title`. */
+    appBar: 'RiceCal Pro',
     title: 'Start logging with RiceCal Pro',
-    perks: {
-      unlimited: 'Unlimited meal logging',
-      scanning: 'Photo scanning',
-      database: 'Local hawker food database',
+    everything: 'EVERYTHING YOU GET',
+    /**
+     * All of it, in the order somebody meets it: the four ways a meal gets in,
+     * then what the app does with it, then what it does over time.
+     *
+     * Each line is what the feature IS, not what it is called. "Recipes" tells
+     * a reader nothing they could not guess; "enter what went in and how many
+     * it feeds, once" tells them why it is worth having.
+     */
+    features: {
+      snap: {
+        title: 'Snap a plate',
+        body: 'Every dish on it named, sized and priced.',
+      },
+      describe: {
+        title: 'Or just say what you ate',
+        body: '"Nasi lemak with fried chicken and a teh tarik."',
+      },
+      barcode: {
+        title: 'Scan a packet',
+        body: 'Three million barcoded products, read off the label.',
+      },
+      search: {
+        title: 'Search the food database',
+        body: 'Hawker dishes, chains and home cooking from across Asia.',
+      },
+      recipes: {
+        title: 'Save what you cook',
+        body: 'Enter what went in and how many it feeds, once. Then one tap.',
+      },
+      budget: {
+        title: 'A calorie budget that fits you',
+        body: 'Worked out from your body and your goal, and kept up to date.',
+      },
+      health: {
+        title: 'Apple Health and Health Connect',
+        body: 'What you burn is added to what you can eat, never taken off it.',
+      },
+      trends: {
+        title: 'Trends and weight',
+        body: 'Where the week went, and whether it is moving.',
+      },
+      reviews: {
+        title: 'Weekly and monthly reviews',
+        body: 'A finished week, read as a few cards you can share.',
+      },
+      reminders: {
+        title: 'Meal reminders',
+        body: 'At your own mealtimes, in your own timezone.',
+      },
     },
     assurance: 'No commitment, cancel any time',
     /**
@@ -37,11 +95,16 @@ export const paywall = {
      * would be false about it — and a sentence assembled from a price and a
      * period word is a sentence no translator can reorder.
      */
-    smallPrintYearly: 'Free for 7 days, then {{price}} a year. Cancel any time.',
-    smallPrintMonthly: 'Free for 7 days, then {{price}} a month. Cancel any time.',
+    smallPrintYearly: 'Free for 7 days, then {{price}} a year.',
+    smallPrintMonthly: 'Free for 7 days, then {{price}} a month.',
     smallPrintLifetime: 'One payment of {{price}}. No subscription, no renewal.',
-    /** Shown until the store answers, so the sentence is never half a price. */
-    smallPrintPending: 'Cancel any time.',
+    /**
+     * Shown until the store answers, so the sentence is never half a price.
+     * Deliberately not "cancel any time": the assurance line directly above
+     * already says that, and the two together read as the same promise made
+     * twice by someone worried it was not believed.
+     */
+    smallPrintPending: 'Free for 7 days.',
     start: 'Start free trial',
     startLifetime: 'Buy lifetime access',
     restore: 'Restore purchase',
@@ -95,54 +158,6 @@ export const paywall = {
     lockedEntry: 'Locked',
     resume: 'Continue with Pro',
     browse: 'Keep browsing free',
-  },
-
-  gate: {
-    photo: {
-      title: 'Photo logging is a Pro feature',
-      body: 'Point at your plate and we name every item on it.',
-      perks: {
-        multiItem: 'Multi item plate detection',
-        portion: 'Portion size estimates',
-        offline: 'Works offline for saved foods',
-      },
-    },
-    /**
-     * The perks are about what the model does with a sentence rather than how
-     * the sentence arrived, which is why none of them mentions typing.
-     */
-    describe: {
-      title: 'Describing a meal is a Pro feature',
-      body: 'Write down what you ate and we work out the rest.',
-      perks: {
-        multiItem: 'Several dishes in one sentence',
-        portion: 'Portion words like "half a plate"',
-        offline: 'Works offline for saved foods',
-      },
-    },
-    /**
-     * The plainest of the three, and the one reached most often: searching,
-     * scanning a barcode and opening a dish are all free, so this is the wall
-     * at the very last tap. It does not oversell, because the user has already
-     * seen the dish and the calories and picked their portion.
-     */
-    log: {
-      title: 'Logging a meal is a Pro feature',
-      body: 'Search, scan and browse as much as you like. Saving it to your diary needs Pro.',
-      perks: {
-        multiItem: 'Every way in: photo, words, barcode, search',
-        portion: 'Your whole diary, trends and weekly reviews',
-        offline: 'Recipes you cook at home, logged in one tap',
-      },
-    },
-    whatYouGet: 'WHAT YOU GET',
-    freeNote: 'You can still search and browse the food database for free.',
-    start: 'Try free for 7 days',
-    searchInstead: 'Search instead',
-    /** The way out of the `log` gate, which has no better offer to make. */
-    notNow: 'Not now',
-    /** Offline, or the check itself failed. Not the same as "you have not paid". */
-    couldNotCheck: 'We could not check your subscription. Try again in a moment.',
   },
 
   /**

@@ -53,7 +53,11 @@ export function PlanPicker({ value, onChange, showLifetime = false, className }:
         title={t('plans.yearly')}
         badge={saving && saving > 0 ? t('plans.yearlyBadge', { percent: saving }) : undefined}
         price={prices?.yearly?.priceString ?? PENDING}
-        caption={prices?.yearly?.perMonthString}
+        caption={
+          prices?.yearly?.perMonthString
+            ? t('plans.perMonth', { price: prices.yearly.perMonthString })
+            : undefined
+        }
       />
       <PlanCard
         selected={value === 'monthly'}
@@ -63,11 +67,14 @@ export function PlanPicker({ value, onChange, showLifetime = false, className }:
         price={prices?.monthly?.priceString ?? PENDING}
       />
       {showLifetime ? (
+        /* No badge here. The yearly card's is a SAVING — a number worth the
+           emphasis because it is a comparison somebody can check. "PAY ONCE"
+           restated the line directly under it and earned its colour with
+           nothing. */
         <PlanCard
           selected={value === 'lifetime'}
           onPress={() => onChange('lifetime')}
           title={t('plans.lifetime')}
-          badge={t('plans.lifetimeBadge')}
           detail={t('plans.lifetimeDetail')}
           price={prices?.lifetime?.priceString ?? PENDING}
         />

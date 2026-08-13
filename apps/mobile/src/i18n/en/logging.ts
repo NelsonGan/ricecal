@@ -117,12 +117,19 @@ export const logging = {
     snap: 'Snap',
     describe: 'Describe',
     search: 'Search',
-    scan: 'Scan',
-    /**
-     * No empty-state copy for the repeat button: it is simply absent when
-     * yesterday had nothing in it, rather than saying so.
-     */
-    repeatYesterday: 'Repeat yesterday',
+  },
+
+  /**
+   * The two sides of one camera.
+   *
+   * "Meal" rather than "Photo" and "Barcode" rather than "Scan": the tabs name
+   * WHAT IS BEING POINTED AT, not the mechanism, because the mechanism is the
+   * same on both and naming it twice would make them read as two cameras.
+   */
+  capture: {
+    tabs: 'What are you pointing at',
+    meal: 'Meal',
+    barcode: 'Barcode',
   },
 
   /**

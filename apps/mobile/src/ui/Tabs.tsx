@@ -15,6 +15,17 @@ export type TabsProps<T extends string> = {
   onChange: (value: T) => void
   /** Let the strip scroll horizontally when the labels do not fit. */
   scrollable?: boolean
+  /**
+   * Where the strip sits in the width it is given.
+   *
+   * `start` is right for a set that can grow or overflow, where a centred strip
+   * would shift every label sideways as tabs are added. `center` is for a short
+   * fixed pair that reads as one control — two tabs hard against the left edge
+   * look like the beginning of a longer list that is missing.
+   *
+   * Ignored when `scrollable`, where the content owns its own offset.
+   */
+  align?: 'start' | 'center'
   accessibilityLabel?: string
   className?: string
 }
@@ -36,6 +47,7 @@ export function Tabs<T extends string>({
   value,
   onChange,
   scrollable = false,
+  align = 'start',
   accessibilityLabel,
   className,
 }: TabsProps<T>) {
@@ -64,7 +76,9 @@ export function Tabs<T extends string>({
     )
   })
 
-  const content = <View className="flex-row gap-lg">{strip}</View>
+  const content = (
+    <View className={cn('flex-row gap-lg', align === 'center' && 'justify-center')}>{strip}</View>
+  )
 
   return (
     <View
