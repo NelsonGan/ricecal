@@ -22,11 +22,9 @@ type Shot = {
   /** Pixels, so the preview can hold the card's own proportions. */
   width: number
   height: number
-  /** The card's own heading, which the sheet takes as its title. */
-  title: string
 }
 
-type Capture = (view: RefObject<View | null>, title: string) => Promise<void>
+type Capture = (view: RefObject<View | null>) => Promise<void>
 
 const CaptureContext = createContext<Capture | null>(null)
 
@@ -84,7 +82,7 @@ export function ShareableCards({ message, children }: ShareableCardsProps) {
   /** The capture still on disk from the last tap, deleted when it is replaced. */
   const written = useRef<string | null>(null)
 
-  const capture = useCallback<Capture>(async (view, title) => {
+  const capture = useCallback<Capture>(async (view) => {
     const image = await makeImageFromView(view as RefObject<never>)
     if (!image) return
 
@@ -97,7 +95,7 @@ export function ShareableCards({ message, children }: ShareableCardsProps) {
     // and the second delete would be of a file already gone.
     const stale = written.current
     written.current = file.uri
-    setShot({ uri: file.uri, width: image.width(), height: image.height(), title })
+    setShot({ uri: file.uri, width: image.width(), height: image.height() })
 
     if (stale) {
       const old = new File(stale)
@@ -132,10 +130,9 @@ export function ShareableCards({ message, children }: ShareableCardsProps) {
       <Sheet
         visible={shot !== null}
         onClose={() => setShot(null)}
-        // The card's own heading. A sheet titled "Share" over a picture of a
-        // card says nothing the button under it does not; the card's name says
-        // WHICH of the three on the page is about to leave.
-        title={shot?.title}
+        // No title. The picture under it is a card with its own heading on it,
+        // and a sheet repeating that heading says the same thing twice in two
+        // sizes.
         closeLabel={t('story.close')}
         scrollable={false}
         footer={
@@ -161,23 +158,29 @@ export function ShareableCards({ message, children }: ShareableCardsProps) {
 }
 
 export type ShareableProps = {
-  /** The card's own heading, which titles the sheet the capture opens in. */
+  /**
+   * The card's own heading. Not drawn anywhere — the picture carries it — but a
+   * screen reader has eight identical "share this card" buttons in a story
+   * without it.
+   */
   title: string
   children: ReactNode
   className?: string
 }
 
 /**
- * One card, liftable, with the app's mark on it FOR THE PICTURE ONLY.
+ * One card, liftable, with the app's mark over it FOR THE PICTURE ONLY.
  *
- * Two things this deliberately does not do, and both were tried.
- *
- * NO PADDING AND NO FILL. It had a canvas-coloured margin so the captured card
- * would not sit flush against the edge of the PNG. What that produced was a
- * block of canvas around a white card inside a white sheet — a grey square with
- * a visible edge, which is exactly the seam a preview must not have. The
- * capture is the card's own box now, so the preview is a card on the sheet's
- * surface and there is nothing around it to see.
+ * A BAND ABOVE THE CARD RATHER THAN A MARGIN AROUND IT. There was a
+ * canvas-coloured margin on all four sides once, so the captured card would not
+ * sit flush against the edge of the PNG, and it produced a grey block around a
+ * white card inside a white sheet — a square with a visible edge, which is the
+ * one seam a preview must not have. What is left is height at the TOP and
+ * nothing on the other three sides: unfilled, so the sheet shows through it,
+ * and enough of it that the mark has somewhere to be that no card's own header
+ * has a claim on. Every card is a different shape at the top — a heading alone
+ * on two of them, a heading beside a badge on another — and a mark tucked into
+ * the corner of the card itself would land on one of them.
  *
  * THE MARK IS NOT ON SCREEN. It is absolutely positioned, so it costs no layout
  * and moves nothing, and it is transparent until the moment of the capture —
@@ -215,7 +218,7 @@ export function Shareable({ title, children, className }: ShareableProps) {
     const frame = requestAnimationFrame(() => {
       requestAnimationFrame(async () => {
         if (!alive) return
-        await capture?.(view, title)
+        await capture?.(view)
         if (alive) setMarked(false)
       })
     })
@@ -224,26 +227,27 @@ export function Shareable({ title, children, className }: ShareableProps) {
       alive = false
       cancelAnimationFrame(frame)
     }
-  }, [marked, capture, title])
+  }, [marked, capture])
 
   return (
     <Pressable
       ref={view}
       onPress={() => setMarked(true)}
-      className={cn(className)}
+      className={cn('pt-6', className)}
       accessibilityRole="button"
       accessibilityLabel={t('share.card', { card: title })}
     >
       {children}
 
-      {/* In the card's own bottom padding, which every card has and none of
-          them fills. Absolute, so nothing on the page moves when it appears. */}
+      {/* In the band above the card, right aligned, clear of whatever that
+          card puts in its own top corner. Absolute, so nothing on the page
+          moves when it appears. */}
       <View
         pointerEvents="none"
-        className="absolute right-4 bottom-3 flex-row items-center gap-1.5"
+        className="absolute top-0.5 right-1 flex-row items-center gap-1.5"
         style={{ opacity: marked ? 1 : 0 }}
       >
-        <Image source={MARK} style={{ width: 15, height: 15, borderRadius: 5 }} />
+        <Image source={MARK} style={{ width: 16, height: 16, borderRadius: 5 }} />
         <Text variant="micro">{t('card.brand')}</Text>
       </View>
     </Pressable>
