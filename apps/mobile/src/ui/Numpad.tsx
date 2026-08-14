@@ -400,6 +400,16 @@ export function useNumpadField({
 export type NumpadHostProps = {
   children: ReactNode
   /**
+   * This host's identity, from `useNumpadZone`.
+   *
+   * Passed in rather than minted here because the container around this element
+   * also has to know how much room ITS OWN pad is taking, and it works that out
+   * in its own render, above this element. One id, generated once, so the two
+   * halves cannot disagree about whose pad is open. A host given none stands
+   * alone: it draws for the fields under it and nothing gets out of its way.
+   */
+  id?: string
+  /**
    * Fired when a field under this host takes the pad, with a way to measure it.
    * A host that scrolls uses it to bring the field back above the pad.
    */
@@ -415,8 +425,9 @@ export type NumpadHostProps = {
  * shell for a page and `Sheet`'s scrim for a panel, both of which reach the
  * bottom of the window.
  */
-export function NumpadHost({ children, onOpen }: NumpadHostProps) {
-  const id = useId()
+export function NumpadHost({ children, id: given, onOpen }: NumpadHostProps) {
+  const own = useId()
+  const id = given ?? own
   const context = useNumpad()
   const shown = context?.shown?.hostId === id ? context.shown : null
   const opening = context?.session?.hostId === id ? context.session : null
@@ -439,17 +450,40 @@ export function NumpadHost({ children, onOpen }: NumpadHostProps) {
 }
 
 /**
- * How much room the pad is taking, for anything that has to get out of its way.
+ * A pad host, and how much room ITS OWN pad is taking.
  *
- * `height` is 0 unless the pad is open, so a caller can add it to a padding
- * without a conditional. `offset` is the animated twin, for the UI thread.
+ * The `id` pairs with the `NumpadHost` the caller renders, and the scoping is
+ * the whole reason it exists. The provider holds ONE `offset` for the app, and
+ * read directly it moves every container in the tree — including the ones that
+ * are not drawing the pad and cannot see it.
+ *
+ * That is not the rare case it sounds like. A field keeps focus when you
+ * navigate away from it: suppressing the system keyboard also removes the
+ * reason the platform had to resign first responder, so nothing blurs, the
+ * session stays open, and the screen it belongs to is still mounted somewhere
+ * under the one you are looking at. Every footer and every floating action
+ * mounted after it then sat the pad's full height off the bottom of the screen,
+ * with a screen of canvas underneath. Onboarding's weight field is the first
+ * numeric field a new user meets, which is why the symptom was a log button and
+ * a paywall button floating a third of the way up the app on first open.
+ *
+ * `height` is 0 unless this host's pad is open, so a caller can add it to a
+ * padding without a conditional. `offset` is the animated twin, for the UI
+ * thread, and it follows `shown` as well as `session` because `shown` lags by
+ * one animation on the way out — scoped to the session alone, a host would let
+ * go of the offset on the frame the pad started sliding away and its footer
+ * would snap down instead of riding it.
  */
-export function useNumpadInset() {
+export function useNumpadZone() {
+  const id = useId()
   const context = useNumpad()
-  const fallback = useSharedValue(0)
+  const still = useSharedValue(0)
+  const mine = context?.session?.hostId === id || context?.shown?.hostId === id
+
   return {
-    height: context?.session ? context.height : 0,
-    offset: context?.offset ?? fallback,
+    id,
+    height: context?.session?.hostId === id ? context.height : 0,
+    offset: mine && context ? context.offset : still,
     dismiss: context?.dismiss,
   }
 }
