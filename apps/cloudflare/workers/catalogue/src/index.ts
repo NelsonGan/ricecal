@@ -55,6 +55,21 @@ export interface Env {
   CATALOGUE_RL: { limit: (options: { key: string }) => Promise<{ success: boolean }> }
   /** Per-IP cap for `/public/*`, which has no account to key on. */
   PUBLIC_RL: { limit: (options: { key: string }) => Promise<{ success: boolean }> }
+  /**
+   * The marketing site's SERVER, exempting it from the per-IP cap.
+   *
+   * Unlike the browser, this one is a real secret: it lives in Vercel's
+   * environment and is read by a server component, so it is never part of a page
+   * anybody is served. Set with `wrangler secret put WEB_TOKEN`.
+   *
+   * It exists because of an accident of how rendering works rather than because
+   * anybody deserves more quota. A dish page nobody has visited yet is rendered
+   * on demand by a Vercel function, and every one of those comes from a handful
+   * of egress addresses — so keyed on IP they would all share one bucket and
+   * start refusing each other the moment a crawler walked the catalogue. It
+   * buys exactly that exemption and reaches no route the public cannot.
+   */
+  WEB_TOKEN: string
 }
 
 /**
@@ -67,17 +82,22 @@ export interface Env {
  * `barcode` edge function, which also falls back to Open Food Facts and writes
  * what it finds, and a second door onto half of that is a door to keep shut.
  *
- * `public` means no credential is asked for. Exactly one route has it, and it is
- * a SEPARATE PATH rather than a relaxation of `/search`, so that the two cannot
- * drift into each other: the public one has its own cache namespace, its own
- * rate limit, its own reply shape, and its own hostname pattern for a WAF rule
- * to name. `/food` is not here either — it takes the internal `id`, which
- * `publicShape` is careful never to hand out.
+ * `public` means no credential is asked for. Those routes are SEPARATE PATHS
+ * rather than relaxations of `/search` and `/food`, so that the two pairs cannot
+ * drift into each other: the public ones have their own cache namespace, their
+ * own rate limit, their own reply shape, and their own path prefix for a WAF
+ * rule to name.
+ *
+ * `/public/food` takes a SLUG where `/food` takes the internal `id` — which is
+ * the whole reason both exist. `publicShape` never hands out an id, so a public
+ * caller has no way to name a row the app's way, and the app has no reason to
+ * learn the website's way.
  */
 const ROUTES: Record<string, 'public' | 'user' | 'service'> = {
   '/search': 'user',
   '/food': 'user',
   '/public/search': 'public',
+  '/public/food': 'public',
   '/barcode': 'service',
   '/product': 'service',
   '/health': 'service',
@@ -372,38 +392,52 @@ function publicShape(food: FoodRow): Record<string, unknown> {
  * header and the header is added on the way out, so one visitor's allowed origin
  * can never be served from cache to another visitor's browser.
  */
+function corsFor(request: Request): Record<string, string> {
+  return {
+    // A disallowed or absent origin still gets a header, just not a matching
+    // one: the browser refuses it, and curl was never going to care either way.
+    'access-control-allow-origin': allowedOrigin(request) ?? PUBLIC_ORIGINS[0],
+    vary: 'Origin',
+  }
+}
+
+/**
+ * Whether this caller may have another one, and who is being charged for it.
+ *
+ * Our own server is not charged — see `WEB_TOKEN` above for why that is a
+ * property of where renders come FROM rather than a favour. Everybody else is
+ * charged by IP.
+ */
+async function withinLimit(request: Request, env: Env): Promise<boolean> {
+  const presented = request.headers.get('x-ricecal-web') ?? ''
+  if (env.WEB_TOKEN && tokenMatches(presented, env.WEB_TOKEN)) return true
+
+  /*
+   * `cf-connecting-ip` rather than anything in `x-forwarded-for`: Cloudflare
+   * sets the first from the connection itself, and a caller cannot forge it. The
+   * second is caller-supplied and would make this limit opt-out.
+   *
+   * The fallback shares ONE bucket among every request arriving without it,
+   * which is the safe direction to fail. In production there are none; under
+   * `wrangler dev` there are all of them.
+   */
+  const ip = request.headers.get('cf-connecting-ip') ?? ''
+  const { success } = await env.PUBLIC_RL.limit({ key: ip || 'no-ip' })
+  return success
+}
+
 async function publicSearch(
   request: Request,
   env: Env,
   ctx: ExecutionContext,
   url: URL,
 ): Promise<Response> {
-  const origin = allowedOrigin(request)
-  const cors: Record<string, string> = {
-    // A disallowed or absent origin still gets a header, just not a matching
-    // one: the browser refuses it, and curl was never going to care either way.
-    'access-control-allow-origin': origin ?? PUBLIC_ORIGINS[0],
-    vary: 'Origin',
-  }
+  const cors = corsFor(request)
   const reply = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), {
       status,
       headers: { ...cors, 'content-type': 'application/json' },
     })
-
-  // A plain GET with no custom headers is not preflighted, so this is here for
-  // the caller who adds one rather than for the one we are writing.
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        ...cors,
-        'access-control-allow-methods': 'GET, OPTIONS',
-        'access-control-max-age': '86400',
-      },
-    })
-  }
-  if (request.method !== 'GET') return reply({ ok: false, error: 'GET only' }, 405)
 
   const qn = normalize(url.searchParams.get('q') ?? '')
   const limit = Math.min(
@@ -434,18 +468,7 @@ async function publicSearch(
     })
   }
 
-  /**
-   * `cf-connecting-ip` rather than anything in `x-forwarded-for`: Cloudflare
-   * sets the first from the connection itself, and a caller cannot forge it. The
-   * second is caller-supplied and would make this limit opt-out.
-   *
-   * The fallback shares ONE bucket among every request arriving without it,
-   * which is the safe direction to fail. In production there are none; under
-   * `wrangler dev` there are all of them.
-   */
-  const ip = request.headers.get('cf-connecting-ip') ?? ''
-  const { success } = await env.PUBLIC_RL.limit({ key: ip || 'no-ip' })
-  if (!success) return reply({ ok: false, error: 'slow down' }, 429)
+  if (!(await withinLimit(request, env))) return reply({ ok: false, error: 'slow down' }, 429)
 
   try {
     const foods = (await search(env, qn, limit)) as FoodRow[]
@@ -480,6 +503,138 @@ async function publicSearch(
   }
 }
 
+/**
+ * One dish, by the name its URL is built from.
+ *
+ * This is the other half of the marketing site, and the cheaper half by a wide
+ * margin: `food_slug_idx` is UNIQUE, so it is an index probe rather than the
+ * four fused arms `/public/search` runs. A dish page costs about as much as
+ * looking up a barcode.
+ *
+ * It exists because the site prerenders only the first few thousand dishes and
+ * renders the rest the first time somebody asks. Without a way to fetch one row
+ * by slug, that long tail would have to be found by SEARCHING for its own name
+ * and hoping the right row came back first — which is a guess, on a page whose
+ * whole job is to state a number accurately.
+ */
+async function publicFood(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+  url: URL,
+): Promise<Response> {
+  const cors = corsFor(request)
+  const reply = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...cors, 'content-type': 'application/json' },
+    })
+
+  const slug = (url.searchParams.get('slug') ?? '').trim().toLowerCase()
+  // The shape every slug in the catalogue has. Anything else cannot match a row,
+  // so it is turned away before it reaches the database rather than after.
+  if (!slug || slug.length > 120 || !/^[a-z0-9-]+$/.test(slug)) {
+    return reply({ ok: false, error: 'not a usable slug' }, 400)
+  }
+
+  const cacheKey = new Request(`https://catalogue.ricecal.app/public/food?slug=${slug}`)
+  const cache = caches.default
+
+  const cached = await cache.match(cacheKey)
+  if (cached) {
+    return new Response(cached.body, {
+      status: 200,
+      headers: {
+        ...cors,
+        'content-type': 'application/json',
+        'cache-control': `public, max-age=${PUBLIC_CACHE_SECONDS}`,
+      },
+    })
+  }
+
+  if (!(await withinLimit(request, env))) return reply({ ok: false, error: 'slow down' }, 429)
+
+  try {
+    const row = await env.DB.prepare('select id from food where slug = ?')
+      .bind(slug)
+      .first<{ id: string }>()
+
+    // Through `foodDetails` rather than a single wider select, so that a dish
+    // read here and the same dish read by the app went through one function:
+    // it is what flattens the default portion onto the row and turns SQLite's
+    // 0/1 into a boolean, and `publicShape` below is written expecting both.
+    const found = row ? (await foodDetails(env, [row.id])).get(row.id) : undefined
+    const body = JSON.stringify({ ok: true, food: found ? publicShape(found) : null })
+
+    // A miss is cached too. A crawler that finds a dead slug tends to find it
+    // repeatedly, and "this is not a dish" is as good an answer to keep as any.
+    ctx.waitUntil(
+      cache.put(
+        cacheKey,
+        new Response(body, {
+          headers: {
+            'content-type': 'application/json',
+            'cache-control': `public, max-age=${PUBLIC_CACHE_SECONDS}`,
+          },
+        }),
+      ),
+    )
+
+    return new Response(body, {
+      status: 200,
+      headers: {
+        ...cors,
+        'content-type': 'application/json',
+        'cache-control': `public, max-age=${PUBLIC_CACHE_SECONDS}`,
+      },
+    })
+  } catch (error) {
+    console.error('catalogue worker public food', error)
+    return reply({ ok: false, error: 'query failed' }, 500)
+  }
+}
+
+/**
+ * The public tier's front door: the parts both routes share, then the split.
+ *
+ * Method and preflight are settled here because they are the same answer for
+ * both, and because getting them wrong is the kind of thing that only shows up
+ * in somebody else's browser console.
+ */
+function publicRoute(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+  url: URL,
+): Promise<Response> | Response {
+  const cors = corsFor(request)
+
+  // A plain GET with no custom headers is not preflighted, so this is here for
+  // the caller who adds one — which our own server does, carrying `WEB_TOKEN`.
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        ...cors,
+        'access-control-allow-methods': 'GET, OPTIONS',
+        'access-control-allow-headers': 'x-ricecal-web',
+        'access-control-max-age': '86400',
+      },
+    })
+  }
+
+  if (request.method !== 'GET') {
+    return new Response(JSON.stringify({ ok: false, error: 'GET only' }), {
+      status: 405,
+      headers: { ...cors, 'content-type': 'application/json' },
+    })
+  }
+
+  return url.pathname === '/public/food'
+    ? publicFood(request, env, ctx, url)
+    : publicSearch(request, env, ctx, url)
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const auth = request.headers.get('authorization') ?? ''
@@ -495,7 +650,7 @@ export default {
     // exactly as it was. That is deliberate: the mobile app's search is the
     // critical path here, and a marketing feature should not be able to change
     // its behaviour by accident.
-    if (required === 'public') return publicSearch(request, env, ctx, url)
+    if (required === 'public') return publicRoute(request, env, ctx, url)
 
     // The shared secret first, and it is checked against EVERY request rather
     // than only on service routes: our own server calls the read routes too
