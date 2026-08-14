@@ -16,8 +16,8 @@
  *
  * WHAT PROTECTS IT
  *
- * Two credentials, for two callers, and which routes each may reach is the
- * policy in `ROUTES` below.
+ * Three callers, and which routes each may reach is the policy in `ROUTES`
+ * below.
  *
  * A SHARED SECRET in `Authorization` is our own server: the Supabase edge
  * functions, which reach everything including the write. Compared in constant
@@ -29,10 +29,17 @@
  * and would not have been before: the project signs tokens with ES256, so this
  * Worker verifies against a PUBLIC key and holds nothing that could forge one.
  *
- * The catalogue is not secret — every row is visible to every signed-in user —
- * so neither credential is protecting the data. They are here so that reading
- * it costs somebody an account, and so that writing it stays impossible from
- * anywhere but our own server.
+ * NO CREDENTIAL AT ALL is the marketing site, on `/public/*`. Anonymous on
+ * purpose: a token shipped inside a web page is readable by everybody the page
+ * is served to, so minting one would have bought nothing and implied a great
+ * deal. What stands in for it is a smaller answer and a per-IP cap.
+ *
+ * WHAT CHANGED WITH THE PUBLIC TIER, stated plainly because it used to read the
+ * other way here: reading this catalogue no longer costs an account. It costs an
+ * account AT SCALE. `/public/search` hands a trimmed row to anybody who asks,
+ * and the things holding it in shape are the cache, the per-IP limit, and the
+ * fields `publicShape` refuses to return — not a credential. Writing is
+ * unchanged and still reachable only from our own server.
  */
 
 import { verifyUser } from './auth.ts'
@@ -46,6 +53,8 @@ export interface Env {
   SUPABASE_URL: string
   /** Per-user request cap, so an account is not a licence to scrape. */
   CATALOGUE_RL: { limit: (options: { key: string }) => Promise<{ success: boolean }> }
+  /** Per-IP cap for `/public/*`, which has no account to key on. */
+  PUBLIC_RL: { limit: (options: { key: string }) => Promise<{ success: boolean }> }
 }
 
 /**
@@ -57,10 +66,18 @@ export interface Env {
  * too and is deliberately NOT here — the app reaches a packet through the
  * `barcode` edge function, which also falls back to Open Food Facts and writes
  * what it finds, and a second door onto half of that is a door to keep shut.
+ *
+ * `public` means no credential is asked for. Exactly one route has it, and it is
+ * a SEPARATE PATH rather than a relaxation of `/search`, so that the two cannot
+ * drift into each other: the public one has its own cache namespace, its own
+ * rate limit, its own reply shape, and its own hostname pattern for a WAF rule
+ * to name. `/food` is not here either — it takes the internal `id`, which
+ * `publicShape` is careful never to hand out.
  */
-const ROUTES: Record<string, 'user' | 'service'> = {
+const ROUTES: Record<string, 'public' | 'user' | 'service'> = {
   '/search': 'user',
   '/food': 'user',
+  '/public/search': 'public',
   '/barcode': 'service',
   '/product': 'service',
   '/health': 'service',
@@ -249,14 +266,236 @@ async function search(env: Env, q: string, limit: number): Promise<unknown[]> {
   return scored.slice(0, limit).map((s) => s.food)
 }
 
+/**
+ * Where the preview search may be called FROM.
+ *
+ * Not a security boundary, and worth being blunt about that rather than letting
+ * the list imply otherwise: `Origin` is set by the browser, so it is honest
+ * about a page and says nothing whatsoever about curl. Anybody who wants these
+ * rows without a browser simply takes them. What the list actually does is stop
+ * OTHER people's pages from spending our rate limit through their visitors'
+ * browsers, which is the only thing CORS was ever able to do.
+ */
+const PUBLIC_ORIGINS = ['https://www.ricecal.app', 'https://ricecal.app']
+
+/** A Vercel preview of `ricecal-web`, whose hostname is generated per branch. */
+const PREVIEW_ORIGIN = /^https:\/\/ricecal-web-[a-z0-9-]+\.vercel\.app$/
+
+function allowedOrigin(request: Request): string | null {
+  const origin = request.headers.get('origin')
+  if (!origin) return null
+  if (PUBLIC_ORIGINS.includes(origin)) return origin
+  if (PREVIEW_ORIGIN.test(origin)) return origin
+  // `next dev`, on the machine of whoever is building the page.
+  if (/^http:\/\/localhost:\d+$/.test(origin)) return origin
+  return null
+}
+
+/**
+ * How long a public answer stays good.
+ *
+ * The dish rows move when a catalogue import runs, which is days apart, so an
+ * hour is conservative. It is also the single biggest lever on what this costs:
+ * D1 bills rows READ, one fused search reads on the order of 1,500 of them, and
+ * a marketing page concentrates its queries onto a handful of famous dishes. The
+ * queries everybody types should be answered from the colo, not the database.
+ */
+const PUBLIC_CACHE_SECONDS = 3600
+
+/** Ten, not two hundred. Walking the catalogue ten rows at a time is the point. */
+const PUBLIC_MAX_LIMIT = 10
+
+/**
+ * The part of a row a stranger gets.
+ *
+ * Every field withheld here is withheld for a reason rather than out of
+ * nervousness:
+ *
+ * `id` is the app's key and the only thing `/food` accepts, so publishing it
+ * would hand out a second way to read rows one at a time — one that answers by
+ * primary key and never goes near the fused search. `slug` names the same dish,
+ * is unique, and is what the website's own URLs are built from.
+ *
+ * `popularity`, `source_priority` and `is_local` are the RANKING, not the food.
+ * They are the part of this that took judgement rather than data entry, and
+ * together they would let somebody reproduce the ordering without reproducing
+ * the catalogue.
+ *
+ * `servings` — the portion matrix, 75,000 rows of it — is the other piece of
+ * curation, and a preview needs one portion rather than all of them. The default
+ * has already been flattened onto the row by `foodDetails`.
+ *
+ * `source_name` and `source_attribution` STAY, and they are the one thing here
+ * that is required rather than chosen. Half these rows come from Open Food
+ * Facts, whose licence is attribution-bearing, so a page showing the numbers has
+ * to be able to show where they came from. Withholding them would make the site
+ * that renders this non-compliant, which is a strange way to protect anything.
+ */
+function publicShape(food: FoodRow): Record<string, unknown> {
+  return {
+    slug: food.slug,
+    name: food.name,
+    brand: food.brand ?? null,
+    place: food.place,
+    kcal: food.kcal,
+    carbs_g: food.carbs_g,
+    protein_g: food.protein_g,
+    fat_g: food.fat_g,
+    fibre_g: food.fibre_g ?? null,
+    sugar_g: food.sugar_g ?? null,
+    sodium_mg: food.sodium_mg ?? null,
+    // Already a boolean by here — `foodDetails` coerces the 0/1 SQLite stores.
+    verified: food.verified === true,
+    icon_set: food.icon_set ?? null,
+    icon_name: food.icon_name ?? null,
+    serving_label: food.serving_label ?? null,
+    serving_g: food.serving_g ?? null,
+    source_name: food.source_name ?? null,
+    source_attribution: food.source_attribution ?? null,
+  }
+}
+
+/**
+ * The marketing site's search: anonymous, cached, and deliberately small.
+ *
+ * THE ORDER IS CACHE → LIMITER → DATABASE, not the obvious limiter → cache, and
+ * that is the one decision in here worth arguing about. A hit costs no D1 rows
+ * and no work, so charging somebody's allowance for one would mean twenty a
+ * minute had to cover every REPEAT of the same query — and a marketing page
+ * repeats enormously, because everyone arrives and types the same four dishes.
+ * Spending the allowance only on questions we have not already answered is what
+ * lets the number stay small enough to be worth having. Volume of repeats is a
+ * job for the WAF rule in front, which never wakes this Worker at all.
+ *
+ * The cache is keyed on the NORMALIZED query, so `Nasi Lemak`, `nasi lemak` and
+ * `nasi  lemak` are one entry rather than three. It is stored WITHOUT the CORS
+ * header and the header is added on the way out, so one visitor's allowed origin
+ * can never be served from cache to another visitor's browser.
+ */
+async function publicSearch(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+  url: URL,
+): Promise<Response> {
+  const origin = allowedOrigin(request)
+  const cors: Record<string, string> = {
+    // A disallowed or absent origin still gets a header, just not a matching
+    // one: the browser refuses it, and curl was never going to care either way.
+    'access-control-allow-origin': origin ?? PUBLIC_ORIGINS[0],
+    vary: 'Origin',
+  }
+  const reply = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...cors, 'content-type': 'application/json' },
+    })
+
+  // A plain GET with no custom headers is not preflighted, so this is here for
+  // the caller who adds one rather than for the one we are writing.
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        ...cors,
+        'access-control-allow-methods': 'GET, OPTIONS',
+        'access-control-max-age': '86400',
+      },
+    })
+  }
+  if (request.method !== 'GET') return reply({ ok: false, error: 'GET only' }, 405)
+
+  const qn = normalize(url.searchParams.get('q') ?? '')
+  const limit = Math.min(
+    Math.max(Number(url.searchParams.get('limit') ?? PUBLIC_MAX_LIMIT), 1),
+    PUBLIC_MAX_LIMIT,
+  )
+
+  // Two characters, because one is not a search — it is the first keystroke of
+  // one, and answering it runs four index scans across the whole catalogue for a
+  // result nobody was going to read. Answered rather than refused, so the site
+  // does not have to special-case an error while somebody is still typing.
+  if (qn.length < 2) return reply({ ok: true, foods: [] })
+
+  const cacheKey = new Request(
+    `https://catalogue.ricecal.app/public/search?q=${encodeURIComponent(qn)}&limit=${limit}`,
+  )
+  const cache = caches.default
+
+  const cached = await cache.match(cacheKey)
+  if (cached) {
+    return new Response(cached.body, {
+      status: 200,
+      headers: {
+        ...cors,
+        'content-type': 'application/json',
+        'cache-control': `public, max-age=${PUBLIC_CACHE_SECONDS}`,
+      },
+    })
+  }
+
+  /**
+   * `cf-connecting-ip` rather than anything in `x-forwarded-for`: Cloudflare
+   * sets the first from the connection itself, and a caller cannot forge it. The
+   * second is caller-supplied and would make this limit opt-out.
+   *
+   * The fallback shares ONE bucket among every request arriving without it,
+   * which is the safe direction to fail. In production there are none; under
+   * `wrangler dev` there are all of them.
+   */
+  const ip = request.headers.get('cf-connecting-ip') ?? ''
+  const { success } = await env.PUBLIC_RL.limit({ key: ip || 'no-ip' })
+  if (!success) return reply({ ok: false, error: 'slow down' }, 429)
+
+  try {
+    const foods = (await search(env, qn, limit)) as FoodRow[]
+    const body = JSON.stringify({ ok: true, foods: foods.map(publicShape) })
+
+    ctx.waitUntil(
+      cache.put(
+        cacheKey,
+        new Response(body, {
+          headers: {
+            'content-type': 'application/json',
+            'cache-control': `public, max-age=${PUBLIC_CACHE_SECONDS}`,
+          },
+        }),
+      ),
+    )
+
+    return new Response(body, {
+      status: 200,
+      headers: {
+        ...cors,
+        'content-type': 'application/json',
+        'cache-control': `public, max-age=${PUBLIC_CACHE_SECONDS}`,
+      },
+    })
+  } catch (error) {
+    // Caught here rather than by the handler's own catch, so that the 500 keeps
+    // its CORS header and the page sees a failed search instead of a browser
+    // console message about a cross-origin refusal.
+    console.error('catalogue worker public', error)
+    return reply({ ok: false, error: 'query failed' }, 500)
+  }
+}
+
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const auth = request.headers.get('authorization') ?? ''
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : ''
     const url = new URL(request.url)
 
     const required = ROUTES[url.pathname]
     if (!required) return json({ ok: false, error: 'unknown path' }, 404)
+
+    // Before the credentials, because this route asks for none. Everything the
+    // public tier does differently — the cache, the per-IP cap, the trimmed
+    // reply, CORS — is inside `publicSearch`, which leaves the app's path below
+    // exactly as it was. That is deliberate: the mobile app's search is the
+    // critical path here, and a marketing feature should not be able to change
+    // its behaviour by accident.
+    if (required === 'public') return publicSearch(request, env, ctx, url)
 
     // The shared secret first, and it is checked against EVERY request rather
     // than only on service routes: our own server calls the read routes too
