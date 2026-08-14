@@ -17,6 +17,7 @@ import {
   useTargets,
 } from '@/data'
 import { signOut } from '@/data/auth'
+import { HelpSheet } from '@/features/settings'
 import { ScreenTitle, SettingRow } from '@/features/shared'
 import { Avatar, Button, Card, ConfirmSheet, Icon, ListRow, Screen, StatTile, Text } from '@/ui'
 
@@ -44,6 +45,7 @@ export default function MeScreen() {
   const weight = useCurrentWeight()
   const health = useHealthConnection()
   const [confirmSignOut, setConfirmSignOut] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   const activeReminders =
     (mealTimes ?? []).filter((meal) => meal.reminder_enabled).length +
@@ -212,11 +214,15 @@ export default function MeScreen() {
           }
           onPress={() => router.push('/settings/preferences')}
         />
+        {/* A sheet rather than a route, because there is no help centre in the
+            app: the row explains where support actually happens and opens
+            Discord. It pointed at the preferences screen, which is the row
+            above it wearing a different name. */}
         <SettingRow
           icon={{ set: 'system', name: 'help' }}
           title={t('profile:home.help')}
           divider={false}
-          onPress={() => router.push('/settings/preferences')}
+          onPress={() => setHelpOpen(true)}
         />
       </Card>
 
@@ -228,6 +234,8 @@ export default function MeScreen() {
           {t('profile:home.signOut')}
         </Button>
       </View>
+
+      <HelpSheet visible={helpOpen} onClose={() => setHelpOpen(false)} />
 
       {/* Confirmed, because signing out of an app whose data lives on a server
           is not destructive but very much feels like it. */}
