@@ -59,11 +59,10 @@ route needs the shared secret, which a preview version does not hold.
 
 ## Which hostname it answers on
 
-Two, and both are load-bearing.
+One:
 
 ```
-https://catalogue.ricecal.app                        what the app is built against
-https://ricecal-catalogue.nelson-ganlw.workers.dev   what older builds still ask for
+https://catalogue.ricecal.app
 ```
 
 `catalogue.ricecal.app` is a **route** in `wrangler.jsonc`, not a custom domain.
@@ -76,15 +75,33 @@ before an origin is ever chosen. If the hostname ever starts returning a
 Cloudflare error page rather than this Worker's own JSON, that record being
 unproxied is the first thing to check.
 
-**`workers.dev` is deliberately still on, and wrangler will turn it off for
-you.** The moment a `routes` entry exists, `workers_dev` and `preview_urls`
-both default to false, and wrangler says so only in a warning printed *after*
-the upload has landed. Turning them off is not cosmetic: `EXPO_PUBLIC_CATALOGUE_URL`
-is inlined into the bundle at export time, so every installed copy of the app
-goes on asking for the `workers.dev` hostname until its owner updates, and
-`preview_urls` is what `versions upload --preview-alias pr-N` hands to a PR's
-`eas update`. Both flags are pinned to `true` in `wrangler.jsonc` for exactly
-that reason, and neither may be removed while an old build can still be running.
+`ricecal-catalogue.nelson-ganlw.workers.dev` was the second hostname for a
+while, and **it is closed now, because this was the only moment it could be.**
+`EXPO_PUBLIC_CATALOGUE_URL` is inlined into the bundle at export time, so a
+build already on somebody's phone asks for whatever it was built against for as
+long as its owner declines to upgrade. Today nothing is in that position:
+nothing has shipped, and a dev client reads its JS from Metro or from an
+`eas update` on a channel that still receives them. The first build to reach a
+store ends that, and the hostname could not have been closed again.
+
+**`preview_urls` has to stay, and has to stay explicit**, because it defaults to
+whatever `workers_dev` is — so turning one off silently takes the other with it,
+and preview URLs are what `versions upload --preview-alias pr-N` hands to a PR's
+`eas update`. Wrangler mentions that default only in a warning printed *after*
+the upload has landed, which is how both halves were learnt: the first deploy of
+this route turned `workers.dev` off and took the catalogue away from every
+installed build, and the second turned preview URLs off.
+
+**The token needs Workers Routes edit on the zone, and the failure names
+neither.** A route is applied at deploy time like any other trigger, so an
+account-scoped Workers Scripts token uploads the script happily and then fails
+on the trigger with a bare "a request to `/zones/<id>/workers/routes` failed" —
+after the upload, so the Worker is live and the deploy is red. The tell is the
+line above it, that the token lacks "All Zones" permissions; the fix is
+Zone → Workers Routes → Edit on `ricecal.app`, on the token behind
+`CLOUDFLARE_API_TOKEN`. Zone *read* is not enough and is what makes this
+confusing: wrangler resolves the zone name to an id, so it gets far enough to
+look as though the permission is there.
 
 The one thing this costs: **the schema is applied on merge only.** A PR's
 version reads the database production is serving, so a migration in that PR is
