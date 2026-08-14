@@ -20,12 +20,30 @@ const labels = {
   neutral: 'text-muted',
 } as const
 
+/**
+ * Two sizes, and the small one is for a pill that rides ALONGSIDE something
+ * rather than standing on its own.
+ *
+ * The default is a status pill with a row to itself. Set beside a label — the
+ * saving on the yearly plan, next to the word "Yearly" — it has to read as an
+ * annotation of that label instead of competing with it, and at the full size
+ * it made the one card carrying it a head taller than the two beside it.
+ */
+const sizes = {
+  md: { box: 'px-[18px] py-2.5', label: 'text-[15px] leading-[18px]' },
+  sm: { box: 'px-2.5 py-1', label: 'text-[12px] leading-[15px]' },
+} as const
+
 export type BadgeTone = keyof typeof tones
+export type BadgeSize = keyof typeof sizes
 
 export type BadgeProps = ViewProps & {
   children: ReactNode
   tone?: BadgeTone
+  size?: BadgeSize
   className?: string
+  /** Overrides the tone's label colour, for a pill drawn on a solid ground. */
+  labelClassName?: string
 }
 
 /**
@@ -42,20 +60,28 @@ export type BadgeProps = ViewProps & {
  * on the row could move it. It also read as `￼0 day streak` to VoiceOver — the
  * object-replacement character the attachment leaves in the string.
  */
-export function Badge({ children, tone = 'pandan', className, ...rest }: BadgeProps) {
+export function Badge({
+  children,
+  tone = 'pandan',
+  size = 'md',
+  className,
+  labelClassName,
+  ...rest
+}: BadgeProps) {
   const isText = typeof children === 'string' || typeof children === 'number'
 
   return (
     <View
       className={cn(
-        'flex-row items-center gap-1.5 self-start rounded-full px-[18px] py-2.5',
+        'flex-row items-center gap-1.5 self-start rounded-full',
+        sizes[size].box,
         tones[tone],
         className,
       )}
       {...rest}
     >
       {isText ? (
-        <Text className={cn('font-body-black text-[15px] leading-[18px]', labels[tone])}>
+        <Text className={cn('font-body-black', sizes[size].label, labels[tone], labelClassName)}>
           {children}
         </Text>
       ) : (
