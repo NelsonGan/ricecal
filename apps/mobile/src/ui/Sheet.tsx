@@ -25,7 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
 import { cn } from './cn'
-import { NumpadHost, useNumpadInset } from './Numpad'
+import { NumpadHost, useNumpadZone } from './Numpad'
 import { Text } from './Text'
 
 /**
@@ -264,7 +264,7 @@ export function SheetSurface({
    * What is left here is the same two sums a screen does: room at the end of
    * the list, and a scroll that brings the focused field back above the keys.
    */
-  const numpad = useNumpadInset()
+  const numpad = useNumpadZone()
   const scroller = useRef<KeyboardAwareScrollViewRef>(null)
   const scrolled = useRef(0)
   const trackScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -326,7 +326,7 @@ export function SheetSurface({
           draw over it, so the pad a field in here opens has to be drawn in
           here. `NumpadHost` picks the nearest one above the field, which is
           this one whenever a sheet is up and `Screen`'s the rest of the time. */}
-      <NumpadHost onOpen={revealForNumpad}>
+      <NumpadHost id={numpad.id} onOpen={revealForNumpad}>
         {/* Both platforms, now that `KeyboardProvider` reports the keyboard rather
           than Android's window resizing under us. It used to be iOS only, for
           exactly the reason that has gone away.

@@ -1289,6 +1289,18 @@ Break these and the feature is wrong in ways tests may not catch.
   because a native modal window cannot be drawn over from below. `keyboardType`
   stays on every field regardless, as the fallback if a platform ever declines
   to suppress the keyboard.
+- **A field on that pad never blurs when you leave the screen.** Taking the
+  system keyboard away also takes away the reason the platform had to resign
+  first responder, so a push, a replace or a tab change fires no `onBlur` at
+  all: the session stays open, on a screen still mounted under the one you are
+  looking at. That is survivable only because the pad's inset is scoped to the
+  host DRAWING it (`useNumpadZone`). Read straight off the provider, which holds
+  ONE offset for the whole app, a stale session lifted the footer and the
+  floating action of every screen by the pad's full height, and the footer's own
+  canvas then covered the content with a screenful of empty canvas below it.
+  Onboarding's weight field is the first numeric field a new user meets, so a
+  first app open showed the log button and the paywall's button floating 280pt
+  up the screen. It reads as a layout bug and is a lifetime bug.
 - **A hosted Postgres does not fail a write when the disk fills. It stops
   accepting them ALL.** Supabase puts a project over its plan's ceiling into
   read-only, and the free plan's ceiling is 500 MB. This is what drove the

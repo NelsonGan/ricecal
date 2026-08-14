@@ -22,7 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
 import { cn } from './cn'
-import { NumpadHost, useNumpadInset } from './Numpad'
+import { NumpadHost, useNumpadZone } from './Numpad'
 
 /**
  * The scroll view, taught `className`.
@@ -200,7 +200,7 @@ export function Screen({
    * the bottom. The two never coincide — a field is either numeric or it is
    * not — but they add rather than branch, so there is one expression to read.
    */
-  const numpad = useNumpadInset()
+  const numpad = useNumpadZone()
 
   const lift = useAnimatedStyle(() => ({
     transform: [
@@ -311,7 +311,7 @@ export function Screen({
           absolutely positioned against a box that reaches the bottom of the
           window. Around it, the pad would be measured against whatever the
           screen's parent happens to be. */}
-      <NumpadHost onOpen={revealForNumpad}>
+      <NumpadHost id={numpad.id} onOpen={revealForNumpad}>
         {body}
 
         {/* Rides up with the footer, so a floating control is never left under an
