@@ -88,7 +88,7 @@ export {
   NumpadProvider,
   type NumpadProviderProps,
   useNumpadField,
-  useNumpadInset,
+  useNumpadZone,
 } from './Numpad'
 export {
   MacroBar,
