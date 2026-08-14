@@ -36,6 +36,15 @@ export type PlanPickerProps = {
  * Radio cards rather than `RadioGroup`, because each option carries a price
  * block and a badge that a plain label cannot hold. The selection state and the
  * accessibility role are the same either way.
+ *
+ * THE THREE CARDS ARE ONE SHAPE: a name, a line of small print under it, and a
+ * price on the right. Every difference between them then reads as information
+ * rather than as three cards drawn to different rules. The yearly one earns two
+ * additions and no more — a small pill beside its name for the saving, and the
+ * per-month figure under its price — which is exactly the comparison it is
+ * asking somebody to make. It used to carry the saving as a full-size status
+ * pill on a row of its own and no billing line at all, which left one card a
+ * head taller than the two below it and the odd one out.
  */
 export function PlanPicker({ value, onChange, showLifetime = false, className }: PlanPickerProps) {
   const { t } = useTranslation('paywall')
@@ -52,6 +61,7 @@ export function PlanPicker({ value, onChange, showLifetime = false, className }:
         onPress={() => onChange('yearly')}
         title={t('plans.yearly')}
         badge={saving && saving > 0 ? t('plans.yearlyBadge', { percent: saving }) : undefined}
+        detail={t('plans.yearlyBilling')}
         price={prices?.yearly?.priceString ?? PENDING}
         caption={
           prices?.yearly?.perMonthString
@@ -106,7 +116,11 @@ function PlanCard({ selected, onPress, title, badge, detail, price, caption }: P
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityState={{ selected }}
-      accessibilityLabel={`${title}, ${price}${caption ? `, ${caption}` : ''}`}
+      /* Everything on the card, in reading order. The label overrides the
+         children rather than adding to them, so anything left out of it is
+         simply not announced — which is what happened to the saving and the
+         billing period, the two things the card is asking somebody to weigh. */
+      accessibilityLabel={[title, badge, detail, price, caption].filter(Boolean).join(', ')}
     >
       <View
         className={cn(
@@ -118,16 +132,18 @@ function PlanCard({ selected, onPress, title, badge, detail, price, caption }: P
       </View>
 
       <View className="min-w-0 flex-1 items-start gap-1">
-        <Text variant="label" className="text-[16px]">
-          {title}
-        </Text>
-        {badge ? (
-          <Badge tone="pandan" className="bg-pandan">
-            <Text variant="micro" className="text-on-pandan">
+        {/* The badge sits ON the title's line, so a card carrying one is the
+            same height as a card that does not. */}
+        <View className="flex-row items-center gap-2">
+          <Text variant="label" className="text-[16px]">
+            {title}
+          </Text>
+          {badge ? (
+            <Badge size="sm" className="bg-pandan" labelClassName="text-on-pandan">
               {badge}
-            </Text>
-          </Badge>
-        ) : null}
+            </Badge>
+          ) : null}
+        </View>
         {detail ? <Text variant="meta">{detail}</Text> : null}
       </View>
 

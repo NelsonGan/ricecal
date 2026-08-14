@@ -27,6 +27,7 @@ export const paywall = {
     perMonth: '{{price}} a month',
     /** The percentage is computed from the two live prices, never assumed. */
     yearlyBadge: 'SAVE {{percent}}%',
+    yearlyBilling: 'Billed every year',
     monthly: 'Monthly',
     monthlyBilling: 'Billed every month',
     lifetime: 'Lifetime',
