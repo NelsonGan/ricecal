@@ -38,6 +38,24 @@ export const profile = {
     signOut: 'Sign out',
   },
 
+  /**
+   * The sheet behind the help row.
+   *
+   * It is all one destination, so the copy names it rather than hiding it: a
+   * button that says "Get help" and opens Discord is a surprise, and somebody
+   * who does not want a Discord account should be able to tell before they tap.
+   */
+  help: {
+    title: 'Come and talk to us',
+    body: 'Our Discord server is where we answer questions and decide what to build next.',
+    logo: 'Discord',
+    bug: 'Report something broken',
+    idea: 'Suggest a feature',
+    ask: 'Ask us anything about RiceCal',
+    action: 'Open Discord',
+    failed: 'We could not open Discord',
+  },
+
   goals: {
     title: 'Goals and targets',
     dailyCalories: 'DAILY CALORIES',
