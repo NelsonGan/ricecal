@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url'
 const CASES = JSON.parse(readFileSync(new URL('./search-gate.cases.json', import.meta.url), 'utf8'))
 const DIR = new URL('../data/search-gate/', import.meta.url)
 
-const URL_BASE = process.env.CATALOGUE_URL ?? 'https://ricecal-catalogue.nelson-ganlw.workers.dev'
+const URL_BASE = process.env.CATALOGUE_URL ?? 'https://catalogue.ricecal.app'
 const TOKEN = process.env.CATALOGUE_TOKEN
 
 if (!TOKEN) {
