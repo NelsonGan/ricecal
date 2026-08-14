@@ -57,6 +57,35 @@ are queried. What makes that safe is the route policy rather than the database:
 a user's token reaches `/search` and `/food` and nothing else, and the write
 route needs the shared secret, which a preview version does not hold.
 
+## Which hostname it answers on
+
+Two, and both are load-bearing.
+
+```
+https://catalogue.ricecal.app                        what the app is built against
+https://ricecal-catalogue.nelson-ganlw.workers.dev   what older builds still ask for
+```
+
+`catalogue.ricecal.app` is a **route** in `wrangler.jsonc`, not a custom domain.
+The difference is which credential can create it: a custom domain writes the
+zone's DNS itself and so needs one token holding both DNS edit and Workers edit,
+where a route needs only Workers edit and sits on a DNS record made separately.
+That record is a proxied `AAAA` to the discard prefix `100::` — nothing is
+listening there and nothing needs to be, because the route answers the request
+before an origin is ever chosen. If the hostname ever starts returning a
+Cloudflare error page rather than this Worker's own JSON, that record being
+unproxied is the first thing to check.
+
+**`workers.dev` is deliberately still on, and wrangler will turn it off for
+you.** The moment a `routes` entry exists, `workers_dev` and `preview_urls`
+both default to false, and wrangler says so only in a warning printed *after*
+the upload has landed. Turning them off is not cosmetic: `EXPO_PUBLIC_CATALOGUE_URL`
+is inlined into the bundle at export time, so every installed copy of the app
+goes on asking for the `workers.dev` hostname until its owner updates, and
+`preview_urls` is what `versions upload --preview-alias pr-N` hands to a PR's
+`eas update`. Both flags are pinned to `true` in `wrangler.jsonc` for exactly
+that reason, and neither may be removed while an old build can still be running.
+
 The one thing this costs: **the schema is applied on merge only.** A PR's
 version reads the database production is serving, so a migration in that PR is
 not in effect while it is being previewed. A PR that adds a column and reads it

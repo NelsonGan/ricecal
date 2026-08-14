@@ -278,7 +278,7 @@ key; there is no client-side equivalent of this token and there must never be.
 
 ```sh
 supabase secrets set --workdir apps \
-  CATALOGUE_URL=https://ricecal-catalogue.<subdomain>.workers.dev CATALOGUE_TOKEN=...
+  CATALOGUE_URL=https://catalogue.ricecal.app CATALOGUE_TOKEN=...
 ```
 
 Four more belong to R2 and are read by `functions/_shared/r2.ts`:

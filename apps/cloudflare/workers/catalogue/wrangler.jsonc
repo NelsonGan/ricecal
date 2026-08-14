@@ -8,6 +8,30 @@
   // the APAC location hint; Smart Placement moves the Worker to meet it.
   "placement": { "mode": "smart" },
   "observability": { "enabled": true },
+  // The public hostname, on our own domain rather than `workers.dev`.
+  //
+  // A ROUTE rather than a custom domain, and the reason is which credential can
+  // do what: a custom domain writes the zone's DNS itself, so it needs one
+  // token holding both DNS edit and Workers edit. A route needs only Workers
+  // edit, and sits on a DNS record made separately — `catalogue` is a proxied
+  // AAAA to the discard prefix `100::`, which the edge never contacts because
+  // this route answers the request before an origin is ever chosen.
+  //
+  // `workers.dev` stays enabled DELIBERATELY. `EXPO_PUBLIC_CATALOGUE_URL` is
+  // baked into a build at compile time, so every copy of the app already in
+  // somebody's hand goes on asking `ricecal-catalogue.nelson-ganlw.workers.dev`
+  // for as long as they decline to update. Turning it off would take search,
+  // the dish page and the barcode scanner away from them.
+  // Both flags below default to FALSE the moment a route exists, and wrangler
+  // only says so in a warning it prints after the upload has already happened.
+  // The first deploy of this route turned `workers.dev` off and took the
+  // catalogue away from every installed build; the second turned preview URLs
+  // off, which is what `versions upload --preview-alias pr-N` hands to the PR's
+  // `eas update`. Neither may be removed while an old build can still be
+  // running or a PR still needs a preview.
+  "routes": [{ "pattern": "catalogue.ricecal.app/*", "zone_name": "ricecal.app" }],
+  "workers_dev": true,
+  "preview_urls": true,
   // Which project's JWTs to accept. A public URL rather than a secret — the
   // key that verifies them is public too, published at that host's JWKS
   // endpoint. See `src/auth.ts`.
