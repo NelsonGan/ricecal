@@ -79,6 +79,17 @@ the pad opened by a field inside a sheet has to be drawn inside that sheet.
 `NumpadHost` picks the nearest host above the field, which is why there is more
 than one.
 
+**A host only gets out of the way of its OWN pad.** `useNumpadZone` mints the id
+a container passes to its `NumpadHost` and reports the room that host's pad is
+taking, zero for anybody else's. Read straight off the provider instead — one
+`offset` for the whole app — a pad open anywhere lifted every footer and every
+floating action in the tree. That is not the rare case it sounds like: a pad
+stays open across a navigation, because suppressing the system keyboard also
+removes the reason the platform had to resign first responder, so leaving the
+screen fires no blur. Onboarding's weight field is the first numeric field a new
+user meets, and it left the log button and the paywall's button floating 280pt
+off the bottom of every screen after it.
+
 ## Icons
 
 484 illustrated icons across five sets — `ui`, `system`, `body`, `food`,

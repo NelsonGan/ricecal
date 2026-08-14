@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { fireEvent, render, screen, userEvent, waitFor } from '../../test-utils'
-import { NumpadHost, NumpadProvider } from '../Numpad'
+import { NUMPAD_BODY_HEIGHT, NumpadHost, NumpadProvider, useNumpadZone } from '../Numpad'
 import { Text } from '../Text'
 import { TextField } from '../TextField'
 
@@ -273,5 +273,60 @@ describe('Numpad', () => {
     expect(screen.queryByRole('button', { name: '7' })).toBeNull()
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('no <NumpadHost>'))
     warn.mockRestore()
+  })
+
+  /**
+   * The bug this pins is a whole-app one and it looked like a layout fault.
+   *
+   * The provider holds ONE offset for the app, and every `Screen` and `Sheet`
+   * used to read it directly — so a pad open anywhere lifted the footer and the
+   * floating action of every container in the tree, including the ones on other
+   * screens that were not drawing it. And a pad stays open across a navigation:
+   * suppressing the system keyboard also removes the reason the platform had to
+   * resign first responder, so leaving the screen fires no blur. Onboarding's
+   * weight field is the first numeric field a new user meets, which is how a
+   * first app open ended up with the log button and the paywall's button
+   * floating 280pt off the bottom over a screen of empty canvas.
+   */
+  it('gets one host out of the way, and leaves the others where they are', async () => {
+    type Reading = { height: number; offset: { value: number } }
+    const seen: Record<string, Reading[]> = { near: [], far: [] }
+    function Zone({ name, children }: { name: string; children?: React.ReactNode }) {
+      const zone = useNumpadZone()
+      seen[name].push({ height: zone.height, offset: zone.offset })
+      return <NumpadHost id={zone.id}>{children}</NumpadHost>
+    }
+    function TwoHosts() {
+      const [value, setValue] = useState('')
+      return (
+        <SafeAreaProvider initialMetrics={METRICS}>
+          <NumpadProvider labels={LABELS}>
+            <Zone name="near">
+              <TextField
+                label="Amount"
+                value={value}
+                onChangeText={setValue}
+                keyboardType="decimal-pad"
+              />
+            </Zone>
+            <Zone name="far" />
+          </NumpadProvider>
+        </SafeAreaProvider>
+      )
+    }
+
+    await render(<TwoHosts />)
+    await openPad()
+
+    // The pad's body plus the home indicator's inset, for the host drawing it.
+    expect(seen.near.at(-1)?.height).toBe(NUMPAD_BODY_HEIGHT + METRICS.insets.bottom)
+    // And nothing at all for the one that is not, at any point.
+    expect(seen.far.every((r) => r.height === 0)).toBe(true)
+
+    // The animated twin is the half that actually moved the footer, so it is
+    // asserted separately: the host drawing the pad is handed the provider's
+    // own offset, and everybody else a still one that is not it.
+    expect(seen.near.at(-1)?.offset).not.toBe(seen.far.at(-1)?.offset)
+    expect(seen.far.at(-1)?.offset.value).toBe(0)
   })
 })
