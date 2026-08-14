@@ -60,7 +60,7 @@ export interface Env {
    *
    * Unlike the browser, this one is a real secret: it lives in Vercel's
    * environment and is read by a server component, so it is never part of a page
-   * anybody is served. Set with `wrangler secret put WEB_TOKEN`.
+   * anybody is served. Set with `wrangler secret put WEB_CATALOGUE_TOKEN`.
    *
    * It exists because of an accident of how rendering works rather than because
    * anybody deserves more quota. A dish page nobody has visited yet is rendered
@@ -68,8 +68,19 @@ export interface Env {
    * of egress addresses — so keyed on IP they would all share one bucket and
    * start refusing each other the moment a crawler walked the catalogue. It
    * buys exactly that exemption and reaches no route the public cannot.
+   *
+   * NAMED FOR BOTH ENDS, and the identical string is used in Vercel, so that it
+   * reads correctly from either side: here it says which caller, and over there
+   * it says which service. It was `WEB_TOKEN` against `RICECAL_WEB_TOKEN`, and
+   * each said only the thing you already knew from where you were standing.
+   *
+   * Not `CATALOGUE_WEB_TOKEN`, deliberately. That sorts directly beside
+   * `CATALOGUE_TOKEN` in `wrangler secret list`, and the two are a long way
+   * apart in what they permit — that one reaches the write route, this one
+   * reaches nothing a stranger cannot already reach. Near-identical names
+   * guarding different powers is a rotation waiting to go wrong.
    */
-  WEB_TOKEN: string
+  WEB_CATALOGUE_TOKEN: string
 }
 
 /**
@@ -404,13 +415,13 @@ function corsFor(request: Request): Record<string, string> {
 /**
  * Whether this caller may have another one, and who is being charged for it.
  *
- * Our own server is not charged — see `WEB_TOKEN` above for why that is a
+ * Our own server is not charged — see `WEB_CATALOGUE_TOKEN` above for why that is a
  * property of where renders come FROM rather than a favour. Everybody else is
  * charged by IP.
  */
 async function withinLimit(request: Request, env: Env): Promise<boolean> {
   const presented = request.headers.get('x-ricecal-web') ?? ''
-  if (env.WEB_TOKEN && tokenMatches(presented, env.WEB_TOKEN)) return true
+  if (env.WEB_CATALOGUE_TOKEN && tokenMatches(presented, env.WEB_CATALOGUE_TOKEN)) return true
 
   /*
    * `cf-connecting-ip` rather than anything in `x-forwarded-for`: Cloudflare
@@ -610,7 +621,7 @@ function publicRoute(
   const cors = corsFor(request)
 
   // A plain GET with no custom headers is not preflighted, so this is here for
-  // the caller who adds one — which our own server does, carrying `WEB_TOKEN`.
+  // the caller who adds one — which our own server does, carrying `WEB_CATALOGUE_TOKEN`.
   if (request.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
