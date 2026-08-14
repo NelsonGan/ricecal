@@ -169,7 +169,7 @@ jobs:
       # A PR that does not touch the Worker skips the upload and falls back to
       # production, so its EAS preview still searches against a live catalogue
       # rather than failing on a URL that was never uploaded.
-      url: ${{ steps.worker.outputs.url || 'https://ricecal-catalogue.nelson-ganlw.workers.dev' }}
+      url: ${{ steps.worker.outputs.url || 'https://catalogue.ricecal.app' }}
     steps:
       - uses: actions/checkout@v4
         with:
