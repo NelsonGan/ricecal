@@ -226,6 +226,7 @@ export default function TodayScreen() {
             id: justAdded.id,
             logDate: justAdded.logDate,
             photoPath: justAdded.photoPath,
+            source: justAdded.source,
           }),
       },
     })
@@ -443,6 +444,7 @@ export default function TodayScreen() {
               id: entry.id,
               logDate: entry.logDate,
               photoPath: entry.photoPath,
+              source: entry.source,
             })
             toast.show({ title: t('logging:added.removedToast') })
           }}

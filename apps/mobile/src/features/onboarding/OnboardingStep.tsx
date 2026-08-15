@@ -2,7 +2,9 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
+import { track } from '@/lib/analytics'
 import { Button, type ButtonVariant, Screen, StepProgress, type StepProgressTone, Text } from '@/ui'
+import { type OnboardingStepName, stepNumber, TOTAL_STEPS } from './steps'
 
 /**
  * The accent each step wears, rotating pandan, kaya, water, hibiscus.
@@ -20,9 +22,17 @@ const accentButton: Record<Accent, ButtonVariant> = {
 }
 
 export type OnboardingStepProps = {
-  /** 1-based. Drives the progress bar. */
-  step: number
-  total: number
+  /**
+   * WHICH question this is, not what number it is.
+   *
+   * The position on the bar is derived from `ONBOARDING_STEPS` and so is the
+   * total, for the reason written out in `steps.ts`: a number written per
+   * screen lasts exactly until a screen is inserted. Passing the name rather
+   * than the number extends that to the analytics funnel as well — the step a
+   * user dropped at is the name they saw, and a funnel keyed on positions
+   * renumbers itself the day a question is added.
+   */
+  name: OnboardingStepName
   accent: Accent
   title: string
   subtitle?: string
@@ -46,8 +56,7 @@ export type OnboardingStepProps = {
  * steps that have a text field.
  */
 export function OnboardingStep({
-  step,
-  total,
+  name,
   accent,
   title,
   subtitle,
@@ -59,6 +68,25 @@ export function OnboardingStep({
   onSecondary,
 }: OnboardingStepProps) {
   const { t } = useTranslation('common')
+  const step = stepNumber(name)
+
+  /**
+   * The whole funnel, from one place.
+   *
+   * Fired here rather than in each screen's own handler because six screens
+   * would be six chances to forget, and the seventh screen added would be the
+   * one that silently ends the funnel. The event is the CTA being pressed, not
+   * the screen being rendered: a step somebody scrolled through and abandoned
+   * is exactly the step a funnel is being read to find.
+   *
+   * The secondary action is deliberately not tracked. It is a skip or a "not
+   * now", and it lands on the same next screen — so what would distinguish the
+   * two events is a fact about which button, not about how far anybody got.
+   */
+  const advance = () => {
+    track('Onboarding Step Completed', { step: name, step_number: step })
+    onPrimary()
+  }
 
   return (
     <Screen
@@ -67,7 +95,7 @@ export function OnboardingStep({
           <Button
             variant={accentButton[accent]}
             fullWidth
-            onPress={onPrimary}
+            onPress={advance}
             disabled={primaryDisabled}
           >
             {primaryLabel}
@@ -83,10 +111,10 @@ export function OnboardingStep({
       {/* Announced rather than shown: the design leaves the marks to speak for
           themselves, and a screen reader has nothing to go on but a percentage. */}
       <StepProgress
-        total={total}
+        total={TOTAL_STEPS}
         current={step}
         tone={accent}
-        accessibilityLabel={t('a11y.step', { current: step, total })}
+        accessibilityLabel={t('a11y.step', { current: step, total: TOTAL_STEPS })}
       />
 
       <View className="gap-2 pt-4">

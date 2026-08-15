@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
+import { dateOffset, type LogMethod, track } from '@/lib/analytics'
 import { supabase } from '@/lib/supabase'
-import { unwrap, unwrapOne } from './client'
+import { today, unwrap, unwrapOne } from './client'
 import { keys } from './keys'
 import { removeMealPhoto } from './photos'
 import { useUserId } from './session'
@@ -42,6 +43,31 @@ export type LogInput = {
   icon?: IconRef
   /** The day it counts towards. Defaults to the day being viewed. */
   logDate: string
+  /**
+   * How the user got here, for analytics and for nothing else.
+   *
+   * SEPARATE FROM `source`, which is a database column and a narrower question.
+   * `entry_source` has no value for a barcode, a recipe or a dish re-logged
+   * from an entry that already existed — all three arrive as `search` or
+   * `quickAdd` — because the column is about how the NUMBERS were obtained and
+   * these are about which door the user came through. Widening the enum to
+   * carry the difference would be a migration, four views and a generated type
+   * for the sake of a report.
+   *
+   * Defaulted from `source` so a call site that has nothing to add says
+   * nothing.
+   */
+  method?: LogMethod
+}
+
+/** What each database source means when nothing more specific was passed. */
+const METHOD_FOR_SOURCE: Record<EntrySource, LogMethod> = {
+  search: 'search',
+  quickAdd: 'quick_add',
+  camera: 'camera',
+  text: 'describe',
+  voice: 'describe',
+  import: 'quick_add',
 }
 
 export function useLogFood() {
@@ -73,6 +99,13 @@ export function useLogFood() {
           .single(),
       ),
     onSuccess: (_row, input) => {
+      // On success rather than at the tap, unlike the scan paths: this write is
+      // one statement and there is no optimistic row standing in for it, so a
+      // failure here means no meal was logged at all.
+      track('Meal Logged', {
+        method: input.method ?? METHOD_FOR_SOURCE[input.source ?? 'search'],
+        date_offset: dateOffset(input.logDate, today()),
+      })
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
       // A first entry can start a streak, and both feed the badges.
       queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
@@ -89,6 +122,27 @@ export function useLogFood() {
       queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
     },
   })
+}
+
+/**
+ * Which parts of an entry a patch actually moves.
+ *
+ * Sent with `Entry Updated` rather than the values themselves. What the report
+ * is for is whether the catalogue offers the right PORTIONS — an app where most
+ * corrections are the serving is an app whose serving list is wrong — and the
+ * names of the fields answer that while the numbers would only add a calorie
+ * count to a table that has no business holding one.
+ */
+function changedFields(patch: EntryPatch): string[] {
+  const changed: string[] = []
+  if (patch.quantity !== undefined) changed.push('quantity')
+  if (patch.servingId !== undefined || patch.servingFactor !== undefined) changed.push('serving')
+  if (patch.name !== undefined) changed.push('name')
+  if (patch.note !== undefined) changed.push('note')
+  if (patch.icon !== undefined) changed.push('icon')
+  if (patch.photoPath !== undefined) changed.push('photo')
+  if (patch.overrides !== undefined) changed.push('overrides')
+  return changed
 }
 
 export type EntryPatch = {
@@ -243,6 +297,7 @@ export function useUpdateEntry() {
       return row
     },
     onSuccess: (_row, patch) => {
+      track('Entry Updated', { changed: changedFields(patch) })
       queryClient.invalidateQueries({ queryKey: keys.day(userId, patch.logDate) })
       // A corrected portion is a different day total, which is a different bar.
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
@@ -258,8 +313,19 @@ export function useRemoveEntry() {
 
   return useMutation({
     // `logDate` is not read here — it is what `onMutate` and `onSettled` need
-    // to find the day this row belongs to.
-    mutationFn: async ({ id, photoPath }: { id: string; logDate: string; photoPath?: string }) => {
+    // to find the day this row belongs to. `source` is read by neither: it is
+    // carried so the analytics event can say WHICH KIND of entry was thrown
+    // away, which is the closest thing the app has to a quality signal on the
+    // scan cascade that does not involve reading anybody's diary.
+    mutationFn: async ({
+      id,
+      photoPath,
+    }: {
+      id: string
+      logDate: string
+      photoPath?: string
+      source?: EntrySource
+    }) => {
       unwrap(
         await supabase.from('food_logs').delete().eq('id', id).eq('user_id', userId).select('id'),
       )
@@ -284,6 +350,12 @@ export function useRemoveEntry() {
       if (context?.previous) {
         queryClient.setQueryData(keys.day(userId, variables.logDate), context.previous)
       }
+    },
+    // On success rather than on settled: an optimistic removal that the server
+    // refused puts the row back, and counting that as a deletion would report
+    // a failed request as a user throwing their meal away.
+    onSuccess: (_data, { source }) => {
+      track('Entry Deleted', { source: source ?? 'unknown' })
     },
     onSettled: (_data, _error, { logDate }) => {
       queryClient.invalidateQueries({ queryKey: keys.day(userId, logDate) })

@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { useFoodSearch } from '@/data'
 import { ItemRow, ROW_TILE } from '@/features/shared'
+import { track } from '@/lib/analytics'
 import { useDebouncedValue } from '@/lib/use-debounce'
 import { Card, EmptyState, SearchField, Skeleton } from '@/ui'
 
@@ -15,6 +16,18 @@ import { Card, EmptyState, SearchField, Skeleton } from '@/ui'
  * result row when the data lands.
  */
 const SKELETON_ROWS = ['s1', 's2', 's3', 's4', 's5', 's6'] as const
+
+/**
+ * How long a settled query has to stay settled before it counts as a search.
+ *
+ * The catalogue is asked 140ms after a keystroke, which is the right delay for
+ * a request and the wrong one for a MEASUREMENT: typing "nasi lemak" would
+ * report three or four searches, most of them prefixes, and "nas" finding
+ * nothing says nothing at all about the catalogue. A second and a bit is longer
+ * than any gap inside a phrase and shorter than the pause before somebody reads
+ * the answer, so what gets recorded is the query they stopped at.
+ */
+const SETTLED_MS = 1_200
 
 export type FoodSearchPanelProps = {
   /** A dish was chosen. The host decides where that goes. */
@@ -80,6 +93,33 @@ export function FoodSearchPanel({ onPick, autoFocus = false }: FoodSearchPanelPr
             ? 'empty'
             : 'results'
 
+  /**
+   * One event per search, not one per keystroke and not one per prefix.
+   *
+   * `state` is in the dependency list as well as the query, so a query that
+   * arrives before its results does not get recorded as finding nothing — the
+   * timer restarts when `loading` becomes `results`.
+   *
+   * The last query recorded is remembered so that coming back from a dish and
+   * re-rendering over the same results does not count as a second search.
+   */
+  const lastTracked = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    const needle = debouncedQuery.trim()
+    if (!needle || (state !== 'results' && state !== 'empty')) return
+    if (lastTracked.current === needle) return
+
+    const timer = setTimeout(() => {
+      lastTracked.current = needle
+      // The text itself is deliberately not sent. What people type and cannot
+      // find belongs in the catalogue's own backlog, next to `food_scan_misses`
+      // — see the note on `Food Searched` in `lib/analytics/events.ts`.
+      track('Food Searched', { results: results.length, query_length: needle.length })
+    }, SETTLED_MS)
+
+    return () => clearTimeout(timer)
+  }, [debouncedQuery, state, results.length])
+
   return (
     <View className="gap-3">
       <SearchField
@@ -138,7 +178,7 @@ export function FoodSearchPanel({ onPick, autoFocus = false }: FoodSearchPanelPr
       ) : null}
 
       {state === 'results' &&
-        results.map((food) => (
+        results.map((food, index) => (
           <Card key={food.id}>
             <ItemRow
               title={food.name}
@@ -152,7 +192,13 @@ export function FoodSearchPanel({ onPick, autoFocus = false }: FoodSearchPanelPr
               value={food.macros.kcal}
               unit="kcal"
               detail={`${t(`logging:search.place.${food.place}`)} · ${food.servingLabel}`}
-              onPress={() => onPick(food.id)}
+              onPress={() => {
+                // 1-based rank, which is the live version of what
+                // `pnpm foods:gate` grades against thirty fixed queries: a
+                // ranking that is working puts most picks at position one.
+                track('Food Picked', { position: index + 1, results: results.length })
+                onPick(food.id)
+              }}
             />
           </Card>
         ))}

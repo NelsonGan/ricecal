@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { track } from '@/lib/analytics'
 import { supabase } from '@/lib/supabase'
 import { unwrap, unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
 import { toIcon, toRecipe, toRecipeIngredient } from './mappers'
 import { removeMealPhoto } from './photos'
-import { refusalFrom } from './refusals'
+import { AiLimitError, refusalFrom } from './refusals'
 import { useUserId } from './session'
 import type { IconRef, Macros, Recipe, RecipeIngredient, RecipeUnit } from './types'
 
@@ -243,7 +244,18 @@ export function useSaveRecipe() {
 
       return { id: recipeId, review }
     },
-    onSuccess: ({ id: recipeId }) => {
+    onSuccess: ({ id: recipeId, review }, input) => {
+      track('Recipe Saved', {
+        is_new: !input.id,
+        ingredients: input.ingredients.length,
+        servings: input.servings,
+      })
+      // An edit to a PUBLISHED recipe sends it back through the reviewer, so
+      // this path produces a verdict too — and it is the same verdict, from the
+      // same call, as the one publishing produces. Reporting it here as well is
+      // what makes the rejection rate a number about the reviewer rather than a
+      // number about which button was pressed.
+      if (review) track('Recipe Published', { outcome: review.status })
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.recipe(recipeId) })
       queryClient.invalidateQueries({ queryKey: keys.recipeIngredients(recipeId) })
@@ -340,7 +352,12 @@ export function usePublishRecipe() {
       if (!isPublic) return { status: 'pending' }
       return runReview(id)
     },
-    onSuccess: (_result, { id }) => {
+    onSuccess: (result, { id, isPublic }) => {
+      // Only the publishing direction. Taking a recipe back runs no reviewer
+      // and has no verdict — `pending` there is the absence of a question, not
+      // an answer, and counting it would put every unpublish in the column that
+      // means "the review failed to run".
+      if (isPublic) track('Recipe Published', { outcome: result.status })
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.recipe(id) })
       // Publishing runs the reviewer, which is a model call. Unpublishing does
@@ -360,6 +377,7 @@ export function useSaveRecipeCopy() {
         await supabase.rpc('save_recipe_copy', { p_recipe_id: recipeId }),
       ) as unknown as string,
     onSuccess: (_newId, sourceId) => {
+      track('Recipe Copied', {})
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
       // The original's saved count moved.
       queryClient.invalidateQueries({ queryKey: keys.recipe(sourceId) })
@@ -410,6 +428,16 @@ export type RecipeSource = { photoPath: string } | { text: string }
 export function useReadRecipe() {
   return useMutation({
     mutationFn: async (source: RecipeSource): Promise<ScannedRecipe | null> => {
+      /**
+       * Which of the two offers was taken, and whether it produced anything.
+       *
+       * `empty` and `failed` are separated because they mean opposite things
+       * about the prompt: `empty` is the model reading the evidence and finding
+       * no cooking in it, which is a judgement worth watching after the escape
+       * clause turned out to fire on "Coq au vin, feeds 6"; `failed` is the
+       * request not landing at all.
+       */
+      const from = 'photoPath' in source ? 'photo' : 'text'
       const { data, error } = await supabase.functions.invoke('recipes', {
         body:
           'photoPath' in source
@@ -423,7 +451,14 @@ export function useReadRecipe() {
       // requests", both of which the caller turns into something actionable.
       if (error) {
         const refusal = await refusalFrom(error)
-        if (refusal) throw refusal
+        if (refusal) {
+          track('Recipe Drafted', {
+            source: from,
+            outcome: refusal instanceof AiLimitError ? 'limit_reached' : 'not_entitled',
+          })
+          throw refusal
+        }
+        track('Recipe Drafted', { source: from, outcome: 'failed' })
         return null
       }
 
@@ -446,8 +481,12 @@ export function useReadRecipe() {
           }>
         } | null
       }
-      if (!result?.ok || !result.draft) return null
+      if (!result?.ok || !result.draft) {
+        track('Recipe Drafted', { source: from, outcome: 'empty' })
+        return null
+      }
 
+      track('Recipe Drafted', { source: from, outcome: 'drafted' })
       const draft = result.draft
       return {
         name: draft.name ?? '',

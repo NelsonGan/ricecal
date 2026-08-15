@@ -32,6 +32,7 @@ import {
 import { FixSheet, IconPicker, ScannedPacket } from '@/features/logging'
 import { useRequirePro } from '@/features/paywall'
 import { MacroBars, MealPhoto } from '@/features/shared'
+import { track } from '@/lib/analytics'
 import { useBack, useDismissTo } from '@/lib/navigation'
 import { entryTotals } from '@/lib/nutrition'
 import { servingUnit, titleCase } from '@/lib/portions'
@@ -218,6 +219,28 @@ export default function FoodDetail() {
    * `useFood` resolves it; the branch below is what those two answers look like.
    */
   const packet = packetCode(params.id)
+
+  /**
+   * How the scan turned out, recorded once per packet.
+   *
+   * Here rather than in `lookupPacket`, which the query retries: a lookup that
+   * could not reach the catalogue would otherwise report two failures for one
+   * box held up to a camera. This reads the SETTLED state instead, so a retry
+   * that succeeds is one `found` and nothing else.
+   *
+   * `not_found` is the number this event exists for. It is the live measurement
+   * of what `d1/food-catalogue/BARCODE-COVERAGE.md` argues about: 4,333 rows
+   * carry a GS1 Malaysia prefix out of 3.2 million, and the source is the
+   * ceiling rather than anything in this repo.
+   */
+  const scanRecorded = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    if (!packet || isPending || scanRecorded.current === packet) return
+    scanRecorded.current = packet
+    track('Barcode Scanned', {
+      outcome: isError ? 'error' : catalogueFood ? 'found' : 'not_found',
+    })
+  }, [packet, isPending, isError, catalogueFood])
 
   // The entry being edited, if this screen was opened from a row. It is on the
   // day in view — the only day whose entries are loaded — which is also the
@@ -714,7 +737,7 @@ export default function FoodDetail() {
     // which is what "search and everything works" means. Only the write is
     // Pro, and editing an entry that ALREADY exists is not gated at all: a
     // lapsed subscription must not lock somebody out of their own diary.
-    if (!requirePro()) return
+    if (!requirePro('log_dish')) return
     logFood.mutate({
       snapshot: snapshotFromFood(food, chosen),
       quantity,
@@ -725,6 +748,11 @@ export default function FoodDetail() {
       // And a photo taken while composing this row, which the picker offers as
       // the alternative to a drawing. Never both: taking one clears the other.
       photoPath: shot?.path,
+      // Two doors lead to this button and `entry_source` calls both `search`:
+      // a packet held up to the camera, and a dish picked out of the list. This
+      // branch only ever runs with no `existing` entry — the footer offers Save
+      // rather than Add once there is one — so there is no third case.
+      method: packet ? 'barcode' : 'search',
     })
     // The insert carries it now, so it is not an orphan for the unmount effect
     // to sweep up on the way out.
@@ -829,6 +857,17 @@ export default function FoodDetail() {
   }
 
   /**
+   * The chips under the fix box: the vision model's own suggestions when it
+   * offered any, and a generic four when it did not.
+   *
+   * Hoisted out of the JSX because `sendFix` reads it too — see `fromChip`
+   * there.
+   */
+  const fixSuggestions = existing?.suggestedEdits?.length
+    ? existing.suggestedEdits
+    : QUICK_FIXES.map((fix) => t(`logging:detail.quickFix.${fix}`))
+
+  /**
    * Send the typed correction and leave.
    *
    * Whatever is staged is written FIRST. The server interprets the correction
@@ -846,7 +885,7 @@ export default function FoodDetail() {
     // other two — and gated HERE, before `commit()`, or the staged edits would
     // be written on their way to a paywall that stops the correction. The
     // server refuses it independently; this is what makes the button honest.
-    if (!requirePro()) return
+    if (!requirePro('refine')) return
     setSending(true)
     try {
       await commit()
@@ -859,6 +898,11 @@ export default function FoodDetail() {
       entryId: existing.id,
       instruction: text,
       logDate: selectedDate,
+      // Derived rather than plumbed through the sheet: a chip sets the field to
+      // exactly its own words, so an instruction that IS one of the offered
+      // sentences came from a chip. The alternative was a second callback and a
+      // piece of state saying the same thing.
+      fromChip: fixSuggestions.includes(text),
       // Said out loud, from wherever the user has got to by then — the toast
       // provider sits above the navigator, and this screen is gone a frame
       // after the send. A row that worked and then changed nothing is
@@ -880,6 +924,7 @@ export default function FoodDetail() {
         id: existing.id,
         logDate: existing.logDate,
         photoPath: existing.photoPath,
+        source: existing.source,
       })
     }
     setConfirmDelete(false)
@@ -1347,11 +1392,7 @@ export default function FoodDetail() {
           value={instruction}
           onChangeText={setInstruction}
           placeholder={t('logging:detail.fixPlaceholder')}
-          suggestions={
-            existing.suggestedEdits?.length
-              ? existing.suggestedEdits
-              : QUICK_FIXES.map((fix) => t(`logging:detail.quickFix.${fix}`))
-          }
+          suggestions={fixSuggestions}
           onSubmit={() => void sendFix()}
           submitting={sending}
         />

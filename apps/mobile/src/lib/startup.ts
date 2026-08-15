@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/react-native'
 import { Mixpanel } from 'mixpanel-react-native'
 
+import { registerAnalytics } from './analytics'
 import { env, isConfigured } from './env'
 import { configurePurchases } from './revenuecat'
 
@@ -12,8 +13,6 @@ import { configurePurchases } from './revenuecat'
  *
  * Remove a gate only once its key is real — never to "make the warning stop".
  */
-
-export let mixpanel: Mixpanel | null = null
 
 const skipped: string[] = []
 
@@ -40,6 +39,13 @@ export function initSentry() {
   })
 }
 
+/**
+ * `true` is `trackAutomaticEvents`, and it is why nothing in `lib/analytics`
+ * sends an "app opened". The SDK records `$ae_session`, `$ae_first_open` and
+ * `$ae_updated` itself, so sessions, installs and upgrades arrive without an
+ * event of ours — and an event of ours would be a second, slightly different
+ * answer to the same question.
+ */
 export async function initMixpanel() {
   if (!isConfigured(env.EXPO_PUBLIC_MIXPANEL_TOKEN)) {
     skipped.push('Mixpanel')
@@ -47,7 +53,17 @@ export async function initMixpanel() {
   }
   const instance = new Mixpanel(env.EXPO_PUBLIC_MIXPANEL_TOKEN, true)
   await instance.init()
-  mixpanel = instance
+  /**
+   * The one place the SDK meets the app's own seam, and the only place the two
+   * shapes are checked against each other. Everything else tracks through
+   * `lib/analytics`, which imports nothing native — see the header there for
+   * what that buys.
+   *
+   * Registering LAST, after `init` has resolved: whatever was fired during
+   * startup is queued in the seam and drains into a client that is ready for
+   * it, rather than into one still reading its own persisted state.
+   */
+  registerAnalytics(instance)
 }
 
 /**

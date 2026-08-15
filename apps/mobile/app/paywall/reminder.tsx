@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useCurrentWeight, usePlanPrices, useStreak, useSubscription, useWeighIns } from '@/data'
+import { useTrackPaywallShown } from '@/features/paywall'
 import { StatRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { Button, Card, Icon, Screen, Text } from '@/ui'
@@ -17,6 +18,11 @@ export default function TrialReminder() {
   const { data: weighIns = [] } = useWeighIns()
   const current = useCurrentWeight() ?? 0
   const streak = useStreak()
+
+  // No purchase on this screen — it is the trial's own reminder, and both
+  // buttons lead away rather than to the store. So the view is all there is to
+  // record, and what follows it is somebody else's event.
+  useTrackPaywallShown('reminder')
 
   // Whole days until the store charges. Derived from the instant RevenueCat
   // reported rather than a counter, which would need something to decrement it.
