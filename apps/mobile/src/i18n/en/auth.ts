@@ -57,9 +57,13 @@ export const auth = {
   },
 
   verify: {
-    /** The heading changes with what the code is for; the screen does not. */
-    signUpTitle: 'Check your email',
-    signInTitle: 'Check your email',
+    /**
+     * ONE HEADING FOR BOTH PURPOSES. There were two keys reading the same
+     * words, chosen by a ternary that could only ever pick between identical
+     * strings. Confirming a new address and signing in with a code are the same
+     * instruction to the reader: go and look.
+     */
+    title: 'Check your email',
     sentTo: 'We sent a 6 digit code to {{email}}. It is in the subject line too.',
 
     field: 'CODE',
@@ -114,7 +118,12 @@ export const auth = {
     rate_limited: 'Wait a moment before asking for another email.',
     /** Same, but we know how long. */
     rate_limited_in: 'Wait {{seconds}} seconds before asking for another email.',
-    captcha: 'We could not confirm you are a person. Close the app and try again.',
+    /**
+     * Reached two ways, and the copy has to serve both: a widget that could not
+     * load, and a build too old to carry a site key at all. "Close the app" was
+     * advice for neither. A connection is the one thing the reader can check.
+     */
+    captcha: 'We could not confirm you are a person. Check your connection and try again.',
     offline: 'No connection. Try again when you are back online.',
     unknown: 'Something went wrong. Try again.',
   },

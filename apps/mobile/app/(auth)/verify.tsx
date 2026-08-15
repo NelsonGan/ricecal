@@ -136,9 +136,7 @@ export default function VerifyScreen() {
       )}
 
       <View className="gap-2 pb-2 pt-6">
-        <Text variant="screenTitle">
-          {t(purpose === 'signup' ? 'auth:verify.signUpTitle' : 'auth:verify.signInTitle')}
-        </Text>
+        <Text variant="screenTitle">{t('auth:verify.title')}</Text>
         <Text variant="meta">{t('auth:verify.sentTo', { email })}</Text>
       </View>
 

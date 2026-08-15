@@ -88,8 +88,11 @@ export function loginLinkRedirect(): string {
  * this one knows is that the person who opened it is in the middle of choosing
  * a new password: land them on `/today` with a session and the reset is over
  * before they typed anything, and the password they were resetting is still the
- * one they could not remember. The path is the whole signal — see
- * `completeLoginFromUrl`, which reads it.
+ * one they could not remember.
+ *
+ * The path is the whole signal, and TWO things read it: `completeLoginFromUrl`,
+ * so a reset is not counted as a sign-in, and `app/auth/[action].tsx`, which is
+ * the route the link lands on and the thing that decides where to go next.
  */
 export function passwordResetRedirect(): string {
   return `${scheme()}://auth/reset`
@@ -229,6 +232,13 @@ export function asAuthProblem(error: unknown): AuthProblem {
   if (status === 429 || /you can only request this after/i.test(message)) {
     return problem('rate_limited', retryAfterIn(message))
   }
+  // The two the app meets most often, matched on their text as well as their
+  // code. `AuthError.code` is populated by every supabase-js this project has
+  // shipped, so these are belt and braces — but they are the two failures a
+  // person actually hits, and reporting either as `unknown` would replace the
+  // sentence that says what to do next with the one that says nothing.
+  if (/invalid login credentials/i.test(message)) return problem('invalid_credentials')
+  if (/email not confirmed/i.test(message)) return problem('email_not_confirmed')
   // An expired code and a wrong one arrive as the same error from an endpoint
   // that will not say which — deliberately, since telling an attacker that the
   // code merely expired confirms the address has an account. `code_invalid`
@@ -512,12 +522,15 @@ async function announceSignIn(method: SignInMethod): Promise<void> {
 /**
  * What a deep link turned out to be.
  *
- * `recovery` is not a flavour of `signed-in`, and the difference is the whole
- * reason this returns three things rather than a boolean. Both end in a
- * session; only one of them means the person is still halfway through changing
- * a password. Treated as an ordinary sign-in, the reset link drops them on
- * Today with everything working, and the password they could not remember is
- * still the password.
+ * `recovery` is not a flavour of `signed-in`. Both end in a session; only one
+ * of them means the person is still halfway through changing a password, and
+ * counting that as a sign-in would report an acquisition every time somebody
+ * forgot one. So the distinction is load-bearing HERE, for `announceSignIn`.
+ *
+ * WHERE the person then lands is not decided from this value. That is the
+ * route's business (`app/auth/[action].tsx`), because this function is called
+ * from outside the navigator and a redirect chosen here would race the root
+ * layout on a cold start from the mail.
  */
 export type LinkOutcome = 'none' | 'signed-in' | 'recovery'
 
