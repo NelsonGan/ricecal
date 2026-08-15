@@ -157,6 +157,35 @@ idea it is meant to send a token.
 Left at `REPLACE_ME`, the app asks for no token and sends none, which is exactly
 right for every step before the last.
 
+### The one that actually happened: `about:srcdoc`
+
+Worth its own heading, because everything about it pointed the wrong way.
+
+Turnstile builds its challenge frame as an **iframe with a `srcdoc` attribute**,
+which the WebView sees as a navigation to `about:srcdoc`. `originWhitelist`
+governs iframe navigations as well as top-level ones, so the list of `https://*`
+this file used to carry did not merely ignore that frame: react-native-webview
+refused to load it internally and handed the URL to the OS instead. The only
+trace anywhere was one line in the Metro log,
+
+```
+WARN  Error opening URL: [Error: Unable to open URL: about:srcdoc. …]
+```
+
+and the widget then loaded, rendered, reported `ready`, and could never produce
+a token.
+
+**The symptom is on the server, so that is where the search starts, and
+everything there is correct.** Supabase refuses every sign-in for want of a
+token; the Cloudflare dashboard shows the site key, the secret, Managed mode and
+the apex hostname all exactly right; the EAS environment carries both variables.
+Two days can go into confirming that a correct configuration is correct. The fix
+is `'about:*'` in one array.
+
+Proven rather than reasoned, by putting it back: with `about:*` a wrong password
+returns "That email and password do not match", and without it the same tap on
+the same account returns "We could not confirm you are a person".
+
 ### When it refuses a real person
 
 **FIVE THINGS FAIL IDENTICALLY HERE, and four of them are not in this repo.**
