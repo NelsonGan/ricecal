@@ -103,6 +103,11 @@ jobs:
       # root-level pass rather than a turbo task so it also covers
       # apps/supabase/functions, which is not a workspace package.
       - run: pnpm check
+      # The auth emails are built from one layout into `templates/build/`, and
+      # those built files are what the local stack reads and what `email:push`
+      # sends. Committed and stale, the mail a reviewer reads here is not the
+      # mail anybody receives.
+      - run: pnpm email:check
 
   preview-pending:
     name: PR Preview · Pending comment

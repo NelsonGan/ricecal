@@ -20,6 +20,22 @@ process.env.EXPO_PUBLIC_MIXPANEL_TOKEN ??= 'REPLACE_ME'
 process.env.EXPO_PUBLIC_SENTRY_DSN ??= 'REPLACE_ME'
 process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ??= 'REPLACE_ME'
 process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ??= 'REPLACE_ME'
+// The sentinel deliberately, so `captchaConfigured()` is false under test and
+// `useCaptchaToken()` resolves `undefined` without a WebView. A real-looking key
+// here would put a Turnstile widget in the middle of every auth test.
+process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY ??= 'REPLACE_ME'
+process.env.EXPO_PUBLIC_TURNSTILE_ORIGIN ??= 'ricecal.app'
+
+// `react-native-webview` reaches for a TurboModule at import time, which under
+// Jest is "'RNCWebViewModule' could not be found". The captcha provider already
+// survives that — it requires the module rather than importing it, because a
+// dev client built before the dependency landed fails the same way — but the
+// warning it prints would then be on every auth test's output. A stub view is
+// quieter and lets a test render the provider if it ever wants to.
+jest.mock('react-native-webview', () => {
+  const { View } = require('react-native')
+  return { __esModule: true, default: View, WebView: View }
+})
 
 // Two Expo modules reach for native views or a native module the moment they
 // are imported, which fails under Jest with "not available on ios, are you sure

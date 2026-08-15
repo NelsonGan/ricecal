@@ -81,7 +81,12 @@ export type ScanOutcome =
   | 'limit_reached'
   | 'not_entitled'
 
-export type SignInMethod = 'apple' | 'google' | 'email'
+/**
+ * `email` is a mailed code or link; `password` is a typed one. They are counted
+ * apart because the choice between them is the question the sign-in screen
+ * exists to answer, and one number covering both cannot answer it.
+ */
+export type SignInMethod = 'apple' | 'google' | 'email' | 'password'
 
 /**
  * What the calorie plan is FOR, which is the whole of what the two weights say.
@@ -118,8 +123,18 @@ export type Events = {
    * profile. It is one of a fixed list of platforms, not free text.
    */
   'Onboarding Completed': { plan_direction: PlanDirection; referral_source: string }
-  /** The email was accepted and the link sent. The other half is `Signed In`. */
+  /** The email was accepted and the code sent. The other half is `Signed In`. */
   'Login Link Requested': NoProps
+  /**
+   * A reset was asked for. No address on it, and no answer either: this fires
+   * whether or not the account exists, because Supabase does not say and
+   * neither does the screen.
+   *
+   * Worth counting on its own rather than as a failed sign-in. It is the
+   * measure of how much the password is costing people, which is the number
+   * that decides whether offering one was right.
+   */
+  'Password Reset Requested': NoProps
   'Signed In': { method: SignInMethod; is_new_account: boolean }
   /**
    * Includes the user closing Apple's own sheet, which is not an error and is

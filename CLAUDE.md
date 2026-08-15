@@ -19,6 +19,8 @@ their own area:
 | `apps/cloudflare/README.md` | the layout, where it deploys, and how a PR gets a Worker of its own |
 | `apps/cloudflare/d1/food-catalogue/BARCODE-COVERAGE.md` | why the scanner misses Malaysian packets, measured, and what would actually fix it |
 | `apps/mobile/src/data/README.md` | the data layer, file by file |
+| `apps/mobile/src/features/auth/README.md` | the four ways in, why the mail carries a code, and how to switch Turnstile on |
+| `apps/supabase/templates/README.md` | the eight auth emails, and why the code comes before the link |
 | `apps/mobile/src/ui/README.md` | the design system, and which prop targets which box |
 | `apps/mobile/src/lib/health/README.md` | what each health store actually gives you, and what Android is missing |
 | `apps/mobile/src/lib/analytics/README.md` | the Mixpanel tracking plan, and what was deliberately left out of it |
@@ -166,6 +168,8 @@ welcome                          the pitch, and the fork for a returning user
 4 calculating                    a beat, then it replaces itself with…
 5 target                         the budget, worked out on the phone
 6 account       (auth)/sign-in, carrying the same bar through the params
+                Apple, Google, or an address, which leads to (auth)/password
+                and then (auth)/verify if a code is owed
   finish                         the one write: profile, first weigh-in, onboarded_at
 7 health        connect the store — a permission that GIVES rather than asks
 8 notifications turns the three meal reminders on, not just the OS permission
@@ -253,6 +257,39 @@ Singular and plural is the information hierarchy, not a naming quirk:
 to and come back from. Those two have a layout of their own that waits for the
 session, because a shared recipe is a link and a link is opened cold — before
 the keychain read that restores the session has finished.
+
+---
+
+## Getting in
+
+Apple, Google, a password, or a code in the post. `(auth)/sign-in` asks which,
+and asks for the address and nothing else; `(auth)/password` owns the rest.
+Full version in `apps/mobile/src/features/auth/README.md`, which is the
+authority. Three things belong here because they shape more than the auth
+screens.
+
+**THE MAIL LEADS WITH A CODE, and the link is the second offer.** It was a link
+alone, and the reasoning was sound until it met the rest of the world. A
+Supabase confirmation link is single use, and corporate mail security fetches
+every link in an incoming message to check it — so the mail arrives already
+spent and the app says it expired ten seconds after it was sent. And a link only
+works on the phone the app is on, which is not where most people read mail. Six
+digits have neither problem: nothing consumes a code by reading a mailbox, and
+it crosses devices in somebody's head. `{{ .Token }}` is in the subject line as
+well as the body, so a signup can be finished from a notification banner.
+
+**Nothing said the redirect was broken, because nothing could.** Supabase DROPS
+an `emailRedirectTo` that is not in the allow-list and quietly substitutes
+`site_url`. The hosted project had an empty allow-list and
+`http://localhost:3000`, so every link in every mail opened localhost on
+somebody's phone — a bug that reads as the app's and is two fields in a settings
+page. Both are `pnpm auth:config` now, which prints a diff before it writes, and
+the site URL is the app's own scheme so even the fallback lands somewhere real.
+
+**A password is an option, never a wall.** Every screen in the flow also offers
+the mailed code, because the failure a password has on a phone keyboard is a
+support ticket and the recovery for it is an email anyway. An account made with
+a code has no password until it sets one.
 
 ---
 
@@ -1092,6 +1129,32 @@ Break these and the feature is wrong in ways tests may not catch.
   the model itself bounded at 780-900 kcal was logged at 160. A breakdown far
   outside its own band is dropped, not repaired, and the dish tier prices the
   plate whole.
+- **A signup form never says an address is taken.** Supabase will not, because
+  that turns the form into an oracle for who uses this app: with confirmations
+  on it answers a repeat signup with an ordinary user object carrying
+  `identities: []`, and sends no mail. `signUpWithPassword` reads the empty
+  array, the screen switches itself to sign-in and offers a code, and neither
+  says why. Read naively that response is somebody marched to a code screen to
+  wait for a mail that will never arrive.
+- **A wrong code and an expired one are ONE error**, for the same reason: both
+  come back 403 `otp_expired`. So there is one `code_invalid` reason and its
+  copy covers both. Copy that named expiry would tell somebody who mistyped to
+  go and wait for another mail.
+- **A recovery code creates the session, so choosing a new password is ONE
+  screen.** `(auth)/_layout` redirects the moment a session appears, which is
+  right for every other way into that stack and wrong for this one — split
+  across two screens, the reset carries the user off to Today the instant it
+  starts working, leaving the password they came to change in force. The layout
+  exempts `new-password` by name, and that screen navigates itself once the new
+  password is actually saved.
+- **The captcha fails OPEN on the client and CLOSED on the server.** No site
+  key, no WebView in the binary, a script that will not load: all of them send
+  no token, and Supabase decides. Failing closed in the app adds no protection
+  the gate is not already providing and does add a way for a broken WebView to
+  lock somebody out of their own account. The consequence is an ordering rule
+  rather than a code rule: `security_captcha_enabled` must not be turned on
+  until a build carrying the site key is the one people are running, because a
+  build already on a phone cannot know it is meant to send one.
 - **A client may READ the catalogue as itself, and may never write it.** This
   used to read "no client reaches the catalogue directly", and the rule behind
   the wording was always about the SHARED SECRET: a client holding that token

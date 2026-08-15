@@ -1,4 +1,5 @@
 import { activity } from './activity'
+import { auth } from './auth'
 import { common } from './common'
 import { logging } from './logging'
 import { onboarding } from './onboarding'
@@ -20,6 +21,7 @@ import { reviews } from './reviews'
 export const en = {
   common,
   activity,
+  auth,
   onboarding,
   logging,
   progress,

@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 
 import { completeLoginFromUrl } from '@/data/auth'
 import { useToast } from '@/ui'
+import { useAuthMessage } from './useAuthMessage'
 
 /**
  * Watches for the login link coming back into the app.
@@ -24,6 +25,7 @@ export function LoginLinkHandler() {
   // most common way a login link arrives.
   const url = Linking.useLinkingURL()
   const toast = useToast()
+  const message = useAuthMessage()
 
   // Every URL is handled once. `useURL` holds its value, so a re-render for any
   // other reason would otherwise redeem the same link again — and a PKCE code is
@@ -35,13 +37,21 @@ export function LoginLinkHandler() {
     if (!url || handled.current === url) return
     handled.current = url
 
+    /**
+     * REDEEMS THE LINK AND NAVIGATES NOWHERE, deliberately.
+     *
+     * This component renders outside the navigator — it has to, because a link
+     * can arrive with no screen on screen — so an imperative navigation from
+     * here races the root layout on a cold start from the mail, which is
+     * expo-router's "attempted to navigate before mounting the Root Layout".
+     * Where each kind of link belongs is decided by the route it lands on
+     * (`app/auth/[action].tsx`), which by definition cannot run before the
+     * navigator exists.
+     */
     completeLoginFromUrl(url).catch((error: unknown) => {
-      toast.show({
-        title: error instanceof Error ? error.message : String(error),
-        tone: 'error',
-      })
+      toast.show({ title: message(error), tone: 'error' })
     })
-  }, [url, toast])
+  }, [url, toast, message])
 
   return null
 }

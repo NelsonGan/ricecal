@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
+    <title>{{ .Token }} is your RiceCal sign-in code</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        supported-color-schemes: light dark;
+      }
+
+      /* Stop iOS turning the code, the address and the expiry into links. */
+      a[x-apple-data-detectors] {
+        color: inherit !important;
+        text-decoration: none !important;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .rc-body { background-color: #1c1c1c !important; }
+        .rc-surface { background-color: #181818 !important; border-color: #2e2e2e !important; }
+        .rc-fg { color: #ededed !important; }
+        .rc-muted { color: #a0a0a0 !important; }
+        .rc-rule { border-color: #2e2e2e !important; }
+        .rc-code { background-color: #14291f !important; border-color: #2e4a3c !important; color: #38d07e !important; }
+        .rc-brand { color: #38d07e !important; }
+        .rc-button { background-color: #38d07e !important; color: #0e1a14 !important; }
+      }
+
+      @media only screen and (max-width: 600px) {
+        .rc-pad { padding-left: 24px !important; padding-right: 24px !important; }
+        .rc-code { font-size: 30px !important; letter-spacing: 6px !important; }
+      }
+    </style>
+  </head>
+
+  <body
+    class="rc-body"
+    style="margin: 0; padding: 0; width: 100%; background-color: #f6f7f8; -webkit-font-smoothing: antialiased;"
+  >
+    
+    <div
+      style="display: none; max-height: 0; overflow: hidden; opacity: 0; mso-hide: all;"
+    >Your sign-in code, good for one hour.&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;</div>
+
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      class="rc-body"
+      style="background-color: #f6f7f8;"
+    >
+      <tr>
+        <td align="center" style="padding: 32px 12px 48px 12px;">
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="max-width: 560px; margin: 0 auto;"
+          >
+            
+            <tr>
+              <td
+                align="center"
+                style="padding: 8px 0 20px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
+              >
+                <span
+                  class="rc-brand"
+                  style="font-size: 20px; font-weight: 700; letter-spacing: -0.2px; color: #1b8a4e;"
+                  >RiceCal</span
+                >
+              </td>
+            </tr>
+
+            
+            <tr>
+              <td
+                class="rc-surface"
+                style="background-color: #ffffff; border: 1px solid #e6e8eb; border-radius: 8px;"
+              >
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td
+                      class="rc-pad"
+                      style="padding: 36px 40px 36px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
+                    >
+                      <h1 class="rc-fg" style="margin: 0 0 12px 0; font-size: 22px; font-weight: 700; line-height: 30px; color: #171717;">
+  Sign in to RiceCal
+</h1>
+
+<p class="rc-muted" style="margin: 0 0 24px 0; font-size: 15px; line-height: 23px; color: #707070;">
+  Enter this code in the app and your diary picks up where it left off.
+</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td
+      align="center"
+      class="rc-code"
+      style="padding: 18px 12px; background-color: #eaf9f0; border: 1px solid #cfebda; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace; font-size: 34px; font-weight: 700; line-height: 40px; letter-spacing: 8px; color: #1b8a4e;"
+    >
+      {{ .Token }}
+    </td>
+  </tr>
+</table>
+
+<p class="rc-muted" style="margin: 20px 0 0 0; font-size: 14px; line-height: 21px; color: #707070;">
+  The code expires in an hour, and it only works once.
+</p>
+
+<div style="height: 28px; line-height: 28px;">&nbsp;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td
+      class="rc-rule"
+      style="padding: 0; border-top: 1px solid #e6e8eb; font-size: 0; line-height: 0;"
+    >
+      &nbsp;
+    </td>
+  </tr>
+</table>
+<div style="height: 24px; line-height: 24px;">&nbsp;</div>
+
+<p class="rc-muted" style="margin: 0 0 18px 0; font-size: 14px; line-height: 21px; color: #707070;">
+  Reading this on the phone RiceCal is installed on? You can tap through
+  instead.
+</p>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
+  <tr>
+    <td
+      class="rc-button"
+      align="center"
+      style="background-color: #1b8a4e; border-radius: 6px;"
+    >
+      <a
+        href="{{ .ConfirmationURL }}"
+        class="rc-button"
+        style="display: inline-block; padding: 13px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 20px; color: #ffffff; text-decoration: none; border-radius: 6px;"
+        >Sign in</a
+      >
+    </td>
+  </tr>
+</table>
+
+<p class="rc-muted" style="margin: 24px 0 0 0; font-size: 13px; line-height: 20px; color: #707070;">
+  If you did not ask to sign in, you can ignore this email. Nobody can get into
+  your account without this code.
+</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            
+            <tr>
+              <td
+                class="rc-pad"
+                style="padding: 24px 40px 0 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
+              >
+                <p
+                  class="rc-muted"
+                  style="margin: 0; font-size: 13px; line-height: 20px; color: #707070;"
+                >
+                  You are receiving this because someone asked for it using this
+                  address at RiceCal. We only ever email you about your account.
+                </p>
+                <p
+                  class="rc-muted"
+                  style="margin: 12px 0 0 0; font-size: 13px; line-height: 20px; color: #707070;"
+                >
+                  RiceCal, a calorie diary for Malaysian eating.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

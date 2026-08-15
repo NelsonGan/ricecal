@@ -16,6 +16,8 @@ const raw = {
   EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
   EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  EXPO_PUBLIC_TURNSTILE_SITE_KEY: process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY,
+  EXPO_PUBLIC_TURNSTILE_ORIGIN: process.env.EXPO_PUBLIC_TURNSTILE_ORIGIN,
 }
 
 /**
@@ -41,6 +43,26 @@ const schema = z.object({
   EXPO_PUBLIC_SENTRY_DSN: z.string().min(1),
   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: z.string().min(1),
   EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: z.string().min(1),
+  /**
+   * Cloudflare Turnstile, which is the bot gate in front of Supabase's auth
+   * endpoints. The SITE key, which is public by design: it identifies the
+   * widget to Cloudflare and proves nothing. The secret is Supabase's, set with
+   * `pnpm auth:config --captcha-secret`, and never reaches a phone.
+   *
+   * Left at the placeholder the app asks for no token and sends none, which is
+   * the correct behaviour while the gate on the project is still off. See
+   * `features/auth/turnstile.tsx` for why that direction is the safe one.
+   */
+  EXPO_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1),
+  /**
+   * The origin the widget believes it is running on.
+   *
+   * A Turnstile widget is bound to a hostname list, and a WebView rendering
+   * inline HTML has no hostname of its own — so the page is loaded under this
+   * one and it has to be a domain the widget allows. It is not a secret and not
+   * fetched; nothing is served from it.
+   */
+  EXPO_PUBLIC_TURNSTILE_ORIGIN: z.string().min(1),
 })
 
 const parsed = schema.safeParse(raw)
