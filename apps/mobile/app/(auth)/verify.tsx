@@ -158,13 +158,18 @@ export default function VerifyScreen() {
    * zero, so "Send it again" is immediately available rather than counting down
    * sixty seconds from a mail that never went.
    *
-   * Once, keyed on nothing: the params do not change under this screen, and a
-   * dependency on `post` would re-send it on every render that rebuilt the
-   * closure.
+   * ONCE, AND THE REF IS NOT BELT AND BRACES. An empty dependency list means
+   * "once per mount", and a mount is not the same thing as an arrival: Fast
+   * Refresh re-runs the effect, and so does anything that remounts this route
+   * under the same params. Every one of those would post a second mail, spend
+   * the account's one send a minute, and leave the user holding a code the app
+   * has just superseded. The ref makes it once per screen, full stop.
    */
+  const posted = useRef(false)
   // biome-ignore lint/correctness/useExhaustiveDependencies: once, on arrival
   useEffect(() => {
-    if (!sendOnArrival) return
+    if (!sendOnArrival || posted.current) return
+    posted.current = true
     let cancelled = false
     post()
       .then(() => {

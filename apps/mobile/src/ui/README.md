@@ -44,8 +44,19 @@ composes `onFocus` and `onBlur` with the ones you passed in, and the composed
 pair has to be the one that reaches the field. See the header in `Numpad.tsx`
 for why the platform's own pad stopped being usable.
 
-`systemKeyboard` is the way out, and there is one field in the app that takes
-it. The pad types a QUANTITY: it refuses a leading zero, because `07` is a typo
+**A field can carry an action on its label's line.** `labelAction` puts one at
+the right edge, level with the label: "Forgot your password?" over the password
+box. It is for the action that belongs TO a field rather than one that comes
+after it, which under the field would compete with the primary button and read
+as one more thing to get past.
+
+**A secure field draws its own placeholder.** Nothing to configure; `TextField`
+does it whenever `secureTextEntry` is set and the value is empty, because iOS
+restyles the native placeholder of an AutoFill target and there is no prop that
+stops it. See the note on `ownPlaceholder`.
+
+`systemKeyboard` is the way out of the pad, and there is one field in the app
+that takes it. The pad types a QUANTITY: it refuses a leading zero, because `07` is a typo
 in every figure this app holds, and it suppresses `oneTimeCode` autofill along
 with the keyboard. A six digit code is neither of those things, so
 `(auth)/verify` asks for the platform's keyboard and gets it.
