@@ -47,6 +47,25 @@ function json(body: unknown, status = 200): Response {
   })
 }
 
+/**
+ * Constant-time comparison of the presented token against the secret.
+ *
+ * A plain `!==` returns as soon as two bytes differ, which leaks — over enough
+ * samples — how much of the secret a guess got right, one byte at a time. This
+ * is the one secret whose disclosure hands over the whole entitlement table, so
+ * it is worth closing. Both sides are hashed to a fixed 32 bytes first, so the
+ * loop is always the same length and reveals nothing about the token's length
+ * either.
+ */
+async function tokenMatches(presented: string, expected: string): Promise<boolean> {
+  const enc = new TextEncoder()
+  const a = new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(presented)))
+  const b = new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(expected)))
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]
+  return diff === 0
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return json({ ok: false, error: 'POST only' }, 405)
 
@@ -60,7 +79,9 @@ Deno.serve(async (req: Request) => {
   // accepts either and the difference is invisible until deliveries start
   // failing in production.
   const presented = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
-  if (presented !== expected) return json({ ok: false, error: 'bad token' }, 401)
+  if (!(await tokenMatches(presented, expected))) {
+    return json({ ok: false, error: 'bad token' }, 401)
+  }
 
   let payload: { event?: RevenueCatEvent }
   try {
@@ -71,6 +92,18 @@ Deno.serve(async (req: Request) => {
 
   const event = payload.event
   if (!event) return json({ ok: false, error: 'no event' }, 400)
+
+  // A SANDBOX PURCHASE IS FREE, and it must not grant the real thing. RevenueCat
+  // forwards sandbox events to the production webhook by default, and a sandbox
+  // buy carries a genuine Supabase user id (the tester signed into the real app)
+  // — so without this an INITIAL_PURCHASE made against Apple's or Play's sandbox
+  // writes `status = 'active'` and unlocks every metered model path for nothing.
+  // Only `PRODUCTION` is a real transaction. Guarded on a defined non-production
+  // value rather than on `!== 'PRODUCTION'`, so a payload that omits the field
+  // entirely is still processed rather than silently dropping real events.
+  if (event.environment && event.environment !== 'PRODUCTION') {
+    return json({ ok: true, ignored: `${event.environment} environment` })
+  }
 
   // `app_user_id` is the id the app told RevenueCat about, which is the
   // Supabase user id — see `identifyPurchaser` in the client. An anonymous id

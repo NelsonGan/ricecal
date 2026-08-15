@@ -88,10 +88,18 @@ export function quote(term: string): string {
   return `"${term.replace(/"/g, '""')}"`
 }
 
+// Belt-and-braces caps on how wide a single query's MATCH expression can get.
+// The caller already bounds the input length, so these are rarely the binding
+// limit; they exist so a query near the length cap still cannot OR together an
+// unreasonable number of arms, each of which is its own index scan.
+const MAX_FTS_TERMS = 24
+const MAX_TRIGRAMS = 64
+
 export function ftsQuery(q: string): string | null {
   const terms = normalize(q)
     .split(' ')
     .filter((t) => t.length >= 2 && !STOPWORDS.has(t))
+    .slice(0, MAX_FTS_TERMS)
   return terms.length ? terms.map(quote).join(' OR ') : null
 }
 
@@ -109,6 +117,6 @@ export function trigramQuery(qn: string): string | null {
   if (qn.length < 3) return null
   const grams = new Set<string>()
   for (let i = 0; i <= qn.length - 3; i++) grams.add(qn.slice(i, i + 3))
-  const usable = [...grams].filter((g) => g.trim().length > 0)
+  const usable = [...grams].filter((g) => g.trim().length > 0).slice(0, MAX_TRIGRAMS)
   return usable.length ? usable.map(quote).join(' OR ') : null
 }

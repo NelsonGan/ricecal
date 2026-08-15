@@ -422,20 +422,28 @@ create trigger recipe_ingredients_set_updated_at
 
 alter table public.recipes enable row level security;
 
-grant select, insert, delete on public.recipes to authenticated;
--- Update is COLUMN LEVEL, and that is the moderation gate.
+grant select, delete on public.recipes to authenticated;
+-- Insert AND update are COLUMN LEVEL, and that is the moderation gate.
 --
--- `is_public` and `review_status` are deliberately absent: with a table-wide
--- update grant, the same client that asks to publish could write
--- `review_status = 'approved'` itself, and the review would be a formality the
--- app performs on itself. Publishing goes through `set_recipe_public` below,
--- which can only ever move the row to `pending`; only `service_role` — the
--- review function — can approve one.
+-- `is_public` and `review_status` are deliberately absent from BOTH grants.
+-- Absent from UPDATE, a client that asks to publish could otherwise write
+-- `review_status = 'approved'` itself and the review would be a formality the
+-- app performs on itself. Absent from INSERT for the same reason one statement
+-- earlier: a table-wide insert grant let a client create the row already
+-- `is_public = true, review_status = 'approved'`, landing it in the community
+-- tab having never been reviewed — the before-insert trigger mints the slug
+-- and the author but does not touch these, so the row's own values would
+-- stand. Publishing goes through `set_recipe_public` below, which can only ever
+-- move the row to `pending`; only `service_role` — the review function — can
+-- approve one. This is the same hole the update grant closes, and it has to be
+-- closed on the way in as well as the way through.
 --
--- `author_name`, `share_slug`, `food_id` and `saved_count` are absent for a
--- quieter reason: they are derived, and a client that could write them could
--- credit somebody else, collide two share links, or point its recipe at the
--- catalogue row of a dish it did not cook.
+-- `author_name`, `share_slug`, `food_id`, `saved_count` and `source_recipe_id`
+-- are absent for a quieter reason: they are derived (or `save_recipe_copy`'s to
+-- set), and a client that could write them could credit somebody else, collide
+-- two share links, vote for its own recipe, or point at a dish it did not cook.
+grant insert (owner_id, name, servings, steps, icon_set, icon_name, photo_path)
+  on public.recipes to authenticated;
 grant update (name, photo_path, icon_set, icon_name, servings, steps)
   on public.recipes to authenticated;
 grant select, insert, update, delete on public.recipes to service_role;
