@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router'
-import type { ReactNode } from 'react'
+import { type ReactNode, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -25,6 +25,7 @@ import {
   StoryFrame,
   type StoryPage,
 } from '@/features/reviews'
+import { track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
 import { AppBar, Card, EmptyState, Screen, Skeleton } from '@/ui'
 
@@ -76,6 +77,22 @@ export default function ReviewStoryScreen() {
   const summary = useReviewSummary(kind, start)
   const series = useReviewSeries(kind, start)
   const meals = useReviewMeals(kind, start)
+
+  /**
+   * One `Review Opened` per story, once the period is actually known.
+   *
+   * Waiting on `start` matters: a report notification links to `week-latest`,
+   * which resolves against the list a request later, so tracking on mount would
+   * fire for a screen that is still deciding what it is about. Keyed on the
+   * resolved start so a `latest` and the dated route it turns into are one view
+   * rather than two.
+   */
+  const openedPeriod = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    if (!start || openedPeriod.current === start) return
+    openedPeriod.current = start
+    track('Review Opened', { kind })
+  }, [start, kind])
 
   if (!period) return <Missing />
 
@@ -138,6 +155,7 @@ export default function ReviewStoryScreen() {
         done: found.daysLogged,
         total: found.days,
       })}
+      onShared={() => track('Review Card Shared', { kind })}
     >
       <StoryFrame
         // Keyed by the review, so opening a second one from the first's

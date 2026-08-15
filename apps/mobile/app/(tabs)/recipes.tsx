@@ -66,7 +66,7 @@ export default function RecipesScreen() {
               // Writing a recipe is composing something to log later, so it is
               // gated where logging is. The shelves, the community and
               // somebody else's recipe all stay readable.
-              if (!requirePro()) return
+              if (!requirePro('new_recipe')) return
               router.push('/recipe/edit')
             }}
           >

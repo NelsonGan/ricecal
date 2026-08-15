@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -7,6 +7,7 @@ import {
   type LogSnapshot,
   packetFoodId,
   snapshotFromRecipe,
+  today,
   useDayLog,
   useDescribeFood,
   useLogFood,
@@ -23,6 +24,7 @@ import {
 } from '@/features/logging'
 import { useRequirePro } from '@/features/paywall'
 import { RecipePanel } from '@/features/recipes'
+import { dateOffset, type LogMethod, track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
 import { sumMacros } from '@/lib/nutrition'
 import { SheetSurface, Tabs, Text } from '@/ui'
@@ -55,7 +57,7 @@ const isPanel = (value: string | undefined): value is NonNullable<Panel> =>
  * link predates the tabs and points at a panel that is now a tab, so it resolves
  * to the camera opened on the barcode side rather than to nothing.
  */
-const openingPanel = (value: string | undefined): Panel =>
+const openingPanel = (value: string | undefined): NonNullable<Panel> =>
   value === 'barcode' ? 'camera' : isPanel(value) ? value : 'camera'
 
 const openingMode = (value: string | undefined): CaptureMode =>
@@ -123,6 +125,30 @@ export default function LogSheet() {
   const toggle = (next: NonNullable<Panel>) =>
     setPanel((current) => (current === next ? null : next))
 
+  /**
+   * The top of the logging funnel: the sheet is up, and nothing has been
+   * written yet.
+   *
+   * ONCE PER PRESENTATION, on mount, with the panel it OPENED on — not on every
+   * switch between the four. Which panel a user ends up logging from is already
+   * on `Meal Logged`; tracking each toggle would add an event per undecided tap
+   * and answer the same question worse.
+   *
+   * The ref is what makes "once" true through a re-render: this route is
+   * remounted per presentation, so a plain effect with an empty dependency list
+   * would already be right — but Fast Refresh re-runs it, and a funnel is not
+   * worth debugging twice.
+   */
+  const announced = useRef(false)
+  useEffect(() => {
+    if (announced.current) return
+    announced.current = true
+    track('Log Sheet Opened', {
+      panel: openingPanel(opening),
+      date_offset: dateOffset(selectedDate, today()),
+    })
+  }, [opening, selectedDate])
+
   const left = (targets?.kcal ?? 0) - sumMacros(day.entries).kcal
 
   // `replace`, for the same reason `openFood` below does it: this route is a
@@ -150,9 +176,13 @@ export default function LogSheet() {
   // Takes the snapshot rather than a food, because one of the two things this
   // sheet adds is a recipe and the other is a catalogue dish. They build one
   // the same way and nothing downstream needs to know which it was.
-  const add = (snapshot: LogSnapshot) => {
-    if (!requirePro()) return
-    logFood.mutate({ snapshot, logDate: selectedDate, source: 'quickAdd' })
+  const add = (snapshot: LogSnapshot, method: LogMethod) => {
+    if (!requirePro('quick_add')) return
+    // `method` and `source` are two different questions and both are answered.
+    // The column says how the numbers were obtained; `method` says which door
+    // the user came through, which `entry_source` has no value for. See
+    // `LogInput` in `data/entries.ts`.
+    logFood.mutate({ snapshot, logDate: selectedDate, source: 'quickAdd', method })
     goBack()
   }
 
@@ -265,7 +295,7 @@ export default function LogSheet() {
               // plate is most of what makes the feature legible, so the camera
               // opens for everybody and the paywall arrives at the moment a
               // request would have been sent.
-              if (!requirePro()) return
+              if (!requirePro('camera')) return
               snapFood({ photoUri, logDate: selectedDate })
               goBack()
             }}
@@ -280,7 +310,7 @@ export default function LogSheet() {
         <DescribePanel
           autoFocus
           onSubmit={(text) => {
-            if (!requirePro()) return
+            if (!requirePro('describe')) return
             describeFood({ text, logDate: selectedDate })
             goBack()
           }}
@@ -293,7 +323,7 @@ export default function LogSheet() {
         // recipe would come up as a second modal stacked on this sheet.
         <RecipePanel
           autoFocus
-          onLog={(recipe) => add(snapshotFromRecipe(recipe))}
+          onLog={(recipe) => add(snapshotFromRecipe(recipe), 'recipe')}
           onOpen={(recipe) =>
             router.replace({ pathname: '/recipe/[id]', params: { id: recipe.id } })
           }

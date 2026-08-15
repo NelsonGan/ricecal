@@ -1,0 +1,314 @@
+// A type-only import, erased at build time, so nothing about the layering
+// between `lib` and `data` changes. See `activity_level` in `PersonProps` for
+// why this property in particular has to be a union rather than a string.
+import type { ActivityLevel } from '@/data/types'
+
+/**
+ * THE TRACKING PLAN, AS A TYPE.
+ *
+ * Every event the app sends is declared here with the exact properties it
+ * carries, and `track` accepts nothing else. This is the same argument
+ * `data/keys.ts` makes about query keys: an analytics event is a string agreed
+ * between a call site and a chart nobody in this repo can see, so a typo does
+ * not fail — it produces a second event with almost the right name, and the
+ * dashboard built on the first one silently stops counting half the traffic.
+ *
+ * A property added here is a property every existing call site has to supply.
+ * That is deliberate: the alternative is an event whose shape depends on where
+ * it was fired from, which is the analytics equivalent of a nullable column
+ * nobody can explain.
+ *
+ * WHAT IS NOT HERE, and why:
+ *
+ * - **Purchases.** RevenueCat funnels its own events into Mixpanel, and it is
+ *   the only party that actually knows whether a transaction settled. What we
+ *   send is the INTENT either side of the store sheet — `Purchase Started` and
+ *   `Purchase Abandoned` — which RevenueCat cannot see, because the store never
+ *   tells it about a purchase that did not happen.
+ * - **Screen views.** An automatic screen-view per route would be the largest
+ *   event stream in the app and would answer almost nothing: the interesting
+ *   screens already have an event of their own (`Paywall Shown`,
+ *   `Log Sheet Opened`, `Review Opened`), and the rest are navigation, not
+ *   behaviour.
+ * - **Errors.** Sentry has them. A failure that is also a PRODUCT fact — a scan
+ *   that found no food, a barcode nothing knows, a request refused for want of
+ *   budget — travels as an `outcome` property on the event it belongs to.
+ * - **Numbers off the diary.** No calorie totals, no weights, no dish names, no
+ *   search text. They are health data, they are not needed to answer any
+ *   question below, and Postgres already holds every one of them next to the
+ *   arithmetic that produced it. `food_scan_items` and `food_scan_misses` are
+ *   where scan quality is measured; this is where BEHAVIOUR is measured.
+ * - **Sessions and installs.** `trackAutomaticEvents` is on, so `$ae_session`,
+ *   `$ae_first_open` and `$ae_updated` arrive without an event of ours.
+ */
+
+/** How an entry reached the diary. The one property most reports break down by. */
+export type LogMethod = 'camera' | 'describe' | 'search' | 'barcode' | 'recipe' | 'quick_add'
+
+/**
+ * Which button was refused, when the paywall came up because of one.
+ *
+ * The point of naming these is to find out which capability actually sells the
+ * app, which is not something the paywall screen can know about itself.
+ */
+export type ProFeature =
+  | 'camera'
+  | 'describe'
+  | 'quick_add'
+  | 'log_dish'
+  | 'log_recipe'
+  | 'new_recipe'
+  | 'refine'
+
+/** Which of the four paywalls. `hard` is `/paywall`, reached from a refusal. */
+export type PaywallScreen = 'hard' | 'intro' | 'reminder' | 'ended'
+
+export type Plan = 'monthly' | 'yearly' | 'lifetime'
+
+/**
+ * How a photographed or typed meal turned out.
+ *
+ * `detached` is the one that needs explaining: the request broke but the edge
+ * function writes the entry itself, so the scan is very probably still running
+ * and this process simply stopped hearing about it. Counting those as failures
+ * is how a scan that succeeded was reported as an error. See `data/snap.ts`.
+ */
+export type ScanOutcome =
+  | 'logged'
+  | 'no_food'
+  | 'failed'
+  | 'detached'
+  | 'limit_reached'
+  | 'not_entitled'
+
+export type SignInMethod = 'apple' | 'google' | 'email'
+
+/**
+ * What the calorie plan is FOR, which is the whole of what the two weights say.
+ * Sent instead of the weights themselves: it is the only part of them any
+ * segment would be built on.
+ */
+export type PlanDirection = 'lose' | 'gain' | 'maintain'
+
+/** An event that carries nothing. Written out so the call site still says `{}`. */
+type NoProps = Record<string, never>
+
+/**
+ * Every event, and its properties.
+ *
+ * Names are Title Case and past tense — Mixpanel's own convention, and the one
+ * its UI sorts and groups by. Properties are snake_case for the same reason.
+ */
+export type Events = {
+  // ── Onboarding and the account ───────────────────────────────────────────
+  /** "Get started" on the welcome screen. The top of the whole funnel. */
+  'Onboarding Started': NoProps
+  /**
+   * One question answered. ONE EVENT WITH A `step` PROPERTY rather than nine
+   * events, so the funnel is built by breaking one thing down rather than by
+   * remembering to add the tenth event when a tenth screen appears.
+   */
+  'Onboarding Step Completed': { step: string; step_number: number }
+  /** The profile write landed. Everything before this is a stranger. */
+  'Onboarding Completed': { plan_direction: PlanDirection }
+  /** The email was accepted and the link sent. The other half is `Signed In`. */
+  'Login Link Requested': NoProps
+  'Signed In': { method: SignInMethod; is_new_account: boolean }
+  /**
+   * Includes the user closing Apple's own sheet, which is not an error and is
+   * exactly the number worth knowing. Real exceptions go to Sentry as well.
+   */
+  'Sign In Failed': { method: SignInMethod; reason: 'cancelled' | 'unavailable' | 'error' }
+  'Signed Out': NoProps
+
+  // ── Logging ──────────────────────────────────────────────────────────────
+  /**
+   * The log button, or a route that opened the sheet directly.
+   *
+   * `date_offset` is days back from today: 0 is the ordinary case and anything
+   * else is somebody filling in a day they missed, which is the question this
+   * property exists to answer.
+   */
+  'Log Sheet Opened': { panel: string; date_offset: number }
+  /**
+   * A meal went on the day.
+   *
+   * Fired when the app HAS PUT A MEAL ON THE DAY. For search, a recipe, a
+   * packet and a quick add that is the insert succeeding; for the camera and
+   * the describe panel it is the optimistic row appearing, because the entry is
+   * written server-side and the diary already shows it.
+   *
+   * So this over-counts the two scan paths by exactly the scans that came back
+   * with nothing edible or failed outright. The correction is one subtraction —
+   * `Meal Scan Completed` where `outcome` is `no_food` or `failed` — and it is
+   * spelt out here because the alternative, tracking the scan paths only once
+   * the cascade answers, would silently DROP every meal whose request broke
+   * while the edge function went on writing it.
+   */
+  'Meal Logged': { method: LogMethod; date_offset: number }
+  /**
+   * What the cascade did with a photographed or typed meal.
+   *
+   * `tier` is the cascade's own tier for the first entry (1 dish, 2 components,
+   * 4 estimate, 5 archetype) and is the single most useful number here: it says
+   * how often the catalogue actually answers rather than being guessed past.
+   */
+  'Meal Scan Completed': {
+    method: 'camera' | 'describe'
+    outcome: ScanOutcome
+    duration_ms: number
+    tier: number | null
+    components: number
+  }
+  /**
+   * A barcode was read and looked up. `not_found` is the interesting value —
+   * see `d1/food-catalogue/BARCODE-COVERAGE.md` for why Malaysian packets are
+   * the thin part of the catalogue and what this number is evidence for.
+   */
+  'Barcode Scanned': { outcome: 'found' | 'not_found' | 'error' }
+  /** Save on the food detail screen. `changed` names what actually moved. */
+  'Entry Updated': { changed: string[] }
+  'Entry Deleted': { source: string }
+  /**
+   * The sparkle: a correction described in words.
+   *
+   * `from_chip` separates the suggested corrections from the typed ones, which
+   * is the difference between the chips being useful and being decoration.
+   */
+  'Entry Refined': {
+    outcome: 'applied' | 'not_applied' | 'failed' | 'limit_reached' | 'not_entitled'
+    from_chip: boolean
+    duration_ms: number
+  }
+
+  // ── The catalogue ────────────────────────────────────────────────────────
+  /**
+   * A search the user stopped typing at. NOT one per keystroke and not one per
+   * prefix: only the query a burst of typing settled on, because "nas" finding
+   * nothing says nothing about the catalogue.
+   *
+   * The text itself is deliberately absent. What people type and cannot find is
+   * worth capturing, and the place to capture it is the Worker, which is
+   * already authenticated and rate limited and is where the rest of the
+   * catalogue-widening backlog lives.
+   */
+  'Food Searched': { results: number; query_length: number }
+  /**
+   * A result was opened. `position` is 1-based rank, and its distribution is
+   * the live version of what `pnpm foods:gate` measures against thirty fixed
+   * queries.
+   */
+  'Food Picked': { position: number; results: number }
+
+  // ── Money, up to the store sheet and no further ──────────────────────────
+  /**
+   * `trigger` is the refused button for `/paywall`, and the screen's own reason
+   * for the other three. There is no `Paywall Dismissed`: a paywall that was
+   * shown and not followed by a purchase IS the dismissal.
+   */
+  'Paywall Shown': { screen: PaywallScreen; trigger: ProFeature | PaywallScreen }
+  'Plan Selected': { screen: PaywallScreen; plan: Plan }
+  /** The store sheet was asked for. RevenueCat reports what happened after. */
+  'Purchase Started': { screen: PaywallScreen; plan: Plan }
+  /**
+   * The store sheet closed with nothing bought. RevenueCat cannot see this —
+   * it only hears about transactions that happened — so it is the one half of
+   * the purchase funnel that has to come from here.
+   */
+  'Purchase Abandoned': {
+    screen: PaywallScreen
+    plan: Plan
+    reason: 'cancelled' | 'unavailable' | 'error'
+  }
+  'Restore Requested': { outcome: 'restored' | 'nothing' | 'unavailable' }
+
+  // ── The habit features ───────────────────────────────────────────────────
+  /**
+   * `granted: false` is a refused permission sheet, which is a different
+   * problem from a store that granted access and returned no days.
+   */
+  'Health Connected': { provider: string; granted: boolean; days: number }
+  'Health Disconnected': { provider: string }
+  'Reminder Toggled': { meal: string; enabled: boolean }
+  /** The only re-engagement surface in the app, so the taps are worth counting. */
+  'Notification Opened': { kind: 'weekly' | 'monthly' }
+  /** Typed by the user. A reading synced from a health store is not an action. */
+  'Weight Logged': NoProps
+  'Recipe Saved': { is_new: boolean; ingredients: number; servings: number }
+  /** The form filled in from a photograph or a sentence, before any save. */
+  'Recipe Drafted': {
+    source: 'photo' | 'text'
+    outcome: 'drafted' | 'empty' | 'failed' | 'limit_reached' | 'not_entitled'
+  }
+  /**
+   * `pending` is not a third verdict, it is the review having failed to run —
+   * and it leaves the recipe public and invisible, which is the failure mode
+   * worth watching.
+   */
+  'Recipe Published': { outcome: 'approved' | 'rejected' | 'pending' }
+  'Recipe Copied': NoProps
+  'Review Opened': { kind: 'week' | 'month' }
+  /**
+   * The share sheet came back having actually shared something.
+   *
+   * WHICH card is deliberately not on it. A story lays out three or four cards
+   * per step and each is its own `Shareable`, so naming them would mean a stable
+   * slug plumbed through two components and every step — and the question that
+   * pays for itself first is simply whether the loop is used at all.
+   */
+  'Review Card Shared': { kind: 'week' | 'month' }
+}
+
+export type EventName = keyof Events
+
+/**
+ * The user properties this app sets, and nothing else.
+ *
+ * No name, no email, no body figures. Every one of these is either a stated
+ * PREFERENCE or a fact about which parts of the app are switched on, which is
+ * what a segment is ever built from.
+ */
+export type PersonProps = {
+  onboarded?: boolean
+  onboarded_at?: string
+  plan_direction?: PlanDirection
+  /**
+   * The CLIENT's spelling, and only that one.
+   *
+   * Two places set this — `finish.tsx` from the onboarding draft, and
+   * `useAnalyticsIdentity` from the stored profile — and the draft holds
+   * `veryActive` where the column holds `very_active`. As a `string` the two
+   * quietly disagreed, and a breakdown on activity showed six values for four
+   * answers, split by nothing more meaningful than which write happened last.
+   * Typed, that mismatch is a compile error.
+   */
+  activity_level?: ActivityLevel
+  food_styles?: string[]
+  referral_source?: string
+  /** The store the account reads movement from, or null once disconnected. */
+  health_provider?: string | null
+  /** How many of the three meal reminders are switched on. */
+  meal_reminders?: number
+}
+
+/**
+ * There are deliberately NO people counters here — no `meals_logged`, no
+ * `recipes_created`. Mixpanel builds a cohort from an event count directly
+ * ("did Meal Logged at least ten times"), so a counter would be a second,
+ * hand-maintained answer to a question the event stream already answers — and
+ * one that has to decide for itself whether a scan that failed halfway counts.
+ *
+ * The properties above are the ones that CANNOT be derived from events: facts
+ * about the person, stated once.
+ */
+
+/**
+ * Properties stamped on EVERY event.
+ *
+ * Only one, and it earns its place: whether this account is paying is the cut
+ * every other report wants, and a super property is the only way to get it
+ * without adding a paid/free property to twenty event definitions.
+ */
+export type SuperProps = {
+  entitled: boolean
+}

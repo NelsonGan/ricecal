@@ -54,6 +54,22 @@ export type ShareableCardsProps = {
    * Android — see `send()`.
    */
   message: string
+  /**
+   * The share sheet closed having shared something.
+   *
+   * A callback rather than an event fired in here, because this component is in
+   * `features/reviews` and knows nothing about which review it is drawing — the
+   * screen does. `dismissedAction` is not reported: a sheet opened and closed
+   * is not a share, and counting it would make the growth loop look twice as
+   * healthy as it is.
+   *
+   * That distinction is REAL ON iOS ONLY. Android's share intent never tells
+   * the app what the user did with it, so `Share` answers `sharedAction` there
+   * whatever happens — which means this fires on every Android tap and only on
+   * a real send on iOS. Worth knowing before the two platforms are compared on
+   * this number; it is not something the app can correct for.
+   */
+  onShared?: () => void
   children: ReactNode
 }
 
@@ -74,7 +90,7 @@ export type ShareableCardsProps = {
  * A context rather than a prop on each card: a step lays out two or three cards
  * and none of them should have to be told what a story is.
  */
-export function ShareableCards({ message, children }: ShareableCardsProps) {
+export function ShareableCards({ message, onShared, children }: ShareableCardsProps) {
   const { t } = useTranslation('reviews')
 
   const [shot, setShot] = useState<Shot | null>(null)
@@ -118,11 +134,14 @@ export function ShareableCards({ message, children }: ShareableCardsProps) {
        * image. Sharing the file on Android needs a content:// provider, which
        * needs a dependency, which needs a rebuild.
        */
-      await Share.share(Platform.OS === 'ios' ? { url: shot.uri, message } : { message })
+      const result = await Share.share(
+        Platform.OS === 'ios' ? { url: shot.uri, message } : { message },
+      )
+      if (result.action === Share.sharedAction) onShared?.()
     } finally {
       setSending(false)
     }
-  }, [message, shot])
+  }, [message, shot, onShared])
 
   return (
     <CaptureContext.Provider value={capture}>

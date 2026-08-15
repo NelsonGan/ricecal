@@ -2,6 +2,8 @@ import * as Notifications from 'expo-notifications'
 import { router } from 'expo-router'
 import { useEffect } from 'react'
 
+import { track } from '@/lib/analytics'
+
 /**
  * Where a report notification goes when it is tapped.
  *
@@ -39,6 +41,10 @@ export function useReportLinks(): void {
     const open = (response: Notifications.NotificationResponse | null) => {
       const kind = response?.notification.request.content.data?.kind
       if (!alive || !isReport(kind)) return
+      // The weekly and monthly reports are the app's only unprompted way back
+      // in — meal reminders say something and go, and there is no push at all —
+      // so whether anybody taps them is the whole question about them.
+      track('Notification Opened', { kind })
       router.push(ROUTE[kind])
     }
 

@@ -6,4 +6,9 @@
  * and what it costs, which is a narrower thing to know than "meals and foods".
  */
 export { ProPitch, type ProPitchProps } from './ProPitch'
+export {
+  trackPurchaseAbandoned,
+  trackPurchaseStarted,
+  useTrackPaywallShown,
+} from './tracking'
 export { type RequireProOptions, useRequirePro } from './useRequirePro'

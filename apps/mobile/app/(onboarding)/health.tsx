@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Platform, View } from 'react-native'
 
 import { useConnectHealth, useSession } from '@/data'
-import { FactRow, OnboardingStep, stepNumber, TOTAL_STEPS } from '@/features/onboarding'
+import { FactRow, OnboardingStep } from '@/features/onboarding'
 import { type Availability, canOfferDemo, offeredProviders, type ProviderId } from '@/lib/health'
 import { Button, Card, Text, useToast } from '@/ui'
 
@@ -127,8 +127,7 @@ function HealthStep() {
 
   return (
     <OnboardingStep
-      step={stepNumber('health')}
-      total={TOTAL_STEPS}
+      name="health"
       accent="water"
       title={t('onboarding:health.title')}
       subtitle={t('onboarding:health.subtitle')}

@@ -10,6 +10,7 @@ import {
   useState,
 } from 'react'
 import { AppState } from 'react-native'
+import { identifyUser, resetIdentity } from '@/lib/analytics'
 import { forgetPurchaser, identifyPurchaser } from '@/lib/revenuecat'
 import { storedSession, supabase, whenStoredSession } from '@/lib/supabase'
 import { clearImageCache } from './photos'
@@ -174,14 +175,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // anybody. `logIn` with an id the SDK already holds is a no-op, so
       // repeating it on each launch costs nothing and is the version that
       // cannot silently skip.
+      //
+      // Mixpanel is told at the same moment and on the same terms, because it
+      // is the same question — who is this process about — and getting it wrong
+      // costs the same thing: events filed against an anonymous device id, which
+      // no funnel can join back to the account that produced them.
       if (nextUserId) {
         if (purchaser.current !== nextUserId) {
           purchaser.current = nextUserId
           void identifyPurchaser(nextUserId)
+          identifyUser(nextUserId)
         }
       } else if (event === 'SIGNED_OUT') {
         purchaser.current = null
         void forgetPurchaser()
+        resetIdentity()
       }
     })
 
