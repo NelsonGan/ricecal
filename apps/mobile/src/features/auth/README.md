@@ -142,27 +142,40 @@ right for every step before the last.
 
 ### When it refuses a real person
 
-Everything that goes wrong here reads the same from inside the app, "we could
-not confirm you are a person", so the diagnosis is in the console. Every failure
-logs a `[captcha]` line carrying Cloudflare's own error code, and the code says
-which of three things it is:
+**FIVE THINGS FAIL IDENTICALLY HERE, and four of them are not in this repo.**
+The gate is on the server, so the app says "we could not confirm you are a
+person" whether the widget never loaded, never produced a token, produced one
+Cloudflare scored badly, or produced a perfectly good one that `siteverify`
+refused. One sentence, five causes, and no way to tell them apart by looking.
 
-| code | what it is | where the fix is |
+So every failure is reported: a `[captcha]` line to the console, and the same
+text to Sentry as a warning (`turnstile.tsx`, `report`). The code is what
+separates them.
+
+| what Sentry says | what it is | where the fix is |
 |---|---|---|
-| `110200` | the WebView's origin is not on the widget's hostname list | add `EXPO_PUBLIC_TURNSTILE_ORIGIN` under Hostname Management |
-| `110100`, `110110`, `400020`, `400070` | wrong, unknown or disabled site key | the key in the EAS environment, or the widget itself |
-| `300*`, `600*` | Cloudflare judged the visitor a bot | the widget's MODE, above |
+| `absent: no site key in this build` | `EXPO_PUBLIC_TURNSTILE_SITE_KEY` never reached the bundle | the EAS environment for that build profile. `EXPO_PUBLIC_*` is inlined at BUNDLE time, so this is a property of the build, not the phone |
+| `absent: no WebView in this binary` | the binary predates `react-native-webview` | a native rebuild. An OTA update cannot add it |
+| `unusable: 110200` | the WebView's origin is not on the widget's hostname list | add `EXPO_PUBLIC_TURNSTILE_ORIGIN`'s value under Hostname Management |
+| `unusable: 110100` / `110110` / `400020` / `400070` | wrong, unknown or disabled site key | the key, or the widget |
+| `gave up after N retryable errors, last 300…` | Cloudflare scored the visitor a bot, twice | the widget's MODE, above |
+| `timed out with no answer` | executed, then twenty seconds of silence | usually the network; otherwise the widget |
 
-The last row is the one that looks like an app bug and is not: the request is
-reaching Cloudflare and being scored, and the app is doing what it can with the
-answer. `turnstile.tsx` no longer settles on the first of these — the widget
-retries itself, and in Managed mode the escalation to a checkbox arrives as an
-`interactive` message and the panel goes up. In Invisible mode nothing arrives
-at all, which is the whole reason for the note about modes above.
+The bot-score row is the one that looks like an app bug and is not: the request
+is reaching Cloudflare and being scored, and the app is doing what it can with
+the answer. It no longer settles on the FIRST one — Cloudflare marks `300*` and
+`600*` retryable, the widget's own `retry: 'auto'` has another go, and in
+Managed mode a visitor who keeps scoring badly is escalated to a checkbox, which
+arrives as an `interactive` message and puts the panel up.
 
-The other half of the pair is the SECRET on Supabase. It has to belong to the
-same widget as the site key: a mismatched pair produces a token the app is happy
-with and `siteverify` rejects, and the only symptom is the same sentence again.
+**And nothing at all in Sentry, with sign-in still failing, is the sixth case:
+the SECRET.** It has to belong to the same widget as the site key. A mismatched
+pair produces a token the app is entirely happy with — no error, no code,
+nothing to report — that `siteverify` then rejects, and the app says the same
+sentence again. Silence here is the evidence: the widget did its job, so the
+problem is on the other side of it. `pnpm auth:config --captcha-secret 0x… --push`
+writes it, and the Supabase API never gives it back in a readable form, so the
+only way to rule it out is to set it again from the widget you are looking at.
 
 ## Where the rest of it lives
 

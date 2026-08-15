@@ -1,8 +1,10 @@
+import * as Sentry from '@sentry/react-native'
 import {
   createContext,
   type ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -226,6 +228,38 @@ function page(siteKey: string): string {
 </html>`
 }
 
+/**
+ * Says WHY the widget refused, somewhere a developer can read it.
+ *
+ * EVERY FAILURE ON THIS PATH LOOKS THE SAME FROM THE OUTSIDE, and that is what
+ * made the first one expensive. The gate is on the server, so a widget that
+ * cannot produce a token and a token the server will not accept both end as
+ * "we could not confirm you are a person" — and so does a hostname missing from
+ * the widget's list, a site key that never reached the build, and a visitor
+ * Cloudflare has scored as a bot. Five causes, one sentence, and four of the
+ * five live in a dashboard rather than in this repo.
+ *
+ * A console warning only reaches somebody holding a cable. This goes to Sentry
+ * as a MESSAGE rather than an exception: nothing has thrown, the app is working
+ * exactly as designed, and what is wanted is the code — `110200` is a hostname,
+ * `400020` is a site key, `300*` is a score — attached to a build and a date.
+ *
+ * The code and nothing else. No address, no token, nothing about who was
+ * signing in; see the analytics note in CLAUDE.md for why that line is drawn
+ * where it is.
+ */
+function report(what: string) {
+  Sentry.captureMessage(`[captcha] ${what}`, 'warning')
+}
+
+/**
+ * Once per launch, not once per visit to the sign-in screen.
+ *
+ * The absent-widget report below fires on mount, and this stack is mounted
+ * again every time somebody backs out of sign-in and returns to it.
+ */
+let announcedAbsent = false
+
 /** Asks for a token. Resolves `undefined` when there is none to be had. */
 export type RequestCaptchaToken = () => Promise<string | undefined>
 
@@ -245,6 +279,29 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
   // that re-renders on every keystroke would print it on every keystroke.
   const WebViewImpl = useMemo(() => (captchaConfigured() ? loadWebView() : null), [])
   const enabled = WebViewImpl !== null
+
+  /**
+   * THE FAILURE WITH NO SYMPTOM AT ALL, and the one worth catching hardest.
+   *
+   * A build whose `EXPO_PUBLIC_TURNSTILE_SITE_KEY` never arrived, or whose
+   * binary predates `react-native-webview`, asks for no token and sends none —
+   * and with the gate on, Supabase then refuses every sign-in, signup, code and
+   * reset that build ever makes. Nothing throws, nothing logs, and the app says
+   * the same sentence it says for a captcha that was merely wrong. It is
+   * indistinguishable from the outside from a Cloudflare problem, which is
+   * exactly the wrong place to go looking.
+   *
+   * `EXPO_PUBLIC_` values are inlined at BUNDLE time, so this is a property of
+   * the build rather than of the phone, and one report per launch is enough to
+   * tell the two apart for good.
+   */
+  useEffect(() => {
+    if (enabled || announcedAbsent) return
+    announcedAbsent = true
+    const why = captchaConfigured() ? 'no WebView in this binary' : 'no site key in this build'
+    console.warn(`[captcha] sending no token: ${why}`)
+    report(`absent: ${why}`)
+  }, [enabled])
 
   const { t } = useTranslation(['auth', 'common'])
 
@@ -284,7 +341,10 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
   /** Reports a widget that is not going to answer, and stops waiting on it. */
   const giveUp = useCallback(
     (why: string) => {
-      if (!broken.current) console.warn(`[captcha] turnstile unusable: ${why}`)
+      if (!broken.current) {
+        console.warn(`[captcha] turnstile unusable: ${why}`)
+        report(`unusable: ${why}`)
+      }
       broken.current = true
       settle(undefined)
     },
@@ -362,7 +422,14 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
           console.warn(`[captcha] turnstile retryable error: ${code}`)
           const waiting = pending.current
           if (!waiting || waiting.interactive) return
-          if (++waiting.errors > RETRIES_ALLOWED) settle(undefined)
+          if (++waiting.errors > RETRIES_ALLOWED) {
+            // Reported only once the retry has also failed, so a score that
+            // cleared on the second go is not filed as a problem. A `300*` or
+            // `600*` surviving both is the one failure here whose fix is the
+            // widget's MODE rather than a key or a hostname.
+            report(`gave up after ${waiting.errors} retryable errors, last ${code}`)
+            settle(undefined)
+          }
           return
         }
       }
@@ -383,10 +450,14 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
       const waiting: Pending = { resolve, timer: null, errors: 0, interactive: false }
       // A timeout with the widget still silent means it never loaded. One that
       // fires after `ready` is one slow attempt, and the next may be fine.
-      waiting.timer = setTimeout(
-        () => (ready.current ? settle(undefined) : giveUp('never became ready')),
-        TOKEN_TIMEOUT_MS,
-      )
+      waiting.timer = setTimeout(() => {
+        if (!ready.current) return giveUp('never became ready')
+        // Ready, executed, and twenty seconds of silence: no token, no error
+        // code, nothing to go on. Worth filing precisely because there is
+        // nothing else to file.
+        report('timed out with no answer')
+        settle(undefined)
+      }, TOKEN_TIMEOUT_MS)
       pending.current = waiting
 
       const execute = () => web.current?.injectJavaScript('window.rcExecute(); true;')
