@@ -49,7 +49,8 @@ import { Button, Text } from '@/ui'
  * RESTYLED, NOT REMOUNTED, and that is the one structural decision here. A
  * WebView moved to a different parent, or unmounted and brought back, reloads
  * the page and throws away the challenge in progress — so there is one instance,
- * always mounted, and `challenging` only changes its size and opacity.
+ * always mounted at one size, and `challenging` changes nothing but the opacity
+ * of the layer it sits in.
  */
 
 /** Whether this build can produce a token at all. */
@@ -185,6 +186,23 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
   const pending = useRef<Pending | null>(null)
   const [challenging, setChallenging] = useState(false)
 
+  /**
+   * Set once this widget has proved it cannot produce a token.
+   *
+   * WITHOUT THIS, A BROKEN WIDGET COSTS TWENTY SECONDS PER TAP. The failure
+   * modes are all silent — a site key the account does not recognise, a
+   * hostname missing from the widget's list, a `render()` that throws before
+   * `ready` is ever posted — and every one of them ends in the timeout rather
+   * than in an error. So the first request waits, and every request after it is
+   * answered immediately with `undefined`.
+   *
+   * The outcome for the user is the same either way, and that is the point:
+   * with the gate on, a request with no token is refused, so the choice is
+   * between being told at once and being told after twenty seconds of spinner.
+   * With the gate off, nothing was ever going to check.
+   */
+  const broken = useRef(false)
+
   const settle = useCallback((token: string | undefined) => {
     const waiting = pending.current
     pending.current = null
@@ -193,6 +211,16 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
     if (waiting.timer) clearTimeout(waiting.timer)
     waiting.resolve(token)
   }, [])
+
+  /** Reports a widget that is not going to answer, and stops waiting on it. */
+  const giveUp = useCallback(
+    (why: string) => {
+      if (!broken.current) console.warn(`[captcha] turnstile unusable: ${why}`)
+      broken.current = true
+      settle(undefined)
+    },
+    [settle],
+  )
 
   const onMessage = useCallback(
     (event: WebViewMessageEvent) => {
@@ -224,18 +252,26 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
           return
         }
         case 'error':
-          // Reported and then forgotten. The request goes without a token and
-          // the server decides, which is the whole failing-open bargain.
+          // A failure BEFORE the widget ever announced itself is a failure of
+          // the widget rather than of one attempt: a site key the account does
+          // not know, or a hostname missing from its list. Those never recover,
+          // so stop waiting on them. An error afterwards is one bad attempt,
+          // reported and forgotten — the request goes without a token and the
+          // server decides, which is the whole failing-open bargain.
+          if (!ready.current) {
+            giveUp(payload.code ?? 'error before ready')
+            return
+          }
           console.warn(`[captcha] turnstile error: ${payload.code}`)
           settle(undefined)
           return
       }
     },
-    [settle],
+    [settle, giveUp],
   )
 
   const request = useCallback<RequestCaptchaToken>(() => {
-    if (!enabled) return Promise.resolve(undefined)
+    if (!enabled || broken.current) return Promise.resolve(undefined)
 
     // One at a time. Two overlapping requests would share one widget, and the
     // second `reset()` cancels the first's challenge — so the earlier caller is
@@ -245,14 +281,19 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
 
     return new Promise<string | undefined>((resolve) => {
       const waiting: Pending = { resolve, timer: null }
-      waiting.timer = setTimeout(() => settle(undefined), TOKEN_TIMEOUT_MS)
+      // A timeout with the widget still silent means it never loaded. One that
+      // fires after `ready` is one slow attempt, and the next may be fine.
+      waiting.timer = setTimeout(
+        () => (ready.current ? settle(undefined) : giveUp('never became ready')),
+        TOKEN_TIMEOUT_MS,
+      )
       pending.current = waiting
 
       const execute = () => web.current?.injectJavaScript('window.rcExecute(); true;')
       if (ready.current) execute()
       else queued.current.push(execute)
     })
-  }, [enabled, settle])
+  }, [enabled, settle, giveUp])
 
   return (
     <CaptchaContext.Provider value={request}>
@@ -286,15 +327,16 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
             </Text>
           </View>
 
-          {/* THE ONE INSTANCE. Sized down to nothing when idle rather than
-              unmounted: a reload here throws away a challenge in progress. */}
-          <View
-            style={
-              challenging
-                ? { width: 300, height: 72, marginTop: 12 }
-                : { width: 0, height: 0, opacity: 0 }
-            }
-          >
+          {/* THE ONE INSTANCE, AND IT IS ALWAYS THE SAME SIZE.
+              Never unmounted, because a reload throws away a challenge in
+              progress. And never resized either: the parent's opacity is what
+              hides it. A widget laid out at 0x0 while it works and grown to
+              300x72 only once Cloudflare asks for a human is a widget deciding
+              whether to challenge inside a viewport with no room to draw one,
+              and on Android a zero-sized WebView is not reliably given a layout
+              pass at all. Opacity is a paint property; the page loads, the
+              script runs, and the iframe has its real box throughout. */}
+          <View style={{ width: 300, height: 72, marginTop: 12 }}>
             <WebViewImpl
               ref={web}
               // The widget is registered against a hostname on Cloudflare, and
@@ -304,6 +346,12 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
                 baseUrl: `https://${env.EXPO_PUBLIC_TURNSTILE_ORIGIN}`,
               }}
               onMessage={onMessage}
+              // The page could not load at all: no network, a DNS failure, or
+              // Cloudflare refusing the origin. Without this the only symptom is
+              // `ready` never arriving, which every request then pays the full
+              // timeout to discover.
+              onError={() => giveUp('load-failed')}
+              onHttpError={() => giveUp('http-error')}
               javaScriptEnabled
               domStorageEnabled
               originWhitelist={['https://*']}

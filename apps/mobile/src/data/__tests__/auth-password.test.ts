@@ -224,6 +224,17 @@ describe('reading what Supabase said', () => {
     expect(asAuthProblem(new Error('Token has expired or is invalid')).reason).toBe('code_invalid')
   })
 
+  /**
+   * `AuthError.code` is populated by every supabase-js this project has
+   * shipped, so these two are belt and braces — but they are the failures a
+   * person actually meets, and `unknown` would replace the sentence saying what
+   * to do next with the one that says nothing.
+   */
+  it('reads the two commonest failures off their text as well as their code', () => {
+    expect(asAuthProblem(new Error('Invalid login credentials')).reason).toBe('invalid_credentials')
+    expect(asAuthProblem(new Error('Email not confirmed')).reason).toBe('email_not_confirmed')
+  })
+
   /** The signal on a phone, and the one reason that must never read as `unknown`. */
   it('recognises a dropped connection', () => {
     expect(asAuthProblem(new TypeError('Network request failed')).reason).toBe('offline')

@@ -1,5 +1,4 @@
 import * as Linking from 'expo-linking'
-import { useRouter } from 'expo-router'
 import { useEffect, useRef } from 'react'
 
 import { completeLoginFromUrl } from '@/data/auth'
@@ -26,7 +25,6 @@ export function LoginLinkHandler() {
   // most common way a login link arrives.
   const url = Linking.useLinkingURL()
   const toast = useToast()
-  const router = useRouter()
   const message = useAuthMessage()
 
   // Every URL is handled once. `useURL` holds its value, so a re-render for any
@@ -39,19 +37,21 @@ export function LoginLinkHandler() {
     if (!url || handled.current === url) return
     handled.current = url
 
-    completeLoginFromUrl(url)
-      .then((outcome) => {
-        // A RESET LINK IS NOT A SIGN-IN, even though it produces a session. It
-        // is the middle of choosing a new password, and left to the ordinary
-        // guard it lands the user on Today with the password they could not
-        // remember still in force. `replace`, because there is nothing behind a
-        // link opened cold to go back to.
-        if (outcome === 'recovery') router.replace('/(auth)/new-password')
-      })
-      .catch((error: unknown) => {
-        toast.show({ title: message(error), tone: 'error' })
-      })
-  }, [url, toast, router, message])
+    /**
+     * REDEEMS THE LINK AND NAVIGATES NOWHERE, deliberately.
+     *
+     * This component renders outside the navigator — it has to, because a link
+     * can arrive with no screen on screen — so an imperative navigation from
+     * here races the root layout on a cold start from the mail, which is
+     * expo-router's "attempted to navigate before mounting the Root Layout".
+     * Where each kind of link belongs is decided by the route it lands on
+     * (`app/auth/[action].tsx`), which by definition cannot run before the
+     * navigator exists.
+     */
+    completeLoginFromUrl(url).catch((error: unknown) => {
+      toast.show({ title: message(error), tone: 'error' })
+    })
+  }, [url, toast, message])
 
   return null
 }

@@ -233,10 +233,13 @@ export const onboarding = {
     or: 'OR',
     email: 'EMAIL',
     emailPlaceholder: 'you@email.com',
-    sendLink: 'Email me a link',
-    /** There is no password to type, so the screen has to say what will happen. */
-    linkExplainer: 'No password to remember. We will send a link that signs you in.',
-    linkSent: 'Link sent to {{email}}. Open it on this phone to carry on.',
+    /**
+     * `sendLink`, `linkExplainer` and `linkSent` used to live here, from when
+     * this screen mailed a link itself and said so. It asks for an address and
+     * nothing else now: what happens to it is `(auth)/password`'s question, and
+     * the copy for it is in the `auth` namespace with the rest of the
+     * credentials wording.
+     */
     errors: {
       email: 'That does not look like an email address.',
     },

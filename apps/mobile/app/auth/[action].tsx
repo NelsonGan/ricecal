@@ -15,27 +15,24 @@ import { Spinner } from '@/ui'
  * person in perfectly well. The link worked and looked broken, which is the
  * worst of both.
  *
- * So this exists to be matched. It does no work: the URL is handled above the
+ * So this exists to be matched. It redeems nothing: the URL is handled above the
  * navigator, because a link can arrive at any moment and there is not
- * necessarily a screen. All this does is wait, and then get out of the way.
+ * necessarily a screen. All this does is wait for the session that handler is
+ * fetching, and then send the person where the link meant them to go.
  *
- * `[action]` rather than two files because the two differ only in when they
- * leave, and the difference is one line.
+ * IT IS ALSO WHERE THE RECOVERY REDIRECT LIVES, and that is a mounting rule
+ * rather than a preference. `LoginLinkHandler` renders outside the navigator, so
+ * an imperative `router.replace` from it races the root layout on a cold start
+ * from the mail — expo-router's "attempted to navigate before mounting the Root
+ * Layout" is exactly that race. A `<Redirect>` in a route cannot happen before
+ * the route is mounted, because being mounted is what renders it.
+ *
+ * `[action]` rather than two files because the two differ only in where they
+ * go, and the difference is one line.
  */
 export default function AuthLanding() {
   const { action } = useLocalSearchParams<{ action?: string }>()
   const { session, loading } = useSession()
-
-  /**
-   * A RESET DOES NOT LEAVE ON ITS OWN.
-   *
-   * Exchanging a recovery link creates a session, same as any other link, so
-   * redirecting on one would race `LoginLinkHandler` to the door and win —
-   * landing somebody on Today with the password they came to change still in
-   * force. The handler sends them to `new-password`; this screen only has to
-   * not move first.
-   */
-  const isReset = action === 'reset'
 
   /**
    * The dead-link case, which has no signal of its own.
@@ -52,9 +49,18 @@ export default function AuthLanding() {
   }, [])
 
   // `/` rather than `/today`: index is the one place that knows whether this
-  // person has finished onboarding, and a dead link belongs at welcome.
+  // person has finished onboarding, and a dead link belongs back at welcome.
   if (waited) return <Redirect href="/" />
-  if (!isReset && !loading && session) return <Redirect href="/" />
+
+  if (!loading && session) {
+    /**
+     * A RESET IS NOT A SIGN-IN, even though it produced a session. It is the
+     * middle of choosing a new password, and sent to `/` the person lands on
+     * Today with everything working and the password they came to change still
+     * in force.
+     */
+    return <Redirect href={action === 'reset' ? '/(auth)/new-password' : '/'} />
+  }
 
   return (
     <View className="flex-1 items-center justify-center bg-canvas">
