@@ -18,7 +18,7 @@ import {
   useTrackPaywallShown,
 } from '@/features/paywall'
 import { track } from '@/lib/analytics'
-import { Button, Screen, Text, useToast } from '@/ui'
+import { Button, Screen, useToast } from '@/ui'
 
 /**
  * THE PAYWALL AT THE END OF ONBOARDING.
@@ -115,18 +115,21 @@ export default function IntroPaywall() {
           {/* `replace`, not `push`. This screen replaced the tour, and the tour
               replaced the questions, so there is nothing underneath worth
               keeping — and Today is where the app IS rather than somewhere the
-              user went. */}
+              user went.
+
+              Two buttons here, and only two. Restore used to be a third
+              full-width control pinned under this one, which read as a way
+              FORWARD from this screen rather than as the hatch it is. It is a
+              link at the foot of the page now, under the small print. */}
           <Button variant="ghost" fullWidth onPress={() => router.replace('/today')}>
             {t('paywall:intro.later')}
-          </Button>
-          <Button variant="ghost" fullWidth onPress={restore}>
-            {t('paywall:hard.restore')}
           </Button>
         </View>
       }
     >
       <ProPitch
         plan={plan}
+        onRestore={restore}
         onPlanChange={(next) => {
           // Only a CHANGE. Tapping the card that is already selected is a real
           // press and no decision, and counting it would inflate the one figure
@@ -135,10 +138,6 @@ export default function IntroPaywall() {
           setPlan(next)
         }}
       />
-
-      <Text variant="caption" className="text-center text-faint">
-        {t('paywall:intro.laterNote')}
-      </Text>
     </Screen>
   )
 }

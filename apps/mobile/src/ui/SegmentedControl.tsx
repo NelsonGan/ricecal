@@ -12,7 +12,15 @@ export type SegmentedOption<T extends string> = {
 
 export type SegmentedControlProps<T extends string> = {
   options: readonly SegmentedOption<T>[]
-  value: T
+  /**
+   * `undefined` draws the track with NOTHING raised in it.
+   *
+   * A control that always has a segment selected cannot ask a question — the
+   * first option is already an answer, and onboarding's sex question was
+   * answered "female" for everybody who did not read it. Undefined is how a
+   * caller says the question is still open.
+   */
+  value: T | undefined
   onChange: (value: T) => void
   /** Read out before the segment labels. */
   accessibilityLabel?: string

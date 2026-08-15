@@ -109,8 +109,15 @@ export type Events = {
    * remembering to add the tenth event when a tenth screen appears.
    */
   'Onboarding Step Completed': { step: string; step_number: number }
-  /** The profile write landed. Everything before this is a stranger. */
-  'Onboarding Completed': { plan_direction: PlanDirection }
+  /**
+   * The profile write landed. Everything before this is a stranger.
+   *
+   * `referral_source` is on the event as well as on the person, because the
+   * question "which channel produces accounts that finish" is a breakdown of
+   * this event and cannot be answered by a property that only exists on the
+   * profile. It is one of a fixed list of platforms, not free text.
+   */
+  'Onboarding Completed': { plan_direction: PlanDirection; referral_source: string }
   /** The email was accepted and the link sent. The other half is `Signed In`. */
   'Login Link Requested': NoProps
   'Signed In': { method: SignInMethod; is_new_account: boolean }
@@ -283,7 +290,11 @@ export type PersonProps = {
    * Typed, that mismatch is a compile error.
    */
   activity_level?: ActivityLevel
-  food_styles?: string[]
+  /**
+   * Which of a fixed list of platforms brought this account in. Free text is
+   * deliberately not offered — "somewhere else" is the escape, and it keeps
+   * this a breakdown rather than a tag cloud.
+   */
   referral_source?: string
   /** The store the account reads movement from, or null once disconnected. */
   health_provider?: string | null

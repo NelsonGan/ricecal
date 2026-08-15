@@ -6,7 +6,16 @@ import { View } from 'react-native'
 import { track } from '@/lib/analytics'
 import { Button, Icon, type IconProps, Screen, Text } from '@/ui'
 
-const MASCOT = require('../../assets/brand/mascot.png')
+/**
+ * The app's own icon, not the mascot.
+ *
+ * The mascot is a character and the first screen is an introduction to a
+ * PRODUCT: the thing a user is about to install on their home screen is this
+ * square, and showing it here is what makes the icon they tap tomorrow
+ * recognisable. It carries its own background, so it is clipped to the same
+ * corner radius the platform gives it.
+ */
+const LOGO = require('../../assets/icon.png')
 
 /**
  * 01 WELCOME
@@ -79,7 +88,11 @@ export default function Welcome() {
       }
     >
       <View className="items-center gap-4">
-        <Image source={MASCOT} style={{ width: 112, height: 112 }} contentFit="contain" />
+        <Image
+          source={LOGO}
+          style={{ width: 104, height: 104, borderRadius: 24 }}
+          contentFit="cover"
+        />
         <Text variant="displayMd" className="text-center">
           {t('welcome.title')}
         </Text>

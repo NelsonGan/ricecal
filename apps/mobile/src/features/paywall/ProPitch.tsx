@@ -6,9 +6,17 @@ import type { Plan } from '@/data'
 import { usePlanPrices } from '@/data'
 import { FactRow } from '@/features/onboarding'
 import { PlanPicker } from '@/features/shared'
-import { Card, Icon, type IconProps, Text } from '@/ui'
+import { Button, Card, Icon, type IconProps, Text } from '@/ui'
 
-const MASCOT = require('../../../assets/brand/mascot.png')
+/**
+ * The app's icon, not the mascot.
+ *
+ * The mascot is a character; this screen is asking somebody to buy a PRODUCT,
+ * and the square at the top of it should be the one they are about to keep on
+ * their home screen. It is the same swap the welcome screen made, for the same
+ * reason, and the two are the first and last screens of the flow.
+ */
+const LOGO = require('../../../assets/icon.png')
 
 /**
  * Everything Pro includes, in the order somebody would meet it.
@@ -45,18 +53,34 @@ const FEATURES = [
 export type ProPitchProps = {
   plan: Plan
   onPlanChange: (plan: Plan) => void
+  /**
+   * Restoring a purchase, as a LINK at the end of the page rather than a button
+   * in the footer.
+   *
+   * Only the onboarding paywall passes it, and the placement is the point.
+   * Pinned under "Maybe later" it was a third full-width control in a stack of
+   * three, which made "Restore purchase" look like one of the ways forward from
+   * this screen — it is not, it is the escape hatch for somebody who has
+   * already paid on another phone. Under the small print it is where every
+   * other app puts it, and the two people a month who need it know to scroll.
+   *
+   * The standing paywall keeps its footer button: it is reached from a refused
+   * tap rather than from a flow, and somebody arriving there having already
+   * paid is a likelier visitor.
+   */
+  onRestore?: () => void
 }
 
 /**
  * The sales half of both paywall screens.
  *
- * Shared because they were diverging: two files with the same mascot, the same
- * perks and the same plan picker, and a change to one silently made the other
- * the old version. What differs between them is how you LEAVE — the onboarding
- * one offers "Maybe later", the standing one has a back chevron — so that is
- * what stays in the screens.
+ * Shared because they were diverging: two files with the same mark at the top,
+ * the same perks and the same plan picker, and a change to one silently made
+ * the other the old version. What differs between them is how you LEAVE — the
+ * onboarding one offers "Maybe later", the standing one has a back chevron —
+ * so that is what stays in the screens.
  */
-export function ProPitch({ plan, onPlanChange }: ProPitchProps) {
+export function ProPitch({ plan, onPlanChange, onRestore }: ProPitchProps) {
   const { t } = useTranslation('paywall')
   const { data: prices } = usePlanPrices()
 
@@ -72,7 +96,11 @@ export function ProPitch({ plan, onPlanChange }: ProPitchProps) {
   return (
     <>
       <View className="items-center gap-2.5">
-        <Image source={MASCOT} style={{ width: 72, height: 72 }} contentFit="contain" />
+        <Image
+          source={LOGO}
+          style={{ width: 76, height: 76, borderRadius: 18 }}
+          contentFit="cover"
+        />
         <Text variant="title" className="text-center">
           {t('hard.title')}
         </Text>
@@ -106,6 +134,14 @@ export function ProPitch({ plan, onPlanChange }: ProPitchProps) {
         <Text variant="caption" className="text-center text-faint">
           {smallPrint}
         </Text>
+
+        {onRestore ? (
+          // `self-center` because `Button` sets `self-start` on its own
+          // container, and align-self beats the column's align-items.
+          <Button variant="ghost" size="sm" className="self-center" onPress={onRestore}>
+            {t('hard.restore')}
+          </Button>
+        ) : null}
       </View>
     </>
   )

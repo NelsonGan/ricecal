@@ -95,6 +95,13 @@ largest drop is expected, and `Sign In Failed { reason: 'cancelled' }` is the
 half of it that is invisible everywhere else — closing Apple's own sheet throws
 nothing and writes nothing.
 
+`Onboarding Completed` carries `referral_source` as well as setting it on the
+person, and the duplication is deliberate: "which channel produces accounts that
+FINISH" is a breakdown of this event, and a property that only ever exists on
+the profile could answer it only by joining back to one. It is one of a fixed
+list of platforms — the grid on the source step — rather than free text, which
+is what keeps it a breakdown instead of a tag cloud.
+
 **The habit.** `Log Sheet Opened` → `Meal Logged`, broken down by `method`. The
 two scan paths add `Meal Scan Completed`, which is where `tier` lives: how often
 the catalogue actually answers rather than being guessed past. `Entry Deleted`

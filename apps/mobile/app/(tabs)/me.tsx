@@ -214,6 +214,15 @@ export default function MeScreen() {
           }
           onPress={() => router.push('/settings/preferences')}
         />
+        {/* The tour's permanent home.
+            It is offered once on Today, as a toast that dismisses itself — so
+            somebody who looked away has no other way back to it, and "once" is
+            only an acceptable rule because this row exists. */}
+        <SettingRow
+          icon={{ set: 'system', name: 'lightbulb' }}
+          title={t('profile:home.tutorial')}
+          onPress={() => router.push('/tutorial')}
+        />
         {/* A sheet rather than a route, because there is no help centre in the
             app: the row explains where support actually happens and opens
             Discord. It pointed at the preferences screen, which is the row
@@ -228,9 +237,19 @@ export default function MeScreen() {
 
       {/* Small and centred rather than a full-width control at the foot of the
           screen. Signing out is the least likely thing anyone came here to do,
-          and at button size it read as the page's main action. */}
-      <View className="items-center">
-        <Button variant="ghost" size="sm" onPress={() => setConfirmSignOut(true)}>
+          and at button size it read as the page's main action.
+
+          `self-center` on the BUTTON rather than `items-center` on the row:
+          `Button` sets `self-start` on its own container, and align-self beats
+          a parent's align-items — so this sat against the left gutter for as
+          long as the sentence above claimed it was centred. */}
+      <View>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="self-center"
+          onPress={() => setConfirmSignOut(true)}
+        >
           {t('profile:home.signOut')}
         </Button>
       </View>
