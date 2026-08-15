@@ -15,6 +15,8 @@ const tones = {
     label: 'text-hibiscus-ink',
   },
   water: { fill: 'bg-water-soft', slab: 'bg-water-soft-line', label: 'text-water-ink' },
+  /** Dietary fat, and only that: the macro trio is kaya, hibiscus, teh everywhere. */
+  teh: { fill: 'bg-teh-soft', slab: 'bg-teh-soft-line', label: 'text-teh-ink' },
   track: { fill: 'bg-track', slab: 'bg-line-strong', label: 'text-heading' },
 } as const
 

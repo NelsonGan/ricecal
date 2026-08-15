@@ -100,12 +100,16 @@ module.exports = {
         teh: {
           DEFAULT: role('teh'),
           slab: role('teh-slab'),
+          soft: role('teh-soft'),
+          'soft-line': role('teh-soft-line'),
+          ink: role('teh-ink'),
         },
 
         'on-pandan': role('on-pandan'),
         'on-hibiscus': role('on-hibiscus'),
         'on-kaya': role('on-kaya'),
         'on-water': role('on-water'),
+        'on-teh': role('on-teh'),
       },
       // One family per weight. React Native does not synthesise weights from a
       // single file the way a browser does, so `font-display` and `font-body`

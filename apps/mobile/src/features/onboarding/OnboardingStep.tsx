@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
-import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { track } from '@/lib/analytics'
-import { Button, type ButtonVariant, Screen, StepProgress, type StepProgressTone, Text } from '@/ui'
+import { Button, type ButtonVariant, Screen, type StepProgressTone, Text } from '@/ui'
+import { StepHeader } from './StepHeader'
 import { type OnboardingStepName, stepNumber, TOTAL_STEPS } from './steps'
 
 /**
@@ -43,6 +43,12 @@ export type OnboardingStepProps = {
   /** The quiet second action under the CTA. */
   secondaryLabel?: string
   onSecondary?: () => void
+  /**
+   * The chevron beside the progress bar. Omitted where there is nothing behind
+   * this screen worth returning to — the two permissions after the account, which
+   * replaced their predecessor and would otherwise walk back into a question.
+   */
+  onBack?: () => void
 }
 
 /**
@@ -66,8 +72,8 @@ export function OnboardingStep({
   primaryDisabled,
   secondaryLabel,
   onSecondary,
+  onBack,
 }: OnboardingStepProps) {
-  const { t } = useTranslation('common')
   const step = stepNumber(name)
 
   /**
@@ -108,14 +114,10 @@ export function OnboardingStep({
         </View>
       }
     >
-      {/* Announced rather than shown: the design leaves the marks to speak for
-          themselves, and a screen reader has nothing to go on but a percentage. */}
-      <StepProgress
-        total={TOTAL_STEPS}
-        current={step}
-        tone={accent}
-        accessibilityLabel={t('a11y.step', { current: step, total: TOTAL_STEPS })}
-      />
+      {/* The bar is announced rather than captioned: the design leaves the
+          marks to speak for themselves, and a screen reader has nothing to go
+          on but a percentage. */}
+      <StepHeader step={step} total={TOTAL_STEPS} tone={accent} onBack={onBack} />
 
       <View className="gap-2 pt-4">
         <Text variant="title">{title}</Text>

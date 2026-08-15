@@ -9,7 +9,15 @@ import { Tappable } from './Tappable'
 import { Text } from './Text'
 
 export type AppBarProps = {
-  title: string
+  /**
+   * The screen's name. OPTIONAL, for a bar that is only a back affordance.
+   *
+   * The sign-in screen is the one that needs it: it carries its own large
+   * heading a few points below, and repeating that heading in the bar would say
+   * the same words twice on a screen with three words on it. Left out, the bar
+   * is a chevron and nothing else, and a trailing `action` still keeps its edge.
+   */
+  title?: string
   /** Back affordance. Omit on a root screen. */
   onBack?: () => void
   /** Screen-reader name for the back button. Pass translated copy. */
@@ -172,10 +180,15 @@ export function AppBar({
             {title}
           </Text>
         </Tappable>
-      ) : (
+      ) : title ? (
         <Text variant="subtitle" className="flex-1" numberOfLines={titleLines}>
           {title}
         </Text>
+      ) : (
+        /* Untitled: the space is still claimed, so a trailing action stays on
+           the right edge and the chevron stays on the left rather than the two
+           meeting in the middle. */
+        <View className="flex-1" />
       )}
 
       {action ?? (onBack ? <View className="w-[44px]" /> : null)}

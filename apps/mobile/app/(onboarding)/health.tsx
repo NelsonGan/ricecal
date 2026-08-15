@@ -52,7 +52,6 @@ function HealthStep() {
   const toast = useToast()
 
   const connect = useConnectHealth()
-  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
 
   /**
    * What this device will allow, asked once on mount.
@@ -103,10 +102,12 @@ function HealthStep() {
    */
   const waiting = connect.isPaused
 
+  // No `onProgress`. Nothing on this screen reports the backfill any more, and
+  // a callback whose only effect is a setState nobody renders is a re-render
+  // per day read.
   const attempt = (provider: ProviderId) => {
-    setProgress(null)
     connect.mutate(
-      { provider, onProgress: setProgress },
+      { provider },
       {
         onSuccess: (result) => {
           // Zero days after a granted-looking connect is the only signal iOS
@@ -145,32 +146,24 @@ function HealthStep() {
       secondaryLabel={unusable ? undefined : t('onboarding:health.later')}
       onSecondary={unusable ? undefined : next}
     >
+      {/* Three words each, and no bodies under them.
+          The rows used to carry a second line apiece ("what you burned moving",
+          "daily habit, not a target") on a screen whose whole job is to get a
+          permission sheet in front of somebody. What is being read is a list,
+          and a list wants to be scanned. The bodies still exist for the
+          Activity tab's panel, which is a screen somebody CAME to read. */}
       <Card title={t('activity:connect.readTitle')}>
         <View className="gap-3.5">
           <FactRow
             icon={{ set: 'body', name: 'flame-burn' }}
             title={t('activity:connect.energy')}
-            body={t('activity:connect.energyBody')}
           />
-          <FactRow
-            icon={{ set: 'body', name: 'footprints' }}
-            title={t('activity:connect.steps')}
-            body={t('activity:connect.stepsBody')}
-          />
+          <FactRow icon={{ set: 'body', name: 'footprints' }} title={t('activity:connect.steps')} />
           <FactRow
             icon={{ set: 'body', name: 'stopwatch' }}
             title={t('activity:connect.workouts')}
-            body={t('activity:connect.workoutsBody')}
           />
         </View>
-
-        {/* The promise, kept beside the permission rather than in a settings
-            screen nobody opens. It is literally true: the HealthKit request
-            passes an empty `toShare` and the Health Connect one asks only to
-            read. */}
-        <Text variant="meta" className="pt-4">
-          {t('activity:connect.privacy')}
-        </Text>
       </Card>
 
       {/* Only when the store cannot be used. The reason is a real sentence with
@@ -202,14 +195,16 @@ function HealthStep() {
         </Card>
       ) : null}
 
+      {/* NOTHING ABOUT THE READ ITSELF.
+          This line used to become "Reading your history…" and then "3 of 7"
+          while the backfill ran, which turned a permission screen into a
+          progress screen: the user has already said yes by then, the wait is a
+          week of days rather than a year, and there is nothing on the far side
+          of it but the next step. It is a background job as far as this screen
+          is concerned. Offline is the one exception, because there the
+          mutation is PAUSED and the button genuinely will not do anything. */}
       <Text variant="meta" className="px-0.5 text-center">
-        {waiting
-          ? t('onboarding:health.offline')
-          : connect.isPending && progress
-            ? t('activity:connect.progress', progress)
-            : connect.isPending
-              ? t('activity:connect.connecting')
-              : t('onboarding:health.reassurance')}
+        {waiting ? t('onboarding:health.offline') : t('onboarding:health.reassurance')}
       </Text>
     </OnboardingStep>
   )

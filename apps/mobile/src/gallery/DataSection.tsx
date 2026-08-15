@@ -106,6 +106,15 @@ export function DataSection() {
           />
           <StatTile className="flex-1" tone="kaya" label="Goal date" value="18 Nov" />
         </View>
+        {/* The macro trio, in the three tones the rest of the app pins them to:
+            carbs kaya, protein hibiscus, fat teh. `teh` is the newest of the
+            soft fills and the only one with a single caller, so it is here to
+            be looked at in both modes rather than only inside onboarding. */}
+        <View className="flex-row gap-3 px-card pb-card">
+          <StatTile className="flex-1" tone="kaya" label="Carbs" value="275g" />
+          <StatTile className="flex-1" tone="hibiscus" label="Protein" value="78g" />
+          <StatTile className="flex-1" tone="teh" label="Fat" value="53g" />
+        </View>
       </Card>
 
       <Card title="List rows" flush>

@@ -119,15 +119,19 @@ export const paywall = {
    * The paywall at the end of onboarding.
    *
    * Distinct copy from `hard` because the moment is different: this is the
-   * first thing after the tour, addressed to somebody who has just finished
-   * setting up and has not seen the app yet. "Later" is a real option and is
-   * worded as one, not as a dismissal.
+   * first thing after the two permissions, addressed to somebody who has just
+   * finished setting up and has not seen the app yet. "Later" is a real option
+   * and is worded as one, not as a dismissal.
+   *
+   * There is no note under the buttons any more. It read "You can look around
+   * first. Logging a meal needs Pro." — an apology for the button above it, and
+   * a second statement of the offer to somebody who has just read the whole
+   * page. "Maybe later" says what it does.
    */
   intro: {
     title: 'You are all set. Ready to log?',
     body: 'Pro is what turns a photo of your plate into a logged meal.',
     later: 'Maybe later',
-    laterNote: 'You can look around first. Logging a meal needs Pro.',
   },
 
   reminder: {

@@ -79,7 +79,7 @@ it('turns the three meal reminders on when permission is granted', async () => {
     { meal: 'lunch', reminder_enabled: true },
     { meal: 'dinner', reminder_enabled: true },
   ])
-  expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/tutorial')
+  expect(mockReplace).toHaveBeenCalledWith('/paywall/intro')
 })
 
 it('schedules nothing when the user says no, and still moves on', async () => {
@@ -88,7 +88,7 @@ it('schedules nothing when the user says no, and still moves on', async () => {
 
   await user.press(screen.getByText('Enable notifications'))
 
-  await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/tutorial'))
+  await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/paywall/intro'))
   expect(mockUpdateMealTime).not.toHaveBeenCalled()
 })
 
@@ -98,7 +98,7 @@ it('carries on when the write fails', async () => {
 
   await user.press(screen.getByText('Enable notifications'))
 
-  await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/tutorial'))
+  await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/paywall/intro'))
 })
 
 /**
@@ -115,7 +115,7 @@ it('does not wait on a write that will never settle', async () => {
 
   await user.press(screen.getByText('Enable notifications'))
 
-  await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/tutorial'))
+  await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/paywall/intro'))
   // Started all the same: the optimistic update has flipped the cache, so
   // `useReminderSync` schedules from it the moment Today mounts.
   expect(mockUpdateMealTime).toHaveBeenCalledWith({ meal: 'breakfast', reminder_enabled: true })
@@ -128,5 +128,5 @@ it('asks for nothing when the ask is declined outright', async () => {
 
   expect(mockEnsure).not.toHaveBeenCalled()
   expect(mockUpdateMealTime).not.toHaveBeenCalled()
-  expect(mockReplace).toHaveBeenCalledWith('/(onboarding)/tutorial')
+  expect(mockReplace).toHaveBeenCalledWith('/paywall/intro')
 })
