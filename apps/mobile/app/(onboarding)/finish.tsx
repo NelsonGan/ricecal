@@ -79,7 +79,6 @@ function Flush({ draft }: { draft: CompleteDraft }) {
         weightKg: draft.weightKg,
         targetWeightKg: draft.targetWeightKg,
         activity: draft.activity,
-        foodStyles: draft.foodStyles,
         referralSource: draft.referralSource,
       },
       {
@@ -100,10 +99,22 @@ function Flush({ draft }: { draft: CompleteDraft }) {
             onboarded_at: profile.onboarded_at ?? new Date().toISOString(),
             plan_direction: direction,
             activity_level: draft.activity,
-            food_styles: draft.foodStyles,
             referral_source: draft.referralSource,
           })
-          track('Onboarding Completed', { plan_direction: direction })
+          /**
+           * The referral source rides on the EVENT as well as on the person.
+           *
+           * As a person property alone it answers "who is here from TikTok"
+           * and nothing about when: it is set at the one moment onboarding
+           * finishes, so a funnel broken down by acquisition channel could
+           * only ever be built by joining back to the profile. On the
+           * completion event it is a breakdown in one click, which is the
+           * whole reason the question is asked.
+           */
+          track('Onboarding Completed', {
+            plan_direction: direction,
+            referral_source: draft.referralSource,
+          })
 
           // Cleared only now. Until the write lands, the draft is the only copy of
           // these answers anywhere.

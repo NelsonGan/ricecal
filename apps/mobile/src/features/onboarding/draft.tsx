@@ -44,7 +44,6 @@ export type OnboardingDraft = {
   weightKg?: number
   targetWeightKg?: number
   activity?: ActivityLevel
-  foodStyles?: string[]
   referralSource?: string
 }
 
@@ -78,7 +77,6 @@ export function isComplete(draft: OnboardingDraft): draft is CompleteDraft {
       draft.weightKg &&
       draft.targetWeightKg &&
       draft.activity &&
-      draft.foodStyles?.length &&
       draft.referralSource,
   )
 }

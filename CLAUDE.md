@@ -157,32 +157,52 @@ local draft rather than the session is what says how far they got. The draft is
 in MMKV and outlives the account it was flushed for, which is why a signed-out
 relaunch starts at the top rather than resuming.
 
-The flow is nine numbered steps plus a welcome and a tour, and it is in two
-halves with the account write between them:
+The flow is eight numbered steps plus a welcome, and it is in two halves with
+the account write between them:
 
 ```
 welcome                          the pitch, and the fork for a returning user
-1 about   2 activity  3 food style  4 source     the questions, drafted locally
-5 calculating                    a beat, then it replaces itself with…
-6 target                         the budget, worked out on the phone
-7 account       (auth)/sign-in, carrying the same bar through the params
+1 about   2 activity  3 source    the questions, drafted locally
+4 calculating                    a beat, then it replaces itself with…
+5 target                         the budget, worked out on the phone
+6 account       (auth)/sign-in, carrying the same bar through the params
   finish                         the one write: profile, first weigh-in, onboarded_at
-8 health        connect the store — a permission that GIVES rather than asks
-9 notifications turns the three meal reminders on, not just the OS permission
-  tutorial                       four cards, then…
+7 health        connect the store — a permission that GIVES rather than asks
+8 notifications turns the three meal reminders on, not just the OS permission
   paywall/intro                  the offer, with "Maybe later" leading to Today
 ```
 
-The paywall is the last thing rather than a step of its own, and BOTH exits
-from the tour lead to it. It used to fork — one button to Today, the other to a
-read-only preview of the diary — and the preview is gone: "later" now lands on
-the real app, where everything reads and only writing an entry is behind the
-wall. A mock of the app was a worse answer than the app.
+**Two screens have left this list.** "How do you usually makan" wrote a
+`profiles.food_styles` array that ranked nothing — search is the Worker's, and
+its prior is locale, popularity and verification — so it was a question whose
+answer changed nothing standing between a user and their diary. And the TOUR is
+no longer part of the flow at all: it was four cards of prose read by somebody
+who had been answering questions for two minutes and had still not seen the app.
+It lives at `/tutorial` now, offered once from Today as a toast a beat after the
+diary appears (`features/tutorial`), and permanently from a row in Me. Nobody
+reads a manual for a thing they have not touched.
 
-Everything from `finish` onwards **replaces** its predecessor and has the edge
-swipe turned off in `(onboarding)/_layout.tsx`. The stack under those screens is
-still the questions, so a back gesture on "Connect Apple Health" walked a user
-who had just made an account into "Where did you hear about us?".
+The paywall is the last thing rather than a step of its own. "Later" lands on
+the real app, where everything reads and only writing an entry is behind the
+wall; there used to be a read-only preview of the diary behind that button, and
+a mock of the app was a worse answer than the app.
+
+**NOTHING IN THIS FLOW HAS AN EDGE SWIPE.** It was off from `finish` onwards
+already, because everything after the account REPLACES its predecessor: the
+stack under "Connect Apple Health" is still a question from before the account
+existed, so a gesture there walked a minute-old account back into "Where did you
+hear about us?". The questions kept it until the same thing turned up one step
+earlier — the account screen is in `(auth)`, so the flow crosses out of the
+group and back, and a swipe after signing in unwound the ROOT stack rather than
+the questions. So `(onboarding)`, `(auth)` and the two group entries in the root
+stack all carry `gestureEnabled: false`, and going back is `StepHeader`'s
+chevron, which each screen points where it belongs.
+
+The first question also answers NOTHING for the user. Every control on `about`
+starts empty and Continue is dead until all five are filled: it used to open on
+164 cm, 65 kg, 29, female, and every one of those is a real answer as far as
+`compute_targets()` is concerned, so tapping straight through produced a calorie
+budget worked out for somebody else with nothing on screen to say so.
 
 The two permissions sit AFTER the account because both of them need one — a
 health connection is a row keyed by user, and enabling a meal reminder is a
@@ -191,10 +211,10 @@ block: a refusal, an unusable store or a failed write says so in a toast and
 carries on, because there is a whole tab for trying again and no version of a
 permission screen should stand between a new account and their diary.
 
-The nine step numbers come from `ONBOARDING_STEPS` in
-`features/onboarding/steps.ts` and nowhere else. Written per screen they lasted
-until a screen was inserted: the questions said "of 4" while the permissions
-after them said "of 9", and nothing about that failed to typecheck.
+The step numbers come from `ONBOARDING_STEPS` in `features/onboarding/steps.ts`
+and nowhere else. Written per screen they lasted until a screen was inserted:
+the questions said "of 4" while the permissions after them said "of 9", and
+nothing about that failed to typecheck. Removing one is now one line there.
 
 `app/_layout.tsx` stacks the providers, and the nesting is load-bearing:
 `ThemeProvider` above the navigator so every screen and Modal inherits the

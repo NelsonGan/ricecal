@@ -48,6 +48,10 @@
     --color-on-water: 255 255 255;
     --color-teh: 201 139 94;
     --color-teh-slab: 166 108 67;
+    --color-teh-soft: 251 240 232;
+    --color-teh-soft-line: 238 217 198;
+    --color-teh-ink: 143 92 54;
+    --color-on-teh: 255 255 255;
   }
   /* --- end generated --- */
 }

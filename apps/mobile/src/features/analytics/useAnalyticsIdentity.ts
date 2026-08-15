@@ -10,8 +10,8 @@ import { setPersonProps, setSuperProps } from '@/lib/analytics'
  * moment onboarding lands. Two reasons, and the second is the load-bearing one:
  *
  * 1. A profile is edited afterwards — the activity level on the goals screen,
- *    the food styles in settings — and a segment built on an answer from a
- *    year ago is a segment about somebody who no longer exists.
+ *    say — and a segment built on an answer from a year ago is a segment about
+ *    somebody who no longer exists.
  * 2. **An account that onboarded on another handset has never run that code.**
  *    Signing in on a new phone, or reinstalling, gives Mixpanel a fresh device
  *    with no profile properties at all, and there is no second onboarding to
@@ -33,9 +33,9 @@ export function useAnalyticsIdentity(): void {
    * What was last sent, so an unchanged profile refetching does not resend it.
    *
    * A signature rather than a dependency list, because `profile` is a new
-   * object on every refetch and `food_styles` is an array inside it — either
-   * would fire this on every window focus for the life of the session, and
-   * Mixpanel's people API is a network call apiece.
+   * object on every refetch — a reference comparison would fire this on every
+   * window focus for the life of the session, and Mixpanel's people API is a
+   * network call apiece.
    */
   const lastPerson = useRef<string | undefined>(undefined)
 
@@ -53,7 +53,9 @@ export function useAnalyticsIdentity(): void {
       // property: they have to agree on the vocabulary or the breakdown splits
       // in half. `PersonProps` types this so they cannot drift again.
       activity_level: profile.activity_level ? fromDbActivity(profile.activity_level) : undefined,
-      food_styles: profile.food_styles ?? undefined,
+      // No `food_styles`. Onboarding stopped asking, so the column is empty on
+      // every account made since — and a property that only some accounts can
+      // ever carry is a breakdown that quietly means "signed up before August".
       referral_source: profile.referral_source ?? undefined,
     }
     // No `plan_direction` here. It needs the current weight beside the target,

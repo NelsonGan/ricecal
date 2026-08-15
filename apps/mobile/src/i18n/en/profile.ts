@@ -34,6 +34,8 @@ export const profile = {
     healthOff: 'Not connected',
     units: 'Units and language',
     unitsValue: '{{units}}, {{language}}',
+    /** The four-card tour, which is offered once on Today and lives here after. */
+    tutorial: 'How RiceCal works',
     help: 'Help centre',
     signOut: 'Sign out',
   },

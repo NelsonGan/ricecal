@@ -4,10 +4,26 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { useSession } from '@/data'
-import { stepNumber, TOTAL_STEPS, useOnboardingDraft } from '@/features/onboarding'
+import { StepHeader, stepNumber, TOTAL_STEPS, useOnboardingDraft } from '@/features/onboarding'
 import { track } from '@/lib/analytics'
 import { computeTargets, goalDate } from '@/lib/nutrition'
-import { Button, CalorieRing, Screen, StatTile, StepProgress, Text } from '@/ui'
+import type { StatTileTone } from '@/ui'
+import { Button, CalorieRing, Card, Icon, type IconProps, Screen, StatTile, Text } from '@/ui'
+
+/**
+ * The three macros, in the app's own colours.
+ *
+ * Kaya, hibiscus, teh — the same triple as `MacroBars` on Today, the entry
+ * screen and the weekly report. This screen is the FIRST place a user meets
+ * them, so getting it wrong here would teach the colour and then contradict it
+ * on the next screen. That is what the `teh` tone in `StatTile` is for; before
+ * it, fat had no soft surface anywhere in the system.
+ */
+const MACROS = [
+  { key: 'carbs', tone: 'kaya', icon: { set: 'food', name: 'carb-block' } },
+  { key: 'protein', tone: 'hibiscus', icon: { set: 'food', name: 'protein-block' } },
+  { key: 'fat', tone: 'teh', icon: { set: 'food', name: 'fat-block' } },
+] as const satisfies ReadonlyArray<{ key: string; tone: StatTileTone; icon: IconProps }>
 
 /**
  * 06 YOUR TARGET
@@ -24,6 +40,16 @@ import { Button, CalorieRing, Screen, StatTile, StepProgress, Text } from '@/ui'
  * Nothing on this screen waits for the network, which is the point of showing it
  * before asking for an email: the user sees what they get before being asked for
  * anything.
+ *
+ * WHAT WAS TAKEN OFF IT
+ *
+ * Two sentences, and both were the app talking about itself rather than about
+ * the plan. "That is about 3 meals and a snack" divided the budget by a made-up
+ * 600 and presented the quotient as advice; "We will nudge, never nag" is a
+ * promise about notifications on a screen showing a calorie figure. What is left
+ * is the number, what it is made of, and where it goes — the goal weight and the
+ * date it lands on, as tiles rather than as prose, because they are figures and
+ * a figure reads faster in a tile than in a sentence.
  */
 export default function TargetStep() {
   const { t } = useTranslation(['onboarding', 'common'])
@@ -53,9 +79,7 @@ export default function TargetStep() {
   // cannot describe different plans.
   const reachedOn = goalDate(body, targetWeightKg, new Date())
 
-  // Roughly 600 kcal a meal is what a Malaysian plate runs to, so the budget
-  // divided by that is the honest answer to "how much food is this?".
-  const meals = Math.max(2, Math.round(targets.kcal / 600))
+  const grams = { carbs: targets.carbs, protein: targets.protein, fat: targets.fat }
 
   /**
    * On to the account, which is the next mark on the bar.
@@ -88,8 +112,8 @@ export default function TargetStep() {
   /**
    * Back to the first question rather than into an editor.
    *
-   * Every answer is already in the draft, so walking the four screens again is
-   * four taps with every choice made — and it is the only route that can change
+   * Every answer is already in the draft, so walking the three screens again is
+   * three taps with every choice made — and it is the only route that can change
    * this number, since the number IS those answers.
    *
    * `dismissTo`, and the choice is load-bearing. `about` is already on the stack
@@ -98,15 +122,25 @@ export default function TargetStep() {
    * one — but in expo-router 57 it pushes unless the target is already the
    * current screen, which put a second `about` ON TOP of `target`: the back
    * swipe from "A few basics" then went FORWARD in time to the budget, and
-   * walking the questions again stacked another four. `dismissTo` pops to the
+   * walking the questions again stacked another three. `dismissTo` pops to the
    * href, and falls back to replacing this screen if it is not on the stack —
    * which is what a deep link straight to `target` would hit.
    */
   const revise = () => router.dismissTo('/(onboarding)/about')
 
+  /**
+   * The chevron goes to the LAST QUESTION, not to the screen before this one.
+   *
+   * The calculating beat replaced itself on the way here, so what is underneath
+   * is `source` — and unwinding to it is what a back gesture would have done if
+   * this flow still had one. `dismissTo` rather than `back()` for the same
+   * reason `revise` uses it: a deep link straight to this route has nothing to
+   * pop, and `back()` there is answered by whatever navigator is listening.
+   */
+  const goBack = () => router.dismissTo('/(onboarding)/source')
+
   return (
     <Screen
-      scroll={false}
       footer={
         <View className="gap-1.5">
           <Button fullWidth onPress={accept}>
@@ -118,58 +152,68 @@ export default function TargetStep() {
         </View>
       }
     >
-      <StepProgress
-        total={TOTAL_STEPS}
-        current={stepNumber('target')}
-        tone="pandan"
-        accessibilityLabel={t('common:a11y.step', {
-          current: stepNumber('target'),
-          total: TOTAL_STEPS,
-        })}
-      />
+      <StepHeader step={stepNumber('target')} total={TOTAL_STEPS} tone="pandan" onBack={goBack} />
 
-      <View className="flex-1 items-center justify-center gap-5">
+      <View className="items-center gap-2 pt-2">
         <CalorieRing
           value={targets.kcal}
           goal={targets.kcal}
-          size={186}
+          size={196}
           // A full ring here is the plan, not a day gone over, so the automatic
           // "you are at 100%" kaya would say the wrong thing.
           tone="pandan"
           centerLabel={targets.kcal.toLocaleString()}
           centerCaption={t('target.perDay')}
         />
-
         <Text variant="screenTitle" className="text-center">
-          {t('target.headline', { meals })}
+          {t('target.title')}
         </Text>
+      </View>
 
-        <View className="w-full flex-row gap-2.5">
-          <StatTile
-            className="flex-1"
-            label={t('target.carbs')}
-            value={t('common:unit.grams', { value: targets.carbs })}
-          />
-          <StatTile
-            className="flex-1"
-            label={t('target.protein')}
-            value={t('common:unit.grams', { value: targets.protein })}
-          />
-          <StatTile
-            className="flex-1"
-            label={t('target.fat')}
-            value={t('common:unit.grams', { value: targets.fat })}
-          />
+      <Card title={t('target.splitTitle')}>
+        <View className="flex-row gap-2.5">
+          {MACROS.map((macro) => (
+            <StatTile
+              key={macro.key}
+              className="flex-1"
+              tone={macro.tone}
+              icon={<Icon {...macro.icon} size={26} />}
+              label={t(`target.${macro.key}`)}
+              value={t('common:unit.grams', { value: grams[macro.key] })}
+            />
+          ))}
         </View>
+      </Card>
 
-        <Text className="text-center text-[15px] leading-[23px]">
-          {reachedOn
-            ? t('target.footnote', {
-                weight: targetWeightKg.toFixed(1),
-                date: format(reachedOn, 'd MMMM'),
-              })
-            : t('target.footnoteMaintain', { weight: weightKg.toFixed(1) })}
-        </Text>
+      {/* Where the plan is going, as two figures rather than a sentence.
+          A maintain plan has no date to reach, so the second tile says what it
+          is doing instead of showing a dash — "steady" is the answer, not a
+          missing measurement. */}
+      <View className="flex-row gap-2.5">
+        <StatTile
+          className="flex-1"
+          tone="pandan"
+          icon={<Icon set="body" name="target" size={26} />}
+          label={t('target.goalWeight')}
+          value={`${targetWeightKg.toFixed(1)} ${t('common:unit.kg')}`}
+        />
+        <StatTile
+          className="flex-1"
+          tone="water"
+          // Two elements rather than one with computed props: `IconProps` is a
+          // mapped union, so a `set` and a `name` chosen by separate ternaries
+          // widen to "any set, any name" and stop being checked against each
+          // other.
+          icon={
+            reachedOn ? (
+              <Icon set="system" name="calendar" size={26} />
+            ) : (
+              <Icon set="body" name="plateau" size={26} />
+            )
+          }
+          label={reachedOn ? t('target.goalBy') : t('target.maintain')}
+          value={reachedOn ? format(reachedOn, 'd MMM yyyy') : t('target.maintainValue')}
+        />
       </View>
     </Screen>
   )
