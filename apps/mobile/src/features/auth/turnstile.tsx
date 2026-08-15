@@ -563,7 +563,27 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
               onHttpError={() => loadFailed('http-error')}
               javaScriptEnabled
               domStorageEnabled
-              originWhitelist={['https://*']}
+              /**
+               * `about:` IS LOAD-BEARING, AND LEAVING IT OUT BREAKS THE WHOLE
+               * WIDGET SILENTLY.
+               *
+               * Turnstile builds its challenge frame as an iframe with a
+               * `srcdoc` attribute, which the WebView sees as a navigation to
+               * `about:srcdoc`. `originWhitelist` governs iframe navigations as
+               * well as top-level ones, so a list of `https://*` alone does not
+               * merely ignore that frame — react-native-webview refuses to load
+               * it internally and hands the URL to the OS instead, which
+               * answers "Unable to open URL: about:srcdoc" in the log and
+               * nothing anywhere else.
+               *
+               * The result is a widget that loads, renders, reports `ready` and
+               * can never produce a token, on a page where every key, hostname
+               * and mode is correct. It cost a day: the symptom is on the
+               * SERVER — Supabase refusing every sign-in for want of a token —
+               * so the search starts in the Cloudflare dashboard, where
+               * everything looks right, because everything there is right.
+               */
+              originWhitelist={['https://*', 'about:*']}
               scrollEnabled={false}
               style={{ flex: 1, backgroundColor: 'transparent' }}
             />
