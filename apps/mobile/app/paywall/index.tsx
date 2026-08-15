@@ -11,7 +11,8 @@ import {
   purchasesAvailable,
   restorePurchases,
 } from '@/data/purchases'
-import { ProPitch } from '@/features/paywall'
+import { ProPitch, trackPurchaseAbandoned, trackPurchaseStarted } from '@/features/paywall'
+import { track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
 import { AppBar, Button, Screen, useToast } from '@/ui'
 
@@ -42,14 +43,19 @@ export default function Paywall() {
       toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
       return
     }
+    trackPurchaseStarted('hard', plan)
     try {
       await purchasePlan(plan)
+      // Nothing is tracked on success: RevenueCat's own webhook reports the
+      // transaction, and it is the only party that knows the store settled it.
+      //
       // The store has confirmed; our own mirror of it has not yet. See
       // `useAwaitEntitlement` — leaving on the store's word alone can put the
       // paywall back in front of somebody who has just paid.
       await awaitEntitlement()
       router.replace({ pathname: '/paywall/welcome', params: { plan } })
     } catch (error) {
+      trackPurchaseAbandoned('hard', plan, error)
       // Closing the store's sheet is not a failure worth apologising for; the
       // user did it deliberately and knows what happened.
       if (isUserCancelled(error)) return
@@ -67,10 +73,12 @@ export default function Paywall() {
 
   const restore = async () => {
     if (!purchasesAvailable()) {
+      track('Restore Requested', { outcome: 'unavailable' })
       toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
       return
     }
     const restored = await restorePurchases()
+    track('Restore Requested', { outcome: restored ? 'restored' : 'nothing' })
     if (!restored) {
       toast.show({ title: t('paywall:hard.nothingToRestore') })
       return
@@ -99,7 +107,16 @@ export default function Paywall() {
         backLabel={t('common:a11y.back')}
       />
 
-      <ProPitch plan={plan} onPlanChange={setPlan} />
+      <ProPitch
+        plan={plan}
+        onPlanChange={(next) => {
+          // Only a CHANGE. Tapping the card that is already selected is a real
+          // press and no decision, and counting it would inflate the one figure
+          // on this screen that is meant to say which plan people move to.
+          if (next !== plan) track('Plan Selected', { screen: 'hard', plan: next })
+          setPlan(next)
+        }}
+      />
     </Screen>
   )
 }

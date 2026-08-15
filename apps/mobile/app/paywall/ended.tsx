@@ -5,6 +5,11 @@ import { View } from 'react-native'
 
 import { dateKey, today, useCurrentWeight, useDayLog, useNutritionRange, useWeighIns } from '@/data'
 import { PurchasesUnavailable, purchasePlan, purchasesAvailable } from '@/data/purchases'
+import {
+  trackPurchaseAbandoned,
+  trackPurchaseStarted,
+  useTrackPaywallShown,
+} from '@/features/paywall'
 import { ItemRow, ScreenTitle, StatRow } from '@/features/shared'
 import { Button, Card, Icon, Screen, Text, useToast } from '@/ui'
 
@@ -27,15 +32,19 @@ export default function TrialEnded() {
 
   const locked = day.entries.slice(0, 2)
 
+  useTrackPaywallShown('ended')
+
   const resume = async () => {
     if (!purchasesAvailable()) {
       toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
       return
     }
+    trackPurchaseStarted('ended', 'yearly')
     try {
       await purchasePlan('yearly')
       router.replace('/today')
     } catch (error) {
+      trackPurchaseAbandoned('ended', 'yearly', error)
       if (error instanceof PurchasesUnavailable) return
       toast.show({
         title: error instanceof Error ? error.message : t('common:action.retry'),

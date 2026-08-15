@@ -5,6 +5,7 @@ import { View } from 'react-native'
 
 import { useSession } from '@/data'
 import { stepNumber, TOTAL_STEPS, useOnboardingDraft } from '@/features/onboarding'
+import { track } from '@/lib/analytics'
 import { computeTargets, goalDate } from '@/lib/nutrition'
 import { Button, CalorieRing, Screen, StatTile, StepProgress, Text } from '@/ui'
 
@@ -65,6 +66,11 @@ export default function TargetStep() {
    * rather than dropping it for one screen in the middle of the flow.
    */
   const accept = () => {
+    // Tracked here rather than through `OnboardingStep`, which this screen does
+    // not use — it draws its own bar around the ring. The step BEFORE it, the
+    // calculating beat, is deliberately not tracked at all: it advances itself
+    // on a timer, so its count could only ever equal the step before it.
+    track('Onboarding Step Completed', { step: 'target', step_number: stepNumber('target') })
     if (session) {
       router.replace('/finish')
       return

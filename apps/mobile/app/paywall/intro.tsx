@@ -11,7 +11,13 @@ import {
   purchasesAvailable,
   restorePurchases,
 } from '@/data/purchases'
-import { ProPitch } from '@/features/paywall'
+import {
+  ProPitch,
+  trackPurchaseAbandoned,
+  trackPurchaseStarted,
+  useTrackPaywallShown,
+} from '@/features/paywall'
+import { track } from '@/lib/analytics'
 import { Button, Screen, Text, useToast } from '@/ui'
 
 /**
@@ -43,6 +49,8 @@ export default function IntroPaywall() {
   const awaitEntitlement = useAwaitEntitlement()
   const [plan, setPlan] = useState<Plan>('yearly')
 
+  useTrackPaywallShown('intro')
+
   const lifetime = plan === 'lifetime'
 
   const start = async () => {
@@ -52,14 +60,18 @@ export default function IntroPaywall() {
       toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
       return
     }
+    trackPurchaseStarted('intro', plan)
     try {
       await purchasePlan(plan)
+      // Nothing on success: RevenueCat reports the transaction itself.
+      //
       // The store has confirmed; our own mirror of it has not yet. See
       // `useAwaitEntitlement` — leaving on the store's word alone can put
       // the paywall back in front of somebody who has just paid.
       await awaitEntitlement()
       router.replace({ pathname: '/paywall/welcome', params: { plan: plan } })
     } catch (error) {
+      trackPurchaseAbandoned('intro', plan, error)
       // Closing the store's sheet is not a failure worth apologising for; the
       // user did it deliberately and knows what happened.
       if (isUserCancelled(error)) return
@@ -78,10 +90,12 @@ export default function IntroPaywall() {
 
   const restore = async () => {
     if (!purchasesAvailable()) {
+      track('Restore Requested', { outcome: 'unavailable' })
       toast.show({ title: t('paywall:hard.notConfigured'), tone: 'warning' })
       return
     }
     const restored = await restorePurchases()
+    track('Restore Requested', { outcome: restored ? 'restored' : 'nothing' })
     if (!restored) {
       toast.show({ title: t('paywall:hard.nothingToRestore') })
       return
@@ -111,7 +125,16 @@ export default function IntroPaywall() {
         </View>
       }
     >
-      <ProPitch plan={plan} onPlanChange={setPlan} />
+      <ProPitch
+        plan={plan}
+        onPlanChange={(next) => {
+          // Only a CHANGE. Tapping the card that is already selected is a real
+          // press and no decision, and counting it would inflate the one figure
+          // on this screen that is meant to say which plan people move to.
+          if (next !== plan) track('Plan Selected', { screen: 'intro', plan: next })
+          setPlan(next)
+        }}
+      />
 
       <Text variant="caption" className="text-center text-faint">
         {t('paywall:intro.laterNote')}

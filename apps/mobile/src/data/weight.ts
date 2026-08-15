@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { track } from '@/lib/analytics'
 import { supabase } from '@/lib/supabase'
 import { today, unwrap, unwrapOne } from './client'
 import { keys } from './keys'
@@ -76,6 +77,14 @@ export function useLogWeight() {
           .single(),
       ),
     onSuccess: () => {
+      // The number itself stays on the phone and in Postgres. What reaches
+      // Mixpanel is that a weigh-in happened, which is the habit; the kilos are
+      // health data and answer nothing a cohort would ask.
+      //
+      // This hook is the TYPED path only — `sync_weight_readings` writes the
+      // ones a scale reports, and a reading that arrived because the app was
+      // opened is not something the user did.
+      track('Weight Logged', {})
       queryClient.invalidateQueries({ queryKey: keys.weighIns(userId) })
       queryClient.invalidateQueries({ queryKey: keys.goals(userId) })
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { type Meal, useSession, useUpdateMealTime } from '@/data'
-import { FactRow, OnboardingStep, stepNumber, TOTAL_STEPS } from '@/features/onboarding'
+import { FactRow, OnboardingStep } from '@/features/onboarding'
 import { ensureNotificationPermission } from '@/lib/notifications'
 import { Card, Text, useToast } from '@/ui'
 
@@ -108,8 +108,7 @@ function NotificationsStep() {
 
   return (
     <OnboardingStep
-      step={stepNumber('notifications')}
-      total={TOTAL_STEPS}
+      name="notifications"
       accent="kaya"
       title={t('onboarding:notifications.title')}
       subtitle={t('onboarding:notifications.subtitle')}

@@ -5,6 +5,7 @@ import { View } from 'react-native'
 
 import { useFinishOnboarding, useSession } from '@/data'
 import { type CompleteDraft, isComplete, useOnboardingDraft } from '@/features/onboarding'
+import { planDirection, setPersonProps, track } from '@/lib/analytics'
 import { birthDateFromAge } from '@/lib/nutrition'
 import { Button, EmptyState, Screen, Spinner, Text } from '@/ui'
 
@@ -82,7 +83,28 @@ function Flush({ draft }: { draft: CompleteDraft }) {
         referralSource: draft.referralSource,
       },
       {
-        onSuccess: () => {
+        onSuccess: (profile) => {
+          /**
+           * The one moment a stranger becomes an account, and the only place
+           * every answer is in hand at once — the draft is about to be cleared
+           * and nothing downstream sees it again.
+           *
+           * The two weights go no further than `planDirection`. What a segment
+           * is ever built on is which way the plan runs, and sending the
+           * direction rather than the kilos means no body figure leaves the
+           * phone. Same reasoning as the rest of `PersonProps`.
+           */
+          const direction = planDirection(draft.weightKg, draft.targetWeightKg)
+          setPersonProps({
+            onboarded: true,
+            onboarded_at: profile.onboarded_at ?? new Date().toISOString(),
+            plan_direction: direction,
+            activity_level: draft.activity,
+            food_styles: draft.foodStyles,
+            referral_source: draft.referralSource,
+          })
+          track('Onboarding Completed', { plan_direction: direction })
+
           // Cleared only now. Until the write lands, the draft is the only copy of
           // these answers anywhere.
           clear()

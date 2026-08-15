@@ -2,6 +2,7 @@ import * as AppleAuthentication from 'expo-apple-authentication'
 import Constants from 'expo-constants'
 import { Platform } from 'react-native'
 
+import { type SignInMethod, track } from '@/lib/analytics'
 import { env, isConfigured } from '@/lib/env'
 import { supabase } from '@/lib/supabase'
 
@@ -75,6 +76,56 @@ export async function sendLoginLink(email: string): Promise<void> {
     options: { shouldCreateUser: true, emailRedirectTo: loginLinkRedirect() },
   })
   if (error) throw error
+  // The mail path is the one sign-in with a gap in the middle of it — the link
+  // is opened in another app, minutes later, on a device that may not be this
+  // one. Recording the request separately from `Signed In` is what turns that
+  // gap into a number: how many people ask for a link and never come back.
+  track('Login Link Requested', {})
+}
+
+/**
+ * How fresh an account has to be for this sign-in to have CREATED it.
+ *
+ * There is no sign-up call to hang the distinction off — `signInWithOtp` and
+ * `signInWithIdToken` both make the account when the identity is new and sign
+ * in when it is not — so the only evidence available is the age of the row.
+ * A minute is far longer than any of these three flows takes and far shorter
+ * than any plausible second sign-in, so the two cases cannot overlap.
+ */
+const NEW_ACCOUNT_WINDOW_MS = 60_000
+
+/**
+ * Record a sign-in that actually happened.
+ *
+ * Deliberately NOT in the session provider, which is where `identify` lives.
+ * That one fires on every launch with a restored session — supabase announces
+ * `SIGNED_IN` whenever it finds a usable token in the keychain — so counting it
+ * as a sign-in would report a returning user's every cold start as an
+ * acquisition. These three call sites are the moments a person signed in.
+ */
+async function announceSignIn(method: SignInMethod): Promise<void> {
+  /**
+   * WRAPPED, and this is the one place in the tracking plan where it matters.
+   *
+   * Every other `track` is a call into a module that cannot throw. This one
+   * reads the session first, to find out whether the account was just created,
+   * and it sits on the success path of all three sign-ins — so a rejection here
+   * would come out of `completeLoginFromUrl`, which the link handler reads as
+   * "that link had expired". A property on a report is not worth a sign-in that
+   * says it failed after it worked.
+   */
+  try {
+    const { data } = await supabase.auth.getSession()
+    const createdAt = data.session?.user.created_at
+    const age = createdAt ? Date.now() - Date.parse(createdAt) : Number.NaN
+    track('Signed In', {
+      method,
+      is_new_account: Number.isFinite(age) && age < NEW_ACCOUNT_WINDOW_MS,
+    })
+  } catch {
+    // Better an unattributed sign-in than a sign-in reported as broken.
+    track('Signed In', { method, is_new_account: false })
+  }
 }
 
 /**
@@ -105,6 +156,7 @@ export async function completeLoginFromUrl(url: string): Promise<boolean> {
       refresh_token: refreshToken,
     })
     if (error) throw error
+    await announceSignIn('email')
     return true
   }
 
@@ -113,6 +165,7 @@ export async function completeLoginFromUrl(url: string): Promise<boolean> {
 
   const { error } = await supabase.auth.exchangeCodeForSession(code)
   if (error) throw error
+  await announceSignIn('email')
   return true
 }
 
@@ -222,6 +275,11 @@ export async function signInWithApple(): Promise<void> {
     // failure is.
     const code = (error as { code?: string }).code
     if (code === 'ERR_REQUEST_CANCELED') {
+      // Tracked, unlike most cancellations, because backing out of Apple's own
+      // sheet is the single biggest drop in this funnel and it is invisible
+      // everywhere else: nothing is thrown to Sentry and nothing reaches the
+      // database.
+      track('Sign In Failed', { method: 'apple', reason: 'cancelled' })
       throw new SignInCancelled()
     }
     // A build with no entitlement fails here rather than at `isAvailableAsync`,
@@ -229,10 +287,18 @@ export async function signInWithApple(): Promise<void> {
     // completed. com.apple.AuthenticationServices.AuthorizationError 1000").
     // Say the useful thing instead: use email.
     if (code === 'ERR_REQUEST_UNKNOWN' || code === 'ERR_APPLE_AUTHENTICATION_UNAVAILABLE') {
+      track('Sign In Failed', { method: 'apple', reason: 'unavailable' })
       throw new AppleSignInUnavailable()
     }
+    track('Sign In Failed', { method: 'apple', reason: 'error' })
     throw error
   }
+
+  // OUTSIDE the try, so the two events cannot both fire for one attempt. The
+  // catch above turns anything thrown in there into a `Sign In Failed`, and it
+  // covers the profile write as well as the sign-in itself — so a success
+  // announced from inside it would be a sign-in reported as both.
+  await announceSignIn('apple')
 }
 
 /**
@@ -266,13 +332,23 @@ export async function signInWithGoogle(): Promise<void> {
   await GoogleSignin.hasPlayServices()
   const response = await GoogleSignin.signIn()
   const idToken = response.data?.idToken
-  if (!idToken) throw new SignInCancelled()
+  if (!idToken) {
+    track('Sign In Failed', { method: 'google', reason: 'cancelled' })
+    throw new SignInCancelled()
+  }
 
   const { error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: idToken })
-  if (error) throw error
+  if (error) {
+    track('Sign In Failed', { method: 'google', reason: 'error' })
+    throw error
+  }
+  await announceSignIn('google')
 }
 
 export async function signOut(): Promise<void> {
   const { error } = await supabase.auth.signOut()
   if (error) throw error
+  // Before the provider's own `reset`, which the `SIGNED_OUT` event triggers a
+  // tick later — so this event is still filed against the account it is about.
+  track('Signed Out', {})
 }

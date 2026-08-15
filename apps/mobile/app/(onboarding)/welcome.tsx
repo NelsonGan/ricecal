@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
+import { track } from '@/lib/analytics'
 import { Button, Icon, type IconProps, Screen, Text } from '@/ui'
 
 const MASCOT = require('../../assets/brand/mascot.png')
@@ -44,7 +45,13 @@ export default function Welcome() {
   ]
 
   /** Straight into the questions. No session needed: the answers are held locally. */
-  const start = () => router.push('/about')
+  const start = () => {
+    // The top of the funnel, and the only place it can be marked. This screen
+    // is also where a returning user lands, so rendering it is not the same
+    // thing as starting — pressing this button is.
+    track('Onboarding Started', {})
+    router.push('/about')
+  }
 
   /**
    * Skips the questions.
