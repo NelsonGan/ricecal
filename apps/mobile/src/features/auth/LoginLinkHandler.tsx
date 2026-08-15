@@ -1,8 +1,10 @@
 import * as Linking from 'expo-linking'
+import { useRouter } from 'expo-router'
 import { useEffect, useRef } from 'react'
 
 import { completeLoginFromUrl } from '@/data/auth'
 import { useToast } from '@/ui'
+import { useAuthMessage } from './useAuthMessage'
 
 /**
  * Watches for the login link coming back into the app.
@@ -24,6 +26,8 @@ export function LoginLinkHandler() {
   // most common way a login link arrives.
   const url = Linking.useLinkingURL()
   const toast = useToast()
+  const router = useRouter()
+  const message = useAuthMessage()
 
   // Every URL is handled once. `useURL` holds its value, so a re-render for any
   // other reason would otherwise redeem the same link again — and a PKCE code is
@@ -35,13 +39,19 @@ export function LoginLinkHandler() {
     if (!url || handled.current === url) return
     handled.current = url
 
-    completeLoginFromUrl(url).catch((error: unknown) => {
-      toast.show({
-        title: error instanceof Error ? error.message : String(error),
-        tone: 'error',
+    completeLoginFromUrl(url)
+      .then((outcome) => {
+        // A RESET LINK IS NOT A SIGN-IN, even though it produces a session. It
+        // is the middle of choosing a new password, and left to the ordinary
+        // guard it lands the user on Today with the password they could not
+        // remember still in force. `replace`, because there is nothing behind a
+        // link opened cold to go back to.
+        if (outcome === 'recovery') router.replace('/(auth)/new-password')
       })
-    })
-  }, [url, toast])
+      .catch((error: unknown) => {
+        toast.show({ title: message(error), tone: 'error' })
+      })
+  }, [url, toast, router, message])
 
   return null
 }

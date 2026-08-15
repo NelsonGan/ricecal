@@ -20,9 +20,10 @@
  * wanting a result should send one statement.
  */
 
-import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+
+import { accessToken } from './management.mjs'
 
 const REPO_ROOT = fileURLToPath(new URL('../../../..', import.meta.url))
 
@@ -45,28 +46,6 @@ export function projectRef() {
     )
   }
   return ref
-}
-
-/**
- * The CLI stores its token in the login keychain rather than in ~/.supabase, so
- * `supabase login` is enough to make this work and there is no second secret to
- * hand around. The env var wins, for CI and for a machine whose keychain is
- * locked.
- */
-function accessToken() {
-  if (process.env.SUPABASE_ACCESS_TOKEN) return process.env.SUPABASE_ACCESS_TOKEN
-
-  try {
-    const token = execFileSync('security', ['find-generic-password', '-s', 'Supabase CLI', '-w'], {
-      encoding: 'utf8',
-    }).trim()
-    if (token) return token
-  } catch {
-    // Fall through to the message below: an empty keychain and a locked one are
-    // the same problem from here, and both are fixed the same way.
-  }
-
-  throw new Error('No Supabase access token. Run `supabase login`, or set SUPABASE_ACCESS_TOKEN.')
 }
 
 let cached

@@ -1,0 +1,31 @@
+<!--
+key: reauthentication
+subject: {{ .Token }} is your RiceCal verification code
+preheader: Confirm it is you before this change goes through.
+-->
+
+<!--
+  NO LINK IN THIS ONE, and there is no `{{ .ConfirmationURL }}` to put in it.
+  Reauthentication is a code by design: the person is already signed in and in
+  the middle of something, so the answer has to come back into the session they
+  are sitting in rather than open a new one.
+-->
+
+<h1 class="rc-fg" style="margin: 0 0 12px 0; font-size: 22px; font-weight: 700; line-height: 30px; color: #171717;">
+  Confirm it is you
+</h1>
+
+<p class="rc-muted" style="margin: 0 0 24px 0; font-size: 15px; line-height: 23px; color: #707070;">
+  Enter this code in RiceCal to confirm the change you just asked for.
+</p>
+
+<!--PARTIAL:code-->
+
+<p class="rc-muted" style="margin: 20px 0 0 0; font-size: 14px; line-height: 21px; color: #707070;">
+  The code expires in an hour, and it only works once.
+</p>
+
+<p class="rc-muted" style="margin: 24px 0 0 0; font-size: 13px; line-height: 20px; color: #707070;">
+  If you are not in the middle of changing something, do not enter this code
+  anywhere. Nobody from RiceCal will ever ask you for it.
+</p>
