@@ -43,25 +43,27 @@ export default function ForgotScreen() {
     ? undefined
     : t('onboarding:account.errors.email')
 
-  const send = () => {
+  const send = async () => {
     setSubmitted(true)
-    if (emailError) return
+    if (emailError || busy) return
 
     setBusy(true)
-    ;(async () => {
-      try {
-        const address = email.trim()
-        await sendPasswordReset(address, await captcha())
-        // Its own screen, not the code screen. Verifying a recovery code
-        // creates a session, and the guard in `_layout` would carry the user off
-        // to Today before they had chosen anything — see `new-password.tsx`.
-        router.replace({ pathname: '/(auth)/new-password', params: { email: address } })
-      } catch (error) {
-        toast.show({ title: message(error), tone: 'error' })
-      } finally {
-        setBusy(false)
-      }
-    })()
+    try {
+      const address = email.trim()
+      await sendPasswordReset(address, await captcha())
+      // `replace`, not `push`: this screen's whole job was to ask which address
+      // and post the mail, and both are done. Left on the stack, the chevron on
+      // the next screen comes back to a form whose button would send a second
+      // mail into the same one-a-minute window.
+      //
+      // And `new-password` rather than the code screen: verifying a recovery
+      // code creates a session, and the guard in `_layout` would carry the user
+      // off to Today before they had chosen anything — see `new-password.tsx`.
+      router.replace({ pathname: '/(auth)/new-password', params: { email: address } })
+    } catch (error) {
+      toast.show({ title: message(error), tone: 'error' })
+      setBusy(false)
+    }
   }
 
   return (

@@ -19,23 +19,6 @@ import { Alert, AppBar, Button, Divider, Screen, Tappable, Text, useToast } from
 type Mode = 'sign-in' | 'sign-up'
 
 /**
- * Which request is in flight, so the spinner lands on the control that was
- * pressed.
- *
- * A single `busy` boolean is what made this screen read as broken: it drove
- * `loading` on the footer CTA, so tapping "Email me a code instead" spun the
- * button at the BOTTOM of the screen while the one that was pressed sat there
- * looking untouched, and the fields stayed editable throughout. Three of these
- * screens had the same shape.
- *
- * There is only ONE of these left, and that is the point of the change that
- * removed the others: a tap that is going somewhere now goes there first and
- * does its network work on arrival. Only signing in and signing up stay here,
- * because those two ARE the request — there is nowhere to go until they answer.
- */
-type Action = 'submit'
-
-/**
  * The password, on a screen of its own.
  *
  * SPLIT FROM SIGN-IN ON PURPOSE. The address and the password are two different
@@ -79,8 +62,17 @@ export default function PasswordScreen() {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [submitted, setSubmitted] = useState(false)
-  const [running, setRunning] = useState<Action | null>(null)
-  const busy = running !== null
+  /**
+   * ONE request can be in flight here, and it is always the same one.
+   *
+   * That is the shape of the screen rather than a simplification of it. A tap
+   * that is going somewhere now goes there first and does its network work on
+   * arrival, so nothing else on this page waits — only signing in and signing
+   * up stay, because those two ARE the request and there is nowhere to go until
+   * the server answers. So the flag can say "the form is submitting" and the
+   * spinner can only land on the button that means it.
+   */
+  const [busy, setBusy] = useState(false)
   /**
    * Set when a signup came back looking like a repeat. It does NOT say the
    * account exists — see the copy, and `signUpWithPassword` for why Supabase
@@ -134,15 +126,15 @@ export default function PasswordScreen() {
   // note in `src/lib/navigation.ts`.
   const back = useBack('/(onboarding)/welcome')
 
-  /** One failure path for everything on this screen, and one spinner per action. */
-  const attempt = async (which: Action, work: () => Promise<void>) => {
-    setRunning(which)
+  /** One failure path for the one request this screen makes. */
+  const attempt = async (work: () => Promise<void>) => {
+    setBusy(true)
     try {
       await work()
     } catch (error) {
       toast.show({ title: message(error), tone: 'error' })
     } finally {
-      setRunning(null)
+      setBusy(false)
     }
   }
 
@@ -150,7 +142,7 @@ export default function PasswordScreen() {
     setSubmitted(true)
     if (localError) return
 
-    attempt('submit', async () => {
+    attempt(async () => {
       const token = await captcha()
 
       if (mode === 'sign-in') {
@@ -230,7 +222,7 @@ export default function PasswordScreen() {
   return (
     <Screen
       footer={
-        <Button fullWidth onPress={submit} disabled={busy} loading={running === 'submit'}>
+        <Button fullWidth onPress={submit} disabled={busy} loading={busy}>
           {t(signingUp ? 'auth:password.createAccount' : 'auth:password.signIn')}
         </Button>
       }
@@ -261,8 +253,17 @@ export default function PasswordScreen() {
            yet, which sends a mail saying nothing. */
         labelAction={
           signingUp ? null : (
-            <Tappable onPress={forgot} disabled={busy} accessibilityRole="button">
-              <Text variant="caption" className="text-pandan-ink">
+            <Tappable
+              onPress={forgot}
+              disabled={busy}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: busy }}
+              // A line of 13pt text is a 17pt tap target. Padding would make
+              // the label row taller than the label, so the slop grows the
+              // touch area without moving anything.
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Text variant="caption" className={busy ? 'text-faint' : 'text-pandan-ink'}>
                 {t('auth:password.forgot')}
               </Text>
             </Tappable>
