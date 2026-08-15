@@ -15,10 +15,22 @@ import {
 import { PasswordField, useAuthMessage, useCaptchaToken } from '@/features/auth'
 import { StepHeader } from '@/features/onboarding'
 import { useBack } from '@/lib/navigation'
-import { Alert, AppBar, Button, Screen, Text, useToast } from '@/ui'
+import { Alert, AppBar, Button, Divider, Screen, Text, useToast } from '@/ui'
 
 /** Which half of the screen is showing. Only the copy and the calls differ. */
 type Mode = 'sign-in' | 'sign-up'
+
+/**
+ * Which request is in flight, so the spinner lands on the control that was
+ * pressed.
+ *
+ * A single `busy` boolean is what made this screen read as broken: it drove
+ * `loading` on the footer CTA, so tapping "Email me a code instead" spun the
+ * button at the BOTTOM of the screen while the one that was pressed sat there
+ * looking untouched, and the fields stayed editable throughout. Three of these
+ * screens had the same shape.
+ */
+type Action = 'submit' | 'code' | 'forgot'
 
 /**
  * The password, on a screen of its own.
@@ -64,7 +76,8 @@ export default function PasswordScreen() {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [submitted, setSubmitted] = useState(false)
-  const [busy, setBusy] = useState(false)
+  const [running, setRunning] = useState<Action | null>(null)
+  const busy = running !== null
   /**
    * Set when a signup came back looking like a repeat. It does NOT say the
    * account exists — see the copy, and `signUpWithPassword` for why Supabase
@@ -118,15 +131,15 @@ export default function PasswordScreen() {
   // note in `src/lib/navigation.ts`.
   const back = useBack('/(onboarding)/welcome')
 
-  /** One failure path for everything on this screen. */
-  const attempt = async (work: () => Promise<void>) => {
-    setBusy(true)
+  /** One failure path for everything on this screen, and one spinner per action. */
+  const attempt = async (which: Action, work: () => Promise<void>) => {
+    setRunning(which)
     try {
       await work()
     } catch (error) {
       toast.show({ title: message(error), tone: 'error' })
     } finally {
-      setBusy(false)
+      setRunning(null)
     }
   }
 
@@ -134,7 +147,7 @@ export default function PasswordScreen() {
     setSubmitted(true)
     if (localError) return
 
-    attempt(async () => {
+    attempt('submit', async () => {
       const token = await captcha()
 
       if (mode === 'sign-in') {
@@ -186,13 +199,13 @@ export default function PasswordScreen() {
 
   /** The way in that always works, whether or not this account has a password. */
   const mailCode = () =>
-    attempt(async () => {
+    attempt('code', async () => {
       await sendLoginLink(email, await captcha())
       router.push({ pathname: '/(auth)/verify', params: { email, purpose: 'email', ...flow } })
     })
 
   const forgot = () =>
-    attempt(async () => {
+    attempt('forgot', async () => {
       await sendPasswordReset(email, await captcha())
       // Its own screen, not the code screen. Verifying a recovery code creates
       // a session, and the guard in `_layout` would carry the user off to Today
@@ -205,7 +218,7 @@ export default function PasswordScreen() {
   return (
     <Screen
       footer={
-        <Button fullWidth onPress={submit} disabled={busy} loading={busy}>
+        <Button fullWidth onPress={submit} disabled={busy} loading={running === 'submit'}>
           {t(signingUp ? 'auth:password.createAccount' : 'auth:password.signIn')}
         </Button>
       }
@@ -241,6 +254,7 @@ export default function PasswordScreen() {
         error={submitted && tooShort ? shortMessage : undefined}
         returnKeyType={signingUp ? 'next' : 'go'}
         onSubmitEditing={() => (signingUp ? confirmRef.current?.focus() : submit())}
+        editable={!busy}
       />
 
       {signingUp ? (
@@ -257,26 +271,60 @@ export default function PasswordScreen() {
           }
           returnKeyType="go"
           onSubmitEditing={submit}
+          editable={!busy}
         />
       ) : null}
 
-      <View className="gap-1 pt-2">
-        <Button variant="ghost" fullWidth onPress={mailCode} disabled={busy}>
-          {t('auth:password.codeInstead')}
-        </Button>
+      {/* THREE OFFERS, THREE WEIGHTS, and they used to be one.
+          A ghost button is a line of text with a tap target round it, so three
+          of them stacked read as three sentences somebody had left lying on the
+          page rather than as things to press — and the stack grew to three
+          exactly when a signup bounced, which is the worst moment to look
+          unfinished.
 
+          So the alternative ROUTE gets a real button, behind the same divider
+          the address screen uses to separate a provider from an address, and
+          the two things that only change what this screen is asking stay quiet
+          underneath it. */}
+      <View className="flex-row items-center gap-3 pt-2">
+        <Divider className="flex-1" />
+        <Text variant="meta">{t('onboarding:account.or')}</Text>
+        <Divider className="flex-1" />
+      </View>
+
+      <Button
+        variant="secondary"
+        fullWidth
+        onPress={mailCode}
+        disabled={busy}
+        loading={running === 'code'}
+      >
+        {t('auth:password.codeInstead')}
+      </Button>
+
+      <View className="items-center gap-1 pt-1">
         {/* Only on the sign-in side. Offered next to "choose a password" it is
             a reset for an account that does not exist yet, which sends a mail
             saying nothing and reads as the app losing track of where it is. */}
         {signingUp ? null : (
-          <Button variant="ghost" fullWidth onPress={forgot} disabled={busy}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="self-center"
+            onPress={forgot}
+            disabled={busy}
+            loading={running === 'forgot'}
+          >
             {t('auth:password.forgot')}
           </Button>
         )}
 
+        {/* Sends nothing, so it never spins: it swaps which question the screen
+            is asking. */}
         <Button
           variant="ghost"
-          fullWidth
+          size="sm"
+          className="self-center"
           disabled={busy}
           onPress={() => {
             setMode(signingUp ? 'sign-in' : 'sign-up')

@@ -100,6 +100,64 @@ const TOKEN_TIMEOUT_MS = 20_000
 type Pending = {
   resolve: (token: string | undefined) => void
   timer: ReturnType<typeof setTimeout> | null
+  /** Retryable errors seen for THIS request. See `RETRIES_ALLOWED`. */
+  errors: number
+  /** A human is being asked to click something, so nothing here may give up. */
+  interactive: boolean
+}
+
+/**
+ * How many retryable failures one request sits through before giving up.
+ *
+ * One, which is to say the widget gets its automatic retry and no more. The
+ * point of waiting at all is that a `300*` bot score often clears on the second
+ * attempt; the point of not waiting for ever is that a visitor Cloudflare has
+ * genuinely decided against will never clear, and holding the sign-in button
+ * for the full twenty second timeout on every tap is the failure this whole
+ * file already has a `broken` flag to avoid.
+ */
+const RETRIES_ALLOWED = 1
+
+/**
+ * Whether a Turnstile error code is worth waiting through, and it is the
+ * difference between "try again" and "this will never work".
+ *
+ * Cloudflare marks each of its codes retryable or not, and the two want
+ * opposite treatment:
+ *
+ * - `300*` and `600*` are "bot behaviour detected" and they are RETRYABLE. The
+ *   widget's own `retry: 'auto'` has another go, and in Managed mode a visitor
+ *   who keeps scoring badly is escalated to a checkbox instead. Settling on the
+ *   first one turns a score that would have cleared into "we could not confirm
+ *   you are a person", which is what a real person on a phone was being told.
+ * - The ones LISTED BELOW are configuration, and they never recover. The first
+ *   one ends it for the session rather than costing every later tap a round
+ *   trip to rediscover the same thing.
+ *
+ * ENUMERATED RATHER THAN MATCHED BY PREFIX, because `110` is not one family:
+ * `110100`, `110110` and `110200` are a bad sitekey and an unlisted hostname,
+ * and `110600` and `110620` are timeouts sitting in the middle of them that
+ * Cloudflare marks retryable. A `/^110/` would have given up on a challenge
+ * that had merely taken too long.
+ *
+ * Anything unrecognised is treated as retryable, because the cost of waiting is
+ * one timeout and the cost of giving up wrongly is an account nobody can get
+ * into.
+ */
+const FATAL_CODES = new Set([
+  '110100', // invalid sitekey
+  '110110', // sitekey not found
+  '110200', // this hostname is not on the widget's list
+  '110420', // unexpected challenge type for this widget
+  '110430', // the browser is unsupported
+  '200100', // the visitor's clock is wrong
+  '400010', // the widget was rendered on an unsupported page
+  '400020', // invalid sitekey
+  '400070', // the widget is disabled
+])
+
+function fatalCode(code: string): boolean {
+  return FATAL_CODES.has(code)
 }
 
 /**
@@ -113,6 +171,16 @@ type Pending = {
  * `refresh-expired: 'never'` because a token is used within seconds of arriving,
  * and a widget quietly refreshing itself in a hidden WebView for the rest of the
  * session is work nobody asked for.
+ *
+ * `error-callback` RETURNS FALSE, and returning true is what it did. A truthy
+ * return tells Turnstile the page has taken charge of the error — and what this
+ * page then did was give up on the spot, so a `300*` "bot behaviour detected"
+ * score, which Cloudflare documents as retryable and which the widget's own
+ * `retry: 'auto'` would have had another go at, became a hard refusal on the
+ * first attempt. That is the failure a real person hits: a phone in a hidden
+ * WebView is exactly the profile that scores badly once. False leaves the retry
+ * where it belongs. The native side is posted the code either way and decides
+ * separately whether it is worth waiting through — see `fatalCode`.
  */
 function page(siteKey: string): string {
   return `<!doctype html>
@@ -138,7 +206,8 @@ function page(siteKey: string): string {
           appearance: 'interaction-only',
           'refresh-expired': 'never',
           callback: function (token) { post({ type: 'token', token: token }) },
-          'error-callback': function (code) { post({ type: 'error', code: String(code) }); return true },
+          // Returns FALSE on purpose. See the note on this function.
+          'error-callback': function (code) { post({ type: 'error', code: String(code) }); return false },
           'timeout-callback': function () { post({ type: 'error', code: 'timeout' }) },
           'before-interactive-callback': function () { post({ type: 'interactive' }) },
         })
@@ -222,6 +291,14 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
     [settle],
   )
 
+  /** A load failure that only counts while the page has yet to announce itself. */
+  const loadFailed = useCallback(
+    (why: string) => {
+      if (!ready.current) giveUp(why)
+    },
+    [giveUp],
+  )
+
   const onMessage = useCallback(
     (event: WebViewMessageEvent) => {
       let payload: { type?: string; token?: string; code?: string }
@@ -244,27 +321,50 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
           // widget and stop counting down: the timeout is there to keep a dead
           // script from blocking a button, not to hurry somebody along.
           const waiting = pending.current
-          if (waiting?.timer) {
-            clearTimeout(waiting.timer)
+          if (waiting) {
+            if (waiting.timer) clearTimeout(waiting.timer)
             waiting.timer = null
+            waiting.interactive = true
           }
           setChallenging(true)
           return
         }
-        case 'error':
+        case 'error': {
+          const code = payload.code ?? 'unknown'
+
           // A failure BEFORE the widget ever announced itself is a failure of
           // the widget rather than of one attempt: a site key the account does
           // not know, or a hostname missing from its list. Those never recover,
-          // so stop waiting on them. An error afterwards is one bad attempt,
-          // reported and forgotten — the request goes without a token and the
-          // server decides, which is the whole failing-open bargain.
+          // so stop waiting on them.
           if (!ready.current) {
-            giveUp(payload.code ?? 'error before ready')
+            giveUp(code)
             return
           }
-          console.warn(`[captcha] turnstile error: ${payload.code}`)
-          settle(undefined)
+
+          // Afterwards, the CODE decides. A configuration error is still
+          // permanent and there is nothing to wait for.
+          if (fatalCode(code)) {
+            giveUp(code)
+            return
+          }
+
+          // And a retryable one buys the widget one more go. Settling on the
+          // first would send the request with no token and hand the person a
+          // captcha failure they had no way to answer, which is exactly what a
+          // `300*` bot score was doing to real people; settling on none of them
+          // would hold the button until the timeout on every single tap.
+          //
+          // NOT WHILE A HUMAN IS ANSWERING, though. Once the widget has
+          // escalated, an error is one the person can have another go at inside
+          // it, and settling would take the panel off the screen mid-click and
+          // send the request without the token they were in the middle of
+          // earning. Same reasoning as the cancelled timer above.
+          console.warn(`[captcha] turnstile retryable error: ${code}`)
+          const waiting = pending.current
+          if (!waiting || waiting.interactive) return
+          if (++waiting.errors > RETRIES_ALLOWED) settle(undefined)
           return
+        }
       }
     },
     [settle, giveUp],
@@ -280,7 +380,7 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
     settle(undefined)
 
     return new Promise<string | undefined>((resolve) => {
-      const waiting: Pending = { resolve, timer: null }
+      const waiting: Pending = { resolve, timer: null, errors: 0, interactive: false }
       // A timeout with the widget still silent means it never loaded. One that
       // fires after `ready` is one slow attempt, and the next may be fine.
       waiting.timer = setTimeout(
@@ -350,8 +450,15 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
               // Cloudflare refusing the origin. Without this the only symptom is
               // `ready` never arriving, which every request then pays the full
               // timeout to discover.
-              onError={() => giveUp('load-failed')}
-              onHttpError={() => giveUp('http-error')}
+              //
+              // ONLY BEFORE THE WIDGET IS READY, though. Android reports
+              // subresource failures through the same two callbacks, so a
+              // single image or beacon that did not come back was marking a
+              // perfectly working widget permanently broken for the rest of the
+              // session — and every sign-in after it went out with no token.
+              // Once `ready` has arrived the page loaded, whatever else failed.
+              onError={() => loadFailed('load-failed')}
+              onHttpError={() => loadFailed('http-error')}
               javaScriptEnabled
               domStorageEnabled
               originWhitelist={['https://*']}

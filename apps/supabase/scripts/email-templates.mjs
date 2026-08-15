@@ -95,6 +95,23 @@ function build() {
   if (start < 0) throw new Error('_layout.html has no doctype')
   const layout = layoutFile.slice(start)
 
+  /**
+   * The app icon, inline.
+   *
+   * A data URI rather than a URL, and the difference matters more in mail than
+   * anywhere else: most clients block remote images until the reader asks, so a
+   * hosted logo is an empty box at the top of every message for as long as it
+   * takes somebody to notice a prompt they have learnt to ignore. Inline there
+   * is nothing to fetch and nothing to block, and no asset host that has to
+   * outlive the mail.
+   *
+   * It costs about 9KB per message. Gmail clips a mail over 102KB, and these
+   * come out around a fifth of that, so the headroom is real rather than
+   * hopeful. Kept at 96px for a 64pt box, which is the 2x anybody reads it at.
+   */
+  const logo = readFileSync(join(TEMPLATES, 'logo.png')).toString('base64')
+  const logoUri = `data:image/png;base64,${logo}`
+
   const partials = readPartials()
 
   const files = readdirSync(TEMPLATES)
@@ -114,7 +131,11 @@ function build() {
       layout
         .replace('<!--CONTENT-->', () => expand(body, partials).trim())
         .replace('<!--SUBJECT-->', () => meta.subject)
-        .replace('<!--PREHEADER-->', () => meta.preheader ?? ''),
+        .replace('<!--PREHEADER-->', () => meta.preheader ?? '')
+        // After the others and inside the same chain, so the base64 — which is
+        // the one substitution long enough to contain anything — cannot be
+        // scanned for the placeholders that come before it.
+        .replace('<!--LOGO-->', () => logoUri),
     ).trim()
 
     return { name: basename(file, '.html'), key: meta.key, subject: meta.subject, html }

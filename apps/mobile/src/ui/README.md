@@ -44,6 +44,12 @@ composes `onFocus` and `onBlur` with the ones you passed in, and the composed
 pair has to be the one that reaches the field. See the header in `Numpad.tsx`
 for why the platform's own pad stopped being usable.
 
+`systemKeyboard` is the way out, and there is one field in the app that takes
+it. The pad types a QUANTITY: it refuses a leading zero, because `07` is a typo
+in every figure this app holds, and it suppresses `oneTimeCode` autofill along
+with the keyboard. A six digit code is neither of those things, so
+`(auth)/verify` asks for the platform's keyboard and gets it.
+
 ## Things that will bite you
 
 **Changing `tailwind.config.js` needs a Metro cache clear.** NativeWind caches
