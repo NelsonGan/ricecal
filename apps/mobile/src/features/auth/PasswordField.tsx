@@ -40,11 +40,20 @@ export const PasswordField = forwardRef<TextInput, PasswordFieldProps>(
           <IconButton
             size="sm"
             variant="ghost"
-            // `self-center`, because `IconButton` puts `self-start` on its own
-            // container and align-self beats the row's `items-center`. Left to
-            // itself the eye sits against the top of a 60pt field, a few points
-            // above the text it belongs to.
-            className="self-center"
+            /**
+             * `self-center`, because `IconButton` puts `self-start` on its own
+             * container and align-self beats the row's `items-center`. Left to
+             * itself the eye sits against the top of a 60pt field, a few points
+             * above the text it belongs to.
+             *
+             * And pulled RIGHT, because a 44pt tap target centres its 22pt icon
+             * 22pt from its own edge and the field already pads 20pt more — so
+             * an untouched eye floats 42pt in from the border with a band of
+             * empty field to its right, reading as though it had come loose from
+             * the edge it belongs to. The negative margin spends the field's
+             * padding rather than the tap target, which stays 44pt.
+             */
+            className="-mr-3 self-center"
             onPress={() => setShown((was) => !was)}
             accessibilityLabel={t(shown ? 'password.hide' : 'password.show')}
           >
