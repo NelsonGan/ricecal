@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { CheckList } from '@/features/shared'
+import { useEnterApp } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, Icon, Screen, Squish, Text } from '@/ui'
 
@@ -10,6 +11,7 @@ import { Button, Icon, Screen, Squish, Text } from '@/ui'
 export default function WelcomeToPro() {
   const { t } = useTranslation('paywall')
   const router = useRouter()
+  const enterApp = useEnterApp()
   /**
    * Which plan was just bought.
    *
@@ -29,9 +31,14 @@ export default function WelcomeToPro() {
    * day underneath it, or it floats over an empty stack with nothing behind
    * its scrim. The router queues both actions in order, so the replace lands
    * first.
+   *
+   * `enterApp` rather than a bare replace, because this screen is the end of
+   * onboarding as often as it is a purchase made from the app — and a replace
+   * leaves every screen the user walked to get here standing under the diary.
+   * See `useEnterApp`.
    */
   const logFirstMeal = () => {
-    router.replace('/today')
+    enterApp()
     router.push('/log')
   }
 

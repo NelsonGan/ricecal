@@ -205,11 +205,14 @@ function RootStack() {
       <Stack.Screen name="auth/[action]" options={{ gestureEnabled: false }} />
       <Stack.Screen name="(onboarding)" options={{ gestureEnabled: false }} />
       {/* The one screen with no back gesture. Everything else in this stack is
-          somewhere you went and can leave; the tabs are where the app IS. Onboarding
-          replaces its own route on the way out, but "replace" only unwinds what it
-          replaced — the seven screens before it are still behind this one, and an
-          edge swipe on Today walked back into the questions somebody had just
-          finished answering. */}
+          somewhere you went and can leave; the tabs are where the app IS.
+
+          Nothing should be behind this any more — `useEnterApp` unwinds the way
+          in rather than replacing one entry of it, which is what left the whole
+          of onboarding under the diary and made an edge swipe on Today land on
+          the questions somebody had just finished answering. The gesture stays
+          off regardless: a swipe on the app itself should do nothing, whatever
+          a future route happens to leave lying around. */}
       <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
       {/* The quick selector sits over Today, so the screen behind it stays
           visible and the sheet keeps its own scrim.
