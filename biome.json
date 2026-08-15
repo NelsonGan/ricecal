@@ -7,7 +7,14 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!**/.expo", "!**/dist", "!**/*.d.ts", "!**/expo-env.d.ts"]
+    "includes": [
+      "**",
+      "!**/.expo",
+      "!**/dist",
+      "!**/*.d.ts",
+      "!**/expo-env.d.ts",
+      "!apps/supabase/templates"
+    ]
   },
   "formatter": {
     "enabled": true,

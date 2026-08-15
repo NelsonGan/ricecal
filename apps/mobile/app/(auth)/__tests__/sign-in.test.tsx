@@ -8,20 +8,24 @@ import { ToastProvider } from '@/ui'
 import SignInScreen from '../sign-in'
 
 /**
- * There are no passwords here any more, and this suite is what says so.
+ * This screen asks for an address and NOTHING ELSE, and this suite is what says
+ * so.
  *
- * The behaviours worth pinning after that change: nothing is mailed to an address
- * that cannot receive it, the screen says the link is on its way (the session
- * arrives through the link, so without that the tap looks like it did nothing),
- * and the heading follows the direction the caller asked for.
+ * It used to mail a link from here. Now it hands the address to `password.tsx`,
+ * where the person says whether they want a password or a code, and the
+ * behaviours worth pinning are what that split has to preserve: nothing is sent
+ * to an address that cannot receive it, no mail goes out on the way past, the
+ * flow's position travels with it, and the heading follows the direction the
+ * caller asked for.
  */
 
 // `mock`-prefixed so the factories below may close over them: everything else is
 // out of scope by the time jest hoists the calls.
 const mockParams: { mode?: string; step?: string; total?: string } = {}
+const mockPush = jest.fn()
 
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn(), dismissTo: jest.fn() }),
   useLocalSearchParams: () => mockParams,
 }))
 
@@ -33,10 +37,13 @@ jest.mock('@/data/auth', () => ({
   signInWithApple: jest.fn(),
   signInWithGoogle: jest.fn(),
   sendLoginLink: jest.fn(),
+  asAuthProblem: (error: unknown) => ({ reason: 'unknown', cause: error }),
   SignInCancelled: class SignInCancelled extends Error {},
 }))
 
-const auth = jest.mocked(require('@/data/auth') as typeof import('@/data/auth'))
+const auth = jest.mocked(
+  require('@/data/auth') as typeof import('@/data/auth') & { sendLoginLink: jest.Mock },
+)
 
 function Providers({ children }: { children: ReactNode }) {
   return (
@@ -61,7 +68,7 @@ const fill = async (label: string, value: string) => {
 }
 
 const submit = async () => {
-  await user.press(screen.getByText('Email me a link'))
+  await user.press(screen.getByText('Continue with email'))
 }
 
 beforeEach(() => {
@@ -73,10 +80,9 @@ beforeEach(() => {
   // `undefined` where the screen awaits a promise fails somewhere unrelated.
   auth.appleSignInAvailable.mockResolvedValue(false)
   auth.googleSignInAvailable.mockReturnValue(false)
-  auth.sendLoginLink.mockResolvedValue(undefined)
 })
 
-describe('the login link', () => {
+describe('the email route', () => {
   it('asks for nothing but an address', async () => {
     await render(<SignInScreen />)
 
@@ -85,57 +91,41 @@ describe('the login link', () => {
     expect(screen.queryByLabelText('CONFIRM PASSWORD')).toBeNull()
   })
 
-  it('sends one', async () => {
+  it('hands the address to the password screen', async () => {
     await render(<SignInScreen />)
 
     await fill('EMAIL', 'aisyah@example.com')
     await submit()
 
-    expect(auth.sendLoginLink).toHaveBeenCalledWith('aisyah@example.com')
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/(auth)/password',
+      params: { email: 'aisyah@example.com', mode: 'sign-in' },
+    })
   })
 
   /**
-   * The session arrives through the link rather than through the call, so a
-   * screen that looks unchanged after a successful send reads as a dead button.
+   * The send limit is one mail a minute per address, so a code posted on the
+   * way past is one taken out of the real request a few seconds later — and
+   * everybody who came here to type a password they remember perfectly well
+   * would get one.
    */
-  it('says where it went', async () => {
+  it('mails nothing on the way past', async () => {
     await render(<SignInScreen />)
 
     await fill('EMAIL', 'aisyah@example.com')
     await submit()
 
-    expect(await screen.findByText(/aisyah@example.com/)).toBeOnTheScreen()
+    expect(auth.sendLoginLink).not.toHaveBeenCalled()
   })
 
-  it('stops talking about the last link once the address changes', async () => {
-    await render(<SignInScreen />)
-
-    await fill('EMAIL', 'aisyah@example.com')
-    await submit()
-    expect(await screen.findByText(/aisyah@example.com/)).toBeOnTheScreen()
-
-    await fill('EMAIL', '.my')
-    expect(screen.queryByText(/Link sent/)).toBeNull()
-  })
-
-  it('refuses an address that cannot receive it', async () => {
+  it('refuses an address that cannot receive anything', async () => {
     await render(<SignInScreen />)
 
     await fill('EMAIL', 'aisyah@')
     await submit()
 
-    expect(auth.sendLoginLink).not.toHaveBeenCalled()
+    expect(mockPush).not.toHaveBeenCalled()
     expect(screen.getByText('That does not look like an email address.')).toBeOnTheScreen()
-  })
-
-  it('reports a failure to send', async () => {
-    auth.sendLoginLink.mockRejectedValue(new Error('Email rate limit exceeded'))
-    await render(<SignInScreen />)
-
-    await fill('EMAIL', 'aisyah@example.com')
-    await submit()
-
-    expect(await screen.findByText('Email rate limit exceeded')).toBeOnTheScreen()
   })
 })
 
@@ -155,16 +145,28 @@ describe('the mode parameter', () => {
     await render(<SignInScreen />)
     expect(screen.getByText('Save your progress')).toBeOnTheScreen()
   })
+
+  it('tells the password screen which side to open on', async () => {
+    mockParams.mode = 'sign-up'
+    await render(<SignInScreen />)
+
+    await fill('EMAIL', 'aisyah@example.com')
+    await submit()
+
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.objectContaining({ params: expect.objectContaining({ mode: 'sign-up' }) }),
+    )
+  })
 })
 
 /**
  * This screen belongs to two flows, and only one of them has a length.
  *
- * Mid-onboarding it is step seven of nine, and dropping the bar for exactly the
- * screen that asks for an email is where a flow stops reading as a flow — "how
- * much more of this is there" is the question being weighed at that moment, and
- * the answer was on every screen but this one. Reached on its own by a returning
- * user, there is no flow to draw.
+ * Mid-onboarding it is one numbered step of eight, and dropping the bar for
+ * exactly the screen that asks for an email is where a flow stops reading as a
+ * flow — "how much more of this is there" is the question being weighed at that
+ * moment, and the answer was on every screen but this one. Reached on its own by
+ * a returning user, there is no flow to draw.
  */
 describe('the onboarding progress bar', () => {
   const bar = () => screen.queryByLabelText(/Step \d+ of \d+/)
@@ -176,11 +178,30 @@ describe('the onboarding progress bar', () => {
 
   it('carries the flow through when onboarding sent us here', async () => {
     mockParams.mode = 'sign-up'
-    mockParams.step = '7'
-    mockParams.total = '9'
+    mockParams.step = '6'
+    mockParams.total = '8'
     await render(<SignInScreen />)
 
-    expect(screen.getByLabelText('Step 7 of 9')).toBeOnTheScreen()
+    expect(screen.getByLabelText('Step 6 of 8')).toBeOnTheScreen()
+  })
+
+  /**
+   * And onward. The password screen and the code screen are the same flow, so a
+   * bar that stopped at the address would read as the flow having ended one
+   * question before it does.
+   */
+  it('passes the position on to the password screen', async () => {
+    mockParams.mode = 'sign-up'
+    mockParams.step = '6'
+    mockParams.total = '8'
+    await render(<SignInScreen />)
+
+    await fill('EMAIL', 'aisyah@example.com')
+    await submit()
+
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.objectContaining({ params: expect.objectContaining({ step: '6', total: '8' }) }),
+    )
   })
 
   it('ignores a position that is not one', async () => {

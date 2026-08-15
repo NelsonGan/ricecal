@@ -1,0 +1,44 @@
+<!--
+key: email_change
+subject: {{ .Token }} is your RiceCal code
+preheader: Confirm the change of email address on your account.
+-->
+
+<!--
+  SENT TO BOTH ADDRESSES, because `mailer_secure_email_change_enabled` is on:
+  the old one has to agree and the new one has to prove it exists. So the copy
+  names the new address rather than saying "your email", or the mail landing in
+  the OLD inbox reads as though the change has already happened.
+-->
+
+<h1 class="rc-fg" style="margin: 0 0 12px 0; font-size: 22px; font-weight: 700; line-height: 30px; color: #171717;">
+  Confirm your new email address
+</h1>
+
+<p class="rc-muted" style="margin: 0 0 24px 0; font-size: 15px; line-height: 23px; color: #707070;">
+  Your RiceCal account is moving from {{ .Email }} to {{ .NewEmail }}. Enter this
+  code in the app to confirm it. Both addresses get a code, and the change needs
+  both.
+</p>
+
+<!--PARTIAL:code-->
+
+<p class="rc-muted" style="margin: 20px 0 0 0; font-size: 14px; line-height: 21px; color: #707070;">
+  The code expires in an hour, and it only works once.
+</p>
+
+<div style="height: 28px; line-height: 28px;">&nbsp;</div>
+<!--PARTIAL:rule-->
+<div style="height: 24px; line-height: 24px;">&nbsp;</div>
+
+<p class="rc-muted" style="margin: 0 0 18px 0; font-size: 14px; line-height: 21px; color: #707070;">
+  Reading this on the phone RiceCal is installed on? You can tap through
+  instead.
+</p>
+
+<!--PARTIAL:button|Confirm new address-->
+
+<p class="rc-muted" style="margin: 24px 0 0 0; font-size: 13px; line-height: 20px; color: #707070;">
+  If you did not ask for this, ignore this email and tell us. The change cannot
+  go through without a code from both addresses.
+</p>

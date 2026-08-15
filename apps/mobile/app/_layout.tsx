@@ -196,6 +196,13 @@ function RootStack() {
           the ROOT stack rather than the questions the user walked. Off on both,
           for the reason written out in `(onboarding)/_layout.tsx`. */}
       <Stack.Screen name="(auth)" options={{ gestureEnabled: false }} />
+      {/* Where a link in an email lands. It is a spinner that redirects, and it
+          exists because the router matches paths against files: with no file at
+          `auth/callback`, tapping the button in a login mail opened the app on
+          "Page not found" while the sign-in it had just performed went through
+          invisibly behind it. No gesture, for the same reason as the groups
+          either side: there is nothing behind a link opened cold. */}
+      <Stack.Screen name="auth/[action]" options={{ gestureEnabled: false }} />
       <Stack.Screen name="(onboarding)" options={{ gestureEnabled: false }} />
       {/* The one screen with no back gesture. Everything else in this stack is
           somewhere you went and can leave; the tabs are where the app IS. Onboarding
