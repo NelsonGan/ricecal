@@ -60,6 +60,19 @@ const SOURCES = {
   hawker_my: { name: 'RiceCal hawker recipes', priority: 80, local: 1 },
   chain_menu_my: { name: 'Malaysian chain menus', priority: 70, local: 1 },
   brand_drinks_my: { name: 'Malaysian chain drinks', priority: 70, local: 1 },
+  // National composition tables. Published, measured figures, so they rank
+  // above anything researched and are the one kind of payload that may claim
+  // `verified` in bulk. Not local: a Taiwanese row belongs in the catalogue and
+  // should not outrank a Malaysian one for a Malaysian user.
+  tfda_tw: { name: 'Taiwan FDA food composition database', priority: 85, local: 0 },
+  mext_jp: { name: 'Standard Tables of Food Composition in Japan', priority: 85, local: 0 },
+  ifct_in: { name: 'Indian Food Composition Tables 2017', priority: 85, local: 0 },
+  tkpi_id: { name: 'Tabel Komposisi Pangan Indonesia', priority: 85, local: 0 },
+  hpb_sg: { name: 'Singapore Food Insights Database', priority: 85, local: 0 },
+  // Two tables under one key: the NIN publishes dishes per portion and
+  // ingredients per 100 g, and the row's own `source_attribution` says which.
+  nin_vn: { name: 'Vietnamese Food Composition Tables (NIN)', priority: 85, local: 0 },
+  inmu_th: { name: 'Thai Food Composition Database', priority: 85, local: 0 },
 }
 
 const args = process.argv.slice(2)
