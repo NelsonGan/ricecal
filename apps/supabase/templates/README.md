@@ -16,6 +16,22 @@ pnpm email:check   # fail if build/ is stale (CI runs this)
 pnpm email:push    # build, then send to the project named by .env.local
 ```
 
+**NOTHING PUSHES THESE FOR YOU, and that is the trap this folder sets.** `build/`
+being committed and green in CI means the local stack is right and a reviewer
+read the right file; it says nothing at all about what the hosted project sends.
+`email:push` is a hand-run command against the project's auth config, and the
+whole of the app's design landed here once and sat unpushed, so every real
+signup for a while got the previous design: Supabase's greys, a hairline card, a
+flat button, and no logo. The symptom cannot be found in the repo, because the
+repo is correct. To see what production is actually sending, ask it:
+
+```sh
+curl -s -H "Authorization: Bearer $(security find-generic-password -s 'Supabase CLI' -w)" \
+  "https://api.supabase.com/v1/projects/<ref>/config/auth" | jq -r .mailer_templates_recovery_content
+```
+
+Push after any change here, and remember it is one PATCH for all eight.
+
 `build/` is committed for the same reason `src/theme/theme.css` is: the local
 stack reads those files straight off disk (the `auth.email.template.*` blocks in
 `config.toml`), a reviewer can read the email that will actually be sent, and
@@ -79,6 +95,32 @@ It is also the only half that works when the mail is opened on a different
 device from the one the app is installed on, which for a phone app is most of
 the time. The link is still there, below the code, for the case where they are
 the same device.
+
+## The copy
+
+**One idea a message, and the shared lines live in the layout.** A request mail
+is a heading, one sentence, the code, and how long it lasts; then the rule, one
+line for the reader holding the phone the app is on, and the button. Nothing
+else. The reassurance every message used to end on ("if you did not ask for
+this…") is now the footer's job, written once, because eight copies of one
+sentence is eight chances to word it differently.
+
+The footer carries **support@ricecal.app**, and the sentence around it is
+deliberately not "ignore this email": a password-changed notice is precisely the
+mail nobody should ignore, and the footer is under that one too.
+
+A tail line survives on a body only where it says something the reader cannot
+work out from the rest of the mail:
+
+| | |
+|---|---|
+| `recovery` | nothing has happened to the password yet |
+| `email-change` | the change needs a code from both addresses |
+| `reauthentication` | nobody from RiceCal will ever ask for the code |
+| `email-changed`, `password-changed` | what to do, since these two are notifications rather than requests |
+
+Those last two link the words rather than printing the address again, since the
+footer prints it in full two lines below.
 
 ## The design
 

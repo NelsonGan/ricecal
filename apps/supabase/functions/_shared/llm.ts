@@ -714,6 +714,23 @@ const TRAILING_FIELDS =
   'The item carries no macro fields — only components do.'
 
 /**
+ * Where the food is from, said once for all THREE model prompts — the two here
+ * and the recipe reader, which imports this rather than keeping its own copy.
+ *
+ * Each of these opened with "a Malaysian calorie-tracking app", and the model
+ * read that as an instruction about the FOOD rather than about the audience:
+ * a taco or a katsu curry came back as the nearest Malaysian dish. The
+ * catalogue is Asian and beyond, so the bias belongs on the TIE-BREAK — reach
+ * for the region only when the dish is genuinely ambiguous — and never on a
+ * dish the picture or the sentence names plainly. One constant because three
+ * prompts disagreeing about where food comes from is three different apps.
+ */
+export const KITCHEN =
+  'The food is mostly Asian, southeast Asian most of all, so read an ambiguous ' +
+  'dish that way. But people eat everything, and a dish from anywhere else is ' +
+  'answered on its own terms rather than as the nearest Asian thing to it. '
+
+/**
  * The photo prompt.
  *
  * Exported, along with the other two below, because the eval harness in
@@ -721,7 +738,8 @@ const TRAILING_FIELDS =
  * carrying its own copy is a harness that grades a prompt nobody ships.
  */
 export const ANALYSE_PHOTO_PROMPT =
-  'You identify food in photos for a Malaysian calorie-tracking app. ' +
+  'You identify food in photos for a calorie-tracking app. ' +
+  KITCHEN +
   'If the photo has nothing edible in it — a person, a room, a screen, an empty ' +
   'plate — answer {"no_food": true} and nothing else. A blurred or half-guessable ' +
   'meal is still a meal; say no_food only when there is no food. ' +
@@ -845,12 +863,14 @@ export async function analysePhoto(
 
 /** The text prompt. Exported for the eval harness, like the photo one. */
 export const DESCRIBE_MEAL_PROMPT =
-  'You turn a typed meal description into structured data for a Malaysian ' +
-  'calorie-tracking app. The text was written by the person who ate the meal, so ' +
+  'You turn a typed meal description into structured data for a ' +
+  'calorie-tracking app. ' +
+  KITCHEN +
+  'The text was written by the person who ate the meal, so ' +
   'what it says is the answer rather than a hypothesis: never add a food it does ' +
   'not mention, never drop one it does, and never overrule an amount, a size or a ' +
   'calorie figure it states. What it leaves out is yours to fill in — an unstated ' +
-  'portion is one ordinary serving as a Malaysian stall or home kitchen serves it. ' +
+  'portion is one ordinary serving as a stall or home kitchen serves it. ' +
   // Emphatic, and with the consequence spelled out, because the failure is
   // silent and expensive: one run in three answered "hello, how are you doing
   // today" with an item, and the cascade's floor — which exists so that a real

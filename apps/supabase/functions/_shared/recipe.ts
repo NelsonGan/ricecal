@@ -15,7 +15,7 @@
 
 import type { Meter } from './entitlement.ts'
 import { guessIcon, ICON_INSTRUCTION, type IconChoice, resolveIcon } from './icons.ts'
-import { chatJSON, mockActive } from './llm.ts'
+import { chatJSON, KITCHEN, mockActive } from './llm.ts'
 
 /** 'g' | 'ml' | 'piece' — the units `recipe_ingredients.unit` accepts. */
 export type RecipeUnit = 'g' | 'ml' | 'piece'
@@ -417,22 +417,9 @@ const RECIPE_STEPS =
   'list: do not suggest sides the recipe does not contain. ' +
   'Do not use em dashes or en dashes anywhere.'
 
-/**
- * Where the cooking is from, said once for both prompts.
- *
- * Malaysian food is the common case and the model should reach for it when the
- * dish is ambiguous, but "a Malaysian app" as the whole framing is what turned
- * every other cuisine into a Malay approximation of itself. The bias belongs on
- * the tie-break, not on the dish.
- */
-const RECIPE_KITCHEN =
-  'Most of the cooking is Malaysian and southeast Asian, so read an ambiguous ' +
-  'dish that way, but people cook everything and a dish from anywhere else is ' +
-  'answered on its own terms. '
-
 export const READ_RECIPE_PROMPT =
   'You read home cooking out of photographs for a calorie-tracking app. ' +
-  RECIPE_KITCHEN +
+  KITCHEN +
   'The photo is a pot, a tray or a spread of ingredients that somebody cooked. ' +
   recipeSchema(false) +
   RECIPE_SHAPE +
@@ -449,7 +436,7 @@ export const READ_RECIPE_PROMPT =
 export const DESCRIBE_RECIPE_PROMPT =
   "You turn a description of somebody's home cooking into a recipe for a " +
   'calorie-tracking app. ' +
-  RECIPE_KITCHEN +
+  KITCHEN +
   // Declared in the schema, which is the only place a model reliably reads a
   // key from. See `recipeSchema`.
   recipeSchema(true) +

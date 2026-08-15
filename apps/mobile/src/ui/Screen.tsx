@@ -375,10 +375,20 @@ export function Screen({
             {/* No rule above the footer. The design separates it with space and
               the canvas colour alone, and a hairline under a full-width CTA
               reads as a seam rather than a divider. */}
+            {/* On a device with a home indicator the inset is already a
+                finger's worth of clearance, so the full `spacing.md` the top
+                uses stacked on top of it reads as a band of dead canvas under
+                the last button — most visible where the footer ends in a ghost
+                button (the intro paywall's "Maybe later", the welcome screen's
+                "I already have an account"), which floated a long way off the
+                bottom edge. So `spacing.xs` on top of the inset there. The
+                `max` is the floor for a device with NO inset (an older phone,
+                most Android gesture-off bars): the CTA still wants `spacing.md`
+                of real gap under it, which is what the old value always gave. */}
             <View
               onLayout={measureFooter}
               className="gap-md bg-canvas px-gutter pt-md"
-              style={{ paddingBottom: insets.bottom + spacing.md }}
+              style={{ paddingBottom: Math.max(insets.bottom + spacing.xs, spacing.md) }}
             >
               {footer}
             </View>
