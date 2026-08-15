@@ -3,6 +3,7 @@ import { useCallback } from 'react'
 import { AppState } from 'react-native'
 
 import i18n from '@/i18n'
+import { dateOffset, type ScanOutcome, track } from '@/lib/analytics'
 import {
   announceScan,
   cancelScanNotice,
@@ -11,6 +12,7 @@ import {
 } from '@/lib/notifications'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/ui'
+import { today } from './client'
 import { keys } from './keys'
 import { usePendingSnaps } from './pending-snaps'
 import { uploadMealPhoto } from './photos'
@@ -142,6 +144,37 @@ function useRecogniseMeal() {
       // mistakes it for one and tries to update it.
       const id = `snap-${Date.now()}-${Math.round(Math.random() * 1e6)}`
       pending.add({ id, logDate, photoUri, text })
+
+      /**
+       * TWO EVENTS FOR ONE MEAL, and they answer different questions.
+       *
+       * `Meal Logged` is fired HERE, at the commit, because that is what the
+       * user did and what the day already shows — a pending row on the diary.
+       * `Meal Scan Completed` follows when the cascade answers, carrying which
+       * tier priced it and how long it took.
+       *
+       * The alternative — one event at the end — would drop every meal whose
+       * request broke, which is exactly the case the pending row exists to
+       * survive: the edge function writes the entry itself, so a scan that
+       * stopped reporting to this process very probably still landed.
+       */
+      const method = text ? 'describe' : 'camera'
+      const startedAt = Date.now()
+      const offset = dateOffset(logDate, today())
+      track('Meal Logged', { method, date_offset: offset })
+
+      const completed = (outcome: ScanOutcome, result?: ScanResponse) =>
+        track('Meal Scan Completed', {
+          method,
+          outcome,
+          duration_ms: Date.now() - startedAt,
+          // The tier the FIRST entry landed on. A decomposed plate has one per
+          // component, but the tier is a property of how the cascade resolved
+          // the meal rather than of each part, and `components` below is what
+          // says the plate came apart.
+          tier: result?.entries?.[0]?.tier ?? null,
+          components: result?.entries?.length ?? 0,
+        })
       // A typed meal has no picture, so the banner and the row talk about the
       // words instead of the plate. Same work underneath, different noun.
       const doneTitle = text ? 'logging:today.describeDoneTitle' : 'logging:today.scanDoneTitle'
@@ -198,6 +231,7 @@ function useRecogniseMeal() {
           if (result.food === false) {
             void booked.then(() => cancelScanNotice(notice))
             pending.noFood(id)
+            completed('no_food', result)
             return
           }
 
@@ -221,6 +255,7 @@ function useRecogniseMeal() {
           // The real rows are in the database now, so the placeholder goes and
           // the day refetches into them. Removing first avoids one frame with
           // both on screen.
+          completed('logged', result)
           pending.remove(id)
           queryClient.invalidateQueries({ queryKey: keys.day(userId, logDate) })
           queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
@@ -239,6 +274,7 @@ function useRecogniseMeal() {
           if (error instanceof AiLimitError) {
             void booked.then(() => cancelScanNotice(notice))
             pending.fail(id)
+            completed('limit_reached')
             toast.show({ title: i18n.t('paywall:limit.reached'), tone: 'error' })
             return
           }
@@ -248,6 +284,7 @@ function useRecogniseMeal() {
           if (error instanceof NotEntitledError) {
             void booked.then(() => cancelScanNotice(notice))
             pending.fail(id)
+            completed('not_entitled')
             toast.show({ title: i18n.t('paywall:limit.notEntitled'), tone: 'warning' })
             return
           }
@@ -259,6 +296,7 @@ function useRecogniseMeal() {
             // the plate was counted would be a lie the user acts on.
             void booked.then(() => cancelScanNotice(notice))
             pending.fail(id)
+            completed('failed')
             return
           }
           // The request broke; the scan probably did not. The row keeps its
@@ -269,6 +307,7 @@ function useRecogniseMeal() {
           // written for: the answer is still coming, this process is no longer
           // the thing that will hear it, and a scheduled notification fires
           // whether or not the app is alive to fire it.
+          completed('detached')
           pending.detach(id)
         })
 

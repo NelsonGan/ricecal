@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 
 import { useEntitlement } from '@/data'
+import { type ProFeature, track } from '@/lib/analytics'
 import { useToast } from '@/ui'
 
 export type RequireProOptions = {
@@ -39,10 +40,18 @@ export type RequireProOptions = {
  * shutter tells a user they cannot do something and gives them nowhere to go,
  * while a shutter that opens the paywall tells them what it costs.
  *
- * Reads as a single early return at the call site:
+ * Reads as a single early return at the call site, naming the button being
+ * guarded:
  *
- *     if (!requirePro()) return
+ *     if (!requirePro('camera')) return
  *     snapFood(...)
+ *
+ * THE FEATURE IS AN ARGUMENT TO THE RETURNED FUNCTION rather than an option on
+ * the hook, because one screen guards several buttons with one hook — the quick
+ * selector's shutter, describe panel and quick add are all the same instance.
+ * It exists so `Paywall Shown` can say which capability was refused, which is
+ * the only way to find out what actually sells the app: the paywall screen
+ * cannot know why it was opened.
  *
  * WAITS FOR THE ANSWER rather than assuming one. While the subscription query
  * is still in flight this refuses and says nothing at all — no paywall, no
@@ -51,14 +60,14 @@ export type RequireProOptions = {
  * call before being refused, or assume unpaid and a paying user is shown a
  * paywall for the app they have already bought.
  */
-export function useRequirePro(options: RequireProOptions = {}): () => boolean {
+export function useRequirePro(options: RequireProOptions = {}): (feature: ProFeature) => boolean {
   const { navigate = 'push' } = options
   const router = useRouter()
   const toast = useToast()
   const { t } = useTranslation('paywall')
   const { entitled, loading, unknown } = useEntitlement()
 
-  return () => {
+  return (feature: ProFeature) => {
     if (entitled) return true
     if (loading) return false
 
@@ -69,6 +78,12 @@ export function useRequirePro(options: RequireProOptions = {}): () => boolean {
       toast.show({ title: t('couldNotCheck'), tone: 'warning' })
       return false
     }
+
+    // Fired here rather than on the paywall's own mount, because this is the
+    // only place that knows WHY. The paywall screen tracks the three routes
+    // that are reached without a refusal (onboarding, the reminder, the ended
+    // trial); everything else arrives through this line.
+    track('Paywall Shown', { screen: 'hard', trigger: feature })
 
     if (navigate === 'replace') router.replace('/paywall')
     else router.push('/paywall')

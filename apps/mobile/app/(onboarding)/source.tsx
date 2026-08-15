@@ -1,12 +1,6 @@
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-import {
-  ChoiceCard,
-  OnboardingStep,
-  stepNumber,
-  TOTAL_STEPS,
-  useOnboardingDraft,
-} from '@/features/onboarding'
+import { ChoiceCard, OnboardingStep, useOnboardingDraft } from '@/features/onboarding'
 
 const OPTIONS = ['tiktok', 'instagram', 'friend', 'appStore', 'youtube', 'other'] as const
 
@@ -18,8 +12,7 @@ export default function SourceStep() {
 
   return (
     <OnboardingStep
-      step={stepNumber('source')}
-      total={TOTAL_STEPS}
+      name="source"
       accent="water"
       title={t('source.title')}
       subtitle={t('source.subtitle')}

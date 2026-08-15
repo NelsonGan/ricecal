@@ -21,6 +21,7 @@ their own area:
 | `apps/mobile/src/data/README.md` | the data layer, file by file |
 | `apps/mobile/src/ui/README.md` | the design system, and which prop targets which box |
 | `apps/mobile/src/lib/health/README.md` | what each health store actually gives you, and what Android is missing |
+| `apps/mobile/src/lib/analytics/README.md` | the Mixpanel tracking plan, and what was deliberately left out of it |
 | `apps/mobile/AGENTS.md` | Expo 57 changed; read the versioned docs before writing Expo code |
 
 ---
@@ -1201,6 +1202,17 @@ Break these and the feature is wrong in ways tests may not catch.
   signature for pictures that never left. That path IS the cache entry, so
   `storedImageSource` hands it over with no `cacheKey` — filing it again would
   ask the cache to store what it just produced.
+- **Nothing off the diary reaches Mixpanel.** No calorie totals, no weights, no
+  dish names, no search text — `src/lib/analytics/events.ts` is the whole list
+  of what is sent, and a call site cannot add to it without editing that file.
+  Where a number is genuinely wanted, its SHAPE goes instead: `planDirection`
+  sends lose/gain/maintain rather than the two weights, and `dateOffset` sends
+  how many days back an entry was logged rather than which day. This is not only
+  a privacy rule — the pipeline's own quality is already measured in Postgres by
+  `food_scan_items` and `food_scan_misses`, so a second copy in an analytics
+  product would be a worse one that drifts. Purchases are RevenueCat's, which
+  funnels them in itself; what the app sends is the INTENT either side of the
+  store sheet, because the store never reports a purchase that did not happen.
 - No embeddings.
 
 ---

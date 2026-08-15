@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { setPersonProps, track } from '@/lib/analytics'
 import type { TablesUpdate } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
 import { unwrap, unwrapMaybe, unwrapOne } from './client'
@@ -104,6 +105,20 @@ export function useUpdateMealTime() {
     },
     onError: (_error, _patch, context) => {
       if (context?.previous) queryClient.setQueryData(keys.mealTimes(userId), context.previous)
+    },
+    onSuccess: (_row, { meal, reminder_enabled }) => {
+      // Only the switch. Moving a reminder from 08:00 to 08:30 is somebody
+      // adjusting a feature they already use, which is not what this is here to
+      // measure — reminders are the app's only unprompted way back in, so the
+      // question is how many people have any at all.
+      if (reminder_enabled === undefined) return
+      track('Reminder Toggled', { meal, enabled: reminder_enabled })
+
+      // The count, kept fresh from the cache the mutation has already updated.
+      // It is a fact about the account rather than an event, so it belongs on
+      // the person: "users with no reminders on" is a cohort worth having.
+      const rows = queryClient.getQueryData<MealTime[]>(keys.mealTimes(userId)) ?? []
+      setPersonProps({ meal_reminders: rows.filter((row) => row.reminder_enabled).length })
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: keys.mealTimes(userId) }),
   })

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState } from 'react-native'
 import { createMMKV } from 'react-native-mmkv'
 
+import { setPersonProps, track } from '@/lib/analytics'
 import type { HealthProvider, HealthReading, ProviderId } from '@/lib/health'
 import { providerFor } from '@/lib/health'
 import { ageFrom } from '@/lib/nutrition'
@@ -504,7 +505,22 @@ export function useConnectHealth() {
       return { granted: true, days }
     },
 
-    onSuccess: () => invalidateAfterSync(queryClient, userId),
+    onSuccess: (result, { provider }) => {
+      /**
+       * `granted: false` and `days: 0` are two different failures wearing one
+       * empty tab, which is the whole reason both are on the event: a refused
+       * permission sheet is a copy problem, and a granted store that returned
+       * nothing is a device problem — most often a simulator, whose Health app
+       * reports itself as available and holds nothing at all.
+       */
+      track('Health Connected', {
+        provider,
+        granted: result.granted,
+        days: result.days,
+      })
+      if (result.granted) setPersonProps({ health_provider: provider })
+      invalidateAfterSync(queryClient, userId)
+    },
   })
 }
 

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 
 import i18n from '@/i18n'
+import { track } from '@/lib/analytics'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/ui'
 import { keys } from './keys'
@@ -223,10 +224,29 @@ export function useRefineEntry() {
       entryId: string
       instruction: string
       logDate: string
+      /**
+       * Whether the words came from a suggested chip rather than the field.
+       *
+       * Carried for analytics alone — nothing in this hook or on the server
+       * treats a chip differently, which is the point: a chip IS the sentence,
+       * not a shortcut the client performs itself. What the property answers is
+       * whether the four chips are being used at all, or whether everybody
+       * types.
+       */
+      fromChip?: boolean
       /** Called when the server understood the request and applied nothing. */
       onNotApplied?: () => void
     }) => {
       refining.add(input.entryId)
+      const startedAt = Date.now()
+      const settled = (
+        outcome: 'applied' | 'not_applied' | 'failed' | 'limit_reached' | 'not_entitled',
+      ) =>
+        track('Entry Refined', {
+          outcome,
+          from_chip: input.fromChip ?? false,
+          duration_ms: Date.now() - startedAt,
+        })
 
       const work = async () => {
         const { data, error } = await supabase.functions.invoke<RefineResponse>('scan-refine', {
@@ -251,6 +271,7 @@ export function useRefineEntry() {
 
       work()
         .then((data) => {
+          settled(data.applied === false ? 'not_applied' : 'applied')
           if (data.applied === false) input.onNotApplied?.()
         })
         .catch((error: unknown) => {
@@ -260,14 +281,20 @@ export function useRefineEntry() {
           // out of subscription does not improve by retrying, and silence
           // there reads as the button not working.
           if (error instanceof AiLimitError) {
+            settled('limit_reached')
             toast.show({ title: i18n.t('paywall:limit.reached'), tone: 'error' })
             return
           }
           if (error instanceof NotEntitledError) {
+            settled('not_entitled')
             toast.show({ title: i18n.t('paywall:limit.notEntitled'), tone: 'warning' })
+            return
           }
           // The entry is untouched on the server; showing it as it was IS the
-          // honest failure state.
+          // honest failure state, so nothing is said to the user here. The
+          // event is still worth having: a correction that quietly did nothing
+          // is invisible from the diary side.
+          settled('failed')
         })
         .finally(() => refining.remove(input.entryId))
     },

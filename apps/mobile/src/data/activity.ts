@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 
+import { setPersonProps, track } from '@/lib/analytics'
 import type { Database, Tables } from '@/lib/database.types'
 import { type ProviderId, parseHrZones, providerFor } from '@/lib/health'
 import { supabase } from '@/lib/supabase'
@@ -473,6 +474,12 @@ export function useDisconnectHealth() {
           .eq('provider', provider)
           .select(),
       )
+    },
+    onSuccess: (_result, provider) => {
+      track('Health Disconnected', { provider })
+      // Null rather than left alone: a segment built on "reads Apple Health"
+      // must not go on containing somebody who turned it off six months ago.
+      setPersonProps({ health_provider: null })
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: keys.healthConnection(userId) })
