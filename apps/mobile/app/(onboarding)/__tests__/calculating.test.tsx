@@ -96,7 +96,7 @@ it('says what the number is made of', async () => {
   expect(screen.getByText('Building your plan')).toBeTruthy()
   expect(screen.getByText('Daily calorie goal')).toBeTruthy()
   expect(screen.getByText('Carbs, protein and fat split')).toBeTruthy()
-  expect(screen.getByText('Local food matches')).toBeTruthy()
+  expect(screen.getByText('Matching your food')).toBeTruthy()
 })
 
 it(

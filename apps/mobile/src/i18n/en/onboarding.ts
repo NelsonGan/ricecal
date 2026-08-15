@@ -82,7 +82,7 @@ export const onboarding = {
     steps: {
       budget: 'Daily calorie goal',
       macros: 'Carbs, protein and fat split',
-      catalogue: 'Local food matches',
+      catalogue: 'Matching your food',
     },
   },
 
