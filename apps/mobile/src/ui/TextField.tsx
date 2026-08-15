@@ -26,6 +26,21 @@ export type TextFieldProps = Omit<TextInputProps, 'style' | 'className'> & {
   /** The `TextInput` inside it — for a field whose value wants display type. */
   inputClassName?: string
   containerClassName?: string
+  /**
+   * Keep the PLATFORM's keyboard on a field whose `keyboardType` is numeric.
+   *
+   * The default is the app's own pad, for the reason CLAUDE.md gives about iOS
+   * 26's floating "Done" pill, and it is right for every figure the app asks
+   * for: a weight, a portion, a calorie total. It is wrong for a code.
+   *
+   * A pad that types a NUMBER cannot type a six digit STRING. It drops a
+   * leading zero ("0" then "7" gives "7", because `07` is a typo in every
+   * quantity this app holds), and one in six codes starts with one. It also
+   * takes away the keyboard, and the keyboard is what carries `oneTimeCode`
+   * autofill — the whole reason a code arriving by mail can be filled in with
+   * one tap rather than memorised.
+   */
+  systemKeyboard?: boolean
 }
 
 /**
@@ -61,6 +76,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
     // knows about is a limit nothing enforces. Still forwarded below, so a
     // field on the platform's keyboard behaves the same way.
     maxLength,
+    systemKeyboard = false,
     ...rest
   },
   ref,
@@ -77,13 +93,15 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
    * `selectTextOnFocus` carries across as `replaceFirst`. With no keyboard
    * there is no typing to replace a selection, so the pad reproduces what the
    * prop was actually for: the first key stands in for the whole value.
+   *
+   * Unless the caller asked for the platform's keyboard. See `systemKeyboard`.
    */
   const numpad = useNumpadField({
     // `onChangeText` is part of it because the pad has nowhere to write without
     // one. An uncontrolled numeric field is not a shape this app uses, and if
     // one appears it should fall back to the platform's keyboard rather than
     // open a pad whose keys do nothing.
-    enabled: editable && NUMERIC.has(keyboardType) && Boolean(onChangeText),
+    enabled: editable && !systemKeyboard && NUMERIC.has(keyboardType) && Boolean(onChangeText),
     value: value ?? '',
     onChangeText: onChangeText ?? (() => {}),
     decimal: keyboardType !== 'number-pad',

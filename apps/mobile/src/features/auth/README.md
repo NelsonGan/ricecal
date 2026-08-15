@@ -108,10 +108,21 @@ can lock every existing install out at once: a build already on a phone has no
 idea it is meant to send a token.
 
 1. **Create the widget** at Cloudflare dashboard → Turnstile → Add widget.
-   Mode **Invisible** (or Managed), and add the hostname you will use as the
-   WebView's origin, e.g. `ricecal.app`. That hostname is never fetched from;
-   inline HTML has no origin of its own and the widget is bound to a hostname
-   list, so the page is loaded under it.
+   Mode **Managed**, and add the hostname you will use as the WebView's origin,
+   e.g. `ricecal.app`. That hostname is never fetched from; inline HTML has no
+   origin of its own and the widget is bound to a hostname list, so the page is
+   loaded under it.
+
+   **MANAGED, NOT INVISIBLE, and this one is not a preference.** Cloudflare's
+   three modes differ in exactly one thing: what happens to a visitor it judges
+   suspicious. Managed escalates to a checkbox. Non-Interactive and Invisible
+   never do — the docs are explicit that those visitors "will never interact
+   with the widget" — so a real person whose score comes out badly has no way
+   to prove otherwise and simply cannot sign in, on every attempt, for ever. A
+   hidden WebView on a phone is a profile that scores badly more often than a
+   browser does, which is what makes this the likely mode rather than a corner.
+   `appearance: 'interaction-only'` keeps a Managed widget invisible until that
+   escalation actually happens, so nothing is lost by choosing it.
 2. **Store the secret on Supabase**, gate still open:
    ```sh
    pnpm auth:config --captcha-secret 0x4AAA... --push
@@ -128,6 +139,30 @@ idea it is meant to send a token.
 
 Left at `REPLACE_ME`, the app asks for no token and sends none, which is exactly
 right for every step before the last.
+
+### When it refuses a real person
+
+Everything that goes wrong here reads the same from inside the app, "we could
+not confirm you are a person", so the diagnosis is in the console. Every failure
+logs a `[captcha]` line carrying Cloudflare's own error code, and the code says
+which of three things it is:
+
+| code | what it is | where the fix is |
+|---|---|---|
+| `110200` | the WebView's origin is not on the widget's hostname list | add `EXPO_PUBLIC_TURNSTILE_ORIGIN` under Hostname Management |
+| `110100`, `110110`, `400020`, `400070` | wrong, unknown or disabled site key | the key in the EAS environment, or the widget itself |
+| `300*`, `600*` | Cloudflare judged the visitor a bot | the widget's MODE, above |
+
+The last row is the one that looks like an app bug and is not: the request is
+reaching Cloudflare and being scored, and the app is doing what it can with the
+answer. `turnstile.tsx` no longer settles on the first of these — the widget
+retries itself, and in Managed mode the escalation to a checkbox arrives as an
+`interactive` message and the panel goes up. In Invisible mode nothing arrives
+at all, which is the whole reason for the note about modes above.
+
+The other half of the pair is the SECRET on Supabase. It has to belong to the
+same widget as the site key: a mismatched pair produces a token the app is happy
+with and `siteverify` rejects, and the only symptom is the same sentence again.
 
 ## Where the rest of it lives
 

@@ -55,7 +55,14 @@ export default function VerifyScreen() {
   const purpose: Exclude<CodePurpose, 'recovery'> = params.purpose === 'signup' ? 'signup' : 'email'
 
   const [code, setCode] = useState('')
-  const [busy, setBusy] = useState(false)
+  /**
+   * WHICH request is in flight. See the note on `Action` in `password.tsx`: a
+   * single boolean here put the spinner on the footer CTA whichever control was
+   * pressed, so asking for a second mail spun a button at the bottom of the
+   * screen that nobody had touched.
+   */
+  const [running, setRunning] = useState<'submit' | 'resend' | null>(null)
+  const busy = running !== null
   const [submitted, setSubmitted] = useState(false)
 
   /**
@@ -82,14 +89,14 @@ export default function VerifyScreen() {
 
   const tooShort = code.length !== CODE_LENGTH
 
-  const attempt = async (work: () => Promise<void>) => {
-    setBusy(true)
+  const attempt = async (which: 'submit' | 'resend', work: () => Promise<void>) => {
+    setRunning(which)
     try {
       await work()
     } catch (error) {
       toast.show({ title: message(error), tone: 'error' })
     } finally {
-      setBusy(false)
+      setRunning(null)
     }
   }
 
@@ -99,11 +106,11 @@ export default function VerifyScreen() {
     // No navigation on success. The session appears and the guard in `_layout`
     // decides where this person belongs, which is not the same place for
     // somebody halfway through onboarding as for somebody coming back.
-    attempt(() => verifyEmailCode(email, code, purpose))
+    attempt('submit', () => verifyEmailCode(email, code, purpose))
   }
 
   const resend = () =>
-    attempt(async () => {
+    attempt('resend', async () => {
       const token = await captcha()
       // The two purposes are two different tokens on the row. Asking for a
       // magic link when the account is waiting to confirm its address signs
@@ -124,7 +131,7 @@ export default function VerifyScreen() {
   return (
     <Screen
       footer={
-        <Button fullWidth onPress={submit} disabled={busy} loading={busy}>
+        <Button fullWidth onPress={submit} disabled={busy} loading={running === 'submit'}>
           {t('auth:verify.submit')}
         </Button>
       }
@@ -145,10 +152,13 @@ export default function VerifyScreen() {
         value={code}
         onChangeText={(next) => setCode(next.replace(/\D/g, '').slice(0, CODE_LENGTH))}
         placeholder={t('auth:verify.placeholder')}
-        // `number-pad` is what hands this to the app's own `Numpad`, which is
-        // the rule for every numeric field here — see the note about iOS 26's
-        // floating "Done" pill in CLAUDE.md. `Screen` provides the host.
+        // THE ONE NUMERIC FIELD IN THE APP THAT KEEPS THE PLATFORM'S KEYBOARD,
+        // and the exception is the field rather than the rule. A code is a
+        // string of six digits, not a quantity: the app's pad drops a leading
+        // zero, which one code in six starts with, and suppressing the keyboard
+        // takes `oneTimeCode` autofill with it. See `systemKeyboard`.
         keyboardType="number-pad"
+        systemKeyboard
         maxLength={CODE_LENGTH}
         autoComplete="one-time-code"
         textContentType="oneTimeCode"
@@ -156,17 +166,22 @@ export default function VerifyScreen() {
         error={submitted && tooShort ? t('auth:errors.codeLength') : undefined}
         returnKeyType="go"
         onSubmitEditing={submit}
+        editable={!busy}
       />
 
-      <View className="gap-1 pt-2">
-        <Button variant="ghost" fullWidth onPress={resend} disabled={busy || cooldown > 0}>
-          {cooldown > 0
-            ? t('auth:verify.resendIn', { seconds: cooldown })
-            : t('auth:verify.resend')}
-        </Button>
-      </View>
-
-      <Text variant="meta">{t('auth:verify.wrongEmail')}</Text>
+      {/* A quiet link rather than a full-width control. It is the hatch for a
+          mail that did not arrive, not the way forward — and the way forward is
+          already a button at the foot of the screen. */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="self-center"
+        onPress={resend}
+        disabled={busy || cooldown > 0}
+        loading={running === 'resend'}
+      >
+        {cooldown > 0 ? t('auth:verify.resendIn', { seconds: cooldown }) : t('auth:verify.resend')}
+      </Button>
     </Screen>
   )
 }

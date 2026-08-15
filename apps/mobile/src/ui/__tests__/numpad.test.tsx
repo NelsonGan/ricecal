@@ -194,6 +194,39 @@ describe('Numpad', () => {
     }
   })
 
+  /**
+   * The six digit code is the one numeric field that keeps the platform's
+   * keyboard, and the reason is that the pad types NUMBERS: it drops a leading
+   * zero, because `07` is a typo in every quantity this app holds and the first
+   * digit of one code in six. Suppressing the keyboard also takes `oneTimeCode`
+   * autofill with it.
+   */
+  it('leaves the platform keyboard on a numeric field that asked for it', async () => {
+    function Coded() {
+      const [value, setValue] = useState('')
+      return (
+        <SafeAreaProvider initialMetrics={METRICS}>
+          <NumpadProvider labels={LABELS}>
+            <NumpadHost>
+              <TextField
+                label="CODE"
+                value={value}
+                onChangeText={setValue}
+                keyboardType="number-pad"
+                systemKeyboard
+              />
+            </NumpadHost>
+          </NumpadProvider>
+        </SafeAreaProvider>
+      )
+    }
+    await render(<Coded />)
+
+    expect(screen.getByLabelText('CODE').props.showSoftInputOnFocus).toBe(true)
+    fireEvent(screen.getByLabelText('CODE'), 'focus')
+    expect(screen.queryByRole('button', { name: '7' })).toBeNull()
+  })
+
   it('leaves a field that is not a number alone', async () => {
     await render(<Harness keyboardType="default" />)
     expect(screen.getByLabelText('Amount').props.showSoftInputOnFocus).toBe(true)

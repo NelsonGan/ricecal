@@ -10,11 +10,17 @@
  * No long dashes anywhere in here. See the conventions note in CLAUDE.md.
  */
 export const auth = {
-  /** The three ways in, on the screen that offers them. */
+  /**
+   * The three ways in, on the screen that offers them.
+   *
+   * No explainer under the buttons. There was one ("Use a password, or have us
+   * email you a code. Your choice.") and it described the NEXT screen, which is
+   * the one place a sentence cannot help: by the time the choice is in front of
+   * the reader they can see both offers, and until then it is a paragraph
+   * between an address field and the button that submits it.
+   */
   choose: {
     email: 'Continue with email',
-    /** Under the three buttons. Says what a password is FOR, not that it exists. */
-    explainer: 'Use a password, or have us email you a code. Your choice.',
   },
 
   password: {
@@ -75,8 +81,9 @@ export const auth = {
     resendIn: 'Send it again in {{seconds}}s',
     resent: 'Sent. Check your email again.',
 
-    /** Under everything, for the person who typed the address wrong. */
-    wrongEmail: 'Wrong address? Go back and change it.',
+    // No "wrong address?" line. It told the reader to use the chevron that is
+    // already at the top of the screen, and it sat under the one control that
+    // matters here reading like a fourth thing to consider.
   },
 
   reset: {

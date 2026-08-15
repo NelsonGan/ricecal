@@ -1,4 +1,4 @@
-import { render as rntlRender, screen, userEvent } from '@testing-library/react-native'
+import { act, render as rntlRender, screen, userEvent } from '@testing-library/react-native'
 import type { ReactElement, ReactNode } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
@@ -259,6 +259,40 @@ describe('the mailed code', () => {
     await render(<PasswordScreen />)
 
     expect(screen.getByText('Email me a code instead')).toBeOnTheScreen()
+  })
+
+  /**
+   * THE SPINNER GOES ON THE BUTTON THAT WAS PRESSED.
+   *
+   * One `busy` boolean drove `loading` on the footer CTA, so asking for a code
+   * spun a button at the bottom of the screen that nobody had touched while the
+   * control that had been tapped sat there looking ignored — and the password
+   * field stayed editable throughout. Every screen in this stack had the shape.
+   */
+  it('spins the control that was pressed, and not the one at the foot of the screen', async () => {
+    let release: () => void = () => {}
+    auth.sendLoginLink.mockReturnValue(
+      new Promise<void>((resolve) => {
+        release = resolve
+      }),
+    )
+    await render(<PasswordScreen />)
+
+    await user.press(screen.getByText('Email me a code instead'))
+
+    const code = screen.getByRole('button', { name: 'Email me a code instead' })
+    const submit = screen.getByRole('button', { name: 'Create account' })
+    expect(code.props.accessibilityState.busy).toBe(true)
+    expect(submit.props.accessibilityState.busy).toBe(false)
+    // Locked, though: a second request is not on offer while one is running.
+    expect(submit.props.accessibilityState.disabled).toBe(true)
+    // And nothing on the screen can be retyped underneath it.
+    expect(screen.getByLabelText('PASSWORD').props.editable).toBe(false)
+
+    // Let the request finish inside the test rather than after it: the state
+    // update that clears the spinner lands either way, and outside `act` it
+    // lands on a torn-down tree and warns.
+    await act(async () => release())
   })
 })
 
