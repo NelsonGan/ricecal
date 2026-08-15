@@ -183,12 +183,27 @@ Deno.serve(async (req: Request) => {
   const gtin = gtin14(body.code ?? '')
   if (!gtin) return json({ ok: false, error: 'not a usable barcode' }, 400)
 
-  // service_role, for the miss backlog. It is the only thing this function
-  // writes to Postgres now that the catalogue lives in D1.
+  // service_role, for the miss backlog and the scan throttle. It is the only
+  // thing this function writes to Postgres now that the catalogue lives in D1.
   const admin = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   )
+
+  // A per-account hourly rate limit, claimed BEFORE any lookup work. This path
+  // spends no AI budget, so the meter never sees it, and without this a signed-
+  // in caller could loop distinct codes to drive a live Open Food Facts fetch
+  // and a miss-backlog write on every one. Claimed atomically in Postgres (see
+  // `claim_barcode_scan`); a database blip lets the scan through uncounted,
+  // which is the cheap direction to be wrong in for a lookup, not a purchase.
+  {
+    const { data: claim, error: claimError } = await admin
+      .rpc('claim_barcode_scan', { p_user: auth.user.id })
+      .maybeSingle<{ allowed: boolean; used: number; hourly_limit: number }>()
+    if (!claimError && claim && !claim.allowed) {
+      return json({ ok: false, error: 'too many scans, try again shortly' }, 429)
+    }
+  }
 
   // THE CATALOGUE IS IN D1 NOW, so this is where the lookup goes. It answers
   // for 3.2 million packaged products — ten times what Postgres could hold —

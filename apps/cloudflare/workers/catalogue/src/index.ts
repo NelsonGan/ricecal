@@ -145,6 +145,20 @@ type FoodRow = Record<string, unknown> & { id: string }
  */
 const D1_MAX_BOUND_PARAMS = 100
 
+/**
+ * The longest search string worth honouring, in characters.
+ *
+ * `q` was clamped nowhere — only `limit` was. A real dish name is well under
+ * this; a 20 KB string is not a search, it is a way to make one request cost
+ * what a thousand should. `ftsQuery` ORs every term and `trigramQuery` ORs one
+ * arm per character, so an unbounded query expands into an FTS5 MATCH with
+ * thousands of clauses, each its own index scan that D1 bills by rows read. On
+ * `/public/search` the answer cache is keyed on the normalized query, so
+ * distinct long random strings miss it every time and hit the database. Cutting
+ * the input here is the one place that covers both callers and both FTS arms.
+ */
+const MAX_QUERY_CHARS = 100
+
 /** One dish with its portions and aliases, shaped like the old `food_details`. */
 async function foodDetails(env: Env, ids: string[]): Promise<Map<string, FoodRow>> {
   if (ids.length === 0) return new Map()
@@ -200,10 +214,15 @@ async function foodDetails(env: Env, ids: string[]): Promise<Map<string, FoodRow
 }
 
 async function search(env: Env, q: string, limit: number): Promise<unknown[]> {
-  const qn = normalize(q)
+  // Bound the input BEFORE it becomes an FTS5 MATCH expression. Everything below
+  // — normalize, both FTS arms, the trigram split — scales with this length, so
+  // capping it once here is what keeps a pathological query from costing far
+  // more than a real one. See MAX_QUERY_CHARS.
+  const bounded = q.length > MAX_QUERY_CHARS ? q.slice(0, MAX_QUERY_CHARS) : q
+  const qn = normalize(bounded)
   if (!qn) return []
 
-  const match = ftsQuery(q)
+  const match = ftsQuery(bounded)
   const trgm = trigramQuery(qn)
 
   // One round trip for all four arms. D1 charges per query and each of these is
@@ -450,7 +469,12 @@ async function publicSearch(
       headers: { ...cors, 'content-type': 'application/json' },
     })
 
-  const qn = normalize(url.searchParams.get('q') ?? '')
+  // Bounded here as well as inside `search`, so the length check and the cache
+  // key are computed on the same capped string the query will be — an unbounded
+  // `q` would otherwise build a giant cache key that never hits. See
+  // MAX_QUERY_CHARS.
+  const raw = url.searchParams.get('q') ?? ''
+  const qn = normalize(raw.length > MAX_QUERY_CHARS ? raw.slice(0, MAX_QUERY_CHARS) : raw)
   const limit = Math.min(
     Math.max(Number(url.searchParams.get('limit') ?? PUBLIC_MAX_LIMIT), 1),
     PUBLIC_MAX_LIMIT,

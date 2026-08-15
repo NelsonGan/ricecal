@@ -537,11 +537,20 @@ export type LinkOutcome = 'none' | 'signed-in' | 'recovery'
 /**
  * Turns a login link back into a session.
  *
- * The link in the mail goes to Supabase, which verifies the token and redirects
- * to the app's own scheme with the result on the end of it. Where exactly depends
- * on the flow the project is on, and that is a project setting rather than
- * something this code picks: implicit puts a pair of tokens in the fragment,
- * PKCE puts one code in the query string. Both are read.
+ * The link in the mail goes to Supabase, which verifies it and redirects to the
+ * app's own scheme with a one-time `?code=` on the end. `exchangeCodeForSession`
+ * trades that code for a session, and under PKCE (see `flowType` in
+ * `lib/supabase.ts`) the trade only succeeds with the verifier THIS install
+ * generated when it asked for the link — so a code lifted from a mail, or a
+ * whole link forwarded to another device, is inert.
+ *
+ * A TOKEN PAIR IN THE URL IS DELIBERATELY IGNORED. The implicit flow puts a
+ * ready-to-use `access_token`/`refresh_token` in the fragment, and this function
+ * once called `setSession` with whatever it found there — which made any
+ * `ricecal://` link a login: an attacker mails the victim a link carrying the
+ * attacker's own tokens, one tap opens the app signed into the attacker's
+ * account, and the victim's next photographed meals and weigh-ins land in rows
+ * the attacker reads back. A code cannot do that, so a code is all this accepts.
  *
  * Returns `none` for a link carrying no session at all, because every other deep
  * link into the app arrives here too.
@@ -550,32 +559,21 @@ export async function completeLoginFromUrl(url: string): Promise<LinkOutcome> {
   const params = paramsIn(url)
 
   // Supabase reports an expired or already-used link this way rather than by
-  // refusing the redirect, so it has to be read before the tokens.
+  // refusing the redirect, so it has to be read before the code.
   const failure = params.get('error_description') ?? params.get('error')
   if (failure) throw asAuthProblem(new Error(failure.replace(/\+/g, ' ')))
 
   /**
-   * Whether this link was a password reset, asked TWO ways because neither is
-   * reliable on its own.
+   * Whether this link was a password reset, told by its PATH.
    *
-   * Supabase puts `type=recovery` on the redirect in the implicit flow and
-   * nothing at all in PKCE, where the type is inside the code it exchanges. So
-   * the path carries it too: `sendPasswordReset` asks to come back to
-   * `ricecal://auth/reset` rather than `/auth/callback`, and that is ours to
-   * choose and cannot be dropped by a flow change.
+   * Both a reset and a sign-in come back as a code that ends in a session, so
+   * the code alone cannot tell them apart. `sendPasswordReset` asks Supabase to
+   * redirect to `ricecal://auth/reset` rather than `/auth/callback`, and that is
+   * ours to choose: read as a sign-in, a reset would carry the user off to Today
+   * with the password they came to change still in force.
    */
-  const recovery = params.get('type') === 'recovery' || /\/auth\/reset\b/.test(url)
+  const recovery = /\/auth\/reset\b/.test(url)
   const outcome: LinkOutcome = recovery ? 'recovery' : 'signed-in'
-
-  const accessToken = params.get('access_token')
-  const refreshToken = params.get('refresh_token')
-  if (accessToken && refreshToken) {
-    await attempt(() =>
-      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }),
-    )
-    if (!recovery) await announceSignIn('email')
-    return outcome
-  }
 
   const code = params.get('code')
   if (!code) return 'none'
@@ -588,9 +586,10 @@ export async function completeLoginFromUrl(url: string): Promise<LinkOutcome> {
 /**
  * Every parameter in a deep link, from wherever it is hiding.
  *
- * The query string and the fragment both, because which one carries the session
- * depends on the project's flow rather than on anything this code picks: implicit
- * puts a token pair in the fragment, PKCE a code in the query.
+ * The query string and the fragment both. PKCE puts the `code` in the query and
+ * an error in either, so reading both misses nothing; a token pair in the
+ * fragment is read out here but ignored by `completeLoginFromUrl`, which acts on
+ * the code alone.
  *
  * And one level inside a `url` parameter, because a launcher can hand the app a
  * wrapper pointing at itself with the real link nested in it — the Expo dev

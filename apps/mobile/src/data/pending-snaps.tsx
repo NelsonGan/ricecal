@@ -126,6 +126,25 @@ const POLL_MS = 6_000
 const store = createMMKV({ id: 'ricecal-pending-snaps' })
 const STORE_KEY = 'snaps'
 
+/**
+ * Drop every persisted pending snap.
+ *
+ * Called on sign-out, alongside the query cache and the image cache. A pending
+ * snap carries a meal's photo key and the day it was logged against, and this
+ * store outlives the process — so without wiping it a signed-out relaunch, or
+ * the next account on the same phone, would rehydrate the previous person's
+ * in-flight meals. It is unencrypted like the rest of MMKV, which is the other
+ * reason not to leave a departed account's data sitting in it.
+ */
+export function clearPendingSnaps(): void {
+  try {
+    store.remove(STORE_KEY)
+  } catch {
+    // Nothing to recover: the worst case is the row rehydrates once more and is
+    // dropped by the 24h restore window anyway.
+  }
+}
+
 function readStored(): PendingSnap[] {
   try {
     const raw = store.getString(STORE_KEY)

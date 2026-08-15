@@ -31,9 +31,9 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
+      "allowBackup": false,
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
         "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
         "android.permission.health.READ_TOTAL_CALORIES_BURNED",
         "android.permission.health.READ_STEPS",
@@ -43,7 +43,10 @@
         "android.permission.health.READ_WEIGHT",
         "android.permission.health.READ_BODY_FAT"
       ],
-      "blockedPermissions": ["com.google.android.gms.permission.AD_ID"]
+      "blockedPermissions": [
+        "com.google.android.gms.permission.AD_ID",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -83,7 +86,9 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "RiceCal uses the camera so you can photograph a meal to log it."
+          "cameraPermission": "RiceCal uses the camera so you can photograph a meal to log it.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
         }
       ],
       [
