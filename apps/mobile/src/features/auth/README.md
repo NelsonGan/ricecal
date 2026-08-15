@@ -123,6 +123,19 @@ idea it is meant to send a token.
    browser does, which is what makes this the likely mode rather than a corner.
    `appearance: 'interaction-only'` keeps a Managed widget invisible until that
    escalation actually happens, so nothing is lost by choosing it.
+
+   **THE HOSTNAME IS THE APEX, AND `www` IS NOT THE SAME ENTRY.** Cloudflare's
+   rule runs one way only: `ricecal.app` covers the apex and every subdomain
+   under it, while `www.ricecal.app` covers that subdomain and its children and
+   explicitly NOT the parent. This is a trap rather than a detail, because the
+   marketing site at ricecal.app is served by Vercel and redirects the apex to
+   `www`, so a widget created for the WEBSITE is naturally listed as
+   `www.ricecal.app` — and the app sends the apex, because that is what
+   `EXPO_PUBLIC_TURNSTILE_ORIGIN` holds and the apex is the entry worth having.
+   Everything then looks correct on both sides and the app gets `110200` on
+   every request for ever, which reads as a broken captcha and is one missing
+   line in Hostname Management. Add the apex; it covers `www` too, so one entry
+   serves the site and the app.
 2. **Store the secret on Supabase**, gate still open:
    ```sh
    pnpm auth:config --captcha-secret 0x4AAA... --push

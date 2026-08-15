@@ -147,6 +147,8 @@ const RETRIES_ALLOWED = 1
  * into.
  */
 const FATAL_CODES = new Set([
+  'unsupported', // ours: Turnstile says it cannot run in this browser at all
+
   '110100', // invalid sitekey
   '110110', // sitekey not found
   '110200', // this hostname is not on the widget's list
@@ -212,6 +214,10 @@ function page(siteKey: string): string {
           'error-callback': function (code) { post({ type: 'error', code: String(code) }); return false },
           'timeout-callback': function () { post({ type: 'error', code: 'timeout' }) },
           'before-interactive-callback': function () { post({ type: 'interactive' }) },
+          'after-interactive-callback': function () { post({ type: 'answered' }) },
+          // The one failure that fires NO error-callback, so without this it is
+          // twenty seconds of silence and then a timeout blamed on the network.
+          'unsupported-callback': function () { post({ type: 'error', code: 'unsupported' }) },
         })
         post({ type: 'ready' })
       }
@@ -389,6 +395,24 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
           setChallenging(true)
           return
         }
+        case 'answered': {
+          // The human is done with the widget, but the token has not arrived
+          // yet — `callback` is a separate message. Take the panel down and put
+          // the clock back on, or a challenge that was answered and then failed
+          // would leave the request waiting for ever.
+          const waiting = pending.current
+          if (waiting) {
+            waiting.interactive = false
+            if (!waiting.timer) {
+              waiting.timer = setTimeout(() => {
+                report('no token after an answered challenge')
+                settle(undefined)
+              }, TOKEN_TIMEOUT_MS)
+            }
+          }
+          setChallenging(false)
+          return
+        }
         case 'error': {
           const code = payload.code ?? 'unknown'
 
@@ -512,6 +536,13 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
               ref={web}
               // The widget is registered against a hostname on Cloudflare, and
               // inline HTML has none. `baseUrl` is what gives the page one.
+              //
+              // THE APEX, NOT `www`, AND THE WIDGET HAS TO LIST THE APEX TOO.
+              // Cloudflare's hostname rule runs one way: an apex entry covers
+              // every subdomain, a `www` entry does not cover its parent. The
+              // marketing site redirects the apex to `www`, so a widget set up
+              // for the WEBSITE ends up listing `www.` and answers this page
+              // with 110200 for ever. See the README.
               source={{
                 html: page(siteKey),
                 baseUrl: `https://${env.EXPO_PUBLIC_TURNSTILE_ORIGIN}`,
