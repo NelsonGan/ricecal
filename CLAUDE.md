@@ -37,8 +37,8 @@ one projection of a budget that does not exist yet because onboarding has not
 finished.
 
 **The catalogue is NOT in Postgres.** It is in Cloudflare D1, behind the Worker
-in `apps/cloudflare/workers/catalogue` — `product` holds 3.2 million barcoded packets, and
-`food`, `food_serving` and `food_alias` hold ~48,000 searchable dishes. It left
+in `apps/cloudflare/workers/catalogue` — `product` holds 3.25 million barcoded packets, and
+`food`, `food_serving` and `food_alias` hold ~53,000 searchable dishes. It left
 because the barcode layer made the catalogue's size the diary's problem: it
 crossed a plan ceiling once and took the whole database read-only mid-load.
 
@@ -311,8 +311,8 @@ Both deploy from CI on `main`, schema first — `apps/cloudflare/README.md`.
 **Two tables, and their sizes are opposite on purpose.**
 
 ```
-food          47,940   everything findable by typing
-product    3,228,419   packaged goods, reachable by an exact barcode and nothing else
+food          52,900   everything findable by typing
+product    3,255,494   packaged goods, reachable by an exact barcode and nothing else
 ```
 
 **Name search wants to be small.** Every row it holds is a competitor for rank.
@@ -325,19 +325,29 @@ match costs nothing but disk, and the only real failure of a scanner is a packet
 it has never heard of.
 
 Two tables is what lets both be true. `product` is a barcode primary key with no
-secondary index, so 3.2 million packets cost search no rank, no index memory and
+secondary index, so 3.25 million packets cost search no rank, no index memory and
 no query time.
 
 What is in `food`:
 
 | source | rows | |
 |---|---|---|
-| Open Food Facts | 25,440 | Southeast Asian shelves and the world's most-scanned |
+| Open Food Facts | 25,422 | Southeast Asian shelves and the world's most-scanned |
 | USDA (Foundation, SR Legacy, FNDDS) | 13,276 | measured generic food |
-| researched Asian dishes | 7,296 | 50 payload files under `apps/supabase/data/foods` |
+| researched Asian dishes | 7,701 | 60-odd payload files under `apps/supabase/data/foods` |
+| other national composition tables | 4,574 | Singapore, Vietnam, Indonesia, Taiwan, India, Thailand, Japan |
 | MyFCD | 1,412 | the Malaysian composition table |
 | hawker / chain / drinks | 451 | recipe-derived from measured rows |
 | archetypes | 65 | the tier-5 fallbacks, which also live in Postgres |
+
+**Seven other countries publish a composition table, and reading one beats a
+research round on every axis.** The figures are measured rather than reasoned,
+the round is a script rather than two days, and the rows can claim `verified`
+honestly — Singapore's carry a household portion with its weight and say whether
+each is a lab analysis. What they cost is judgement at the door: a table is
+mostly ingredients, and importing one whole is the USDA Branded mistake in a new
+accent, so each is loaded as a SLICE. Which slice, and where each table lives,
+is in `apps/supabase/data/foods/README.md`.
 
 Three things ride along with a dish, and each removed a workaround:
 

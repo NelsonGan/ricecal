@@ -370,6 +370,7 @@ export const TABLE: Record<string, string | null> = {
   'rice grains': 'rice-grains',
 
   // -- Bread and baked -----------------------------------------------------
+  'whole wheat': 'wholemeal-bread',
   'wholemeal bread': 'wholemeal-bread',
   wholemeal: 'wholemeal-bread',
   wholegrain: 'wholemeal-bread',
@@ -484,6 +485,7 @@ export const TABLE: Record<string, string | null> = {
   'sugarcane juice': 'sugarcane-juice',
   'coconut water': 'coconut-water',
   'energy drink': 'energy-drink',
+  'sports drink': 'energy-drink',
   'soft drink': 'soda-bottle',
   'soda water': 'soda-bottle',
   carbonated: 'soda-bottle',
@@ -554,6 +556,8 @@ export const TABLE: Record<string, string | null> = {
   fries: 'french-fries',
   'french fries': 'french-fries',
   chocolate: 'chocolate-bar',
+  choco: 'chocolate-bar',
+  sapi: 'beef-slices',
   chocolat: 'chocolate-bar',
   coklat: 'chocolate-bar',
   candies: 'candy',
@@ -616,9 +620,14 @@ export const TABLE: Record<string, string | null> = {
   bouillon: 'soup-bowl',
   chowder: 'soup-bowl',
   kicap: 'soy-sauce',
+  // USDA writes "cooked with oil" on greens and vegetables, where the oil is
+  // how it was cooked rather than what it is. Three words, so it wins the
+  // ordering and stops the bottle being drawn on a plate of collards.
+  'cooked with oil': null,
   'olive oil': 'cooking-oil',
   'cooking oil': 'cooking-oil',
   minyak: 'cooking-oil',
+  oil: 'cooking-oil',
   sugar: 'sugar-cubes',
   gula: 'sugar-cubes',
   sucre: 'sugar-cubes',
@@ -642,6 +651,18 @@ export const TABLE: Record<string, string | null> = {
   tauhu: 'tofu',
   tempeh: 'tempeh',
   tempe: 'tempeh',
+  kacang: 'beans',
+  // Indonesian spellings of words the Malay side already has, plus the ones
+  // TKPI writes differently: `kue` is `kuih`, `kerupuk` is `keropok`.
+  kue: 'kuih',
+  kerupuk: 'crackers',
+  keripik: 'crackers',
+  tahu: 'tofu',
+  dendeng: 'beef-slices',
+  mie: 'egg-noodles',
+  cumi: 'squid-rings',
+  singkong: 'tapioca',
+
   beans: 'beans',
   bean: 'beans',
   'mature seeds': 'beans',
@@ -759,6 +780,21 @@ export const TABLE: Record<string, string | null> = {
   vegetables: 'vegetables',
   vegetable: 'vegetables',
   sayur: 'vegetables',
+  // Indian composition-table shapes. `leaves` is the biggest single cluster in
+  // that source — agathi, basella, fenugreek, gogu, tamarind — and `tea leaves`
+  // is here to win before it, or every bancha in the catalogue becomes a salad.
+  'tea leaves': 'tea-cup',
+  leaves: 'leafy-greens',
+  daun: 'leafy-greens',
+  gourd: 'vegetables',
+  // `gram` is deliberately absent even though the pulses are written "Bengal
+  // gram": it is also the unit of mass on a few thousand packets, and `dal`
+  // already catches the rows that matter.
+  dal: 'lentils',
+  rajmah: 'red-beans',
+  millet: 'rice-grains',
+
+  squash: 'vegetables',
   salad: 'vegetables',
   spinach: 'leafy-greens',
   bayam: 'vegetables',
@@ -821,6 +857,10 @@ export const TABLE: Record<string, string | null> = {
  */
 const WEAK = new Set([
   'chocolate',
+  'choco',
+  // Indonesian packets are named for their flavour: "Rasa Sapi Panggang" is a
+  // crisp, and "Mie ... sumsum sapi" is a noodle. Beef is what it tastes of.
+  'sapi',
   'chocolat',
   'coklat',
   'milk chocolate',
@@ -884,6 +924,365 @@ const WEAK = new Set([
   'creme',
   'krim',
 ])
+
+/**
+ * The same idea again, for names that are not written in Latin letters.
+ *
+ * `normaliseName` drops everything outside `[a-z0-9]`, which is correct for the
+ * Latin table — accents fold, punctuation goes — and total for a script it does
+ * not cover. A Thai name normalises to the empty string, and `matchIcon` used to
+ * return null on the first line without looking at anything. Measured against
+ * the catalogue that was **4,573 undrawn rows, a third of all of them**, and it
+ * read as a missing vocabulary when it was really a missing alphabet.
+ *
+ * Two things make this a separate table rather than more rows in the one above.
+ * Thai does not put spaces between words, so the boundary test that stops
+ * `cream` firing inside `creamer` cannot work here and the match has to be a
+ * plain substring. And with no boundaries the ORDERING is doing all of the
+ * safety work, so the entries have to be chosen against the corpus rather than
+ * from a dictionary: `มันฝรั่ง` (potato) and `หมากฝรั่ง` (chewing gum) both
+ * contain `ฝรั่ง` (guava), and `คาปูชิโน` (cappuccino) contains `ปู` (crab).
+ * Each of those longer phrases is here to win before the short one can.
+ */
+const SCRIPT_TABLE: Record<string, string | null> = {
+  // -- Japanese ------------------------------------------------------------
+  //
+  // The 45x and 49x shelves are 34,736 packets, the largest in Asia here, and
+  // they were at 30% because kana and kanji were as invisible to the matcher as
+  // Thai. Same rules: no spaces, so the compounds have to outrank the single
+  // characters — 牛乳 (milk) contains 牛 (beef), 豆腐 (tofu) and 納豆 (natto)
+  // and 豆乳 (soy milk) all contain 豆 (bean), and アイスコーヒー is a coffee.
+  ミルクチョコレート: 'chocolate-bar',
+  アイスコーヒー: 'coffee',
+  アイスティー: 'tea-cup',
+  アイスクリーム: 'ice-cream',
+  アイス: 'ice-cream',
+  ポテトチップス: 'potato-chips',
+  ハンバーガー: 'burger',
+  サンドイッチ: 'sandwich',
+  スパゲッティ: 'spaghetti',
+  ヨーグルト: 'yogurt',
+  ドーナツ: 'doughnut',
+  キャンディ: 'candy',
+  ビスケット: 'biscuit-stack',
+  クッキー: 'biscuit-stack',
+  せんべい: 'crackers',
+  煎餅: 'crackers',
+  ラーメン: 'noodle-bowl',
+  焼きそば: 'noodle-bowl',
+  うどん: 'noodle-bowl',
+  蕎麦: 'noodle-bowl',
+  そば: 'noodle-bowl',
+  パスタ: 'spaghetti',
+  おにぎり: 'rice-bowl',
+  ごはん: 'rice-bowl',
+  ご飯: 'rice-bowl',
+  玄米: 'brown-rice',
+  食パン: 'bread-loaf',
+  パン: 'bread-loaf',
+  ケーキ: 'cake-slice',
+  プリン: 'pudding',
+  ゼリー: 'jelly',
+  チーズ: 'cheese',
+  バター: 'butter',
+  牛乳: 'milk-carton',
+  ミルク: 'milk-carton',
+  豆乳: 'soy-milk',
+  豆腐: 'tofu',
+  納豆: 'soy-beans',
+  醤油: 'soy-sauce',
+  ソース: 'sauce-bottle',
+  ジュース: 'fruit-juice',
+  果汁: 'fruit-juice',
+  ビール: 'beer-mug',
+  カレー: 'gulai',
+  スープ: 'soup-bowl',
+  味噌汁: 'soup-bowl',
+  野菜: 'vegetables',
+  餃子: 'dumpling',
+  寿司: 'sushi-roll',
+  ピザ: 'pizza-slice',
+  ジャム: 'jam-jar',
+  はちみつ: 'honey',
+  チキン: 'grilled-chicken',
+  ポーク: 'pork-belly',
+  ビーフ: 'beef-slices',
+  鶏卵: 'boiled-egg',
+  たまご: 'boiled-egg',
+  卵: 'boiled-egg',
+  えび: 'prawn',
+  エビ: 'prawn',
+  鶏: 'grilled-chicken',
+  豚: 'pork-belly',
+  牛: 'beef-slices',
+  魚: 'fish',
+  米: 'rice-bowl',
+  豆: 'beans',
+
+  // -- Thai: rice and noodles ----------------------------------------------
+  ข้าวเหนียว: 'glutinous-rice',
+  ข้าวกล้อง: 'brown-rice',
+  ข้าวโอ๊ต: 'oats',
+  ข้าวโพด: 'corn',
+  ข้าวผัด: 'nasi-goreng',
+  ข้าวต้ม: 'porridge',
+  ข้าวเกรียบ: 'crackers',
+  ข้าวตัง: 'crackers',
+  ข้าวโพดคั่ว: 'popcorn',
+  ข้าวมันไก่: 'chicken-rice',
+  ข้าวหมูแดง: 'char-siu-rice',
+  ข้าวขาหมู: 'pork-belly',
+  ข้าวหอมมะลิ: 'rice-grains',
+  ข้าว: 'rice-bowl',
+  ก๋วยเตี๋ยว: 'noodle-bowl',
+  บะหมี่กึ่งสำเร็จรูป: 'instant-noodles',
+  มาม่า: 'instant-noodles',
+  ราเมน: 'noodle-bowl',
+  ก๋วยจั๊บ: 'noodle-bowl',
+  ผัดกะเพรา: 'plate-rice',
+  บะหมี่: 'egg-noodles',
+  เส้นหมี่: 'rice-vermicelli',
+  ขนมจีน: 'rice-vermicelli',
+  วุ้นเส้น: 'glass-noodles',
+  สปาเก็ตตี้: 'spaghetti',
+  มักกะโรนี: 'macaroni',
+  ผัดไทย: 'pad-thai',
+
+  // -- Thai: the bread words, which is most of what `ขนม` turned out to be --
+  //
+  // 287 rows contain `ขนม` and almost none of them are a generic sweet: they
+  // are `ขนมปัง` (bread), `ขนมปังกรอบ` (a cracker), `ขนมขาไก่` (a stick
+  // snack). Bare `ขนม` is deliberately absent — it covers everything from a
+  // rusk to a peanut brittle, and there is no drawing that is right for all of
+  // them.
+  ขนมปังกรอบ: 'crackers',
+  ขนมปัง: 'bread-loaf',
+  // `ขนม` is the trap that made the null value earn its keep. It means a snack
+  // or a sweet, it covers everything from a rusk to a peanut brittle, and it
+  // CONTAINS `นม` (milk) — so without a stop here every `ขนมขาไก่` and
+  // `ขนมถั่วตัด` in the catalogue drew a carton of milk. Longer than `นม`, so
+  // it wins the ordering and suppresses it; shorter than `ขนมปัง`, so bread
+  // still answers first.
+  ขนม: null,
+
+  // -- Thai: meat, fish, egg ------------------------------------------------
+  นักเก็ต: 'chicken-nugget',
+  ไก่ทอด: 'ayam-goreng',
+  ไก่ย่าง: 'grilled-chicken',
+  ไก่: 'grilled-chicken',
+  หมูปิ้ง: 'moo-ping',
+  หมูกรอบ: 'pork-belly',
+  หมู: 'pork-belly',
+  // `เนื้อ` alone is flesh of any kind, so the compounds have to come first:
+  // `เนื้อปลาบดปรุงรส` is minced FISH and drew a plate of beef.
+  เนื้อปลา: 'fish',
+  เนื้อไก่: 'grilled-chicken',
+  เนื้อหมู: 'pork-belly',
+  เนื้อ: 'beef-slices',
+  เป็ด: 'duck',
+  ปลาหมึก: 'squid-rings',
+  ปลา: 'fish',
+  กุ้ง: 'prawn',
+  // `ปูอัด` is the crab stick and it is most of the `ปู` rows; `คาปูชิโน` is a
+  // cappuccino and contains the same two letters.
+  ปูอัด: 'crab-stick',
+  คาปูชิโน: 'coffee',
+  หอย: 'mussels',
+  ไข่ไก่: 'boiled-egg',
+  ไข่: 'boiled-egg',
+  ลูกชิ้น: 'meatball',
+  ไส้กรอก: 'sausage',
+  แหนม: 'sausage',
+
+  // -- Thai: drinks ---------------------------------------------------------
+  นมถั่วเหลือง: 'soy-milk',
+  นมข้น: 'condensed-milk',
+  // Strong, and only safe because `ขนม` above stops first: milk is two
+  // characters and loses to every flavour word otherwise, and "chocolate milk"
+  // is a carton of milk.
+  นม: 'milk-carton',
+  ชานม: 'teh-tarik',
+  กาแฟ: 'coffee',
+  โกโก้: 'cocoa-powder',
+  น้ำผลไม้: 'fruit-juice',
+  น้ำมะพร้าว: 'coconut-water',
+  น้ำอ้อย: 'sugarcane-juice',
+  น้ำอัดลม: 'soda-bottle',
+  น้ำส้ม: 'orange-juice',
+  น้ำมันมะพร้าว: 'cooking-oil',
+  น้ำมัน: 'cooking-oil',
+  น้ำตาลมะพร้าว: 'gula-melaka',
+  นมเปรี้ยว: 'yogurt-drink',
+  น้ำเปล่า: 'water-bottle',
+  โซดา: 'soda-bottle',
+  ธัญพืช: 'cereal',
+  ไส้อั่ว: 'sausage',
+  เกี๊ยวซ่า: 'dumpling',
+  น้ำปลา: 'sauce-bottle',
+  น้ำพริก: 'sambal-jar',
+  น้ำสลัด: 'salad-dressing',
+  น้ำจิ้ม: 'sauce-bottle',
+  เบียร์: 'beer-mug',
+  ไวน์: 'wine-glass',
+
+  // -- Thai: dairy, sweets, snacks -----------------------------------------
+  โยเกิร์ต: 'yogurt',
+  ชีส: 'cheese',
+  เนย: 'butter',
+  ไอศกรีม: 'ice-cream',
+  ไอศ: 'ice-cream',
+  เค้ก: 'cake-slice',
+  แพนเค้ก: 'pancakes',
+  คุกกี้: 'biscuit-stack',
+  บิสกิต: 'biscuit-stack',
+  แครกเกอร์: 'crackers',
+  เวเฟอร์: 'wafer-roll',
+  ทองม้วน: 'wafer-roll',
+  ท้องม้วน: 'wafer-roll',
+  ลูกอม: 'candy',
+  หมากฝรั่ง: 'chewing-gum',
+  เยลลี่: 'jelly',
+  เฉาก๊วย: 'jelly',
+  พุดดิ้ง: 'pudding',
+  โดนัท: 'doughnut',
+  วาฟเฟิล: 'waffle',
+  ป๊อปคอร์น: 'popcorn',
+  สาคู: 'sago',
+
+  // -- Thai: vegetables, pulses, fruit -------------------------------------
+  มันฝรั่งทอด: 'potato-chips',
+  มันฝรั่ง: 'potato',
+  มันเทศ: 'sweet-potato',
+  เผือก: 'taro',
+  ถั่วลันเตา: 'green-peas',
+  ถั่วลิสง: 'peanuts',
+  ถั่วเหลือง: 'soy-beans',
+  ถั่ว: 'beans',
+  เต้าหู้: 'tofu',
+  เห็ด: 'mushroom',
+  สาหร่าย: 'seaweed',
+  ผัก: 'vegetables',
+  อัลมอนด์: 'almonds',
+  เม็ดมะม่วงหิมพานต์: 'cashews',
+  // `ส้มตำ` is the papaya salad, not an orange.
+  ส้มตำ: 'kerabu',
+  มะม่วง: 'mango',
+  มะละกอ: 'papaya',
+  มะพร้าว: 'coconut',
+  มะนาว: 'lime',
+  กล้วย: 'banana',
+  แอปเปิ้ล: 'apple',
+  สับปะรด: 'pineapple',
+  แตงโม: 'watermelon',
+  องุ่น: 'grapes',
+  ทุเรียน: 'durian',
+
+  // -- Thai: dishes and pantry ---------------------------------------------
+  ต้มยำ: 'tomyam',
+  แกง: 'gulai',
+  ซุป: 'soup-bowl',
+  โจ๊ก: 'porridge',
+  เกี๊ยว: 'dumpling',
+  ปอเปี๊ยะ: 'spring-roll',
+  ซูชิ: 'sushi-roll',
+  พิซซ่า: 'pizza-slice',
+  เบอร์เกอร์: 'burger',
+  แซนด์วิช: 'sandwich',
+  เฟรนช์ฟราย: 'french-fries',
+  ซีเรียล: 'cereal',
+  ซีอิ๊ว: 'soy-sauce',
+  ซอส: 'sauce-bottle',
+  แยม: 'jam-jar',
+  แป้ง: 'flour',
+}
+
+/**
+ * The script phrases that describe a flavour or a liquid rather than a food,
+ * held back for the same reason the Latin `WEAK` set is: `ช็อกโกแลต` is nine
+ * characters and `นม` is two, so "chocolate milk" would draw a bar rather than
+ * a carton. `น้ำ` is the broadest of them — it prefixes oil, sugar, fish sauce
+ * and juice alike, and every one of those is spelled out above, so what is left
+ * for it really is a glass of something.
+ */
+const SCRIPT_WEAK = new Set([
+  'ช็อกโกแลต',
+  'สตรอเบอร์รี่',
+  'น้ำตาล',
+  'น้ำผึ้ง',
+  'น้ำ',
+  'ส้ม',
+  'ปู',
+  'ฝรั่ง',
+  // Tea is a flavour at least as often as it is the drink: `มัทฉะคุกกี้
+  // (คุกกี้รสชาเขียว)` is a cookie, and green tea beat it on length.
+  'ชาเขียว',
+  'ชา',
+  // The same in Japanese: `チョコ` is a flavour on half the shelf, and a
+  // green-tea Kit Kat is a chocolate bar.
+  'チョコレート',
+  'チョコ',
+  '緑茶',
+  '紅茶',
+  '麦茶',
+  'お茶',
+  '茶',
+])
+for (const [phrase, icon] of Object.entries({
+  ชาเขียว: 'tea-cup',
+  ชา: 'tea-cup',
+  チョコレート: 'chocolate-bar',
+  チョコ: 'chocolate-bar',
+  緑茶: 'tea-cup',
+  紅茶: 'tea-cup',
+  麦茶: 'tea-cup',
+  お茶: 'tea-cup',
+  茶: 'tea-cup',
+  ช็อกโกแลต: 'chocolate-bar',
+  สตรอเบอร์รี่: 'strawberry',
+  น้ำตาล: 'sugar-cubes',
+  น้ำผึ้ง: 'honey',
+  น้ำ: 'water-glass',
+  ส้ม: 'orange',
+  ปู: 'crab',
+  ฝรั่ง: 'guava',
+})) {
+  SCRIPT_TABLE[phrase] = icon
+}
+
+/**
+ * Phrases too short to be safe loose in a Thai string.
+ *
+ * `นม` (milk) is two characters, and Thai runs its words together: it turned up
+ * inside `กลิ่นมะลิ` (jasmine scent) and drew a carton of milk on a green tea.
+ * These must start the name or follow something that is not itself a Thai
+ * letter — which is what a word boundary means in a script that has none.
+ */
+const SCRIPT_ANCHORED = new Set(['นม', 'ชา', 'ปู', 'ส้ม', '茶', '豆', '米', '牛', '鶏', '豚', '魚'])
+
+/** Is the phrase at a position no Thai letter runs into? */
+function anchoredHit(raw: string, phrase: string): boolean {
+  let at = raw.indexOf(phrase)
+  while (at !== -1) {
+    const before = at === 0 ? '' : raw[at - 1]
+    if (!before || before.charCodeAt(0) <= 127) return true
+    at = raw.indexOf(phrase, at + 1)
+  }
+  return false
+}
+
+/** No word boundaries to sort by, so length is the only proxy for specificity. */
+const byLength = (a: string, b: string): number => b.length - a.length
+const SCRIPT_PHRASES = [
+  ...Object.keys(SCRIPT_TABLE)
+    .filter((p) => !SCRIPT_WEAK.has(p))
+    .sort(byLength),
+  ...Object.keys(SCRIPT_TABLE)
+    .filter((p) => SCRIPT_WEAK.has(p))
+    .sort(byLength),
+]
+
+/** Exported so the loader can check these name real drawings too. */
+export { SCRIPT_TABLE }
 
 /**
  * Longest first, so "fried rice" beats "rice" and "ice cream" beats "cream".
@@ -980,8 +1379,11 @@ function normaliseName(name: unknown): string {
  * there is no drawing of a brand.
  */
 export function matchIcon(name: unknown): string | null {
+  const raw = String(name ?? '')
   const text = normaliseName(name)
-  if (text.trim().length === 0) return null
+  // A name written entirely in another script normalises to nothing. That is
+  // not a miss, it is a different alphabet — see `SCRIPT_TABLE`.
+  if (text.trim().length === 0) return matchScript(raw)
 
   // A FORM DECLARED FIRST WINS.
   //
@@ -1012,7 +1414,27 @@ export function matchIcon(name: unknown): string | null {
     }
   }
 
-  return matchBody(text)
+  // Latin first, and the script table only for what it could not answer, so a
+  // mixed name keeps whatever drawing it has today.
+  return matchBody(text) ?? matchScript(raw)
+}
+
+/**
+ * The non-Latin scan: a plain substring, longest phrase first.
+ *
+ * Runs only after the Latin pass has found nothing, which keeps it strictly
+ * additive — no name that already had a drawing can change its mind here. It
+ * also means a mixed name is read in Latin first, which is the right way round:
+ * "KitKat Gold (Japan)" is a Latin name that happens to sit beside Thai ones.
+ */
+function matchScript(raw: string): string | null {
+  // Nothing to do for a name that is entirely ASCII, which is most of them.
+  if (![...raw].some((c) => c.charCodeAt(0) > 127)) return null
+  for (const phrase of SCRIPT_PHRASES) {
+    const hit = SCRIPT_ANCHORED.has(phrase) ? anchoredHit(raw, phrase) : raw.includes(phrase)
+    if (hit) return SCRIPT_TABLE[phrase]
+  }
+  return null
 }
 
 /** The ordinary scan: longest phrase first, anywhere in the name. */

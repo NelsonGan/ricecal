@@ -157,3 +157,50 @@ When the right answer is "the dish is already there but nobody types that
 name", use `pnpm foods:alias` rather than writing a second row. It only adds
 `food_alias` rows, never touching `name` or `name_norm`, so it cannot change
 what a future payload is considered a duplicate of.
+
+## The national composition tables
+
+Not every payload here is researched. Seven countries publish a food composition
+table that can be read directly, and a table beats a round of estimates on every
+axis that matters: the figures are measured, the round is one script rather than
+two days, and the rows can claim `verified` honestly. Each has a `source_id` in
+`SOURCES` in `catalogue-import.mjs`, which is what decides how the rows are
+attributed and how they rank — a payload naming a source_id that is not
+registered there silently attributes itself as `research`.
+
+| file | source | rows | basis |
+|---|---|---|---|
+| `singapore-hpb.json` | Singapore Food Insights Database (HPB) | 1,430 | a household portion, with its weight |
+| `vietnam-nin.json` | Vietnamese dish table (NIN) | 797 | one portion |
+| `vietnam-nin-ingredients.json` | Vietnamese Food Composition Table (NIN) | 468 | 100 g |
+| `indonesia-tkpi.json` | Tabel Komposisi Pangan Indonesia | 537 | 100 g |
+| `taiwan-tfda.json` | Taiwan FDA food composition database | 412 | the stated unit, else 100 g |
+| `india-ifct.json` | Indian Food Composition Tables 2017 | 383 | 100 g |
+| `thailand-inmu.json` | Thai Food Composition Database (INMU) | 342 | 100 g |
+| `japan-mext.json` | Standard Tables of Food Composition in Japan | 217 | 100 g |
+
+The endpoints are recorded in the session memory rather than here, because they
+are undocumented and change. Three things about them are worth knowing before
+the next one is loaded:
+
+**Read the whole table, then import a slice of it.** Taiwan's has 2,181 samples
+and 331 of them are fish species; Japan's has eighteen groups and fifteen are
+ingredients the USDA rows already answer for; India's has nineteen cultivars of
+Chinese yam. Every row in `food` is a competitor for rank, and importing a
+composition table whole is the USDA Branded mistake in a new accent. The slice
+that earns its place is the prepared food, the confectionery, the drinks, and
+whatever is genuinely local.
+
+**Establish what a row is priced per before you label it.** Vietnam publishes
+two tables through two endpoints — 1,250 dishes per PORTION and 853 ingredients
+per 100 g — and they look identical until you notice 136 grams of macronutrient
+in a hundred-gram serving. The mass check in `lib/food-shape.mjs` caught it, four
+hundred rows in a row, which is what a wrong basis looks like from the outside.
+
+**The names are the work.** A table in Chinese or Japanese has no slug, because
+`slugify` is ASCII only, and a machine romanization ("Bai Man Tou") is worse than
+the name a person would type. Both of those rounds were hand-named against the
+source's own English column where it had one, which is a few hundred lines of
+judgement and the reason the row is findable at all. India's table is the
+opposite case and the most valuable of the seven for it: its `lang` column carries
+each food's name in a dozen Indian languages, and those go in as aliases.
