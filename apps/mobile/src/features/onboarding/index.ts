@@ -9,6 +9,8 @@ export {
 } from './draft'
 export { FactRow, type FactRowProps } from './FactRow'
 export { type Accent, OnboardingStep, type OnboardingStepProps } from './OnboardingStep'
+export { type BrandLogo, SourceOption, type SourceOptionProps } from './SourceOption'
+export { StepHeader, type StepHeaderProps } from './StepHeader'
 export {
   ONBOARDING_STEPS,
   type OnboardingStepName,

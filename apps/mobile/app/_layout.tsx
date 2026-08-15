@@ -191,8 +191,12 @@ function RootStack() {
         fullScreenGestureEnabled: false,
       }}
     >
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(onboarding)" />
+      {/* The flow crosses between these two groups — the account screen is in
+          `(auth)` and the flush replaces it — so a swipe on either would unwind
+          the ROOT stack rather than the questions the user walked. Off on both,
+          for the reason written out in `(onboarding)/_layout.tsx`. */}
+      <Stack.Screen name="(auth)" options={{ gestureEnabled: false }} />
+      <Stack.Screen name="(onboarding)" options={{ gestureEnabled: false }} />
       {/* The one screen with no back gesture. Everything else in this stack is
           somewhere you went and can leave; the tabs are where the app IS. Onboarding
           replaces its own route on the way out, but "replace" only unwinds what it
@@ -213,6 +217,10 @@ function RootStack() {
         name="log/index"
         options={{ presentation: 'transparentModal', animation: 'fade', gestureEnabled: false }}
       />
+      {/* The tour. A page rather than a modal: it is somewhere you go, read and
+          come back from, and it is reached from a toast on Today and from a row
+          in Me — both places worth returning to. */}
+      <Stack.Screen name="tutorial" />
       {/* Search pushes. It is a place you go and come back from, not something
           that comes up over the day: the query survives the trip to a dish and
           back, the edge swipe returns to it, and its bar carries a chevron. As a

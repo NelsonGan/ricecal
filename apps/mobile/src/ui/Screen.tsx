@@ -56,6 +56,28 @@ const GestureScrollView = Reanimated.createAnimatedComponent(
   RawGestureScrollView,
 ) as unknown as KeyboardAwareScrollViewProps['ScrollViewComponent']
 
+/**
+ * How far above the footer a focused field is brought to rest.
+ *
+ * A GAP PLUS THE PART OF THE FIELD NOBODY MEASURES, and the second half is the
+ * whole reason this is not simply `spacing.md`.
+ *
+ * `KeyboardAwareScrollView` reveals the focused NODE, and the focused node is
+ * the `TextInput` — not the field. `TextField` centres a line of text about
+ * 22pt tall inside a bordered box at least 60pt tall, so roughly 19pt of the
+ * thing the user sees sits BELOW the thing the library measures, and the label
+ * and any hint sit outside it entirely. At a 14pt gap that arithmetic left the
+ * field's bottom border within a point or two of the footer's canvas: the
+ * account screen's email field came to rest looking cropped, and whether it
+ * actually was depended on the screen height, the home indicator's inset and
+ * whichever keyboard the platform put up. "Slightly covered", and only
+ * sometimes, which is the worst version of a layout bug to chase.
+ *
+ * So the clearance is the box first and the gap after it. Costing a scroll
+ * position a few points higher is not a trade worth thinking about.
+ */
+const FIELD_CLEARANCE = spacing.lg + spacing.md
+
 export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   children: ReactNode
   /** Content pinned below the scroll area — the footer CTA. Never scrolls away. */
@@ -167,9 +189,9 @@ export function Screen({
    * The footer rises to sit on the keyboard, so the part of it standing ABOVE
    * the keys is what a field has to clear — its height less the home
    * indicator's inset, which the lift already takes off (see the footer). Plus
-   * a gap, so the field is not flush against the buttons.
+   * `FIELD_CLEARANCE`, for the reason written on it.
    */
-  const bottomOffset = Math.max(footerHeight - insets.bottom, 0) + spacing.md
+  const bottomOffset = Math.max(footerHeight - insets.bottom, 0) + FIELD_CLEARANCE
 
   /**
    * How far the footer and the floating action ride up, tracked on the UI

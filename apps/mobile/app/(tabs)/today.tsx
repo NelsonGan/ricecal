@@ -18,6 +18,7 @@ import {
 } from '@/data'
 import { WeekPicker } from '@/features/logging'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
+import { useTutorialOffer } from '@/features/tutorial'
 import { sumMacros } from '@/lib/nutrition'
 import {
   Badge,
@@ -68,6 +69,16 @@ export default function TodayScreen() {
   const { t } = useTranslation(['logging', 'common'])
   const router = useRouter()
   const toast = useToast()
+
+  /**
+   * The tour, offered once and never again.
+   *
+   * It used to be four screens at the end of onboarding. Here it is a toast a
+   * beat after the diary appears, so the thing being explained is on screen
+   * while the user decides whether they want it explained. See
+   * `features/tutorial`.
+   */
+  useTutorialOffer()
 
   const { selectedDate, todayKey } = useSelectedDate()
   const day = useDayLog(selectedDate)

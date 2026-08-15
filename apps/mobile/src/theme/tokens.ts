@@ -99,9 +99,16 @@ const light = {
   waterInk: '#1B87A8',
   onWater: '#FFFFFF',
 
-  // Teh tarik (fat).
+  // Teh tarik (fat). The soft trio arrived late, with the onboarding target
+  // screen: fat is the one macro the app names in colour everywhere (the bar on
+  // Today, the entry, the weekly report) and had no surface to sit on, so a
+  // tile for it had to borrow water's blue and disagree with every bar beside it.
   teh: '#C98B5E',
   tehSlab: '#A66C43',
+  tehSoft: '#FBF0E8',
+  tehSoftLine: '#EED9C6',
+  tehInk: '#8F5C36',
+  onTeh: '#FFFFFF',
 } as const
 
 /**
@@ -165,6 +172,10 @@ const dark = {
 
   teh: '#D6A277',
   tehSlab: '#8F6440',
+  tehSoft: '#2C2018',
+  tehSoftLine: '#4E392A',
+  tehInk: '#D6A277',
+  onTeh: '#0C1310',
 } as const
 
 export const semantic = { light, dark } as const

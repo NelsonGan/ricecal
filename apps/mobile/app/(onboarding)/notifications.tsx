@@ -52,7 +52,15 @@ function NotificationsStep() {
 
   const [busy, setBusy] = useState(false)
 
-  const next = () => router.replace('/(onboarding)/tutorial')
+  /**
+   * Straight to the offer, and then to the diary.
+   *
+   * The tour used to sit here — four screens of prose between the last
+   * permission and the app. It is offered from Today instead, once, as a toast,
+   * so somebody who wants to start logging can, and somebody who wants the tour
+   * is one tap from it. See `features/tutorial`.
+   */
+  const next = () => router.replace('/paywall/intro')
 
   /**
    * The three writes, started but NOT waited on.
@@ -118,29 +126,32 @@ function NotificationsStep() {
       secondaryLabel={t('onboarding:notifications.later')}
       onSecondary={next}
     >
-      <Card title={t('onboarding:notifications.sendTitle')}>
-        <View className="gap-3.5">
+      {/* Three lines and no card title. What each row said underneath itself
+          ("breakfast, lunch and dinner, at your own times") is now the screen's
+          own subtitle, said once — the rows were repeating the heading in
+          smaller type, which is how a permission ask ends up being three
+          paragraphs long. The third row stays, because "and nothing else" is
+          the one thing here nobody expects and every other tracker gets wrong. */}
+      <Card>
+        <View className="gap-4">
           <FactRow
             icon={{ set: 'system', name: 'bell-active' }}
             title={t('onboarding:notifications.meals')}
-            body={t('onboarding:notifications.mealsBody')}
           />
           <FactRow
             icon={{ set: 'system', name: 'camera' }}
             title={t('onboarding:notifications.scans')}
-            body={t('onboarding:notifications.scansBody')}
           />
           <FactRow
             icon={{ set: 'system', name: 'bell-off' }}
             title={t('onboarding:notifications.nothingElse')}
-            body={t('onboarding:notifications.nothingElseBody')}
           />
         </View>
-
-        <Text variant="meta" className="pt-4">
-          {t('onboarding:notifications.promise')}
-        </Text>
       </Card>
+
+      <Text variant="meta" className="px-0.5 text-center">
+        {t('onboarding:notifications.promise')}
+      </Text>
     </OnboardingStep>
   )
 }

@@ -16,7 +16,10 @@
 export const ONBOARDING_STEPS = [
   'about',
   'activity',
-  'foodStyle',
+  // No `foodStyle`. The question ("how do you usually makan") fed a
+  // `profiles.food_styles` array that ranked nothing: search is the Worker's,
+  // and its prior is locale, popularity and verification. A question whose
+  // answer changes nothing is a screen between a user and their diary.
   'source',
   'calculating',
   'target',

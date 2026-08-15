@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
@@ -12,7 +12,8 @@ import {
   signInWithGoogle,
 } from '@/data/auth'
 import { ProviderButton } from '@/features/auth'
-import { Alert, Button, Divider, Icon, Screen, StepProgress, Text, TextField, useToast } from '@/ui'
+import { StepHeader } from '@/features/onboarding'
+import { Alert, AppBar, Button, Divider, Icon, Screen, Text, TextField, useToast } from '@/ui'
 
 /** Only what the screen says differs; the email button does the same thing either way. */
 type Mode = 'sign-in' | 'sign-up'
@@ -32,6 +33,7 @@ type Mode = 'sign-in' | 'sign-up'
  */
 export default function SignInScreen() {
   const { t } = useTranslation(['onboarding', 'common'])
+  const router = useRouter()
   const toast = useToast()
 
   /**
@@ -125,14 +127,32 @@ export default function SignInScreen() {
         </Button>
       }
     >
+      {/* A CHEVRON EITHER WAY, because there is no edge swipe here any more.
+          This route is pushed onto the ROOT stack from inside onboarding, so a
+          gesture on it unwound the root rather than the questions — see
+          `(onboarding)/_layout.tsx`. Where it goes depends on which flow sent
+          us: the target screen for somebody mid-onboarding, welcome for a
+          returning user who tapped "I already have an account".
+
+          `dismissTo` rather than `back()`, for the reason the target screen
+          gives: this route is deep-linkable, `back()` with nothing to pop is
+          answered by whichever navigator is listening, and `dismissTo` falls
+          back to replacing this screen with the href. */}
       {showProgress ? (
-        <StepProgress
+        <StepHeader
+          step={step}
           total={total}
-          current={step}
           tone="pandan"
-          accessibilityLabel={t('common:a11y.step', { current: step, total })}
+          onBack={() => router.dismissTo('/(onboarding)/target')}
         />
-      ) : null}
+      ) : (
+        // No title: the heading a few points below says "Welcome back", and a
+        // bar repeating it would be the same words twice.
+        <AppBar
+          onBack={() => router.dismissTo('/(onboarding)/welcome')}
+          backLabel={t('common:a11y.back')}
+        />
+      )}
 
       <View className="items-center gap-3 pb-2 pt-6">
         <Icon set="food" name="rice-bowl" size={96} />

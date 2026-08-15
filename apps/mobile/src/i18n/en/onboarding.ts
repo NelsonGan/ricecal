@@ -1,70 +1,84 @@
 export const onboarding = {
   welcome: {
     title: 'Every dish, already counted',
-    subtitle: 'Nasi lemak, roti canai, cendol. Every local dish already in the book.',
+    /**
+     * Asian rather than Malaysian, and the size of the book rather than a
+     * region.
+     *
+     * The catalogue was never only Malaysian — seven national composition
+     * tables, the Open Food Facts slice and the researched dishes make it an
+     * Asian book with a Malaysian centre — and "Made for Malaysia" told
+     * everybody else in the region the app was not for them. What replaces it
+     * is the one fact a first screen can offer that a competitor cannot: how
+     * much is already in there.
+     */
+    subtitle: 'Nasi lemak, pho, laksa, char siu rice. Asian food, counted properly.',
     perks: {
       track: { title: 'Track every calorie', subtitle: 'Snap a photo or search in seconds' },
       habit: { title: 'Build a healthier habit', subtitle: 'Gentle goals, streaks, no shaming' },
-      local: { title: 'Made for Malaysia', subtitle: 'Mamak, kopitiam and hawker dishes' },
+      /** The numbers are `food` and `product` in the D1 catalogue, rounded down. */
+      local: { title: '50,000 Asian dishes', subtitle: 'And 3 million packets, read by barcode' },
     },
     start: 'Get started',
     signIn: 'I already have an account',
   },
 
+  /**
+   * The first question, and every control on it starts EMPTY.
+   *
+   * It used to open with a plausible body already filled in: 164 cm, 65 kg,
+   * 29 years old, female. Every one of those is a real answer as far as the
+   * budget is concerned, so a user who tapped Continue without reading got a
+   * calorie target computed for somebody else and no sign that anything had
+   * been skipped. Empty fields cannot be walked past.
+   */
   about: {
     title: 'A few basics',
-    subtitle: 'Used only to work out your daily budget.',
     height: 'HEIGHT',
+    heightPlaceholder: '170',
     weight: 'WEIGHT',
+    weightPlaceholder: '65',
     sex: 'SEX',
     female: 'Female',
     male: 'Male',
     age: 'AGE',
-    ageValue_one: '{{count}} year',
-    ageValue_other: '{{count}} years',
+    agePlaceholder: '29',
+    years: 'years',
     targetWeight: 'TARGET WEIGHT',
+    /** The slider's readout before it has been touched. */
+    targetWeightUnset: '—',
+    targetWeightHint: 'Slide to set the weight you are aiming for.',
+    /** Only appears once the weight is known, because it is measured from it. */
+    targetWeightLocked: 'Enter your weight first.',
   },
 
   activity: {
     title: 'How active is your day?',
-    subtitle: 'Desk job or on your feet, both are fine.',
     sedentary: { title: 'Mostly sitting', subtitle: 'Office, driving, study' },
     light: { title: 'Lightly active', subtitle: 'Some walking, light chores' },
     onFeet: { title: 'On my feet', subtitle: 'Retail, nursing, site work' },
     veryActive: { title: 'Very active', subtitle: 'Training most days' },
-    note: 'A rough answer is fine. You can change it any time.',
-  },
-
-  foodStyle: {
-    title: 'How do you usually makan?',
-    subtitle: 'Helps us rank search results near you.',
-    tags: {
-      halal: 'Halal',
-      mamak: 'Mamak',
-      kopitiam: 'Kopitiam',
-      hawker: 'Hawker',
-      homeCooked: 'Home cooked',
-      vegetarian: 'Vegetarian',
-      noBeef: 'No beef',
-      lessSugar: 'Less sugar',
-      nasiCampur: 'Nasi campur',
-    },
   },
 
   source: {
     title: 'Where did you hear about us?',
-    subtitle: 'Helps us know which kampung to visit next.',
-    tiktok: 'TikTok',
+    subtitle: 'It helps us know where to show up next.',
+    xiaohongshu: 'XiaoHongShu',
     instagram: 'Instagram',
-    friend: 'Friend or family',
-    appStore: 'App Store',
+    tiktok: 'TikTok',
     youtube: 'YouTube',
+    reddit: 'Reddit',
+    facebook: 'Facebook',
+    threads: 'Threads',
+    appStore: 'App Store',
+    googlePlay: 'Google Play',
+    friend: 'Friend or family',
     other: 'Somewhere else',
   },
 
   calculating: {
     title: 'Building your plan',
-    subtitle: 'Weighing your height, your weight, the target you set and how active your day is.',
+    subtitle: 'Your height, your weight, your target and how you spend the day.',
     steps: {
       budget: 'Daily calorie goal',
       macros: 'Carbs, protein and fat split',
@@ -73,13 +87,17 @@ export const onboarding = {
   },
 
   target: {
+    title: 'Your daily budget',
     perDay: 'KCAL A DAY',
-    headline: 'That is about {{meals}} meals and a snack',
     carbs: 'CARBS',
     protein: 'PROTEIN',
     fat: 'FAT',
-    footnote: 'Goal weight {{weight}} kg by {{date}}. We will nudge, never nag.',
-    footnoteMaintain: 'Holding steady at {{weight}} kg. We will nudge, never nag.',
+    /** The plan, as two tiles rather than a sentence. */
+    goalWeight: 'GOAL WEIGHT',
+    goalBy: 'ON TRACK FOR',
+    maintain: 'MAINTAIN',
+    maintainValue: 'Steady',
+    splitTitle: 'YOUR DAILY SPLIT',
     looksRight: 'This looks right',
     /** Walks back to the first question rather than opening an editor. */
     adjust: 'Change my answers',
@@ -87,8 +105,8 @@ export const onboarding = {
 
   health: {
     title: 'Let your watch do the counting',
-    subtitle:
-      'Every walk, run and badminton game adds back to today’s budget. Nothing you eat is ever taken away.',
+    /** Short, and about what the user GETS. The long version listed workouts. */
+    subtitle: 'What you burn is added to today’s budget.',
     connectApple: 'Connect Apple Health',
     connectAndroid: 'Connect Health Connect',
     /** A development build with no usable store. Says what it is, plainly. */
@@ -98,7 +116,7 @@ export const onboarding = {
     emptyToast: 'Nothing came back from Health. You can connect again from Activity.',
     failedToast: 'We could not connect to your health store. You can try again from Activity.',
     /** Under the CTA, so the promise is where the permission is asked for. */
-    reassurance: 'You can connect later from the Activity tab. Nothing here is one-way.',
+    reassurance: 'Read only. You can connect later from Activity.',
     /**
      * Paused rather than failed: react-query holds an online-only mutation until
      * a connection returns, so there is no error to report and nothing to retry.
@@ -108,16 +126,12 @@ export const onboarding = {
 
   notifications: {
     title: 'A nudge at the right moment',
-    subtitle: 'A reminder when a meal goes unlogged, and word when a photo finishes counting.',
-    sendTitle: 'WHAT WE WILL SEND',
+    subtitle: 'Three meal reminders, at your own times.',
     meals: 'Meal reminders',
-    mealsBody: 'Breakfast, lunch and dinner, at your own times',
     scans: 'Your plate is counted',
-    scansBody: 'When a photo finishes while you are elsewhere',
     /** Said out loud because every other tracker turns these on for you. */
     nothingElse: 'And nothing else',
-    nothingElseBody: 'Water and weigh-in nudges stay off until you ask',
-    promise: 'Turn any of these off later in Me, Reminders. Never a scold.',
+    promise: 'Turn any of these off in Me, Reminders.',
     enable: 'Enable notifications',
     later: 'Maybe later',
     /**
@@ -128,66 +142,75 @@ export const onboarding = {
   },
 
   /**
-   * The four cards after the permissions, in the order they are shown.
+   * THE TOUR, WHICH IS NO LONGER PART OF THE FLOW.
    *
-   * Deliberately about what this app actually does — snap, describe, search, and
-   * correct — rather than about a confidence score or a recipe builder. A tour
-   * that promises a feature is a tour that has to be rewritten when somebody
-   * looks for it.
+   * It used to sit between the permissions and the paywall, four screens of
+   * prose read by somebody who had been answering questions for two minutes and
+   * had still not seen the app. It is offered from Today instead, once, as a
+   * toast, and lives in Me afterwards.
+   *
+   * So the writing changed with the placement. Each card is now a MOCK of the
+   * thing it describes — the log sheet, a diary row, the correction chips, the
+   * ring — because a reader who has the real screen one tap away is checking
+   * whether the picture matches it, not reading an essay about grams.
    */
   tutorial: {
-    skip: 'Skip the tour',
+    appBar: 'How RiceCal works',
+    skip: 'Skip',
+    next: 'Next',
+    done: 'Start logging',
+    /** The toast on Today, offered once and never again. */
+    offerTitle: 'New here?',
+    offerBody: 'A 30 second tour of how logging works.',
+    offerAction: 'Show me',
 
-    ways: {
-      title: 'How RiceCal reads a meal',
-      subtitle: 'Three ways in, one number out. Whichever you use, the plate lands on your day.',
-      snap: 'Snap it',
-      snapBody: 'A photo of the plate, straight down',
-      describe: 'Describe it',
-      describeBody: '“nasi lemak with fried chicken”',
-      search: 'Search it',
-      searchBody: 'The catalogue, by name and portion',
-      next: 'What happens next?',
+    log: {
+      title: 'Four ways to log',
+      subtitle: 'Tap the green button on Today, then pick one.',
+      snap: 'Snap',
+      snapBody: 'A photo of the plate',
+      describe: 'Describe',
+      describeBody: 'Type what you ate',
+      search: 'Search',
+      searchBody: 'Find it by name',
+      recipes: 'Recipes',
+      recipesBody: 'Something you cooked',
+      /** Scanning is a tab inside the camera, not a fifth square. Say so. */
+      barcode: 'Got a packet? The camera scans barcodes too.',
     },
 
-    match: {
-      title: 'We match it, then weigh it',
-      subtitle:
-        'Your plate goes against a catalogue of Malaysian dishes and hundreds of thousands of foods worldwide.',
+    read: {
+      title: 'It lands on your day',
+      subtitle: 'We name the dish, size the portion and count it for you.',
       exampleName: 'Nasi lemak ayam',
       exampleDetail: '1 plate, 320 g',
       exampleKcal: '644',
-      weightTitle: 'The portion is a weight first',
-      weightBody:
-        'Grams are the one thing a photograph really carries, and unlike a calorie figure they can be checked against the catalogue. That is what keeps four satay sticks from being logged as a meal.',
-      next: 'How to snap a good one',
+      tip: 'Shoot straight down, with the whole plate in frame.',
     },
 
-    photo: {
-      title: 'Sharpen a photo',
-      subtitle: 'The portion is the part we read from the picture, so it is worth a glance.',
-      angle: 'Shoot straight down',
-      angleBody: 'The whole plate in frame, nothing cropped',
-      scale: 'Leave something for scale',
-      scaleBody: 'A spoon, a hand, the edge of the table',
-      single: 'One dish per shot',
-      singleBody: 'A full table is harder than a single plate',
-      next: 'One more thing',
+    fix: {
+      title: 'Wrong? Just say so',
+      subtitle: 'Tap the entry, then the sparkle. Plain words are enough.',
+      /** The chips are real ones from `FixSheet`. */
+      chipHalf: 'Half portion',
+      chipNoRice: 'No rice',
+      chipExtra: 'Add a drink',
+      typed: 'I only ate half the rice',
+      beforeLabel: 'BEFORE',
+      before: '644',
+      afterLabel: 'AFTER',
+      after: '498',
     },
 
-    adjust: {
-      title: 'Nothing is locked in',
-      subtitle: 'Tap any entry afterwards. Change the portion by hand, or just say what was wrong.',
-      beforeLabel: 'FROM A PHOTO',
-      beforeName: 'Char kuey teow',
-      beforeDetail: 'portion read as 250 g',
-      afterLabel: 'AFTER YOU SAY SO',
-      afterName: 'Char kuey teow',
-      afterDetail: '300 g, and every part re-priced',
-      closing:
-        'Snap first, fix later. A rough log beats a skipped one, and a week of rough logs still shows the trend.',
-      logFirst: 'Log my first meal',
-      explore: 'Explore first',
+    day: {
+      title: 'Watch the day fill up',
+      /** Says what the card beside it actually draws: the ring, then the bars. */
+      subtitle: 'The ring is what is left. The bars are carbs, protein and fat.',
+      ringCaption: 'KCAL LEFT',
+      carbs: 'Carbs',
+      protein: 'Protein',
+      fat: 'Fat',
+      note: 'Movement from your watch is added on top, never taken off.',
     },
   },
 

@@ -18,5 +18,8 @@ export default function AuthLayout() {
 
   if (!loading && session) return <Redirect href="/" />
 
-  return <Stack screenOptions={{ headerShown: false }} />
+  // No edge swipe, matching `(onboarding)`. This stack is one screen of that
+  // flow wearing a different group, and the chevron in its own header is the
+  // way back — see the note in `(onboarding)/_layout.tsx`.
+  return <Stack screenOptions={{ headerShown: false, gestureEnabled: false }} />
 }
