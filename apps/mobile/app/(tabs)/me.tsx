@@ -202,16 +202,9 @@ export default function MeScreen() {
           onPress={() => router.push('/settings/reminders')}
         />
         <SettingRow
-          icon={{ set: 'system', name: 'language' }}
+          icon={{ set: 'system', name: 'contrast' }}
           title={t('profile:home.units')}
-          value={
-            settings
-              ? t('profile:home.unitsValue', {
-                  units: t(`profile:home.${settings.units}`),
-                  language: settings.language.toUpperCase(),
-                })
-              : undefined
-          }
+          value={settings ? t(`profile:home.${settings.units}`) : undefined}
           onPress={() => router.push('/settings/preferences')}
         />
         {/* The tour's permanent home.

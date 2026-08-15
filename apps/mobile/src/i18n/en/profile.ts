@@ -32,8 +32,7 @@ export const profile = {
      * that row has to be able to say without being opened.
      */
     healthOff: 'Not connected',
-    units: 'Units and language',
-    unitsValue: '{{units}}, {{language}}',
+    units: 'Units and appearance',
     /** The four-card tour, which is offered once on Today and lives here after. */
     tutorial: 'How RiceCal works',
     help: 'Help centre',
@@ -140,11 +139,7 @@ export const profile = {
   },
 
   preferences: {
-    title: 'Units and language',
-    language: 'LANGUAGE',
-    english: 'English',
-    bahasa: 'Bahasa',
-    languageNote: 'Food names keep their local spelling in both languages.',
+    title: 'Units and appearance',
     units: 'UNITS',
     weight: 'Weight',
     kg: 'kg',
@@ -179,7 +174,7 @@ export const profile = {
     perks: {
       unlimited: 'Unlimited logging',
       scanning: 'Photo scanning',
-      database: 'Local food database',
+      database: 'The full food database',
     },
     cancel: 'Cancel subscription',
     cancelTitle: 'Cancel your subscription?',

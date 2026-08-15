@@ -9,13 +9,18 @@ preheader: A confirmation, in case it was not you.
 </h1>
 
 <p class="rc-copy" style="margin: 0 0 20px 0; font-size: 16px; line-height: 26px; color: #495450;">
-  The RiceCal account that used {{ .OldEmail }} now uses {{ .Email }}. If that
-  was you, there is nothing to do.
+  The RiceCal account that used {{ .OldEmail }} now uses {{ .Email }}.
 </p>
 
+<!--
+  The footer's offer of support is not enough on its own here, and the reason is
+  the second sentence: this reader cannot fix it themselves, because the address
+  they are reading on is no longer the one that signs in. The address itself is
+  left to the footer, which prints it in full two lines below.
+-->
 <p class="rc-copy" style="margin: 0; font-size: 16px; line-height: 26px; color: #495450;">
-  If it was not you, write to us at
-  <a class="rc-brand" href="mailto:hello@ricecal.app" style="color: #1b8a4e; text-decoration: underline;">hello@ricecal.app</a>
-  straight away. This address can no longer sign in to that account, so we have
-  to move it back for you.
+  Not you?
+  <a class="rc-brand" href="mailto:support@ricecal.app" style="color: #1b8a4e; text-decoration: underline;">Write to us</a>
+  straight away. This address can no longer sign in, so we have to move it back
+  for you.
 </p>
