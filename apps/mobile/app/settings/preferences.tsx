@@ -32,22 +32,13 @@ export default function PreferencesScreen() {
         backLabel={t('common:a11y.back')}
       />
 
-      <Card title={t('preferences.language')}>
-        {segment(
-          <SegmentedControl
-            options={[
-              { value: 'en', label: t('preferences.english') },
-              { value: 'ms', label: t('preferences.bahasa') },
-            ]}
-            value={settings?.language ?? 'en'}
-            // Only English is bundled, so this records the choice without
-            // switching i18next to a locale that has no strings.
-            onChange={(language) => updateSettings.mutate({ language })}
-            accessibilityLabel={t('preferences.language')}
-          />,
-        )}
-        <Text variant="meta">{t('preferences.languageNote')}</Text>
-      </Card>
+      {/* No language card. It offered English and Bahasa, and only English is
+          bundled — so the control recorded a preference into `user_settings`
+          and changed not one word on screen. A setting that appears to work and
+          does nothing is worse than an absent one, and it was the first thing
+          on the screen. The column stays where it is; dropping it is a
+          migration, and a choice nobody can make cannot mislead anybody. Put
+          the card back when there is a second bundle to switch to. */}
 
       <Card title={t('preferences.units')}>
         <Text variant="label">{t('preferences.weight')}</Text>
