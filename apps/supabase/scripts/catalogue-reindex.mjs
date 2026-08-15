@@ -19,7 +19,16 @@
  * the full-text indexes, which are CONTENTLESS FTS5 tables and therefore cannot
  * be edited row by row without the original values to hand. Rebuilding them is
  * cheaper to get right than patching them, and the catalogue is small enough
- * (~48,000 searchable rows) that "rebuild" is a minute rather than an outage.
+ * (~53,000 searchable rows) that "rebuild" is a few minutes rather than an
+ * outage.
+ *
+ * `--all` IS A WINDOW, THOUGH, and it is a live one. The indexes are truncated
+ * and refilled, so for the three or four minutes it runs, search answers off a
+ * partial index — and the fuzzy arm is the last one rebuilt, so misspellings go
+ * first. Graded halfway through, the search gate scored 26/30 with "nasi lemk"
+ * and "ayam gorng" finding nothing at all; the same gate against the finished
+ * index scored 29/30. Run it when nobody is typing, and do not read a gate
+ * result taken while it is in flight.
  *
  * The normalizer is imported from the WORKER's own source rather than
  * reimplemented, because the query and the column have to be folded identically

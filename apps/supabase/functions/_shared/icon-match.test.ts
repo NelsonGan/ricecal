@@ -1,5 +1,5 @@
 import { assertEquals as eq } from 'jsr:@std/assert@1'
-import { iconFor, matchIcon, TABLE, WEAK_PHRASES } from './icon-match.ts'
+import { iconFor, matchIcon, SCRIPT_TABLE, TABLE, WEAK_PHRASES } from './icon-match.ts'
 import { ICON_NAMES } from './icons.generated.ts'
 
 // The one failure on this path with no symptom. `icon_name` is free text in D1
@@ -117,4 +117,59 @@ Deno.test('every weak phrase is a real table entry', () => {
   for (const phrase of WEAK_PHRASES) {
     if (!(phrase in TABLE)) throw new Error(`"${phrase}" is weak but maps to nothing`)
   }
+})
+
+// -- Names that are not written in Latin letters ---------------------------
+//
+// `normaliseName` drops everything outside `[a-z0-9]`, so a Thai or Japanese
+// name reached `matchIcon` as the empty string and left on the first line.
+// That was a third of every undrawn row in the catalogue, and it read as a
+// missing vocabulary when it was a missing alphabet.
+
+Deno.test('every script phrase names a drawing that exists', () => {
+  const known = new Set<string>(Object.values(ICON_NAMES).flat())
+  for (const [phrase, icon] of Object.entries(SCRIPT_TABLE)) {
+    if (icon === null) continue
+    if (!known.has(icon)) throw new Error(`"${phrase}" -> "${icon}", which is not a drawing`)
+  }
+})
+
+Deno.test('a name in another script reaches a drawing', () => {
+  eq(matchIcon('ข้าวผัดกุ้ง'), 'nasi-goreng', 'Thai fried rice')
+  eq(matchIcon('นมจืด'), 'milk-carton', 'Thai plain milk')
+  eq(matchIcon('牛乳 1L'), 'milk-carton', 'Japanese milk')
+  eq(matchIcon('ポテトチップス うすしお'), 'potato-chips', 'Japanese crisps')
+})
+
+// With no spaces between words there is no boundary to stop a short phrase
+// firing inside a longer one, so the ordering is doing all of the safety work.
+Deno.test('the longer script phrase wins', () => {
+  eq(matchIcon('มันฝรั่งแผ่นทอดกรอบ'), 'potato', 'potato, not the guava inside it')
+  eq(matchIcon('มันฝรั่งทอดกรอบชนิดแผ่นหยัก'), 'potato-chips', 'and the crisp when it is contiguous')
+  eq(matchIcon('หมากฝรั่งไม่มีน้ำตาล'), 'chewing-gum', 'gum, not guava')
+  eq(matchIcon('เนสกาแฟโกลด์ คาปูชิโน'), 'coffee', 'cappuccino, not the crab inside it')
+  eq(matchIcon('เนื้อปลาบดปรุงรสย่าง'), 'fish', 'fish flesh, not beef')
+  eq(matchIcon('明治ミルクチョコレート'), 'chocolate-bar', 'milk chocolate is chocolate')
+  eq(matchIcon('豆腐 絹'), 'tofu', 'tofu, not the bean inside it')
+  eq(matchIcon('アイスコーヒー 微糖'), 'coffee', 'iced coffee is not an ice cream')
+})
+
+// `นม` (milk) is two characters and Thai runs its words together, so it turned
+// up inside `กลิ่นมะลิ` (jasmine scent) and put a carton on a green tea.
+Deno.test('a two-character phrase must start a word', () => {
+  eq(matchIcon('ชาเขียว กลิ่นมะลิ สูตรไม่มีน้ำตาล'), 'tea-cup')
+  eq(matchIcon('นมรสช็อกโกแลต'), 'milk-carton', 'and still fires where it does start one')
+})
+
+// The null value earns its keep here: `ขนม` (snack) CONTAINS `นม` (milk), and
+// covers everything from a rusk to a peanut brittle. Stopping is the answer.
+Deno.test('a script phrase can suppress a shorter one', () => {
+  eq(matchIcon('ขนมขาไก่ รสเบคอน'), null)
+  eq(matchIcon('ขนมปังโฮลวีต'), 'bread-loaf', 'but the bread compound still answers')
+})
+
+Deno.test('a Latin name never reaches the script table', () => {
+  eq(matchIcon('KitKat Gold (Japan)'), null)
+  eq(matchIcon('Nasi Lemak'), 'nasi-lemak')
+  eq(matchIcon('Beef, round, steak'), 'beef-steak')
 })

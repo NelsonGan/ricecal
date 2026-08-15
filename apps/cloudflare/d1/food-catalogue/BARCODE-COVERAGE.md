@@ -193,3 +193,98 @@ the next Malaysian nutrition app does not have to solve this again.
 4. **Contribute upstream** (6) as soon as (1) writes anything.
 
 Everything else on this page is a source to remember, not a plan.
+
+---
+
+## Re-measured, 14 August 2026
+
+The conclusion above survives, and it is now measured twice rather than once.
+Three things were tried in a single pass and only the first two added anything.
+
+**Open Food Facts, the delta since the dump.** `static.openfoodfacts.org/data/delta/`
+publishes a file a day and keeps about a fortnight of them. Reading all thirteen
+gave 85,472 records, 59,519 with a complete panel, **7,745 of them codes D1 did
+not hold** — 450 on Asian GS1 prefixes.
+
+**And it is worth re-running, which was measured rather than assumed.** A file
+covering the next two days landed the same afternoon and carried a further
+**2,829** new codes. That is roughly 1,400 a day, so the delta is the one barcode
+source here that pays a standing dividend: a weekly pass costs a few minutes and
+nothing else on this page adds a row without a contract or a code change.
+
+That load also found something the sibling repo needs to know: **Open Food Facts
+has moved the panel out of `nutriments`.** It is now
+`nutrition.aggregated_set.nutrients.<key>.value`, with the basis in
+`aggregated_set.per`. A reader written against the old key does not error — it
+found four usable products in 85,000 and looked like a quiet fortnight.
+
+**USDA FoodData Central, Branded Foods.** 1,993,673 rows collapse to 441,858
+distinct GTINs (FDC keeps every label revision), 431,852 of them with a name and
+a complete panel. **16,500 were new.** The other 96% were already here, which is
+worth knowing on its own: Open Food Facts already carries almost all of FDC
+Branded, so that is not a second source so much as a footnote to the first.
+31,108 of its GTINs sit on Asian prefixes, which is why it was worth checking.
+
+**Walking Open Food Facts per country was abandoned, and the abandonment is the
+finding.** Sampling pages from the middle of six countries' catalogues found
+97% already held (India 56/61, Korea 83/84, Vietnam 41/42, Thailand 25/26).
+A sequential sweep of Malaysia then read 1,000 products from page one and added
+**zero**. At roughly a page a minute against their search API, the remaining tail
+is not worth thirteen hours. Open Food Facts is exhausted for these shelves, in
+the specific sense that everything it holds with a usable panel is already here.
+
+```
+product rows in D1                     3,228,419 → 3,255,494
+
+  GS1 Malaysia   (955…)                    4,333 → 4,366
+  Thailand       (885…)                   12,997 → 13,034
+  Singapore      (888…)                    3,764 → 3,775
+  Philippines    (480…)                    3,554 → 3,599
+  Indonesia      (899…)                    2,223 → 2,236
+  Vietnam        (893…)                    3,681 → 3,707
+  Japan          (45…, 49…)               34,540 → 34,736
+  China          (690-699…)               11,472 → 11,541
+  Korea          (880…)                    8,543 → 8,599
+  Taiwan         (471…)                    5,165 → 5,187
+  Hong Kong      (489…)                    2,845 → 2,869
+  India          (890…)                   11,103 → 11,242
+  Sri Lanka      (479…)                      942 → 943
+  Pakistan       (896…)                      829 → 842
+  Myanmar        (883…)                       65 → 66
+```
+
+Myanmar is 66 packets. That is the whole shelf, and no amount of loading fixes
+it, because Open Food Facts has 368 Myanmar products in total and most carry no
+panel. Option (5) — the capture loop — remains the only thing on this page that
+can move a number like that.
+
+### The three sources that would have helped, and why they did not
+
+**Korea (MFDS).** `식품안전나라` publishes 바코드연계제품정보 (service C005) and
+유통바코드 (I2570), which are exactly a barcode-to-product join, and the
+식품영양성분 통합DB behind them. Every route — foodsafetykorea.go.kr's download
+page, data.go.kr's file and API datasets, data.mfds.go.kr — requires a registered
+account. Worth an hour when somebody is willing to sign up; the payoff is the
+880 shelf, currently 8,587 rows of Open Food Facts leftovers.
+
+**Taiwan (TFDA).** `data.fda.gov.tw` serves its open datasets with no auth at all
+and one of them (`InfoId=20`) is the national food composition table, which is
+now loaded. None of the other twenty-odd datasets is a packaged-product register
+with barcodes; 食品登錄平台's product registry is not among them.
+
+**Philippines (FNRI).** PhilFCT is behind a registration wall at
+`i.fnri.dost.gov.ph`, and it is a composition table rather than a barcode source
+in any case.
+
+### The French names cannot be fixed from Open Food Facts either
+
+The measurement above says ~210 of the Malaysian-prefix rows are named in French.
+Asking Open Food Facts for each one's `product_name_en`, `product_name_ms`,
+`product_name_id` or `generic_name_en` returned a usable alternative for **3 of
+168**. The rest have exactly one name and it is the one a European contributor
+typed. So this is not a field we failed to read — the packet was scanned in
+France and nobody has ever entered it in English or Malay.
+
+Which sharpens option (5) rather than adding to the list: the capture loop would
+fix the name and the panel in the same photograph, and it is still the only
+thing on this page that can.
