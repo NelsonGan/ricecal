@@ -124,18 +124,22 @@ idea it is meant to send a token.
    `appearance: 'interaction-only'` keeps a Managed widget invisible until that
    escalation actually happens, so nothing is lost by choosing it.
 
-   **THE HOSTNAME IS THE APEX, AND `www` IS NOT THE SAME ENTRY.** Cloudflare's
-   rule runs one way only: `ricecal.app` covers the apex and every subdomain
-   under it, while `www.ricecal.app` covers that subdomain and its children and
-   explicitly NOT the parent. This is a trap rather than a detail, because the
-   marketing site at ricecal.app is served by Vercel and redirects the apex to
-   `www`, so a widget created for the WEBSITE is naturally listed as
-   `www.ricecal.app` — and the app sends the apex, because that is what
-   `EXPO_PUBLIC_TURNSTILE_ORIGIN` holds and the apex is the entry worth having.
-   Everything then looks correct on both sides and the app gets `110200` on
-   every request for ever, which reads as a broken captcha and is one missing
-   line in Hostname Management. Add the apex; it covers `www` too, so one entry
-   serves the site and the app.
+   **LIST THE APEX, BECAUSE `www` IS NOT THE SAME ENTRY.** Cloudflare's rule
+   runs one way only: `ricecal.app` covers the apex and every subdomain under
+   it, while `www.ricecal.app` covers that subdomain and its children and
+   explicitly NOT the parent. Worth stating because the two are easy to reach
+   for interchangeably and only one of them works here — the marketing site is
+   on Vercel and redirects the apex to `www`, so `www` is the hostname anybody
+   setting a widget up for the WEBSITE would naturally add, while the app sends
+   the apex, which is what `EXPO_PUBLIC_TURNSTILE_ORIGIN` holds. A `www`-only
+   list answers the app with `110200` on every request for ever. The apex covers
+   both, so one entry serves the site and the app.
+
+   Reading the widget back does not need the dashboard:
+   `npx wrangler turnstile widget list` prints the sitekey, mode and domains,
+   and `widget get <sitekey>` adds the secret. Faster than describing a settings
+   page to somebody, and it is the only way to see the secret at all — Supabase
+   will not give its copy back.
 2. **Store the secret on Supabase**, gate still open:
    ```sh
    pnpm auth:config --captcha-secret 0x4AAA... --push

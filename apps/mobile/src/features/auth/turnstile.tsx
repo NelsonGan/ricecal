@@ -537,12 +537,12 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
               // The widget is registered against a hostname on Cloudflare, and
               // inline HTML has none. `baseUrl` is what gives the page one.
               //
-              // THE APEX, NOT `www`, AND THE WIDGET HAS TO LIST THE APEX TOO.
-              // Cloudflare's hostname rule runs one way: an apex entry covers
-              // every subdomain, a `www` entry does not cover its parent. The
-              // marketing site redirects the apex to `www`, so a widget set up
-              // for the WEBSITE ends up listing `www.` and answers this page
-              // with 110200 for ever. See the README.
+              // THE APEX, AND THE WIDGET HAS TO LIST THE APEX TOO. Cloudflare's
+              // hostname rule runs one way: an apex entry covers every
+              // subdomain, a `www` entry does not cover its parent. The
+              // marketing site redirects the apex to `www`, so `www` is the
+              // easy thing to list and it would answer this page with 110200
+              // for ever. See the README.
               source={{
                 html: page(siteKey),
                 baseUrl: `https://${env.EXPO_PUBLIC_TURNSTILE_ORIGIN}`,
