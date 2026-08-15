@@ -180,14 +180,18 @@ export const paywall = {
   },
 
   welcome: {
-    title: 'You are in. Jom makan.',
+    // Was "You are in. Jom makan." — "jom makan" is Malay for "let's eat", and
+    // it was the one place the English copy switched language to name who the
+    // app is for. The catalogue reaches across Asia and beyond, so the welcome
+    // greets everybody in the language they are reading it in.
+    title: "You are in. Let's eat.",
     body: 'Trial active for 7 days. Everything is unlocked, nothing to set up.',
     bodyLifetime: 'RiceCal Pro is yours for good. Everything is unlocked, nothing to set up.',
     perks: {
       // The three ways in, and they have to stay the three ways in: this is a
       // promise made to somebody at the moment they pay.
       log: 'Log by photo, by barcode or in your own words',
-      database: 'Full local food database',
+      database: 'The full food database',
     },
     manageNote: 'Manage or cancel any time in Profile, Subscription.',
     manageNoteLifetime: 'Paid once. There is nothing to renew or cancel.',
