@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(26);
+select plan(28);
 
 \set cook  '33333333-3333-3333-3333-333333333333'
 \set other '44444444-4444-4444-4444-444444444444'
@@ -147,6 +147,27 @@ select throws_ok(
   '42501',
   null,
   'and no client can approve one itself'
+);
+
+-- The SAME gate on the way IN. A table-wide insert grant let a client create
+-- the row already approved and public, skipping the reviewer entirely — the
+-- before-insert trigger does not touch these columns. `review_status` and
+-- `is_public` are out of the INSERT grant too, so naming either is a privilege
+-- error before RLS is even consulted.
+select throws_ok(
+  $q$insert into public.recipes (owner_id, name, servings, review_status)
+     values ((select auth.uid()), 'fixture-insert-approved', 1, 'approved')$q$,
+  '42501',
+  null,
+  'and no client can insert one pre-approved'
+);
+
+select throws_ok(
+  $q$insert into public.recipes (owner_id, name, servings, is_public)
+     values ((select auth.uid()), 'fixture-insert-public', 1, true)$q$,
+  '42501',
+  null,
+  'and no client can insert one already public'
 );
 
 reset role;

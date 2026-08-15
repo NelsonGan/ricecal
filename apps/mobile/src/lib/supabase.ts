@@ -238,6 +238,15 @@ export const supabase = createClient<Database>(
       persistSession: true,
       // No URL to detect a session in — this is a native app, not a browser.
       detectSessionInUrl: false,
+      // PKCE, NOT the library's implicit default. A magic link or a reset then
+      // comes back as a one-time `?code=` that only means anything with the
+      // verifier THIS install generated and stored, so a link carrying a
+      // session cannot be replayed onto another device. The implicit flow puts
+      // a usable token pair straight in the URL fragment, and any `ricecal://`
+      // link carrying one would sign the app in — a stranger's crafted link
+      // becomes a login. `completeLoginFromUrl` accepts only the code for the
+      // same reason.
+      flowType: 'pkce',
     },
   },
 )

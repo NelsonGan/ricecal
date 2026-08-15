@@ -3,12 +3,12 @@ import { completeLoginFromUrl, loginLinkRedirect, passwordResetRedirect } from '
 /**
  * Reading a session back out of a login link.
  *
- * Worth its own suite because the tokens are not in one predictable place. Which
- * half of the URL carries them depends on the project's auth flow — implicit puts
- * a pair in the fragment, PKCE puts a code in the query — and a development
- * client wraps the whole link inside a `url` parameter of its own. Getting any of
- * those wrong looks identical from the outside: the user taps the link in the mail
- * and the app opens signed out.
+ * Worth its own suite because the code is not in one predictable place: PKCE puts
+ * it in the query, and a development client wraps the whole link inside a `url`
+ * parameter of its own. Getting that wrong looks identical from the outside — the
+ * user taps the link in the mail and the app opens signed out. The suite also
+ * pins the security half: a link carrying a ready-made token pair is IGNORED, not
+ * turned into a session, so a forwarded or forged link cannot log the app in.
  */
 
 // Imported at the top of the module under test, and it reaches for a native view
@@ -68,40 +68,30 @@ it('falls back to the release scheme when there is no manifest to read', () => {
   expect(loginLinkRedirect()).toBe('ricecal://auth/callback')
 })
 
-it('takes the token pair from the fragment', async () => {
+/**
+ * The security assertion the whole PKCE switch exists for. A link carrying a
+ * ready-to-use token pair — the implicit flow's shape, and the shape an attacker
+ * can mint from their own account — must NOT become a session. Read as a login,
+ * one such link mailed to a victim signs their app into the attacker's account.
+ * With no code to exchange, this is just an unrecognised deep link.
+ */
+it('ignores a token pair in the fragment', async () => {
   const done = await completeLoginFromUrl(
     'ricecal://auth/callback#access_token=abc&refresh_token=def&token_type=bearer',
   )
 
-  expect(done).toBe('signed-in')
-  expect(supabase.auth.setSession).toHaveBeenCalledWith({
-    access_token: 'abc',
-    refresh_token: 'def',
-  })
+  expect(done).toBe('none')
+  expect(supabase.auth.setSession).not.toHaveBeenCalled()
+  expect(supabase.auth.exchangeCodeForSession).not.toHaveBeenCalled()
 })
 
-it('takes them from the query string too', async () => {
-  await completeLoginFromUrl('ricecal://auth/callback?access_token=abc&refresh_token=def')
+it('ignores a token pair in the query string too', async () => {
+  const done = await completeLoginFromUrl(
+    'ricecal://auth/callback?access_token=abc&refresh_token=def',
+  )
 
-  expect(supabase.auth.setSession).toHaveBeenCalledWith({
-    access_token: 'abc',
-    refresh_token: 'def',
-  })
-})
-
-/**
- * The shape `Linking.createURL` produces under a development client: the real
- * link is wrapped in one pointing at the dev launcher. Without unwrapping it, a
- * login link can only be tested in a release build.
- */
-it('finds them inside a development client wrapper', async () => {
-  const inner = encodeURIComponent('http://127.0.0.1:8081/#access_token=abc&refresh_token=def')
-  await completeLoginFromUrl(`exp+ricecal://expo-development-client/?url=${inner}`)
-
-  expect(supabase.auth.setSession).toHaveBeenCalledWith({
-    access_token: 'abc',
-    refresh_token: 'def',
-  })
+  expect(done).toBe('none')
+  expect(supabase.auth.setSession).not.toHaveBeenCalled()
 })
 
 it('exchanges a PKCE code when that is what arrives', async () => {
@@ -110,6 +100,18 @@ it('exchanges a PKCE code when that is what arrives', async () => {
   expect(done).toBe('signed-in')
   expect(supabase.auth.exchangeCodeForSession).toHaveBeenCalledWith('one-time-code')
   expect(supabase.auth.setSession).not.toHaveBeenCalled()
+})
+
+/**
+ * The shape `Linking.createURL` produces under a development client: the real
+ * link is wrapped in one pointing at the dev launcher. Without unwrapping it, a
+ * login link can only be tested in a release build.
+ */
+it('finds the code inside a development client wrapper', async () => {
+  const inner = encodeURIComponent('http://127.0.0.1:8081/?code=one-time-code')
+  await completeLoginFromUrl(`exp+ricecal://expo-development-client/?url=${inner}`)
+
+  expect(supabase.auth.exchangeCodeForSession).toHaveBeenCalledWith('one-time-code')
 })
 
 /**
@@ -134,11 +136,14 @@ it('ignores a deep link that is not a login at all', async () => {
   expect(supabase.auth.exchangeCodeForSession).not.toHaveBeenCalled()
 })
 
-it('passes a setSession failure on', async () => {
-  supabase.auth.setSession.mockResolvedValue({ data: {}, error: new Error('Invalid token') })
+it('passes a code-exchange failure on', async () => {
+  supabase.auth.exchangeCodeForSession.mockResolvedValue({
+    data: {},
+    error: new Error('Invalid token'),
+  })
 
   await expect(
-    completeLoginFromUrl('ricecal://auth/callback#access_token=abc&refresh_token=def'),
+    completeLoginFromUrl('ricecal://auth/callback?code=one-time-code'),
   ).rejects.toMatchObject({ name: 'AuthProblem', reason: 'unknown' })
 })
 
@@ -147,23 +152,14 @@ it('passes a setSession failure on', async () => {
  *
  * Both produce a session, so read as a sign-in the reset lands the user on
  * Today with everything working and the password they came to change still in
- * force. It is asked two ways because neither is reliable alone: the implicit
- * flow puts `type=recovery` on the redirect and PKCE puts nothing, so
- * `sendPasswordReset` also asks to come back to a path of its own.
+ * force. PKCE carries no `type` on the redirect, so `sendPasswordReset` asks to
+ * come back to a path of its own and the path is what tells them apart.
  */
 it('knows a password reset from a sign-in, by its path', async () => {
   const outcome = await completeLoginFromUrl('ricecal://auth/reset?code=one-time-code')
 
   expect(outcome).toBe('recovery')
   expect(supabase.auth.exchangeCodeForSession).toHaveBeenCalledWith('one-time-code')
-})
-
-it('knows one by its type parameter, for the flow that sends no path', async () => {
-  const outcome = await completeLoginFromUrl(
-    'ricecal://auth/callback#access_token=abc&refresh_token=def&type=recovery',
-  )
-
-  expect(outcome).toBe('recovery')
 })
 
 /**
