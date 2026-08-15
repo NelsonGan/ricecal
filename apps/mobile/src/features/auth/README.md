@@ -108,10 +108,38 @@ can lock every existing install out at once: a build already on a phone has no
 idea it is meant to send a token.
 
 1. **Create the widget** at Cloudflare dashboard → Turnstile → Add widget.
-   Mode **Invisible** (or Managed), and add the hostname you will use as the
-   WebView's origin, e.g. `ricecal.app`. That hostname is never fetched from;
-   inline HTML has no origin of its own and the widget is bound to a hostname
-   list, so the page is loaded under it.
+   Mode **Managed**, and add the hostname you will use as the WebView's origin,
+   e.g. `ricecal.app`. That hostname is never fetched from; inline HTML has no
+   origin of its own and the widget is bound to a hostname list, so the page is
+   loaded under it.
+
+   **MANAGED, NOT INVISIBLE, and this one is not a preference.** Cloudflare's
+   three modes differ in exactly one thing: what happens to a visitor it judges
+   suspicious. Managed escalates to a checkbox. Non-Interactive and Invisible
+   never do — the docs are explicit that those visitors "will never interact
+   with the widget" — so a real person whose score comes out badly has no way
+   to prove otherwise and simply cannot sign in, on every attempt, for ever. A
+   hidden WebView on a phone is a profile that scores badly more often than a
+   browser does, which is what makes this the likely mode rather than a corner.
+   `appearance: 'interaction-only'` keeps a Managed widget invisible until that
+   escalation actually happens, so nothing is lost by choosing it.
+
+   **LIST THE APEX, BECAUSE `www` IS NOT THE SAME ENTRY.** Cloudflare's rule
+   runs one way only: `ricecal.app` covers the apex and every subdomain under
+   it, while `www.ricecal.app` covers that subdomain and its children and
+   explicitly NOT the parent. Worth stating because the two are easy to reach
+   for interchangeably and only one of them works here — the marketing site is
+   on Vercel and redirects the apex to `www`, so `www` is the hostname anybody
+   setting a widget up for the WEBSITE would naturally add, while the app sends
+   the apex, which is what `EXPO_PUBLIC_TURNSTILE_ORIGIN` holds. A `www`-only
+   list answers the app with `110200` on every request for ever. The apex covers
+   both, so one entry serves the site and the app.
+
+   Reading the widget back does not need the dashboard:
+   `npx wrangler turnstile widget list` prints the sitekey, mode and domains,
+   and `widget get <sitekey>` adds the secret. Faster than describing a settings
+   page to somebody, and it is the only way to see the secret at all — Supabase
+   will not give its copy back.
 2. **Store the secret on Supabase**, gate still open:
    ```sh
    pnpm auth:config --captcha-secret 0x4AAA... --push
@@ -128,6 +156,72 @@ idea it is meant to send a token.
 
 Left at `REPLACE_ME`, the app asks for no token and sends none, which is exactly
 right for every step before the last.
+
+### The one that actually happened: `about:srcdoc`
+
+Worth its own heading, because everything about it pointed the wrong way.
+
+Turnstile builds its challenge frame as an **iframe with a `srcdoc` attribute**,
+which the WebView sees as a navigation to `about:srcdoc`. `originWhitelist`
+governs iframe navigations as well as top-level ones, so the list of `https://*`
+this file used to carry did not merely ignore that frame: react-native-webview
+refused to load it internally and handed the URL to the OS instead. The only
+trace anywhere was one line in the Metro log,
+
+```
+WARN  Error opening URL: [Error: Unable to open URL: about:srcdoc. …]
+```
+
+and the widget then loaded, rendered, reported `ready`, and could never produce
+a token.
+
+**The symptom is on the server, so that is where the search starts, and
+everything there is correct.** Supabase refuses every sign-in for want of a
+token; the Cloudflare dashboard shows the site key, the secret, Managed mode and
+the apex hostname all exactly right; the EAS environment carries both variables.
+Two days can go into confirming that a correct configuration is correct. The fix
+is `'about:*'` in one array.
+
+Proven rather than reasoned, by putting it back: with `about:*` a wrong password
+returns "That email and password do not match", and without it the same tap on
+the same account returns "We could not confirm you are a person".
+
+### When it refuses a real person
+
+**FIVE THINGS FAIL IDENTICALLY HERE, and four of them are not in this repo.**
+The gate is on the server, so the app says "we could not confirm you are a
+person" whether the widget never loaded, never produced a token, produced one
+Cloudflare scored badly, or produced a perfectly good one that `siteverify`
+refused. One sentence, five causes, and no way to tell them apart by looking.
+
+So every failure is reported: a `[captcha]` line to the console, and the same
+text to Sentry as a warning (`turnstile.tsx`, `report`). The code is what
+separates them.
+
+| what Sentry says | what it is | where the fix is |
+|---|---|---|
+| `absent: no site key in this build` | `EXPO_PUBLIC_TURNSTILE_SITE_KEY` never reached the bundle | the EAS environment for that build profile. `EXPO_PUBLIC_*` is inlined at BUNDLE time, so this is a property of the build, not the phone |
+| `absent: no WebView in this binary` | the binary predates `react-native-webview` | a native rebuild. An OTA update cannot add it |
+| `unusable: 110200` | the WebView's origin is not on the widget's hostname list | add `EXPO_PUBLIC_TURNSTILE_ORIGIN`'s value under Hostname Management |
+| `unusable: 110100` / `110110` / `400020` / `400070` | wrong, unknown or disabled site key | the key, or the widget |
+| `gave up after N retryable errors, last 300…` | Cloudflare scored the visitor a bot, twice | the widget's MODE, above |
+| `timed out with no answer` | executed, then twenty seconds of silence | usually the network; otherwise the widget |
+
+The bot-score row is the one that looks like an app bug and is not: the request
+is reaching Cloudflare and being scored, and the app is doing what it can with
+the answer. It no longer settles on the FIRST one — Cloudflare marks `300*` and
+`600*` retryable, the widget's own `retry: 'auto'` has another go, and in
+Managed mode a visitor who keeps scoring badly is escalated to a checkbox, which
+arrives as an `interactive` message and puts the panel up.
+
+**And nothing at all in Sentry, with sign-in still failing, is the sixth case:
+the SECRET.** It has to belong to the same widget as the site key. A mismatched
+pair produces a token the app is entirely happy with — no error, no code,
+nothing to report — that `siteverify` then rejects, and the app says the same
+sentence again. Silence here is the evidence: the widget did its job, so the
+problem is on the other side of it. `pnpm auth:config --captcha-secret 0x… --push`
+writes it, and the Supabase API never gives it back in a readable form, so the
+only way to rule it out is to set it again from the widget you are looking at.
 
 ## Where the rest of it lives
 

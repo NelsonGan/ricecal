@@ -6,11 +6,21 @@
   writes the result to templates/build/, which is what the local stack reads and
   what `pnpm email:push` sends to the project.
 
-  The design follows the Supabase design system's roles rather than its brand:
-  background / surface / foreground / foreground-muted / border, the same 6px
-  and 8px radii, the same type ramp. The accent is RiceCal's pandan, because the
-  reader asked an app for this mail and the mail should look like the app.
-  Swapping it back is the two `--brand` values below and nothing else.
+  THE DESIGN IS RICECAL'S OWN, and it used to be Supabase's design system roles
+  painted in one RiceCal colour. That was a reasonable place to start from and
+  it produced a mail that looked like a developer tool: Supabase's neutrals, its
+  6px radii, its system font stack, and a green button. Nothing about it said
+  which app it had come from, and the mail is the first thing a new account ever
+  sees of this product — it arrives BEFORE the diary does.
+
+  So every value here now comes from `apps/mobile/src/theme/tokens.ts`:
+
+    canvas / surface / line          the two backgrounds and the border
+    heading / body / muted           the type colours
+    pandan / pandanSlab              the button, slab and all
+    pandanSoft / pandanSoftLine      the code block
+    radius.card 28, radius.md 20     the corners
+    slab.lg 6                        the drop under the button
 
   Three constraints shape the markup, and all three are about mail clients
   rather than about taste:
@@ -22,9 +32,21 @@
     <style> block entirely still get the light palette from the attributes, and
     a client that keeps it gets dark mode. An email with only the style block
     renders as black text on a black background in Outlook.
-  - NO REMOTE IMAGES. Most clients block them until the reader asks, so a logo
-    that is an <img> is an empty box in the first second of every email we send.
-    The wordmark is text.
+  - THE FONTS ARE A PROGRESSIVE ENHANCEMENT. Baloo 2 and Nunito are what the app
+    is set in and they are linked from Google Fonts, which Apple Mail and iOS
+    Mail honour and Gmail ignores. So every family declaration carries the full
+    system fallback after it, and the mail is designed to be right in the
+    fallback rather than merely tolerable — the colour, the slab and the shapes
+    are what carry the identity, and they need no font at all.
+
+  ONE IMAGE, AND IT DEGRADES TO WHAT WAS HERE BEFORE. The rule used to be no
+  remote images at all, on the good grounds that a blocked <img> is an empty box
+  for the first second of every mail. The app icon is INLINE instead, as a data
+  URI spliced in at build time from `logo.png` — nothing to fetch, nothing to
+  block, and no asset host to keep alive. A client that drops data URIs (some
+  Outlook builds do) is left with the wordmark under it, which is exactly the
+  header this layout had before the icon existed. Never worse, and see the note
+  on the header itself for why the icon's alt text is empty.
 -->
 <!doctype html>
 <html lang="en">
@@ -36,6 +58,8 @@
     <meta name="supported-color-schemes" content="light dark" />
     <title><!--SUBJECT--></title>
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@400;700;800&display=swap');
+
       :root {
         color-scheme: light dark;
         supported-color-schemes: light dark;
@@ -48,26 +72,30 @@
       }
 
       @media (prefers-color-scheme: dark) {
-        .rc-body { background-color: #1c1c1c !important; }
-        .rc-surface { background-color: #181818 !important; border-color: #2e2e2e !important; }
-        .rc-fg { color: #ededed !important; }
-        .rc-muted { color: #a0a0a0 !important; }
-        .rc-rule { border-color: #2e2e2e !important; }
-        .rc-code { background-color: #14291f !important; border-color: #2e4a3c !important; color: #38d07e !important; }
-        .rc-brand { color: #38d07e !important; }
-        .rc-button { background-color: #38d07e !important; color: #0e1a14 !important; }
+        .rc-body { background-color: #111716 !important; }
+        .rc-surface { background-color: #1A2220 !important; border-color: #2E3936 !important; }
+        .rc-fg { color: #F2F5F3 !important; }
+        .rc-copy { color: #B9C4BF !important; }
+        .rc-muted { color: #8B9A94 !important; }
+        .rc-rule { border-color: #2E3936 !important; }
+        .rc-code { background-color: #14291F !important; border-color: #2E4A3C !important; color: #38D07E !important; }
+        .rc-brand { color: #38D07E !important; }
+        /* The accents get BRIGHTER in dark mode, not darker, so a filled button
+           flips its label to near-black. Same rule as `onPandan` in the app. */
+        .rc-slab { background-color: #1C6E44 !important; }
+        .rc-button { background-color: #38D07E !important; color: #0C1310 !important; }
       }
 
       @media only screen and (max-width: 600px) {
         .rc-pad { padding-left: 24px !important; padding-right: 24px !important; }
-        .rc-code { font-size: 30px !important; letter-spacing: 6px !important; }
+        .rc-code { font-size: 32px !important; letter-spacing: 6px !important; }
       }
     </style>
   </head>
 
   <body
     class="rc-body"
-    style="margin: 0; padding: 0; width: 100%; background-color: #f6f7f8; -webkit-font-smoothing: antialiased;"
+    style="margin: 0; padding: 0; width: 100%; background-color: #f6f8f7; -webkit-font-smoothing: antialiased;"
   >
     <!-- The first line of text a list view shows, before the reader opens
          anything. Left empty it shows the wordmark and then the heading twice. -->
@@ -82,7 +110,7 @@
       cellspacing="0"
       border="0"
       class="rc-body"
-      style="background-color: #f6f7f8;"
+      style="background-color: #f6f8f7;"
     >
       <tr>
         <td align="center" style="padding: 32px 12px 48px 12px;">
@@ -94,31 +122,50 @@
             border="0"
             style="max-width: 560px; margin: 0 auto;"
           >
-            <!-- Wordmark -->
+            <!-- THE ICON AND THE WORDMARK, and they are two elements for the
+                 sake of the client that keeps only one of them.
+
+                 The icon carries an EMPTY alt on purpose: given the wordmark to
+                 say, a client that strips data URIs draws a 64px box with 22pt
+                 text in it and clips the word. Empty, the same client shows
+                 nothing at all and the wordmark below reads on its own — which
+                 is exactly the header this layout had before the icon existed.
+                 The image is decorative in the strict sense; the name is right
+                 underneath it. -->
             <tr>
-              <td
-                align="center"
-                style="padding: 8px 0 20px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
-              >
+              <td align="center" style="padding: 4px 0 10px 0;">
+                <img
+                  src="<!--LOGO-->"
+                  width="64"
+                  height="64"
+                  alt=""
+                  style="display: block; width: 64px; height: 64px; border: 0; border-radius: 16px;"
+                />
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding: 0 0 22px 0;">
                 <span
                   class="rc-brand"
-                  style="font-size: 20px; font-weight: 700; letter-spacing: -0.2px; color: #1b8a4e;"
+                  style="font-family: 'Baloo 2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.2px; color: #1b8a4e;"
                   >RiceCal</span
                 >
               </td>
             </tr>
 
-            <!-- The card -->
+            <!-- The card. `radius.card`, and the app's 2px border rather than a
+                 hairline: a 1px rule is a Supabase card, and the whole of this
+                 app is drawn with a thicker line than that. -->
             <tr>
               <td
                 class="rc-surface"
-                style="background-color: #ffffff; border: 1px solid #e6e8eb; border-radius: 8px;"
+                style="background-color: #ffffff; border: 2px solid #e4e8e5; border-radius: 28px;"
               >
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td
                       class="rc-pad"
-                      style="padding: 36px 40px 36px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
+                      style="padding: 36px 40px 36px 40px; font-family: Nunito, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
                     >
                       <!--CONTENT-->
                     </td>
@@ -131,18 +178,18 @@
             <tr>
               <td
                 class="rc-pad"
-                style="padding: 24px 40px 0 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
+                style="padding: 24px 40px 0 40px; font-family: Nunito, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
               >
                 <p
                   class="rc-muted"
-                  style="margin: 0; font-size: 13px; line-height: 20px; color: #707070;"
+                  style="margin: 0; font-size: 13px; line-height: 20px; font-weight: 700; color: #6e7b74;"
                 >
                   You are receiving this because someone asked for it using this
                   address at RiceCal. We only ever email you about your account.
                 </p>
                 <p
                   class="rc-muted"
-                  style="margin: 12px 0 0 0; font-size: 13px; line-height: 20px; color: #707070;"
+                  style="margin: 12px 0 0 0; font-size: 13px; line-height: 20px; font-weight: 700; color: #6e7b74;"
                 >
                   RiceCal, a calorie diary for Malaysian eating.
                 </p>

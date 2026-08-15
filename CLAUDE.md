@@ -1394,6 +1394,14 @@ Break these and the feature is wrong in ways tests may not catch.
   because a native modal window cannot be drawn over from below. `keyboardType`
   stays on every field regardless, as the fallback if a platform ever declines
   to suppress the keyboard.
+  **One field is exempt, and it is the six digit code.** The pad types a
+  quantity, and a code is a string that happens to be digits: the pad refuses a
+  leading zero, because `07` is a typo in every figure this app holds and the
+  first digit of one code in six, and suppressing the keyboard suppresses
+  `oneTimeCode` autofill with it. `systemKeyboard` on `TextField` is the
+  opt-out, `(auth)/verify` and `(auth)/new-password` are the only two callers,
+  and the "Done" pill is harmless there because those screens have nothing
+  behind the footer but canvas.
 - **A field on that pad never blurs when you leave the screen.** Taking the
   system keyboard away also takes away the reason the platform had to resign
   first responder, so a push, a replace or a tab change fires no `onBlur` at

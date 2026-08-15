@@ -5,8 +5,9 @@ Eight messages, one layout, and a script that puts them on the project.
 ```
 _layout.html          the shell: doctype, palette, card, footer
 _partials.html        the code block, the button, the rule
+logo.png              the app icon at 96px, inlined into every message
 <message>.html        one body per email, with its subject in a metadata block
-build/                what the two of them make. COMMITTED. Do not edit.
+build/                what the three of them make. COMMITTED. Do not edit.
 ```
 
 ```sh
@@ -81,27 +82,53 @@ the same device.
 
 ## The design
 
-Supabase's design system's ROLES, painted in RiceCal's colour. Background,
-surface, foreground, foreground-muted and border are Supabase's neutrals at
-their published values (`#ffffff`/`#1c1c1c`, `#e6e8eb`/`#2e2e2e`,
-`#171717`/`#ededed`, `#707070`/`#a0a0a0`), with its 6px and 8px radii and its
-type ramp. The accent is pandan (`#1b8a4e` on light, `#38d07e` on dark) rather
-than Supabase's brand green, because the person reading this asked RiceCal for
-it and a mail in another product's colours reads as a forward.
+**RiceCal's own, and every value comes from `apps/mobile/src/theme/tokens.ts`.**
+It was Supabase's design system roles painted in one RiceCal colour for a while,
+which was a sensible place to start and produced a mail that looked like a
+developer tool: their neutrals, their 6px radii, the system font stack, and a
+green button. Nothing in it said which app it had come from — and for a new
+account this mail arrives BEFORE the app does, so it is the first thing anybody
+sees of the product.
 
-Swapping that decision is the `--brand`-coloured values in `_layout.html` and
-`_partials.html`, and nothing else.
+| | |
+|---|---|
+| canvas `#F6F8F7` / `#111716` | the page |
+| surface `#FFFFFF` / `#1A2220`, line `#E4E8E5` / `#2E3936` | the card, at `radius.card` 28 with the app's 2px border |
+| heading `#1B3A2B`, body `#495450`, muted `#6E7B74` | the type colours |
+| pandan `#2FBF71` over pandanSlab `#1B8A4E` | the button, slab and all |
+| pandanSoft `#EAF9F0` on pandanSoftLine `#CFEBDA` | the code block |
 
-Three constraints shape the markup and all three are about mail clients:
+Baloo 2 carries the heading, the button label and the six digits; Nunito carries
+the prose. Same split as the app.
+
+Four constraints shape the markup and all four are about mail clients:
 
 - **Tables, not flex or grid.** Outlook renders through Word's engine.
 - **The palette is declared twice**, once inline on the element and once in a
   `prefers-color-scheme` block. A client that drops the `<style>` block still
   gets the light palette; one that keeps it gets dark mode. Declared only in the
   style block, Outlook renders black on black.
-- **No remote images.** Most clients block them until asked, so a logo that is
-  an `<img>` is an empty box for the first second of every email. The wordmark
-  is text.
+- **The fonts are an enhancement, never a dependency.** Baloo 2 and Nunito come
+  from Google Fonts, which Apple Mail and iOS Mail honour and Gmail ignores, so
+  every family declaration carries the full system fallback behind it. What
+  makes the mail recognisable without them is the colour, the corners and the
+  slab under the button, none of which need a typeface.
+- **The one image is inline.** The rule used to be no images at all, because
+  most clients block a remote one until the reader asks and a hosted logo is an
+  empty box at the top of every message until they do. The app icon is a
+  `data:` URI instead, spliced in at build time from `logo.png` — nothing to
+  fetch, nothing to block, no asset host to keep alive. It costs about 9KB a
+  message against Gmail's 102KB clipping threshold, and these build to roughly
+  17KB. A client that drops data URIs shows the `alt` text, which is styled as
+  the wordmark: exactly the header this layout had before the icon existed.
+
+**The button is the app's `Squish`,** as far as a mail client can draw one: the
+outer cell is the slab colour with six points of bottom padding and the anchor
+is the surface laid over it. Outlook squares off the corners, having no
+`border-radius`, and what survives there is still the two-tone block.
+
+Replacing `logo.png` is `sips -Z 96` over `apps/mobile/assets/icon.png`, and a
+rebuild.
 
 ## The two that nothing in the app sends
 

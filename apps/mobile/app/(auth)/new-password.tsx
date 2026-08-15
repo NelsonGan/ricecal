@@ -66,7 +66,10 @@ export default function NewPasswordScreen() {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [submitted, setSubmitted] = useState(false)
-  const [busy, setBusy] = useState(false)
+  /** Which request is running, so the spinner lands on the control that was
+   *  pressed rather than always on the footer. See `password.tsx`. */
+  const [running, setRunning] = useState<'save' | 'resend' | null>(null)
+  const busy = running !== null
   /** Full on arrival, because the mail that brought them here just went out. */
   const [cooldown, setCooldown] = useState(RESEND_COOLDOWN_S)
   useEffect(() => {
@@ -83,14 +86,14 @@ export default function NewPasswordScreen() {
   const tooShort = password.length < 8
   const mismatched = confirm !== password
 
-  const attempt = async (work: () => Promise<void>) => {
-    setBusy(true)
+  const attempt = async (which: 'save' | 'resend', work: () => Promise<void>) => {
+    setRunning(which)
     try {
       await work()
     } catch (error) {
       toast.show({ title: message(error), tone: 'error' })
     } finally {
-      setBusy(false)
+      setRunning(null)
     }
   }
 
@@ -98,7 +101,7 @@ export default function NewPasswordScreen() {
     setSubmitted(true)
     if (badCode || tooShort || mismatched) return
 
-    attempt(async () => {
+    attempt('save', async () => {
       // In this order, and the local checks above are what make it safe. The
       // code is spent by `verifyEmailCode`, so a password rejected AFTER it
       // would leave the user signed in with the old one and no code left to try
@@ -115,7 +118,7 @@ export default function NewPasswordScreen() {
   }
 
   const resend = () =>
-    attempt(async () => {
+    attempt('resend', async () => {
       await sendPasswordReset(email, await captcha())
       setCooldown(RESEND_COOLDOWN_S)
       setCode('')
@@ -125,7 +128,7 @@ export default function NewPasswordScreen() {
   return (
     <Screen
       footer={
-        <Button fullWidth onPress={save} disabled={busy} loading={busy}>
+        <Button fullWidth onPress={save} disabled={busy} loading={running === 'save'}>
           {t('auth:reset.save')}
         </Button>
       }
@@ -145,7 +148,11 @@ export default function NewPasswordScreen() {
           value={code}
           onChangeText={(next) => setCode(next.replace(/\D/g, '').slice(0, CODE_LENGTH))}
           placeholder={t('auth:verify.placeholder')}
+          // The platform's keyboard, like the code field on `verify`. A code is
+          // six digits rather than a quantity: the app's pad drops the leading
+          // zero and takes `oneTimeCode` autofill with it. See `systemKeyboard`.
           keyboardType="number-pad"
+          systemKeyboard
           maxLength={CODE_LENGTH}
           autoComplete="one-time-code"
           textContentType="oneTimeCode"
@@ -153,6 +160,7 @@ export default function NewPasswordScreen() {
           error={submitted && badCode ? t('auth:errors.codeLength') : undefined}
           returnKeyType="next"
           onSubmitEditing={() => passwordRef.current?.focus()}
+          editable={!busy}
         />
       ) : null}
 
@@ -167,6 +175,7 @@ export default function NewPasswordScreen() {
         error={submitted && tooShort ? t('auth:errors.passwordShort') : undefined}
         returnKeyType="next"
         onSubmitEditing={() => confirmRef.current?.focus()}
+        editable={!busy}
       />
 
       <PasswordField
@@ -180,13 +189,22 @@ export default function NewPasswordScreen() {
         error={submitted && !tooShort && mismatched ? t('auth:errors.passwordMismatch') : undefined}
         returnKeyType="go"
         onSubmitEditing={save}
+        editable={!busy}
       />
 
       {/* Only when a code is what is missing. Offered to somebody who arrived
           through the link, it would post a second mail they have no use for and
-          spend their one send a minute. */}
+          spend their one send a minute. A quiet centred link, matching the same
+          offer on `verify`. */}
       {needsCode ? (
-        <Button variant="ghost" fullWidth onPress={resend} disabled={busy || cooldown > 0}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="self-center"
+          onPress={resend}
+          disabled={busy || cooldown > 0}
+          loading={running === 'resend'}
+        >
           {cooldown > 0
             ? t('auth:verify.resendIn', { seconds: cooldown })
             : t('auth:verify.resend')}

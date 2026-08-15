@@ -118,12 +118,25 @@ export function Button({
   const metrics = sizes[size]
   const inert = Boolean(disabled) || loading
 
-  // A disabled button is its own tone, not a faded copy of another one: the
-  // design gives it a flat grey fill and a shallower slab.
-  const surface = inert ? 'bg-disabled' : tone.surface
-  const slabColor = inert ? 'bg-disabled-slab' : tone.slab
-  const label = inert ? 'text-on-disabled' : tone.label
-  const depth = variant === 'ghost' ? 0 : inert ? slab.sm : metrics.depth
+  /**
+   * A disabled button is its own tone, not a faded copy of another one: the
+   * design gives it a flat grey fill and a shallower slab.
+   *
+   * EXCEPT A GHOST, which has no fill to grey out. A ghost is a line of text
+   * with a tap target round it, and filling it made a quiet link turn into a
+   * grey slab the moment anything on the screen was in flight — three of them
+   * on the password screen, all going solid together while one request ran. It
+   * dims its label instead, which is what "not available" looks like for text.
+   */
+  const ghost = variant === 'ghost'
+  const surface = inert && !ghost ? 'bg-disabled' : tone.surface
+  // The slab as well as the surface, and forgetting it is invisible in the
+  // source and unmissable on screen: `Squish` always renders the slab layer,
+  // absolutely filling the box behind a surface that for a ghost is
+  // transparent. Coloured, it IS the grey box.
+  const slabColor = inert && !ghost ? 'bg-disabled-slab' : tone.slab
+  const label = inert ? (ghost ? 'text-faint' : 'text-on-disabled') : tone.label
+  const depth = ghost ? 0 : inert ? slab.sm : metrics.depth
 
   return (
     <Squish
