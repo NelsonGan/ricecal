@@ -112,6 +112,109 @@ grant select, insert, delete on public.barcode_misses to service_role;
 
 
 -- ---------------------------------------------------------------------------
+-- How many packets an account has scanned in the current hour, and the ceiling.
+--
+-- The barcode function is the one model-adjacent path with no throttle: unlike
+-- a scan or a described meal it spends no AI budget, so `claim_ai_inference`
+-- never sees it, and a signed-in caller could loop distinct codes to drive a
+-- live Open Food Facts fetch and a `barcode_misses` write on every one. That is
+-- a denial-of-wallet rather than a data risk, so the control is a plain
+-- per-account rate limit shaped exactly like the AI meter above: one row per
+-- hour, an atomic claim, no client write grant.
+--
+-- HOURLY, not monthly. A real person scans a handful of packets in a shopping
+-- trip; the ceiling only has to be far above that and far below what a script
+-- can do. Fixed hour windows rather than a sliding one for the same reason the
+-- AI meter uses calendar months: a window that has to be swept clean needs
+-- something to sweep it, and a row keyed by the window is the same fact without
+-- the sweeping.
+-- ---------------------------------------------------------------------------
+create table public.barcode_scan_usage (
+  user_id      uuid not null references auth.users (id) on delete cascade,
+  -- The start of the hour, UTC. A billing-style window, not a diary day, so it
+  -- does not travel with the user's clock.
+  window_start timestamptz not null,
+  scans        integer not null default 0 check (scans >= 0),
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  primary key (user_id, window_start)
+);
+
+create trigger barcode_scan_usage_set_updated_at
+  before update on public.barcode_scan_usage
+  for each row execute function public.set_updated_at();
+
+alter table public.barcode_scan_usage enable row level security;
+
+-- No client write grant at all, like `ai_usage`: the only writer is
+-- `claim_barcode_scan`, and a client that could zero its own counter is not a
+-- limit.
+grant select on public.barcode_scan_usage to authenticated;
+grant select, insert, update, delete on public.barcode_scan_usage to service_role;
+
+create policy "barcode_scan_usage: read own"
+  on public.barcode_scan_usage for select
+  to authenticated
+  using ((select auth.uid()) = user_id);
+
+create or replace function public.barcode_hourly_limit()
+returns integer
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select 120;
+$$;
+
+revoke execute on function public.barcode_hourly_limit from public, anon;
+grant execute on function public.barcode_hourly_limit to authenticated, service_role;
+
+-- ---------------------------------------------------------------------------
+-- Take one scan's worth of budget, or refuse. Atomic, for the reason
+-- `claim_ai_inference` is: a read-then-write limit is one two requests can both
+-- walk through. The guard is a `where` on the `on conflict do update`, so the
+-- check and the increment are one statement under one row lock.
+-- ---------------------------------------------------------------------------
+create or replace function public.claim_barcode_scan(p_user uuid)
+returns table (
+  allowed       boolean,
+  used          integer,
+  hourly_limit  integer
+)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_limit  integer     := public.barcode_hourly_limit();
+  v_window timestamptz := date_trunc('hour', (now() at time zone 'utc')) at time zone 'utc';
+  v_used   integer;
+begin
+  insert into public.barcode_scan_usage as u (user_id, window_start, scans)
+  values (p_user, v_window, 1)
+  on conflict (user_id, window_start) do update
+     set scans = u.scans + 1
+   where u.scans + 1 <= v_limit
+  returning u.scans into v_used;
+
+  if v_used is null then
+    select u.scans into v_used
+      from public.barcode_scan_usage u
+     where u.user_id = p_user and u.window_start = v_window;
+    return query select false, coalesce(v_used, 0), v_limit;
+    return;
+  end if;
+
+  return query select true, v_used, v_limit;
+end;
+$$;
+
+revoke execute on function public.claim_barcode_scan from public, anon, authenticated;
+grant execute on function public.claim_barcode_scan to service_role;
+
+
+-- ---------------------------------------------------------------------------
 -- WHERE TIER 4's WRITE PATH WENT
 --
 -- `upsert_estimate_food` made one shared `foods` row per normalized name AND

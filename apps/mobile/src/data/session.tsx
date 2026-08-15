@@ -13,6 +13,7 @@ import { AppState } from 'react-native'
 import { identifyUser, resetIdentity } from '@/lib/analytics'
 import { forgetPurchaser, identifyPurchaser } from '@/lib/revenuecat'
 import { storedSession, supabase, whenStoredSession } from '@/lib/supabase'
+import { clearPendingSnaps } from './pending-snaps'
 import { clearImageCache } from './photos'
 
 /**
@@ -160,7 +161,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // filed under a key that no longer rotates — so unlike every other trace
       // of an account they do not age out by themselves. See `clearImageCache`
       // for why this is the leaving edge only.
-      if (event === 'SIGNED_OUT') void clearImageCache()
+      if (event === 'SIGNED_OUT') {
+        void clearImageCache()
+        // Persisted, unencrypted, and outlives the process — so a departed
+        // account's in-flight meals would otherwise rehydrate for whoever opens
+        // the app next. See `clearPendingSnaps`.
+        clearPendingSnaps()
+      }
 
       // RevenueCat has to be told who this is, or a purchase arrives at the
       // webhook under an anonymous id with no account to credit and is dropped.

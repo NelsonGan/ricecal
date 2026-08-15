@@ -36,6 +36,22 @@ export function initSentry() {
     // Leave off in dev so local crashes stay local.
     enabled: !__DEV__,
     tracesSampleRate: __DEV__ ? 1.0 : 0.2,
+    // The one place the diary could leak into a third-party log. Sentry records
+    // a breadcrumb for every fetch/XHR with the FULL url, and ours carry the
+    // typed search query in the query string (`catalogue.ts`) and the R2
+    // signature in it too (`photos.ts`) — the exact data the analytics plan
+    // promises never leaves. Drop the query string from every breadcrumb url so
+    // the Sentry side keeps the same promise the Mixpanel side does.
+    beforeBreadcrumb(breadcrumb) {
+      const url = breadcrumb.data?.url
+      if (typeof url === 'string') {
+        const q = url.indexOf('?')
+        if (q !== -1) {
+          breadcrumb.data = { ...breadcrumb.data, url: url.slice(0, q) }
+        }
+      }
+      return breadcrumb
+    },
   })
 }
 
