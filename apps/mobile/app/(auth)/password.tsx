@@ -7,15 +7,13 @@ import { View } from 'react-native'
 import {
   asAuthProblem,
   resendConfirmation,
-  sendLoginLink,
-  sendPasswordReset,
   signInWithPassword,
   signUpWithPassword,
 } from '@/data/auth'
 import { PasswordField, useAuthMessage, useCaptchaToken } from '@/features/auth'
 import { StepHeader } from '@/features/onboarding'
 import { useBack } from '@/lib/navigation'
-import { Alert, AppBar, Button, Divider, Screen, Text, useToast } from '@/ui'
+import { Alert, AppBar, Button, Divider, Screen, Tappable, Text, useToast } from '@/ui'
 
 /** Which half of the screen is showing. Only the copy and the calls differ. */
 type Mode = 'sign-in' | 'sign-up'
@@ -29,8 +27,13 @@ type Mode = 'sign-in' | 'sign-up'
  * button at the BOTTOM of the screen while the one that was pressed sat there
  * looking untouched, and the fields stayed editable throughout. Three of these
  * screens had the same shape.
+ *
+ * There is only ONE of these left, and that is the point of the change that
+ * removed the others: a tap that is going somewhere now goes there first and
+ * does its network work on arrival. Only signing in and signing up stay here,
+ * because those two ARE the request — there is nowhere to go until they answer.
  */
-type Action = 'submit' | 'code' | 'forgot'
+type Action = 'submit'
 
 /**
  * The password, on a screen of its own.
@@ -197,21 +200,30 @@ export default function PasswordScreen() {
     })
   }
 
-  /** The way in that always works, whether or not this account has a password. */
+  /**
+   * The way in that always works, whether or not this account has a password.
+   *
+   * GOES FIRST AND SENDS ON ARRIVAL. It used to post the mail here and navigate
+   * on the answer, which put a whole round trip — a captcha token, then an SMTP
+   * send Supabase does synchronously — between the tap and anything happening.
+   * On a slow connection that is several seconds of a screen that has not
+   * changed, which is the shape of a button that did not work, and the usual
+   * reply to it is a second tap. The code screen is where the waiting belongs:
+   * it can say a mail is on its way while it is on its way, and it is where the
+   * person needs to be either way.
+   */
   const mailCode = () =>
-    attempt('code', async () => {
-      await sendLoginLink(email, await captcha())
-      router.push({ pathname: '/(auth)/verify', params: { email, purpose: 'email', ...flow } })
+    router.push({
+      pathname: '/(auth)/verify',
+      params: { email, purpose: 'email', send: '1', ...flow },
     })
 
-  const forgot = () =>
-    attempt('forgot', async () => {
-      await sendPasswordReset(email, await captcha())
-      // Its own screen, not the code screen. Verifying a recovery code creates
-      // a session, and the guard in `_layout` would carry the user off to Today
-      // before they had chosen anything — see `new-password.tsx`.
-      router.push({ pathname: '/(auth)/new-password', params: { email } })
-    })
+  /**
+   * Opens the screen that asks WHICH address. Nothing is sent from here: see
+   * `forgot.tsx` for why assuming the address is the wrong thing to do to
+   * somebody who has just failed to remember something.
+   */
+  const forgot = () => router.push({ pathname: '/(auth)/forgot', params: { email } })
 
   const signingUp = mode === 'sign-up'
 
@@ -244,6 +256,18 @@ export default function PasswordScreen() {
 
       <PasswordField
         label={t('auth:password.field')}
+        /* Level with the label, and only on the sign-in side. Offered next to
+           "choose a password" it is a reset for an account that does not exist
+           yet, which sends a mail saying nothing. */
+        labelAction={
+          signingUp ? null : (
+            <Tappable onPress={forgot} disabled={busy} accessibilityRole="button">
+              <Text variant="caption" className="text-pandan-ink">
+                {t('auth:password.forgot')}
+              </Text>
+            </Tappable>
+          )
+        }
         value={password}
         onChangeText={setPassword}
         placeholder={t('auth:password.placeholder')}
@@ -292,35 +316,13 @@ export default function PasswordScreen() {
         <Divider className="flex-1" />
       </View>
 
-      <Button
-        variant="secondary"
-        fullWidth
-        onPress={mailCode}
-        disabled={busy}
-        loading={running === 'code'}
-      >
+      {/* Navigates rather than sends, so it never spins. */}
+      <Button variant="secondary" fullWidth onPress={mailCode} disabled={busy}>
         {t('auth:password.codeInstead')}
       </Button>
 
       <View className="items-center gap-1 pt-1">
-        {/* Only on the sign-in side. Offered next to "choose a password" it is
-            a reset for an account that does not exist yet, which sends a mail
-            saying nothing and reads as the app losing track of where it is. */}
-        {signingUp ? null : (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="self-center"
-            onPress={forgot}
-            disabled={busy}
-            loading={running === 'forgot'}
-          >
-            {t('auth:password.forgot')}
-          </Button>
-        )}
-
-        {/* Sends nothing, so it never spins: it swaps which question the screen
-            is asking. */}
+        {/* Sends nothing either: it swaps which question the screen is asking. */}
         <Button
           variant="ghost"
           size="sm"

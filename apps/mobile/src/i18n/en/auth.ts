@@ -71,6 +71,12 @@ export const auth = {
      */
     title: 'Check your email',
     sentTo: 'We sent a 6 digit code to {{email}}. It is in the subject line too.',
+    /**
+     * While the mail is still going out, because this screen now opens BEFORE
+     * the send rather than after it. Past tense over a request in flight is the
+     * one version that can turn out to be false.
+     */
+    sendingTo: 'Sending a 6 digit code to {{email}}...',
 
     field: 'CODE',
     placeholder: '000000',
@@ -87,6 +93,11 @@ export const auth = {
   },
 
   reset: {
+    /** The screen that asks WHICH address, before anything is sent. */
+    askTitle: 'Reset your password',
+    askSubtitle: 'Tell us the address on your account and we will email you a code.',
+    send: 'Email me a reset code',
+
     newTitle: 'Choose a new password',
     newSubtitle: 'Nearly there. Pick something you will remember.',
     field: 'NEW PASSWORD',

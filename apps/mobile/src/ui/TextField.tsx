@@ -15,6 +15,16 @@ const NUMERIC = new Set<TextInputProps['keyboardType']>(['number-pad', 'decimal-
 
 export type TextFieldProps = Omit<TextInputProps, 'style' | 'className'> & {
   label?: string
+  /**
+   * A control on the label's line, pushed to the right edge of the field.
+   *
+   * For the action that belongs TO a field rather than after it: "Forgot your
+   * password?" over the password box. Under the field it competes with the
+   * primary button and reads as one more thing to get past; level with the
+   * label it reads as a property of the thing it is about, which is where every
+   * sign-in form anybody has used puts it.
+   */
+  labelAction?: ReactNode
   /** Shown under the field, in hibiscus, and flips the border. */
   error?: string
   /** Shown under the field when there is no error. */
@@ -57,6 +67,7 @@ export type TextFieldProps = Omit<TextInputProps, 'style' | 'className'> & {
 export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField(
   {
     label,
+    labelAction,
     error,
     hint,
     leftSlot,
@@ -77,6 +88,8 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
     // field on the platform's keyboard behaves the same way.
     maxLength,
     systemKeyboard = false,
+    secureTextEntry,
+    placeholder,
     ...rest
   },
   ref,
@@ -128,9 +141,43 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   // read as invalid, not as merely active.
   const border = error ? 'border-hibiscus' : focused ? 'border-pandan' : 'border-line'
 
+  /**
+   * A SECURE FIELD DRAWS ITS OWN PLACEHOLDER, because iOS restyles the native
+   * one and there is no prop that stops it.
+   *
+   * Once the keychain has a credential to offer, iOS treats a `password` or
+   * `newPassword` field as an AutoFill target and renders its placeholder with
+   * its own tracking: "At least 8 characters" comes out as
+   * "A t   l e a s t   8   c h a r …", wide enough to truncate, on the first
+   * such field only — so a signup screen shows one spaced placeholder above one
+   * normal one and looks broken. It is invisible on a simulator with no saved
+   * passwords, which is why it has to be reasoned about rather than watched.
+   *
+   * Handing `placeholder` to the native input is what invites that, so a secure
+   * field does not: it passes none and lays the text over the input itself, in
+   * the app's own type. Nothing native is left to restyle. The overlay takes no
+   * touches, so the tap still lands on the field and the caret still blinks in
+   * front of it.
+   *
+   * Only while the value is EMPTY, and only for a secure field. Everything else
+   * keeps the platform's placeholder, which is better behaved and one view
+   * cheaper.
+   */
+  const ownPlaceholder = Boolean(secureTextEntry) && !value && Boolean(placeholder)
+
   return (
     <View className={cn('gap-1.5', containerClassName)}>
-      {label ? <Text variant="label">{label}</Text> : null}
+      {/* One row when there is an action, so the label and it share a baseline
+          rather than the action opening a line of its own. `min-w-0` on the
+          label so a long one truncates instead of pushing the action off. */}
+      {label || labelAction ? (
+        <View className="min-h-[20px] flex-row items-center justify-between gap-3">
+          <Text variant="label" numberOfLines={1} className="min-w-0 shrink">
+            {label}
+          </Text>
+          {labelAction}
+        </View>
+      ) : null}
 
       <View
         className={cn(
@@ -141,35 +188,48 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         )}
       >
         {leftSlot}
-        <TextInput
-          editable={editable}
-          value={value}
-          onChangeText={onChangeText}
-          keyboardType={keyboardType}
-          maxLength={maxLength}
-          selectTextOnFocus={selectTextOnFocus}
-          className={cn('flex-1 font-body-bold text-[17px] text-ink', inputClassName)}
-          placeholderTextColor={colors.faint}
-          // The caret defaults to the platform blue, which is the one colour in
-          // the app that belongs to no role.
-          cursorColor={colors.pandan}
-          selectionColor={colors.pandan}
-          accessibilityLabel={label}
-          {...rest}
-          // Last, and the ordering is load-bearing: the pad composes the focus
-          // handlers this field wants with the ones a caller passed in, and its
-          // pair has to be the one that reaches the input.
-          {...numpad}
-          ref={setRef}
-          onFocus={(event) => {
-            numpad.onFocus()
-            onFocus?.(event)
-          }}
-          onBlur={(event) => {
-            numpad.onBlur()
-            onBlur?.(event)
-          }}
-        />
+        <View className="flex-1 justify-center">
+          {ownPlaceholder ? (
+            <Text
+              pointerEvents="none"
+              numberOfLines={1}
+              className="absolute font-body-bold text-[17px] text-faint"
+            >
+              {placeholder}
+            </Text>
+          ) : null}
+          <TextInput
+            editable={editable}
+            value={value}
+            onChangeText={onChangeText}
+            keyboardType={keyboardType}
+            maxLength={maxLength}
+            secureTextEntry={secureTextEntry}
+            placeholder={ownPlaceholder ? undefined : placeholder}
+            selectTextOnFocus={selectTextOnFocus}
+            className={cn('font-body-bold text-[17px] text-ink', inputClassName)}
+            placeholderTextColor={colors.faint}
+            // The caret defaults to the platform blue, which is the one colour
+            // in the app that belongs to no role.
+            cursorColor={colors.pandan}
+            selectionColor={colors.pandan}
+            accessibilityLabel={label}
+            {...rest}
+            // Last, and the ordering is load-bearing: the pad composes the focus
+            // handlers this field wants with the ones a caller passed in, and its
+            // pair has to be the one that reaches the input.
+            {...numpad}
+            ref={setRef}
+            onFocus={(event) => {
+              numpad.onFocus()
+              onFocus?.(event)
+            }}
+            onBlur={(event) => {
+              numpad.onBlur()
+              onBlur?.(event)
+            }}
+          />
+        </View>
         {rightSlot}
       </View>
 
