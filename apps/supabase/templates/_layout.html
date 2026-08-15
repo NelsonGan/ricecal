@@ -1,0 +1,156 @@
+<!--
+  THE SHELL EVERY RICECAL AUTH EMAIL IS BUILT IN.
+
+  One file, because a design change that has to be made eight times gets made
+  seven. `pnpm email:build` drops each message's body into `<!--CONTENT-->` and
+  writes the result to templates/build/, which is what the local stack reads and
+  what `pnpm email:push` sends to the project.
+
+  The design follows the Supabase design system's roles rather than its brand:
+  background / surface / foreground / foreground-muted / border, the same 6px
+  and 8px radii, the same type ramp. The accent is RiceCal's pandan, because the
+  reader asked an app for this mail and the mail should look like the app.
+  Swapping it back is the two `--brand` values below and nothing else.
+
+  Three constraints shape the markup, and all three are about mail clients
+  rather than about taste:
+
+  - TABLES, not flex or grid. Outlook renders through Word's engine and knows
+    neither.
+  - The palette is declared TWICE: once inline on the element, once in a
+    prefers-color-scheme block. Gmail strips neither, but clients that drop the
+    <style> block entirely still get the light palette from the attributes, and
+    a client that keeps it gets dark mode. An email with only the style block
+    renders as black text on a black background in Outlook.
+  - NO REMOTE IMAGES. Most clients block them until the reader asks, so a logo
+    that is an <img> is an empty box in the first second of every email we send.
+    The wordmark is text.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
+    <title><!--SUBJECT--></title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        supported-color-schemes: light dark;
+      }
+
+      /* Stop iOS turning the code, the address and the expiry into links. */
+      a[x-apple-data-detectors] {
+        color: inherit !important;
+        text-decoration: none !important;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .rc-body { background-color: #1c1c1c !important; }
+        .rc-surface { background-color: #181818 !important; border-color: #2e2e2e !important; }
+        .rc-fg { color: #ededed !important; }
+        .rc-muted { color: #a0a0a0 !important; }
+        .rc-rule { border-color: #2e2e2e !important; }
+        .rc-code { background-color: #14291f !important; border-color: #2e4a3c !important; color: #38d07e !important; }
+        .rc-brand { color: #38d07e !important; }
+        .rc-button { background-color: #38d07e !important; color: #0e1a14 !important; }
+      }
+
+      @media only screen and (max-width: 600px) {
+        .rc-pad { padding-left: 24px !important; padding-right: 24px !important; }
+        .rc-code { font-size: 30px !important; letter-spacing: 6px !important; }
+      }
+    </style>
+  </head>
+
+  <body
+    class="rc-body"
+    style="margin: 0; padding: 0; width: 100%; background-color: #f6f7f8; -webkit-font-smoothing: antialiased;"
+  >
+    <!-- The first line of text a list view shows, before the reader opens
+         anything. Left empty it shows the wordmark and then the heading twice. -->
+    <div
+      style="display: none; max-height: 0; overflow: hidden; opacity: 0; mso-hide: all;"
+    ><!--PREHEADER-->&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;&#8203;&#847;</div>
+
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      class="rc-body"
+      style="background-color: #f6f7f8;"
+    >
+      <tr>
+        <td align="center" style="padding: 32px 12px 48px 12px;">
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="max-width: 560px; margin: 0 auto;"
+          >
+            <!-- Wordmark -->
+            <tr>
+              <td
+                align="center"
+                style="padding: 8px 0 20px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
+              >
+                <span
+                  class="rc-brand"
+                  style="font-size: 20px; font-weight: 700; letter-spacing: -0.2px; color: #1b8a4e;"
+                  >RiceCal</span
+                >
+              </td>
+            </tr>
+
+            <!-- The card -->
+            <tr>
+              <td
+                class="rc-surface"
+                style="background-color: #ffffff; border: 1px solid #e6e8eb; border-radius: 8px;"
+              >
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td
+                      class="rc-pad"
+                      style="padding: 36px 40px 36px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
+                    >
+                      <!--CONTENT-->
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td
+                class="rc-pad"
+                style="padding: 24px 40px 0 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
+              >
+                <p
+                  class="rc-muted"
+                  style="margin: 0; font-size: 13px; line-height: 20px; color: #707070;"
+                >
+                  You are receiving this because someone asked for it using this
+                  address at RiceCal. We only ever email you about your account.
+                </p>
+                <p
+                  class="rc-muted"
+                  style="margin: 12px 0 0 0; font-size: 13px; line-height: 20px; color: #707070;"
+                >
+                  RiceCal, a calorie diary for Malaysian eating.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

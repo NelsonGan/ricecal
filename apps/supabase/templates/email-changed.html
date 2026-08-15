@@ -1,0 +1,21 @@
+<!--
+key: email_changed_notification
+subject: Your RiceCal email address was changed
+preheader: A confirmation, in case it was not you.
+-->
+
+<h1 class="rc-fg" style="margin: 0 0 12px 0; font-size: 22px; font-weight: 700; line-height: 30px; color: #171717;">
+  Your email address was changed
+</h1>
+
+<p class="rc-muted" style="margin: 0 0 20px 0; font-size: 15px; line-height: 23px; color: #707070;">
+  The RiceCal account that used {{ .OldEmail }} now uses {{ .Email }}. If that
+  was you, there is nothing to do.
+</p>
+
+<p class="rc-muted" style="margin: 0; font-size: 15px; line-height: 23px; color: #707070;">
+  If it was not you, write to us at
+  <a class="rc-brand" href="mailto:hello@ricecal.app" style="color: #1b8a4e; text-decoration: underline;">hello@ricecal.app</a>
+  straight away. This address can no longer sign in to that account, so we have
+  to move it back for you.
+</p>

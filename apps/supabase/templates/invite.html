@@ -1,0 +1,38 @@
+<!--
+key: invite
+subject: You have been invited to RiceCal
+preheader: Your invitation to RiceCal is inside.
+-->
+
+<!--
+  NOTHING IN THE APP SENDS THIS ONE. `inviteUserByEmail` is an admin call, and
+  the only route to it here is the dashboard or a service-role script. It is
+  written and pushed anyway, because the alternative is not "no invitation mail"
+  but Supabase's unstyled default going out the first time somebody invites a
+  tester from the dashboard.
+-->
+
+<h1 class="rc-fg" style="margin: 0 0 12px 0; font-size: 22px; font-weight: 700; line-height: 30px; color: #171717;">
+  You have been invited to RiceCal
+</h1>
+
+<p class="rc-muted" style="margin: 0 0 24px 0; font-size: 15px; line-height: 23px; color: #707070;">
+  RiceCal counts what you eat from a photo, a sentence or a barcode, with 50,000
+  Asian dishes already in it. Accept below and the account is yours.
+</p>
+
+<!--PARTIAL:button|Accept the invitation-->
+
+<div style="height: 28px; line-height: 28px;">&nbsp;</div>
+<!--PARTIAL:rule-->
+<div style="height: 24px; line-height: 24px;">&nbsp;</div>
+
+<p class="rc-muted" style="margin: 0 0 18px 0; font-size: 14px; line-height: 21px; color: #707070;">
+  Already have the app? Enter this code instead.
+</p>
+
+<!--PARTIAL:code-->
+
+<p class="rc-muted" style="margin: 24px 0 0 0; font-size: 13px; line-height: 20px; color: #707070;">
+  If you were not expecting this, you can ignore it.
+</p>

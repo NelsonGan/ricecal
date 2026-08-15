@@ -7,13 +7,12 @@ import {
   appleSignInAvailable,
   googleSignInAvailable,
   SignInCancelled,
-  sendLoginLink,
   signInWithApple,
   signInWithGoogle,
 } from '@/data/auth'
-import { ProviderButton } from '@/features/auth'
+import { ProviderButton, useAuthMessage } from '@/features/auth'
 import { StepHeader } from '@/features/onboarding'
-import { Alert, AppBar, Button, Divider, Icon, Screen, Text, TextField, useToast } from '@/ui'
+import { AppBar, Button, Divider, Icon, Screen, Text, TextField, useToast } from '@/ui'
 
 /** Only what the screen says differs; the email button does the same thing either way. */
 type Mode = 'sign-in' | 'sign-up'
@@ -21,20 +20,30 @@ type Mode = 'sign-in' | 'sign-up'
 /**
  * The gate. Nothing behind it renders without a session.
  *
- * Three ways in and not one password among them. Apple and Google hand back an
- * identity token; email gets a link in the post. There is no separate sign-up
- * call to make either — `sendLoginLink` creates the account when the address is
- * new — so this screen has one action per provider rather than two, and `mode`
- * only decides the heading.
+ * THREE WAYS IN, and this screen's only job is to find out which. Apple and
+ * Google hand back an identity token and are done in one tap. Email is a
+ * question, so it takes an address here and asks the rest on the next screen:
+ * a password, or a code in the post, whichever the person wants.
+ *
+ * It used to end here, with one button that mailed a link. What that could not
+ * survive is somebody who opens this app every day, for whom "wait for an
+ * email" is the whole cost of coming back, and somebody on a work address whose
+ * employer's link scanner spends the link before they can. So the address is
+ * still all this screen asks for, and `password.tsx` owns the rest.
+ *
+ * `mode` decides the heading and which side of the next screen opens. It does
+ * NOT change what any of these buttons do: Supabase makes the account when the
+ * identity is new either way.
  *
  * Nothing here explains the app any more. Both ways in pass through welcome or
- * the seven questions first, so by the time anyone reads this screen the pitch
- * has been made.
+ * the questions first, so by the time anyone reads this screen the pitch has
+ * been made.
  */
 export default function SignInScreen() {
-  const { t } = useTranslation(['onboarding', 'common'])
+  const { t } = useTranslation(['auth', 'onboarding', 'common'])
   const router = useRouter()
   const toast = useToast()
+  const message = useAuthMessage()
 
   /**
    * Which side to open on, when the caller knows.
@@ -51,8 +60,8 @@ export default function SignInScreen() {
    * The onboarding bar, when onboarding is what sent us here.
    *
    * This screen belongs to two flows. In the middle of onboarding it is one
-   * numbered step of nine, and dropping the bar for exactly the screen that asks
-   * for an email is where a flow reads as having stopped being a flow — the
+   * numbered step of eight, and dropping the bar for exactly the screen that
+   * asks for an email is where a flow reads as having stopped being a flow — the
    * question the user is weighing at that moment is "how much more of this is
    * there", and the answer was on every screen but this one. Reached on its own,
    * by a returning user tapping "I already have an account", there is no flow
@@ -60,7 +69,8 @@ export default function SignInScreen() {
    *
    * Passed as params rather than read from a store because the position is a
    * property of the route that pushed this one, and this file must not learn the
-   * shape of a flow it is only borrowed by.
+   * shape of a flow it is only borrowed by. It is passed onward to the password
+   * and code screens for the same reason.
    */
   const step = Number(params.step)
   const total = Number(params.total)
@@ -69,7 +79,6 @@ export default function SignInScreen() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [sentTo, setSentTo] = useState<string | undefined>()
 
   // Asked of the OS rather than assumed from the platform, because a local
   // simulator build ships without the entitlement. `undefined` until the answer
@@ -89,7 +98,7 @@ export default function SignInScreen() {
     ? undefined
     : t('onboarding:account.errors.email')
 
-  /** Every provider funnels through here so one failure path serves all three. */
+  /** Both providers funnel through here so one failure path serves them. */
   const attempt = async (work: () => Promise<void>) => {
     setBusy(true)
     try {
@@ -98,32 +107,40 @@ export default function SignInScreen() {
       // `_layout` moves the user. Pushing here as well would race it.
     } catch (error) {
       if (error instanceof SignInCancelled) return
-      toast.show({
-        title: error instanceof Error ? error.message : t('common:action.retry'),
-        tone: 'error',
-      })
+      toast.show({ title: message(error), tone: 'error' })
     } finally {
       setBusy(false)
     }
   }
 
-  const mailLink = () => {
+  /**
+   * The email route, and it sends nothing.
+   *
+   * Nothing is posted until the next screen, where the person has said whether
+   * they want a password or a code. Mailing one here on the way past would send
+   * a code to everybody who typed an address, including everybody about to type
+   * a password they remember perfectly well — and the send limit is one mail a
+   * minute, so those wasted sends are taken out of a real one later.
+   */
+  const withEmail = () => {
     setSubmitted(true)
     if (emailError) return
 
-    attempt(async () => {
-      await sendLoginLink(email)
-      // The session arrives through the link, not through this call, so this
-      // screen has to say what happens next or it looks like nothing did.
-      setSentTo(email.trim())
+    router.push({
+      pathname: '/(auth)/password',
+      params: {
+        email: email.trim(),
+        mode,
+        ...(showProgress ? { step: String(step), total: String(total) } : {}),
+      },
     })
   }
 
   return (
     <Screen
       footer={
-        <Button fullWidth onPress={mailLink} disabled={busy}>
-          {t('onboarding:account.sendLink')}
+        <Button fullWidth onPress={withEmail} disabled={busy}>
+          {t('auth:choose.email')}
         </Button>
       }
     >
@@ -169,10 +186,6 @@ export default function SignInScreen() {
         </Text>
       </View>
 
-      {sentTo ? (
-        <Alert tone="success" title={t('onboarding:account.linkSent', { email: sentTo })} />
-      ) : null}
-
       {appleReady ? (
         <ProviderButton provider="apple" onPress={() => attempt(signInWithApple)} disabled={busy} />
       ) : null}
@@ -196,22 +209,17 @@ export default function SignInScreen() {
       <TextField
         label={t('onboarding:account.email')}
         value={email}
-        onChangeText={(next) => {
-          setEmail(next)
-          // A new address means the last link is not the one being talked about
-          // any more.
-          setSentTo(undefined)
-        }}
+        onChangeText={setEmail}
         placeholder={t('onboarding:account.emailPlaceholder')}
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
         error={submitted ? emailError : undefined}
-        returnKeyType="go"
-        onSubmitEditing={mailLink}
+        returnKeyType="next"
+        onSubmitEditing={withEmail}
       />
 
-      <Text variant="meta">{t('onboarding:account.linkExplainer')}</Text>
+      <Text variant="meta">{t('auth:choose.explainer')}</Text>
     </Screen>
   )
 }

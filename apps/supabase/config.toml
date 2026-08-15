@@ -180,7 +180,17 @@ max_indexes = 5
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "http://127.0.0.1:3000"
+#
+# THE APP SCHEME, not a web address, and the same value the hosted project
+# carries. This is where Supabase sends anybody it could not send somewhere
+# better: a link with no `redirect_to`, or one whose `redirect_to` was not in
+# the list below. There is no RiceCal website to land on, so a web address here
+# is a dead end on the one device every reader of these emails is holding — and
+# the hosted project sat on `http://localhost:3000` for exactly that reason,
+# answering every login link with a page nobody could open.
+#
+# `pnpm auth:config` is what keeps the hosted project on this value.
+site_url = "ricecal://auth/callback"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
@@ -222,7 +232,11 @@ enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
 enable_manual_linking = false
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
-minimum_password_length = 6
+# Eight, up from Supabase's default of six, and matching the hosted project.
+# `password_requirements` is deliberately left empty: character classes push
+# people towards `Passw0rd!` and away from length, which is the only part an
+# attacker actually has to pay for.
+minimum_password_length = 8
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
 password_requirements = ""
@@ -254,10 +268,22 @@ token_verifications = 30
 web3 = 30
 
 # Configure one of the supported captcha providers: `hcaptcha`, `turnstile`.
+#
+# LEFT OFF LOCALLY, and that is a considered asymmetry rather than an oversight.
+# Turnstile's widget is a web page, so the app hosts it in a WebView and needs a
+# site key to render one; a local stack has no key and no widget, and turning
+# the gate on here would make every local sign-in fail with `captcha protection:
+# request disallowed` for want of a token nothing can produce.
+#
+# The client is written so that an unprovisioned build simply omits the token
+# (see EXPO_PUBLIC_TURNSTILE_SITE_KEY in src/features/auth/turnstile.tsx), which
+# is exactly the shape a gate-off stack wants. On the hosted project the gate is
+# turned on separately, with `pnpm auth:config --captcha-on`, once a build
+# carrying the site key is the one people are running.
 # [auth.captcha]
 # enabled = true
-# provider = "hcaptcha"
-# secret = ""
+# provider = "turnstile"
+# secret = "env(SUPABASE_AUTH_CAPTCHA_SECRET)"
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
@@ -266,7 +292,13 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+#
+# TRUE, to match the hosted project (`mailer_autoconfirm = false` there). Left
+# false, `signUp` hands back a session immediately on a local stack and only on
+# a local stack, so the whole confirm-your-address path — the mail, the code
+# screen, the account that exists but cannot sign in yet — is dead code until it
+# reaches production, which is the one place nobody wants to meet it first.
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
@@ -286,16 +318,59 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# THE MAIL, and it is the same mail here as in production.
+#
+# Each `content_path` points at a file `pnpm email:build` writes from
+# ./templates — the bodies and the one layout they share. `pnpm email:push`
+# sends those same files to the hosted project, so the local stack and
+# production render from one source and a template can be read before it is
+# sent to anybody. See ./templates/README.md.
+#
+# The subjects are repeated here because the CLI takes them separately from the
+# body; `email:push` reads them out of each file's own metadata block, so the
+# two cannot be edited independently by accident — but they DO have to be kept
+# in step with the metadata by hand in this file.
 
-# Uncomment to customize notification email template
-# [auth.email.notification.password_changed]
-# enabled = true
-# subject = "Your password has been changed"
-# content_path = "./templates/password_changed_notification.html"
+[auth.email.template.confirmation]
+subject = "{{ `{{ .Token }}` }} is your RiceCal code"
+content_path = "./supabase/templates/build/confirm-signup.html"
+
+[auth.email.template.magic_link]
+subject = "{{ `{{ .Token }}` }} is your RiceCal sign-in code"
+content_path = "./supabase/templates/build/magic-link.html"
+
+[auth.email.template.recovery]
+subject = "{{ `{{ .Token }}` }} is your RiceCal password reset code"
+content_path = "./supabase/templates/build/recovery.html"
+
+[auth.email.template.email_change]
+subject = "{{ `{{ .Token }}` }} is your RiceCal code"
+content_path = "./supabase/templates/build/email-change.html"
+
+[auth.email.template.invite]
+subject = "You have been invited to RiceCal"
+content_path = "./supabase/templates/build/invite.html"
+
+[auth.email.template.reauthentication]
+subject = "{{ `{{ .Token }}` }} is your RiceCal verification code"
+content_path = "./supabase/templates/build/reauthentication.html"
+
+# THE TWO NOTIFICATION PATHS ARE RELATIVE TO A DIFFERENT DIRECTORY, and that is
+# the CLI's behaviour rather than a mistake here. A `[auth.email.template.*]`
+# path is resolved from the WORKDIR (`apps`, hence the `./supabase/` above),
+# while a `[auth.email.notification.*]` path is resolved from the supabase
+# directory itself. Supabase's own commented defaults show the same split
+# without remarking on it. Get it wrong and `supabase start` refuses with an
+# ENOENT naming a doubled-up path.
+[auth.email.notification.password_changed]
+enabled = true
+subject = "Your RiceCal password was changed"
+content_path = "./templates/build/password-changed.html"
+
+[auth.email.notification.email_changed]
+enabled = true
+subject = "Your RiceCal email address was changed"
+content_path = "./templates/build/email-changed.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
