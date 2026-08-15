@@ -33,7 +33,7 @@
  * renders blank for ever, and looks exactly like a row that never had a drawing.
  */
 
-import { matchIcon, PHRASE_COUNT, TABLE } from '../functions/_shared/icon-match.ts'
+import { matchIcon, PHRASE_COUNT, SCRIPT_TABLE, TABLE } from '../functions/_shared/icon-match.ts'
 import { ICON_NAMES } from '../functions/_shared/icons.generated.ts'
 import { ICON_LIST } from '../functions/_shared/icons.ts'
 import { d1, d1batch, q } from './lib/d1.mjs'
@@ -63,7 +63,10 @@ for (const set of Object.keys(ICON_NAMES)) {
 // or later. Failing here costs a re-run; failing silently costs a catalogue of
 // blank squares nobody can tell from rows that simply have no drawing.
 const bad = []
-for (const [phrase, icon] of Object.entries(TABLE)) {
+// Both tables, and the script one especially: its phrases are in an alphabet
+// nobody reviewing this file can spell-check by eye, so the registry is the
+// only thing standing between a typo and a row that renders blank for ever.
+for (const [phrase, icon] of [...Object.entries(TABLE), ...Object.entries(SCRIPT_TABLE)]) {
   if (icon === null) continue // a deliberate "no drawing"
   if (!SET_OF.has(icon)) bad.push(`${phrase} -> ${icon} (no such drawing)`)
   else if (!OFFERABLE.has(icon)) bad.push(`${phrase} -> ${icon} (not a meal)`)
