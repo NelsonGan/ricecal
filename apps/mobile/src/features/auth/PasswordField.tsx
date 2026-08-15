@@ -2,7 +2,6 @@ import { forwardRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TextInput } from 'react-native'
 
-import { useThemeColors } from '@/theme/useTheme'
 import { Icon, IconButton, TextField, type TextFieldProps } from '@/ui'
 
 export type PasswordFieldProps = Omit<TextFieldProps, 'secureTextEntry' | 'rightSlot'>
@@ -25,7 +24,6 @@ export type PasswordFieldProps = Omit<TextFieldProps, 'secureTextEntry' | 'right
 export const PasswordField = forwardRef<TextInput, PasswordFieldProps>(
   function PasswordField(props, ref) {
     const { t } = useTranslation('auth')
-    const colors = useThemeColors()
     const [shown, setShown] = useState(false)
 
     return (
@@ -42,15 +40,29 @@ export const PasswordField = forwardRef<TextInput, PasswordFieldProps>(
           <IconButton
             size="sm"
             variant="ghost"
+            /**
+             * `self-center`, because `IconButton` puts `self-start` on its own
+             * container and align-self beats the row's `items-center`. Left to
+             * itself the eye sits against the top of a 60pt field, a few points
+             * above the text it belongs to.
+             *
+             * And pulled RIGHT, because a 44pt tap target centres its 22pt icon
+             * 22pt from its own edge and the field already pads 20pt more — so
+             * an untouched eye floats 42pt in from the border with a band of
+             * empty field to its right, reading as though it had come loose from
+             * the edge it belongs to. The negative margin spends the field's
+             * padding rather than the tap target, which stays 44pt.
+             */
+            className="-mr-3 self-center"
             onPress={() => setShown((was) => !was)}
             accessibilityLabel={t(shown ? 'password.hide' : 'password.show')}
           >
-            <Icon
-              set="system"
-              name={shown ? 'eye-hide' : 'eye-show'}
-              size={20}
-              tintColor={colors.muted}
-            />
+            {/* NOT TINTED. These are flat colour illustrations rather than
+                glyphs, so a `tintColor` does not recolour the eye, it flattens
+                the whole drawing to one solid shape — a black blob on the end
+                of the field where an eye should be. The set's own palette is
+                what makes it read as an eye at 22pt. */}
+            <Icon set="system" name={shown ? 'eye-hide' : 'eye-show'} size={22} />
           </IconButton>
         }
         {...props}

@@ -78,7 +78,16 @@ export default function SignInScreen() {
 
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
-  const [busy, setBusy] = useState(false)
+  /**
+   * WHICH provider is signing in, not merely that one is.
+   *
+   * A single boolean locked every control on the screen and put a spinner on
+   * none of them, so a tap on "Continue with Apple" looked like a tap that had
+   * been ignored while three buttons went quietly grey. Naming the button means
+   * the spinner lands on the one that was pressed.
+   */
+  const [running, setRunning] = useState<'apple' | 'google' | null>(null)
+  const busy = running !== null
 
   // Asked of the OS rather than assumed from the platform, because a local
   // simulator build ships without the entitlement. `undefined` until the answer
@@ -99,8 +108,8 @@ export default function SignInScreen() {
     : t('onboarding:account.errors.email')
 
   /** Both providers funnel through here so one failure path serves them. */
-  const attempt = async (work: () => Promise<void>) => {
-    setBusy(true)
+  const attempt = async (which: 'apple' | 'google', work: () => Promise<void>) => {
+    setRunning(which)
     try {
       await work()
       // No navigation on success: the session changes, and the guard in
@@ -109,7 +118,7 @@ export default function SignInScreen() {
       if (error instanceof SignInCancelled) return
       toast.show({ title: message(error), tone: 'error' })
     } finally {
-      setBusy(false)
+      setRunning(null)
     }
   }
 
@@ -187,7 +196,12 @@ export default function SignInScreen() {
       </View>
 
       {appleReady ? (
-        <ProviderButton provider="apple" onPress={() => attempt(signInWithApple)} disabled={busy} />
+        <ProviderButton
+          provider="apple"
+          onPress={() => attempt('apple', signInWithApple)}
+          disabled={busy}
+          loading={running === 'apple'}
+        />
       ) : null}
 
       {/* Hidden rather than disabled while its client ids are placeholders:
@@ -195,8 +209,9 @@ export default function SignInScreen() {
       {googleSignInAvailable() ? (
         <ProviderButton
           provider="google"
-          onPress={() => attempt(signInWithGoogle)}
+          onPress={() => attempt('google', signInWithGoogle)}
           disabled={busy}
+          loading={running === 'google'}
         />
       ) : null}
 
@@ -217,9 +232,8 @@ export default function SignInScreen() {
         error={submitted ? emailError : undefined}
         returnKeyType="next"
         onSubmitEditing={withEmail}
+        editable={!busy}
       />
-
-      <Text variant="meta">{t('auth:choose.explainer')}</Text>
     </Screen>
   )
 }

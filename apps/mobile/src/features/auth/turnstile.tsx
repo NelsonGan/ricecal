@@ -1,8 +1,10 @@
+import * as Sentry from '@sentry/react-native'
 import {
   createContext,
   type ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -100,6 +102,66 @@ const TOKEN_TIMEOUT_MS = 20_000
 type Pending = {
   resolve: (token: string | undefined) => void
   timer: ReturnType<typeof setTimeout> | null
+  /** Retryable errors seen for THIS request. See `RETRIES_ALLOWED`. */
+  errors: number
+  /** A human is being asked to click something, so nothing here may give up. */
+  interactive: boolean
+}
+
+/**
+ * How many retryable failures one request sits through before giving up.
+ *
+ * One, which is to say the widget gets its automatic retry and no more. The
+ * point of waiting at all is that a `300*` bot score often clears on the second
+ * attempt; the point of not waiting for ever is that a visitor Cloudflare has
+ * genuinely decided against will never clear, and holding the sign-in button
+ * for the full twenty second timeout on every tap is the failure this whole
+ * file already has a `broken` flag to avoid.
+ */
+const RETRIES_ALLOWED = 1
+
+/**
+ * Whether a Turnstile error code is worth waiting through, and it is the
+ * difference between "try again" and "this will never work".
+ *
+ * Cloudflare marks each of its codes retryable or not, and the two want
+ * opposite treatment:
+ *
+ * - `300*` and `600*` are "bot behaviour detected" and they are RETRYABLE. The
+ *   widget's own `retry: 'auto'` has another go, and in Managed mode a visitor
+ *   who keeps scoring badly is escalated to a checkbox instead. Settling on the
+ *   first one turns a score that would have cleared into "we could not confirm
+ *   you are a person", which is what a real person on a phone was being told.
+ * - The ones LISTED BELOW are configuration, and they never recover. The first
+ *   one ends it for the session rather than costing every later tap a round
+ *   trip to rediscover the same thing.
+ *
+ * ENUMERATED RATHER THAN MATCHED BY PREFIX, because `110` is not one family:
+ * `110100`, `110110` and `110200` are a bad sitekey and an unlisted hostname,
+ * and `110600` and `110620` are timeouts sitting in the middle of them that
+ * Cloudflare marks retryable. A `/^110/` would have given up on a challenge
+ * that had merely taken too long.
+ *
+ * Anything unrecognised is treated as retryable, because the cost of waiting is
+ * one timeout and the cost of giving up wrongly is an account nobody can get
+ * into.
+ */
+const FATAL_CODES = new Set([
+  'unsupported', // ours: Turnstile says it cannot run in this browser at all
+
+  '110100', // invalid sitekey
+  '110110', // sitekey not found
+  '110200', // this hostname is not on the widget's list
+  '110420', // unexpected challenge type for this widget
+  '110430', // the browser is unsupported
+  '200100', // the visitor's clock is wrong
+  '400010', // the widget was rendered on an unsupported page
+  '400020', // invalid sitekey
+  '400070', // the widget is disabled
+])
+
+function fatalCode(code: string): boolean {
+  return FATAL_CODES.has(code)
 }
 
 /**
@@ -113,6 +175,16 @@ type Pending = {
  * `refresh-expired: 'never'` because a token is used within seconds of arriving,
  * and a widget quietly refreshing itself in a hidden WebView for the rest of the
  * session is work nobody asked for.
+ *
+ * `error-callback` RETURNS FALSE, and returning true is what it did. A truthy
+ * return tells Turnstile the page has taken charge of the error — and what this
+ * page then did was give up on the spot, so a `300*` "bot behaviour detected"
+ * score, which Cloudflare documents as retryable and which the widget's own
+ * `retry: 'auto'` would have had another go at, became a hard refusal on the
+ * first attempt. That is the failure a real person hits: a phone in a hidden
+ * WebView is exactly the profile that scores badly once. False leaves the retry
+ * where it belongs. The native side is posted the code either way and decides
+ * separately whether it is worth waiting through — see `fatalCode`.
  */
 function page(siteKey: string): string {
   return `<!doctype html>
@@ -138,9 +210,14 @@ function page(siteKey: string): string {
           appearance: 'interaction-only',
           'refresh-expired': 'never',
           callback: function (token) { post({ type: 'token', token: token }) },
-          'error-callback': function (code) { post({ type: 'error', code: String(code) }); return true },
+          // Returns FALSE on purpose. See the note on this function.
+          'error-callback': function (code) { post({ type: 'error', code: String(code) }); return false },
           'timeout-callback': function () { post({ type: 'error', code: 'timeout' }) },
           'before-interactive-callback': function () { post({ type: 'interactive' }) },
+          'after-interactive-callback': function () { post({ type: 'answered' }) },
+          // The one failure that fires NO error-callback, so without this it is
+          // twenty seconds of silence and then a timeout blamed on the network.
+          'unsupported-callback': function () { post({ type: 'error', code: 'unsupported' }) },
         })
         post({ type: 'ready' })
       }
@@ -156,6 +233,38 @@ function page(siteKey: string): string {
   </body>
 </html>`
 }
+
+/**
+ * Says WHY the widget refused, somewhere a developer can read it.
+ *
+ * EVERY FAILURE ON THIS PATH LOOKS THE SAME FROM THE OUTSIDE, and that is what
+ * made the first one expensive. The gate is on the server, so a widget that
+ * cannot produce a token and a token the server will not accept both end as
+ * "we could not confirm you are a person" — and so does a hostname missing from
+ * the widget's list, a site key that never reached the build, and a visitor
+ * Cloudflare has scored as a bot. Five causes, one sentence, and four of the
+ * five live in a dashboard rather than in this repo.
+ *
+ * A console warning only reaches somebody holding a cable. This goes to Sentry
+ * as a MESSAGE rather than an exception: nothing has thrown, the app is working
+ * exactly as designed, and what is wanted is the code — `110200` is a hostname,
+ * `400020` is a site key, `300*` is a score — attached to a build and a date.
+ *
+ * The code and nothing else. No address, no token, nothing about who was
+ * signing in; see the analytics note in CLAUDE.md for why that line is drawn
+ * where it is.
+ */
+function report(what: string) {
+  Sentry.captureMessage(`[captcha] ${what}`, 'warning')
+}
+
+/**
+ * Once per launch, not once per visit to the sign-in screen.
+ *
+ * The absent-widget report below fires on mount, and this stack is mounted
+ * again every time somebody backs out of sign-in and returns to it.
+ */
+let announcedAbsent = false
 
 /** Asks for a token. Resolves `undefined` when there is none to be had. */
 export type RequestCaptchaToken = () => Promise<string | undefined>
@@ -176,6 +285,29 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
   // that re-renders on every keystroke would print it on every keystroke.
   const WebViewImpl = useMemo(() => (captchaConfigured() ? loadWebView() : null), [])
   const enabled = WebViewImpl !== null
+
+  /**
+   * THE FAILURE WITH NO SYMPTOM AT ALL, and the one worth catching hardest.
+   *
+   * A build whose `EXPO_PUBLIC_TURNSTILE_SITE_KEY` never arrived, or whose
+   * binary predates `react-native-webview`, asks for no token and sends none —
+   * and with the gate on, Supabase then refuses every sign-in, signup, code and
+   * reset that build ever makes. Nothing throws, nothing logs, and the app says
+   * the same sentence it says for a captcha that was merely wrong. It is
+   * indistinguishable from the outside from a Cloudflare problem, which is
+   * exactly the wrong place to go looking.
+   *
+   * `EXPO_PUBLIC_` values are inlined at BUNDLE time, so this is a property of
+   * the build rather than of the phone, and one report per launch is enough to
+   * tell the two apart for good.
+   */
+  useEffect(() => {
+    if (enabled || announcedAbsent) return
+    announcedAbsent = true
+    const why = captchaConfigured() ? 'no WebView in this binary' : 'no site key in this build'
+    console.warn(`[captcha] sending no token: ${why}`)
+    report(`absent: ${why}`)
+  }, [enabled])
 
   const { t } = useTranslation(['auth', 'common'])
 
@@ -215,11 +347,22 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
   /** Reports a widget that is not going to answer, and stops waiting on it. */
   const giveUp = useCallback(
     (why: string) => {
-      if (!broken.current) console.warn(`[captcha] turnstile unusable: ${why}`)
+      if (!broken.current) {
+        console.warn(`[captcha] turnstile unusable: ${why}`)
+        report(`unusable: ${why}`)
+      }
       broken.current = true
       settle(undefined)
     },
     [settle],
+  )
+
+  /** A load failure that only counts while the page has yet to announce itself. */
+  const loadFailed = useCallback(
+    (why: string) => {
+      if (!ready.current) giveUp(why)
+    },
+    [giveUp],
   )
 
   const onMessage = useCallback(
@@ -244,27 +387,75 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
           // widget and stop counting down: the timeout is there to keep a dead
           // script from blocking a button, not to hurry somebody along.
           const waiting = pending.current
-          if (waiting?.timer) {
-            clearTimeout(waiting.timer)
+          if (waiting) {
+            if (waiting.timer) clearTimeout(waiting.timer)
             waiting.timer = null
+            waiting.interactive = true
           }
           setChallenging(true)
           return
         }
-        case 'error':
+        case 'answered': {
+          // The human is done with the widget, but the token has not arrived
+          // yet — `callback` is a separate message. Take the panel down and put
+          // the clock back on, or a challenge that was answered and then failed
+          // would leave the request waiting for ever.
+          const waiting = pending.current
+          if (waiting) {
+            waiting.interactive = false
+            if (!waiting.timer) {
+              waiting.timer = setTimeout(() => {
+                report('no token after an answered challenge')
+                settle(undefined)
+              }, TOKEN_TIMEOUT_MS)
+            }
+          }
+          setChallenging(false)
+          return
+        }
+        case 'error': {
+          const code = payload.code ?? 'unknown'
+
           // A failure BEFORE the widget ever announced itself is a failure of
           // the widget rather than of one attempt: a site key the account does
           // not know, or a hostname missing from its list. Those never recover,
-          // so stop waiting on them. An error afterwards is one bad attempt,
-          // reported and forgotten — the request goes without a token and the
-          // server decides, which is the whole failing-open bargain.
+          // so stop waiting on them.
           if (!ready.current) {
-            giveUp(payload.code ?? 'error before ready')
+            giveUp(code)
             return
           }
-          console.warn(`[captcha] turnstile error: ${payload.code}`)
-          settle(undefined)
+
+          // Afterwards, the CODE decides. A configuration error is still
+          // permanent and there is nothing to wait for.
+          if (fatalCode(code)) {
+            giveUp(code)
+            return
+          }
+
+          // And a retryable one buys the widget one more go. Settling on the
+          // first would send the request with no token and hand the person a
+          // captcha failure they had no way to answer, which is exactly what a
+          // `300*` bot score was doing to real people; settling on none of them
+          // would hold the button until the timeout on every single tap.
+          //
+          // NOT WHILE A HUMAN IS ANSWERING, though. Once the widget has
+          // escalated, an error is one the person can have another go at inside
+          // it, and settling would take the panel off the screen mid-click and
+          // send the request without the token they were in the middle of
+          // earning. Same reasoning as the cancelled timer above.
+          console.warn(`[captcha] turnstile retryable error: ${code}`)
+          const waiting = pending.current
+          if (!waiting || waiting.interactive) return
+          if (++waiting.errors > RETRIES_ALLOWED) {
+            // Reported only once the retry has also failed, so a score that
+            // cleared on the second go is not filed as a problem. A `300*` or
+            // `600*` surviving both is the one failure here whose fix is the
+            // widget's MODE rather than a key or a hostname.
+            report(`gave up after ${waiting.errors} retryable errors, last ${code}`)
+            settle(undefined)
+          }
           return
+        }
       }
     },
     [settle, giveUp],
@@ -280,13 +471,17 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
     settle(undefined)
 
     return new Promise<string | undefined>((resolve) => {
-      const waiting: Pending = { resolve, timer: null }
+      const waiting: Pending = { resolve, timer: null, errors: 0, interactive: false }
       // A timeout with the widget still silent means it never loaded. One that
       // fires after `ready` is one slow attempt, and the next may be fine.
-      waiting.timer = setTimeout(
-        () => (ready.current ? settle(undefined) : giveUp('never became ready')),
-        TOKEN_TIMEOUT_MS,
-      )
+      waiting.timer = setTimeout(() => {
+        if (!ready.current) return giveUp('never became ready')
+        // Ready, executed, and twenty seconds of silence: no token, no error
+        // code, nothing to go on. Worth filing precisely because there is
+        // nothing else to file.
+        report('timed out with no answer')
+        settle(undefined)
+      }, TOKEN_TIMEOUT_MS)
       pending.current = waiting
 
       const execute = () => web.current?.injectJavaScript('window.rcExecute(); true;')
@@ -341,6 +536,13 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
               ref={web}
               // The widget is registered against a hostname on Cloudflare, and
               // inline HTML has none. `baseUrl` is what gives the page one.
+              //
+              // THE APEX, AND THE WIDGET HAS TO LIST THE APEX TOO. Cloudflare's
+              // hostname rule runs one way: an apex entry covers every
+              // subdomain, a `www` entry does not cover its parent. The
+              // marketing site redirects the apex to `www`, so `www` is the
+              // easy thing to list and it would answer this page with 110200
+              // for ever. See the README.
               source={{
                 html: page(siteKey),
                 baseUrl: `https://${env.EXPO_PUBLIC_TURNSTILE_ORIGIN}`,
@@ -350,11 +552,38 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
               // Cloudflare refusing the origin. Without this the only symptom is
               // `ready` never arriving, which every request then pays the full
               // timeout to discover.
-              onError={() => giveUp('load-failed')}
-              onHttpError={() => giveUp('http-error')}
+              //
+              // ONLY BEFORE THE WIDGET IS READY, though. Android reports
+              // subresource failures through the same two callbacks, so a
+              // single image or beacon that did not come back was marking a
+              // perfectly working widget permanently broken for the rest of the
+              // session — and every sign-in after it went out with no token.
+              // Once `ready` has arrived the page loaded, whatever else failed.
+              onError={() => loadFailed('load-failed')}
+              onHttpError={() => loadFailed('http-error')}
               javaScriptEnabled
               domStorageEnabled
-              originWhitelist={['https://*']}
+              /**
+               * `about:` IS LOAD-BEARING, AND LEAVING IT OUT BREAKS THE WHOLE
+               * WIDGET SILENTLY.
+               *
+               * Turnstile builds its challenge frame as an iframe with a
+               * `srcdoc` attribute, which the WebView sees as a navigation to
+               * `about:srcdoc`. `originWhitelist` governs iframe navigations as
+               * well as top-level ones, so a list of `https://*` alone does not
+               * merely ignore that frame — react-native-webview refuses to load
+               * it internally and hands the URL to the OS instead, which
+               * answers "Unable to open URL: about:srcdoc" in the log and
+               * nothing anywhere else.
+               *
+               * The result is a widget that loads, renders, reports `ready` and
+               * can never produce a token, on a page where every key, hostname
+               * and mode is correct. It cost a day: the symptom is on the
+               * SERVER — Supabase refusing every sign-in for want of a token —
+               * so the search starts in the Cloudflare dashboard, where
+               * everything looks right, because everything there is right.
+               */
+              originWhitelist={['https://*', 'about:*']}
               scrollEnabled={false}
               style={{ flex: 1, backgroundColor: 'transparent' }}
             />

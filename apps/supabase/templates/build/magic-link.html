@@ -8,6 +8,8 @@
     <meta name="supported-color-schemes" content="light dark" />
     <title>{{ .Token }} is your RiceCal sign-in code</title>
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@400;700;800&display=swap');
+
       :root {
         color-scheme: light dark;
         supported-color-schemes: light dark;
@@ -20,26 +22,30 @@
       }
 
       @media (prefers-color-scheme: dark) {
-        .rc-body { background-color: #1c1c1c !important; }
-        .rc-surface { background-color: #181818 !important; border-color: #2e2e2e !important; }
-        .rc-fg { color: #ededed !important; }
-        .rc-muted { color: #a0a0a0 !important; }
-        .rc-rule { border-color: #2e2e2e !important; }
-        .rc-code { background-color: #14291f !important; border-color: #2e4a3c !important; color: #38d07e !important; }
-        .rc-brand { color: #38d07e !important; }
-        .rc-button { background-color: #38d07e !important; color: #0e1a14 !important; }
+        .rc-body { background-color: #111716 !important; }
+        .rc-surface { background-color: #1A2220 !important; border-color: #2E3936 !important; }
+        .rc-fg { color: #F2F5F3 !important; }
+        .rc-copy { color: #B9C4BF !important; }
+        .rc-muted { color: #8B9A94 !important; }
+        .rc-rule { border-color: #2E3936 !important; }
+        .rc-code { background-color: #14291F !important; border-color: #2E4A3C !important; color: #38D07E !important; }
+        .rc-brand { color: #38D07E !important; }
+        /* The accents get BRIGHTER in dark mode, not darker, so a filled button
+           flips its label to near-black. Same rule as `onPandan` in the app. */
+        .rc-slab { background-color: #1C6E44 !important; }
+        .rc-button { background-color: #38D07E !important; color: #0C1310 !important; }
       }
 
       @media only screen and (max-width: 600px) {
         .rc-pad { padding-left: 24px !important; padding-right: 24px !important; }
-        .rc-code { font-size: 30px !important; letter-spacing: 6px !important; }
+        .rc-code { font-size: 32px !important; letter-spacing: 6px !important; }
       }
     </style>
   </head>
 
   <body
     class="rc-body"
-    style="margin: 0; padding: 0; width: 100%; background-color: #f6f7f8; -webkit-font-smoothing: antialiased;"
+    style="margin: 0; padding: 0; width: 100%; background-color: #f6f8f7; -webkit-font-smoothing: antialiased;"
   >
     
     <div
@@ -53,7 +59,7 @@
       cellspacing="0"
       border="0"
       class="rc-body"
-      style="background-color: #f6f7f8;"
+      style="background-color: #f6f8f7;"
     >
       <tr>
         <td align="center" style="padding: 32px 12px 48px 12px;">
@@ -67,13 +73,21 @@
           >
             
             <tr>
-              <td
-                align="center"
-                style="padding: 8px 0 20px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
-              >
+              <td align="center" style="padding: 4px 0 10px 0;">
+                <img
+                  src="data:image/png;base64,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"
+                  width="64"
+                  height="64"
+                  alt=""
+                  style="display: block; width: 64px; height: 64px; border: 0; border-radius: 16px;"
+                />
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding: 0 0 22px 0;">
                 <span
                   class="rc-brand"
-                  style="font-size: 20px; font-weight: 700; letter-spacing: -0.2px; color: #1b8a4e;"
+                  style="font-family: 'Baloo 2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.2px; color: #1b8a4e;"
                   >RiceCal</span
                 >
               </td>
@@ -83,19 +97,19 @@
             <tr>
               <td
                 class="rc-surface"
-                style="background-color: #ffffff; border: 1px solid #e6e8eb; border-radius: 8px;"
+                style="background-color: #ffffff; border: 2px solid #e4e8e5; border-radius: 28px;"
               >
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td
                       class="rc-pad"
-                      style="padding: 36px 40px 36px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
+                      style="padding: 36px 40px 36px 40px; font-family: Nunito, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
                     >
-                      <h1 class="rc-fg" style="margin: 0 0 12px 0; font-size: 22px; font-weight: 700; line-height: 30px; color: #171717;">
+                      <h1 class="rc-fg" style="margin: 0 0 14px 0; font-family: 'Baloo 2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 26px; font-weight: 800; line-height: 33px; color: #1b3a2b;">
   Sign in to RiceCal
 </h1>
 
-<p class="rc-muted" style="margin: 0 0 24px 0; font-size: 15px; line-height: 23px; color: #707070;">
+<p class="rc-copy" style="margin: 0 0 24px 0; font-size: 16px; line-height: 26px; color: #495450;">
   Enter this code in the app and your diary picks up where it left off.
 </p>
 
@@ -104,14 +118,14 @@
     <td
       align="center"
       class="rc-code"
-      style="padding: 18px 12px; background-color: #eaf9f0; border: 1px solid #cfebda; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace; font-size: 34px; font-weight: 700; line-height: 40px; letter-spacing: 8px; color: #1b8a4e;"
+      style="padding: 20px 12px; background-color: #eaf9f0; border: 2px solid #cfebda; border-radius: 20px; font-family: 'Baloo 2', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace; font-size: 36px; font-weight: 800; line-height: 42px; letter-spacing: 8px; color: #1b8a4e;"
     >
       {{ .Token }}
     </td>
   </tr>
 </table>
 
-<p class="rc-muted" style="margin: 20px 0 0 0; font-size: 14px; line-height: 21px; color: #707070;">
+<p class="rc-muted" style="margin: 20px 0 0 0; font-size: 14px; line-height: 22px; font-weight: 700; color: #6e7b74;">
   The code expires in an hour, and it only works once.
 </p>
 
@@ -120,7 +134,7 @@
   <tr>
     <td
       class="rc-rule"
-      style="padding: 0; border-top: 1px solid #e6e8eb; font-size: 0; line-height: 0;"
+      style="padding: 0; border-top: 2px solid #e4e8e5; font-size: 0; line-height: 0;"
     >
       &nbsp;
     </td>
@@ -128,7 +142,7 @@
 </table>
 <div style="height: 24px; line-height: 24px;">&nbsp;</div>
 
-<p class="rc-muted" style="margin: 0 0 18px 0; font-size: 14px; line-height: 21px; color: #707070;">
+<p class="rc-muted" style="margin: 0 0 18px 0; font-size: 14px; line-height: 22px; font-weight: 700; color: #6e7b74;">
   Reading this on the phone RiceCal is installed on? You can tap through
   instead.
 </p>
@@ -136,21 +150,21 @@
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
   <tr>
     <td
-      class="rc-button"
+      class="rc-slab"
       align="center"
-      style="background-color: #1b8a4e; border-radius: 6px;"
+      style="background-color: #1b8a4e; border-radius: 20px; padding-bottom: 6px;"
     >
       <a
         href="{{ .ConfirmationURL }}"
         class="rc-button"
-        style="display: inline-block; padding: 13px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 20px; color: #ffffff; text-decoration: none; border-radius: 6px;"
+        style="display: block; padding: 15px 30px; background-color: #2fbf71; border-radius: 20px; font-family: 'Baloo 2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 19px; font-weight: 700; line-height: 26px; color: #ffffff; text-decoration: none;"
         >Sign in</a
       >
     </td>
   </tr>
 </table>
 
-<p class="rc-muted" style="margin: 24px 0 0 0; font-size: 13px; line-height: 20px; color: #707070;">
+<p class="rc-muted" style="margin: 24px 0 0 0; font-size: 13px; line-height: 20px; font-weight: 700; color: #6e7b74;">
   If you did not ask to sign in, you can ignore this email. Nobody can get into
   your account without this code.
 </p>
@@ -164,18 +178,18 @@
             <tr>
               <td
                 class="rc-pad"
-                style="padding: 24px 40px 0 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
+                style="padding: 24px 40px 0 40px; font-family: Nunito, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
               >
                 <p
                   class="rc-muted"
-                  style="margin: 0; font-size: 13px; line-height: 20px; color: #707070;"
+                  style="margin: 0; font-size: 13px; line-height: 20px; font-weight: 700; color: #6e7b74;"
                 >
                   You are receiving this because someone asked for it using this
                   address at RiceCal. We only ever email you about your account.
                 </p>
                 <p
                   class="rc-muted"
-                  style="margin: 12px 0 0 0; font-size: 13px; line-height: 20px; color: #707070;"
+                  style="margin: 12px 0 0 0; font-size: 13px; line-height: 20px; font-weight: 700; color: #6e7b74;"
                 >
                   RiceCal, a calorie diary for Malaysian eating.
                 </p>

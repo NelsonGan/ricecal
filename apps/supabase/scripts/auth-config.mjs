@@ -149,8 +149,20 @@ async function main() {
   const current = await managementFetch(`/projects/${ref}/config/auth`)
 
   const differing = Object.entries(wanted).filter(([field, value]) => {
-    // A secret never comes back from the API in a form worth comparing, so it
-    // is always written when it was passed.
+    /**
+     * A secret never comes back from the API in a form worth comparing, so it
+     * is always written when it was passed.
+     *
+     * SPECIFICALLY, IT COMES BACK AS A 64 CHARACTER HASH. Every secret field
+     * does — `security_captcha_secret`, `external_google_secret` and `smtp_pass`
+     * are all 64 lowercase hex, which three unrelated credentials cannot
+     * genuinely be. Worth writing down because the length reads like a value:
+     * a Turnstile secret is about 35 characters and starts `0x4AAA`, so 64 hex
+     * looks exactly like the wrong secret having been pasted in, and it is not
+     * evidence of anything. There is no way to read back what is stored, which
+     * is why a mismatched captcha secret can only be ruled out by setting it
+     * again from the widget you are looking at.
+     */
     if (field.includes('secret')) return true
     return current[field] !== value
   })

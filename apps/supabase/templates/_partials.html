@@ -1,5 +1,5 @@
 <!--
-  The two blocks every message shares, kept in one file for the reason the
+  The three blocks every message shares, kept in one file for the reason the
   layout is one file.
 
   `pnpm email:build` splices these in wherever a body writes
@@ -24,13 +24,17 @@
 
   It is also the only half that works when the mail is opened on a DIFFERENT
   device from the one the app is on, which on a phone app is common.
+
+  Drawn as the app draws a soft-tone panel: `pandanSoft` on `pandanSoftLine` at
+  `radius.md`, and the digits in Baloo 2, which is the face every other number
+  in this app is set in.
 -->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
   <tr>
     <td
       align="center"
       class="rc-code"
-      style="padding: 18px 12px; background-color: #eaf9f0; border: 1px solid #cfebda; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace; font-size: 34px; font-weight: 700; line-height: 40px; letter-spacing: 8px; color: #1b8a4e;"
+      style="padding: 20px 12px; background-color: #eaf9f0; border: 2px solid #cfebda; border-radius: 20px; font-family: 'Baloo 2', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace; font-size: 36px; font-weight: 800; line-height: 42px; letter-spacing: 8px; color: #1b8a4e;"
     >
       {{ .Token }}
     </td>
@@ -39,17 +43,31 @@
 <!-- /PARTIAL -->
 
 <!-- PARTIAL button -->
+<!--
+  THE SQUISHY BUTTON, AS FAR AS A MAIL CLIENT CAN DRAW ONE.
+
+  Every raised control in the app sits on a `slab`: a second rectangle in a
+  darker tone, six points tall, showing under the surface. It is the single
+  most recognisable thing about how this app looks, and it is one nested table
+  away in email — the outer cell is the slab colour with `padding-bottom: 6px`,
+  and the anchor is the surface laid on top of it. No shadow, no image, and
+  nothing that depends on a font.
+
+  Outlook squares off the corners, because Word's engine has no border-radius.
+  What survives there is the two-tone block, which is still this app's button
+  and nobody else's.
+-->
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
   <tr>
     <td
-      class="rc-button"
+      class="rc-slab"
       align="center"
-      style="background-color: #1b8a4e; border-radius: 6px;"
+      style="background-color: #1b8a4e; border-radius: 20px; padding-bottom: 6px;"
     >
       <a
         href="{{ .ConfirmationURL }}"
         class="rc-button"
-        style="display: inline-block; padding: 13px 28px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 20px; color: #ffffff; text-decoration: none; border-radius: 6px;"
+        style="display: block; padding: 15px 30px; background-color: #2fbf71; border-radius: 20px; font-family: 'Baloo 2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 19px; font-weight: 700; line-height: 26px; color: #ffffff; text-decoration: none;"
         >$1</a
       >
     </td>
@@ -62,7 +80,7 @@
   <tr>
     <td
       class="rc-rule"
-      style="padding: 0; border-top: 1px solid #e6e8eb; font-size: 0; line-height: 0;"
+      style="padding: 0; border-top: 2px solid #e4e8e5; font-size: 0; line-height: 0;"
     >
       &nbsp;
     </td>

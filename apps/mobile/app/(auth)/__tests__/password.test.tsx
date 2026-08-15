@@ -1,4 +1,4 @@
-import { render as rntlRender, screen, userEvent } from '@testing-library/react-native'
+import { act, render as rntlRender, screen, userEvent } from '@testing-library/react-native'
 import type { ReactElement, ReactNode } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
@@ -205,18 +205,22 @@ describe('signing in', () => {
   })
 
   /**
-   * Its own screen, not the code screen. Verifying a recovery code creates the
-   * session, and the guard would carry the user off to Today before they had
-   * chosen anything.
+   * OPENS THE SCREEN THAT ASKS WHICH ADDRESS, and posts nothing on the way.
+   *
+   * It used to send to whatever address this screen was holding, which is the
+   * wrong thing to do twice over: it spends a mail and a minute of send limit
+   * on a mistap, and it is most confident about the address exactly when the
+   * person is least able to be — somebody who cannot remember a password often
+   * cannot remember which of two addresses they used.
    */
-  it('sends a reset to the screen that sets the new password', async () => {
+  it('opens the reset screen without sending anything', async () => {
     await render(<PasswordScreen />)
 
     await user.press(screen.getByText('Forgot your password?'))
 
-    expect(auth.sendPasswordReset).toHaveBeenCalledWith('aisyah@example.com', undefined)
+    expect(auth.sendPasswordReset).not.toHaveBeenCalled()
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/(auth)/new-password',
+      pathname: '/(auth)/forgot',
       params: { email: 'aisyah@example.com' },
     })
   })
@@ -242,15 +246,22 @@ describe('signing in', () => {
  * one needs a route that does not depend on the answer.
  */
 describe('the mailed code', () => {
-  it('is offered when creating an account', async () => {
+  /**
+   * GOES FIRST AND SENDS ON ARRIVAL. Posting the mail here and navigating on
+   * the answer put a captcha round trip and a synchronous SMTP send between the
+   * tap and anything happening, which on a slow connection is several seconds
+   * of a screen that has not changed — the shape of a button that did not work,
+   * and the usual reply to it is a second tap.
+   */
+  it('is offered when creating an account, and navigates before sending', async () => {
     await render(<PasswordScreen />)
 
     await user.press(screen.getByText('Email me a code instead'))
 
-    expect(auth.sendLoginLink).toHaveBeenCalledWith('aisyah@example.com', undefined)
+    expect(auth.sendLoginLink).not.toHaveBeenCalled()
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/(auth)/verify',
-      params: { email: 'aisyah@example.com', purpose: 'email' },
+      params: { email: 'aisyah@example.com', purpose: 'email', send: '1' },
     })
   })
 
@@ -259,6 +270,48 @@ describe('the mailed code', () => {
     await render(<PasswordScreen />)
 
     expect(screen.getByText('Email me a code instead')).toBeOnTheScreen()
+  })
+
+  /**
+   * THE SPINNER GOES ON THE BUTTON THAT WAS PRESSED.
+   *
+   * One `busy` boolean drove `loading` on the footer CTA, so asking for a code
+   * spun a button at the bottom of the screen that nobody had touched while the
+   * control that had been tapped sat there looking ignored — and the password
+   * field stayed editable throughout. Every screen in this stack had the shape.
+   */
+  /**
+   * The one request that still waits here, because it IS the request: there is
+   * nowhere to navigate to until the server has answered. So it is the one that
+   * has to show the wait honestly — on the control that was pressed, over
+   * fields nobody can retype underneath it.
+   */
+  it('spins the button that was pressed, and locks the form under it', async () => {
+    let release: () => void = () => {}
+    auth.signUpWithPassword.mockReturnValue(
+      new Promise((resolve) => {
+        release = () => resolve('confirm')
+      }),
+    )
+    await render(<PasswordScreen />)
+
+    await fill('PASSWORD', 'longenough')
+    await fill('CONFIRM PASSWORD', 'longenough')
+    await user.press(screen.getByText('Create account'))
+
+    const submit = screen.getByRole('button', { name: 'Create account' })
+    const code = screen.getByRole('button', { name: 'Email me a code instead' })
+    expect(submit.props.accessibilityState.busy).toBe(true)
+    // Not the other one, which is what a single `busy` boolean used to get
+    // wrong in the opposite direction.
+    expect(code.props.accessibilityState.busy).toBe(false)
+    expect(code.props.accessibilityState.disabled).toBe(true)
+    expect(screen.getByLabelText('PASSWORD').props.editable).toBe(false)
+
+    // Let the request finish inside the test rather than after it: the state
+    // update that clears the spinner lands either way, and outside `act` it
+    // lands on a torn-down tree and warns.
+    await act(async () => release())
   })
 })
 
