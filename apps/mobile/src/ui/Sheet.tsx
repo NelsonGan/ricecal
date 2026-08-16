@@ -229,24 +229,53 @@ export function SheetSurface({
    * directly, which is how a sheet still closed twice with this guard in place.
    */
   const closing = useRef(false)
+  /**
+   * The same fact, on the UI thread, where the pan gesture can read it.
+   *
+   * A shared value rather than the ref beside it, because a worklet reading a
+   * ref would be reading an object it has frozen — the mistake `Numpad` paid an
+   * afternoon for. It exists so nothing writes `rise` once the panel is on its
+   * way out: an interrupted timing animation reports `finished: false`, and the
+   * callback below rightly declines to close on one, so a second grab of the
+   * handle mid-fall would otherwise leave a sheet nothing could dismiss.
+   */
+  const falling = useSharedValue(false)
 
   const dismiss = useCallback(() => {
     if (closing.current) return
     closing.current = true
-    rise.value = withTiming(height, { duration: FALL_MS, easing: Easing.in(Easing.cubic) }, () => {
-      // After the panel is gone, not before: `onClose` unmounts this, and calling
-      // it first would take the surface off screen with no animation at all.
-      runOnJS(onClose)()
-    })
-  }, [rise, height, onClose])
+    falling.value = true
+    rise.value = withTiming(
+      height,
+      { duration: FALL_MS, easing: Easing.in(Easing.cubic) },
+      (finished) => {
+        // After the panel is gone, not before: `onClose` unmounts this, and
+        // calling it first would take the surface off screen with no animation
+        // at all.
+        //
+        // ONLY when the animation ran to its end, and the guard above is not
+        // enough on its own. Reanimated calls this back a SECOND time when the
+        // animation is cancelled, which is what unmounting the surface does to
+        // it — and unmounting the surface is precisely what `onClose` has just
+        // arranged. Written unconditionally, one dismissal therefore unwound
+        // two screens: the sheet, and then whatever was under it. On the quick
+        // selector that meant tapping the log button and closing it again took
+        // the user off Today.
+        if (finished) runOnJS(onClose)()
+      },
+    )
+  }, [rise, falling, height, onClose])
 
   const dragHandle = Gesture.Pan()
     .onUpdate((event) => {
+      // Nothing moves the panel once it is leaving. See `falling`.
+      if (falling.value) return
       // Downward only. Dragging up would lift the panel off the bottom of the
       // screen and show the scrim under it.
       rise.value = Math.max(0, event.translationY)
     })
     .onEnd((event) => {
+      if (falling.value) return
       if (event.translationY > DISMISS_DISTANCE || event.velocityY > DISMISS_VELOCITY) {
         runOnJS(dismiss)()
         return

@@ -18,6 +18,7 @@ import {
   useTrackPaywallShown,
 } from '@/features/paywall'
 import { track } from '@/lib/analytics'
+import { useEnterApp } from '@/lib/navigation'
 import { Button, Screen, useToast } from '@/ui'
 
 /**
@@ -45,6 +46,7 @@ import { Button, Screen, useToast } from '@/ui'
 export default function IntroPaywall() {
   const { t } = useTranslation(['paywall', 'common'])
   const router = useRouter()
+  const enterApp = useEnterApp()
   const toast = useToast()
   const awaitEntitlement = useAwaitEntitlement()
   const [plan, setPlan] = useState<Plan>('yearly')
@@ -112,16 +114,21 @@ export default function IntroPaywall() {
           <Button fullWidth onPress={start}>
             {lifetime ? t('paywall:hard.startLifetime') : t('paywall:hard.start')}
           </Button>
-          {/* `replace`, not `push`. This screen replaced the tour, and the tour
-              replaced the questions, so there is nothing underneath worth
-              keeping — and Today is where the app IS rather than somewhere the
-              user went.
+          {/* Not a push. This screen replaced the tour, and the tour replaced
+              the questions, so there is nothing underneath worth keeping — and
+              Today is where the app IS rather than somewhere the user went.
+
+              A `replace` was not enough to say that, because "the questions"
+              are not one entry. The account step crosses out of the onboarding
+              group and back, so the screens walked before it are a root entry
+              of their own that a replace of THIS one leaves behind: the diary
+              came up standing on "Get started". `enterApp` unwinds the lot.
 
               Two buttons here, and only two. Restore used to be a third
               full-width control pinned under this one, which read as a way
               FORWARD from this screen rather than as the hatch it is. It is a
               link at the foot of the page now, under the small print. */}
-          <Button variant="ghost" fullWidth onPress={() => router.replace('/today')}>
+          <Button variant="ghost" fullWidth onPress={() => enterApp()}>
             {t('paywall:intro.later')}
           </Button>
         </View>

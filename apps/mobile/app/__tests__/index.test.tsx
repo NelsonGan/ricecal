@@ -16,6 +16,7 @@ const mockSession = jest.fn()
 const mockProfile = jest.fn()
 const mockDraft = jest.fn()
 const mockSignOut = jest.fn(() => Promise.resolve())
+const mockEnterApp = jest.fn()
 
 jest.mock('expo-router', () => ({
   Redirect: ({ href }: { href: string }) => {
@@ -31,6 +32,12 @@ jest.mock('@/data', () => ({
 
 jest.mock('@/data/auth', () => ({
   signOut: () => mockSignOut(),
+}))
+
+// Landing on the app is a reset rather than a redirect — see `useEnterApp` —
+// so this route's last answer is a call rather than a rendered href.
+jest.mock('@/lib/navigation', () => ({
+  useEnterApp: () => mockEnterApp,
 }))
 
 jest.mock('@/features/onboarding', () => ({
@@ -86,7 +93,9 @@ it('starts a visitor with no session at the top of the flow', async () => {
 it('sends an onboarded user to the app', async () => {
   await render(<Index />)
 
-  expect(redirectTo('/today')).toBeTruthy()
+  // Not a redirect: entering the app clears what is under it, because signing
+  // in reaches this route with the welcome screen still on the stack.
+  await waitFor(() => expect(mockEnterApp).toHaveBeenCalled())
 })
 
 it('flushes the answers a half-finished account already has on this phone', async () => {
@@ -117,6 +126,7 @@ it('signs out a session whose account has been deleted', async () => {
   await waitFor(() => expect(mockSignOut).toHaveBeenCalled())
   // And holds still meanwhile, so nobody lands mid-flow on the way out.
   expect(screen.queryByText(/^redirect:/)).toBeNull()
+  expect(mockEnterApp).not.toHaveBeenCalled()
 })
 
 /**
