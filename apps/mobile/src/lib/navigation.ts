@@ -72,3 +72,42 @@ export function useDismissTo(fallback: Href): () => void {
     router.replace(fallback)
   }, [router, fallback])
 }
+
+/**
+ * Land on the app, with nothing left behind it.
+ *
+ * THE TABS ARE WHERE THE APP IS, and everything else in the root stack is
+ * somewhere you went and can leave. A `replace` alone does not say that: it
+ * swaps the ONE entry it replaces and leaves whatever that entry was standing
+ * on, so the way in stays on the stack under the app for the rest of the
+ * session.
+ *
+ * It is the way in that makes this expensive. Every route into the app crosses
+ * the welcome screen or the questions — a returning user signs in from
+ * `welcome`, so `(auth)` is pushed ON TOP of it and the redirect afterwards
+ * replaces `(auth)` and nothing else; onboarding's own screens sit under the
+ * paywall for the same reason. So Today came up standing on "Get started", with
+ * a live session, and any stray pop landed there: a signed-in person looking at
+ * the sign-up screen, whose "I already have an account" bounced them straight
+ * back to the diary while "Get started" walked them into onboarding they had
+ * already finished. `gestureEnabled: false` on `(tabs)` was written to stop the
+ * edge swipe finding it, which is a fence around the hole rather than the hole
+ * filled in.
+ *
+ * `dismissAll` first, then `replace`: the first unwinds to the bottom of the
+ * root stack, the second takes that last entry's place. Both are queued in one
+ * flush, so there is no frame of the welcome screen in between. The guard is
+ * not optional — `dismissAll` throws when there is nothing to unwind, which is
+ * the ordinary case on a cold launch straight into the app.
+ */
+export function useEnterApp(): (href?: Href) => void {
+  const router = useRouter()
+
+  return useCallback(
+    (href: Href = '/today') => {
+      if (router.canDismiss()) router.dismissAll()
+      router.replace(href)
+    },
+    [router],
+  )
+}

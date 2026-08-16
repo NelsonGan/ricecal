@@ -6,6 +6,7 @@ import { View } from 'react-native'
 import { useProfile, useSession } from '@/data'
 import { signOut } from '@/data/auth'
 import { isComplete, useOnboardingDraft } from '@/features/onboarding'
+import { useEnterApp } from '@/lib/navigation'
 import { EmptyState, Spinner } from '@/ui'
 
 /**
@@ -107,7 +108,26 @@ export default function Index() {
 
   if (!profile?.onboarded_at) return <Redirect href={answered ? '/finish' : '/about'} />
 
-  return <Redirect href="/today" />
+  return <EnterApp />
+}
+
+/**
+ * Into the app, and not merely on top of it.
+ *
+ * A `Redirect` would do here on a cold launch, where this route is all there is
+ * to replace. It is wrong on the other way in: signing in pushes `(auth)` OVER
+ * the welcome screen, the layout there sends the new session back to this route,
+ * and a replace then swaps THIS entry and leaves "Get started" underneath the
+ * diary. See `useEnterApp` for what that cost.
+ */
+function EnterApp() {
+  const enterApp = useEnterApp()
+
+  useEffect(() => {
+    enterApp()
+  }, [enterApp])
+
+  return <Loading />
 }
 
 function Loading() {
