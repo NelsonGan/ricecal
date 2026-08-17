@@ -28,6 +28,14 @@
 export const CONNECT_READ_TYPES = [
   'ActiveCaloriesBurned',
   'TotalCaloriesBurned',
+  /**
+   * Read to SPLIT a total, not to display. Plenty of sources — Samsung Health
+   * among them — write the day's total energy and never the active half, and
+   * only the active half may reach a calorie budget that is already a
+   * Mifflin-St Jeor figure. A store that computes its own basal knows this
+   * user's better than a formula over four numbers they typed in onboarding.
+   */
+  'BasalMetabolicRate',
   'Steps',
   'Distance',
   'ExerciseSession',
@@ -54,15 +62,16 @@ export const isConnectReadType = (value: string): value is ConnectReadType =>
 /**
  * The permission that reads each record type.
  *
- * Written out rather than derived from the type name. Seven of the eight ARE
- * the name in screaming snake case, which is what makes a derivation tempting;
- * the eighth is not — `ExerciseSession` is read by `READ_EXERCISE` — so a
- * clever version would be right seven times and silently wrong about workouts,
- * which is the half of the feature with a screen of its own.
+ * Written out rather than derived from the type name. All but one ARE the name
+ * in screaming snake case, which is what makes a derivation tempting; the
+ * exception is `ExerciseSession`, read by `READ_EXERCISE`, so a clever version
+ * would be right every time but once and silently wrong about workouts, which
+ * is the half of the feature with a screen of its own.
  */
 const READ_PERMISSION: Record<ConnectReadType, string> = {
   ActiveCaloriesBurned: 'android.permission.health.READ_ACTIVE_CALORIES_BURNED',
   TotalCaloriesBurned: 'android.permission.health.READ_TOTAL_CALORIES_BURNED',
+  BasalMetabolicRate: 'android.permission.health.READ_BASAL_METABOLIC_RATE',
   Steps: 'android.permission.health.READ_STEPS',
   Distance: 'android.permission.health.READ_DISTANCE',
   ExerciseSession: 'android.permission.health.READ_EXERCISE',

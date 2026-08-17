@@ -1,5 +1,6 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config'
-
+import { energyFor, informativeHours } from '../androidHealth'
+import { preferredOrigin } from '../connectOrigins'
 import { ANDROID_HEALTH_PERMISSIONS } from '../connectPermissions'
 import { demoHealth } from '../demo'
 import { estimatedMaxHr, hrZonesFromSamples } from '../hrZones'
@@ -24,8 +25,16 @@ describe('the demo provider', () => {
    * visibly failed to do.
    */
   it('returns identical data when the same range is read twice', async () => {
-    const first = await demoHealth.read('2026-03-01', '2026-03-07', { withHours: true, age: null })
-    const second = await demoHealth.read('2026-03-01', '2026-03-07', { withHours: true, age: null })
+    const first = await demoHealth.read('2026-03-01', '2026-03-07', {
+      withHours: true,
+      age: null,
+      basalKcal: null,
+    })
+    const second = await demoHealth.read('2026-03-01', '2026-03-07', {
+      withHours: true,
+      age: null,
+      basalKcal: null,
+    })
 
     expect(second).toEqual(first)
   })
@@ -43,8 +52,13 @@ describe('the demo provider', () => {
     const narrow = await demoHealth.read('2026-03-05', '2026-03-05', {
       withHours: false,
       age: null,
+      basalKcal: null,
     })
-    const wide = await demoHealth.read('2026-02-01', '2026-03-20', { withHours: false, age: null })
+    const wide = await demoHealth.read('2026-02-01', '2026-03-20', {
+      withHours: false,
+      age: null,
+      basalKcal: null,
+    })
 
     const fromWide = wide.days.find((day) => day.date === '2026-03-05')
     expect(narrow.days).toHaveLength(1)
@@ -56,8 +70,13 @@ describe('the demo provider', () => {
     const narrow = await demoHealth.read('2026-03-05', '2026-03-05', {
       withHours: false,
       age: null,
+      basalKcal: null,
     })
-    const wide = await demoHealth.read('2026-02-01', '2026-03-20', { withHours: false, age: null })
+    const wide = await demoHealth.read('2026-02-01', '2026-03-20', {
+      withHours: false,
+      age: null,
+      basalKcal: null,
+    })
 
     const ids = (workouts: { externalId: string; date: string }[]) =>
       workouts.filter((w) => w.date === '2026-03-05').map((w) => w.externalId)
@@ -69,6 +88,7 @@ describe('the demo provider', () => {
     const { days, workouts } = await demoHealth.read('2026-01-01', '2026-03-31', {
       withHours: false,
       age: null,
+      basalKcal: null,
     })
 
     for (const day of days) {
@@ -87,6 +107,7 @@ describe('the demo provider', () => {
     const { days, hours } = await demoHealth.read('2026-01-01', '2026-01-31', {
       withHours: true,
       age: null,
+      basalKcal: null,
     })
 
     for (const day of days) {
@@ -309,4 +330,195 @@ describe('the Health Connect manifest declaration', () => {
       expect(declared.sort()).toEqual([...ANDROID_HEALTH_PERMISSIONS].sort())
     },
   )
+})
+
+/**
+ * The three decisions that stop Health Connect lying to the diary.
+ *
+ * All of them are pure functions of an aggregate's shape, which is the only
+ * part of this that can be tested off a phone — and it is the part that was
+ * wrong. Each case here is a real reading off a real Samsung account, kept as
+ * numbers rather than as prose so that a change which reintroduces the bug
+ * fails rather than merely reads differently.
+ */
+describe('choosing whose numbers to read', () => {
+  /**
+   * The bug this whole mechanism exists for.
+   *
+   * The account read 4,675 steps against Samsung Health's own 2,808 for the
+   * same day, because a second stream had written the same walk and the
+   * aggregate returned the sum. An app the user can open beats the phone's own
+   * pedometer, so the total becomes one they can check.
+   */
+  it('prefers an app the user can open over the phone recording itself', () => {
+    expect(preferredOrigin(['android', 'com.sec.android.app.shealth'])).toBe(
+      'com.sec.android.app.shealth',
+    )
+  })
+
+  /** The same, for the synthetic package the platform moved to in June 2026. */
+  it('treats a bare token as the platform, whatever it is called', () => {
+    expect(preferredOrigin(['stepcounter', 'com.garmin.android.apps.connectmobile'])).toBe(
+      'com.garmin.android.apps.connectmobile',
+    )
+  })
+
+  /**
+   * Strava is last among real apps on purpose: it writes GPS activities and
+   * nothing else, so reading a day's steps from it would report the ride and
+   * none of the walking.
+   */
+  it('does not let an activities-only app answer for the whole day', () => {
+    expect(preferredOrigin(['com.strava', 'com.sec.android.app.shealth'])).toBe(
+      'com.sec.android.app.shealth',
+    )
+  })
+
+  /** Ranked last still means chosen when it is the only thing there. */
+  it('reads from the only source there is, however it ranks', () => {
+    expect(preferredOrigin(['com.strava'])).toBe('com.strava')
+    expect(preferredOrigin(['android'])).toBe('android')
+  })
+
+  /**
+   * STABILITY, which matters more than which of two equals wins. The rolling
+   * window re-reads and overwrites the same seven days on every foreground, so
+   * a choice that varied with argument order would rewrite a user's step count
+   * to a different number every time they opened the app.
+   */
+  it('makes the same choice however the platform ordered the list', () => {
+    const origins = ['com.acme.tracker', 'com.zeta.tracker']
+
+    expect(preferredOrigin(origins)).toBe(preferredOrigin([...origins].reverse()))
+  })
+
+  it('has nothing to choose from an empty list', () => {
+    expect(preferredOrigin([])).toBeNull()
+  })
+})
+
+describe('splitting a day of energy', () => {
+  /** A store that measures active energy is believed, and resting is the rest. */
+  it('takes a measured active figure and derives resting from the total', () => {
+    expect(
+      energyFor({ active: 400, total: 1900, measuredBasal: undefined, profileBasal: 1500 }),
+    ).toEqual({ activeKcal: 400, restingKcal: 1500 })
+  })
+
+  /**
+   * The Samsung case, and the reason this function exists. Their store writes
+   * the day's total and never the active half, so active came back zero every
+   * day and the whole burn was filed as resting — 2,524 kcal of "resting" on a
+   * day with two hours of badminton in it.
+   */
+  it('splits a total-only day rather than calling its movement zero', () => {
+    expect(
+      energyFor({ active: undefined, total: 2524, measuredBasal: 1434, profileBasal: 1600 }),
+    ).toEqual({ activeKcal: 1090, restingKcal: 1434 })
+  })
+
+  /** The store's own basal beats the profile's formula, being about this body. */
+  it('prefers a measured basal to the profile estimate', () => {
+    const withMeasured = energyFor({
+      active: undefined,
+      total: 2000,
+      measuredBasal: 1400,
+      profileBasal: 1700,
+    })
+
+    expect(withMeasured.activeKcal).toBe(600)
+  })
+
+  /** A quiet day whose estimate overshoots reports no movement, never negative. */
+  it('never reports negative movement when the basal estimate is high', () => {
+    expect(
+      energyFor({ active: undefined, total: 1434, measuredBasal: undefined, profileBasal: 1600 }),
+    ).toEqual({ activeKcal: 0, restingKcal: 1434 })
+  })
+
+  /**
+   * A total with nothing to split it by is NOT an active figure. Passing it
+   * through would credit the user their whole basal metabolism as exercise, on
+   * top of a goal that already contains it.
+   */
+  it('declines to answer when there is nothing to split a total by', () => {
+    expect(
+      energyFor({ active: undefined, total: 1900, measuredBasal: undefined, profileBasal: null }),
+    ).toEqual({ activeKcal: null, restingKcal: null })
+  })
+
+  /**
+   * The empty-store case, with the figure a real device actually returned.
+   *
+   * Probed on a Pixel API 36 emulator whose Health Connect held nothing at all,
+   * `BasalMetabolicRate` still answered 1,564.5 kcal — derived rather than
+   * measured, and marked as such only by an empty `dataOrigins`. `hasOrigins`
+   * is what keeps it out of `measuredBasal`; this asserts what happens if it
+   * ever gets through, which is that the day is priced off a number nobody
+   * recorded.
+   */
+  it('would price a day off a derived basal, which is why hasOrigins drops it first', () => {
+    const leaked = energyFor({
+      active: undefined,
+      total: undefined,
+      measuredBasal: 1564.5,
+      profileBasal: null,
+    })
+
+    // No total to split, so nothing is credited as movement either way — but
+    // the phantom figure reaches `resting_kcal`, which is the leak.
+    expect(leaked).toEqual({ activeKcal: null, restingKcal: 1565 })
+  })
+
+  /** And a day nothing wrote at all is unknown rather than a day of rest. */
+  it('reports nothing rather than zero when no energy was written', () => {
+    expect(
+      energyFor({
+        active: undefined,
+        total: undefined,
+        measuredBasal: undefined,
+        profileBasal: 1500,
+      }),
+    ).toEqual({ activeKcal: null, restingKcal: null })
+  })
+})
+
+describe('whether an hourly chart says anything', () => {
+  const day = (steps: number[]) =>
+    steps.map((count, hour) => ({
+      date: '2026-08-17',
+      hour,
+      steps: count,
+      activeKcal: 0,
+      distanceM: null,
+    }))
+
+  /**
+   * Samsung Health writes ONE record for the whole day. Health Connect divides
+   * a record across every bucket it overlaps, so that record arrives as 24
+   * identical hours — 2,808 steps became 117 an hour, all night included, and
+   * the chart claimed a walk at 3am every morning.
+   */
+  it('drops a day that is one record divided by twenty-four', () => {
+    expect(informativeHours(day(Array(24).fill(117)))).toBe(false)
+  })
+
+  /** Integer division leaves a remainder in some buckets. Still no shape. */
+  it('drops it despite the rounding remainder', () => {
+    expect(informativeHours(day([...Array(20).fill(117), 118, 118, 118, 118]))).toBe(false)
+  })
+
+  /** A day somebody actually walked keeps every hour of it. */
+  it('keeps a day with a shape', () => {
+    expect(informativeHours(day([...Array(20).fill(117), 600, 480, 220, 118]))).toBe(true)
+  })
+
+  /**
+   * A handful of flat hours is a real reading, not an apportioned one: a
+   * record spanning the day would have landed in all of them. Three hours of
+   * 30 steps is somebody who took 30 steps three times.
+   */
+  it('keeps a sparse day even when its hours are equal', () => {
+    expect(informativeHours(day([30, 30, 30]))).toBe(true)
+  })
 })
