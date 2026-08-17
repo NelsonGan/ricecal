@@ -26,6 +26,12 @@
  * a calorie band it must land inside, words the name must and must not contain,
  * and how many parts a breakdown should have. That is the level at which this
  * pipeline is actually wrong when it is wrong.
+ *
+ * A case may also band a MACRO — `protein`, `carbs`, `fat` — and one of them
+ * does. Calories were the only thing graded here for a long time, and the bug
+ * that changed that is written up beside the check in `grade()`: a plate can be
+ * defensible on energy and twice the dish on protein, and the half nobody looks
+ * at is the half that goes wrong quietly.
  */
 
 import { createHash } from 'node:crypto'
@@ -76,6 +82,7 @@ const savePath = flag('save')
 const repeat = Math.max(1, Number(flag('repeat') ?? 1))
 
 const norm = (s) => String(s ?? '').toLowerCase()
+const round1 = (n) => Math.round(n * 10) / 10
 
 /** Did the entry land where the case said it should? */
 function grade(kase, entry, breakdown) {
@@ -108,13 +115,46 @@ function grade(kase, entry, breakdown) {
     else if (!(g >= gLow && g <= gHigh)) problems.push(`${g} g is outside ${gLow}-${gHigh}`)
   }
 
+  // PROTEIN, because calories alone could not see the bug that put this here.
+  //
+  // A photographed Hainanese chicken rice landed at 959 kcal and 72.6 g of
+  // protein, for a plate that holds about 38: the "chicken rice" part matched a
+  // composition-table row for the whole plate, so the bird was counted once as
+  // itself and again inside the rice. Every gate it passed was a calorie gate,
+  // and 959 kcal for a big chicken rice with soup is defensible — so the half of
+  // the answer that was wrong was the half nothing looked at. A case may now
+  // state the macro it cares about, and a plate whose protein is twice the dish
+  // fails even when its calories are merely high.
+  for (const macro of ['protein', 'carbs', 'fat']) {
+    if (!kase[macro]) continue
+    const [mLow, mHigh] = kase[macro]
+    const got = Number(entry[`${macro}_g`])
+    if (!(got >= mLow && got <= mHigh)) {
+      problems.push(`${got} g ${macro} is outside ${mLow}-${mHigh}`)
+    }
+  }
+
   // A breakdown that does not add up to its parent is the invariant this
   // pipeline breaks most quietly: the diary shows one number and the list under
   // it shows another, and neither looks wrong on its own.
+  //
+  // All four figures, not just the calories. `food_log_details` coalesces the
+  // parts branch for every one of them, so a parent that agrees about energy and
+  // disagrees about protein is the same broken invariant showing a subtler face —
+  // and it is exactly the shape a scaling bug takes, which is how editing an
+  // ingredient once moved only the calories.
   if (breakdown.length) {
-    const sum = breakdown.reduce((t, p) => t + Number(p.kcal), 0)
-    if (Math.abs(sum - kcal) > Math.max(3, kcal * 0.02)) {
-      problems.push(`parts sum to ${sum} but the entry says ${kcal}`)
+    for (const [field, tolerance] of [
+      ['kcal', 3],
+      ['protein_g', 0.5],
+      ['carbs_g', 0.5],
+      ['fat_g', 0.5],
+    ]) {
+      const total = Number(entry[field])
+      const sum = breakdown.reduce((t, p) => t + Number(p[field]), 0)
+      if (Math.abs(sum - total) > Math.max(tolerance, total * 0.02)) {
+        problems.push(`parts sum to ${round1(sum)} ${field} but the entry says ${total}`)
+      }
     }
   }
 
@@ -174,6 +214,7 @@ async function runOne(kase, written) {
   result.entryCount = ids.length
   result.name_out = row?.food_name
   result.kcal = row ? Number(row.kcal) : null
+  result.protein = row ? Number(row.protein_g) : null
   result.grams = row?.grams == null ? null : Number(row.grams)
   result.serving = row?.serving_label
   result.tiers = items.map((i) => i.resolved_tier)
@@ -184,9 +225,13 @@ async function runOne(kase, written) {
   // What the model actually claimed, before the cascade priced any of it. When
   // an entry lands somewhere odd this is nearly always where it went wrong.
   result.claimed = items.flatMap((i) =>
-    (i.components ?? []).map((c) => `${c.name} x${c.count} @ ${c.grams}g = ${c.kcal}`),
+    (i.components ?? []).map(
+      (c) => `${c.name} x${c.count} @ ${c.grams}g = ${c.kcal} kcal / ${c.protein_g ?? '?'}P`,
+    ),
   )
-  result.parts = breakdown.map((p) => `${p.name} x${p.quantity} = ${p.kcal}`)
+  // With protein, because a part priced from a row that has meat in it when it
+  // should not is invisible in the calories and obvious here.
+  result.parts = breakdown.map((p) => `${p.name} x${p.quantity} = ${p.kcal} kcal / ${p.protein_g}P`)
   result.problems = [...(result.problems ?? []), ...grade(kase, row, breakdown)]
 
   if (kase.refine) {
@@ -256,7 +301,7 @@ for (const kase of cases) {
   for (const result of runs) {
     const summary = result.noFood
       ? 'no food'
-      : `${result.name_out ?? '—'} · ${result.kcal ?? '—'} kcal · tier ${(result.tiers ?? []).join(',') || '—'}`
+      : `${result.name_out ?? '—'} · ${result.kcal ?? '—'} kcal · ${result.protein ?? '—'} g protein · tier ${(result.tiers ?? []).join(',') || '—'}`
     console.log(`    ${summary}  (${result.ms ?? 0} ms)`)
     if (result.queries?.some(Boolean)) {
       console.log(
