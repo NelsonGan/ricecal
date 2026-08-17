@@ -1310,6 +1310,13 @@ Break these and the feature is wrong in ways tests may not catch.
 - **Nothing off the diary reaches Mixpanel.** No calorie totals, no weights, no
   dish names, no search text — `src/lib/analytics/events.ts` is the whole list
   of what is sent, and a call site cannot add to it without editing that file.
+  The ONE identifier that names a real person is `$email`, and it is an
+  exception made on purpose rather than a hole in the rule: the address is what
+  a support conversation starts from, and a profile that cannot be found by it
+  is a profile nobody can act on. It is set from `identifyUser` alone, from the
+  address on the session, and it is the same address RevenueCat is given — so
+  both dashboards answer the same search. Nothing else about the person follows
+  it: no name, no body figures, and the diary half of this rule is unchanged.
   Where a number is genuinely wanted, its SHAPE goes instead: `planDirection`
   sends lose/gain/maintain rather than the two weights, and `dateOffset` sends
   how many days back an entry was logged rather than which day. This is not only

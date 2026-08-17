@@ -148,23 +148,38 @@ placeholder, and the attribute is then left unset rather than guessed at —
 claiming a distinct id for somebody Mixpanel has never been told about would
 file real purchases against an empty profile.
 
-**The email is the one thing the two platforms are told differently, and the
-asymmetry is deliberate.** RevenueCat gets `$email`, because a purchase is a
-transaction somebody writes in about and the dashboard is where that is
-answered: an address is how support finds the customer, and it is what
-RevenueCat's own billing-issue mail is sent to. Mixpanel gets no email, no name
-and no body figures, because a segment is never built on an address and the
-question "who exactly is this" is not one this project asks. What travels here
-is the shape of a person, not the person.
+**Both platforms get the same address, from the same read of the session.** It
+is `$email` on either side — RevenueCat's subscriber attribute and Mixpanel's
+reserved people property — and the reserved spelling is the point: written as
+`email` it is an ordinary property that neither dashboard's search box looks in.
+
+The reason is support rather than segmentation. A segment is never built on an
+address, and nothing here breaks down by one. What an address answers is the
+message that begins "I paid and it is still locked": the purchase is found in
+RevenueCat and what the person actually did is found in Mixpanel, and a profile
+identified only by a uuid can be reached from neither. Told to one platform and
+not the other, half of that question stays unanswerable.
+
+`identifyUser` is the only thing that sets it, from the address on the session,
+and it sends it AFTER the identify — a people property is filed against
+whichever distinct id the SDK is holding at the time, so an email sent first
+lands on the anonymous device profile and the real account stays blank. An
+account whose provider supplied no address leaves it unset rather than blank.
+
+This is a carve-out from the privacy rule in the root `CLAUDE.md` and it is the
+whole of it. No name, no body figures, and nothing off the diary: the address is
+the one fact here that names a person, and it names them so somebody can be
+helped rather than so a chart can be cut by them.
 
 `Signed In` is deliberately NOT fired there. Supabase announces `SIGNED_IN` on
 every launch that finds a usable token in the keychain, so counting it as a
 sign-in would report a returning user's every cold start as an acquisition. The
 three call sites in `data/auth.ts` are the moments a person signed in.
 
-**Person properties** are in `PersonProps` and nowhere else: no name, no email,
-no body figures. Each is either a stated preference or a fact about which parts
-of the app are switched on, which is what a segment is ever built from.
+**Person properties** are in `PersonProps` and nowhere else: no name, no body
+figures, and `$email` as the single exception explained above. Each of the rest
+is either a stated preference or a fact about which parts of the app are
+switched on, which is what a segment is ever built from.
 `finish.tsx` writes them when onboarding lands, and `useAnalyticsIdentity` keeps
 them fresh — including on a handset that never ran onboarding, which is what a
 reinstall or a second phone looks like.

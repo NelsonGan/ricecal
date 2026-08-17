@@ -148,13 +148,26 @@ export function track<E extends EventName>(event: E, properties: Events[E]): voi
  * and whether anything was sent at all, so it is the place that answers —
  * `null` in development and in a build whose token is still a placeholder,
  * where Mixpanel knows nobody by any name.
+ *
+ * THE EMAIL IS SET HERE AND NOWHERE ELSE, for the reason the distinct id is
+ * returned here: this is the moment the app knows which account it is looking
+ * at, and the address is a fact about that account rather than about anything a
+ * screen is doing. It goes on the profile AFTER the identify, because a people
+ * property is filed against whichever distinct id the SDK is holding when it is
+ * sent — the same ordering `identifyPurchaser` keeps for the same reason, and
+ * the queue preserves it whether or not the SDK has registered yet.
  */
-export function identifyUser(userId: string): string | null {
+export function identifyUser(userId: string, email: string | null): string | null {
   if (!sending()) {
     trace('identify', userId)
     return null
   }
   enqueue((target) => void target.identify(userId))
+  // Only when there IS one. A provider that supplied no address leaves the
+  // property unset rather than blank — see `$email` in `events.ts`. An address
+  // that later appears or changes arrives here as an ordinary re-identify,
+  // because the session provider keys on the pair rather than on the id alone.
+  if (email) enqueue((target) => target.getPeople().set({ $email: email }))
   return userId
 }
 
