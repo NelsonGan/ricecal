@@ -32,8 +32,10 @@ import {
 } from './llm.ts'
 import {
   defaultMacros,
+  isWholeMealServing,
   MAX_KCAL_PER_G,
   plausibleForGrams,
+  rowIsMeatier,
   servingGrams,
   servingUnitCount,
 } from './portion.ts'
@@ -312,6 +314,78 @@ export const priceRow = (row: SearchRow, grams: number | null): Priced => {
 const isWholeUnit = (fit: Priced): boolean => !fit.byWeight && fit.units === 1
 
 /**
+ * The rows a PART of a meal may be priced from — two checks about IDENTITY,
+ * where everything in `bestFit` below is about size.
+ *
+ * Both come from one entry. A photographed Hainanese chicken rice was logged at
+ * 959 kcal and 72.6 g of protein for a plate holding about 38, and it passed
+ * every gate in this file because every gate in this file was a calorie gate:
+ * 959 kcal for a large chicken rice with soup is defensible, so nothing looked
+ * at the half of the answer that was wrong.
+ *
+ *   A LEAN PART IS NOT PRICED FROM A MEATY ROW. The rice component matched the
+ *   Malaysian composition table's "Rice, Chicken (Nasi Ayam)" — 1 plate, 230 g,
+ *   16.1 g of protein, which is 7 g per 100 g against plain cooked rice's 2.7,
+ *   with LESS carbohydrate per 100 g than plain rice. That row is not seasoned
+ *   rice, it is rice with the bird in it, so the chicken was priced once as
+ *   itself and again inside the rice. Told to stop naming the part after its
+ *   dish, the model called it "seasoned rice" and weighed it honestly at 6 g of
+ *   protein in 220 g — and the catalogue went on answering with rows at 7.7,
+ *   because their calories are right and only their composition is wrong. Same
+ *   for a clear radish broth priced from a soup with meat in it. See
+ *   `rowIsMeatier`.
+ *
+ *   A PART IS NOT CHARGED FOR A WHOLE PLATE. The check above needs a weight at
+ *   both ends to read a density, and the rows that state neither are the
+ *   dangerous ones: with no weight to take a helping from, `priceRow` hands back
+ *   the row's ENTIRE figure and `isWholeUnit` lets the part point straight at it.
+ *   "Hainanese Chicken Rice, Steamed (SG)" is 600 kcal for "1 plate" and says
+ *   nothing about what a plate weighs, so it would charge one component for the
+ *   whole meal.
+ *
+ * Which is why the plate rule is scoped to exactly that case rather than applied
+ * to every plate-shaped label, and the scoping was learnt by breaking something:
+ * unscoped, it also threw out "Rice, Coconut Milk (Nasi Lemak)" — 1 plate, 230 g,
+ * 4.2 g of protein per 100 g, which IS just the rice, a plate being how a
+ * composition table states a household portion of one food. Losing it promoted
+ * "Coconut sticky rice", a Thai dessert with no stated weight, and a nasi lemak's
+ * rice went from 338 kcal to 527. A row that states its weight can be asked for a
+ * helping, and then composition decides whether it is the right food at all.
+ *
+ * A part with no usable row falls back to the model's own figures, which is the
+ * path this file already takes for a part the catalogue cannot answer — so the
+ * cost of rejecting a row is an estimate rather than a missing part, and the
+ * model's own composition claim was the better witness in every case above.
+ *
+ * The DISH tier does not use this and must not: a plate is exactly the row it
+ * wants, and a dish is allowed to contain meat.
+ */
+export function componentCandidates(
+  rows: SearchRow[],
+  /** Grams of protein in ONE unit of the part, as the model stated them. */
+  partProtein: number | null = null,
+  /** What one unit weighs, so both sides can be read per gram. */
+  partGrams: number | null = null,
+): SearchRow[] {
+  const partPerG =
+    partProtein === null || !partGrams || partGrams <= 0 ? null : partProtein / partGrams
+
+  return rows.filter((row) => {
+    const weight = rowGrams(row)
+    // Would this row be charged WHOLE? `priceRow` converts by weight only when
+    // both sides have one, so either side missing means the part pays the row's
+    // full figure — and a full plate is not a part of a meal.
+    if ((!partGrams || !weight) && isWholeMealServing(row.serving_label)) return false
+    // The row's own density, which is what it charges per gram whatever its
+    // serving happens to be called — so this reads the same for "100 g" and for
+    // "1 quarter (148 g)".
+    const rowPerG =
+      !weight || weight <= 0 || row.protein_g === null ? null : Number(row.protein_g) / weight
+    return !rowIsMeatier(rowPerG, partPerG, partGrams)
+  })
+}
+
+/**
  * The candidate closest in size to what the model described, or null.
  *
  * The gate used to be the model's own calorie figure — a quarter to double of
@@ -328,6 +402,9 @@ const isWholeUnit = (fit: Priced): boolean => !fit.byWeight && fit.units === 1
  * figure act as a tie-break between the survivors. Where the two disagree
  * about a row that is plainly the right food, the catalogue wins, which is the
  * arrangement everywhere else in this file.
+ *
+ * Identity is NOT this function's business beyond that — see
+ * `componentCandidates` for the two checks that are, and which run before it.
  */
 export function bestFit(rows: SearchRow[], grams: number | null, kcal: number): Priced | null {
   const priced = rows.map((row) => priceRow(row, grams))
@@ -494,12 +571,24 @@ async function resolveByComponents(
       return [] as SearchRow[]
     })
 
+    // Which of these rows can be THIS PART at all, before anything asks how big
+    // it is. It runs before `bestFit` rather than after for the obvious reason:
+    // rejected afterwards, the part would keep whichever wrong row ranked best
+    // and lose the runner-up that might have been the right food.
+    const candidates = componentCandidates(rows, component.protein_g, component.grams)
+    if (candidates.length < rows.length) {
+      trace?.push(
+        `[cascade] components: "${q}" dropped ${rows.length - candidates.length} of ${rows.length} ` +
+          'row(s) as a whole meal or as meatier than the part',
+      )
+    }
+
     // The catalogue row that best describes ONE of this part, at this weight.
     // Catalogue servings are whatever the source recorded — "Chicken Satay
     // (Satay Ayam)" is 365 kcal for TEN STICKS, and "Chicken, fried" is per
     // 100 g — so a row's own figure is almost never the price of one of the
     // thing on the plate. `bestFit` converts before it compares.
-    const fit = bestFit(rows, component.grams, component.kcal)
+    const fit = bestFit(candidates, component.grams, component.kcal)
 
     if (fit && isWholeUnit(fit)) {
       // A row that IS one of the thing. The quantity is the count and nothing
@@ -546,7 +635,15 @@ async function resolveByComponents(
       continue
     }
 
-    if (!rows.length) await recordMisses(db, scanId, [q])
+    // A miss is a gap in the CATALOGUE, and "nothing this part could use" is not
+    // the same thing. "chicken rice" answers eight rows and not one of them can
+    // be the rice UNDER a chicken rice — they are plates, sets and a seasoning
+    // packet — so that is a real gap and the widening backlog should hear about
+    // it. A row turned down over its COMPOSITION is not: it exists, and it is
+    // right about some other food. Recording those filled the backlog with
+    // queries the catalogue already answers well.
+    const noAnswer = !rows.length || rows.every((r) => isWholeMealServing(r.serving_label))
+    if (noAnswer) await recordMisses(db, scanId, [q])
 
     // No catalogue answer at this size: the model's own figures become a
     // shared estimate row for the component. Macros are the model's when it

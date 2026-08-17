@@ -10,8 +10,10 @@
 // is why the imperial spellings look the way they do.
 
 import {
+  isWholeMealServing,
   plausibleForGrams,
   reconcile,
+  rowIsMeatier,
   servingGrams,
   servingUnitCount,
   unfoldCounts,
@@ -60,6 +62,68 @@ Deno.test('servingGrams refuses a volume whose density it does not know', () => 
   // plain object: `scale['constructor']` is a function, not a weight.
   eq(servingGrams('1 constructor'), null, 'an inherited property is not a unit')
   eq(servingGrams('2 toString'), null, 'nor is that one')
+})
+
+Deno.test('isWholeMealServing tells a complete meal from a helping of one food', () => {
+  // The labels that cost a plate of Hainanese chicken rice 40 g of phantom
+  // protein: the rice component matched "Rice, Chicken (Nasi Ayam) — 1 plate",
+  // which is rice with the bird already in it.
+  eq(isWholeMealServing('1 plate'), true, 'a plate is a whole meal')
+  eq(isWholeMealServing('1 plate (315 g)'), true, 'even when it states its weight')
+  eq(isWholeMealServing('1 set'), true, 'a set meal')
+  eq(isWholeMealServing('1 bento'), true, 'a bento')
+  eq(isWholeMealServing('2 platters'), true, 'plural')
+
+  // A part of a meal is measured in helpings, weights and pieces.
+  eq(isWholeMealServing('100 g'), false, 'a weight')
+  eq(isWholeMealServing('1 serving (120 g)'), false, 'a helping of one food')
+  eq(isWholeMealServing('1 quarter (148 g)'), false, 'a quarter chicken')
+  eq(isWholeMealServing('10 sticks'), false, 'satay')
+  eq(isWholeMealServing('1 cup'), false, 'a cup')
+  eq(isWholeMealServing(null), false, 'no label')
+  // A bowl is deliberately not on the list: a bowl of laksa is a whole meal and
+  // a bowl of soup beside a rice plate is a part of one.
+  eq(isWholeMealServing('1 bowl (400 g)'), false, 'a bowl says nothing either way')
+  // Substrings of longer words must not match — "template" holds "plate".
+  eq(isWholeMealServing('1 template'), false, 'not a word boundary')
+})
+
+Deno.test('rowIsMeatier refuses a lean part a row with meat in it', () => {
+  // Both measured, and both from the same plate of chicken rice. The model said
+  // 6 g of protein in 220 g of seasoned rice (2.7 per 100) and 2 g in 180 g of
+  // clear radish broth (1.1 per 100); the catalogue answered with rows at 7.7 and
+  // 4.4 per 100, which are rice with the bird in it and a soup with meat in it.
+  eq(rowIsMeatier(0.077, 0.027, 220), true, 'rice with chicken in it, 11 g in dispute')
+  eq(rowIsMeatier(0.044, 0.011, 180), true, 'a soup with meat in it, 5.9 g in dispute')
+  // The founding row: "Rice, Chicken (Nasi Ayam)", 16.1 g in 230 g, against the
+  // model's 5.5 g in 200 g of what it called chicken rice.
+  eq(rowIsMeatier(16.1 / 230, 5.5 / 200, 200), true, 'the entry that started this')
+
+  // The asymmetry that makes this safe: a part the model already calls a protein
+  // food is never second-guessed, so the catalogue goes on setting the number for
+  // the thing it matters most for.
+  eq(rowIsMeatier(0.144, 0.2, 160), false, 'poached chicken, and the row is leaner anyway')
+  eq(rowIsMeatier(0.31, 0.2, 160), false, 'a leaner row than the model claimed, still meat')
+  eq(rowIsMeatier(0.25, 0.05, 100), false, 'exactly at the line counts as a protein food')
+  eq(rowIsMeatier(0.3, 0.09, 150), false, 'cooked pulses and tofu are protein foods')
+
+  // Small parts cannot dispute much, which is what keeps the condiments out of
+  // it. A model that says a sauce has no protein makes the ratio test useless —
+  // zero divides into anything — so the grams are what separate a 20 g dip of
+  // real soy sauce, worth 1.6 g, from a plate of rice worth 11.
+  eq(rowIsMeatier(0.08, 0, 20), false, 'dark soy sauce: genuinely 8 g per 100, but 1.6 g of it')
+  eq(rowIsMeatier(0.06, 0, 25), false, 'chilli sauce, 1.5 g')
+  eq(rowIsMeatier(0.08, 0, 200), true, 'the same density over a real portion is another matter')
+
+  // Composition has to disagree, not just add up. Egg noodles really are about
+  // 6 g per 100 g and a model that says 2.7 is only a little wrong.
+  eq(rowIsMeatier(0.06, 0.027, 300), false, 'egg noodles: 9 g in dispute, but ratio 2.2')
+
+  // Nothing to compare is not a reason to reject: most parts state no macros and
+  // most rows in this catalogue state no weight.
+  eq(rowIsMeatier(null, 0.027, 220), false, 'no row density')
+  eq(rowIsMeatier(0.077, null, 220), false, 'the model said nothing about protein')
+  eq(rowIsMeatier(0.077, 0.027, null), false, 'and nothing about the weight')
 })
 
 Deno.test('servingUnitCount counts only countable units', () => {
