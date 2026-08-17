@@ -2,6 +2,7 @@ import { Platform } from 'react-native'
 
 import { dateKey } from '@/data/client'
 import { eachDay } from './apple'
+import { preferredOrigin } from './connectOrigins'
 import { CONNECT_READ_TYPES, isConnectReadType } from './connectPermissions'
 import { hrZonesFromSamples } from './hrZones'
 import { fromConnectExerciseType } from './kinds'
@@ -35,20 +36,40 @@ import type {
  *
  *   * No stand hours. There is no such record type. Apple's Stand ring has no
  *     equivalent and the Activity screen shows steps in its place.
- *   * Basal energy only if something writes `BasalMetabolicRate` or
- *     `TotalCaloriesBurned`. Many phones write neither, so the energy-balance
- *     screen falls back to the profile's own Mifflin-St Jeor figure and says so.
  *   * Heart rate at whatever resolution the writer chose. A watch writes a
  *     sample a second and gives real zones; Strava writes one average per
  *     session and gives none. `hr_zones` is null for the second, which is
  *     exactly the N4 screen in the design.
  *   * Hourly steps only if the writer recorded short segments. Samsung Health
- *     writes coarse blocks, so `readHours` here returns what it can and the
- *     steps screen groups the day into three when the answer is too sparse to
- *     draw twenty-four columns of.
+ *     writes one record for the whole day, so `readHours` returns nothing for
+ *     it rather than a flat carpet — see `informativeHours`.
  *
  * None of that is an error state. It is the shape of the platform, and the
  * screens are written to report it rather than to hide it behind zeros.
+ *
+ * TWO THINGS THIS FILE NOW REFUSES TO TAKE AT FACE VALUE, both learnt from a
+ * Samsung user whose diary disagreed with the app on their own phone.
+ *
+ * 1. A SUM ACROSS EVERY APP THAT WROTE. Health Connect dedupes Activity by a
+ *    priority list the user owns and can empty, so the same walk can arrive
+ *    twice from two sources and be counted twice. `aggregated` picks one origin
+ *    and filters to it — see `connectOrigins.ts` for the whole argument.
+ *
+ * 2. A ZERO. The native bridge reads a missing metric out of an aggregate as
+ *    `0.0`, so "nothing wrote active energy on this phone" and "this user
+ *    burned nothing" are the same number coming back. `dataOrigins` is what
+ *    tells them apart, and `hasOrigins` is the one place that check lives.
+ *    Believing the zero is what filed a Samsung user's entire daily burn as
+ *    RESTING — active came back 0, resting is total minus active, and two hours
+ *    of badminton went into the column the budget never reads.
+ *
+ * ENERGY IS THE PART WHERE PROVIDERS DIFFER MOST, so it is worth naming the
+ * split this file works around. `ActiveCaloriesBurned` is the figure the budget
+ * wants and plenty of sources never write it: Samsung Health writes
+ * `TotalCaloriesBurned` and nothing else, Garmin writes both, and a phone with
+ * only its own pedometer writes neither. `energyFor` is the ladder that comes
+ * out of that — measured active first, then total minus a basal, then nothing
+ * at all, which is a real answer and not a zero.
  *
  * The `require` is lazy for the same reason as `apple.ts` — see the note there.
  */
@@ -88,47 +109,158 @@ const between = (from: LocalDate, to: LocalDate) =>
     endTime: endOf(to).toISOString(),
   }) as const
 
+/** The shape every aggregate result carries, whatever the record type. */
+type Bucket = { result: Record<string, unknown>; startTime: string }
+
 /**
- * A daily aggregate, folded to `date -> value`.
+ * Whether anything actually WROTE the data behind an aggregate bucket.
  *
- * `aggregateGroupByPeriod` with a DAYS slicer rather than reading records and
- * summing, for the reason `apple.ts` uses a statistics collection: Health
- * Connect deduplicates across data origins inside the aggregate, and a phone
- * with both Samsung Health and Google Fit writing steps otherwise counts every
- * step twice.
+ * The one guard that keeps this file honest, and it exists because the native
+ * bridge reads a missing metric as zero:
  *
- * A failure here is caught and returns nothing, because a single denied record
- * type must not take the whole sync with it — a user who granted steps but not
- * workouts has a working Activity screen with an explained gap, which is the N1
- * and N6 screens in the design.
+ *     putDouble("COUNT_TOTAL", record[StepsRecord.COUNT_TOTAL]?.toDouble() ?: 0.0)
+ *
+ * So every bucket comes back with a number in it whether or not a single record
+ * fell inside it, and a type nobody on the phone writes is indistinguishable
+ * from a type everybody wrote a zero to. `dataOrigins` is the difference: it
+ * lists the packages that contributed, and it is empty when none did.
+ *
+ * AND THE NUMBER IS NOT ALWAYS ZERO, which is the part worth measuring rather
+ * than reasoning about. Probed against a Health Connect with nothing at all in
+ * it, on a Pixel API 36 emulator, eight daily buckets each:
+ *
+ *     Steps                { dataOrigins: [], COUNT_TOTAL: 0 }
+ *     ActiveCaloriesBurned { dataOrigins: [], ACTIVE_CALORIES_TOTAL: 0 kcal }
+ *     Distance             { dataOrigins: [], DISTANCE: 0 m }
+ *     TotalCaloriesBurned  { dataOrigins: [], ENERGY_TOTAL: 1564.5 kcal }
+ *     BasalMetabolicRate   { dataOrigins: [], BASAL_CALORIES_TOTAL: 1564.5 kcal }
+ *
+ * The last two are the ones to remember: Health Connect DERIVES an energy
+ * figure rather than declining to answer, so a store holding nothing reports
+ * 1,564.5 kcal a day as confidently as a watch would. Nothing about the number
+ * says it came from nowhere; only the empty `dataOrigins` does.
+ *
+ * Run the old code over that payload and it wrote eight rows of `active_kcal
+ * 0, resting_kcal 1565, distance_m 0` for a phone that had never recorded a
+ * step — which is the shape the Samsung account's rows were actually in. So
+ * the constant "resting" figure in a user's diary is not necessarily their
+ * store's basal at all; it can be this, and the same guard drops both.
+ *
+ * The project's rule that null is not zero in `activity_days` has always been
+ * written down; this is what makes it true on Android.
  */
-async function daily<T extends string>(
+function hasOrigins(result: Record<string, unknown>): boolean {
+  return Array.isArray(result.dataOrigins) && result.dataOrigins.length > 0
+}
+
+const originsOf = (buckets: readonly Bucket[]): string[] => {
+  const seen = new Set<string>()
+  for (const bucket of buckets) {
+    const origins = bucket.result.dataOrigins
+    if (!Array.isArray(origins)) continue
+    for (const origin of origins) if (typeof origin === 'string') seen.add(origin)
+  }
+  return [...seen]
+}
+
+/** One grouped-aggregate call, or null if the read failed. */
+async function group<T extends string>(
+  hc: ConnectModule,
+  recordType: T,
+  from: LocalDate,
+  to: LocalDate,
+  slicer: { period: 'DAYS'; length: 1 } | { duration: 'HOURS'; length: 1 },
+  origin?: string,
+): Promise<Bucket[] | null> {
+  const request = {
+    // biome-ignore lint/suspicious/noExplicitAny: the record-type union is wider than this helper needs
+    recordType: recordType as any,
+    timeRangeFilter: between(from, to),
+    ...(origin ? { dataOriginFilter: [origin] } : {}),
+  }
+
+  try {
+    const groups =
+      'period' in slicer
+        ? await hc.aggregateGroupByPeriod({ ...request, timeRangeSlicer: slicer })
+        : await hc.aggregateGroupByDuration({ ...request, timeRangeSlicer: slicer })
+
+    return groups.map((entry) => ({
+      result: entry.result as unknown as Record<string, unknown>,
+      startTime: entry.startTime,
+    }))
+  } catch {
+    return null
+  }
+}
+
+/** What an aggregate came back with, and whose numbers they turned out to be. */
+type Aggregated = {
+  /** Only dates something actually wrote. An absent date is UNKNOWN, not zero. */
+  values: Map<LocalDate, number>
+  /** The origin the values were read from, once more than one had written. */
+  origin: string | null
+}
+
+/**
+ * A FUNCTION rather than a shared constant, because the empty answer carries a
+ * Map and a Map is mutable. One `const NOTHING` handed back from six different
+ * reads is six references to the same Map, and the day anybody writes into a
+ * result instead of reading from it, every type that returned nothing shares
+ * the damage. Nothing does that today; the point is that nothing can.
+ */
+const nothing = (): Aggregated => ({ values: new Map(), origin: null })
+
+/**
+ * An aggregate, read from ONE app rather than summed across all of them.
+ *
+ * Two calls in the case that needs two, and one in the case that does not. The
+ * first is unfiltered and is what discovers who wrote — with a single origin,
+ * which is most phones, its numbers are already the answer and nothing else
+ * happens. Only a genuinely contested type pays for the second call.
+ *
+ * A FAILED SECOND CALL RETURNS NOTHING rather than the first call's totals, and
+ * that direction is deliberate. The unfiltered numbers are the double count
+ * this function exists to avoid, so falling back to them would answer a
+ * transient failure by writing a figure known to be wrong. Returning nothing
+ * writes no row for those days at all and leaves whatever the last good sync
+ * stored — the incremental pass comes round again on the next foreground, and
+ * stale is a better failure than wrong.
+ *
+ * A failure of the FIRST call is caught the same way and for the older reason:
+ * one denied record type must not take the whole sync with it. A user who
+ * granted steps but not workouts has a working Activity screen with an
+ * explained gap, which is the N1 and N6 screens in the design.
+ */
+async function aggregated<T extends string>(
   hc: ConnectModule,
   recordType: T,
   from: LocalDate,
   to: LocalDate,
   pick: (result: Record<string, unknown>) => number | null,
-): Promise<Map<LocalDate, number>> {
-  const out = new Map<LocalDate, number>()
+): Promise<Aggregated> {
+  const discovered = await group(hc, recordType, from, to, { period: 'DAYS', length: 1 })
+  if (!discovered) return nothing()
 
-  try {
-    const groups = await hc.aggregateGroupByPeriod({
-      // biome-ignore lint/suspicious/noExplicitAny: the record-type union is wider than this helper needs
-      recordType: recordType as any,
-      timeRangeFilter: between(from, to),
-      timeRangeSlicer: { period: 'DAYS', length: 1 },
-    })
+  const origins = originsOf(discovered)
+  if (origins.length === 0) return nothing()
 
-    for (const group of groups) {
-      const value = pick(group.result as unknown as Record<string, unknown>)
-      if (value == null) continue
-      out.set(dateKey(new Date(group.startTime)), value)
-    }
-  } catch {
-    return out
+  const origin = preferredOrigin(origins)
+  const buckets =
+    origins.length === 1
+      ? discovered
+      : await group(hc, recordType, from, to, { period: 'DAYS', length: 1 }, origin ?? undefined)
+  if (!buckets) return nothing()
+
+  const values = new Map<LocalDate, number>()
+  for (const bucket of buckets) {
+    if (!hasOrigins(bucket.result)) continue
+    const value = pick(bucket.result)
+    if (value == null) continue
+    values.set(dateKey(new Date(bucket.startTime)), value)
   }
 
-  return out
+  return { values, origin }
 }
 
 export const healthConnect: HealthProvider = {
@@ -203,20 +335,39 @@ export const healthConnect: HealthProvider = {
     return { granted: names.length > 0, permissions: names }
   },
 
-  async read(from, to, { withHours, age }): Promise<HealthReading> {
+  async read(from, to, { withHours, age, basalKcal }): Promise<HealthReading> {
     const hc = load()
     if (!hc) return { days: [], workouts: [], hours: [], weights: [], deviceName: null }
 
     await hc.initialize()
 
-    const [active, total, steps, distance, exercise] = await Promise.all([
-      daily(hc, 'ActiveCaloriesBurned', from, to, (r) => energy(r.ACTIVE_CALORIES_TOTAL)),
-      daily(hc, 'TotalCaloriesBurned', from, to, (r) => energy(r.ENERGY_TOTAL)),
-      daily(hc, 'Steps', from, to, (r) =>
+    const [active, total, basal, steps, distance, exercise] = await Promise.all([
+      aggregated(hc, 'ActiveCaloriesBurned', from, to, (r) => energy(r.ACTIVE_CALORIES_TOTAL)),
+      aggregated(hc, 'TotalCaloriesBurned', from, to, (r) => energy(r.ENERGY_TOTAL)),
+      aggregated(hc, 'BasalMetabolicRate', from, to, (r) => energy(r.BASAL_CALORIES_TOTAL)),
+      aggregated(hc, 'Steps', from, to, (r) =>
         typeof r.COUNT_TOTAL === 'number' ? r.COUNT_TOTAL : null,
       ),
-      daily(hc, 'Distance', from, to, (r) => length(r.DISTANCE)),
-      daily(hc, 'ExerciseSession', from, to, (r) => {
+      aggregated(hc, 'Distance', from, to, (r) => length(r.DISTANCE)),
+      /**
+       * The one type where filtering to one origin can UNDERCOUNT, so the
+       * asymmetry with the session list below is worth naming.
+       *
+       * Steps and energy describe the whole day, so two sources are two
+       * descriptions of the same thing and taking one is right. Exercise
+       * sessions are events, and two apps more often hold DIFFERENT ones — a
+       * Strava ride and a watch-recorded walk — than two copies of the same. So
+       * the filter costs minutes here where elsewhere it only removes
+       * duplicates.
+       *
+       * It stays, for two reasons. It only engages when more than one app wrote
+       * sessions at all, which is exactly the population that can double count;
+       * and this figure feeds a tile, while `readWorkouts` below reads records
+       * UNFILTERED so no workout ever disappears from the list. A tile that
+       * undercounts is a smaller failure than a workout the user did that the
+       * app never shows them.
+       */
+      aggregated(hc, 'ExerciseSession', from, to, (r) => {
         const duration = r.EXERCISE_DURATION_TOTAL as { inSeconds?: number } | undefined
         return duration?.inSeconds == null ? null : Math.round(duration.inSeconds / 60)
       }),
@@ -224,32 +375,25 @@ export const healthConnect: HealthProvider = {
 
     const days: ActivityDayReading[] = []
     for (const date of eachDay(from, to)) {
-      const activeKcal = active.get(date)
-      const stepCount = steps.get(date)
-      if (activeKcal == null && stepCount == null) continue
+      const stepCount = steps.values.get(date)
+      const burn = energyFor({
+        active: active.values.get(date),
+        total: total.values.get(date),
+        measuredBasal: basal.values.get(date),
+        profileBasal: basalKcal,
+      })
 
-      /**
-       * Resting is TOTAL minus ACTIVE, and only when total is present.
-       *
-       * Health Connect has no "basal energy for the day" aggregate that lines
-       * up with Apple's — `BasalMetabolicRate` is a rate in kcal/day recorded
-       * at instants, not a daily sum. `TotalCaloriesBurned` is the one figure
-       * that means the same thing on both platforms, and the subtraction is
-       * the only honest way to reach the split the balance screen draws.
-       */
-      const totalKcal = total.get(date)
-      const resting =
-        totalKcal == null || activeKcal == null
-          ? null
-          : Math.max(0, Math.round(totalKcal - activeKcal))
+      // A day nothing at all was written for is not a day of zeros. Skipping it
+      // leaves no row, and `activity_days_range` draws the gap as a gap.
+      if (burn.activeKcal == null && stepCount == null) continue
 
       days.push({
         date,
-        activeKcal: Math.round(activeKcal ?? 0),
-        restingKcal: resting,
+        activeKcal: burn.activeKcal,
+        restingKcal: burn.restingKcal,
         steps: Math.round(stepCount ?? 0),
-        distanceM: round(distance.get(date)),
-        exerciseMinutes: round(exercise.get(date)),
+        distanceM: round(distance.values.get(date)),
+        exerciseMinutes: round(exercise.values.get(date)),
         // No such record type. Null, never zero — see the header.
         standHours: null,
         flights: null,
@@ -260,8 +404,11 @@ export const healthConnect: HealthProvider = {
     }
 
     const [workouts, hours, weights] = await Promise.all([
-      readWorkouts(hc, from, to, age),
-      withHours ? readHours(hc, from, to) : Promise.resolve<HourReading[]>([]),
+      readWorkouts(hc, from, to, age, basalKcal),
+      // The SAME origin the day totals came from. A chart whose bars are one
+      // app's and whose headline figure is another's does not add up, and the
+      // first thing anybody does with an hourly chart is check that it does.
+      withHours ? readHours(hc, from, to, steps.origin) : Promise.resolve<HourReading[]>([]),
       // The whole range, not only the hourly window — see the note in `apple.ts`.
       readWeights(hc, from, to),
     ])
@@ -271,9 +418,78 @@ export const healthConnect: HealthProvider = {
       workouts,
       hours,
       weights,
-      deviceName: workouts.find((w) => w.sourceName)?.sourceName ?? null,
+      /**
+       * Whoever the STEPS were read from, falling back to whoever recorded a
+       * workout. It used to be the workout writer alone, which named the app
+       * behind the smallest part of the screen: a phone can have workouts from
+       * Strava and every daily figure from Samsung Health, and the settings row
+       * would credit Strava for a step count it did not write.
+       */
+      deviceName: steps.origin ?? workouts.find((w) => w.sourceName)?.sourceName ?? null,
     }
   },
+}
+
+/**
+ * The day's energy, split into the half the budget reads and the half it must
+ * not, out of whichever of three figures this phone actually has.
+ *
+ * A LADDER, because providers disagree about which of them they write:
+ *
+ *   active measured        Garmin, and anything with a real activity tracker.
+ *                          Resting is then total minus active — the store's own
+ *                          arithmetic, not ours.
+ *   total measured only    Samsung Health. Total is basal PLUS movement, so it
+ *                          has to be split before any of it reaches a budget
+ *                          that is already a Mifflin-St Jeor figure. Subtract
+ *                          the basal: the store's own `BasalMetabolicRate` when
+ *                          it wrote one, else the profile's.
+ *   neither                Null. Not zero — see the header.
+ *
+ * THE MIDDLE RUNG IS THE WHOLE POINT OF THIS FUNCTION. Without it a Samsung
+ * user's active energy is zero every day, so movement never extends their
+ * budget, and their entire daily burn lands in `resting_kcal` where nothing
+ * reads it. Two hours of badminton showed as 0 kcal on the session and 2,524
+ * kcal of "resting" on the day.
+ *
+ * The subtraction is clamped at zero rather than allowed to go negative, and
+ * the resting half is capped at the total, so a basal estimate that overshoots
+ * a quiet day reports no movement instead of negative movement.
+ */
+export function energyFor(input: {
+  active: number | undefined
+  total: number | undefined
+  measuredBasal: number | undefined
+  profileBasal: number | null
+}): { activeKcal: number | null; restingKcal: number | null } {
+  const { active, total, measuredBasal, profileBasal } = input
+
+  if (active != null) {
+    return {
+      activeKcal: Math.round(active),
+      restingKcal: total == null ? round(measuredBasal) : Math.max(0, Math.round(total - active)),
+    }
+  }
+
+  // Measured before estimated. A store that computes its own basal knows this
+  // user's, and the profile's figure is a formula over four numbers they typed.
+  const basal = measuredBasal ?? profileBasal ?? null
+
+  if (total != null && basal != null) {
+    return {
+      activeKcal: Math.max(0, Math.round(total - basal)),
+      restingKcal: Math.min(Math.round(basal), Math.round(total)),
+    }
+  }
+
+  /**
+   * A total with nothing to split it by is not an active figure.
+   *
+   * Writing it as active would credit the user their whole basal metabolism on
+   * top of a goal that already contains it — the "alive twice" bug the schema
+   * warns about, worth roughly 1,500 kcal a day of budget nobody earned.
+   */
+  return { activeKcal: null, restingKcal: round(measuredBasal) }
 }
 
 /**
@@ -352,6 +568,7 @@ async function readWorkouts(
   from: LocalDate,
   to: LocalDate,
   age: number | null,
+  basalKcal: number | null,
 ): Promise<WorkoutReading[]> {
   let sessions: Awaited<ReturnType<typeof hc.readRecords<'ExerciseSession'>>>['records']
   try {
@@ -372,7 +589,7 @@ async function readWorkouts(
     const durationS = Math.max(0, Math.round((ended.getTime() - started.getTime()) / 1000))
 
     const [energyBurned, hr] = await Promise.all([
-      sessionEnergy(hc, session.startTime, session.endTime),
+      sessionEnergy(hc, session.startTime, session.endTime, durationS, basalKcal),
       readHeartRate(hc, session.startTime, session.endTime, age),
     ])
 
@@ -411,19 +628,55 @@ async function readWorkouts(
  * the end of a gym session — and the number is still the best available answer,
  * because the alternative is showing no calories at all for every Android
  * workout.
+ *
+ * The same ladder as `energyFor`, for the same reason and with one extra step.
+ * Asked for active energy alone, a Samsung Health session came back at zero
+ * against the 1,210 kcal Samsung's own screen showed for it, because Samsung
+ * writes total and not active. Falling through to the total means subtracting
+ * the basal the body would have spent lying still for those two hours — hence
+ * the proration, which is the only part of this that a day-long window does not
+ * need.
  */
 async function sessionEnergy(
   hc: ConnectModule,
   startTime: string,
   endTime: string,
+  durationS: number,
+  basalKcal: number | null,
+): Promise<number | null> {
+  const measured = await windowEnergy(hc, 'ActiveCaloriesBurned', startTime, endTime)
+  if (measured != null) return Math.round(measured)
+
+  const total = await windowEnergy(hc, 'TotalCaloriesBurned', startTime, endTime)
+  if (total == null) return null
+
+  // A basal we cannot name means the total is the closest thing to an answer
+  // there is. It overstates a session by an hour or two of lying-still energy,
+  // which is a smaller error than reporting a two-hour workout as free.
+  const basalOverWindow = basalKcal == null ? 0 : (basalKcal * durationS) / 86_400
+
+  return Math.max(0, Math.round(total - basalOverWindow))
+}
+
+/** One energy aggregate over an arbitrary window, or null if nothing wrote it. */
+async function windowEnergy(
+  hc: ConnectModule,
+  recordType: 'ActiveCaloriesBurned' | 'TotalCaloriesBurned',
+  startTime: string,
+  endTime: string,
 ): Promise<number | null> {
   try {
-    const result = await hc.aggregateRecord({
-      recordType: 'ActiveCaloriesBurned',
+    const result = (await hc.aggregateRecord({
+      recordType,
       timeRangeFilter: { operator: 'between', startTime, endTime },
-    })
-    const value = energy((result as Record<string, unknown>).ACTIVE_CALORIES_TOTAL)
-    return value == null ? null : Math.round(value)
+    })) as unknown as Record<string, unknown>
+
+    // Same zero-is-not-nothing trap as everywhere else in this file.
+    if (!hasOrigins(result)) return null
+
+    return energy(
+      recordType === 'ActiveCaloriesBurned' ? result.ACTIVE_CALORIES_TOTAL : result.ENERGY_TOTAL,
+    )
   } catch {
     return null
   }
@@ -463,43 +716,76 @@ async function readHeartRate(
 }
 
 /**
- * Steps by hour, as far as the writing app allows.
+ * Steps by hour, for the days that genuinely have an hourly shape.
  *
- * `aggregateGroupByDuration` with an hour slice. What comes back depends on how
- * the source recorded: a watch writing per-minute segments fills all 24, while
- * Samsung Health's coarse blocks land in a handful. Both are returned as-is —
- * deciding whether there is enough shape to draw an hourly chart is the steps
- * screen's job, and it is a decision that needs the data to make.
+ * `aggregateGroupByDuration` with an hour slice, filtered to the app the day
+ * totals came from. What comes back depends on how that source recorded, and
+ * the two cases look nothing alike: a watch writing per-minute segments fills
+ * the hours it moved in, while Samsung Health writes ONE record spanning the
+ * whole calendar day.
+ *
+ * Health Connect apportions a record across the buckets it overlaps, so that
+ * one record does not land in one bucket — it lands in all 24, divided by 24.
+ * The chart drawn off it is a flat carpet claiming the user took 117 steps at
+ * three in the morning, every morning. `informativeHours` is what drops it.
  */
 async function readHours(
   hc: ConnectModule,
   from: LocalDate,
   to: LocalDate,
+  origin: string | null,
 ): Promise<HourReading[]> {
-  try {
-    const groups = await hc.aggregateGroupByDuration({
-      recordType: 'Steps',
-      timeRangeFilter: between(from, to),
-      timeRangeSlicer: { duration: 'HOURS', length: 1 },
-    })
+  const buckets = await group(
+    hc,
+    'Steps',
+    from,
+    to,
+    { duration: 'HOURS', length: 1 },
+    origin ?? undefined,
+  )
+  if (!buckets) return []
 
-    const out: HourReading[] = []
-    for (const group of groups) {
-      const count = (group.result as unknown as { COUNT_TOTAL?: number }).COUNT_TOTAL
-      if (!count) continue
-      const at = new Date(group.startTime)
-      out.push({
-        date: dateKey(at),
-        hour: at.getHours(),
-        steps: Math.round(count),
-        activeKcal: 0,
-        distanceM: null,
-      })
-    }
-    return out
-  } catch {
-    return []
+  const byDate = new Map<LocalDate, HourReading[]>()
+  for (const bucket of buckets) {
+    if (!hasOrigins(bucket.result)) continue
+    const count = bucket.result.COUNT_TOTAL
+    if (typeof count !== 'number' || count <= 0) continue
+
+    const at = new Date(bucket.startTime)
+    const date = dateKey(at)
+    const hours = byDate.get(date) ?? []
+    hours.push({
+      date,
+      hour: at.getHours(),
+      steps: Math.round(count),
+      activeKcal: 0,
+      distanceM: null,
+    })
+    byDate.set(date, hours)
   }
+
+  return [...byDate.values()].filter(informativeHours).flat()
+}
+
+/**
+ * Whether a day's hourly steps say anything the daily total does not.
+ *
+ * One record spread over a whole day arrives as 24 buckets holding the same
+ * number, give or take the rounding of dividing by 24. There is no shape in
+ * that — every hour is the mean — so drawing it invents a night of walking and
+ * flattens the evening the user actually did.
+ *
+ * Both halves of the test matter. The SPREAD is what identifies an apportioned
+ * record; the COUNT is what stops it firing on a real day that happens to be
+ * flat, because somebody who took 30 steps in each of three hours took them,
+ * and a day with only a few populated hours could not have come from a record
+ * spanning all of them.
+ */
+export function informativeHours(hours: readonly HourReading[]): boolean {
+  if (hours.length < 12) return true
+
+  const counts = hours.map((hour) => hour.steps)
+  return Math.max(...counts) - Math.min(...counts) > 1
 }
 
 const energy = (value: unknown): number | null => {
@@ -519,29 +805,4 @@ const length = (value: unknown): number | null => {
 const round = (value: number | undefined): number | null =>
   value == null ? null : Math.round(value)
 
-/**
- * A writing app's package name as something a person would recognise.
- *
- * The list is the apps that actually matter in this market; anything else falls
- * back to the last dotted segment, title-cased, which turns `com.acme.tracker`
- * into "Tracker" rather than showing the whole package on a detail screen.
- */
-const SOURCE_NAMES: Record<string, string> = {
-  'com.sec.android.app.shealth': 'Samsung Health',
-  'com.google.android.apps.fitness': 'Google Fit',
-  'com.strava': 'Strava',
-  'com.fitbit.FitbitMobile': 'Fitbit',
-  'com.garmin.android.apps.connectmobile': 'Garmin Connect',
-  'com.xiaomi.wearable': 'Mi Fitness',
-  'com.huami.watch.hmwatchmanager': 'Zepp',
-  'com.google.android.apps.healthdata': 'Health Connect',
-}
-
-export function sourceLabel(dataOrigin: string | null): string | null {
-  if (!dataOrigin) return null
-  const known = SOURCE_NAMES[dataOrigin]
-  if (known) return known
-  if (!dataOrigin.includes('.')) return dataOrigin
-  const last = dataOrigin.split('.').filter(Boolean).at(-1) ?? dataOrigin
-  return last.charAt(0).toUpperCase() + last.slice(1)
-}
+export { sourceLabel } from './connectOrigins'

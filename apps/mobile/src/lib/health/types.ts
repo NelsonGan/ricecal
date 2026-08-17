@@ -22,8 +22,17 @@ export type LocalDate = string
 
 export type ActivityDayReading = {
   date: LocalDate
-  /** Energy spent moving, above resting. The figure that extends the budget. */
-  activeKcal: number
+  /**
+   * Energy spent moving, above resting. The figure that extends the budget.
+   *
+   * NULLABLE, and the reason is the rule at the top of this file rather than an
+   * exception to it. A store can report a day's steps and have no opinion at
+   * all about its energy — Health Connect hands back a bucket of zeros for a
+   * record type nobody on the phone writes, which is how a Samsung user's
+   * active energy read 0 kcal every day for a week while they walked 60,000
+   * steps. Zero here has to keep meaning "measured, and it was none".
+   */
+  activeKcal: number | null
   restingKcal: number | null
   steps: number
   distanceM: number | null
@@ -150,6 +159,22 @@ export type AccessResult = {
 export type ReadOptions = {
   withHours: boolean
   age: number | null
+  /**
+   * What this body spends doing nothing, in kcal a day, from the profile.
+   *
+   * Here for the same reason as `age`: it is a fact about the USER and the
+   * providers only know about the store. It is what SPLITS a total-energy
+   * figure into the active half a budget may read and the resting half it must
+   * not — see `energyFor` in `androidHealth.ts`. Only reached when the store
+   * itself has no basal to offer, which on Android is common and on iOS never
+   * happens, since HealthKit reports basal energy directly.
+   *
+   * Null when the profile is missing a body measurement, which leaves a
+   * total-only provider unable to report active energy at all. That is the
+   * correct answer rather than a degraded one: the alternative is crediting a
+   * user their entire basal metabolism as exercise.
+   */
+  basalKcal: number | null
 }
 
 export interface HealthProvider {
