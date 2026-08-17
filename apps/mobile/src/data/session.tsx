@@ -65,9 +65,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
    * fact here that moves under a stable account: changing an email fires
    * `USER_UPDATED` with the same user id, and keyed on the id alone the
    * dashboard would go on showing the old address for as long as the process
-   * lived. Re-identifying is a no-op on both platforms, so the cost of the
-   * wider key is nothing and the cost of the narrower one is a support search
-   * that finds nobody.
+   * lived. What the wider key costs is naming the same person twice on an event
+   * both platforms treat as idempotent, which happens about as often as
+   * somebody changes their email.
    */
   const identified = useRef<string | null>(null)
 
