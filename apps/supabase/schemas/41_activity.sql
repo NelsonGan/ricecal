@@ -130,12 +130,23 @@ create policy "health_connections: delete own"
 -- day the runner thinks it does, and it has to land on the same day as the
 -- supper afterwards or the balance chart pairs the wrong two bars.
 --
--- Every column is nullable except steps and active energy, and that asymmetry
--- is the whole Android story. Health Connect has no stand hours, frequently no
--- basal rate, and exercise minutes only if something wrote them. Null means the
--- provider does not report it; zero means it reported none. The Activity screen
--- draws a tile for the first and a real zero for the second, and conflating
--- them is what makes an Android user think the app is broken.
+-- Every column is nullable except steps, and that asymmetry is the whole
+-- Android story. Health Connect has no stand hours, frequently no basal rate,
+-- and exercise minutes only if something wrote them. Null means the provider
+-- does not report it; zero means it reported none. The Activity screen draws a
+-- tile for the first and a real zero for the second, and conflating them is
+-- what makes an Android user think the app is broken.
+--
+-- ACTIVE ENERGY WAS NOT NULLABLE, and it should have been from the start. The
+-- reasoning was that every provider reports it, which is true of HealthKit and
+-- false of Health Connect: a store there reports what its writers wrote, and
+-- Samsung Health writes the day's TOTAL energy and never the active half. The
+-- column being not-null meant the sync had to invent a zero for those days, so
+-- a user walking 60,000 steps a week had their movement extend their budget by
+-- nothing at all, and the arithmetic that derives resting from total minus
+-- active filed their entire daily burn as resting. Null is the honest answer
+-- and it is now sayable; `activity_days_range` already coalesced it, because a
+-- day with no row at all has always produced one.
 -- ---------------------------------------------------------------------------
 
 create table public.activity_days (
@@ -148,7 +159,7 @@ create table public.activity_days (
   -- added in: the calorie goal is already a Mifflin-St Jeor figure that
   -- includes basal metabolism, so adding resting energy to it again would
   -- credit a user roughly 1,500 kcal for being alive twice.
-  active_kcal       integer not null default 0 check (active_kcal between 0 and 20000),
+  active_kcal       integer check (active_kcal between 0 and 20000),
   -- Basal, as the store measured it. Read for the "where the burn comes from"
   -- breakdown only, never added to the budget.
   resting_kcal      integer check (resting_kcal between 0 and 20000),

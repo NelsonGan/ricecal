@@ -56,8 +56,8 @@ a different app.
 
 | What | Apple Health | Health Connect | Used for |
 |---|---|---|---|
-| Active energy | `activeEnergyBurned` | `ActiveCaloriesBurned` | **the budget**, the Move tile, the balance chart |
-| Resting energy | `basalEnergyBurned` | `TotalCaloriesBurned` − active | the burn split only — never the budget |
+| Active energy | `activeEnergyBurned` | `ActiveCaloriesBurned`, or `TotalCaloriesBurned` − basal | **the budget**, the Move tile, the balance chart |
+| Resting energy | `basalEnergyBurned` | `BasalMetabolicRate`, or `TotalCaloriesBurned` − active | the burn split only — never the budget |
 | Steps | `stepCount` | `Steps` | the steps screen, the third tile on Android |
 | Distance | `distanceWalkingRunning` | `Distance` | beside steps, and on a workout row |
 | Exercise minutes | `appleExerciseTime` | `ExerciseSession` durations | the Exercise tile |
@@ -77,10 +77,19 @@ why it is written down rather than left to look like scope creep.
 
 Everything above the line is read through an **aggregate** API rather than by
 summing raw samples — `queryStatisticsCollectionForQuantity` on iOS,
-`aggregateGroupByPeriod` on Android. That is not a performance choice. Both
-stores deduplicate across sources inside the aggregate, and summing samples on a
-phone that has an iPhone *and* a Watch writing step counts produces double the
-steps. It is the classic "12,000 in the app, 6,000 in Health" bug.
+`aggregateGroupByPeriod` on Android. That is not a performance choice: summing
+samples on a phone that has an iPhone *and* a Watch writing step counts produces
+double the steps, the classic "12,000 in the app, 6,000 in Health" bug.
+
+**On iOS that is the end of it.** A statistics collection merges across sources
+itself, so the aggregate is the answer.
+
+**On Android the aggregate is only where the question starts.** Health Connect
+dedupes by a priority list the USER controls, which means it can be switched
+off without anybody being told, and then the aggregate hands back the sum of
+every app that wrote. So the Android provider reads which origins contributed
+and re-reads filtered to one of them — see "Who writes what" below, which is
+the section to read before touching `androidHealth.ts` at all.
 
 **The two body measurements are read as SAMPLES instead**, and the reason the
 aggregate is mandatory elsewhere is exactly the reason it is wrong here. Weight
@@ -131,21 +140,111 @@ the user's app mix rather than of the platform:
 
 - **No stand hours, ever.** There is no such record type. The third tile becomes
   Steps and a footnote says why.
-- **Resting energy only if something writes it.** Many phones write neither
-  `BasalMetabolicRate` nor `TotalCaloriesBurned`. Without it there is no honest
-  three-way burn split and no daily balance, and the balance screen says which
-  half is missing instead of drawing zeros.
+- **Active energy only if something writes it.** This is the big one — see the
+  table below. `energyFor` in `androidHealth.ts` derives it from a total minus a
+  basal when it has to, and reports nothing at all when it cannot.
 - **Heart rate at whatever resolution the writer chose.** A watch writes a
   sample every few seconds and produces real zones. Strava writes one average
   per session and produces none — `hr_zones` is null, and the workout screen
   names Strava and says what would fix it.
 - **Hourly steps only if the writer recorded short segments.** Samsung Health
-  writes coarse blocks. The steps chart falls back to three blocks a day rather
-  than drawing twenty-four columns of which three are skyscrapers.
+  writes one record for the whole day, which is worse than coarse — see
+  `informativeHours`.
 
 None of these is an error state and none of them is hidden. Every one has copy
 in `i18n/en/activity.ts` that names the app responsible, because "not available"
 is not something a user can act on.
+
+## Who writes what, and what it costs us
+
+Health Connect is an aggregator with no opinion, so the shape of the data is the
+shape of whatever the user installed. This table is the thing the Android
+provider is written against, and it was assembled the expensive way: from a
+support report where the diary said 4,675 steps and the user's own Samsung
+Health said 2,808 on the same afternoon.
+
+| source | steps | energy | workouts | the thing to know |
+|---|---|---|---|---|
+| **Samsung Health** | ONE record spanning the whole day | `TotalCaloriesBurned` only | sessions + dense HR | no active energy, and no intra-day step shape |
+| **Garmin Connect** | daily wellness + per-workout | active AND total, both | sessions with distance, elevation, cadence | the richest source here, and one-way: Garmin will not read back |
+| **Fitbit / Google Health** | yes | yes, partial coverage | yes | reads and writes, but not every type |
+| **Strava** | activities only | per-activity calories | GPS activities, one average HR | writes nothing about a day the user did not record |
+| **Mi Fitness / Zepp** | via their own app, patchy | patchy | patchy | reaches Health Connect indirectly at best |
+| **the phone itself** | granular, all day | none | none | lowest priority by default; attributed to `android` before June 2026 and to a device-specific synthetic name after |
+| **Apple Health** (for contrast) | dedupes in the query | active AND basal, always | sessions with their own energy | none of the problems below apply |
+
+Three consequences fall out of that table, and all three are implemented rather
+than merely noted.
+
+**A sum across every writer double counts.** Health Connect dedupes Activity and
+Sleep by a priority list, and the list belongs to the user: they can reorder it
+and they can remove a source from it, after which that source goes on writing
+and simply stops being deduped against. So `aggregated` picks ONE origin and
+re-reads filtered to it. The whole argument, including what it costs, is in
+`connectOrigins.ts`.
+
+**A zero is not a measurement, and it is not always a zero.** The native bridge
+reads a missing aggregate metric as `0.0` — `record[StepsRecord.COUNT_TOTAL]
+?.toDouble() ?: 0.0` — so a record type nobody on the phone writes is
+indistinguishable from one everybody wrote zero to. `dataOrigins` on the
+aggregate result is the difference, and `hasOrigins` is the one place that check
+lives.
+
+Probed against a Health Connect with **nothing in it at all**, on a Pixel API 36
+emulator, the two answers came back:
+
+```
+Steps                { dataOrigins: [], COUNT_TOTAL: 0 }
+ActiveCaloriesBurned { dataOrigins: [], ACTIVE_CALORIES_TOTAL: 0 kcal }
+Distance             { dataOrigins: [], DISTANCE: 0 m }
+TotalCaloriesBurned  { dataOrigins: [], ENERGY_TOTAL: 1564.5 kcal }
+BasalMetabolicRate   { dataOrigins: [], BASAL_CALORIES_TOTAL: 1564.5 kcal }
+```
+
+The last two are the ones to remember. Health Connect DERIVES an energy figure
+rather than declining to answer, so an empty store reports 1,564.5 kcal a day as
+confidently as a watch would. Nothing about the number says it came from
+nowhere; only the empty `dataOrigins` does.
+
+Run the pre-fix code over that payload and it writes eight rows of `active_kcal
+0, resting_kcal 1565, distance_m 0` for a phone that has never recorded a step
+— which is the shape the Samsung account's rows were actually in. So a constant
+"resting" figure in somebody's diary is not necessarily their store's basal; it
+can be this. The same guard drops both, and it is what makes the project's "null
+is not zero in `activity_days`" rule true on Android rather than merely written
+down.
+
+**Active energy has to be derived, for the commonest phone in this market.**
+Only the active half of a day's burn may reach the budget, because the goal is
+already a Mifflin-St Jeor figure with basal metabolism inside it. Samsung writes
+only the total, so `energyFor` subtracts a basal — the store's own
+`BasalMetabolicRate` where there is one, else the profile's own figure through
+`basalRate`, which is the same formula `compute_targets()` runs in Postgres.
+With neither, it reports null and the Move tile draws a dash.
+
+### What that bug actually looked like
+
+Worth keeping, because every part of it read as something other than what it
+was.
+
+- Steps ran ~1.6× high. Seven days averaged 9,197 against Samsung's own 5,635.
+  The hourly rows gave it away: every day had a constant floor in all 24 hours —
+  117 on the day in question — and `117 × 24 = 2,808`, exactly the figure
+  Samsung Health was showing. One whole-day record, divided across the buckets
+  it overlapped, with a second source's real segments summed on top.
+- The hourly chart claimed steps at 3am, every night, for the same reason.
+- `active_kcal` was 0 on every single day, so movement extended the budget by
+  nothing at all.
+- `resting_kcal` was derived as total minus active, so with active at zero the
+  ENTIRE day's burn was filed as resting: 2,524 kcal of "resting" on a day with
+  two hours of badminton in it.
+- The badminton session itself showed 0 kcal against Samsung's 1,210, because
+  the session's energy was aggregated from the record type Samsung never wrote.
+- `distance_m` was 0 every day against a real 2.15 km, same cause.
+
+Heart rate came through perfectly throughout — 141 average, 178 max, zones and
+all — which is what made the session card read as a rendering bug rather than a
+data one.
 
 ## The simulator has a Health store with nothing in it
 
@@ -227,6 +326,26 @@ a broken tab. Both providers load inside a `try` and report `not-linked`.
 **Adding these needs a native rebuild.** `expo prebuild && expo run:ios`. They
 do not work in Expo Go and never will.
 
+**A Health Connect aggregate never returns null, so it can never say "nobody
+wrote this".** Every metric comes back as a number because the native bridge
+coalesces a missing one to `0.0`. Read `dataOrigins` on the result before you
+believe any figure it carries — `hasOrigins` in `androidHealth.ts` — or a
+provider that has no opinion about a measurement will be recorded as having
+measured none of it. That mistake filed a user's whole daily burn as resting for
+a week.
+
+**A permission granted is not a record type written.** `health_connections
+.permissions` said `ActiveCaloriesBurned` was granted on the account where
+active energy was zero every day, and it was: the grant was real and Samsung
+Health simply never writes that type. When a figure is missing, the permission
+list is the wrong place to look — `dataOrigins` is the one that answers.
+
+**Adding a read type re-asks for the whole sheet, once per device.** `asked` in
+`health-sync.ts` fingerprints the list, so `BasalMetabolicRate` joining it means
+every already-connected Android install sees one more permission sheet on its
+next foreground. That is the mechanism working, not a bug, but it is worth
+knowing before you add a type casually.
+
 **Health Connect reads nothing that the manifest did not declare, and nobody
 tells you.** `react-native-health-connect`'s config plugin adds the rationale
 intent-filter and the `ViewPermissionUsageActivity` alias and *no*
@@ -237,7 +356,7 @@ and `requestAccess` reports a refusal the user was never offered the chance to
 make. On a phone with RiceCal installed, Health Connect's own App permissions
 screen said "No compatible apps installed".
 
-So the six live in `app.json` under `android.permissions`, and they cannot be
+So the nine live in `app.json` under `android.permissions`, and they cannot be
 derived there: Expo's config loader transpiles `app.config.ts` alone and
 requires its relative imports through plain Node, which will not load a `.ts`
 module. `connectPermissions.ts` holds the record types and their permissions,

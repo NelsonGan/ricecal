@@ -1256,8 +1256,20 @@ Break these and the feature is wrong in ways tests may not catch.
   a user ~1,500 kcal for being alive twice. Resting is stored beside it and read
   only by the burn breakdown.
 - **Null is not zero in `activity_days`.** Health Connect has no stand hours at
-  all and often no resting energy; a confident zero there is a claim about the
-  user rather than about the provider.
+  all, and a store reports only what its writers wrote; a confident zero there
+  is a claim about the user rather than about the provider. This one is harder
+  than it reads on Android, because the aggregate API cannot say "nobody wrote
+  this" — the native bridge coalesces a missing metric to `0.0`, so every figure
+  comes back a number. `dataOrigins` on the result is the only thing that tells
+  the two apart, and believing the zero once filed a Samsung user's ENTIRE daily
+  burn as resting for a week while their budget got nothing.
+- **On Android, one app answers for a measurement, not all of them.** Health
+  Connect dedupes Activity by a priority list the USER owns and can empty, so a
+  plain aggregate can return the same walk twice from two sources — read as
+  4,675 steps against the 2,808 Samsung Health showed the same user. The
+  provider picks one origin and re-reads with `dataOriginFilter`;
+  `connectOrigins.ts` holds the order and what it costs. Apple needs none of
+  this: a statistics collection merges across sources itself.
 - **A paywall enforced only in the client is enforced only on people running
   the client.** `useRequirePro` makes the buttons read honestly;
   `requireEntitlement` in the edge functions is what actually stops the request,
