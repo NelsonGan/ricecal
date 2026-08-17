@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics'
-import { type ReactNode, useCallback, useEffect, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -81,23 +81,41 @@ export function SwipeRow({
   // control still takes touches — including the start of the next swipe.
   const [open, setOpen] = useState(false)
 
-  const settle = useCallback(
-    (toOpen: boolean) => {
-      setOpen(toOpen)
-      onOpenChange?.(toOpen)
-      if (toOpen) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
-    },
-    [onOpenChange],
-  )
+  /**
+   * The listener and the last thing it was told, both behind refs.
+   *
+   * The unmount effect below has to fire EXACTLY once and only for a row that
+   * was actually open, and both halves of that were wrong when this was written
+   * against the prop directly. Depending on `onOpenChange` meant the cleanup
+   * also ran whenever the caller re-created its callback, reporting a close
+   * from a row still sitting there open; and reporting unconditionally meant a
+   * row that had already been closed by hand reported a second one on its way
+   * out, which the counter above cannot tell from a different row closing.
+   */
+  const notify = useRef(onOpenChange)
+  const reportedOpen = useRef(false)
+  useEffect(() => {
+    notify.current = onOpenChange
+  })
+
+  const settle = useCallback((toOpen: boolean) => {
+    setOpen(toOpen)
+    if (reportedOpen.current !== toOpen) {
+      reportedOpen.current = toOpen
+      notify.current?.(toOpen)
+    }
+    if (toOpen) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+  }, [])
 
   // An open row taken off screen — deleted, or refetched out of the list —
   // never settles closed, so whoever stood aside for it would stand aside for
-  // good. The row that reported open reports closed on the way out.
+  // good. The row that reported open reports closed on the way out, and one
+  // that never did stays quiet.
   useEffect(
     () => () => {
-      onOpenChange?.(false)
+      if (reportedOpen.current) notify.current?.(false)
     },
-    [onOpenChange],
+    [],
   )
 
   const remove = useCallback(() => {
@@ -180,7 +198,11 @@ export function SwipeRow({
           accessibilityRole="button"
           accessibilityLabel={deleteLabel}
           onPress={() => {
-            setOpen(false)
+            // Through `settle` rather than `setOpen`, so this path reports the
+            // close like every other one: the row is on its way out and
+            // whatever stood aside for it can come back during the slide,
+            // instead of waiting for the unmount at the end of it.
+            settle(false)
             parked.value = false
             offset.value = withTiming(-600, { duration: 200 }, () => runOnJS(remove)())
           }}

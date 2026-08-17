@@ -87,6 +87,10 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
               // it — and where there was no earlier reading the change was
               // measured from the first one inside the period, which puts the
               // line's start on its own first point and draws the same shape.
+              //
+              // Null when the change is, which is now the single-weigh-in case:
+              // there is nothing to carry from, and one point drawn from itself
+              // and one point drawn from nothing are the same point.
               carryFrom={
                 summary.weightLast !== null && summary.weightChange !== null
                   ? summary.weightLast - summary.weightChange

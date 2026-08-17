@@ -82,8 +82,9 @@ const GestureScrollView = Reanimated.createAnimatedComponent(
  * footer's top edge left that line under the footer's canvas. The account
  * screen showed it: tap Continue with an empty address, tap the field, and
  * "That does not look like an email address" came to rest half-covered by the
- * button it was explaining. `spacing.lg` is a line of `meta` text and its
- * leading, which is what one of those is.
+ * button it was explaining. `spacing.lg` is 22 against a `meta` line box of 19,
+ * so it clears one of those with a little to spare — which is the right side to
+ * be wrong on, since the cost is a scroll position a few points higher.
  */
 const FIELD_CLEARANCE = spacing.lg + spacing.md + spacing.lg
 
