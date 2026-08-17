@@ -199,6 +199,9 @@ export default function TodayScreen() {
   const left = budget - eaten.kcal
   const over = left < 0
 
+  /** A row is parked open with its Delete showing. See the `floating` slot. */
+  const [swipeOpen, setSwipeOpen] = useState(false)
+
   /**
    * Eight glasses until told otherwise.
    *
@@ -278,7 +281,25 @@ export default function TodayScreen() {
     // typing, which is what makes that trade free — see `gestureScroll`.
     <Screen
       gestureScroll
-      floating={<FloatingAction onPress={() => router.push('/log')} label={t('common:nav.log')} />}
+      /**
+       * OUT OF THE WAY WHILE A ROW IS OPEN FOR DELETE.
+       *
+       * `floating` overlaps the scroll content by design, and this button's
+       * corner is exactly where a swiped row's Delete comes to rest for
+       * whichever entry happens to be at that height. Drawn above the list, it
+       * took the tap: swipe the row, aim at the bin, and the log sheet opened
+       * instead — a confirmation-free destructive action replaced by the wrong
+       * screen, which is at least the safe direction to fail in.
+       *
+       * Hidden rather than moved. There is nowhere to move it to that is not
+       * over some other row, and a control that jumps aside when you swipe is
+       * a second thing happening.
+       */
+      floating={
+        swipeOpen ? null : (
+          <FloatingAction onPress={() => router.push('/log')} label={t('common:nav.log')} />
+        )
+      }
     >
       <ScreenTitle
         title={title}
@@ -459,6 +480,7 @@ export default function TodayScreen() {
             })
             toast.show({ title: t('logging:added.removedToast') })
           }}
+          onSwipeOpenChange={setSwipeOpen}
         />
       )}
     </Screen>

@@ -74,7 +74,21 @@ export default function Welcome() {
 
   return (
     <Screen
-      scroll={false}
+      /**
+       * SCROLLS, because this screen is taller than a small phone.
+       *
+       * It was `scroll={false}`, which on a 6.1" display looks identical and on
+       * an iPhone SE hid the bottom of the third perk: the card ran to y 0.831
+       * and the "Get started" button started at 0.795, so the last quarter of it
+       * sat behind the footer and "read by barcode" was cut to "read by". With
+       * nothing to scroll there was no way to reach it — the first screen of the
+       * app, and the pitch it exists to make, quietly truncated.
+       *
+       * The content is fixed in length, so on a large phone this never scrolls
+       * and `justify-center` centres it exactly as before. It is the SMALL
+       * phone, and the phone with larger text turned on, that need the overflow
+       * to go somewhere.
+       */
       contentClassName="justify-center"
       footer={
         <View className="gap-1.5">

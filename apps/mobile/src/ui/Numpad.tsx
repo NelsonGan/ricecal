@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { type TextInput, View } from 'react-native'
+import { type TextInput, type TextInputProps, View } from 'react-native'
 import Animated, {
   Easing,
   type SharedValue,
@@ -270,6 +270,18 @@ export type NumpadFieldOptions = {
    * conditionally.
    */
   enabled?: boolean
+  /**
+   * The return key the field would ask for WITHOUT this pad, handed over rather
+   * than set in JSX.
+   *
+   * The spread goes last so its `onFocus` and `onBlur` win, which means it also
+   * overwrites anything it returns — so a `returnKeyType` left on the element
+   * cannot be suppressed from in here, and one returned as `undefined` would
+   * wipe the caller's on the fallback path too. Passing it in is what lets the
+   * hook decide: dropped while the pad is driving, handed straight back when it
+   * is not. See the note beside `returnKeyType` in the return value.
+   */
+  returnKeyType?: TextInputProps['returnKeyType']
 }
 
 /**
@@ -289,6 +301,7 @@ export function useNumpadField({
   onFocus,
   onBlur,
   enabled = true,
+  returnKeyType,
 }: NumpadFieldOptions) {
   const context = useNumpad()
   const hostId = useContext(HostContext)
@@ -384,6 +397,24 @@ export function useNumpadField({
     // empty input view, which keeps the caret blinking; on Android it is the
     // same prop it has always had.
     showSoftInputOnFocus: !live,
+    /**
+     * NO `done` RETURN KEY WHILE THE PAD IS DRIVING, and this is the other half
+     * of suppressing the keyboard.
+     *
+     * A number pad has no return key, so asking one for `returnKeyType="done"`
+     * is asking iOS 26 for the floating "Done" pill — and the pill is NOT part
+     * of the input view. Handing UIKit an empty input view takes the keys away
+     * and leaves the pill behind, floating over the bottom-right of the pad
+     * this file draws: two Done buttons on screen, the system one covering the
+     * pad's own bottom row. It is the same artifact `NumpadProvider` was
+     * written to remove, arriving by the one route that survives the fix.
+     *
+     * `undefined` rather than a different value, so a field that sets its own
+     * (a text field chaining `next` from one input to the next) is left alone.
+     * The fallback stays intact: with no pad to drive the field, `live` is
+     * false and whatever the caller asked for is passed straight through.
+     */
+    returnKeyType: live ? undefined : returnKeyType,
     /**
      * The caret lives at the end, because that is where the pad writes.
      *

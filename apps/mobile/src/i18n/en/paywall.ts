@@ -91,6 +91,16 @@ export const paywall = {
     },
     assurance: 'No commitment, cancel any time',
     /**
+     * The same reassurance for a plan with nothing to cancel.
+     *
+     * Shown over the lifetime small print, which says "One payment. No
+     * subscription, no renewal." — so the shared line was promising the reader
+     * they could cancel a thing the sentence beneath it had just told them did
+     * not renew. What a one-off purchase actually offers instead is the store's
+     * own refund window, which is the true version of the same comfort.
+     */
+    assuranceLifetime: 'One payment, refundable through the store',
+    /**
      * One line per plan rather than one line with the price and the period
      * interpolated. Lifetime has no trial, so "free for 7 days, then $119.99"
      * would be false about it — and a sentence assembled from a price and a

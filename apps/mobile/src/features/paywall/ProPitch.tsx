@@ -126,7 +126,9 @@ export function ProPitch({ plan, onPlanChange, onRestore }: ProPitchProps) {
         <View className="flex-row items-center gap-2">
           <Icon set="system" name="shield" size={16} />
           <Text variant="caption" className="text-pandan-ink">
-            {t('hard.assurance')}
+            {/* Branches with the small print below it, or the two contradict
+                each other. See `assuranceLifetime`. */}
+            {t(plan === 'lifetime' ? 'hard.assuranceLifetime' : 'hard.assurance')}
           </Text>
         </View>
         {/* The sentence needs the price, so it waits for it rather than

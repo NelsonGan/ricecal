@@ -8,10 +8,12 @@ import {
   packetFoodId,
   snapshotFromRecipe,
   today,
+  useActivityDay,
   useDayLog,
   useDescribeFood,
   useLogFood,
   useSelectedDate,
+  useSettings,
   useSnapFood,
   useTargets,
 } from '@/data'
@@ -86,6 +88,8 @@ export default function LogSheet() {
   const { selectedDate } = useSelectedDate()
   const day = useDayLog(selectedDate)
   const { data: targets } = useTargets()
+  const { data: activity } = useActivityDay(selectedDate)
+  const { data: settings } = useSettings()
   /**
    * Which panel to open with, for the routes that arrive knowing.
    *
@@ -149,7 +153,20 @@ export default function LogSheet() {
     })
   }, [opening, selectedDate])
 
-  const left = (targets?.kcal ?? 0) - sumMacros(day.entries).kcal
+  /**
+   * `goal + active - eaten`, the same sum the ring on Today draws.
+   *
+   * IT USED TO BE `goal - eaten`, and this sheet opens over that ring. A day
+   * with a walk on it therefore had two figures for one number on screen at
+   * once — the ring reading "382 kcal left" behind a sheet whose header said
+   * "0 kcal left" — which is the disagreement the invariant exists to stop.
+   * Movement extends the budget everywhere or it extends it nowhere.
+   *
+   * `activeKcal` rather than the total burn, and skipped when the user has
+   * turned the extension off, for the reasons written out beside the ring.
+   */
+  const burned = settings?.activity_extends_budget === false ? 0 : (activity?.activeKcal ?? 0)
+  const left = (targets?.kcal ?? 0) + burned - sumMacros(day.entries).kcal
 
   // `replace`, for the same reason `openFood` below does it: this route is a
   // transparentModal, and a paywall pushed from inside one comes up stacked on
