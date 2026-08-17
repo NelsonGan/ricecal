@@ -29,24 +29,6 @@
 // cascade already believes in: the model says WHAT and HOW MUCH, the catalogue
 // says what that is worth.
 
-/**
- * What one serving of a catalogue row weighs, when the label says so.
- *
- * Three shapes cover most of what the import produced: a pure weight ("100 g",
- * the single commonest label in the table), a weight in parentheses after a
- * human portion ("1 bowl (400 g)"), and an imperial unit ("3.0 oz", "1.0 lb").
- *
- * Volumes in millilitres are read as grams. That is wrong for oil and for
- * syrup and right for everything a Malaysian drinks, which is what the ml
- * labels in this catalogue are.
- *
- * CUPS AND SPOONS ARE DELIBERATELY NOT READ. Between them they are over 9,000
- * of the catalogue's 70,000 portions, so the temptation is real — but a cup of
- * cooked rice is 200 g, a cup of oil is 218 g, and a cup of cornflakes is 30 g.
- * Reading them with any single density would put a confident, precisely wrong
- * number where there is currently an honest null, and null has somewhere to go:
- * the per-unit path below handles it exactly as it did before grams existed.
- */
 const MASS_UNITS: Record<string, number> = {
   g: 1,
   gm: 1,
@@ -72,17 +54,33 @@ const MASS_UNITS: Record<string, number> = {
   pounds: 453.6,
 }
 
+/**
+ * What one serving of a catalogue row weighs, when the label says so.
+ *
+ * Three shapes cover most of what the import produced: a pure weight ("100 g",
+ * the single commonest label in the table), a weight in parentheses after a
+ * human portion ("1 bowl (400 g)"), and an imperial unit ("3.0 oz", "1.0 lb").
+ *
+ * Volumes in millilitres are read as grams. That is wrong for oil and for
+ * syrup and right for everything a Malaysian drinks, which is what the ml
+ * labels in this catalogue are.
+ *
+ * CUPS AND SPOONS ARE DELIBERATELY NOT READ. Between them they are over 9,000
+ * of the catalogue's 70,000 portions, so the temptation is real — but a cup of
+ * cooked rice is 200 g, a cup of oil is 218 g, and a cup of cornflakes is 30 g.
+ * Reading them with any single density would put a confident, precisely wrong
+ * number where there is currently an honest null, and null has somewhere to go:
+ * the per-unit path below handles it exactly as it did before grams existed.
+ */
 export function servingGrams(label: string | null | undefined): number | null {
   const text = (label ?? '').trim()
   if (!text) return null
-
-  const scale = MASS_UNITS
 
   // "1 bowl (400 g)" — the parenthesised weight is the whole answer, and it
   // wins over the leading count, which is a bowl and not a number of grams.
   const paren = text.match(/\(\s*(\d+(?:\.\d+)?)\s*(g|gm|gr|gram|grams|kg|ml|l)\s*\)/i)
   if (paren) {
-    const grams = Number(paren[1]) * (scale[paren[2].toLowerCase()] ?? 0)
+    const grams = Number(paren[1]) * (MASS_UNITS[paren[2].toLowerCase()] ?? 0)
     return usableGrams(grams)
   }
 
@@ -94,10 +92,10 @@ export function servingGrams(label: string | null | undefined): number | null {
   if (!lead) return null
   const unit = lead[2] ? 'oza' : lead[3].toLowerCase()
   // `hasOwn` rather than a bare index: the unit is whatever text the catalogue
-  // put in the label, and `scale['constructor']` is a function — truthy, and
+  // put in the label, and `MASS_UNITS['constructor']` is a function — truthy, and
   // not a number of grams.
-  if (!Object.hasOwn(scale, unit)) return null
-  const factor = scale[unit]
+  if (!Object.hasOwn(MASS_UNITS, unit)) return null
+  const factor = MASS_UNITS[unit]
   const count = lead[1].includes('/')
     ? Number(lead[1].split('/')[0]) / Number(lead[1].split('/')[1])
     : Number(lead[1])
@@ -451,6 +449,11 @@ export function rowIsMeatier(
   disputed: number,
 ): boolean {
   if (!row || !part) return false
+  // Neither share means anything without energy behind it, and a part priced at
+  // nothing would give the row an infinite head start: `proteinShare` answers 0
+  // for it, and 0 times any factor is 0, so every protein-bearing row would look
+  // like a different food. Nothing to compare is not a reason to reject.
+  if (row.kcal <= 0 || part.kcal <= 0) return false
   if (proteinShare(row.protein, row.kcal) <= proteinShare(part.protein, part.kcal) * 2.5) {
     return false
   }

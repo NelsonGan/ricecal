@@ -74,17 +74,25 @@ async function runOne(kase, written) {
   if (!scan.body?.ok) throw new Error(`scan failed: ${scan.body?.error ?? scan.status}`)
   if (scan.body.food === false) throw new Error('answered "no food"')
 
-  const id = scan.body.entries[0].id
-  written.ids.push(...scan.body.entries.map((e) => e.id))
+  const ids = scan.body.entries.map((e) => e.id)
+  if (!ids.length) throw new Error('scan wrote no entry')
+  written.ids.push(...ids)
 
-  const entry = await live.entry(id)
-  const parts = await live.parts(id)
+  // SUMMED over every entry, not read off the first. A photograph is one meal to
+  // this benchmark and its reference figure is for the whole of it, but the vision
+  // prompt is allowed to answer with more than one item when it thinks it sees
+  // separate meals. Grading `entries[0]` against a whole-plate reference then
+  // reports a large negative error that reads as the pipeline under-counting, when
+  // what happened is that the harness looked at half the answer.
+  const entries = await Promise.all(ids.map((id) => live.entry(id)))
+  const parts = (await Promise.all(ids.map((id) => live.parts(id)))).flat()
   const items = await live.scanItems(scan.body.scanId)
 
   return {
     tier: items[0]?.resolved_tier ?? null,
-    name: entry.food_name,
-    got: Object.fromEntries(MACROS.map((m) => [m, Number(entry[m])])),
+    entries: ids.length,
+    name: entries.map((e) => e.food_name).join(' + '),
+    got: Object.fromEntries(MACROS.map((m) => [m, entries.reduce((t, e) => t + Number(e[m]), 0)])),
     parts: parts.map(
       (p) =>
         `${p.name} x${p.quantity} ${p.grams ?? '?'}g = ${p.kcal}kcal ${p.protein_g}P/${p.carbs_g}C/${p.fat_g}F`,
@@ -135,8 +143,9 @@ for (const kase of cases) {
   results.push({ file: kase.file, dish: kase.dish, reference: kase.reference, mean, errs, runs })
 
   const worst = Math.max(...MACROS.map((m) => Math.abs(errs[m])))
+  const split = runs.some((r) => r.entries > 1) ? '  (came back as separate meals)' : ''
   console.log(
-    `${worst > 0.4 ? '✗' : worst > 0.2 ? '~' : '✓'} ${kase.file}  tier ${runs.map((r) => r.tier).join(',')}\n` +
+    `${worst > 0.4 ? '✗' : worst > 0.2 ? '~' : '✓'} ${kase.file}  tier ${runs.map((r) => r.tier).join(',')}${split}\n` +
       `    ${MACROS.map((m) => `${m.replace('_g', '')} ${mean[m].toFixed(0)}/${kase.reference[m]} ${asPct(errs[m])}`).join('   ')}`,
   )
 }
