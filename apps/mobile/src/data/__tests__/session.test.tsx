@@ -52,9 +52,13 @@ jest.mock('@/lib/revenuecat', () => ({
  * events under. A fake that returned nothing would let the tie below pass while
  * asserting nothing.
  */
-const mockIdentifyUser = jest.fn((id: string) => id)
+const mockIdentifyUser = jest.fn((id: string): string | null => id)
 const mockResetIdentity = jest.fn()
+// Spread over the real module rather than replacing it: the provider tracks
+// nothing today, and a `track` call added to it later should fail on what it
+// asserts rather than on this mock not having the function.
 jest.mock('@/lib/analytics', () => ({
+  ...jest.requireActual('@/lib/analytics'),
   identifyUser: (id: string) => mockIdentifyUser(id),
   resetIdentity: () => mockResetIdentity(),
 }))
@@ -395,7 +399,7 @@ it('names the same person to Mixpanel and to RevenueCat', async () => {
  * than asserting one for a person Mixpanel has never heard of.
  */
 it('leaves the distinct id unset when nothing was sent to Mixpanel', async () => {
-  mockIdentifyUser.mockReturnValueOnce(null as unknown as string)
+  mockIdentifyUser.mockReturnValueOnce(null)
   await mount(primed())
 
   await emit('SIGNED_IN', sessionFor('user-1'))
