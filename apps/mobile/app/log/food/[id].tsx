@@ -1277,35 +1277,6 @@ export default function FoodDetail() {
             </Text>
           </View>
         ) : null}
-
-        {/* WHERE THE NUMBERS CAME FROM, and for half the catalogue it is a
-            licence condition rather than a courtesy.
-
-            Open Food Facts is ODbL: serving its facts through an app makes a
-            Produced Work, and attribution is required. The Worker carries
-            `source_attribution` for exactly this reason and `mappers.ts` maps
-            it, but nothing rendered it — the obligation was met everywhere
-            except on the one screen a user reads the figures on.
-
-            Off `catalogueFood` rather than `food`: a saved entry prices itself
-            from its own snapshot (`foodFromEntry`), which has no room for a
-            licence, and a tier-4 estimate or a tier-5 archetype has no
-            catalogue row behind it to credit. Absent means nobody to credit.
-
-            Printed VERBATIM and not through i18n. The string is the source's
-            own credit line, carried per row from the payload that loaded it —
-            "Data from Open Food Facts, available under the Open Database
-            License" — so it is already a sentence, and it is one whose wording
-            the licence chose rather than us. Framed with a lead-in it read
-            "Nutrition data from Data from Open Food Facts". */}
-        {catalogueFood?.sourceAttribution ? (
-          <>
-            <Divider />
-            <Text variant="meta" className="text-faint">
-              {catalogueFood.sourceAttribution}
-            </Text>
-          </>
-        ) : null}
       </Card>
 
       {/* What the scan decided the plate was made of, each part with its own
