@@ -118,6 +118,12 @@ Deno.test('componentCandidates refuses a lean part a row with meat in it', () =>
     macro(row('Chicken meat, local, boiled', 214, '100 g', 100), 20),
   ]
   eq(componentCandidates(chicken, 32, 160).length, 2, 'meat is priced by the catalogue')
+
+  // Nor on a 20 g dip, whatever the densities say. Soy sauce really does hold
+  // 8 g of protein per 100 g and the model really does report a sauce as zero, so
+  // the ratio test is no help; what settles it is that there is 1.6 g at stake.
+  const dip = [macro(row('Soya Sauce, Thin (Kicap Cair)', 13, '1 tablespoon', 17.2), 1.6)]
+  eq(componentCandidates(dip, 0, 20).length, 1, 'the catalogue knows more about soy sauce')
 })
 
 Deno.test('componentCandidates keeps a helping of one food', () => {

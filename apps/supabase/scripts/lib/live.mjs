@@ -39,6 +39,13 @@
  * `supabase.auth.signInWithPassword(...)`, or use a different account for the
  * simulator than for the harness.
  *
+ * AND THAT IS NO LONGER ENOUGH ON ITS OWN. Turning captcha on for the project
+ * took every harness in this directory with it: `/token?grant_type=password` is
+ * captcha protected, a script has no widget to solve, and the refusal names the
+ * app rather than the switch — `captcha_failed` on an account whose password is
+ * perfectly good. `token()` has two ways round it, and `otpToken` explains the
+ * second and why it is allowed to work.
+ *
  * Anything this writes lands in production, under that account. Every helper
  * that writes has a matching one that takes it back out; use them.
  */
@@ -59,10 +66,24 @@ async function config() {
   } catch {
     throw new Error(
       `No eval session at ${SESSION_FILE}. It needs { url, anon, email, password } ` +
-        'for a throwaway account — see the header of this file for how to make one.',
+        'for a throwaway account, plus `service_role` while captcha is on — see the ' +
+        'header of this file for how to make one, and `otpToken` for why.',
     )
   }
   return cfg
+}
+
+/**
+ * Seconds until a JWT's own `exp`, or null if it does not carry a readable one.
+ * No verification: this only decides whether to bother sending it.
+ */
+function secondsLeft(jwt) {
+  try {
+    const claims = JSON.parse(Buffer.from(jwt.split('.')[1], 'base64url').toString())
+    return typeof claims.exp === 'number' ? claims.exp - Date.now() / 1000 : null
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -79,7 +100,20 @@ export async function token() {
   // A token handed in from outside, for a caller that already has one — the
   // simplest way past the captcha below, and the only one that needs no
   // service-role key anywhere.
+  //
+  // Its expiry is CHECKED rather than assumed, because this is the one branch
+  // that cannot mint a replacement. Left unchecked, an hour-old token got handed
+  // back for another fifty minutes and every call in the run answered 401, which
+  // reads as a broken account or a broken function rather than as a stale
+  // variable in the shell.
   if (process.env.EVAL_ACCESS_TOKEN) {
+    const left = secondsLeft(process.env.EVAL_ACCESS_TOKEN)
+    if (left !== null && left < 60) {
+      throw new Error(
+        `EVAL_ACCESS_TOKEN expired ${Math.round(-left / 60)} min ago. Mint another; ` +
+          'this branch cannot, which is the trade for needing no service-role key.',
+      )
+    }
     access = process.env.EVAL_ACCESS_TOKEN
     accessAt = Date.now()
     return access

@@ -143,6 +143,12 @@ function grade(kase, entry, breakdown) {
   // disagrees about protein is the same broken invariant showing a subtler face —
   // and it is exactly the shape a scaling bug takes, which is how editing an
   // ingredient once moved only the calories.
+  //
+  // The half-gram tolerance is not slack, it is a double rounding: the parent
+  // sums the parts UNROUNDED and rounds once, while each part row rounds its own
+  // product to a decimal, so summing what the rows report can miss the parent by
+  // up to 0.05 a part. Tighten it and a six-part plate fails on arithmetic that
+  // is correct.
   if (breakdown.length) {
     for (const [field, tolerance] of [
       ['kcal', 3],
