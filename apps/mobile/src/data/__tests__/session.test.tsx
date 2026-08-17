@@ -42,11 +42,27 @@ jest.mock('../photos', () => ({ clearImageCache: jest.fn() }))
 const mockIdentifyPurchaser = jest.fn()
 const mockForgetPurchaser = jest.fn()
 jest.mock('@/lib/revenuecat', () => ({
-  identifyPurchaser: (id: string) => mockIdentifyPurchaser(id),
+  identifyPurchaser: (id: string, traits: unknown) => mockIdentifyPurchaser(id, traits),
   forgetPurchaser: () => mockForgetPurchaser(),
 }))
 
-const sessionFor = (id: string) => ({ user: { id }, access_token: `token-for-${id}` })
+/**
+ * Shaped like the real seam: `identifyUser` answers with the distinct id it
+ * registered, which is what the purchase SDK is then told to file its forwarded
+ * events under. A fake that returned nothing would let the tie below pass while
+ * asserting nothing.
+ */
+const mockIdentifyUser = jest.fn((id: string) => id)
+const mockResetIdentity = jest.fn()
+jest.mock('@/lib/analytics', () => ({
+  identifyUser: (id: string) => mockIdentifyUser(id),
+  resetIdentity: () => mockResetIdentity(),
+}))
+
+const sessionFor = (id: string, email: string | null = `${id}@example.com`) => ({
+  user: { id, email: email ?? undefined },
+  access_token: `token-for-${id}`,
+})
 
 /** Reads the context out, so the assertions can be about what the app sees. */
 function Probe() {
@@ -346,7 +362,64 @@ it('tells RevenueCat who is signed in on an ordinary launch', async () => {
 
   await emit('SIGNED_IN', sessionFor('user-1'))
 
-  await waitFor(() => expect(mockIdentifyPurchaser).toHaveBeenCalledWith('user-1'))
+  await waitFor(() =>
+    expect(mockIdentifyPurchaser).toHaveBeenCalledWith('user-1', {
+      email: 'user-1@example.com',
+      mixpanelDistinctId: 'user-1',
+    }),
+  )
+})
+
+/**
+ * ONE PERSON ACROSS BOTH PLATFORMS.
+ *
+ * RevenueCat forwards its purchase events into Mixpanel under the distinct id
+ * it was given, so the two identifiers have to be the same string or a
+ * subscription lands on a profile with no behaviour on it while the behaviour
+ * sits on a profile that never bought anything. Nothing about that failure is
+ * visible from either dashboard — both look plausible on their own.
+ */
+it('names the same person to Mixpanel and to RevenueCat', async () => {
+  await mount(primed())
+
+  await emit('SIGNED_IN', sessionFor('user-1'))
+
+  await waitFor(() => expect(mockIdentifyUser).toHaveBeenCalledWith('user-1'))
+  const [id, traits] = mockIdentifyPurchaser.mock.calls[0]
+  expect(traits.mixpanelDistinctId).toBe(mockIdentifyUser.mock.results[0].value)
+  expect(id).toBe('user-1')
+})
+
+/**
+ * A build that sends nothing to Mixpanel claims no distinct id either, rather
+ * than asserting one for a person Mixpanel has never heard of.
+ */
+it('leaves the distinct id unset when nothing was sent to Mixpanel', async () => {
+  mockIdentifyUser.mockReturnValueOnce(null as unknown as string)
+  await mount(primed())
+
+  await emit('SIGNED_IN', sessionFor('user-1'))
+
+  await waitFor(() =>
+    expect(mockIdentifyPurchaser).toHaveBeenCalledWith('user-1', {
+      email: 'user-1@example.com',
+      mixpanelDistinctId: null,
+    }),
+  )
+})
+
+/** An account made through a provider that gave no address has none to send. */
+it('says so rather than inventing one when the account has no address', async () => {
+  await mount(primed())
+
+  await emit('SIGNED_IN', sessionFor('user-1', null))
+
+  await waitFor(() =>
+    expect(mockIdentifyPurchaser).toHaveBeenCalledWith('user-1', {
+      email: null,
+      mixpanelDistinctId: 'user-1',
+    }),
+  )
 })
 
 it('does not repeat itself while the same person stays signed in', async () => {
@@ -359,14 +432,41 @@ it('does not repeat itself while the same person stays signed in', async () => {
   await waitFor(() => expect(mockIdentifyPurchaser).toHaveBeenCalledTimes(1))
 })
 
+/**
+ * The one fact here that moves under a stable account. `USER_UPDATED` carries
+ * the same user id, so keyed on the id alone the dashboard would go on showing
+ * the address somebody has just stopped using — and the support search that
+ * matters is the one done from the new one.
+ */
+it('follows an address changed while signed in', async () => {
+  await mount(primed())
+
+  await emit('SIGNED_IN', sessionFor('user-1'))
+  await emit('USER_UPDATED', sessionFor('user-1', 'moved@example.com'))
+
+  await waitFor(() =>
+    expect(mockIdentifyPurchaser).toHaveBeenLastCalledWith('user-1', {
+      email: 'moved@example.com',
+      mixpanelDistinctId: 'user-1',
+    }),
+  )
+})
+
 it('follows a change of account, and forgets on the way out', async () => {
   await mount(primed())
 
   await emit('SIGNED_IN', sessionFor('user-1'))
   await emit('SIGNED_IN', sessionFor('user-2'))
-  await waitFor(() => expect(mockIdentifyPurchaser).toHaveBeenCalledWith('user-2'))
+  await waitFor(() =>
+    expect(mockIdentifyPurchaser).toHaveBeenCalledWith('user-2', {
+      email: 'user-2@example.com',
+      mixpanelDistinctId: 'user-2',
+    }),
+  )
 
   await emit('SIGNED_OUT', null)
   // Or the next account on this handset inherits the last one's entitlement.
   await waitFor(() => expect(mockForgetPurchaser).toHaveBeenCalled())
+  // And Mixpanel stops filing this handset's events under the account that left.
+  expect(mockResetIdentity).toHaveBeenCalled()
 })
