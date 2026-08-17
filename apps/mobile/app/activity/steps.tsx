@@ -112,9 +112,31 @@ export default function StepsScreen() {
     {
       key: 'goal-days',
       label: t('activity:steps.goalDays'),
+      /**
+       * OUT OF THE DAYS THAT WERE MEASURED, not out of the days in the range.
+       *
+       * `days` is every date between the ends of the window; `active_days` is
+       * the ones carrying a reading. Every other figure on this card already
+       * uses the second — `activity_summary` filters each average on
+       * `has_data` — so reading `days` here made the goal ratio the one stat
+       * describing a different set of days from the two beside it.
+       *
+       * What that looked like: a week-deep backfill is all a first connection
+       * gets, so a fresh account opening the year view was told it had hit its
+       * step goal on "1 of 351 days" while the average and the best beside it
+       * were computed over nine. 342 of those days predate the health store
+       * being connected at all — nobody counted them, and a day nobody counted
+       * is not a day the user failed. Same reasoning as null-is-not-zero in
+       * `activity_days`.
+       *
+       * Water and calories keep `days` on purpose, and the difference is who
+       * writes them: those are the user's own entries, so a day with nothing on
+       * it really is a day the goal was missed. Steps are somebody else's
+       * measurement, and its absence says nothing about the walking.
+       */
       value: t('progress:ofDays', {
         done: summary.data?.stepGoalDays ?? 0,
-        total: summary.data?.days ?? 0,
+        total: summary.data?.activeDays ?? 0,
       }),
     },
     {

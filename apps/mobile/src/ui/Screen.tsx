@@ -75,8 +75,18 @@ const GestureScrollView = Reanimated.createAnimatedComponent(
  *
  * So the clearance is the box first and the gap after it. Costing a scroll
  * position a few points higher is not a trade worth thinking about.
+ *
+ * AND THE LINE UNDER THE FIELD, which is the third term and was the one
+ * missing. `TextField` renders its error or hint BELOW the input — outside the
+ * measured node, like the label above it — so a field revealed to exactly the
+ * footer's top edge left that line under the footer's canvas. The account
+ * screen showed it: tap Continue with an empty address, tap the field, and
+ * "That does not look like an email address" came to rest half-covered by the
+ * button it was explaining. `spacing.lg` is 22 against a `meta` line box of 19,
+ * so it clears one of those with a little to spare — which is the right side to
+ * be wrong on, since the cost is a scroll position a few points higher.
  */
-const FIELD_CLEARANCE = spacing.lg + spacing.md
+const FIELD_CLEARANCE = spacing.lg + spacing.md + spacing.lg
 
 export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   children: ReactNode
@@ -118,6 +128,23 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    */
   gestureScroll?: boolean
   className?: string
+  /**
+   * Layout for the box the children sit in — `justify-center`, `items-center`.
+   *
+   * The CONTENT BOX in both modes, which it did not used to be. On the
+   * scrolling path this landed on the ScrollView's own `className`, where
+   * `justify-center` styles the wrong box and does nothing at all: a scroll
+   * view's alignment belongs to its content container. Nothing caught it
+   * because every caller happened to pass `scroll={false}` as well, so the
+   * broken half had no users — it was a trap set for whoever wrote the next
+   * screen rather than a live bug.
+   *
+   * Passing it also makes the content box FILL the viewport before it scrolls
+   * (`flexGrow: 1`), because centring inside a box that is only as tall as its
+   * contents is a no-op. Only when it is passed: a content container with a
+   * definite height changes what a `flex-1` child does, and screens that never
+   * asked for alignment should not have their layout quietly reinterpreted.
+   */
   contentClassName?: string
 }
 
@@ -268,8 +295,15 @@ export function Screen({
   const body = scroll ? (
     <AwareScrollView
       ref={scroller}
-      className={cn('flex-1', contentClassName)}
+      className="flex-1"
+      // The caller's alignment goes on the CONTENT CONTAINER, not here. See
+      // `contentClassName`.
+      contentContainerClassName={contentClassName}
       contentContainerStyle={{
+        // Fills the viewport so `justify-center` has room to work, and grows
+        // past it so taller content scrolls rather than hiding under the
+        // footer. See `contentClassName` for why it is conditional.
+        ...(contentClassName ? { flexGrow: 1 } : null),
         padding: flush ? 0 : spacing.gutter,
         // Every route draws its own title bar with `headerShown: false`, so the
         // status bar is this view's problem. Without the top inset the first

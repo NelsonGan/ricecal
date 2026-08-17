@@ -17,8 +17,22 @@ import {
   Text,
 } from '@/ui'
 
-/** The order they happen in, which is not the order the table returns. */
-const MEALS: Meal[] = ['breakfast', 'lunch', 'dinner', 'snack']
+/**
+ * The order they happen in, which is not the order the table returns.
+ *
+ * SNACK IS NOT HERE, and it is a row in `meal_times` like the other three.
+ * The reminders screen offers a toggle for breakfast, lunch and dinner alone
+ * (`REMINDER_MEALS`), and `meal_times.reminder_enabled` defaults to false — so
+ * nothing in the app can ever turn a snack reminder on, and the note under this
+ * card says these times are what the reminders go off at. Listed here it was a
+ * control that changed nothing: somebody could set "Snack 15:00" as carefully
+ * as they liked and no notification would ever come of it.
+ *
+ * The row itself stays in the table and `rescheduleReminders` still reads every
+ * meal generically, so adding the fourth reminder later is a line on the
+ * reminders screen and a line here.
+ */
+const MEALS: Meal[] = ['breakfast', 'lunch', 'dinner']
 
 /** Five-minute steps. Nobody eats at 08:07, and 288 stops is a nicer stepper. */
 const MINUTE_STEP = 5
@@ -27,7 +41,7 @@ const MINUTE_STEP = 5
  * SETTINGS / PERSONALISATION.
  *
  * When the user's meals are. One screen, because the times belong to the
- * person rather than to the reminders that read them: the same four rows
+ * person rather than to the reminders that read them: the same three rows
  * decide when a reminder fires and, on a phone whose owner eats dinner at ten,
  * what "dinner" means at all.
  *

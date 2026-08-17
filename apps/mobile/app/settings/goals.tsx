@@ -14,14 +14,20 @@ import {
   useWeighIns,
 } from '@/data'
 import { count } from '@/features/activity'
+import { fromKg, showWeight, UNIT_KEY, unitFor } from '@/features/progress'
 import { useBack } from '@/lib/navigation'
 import { computeTargets, macroSplit, weeklyPace } from '@/lib/nutrition'
 import { AppBar, Button, Card, Screen, Skeleton, Slider, Stepper, Text, useToast } from '@/ui'
 
 /**
- * The bounds the target slider answers within. Narrower than the weight range
- * because it is dragged rather than typed — the same numbers the onboarding
- * copy of this control uses.
+ * The bounds the target slider answers within, IN KILOGRAMS. Narrower than the
+ * weight range because it is dragged rather than typed — the same numbers the
+ * onboarding copy of this control uses.
+ *
+ * Kilograms whatever the user reads, because this is the value that is stored:
+ * `target_weight_kg` is a kilogram column and the slider's position is written
+ * straight into it. Only the LABELS convert (see `unit` below), which is the
+ * same split `WeighInSheet` makes — one domain, converted once at the glass.
  */
 const TARGET = { min: 40, max: 120 }
 
@@ -38,6 +44,16 @@ export default function GoalsScreen() {
   const updateSettings = useUpdateSettings()
   const setTargets = useSetTargets()
   const weight = useCurrentWeight() ?? 0
+  /**
+   * Which unit this screen READS in. Everything it stores stays kilograms.
+   *
+   * This whole card printed `common:unit.kg` against an unconverted figure, so
+   * an imperial account was shown "200.0 kg" beside a Me tab that had just
+   * agreed its units were Imperial — the one number on the screen the user can
+   * check against their own scale, in the unit they said they do not use.
+   */
+  const unit = unitFor(settings?.units)
+  const unitLabel = t(UNIT_KEY[unit])
 
   /**
    * Nothing is editable until everything it is seeded from is here.
@@ -270,7 +286,7 @@ export default function GoalsScreen() {
                 {t('profile:goals.currentWeight')}
               </Text>
               <Text variant="label">
-                {weight.toFixed(1)} {t('common:unit.kg')}
+                {showWeight(weight, unit)} {unitLabel}
               </Text>
             </View>
 
@@ -279,7 +295,7 @@ export default function GoalsScreen() {
                 {t('profile:goals.targetWeight')}
               </Text>
               <Text variant="label">
-                {targetWeightPosition.toFixed(1)} {t('common:unit.kg')}
+                {showWeight(targetWeightPosition, unit)} {unitLabel}
               </Text>
             </View>
             <Slider
@@ -289,7 +305,10 @@ export default function GoalsScreen() {
               max={TARGET.max}
               step={0.5}
               accessibilityLabel={t('profile:goals.targetWeight')}
-              format={(value) => `${value.toFixed(1)} ${t('common:unit.kg')}`}
+              // `format` draws the thumb's bubble AND the two bound labels under
+              // the track, so converting here is what turns "40.0 kg / 120.0 kg"
+              // into pounds as well. The value handed in is still kilograms.
+              format={(value) => `${showWeight(value, unit)} ${unitLabel}`}
             />
 
             {/* The pace is what the gap between those two actually buys, and
@@ -305,7 +324,12 @@ export default function GoalsScreen() {
                 {pace === 0
                   ? t('profile:goals.paceHolding')
                   : t(pace < 0 ? 'profile:goals.paceLosing' : 'profile:goals.paceGaining', {
-                      value: Math.abs(pace).toFixed(2),
+                      // Two decimals rather than `showWeight`'s one: a pace is a
+                      // fraction of a unit a week, and rounded to 0.1 the
+                      // difference between a gentle plan and a brisk one
+                      // disappears.
+                      value: fromKg(Math.abs(pace), unit).toFixed(2),
+                      unit: unitLabel,
                     })}
               </Text>
             </View>

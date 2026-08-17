@@ -3,7 +3,8 @@ export const profile = {
     title: 'Me',
     memberSince: 'Member since {{month}}',
     streak: 'STREAK',
-    weight: 'KG',
+    // No `weight` key: that tile's label is the unit symbol itself, and it
+    // comes from `common:unit.*` so it can follow the account's setting.
     goal: 'GOAL',
     pro: 'RiceCal Pro',
     proTrial: 'Trial ends {{when}}',
@@ -76,9 +77,13 @@ export const profile = {
      * slider; it is the gap between the two weights now, and this line is where
      * that gap is read back. "-0.50 kg" states the same thing and makes the
      * reader do the arithmetic to find out which way they are going.
+     *
+     * The UNIT is interpolated rather than written in, because this screen is
+     * read in whichever one the account asked for and the figure beside it is
+     * converted. Spelt "kg" here it contradicted the pounds above it.
      */
-    paceLosing: 'Losing {{value}} kg',
-    paceGaining: 'Gaining {{value}} kg',
+    paceLosing: 'Losing {{value}} {{unit}}',
+    paceGaining: 'Gaining {{value}} {{unit}}',
     /**
      * The pace when the plan is not moving — the target sitting where the user
      * already is, which is also how they say they have no goal. "0.00 kg / week"

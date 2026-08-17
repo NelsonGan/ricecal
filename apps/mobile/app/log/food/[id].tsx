@@ -131,6 +131,9 @@ function KcalFigure({
     replaceFirst: true,
     label,
     onBlur: onDone,
+    // Through the hook rather than onto the element: see the note beside
+    // `returnKeyType` in `useNumpadField`.
+    returnKeyType: 'done',
   })
 
   if (!editing) {
@@ -157,7 +160,6 @@ function KcalFigure({
       // Does nothing while the pad is up, and is the fallback if a platform
       // ever declines to suppress the keyboard.
       keyboardType="number-pad"
-      returnKeyType="done"
       autoFocus
       selectTextOnFocus
       accessibilityLabel={label}
@@ -679,6 +681,18 @@ export default function FoodDetail() {
       value: sodium === undefined ? undefined : t('logging:detail.milligrams', { value: sodium }),
     },
   ] as const
+
+  /**
+   * Whether there is a "More nutrients" section at all.
+   *
+   * Read twice — by the control and by the rule above it — because a divider is
+   * a separator and a separator with nothing on the far side of it is just a
+   * line across the bottom of the card. Most of the catalogue has none of these
+   * columns, so that was the ordinary case rather than the edge one: every
+   * barcoded product with a bare macro panel drew a rule under its last macro
+   * and a band of empty space under that.
+   */
+  const hasExtras = extras.some((row) => row.value !== undefined)
 
   /**
    * Put a photo of the actual plate on this row.
@@ -1224,13 +1238,14 @@ export default function FoodDetail() {
           </Tappable>
         ) : null}
 
-        <Divider />
+        {/* The rule goes with the section it introduces. See `hasExtras`. */}
+        {hasExtras ? <Divider /> : null}
 
         {/* Only when there is something under it. This used to be shown for
             every dish so that "nobody recorded it" was still an answer — but
             most of the catalogue has none of these columns, so most rows grew
             a control that opened three dashes. */}
-        {extras.some((row) => row.value !== undefined) ? (
+        {hasExtras ? (
           <Tappable
             className="flex-row items-center justify-between"
             onPress={() => setShowNutrients((open) => !open)}

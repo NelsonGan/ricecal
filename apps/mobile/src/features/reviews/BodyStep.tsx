@@ -87,6 +87,10 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
               // it — and where there was no earlier reading the change was
               // measured from the first one inside the period, which puts the
               // line's start on its own first point and draws the same shape.
+              //
+              // Null when the change is, which is now the single-weigh-in case:
+              // there is nothing to carry from, and one point drawn from itself
+              // and one point drawn from nothing are the same point.
               carryFrom={
                 summary.weightLast !== null && summary.weightChange !== null
                   ? summary.weightLast - summary.weightChange
@@ -113,9 +117,16 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
               </Text>
               {summary.stepGoal ? (
                 <Text variant="meta" numberOfLines={1} className="min-w-0 shrink">
+                  {/* Out of the days that were MEASURED, matching the average
+                      beside it — `review_summary` filters that on `has_activity`
+                      and this card is only drawn when `activeDays > 0` at all.
+                      Against `days` a month whose health store was connected
+                      halfway through claimed the goal was missed on every day
+                      before the connection existed. Same reasoning as the steps
+                      card in `app/activity/steps.tsx`. */}
                   {t('reviews:body.stepGoal', {
                     done: summary.stepGoalDays,
-                    total: summary.days,
+                    total: summary.activeDays,
                     goal: summary.stepGoal.toLocaleString(),
                   })}
                 </Text>
