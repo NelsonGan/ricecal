@@ -1006,6 +1006,28 @@ auto-renew was turned off and the user keeps what they paid for until
 `EXPIRATION` follows, so reading it as the end takes the app away from somebody
 who has paid for another three weeks of it.
 
+**That id is the SUPABASE UUID and must never become the email.** An address is
+the readable choice and it is wrong on three counts at once: it changes, and a
+changed one logs the SDK in as a different customer whose `app_user_id` matches
+no row in `subscriptions`, so a paying user silently stops being entitled; not
+every way in supplies one; and it is guessable, which with a public SDK key is
+enough to ask about somebody else's purchases. What the dashboard needs is the
+address as an ATTRIBUTE, and `$email` is set right after the log in — never
+before, or it is filed against the anonymous customer the process started with.
+
+**Two platforms are told who this is, and they have to agree.** RevenueCat
+forwards its purchase events into Mixpanel under the `$mixpanelDistinctId`
+attribute, falling back to `app_user_id` when nothing set it, and Mixpanel knows
+the person by whatever `identifyUser` registered. Both are the user's uuid, so
+the fallback lands correctly by coincidence rather than by design — which is why
+`identifyUser` RETURNS its distinct id and `SessionProvider` hands that same
+string to `identifyPurchaser`. Wrong, it is invisible from both dashboards: the
+subscription attaches to a profile with no behaviour and the behaviour to a
+profile that never paid, and the paywall funnel reads as zero conversions. The
+email is the one thing the two are told differently, and deliberately: support
+searches RevenueCat by address, while `PersonProps` carries no name, no email
+and no body figures because a segment is never built on one.
+
 **Prices come from the store, never from this repo.** `usePlanPrices` reads the
 current offering and uses RevenueCat's localised `priceString`, so a Malaysian
 user sees ringgit because that is what they will be charged. They were strings
@@ -1505,13 +1527,20 @@ Break these and the feature is wrong in ways tests may not catch.
 
 Worth knowing before wondering where the handler went.
 
-- **RevenueCat is live now**, and what is left is configuration rather than
-  code: the `pro` entitlement has to exist in the RevenueCat dashboard with the
-  six store products attached, `REVENUECAT_WEBHOOK_TOKEN` has to be set on the
-  edge functions and matched in the dashboard's webhook, and an App Store
-  Connect API key has to be uploaded to RevenueCat before an iOS receipt can be
-  validated. Until the entitlement exists every account reads as `none` and the
-  paywall refuses everybody, including whoever just paid.
+- **RevenueCat is live now**, and the dashboard has caught up with the code: the
+  `pro` entitlement exists with all six store products attached, and the webhook
+  points at the `revenuecat` function with no environment filter — which is the
+  right setting, because the function drops anything that is not `PRODUCTION`
+  itself rather than trusting the dashboard to. What cannot be read back from
+  the API, and so is worth checking by hand when a purchase does not land:
+  `REVENUECAT_WEBHOOK_TOKEN` set on the edge functions and matched in the
+  dashboard's webhook, and an App Store Connect API key uploaded to RevenueCat
+  before an iOS receipt can be validated.
+- **The RevenueCat → Mixpanel integration is dashboard configuration**, and the
+  app has done its half: every signed-in customer carries `$mixpanelDistinctId`.
+  Until the integration is switched on in RevenueCat, purchases simply never
+  reach Mixpanel and the funnel stops at `Purchase Started` — which reads as
+  nobody buying anything rather than as a missing integration.
 
 ---
 

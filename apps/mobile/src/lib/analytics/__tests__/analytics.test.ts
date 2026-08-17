@@ -105,6 +105,29 @@ describe('the analytics seam', () => {
     expect(fake.identified).toEqual(['user-1'])
     expect(fake.people).toEqual([{ onboarded: true, plan_direction: 'lose' }])
   })
+
+  /**
+   * The distinct id goes on to RevenueCat, which files the purchase events it
+   * forwards here under it. Answering with the id even before the SDK has
+   * registered is deliberate: the value is decided by this call, not by the
+   * client that eventually drains the queue, and a purchase made in that window
+   * still has to land on the same profile as the events around it.
+   */
+  it('answers with the distinct id a second platform has to agree with', () => {
+    expect(identifyUser('user-1')).toBe('user-1')
+
+    registerAnalytics(fakeClient().client)
+    expect(identifyUser('user-1')).toBe('user-1')
+  })
+
+  it('answers with nothing in a build that sends nothing', () => {
+    // @ts-expect-error — as above: the branch that does not ship is the one
+    // every local run takes, and RevenueCat must not claim a Mixpanel identity
+    // for somebody Mixpanel has never been told about.
+    global.__DEV__ = true
+
+    expect(identifyUser('user-1')).toBeNull()
+  })
 })
 
 describe('dateOffset', () => {
