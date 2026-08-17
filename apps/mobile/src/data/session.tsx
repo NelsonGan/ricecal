@@ -54,14 +54,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const cacheOwner = useRef<string | null | undefined>(undefined)
 
   /**
-   * Who this process has told RevenueCat about.
+   * Who this process has told RevenueCat and Mixpanel about.
    *
    * Deliberately NOT `cacheOwner`. That one answers "has the person changed",
    * which is false on a cold start by design; this one answers "have we said
    * anything yet", which is false on exactly the launches where identifying
    * matters most.
+   *
+   * The ADDRESS is in the signature as well as the id, because it is the one
+   * fact here that moves under a stable account: changing an email fires
+   * `USER_UPDATED` with the same user id, and keyed on the id alone the
+   * dashboard would go on showing the old address for as long as the process
+   * lived. What the wider key costs is naming the same person twice on an event
+   * both platforms treat as idempotent, which happens about as often as
+   * somebody changes their email.
    */
-  const purchaser = useRef<string | null>(null)
+  const identified = useRef<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -187,14 +195,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // is the same question — who is this process about — and getting it wrong
       // costs the same thing: events filed against an anonymous device id, which
       // no funnel can join back to the account that produced them.
+      //
+      // THE TWO ARE TOLD THE SAME THING, and this is the only line in the app
+      // that could stop being true. Both platforms key on the Supabase user id,
+      // so RevenueCat's forwarded purchases and Mixpanel's own events describe
+      // one person rather than two — the distinct id travels from the analytics
+      // seam to the purchase SDK rather than being assumed equal in both.
       if (nextUserId) {
-        if (purchaser.current !== nextUserId) {
-          purchaser.current = nextUserId
-          void identifyPurchaser(nextUserId)
-          identifyUser(nextUserId)
+        const email = resolved?.user.email ?? null
+        const signature = `${nextUserId} ${email ?? ''}`
+        if (identified.current !== signature) {
+          identified.current = signature
+          const mixpanelDistinctId = identifyUser(nextUserId)
+          void identifyPurchaser(nextUserId, { email, mixpanelDistinctId })
         }
       } else if (event === 'SIGNED_OUT') {
-        purchaser.current = null
+        identified.current = null
         void forgetPurchaser()
         resetIdentity()
       }
