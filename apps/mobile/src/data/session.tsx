@@ -200,13 +200,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // that could stop being true. Both platforms key on the Supabase user id,
       // so RevenueCat's forwarded purchases and Mixpanel's own events describe
       // one person rather than two — the distinct id travels from the analytics
-      // seam to the purchase SDK rather than being assumed equal in both.
+      // seam to the purchase SDK rather than being assumed equal in both. The
+      // ADDRESS goes to both from this one read of the session, which is what
+      // makes somebody who writes in about a purchase findable on either
+      // dashboard by the address they wrote from. It is the account's own
+      // email, so every way in supplies it — a provider sign-in included, since
+      // Supabase stores what the identity token carried.
       if (nextUserId) {
         const email = resolved?.user.email ?? null
         const signature = `${nextUserId} ${email ?? ''}`
         if (identified.current !== signature) {
           identified.current = signature
-          const mixpanelDistinctId = identifyUser(nextUserId)
+          const mixpanelDistinctId = identifyUser(nextUserId, email)
           void identifyPurchaser(nextUserId, { email, mixpanelDistinctId })
         }
       } else if (event === 'SIGNED_OUT') {

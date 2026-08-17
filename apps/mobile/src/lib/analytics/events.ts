@@ -286,11 +286,31 @@ export type EventName = keyof Events
 /**
  * The user properties this app sets, and nothing else.
  *
- * No name, no email, no body figures. Every one of these is either a stated
- * PREFERENCE or a fact about which parts of the app are switched on, which is
- * what a segment is ever built from.
+ * No name and no body figures. Every one of these is either a stated PREFERENCE,
+ * a fact about which parts of the app are switched on, or — in the single case
+ * of `$email` below — the address the account itself is keyed on. Nothing off
+ * the diary is here, and that half of the rule has not moved.
  */
 export type PersonProps = {
+  /**
+   * The address on the Supabase account, and the one identifier here that names
+   * a real person.
+   *
+   * It is Mixpanel's RESERVED spelling on purpose: a plain `email` is an
+   * ordinary property, while `$email` is the field the profile list shows, the
+   * search box looks in, and the messaging tools send to. Written any other way
+   * it would be a column nobody finds.
+   *
+   * Set from `identifyUser` alone, from the address on the session, so it moves
+   * with the account rather than with whatever screen last had one to hand. It
+   * is the same value RevenueCat is given, which is what lets somebody writing
+   * in about a purchase be found on both dashboards — see `lib/revenuecat.ts`.
+   *
+   * `undefined` for an account whose provider supplied no address, rather than
+   * an empty string: Mixpanel would file that as a profile whose email is blank
+   * and offer it in a breakdown, which is a worse answer than not knowing.
+   */
+  $email?: string
   onboarded?: boolean
   onboarded_at?: string
   plan_direction?: PlanDirection

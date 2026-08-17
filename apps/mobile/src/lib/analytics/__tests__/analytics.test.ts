@@ -29,19 +29,35 @@ function fakeClient() {
   const events: Recorded[] = []
   const identified: string[] = []
   const people: Record<string, unknown>[] = []
+  /**
+   * Which call arrived when, across the two lists above.
+   *
+   * Mixpanel files a people property against whoever the SDK is identified as
+   * at the time, so "the email was sent" and "the email was sent to the right
+   * profile" are different assertions and only this one can tell them apart.
+   */
+  const calls: string[] = []
   let resets = 0
 
   const client: AnalyticsClient = {
     track: (event, props) => void events.push({ event, props }),
-    identify: (id) => void identified.push(id),
+    identify: (id) => {
+      calls.push('identify')
+      identified.push(id)
+    },
     reset: () => {
       resets += 1
     },
     registerSuperProperties: () => {},
-    getPeople: () => ({ set: (props) => void people.push(props) }),
+    getPeople: () => ({
+      set: (props) => {
+        calls.push('people')
+        people.push(props)
+      },
+    }),
   }
 
-  return { client, events, identified, people, resets: () => resets }
+  return { client, events, identified, people, calls, resets: () => resets }
 }
 
 describe('the analytics seam', () => {
@@ -99,11 +115,54 @@ describe('the analytics seam', () => {
     const fake = fakeClient()
     registerAnalytics(fake.client)
 
-    identifyUser('user-1')
+    identifyUser('user-1', null)
     setPersonProps({ onboarded: true, plan_direction: 'lose' })
 
     expect(fake.identified).toEqual(['user-1'])
     expect(fake.people).toEqual([{ onboarded: true, plan_direction: 'lose' }])
+  })
+
+  /**
+   * The address is what makes somebody who writes in findable on the profile
+   * their events are on, and RevenueCat is given the same one — so the two
+   * dashboards answer the same search.
+   *
+   * The ORDER is the part worth asserting. A people property is filed against
+   * whichever distinct id the SDK is holding when it arrives, so an email sent
+   * before the identify lands on the anonymous device profile and the real
+   * account stays blank.
+   */
+  it('puts the account email on the profile, after the identify', () => {
+    const fake = fakeClient()
+    registerAnalytics(fake.client)
+
+    identifyUser('user-1', 'one@example.com')
+
+    expect(fake.calls).toEqual(['identify', 'people'])
+    expect(fake.people).toEqual([{ $email: 'one@example.com' }])
+  })
+
+  it('holds that order across the queue, for a launch that beats the SDK', () => {
+    // The real window: `initServices` is awaited inside an effect, so a cold
+    // start into a restored session identifies before Mixpanel exists.
+    identifyUser('user-1', 'one@example.com')
+
+    const fake = fakeClient()
+    registerAnalytics(fake.client)
+
+    expect(fake.calls).toEqual(['identify', 'people'])
+    expect(fake.people).toEqual([{ $email: 'one@example.com' }])
+  })
+
+  it('leaves the property unset when the account has no address', () => {
+    // A provider that supplied none. Blank is a worse answer than absent: it
+    // would show up in the profile list and in every breakdown as a real value.
+    const fake = fakeClient()
+    registerAnalytics(fake.client)
+
+    identifyUser('user-1', null)
+
+    expect(fake.people).toEqual([])
   })
 
   /**
@@ -114,10 +173,10 @@ describe('the analytics seam', () => {
    * still has to land on the same profile as the events around it.
    */
   it('answers with the distinct id a second platform has to agree with', () => {
-    expect(identifyUser('user-1')).toBe('user-1')
+    expect(identifyUser('user-1', null)).toBe('user-1')
 
     registerAnalytics(fakeClient().client)
-    expect(identifyUser('user-1')).toBe('user-1')
+    expect(identifyUser('user-1', null)).toBe('user-1')
   })
 
   it('answers with nothing in a build that sends nothing', () => {
@@ -126,7 +185,7 @@ describe('the analytics seam', () => {
     // for somebody Mixpanel has never been told about.
     global.__DEV__ = true
 
-    expect(identifyUser('user-1')).toBeNull()
+    expect(identifyUser('user-1', null)).toBeNull()
   })
 })
 
