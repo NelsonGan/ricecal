@@ -112,6 +112,31 @@ const usableGrams = (grams: number): number | null =>
   Number.isFinite(grams) && grams >= 3 && grams <= 3000 ? Math.round(grams * 10) / 10 : null
 
 /**
+ * Does this row's portion name a WHOLE MEAL rather than a helping of one food?
+ *
+ * A plate, a set, a bento: the vessel a complete meal arrives in. The catalogue
+ * is full of rows measured that way, because most of what people look up by
+ * typing is a whole dish — right for the dish tier and wrong for a part of a
+ * breakdown, where charging one component for a whole plate counts the meal
+ * twice.
+ *
+ * A LABEL ALONE IS WEAK EVIDENCE, so read `componentCandidates`, which is the
+ * only caller, before reaching for this: a composition table states a household
+ * portion of ONE food as "1 plate" too, and "Rice, Coconut Milk (Nasi Lemak)"
+ * is a plate of nothing but rice. The label only settles it where there is no
+ * weight to take a helping from, and that is exactly where the label has to
+ * settle it, since a weightless row is charged in full.
+ *
+ * "Bowl" is deliberately absent. A bowl of laksa is a whole meal and a bowl of
+ * soup beside a rice plate is a part of one, and nothing in the label says
+ * which — where a plate at least leans one way.
+ */
+const WHOLE_MEAL_SERVING = /\b(plates?|sets?|meals?|platters?|combos?|bentos?)\b/i
+
+export const isWholeMealServing = (label: string | null | undefined): boolean =>
+  WHOLE_MEAL_SERVING.test(label ?? '')
+
+/**
  * How many of the thing one serving of a catalogue row holds.
  *
  * "10 sticks" is ten satay; "1 cup" and "100 g" are one serving of something
@@ -294,6 +319,50 @@ export function unfoldCounts<T extends Sized & { count: number }>(
  */
 export const plausibleForGrams = (kcal: number, grams: number): boolean =>
   kcal > 0 && grams > 0 && kcal / grams >= MIN_KCAL_PER_G && kcal / grams <= 9
+
+/**
+ * Above this much protein per gram, a food IS a protein food: meat, fish, egg,
+ * tofu, pulses. Below it, it is a starch, a vegetable, a sauce or a drink.
+ *
+ * Five grams per hundred is comfortably under cooked pulses (8-9) and tofu (8),
+ * and comfortably over cooked rice (2.7), noodles (4), a clear broth (1) and any
+ * sauce. It does not need to be a sharp line, because of how it is used.
+ */
+export const PROTEIN_FOOD_PER_G = 0.05
+
+/**
+ * Is this catalogue row a protein food when the part it would price is not?
+ *
+ * The systemic version of the double-count, and the one that survived fixing the
+ * obvious half. A photographed chicken rice came back with its parts correctly
+ * named and correctly weighed — "seasoned rice" 220 g at 6 g of protein, "radish
+ * soup" 180 g at 2 g — and the catalogue then priced the rice from a row holding
+ * 7.7 g of protein per 100 g and the clear soup from one holding 4.4. Both rows
+ * have meat in them; neither part does. The entry came out at 52 g of protein
+ * for a photographed plate holding about 38, with the calories inside the band the
+ * whole way.
+ *
+ * The asymmetry is deliberate and is the whole reason this is safe. It only
+ * fires when the MODEL says the part is not a protein food, so the case it
+ * cannot get wrong is the one that matters: a part that really is meat is
+ * already over the line, the gate never looks at it, and the catalogue goes on
+ * winning the number — which is the arrangement everywhere else in the cascade.
+ * What it declines to believe is a lean thing priced from a meaty row, and a
+ * model that has just said "6 g of protein in 220 g of rice" is a better witness
+ * to THAT than a name match is.
+ *
+ * Both tests have to hold. The ratio catches the composition being wrong; the
+ * absolute gap keeps a sauce with a gram of protein in it out of the argument,
+ * since three grams per hundred either way is not evidence of anything.
+ */
+export function rowIsMeatier(
+  rowProteinPerG: number | null,
+  partProteinPerG: number | null,
+): boolean {
+  if (rowProteinPerG === null || partProteinPerG === null) return false
+  if (partProteinPerG >= PROTEIN_FOOD_PER_G) return false
+  return rowProteinPerG > partProteinPerG * 2.5 && rowProteinPerG - partProteinPerG > 0.03
+}
 
 /**
  * The Atwater-consistent macro split for a figure with no macros behind it.

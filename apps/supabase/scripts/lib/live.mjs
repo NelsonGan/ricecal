@@ -76,19 +76,91 @@ export async function token() {
   const c = await config()
   if (access && Date.now() - accessAt < 50 * 60_000) return access
 
+  // A token handed in from outside, for a caller that already has one — the
+  // simplest way past the captcha below, and the only one that needs no
+  // service-role key anywhere.
+  if (process.env.EVAL_ACCESS_TOKEN) {
+    access = process.env.EVAL_ACCESS_TOKEN
+    accessAt = Date.now()
+    return access
+  }
+
   const res = await fetch(`${c.url}/auth/v1/token?grant_type=password`, {
     method: 'POST',
     headers: { apikey: c.anon, 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: c.email, password: c.password }),
   })
   const body = await res.json()
+
   if (!res.ok || !body.access_token) {
+    // Turning captcha on took every harness in this directory with it, and the
+    // failure names the app rather than the switch: `captcha_failed` on an
+    // account whose password is right. Password sign-in is captcha protected and
+    // a script has no widget to solve, so this is not a thing to retry.
+    if (body?.error_code === 'captcha_failed') {
+      access = await otpToken(c)
+      accessAt = Date.now()
+      return access
+    }
     throw new Error(`sign-in failed (${res.status}): ${JSON.stringify(body).slice(0, 300)}`)
   }
 
   access = body.access_token
   accessAt = Date.now()
   return access
+}
+
+/**
+ * The way in when captcha is on: mint a code as the admin, then spend it.
+ *
+ * `/auth/v1/verify` is NOT captcha protected — the protection is on the
+ * endpoints that a bot would use to ASK for something (`/token`, `/signup`,
+ * `/otp`, `/recover`), and redeeming a code the server itself issued is not one
+ * of them. `admin/generate_link` sends no mail and returns `email_otp` in
+ * plaintext, so the round trip is entirely server side.
+ *
+ * It needs the service-role key, which is a real step up from a password and so
+ * is deliberately NOT read from anywhere it could be committed:
+ *
+ *     export SUPABASE_ACCESS_TOKEN=$(security find-generic-password -s "Supabase CLI" -w)
+ *     curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+ *       "https://api.supabase.com/v1/projects/<ref>/api-keys?reveal=true"
+ *
+ * then `export SUPABASE_SERVICE_ROLE_KEY=<the service_role one>`, or put it in
+ * `.secrets/eval.json` as `service_role`.
+ */
+async function otpToken(c) {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? c.service_role
+  if (!key) {
+    throw new Error(
+      'captcha is on, so password sign-in is refused. This harness needs the ' +
+        'service-role key to mint a code instead — set SUPABASE_SERVICE_ROLE_KEY ' +
+        'or add "service_role" to .secrets/eval.json. See otpToken() in lib/live.mjs.',
+    )
+  }
+
+  const link = await fetch(`${c.url}/auth/v1/admin/generate_link`, {
+    method: 'POST',
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ type: 'magiclink', email: c.email }),
+  }).then((r) => r.json())
+  if (!link.email_otp) {
+    throw new Error(`could not mint a code: ${JSON.stringify(link).slice(0, 300)}`)
+  }
+
+  const session = await fetch(`${c.url}/auth/v1/verify`, {
+    method: 'POST',
+    headers: { apikey: c.anon, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'magiclink', email: c.email, token: link.email_otp }),
+  }).then((r) => r.json())
+  if (!session.access_token) {
+    throw new Error(`code did not verify: ${JSON.stringify(session).slice(0, 300)}`)
+  }
+  return session.access_token
 }
 
 /**
