@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Animated, Easing, View } from 'react-native'
 import Reanimated, {
@@ -35,6 +35,15 @@ export type EntryListProps = {
    * to delete — the row is dismissed and goes.
    */
   onDismissEntry?: (entry: Entry) => void
+  /**
+   * Whether any row is parked open with its Delete showing.
+   *
+   * For a screen that draws something over this list: Today's floating log
+   * button lands on top of a revealed Delete and takes the tap. See
+   * `SwipeRow`'s `onOpenChange`. Counted rather than passed straight through,
+   * because nothing stops two rows being open at once.
+   */
+  onSwipeOpenChange?: (open: boolean) => void
 }
 
 /**
@@ -61,8 +70,34 @@ export function EntryList({
   onFixEntry,
   onDeleteEntry,
   onDismissEntry,
+  onSwipeOpenChange,
 }: EntryListProps) {
   const { t } = useTranslation(['logging', 'common'])
+
+  /**
+   * How many rows are parked open, so "any" survives one closing as another
+   * opens — a boolean forwarded straight from each row would flicker shut on
+   * the closing one and leave the overlay back over the opening one.
+   *
+   * A ref plus a call rather than state: nothing HERE renders differently, and
+   * a re-render of the whole list on every swipe would be a cost paid for
+   * nobody. `SwipeRow` reports closed on unmount, so a deleted row cannot
+   * leave the count above zero.
+   */
+  const openRows = useRef(0)
+  /** What the screen above was last told, so it hears only the changes. */
+  const reported = useRef(false)
+  const reportOpen = useCallback(
+    (open: boolean) => {
+      openRows.current = Math.max(0, openRows.current + (open ? 1 : -1))
+      const anyOpen = openRows.current > 0
+      if (anyOpen !== reported.current) {
+        reported.current = anyOpen
+        onSwipeOpenChange?.(anyOpen)
+      }
+    },
+    [onSwipeOpenChange],
+  )
 
   // Newest first. The day used to read in the order it happened, which put the
   // meal just logged at the bottom of a growing list — and the thing a user
@@ -85,6 +120,7 @@ export function EntryList({
           onFix={onFixEntry}
           onDelete={onDeleteEntry}
           onDismiss={onDismissEntry}
+          onSwipeOpenChange={reportOpen}
         />
       ))}
     </Card>
@@ -103,12 +139,14 @@ function EntryRow({
   onFix,
   onDelete,
   onDismiss,
+  onSwipeOpenChange,
 }: {
   entry: Entry
   onPress?: (entry: Entry) => void
   onFix?: (entry: Entry) => void
   onDelete?: (entry: Entry) => void
   onDismiss?: (entry: Entry) => void
+  onSwipeOpenChange?: (open: boolean) => void
 }) {
   const { t } = useTranslation(['logging', 'common'])
 
@@ -210,6 +248,7 @@ function EntryRow({
       onDelete={() => onDelete(entry)}
       onPress={onPress ? () => onPress(entry) : undefined}
       deleteLabel={t('logging:today.deleteEntry')}
+      onOpenChange={onSwipeOpenChange}
     >
       {row()}
     </SwipeRow>

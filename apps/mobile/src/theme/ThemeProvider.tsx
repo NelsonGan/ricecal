@@ -41,6 +41,16 @@ export type ThemeProviderProps = {
   children: ReactNode
   /** Initial preference. Persist the user's choice and pass it back in here. */
   initialPreference?: ColorSchemePreference
+  /**
+   * The other half of that instruction: fired whenever the choice changes, so
+   * the caller has somewhere to write it.
+   *
+   * Without it there was no way to hold up the contract above — the setter is
+   * reached through the context by whichever screen offers the control, and the
+   * root layout that supplies `initialPreference` never sees it being called.
+   * So the preference was read from a store nothing wrote to.
+   */
+  onPreferenceChange?: (preference: ColorSchemePreference) => void
 }
 
 /**
@@ -65,7 +75,11 @@ export type ThemeProviderProps = {
  * and iOS pins the whole app, so `Appearance` reports light on a device in dark
  * mode and no amount of JS will notice.
  */
-export function ThemeProvider({ children, initialPreference = 'system' }: ThemeProviderProps) {
+export function ThemeProvider({
+  children,
+  initialPreference = 'system',
+  onPreferenceChange,
+}: ThemeProviderProps) {
   const system = useSystemColorScheme()
   const [preference, setPreference] = useState<ColorSchemePreference>(initialPreference)
 
@@ -74,7 +88,13 @@ export function ThemeProvider({ children, initialPreference = 'system' }: ThemeP
 
   const variables = useMemo(() => cssVariables(colorScheme), [colorScheme])
 
-  const update = useCallback((next: ColorSchemePreference) => setPreference(next), [])
+  const update = useCallback(
+    (next: ColorSchemePreference) => {
+      setPreference(next)
+      onPreferenceChange?.(next)
+    },
+    [onPreferenceChange],
+  )
 
   const value = useMemo<ThemeContextValue>(
     () => ({ colorScheme, preference, setPreference: update }),

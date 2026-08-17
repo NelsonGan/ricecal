@@ -17,6 +17,7 @@ import {
   useTargets,
 } from '@/data'
 import { signOut } from '@/data/auth'
+import { showWeight, UNIT_KEY, unitFor } from '@/features/progress'
 import { HelpSheet } from '@/features/settings'
 import { ScreenTitle, SettingRow } from '@/features/shared'
 import { Avatar, Button, Card, ConfirmSheet, Icon, ListRow, Screen, StatTile, Text } from '@/ui'
@@ -43,16 +44,30 @@ export default function MeScreen() {
   const { data: mealTimes } = useMealTimes()
   const streak = useStreak()
   const weight = useCurrentWeight()
+  const weightUnit = unitFor(settings?.units)
   const health = useHealthConnection()
   const [confirmSignOut, setConfirmSignOut] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
 
+  /**
+   * Every switch on `/settings/reminders`, and it has to stay every switch.
+   *
+   * The monthly report was missing, so the row summarised seven reminders as
+   * "6 on" — a figure with nothing to correct it, since the only way to see the
+   * disagreement is to open the screen and count the toggles by hand. A list
+   * written out here rather than derived is what let one drift away from the
+   * screen it describes; the fix is cheap and the check is to read the switches
+   * in `app/settings/reminders.tsx` against these names whenever either moves.
+   */
   const activeReminders =
     (mealTimes ?? []).filter((meal) => meal.reminder_enabled).length +
     (settings
-      ? [settings.notify_water, settings.notify_weigh_in, settings.notify_weekly_report].filter(
-          Boolean,
-        ).length
+      ? [
+          settings.notify_water,
+          settings.notify_weigh_in,
+          settings.notify_weekly_report,
+          settings.notify_monthly_report,
+        ].filter(Boolean).length
       : 0)
 
   /**
@@ -120,11 +135,14 @@ export default function MeScreen() {
             label={t('profile:home.streak')}
             value={streak.isPending ? '—' : String(streak.current)}
           />
+          {/* The label IS the unit, so it has to move with the setting: this
+              tile printed a hardcoded "KG" over an unconverted figure, and the
+              row four lines down on the same screen said "Imperial". */}
           <StatTile
             className="flex-1"
             tone="track"
-            label={t('profile:home.weight')}
-            value={weight === undefined ? '—' : weight.toFixed(1)}
+            label={t(UNIT_KEY[weightUnit]).toUpperCase()}
+            value={weight === undefined ? '—' : showWeight(weight, weightUnit)}
           />
           <StatTile
             className="flex-1"

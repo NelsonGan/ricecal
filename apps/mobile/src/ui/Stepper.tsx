@@ -142,6 +142,7 @@ export function Stepper({
     label: editLabel ?? unit,
     onFocus: startEditing,
     onBlur: commit,
+    returnKeyType: 'done',
   })
 
   return (
@@ -187,8 +188,12 @@ export function Stepper({
             // what this field falls back to if a platform ever declines to
             // suppress the keyboard: a number pad in the wrong place beats a
             // QWERTY one.
+            //
+            // `returnKeyType` is the same fallback and cannot be set here, so
+            // it goes to the hook instead — asked for on the element it reaches
+            // UIKit even with the keyboard suppressed, and iOS 26 answers a
+            // number pad's missing return key with the floating "Done" pill.
             keyboardType="decimal-pad"
-            returnKeyType="done"
             // What the field held before it was emptied, so the number does not
             // vanish out from under the person about to retype it.
             placeholder={typed === '' ? format(value) : undefined}
@@ -196,8 +201,20 @@ export function Stepper({
             // Android draws a Material underline under a bare TextInput, which
             // would sit under the rule this control draws for itself.
             underlineColorAndroid="transparent"
+            /* WIDE ENOUGH FOR THE WIDEST NUMBER THIS CONTROL SHOWS, because a
+               `TextInput` does not grow to fit its own text — it lays out at
+               whatever width it is given and crops what does not fit, silently
+               and on the trailing edge.
+
+               At 92pt a weight in pounds lost its last digit: 200.0 kg reads as
+               440.9 lb and drew "440.", so the one number the sheet exists to
+               show was the one thing on it the user could not read. Baloo's
+               digits are proportional, which is why it looked intermittent —
+               441.0 fitted where 440.9 did not, and the kilogram side never
+               showed it at all. 128pt clears five of the widest glyphs plus the
+               padding, with the decimal point to spare. */
             className={cn(
-              'min-w-[92px] border-b-2 px-2 text-center font-display text-[34px] text-heading',
+              'min-w-[128px] border-b-2 px-2 text-center font-display text-[34px] text-heading',
               typed === null ? 'border-line border-dashed' : 'border-pandan',
             )}
             // Android reserves room for ascenders this glyph does not use, which

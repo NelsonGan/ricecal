@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics'
-import { type ReactNode, useCallback, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -32,6 +32,17 @@ export type SwipeRowProps = {
    * the pan in one detector makes the outcome decidable.
    */
   onPress?: () => void
+  /**
+   * Whether this row's action is parked open, for whoever is drawing over it.
+   *
+   * Today's floating log button sits at the bottom-right corner, which is
+   * exactly where a revealed Delete lands for whichever row happens to be at
+   * that height — and the button is drawn above the list, so it took the tap:
+   * swipe, aim at the bin, get the log sheet. The screen stands the button
+   * aside while anything is open. Reported rather than solved in here because
+   * this component has no idea what is over it.
+   */
+  onOpenChange?: (open: boolean) => void
 }
 
 /**
@@ -55,7 +66,13 @@ export type SwipeRowProps = {
  * the row's box keeps its full width while its contents slide, so a button
  * underneath it is visible and unpressable.
  */
-export function SwipeRow({ children, onDelete, deleteLabel, onPress }: SwipeRowProps) {
+export function SwipeRow({
+  children,
+  onDelete,
+  deleteLabel,
+  onPress,
+  onOpenChange,
+}: SwipeRowProps) {
   const colors = useThemeColors()
   const offset = useSharedValue(0)
   const parked = useSharedValue(false)
@@ -64,10 +81,24 @@ export function SwipeRow({ children, onDelete, deleteLabel, onPress }: SwipeRowP
   // control still takes touches — including the start of the next swipe.
   const [open, setOpen] = useState(false)
 
-  const settle = useCallback((toOpen: boolean) => {
-    setOpen(toOpen)
-    if (toOpen) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
-  }, [])
+  const settle = useCallback(
+    (toOpen: boolean) => {
+      setOpen(toOpen)
+      onOpenChange?.(toOpen)
+      if (toOpen) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+    },
+    [onOpenChange],
+  )
+
+  // An open row taken off screen — deleted, or refetched out of the list —
+  // never settles closed, so whoever stood aside for it would stand aside for
+  // good. The row that reported open reports closed on the way out.
+  useEffect(
+    () => () => {
+      onOpenChange?.(false)
+    },
+    [onOpenChange],
+  )
 
   const remove = useCallback(() => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})

@@ -75,8 +75,17 @@ const GestureScrollView = Reanimated.createAnimatedComponent(
  *
  * So the clearance is the box first and the gap after it. Costing a scroll
  * position a few points higher is not a trade worth thinking about.
+ *
+ * AND THE LINE UNDER THE FIELD, which is the third term and was the one
+ * missing. `TextField` renders its error or hint BELOW the input — outside the
+ * measured node, like the label above it — so a field revealed to exactly the
+ * footer's top edge left that line under the footer's canvas. The account
+ * screen showed it: tap Continue with an empty address, tap the field, and
+ * "That does not look like an email address" came to rest half-covered by the
+ * button it was explaining. `spacing.lg` is a line of `meta` text and its
+ * leading, which is what one of those is.
  */
-const FIELD_CLEARANCE = spacing.lg + spacing.md
+const FIELD_CLEARANCE = spacing.lg + spacing.md + spacing.lg
 
 export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   children: ReactNode
