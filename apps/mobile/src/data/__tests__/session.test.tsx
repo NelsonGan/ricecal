@@ -52,14 +52,14 @@ jest.mock('@/lib/revenuecat', () => ({
  * events under. A fake that returned nothing would let the tie below pass while
  * asserting nothing.
  */
-const mockIdentifyUser = jest.fn((id: string): string | null => id)
+const mockIdentifyUser = jest.fn((id: string, _email: string | null): string | null => id)
 const mockResetIdentity = jest.fn()
 // Spread over the real module rather than replacing it: the provider tracks
 // nothing today, and a `track` call added to it later should fail on what it
 // asserts rather than on this mock not having the function.
 jest.mock('@/lib/analytics', () => ({
   ...jest.requireActual('@/lib/analytics'),
-  identifyUser: (id: string) => mockIdentifyUser(id),
+  identifyUser: (id: string, email: string | null) => mockIdentifyUser(id, email),
   resetIdentity: () => mockResetIdentity(),
 }))
 
@@ -388,10 +388,15 @@ it('names the same person to Mixpanel and to RevenueCat', async () => {
 
   await emit('SIGNED_IN', sessionFor('user-1'))
 
-  await waitFor(() => expect(mockIdentifyUser).toHaveBeenCalledWith('user-1'))
+  await waitFor(() => expect(mockIdentifyUser).toHaveBeenCalledWith('user-1', 'user-1@example.com'))
   const [id, traits] = mockIdentifyPurchaser.mock.calls[0]
   expect(traits.mixpanelDistinctId).toBe(mockIdentifyUser.mock.results[0].value)
   expect(id).toBe('user-1')
+  // The ADDRESS is the other half of that agreement, and it comes from one read
+  // of the session rather than from each platform's own idea of who this is —
+  // so somebody who writes in about a purchase is findable on both dashboards
+  // by the address they wrote from.
+  expect(mockIdentifyUser.mock.calls[0][1]).toBe(traits.email)
 })
 
 /**
@@ -424,6 +429,9 @@ it('says so rather than inventing one when the account has no address', async ()
       mixpanelDistinctId: 'user-1',
     }),
   )
+  // Mixpanel is told the same nothing, and leaves `$email` unset rather than
+  // filing a blank one — see `identifyUser`.
+  expect(mockIdentifyUser).toHaveBeenCalledWith('user-1', null)
 })
 
 it('does not repeat itself while the same person stays signed in', async () => {
@@ -454,6 +462,8 @@ it('follows an address changed while signed in', async () => {
       mixpanelDistinctId: 'user-1',
     }),
   )
+  // Both platforms follow it, or the two dashboards answer different searches.
+  expect(mockIdentifyUser).toHaveBeenLastCalledWith('user-1', 'moved@example.com')
 })
 
 it('follows a change of account, and forgets on the way out', async () => {
