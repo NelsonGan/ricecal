@@ -131,6 +131,32 @@ and none of them can be counted from the diary.
 signed in, including a cold start with a restored session, which is the launch
 where nothing else would have named them.
 
+**Mixpanel and RevenueCat have to mean the same person, and one line makes
+sure of it.** RevenueCat forwards its own purchase events here, and it files
+each one under the `$mixpanelDistinctId` subscriber attribute — falling back to
+the app user id when nothing set it. Both are the Supabase user id, so the
+fallback happens to land in the right place, and "happens to" is what stops
+being true the first time either side changes. So `identifyUser` RETURNS the
+distinct id it registered and `SessionProvider` hands it to
+`identifyPurchaser`, which sets the attribute. Get this wrong and nothing looks
+broken from either dashboard: the subscription sits on a profile with no
+behaviour on it, the behaviour sits on a profile that never bought anything, and
+every funnel from `Paywall Shown` onwards quietly reports zero conversions.
+
+The id is null in development and in a build whose token is still a
+placeholder, and the attribute is then left unset rather than guessed at —
+claiming a distinct id for somebody Mixpanel has never been told about would
+file real purchases against an empty profile.
+
+**The email is the one thing the two platforms are told differently, and the
+asymmetry is deliberate.** RevenueCat gets `$email`, because a purchase is a
+transaction somebody writes in about and the dashboard is where that is
+answered: an address is how support finds the customer, and it is what
+RevenueCat's own billing-issue mail is sent to. Mixpanel gets no email, no name
+and no body figures, because a segment is never built on an address and the
+question "who exactly is this" is not one this project asks. What travels here
+is the shape of a person, not the person.
+
 `Signed In` is deliberately NOT fired there. Supabase announces `SIGNED_IN` on
 every launch that finds a usable token in the keychain, so counting it as a
 sign-in would report a returning user's every cold start as an acquisition. The

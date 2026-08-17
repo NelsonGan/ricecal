@@ -139,13 +139,23 @@ export function track<E extends EventName>(event: E, properties: Events[E]): voi
  * Idempotent by design: the session provider calls this once per process for
  * whoever is signed in, including on a cold start with a restored session,
  * which is the launch where nothing else would have named them.
+ *
+ * RETURNS THE DISTINCT ID, because a second platform needs it. RevenueCat files
+ * the purchase events it forwards to Mixpanel under a `$mixpanelDistinctId`
+ * attribute, and the two have to agree or a subscription lands on a profile
+ * with no behaviour on it while the behaviour sits on a profile that never
+ * bought anything. This is the only place that knows both what was registered
+ * and whether anything was sent at all, so it is the place that answers —
+ * `null` in development and in a build whose token is still a placeholder,
+ * where Mixpanel knows nobody by any name.
  */
-export function identifyUser(userId: string): void {
+export function identifyUser(userId: string): string | null {
   if (!sending()) {
     trace('identify', userId)
-    return
+    return null
   }
   enqueue((target) => void target.identify(userId))
+  return userId
 }
 
 /**
