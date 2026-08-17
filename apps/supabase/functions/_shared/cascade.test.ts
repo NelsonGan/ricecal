@@ -7,7 +7,7 @@
 // the rice flour that outranks rice, the restaurant portion that is four times
 // the plate. Each of these was a wrong entry in someone's diary first.
 
-import { bestFit, priceRow, type SearchRow } from './cascade.ts'
+import { bestFit, componentCandidates, priceRow, type SearchRow } from './cascade.ts'
 
 const eq = (got: unknown, want: unknown, what: string) => {
   if (got !== want) throw new Error(`${what}: expected ${want}, got ${got}`)
@@ -64,6 +64,79 @@ Deno.test('priceRow leaves a row that is one of the thing alone', () => {
   eq(egg.kcal, 78, 'one egg costs what the row says')
   eq(egg.units, 1, 'one to a serving')
   eq(egg.byWeight, false, 'not converted, so an entry can point straight at it')
+})
+
+Deno.test('componentCandidates will not charge a part for a whole plate', () => {
+  // A row that states no weight cannot be asked for a helping: `priceRow` hands
+  // back its whole figure and `isWholeUnit` lets a part point straight at it. So
+  // a plate with no weight would charge one component for the entire meal.
+  const whole = [
+    row('Hainanese Chicken Rice, Steamed (SG)', 600, '1 plate', null),
+    row('Chicken Rice Shop Steamed Chicken Rice', 560, '1 set', null),
+    row('Coconut sticky rice', 527, '1 serving', null),
+  ]
+  const left = componentCandidates(whole, null, 200)
+  eq(left.length, 1, 'the plate and the set are gone')
+  eq(left[0].name, 'Coconut sticky rice', 'and a "1 serving" label is not a claim to be a meal')
+
+  // The scoping, learnt by breaking something. Applied to every plate-shaped
+  // label this also threw out "Rice, Coconut Milk (Nasi Lemak)" — a plate being
+  // how a composition table states a household portion of ONE food — which
+  // promoted the Thai dessert above and took a nasi lemak's rice from 338 to 527.
+  const weighed = componentCandidates(
+    [row('Rice, Coconut Milk (Nasi Lemak)', 389, '1 plate', 230)],
+    null,
+    200,
+  )
+  eq(weighed.length, 1, 'a plate that states its weight can price a helping')
+})
+
+Deno.test('componentCandidates refuses a lean part a row with meat in it', () => {
+  // The second half of the same bug, and the one that survived fixing the first.
+  // Told to stop naming the part after its dish, the model called it "seasoned
+  // rice" and weighed it honestly at 6 g of protein in 220 g — and the catalogue
+  // went on answering with rows holding two and three times that per gram,
+  // because their calories are right and only their composition is wrong.
+  const macro = (r: SearchRow, protein: number): SearchRow => ({ ...r, protein_g: protein })
+  const hits = [
+    // The row that caused all this. 16.1 g of protein in 230 g is rice with the
+    // bird in it — and note it states a weight, so the plate rule above leaves it
+    // alone and composition is what has to catch it.
+    macro(row('Rice, Chicken (Nasi Ayam)', 278, '1 plate', 230), 16.1),
+    // 2.7 g in 100 g: cooked rice, which is what the part actually is.
+    macro(row('Rice, white, cooked', 130, '100 g', 100), 2.7),
+  ]
+  const left = componentCandidates(hits, 6, 220)
+  eq(left.length, 1, 'the meaty row is not this part')
+  eq(left[0].name, 'Rice, white, cooked', 'the one whose composition matches')
+
+  // And the direction it must never fire in: the poached chicken beside that rice
+  // is a protein food by the model's own account, so the catalogue keeps the
+  // number — which is the arrangement the rest of the cascade depends on.
+  const chicken = [
+    macro(row('Ayam Rebus Nasi Ayam', 215, '1 serving (120 g)', 120), 23),
+    macro(row('Chicken meat, local, boiled', 214, '100 g', 100), 20),
+  ]
+  eq(componentCandidates(chicken, 32, 160).length, 2, 'meat is priced by the catalogue')
+
+  // Nor on a 20 g dip, whatever the densities say. Soy sauce really does hold
+  // 8 g of protein per 100 g and the model really does report a sauce as zero, so
+  // the ratio test is no help; what settles it is that there is 1.6 g at stake.
+  const dip = [macro(row('Soya Sauce, Thin (Kicap Cair)', 13, '1 tablespoon', 17.2), 1.6)]
+  eq(componentCandidates(dip, 0, 20).length, 1, 'the catalogue knows more about soy sauce')
+})
+
+Deno.test('componentCandidates keeps a helping of one food', () => {
+  // The counterpart: a part measured in helpings, pieces or weights is exactly
+  // what a breakdown wants, and the poached chicken of a chicken rice is in the
+  // catalogue as one.
+  const left = componentCandidates([
+    row('Ayam Rebus Nasi Ayam', 215, '1 serving (120 g)', 120),
+    row('Boiled kampung chicken', 184, '1 quarter (148 g)', 148),
+    row('Chicken Satay (Satay Ayam)', 365, '10 sticks', null),
+    row('Chicken, fried', 240, '100 g', 100),
+  ])
+  eq(left.length, 4, 'none of these is a whole meal')
 })
 
 Deno.test('bestFit takes the catalogue over an inflated guess', () => {

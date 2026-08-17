@@ -210,5 +210,15 @@
     "kind": "photo",
     "image": "https://upload.wikimedia.org/wikipedia/commons/f/fd/Cup_of_black_coffee.jpg",
     "kcal": [0, 120]
+  },
+  {
+    "name": "photo: chicken rice, whose parts must not each be the whole plate",
+    "kind": "photo",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Hainanese_Chicken_Rice_with_Radish_Soup.jpg/1280px-Hainanese_Chicken_Rice_with_Radish_Soup.jpg",
+    "kcal": [400, 1100],
+    "protein": [15, 50],
+    "name_has": ["chicken rice"],
+    "parts": [2, 6],
+    "note": "The protein band is the whole case, and it is the first one here. A plate like this landed in a real diary at 959 kcal and 72.6 g of protein, because the model named its rice component \"chicken rice\" and the catalogue answered with a composition-table row for the complete plate: the bird was priced once as itself and again inside the rice. Every gate it passed was a calorie gate, and 959 kcal for a large chicken rice with soup is defensible, so nothing looked at the half that was wrong. A plate of chicken rice cannot hold 50 g of protein however generous the portion, which catches the double count without the case having to argue about how much chicken is in the photograph. READ THIS ONE WITH --repeat. Measured over seven runs after the fix: 27.9, 29.8, 30.4, 36.4, 38.0, 40.1, 54.6 against a reference of about 33 for the plate — so it passes six times in seven, and the seventh is a run where the model claimed 160 g of chicken AND 260 g of rice, which is a genuinely bad answer rather than a badly drawn band. Before the fix the same photograph gave 51.3, 52.0 and 60.0, and the user's own plate gave 50.4 to 62.3. The ceiling sits where it does to catch all of that; a rate of six in seven is the measurement, not a flake to be widened away."
   }
 ]

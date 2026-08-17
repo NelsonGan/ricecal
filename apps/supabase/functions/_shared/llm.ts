@@ -609,6 +609,16 @@ const COMPONENT_FIELDS =
   '"components" empty. Two or none. ' +
   'A component name is the food alone ("coconut rice") — not the dish it came from, ' +
   'and never a parenthesised recipe. ' +
+  // A part wearing the dish's name is looked up as the dish, and the catalogue
+  // is mostly whole dishes. A photographed chicken rice came back with parts
+  // "boiled chicken" and "chicken rice", and the second matched a composition
+  // table row for the complete plate — so the bird was counted once as itself
+  // and again inside the rice, and the entry carried 72.6 g of protein for a
+  // meal holding about 38.
+  "NEVER GIVE A PART THE WHOLE DISH'S NAME. The rice under a chicken rice is " +
+  '"seasoned rice", never "chicken rice"; the noodles in a laksa are "rice noodles", ' +
+  'never "laksa"; the rice under a nasi lemak is "coconut rice". A part that repeats ' +
+  "the dish's name is priced as the whole dish and the meal is counted twice. " +
   // Listed separately, the oil is counted twice: once as itself and once in
   // the density of the fried thing it was cooked into.
   'Oil, seasoning, gravy stirred through and anything else absorbed into a dish belong to ' +
@@ -659,7 +669,23 @@ const SIZE_ANCHORS =
   'apple slice 15-20, potato wedge 20-30, prawn cracker 2-4, ' +
   'scoop of cooked rice 150-220, drained noodles 200-300, ladle of curry or soup 150-250, ' +
   'spoon of sambal or sauce 15-25, single-patty burger 100-130, medium fries 110-130, ' +
-  'canned drink 330. ' +
+  'canned drink 330, ' +
+  // The gap this list had, and it is a Malaysian staple: a dish of sliced
+  // poached chicken beside a chicken rice came back at 180-260 g of meat three
+  // runs out of three, which is most of a bird and about twice what is on the
+  // plate. Meat is the densest thing in protein on a plate, so an overweighed
+  // piece of it is the single most expensive size mistake available.
+  'sliced poached, steamed or roast chicken served beside rice 90-140, ' +
+  'quarter chicken off the bone 100-150, half chicken off the bone 200-280, ' +
+  'grilled or steamed fish fillet 100-150, slice of char siu 15-25. ' +
+  // The general rule behind those, because a list cannot cover every dish. It
+  // says nothing about "count" on purpose: the two counts are settled further up
+  // and a second mention of them here, in a block about weight, is how a plate of
+  // toast came back as two slices of two slices.
+  "ONE PERSON'S HELPING OF MEAT OR FISH IS 80-150 g. Over 200 g is a sharing dish, and " +
+  'is worth checking rather than assuming. Bone, shell and skin left on the plate are ' +
+  'not food: a quarter chicken is 250 g on the scales and about 130 g to eat, and the ' +
+  'weight you give is the second number. ' +
   // The conversion, so the two numbers are one answer rather than two.
   'And what a gram is worth: cooked rice and noodles 1.2-1.5 kcal/g, steamed or grilled meat ' +
   '1.5-2, fried chicken with skin 2.5-3, chips and fried potato 3, curry and coconut gravy ' +
