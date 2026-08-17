@@ -135,6 +135,10 @@ Deno.test('rowIsMeatier tells one food from another with the same calories', () 
   // Nothing to compare is not a reason to reject.
   eq(rowIsMeatier(null, { protein: 5, kcal: 260 }, 20), false, 'no row figures')
   eq(rowIsMeatier({ protein: 7, kcal: 121 }, null, 20), false, 'the model said nothing')
+  // Nor is a share with no energy behind it. A part priced at nothing would give
+  // the row an infinite head start, since zero times any factor is zero.
+  eq(fires(7, 121, 5, 0, 20), false, 'a part with no calories is not a comparison')
+  eq(fires(7, 0, 5, 260, 20), false, 'nor is a row with none')
 })
 
 Deno.test('namesAPortion tells a helping from a measurement', () => {

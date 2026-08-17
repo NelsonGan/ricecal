@@ -351,22 +351,27 @@ const isWholeUnit = (fit: Priced): boolean => !fit.byWeight && fit.units === 1
  *   and tripled the protein. Both are the same mistake and `rowIsMeatier` is the
  *   one check for it: protein's SHARE OF ENERGY, the row's against the model's.
  *
- *   A PART IS NOT CHARGED FOR A WHOLE PLATE. The check above needs a weight at
- *   both ends to read a density, and the rows that state neither are the
- *   dangerous ones: with no weight to take a helping from, `priceRow` hands back
- *   the row's ENTIRE figure and `isWholeUnit` lets the part point straight at it.
- *   "Hainanese Chicken Rice, Steamed (SG)" is 600 kcal for "1 plate" and says
- *   nothing about what a plate weighs, so it would charge one component for the
- *   whole meal.
+ *   A PART IS NOT CHARGED FOR A WHOLE PLATE. A row with no stated weight cannot
+ *   be asked for a helping: `priceRow` hands back its ENTIRE figure and
+ *   `isWholeUnit` lets the part point straight at it. "Hainanese Chicken Rice,
+ *   Steamed (SG)" is 600 kcal for "1 plate" and says nothing about what a plate
+ *   weighs, so it would charge one component for the whole meal.
  *
- * Which is why the plate rule is scoped to exactly that case rather than applied
- * to every plate-shaped label, and the scoping was learnt by breaking something:
- * unscoped, it also threw out "Rice, Coconut Milk (Nasi Lemak)" — 1 plate, 230 g,
- * 4.2 g of protein per 100 g, which IS just the rice, a plate being how a
- * composition table states a household portion of one food. Losing it promoted
- * "Coconut sticky rice", a Thai dessert with no stated weight, and a nasi lemak's
- * rice went from 338 kcal to 527. A row that states its weight can be asked for a
- * helping, and then composition decides whether it is the right food at all.
+ *   The composition check above would catch that particular row — 22% of its
+ *   energy is protein against a rice part's 8% — but not one whose composition
+ *   happens to match the part it is swallowing. A plate of nasi lemak against its
+ *   own coconut rice is 11% versus 6%, well inside the gate, and the plate would
+ *   be charged for the rice. So the two checks are not redundant: this one is
+ *   about SIZE where the other is about identity.
+ *
+ * The plate rule is scoped to weightless rows rather than applied to every
+ * plate-shaped label, and the scoping was learnt by breaking something: unscoped,
+ * it also threw out "Rice, Coconut Milk (Nasi Lemak)" — 1 plate, 230 g, 4.2 g of
+ * protein per 100 g, which IS just the rice, a plate being how a composition table
+ * states a household portion of one food. Losing it promoted "Coconut sticky
+ * rice", a Thai dessert with no stated weight, and a nasi lemak's rice went from
+ * 338 kcal to 527. A row that states its weight can be asked for a helping, and
+ * `boundGramsToServing` then decides how big a helping it may be.
  *
  * A part with no usable row falls back to the model's own figures, which is the
  * path this file already takes for a part the catalogue cannot answer — so the
