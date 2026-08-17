@@ -34,6 +34,7 @@
     "eval:prompts": "deno run -A apps/supabase/scripts/eval-prompts.ts",
     "eval:scan": "node --no-warnings apps/supabase/scripts/scan-eval.mjs",
     "eval:recipe": "node --no-warnings apps/supabase/scripts/recipe-eval.mjs",
+    "bench:photos": "node --no-warnings apps/supabase/scripts/photo-bench.mjs",
     "eas": "pnpm --filter @ricecal/mobile exec eas",
     "eas:credentials": "pnpm --filter @ricecal/mobile exec eas credentials",
     "expo": "pnpm --filter @ricecal/mobile exec expo",

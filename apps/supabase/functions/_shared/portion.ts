@@ -29,6 +29,31 @@
 // cascade already believes in: the model says WHAT and HOW MUCH, the catalogue
 // says what that is worth.
 
+const MASS_UNITS: Record<string, number> = {
+  g: 1,
+  gm: 1,
+  gr: 1,
+  gram: 1,
+  grams: 1,
+  kg: 1000,
+  // Millilitres as grams: see the header.
+  ml: 1,
+  l: 1000,
+  litre: 1000,
+  liter: 1000,
+  oz: 28.35,
+  // The import's own abbreviations. ONZ is an ounce by weight; OZA is a
+  // fluid ounce, which is 29.6 ml and so 29.6 g of anything drinkable.
+  onz: 28.35,
+  ounce: 28.35,
+  ounces: 28.35,
+  oza: 29.57,
+  lb: 453.6,
+  lbs: 453.6,
+  pound: 453.6,
+  pounds: 453.6,
+}
+
 /**
  * What one serving of a catalogue row weighs, when the label says so.
  *
@@ -51,36 +76,11 @@ export function servingGrams(label: string | null | undefined): number | null {
   const text = (label ?? '').trim()
   if (!text) return null
 
-  const scale: Record<string, number> = {
-    g: 1,
-    gm: 1,
-    gr: 1,
-    gram: 1,
-    grams: 1,
-    kg: 1000,
-    // Millilitres as grams: see the header.
-    ml: 1,
-    l: 1000,
-    litre: 1000,
-    liter: 1000,
-    oz: 28.35,
-    // The import's own abbreviations. ONZ is an ounce by weight; OZA is a
-    // fluid ounce, which is 29.6 ml and so 29.6 g of anything drinkable.
-    onz: 28.35,
-    ounce: 28.35,
-    ounces: 28.35,
-    oza: 29.57,
-    lb: 453.6,
-    lbs: 453.6,
-    pound: 453.6,
-    pounds: 453.6,
-  }
-
   // "1 bowl (400 g)" — the parenthesised weight is the whole answer, and it
   // wins over the leading count, which is a bowl and not a number of grams.
   const paren = text.match(/\(\s*(\d+(?:\.\d+)?)\s*(g|gm|gr|gram|grams|kg|ml|l)\s*\)/i)
   if (paren) {
-    const grams = Number(paren[1]) * (scale[paren[2].toLowerCase()] ?? 0)
+    const grams = Number(paren[1]) * (MASS_UNITS[paren[2].toLowerCase()] ?? 0)
     return usableGrams(grams)
   }
 
@@ -92,10 +92,10 @@ export function servingGrams(label: string | null | undefined): number | null {
   if (!lead) return null
   const unit = lead[2] ? 'oza' : lead[3].toLowerCase()
   // `hasOwn` rather than a bare index: the unit is whatever text the catalogue
-  // put in the label, and `scale['constructor']` is a function — truthy, and
+  // put in the label, and `MASS_UNITS['constructor']` is a function — truthy, and
   // not a number of grams.
-  if (!Object.hasOwn(scale, unit)) return null
-  const factor = scale[unit]
+  if (!Object.hasOwn(MASS_UNITS, unit)) return null
+  const factor = MASS_UNITS[unit]
   const count = lead[1].includes('/')
     ? Number(lead[1].split('/')[0]) / Number(lead[1].split('/')[1])
     : Number(lead[1])
@@ -135,6 +135,68 @@ const WHOLE_MEAL_SERVING = /\b(plates?|sets?|meals?|platters?|combos?|bentos?)\b
 
 export const isWholeMealServing = (label: string | null | undefined): boolean =>
   WHOLE_MEAL_SERVING.test(label ?? '')
+
+/**
+ * Does this label NAME A HELPING, or merely state a measurement?
+ *
+ * "1 serving (120 g)", "1 quarter (148 g)", "1 bowl", "1 cup" all name a portion
+ * somebody is served. "100 g" and "3.0 oz" name an amount of substance and say
+ * nothing about how much of it is a helping — they are the units a composition
+ * table publishes in, not portions anybody eats.
+ *
+ * The distinction earns its keep in `boundGramsToServing`, which trusts the first
+ * kind about size and has no business trusting the second.
+ */
+export const namesAPortion = (label: string | null | undefined): boolean => {
+  const text = (label ?? '').trim()
+  if (!text) return false
+  // The one shape that is a bare measurement: a number and a unit of mass or
+  // volume, and nothing else. Anything with a word in it that is not such a unit
+  // ("serving", "quarter", "plate", "cup") is naming a portion.
+  const bare = text.match(/^\s*(\d+(?:\.\d+)?|\d+\/\d+)\s*(fl\s+)?([a-z]+)\s*$/i)
+  if (!bare) return true
+  return !(bare[2] || Object.hasOwn(MASS_UNITS, bare[3].toLowerCase()))
+}
+
+/**
+ * How much a part may weigh when the catalogue names a helping of that food.
+ *
+ * A weight is the one thing about a portion a photograph carries, and it is why
+ * `reconcile` and `bestFit` are built around it — but it is still the model's
+ * guess, and for MEAT it is the guess that costs the most. Measured on a
+ * photographed plate of Hainanese chicken rice: every density in the breakdown
+ * was right and the whole of a 17 g protein overcount was one number, 220 g of
+ * poached chicken where the picture holds about 125.
+ *
+ * The row that priced it was "Ayam Rebus Nasi Ayam — 1 serving (120 g)". The
+ * catalogue had already said what one helping of exactly that food weighs, and
+ * the cascade threw it away — while a row carrying NO weight would have gone
+ * through `isWholeUnit` and overridden the model's mass completely. The better
+ * the catalogue's data, the less it was believed, which is the wrong way round.
+ *
+ * A CAP RATHER THAN A CLAMP, at half again the stated helping. A restaurant
+ * portion is not a composition table's portion and somebody really can be served
+ * more, so this catches an answer wrong by a factor rather than arbitrating a
+ * generous plate. Downwards only, like everything a weight is allowed to do here.
+ *
+ * The row's serving weight is taken WHOLE and not divided by how many units it
+ * holds, which was the first shape of this and was wrong twice over: a part is a
+ * helping of a food and not one countable item of it, so dividing "4 pieces
+ * (120 g)" down to a single prawn cut a 190 g portion of curry prawns to 45 g.
+ * Against a countable row the cap then never fires, which is the right kind of
+ * inaction: `servingUnitCount` already prices those per unit.
+ */
+export const PORTION_OVER_SERVING = 1.5
+
+export function boundGramsToServing(
+  grams: number | null,
+  /** What one serving of the row weighs, when it names a helping and states one. */
+  servingGrams: number | null,
+): number | null {
+  if (!grams || !servingGrams || servingGrams <= 0) return grams
+  const ceiling = servingGrams * PORTION_OVER_SERVING
+  return grams > ceiling ? Math.round(ceiling) : grams
+}
 
 /**
  * How many of the thing one serving of a catalogue row holds.
@@ -321,56 +383,81 @@ export const plausibleForGrams = (kcal: number, grams: number): boolean =>
   kcal > 0 && grams > 0 && kcal / grams >= MIN_KCAL_PER_G && kcal / grams <= 9
 
 /**
- * Above this much protein per gram, a food IS a protein food: meat, fish, egg,
- * tofu, pulses. Below it, it is a starch, a vegetable, a sauce or a drink.
+ * How much of a food's energy comes from protein.
  *
- * Five grams per hundred is comfortably under cooked pulses (8-9) and tofu (8),
- * and comfortably over cooked rice (2.7), noodles (4), a clear broth (1) and any
- * sauce. It does not need to be a sharp line, because of how it is used.
+ * This is what "what is this made of" has to mean once the two sides are allowed
+ * to disagree about how many calories are in a gram. Compared as DENSITIES, an
+ * omelette and a slice of Canadian bacon look like an argument about portion
+ * size; compared as shares, one is 27% protein and the other 78%, and no amount
+ * of portion disagreement closes that.
  */
-export const PROTEIN_FOOD_PER_G = 0.05
+export const proteinShare = (proteinG: number, kcal: number): number =>
+  kcal > 0 ? (proteinG * 4) / kcal : 0
 
 /**
- * Is this catalogue row a protein food when the part it would price is not?
+ * Is this catalogue row describing a far more protein-heavy food than the part?
  *
- * The systemic version of the double-count, and the one that survived fixing the
- * obvious half. A photographed chicken rice came back with its parts correctly
- * named and correctly weighed — "seasoned rice" 220 g at 6 g of protein, "radish
- * soup" 180 g at 2 g — and the catalogue then priced the rice from a row holding
- * 7.7 g of protein per 100 g and the clear soup from one holding 4.4. Both rows
- * have meat in them; neither part does. The entry came out at 52 g of protein
- * for a photographed plate holding about 38, with the calories inside the band the
- * whole way.
+ * The rows in this catalogue are ranked by NAME and then chosen by CALORIES, and
+ * neither of those can tell one food from another of the same energy density.
+ * Measured, on real plates: a part the model called a "pan-fried omelette" and
+ * priced at 14 g of protein and 16 g of fat in 140 g — a three-egg omelette,
+ * correctly — was priced from "Canadian bacon, cooked, pan-fried" at 28.3 g of
+ * protein per 100 g, because 140 g of bacon costs 203 kcal against the model's
+ * 210 while the catalogue's actual omelette rows fit the calories WORSE. And a
+ * part plainly named "steamed white rice" was charged 27.5 g of protein, from a
+ * row that states no weight at all and so was handed over whole.
  *
- * The asymmetry is deliberate and is the whole reason this is safe. It only
- * fires when the MODEL says the part is not a protein food, so the case it
- * cannot get wrong is the one that matters: a part that really is meat is
- * already over the line, the gate never looks at it, and the catalogue goes on
- * winning the number — which is the arrangement everywhere else in the cascade.
- * What it declines to believe is a lean thing priced from a meaty row, and a
- * model that has just said "6 g of protein in 220 g of rice" is a better witness
- * to THAT than a name match is.
+ * Nothing else in the cascade can see this. Every other gate is a calorie gate,
+ * and Atwater cannot help: the prompt asks the model to make 4/4/9 agree with its
+ * own kcal, so the check confirms the model's arithmetic and never its nutrition.
+ * Protein and carbohydrate are both four calories a gram, which makes trading one
+ * for the other free, and protein for fat nearly so — which is why the calories
+ * have been broadly right all along while the macros drifted.
  *
- * Both tests have to hold, and the second is measured in GRAMS ON THE PLATE
- * rather than in density, because that is the thing worth being wrong about.
- * Written as a density gap it threw out every row for a 20 g dip of dark soy —
- * the model says a sauce has no protein, real soy sauce has 8 g per 100 g, and
- * the ratio test cannot see the difference between that and a plate of rice
- * because a claim of zero divides into anything. What separates them is not the
- * densities, it is that the dip disputes 1.6 g and the rice disputes 11. Under
- * four grams there is nothing here worth overruling the catalogue for.
+ * A SHARE OF ENERGY IS SCALE FREE, and that is what makes this work where a
+ * density comparison could not. Both sides can be handed over per serving, per
+ * gram or per plate; the ratio is the same, so the two thirds of this catalogue
+ * that never state a weight are judged exactly like the rest.
+ *
+ * ONE DIRECTION ONLY. It fires when the ROW claims the larger share, never when
+ * the model does, and that asymmetry is the safety: a model that over-eggs the
+ * protein of real meat is precisely the case the catalogue exists to correct, and
+ * it goes on correcting it. Measured against eleven real (part, row) pairs it
+ * agrees with the photograph nine times, and the two it misses are 1.4-1.5x
+ * disagreements worth a few grams — which no threshold separates from a fried
+ * rice whose row is RIGHT to add the oil the model forgot.
+ *
+ * `disputed` is in GRAMS ON THE PLATE, because that is the thing worth being
+ * wrong about. A 20 g dip of dark soy really does hold 8 g of protein per 100 g
+ * and a model really does report a sauce as zero, so the share test alone throws
+ * out a row that is right; what settles it is that the dip disputes 1.6 g and the
+ * omelette disputes 25.
+ *
+ * TWO AND A HALF IS MEASURED, not argued. `pnpm bench:photos --repeat=3` over
+ * eleven photographed plates against a read reference: at 2.5x the protein bias
+ * is +22% and the mean error 31%; at 2.0x the protein is no better (+23%, 31%) and
+ * calories, carbohydrate and fat are all worse — fat's mean error goes from 30% to
+ * 40%, because a tighter gate starts throwing out rows that were right. Loosening
+ * it is what the benchmark is for; do that rather than reasoning about it.
  */
 export function rowIsMeatier(
-  rowProteinPerG: number | null,
-  partProteinPerG: number | null,
-  /** What one unit of the part weighs, so the disagreement can be weighed too. */
-  partGrams: number | null,
+  /** The row's protein and energy. Per serving or per gram — a share is scale free. */
+  row: { protein: number; kcal: number } | null,
+  /** What the model said ONE unit of the part holds. */
+  part: { protein: number; kcal: number } | null,
+  /** Grams of protein this row would put on the plate OVER the model's claim. */
+  disputed: number,
 ): boolean {
-  if (rowProteinPerG === null || partProteinPerG === null) return false
-  if (!partGrams || partGrams <= 0) return false
-  if (partProteinPerG >= PROTEIN_FOOD_PER_G) return false
-  if (rowProteinPerG <= partProteinPerG * 2.5) return false
-  return (rowProteinPerG - partProteinPerG) * partGrams >= 4
+  if (!row || !part) return false
+  // Neither share means anything without energy behind it, and a part priced at
+  // nothing would give the row an infinite head start: `proteinShare` answers 0
+  // for it, and 0 times any factor is 0, so every protein-bearing row would look
+  // like a different food. Nothing to compare is not a reason to reject.
+  if (row.kcal <= 0 || part.kcal <= 0) return false
+  if (proteinShare(row.protein, row.kcal) <= proteinShare(part.protein, part.kcal) * 2.5) {
+    return false
+  }
+  return disputed >= 4
 }
 
 /**
