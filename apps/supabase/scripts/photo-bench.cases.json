@@ -1,0 +1,68 @@
+[
+  {
+    "file": "01-chickenrice-late.jpg",
+    "dish": "Hainanese chicken rice, soup, chilli and dark soy",
+    "reference": { "kcal": 660, "protein_g": 36, "carbs_g": 78, "fat_g": 22 },
+    "read": "One oval dish of sliced poached chicken, about 8 slices and 125 g of meat. One moulded dome of chicken rice, 160 g. A bowl of clear soup. Two small dips. Singapore's composition table puts one plate of steamed Hainanese chicken rice at 600 kcal and 33 g of protein, which the catalogue also holds, and the soup and dips are the rest."
+  },
+  {
+    "file": "02-nasilemak-porkchop.jpg",
+    "dish": "Nasi lemak with fried chicken, pork chop, egg and sambal",
+    "reference": { "kcal": 1120, "protein_g": 61, "carbs_g": 90, "fat_g": 55 },
+    "read": "Coconut rice about 180 g, one bone-in fried chicken quarter at roughly 110 g of meat, a fried egg, a slab of pork chop about 80 g, two or three fried fritters, a vegetable kerabu and a cup of sambal. The one plate here where the breakdown is close."
+  },
+  {
+    "file": "03-porkbelly.jpg",
+    "dish": "Pork belly with green peppers, omelette and rice",
+    "reference": { "kcal": 720, "protein_g": 42, "carbs_g": 55, "fat_g": 38 },
+    "read": "Three shared dishes photographed together: a whole cut omelette of two or three eggs, a plate of stir-fried pork belly with green peppers, and a small bowl of PLAIN white rice, not fried. Pork belly is about 13 g of protein per 100 g and mostly fat, so a plate of it cannot be 40% protein by energy."
+  },
+  {
+    "file": "04-chickenrice-early.jpg",
+    "dish": "Hainanese chicken rice, soup, chilli and dark soy",
+    "reference": { "kcal": 660, "protein_g": 36, "carbs_g": 78, "fat_g": 22 },
+    "read": "The same lunch as 01, photographed twice and cropped differently. Two readings of one meal are worth having: they measure how much of the answer is the pipeline and how much is the framing."
+  },
+  {
+    "file": "05-nasilemak-friedchicken.jpg",
+    "dish": "Boxed nasi lemak with fried chicken",
+    "reference": { "kcal": 675, "protein_g": 31, "carbs_g": 70, "fat_g": 30 },
+    "read": "A takeaway box: rice about 160 g, one fried chicken thigh at roughly 85 g of meat off the bone, fried anchovies and shallots, a cabbage leaf, a cucumber slice, a cup of gravy."
+  },
+  {
+    "file": "06-korean-friedchicken.jpg",
+    "dish": "Karaage with potato salad, rice and soup",
+    "reference": { "kcal": 1065, "protein_g": 39, "carbs_g": 80, "fat_g": 57 },
+    "read": "About 180 g of fried chicken, a scoop of potato salad, a generous blob of mayonnaise, pickled radish, a full bowl of white rice and a bowl of soup. The mayonnaise is a quarter of the calories and the easiest thing on the plate to miss, which is why this case is here."
+  },
+  {
+    "file": "07-prawn-pasta.jpg",
+    "dish": "Grilled prawn pasta with arugula",
+    "reference": { "kcal": 560, "protein_g": 30, "carbs_g": 60, "fat_g": 22 },
+    "read": "Restaurant tagliatelle, about 180 g cooked, with four or five large shell-on prawns yielding roughly 100 g of meat, oil and arugula. Prawn shells and heads are on the plate and are not food."
+  },
+  {
+    "file": "08-omelette-rice-curry.jpg",
+    "dish": "Rolled omelette with rice and prawn curry",
+    "reference": { "kcal": 600, "protein_g": 30, "carbs_g": 50, "fat_g": 28 },
+    "read": "Four slices of rolled omelette with a meat filling, about 130 g. A modest heap of plain white rice, about 140 g. A tub of prawn sambal with onions, about 150 g including the oil."
+  },
+  {
+    "file": "09-nasikandar.jpg",
+    "dish": "Fried beehoon with fried chicken and fried sides",
+    "reference": { "kcal": 950, "protein_g": 35, "carbs_g": 95, "fat_g": 51 },
+    "read": "A takeaway plate of fried beehoon about 150 g, one fried chicken thigh at roughly 80 g of meat, two spring rolls, three fritter discs and a handful of battered vegetable fritters. Almost everything is fried, so the calories are high and the protein is not."
+  },
+  {
+    "file": "10-friedchicken-cream-set.jpg",
+    "dish": "Karaage with cream sauce, potatoes, rice and soup",
+    "reference": { "kcal": 1185, "protein_g": 39, "carbs_g": 75, "fat_g": 66 },
+    "read": "About 180 g of fried chicken under a heavy tartar-style cream sauce, potato wedges, a bowl of white rice and a soup. Fried chicken with cream sauce is a FAT dish: the pipeline priced this part at 100 g of carbohydrate, which is the same wrong-row failure as the protein cases wearing a different macro."
+  },
+  {
+    "file": "12-claypot-beef.jpg",
+    "dish": "Claypot rice with sliced beef and minced meat",
+    "reference": { "kcal": 865, "protein_g": 43, "carbs_g": 105, "fat_g": 30 },
+    "read": "A claypot of rice, about 250 g, topped with roughly 80 g of sliced beef, 60 g of minced meat and an egg yolk, with a side of edamame and a dipping sauce. The pipeline priced the rice part at 380 g and 25 g of protein, which is the whole pot with the meat already in it, and then added the meat again."
+  }
+]

@@ -10,7 +10,9 @@
 // is why the imperial spellings look the way they do.
 
 import {
+  boundGramsToServing,
   isWholeMealServing,
+  namesAPortion,
   plausibleForGrams,
   reconcile,
   rowIsMeatier,
@@ -88,42 +90,93 @@ Deno.test('isWholeMealServing tells a complete meal from a helping of one food',
   eq(isWholeMealServing('1 template'), false, 'not a word boundary')
 })
 
-Deno.test('rowIsMeatier refuses a lean part a row with meat in it', () => {
-  // Both measured, and both from the same plate of chicken rice. The model said
-  // 6 g of protein in 220 g of seasoned rice (2.7 per 100) and 2 g in 180 g of
-  // clear radish broth (1.1 per 100); the catalogue answered with rows at 7.7 and
-  // 4.4 per 100, which are rice with the bird in it and a soup with meat in it.
-  eq(rowIsMeatier(0.077, 0.027, 220), true, 'rice with chicken in it, 11 g in dispute')
-  eq(rowIsMeatier(0.044, 0.011, 180), true, 'a soup with meat in it, 5.9 g in dispute')
-  // The founding row: "Rice, Chicken (Nasi Ayam)", 16.1 g in 230 g, against the
-  // model's 5.5 g in 200 g of what it called chicken rice.
-  eq(rowIsMeatier(16.1 / 230, 5.5 / 200, 200), true, 'the entry that started this')
+Deno.test('rowIsMeatier tells one food from another with the same calories', () => {
+  // Every pair here is a real (part, chosen row) off a real scan, with the answer
+  // read off the photograph. Both sides may be quoted per serving or per gram — a
+  // share of energy is scale free, which is what lets this judge the two thirds of
+  // the catalogue that state no weight.
+  const fires = (
+    rowProtein: number,
+    rowKcal: number,
+    partProtein: number,
+    partKcal: number,
+    disputed: number,
+  ) =>
+    rowIsMeatier(
+      { protein: rowProtein, kcal: rowKcal },
+      { protein: partProtein, kcal: partKcal },
+      disputed,
+    )
 
-  // The asymmetry that makes this safe: a part the model already calls a protein
-  // food is never second-guessed, so the catalogue goes on setting the number for
-  // the thing it matters most for.
-  eq(rowIsMeatier(0.144, 0.2, 160), false, 'poached chicken, and the row is leaner anyway')
-  eq(rowIsMeatier(0.31, 0.2, 160), false, 'a leaner row than the model claimed, still meat')
-  eq(rowIsMeatier(0.25, 0.05, 100), false, 'exactly at the line counts as a protein food')
-  eq(rowIsMeatier(0.3, 0.09, 150), false, 'cooked pulses and tofu are protein foods')
+  // The three the gate exists for. An omelette priced from Canadian bacon, at 78%
+  // of the row's energy against 27% of the model's:
+  eq(fires(28.3, 145, 14, 210, 25.6), true, 'Canadian bacon is not an omelette')
+  // rice priced from rice-with-the-chicken-in-it, which is where this started:
+  eq(fires(16.1, 278, 5.5, 286, 8.5), true, 'a plate of chicken rice is not the rice under one')
+  // and the one that needed the share test to be WEIGHT FREE. This row states no
+  // weight, so it is handed over whole and a plate of steamed rice was charged
+  // 27.5 g of protein.
+  eq(fires(27.5, 226, 5, 260, 22.5), true, 'a weightless row is judged like any other')
 
-  // Small parts cannot dispute much, which is what keeps the condiments out of
-  // it. A model that says a sauce has no protein makes the ratio test useless —
-  // zero divides into anything — so the grams are what separate a 20 g dip of
-  // real soy sauce, worth 1.6 g, from a plate of rice worth 11.
-  eq(rowIsMeatier(0.08, 0, 20), false, 'dark soy sauce: genuinely 8 g per 100, but 1.6 g of it')
-  eq(rowIsMeatier(0.06, 0, 25), false, 'chilli sauce, 1.5 g')
-  eq(rowIsMeatier(0.08, 0, 200), true, 'the same density over a real portion is another matter')
+  // ONE DIRECTION ONLY, and this is the safety. A model that over-eggs the protein
+  // of real meat is the case the catalogue is here to correct: it claimed 66 g in
+  // 220 g of poached chicken and the row's 23 g a serving is the better figure.
+  eq(fires(23, 215, 66, 396, -19), false, 'the row claims the smaller share')
+  // Nor when the row is right to ADD protein the model left out. Fried rice has
+  // oil and egg in it that a model reading a photograph does not count.
+  eq(fires(4.6, 177, 4, 234, 4.3), false, 'a fried rice row corrects the model, at 1.5x')
+  eq(fires(2.7, 130, 4.4, 260, 1), false, 'plain rice, and the two agree')
 
-  // Composition has to disagree, not just add up. Egg noodles really are about
-  // 6 g per 100 g and a model that says 2.7 is only a little wrong.
-  eq(rowIsMeatier(0.06, 0.027, 300), false, 'egg noodles: 9 g in dispute, but ratio 2.2')
+  // Grams on the plate, not shares, is the second test. Dark soy really does hold
+  // 8 g of protein per 100 g and a model really does report a sauce as zero.
+  eq(fires(9.3, 76, 0, 10, 1.6), false, 'a 20 g dip disputes 1.6 g, not worth an argument')
+  eq(fires(9.3, 76, 0, 100, 18.6), true, 'the same row over a real portion is another matter')
 
-  // Nothing to compare is not a reason to reject: most parts state no macros and
-  // most rows in this catalogue state no weight.
-  eq(rowIsMeatier(null, 0.027, 220), false, 'no row density')
-  eq(rowIsMeatier(0.077, null, 220), false, 'the model said nothing about protein')
-  eq(rowIsMeatier(0.077, 0.027, null), false, 'and nothing about the weight')
+  // Nothing to compare is not a reason to reject.
+  eq(rowIsMeatier(null, { protein: 5, kcal: 260 }, 20), false, 'no row figures')
+  eq(rowIsMeatier({ protein: 7, kcal: 121 }, null, 20), false, 'the model said nothing')
+})
+
+Deno.test('namesAPortion tells a helping from a measurement', () => {
+  eq(namesAPortion('1 serving (120 g)'), true, 'a helping that states its weight')
+  eq(namesAPortion('1 quarter (148 g)'), true, 'a quarter chicken')
+  eq(namesAPortion('1 bowl'), true, 'a bowl')
+  eq(namesAPortion('10 sticks'), true, 'ten satay')
+  eq(namesAPortion('1 cup'), true, 'a cup is a portion, even with no weight')
+  eq(namesAPortion('1 plate (315 g)'), true, 'a plate')
+
+  // The units a composition table publishes in. These say how much substance
+  // there is and nothing about how much of it anybody is served.
+  eq(namesAPortion('100 g'), false, 'a bare weight')
+  eq(namesAPortion('250g'), false, 'no space')
+  eq(namesAPortion('3.0 oz'), false, 'ounces')
+  eq(namesAPortion('1.0 fl oz'), false, 'fluid ounces')
+  eq(namesAPortion('330 ml'), false, 'millilitres')
+  eq(namesAPortion('1/2 lb'), false, 'a fraction of a pound')
+  eq(namesAPortion(null), false, 'no label')
+})
+
+Deno.test('boundGramsToServing caps a weight the catalogue calls a helping', () => {
+  // The measured case: "Ayam Rebus Nasi Ayam — 1 serving (120 g)" against a model
+  // that said 220 g, where the photograph holds about 125. Capped at half again a
+  // helping, because a restaurant portion is not a composition table's portion.
+  eq(boundGramsToServing(220, 120), 180, 'capped at 1.5 servings')
+  eq(boundGramsToServing(150, 120), 150, 'inside the cap, left alone')
+  eq(boundGramsToServing(180, 120), 180, 'exactly at the cap')
+
+  // Downwards only, like everything else a weight is allowed to do here.
+  eq(boundGramsToServing(60, 120), 60, 'a small helping is not raised')
+
+  // The serving weight is taken WHOLE. Divided by how many units it holds — the
+  // first shape of this — a row reading "4 pieces (120 g)" cut a 190 g portion of
+  // curry prawns to 45 g, because a part is a helping of a food and not one
+  // countable item of it.
+  eq(boundGramsToServing(190, 120), 180, 'a portion against a four-piece serving')
+  eq(boundGramsToServing(30, 300), 30, 'and a countable row simply never fires')
+
+  // Nothing to cap against.
+  eq(boundGramsToServing(220, null), 220, 'the row states no weight')
+  eq(boundGramsToServing(null, 120), null, 'the model states no weight')
 })
 
 Deno.test('servingUnitCount counts only countable units', () => {
