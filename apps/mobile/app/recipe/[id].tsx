@@ -257,7 +257,7 @@ export default function RecipeDetailScreen() {
             step={0.5}
             min={0.5}
             max={recipe.servings * 2}
-            unit={t('recipes:detail.servingLabel')}
+            unit={t('recipes:detail.servingLabel', { count: quantity })}
             decrementLabel={t('common:a11y.decrease')}
             incrementLabel={t('common:a11y.increase')}
           />

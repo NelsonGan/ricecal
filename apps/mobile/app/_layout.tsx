@@ -9,7 +9,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { useFonts } from 'expo-font'
 import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
-import { type ReactNode, useEffect, useMemo } from 'react'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
@@ -28,6 +28,7 @@ import { initOnlineManager } from '@/lib/online'
 import { persistOptions, queryClient } from '@/lib/query'
 import { initServices } from '@/lib/startup'
 import { fontMap } from '@/theme/fonts'
+import { storedThemePreference, storeThemePreference } from '@/theme/preference'
 import { ThemeProvider } from '@/theme/ThemeProvider'
 import { NAV_BAR_HEIGHT, NumpadProvider, ToastProvider } from '@/ui'
 
@@ -76,7 +77,7 @@ export default Sentry.wrap(function RootLayout() {
             {/* Above the navigator so every screen and every Modal inherits the
             palette — the variable scope follows the React tree, not the native
             view hierarchy. */}
-            <ThemeProvider>
+            <ThemeScope>
               <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
                 {/* Inside the query provider, because signing in and out clears the
                 cache — one account's diary must never appear under another's
@@ -111,7 +112,7 @@ export default Sentry.wrap(function RootLayout() {
                   </SelectedDateProvider>
                 </SessionProvider>
               </PersistQueryClientProvider>
-            </ThemeProvider>
+            </ThemeScope>
           </NumpadScope>
         </SafeAreaProvider>
       </KeyboardProvider>
@@ -135,6 +136,28 @@ export default Sentry.wrap(function RootLayout() {
  * label in `src/ui` is a prop, and this is the one provider whose caller is the
  * root layout rather than a screen with a `t` already in scope.
  */
+/**
+ * Holds the two ends of `ThemeProvider`'s persistence contract together.
+ *
+ * The provider takes an initial preference and reports every change; the store
+ * is `src/theme/preference.ts`. Both here rather than split across the layout
+ * and the settings screen, because a read in one file and a write in another is
+ * how they came to disagree in the first place — the read existed, the write
+ * did not, and Dark lasted until the app was next killed.
+ *
+ * `useState` for the initial read so it happens ONCE, before the first paint,
+ * rather than on every re-render of the root.
+ */
+function ThemeScope({ children }: { children: ReactNode }) {
+  const [initial] = useState(storedThemePreference)
+
+  return (
+    <ThemeProvider initialPreference={initial} onPreferenceChange={storeThemePreference}>
+      {children}
+    </ThemeProvider>
+  )
+}
+
 function NumpadScope({ children }: { children: ReactNode }) {
   const { t } = useTranslation('common')
   const labels = useMemo(
@@ -263,11 +286,16 @@ function RootStack() {
         name="paywall/intro"
         options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
       />
-      {/* A PAGE, not a modal. It carries ten features, three plans and small
-          print, and it is reached from somewhere worth returning to — so it
-          pushes and wears a back chevron like every other full page here. The
-          onboarding one below still presents, because it replaces the tour and
-          has nothing behind it to go back to. */}
+      {/* `paywall/index` has no entry at all, and that is the decision rather
+          than an omission: it is A PAGE, not a modal — ten features, three
+          plans and small print, reached from the dish that was about to be
+          logged — so it takes the stack's default push and wears a back
+          chevron like every other full page here.
+
+          These three do present. Welcome and ended are arrivals rather than
+          places: one lands after a purchase settles and the other after a
+          subscription lapses, and neither has a screen behind it worth
+          returning to. The reminder is a sheet-sized nudge. */}
       <Stack.Screen name="paywall/welcome" options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="paywall/reminder" options={{ presentation: 'modal' }} />
       <Stack.Screen name="paywall/ended" options={{ presentation: 'fullScreenModal' }} />

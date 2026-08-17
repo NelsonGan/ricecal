@@ -248,6 +248,7 @@ as $$
       count(*)::integer                                       as days,
       (count(*) filter (where d.entry_count > 0))::integer    as days_logged,
       round(avg(d.kcal) filter (where d.entry_count > 0), 0)  as kcal_avg,
+      count(d.weight_kg)::integer                             as weigh_ins,
       (array_agg(d.weight_kg order by d.at)      filter (where d.weight_kg is not null))[1] as weight_first,
       (array_agg(d.weight_kg order by d.at desc) filter (where d.weight_kg is not null))[1] as weight_last
     from days d
@@ -264,8 +265,17 @@ as $$
     -- began rather than the first one inside it. A user who weighs in on
     -- Wednesday and Sunday changed by the distance from the week before, not by
     -- the distance between those two days.
+    --
+    -- ONE READING AND NOTHING BEFORE IT IS NOT A CHANGE OF ZERO. The fallback
+    -- to the period's own first reading is right whenever there are two of
+    -- them; with a single weigh-in it names the same row twice and subtracts it
+    -- from itself, so somebody's first ever time on the scale was reported back
+    -- as "0.0 kg" -- a claim the data cannot support, in a tile whose whole job
+    -- is to say which way the weight went. Null is what the reader is owed, and
+    -- the card already draws a dash for it.
     case
       when f.weight_last is null then null
+      when f.weigh_ins = 1 and wb.weight_kg is null then null
       else f.weight_last - coalesce(wb.weight_kg, f.weight_first)
     end,
     s.marks
@@ -406,8 +416,12 @@ as $$
     (count(*) filter (where d.water_glasses >= coalesce(d.goal_water, 8)))::integer,
 
     (array_agg(d.weight_kg order by d.at desc) filter (where d.weight_kg is not null))[1],
+    -- One reading and nothing before it is not a change of zero: the fallback
+    -- would subtract that reading from itself. Same rule, and the same reason,
+    -- as the one written out in `review_periods`.
     case
       when count(d.weight_kg) = 0 then null
+      when count(d.weight_kg) = 1 and (select b.weight_kg from before b) is null then null
       else (array_agg(d.weight_kg order by d.at desc) filter (where d.weight_kg is not null))[1]
          - coalesce(
              (select b.weight_kg from before b),

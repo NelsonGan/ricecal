@@ -140,6 +140,9 @@ export function MacroBar({
     label: amountLabel ?? label,
     replaceFirst: true,
     onBlur: onDoneAmount,
+    // Through the hook rather than onto the element: see the note beside
+    // `returnKeyType` in `useNumpadField`.
+    returnKeyType: 'done',
   })
 
   return (
@@ -157,7 +160,6 @@ export function MacroBar({
             placeholder={amount}
             placeholderTextColor={colors.faint}
             keyboardType="decimal-pad"
-            returnKeyType="done"
             autoFocus
             selectTextOnFocus
             accessibilityLabel={amountLabel ?? label}

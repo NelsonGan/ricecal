@@ -167,7 +167,16 @@ export const recipes = {
   },
 
   detail: {
-    servingLabel: 'serving',
+    /**
+     * The word under the stepper's number, and it has to agree with it.
+     *
+     * A count-bearing key with no `{{count}}` in the text: the stepper draws
+     * the figure itself, one line above, so a unit carrying its own copy of it
+     * would read "3 3 servings". The count is passed for the plural rule and
+     * for nothing else.
+     */
+    servingLabel_one: 'serving',
+    servingLabel_other: 'servings',
     portion: {
       half: 'Half',
       one: '1 serving',

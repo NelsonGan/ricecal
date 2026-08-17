@@ -131,6 +131,9 @@ function KcalFigure({
     replaceFirst: true,
     label,
     onBlur: onDone,
+    // Through the hook rather than onto the element: see the note beside
+    // `returnKeyType` in `useNumpadField`.
+    returnKeyType: 'done',
   })
 
   if (!editing) {
@@ -157,7 +160,6 @@ function KcalFigure({
       // Does nothing while the pad is up, and is the fallback if a platform
       // ever declines to suppress the keyboard.
       keyboardType="number-pad"
-      returnKeyType="done"
       autoFocus
       selectTextOnFocus
       accessibilityLabel={label}
@@ -679,6 +681,18 @@ export default function FoodDetail() {
       value: sodium === undefined ? undefined : t('logging:detail.milligrams', { value: sodium }),
     },
   ] as const
+
+  /**
+   * Whether there is a "More nutrients" section at all.
+   *
+   * Read twice — by the control and by the rule above it — because a divider is
+   * a separator and a separator with nothing on the far side of it is just a
+   * line across the bottom of the card. Most of the catalogue has none of these
+   * columns, so that was the ordinary case rather than the edge one: every
+   * barcoded product with a bare macro panel drew a rule under its last macro
+   * and a band of empty space under that.
+   */
+  const hasExtras = extras.some((row) => row.value !== undefined)
 
   /**
    * Put a photo of the actual plate on this row.
@@ -1224,13 +1238,14 @@ export default function FoodDetail() {
           </Tappable>
         ) : null}
 
-        <Divider />
+        {/* The rule goes with the section it introduces. See `hasExtras`. */}
+        {hasExtras ? <Divider /> : null}
 
         {/* Only when there is something under it. This used to be shown for
             every dish so that "nobody recorded it" was still an answer — but
             most of the catalogue has none of these columns, so most rows grew
             a control that opened three dashes. */}
-        {extras.some((row) => row.value !== undefined) ? (
+        {hasExtras ? (
           <Tappable
             className="flex-row items-center justify-between"
             onPress={() => setShowNutrients((open) => !open)}
@@ -1261,6 +1276,35 @@ export default function FoodDetail() {
                 : t('logging:detail.nutrientsNote')}
             </Text>
           </View>
+        ) : null}
+
+        {/* WHERE THE NUMBERS CAME FROM, and for half the catalogue it is a
+            licence condition rather than a courtesy.
+
+            Open Food Facts is ODbL: serving its facts through an app makes a
+            Produced Work, and attribution is required. The Worker carries
+            `source_attribution` for exactly this reason and `mappers.ts` maps
+            it, but nothing rendered it — the obligation was met everywhere
+            except on the one screen a user reads the figures on.
+
+            Off `catalogueFood` rather than `food`: a saved entry prices itself
+            from its own snapshot (`foodFromEntry`), which has no room for a
+            licence, and a tier-4 estimate or a tier-5 archetype has no
+            catalogue row behind it to credit. Absent means nobody to credit.
+
+            Printed VERBATIM and not through i18n. The string is the source's
+            own credit line, carried per row from the payload that loaded it —
+            "Data from Open Food Facts, available under the Open Database
+            License" — so it is already a sentence, and it is one whose wording
+            the licence chose rather than us. Framed with a lead-in it read
+            "Nutrition data from Data from Open Food Facts". */}
+        {catalogueFood?.sourceAttribution ? (
+          <>
+            <Divider />
+            <Text variant="meta" className="text-faint">
+              {catalogueFood.sourceAttribution}
+            </Text>
+          </>
         ) : null}
       </Card>
 
