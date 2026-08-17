@@ -12,17 +12,6 @@ export type MacroBarsProps = {
   eaten: Macros
   targets: Pick<Targets, 'carbs' | 'protein' | 'fat'>
   /**
-   * Makes each amount tappable, for the one screen where these figures are
-   * editable — the entry a user is correcting. Everywhere else they are a
-   * reading of something already decided.
-   */
-  onEdit?: (macro: 'carbs' | 'protein' | 'fat') => void
-  /** Which row is being typed into, and what has been typed so far. */
-  editing?: 'carbs' | 'protein' | 'fat' | null
-  editingValue?: string
-  onChangeAmount?: (value: string) => void
-  onDoneAmount?: () => void
-  /**
    * Reads "120/203g" instead of "120g".
    *
    * The bar has always shown the share of the day's allowance and never what the
@@ -46,17 +35,7 @@ export type MacroBarsProps = {
  * nothing" — and a card whose height is bounded, which is what a keyboard
  * does, then collapsed all three bars into a band with their labels gone.
  */
-export function MacroBars({
-  eaten,
-  targets,
-  showGoal = false,
-  onEdit,
-  editing = null,
-  editingValue = '',
-  onChangeAmount,
-  onDoneAmount,
-  className,
-}: MacroBarsProps) {
+export function MacroBars({ eaten, targets, showGoal = false, className }: MacroBarsProps) {
   const { t } = useTranslation()
 
   const rows = [
@@ -93,11 +72,6 @@ export function MacroBars({
           }
           value={progressOf(row.grams, row.goal)}
           tone={row.tone}
-          onPressAmount={onEdit ? () => onEdit(row.key) : undefined}
-          editing={editing === row.key}
-          editingValue={editingValue}
-          onChangeAmount={onChangeAmount}
-          onDoneAmount={onDoneAmount}
         />
       ))}
     </View>

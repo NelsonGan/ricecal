@@ -135,6 +135,7 @@ export function useLogFood() {
  */
 function changedFields(patch: EntryPatch): string[] {
   const changed: string[] = []
+  if (patch.when !== undefined) changed.push('when')
   if (patch.quantity !== undefined) changed.push('quantity')
   if (patch.servingId !== undefined || patch.servingFactor !== undefined) changed.push('serving')
   if (patch.name !== undefined) changed.push('name')
@@ -147,7 +148,26 @@ function changedFields(patch: EntryPatch): string[] {
 
 export type EntryPatch = {
   id: string
+  /**
+   * The day this entry is on NOW, which is what has to be invalidated. Not the
+   * day it is being moved to — see `when`.
+   */
   logDate: string
+  /**
+   * WHEN this was eaten, and both columns of it.
+   *
+   * `log_date` is the day the entry counts towards and `logged_at` is the
+   * instant, and they are written together for the same reason a portion writes
+   * all three of its columns: sent alone, the timestamp would move the row inside
+   * a day it had not left, and the date would move the row to a day whose
+   * ordering still read off the old afternoon. The screen asks one question and
+   * `when.ts` turns the answer into the pair.
+   *
+   * Moving the DATE is what makes this more than an edit: the entry leaves one
+   * day's totals and joins another's, so `onSuccess` invalidates both and the
+   * streak as well — an emptied day can break one.
+   */
+  when?: { logDate: string; loggedAt: string }
   quantity?: number
   /**
    * A different portion, and all three columns of it.
@@ -210,6 +230,7 @@ export function useUpdateEntry() {
   return useMutation({
     mutationFn: async ({
       id,
+      when,
       quantity,
       servingId,
       servingLabel,
@@ -235,6 +256,8 @@ export function useUpdateEntry() {
         await supabase
           .from('food_logs')
           .update({
+            // Both or neither, for the reason on `when`.
+            ...(when === undefined ? {} : { log_date: when.logDate, logged_at: when.loggedAt }),
             ...(quantity === undefined ? {} : { quantity }),
             ...(servingId === undefined ? {} : { serving_id: servingId }),
             // The two that make a portion change count for anything. Sent
@@ -299,6 +322,16 @@ export function useUpdateEntry() {
     onSuccess: (_row, patch) => {
       track('Entry Updated', { changed: changedFields(patch) })
       queryClient.invalidateQueries({ queryKey: keys.day(userId, patch.logDate) })
+      // The day it moved TO, when it moved. Without this the meal arrives on a
+      // day whose cached answer was worked out before it got there — and if that
+      // day happens to be the one on screen, it simply does not appear.
+      if (patch.when && patch.when.logDate !== patch.logDate) {
+        queryClient.invalidateQueries({ queryKey: keys.day(userId, patch.when.logDate) })
+        // A day emptied by the move can break a streak, and a day filled by it
+        // can start one. No other kind of patch can change which days have
+        // entries on them, which is why this is not unconditional.
+        queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
+      }
       // A corrected portion is a different day total, which is a different bar.
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })

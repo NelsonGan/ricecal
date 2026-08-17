@@ -244,6 +244,11 @@ export const logging = {
     plateTitle: 'INGREDIENTS',
     plateTotal: 'Total',
     /**
+     * Every part taken off. The entry survives as whatever its own portion costs,
+     * so this says what will happen rather than standing in the way.
+     */
+    plateEmptied: 'Nothing left on the plate. The entry goes back to counting as one serving.',
+    /**
      * How many of an ingredient are on the plate. Shown at one as well: a
      * count that appears only above one reads as a badge on the busy rows
      * rather than as the amount every row has.
@@ -258,6 +263,14 @@ export const logging = {
      * is actually moving.
      */
     timesWeight: '× {{amount}} · {{grams}} g',
+    /**
+     * The same two, plus what the part costs, for the sheet where the amount is
+     * being changed. On the card the calories have a column of their own; in the
+     * sheet that column is where the buttons are, so the figure joins the line
+     * they are moving.
+     */
+    timesWeightKcal: '× {{amount}} · {{grams}} g · {{kcal}} kcal',
+    timesKcal: '× {{amount}} · {{kcal}} kcal',
     /** The per-ingredient portion steppers, and the one that empties a row. */
     lessOf: 'Less {{name}}',
     moreOf: 'More {{name}}',
@@ -271,9 +284,35 @@ export const logging = {
      * macros need no label of their own — the bar beside each one already
      * carries its name.
      */
-    editKcal: 'Edit the calories',
-    /** Renaming one logged entry, which does not rename the dish. */
-    nameField: 'What to call this',
+    editKcal: 'Calories',
+    /**
+     * The sheet those four figures are typed in, and the three "Edit" controls
+     * that open one. Each label names the card rather than repeating the word,
+     * because a screen reader hearing three "Edit" buttons on one screen learns
+     * nothing from any of them.
+     */
+    figuresTitle: 'Your own figures',
+    macrosTitle: 'Macros',
+    /**
+     * The three pencils, and they are the only words those controls have: the
+     * button itself is the icon alone, so a screen reader hearing three of them
+     * on one screen needs each to say WHICH card it opens.
+     */
+    editFigures: 'Edit the calories and macros',
+    editPlate: 'Edit the ingredients',
+    editDetails: 'Edit the name, day and time',
+    /** On the card, when at least one figure was typed. See the reset link. */
+    yourFigures: 'Your own figures, not the app’s.',
+    /**
+     * The two field labels in the details sheet, and they are ONE WORD each.
+     * "What to call this" and "When you ate it" were sentences where a label was
+     * wanted: a field with a value in it and a heading over it does not need the
+     * heading to also explain the field.
+     *
+     * Renaming one logged entry writes `display_label`, so it does not rename the
+     * dish for anyone else who logged it.
+     */
+    nameField: 'Name',
     numbersReset: 'Use the app’s figures',
     /**
      * Stands in for a serving label the catalogue import left unusable — a
@@ -293,6 +332,33 @@ export const logging = {
       extraRice: 'Extra rice',
     },
     editByHand: 'Edit the details by hand',
+    /**
+     * WHEN it was eaten: the day it counts towards and the time on the row.
+     *
+     * Two columns and one question — see `features/logging/when.ts`. It reads as
+     * one line under the title, the same pair of facts the diary row prints under
+     * a dish name, and the sheet asks once.
+     */
+    whenValue: '{{day}} at {{time}}',
+    /**
+     * The row in the details sheet that opens the picker. A value with a way in
+     * rather than the controls themselves — five of those laid out flat is what
+     * the picker replaced.
+     */
+    whenRow: 'Date',
+    /** The four wheels, to a screen reader. Each is a run of near-identical rows. */
+    dayTitle: 'Day',
+    timeTitle: 'Time',
+    hour: 'Hour',
+    minute: 'Minute',
+    am: 'am',
+    pm: 'pm',
+    /**
+     * Said when the entry has left the day the user is looking at. Without it
+     * the diary they land back on has one fewer row and a meal moved to
+     * yesterday reads as a meal deleted.
+     */
+    movedTo: 'Moved to {{day}}',
     /**
      * The footer. Short because it shares the row with "Fix it" — "Save
      * changes" and a sparkle button do not both fit on a small phone.
