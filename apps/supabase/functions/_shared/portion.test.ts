@@ -93,25 +93,37 @@ Deno.test('rowIsMeatier refuses a lean part a row with meat in it', () => {
   // 6 g of protein in 220 g of seasoned rice (2.7 per 100) and 2 g in 180 g of
   // clear radish broth (1.1 per 100); the catalogue answered with rows at 7.7 and
   // 4.4 per 100, which are rice with the bird in it and a soup with meat in it.
-  eq(rowIsMeatier(0.077, 0.027), true, 'rice with chicken in it')
-  eq(rowIsMeatier(0.044, 0.011), true, 'a soup with meat in it')
+  eq(rowIsMeatier(0.077, 0.027, 220), true, 'rice with chicken in it, 11 g in dispute')
+  eq(rowIsMeatier(0.044, 0.011, 180), true, 'a soup with meat in it, 5.9 g in dispute')
+  // The founding row: "Rice, Chicken (Nasi Ayam)", 16.1 g in 230 g, against the
+  // model's 5.5 g in 200 g of what it called chicken rice.
+  eq(rowIsMeatier(16.1 / 230, 5.5 / 200, 200), true, 'the entry that started this')
 
   // The asymmetry that makes this safe: a part the model already calls a protein
   // food is never second-guessed, so the catalogue goes on setting the number for
   // the thing it matters most for.
-  eq(rowIsMeatier(0.144, 0.2), false, 'poached chicken, and the row is leaner anyway')
-  eq(rowIsMeatier(0.31, 0.2), false, 'a leaner row than the model claimed, still meat')
-  eq(rowIsMeatier(0.25, 0.05), false, 'exactly at the line counts as a protein food')
-  eq(rowIsMeatier(0.3, 0.09), false, 'cooked pulses and tofu are protein foods')
+  eq(rowIsMeatier(0.144, 0.2, 160), false, 'poached chicken, and the row is leaner anyway')
+  eq(rowIsMeatier(0.31, 0.2, 160), false, 'a leaner row than the model claimed, still meat')
+  eq(rowIsMeatier(0.25, 0.05, 100), false, 'exactly at the line counts as a protein food')
+  eq(rowIsMeatier(0.3, 0.09, 150), false, 'cooked pulses and tofu are protein foods')
 
-  // A gram either way is not evidence. Both tests have to hold.
-  eq(rowIsMeatier(0.02, 0.005), false, 'a sauce with a trace of protein: ratio yes, gap no')
-  eq(rowIsMeatier(0.045, 0.03), false, 'gap yes, ratio no')
+  // Small parts cannot dispute much, which is what keeps the condiments out of
+  // it. A model that says a sauce has no protein makes the ratio test useless —
+  // zero divides into anything — so the grams are what separate a 20 g dip of
+  // real soy sauce, worth 1.6 g, from a plate of rice worth 11.
+  eq(rowIsMeatier(0.08, 0, 20), false, 'dark soy sauce: genuinely 8 g per 100, but 1.6 g of it')
+  eq(rowIsMeatier(0.06, 0, 25), false, 'chilli sauce, 1.5 g')
+  eq(rowIsMeatier(0.08, 0, 200), true, 'the same density over a real portion is another matter')
+
+  // Composition has to disagree, not just add up. Egg noodles really are about
+  // 6 g per 100 g and a model that says 2.7 is only a little wrong.
+  eq(rowIsMeatier(0.06, 0.027, 300), false, 'egg noodles: 9 g in dispute, but ratio 2.2')
 
   // Nothing to compare is not a reason to reject: most parts state no macros and
   // most rows in this catalogue state no weight.
-  eq(rowIsMeatier(null, 0.027), false, 'no row density')
-  eq(rowIsMeatier(0.077, null), false, 'the model said nothing about protein')
+  eq(rowIsMeatier(null, 0.027, 220), false, 'no row density')
+  eq(rowIsMeatier(0.077, null, 220), false, 'the model said nothing about protein')
+  eq(rowIsMeatier(0.077, 0.027, null), false, 'and nothing about the weight')
 })
 
 Deno.test('servingUnitCount counts only countable units', () => {

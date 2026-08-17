@@ -351,17 +351,26 @@ export const PROTEIN_FOOD_PER_G = 0.05
  * model that has just said "6 g of protein in 220 g of rice" is a better witness
  * to THAT than a name match is.
  *
- * Both tests have to hold. The ratio catches the composition being wrong; the
- * absolute gap keeps a sauce with a gram of protein in it out of the argument,
- * since three grams per hundred either way is not evidence of anything.
+ * Both tests have to hold, and the second is measured in GRAMS ON THE PLATE
+ * rather than in density, because that is the thing worth being wrong about.
+ * Written as a density gap it threw out every row for a 20 g dip of dark soy —
+ * the model says a sauce has no protein, real soy sauce has 8 g per 100 g, and
+ * the ratio test cannot see the difference between that and a plate of rice
+ * because a claim of zero divides into anything. What separates them is not the
+ * densities, it is that the dip disputes 1.6 g and the rice disputes 11. Under
+ * four grams there is nothing here worth overruling the catalogue for.
  */
 export function rowIsMeatier(
   rowProteinPerG: number | null,
   partProteinPerG: number | null,
+  /** What one unit of the part weighs, so the disagreement can be weighed too. */
+  partGrams: number | null,
 ): boolean {
   if (rowProteinPerG === null || partProteinPerG === null) return false
+  if (!partGrams || partGrams <= 0) return false
   if (partProteinPerG >= PROTEIN_FOOD_PER_G) return false
-  return rowProteinPerG > partProteinPerG * 2.5 && rowProteinPerG - partProteinPerG > 0.03
+  if (rowProteinPerG <= partProteinPerG * 2.5) return false
+  return (rowProteinPerG - partProteinPerG) * partGrams >= 4
 }
 
 /**

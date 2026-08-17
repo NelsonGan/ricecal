@@ -381,7 +381,7 @@ export function componentCandidates(
     // "1 quarter (148 g)".
     const rowPerG =
       !weight || weight <= 0 || row.protein_g === null ? null : Number(row.protein_g) / weight
-    return !rowIsMeatier(rowPerG, partPerG)
+    return !rowIsMeatier(rowPerG, partPerG, partGrams)
   })
 }
 
@@ -575,11 +575,7 @@ async function resolveByComponents(
     // it is. It runs before `bestFit` rather than after for the obvious reason:
     // rejected afterwards, the part would keep whichever wrong row ranked best
     // and lose the runner-up that might have been the right food.
-    const candidates = componentCandidates(
-      rows,
-      component.protein_g === null ? null : Number(component.protein_g),
-      component.grams,
-    )
+    const candidates = componentCandidates(rows, component.protein_g, component.grams)
     if (candidates.length < rows.length) {
       trace?.push(
         `[cascade] components: "${q}" dropped ${rows.length - candidates.length} of ${rows.length} ` +
@@ -639,11 +635,15 @@ async function resolveByComponents(
       continue
     }
 
-    // The filtered set, not the raw one. "chicken rice" answers eight rows and
-    // not one of them can be the rice UNDER a chicken rice — they are plates,
-    // sets and a seasoning packet — so the catalogue genuinely has nothing for
-    // this part, and the widening backlog is where that belongs.
-    if (!candidates.length) await recordMisses(db, scanId, [q])
+    // A miss is a gap in the CATALOGUE, and "nothing this part could use" is not
+    // the same thing. "chicken rice" answers eight rows and not one of them can
+    // be the rice UNDER a chicken rice — they are plates, sets and a seasoning
+    // packet — so that is a real gap and the widening backlog should hear about
+    // it. A row turned down over its COMPOSITION is not: it exists, and it is
+    // right about some other food. Recording those filled the backlog with
+    // queries the catalogue already answers well.
+    const noAnswer = !rows.length || rows.every((r) => isWholeMealServing(r.serving_label))
+    if (noAnswer) await recordMisses(db, scanId, [q])
 
     // No catalogue answer at this size: the model's own figures become a
     // shared estimate row for the component. Macros are the model's when it
