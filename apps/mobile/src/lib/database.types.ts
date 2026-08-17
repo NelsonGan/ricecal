@@ -16,60 +16,16 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: '14.5'
   }
   public: {
     Tables: {
-      ai_usage: {
-        Row: {
-          created_at: string
-          inferences: number
-          period_start: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          inferences?: number
-          period_start: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          inferences?: number
-          period_start?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       activity_days: {
         Row: {
-          active_kcal: number
+          active_kcal: number | null
           created_at: string
           distance_m: number | null
           exercise_goal_min: number | null
@@ -87,7 +43,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          active_kcal?: number
+          active_kcal?: number | null
           created_at?: string
           distance_m?: number | null
           exercise_goal_min?: number | null
@@ -105,7 +61,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          active_kcal?: number
+          active_kcal?: number | null
           created_at?: string
           distance_m?: number | null
           exercise_goal_min?: number | null
@@ -220,6 +176,30 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_usage: {
+        Row: {
+          created_at: string
+          inferences: number
+          period_start: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          inferences?: number
+          period_start: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          inferences?: number
+          period_start?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       archetypes: {
         Row: {
           carbs_g: number
@@ -268,6 +248,30 @@ export type Database = {
           created_at?: string
           found?: boolean
           id?: string
+        }
+        Relationships: []
+      }
+      barcode_scan_usage: {
+        Row: {
+          created_at: string
+          scans: number
+          updated_at: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          scans?: number
+          updated_at?: string
+          user_id: string
+          window_start: string
+        }
+        Update: {
+          created_at?: string
+          scans?: number
+          updated_at?: string
+          user_id?: string
+          window_start?: string
         }
         Relationships: []
       }
@@ -1401,26 +1405,6 @@ export type Database = {
       }
     }
     Functions: {
-      ai_monthly_limit: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      ai_usage_this_month: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          monthly_limit: number
-          remaining: number
-          used: number
-        }[]
-      }
-      claim_ai_inference: {
-        Args: { p_count?: number; p_user: string }
-        Returns: {
-          allowed: boolean
-          monthly_limit: number
-          used: number
-        }[]
-      }
       activity_days_range: {
         Args: { p_range: string; p_user_id?: string }
         Returns: {
@@ -1499,6 +1483,32 @@ export type Database = {
           steps_total: number
           to_date: string
           walking_kcal: number
+        }[]
+      }
+      ai_monthly_limit: { Args: never; Returns: number }
+      ai_usage_this_month: {
+        Args: never
+        Returns: {
+          monthly_limit: number
+          remaining: number
+          used: number
+        }[]
+      }
+      barcode_hourly_limit: { Args: never; Returns: number }
+      claim_ai_inference: {
+        Args: { p_count?: number; p_user: string }
+        Returns: {
+          allowed: boolean
+          monthly_limit: number
+          used: number
+        }[]
+      }
+      claim_barcode_scan: {
+        Args: { p_user: string }
+        Returns: {
+          allowed: boolean
+          hourly_limit: number
+          used: number
         }[]
       }
       compute_targets: {
@@ -1896,9 +1906,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       activity_level: ['sedentary', 'light', 'on_feet', 'very_active'],

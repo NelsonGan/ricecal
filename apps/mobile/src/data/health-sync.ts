@@ -7,7 +7,7 @@ import { createMMKV } from 'react-native-mmkv'
 import { setPersonProps, track } from '@/lib/analytics'
 import type { HealthProvider, HealthReading, ProviderId } from '@/lib/health'
 import { providerFor } from '@/lib/health'
-import { ageFrom } from '@/lib/nutrition'
+import { ageFrom, basalRate } from '@/lib/nutrition'
 import { supabase } from '@/lib/supabase'
 import { daysAgo } from './activity'
 import { dateKey } from './client'
@@ -252,27 +252,72 @@ async function persist(
 }
 
 /**
- * The user's age in years, or null when the profile has no birth date.
+ * The two facts about the PERSON that a provider needs and cannot know.
  *
- * Read here rather than inside a provider because it is a fact about the person
- * and the providers only know about the store. It is what bands a heart rate:
- * the zones are fractions of an estimated maximum, and that maximum is a
- * function of age. Without it every session was banded against a 40-year-old —
- * which for a 29-year-old puts the Peak threshold seven beats too low and turns
- * a steady run into twenty minutes of Peak.
+ * Read here rather than inside a provider because both are about the user and
+ * the providers only know about the store. One round trip for the pair, since
+ * they come off the same row.
  *
- * NOT `ageFrom` alone: that returns 0 for a missing birth date, and 0 through
- * the Tanaka formula is a maximum of 208, which would band nothing as hard at
- * all. Null is the answer `estimatedMaxHr` documents a fallback for.
+ * `age` is what bands a heart rate: the zones are fractions of an estimated
+ * maximum, and that maximum is a function of age. Without it every session was
+ * banded against a 40-year-old — which for a 29-year-old puts the Peak
+ * threshold seven beats too low and turns a steady run into twenty minutes of
+ * Peak. NOT `ageFrom` alone: that returns 0 for a missing birth date, and 0
+ * through the Tanaka formula is a maximum of 208, which would band nothing as
+ * hard at all. Null is the answer `estimatedMaxHr` documents a fallback for.
+ *
+ * `basalKcal` is what splits a store's total energy into the active half that
+ * may extend a budget and the resting half that may not — see `energyFor` in
+ * `androidHealth.ts`. Mifflin-St Jeor, the same formula `compute_targets()`
+ * runs in Postgres, so the figure the split uses is the same one the budget it
+ * feeds was built from. Null unless all four inputs are on the profile: a
+ * partial body cannot be guessed at here, because every fallback would be a
+ * number invented on the client and then written to the database as if a watch
+ * had measured it.
  */
-async function ageOf(userId: string): Promise<number | null> {
-  const { data } = await supabase
-    .from('profiles')
-    .select('birth_date')
-    .eq('id', userId)
-    .maybeSingle()
+async function personOf(userId: string): Promise<{ age: number | null; basalKcal: number | null }> {
+  // Two rows, because a body is spread over two tables: the parts that do not
+  // change live on the profile, and the weight is the latest weigh-in — the
+  // same place `compute_targets()` reads it from, rather than a copy that would
+  // drift the first time somebody stood on a scale.
+  const [profile, weighIn] = await Promise.all([
+    supabase.from('profiles').select('birth_date, sex, height_cm').eq('id', userId).maybeSingle(),
+    supabase
+      .from('weight_logs')
+      .select('weight_kg')
+      .eq('user_id', userId)
+      .order('measured_on', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ])
 
-  return data?.birth_date ? ageFrom(data.birth_date) : null
+  const body = profile.data
+  const age = body?.birth_date ? ageFrom(body.birth_date) : null
+  const weightKg = weighIn.data?.weight_kg ?? null
+  const sex = body?.sex
+
+  const known =
+    age != null &&
+    weightKg != null &&
+    body?.height_cm != null &&
+    (sex === 'female' || sex === 'male')
+
+  return {
+    age,
+    basalKcal: known
+      ? Math.round(
+          basalRate({
+            sex,
+            weightKg,
+            heightCm: body.height_cm as number,
+            age,
+            // Ignored by `basalRate` — the multiplier belongs to maintenance,
+            // and a basal figure is what splits a store's total.
+            activity: 'sedentary',
+          }),
+        )
+      : null,
+  }
 }
 
 /**
@@ -297,9 +342,9 @@ export async function syncRange(
   to: string,
   onProgress?: (progress: SyncProgress) => void,
 ): Promise<{ days: number; deviceName: string | null }> {
-  // Once for the whole range rather than once per chunk. It cannot change
+  // Once for the whole range rather than once per chunk. Neither can change
   // between two chunks of the same sync, and it is a round trip either way.
-  const age = await ageOf(userId)
+  const person = await personOf(userId)
 
   const chunks: Array<{ from: string; to: string }> = []
   const cursor = new Date(`${from}T00:00:00`)
@@ -330,7 +375,7 @@ export async function syncRange(
     // stays because it is the incremental pass and any future deeper backfill
     // that it exists for, not the current value of `BACKFILL_DAYS`.
     const withHours = chunk.to >= hourlyFrom
-    const reading = await provider.read(chunk.from, chunk.to, { withHours, age })
+    const reading = await provider.read(chunk.from, chunk.to, { withHours, ...person })
     // The hour window is the CHUNK, not the retention window. A provider hands
     // back hours for everything it was asked to read, so this is the range the
     // delete has to cover for the replace to be idempotent — see `persist`.

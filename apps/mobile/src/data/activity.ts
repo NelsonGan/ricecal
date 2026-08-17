@@ -37,8 +37,17 @@ const orZero = (value: number | null): number => (value === null ? 0 : Number(va
 export type ActivityDay = {
   date: string
   provider: ProviderId
-  /** Energy spent moving. The figure that extends the budget. */
-  activeKcal: number
+  /**
+   * Energy spent moving. The figure that extends the budget.
+   *
+   * Null where the store has no opinion, which is an ordinary Android state
+   * rather than an error: Health Connect reports what its writers wrote, and a
+   * phone whose only tracker writes total energy has no active figure at all.
+   * The Move tile draws a dash for it, the same as every other nullable
+   * measurement — see `energyFor` in `lib/health/androidHealth.ts` for the
+   * ladder that tries to avoid ever getting here.
+   */
+  activeKcal: number | null
   restingKcal: number | null
   steps: number
   distanceM: number | null

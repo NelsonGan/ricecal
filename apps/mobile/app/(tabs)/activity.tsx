@@ -216,9 +216,13 @@ export default function ActivityScreen() {
     {
       key: 'move',
       label: t('activity:today.move'),
-      value: count(activity?.activeKcal ?? 0),
+      // A dash, not a zero, for the same reason as the exercise tile below —
+      // and this one is the commoner case on Android. A store that reports
+      // steps but no active energy is a Samsung phone with no watch on it, and
+      // "0 kcal" beside 4,000 steps is the app calling the user still.
+      value: activity?.activeKcal == null ? t('activity:today.none') : count(activity.activeKcal),
       ...against(
-        activity?.activeKcal ?? 0,
+        activity?.activeKcal ?? null,
         activity?.moveGoalKcal ?? null,
         summary.data?.activeKcal ?? null,
         'moveUnit',

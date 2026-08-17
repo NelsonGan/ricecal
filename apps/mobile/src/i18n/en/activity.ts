@@ -107,8 +107,10 @@ export const activity = {
     avgUnit: '/ {{value}} avg',
     /**
      * The provider has no opinion on this measurement — an em dash, never a
-     * zero. Only the nullable tiles can show it: active energy and steps are
-     * `not null` columns, so a zero there is a real measurement.
+     * zero. Steps is the one tile that cannot show it: that column really is
+     * `not null`, so a zero there is a phone that spent the day on a table.
+     * Active energy joined the nullable tiles when it turned out that a Health
+     * Connect store can report a day's steps and no energy at all.
      */
     none: '—',
     /** Neither a goal nor a history to average: a connection minutes old. */
