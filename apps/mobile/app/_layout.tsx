@@ -121,22 +121,6 @@ export default Sentry.wrap(function RootLayout() {
 })
 
 /**
- * Hands the draft provider the signed-in user, and nothing else.
- *
- * A component of its own because `RootLayout` sits ABOVE `SessionProvider` and so
- * cannot read the session, while the draft module deliberately does not import
- * the data layer — pulling it in would build the Supabase client at import time,
- * which no test environment can do. One `string | null` crossing the boundary is
- * all either side needs.
- */
-/**
- * The number pad, with its copy.
- *
- * A component of its own only because the design system takes no words: every
- * label in `src/ui` is a prop, and this is the one provider whose caller is the
- * root layout rather than a screen with a `t` already in scope.
- */
-/**
  * Holds the two ends of `ThemeProvider`'s persistence contract together.
  *
  * The provider takes an initial preference and reports every change; the store
@@ -146,7 +130,10 @@ export default Sentry.wrap(function RootLayout() {
  * did not, and Dark lasted until the app was next killed.
  *
  * `useState` for the initial read so it happens ONCE, before the first paint,
- * rather than on every re-render of the root.
+ * rather than on every re-render of the root. `storeThemePreference` is passed
+ * by reference rather than wrapped in an arrow, because the provider memoises
+ * its setter on this prop and a new function each render would re-render every
+ * consumer of the theme.
  */
 function ThemeScope({ children }: { children: ReactNode }) {
   const [initial] = useState(storedThemePreference)
@@ -158,6 +145,13 @@ function ThemeScope({ children }: { children: ReactNode }) {
   )
 }
 
+/**
+ * The number pad, with its copy.
+ *
+ * A component of its own only because the design system takes no words: every
+ * label in `src/ui` is a prop, and this is the one provider whose caller is the
+ * root layout rather than a screen with a `t` already in scope.
+ */
 function NumpadScope({ children }: { children: ReactNode }) {
   const { t } = useTranslation('common')
   const labels = useMemo(
@@ -172,6 +166,15 @@ function NumpadScope({ children }: { children: ReactNode }) {
   return <NumpadProvider labels={labels}>{children}</NumpadProvider>
 }
 
+/**
+ * Hands the draft provider the signed-in user, and nothing else.
+ *
+ * A component of its own because `RootLayout` sits ABOVE `SessionProvider` and so
+ * cannot read the session, while the draft module deliberately does not import
+ * the data layer — pulling it in would build the Supabase client at import time,
+ * which no test environment can do. One `string | null` crossing the boundary is
+ * all either side needs.
+ */
 function OnboardingDraftScope({ children }: { children: ReactNode }) {
   const { userId } = useSession()
 

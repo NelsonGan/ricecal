@@ -137,12 +137,20 @@ export default function MeScreen() {
           />
           {/* The label IS the unit, so it has to move with the setting: this
               tile printed a hardcoded "KG" over an unconverted figure, and the
-              row four lines down on the same screen said "Imperial". */}
+              row four lines down on the same screen said "Imperial".
+
+              Waits on the SETTINGS as well as the weight, for the reason given
+              above `remindersValue`: the two queries answer independently, and
+              `unitFor(undefined)` is kilograms — so an imperial account whose
+              weight landed first would read its own figure in the unit it does
+              not use, then watch it change. A dash says nothing instead. */}
           <StatTile
             className="flex-1"
             tone="track"
             label={t(UNIT_KEY[weightUnit]).toUpperCase()}
-            value={weight === undefined ? '—' : showWeight(weight, weightUnit)}
+            value={
+              weight === undefined || settings === undefined ? '—' : showWeight(weight, weightUnit)
+            }
           />
           <StatTile
             className="flex-1"
