@@ -75,7 +75,7 @@ Deno.test('componentCandidates will not charge a part for a whole plate', () => 
     row('Chicken Rice Shop Steamed Chicken Rice', 560, '1 set', null),
     row('Coconut sticky rice', 527, '1 serving', null),
   ]
-  const left = componentCandidates(whole, null, 200)
+  const left = componentCandidates(whole, { protein_g: null, kcal: 300, grams: 200 })
   eq(left.length, 1, 'the plate and the set are gone')
   eq(left[0].name, 'Coconut sticky rice', 'and a "1 serving" label is not a claim to be a meal')
 
@@ -85,18 +85,21 @@ Deno.test('componentCandidates will not charge a part for a whole plate', () => 
   // promoted the Thai dessert above and took a nasi lemak's rice from 338 to 527.
   const weighed = componentCandidates(
     [row('Rice, Coconut Milk (Nasi Lemak)', 389, '1 plate', 230)],
-    null,
-    200,
+    {
+      protein_g: null,
+      kcal: 340,
+      grams: 200,
+    },
   )
   eq(weighed.length, 1, 'a plate that states its weight can price a helping')
 })
 
-Deno.test('componentCandidates refuses a lean part a row with meat in it', () => {
-  // The second half of the same bug, and the one that survived fixing the first.
-  // Told to stop naming the part after its dish, the model called it "seasoned
-  // rice" and weighed it honestly at 6 g of protein in 220 g — and the catalogue
-  // went on answering with rows holding two and three times that per gram,
-  // because their calories are right and only their composition is wrong.
+Deno.test('componentCandidates refuses a part a row made of something else', () => {
+  // The model's own macros are the witness here, and they are usually right about
+  // COMPOSITION even when they are wrong about size: told to stop naming the part
+  // after its dish, it called this one "seasoned rice" and weighed it honestly at
+  // 6 g of protein in 220 g, while the catalogue went on answering with rows whose
+  // calories are right and whose composition is not.
   const macro = (r: SearchRow, protein: number): SearchRow => ({ ...r, protein_g: protein })
   const hits = [
     // The row that caused all this. 16.1 g of protein in 230 g is rice with the
@@ -106,24 +109,48 @@ Deno.test('componentCandidates refuses a lean part a row with meat in it', () =>
     // 2.7 g in 100 g: cooked rice, which is what the part actually is.
     macro(row('Rice, white, cooked', 130, '100 g', 100), 2.7),
   ]
-  const left = componentCandidates(hits, 6, 220)
+  const left = componentCandidates(hits, { protein_g: 6, kcal: 286, grams: 220 })
   eq(left.length, 1, 'the meaty row is not this part')
   eq(left[0].name, 'Rice, white, cooked', 'the one whose composition matches')
 
-  // And the direction it must never fire in: the poached chicken beside that rice
-  // is a protein food by the model's own account, so the catalogue keeps the
-  // number — which is the arrangement the rest of the cascade depends on.
+  // And the direction it must never fire in. The model claimed 32 g of protein in
+  // 160 g of poached chicken, which is more than either row does per gram, so the
+  // catalogue keeps the number — the arrangement the rest of the cascade needs.
   const chicken = [
     macro(row('Ayam Rebus Nasi Ayam', 215, '1 serving (120 g)', 120), 23),
     macro(row('Chicken meat, local, boiled', 214, '100 g', 100), 20),
   ]
-  eq(componentCandidates(chicken, 32, 160).length, 2, 'meat is priced by the catalogue')
+  eq(
+    componentCandidates(chicken, { protein_g: 32, kcal: 296, grams: 160 }).length,
+    2,
+    'meat is priced by the catalogue',
+  )
 
-  // Nor on a 20 g dip, whatever the densities say. Soy sauce really does hold
-  // 8 g of protein per 100 g and the model really does report a sauce as zero, so
-  // the ratio test is no help; what settles it is that there is 1.6 g at stake.
+  // Nor on a 20 g dip. Soy sauce really does hold 8 g of protein per 100 g and the
+  // model really does report a sauce as zero, so the share test is no help at all;
+  // what settles it is that there is 1.6 g at stake.
   const dip = [macro(row('Soya Sauce, Thin (Kicap Cair)', 13, '1 tablespoon', 17.2), 1.6)]
-  eq(componentCandidates(dip, 0, 20).length, 1, 'the catalogue knows more about soy sauce')
+  eq(
+    componentCandidates(dip, { protein_g: 0, kcal: 10, grams: 20 }).length,
+    1,
+    'the catalogue knows more about soy sauce',
+  )
+})
+
+Deno.test('componentCandidates judges a row that states no weight', () => {
+  // The hole the first version left. A row with no weight is handed over WHOLE by
+  // `isWholeUnit`, so it escaped both the size gates AND a composition check that
+  // needed a density — and a part plainly named "steamed white rice" was charged
+  // 27.5 g of protein off a 226 kcal serving. A share of energy needs no weight.
+  const rice = {
+    ...row('Rice, steamed, with something else in it', 226, '1 serving', null),
+    protein_g: 27.5,
+  }
+  eq(
+    componentCandidates([rice], { protein_g: 5, kcal: 260, grams: 200 }).length,
+    0,
+    "48% of that row is protein against the model's 8%",
+  )
 })
 
 Deno.test('componentCandidates keeps a helping of one food', () => {

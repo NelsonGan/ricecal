@@ -64,6 +64,11 @@ deno.lock
 # the URL; this is only the copy.
 apps/supabase/data/scan-eval/.cache/
 
+# The photo benchmark's plates. Somebody's actual lunch, photographed on their
+# own phone, so the images stay out of the repo and only the reference figures
+# and what was seen in each are committed. See `photo-bench.mjs`.
+apps/supabase/data/photo-bench/
+
 # The researched dish payloads and the reports a load writes.
 #
 # These are the INPUT to the catalogue, and the catalogue is not in this repo —
