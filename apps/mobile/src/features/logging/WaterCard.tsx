@@ -5,8 +5,16 @@ import { TextInput, View } from 'react-native'
 import { useAddWater } from '@/data'
 import { DEFAULT_WATER_ML, millilitres, WATER_MAX_ML, WATER_PRESETS } from '@/lib/water'
 import { radius, slab } from '@/theme/tokens'
-import { useThemeColors } from '@/theme/useTheme'
+import { useTheme, useThemeColors } from '@/theme/useTheme'
 import { Button, Card, Icon, Sheet, Squish, Text, useNumpadField, useToast, WaterTank } from '@/ui'
+
+/**
+ * How tall the tank is, which is how tall the card is.
+ *
+ * Enough to write a figure across without the water crowding it, and no more:
+ * this is one line of information on a screen whose subject is underneath it.
+ */
+const TANK_HEIGHT = 88
 
 export type WaterCardProps = {
   /** The day the strip has selected. Drinks are recorded against it, not against now. */
@@ -20,19 +28,26 @@ export type WaterCardProps = {
 }
 
 /**
- * Water on Today: a band of it, and one button.
+ * Water on Today: the card IS the tank.
  *
- * TWO LINES, and that is the design. The first attempt at this put a tall glass
- * beside a column of three quick-add buttons and a fourth for a custom amount,
- * which is a good control panel and a bad card: it took a third of the screen
- * on a diary whose subject is the meals underneath, and it was the largest
- * thing on Today while being the smallest decision on it. What is here now is a
- * level you can read at a glance and an Add that opens the panel — the choosing
- * happens in a sheet, where a row of buttons costs nothing.
+ * ONE RECTANGLE, and everything else is drawn on it. It went through two
+ * shapes before this: a tall glass beside a column of quick-add buttons, which
+ * took a third of the screen on a diary whose subject is the meals underneath,
+ * and then a band with the figure above it and an Add button beside it, which
+ * was three boxes saying one thing. What is here is the level, with the figure
+ * and the button tucked into the top-right corner of it. They are small because
+ * water is the cheapest decision on this screen and should look like one.
  *
- * THE UNDO IS A TOAST, for the same reason. A button that appears on the card
- * after every drink is a control that exists to be ignored; a toast offers it
- * for as long as anybody would want it and takes no space at all.
+ * NO HEADING. The word "Water" over a tank of water is the label a picture
+ * already carries; the drop beside the figure is what identifies it on the days
+ * the tank is empty and there is no water to recognise.
+ *
+ * THE FIGURE IS DRAWN TWICE, once on the dry ground and once in the water, and
+ * `WaterTank` explains why: in dark mode the water and the water ink are the
+ * same colour, so a single copy would vanish exactly as the day went well.
+ *
+ * THE UNDO IS A TOAST. A button that appears on the card after every drink is a
+ * control that exists to be ignored, and there is nowhere left to put one.
  *
  * Everything here is in MILLILITRES rather than the litres the trends show,
  * because this is where a figure is chosen. See `lib/water.ts`.
@@ -44,6 +59,7 @@ export function WaterCard({
   loading = false,
 }: WaterCardProps) {
   const { t } = useTranslation(['logging', 'common'])
+  const { isDark } = useTheme()
   const toast = useToast()
   const addWater = useAddWater(date)
 
@@ -63,47 +79,93 @@ export function WaterCard({
   }
 
   const toGo = Math.max(0, goalMl - ml)
+  const count = t('logging:water.count', { filled: millilitres(ml), goal: millilitres(goalMl) })
+
+  /**
+   * The figure's colour once the water is over it, and the one place in this
+   * card that asks which theme it is in.
+   *
+   * `on-water` is the design system's pairing for a label on a water fill, and
+   * it is white — which is right on a chip and wrong here, because a 22pt
+   * figure in white on `#4CC9F0` is about 1.9:1 and washes out on exactly the
+   * days somebody most wants to read it. Dark ink on that same blue is 8:1. The
+   * dark palette has no such problem: `on-water` is already near-black there,
+   * against a brighter water, and `ink` would be the near-white that fails.
+   */
+  const wetInk = isDark ? 'text-on-water' : 'text-ink'
 
   return (
     <>
-      <Card
-        tone="water"
-        title={t('logging:water.title')}
-        action={
-          loading ? undefined : (
-            <Text variant="label" className={toGo === 0 ? 'text-pandan-ink' : 'text-water-ink'}>
-              {t('logging:water.count', { filled: millilitres(ml), goal: millilitres(goalMl) })}
-            </Text>
-          )
-        }
-      >
-        <View className="flex-row items-center gap-3">
-          <WaterTank
-            className="min-w-0 flex-1"
-            value={ml}
-            goal={goalMl}
-            loading={loading}
-            accessibilityLabel={t('logging:water.level', {
-              filled: millilitres(ml),
-              goal: millilitres(goalMl),
-            })}
-          />
+      {/* `flush`, and the tank carries the card's own corner radius: the two
+          silhouettes coincide, so what the user sees is one object filling up
+          rather than a chart sitting in a box. */}
+      <Card flush contentClassName="gap-0">
+        <WaterTank
+          value={ml}
+          goal={goalMl}
+          loading={loading}
+          height={TANK_HEIGHT}
+          radius={radius.card}
+          accessibilityLabel={t('logging:water.level', {
+            filled: millilitres(ml),
+            goal: millilitres(goalMl),
+          })}
+        >
+          {(onWater) => (
+            /* Everything in the TOP-RIGHT corner, and nothing in the middle:
+               the tank is the picture and this is its readout, so it sits out
+               of the way and stays out of the water for most of a day. The row
+               is short and close to the top for that reason — the band of
+               levels that cuts through it is the last third of the goal, where
+               the figure is fully under water and reads white on blue. */
+            <View className="flex-1 items-end px-3 pt-2.5">
+              <View className="flex-row items-center gap-1.5">
+                <Icon set="body" name="water-drop" size={15} />
+                {/* Hidden from a screen reader, both copies of it: the tank
+                    itself announces the same pair of figures as a sentence, and
+                    as a progress bar, which is the better of the two. */}
+                <Text
+                  variant="label"
+                  numberOfLines={1}
+                  className={onWater ? wetInk : 'text-water-ink'}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no-hide-descendants"
+                >
+                  {loading ? '' : count}
+                </Text>
 
-          {/* Square, and 56 because that is `WaterTank`'s own height: the two
-              are a pair, so the row reads as one object rather than as a chart
-              with a button parked next to it. */}
-          <Squish
-            depth={slab.md}
-            radius={radius.sm}
-            slabClassName="bg-water-slab"
-            className="h-[56px] w-[56px] items-center justify-center rounded-[14px] bg-water"
-            onPress={() => setSheetOpen(true)}
-            accessibilityRole="button"
-            accessibilityLabel={t('logging:water.addTitle')}
-          >
-            <Icon set="ui" name="plus" size={24} />
-          </Squish>
-        </View>
+                {/* Beside the figure, not opposite it: the two are one control
+                    and one readout about the same thing, and a button parked at
+                    the far end of a 300pt band reads as belonging to the card
+                    rather than to the number.
+
+                    Flat, because it is overlaid on the tank rather than raised
+                    off the card — a squishy button standing proud of a surface
+                    that is itself the content reads as a sticker. `water-slab`
+                    is the one fill that holds against both grounds in both
+                    themes: the ink is the water's own colour in the dark
+                    palette and would disappear into it.
+
+                    `hitSlop` takes a 28pt circle up to a 44pt target. The
+                    button is small on purpose — this is the cheapest decision
+                    on the screen and should look like one — but the finger
+                    pressing it is the same size as everybody else's. */}
+                <Squish
+                  depth={0}
+                  radius={radius.full}
+                  containerClassName="ml-0.5"
+                  className="h-7 w-7 items-center justify-center rounded-full bg-water-slab"
+                  hitSlop={8}
+                  onPress={() => setSheetOpen(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('logging:water.addTitle')}
+                >
+                  <Icon set="ui" name="plus" size={13} />
+                </Squish>
+              </View>
+            </View>
+          )}
+        </WaterTank>
       </Card>
 
       <AddWaterSheet
@@ -171,7 +233,7 @@ function AddWaterSheet({
             accessibilityLabel={t('logging:water.add', { amount: millilitres(preset.ml) })}
           >
             <Icon set="food" name={preset.icon} size={30} />
-            <Text variant="label" className="text-water-ink" numberOfLines={1}>
+            <Text variant="label" className="text-on-water" numberOfLines={1}>
               {t('common:volume.ml', { value: millilitres(preset.ml) })}
             </Text>
           </Squish>
