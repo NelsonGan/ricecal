@@ -115,11 +115,11 @@ grant select, insert, delete on public.barcode_misses to service_role;
 -- How many packets an account has scanned in the current hour, and the ceiling.
 --
 -- The barcode function is the one model-adjacent path with no throttle: unlike
--- a scan or a described meal it spends no AI budget, so `claim_ai_inference`
+-- a scan or a described meal it spends no scan quota, so `claim_scan`
 -- never sees it, and a signed-in caller could loop distinct codes to drive a
 -- live Open Food Facts fetch and a `barcode_misses` write on every one. That is
 -- a denial-of-wallet rather than a data risk, so the control is a plain
--- per-account rate limit shaped exactly like the AI meter above: one row per
+-- per-account rate limit shaped exactly like the scan meter above: one row per
 -- hour, an atomic claim, no client write grant.
 --
 -- HOURLY, not monthly. A real person scans a handful of packets in a shopping
@@ -146,7 +146,7 @@ create trigger barcode_scan_usage_set_updated_at
 
 alter table public.barcode_scan_usage enable row level security;
 
--- No client write grant at all, like `ai_usage`: the only writer is
+-- No client write grant at all, like `scan_usage`: the only writer is
 -- `claim_barcode_scan`, and a client that could zero its own counter is not a
 -- limit.
 grant select on public.barcode_scan_usage to authenticated;
@@ -171,8 +171,8 @@ revoke execute on function public.barcode_hourly_limit from public, anon;
 grant execute on function public.barcode_hourly_limit to authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
--- Take one scan's worth of budget, or refuse. Atomic, for the reason
--- `claim_ai_inference` is: a read-then-write limit is one two requests can both
+-- Take one packet's worth of budget, or refuse. Atomic, for the reason
+-- `claim_scan` is: a read-then-write limit is one two requests can both
 -- walk through. The guard is a `where` on the `on conflict do update`, so the
 -- check and the increment are one statement under one row lock.
 -- ---------------------------------------------------------------------------

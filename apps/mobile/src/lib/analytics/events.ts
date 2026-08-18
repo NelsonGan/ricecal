@@ -52,13 +52,24 @@ export type LogMethod = 'camera' | 'describe' | 'search' | 'barcode' | 'recipe' 
  * app, which is not something the paywall screen can know about itself.
  */
 export type ProFeature =
+  /**
+   * The daily scan allowance ran out. NOT "the camera is behind the paywall" —
+   * it is not, and that is the freemium change: a free account photographs
+   * three plates a day. This is what a fourth one reports, and it is the single
+   * most interesting trigger in the funnel, because it is the only refusal that
+   * happens to somebody already using the app the way it is meant to be used.
+   */
   | 'camera'
   | 'describe'
-  | 'quick_add'
-  | 'log_dish'
-  | 'log_recipe'
-  | 'new_recipe'
   | 'refine'
+  | 'read_recipe'
+  | 'new_recipe'
+  /** A range on Trends that a free account cannot see: 30 days, or a year. */
+  | 'trend_range'
+  /** An older weekly or monthly review. The latest one is free. */
+  | 'review'
+  /** The standing offer on launch, which no button refused. See `useProNudge`. */
+  | 'nudge'
 
 /** Which of the four paywalls. `hard` is `/paywall`, reached from a refusal. */
 export type PaywallScreen = 'hard' | 'intro' | 'reminder' | 'ended'
@@ -243,6 +254,19 @@ export type Events = {
     reason: 'cancelled' | 'unavailable' | 'error'
   }
   'Restore Requested': { outcome: 'restored' | 'nothing' | 'unavailable' }
+  /**
+   * Share & Earn: a platform shortcut was tapped, and the Discord claim was
+   * opened.
+   *
+   * The two ends of a funnel nothing else can see. The middle of it — whether
+   * anybody actually posted — happens in somebody else's app and is not ours to
+   * know, so these two numbers and the count of codes we hand out in Discord
+   * are the whole measurement. Which PLATFORM is the interesting half: it says
+   * where this app's users actually are, which is a question no other event in
+   * the plan answers.
+   */
+  'Share Platform Opened': { platform: string }
+  'Share Claim Opened': NoProps
 
   // ── The habit features ───────────────────────────────────────────────────
   /**

@@ -46,12 +46,19 @@ export type ToastOptions = {
 
 type Toast = ToastOptions & { id: number }
 
-type ToastContextValue = {
+/**
+ * What `useToast` hands back.
+ *
+ * Exported because a couple of things that are not components need to show a
+ * toast — a refusal read off the wire, for one — and taking the api as an
+ * argument is how they do it without reaching for the context themselves.
+ */
+export type ToastApi = {
   show: (options: ToastOptions) => void
   dismiss: () => void
 }
 
-const ToastContext = createContext<ToastContextValue | null>(null)
+const ToastContext = createContext<ToastApi | null>(null)
 
 /**
  * Fire a toast from anywhere under the provider.

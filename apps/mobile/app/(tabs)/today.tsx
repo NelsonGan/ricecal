@@ -17,6 +17,7 @@ import {
   useTargets,
 } from '@/data'
 import { WeekPicker } from '@/features/logging'
+import { useProNudge } from '@/features/paywall'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
 import { useTutorialOffer } from '@/features/tutorial'
 import { sumMacros } from '@/lib/nutrition'
@@ -79,6 +80,16 @@ export default function TodayScreen() {
    * `features/tutorial`.
    */
   useTutorialOffer()
+
+  /**
+   * And the standing offer, for a free account, at most once every two days.
+   *
+   * Here rather than in the tabs layout for the same reason the tour is: it
+   * appears over this screen, a beat after it. The two cannot collide in
+   * practice — the tour is offered once, on an account whose onboarding paywall
+   * has just reset the offer's clock. See `features/paywall/nudge.ts`.
+   */
+  useProNudge()
 
   const { selectedDate, todayKey } = useSelectedDate()
   const day = useDayLog(selectedDate)

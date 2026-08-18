@@ -13,6 +13,17 @@ export type ReviewRowProps = {
   unit: WeightUnit
   /** The newest one, whose sparkline is drawn in the accent rather than grey. */
   latest?: boolean
+  /**
+   * Behind the paywall for this account.
+   *
+   * The row is drawn IN FULL and stays pressable — the sparkline, the average,
+   * the days logged, all of it. Only the chevron changes, to a padlock. A
+   * locked row that hid its own figures would be a row with nothing to want,
+   * and the point of showing a free account its older weeks is that it can see
+   * they are there. Pressing one opens the paywall, which is what a lock is
+   * for: it says the door is shut and where the key is sold.
+   */
+  locked?: boolean
   divider?: boolean
   onPress: () => void
 }
@@ -35,6 +46,7 @@ export function ReviewRow({
   period,
   unit,
   latest = false,
+  locked = false,
   divider = true,
   onPress,
 }: ReviewRowProps) {
@@ -88,7 +100,11 @@ export function ReviewRow({
       <Tappable
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel={t('reviews:list.a11y', { title, meta, summary })}
+        accessibilityLabel={
+          locked
+            ? t('reviews:list.a11yLocked', { title, meta, summary })
+            : t('reviews:list.a11y', { title, meta, summary })
+        }
         className="flex-row items-center gap-md py-3"
       >
         <View className="min-w-0 flex-1 gap-0.5">
@@ -107,8 +123,14 @@ export function ReviewRow({
 
         {/* Tinted, as `ListRow` does it: the chevron is chrome, and the
             illustration's own blue is the one colour on the row that means
-            nothing. */}
-        <Icon set="ui" name="chevron-right" size={20} tintColor={colors.faint} />
+            nothing. A locked row swaps it for a padlock in the same place and
+            at the same weight — the row is not decorated differently, it just
+            says what is behind it. */}
+        {locked ? (
+          <Icon set="system" name="lock" size={20} tintColor={colors.faint} />
+        ) : (
+          <Icon set="ui" name="chevron-right" size={20} tintColor={colors.faint} />
+        )}
       </Tappable>
       {divider ? <Divider /> : null}
     </>

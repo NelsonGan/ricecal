@@ -3,9 +3,20 @@
 // Two separate questions, deliberately kept apart because they fail
 // differently and the user can do something about exactly one of them:
 //
-//   HAS THIS ACCOUNT PAID?   -> no: show the paywall. Buying fixes it.
-//   HAS IT SPENT ITS MONTH?  -> no: nothing the user can buy their way out of,
-//                               so the app says to get in touch.
+//   HAS THIS ACCOUNT PAID?   -> decides which FEATURES it may reach at all.
+//                               Describing a meal, correcting one with words
+//                               and reading a recipe out of a photograph are
+//                               Pro; photographing a plate is not.
+//   HAS IT SPENT TODAY?      -> decides how many SCANS it may spend, and the
+//                               ceiling depends on the answer above: three a
+//                               day free, fifty a day Pro.
+//
+// The second question used to be "has it spent its month", counted in requests
+// to OpenRouter, and the unit was the problem: one photographed plate is three
+// or four of them, so the number could never be said out loud and the refusal
+// had nothing to offer — there was no larger tier to buy. Counted in scans, a
+// free account's refusal has an answer, which is the whole point of a free
+// tier.
 //
 // Both are checked SERVER-SIDE and that is the whole point. The client gates
 // the same two things so the buttons read honestly, but a paywall enforced
@@ -54,26 +65,46 @@ export function entitledBy(
  * Refused because the account is not subscribed.
  *
  * Separate from the quota error below so the endpoints can answer with
- * different codes: the app routes one to the paywall and the other to a toast,
- * and a single "denied" would have the client guessing which.
+ * different codes: the app routes one to the paywall and the other to a toast
+ * over the same paywall, and a single "denied" would have the client guessing
+ * which.
+ *
+ * `feature` says WHICH Pro-only thing was asked for. It rides along because
+ * the app's paywall tracks what refused it — that is the only way to find out
+ * which capability actually sells the app — and a 402 with no name in it makes
+ * every server-side refusal look the same in the funnel.
  */
 export class NotEntitled extends Error {
-  constructor() {
+  readonly feature: string
+
+  constructor(feature: string) {
     super('This account is not subscribed')
     this.name = 'NotEntitled'
+    this.feature = feature
   }
 }
 
-/** Refused because the account has spent its monthly allowance of requests. */
-export class AiLimitReached extends Error {
+/**
+ * Refused because the account has spent today's scans.
+ *
+ * `entitled` is the half that decides what the app says. A free account that
+ * has spent its three has something to buy and is shown the paywall; a Pro
+ * account that has spent its fifty has not, and is asked to get in touch. Two
+ * very different messages behind one status code, and the client cannot tell
+ * them apart from the numbers alone — 50 is only recognisably the Pro ceiling
+ * to somebody who knows both.
+ */
+export class ScanLimitReached extends Error {
   readonly used: number
-  readonly monthlyLimit: number
+  readonly dailyLimit: number
+  readonly entitled: boolean
 
-  constructor(used: number, monthlyLimit: number) {
-    super(`Monthly AI limit reached (${used}/${monthlyLimit})`)
-    this.name = 'AiLimitReached'
+  constructor(used: number, dailyLimit: number, entitled: boolean) {
+    super(`Daily scan limit reached (${used}/${dailyLimit})`)
+    this.name = 'ScanLimitReached'
     this.used = used
-    this.monthlyLimit = monthlyLimit
+    this.dailyLimit = dailyLimit
+    this.entitled = entitled
   }
 }
 
@@ -88,9 +119,9 @@ export class AiLimitReached extends Error {
  * that is the ordinary state; `maybeSingle` says so without a 406.
  *
  * A failed READ is also "no", and that is the uncomfortable half. Failing open
- * would mean an outage in this one query hands the model to everybody, which
- * is the expensive direction to be wrong in; failing shut costs a paying user
- * one refused scan and a retry.
+ * would mean an outage in this one query hands the Pro features to everybody,
+ * which is the expensive direction to be wrong in; failing shut costs a paying
+ * user one refused describe and a retry.
  */
 export async function isEntitled(db: SupabaseClient, userId: string): Promise<boolean> {
   const { data, error } = await db
@@ -106,78 +137,129 @@ export async function isEntitled(db: SupabaseClient, userId: string): Promise<bo
   return entitledBy(data)
 }
 
-/** Throws `NotEntitled` unless the account may reach the model. */
-export async function requireEntitlement(db: SupabaseClient, userId: string): Promise<void> {
-  if (!(await isEntitled(db, userId))) throw new NotEntitled()
-}
-
 /**
- * The per-request meter.
+ * Throws `NotEntitled` unless the account may reach this Pro-only feature.
  *
- * `claim()` is called immediately before each HTTP request to OpenRouter and
- * throws when the account is out of budget. It is a REQUIRED argument
- * everywhere a model is called, all the way down to `chatJSON`, so that a new
- * model call cannot be added without deciding whose budget it comes out of —
- * an optional parameter would have made an uncounted call the thing that
- * happens when somebody forgets, and an under-count is invisible until the
- * bill arrives. `deno check` runs over every function in CI, so a missed one
- * fails the build rather than the invoice.
+ * NOT EVERY MODEL PATH IS BEHIND THIS ANY MORE, which is the change freemium
+ * made here. Photographing a plate is the app's whole pitch and a free account
+ * gets three a day of it; what stays Pro is the paths that are worth paying for
+ * and cheap to live without — describing a meal in words, correcting one with
+ * words, and reading a recipe out of a photograph. The names are the same
+ * strings the client's `ProFeature` union uses, so a refusal that starts on the
+ * server lands in the same funnel as one the client caught first.
  */
-export type Meter = {
-  /** Takes one request's worth of budget, or throws `AiLimitReached`. */
-  claim(): Promise<void>
-  /** How many requests this invocation has made. For logs and the debug trace. */
-  spent(): number
+export async function requireEntitlement(
+  db: SupabaseClient,
+  userId: string,
+  feature: string,
+): Promise<void> {
+  if (!(await isEntitled(db, userId))) throw new NotEntitled(feature)
 }
 
 /**
- * A meter backed by `claim_ai_inference`, which does the check and the
- * increment in one statement so two scans at once cannot both walk through the
- * last unit of budget.
+ * Take one scan's worth of today's budget, or throw.
+ *
+ * ONE CLAIM PER USER-INITIATED PASS AT THE MODEL, taken at the top of the
+ * endpoint before the photo is read and before the first model call. Claimed
+ * afterwards, an account already at its ceiling would still get to send the
+ * request that put it there.
+ *
+ * WHAT COUNTS AS ONE. A photographed plate, a typed meal, a correction, a
+ * recipe read out of a picture: one each, whatever they cost underneath. A
+ * plate that takes a vision call, a verifier call and an estimate is still one
+ * scan, because one scan is what the user did. `Meter` below counts the model
+ * requests separately, for the logs and the bill.
+ *
+ * THE CLAIM IS NOT REFUNDED when the cascade goes badly. A scan that bottomed
+ * out at the archetype floor, or a photograph with no food in it, has still
+ * spent a plate's worth of model time and the user has still had an answer.
+ * Refunding would also mean deciding what "went badly" means, which is a
+ * judgement the meter has no business making.
+ *
+ * A FAILED CLAIM LETS THE REQUEST THROUGH, uncounted. This is the opposite call
+ * from `isEntitled` above because the risk is opposite: entitlement decides
+ * whether a non-paying account reaches a Pro feature at all, while this decides
+ * how much anybody gets, and a database blip should not read as "you are cut
+ * off" to somebody who has paid.
  */
-export function createMeter(db: SupabaseClient, userId: string): Meter {
-  let spent = 0
+export async function claimScan(db: SupabaseClient, userId: string): Promise<void> {
+  const { data, error } = await db
+    .rpc('claim_scan', { p_user: userId })
+    .maybeSingle<{ allowed: boolean; used: number; daily_limit: number; entitled: boolean }>()
 
-  return {
-    spent: () => spent,
-    async claim() {
-      const { data, error } = await db
-        .rpc('claim_ai_inference', { p_user: userId, p_count: 1 })
-        .maybeSingle<{ allowed: boolean; used: number; monthly_limit: number }>()
-
-      // The meter failing is not the user being over their limit, and charging
-      // them for a request that has not happened is worse than letting one
-      // through uncounted. This is the opposite call from `isEntitled` above
-      // because the risk is opposite: entitlement decides whether a
-      // non-paying account gets the model at all, while this decides how much
-      // a PAYING one gets, and a database blip should not read as "you are cut
-      // off" to somebody who has paid.
-      if (error) {
-        console.error('[meter] claim failed, allowing uncounted:', error.message)
-        return
-      }
-      if (data && !data.allowed) {
-        throw new AiLimitReached(data.used, data.monthly_limit)
-      }
-      spent += 1
-    },
+  if (error) {
+    console.error('[quota] claim failed, allowing uncounted:', error.message)
+    return
+  }
+  if (data && !data.allowed) {
+    throw new ScanLimitReached(data.used, data.daily_limit, data.entitled)
   }
 }
 
 /**
- * A meter that counts and never refuses.
+ * Take one recipe review's worth of budget, or refuse.
  *
- * For mock mode, where no request reaches OpenRouter and there is nothing to
- * bill. Counting anyway would make a local stack's numbers look like a real
- * account's while costing nothing.
+ * NOT THE USER'S SCAN QUOTA, and that is the whole reason this is a second
+ * claim rather than a call to the one above. The review is the app's own
+ * moderation — it runs because somebody pressed Publish, not because they asked
+ * for a model — and spending their daily allowance on it would be the app
+ * billing them for a check it performs on its own behalf. What it needs instead
+ * is a ceiling that no real use comes near and a loop cannot walk through, which
+ * is what a per-hour rate limit is.
+ *
+ * Returns a BOOLEAN rather than throwing. There is one caller and it answers
+ * the refusal the same way it answers every other failure in that branch — the
+ * recipe stays `pending`, which keeps it out of the community tab — so a class
+ * to carry the numbers across would be a class nobody reads.
+ *
+ * A FAILED CLAIM LETS IT THROUGH, like the scan meter and for the same reason:
+ * a database blip must not become a recipe nobody can publish.
  */
-export function nullMeter(): Meter {
+export async function claimRecipeReview(db: SupabaseClient, userId: string): Promise<boolean> {
+  const { data, error } = await db
+    .rpc('claim_recipe_review', { p_user: userId })
+    .maybeSingle<{ allowed: boolean; used: number; hourly_limit: number }>()
+
+  if (error) {
+    console.error('[review quota] claim failed, allowing uncounted:', error.message)
+    return true
+  }
+  if (data && !data.allowed) {
+    console.warn(`[review quota] refused: ${data.used}/${data.hourly_limit} this hour`)
+    return false
+  }
+  return true
+}
+
+/**
+ * How many requests to OpenRouter one invocation made.
+ *
+ * COUNTS, AND NO LONGER REFUSES. It used to be the quota itself: `claim()` ran
+ * before every HTTP request to the model and threw when the account was out of
+ * budget for the month. That is what made the ceiling unspeakable — a limit in
+ * units of "requests" cannot be printed on a paywall — so the ceiling moved to
+ * `claimScan` above, counted in scans, and what is left here is the honest
+ * record of what a scan actually cost us.
+ *
+ * STILL A REQUIRED ARGUMENT everywhere a model is called, all the way down to
+ * `chatJSON`, and that is deliberate: it is what keeps a new model call from
+ * being added without the trace and the logs knowing about it, and it is the
+ * hook a per-request budget would go back on to if one is ever wanted again.
+ * `deno check` runs over every function in CI, so a missed one fails the build.
+ */
+export type Meter = {
+  /** Counts one HTTP request to OpenRouter. */
+  record(): void
+  /** How many requests this invocation has made. For logs and the debug trace. */
+  spent(): number
+}
+
+export function createMeter(): Meter {
   let spent = 0
   return {
     spent: () => spent,
-    claim: () => {
+    record: () => {
       spent += 1
-      return Promise.resolve()
     },
   }
 }

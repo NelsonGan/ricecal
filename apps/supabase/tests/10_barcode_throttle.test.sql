@@ -1,7 +1,7 @@
 -- ---------------------------------------------------------------------------
 -- The hourly ceiling on barcode lookups: who can move it, and whether it stops.
 --
--- The barcode function spends no AI budget, so `claim_ai_inference` never sees
+-- The barcode function spends no scan quota, so `claim_scan` never sees
 -- it and this is the only thing standing between a signed-in caller and an
 -- unbounded loop of live Open Food Facts fetches. It is the AI meter's shape,
 -- and so are its risks: the ceiling guard lives in an `on conflict do update
@@ -28,7 +28,7 @@ values
 
 -- -- GRANTS --------------------------------------------------------------------
 -- The client may read its own counter and may never move it, exactly as with
--- `ai_usage`: a client that could write here could zero its own throttle.
+-- `scan_usage`: a client that could write here could zero its own throttle.
 
 select ok(
   has_table_privilege('authenticated', 'public.barcode_scan_usage', 'SELECT'),

@@ -89,9 +89,11 @@ export {
   useUpdateProfile,
 } from './profile'
 export {
+  isRecipeLimit,
   type PublishResult,
   type RecipeIngredientInput,
   type RecipeInput,
+  type RecipeQuota,
   type RecipeShelf,
   type RecipeSource,
   type SaveResult,
@@ -101,6 +103,7 @@ export {
   useReadRecipe,
   useRecipe,
   useRecipeIngredients,
+  useRecipeQuota,
   useRecipes,
   useSaveRecipe,
   useSaveRecipeCopy,
@@ -138,9 +141,11 @@ export {
 } from './snapshot'
 export {
   type Entitlement,
+  type ScanQuota,
   useAwaitEntitlement,
   useEntitlement,
   usePlanPrices,
+  useScanQuota,
   useSubscription,
 } from './subscription'
 export { useTrendSeries, useTrendSummary } from './trends'

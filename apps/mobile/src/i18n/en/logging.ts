@@ -130,6 +130,18 @@ export const logging = {
     tabs: 'What are you pointing at',
     meal: 'Meal',
     barcode: 'Barcode',
+    /**
+     * What a free account has left today, under the viewfinder.
+     *
+     * Plural because the last one is the one that matters: "1 scan left today"
+     * is the line somebody reads before deciding whether to spend it, and "1
+     * scans" would undermine the only sentence on this screen that is asking
+     * for a decision. Zero reads as none rather than as a number, since by then
+     * the sentence is about tomorrow.
+     */
+    scansLeft_zero: 'No scans left today. They come back tomorrow.',
+    scansLeft_one: '{{count}} scan left today',
+    scansLeft_other: '{{count}} scans left today',
   },
 
   /**

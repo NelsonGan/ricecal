@@ -10,6 +10,7 @@ import {
   useTrendSummary,
   useUpdateSettings,
 } from '@/data'
+import { useRequirePro } from '@/features/paywall'
 import {
   CaloriesPanel,
   MetricTabs,
@@ -48,6 +49,7 @@ export default function TrendsScreen() {
   const { t } = useTranslation(['progress', 'common', 'reviews'])
 
   const [range, setRange] = useState<TrendRange>('7d')
+  const requirePro = useRequirePro()
   const [metric, setMetric] = useState<TrendMetric>('calories')
   /** Which day the weigh-in sheet is on, and null when it is shut. */
   const [weighingIn, setWeighingIn] = useState<string | null>(null)
@@ -81,7 +83,26 @@ export default function TrendsScreen() {
               label: t(RANGE_KEY[value]),
             }))}
             value={range}
-            onChange={setRange}
+            /**
+             * A free account sees the week and nothing else.
+             *
+             * The control keeps all three segments and refuses the two it
+             * cannot serve, rather than hiding them: a hidden option is a
+             * feature nobody knows they are missing, and the whole job of a
+             * free tier is to show what the paid one is for. Same argument as
+             * the gated buttons everywhere else — a greyed-out control tells
+             * somebody they cannot do something and gives them nowhere to go.
+             *
+             * The seven-day range is not an arbitrary slice either: it is the
+             * one the app is built around. The strip on Today is a week, the
+             * review is a week, and a free user is not being shown a crippled
+             * chart — they are being shown the week, and offered the shape only
+             * a month or a year can carry.
+             */
+            onChange={(next) => {
+              if (next !== '7d' && !requirePro('trend_range')) return
+              setRange(next)
+            }}
             accessibilityLabel={t('progress:range.label')}
             // Sized rather than left to grow: the control and the title share a
             // row, and a segmented control that takes what it needs would push

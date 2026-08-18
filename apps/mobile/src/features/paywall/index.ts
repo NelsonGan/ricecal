@@ -5,10 +5,15 @@
  * Separate from `features/shared` because these know what a subscription is
  * and what it costs, which is a narrower thing to know than "meals and foods".
  */
-export { PRO_FEATURES, ProPitch, type ProPitchProps } from './ProPitch'
+
+export { markPaywallSeen, NUDGE_INTERVAL_MS, paywallDue } from './nudge'
+export { PLAN_FEATURES, type PlanFeature, PlanTable } from './PlanTable'
+export { ProPitch, type ProPitchProps } from './ProPitch'
 export {
   trackPurchaseAbandoned,
   trackPurchaseStarted,
+  useMarkPaywallSeen,
   useTrackPaywallShown,
 } from './tracking'
+export { useProNudge } from './useProNudge'
 export { type RequireProOptions, useRequirePro } from './useRequirePro'

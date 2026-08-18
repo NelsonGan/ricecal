@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react'
 
+import { useSession } from '@/data'
 import { isUserCancelled, PurchasesUnavailable } from '@/data/purchases'
 import { type AnalyticsPlan, type PaywallScreen, track } from '@/lib/analytics'
+import { markPaywallSeen } from './nudge'
 
 /**
  * The paywall half of the tracking plan, shared by the screens that have one.
@@ -32,12 +34,30 @@ import { type AnalyticsPlan, type PaywallScreen, track } from '@/lib/analytics'
  */
 export function useTrackPaywallShown(screen: Exclude<PaywallScreen, 'hard'>): void {
   const shown = useRef(false)
+  const { userId } = useSession()
 
   useEffect(() => {
     if (shown.current) return
     shown.current = true
     track('Paywall Shown', { screen, trigger: screen })
-  }, [screen])
+    // Every paywall resets the standing offer's two-day clock, whichever one it
+    // was. Somebody who declined the price at the end of onboarding should not
+    // meet it again on their first ordinary launch. See `nudge.ts`.
+    if (userId) markPaywallSeen(userId)
+  }, [screen, userId])
+}
+
+/**
+ * The same clock, for `/paywall` — which does not use the tracker above,
+ * because it is reached from a refused button and `useRequirePro` is the only
+ * thing that knows which one.
+ */
+export function useMarkPaywallSeen(): void {
+  const { userId } = useSession()
+
+  useEffect(() => {
+    if (userId) markPaywallSeen(userId)
+  }, [userId])
 }
 
 /** The store sheet is about to open. */

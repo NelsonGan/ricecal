@@ -1,10 +1,11 @@
+import { FREE_DAILY_SCANS, FREE_RECIPES } from '@ricecal/shared'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useEntitlement, usePlanPrices, useSubscription } from '@/data'
 import { openManageSubscriptions } from '@/data/purchases'
-import { PRO_FEATURES } from '@/features/paywall'
+import { PLAN_FEATURES } from '@/features/paywall'
 import { CheckList } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { progressOf } from '@/lib/nutrition'
@@ -132,7 +133,12 @@ export default function SubscriptionScreen() {
                 })}
           </Text>
         ) : (
-          <Text variant="meta">{t('profile:subscription.freeBody')}</Text>
+          <Text variant="meta">
+            {t('profile:subscription.freeBody', {
+              scans: FREE_DAILY_SCANS,
+              recipes: FREE_RECIPES,
+            })}
+          </Text>
         )}
       </Card>
 
@@ -140,13 +146,15 @@ export default function SubscriptionScreen() {
           three lines written here — unlimited logging, photo scanning, the food
           database — while the pitch had grown to ten, so the screen you read
           after paying described a smaller product than the one you bought. See
-          `PRO_FEATURES`. Titles only: the pitch has room for a sentence under
-          each and a settings card does not. */}
+          `PLAN_FEATURES`. Labels only: the paywall renders each row's two
+          values beside it and a settings card has no column to put them in,
+          which is fine here — everything on this list is included, and what the
+          free tier gets instead is a question for the page that is selling. */}
       <Card
         title={entitled ? t('profile:subscription.included') : t('profile:subscription.whatYouGet')}
       >
         <CheckList
-          items={PRO_FEATURES.map((feature) => t(`paywall:hard.features.${feature.key}.title`))}
+          items={PLAN_FEATURES.map((feature) => t(`paywall:table.rows.${feature.key}.label`))}
         />
       </Card>
 
