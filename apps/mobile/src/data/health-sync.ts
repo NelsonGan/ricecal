@@ -91,7 +91,12 @@ const BACKFILL_DAYS = 7
  */
 const WINDOW_DAYS = 7
 
-/** How much of the past keeps an hourly breakdown. Nothing draws older. */
+/**
+ * How much of the past keeps an hourly breakdown. Nothing draws older, nothing
+ * writes older, and `pruneHours` deletes what falls out behind it — three
+ * meanings for one constant, which is what makes it safe to change: lower it
+ * and the next sync tidies up to the new depth on its own.
+ */
 const HOURLY_DAYS = 30
 
 /**
@@ -252,6 +257,41 @@ async function persist(
 }
 
 /**
+ * Drops the hourly rows that have aged out of the retention window.
+ *
+ * `HOURLY_DAYS` is the depth every chart reads, and until this existed the only
+ * thing it bounded was how far back a sync would WRITE hours. Nothing removed
+ * the ones that fell out behind it. `persist` deletes exactly the range it is
+ * about to re-insert — that equality is the correctness argument for the
+ * replace, and it says nothing at all about older rows — so a connected user
+ * accumulated 24 rows a day for as long as they kept the app, and past the
+ * first month every one of them was a row no query would ever return again.
+ * `schemas/41_activity.sql` has described this table as a month deep since it
+ * was written. It was not; this is the statement that makes it true.
+ *
+ * Run once per sync rather than once per chunk: the rows it finds are the same
+ * rows whatever range was just read, and a chunked backfill would otherwise
+ * repeat an identical delete for every chunk of it.
+ *
+ * A failure here is SWALLOWED, which is the one place in this file that does
+ * not throw. Everything above it is the user's activity and a caller that
+ * carried on regardless would be showing them a day that is not there; this is
+ * housekeeping running after all of that has already landed, and raising would
+ * turn "we could not tidy up" into "your sync failed" — with the retry writing
+ * every day again to arrive at the same delete. Rows left behind cost storage
+ * until the next foreground, which is a bill, not a bug.
+ */
+export async function pruneHours(userId: string, retainFrom: string): Promise<void> {
+  const { error } = await supabase
+    .from('activity_hours')
+    .delete()
+    .eq('user_id', userId)
+    .lt('log_date', retainFrom)
+
+  if (error) console.warn('[health] could not prune the hourly rows', error)
+}
+
+/**
  * The two facts about the PERSON that a provider needs and cannot know.
  *
  * Read here rather than inside a provider because both are about the user and
@@ -389,6 +429,12 @@ export async function syncRange(
     done += 1
     onProgress?.({ done, total })
   }
+
+  // After the writes rather than before them: the sync has just re-inserted
+  // everything inside the window, so this only ever finds rows the window no
+  // longer covers, and running it first would leave the newest expiry sitting
+  // there for one more foreground.
+  await pruneHours(userId, hourlyFrom)
 
   return { days: written, deviceName }
 }
