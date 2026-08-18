@@ -19,6 +19,38 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 const ENTITLED = new Set(['trial', 'active'])
 
 /**
+ * The whole rule: an entitled status, and a period that has not run out.
+ *
+ * THE DATE IS PART OF IT, and for a long time it was not. Both gates read the
+ * status alone, so `current_period_end` was a column the webhook wrote and
+ * nothing ever read — which made every missed ending PERMANENT rather than
+ * temporary. A delivery that failed past RevenueCat's retries, or an event the
+ * ordering guard wrongly discarded (which is exactly what happened to two
+ * revoked promotional grants): either leaves a row saying `active` with an
+ * expiry in the past, and the account goes on reaching the model for ever.
+ *
+ * It does not replace the webhook, and it cannot: RevenueCat is still the only
+ * thing that knows a subscription ended EARLY. What it does is bound the damage
+ * of never hearing, to the period that was actually paid for.
+ *
+ * NULL IS NO EXPIRY, not an expired one. Lifetime is bought once and renews
+ * never, so RevenueCat sends no expiry for it and the column is null by design
+ * — read the other way round, this would refuse the one plan nobody can renew.
+ *
+ * Mirrored by `isEntitledRow` in the client's `data/subscription.ts`. The two
+ * cannot import each other across the Deno / React Native line, so they are two
+ * copies of one rule and have to be changed together.
+ */
+export function entitledBy(
+  row: { status?: string | null; current_period_end?: string | null } | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (!ENTITLED.has(row?.status ?? 'none')) return false
+  const end = row?.current_period_end
+  return !end || new Date(end) > now
+}
+
+/**
  * Refused because the account is not subscribed.
  *
  * Separate from the quota error below so the endpoints can answer with
@@ -63,7 +95,7 @@ export class AiLimitReached extends Error {
 export async function isEntitled(db: SupabaseClient, userId: string): Promise<boolean> {
   const { data, error } = await db
     .from('subscriptions')
-    .select('status')
+    .select('status, current_period_end')
     .eq('user_id', userId)
     .maybeSingle()
 
@@ -71,7 +103,7 @@ export async function isEntitled(db: SupabaseClient, userId: string): Promise<bo
     console.error('[entitlement] read failed, refusing:', error.message)
     return false
   }
-  return ENTITLED.has(data?.status ?? 'none')
+  return entitledBy(data)
 }
 
 /** Throws `NotEntitled` unless the account may reach the model. */

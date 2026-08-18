@@ -32,8 +32,17 @@ const LOGO = require('../../../assets/icon.png')
  *
  * Copy keys rather than strings so this stays translatable, and one array so
  * adding a feature is one entry rather than a hunt through JSX.
+ *
+ * EXPORTED because the subscription screen lists the same things under
+ * "Included", and it had its own hand-written three: unlimited logging, photo
+ * scanning, the food database. Two lists meant the screen somebody reads AFTER
+ * paying described a smaller product than the one that sold it to them, and
+ * nothing would have caught the drift — a feature added to the pitch simply
+ * never appeared there. Same source, two renderings: the pitch has room for a
+ * line of body copy under each, and the settings card is a checklist of the
+ * titles.
  */
-const FEATURES = [
+export const PRO_FEATURES = [
   { key: 'snap', icon: { set: 'system', name: 'camera' } },
   { key: 'describe', icon: { set: 'system', name: 'sparkle' } },
   { key: 'barcode', icon: { set: 'system', name: 'barcode' } },
@@ -106,10 +115,10 @@ export function ProPitch({ plan, onPlanChange, onRestore }: ProPitchProps) {
         </Text>
       </View>
 
-      {/* Every feature, not a highlight reel. See `FEATURES`. */}
+      {/* Every feature, not a highlight reel. See `PRO_FEATURES`. */}
       <Card title={t('hard.everything')}>
         <View className="gap-4">
-          {FEATURES.map((feature) => (
+          {PRO_FEATURES.map((feature) => (
             <FactRow
               key={feature.key}
               icon={feature.icon}

@@ -169,18 +169,8 @@ export const profile = {
     /** The same card for somebody who has never subscribed. */
     freeBody: 'Search and browse are free. Logging a meal needs Pro.',
     whatYouGet: 'WHAT YOU GET WITH PRO',
-    yourPlan: 'YOUR PLAN',
-    plan: 'Plan',
-    perMonth: 'Per month',
-    payment: 'Payment',
-    paymentUnknown: 'Managed by the store',
-    paymentValue: 'Card ending {{last4}}',
+    /** A heading only. What is under it comes from `paywall:hard.features`. */
     included: 'INCLUDED',
-    perks: {
-      unlimited: 'Unlimited logging',
-      scanning: 'Photo scanning',
-      database: 'The full food database',
-    },
     cancel: 'Cancel subscription',
     cancelTitle: 'Cancel your subscription?',
     cancelBody: 'You keep Pro until the end of the period. Your log stays readable either way.',

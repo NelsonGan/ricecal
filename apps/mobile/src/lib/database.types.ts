@@ -930,6 +930,7 @@ export type Database = {
         Row: {
           created_at: string
           current_period_end: string | null
+          last_event_at: string | null
           plan: Database['public']['Enums']['subscription_plan'] | null
           product_id: string | null
           rc_app_user_id: string | null
@@ -942,6 +943,7 @@ export type Database = {
         Insert: {
           created_at?: string
           current_period_end?: string | null
+          last_event_at?: string | null
           plan?: Database['public']['Enums']['subscription_plan'] | null
           product_id?: string | null
           rc_app_user_id?: string | null
@@ -954,6 +956,7 @@ export type Database = {
         Update: {
           created_at?: string
           current_period_end?: string | null
+          last_event_at?: string | null
           plan?: Database['public']['Enums']['subscription_plan'] | null
           product_id?: string | null
           rc_app_user_id?: string | null
