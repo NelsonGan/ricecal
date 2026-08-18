@@ -2,7 +2,8 @@ import { router } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { type ReviewKind, useReviewPeriods, useSettings } from '@/data'
+import { type ReviewKind, useEntitlement, useReviewPeriods, useSettings } from '@/data'
+import { useRequirePro } from '@/features/paywall'
 import { unitFor } from '@/features/progress'
 import { ReviewRow, reviewId } from '@/features/reviews'
 import { useBack } from '@/lib/navigation'
@@ -16,6 +17,14 @@ import { AppBar, Card, EmptyState, Screen, SegmentedControl, Skeleton } from '@/
  * you still remember eating and a monthly one is about a shape you only see
  * from a distance. Both are decided in `review_periods`; nothing here knows a
  * date.
+ *
+ * ONE OF THEM IS FREE, and it is the newest week. A review is the thing this
+ * app does that a notes page cannot, so a free account gets to read one rather
+ * than be told about one — and it is the newest week rather than a sample,
+ * because the sample would be somebody else's week and this one is theirs.
+ * Everything older, and every month, opens the paywall. The rows are still
+ * drawn in full with a padlock where the chevron goes: what is being sold is
+ * visibly their own year, which is the only honest way to sell it.
  *
  * EVERY PERIOD IN THE WINDOW, however little is in it. There was a sufficiency
  * rule here — four logged days of a week, twelve of a month — and periods that
@@ -32,9 +41,24 @@ export default function ReviewsScreen() {
   const [kind, setKind] = useState<ReviewKind>('week')
   const periods = useReviewPeriods(kind)
   const { data: settings } = useSettings()
+  const { entitled, loading: checkingPlan, unknown: planUnknown } = useEntitlement()
+  const requirePro = useRequirePro()
   const unit = unitFor(settings?.units)
 
   const listed = periods.data ?? []
+
+  /**
+   * The one review a free account may open: the newest finished week.
+   *
+   * "Not yet known" counts as free, so no padlock is drawn while the
+   * subscription query is in flight or while the app is offline with nothing
+   * cached. A row that shows a lock for a moment on every cold launch is a
+   * paying user being told twice a day that they have not paid; the tap is
+   * still guarded by `requirePro`, which says "we could not check" rather than
+   * refusing when it does not know.
+   */
+  const known = !checkingPlan && !planUnknown
+  const isFree = (index: number) => !known || entitled || (kind === 'week' && index === 0)
 
   return (
     <Screen>
@@ -74,8 +98,16 @@ export default function ReviewsScreen() {
               period={period}
               unit={unit}
               latest={index === 0}
+              locked={!isFree(index)}
               divider={index < listed.length - 1}
-              onPress={() => router.push(`/reviews/${reviewId(period.kind, period.start)}`)}
+              onPress={() => {
+                // `requirePro` rather than the `entitled` above, because it is
+                // the one that knows the difference between "not subscribed"
+                // and "we could not find out" — and offline, a locked row must
+                // say the second rather than the first.
+                if (!isFree(index) && !requirePro('review')) return
+                router.push(`/reviews/${reviewId(period.kind, period.start)}`)
+              }}
             />
           ))}
         </Card>

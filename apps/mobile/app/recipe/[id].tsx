@@ -11,6 +11,7 @@ import {
   useMealPhotoUrl,
   useRecipe,
   useRecipeIngredients,
+  useRecipeQuota,
   useSaveRecipeCopy,
   useSelectedDate,
 } from '@/data'
@@ -69,6 +70,7 @@ export default function RecipeDetailScreen() {
   const logFood = useLogFood()
   const requirePro = useRequirePro()
   const saveCopy = useSaveRecipeCopy()
+  const quota = useRecipeQuota()
   const remove = useDeleteRecipe()
 
   /**
@@ -136,10 +138,11 @@ export default function RecipeDetailScreen() {
   ]
 
   const addToDay = () => {
-    // Logging a pot writes a food entry like any other, so it is gated like
-    // any other. Reading the recipe, saving a copy of somebody else's and
-    // editing your own all stay free: none of them puts a row in the diary.
-    if (!requirePro('log_recipe')) return
+    // NOT GATED. Logging a pot writes a food entry from figures the user
+    // entered themselves, reaches no model and costs nothing, so it is free for
+    // the same reason searching the catalogue is. What a free account is
+    // limited on is how many recipes it may KEEP, which is checked where one is
+    // created rather than where one is logged.
     logFood.mutate({
       snapshot: snapshotFromRecipe(recipe),
       quantity,
@@ -152,6 +155,12 @@ export default function RecipeDetailScreen() {
   }
 
   const copy = async () => {
+    // A saved copy is a recipe of yours — it lands on your shelf, it is yours
+    // to edit, and the database counts it against the same three. So the gate
+    // is here as well as on the plus button, or "save somebody else's" would be
+    // the way round the ceiling, and the user would meet a trigger's error
+    // message instead of a paywall.
+    if (quota.atLimit && !requirePro('new_recipe')) return
     let newId: string
     try {
       newId = await saveCopy.mutateAsync(recipe.id)

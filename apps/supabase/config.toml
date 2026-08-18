@@ -604,6 +604,19 @@ verify_jwt = false
 import_map = "./functions/barcode/deno.json"
 entrypoint = "./functions/barcode/index.ts"
 
+# The photograph sweep: a free account's plates are kept for thirty days, and
+# this is what deletes them. NOT the same auth pattern as the others — there is
+# no user, since it runs across every account — so it checks a shared secret
+# like the RevenueCat webhook does. Secrets it reads: RETENTION_TOKEN, matching
+# the value in the scheduled workflow, and the R2 four. Unset, it refuses every
+# request rather than accepting them, because an open version of this endpoint
+# deletes strangers' photographs.
+[functions.retention]
+enabled = true
+verify_jwt = false
+import_map = "./functions/retention/deno.json"
+entrypoint = "./functions/retention/index.ts"
+
 # There is no `catalogue` function any more. The app carries the user's own
 # JWT and reads the Worker directly, so the hop was removed along with the
 # shared secret it existed to hold. Its block stayed here for one commit after

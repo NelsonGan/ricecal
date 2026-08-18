@@ -19,8 +19,14 @@
 // the auth check rather than inside the cascade because they are the same kind
 // of thing: a statement about who is asking, settled before any work starts.
 // Falling to the archetype floor would be wrong twice over — it would write a
-// guessed meal nobody asked for, and it would quietly hand an unsubscribed
-// account the answer the paywall exists to sell.
+// guessed meal nobody asked for, and it would hand out the answer the paywall
+// exists to sell.
+//
+// THE TWO ARE ASKED OF DIFFERENT INPUTS, which is the freemium shape. A typed
+// meal needs a subscription; a photographed one does not, and instead spends
+// one of the day's scans — three of them on a free account and fifty on a paid
+// one. So the same endpoint answers 402 to one input and 429 to either, and the
+// client tells them apart by the `code` in the body.
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
@@ -34,11 +40,11 @@ import {
   writeEntry,
 } from '../_shared/cascade.ts'
 import {
-  AiLimitReached,
+  claimScan,
   createMeter,
   NotEntitled,
-  nullMeter,
   requireEntitlement,
+  ScanLimitReached,
 } from '../_shared/entitlement.ts'
 import {
   analysePhoto,
@@ -116,22 +122,57 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   )
 
-  // -- May this account be here at all, and does it have budget left?
+  // -- May this account be here at all, and has it any scans left today?
   //
   // Before the photo is read and before the first model call, because both
-  // cost money and neither is refundable once spent. In mock mode nothing
-  // reaches OpenRouter, so nothing is metered — but the entitlement check
-  // still runs, or a local stack would be the one place the paywall does not
-  // exist and every gating bug would be invisible in development.
+  // cost money and neither is refundable once spent.
+  //
+  // THE TWO INPUTS ARE NOT THE SAME PRODUCT. Photographing a plate is what the
+  // app is FOR, and a free account gets three a day of it — a diary somebody
+  // can actually keep, which is the only version of a free tier worth having.
+  // Typing a meal is a convenience on top of that, and it is Pro: it costs the
+  // same model time for a meal the user could have photographed, and a free
+  // tier that includes it has nothing left to sell at the top of the funnel.
+  //
+  // Both checks run in mock mode too. A local stack where the gates did not
+  // exist would be the one place every gating bug is invisible.
+  if (description) {
+    try {
+      await requireEntitlement(db, userId, 'describe')
+    } catch (error) {
+      if (error instanceof NotEntitled) {
+        return json(
+          {
+            ok: false,
+            code: 'not_entitled',
+            feature: error.feature,
+            error: 'subscription required',
+          },
+          402,
+        )
+      }
+      throw error
+    }
+  }
   try {
-    await requireEntitlement(db, userId)
+    await claimScan(db, userId)
   } catch (error) {
-    if (error instanceof NotEntitled) {
-      return json({ ok: false, code: 'not_entitled', error: 'subscription required' }, 402)
+    if (error instanceof ScanLimitReached) {
+      return json(
+        {
+          ok: false,
+          code: 'scan_limit',
+          used: error.used,
+          limit: error.dailyLimit,
+          entitled: error.entitled,
+          error: error.message,
+        },
+        429,
+      )
     }
     throw error
   }
-  const meter = mockActive() ? nullMeter() : createMeter(db, userId)
+  const meter = createMeter()
 
   const scanId = crypto.randomUUID()
   const source = description ? 'text' : 'camera'
@@ -168,12 +209,10 @@ Deno.serve(async (req: Request) => {
           : await analysePhoto(photoBase64, mock, meter),
       )
     } catch (error) {
-      // Out of budget is not a model failure and must not become one. Left to
-      // fall through it would reach the archetype floor, which needs a model
-      // call of its own, fail again for the same reason, and hand the user a
-      // terminal "Mixed meal" row where the honest answer is that they are out
-      // of requests for the month.
-      if (error instanceof AiLimitReached) throw error
+      // Anything that goes wrong here is a model failure, and the archetype
+      // floor answers it. Running out of scans cannot arrive this way: the
+      // claim is taken above, before a single request is sent, so the one
+      // outcome this catch used to have to re-throw is now unreachable.
       const message = `[vision] ${describe(error)}`
       console.error(message)
       trace.push(message)
@@ -288,22 +327,6 @@ Deno.serve(async (req: Request) => {
       ...(wantDebug ? { trace } : {}),
     })
   } catch (error) {
-    // The account ran out of requests part-way through. A distinct answer from
-    // the failure below it, because there is nothing to retry: the client
-    // drops its pending row and says so rather than leaving a spinner over a
-    // scan that will refuse again.
-    if (error instanceof AiLimitReached) {
-      return json(
-        {
-          ok: false,
-          code: 'ai_limit',
-          used: error.used,
-          limit: error.monthlyLimit,
-          error: error.message,
-        },
-        429,
-      )
-    }
     // Even the cascade's floor failed (database down, terminal row missing).
     // Still not an HTTP error: the client keeps its pending row and retries.
     console.error('[scan-meal] unrecoverable:', error)

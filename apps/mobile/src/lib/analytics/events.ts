@@ -52,13 +52,24 @@ export type LogMethod = 'camera' | 'describe' | 'search' | 'barcode' | 'recipe' 
  * app, which is not something the paywall screen can know about itself.
  */
 export type ProFeature =
+  /**
+   * The daily scan allowance ran out. NOT "the camera is behind the paywall" —
+   * it is not, and that is the freemium change: a free account photographs
+   * three plates a day. This is what a fourth one reports, and it is the single
+   * most interesting trigger in the funnel, because it is the only refusal that
+   * happens to somebody already using the app the way it is meant to be used.
+   */
   | 'camera'
   | 'describe'
-  | 'quick_add'
-  | 'log_dish'
-  | 'log_recipe'
-  | 'new_recipe'
   | 'refine'
+  | 'read_recipe'
+  | 'new_recipe'
+  /** A range on Trends that a free account cannot see: 30 days, or a year. */
+  | 'trend_range'
+  /** An older weekly or monthly review. The latest one is free. */
+  | 'review'
+  /** The standing offer on launch, which no button refused. See `useProNudge`. */
+  | 'nudge'
 
 /** Which of the four paywalls. `hard` is `/paywall`, reached from a refusal. */
 export type PaywallScreen = 'hard' | 'intro' | 'reminder' | 'ended'

@@ -167,9 +167,9 @@ export const profile = {
     /** Lifetime does not renew, and saying it does would be the app lying. */
     neverRenews: 'Paid once. Nothing renews.',
     /** The same card for somebody who has never subscribed. */
-    freeBody: 'Search and browse are free. Logging a meal needs Pro.',
+    freeBody: '{{scans}} scans a day, {{recipes}} recipes, and the last week of trends.',
     whatYouGet: 'WHAT YOU GET WITH PRO',
-    /** A heading only. What is under it comes from `paywall:hard.features`. */
+    /** A heading only. What is under it comes from `paywall:table.rows`. */
     included: 'INCLUDED',
     cancel: 'Cancel subscription',
     cancelTitle: 'Cancel your subscription?',
