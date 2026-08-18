@@ -1,0 +1,21 @@
+-- Order RevenueCat's events by when they HAPPENED, not by the period they end.
+--
+-- The webhook guarded against out-of-order delivery by comparing the incoming
+-- event's expiry against the one already stored, and ignoring the event when the
+-- stored period ran longer. That is the right instinct — a delayed EXPIRATION
+-- arriving after the RENEWAL that superseded it must not take the app away from
+-- somebody who has just paid — and the wrong measurement, because it cannot tell
+-- a stale event from an event that ends a subscription EARLY.
+--
+-- Every early ending therefore read as stale and was dropped: a store refund, a
+-- support-initiated cancellation, and a revoked promotional grant. All three
+-- left the account `active` with a period end a year out, and nothing that
+-- followed corrected it, because RevenueCat had already said the only thing it
+-- was going to say about it.
+--
+-- `last_event_at` is `event_timestamp_ms` off the payload, which orders the
+-- deliveries by the one fact that does not move. Null for the rows already here
+-- and for any corrected by hand, neither of which came from an event — and null
+-- is read as "nothing to compare against", so the next event applies.
+alter table public.subscriptions
+  add column last_event_at timestamptz;

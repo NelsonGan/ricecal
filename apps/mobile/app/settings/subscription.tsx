@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useEntitlement, usePlanPrices, useSubscription } from '@/data'
 import { openManageSubscriptions } from '@/data/purchases'
+import { PRO_FEATURES } from '@/features/paywall'
 import { CheckList } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { progressOf } from '@/lib/nutrition'
@@ -22,8 +23,8 @@ export default function SubscriptionScreen() {
   const [confirmCancel, setConfirmCancel] = useState(false)
 
   const yearly = subscription?.plan === 'yearly'
-  // A one-off purchase has no period, no renewal and nothing to switch to, so
-  // three things on this screen have to say something else.
+  // A one-off purchase has no renewal and nothing to switch to, so both the
+  // footer button and the line under the plan have to say something else.
   const lifetime = subscription?.plan === 'lifetime'
 
   /**
@@ -90,12 +91,16 @@ export default function SubscriptionScreen() {
           <Icon set="system" name="crown" size={50} />
           <View className="min-w-0 flex-1 gap-0.5">
             <Text variant="subtitle">{t('profile:subscription.pro')}</Text>
+            {/* Gated on `entitled`, not on the status alone. A row whose period
+                has run out still SAYS `active`, and every gate in the app reads
+                the date — so left on the status this line would tell somebody
+                they had Pro on the screen offering to sell it to them. */}
             <Text variant="meta">
-              {subscription?.status === 'trial'
-                ? t('profile:subscription.trialLeft', { count: trialDaysLeft })
-                : subscription?.status === 'active'
-                  ? t('profile:home.proActive')
-                  : t('profile:home.proNone')}
+              {!entitled
+                ? t('profile:home.proNone')
+                : subscription?.status === 'trial'
+                  ? t('profile:subscription.trialLeft', { count: trialDaysLeft })
+                  : t('profile:home.proActive')}
             </Text>
           </View>
         </View>
@@ -105,7 +110,7 @@ export default function SubscriptionScreen() {
             to be left of — which told a paying subscriber their trial was
             spent, and told somebody who had bought LIFETIME the same thing
             about a trial they never had. */}
-        {subscription?.status === 'trial' ? (
+        {entitled && subscription?.status === 'trial' ? (
           <ProgressBar
             value={progressOf(TRIAL_DAYS - trialDaysLeft, TRIAL_DAYS)}
             tone="kaya"
@@ -131,50 +136,17 @@ export default function SubscriptionScreen() {
         )}
       </Card>
 
-      {/* The whole card is about a plan, so there is nothing honest to put in
-          it for somebody on none: "Plan: Monthly, Per month: $4.99" described
-          a subscription they had not bought, and "Payment: promotional" leaked
-          how the row got there. */}
-      {entitled ? (
-        <Card title={t('profile:subscription.yourPlan')}>
-          <Row
-            label={t('profile:subscription.plan')}
-            value={
-              lifetime
-                ? t('paywall:plans.lifetime')
-                : yearly
-                  ? t('paywall:plans.yearly')
-                  : t('paywall:plans.monthly')
-            }
-          />
-          <Row
-            label={t('profile:subscription.perMonth')}
-            value={
-              (lifetime
-                ? prices?.lifetime?.priceString
-                : yearly
-                  ? prices?.yearly?.perMonthString
-                  : prices?.monthly?.priceString) ?? '—'
-            }
-          />
-          {/* The store holds the card, and never tells us anything about it.
-            What it does tell us is which store the purchase came from. */}
-          <Row
-            label={t('profile:subscription.payment')}
-            value={subscription?.store ?? t('profile:subscription.paymentUnknown')}
-          />
-        </Card>
-      ) : null}
-
+      {/* THE WHOLE OF PRO, from the same list the paywall sells it with. It was
+          three lines written here — unlimited logging, photo scanning, the food
+          database — while the pitch had grown to ten, so the screen you read
+          after paying described a smaller product than the one you bought. See
+          `PRO_FEATURES`. Titles only: the pitch has room for a sentence under
+          each and a settings card does not. */}
       <Card
         title={entitled ? t('profile:subscription.included') : t('profile:subscription.whatYouGet')}
       >
         <CheckList
-          items={[
-            t('profile:subscription.perks.unlimited'),
-            t('profile:subscription.perks.scanning'),
-            t('profile:subscription.perks.database'),
-          ]}
+          items={PRO_FEATURES.map((feature) => t(`paywall:hard.features.${feature.key}.title`))}
         />
       </Card>
 
@@ -194,14 +166,5 @@ export default function SubscriptionScreen() {
         tone="danger"
       />
     </Screen>
-  )
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="flex-row items-center justify-between">
-      <Text variant="label">{label}</Text>
-      <Text variant="meta">{value}</Text>
-    </View>
   )
 }

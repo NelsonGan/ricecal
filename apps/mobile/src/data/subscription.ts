@@ -33,6 +33,40 @@ export function useSubscription() {
 /** The statuses that unlock the app. Must agree with `ENTITLED` on the server. */
 const ENTITLED = new Set(['trial', 'active'])
 
+/** Just enough of the row to decide, so a cached partial can be judged too. */
+export type EntitlementRow = {
+  status?: string | null
+  current_period_end?: string | null
+} | null
+
+/**
+ * The whole rule: an entitled status, and a period that has not run out.
+ *
+ * THE DATE IS PART OF IT. Read on the status alone — as this was — a missed
+ * ending is permanent rather than temporary: a webhook delivery that failed past
+ * RevenueCat's retries, or an event the server's ordering guard wrongly
+ * discarded, leaves a row saying `active` with an expiry in the past, and the
+ * app goes on unlocking itself for ever.
+ *
+ * NULL IS NO EXPIRY. Lifetime renews never, so RevenueCat sends no expiry and
+ * the column is null by design; read as expired it would refuse the one plan
+ * that cannot lapse.
+ *
+ * The server enforces the same rule independently in `entitledBy` — the two
+ * cannot import each other across the Deno / React Native line, so they are two
+ * copies of one rule and have to be changed together, and each is tested against
+ * the same cases. This copy is the one that decides what the buttons say; that
+ * one is the one that actually refuses.
+ *
+ * `now` is a parameter so the boundary can be tested from both sides without
+ * moving the clock.
+ */
+export function isEntitledRow(row: EntitlementRow | undefined, now: Date = new Date()): boolean {
+  if (!ENTITLED.has(row?.status ?? 'none')) return false
+  const end = row?.current_period_end
+  return !end || new Date(end) > now
+}
+
 export type Entitlement = {
   /** May this account log a meal and reach the model? */
   entitled: boolean
@@ -76,7 +110,7 @@ export function useEntitlement(): Entitlement {
   const noAnswer = data === undefined && (isError || isPaused)
 
   return {
-    entitled: ENTITLED.has(data?.status ?? 'none'),
+    entitled: isEntitledRow(data),
     // Paused is not loading. Something that is loading will finish.
     loading: isLoading && !isPaused,
     // We asked and could not find out. The screens use this to say "we could
@@ -131,8 +165,8 @@ export function useAwaitEntitlement(): () => Promise<boolean> {
   return useCallback(async () => {
     for (let attempt = 0; attempt < ENTITLEMENT_POLL_ATTEMPTS; attempt++) {
       await queryClient.invalidateQueries({ queryKey: keys.subscription(userId) })
-      const row = queryClient.getQueryData<{ status?: string } | null>(keys.subscription(userId))
-      if (ENTITLED.has(row?.status ?? 'none')) return true
+      const row = queryClient.getQueryData<EntitlementRow>(keys.subscription(userId))
+      if (isEntitledRow(row)) return true
       if (attempt < ENTITLEMENT_POLL_ATTEMPTS - 1) {
         await new Promise((resolve) => setTimeout(resolve, ENTITLEMENT_POLL_INTERVAL_MS))
       }
