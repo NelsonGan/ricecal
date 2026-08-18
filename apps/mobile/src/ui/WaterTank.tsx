@@ -53,8 +53,24 @@ const AMPLITUDE = 3
 /** Points between samples of the wave. Small enough that `lineTo` reads as a curve. */
 const STEP = 4
 
-/** One full trip of the wave, in milliseconds. Slow: this is water, not a loading bar. */
+/**
+ * One full trip of each wave, in milliseconds. Slow: this is water, not a
+ * loading bar.
+ *
+ * TWO PERIODS RATHER THAN ONE PHASE AND TWO SPEEDS, and that is a bug fix
+ * rather than a preference. A phase that ramps 0 to 1 and repeats is only
+ * seamless if the wave built from it advances a WHOLE cycle over that ramp —
+ * multiply it by 0.62 to slow one wave down and the wrap leaves 38% of a cycle
+ * unaccounted for, so every 3.6 seconds that wave jumped backwards. It read as
+ * the animation resetting, because it was.
+ *
+ * Each wave gets its own value looping over its own duration instead, so both
+ * advance exactly one cycle per wrap. The difference between the two durations
+ * is what makes them beat against each other, which is what the second wave is
+ * for.
+ */
 const PERIOD = 3600
+const BACK_PERIOD = 5800
 
 /** How far the surface tips, end to end, at the height of a slosh. In points. */
 const TILT = 7
@@ -108,6 +124,7 @@ export function WaterTank({
   // shared value stops accepting writes without saying so.
   const level = useSharedValue(0)
   const phase = useSharedValue(0)
+  const phaseBack = useSharedValue(0)
   const tilt = useSharedValue(0)
 
   useEffect(() => {
@@ -139,11 +156,15 @@ export function WaterTank({
     if (reduceMotion) return
     // Linear, and it must be: any easing on a loop makes the wave hesitate once
     // a cycle, which reads as a dropped frame rather than as a current.
-    phase.value = withRepeat(withTiming(1, { duration: PERIOD, easing: Easing.linear }), -1, false)
+    const loop = (duration: number) =>
+      withRepeat(withTiming(1, { duration, easing: Easing.linear }), -1, false)
+    phase.value = loop(PERIOD)
+    phaseBack.value = loop(BACK_PERIOD)
     return () => {
       phase.value = 0
+      phaseBack.value = 0
     }
-  }, [phase, reduceMotion])
+  }, [phase, phaseBack, reduceMotion])
 
   const corner = radius ?? Math.min(14, height / 3)
   const tank = Skia.PathBuilder.Make()
@@ -156,13 +177,12 @@ export function WaterTank({
     width,
     height,
     level,
-    phase,
+    phase: phaseBack,
     tilt,
     offset: 0.5,
-    speed: 0.62,
     scale: 1.3,
   })
-  const front = useWavePath({ width, height, level, phase, tilt, offset: 0, speed: 1, scale: 1 })
+  const front = useWavePath({ width, height, level, phase, tilt, offset: 0, scale: 1 })
 
   // How much of the overlay is under water. A number and a shared value are all
   // this worklet captures: see the note on `useWavePath` for why that matters.
@@ -253,16 +273,15 @@ function useWavePath({
   phase,
   tilt,
   offset,
-  speed,
   scale,
 }: {
   width: number
   height: number
   level: SharedValue<number>
+  /** This wave's OWN loop, so a wrap is always a whole cycle. See `PERIOD`. */
   phase: SharedValue<number>
   tilt: SharedValue<number>
   offset: number
-  speed: number
   scale: number
 }) {
   return useDerivedValue(() => {
@@ -282,7 +301,7 @@ function useWavePath({
       // the other, and it is the two ends disagreeing that reads as weight. A
       // second sine would only read as a faster current.
       const tipped = top + tilt.value * TILT * (across - 0.5)
-      const angle = across * Math.PI * 2 * 1.6 + (phase.value * speed + offset) * Math.PI * 2
+      const angle = across * Math.PI * 2 * 1.6 + (phase.value + offset) * Math.PI * 2
       const y = tipped + Math.sin(angle) * amplitude
       if (x === 0) builder.moveTo(x, y)
       else builder.lineTo(x, y)

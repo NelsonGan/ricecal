@@ -455,13 +455,20 @@ export const logging = {
     customLabel: 'Another amount',
     /** The example in the empty field. A figure none of the three presets is. */
     customPlaceholder: '600',
-    customAdd: 'Add it',
+    /**
+     * The two buttons under it, which are icons on screen — so these are what a
+     * screen reader has to go on, and they name the DIRECTION rather than the
+     * figure, which is in the field above and already announced.
+     */
+    customAdd: 'Add this amount',
+    customRemove: 'Take this amount off',
     /**
      * The toast after a drink, and the way back out of it. The amount is in the
      * message rather than on the button, because "Undo" is what somebody is
      * looking for and the figure is what tells them whether they want it.
      */
     added: '{{amount}} ml of water',
+    removed: '{{amount}} ml taken off',
     undo: 'Undo',
     /** The tank itself, to a screen reader. */
     level: '{{filled}} of {{goal}} ml drunk today',

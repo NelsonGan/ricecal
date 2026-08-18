@@ -6,7 +6,17 @@ import { useAddWater } from '@/data'
 import { DEFAULT_WATER_ML, millilitres, WATER_MAX_ML, WATER_PRESETS } from '@/lib/water'
 import { radius, slab } from '@/theme/tokens'
 import { useTheme, useThemeColors } from '@/theme/useTheme'
-import { Button, Card, Icon, Sheet, Squish, Text, useNumpadField, useToast, WaterTank } from '@/ui'
+import {
+  Card,
+  Icon,
+  IconButton,
+  Sheet,
+  Squish,
+  Text,
+  useNumpadField,
+  useToast,
+  WaterTank,
+} from '@/ui'
 
 /**
  * How tall the tank is, which is how tall the card is.
@@ -65,15 +75,24 @@ export function WaterCard({
 
   const [sheetOpen, setSheetOpen] = useState(false)
 
-  const add = (amount: number) => {
+  /**
+   * One path for both directions, because the server has one: a removal is an
+   * addition of a negative amount, and so is the undo of either.
+   *
+   * The toast has to know which happened, though. Read from the same figure,
+   * "600 ml of water" would announce a removal as a drink — and would print the
+   * minus sign into the sentence if it were not.
+   */
+  const record = (amount: number) => {
     addWater.mutate(amount)
     setSheetOpen(false)
     toast.show({
-      title: t('logging:water.added', { amount: millilitres(amount) }),
+      title:
+        amount < 0
+          ? t('logging:water.removed', { amount: millilitres(-amount) })
+          : t('logging:water.added', { amount: millilitres(amount) }),
       tone: 'success',
       icon: { set: 'body', name: 'water-drop' },
-      // `mutate` again rather than anything clever: the day's total is the
-      // server's, so taking a drink back is just adding a negative one.
       action: { label: t('logging:water.undo'), onPress: () => addWater.mutate(-amount) },
     })
   }
@@ -118,14 +137,19 @@ export function WaterCard({
                is short and close to the top for that reason — the band of
                levels that cuts through it is the last third of the goal, where
                the figure is fully under water and reads white on blue. */
-            <View className="flex-1 items-end px-3 pt-2.5">
+            <View className="flex-1 items-end pr-1 pt-1">
               <View className="flex-row items-center gap-1.5">
-                <Icon set="body" name="water-drop" size={15} />
-                {/* Hidden from a screen reader, both copies of it: the tank
-                    itself announces the same pair of figures as a sentence, and
-                    as a progress bar, which is the better of the two. */}
+                <Icon set="body" name="water-drop" size={14} />
+                {/* `meta` rather than `label`: this is a secondary line about a
+                    picture that has already said the same thing, and the app
+                    writes those at fourteen points in the body weight
+                    everywhere else.
+
+                    Hidden from a screen reader, both copies of it — the tank
+                    announces the same pair of figures as a sentence and as a
+                    progress bar, which is the better of the two. */}
                 <Text
-                  variant="label"
+                  variant="meta"
                   numberOfLines={1}
                   className={onWater ? wetInk : 'text-water-ink'}
                   accessibilityElementsHidden
@@ -139,29 +163,22 @@ export function WaterCard({
                     the far end of a 300pt band reads as belonging to the card
                     rather than to the number.
 
-                    Flat, because it is overlaid on the tank rather than raised
-                    off the card — a squishy button standing proud of a surface
-                    that is itself the content reads as a sticker. `water-slab`
-                    is the one fill that holds against both grounds in both
-                    themes: the ink is the water's own colour in the dark
-                    palette and would disappear into it.
-
-                    `hitSlop` takes a 28pt circle up to a 44pt target. The
-                    button is small on purpose — this is the cheapest decision
-                    on the screen and should look like one — but the finger
-                    pressing it is the same size as everybody else's. */}
-                <Squish
-                  depth={0}
-                  radius={radius.full}
-                  containerClassName="ml-0.5"
-                  className="h-7 w-7 items-center justify-center rounded-full bg-water-slab"
-                  hitSlop={8}
+                    GHOST, which is the design system's own quietest icon
+                    control: no slab, no fill, just the glyph over the water. It
+                    was a filled circle, and a solid disc with a raised edge
+                    standing on a surface that is itself the content read as a
+                    sticker stuck on the card — the loudest thing on a screen
+                    whose loudest thing should be the food. The 44pt box is
+                    transparent, so what shrank is what you can see and not what
+                    you can hit. */}
+                <IconButton
+                  variant="ghost"
+                  size="sm"
                   onPress={() => setSheetOpen(true)}
-                  accessibilityRole="button"
                   accessibilityLabel={t('logging:water.addTitle')}
                 >
-                  <Icon set="ui" name="plus" size={13} />
-                </Squish>
+                  <Icon set="ui" name="plus" size={20} />
+                </IconButton>
               </View>
             </View>
           )}
@@ -171,7 +188,7 @@ export function WaterCard({
       <AddWaterSheet
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}
-        onAdd={add}
+        onRecord={record}
         toGo={toGo}
       />
     </>
@@ -196,12 +213,13 @@ export function WaterCard({
 function AddWaterSheet({
   visible,
   onClose,
-  onAdd,
+  onRecord,
   toGo,
 }: {
   visible: boolean
   onClose: () => void
-  onAdd: (ml: number) => void
+  /** Positive adds, negative takes back. */
+  onRecord: (ml: number) => void
   toGo: number
 }) {
   const { t } = useTranslation(['logging', 'common'])
@@ -228,7 +246,7 @@ function AddWaterSheet({
             containerClassName="flex-1"
             slabClassName="bg-water-slab"
             className="items-center gap-1 rounded-[20px] bg-water px-2 py-4"
-            onPress={() => onAdd(preset.ml)}
+            onPress={() => onRecord(preset.ml)}
             accessibilityRole="button"
             accessibilityLabel={t('logging:water.add', { amount: millilitres(preset.ml) })}
           >
@@ -243,7 +261,7 @@ function AddWaterSheet({
       {/* Remounted on every open, which is how the draft is forgotten. A `Sheet`
           is a `Modal` that stays in the tree with `visible={false}`, so a number
           typed and abandoned would otherwise still be there next time. */}
-      <CustomAmount key={visible ? 'open' : 'shut'} onAdd={onAdd} />
+      <CustomAmount key={visible ? 'open' : 'shut'} onRecord={onRecord} />
     </Sheet>
   )
 }
@@ -258,7 +276,7 @@ function AddWaterSheet({
  * the sheet's native window. The field is focused, the system keyboard is
  * suppressed, and nothing appears to type with.
  */
-function CustomAmount({ onAdd }: { onAdd: (ml: number) => void }) {
+function CustomAmount({ onRecord }: { onRecord: (ml: number) => void }) {
   const { t } = useTranslation(['logging', 'common'])
   const colors = useThemeColors()
   const [typed, setTyped] = useState('')
@@ -279,11 +297,12 @@ function CustomAmount({ onAdd }: { onAdd: (ml: number) => void }) {
 
   return (
     <>
-      <Text variant="overline" className="mt-md">
-        {t('logging:water.customLabel')}
-      </Text>
-
-      <View className="flex-row items-end gap-3">
+      {/* No heading over it. "ANOTHER AMOUNT" said what the three buttons above
+          have just finished implying, and an overline is a section marker in a
+          sheet that has only ever had one section. The field's own
+          `accessibilityLabel` carries the words for anybody who cannot see the
+          layout say it. */}
+      <View className="mt-md flex-row items-end justify-center gap-3">
         <TextInput
           value={typed}
           onChangeText={setTyped}
@@ -305,9 +324,35 @@ function CustomAmount({ onAdd }: { onAdd: (ml: number) => void }) {
         </Text>
       </View>
 
-      <Button onPress={() => onAdd(parsed)} disabled={!valid}>
-        {t('logging:water.customAdd')}
-      </Button>
+      {/* BOTH DIRECTIONS, and the minus is not a nicety: the toast's undo is
+          gone the moment it times out, a drink logged on the wrong day is only
+          discovered later, and a bottle nobody finished is an ordinary Tuesday.
+          Without this the only way back was to log a negative amount, which
+          this pad cannot type.
+
+          The same pair `Stepper` draws, tinted the same way and for the same
+          reason — the illustrations carry their own palette, which on a neutral
+          button reads as a stray colour rather than as a control. Centred,
+          because they are two halves of one decision about the figure above
+          them rather than the sheet's action row. */}
+      <View className="flex-row items-center justify-center gap-4">
+        <IconButton
+          variant="subtle"
+          disabled={!valid}
+          onPress={() => onRecord(-parsed)}
+          accessibilityLabel={t('logging:water.customRemove')}
+        >
+          <Icon set="ui" name="minus" size={26} tintColor={colors.muted} />
+        </IconButton>
+        <IconButton
+          variant="subtle"
+          disabled={!valid}
+          onPress={() => onRecord(parsed)}
+          accessibilityLabel={t('logging:water.customAdd')}
+        >
+          <Icon set="ui" name="plus" size={26} tintColor={colors.muted} />
+        </IconButton>
+      </View>
     </>
   )
 }
