@@ -86,14 +86,18 @@ it('offers the drink back, once, and takes it off the day', async () => {
   expect(mockMutate).toHaveBeenLastCalledWith(-350)
 })
 
-it('counts down to the goal, and says so once it is met', async () => {
+// Beside the sheet's heading, the way the log sheet writes "1,460 kcal left"
+// beside its own. Clamped at zero rather than swapped for a congratulation:
+// a day past its goal has nothing left, and "-400 ml left" is what an
+// unclamped subtraction prints there.
+it('says what is left of the goal, and never less than nothing', async () => {
   await withToast(<WaterCard date="2026-08-18" ml={1250} goalMl={2000} />)
   await user.press(screen.getByLabelText('Add water'))
-  expect(screen.getByText('750 ml to go today')).toBeOnTheScreen()
+  expect(screen.getByText('750 ml left')).toBeOnTheScreen()
 
-  await withToast(<WaterCard date="2026-08-18" ml={2000} goalMl={2000} />)
+  await withToast(<WaterCard date="2026-08-18" ml={2400} goalMl={2000} />)
   await user.press(screen.getByLabelText('Add water'))
-  expect(screen.getByText('Goal reached. Nice one.')).toBeOnTheScreen()
+  expect(screen.getByText('0 ml left')).toBeOnTheScreen()
 })
 
 /**

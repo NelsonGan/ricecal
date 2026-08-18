@@ -38,7 +38,7 @@ export type ToastOptions = {
   /** An inline action, e.g. { label: 'Undo', onPress }. */
   action?: { label: string; onPress: () => void }
   icon?: IconProps
-  /** Milliseconds on screen. Defaults to 6s, or 8s when there is an action. */
+  /** Milliseconds on screen. Defaults to 6s, or 4.5s when there is an action. */
   duration?: number
   /** Overrides the tone's default edge. Rarely needed. */
   placement?: ToastPlacement
@@ -117,7 +117,20 @@ export function ToastProvider({ children, offset = 0 }: ToastProviderProps) {
       clear()
       nextId.current += 1
       setToast({ ...options, id: nextId.current })
-      timer.current = setTimeout(dismiss, options.duration ?? (options.action ? 8000 : 6000))
+      /**
+       * SHORTER WITH AN ACTION THAN WITHOUT, which is the opposite of what it
+       * was and of what it looks like it should be.
+       *
+       * The reasoning for eight seconds was that an offer needs longer than a
+       * statement, because it has to be read AND acted on. What that missed is
+       * where the offer sits: an undo is a bar across the bottom of the screen,
+       * over the diary and the tab bar, and every second of it is a second the
+       * app is partly covered. And the decision behind it is not a slow one —
+       * somebody who has just logged a meal or a drink knows immediately
+       * whether they meant to. Eight seconds stopped reading as a chance to
+       * take it back and started reading as something in the way.
+       */
+      timer.current = setTimeout(dismiss, options.duration ?? (options.action ? 4500 : 6000))
     },
     [clear, dismiss],
   )

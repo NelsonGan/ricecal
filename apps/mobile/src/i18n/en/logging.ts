@@ -442,10 +442,16 @@ export const logging = {
      * different units and reads as a fault.
      */
     count: '{{filled}} / {{goal}} ml',
-    /** The sheet behind Add, and the line under its heading. */
+    /**
+     * The sheet behind Add, and what is left of the goal beside its heading.
+     *
+     * "left" rather than "to go", and clamped at zero rather than swapped for a
+     * congratulation, because the sheet this one is a sibling of writes
+     * "1,460 kcal left" in the same corner. Two ways of saying the same thing
+     * in two sheets opened by two buttons on one screen is one too many.
+     */
     addTitle: 'Add water',
-    toGo: '{{amount}} ml to go today',
-    goalMet: 'Goal reached. Nice one.',
+    left: '{{amount}} ml left',
     /**
      * A quick-add button, to a screen reader. The label on screen is the size
      * alone, and the vessel is the drawing above it — a button reading "Glass

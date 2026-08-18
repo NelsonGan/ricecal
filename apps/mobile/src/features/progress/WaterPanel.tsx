@@ -33,8 +33,8 @@ const HABIT_SHARE = 0.75
  * The chart is the tab's whole argument: a water column's height is the GOAL,
  * every time, and what varies is how much of it is filled. See `WaterColumns`.
  *
- * The third card is the one that changes with the range. At seven days it shows
- * today, because today is still fixable — half a litre to go is an instruction. At
+ * The third card is the one that changes with the range. At seven days it is
+ * today, because today is the one day in the window that is still fixable. At
  * thirty days and a year that is noise inside the window, so it becomes the
  * habit: how many days cleared the bar at all.
  */
@@ -203,6 +203,10 @@ export function WaterPanel({ range, buckets, summary }: WaterPanelProps) {
             })}
           >
             {(onWater) => (
+              /* Sixteen points in, which is where Today's figure sits too — it
+                 gets there through a four-point padding plus the transparent
+                 half of the ghost button beside it. The two cards are read one
+                 after the other often enough for the figures to line up. */
               <View className="flex-1 flex-row items-start justify-between px-4 pt-3">
                 <TankLabel onWater={onWater}>{t('progress:water.todayTitle')}</TankLabel>
                 <TankFigure ml={todayMl} goalMl={goal} onWater={onWater} />

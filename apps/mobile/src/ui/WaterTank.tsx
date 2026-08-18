@@ -17,7 +17,6 @@ import Animated, {
 } from 'react-native-reanimated'
 
 import { useThemeColors } from '@/theme/useTheme'
-import { cn } from './cn'
 import { Skeleton } from './Skeleton'
 
 export type WaterTankProps = {
@@ -78,6 +77,9 @@ const TILT = 7
 /** The outline's weight. See `outline` for why the path it follows is inset. */
 const STROKE = 2
 
+/** How much dry tank is left above the water on a day that met its goal. */
+const BRIM = 2
+
 /**
  * Water left in an empty tank, in points.
  *
@@ -114,6 +116,23 @@ const EMPTY_FILL = 5
  * two paths of about sixty points rebuilt per frame on the UI thread, and it
  * buys the one thing a static fill cannot say, which is that this is a liquid.
  */
+/**
+ * Where the surface sits, in points from the top of the tank.
+ *
+ * ONE FORMULA, called from two places: the waves are drawn around it on the UI
+ * thread, and the overlay's wet copy is clipped to it. Written twice they
+ * drifted — the clip used a plain fraction of the height, which ignores both
+ * the puddle at the bottom and the brim at the top, so the figure's colours
+ * changed a few points before or after the water actually reached them.
+ *
+ * A worklet, because one of its two callers is.
+ */
+function surfaceTop(height: number, level: number) {
+  'worklet'
+  const floor = height - EMPTY_FILL
+  return floor - (floor - BRIM) * level
+}
+
 export function WaterTank({
   value,
   goal,
@@ -207,7 +226,14 @@ export function WaterTank({
    */
   const outline = Skia.PathBuilder.Make()
     .addRRect({
-      rect: { x: STROKE / 2, y: STROKE / 2, width: width - STROKE, height: height - STROKE },
+      rect: {
+        x: STROKE / 2,
+        y: STROKE / 2,
+        // Clamped: `width` is 0 until the first layout, and a rounded rect two
+        // points wide in the wrong direction is not something to hand Skia.
+        width: Math.max(0, width - STROKE),
+        height: Math.max(0, height - STROKE),
+      },
       rx: Math.max(0, corner - STROKE / 2),
       ry: Math.max(0, corner - STROKE / 2),
     })
@@ -226,15 +252,22 @@ export function WaterTank({
   })
   const front = useWavePath({ width, height, level, phase, tilt, offset: 0, scale: 1 })
 
-  // How much of the overlay is under water. A number and a shared value are all
-  // this worklet captures: see the note on `useWavePath` for why that matters.
-  const wetClip = useAnimatedStyle(() => ({ height: level.value * height }))
+  // How much of the overlay is under water, off the SAME formula the waves are
+  // drawn around. A number and a shared value are all this worklet captures:
+  // see the note on `useWavePath` for why that matters.
+  const wetClip = useAnimatedStyle(() => ({ height: height - surfaceTop(height, level.value) }))
 
   if (loading) {
-    // The tank's own corners, not `Skeleton`'s pill: the placeholder is exactly
-    // the shape of the thing it stands in for, so nothing changes silhouette
-    // when the day arrives.
-    return <Skeleton height={height} rounded={false} className={cn(className, 'rounded-[14px]')} />
+    // The tank's own corner, not `Skeleton`'s pill and not a literal: this is
+    // drawn at the card's radius on Today and at its own everywhere else, so
+    // the placeholder is exactly the shape of the thing it stands in for and
+    // nothing changes silhouette when the day arrives. A wrapper because the
+    // radius is a number rather than a class.
+    return (
+      <View className={className} style={{ height, borderRadius: corner, overflow: 'hidden' }}>
+        <Skeleton height={height} rounded={false} className="w-full" />
+      </View>
+    )
   }
 
   return (
@@ -327,13 +360,11 @@ function useWavePath({
   scale: number
 }) {
   return useDerivedValue(() => {
-    // Neither end of the range is the edge of the tank. An empty day keeps a
-    // shallow puddle (see `EMPTY_FILL`), and a full one keeps two points of dry
-    // tank above the water, because a level flush with the rim stops reading as
-    // a level at all.
+    // Neither end of the range is the edge of the tank: an empty day keeps a
+    // shallow puddle and a full one keeps a brim of dry tank, because a level
+    // flush with the rim stops reading as a level at all. See `surfaceTop`.
     const amplitude = AMPLITUDE * scale
-    const floor = height - EMPTY_FILL
-    const top = floor - (floor - 2) * level.value
+    const top = surfaceTop(height, level.value)
     const builder = Skia.PathBuilder.Make()
 
     for (let x = 0; x <= width; x += STEP) {
