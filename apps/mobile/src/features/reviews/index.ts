@@ -1,11 +1,11 @@
 /**
- * Reviews: a finished week or month, read as a few cards you tap through.
+ * Reviews: a finished week or month, read as a column of cards.
  *
  * The screens are thin. `app/reviews/index.tsx` is a list of periods and
- * `app/reviews/[id].tsx` is a frame with steps in it; everything that decides
+ * `app/reviews/[id].tsx` is one column of cards; everything that decides
  * WHAT a review says is either in Postgres (see `95_reviews.sql`) or in
- * `period.ts`, which is the one place that knows a story can be three steps
- * rather than four.
+ * `period.ts`, which is the one place that knows a review can be three
+ * sections rather than four.
  */
 export { BodyStep, type BodyStepProps } from './BodyStep'
 export { CaloriesStep, type CaloriesStepProps } from './CaloriesStep'
@@ -30,4 +30,3 @@ export {
   type ShareableCardsProps,
   type ShareableProps,
 } from './ShareableCards'
-export { StoryFrame, type StoryFrameProps, type StoryPage } from './StoryFrame'

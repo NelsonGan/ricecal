@@ -28,7 +28,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(16);
+select plan(18);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -60,23 +60,29 @@ values
 -- Four days logged in it, one of them deliberately over budget, and the
 -- heaviest deliberately the dish that was eaten ONCE — so an ordering by
 -- repeats and an ordering by calories cannot agree.
+--
+-- The photograph is on the OLDER of the two nasi lemak rows on purpose: a group
+-- keeps the newest picture anybody took of it, and "newest that HAS one" is a
+-- different rule from "the newest one's", which is the one a plain array_agg
+-- would implement.
 insert into public.food_logs (
   user_id, log_date, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g,
-  serving_label, serving_factor, quantity, source, logged_at
+  serving_label, serving_factor, quantity, source, logged_at, photo_path
 )
 select
   :'user_a',
   (date_trunc('week', public.local_today(:'user_a'))::date - 7) + offset_days,
   name, kcal, carbs, protein, fat, '1 serving', 1, 1, 'search',
-  ((date_trunc('week', public.local_today(:'user_a'))::date - 7) + offset_days)::timestamptz + interval '12 hours'
+  ((date_trunc('week', public.local_today(:'user_a'))::date - 7) + offset_days)::timestamptz + interval '12 hours',
+  photo
 from (values
-  (0, 'Nasi lemak',     900, 100.0, 30.0, 40.0),
-  (1, 'nasi lemak',     900, 100.0, 30.0, 40.0),
-  (2, 'Char kuey teow', 800,  90.0, 25.0, 35.0),
+  (0, 'Nasi lemak',     900, 100.0, 30.0, 40.0, 'meals/a/one.jpg'),
+  (1, 'nasi lemak',     900, 100.0, 30.0, 40.0, null),
+  (2, 'Char kuey teow', 800,  90.0, 25.0, 35.0, null),
   -- One day over the 2,000 budget, so `days_under_goal` cannot be a count of
   -- logged days wearing a different name.
-  (3, 'Bak kut teh',   2400,  80.0, 90.0, 60.0)
-) as f(offset_days, name, kcal, carbs, protein, fat);
+  (3, 'Bak kut teh',   2400,  80.0, 90.0, 60.0, null)
+) as f(offset_days, name, kcal, carbs, protein, fat, photo);
 
 -- A meal in the CURRENT week, which no review may include.
 insert into public.food_logs (
@@ -217,6 +223,26 @@ select is(
    limit 1),
   'Bak kut teh',
   'the biggest plate is first'
+);
+
+-- The picture, which is what the biggest plates lead with. Only one of the two
+-- nasi lemak rows carries one, and it is not the newer of them.
+select is(
+  (select photo_path
+     from public.review_meals('week', date_trunc('week', public.local_today())::date - 7, 5)
+    where lower(name) = 'nasi lemak'),
+  'meals/a/one.jpg',
+  'a dish keeps the newest photograph anybody took of it, not the newest row'
+);
+
+-- And a dish nobody photographed says so, rather than borrowing one. Null is
+-- what sends the row back to its drawing.
+select is(
+  (select photo_path
+     from public.review_meals('week', date_trunc('week', public.local_today())::date - 7, 5)
+    where name = 'Bak kut teh'),
+  null::text,
+  'a dish with no photograph has none'
 );
 
 

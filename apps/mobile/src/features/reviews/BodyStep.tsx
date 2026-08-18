@@ -16,7 +16,7 @@ export type BodyStepProps = {
 }
 
 /**
- * Step 4: the scale, the steps, and everything else that got recorded.
+ * The scale, the steps, and everything else that got recorded.
  *
  * EVERY CARD HERE IS CONDITIONAL, which is the whole reason this step exists
  * separately from the calorie one. A review of a month before the watch arrived

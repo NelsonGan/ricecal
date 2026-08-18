@@ -22,17 +22,12 @@ export default function ReviewsLayout() {
   if (!session) return <Redirect href="/sign-in" />
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      {/* A story covers the screen and is left through its own cross.
-          `fullScreenModal` rather than a push for the gesture: a pushed screen
-          keeps the interactive pop, and an edge swipe on a story is a swipe
-          BACK A STEP as far as the user is concerned. One of the two has to go,
-          and it is not the step. */}
-      <Stack.Screen
-        name="[id]"
-        options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
-      />
-    </Stack>
+    /* Both push, and one of them used to present. A review was a
+       `fullScreenModal` with the edge swipe turned off, for a reason that has
+       gone: it paged sideways, and an interactive pop would have eaten the
+       gesture that stepped it. It scrolls DOWN now, so it is an ordinary page
+       you go to and come back from — a chevron, a swipe back, and the list
+       still behind it. */
+    <Stack screenOptions={{ headerShown: false }} />
   )
 }

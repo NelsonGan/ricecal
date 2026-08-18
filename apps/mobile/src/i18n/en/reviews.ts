@@ -1,9 +1,9 @@
 /**
- * Reviews: a finished week or month, read as four cards you tap through.
+ * Reviews: a finished week or month, read as a column of cards.
  *
  * Two shapes of copy, and the split is worth knowing before adding to it.
  *
- * The LIST speaks in periods: a name, a week number, an average. The STORY
+ * The LIST speaks in periods: a name, a week number, an average. The REVIEW
  * speaks in one period's numbers, and every headline in it is a figure with a
  * word after it rather than a sentence with a figure in it — the number is what
  * the eye lands on, and a label under it says only what it was.
@@ -57,7 +57,7 @@ export const reviews = {
   },
 
   /**
-   * Lifting a card out of a story.
+   * Lifting a card out of a review.
    *
    * Any card, not just the first one: the sheet shows the picture that will
    * leave the phone, so the copy is about the picture rather than about which
@@ -68,18 +68,20 @@ export const reviews = {
     preview: 'The card as it will be sent',
   },
 
+  /**
+   * What is left of the copy a paged story needed.
+   *
+   * "1 of 4", "Previous" and "Next" went with the pager. `close` outlived it:
+   * the share sheet is still a sheet, and a sheet is still dismissed.
+   */
   story: {
-    /** The counter beside the title: "2 of 4". */
-    step: '{{index}} of {{total}}',
     close: 'Close',
-    previous: 'Previous',
-    next: 'Next',
     share: 'Share',
     missingTitle: 'That review is not here',
     missingBody: 'It may have been a week with too little in it to look back on.',
   },
 
-  /** Step 1, the card that gets shared. */
+  /** The first card, and the one most likely to be shared. */
   card: {
     /** The wordmark at the foot of the card. Not translated: it is a name. */
     brand: 'RiceCal',
@@ -109,7 +111,7 @@ export const reviews = {
     shareText: '{{period}}: {{kcal}} kcal a day, {{done}} of {{total}} days logged. RiceCal',
   },
 
-  /** Step 2, the food. */
+  /** The food. */
   food: {
     title: 'THE BIGGEST PLATES',
     macros: 'MACROS A DAY',
@@ -117,7 +119,7 @@ export const reviews = {
     share: '{{value}}% of energy',
   },
 
-  /** Step 3, the calories. */
+  /** The calories. */
   calories: {
     average: 'AVERAGE A DAY',
     kcal: 'kcal',
@@ -141,7 +143,7 @@ export const reviews = {
     noData: '—',
   },
 
-  /** Step 4, the body and the movement. */
+  /** The body and the movement. */
   body: {
     weight: 'WEIGHT',
     weighIns_one: 'One weigh in',

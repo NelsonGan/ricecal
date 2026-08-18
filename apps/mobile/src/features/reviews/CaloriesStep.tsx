@@ -22,7 +22,7 @@ export type CaloriesStepProps = {
 const COMPARED = 5
 
 /**
- * Step 3: the calories, against the budget and against the periods either side.
+ * The calories, against the budget and against the periods either side.
  *
  * Three cards asking three questions in the order somebody asks them: how much,
  * how it moved day by day, and whether that is more or less than usual.

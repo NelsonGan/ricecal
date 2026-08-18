@@ -559,6 +559,7 @@ returns table (
   name          text,
   icon_set      public.icon_set,
   icon_name     text,
+  photo_path    text,
   kcal_avg      integer,
   carbs_g_avg   numeric,
   protein_g_avg numeric,
@@ -575,8 +576,9 @@ as $$
     -- The view for the arithmetic, the table beside it for the DRAWING.
     -- `food_log_details` nulls both icon columns whenever an entry has a
     -- photograph, because in the diary the photograph is the better picture.
-    -- This screen shows no photographs, so a camera user's five biggest plates
-    -- would every one of them be the blank plate.
+    -- This screen wants BOTH — the plate somebody actually photographed, and a
+    -- drawing to fall back on when nobody did — and the view can only ever hand
+    -- it one of them.
     select
       e.*,
       coalesce(f.icon_set,  f.item_icon_set)  as own_icon_set,
@@ -592,6 +594,11 @@ as $$
     (array_agg(e.food_name order by e.logged_at desc))[1],
     (array_agg(e.own_icon_set  order by e.logged_at desc) filter (where e.own_icon_set  is not null))[1],
     (array_agg(e.own_icon_name order by e.logged_at desc) filter (where e.own_icon_name is not null))[1],
+    -- The newest plate anybody photographed under this name, which is not
+    -- necessarily the entry the icon came from: a dish logged twice by camera
+    -- and once by hand has a photograph and a drawing, and the screen prefers
+    -- the photograph exactly as the diary does.
+    (array_agg(e.photo_path order by e.logged_at desc) filter (where e.photo_path is not null))[1],
     round(avg(e.kcal))::integer,
     round(avg(e.carbs_g), 1),
     round(avg(e.protein_g), 1),
