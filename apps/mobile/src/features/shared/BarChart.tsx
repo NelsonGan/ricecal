@@ -19,7 +19,7 @@ export type BarChartProps = {
    * Where the bars start from.
    *
    * `zero` is right for anything counted from nothing — calories, minutes,
-   * glasses. `range` is right for a measurement that never approaches zero: a
+   * millilitres. `range` is right for a measurement that never approaches zero: a
    * weight chart drawn from 0 makes 68.4 kg and 70.2 kg look identical, which
    * is the one thing the chart exists to tell apart.
    */

@@ -19,7 +19,7 @@ import {
   Spinner,
   StatTile,
   Text,
-  WaterTracker,
+  WaterTank,
   type WeekDay,
   WeekStrip,
 } from '@/ui'
@@ -35,7 +35,7 @@ const WEEK: WeekDay[] = [
 ]
 
 export function DataSection() {
-  const [water, setWater] = useState(5)
+  const [water, setWater] = useState(1250)
   const [eaten, setEaten] = useState(1487)
 
   return (
@@ -83,15 +83,25 @@ export function DataSection() {
         </Text>
       </Card>
 
+      {/* Three tanks stacked rather than one you can drag: what is worth
+          looking at is the drawing at a few levels — empty, part full, and a
+          met goal — and the wave has to be watched rather than poked. The
+          middle one takes the pours, and the slosh runs on every one. */}
       <Card
         title="Water"
         action={
           <Text className="font-display text-[20px] leading-[24px] text-water-ink">
-            {water} / 8
+            {water.toLocaleString()} / 2,000 ml
           </Text>
         }
       >
-        <WaterTracker filled={water} goal={8} onChange={setWater} />
+        <WaterTank value={0} goal={2000} />
+        <WaterTank value={water} goal={2000} />
+        <WaterTank value={2000} goal={2000} />
+        <Button variant="secondary" onPress={() => setWater((ml) => (ml >= 2000 ? 0 : ml + 250))}>
+          Pour 250 ml
+        </Button>
+        <WaterTank value={water} goal={2000} loading />
       </Card>
 
       <Card title="Stat tiles" flush>

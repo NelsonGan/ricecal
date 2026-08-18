@@ -17,6 +17,13 @@ import { count } from '@/features/activity'
 import { fromKg, showWeight, UNIT_KEY, unitFor } from '@/features/progress'
 import { useBack } from '@/lib/navigation'
 import { computeTargets, macroSplit, weeklyPace } from '@/lib/nutrition'
+import {
+  DEFAULT_WATER_ML,
+  millilitres,
+  WATER_GOAL_MAX_ML,
+  WATER_GOAL_MIN_ML,
+  WATER_GOAL_STEP_ML,
+} from '@/lib/water'
 import { AppBar, Button, Card, Screen, Skeleton, Slider, Stepper, Text, useToast } from '@/ui'
 
 /**
@@ -96,7 +103,7 @@ export default function GoalsScreen() {
     TARGET.max,
     Math.max(TARGET.min, currentTargetWeight ?? weight),
   )
-  const currentWater = water ?? targets?.waterGlasses ?? 8
+  const currentWater = water ?? targets?.waterMl ?? DEFAULT_WATER_ML
   const currentSteps = steps ?? settings?.step_goal ?? 8000
 
   // What the same formula the database runs would suggest for this body and this
@@ -190,7 +197,7 @@ export default function GoalsScreen() {
       // calorie total still gets protein from body weight rather than from a
       // share of energy.
       ...macroSplit(currentKcal, weight),
-      waterGlasses: currentWater,
+      waterMl: currentWater,
       isCustom,
     })
     // Not part of the calorie budget, and stored beside the display preferences
@@ -337,15 +344,22 @@ export default function GoalsScreen() {
 
           <Card title={t('profile:goals.other')}>
             <Text variant="label">{t('profile:goals.waterGoal')}</Text>
+            {/* A quarter of a litre a step, which is what makes the whole range
+                22 taps rather than 55 — and it lands on every figure anybody
+                actually names. The bounds are the column's own check
+                constraint, narrowed: `daily_goals` allows 250 to 8,000, and a
+                stepper that can reach a goal nobody should be nudged towards is
+                a stepper that suggests it. */}
             <Stepper
               value={currentWater}
               onChange={setWater}
-              min={4}
-              max={16}
+              min={WATER_GOAL_MIN_ML}
+              max={WATER_GOAL_MAX_ML}
+              step={WATER_GOAL_STEP_ML}
               accessibilityLabel={t('profile:goals.waterGoal')}
               decrementLabel={t('common:a11y.decrease')}
               incrementLabel={t('common:a11y.increase')}
-              format={(value) => t('common:count.glasses', { count: value })}
+              format={(value) => t('common:volume.ml', { value: millilitres(value) })}
             />
 
             <Text variant="label">{t('activity:settings.stepGoal')}</Text>

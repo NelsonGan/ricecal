@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { TrendSummary } from '@/data'
+import { volume } from '@/lib/water'
 import { radius, slab } from '@/theme/tokens'
 import { cn, Icon, type IconProps, Skeleton, Squish, Text } from '@/ui'
 import { showWeight, UNIT_KEY, type WeightUnit } from './units'
@@ -72,6 +73,10 @@ export function MetricTabs({
 }: MetricTabsProps) {
   const { t } = useTranslation(['progress', 'common'])
 
+  // Once, not once per field: the figure and the unit are two halves of one
+  // decision about which unit this average is best read in.
+  const water = summary ? volume(summary.water) : null
+
   const figures: Record<TrendMetric, { value: string; unit: string }> = {
     calories: {
       value:
@@ -81,8 +86,12 @@ export function MetricTabs({
       unit: t('progress:metric.caloriesUnit'),
     },
     water: {
-      value: summary ? summary.water.toFixed(1) : t('progress:metric.none'),
-      unit: t('progress:metric.waterUnit'),
+      // Litres above a litre, so a daily average fits the tile as "1.8 L"
+      // rather than as "1,800". The unit comes back WITH the figure and is
+      // printed under it, which is why this tile alone does not read a fixed
+      // one out of the copy bundle.
+      value: water ? water.value : t('progress:metric.none'),
+      unit: water ? t(`common:volume.${water.unit}Unit`) : t('progress:metric.waterUnit'),
     },
     weight: {
       value:
