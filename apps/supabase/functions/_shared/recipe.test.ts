@@ -9,7 +9,7 @@
 // The reviewer half is tested for one property only, and it is the one that
 // matters: nothing but an explicit `approved: true` may come back approved.
 
-import { nullMeter } from './entitlement.ts'
+import { createMeter } from './entitlement.ts'
 import {
   type DraftIngredient,
   looksLikeLink,
@@ -169,12 +169,12 @@ Deno.test('reviewRecipe approves on an explicit true and on nothing else', async
   }
 
   for (const answer of [{}, { approved: 'yes' }, { approved: 1 }, { approved: null }, null]) {
-    const verdict = await reviewRecipe(recipe, { review: answer }, nullMeter())
+    const verdict = await reviewRecipe(recipe, { review: answer }, createMeter())
     eq(verdict.approved, false, `${JSON.stringify(answer)} must not approve`)
   }
 
   eq(
-    (await reviewRecipe(recipe, { review: { approved: true } }, nullMeter())).approved,
+    (await reviewRecipe(recipe, { review: { approved: true } }, createMeter())).approved,
     true,
     'an explicit yes',
   )
@@ -188,7 +188,7 @@ Deno.test('reviewRecipe throws rather than answering when the call fails', async
     await reviewRecipe(
       { name: 'x', servings: 1, steps: '', ingredients: [] },
       { fail: 'review' },
-      nullMeter(),
+      createMeter(),
     )
   } catch {
     return

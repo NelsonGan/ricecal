@@ -5,6 +5,7 @@ import { View } from 'react-native'
 
 import { radius, slab } from '@/theme/tokens'
 import { Button, Icon, type IconProps, Sheet, Squish, Text, useToast } from '@/ui'
+import { DISCORD_INVITE, DISCORD_LOGO } from './discord'
 
 /**
  * Where help actually happens.
@@ -14,18 +15,10 @@ import { Button, Icon, type IconProps, Sheet, Squish, Text, useToast } from '@/u
  * side and then hands over. An in-app form would be a second place to build and
  * a slower answer, and neither of us would be able to see what anybody else
  * asked.
- */
-const DISCORD_INVITE = 'https://discord.gg/DCtQ47tEMh'
-
-/**
- * The logo, `require`d from `assets/brand` rather than added to the icon set.
  *
- * `assets/icons` is written by `scripts/sync-icons.mjs`, which starts a full
- * import by deleting the directory and refilling it from the design system — a
- * mark that is not ours would not survive the next sync. Brand art has always
- * lived beside the mascot for the same reason.
+ * The invite and the mark moved to `discord.ts` when Share & Earn started
+ * handing over to the same server. See the note there.
  */
-const DISCORD = require('../../../assets/brand/discord.png')
 
 export type HelpSheetProps = {
   visible: boolean
@@ -114,7 +107,7 @@ export function HelpSheet({ visible, onClose }: HelpSheetProps) {
           className="bg-track p-3.5"
         >
           <Image
-            source={DISCORD}
+            source={DISCORD_LOGO}
             style={{ width: 48, height: 48 }}
             contentFit="contain"
             // Bundled, so there is nothing to fade in from.

@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 
-import i18n from '@/i18n'
 import { track } from '@/lib/analytics'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/ui'
 import { keys } from './keys'
 import { useRefiningEntries } from './refining'
-import { AiLimitError, NotEntitledError, refusalFrom } from './refusals'
+import { announceRefusal, refusalFrom, ScanLimitError } from './refusals'
 import { useUserId } from './session'
 
 /**
@@ -266,6 +265,10 @@ export function useRefineEntry() {
         queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
         queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
         queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+        // A correction spends a scan like a plate does. Invisible today — the
+        // count is only drawn for a free account and only Pro can refine — and
+        // an off-by-one waiting to happen the moment either of those changes.
+        queryClient.invalidateQueries({ queryKey: keys.scanQuota(userId) })
         return data
       }
 
@@ -280,14 +283,8 @@ export function useRefineEntry() {
           // row going back to how it was says enough; being out of budget or
           // out of subscription does not improve by retrying, and silence
           // there reads as the button not working.
-          if (error instanceof AiLimitError) {
-            settled('limit_reached')
-            toast.show({ title: i18n.t('paywall:limit.reached'), tone: 'error' })
-            return
-          }
-          if (error instanceof NotEntitledError) {
-            settled('not_entitled')
-            toast.show({ title: i18n.t('paywall:limit.notEntitled'), tone: 'warning' })
+          if (announceRefusal(toast, error, 'refine')) {
+            settled(error instanceof ScanLimitError ? 'limit_reached' : 'not_entitled')
             return
           }
           // The entry is untouched on the server; showing it as it was IS the

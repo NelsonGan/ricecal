@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 
 import { supabase } from '@/lib/supabase'
-import { unwrapMaybe } from './client'
+import { unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
 import { fetchPlanPrices } from './purchases'
 import { useUserId } from './session'
@@ -68,7 +68,13 @@ export function isEntitledRow(row: EntitlementRow | undefined, now: Date = new D
 }
 
 export type Entitlement = {
-  /** May this account log a meal and reach the model? */
+  /**
+   * Is this account Pro?
+   *
+   * It used to be "may this account log a meal", and it is not that any more: a
+   * free account logs. What this decides is the Pro-only features and which of
+   * the two daily ceilings applies. See CLAUDE.md, "Free and Pro".
+   */
   entitled: boolean
   /**
    * Is the answer still being fetched?
@@ -118,6 +124,52 @@ export function useEntitlement(): Entitlement {
     // things to read when you have in fact paid.
     unknown: noAnswer,
   }
+}
+
+/**
+ * How many scans this account has left today.
+ *
+ * SHOWN, unlike the meter this replaced. `ai_usage_this_month()` existed for
+ * support and an admin view nobody built, because the number it returned could
+ * not be put in front of anybody: it counted requests to a model, and no user
+ * has any idea how many of those a plate costs. This one counts the thing they
+ * did, so "2 scans left today" is a sentence that answers itself — and a free
+ * account that cannot see the count meets the ceiling as a surprise, on the one
+ * screen where a surprise costs a photograph they have already framed.
+ *
+ * ONLY THE SERVER KNOWS. The count is claimed there, keyed by the user's own
+ * local date, and a second copy in the client would be wrong the first time the
+ * phone was offline, or a second device scanned, or the two disagreed about
+ * what day it is.
+ *
+ * The row is always there, including for somebody who has never scanned, so a
+ * screen never has to tell "no row yet" from "no answer yet".
+ */
+export type ScanQuota = {
+  used: number
+  dailyLimit: number
+  remaining: number
+  entitled: boolean
+}
+
+export function useScanQuota() {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.scanQuota(userId),
+    queryFn: async (): Promise<ScanQuota> => {
+      const row = unwrapOne(await supabase.rpc('scan_usage_today').maybeSingle())
+      return {
+        used: row.used,
+        dailyLimit: row.daily_limit,
+        remaining: row.remaining,
+        entitled: row.entitled,
+      }
+    },
+    // A count that is a few seconds stale is fine; one that is a launch stale is
+    // a free user told they have three left as they spend their last.
+    staleTime: 30 * 1000,
+  })
 }
 
 /**

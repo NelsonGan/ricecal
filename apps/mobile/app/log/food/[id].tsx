@@ -750,12 +750,13 @@ export default function FoodDetail() {
   const hasPhoto = Boolean(shot ?? existing?.photoPath)
 
   const addToDiary = () => {
-    // Composing the row is free; committing it is not. Everything above this
-    // line — the portions, the macros, the picture — is readable by anybody,
-    // which is what "search and everything works" means. Only the write is
-    // Pro, and editing an entry that ALREADY exists is not gated at all: a
-    // lapsed subscription must not lock somebody out of their own diary.
-    if (!requirePro('log_dish')) return
+    // NOT GATED, and it used to be the app's main paywall. A dish out of the
+    // catalogue and a packet off a barcode are both exact answers that cost us
+    // one index probe, so writing them is free — that is the free tier: a diary
+    // you can keep by searching and scanning, with the model behind the wall.
+    // Editing an entry that already exists was never gated either, for the
+    // reason that has not changed: a lapsed subscription must not lock somebody
+    // out of their own diary.
     logFood.mutate({
       snapshot: snapshotFromFood(food, chosen),
       quantity,
@@ -1050,9 +1051,12 @@ export default function FoodDetail() {
   const sendFix = async () => {
     const text = instruction.trim()
     if (!existing || !text) return
-    // Correcting by describing it is a model call, so it is gated like the other
-    // two. The server refuses it independently; this is what makes the button
-    // honest.
+    // Correcting by describing it is Pro. It is the most expensive thing a user
+    // can ask for per unit of value — the entry exists and already has numbers
+    // on it — and it is the one model path with a free alternative sitting right
+    // beside it: every figure it would change is editable by hand, on this
+    // screen, for nothing. The server refuses it independently; this is what
+    // makes the button honest.
     if (!requirePro('refine')) return
     setSending(true)
     /**

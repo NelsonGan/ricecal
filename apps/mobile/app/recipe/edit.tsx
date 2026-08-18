@@ -1,3 +1,4 @@
+import { FREE_RECIPES } from '@ricecal/shared'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -5,6 +6,7 @@ import { ActivityIndicator, View } from 'react-native'
 
 import type { IconRef, RecipeIngredientInput, ScannedRecipe } from '@/data'
 import {
+  isRecipeLimit,
   removeMealPhoto,
   storedImageSource,
   uploadMealPhoto,
@@ -14,8 +16,9 @@ import {
   useRecipeIngredients,
   useSaveRecipe,
 } from '@/data'
-import { AiLimitError, NotEntitledError } from '@/data/refusals'
+import { announceRefusal } from '@/data/refusals'
 import { IconPicker, InlineCamera } from '@/features/logging'
+import { useRequirePro } from '@/features/paywall'
 import {
   DescribeRecipePanel,
   IngredientAmountSheet,
@@ -26,6 +29,7 @@ import {
   StepsField,
 } from '@/features/recipes'
 import { MealPhoto } from '@/features/shared'
+import { track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
 import {
@@ -96,6 +100,7 @@ export default function RecipeFormScreen() {
   const router = useRouter()
   const goBack = useBack('/recipes')
   const toast = useToast()
+  const requirePro = useRequirePro()
   const colors = useThemeColors()
 
   const params = useLocalSearchParams<{ id?: string }>()
@@ -210,18 +215,15 @@ export default function RecipeFormScreen() {
    * The two refusals, shown and swallowed. Anything else is re-thrown for the
    * caller's own "we could not read it" message, which is the ordinary
    * failure and the one the user can do something about by typing.
+   *
+   * It used to answer them differently — a toast for one, a silent push to the
+   * paywall for the other — and both halves were wrong in the same way: a
+   * paywall that arrives with no statement of what just failed reads as the app
+   * deciding to sell something, and a message with no way to act on it leaves
+   * the user to go and find the paywall themselves. `announceRefusal` does both,
+   * and does them the same way everywhere a refusal can land.
    */
-  const showRefusal = (error: unknown): boolean => {
-    if (error instanceof AiLimitError) {
-      toast.show({ title: t('paywall:limit.reached'), tone: 'error' })
-      return true
-    }
-    if (error instanceof NotEntitledError) {
-      router.push('/paywall')
-      return true
-    }
-    return false
-  }
+  const showRefusal = (error: unknown): boolean => announceRefusal(toast, error, 'read_recipe')
 
   /**
    * A photo of the pot: attach it, then read it.
@@ -388,7 +390,23 @@ export default function RecipeFormScreen() {
         previousPhotoPath: existing?.photoPath,
         ingredients: items.map(({ key: _key, ...input }) => input),
       })
-    } catch {
+    } catch (error) {
+      // The free tier's ceiling, met at the write rather than at the button.
+      // The plus button on the shelf checks the count first, so this is what is
+      // left: a third recipe saved on another phone since this count was read,
+      // or a form opened before a subscription lapsed. `recipes_enforce_free_limit`
+      // is a trigger and raises a token rather than a sentence, because a
+      // PostgREST error is not a place to write copy — so the words are ours and
+      // the answer is the paywall, not "save failed".
+      if (isRecipeLimit(error)) {
+        toast.show({
+          title: t('recipes:edit.limitReached', { count: FREE_RECIPES }),
+          tone: 'warning',
+        })
+        track('Paywall Shown', { screen: 'hard', trigger: 'new_recipe' })
+        router.push('/paywall')
+        return
+      }
       // Stay on the form. Everything the user typed is still staged, so Save is
       // the retry — navigating away on a failed write would lose the lot and
       // leave them looking at the old recipe wondering what happened.
@@ -464,17 +482,29 @@ export default function RecipeFormScreen() {
           {!recipeId && !filled ? (
             <View className="gap-2.5">
               <View className="flex-row gap-2.5">
+                {/* Both are Pro, and both are gated at the tap rather than at
+                the send: the camera and the describe field are each a sheet,
+                and opening one to refuse what comes out of it wastes a photo
+                the user has already taken. The form underneath is free, which
+                is the point — a free account writes a recipe by typing it, the
+                way one has always been written. */}
                 <FillOption
                   icon={{ set: 'system', name: 'camera' }}
                   label={t('recipes:new.scanLabel')}
                   tone="pandan"
-                  onPress={() => setCamera(true)}
+                  onPress={() => {
+                    if (!requirePro('read_recipe')) return
+                    setCamera(true)
+                  }}
                 />
                 <FillOption
                   icon={{ set: 'system', name: 'sparkle' }}
                   label={t('recipes:new.describeLabel')}
                   tone="kaya"
-                  onPress={() => setDescribing(true)}
+                  onPress={() => {
+                    if (!requirePro('read_recipe')) return
+                    setDescribing(true)
+                  }}
                 />
               </View>
               <View className="flex-row items-center gap-3 pt-1">

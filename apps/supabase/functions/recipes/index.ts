@@ -26,11 +26,12 @@ import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 import {
-  AiLimitReached,
+  claimRecipeReview,
+  claimScan,
   createMeter,
   NotEntitled,
-  nullMeter,
   requireEntitlement,
+  ScanLimitReached,
 } from '../_shared/entitlement.ts'
 import { mockActive } from '../_shared/llm.ts'
 import { ownsKey, readObject } from '../_shared/r2.ts'
@@ -139,12 +140,16 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   )
 
-  // Every request to OpenRouter is metered, both actions, whoever asked. The
-  // ENTITLEMENT check below is narrower and only covers `read`: filling a form
-  // in from a photograph is the same kind of AI convenience the scan is, while
-  // the publish review is a gate the app runs on its own behalf and must go on
-  // running for anybody who can reach the publish button.
-  const meter = mockActive() ? nullMeter() : createMeter(db, userId)
+  // Counts what this invocation spends at OpenRouter, for the logs. The QUOTA
+  // is claimed inside `read` alone, one unit for the whole action, and so is
+  // the entitlement check: filling a form in from a photograph is the same kind
+  // of AI convenience a described meal is, and Pro for the same reason. The
+  // publish review is a gate the app runs on its own behalf — it must go on
+  // running for anybody who can reach the publish button, and charging a user's
+  // daily allowance for a check they did not ask for would be the app billing
+  // them for its own moderation. It has a ceiling of its own instead; see the
+  // claim in that branch.
+  const meter = createMeter()
 
   // -- READ: a photograph of the pot, or a description of it, becomes a
   // filled-in form. One action rather than two, because everything after the
@@ -169,7 +174,8 @@ Deno.serve(async (req: Request) => {
     }
 
     try {
-      await requireEntitlement(db, userId)
+      await requireEntitlement(db, userId, 'read_recipe')
+      await claimScan(db, userId)
       const draft = described
         ? await describeRecipe(described, mock, meter)
         : await readRecipePhoto(
@@ -212,15 +218,24 @@ Deno.serve(async (req: Request) => {
       // "the model could not read it", which the form answers by letting them
       // fill it in themselves.
       if (error instanceof NotEntitled) {
-        return json({ ok: false, code: 'not_entitled', error: 'subscription required' }, 402)
-      }
-      if (error instanceof AiLimitReached) {
         return json(
           {
             ok: false,
-            code: 'ai_limit',
+            code: 'not_entitled',
+            feature: error.feature,
+            error: 'subscription required',
+          },
+          402,
+        )
+      }
+      if (error instanceof ScanLimitReached) {
+        return json(
+          {
+            ok: false,
+            code: 'scan_limit',
             used: error.used,
-            limit: error.monthlyLimit,
+            limit: error.dailyLimit,
+            entitled: error.entitled,
             error: error.message,
           },
           429,
@@ -251,6 +266,18 @@ Deno.serve(async (req: Request) => {
     // private row, and the next publish would inherit it without being read.
     if (!loaded.recipe.is_public) {
       return json({ ok: false, error: 'recipe is not public' }, 400)
+    }
+
+    // The one model call in the app that no user quota stands in front of, and
+    // the one nobody asked for: it is our moderation, running because somebody
+    // pressed Publish. So it is bounded by a rate limit rather than by their
+    // scan allowance — ten an hour, which no real use comes near and which
+    // stops `{action: 'review'}` from being a loop somebody can put our
+    // OpenRouter bill through. Refused, the recipe stays `pending` and stays
+    // out of the community tab, which is the same fail-shut answer every other
+    // failure in this branch gives.
+    if (!(await claimRecipeReview(db, userId))) {
+      return json({ ok: false, status: 'pending', error: 'too many reviews, try again later' }, 429)
     }
 
     const input: ReviewInput = {

@@ -1,9 +1,10 @@
-import { useLocalSearchParams } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { type ReactNode, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
+  useEntitlement,
   useReviewMeals,
   useReviewPeriods,
   useReviewSeries,
@@ -102,11 +103,51 @@ export default function ReviewScreen() {
     track('Review Opened', { kind })
   }, [start, kind])
 
+  /**
+   * The same gate the list applies, applied again here.
+   *
+   * The list is not the only way in. A monthly report notification links
+   * straight to `month-latest`, a shared link names a week by date, and neither
+   * goes through a row that could have refused it — so a free account would
+   * otherwise read a locked review by tapping a notification.
+   *
+   * `replace`, not `push`. Pushed, the back gesture off the paywall lands on
+   * this screen again, which redirects again: a loop the user cannot leave.
+   *
+   * Waits for EVERY answer. `entitled` is false while the subscription query is
+   * in flight and false again when the app is offline with nothing cached, and
+   * acting on either would take a paying user off the review they just opened —
+   * on every cold launch, or every time they read it on a train. `unknown` is
+   * the offline case and it is why this reads all three: "we could not check"
+   * must never be answered with "you have not paid". The same is true of the
+   * period list on the `latest` path, where "is this the newest week" cannot be
+   * answered until it lands — hence `periods.isPending` rather than only
+   * `start`.
+   */
+  const { entitled, loading: checkingPlan, unknown: planUnknown } = useEntitlement()
+  const locked =
+    !entitled &&
+    !checkingPlan &&
+    !planUnknown &&
+    !periods.isPending &&
+    start !== '' &&
+    !(kind === 'week' && start === periods.data?.[0]?.start)
+
+  useEffect(() => {
+    if (!locked) return
+    track('Paywall Shown', { screen: 'hard', trigger: 'review' })
+    router.replace('/paywall')
+  }, [locked])
+
   if (!period) return <Missing />
 
   const resolving = period.start === LATEST && periods.isPending
+  // `locked` draws the skeleton rather than the review while the replace above
+  // takes effect. A frame of somebody else's paid feature is still the feature.
   const loading =
-    resolving || (start !== '' && (summary.isPending || series.isPending || meals.isPending))
+    locked ||
+    resolving ||
+    (start !== '' && (summary.isPending || series.isPending || meals.isPending))
   const found = summary.data
 
   if (loading) {

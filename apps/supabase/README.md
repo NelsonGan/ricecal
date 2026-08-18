@@ -298,6 +298,18 @@ words rather than failing at the tap, and a local stack still starts, still
 resets and still scans — mock AI never reads the photo, so only the upload and
 the tiles need Cloudflare to exist.
 
+One more belongs to the retention sweep: **`RETENTION_TOKEN`**, a shared secret
+that `functions/retention` checks on every request, matched by the repo secret
+of the same name that `.github/workflows/retention.yml` sends. It is a shared
+secret rather than a user's JWT because the sweep runs across every account and
+there is no user to be — the same shape the RevenueCat webhook uses. UNSET, the
+function refuses every request rather than accepting them: an open version of
+this endpoint deletes strangers' photographs.
+
+```sh
+supabase secrets set --workdir apps RETENTION_TOKEN="$(openssl rand -hex 32)"
+```
+
 A fifth R2 value is optional and local-only: **`R2_ENDPOINT`** overrides the Cloudflare
 host, so a developer can point the same signing code at any S3 — the one the
 local stack already runs beside it, say. Set it and an upload can be walked on

@@ -47,6 +47,15 @@ export const reviews = {
     /** A period with a budget but nothing logged. Should not be listed at all. */
     summaryEmpty: 'Nothing logged',
     a11y: '{{title}}, {{meta}}, {{summary}}',
+    /**
+     * The same row with a padlock on it.
+     *
+     * The lock is an ICON and a screen reader would announce nothing for it, so
+     * the fact that pressing this opens a paywall has to be in the label. It
+     * comes last, after the figures, because the row is still a review and its
+     * numbers are still what it is about.
+     */
+    a11yLocked: '{{title}}, {{meta}}, {{summary}}, Pro',
 
     emptyWeekTitle: 'No weeks to look back on yet',
     emptyWeekBody:

@@ -11,7 +11,12 @@ import {
   purchasesAvailable,
   restorePurchases,
 } from '@/data/purchases'
-import { ProPitch, trackPurchaseAbandoned, trackPurchaseStarted } from '@/features/paywall'
+import {
+  ProPitch,
+  trackPurchaseAbandoned,
+  trackPurchaseStarted,
+  useMarkPaywallSeen,
+} from '@/features/paywall'
 import { track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
 import { AppBar, Button, Screen, useToast } from '@/ui'
@@ -37,6 +42,11 @@ export default function Paywall() {
   const toast = useToast()
   const awaitEntitlement = useAwaitEntitlement()
   const [plan, setPlan] = useState<Plan>('yearly')
+
+  // Seeing the price resets the standing offer's clock, however the user got
+  // here. Without it, somebody refused at the shutter on Monday would meet the
+  // same page unprompted on Wednesday having already read it.
+  useMarkPaywallSeen()
 
   const start = async () => {
     if (!purchasesAvailable()) {

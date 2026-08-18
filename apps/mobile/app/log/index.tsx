@@ -12,6 +12,7 @@ import {
   useDayLog,
   useDescribeFood,
   useLogFood,
+  useScanQuota,
   useSelectedDate,
   useSettings,
   useSnapFood,
@@ -172,6 +173,9 @@ export default function LogSheet() {
   // transparentModal, and a paywall pushed from inside one comes up stacked on
   // the sheet rather than over the app.
   const requirePro = useRequirePro({ navigate: 'replace' })
+  // Only ever rendered under the viewfinder, so it is fetched with the sheet
+  // rather than with the tab behind it.
+  const quota = useScanQuota()
 
   /**
    * A dish was picked out of the inline search.
@@ -194,7 +198,11 @@ export default function LogSheet() {
   // sheet adds is a recipe and the other is a catalogue dish. They build one
   // the same way and nothing downstream needs to know which it was.
   const add = (snapshot: LogSnapshot, method: LogMethod) => {
-    if (!requirePro('quick_add')) return
+    // NOT GATED. Adding a dish from the catalogue, a scanned packet or a saved
+    // recipe reaches no model and costs nothing to serve, and a free tier that
+    // could not write those is a catalogue with a read-only diary attached.
+    // What is metered is the SCAN — see the shutter below.
+    //
     // `method` and `source` are two different questions and both are answered.
     // The column says how the numbers were obtained; `method` says which door
     // the user came through, which `entry_source` has no value for. See
@@ -260,7 +268,15 @@ export default function LogSheet() {
           icon={{ set: 'system', name: 'sparkle' }}
           tone="kaya"
           selected={panel === 'describe'}
-          onPress={() => toggle('describe')}
+          onPress={() => {
+            // Gated at the TAP, unlike the shutter beside it. The camera is
+            // free and framing a plate is most of what makes it legible, so
+            // that panel opens for everybody; this one is Pro outright, and
+            // opening it would have somebody type out a meal before being told
+            // the sentence has nowhere to go.
+            if (panel !== 'describe' && !requirePro('describe')) return
+            toggle('describe')
+          }}
         />
         <QuickAction
           label={t('logging:selector.search')}
@@ -308,16 +324,39 @@ export default function LogSheet() {
           <InlineCamera
             mode={captureMode}
             onCapture={(photoUri) => {
-              // The viewfinder is free and the shutter is not. Framing the
-              // plate is most of what makes the feature legible, so the camera
-              // opens for everybody and the paywall arrives at the moment a
-              // request would have been sent.
-              if (!requirePro('camera')) return
+              // NO GATE HERE ANY MORE, and that is the whole freemium change.
+              // The shutter used to be the paywall's front door; a free account
+              // now photographs three plates a day, which is what makes the
+              // free tier a diary somebody can actually keep rather than a
+              // demonstration of one.
+              //
+              // The ceiling is claimed on the SERVER, one unit per scan, and
+              // the fourth plate comes back refused — `announceRefusal` in
+              // `data/refusals.ts` says so and opens the paywall. Checked here
+              // as well it would be a second copy of the count, wrong whenever
+              // the phone had been offline or another device had scanned.
               snapFood({ photoUri, logDate: selectedDate })
               goBack()
             }}
             onScanned={(code) => openFood(packetFoodId(code))}
           />
+
+          {/* WHAT IS LEFT, and only on a free account with a meal in the
+              viewfinder. A ceiling nobody can see is a ceiling that arrives as a
+              surprise, and it arrives on the one screen where a surprise costs a
+              photograph somebody has already framed and taken.
+
+              Not shown to a subscriber, whose ceiling is fifty and is not a
+              number they are meant to be counting against — printing it would
+              turn the thing they paid for into a quota. Not shown over the
+              barcode tab either: a packet spends nothing. And nothing at all
+              until the count has landed, since a line that says "3 left" and
+              then corrects itself is worse than a beat of silence. */}
+          {quota.data && !quota.data.entitled && captureMode === 'meal' ? (
+            <Text variant="caption" className="text-center">
+              {t('logging:capture.scansLeft', { count: quota.data.remaining })}
+            </Text>
+          ) : null}
         </View>
       ) : null}
       {panel === 'describe' ? (
@@ -327,6 +366,11 @@ export default function LogSheet() {
         <DescribePanel
           autoFocus
           onSubmit={(text) => {
+            // The same guard again, and not redundant: the panel can be opened
+            // by a ROUTE PARAM (`/log?panel=describe`) without going through the
+            // action above it. Cheap, and the alternative is a hole in the gate
+            // that only a deep link finds. The server refuses it a third time,
+            // for anybody not running this build at all.
             if (!requirePro('describe')) return
             describeFood({ text, logDate: selectedDate })
             goBack()
