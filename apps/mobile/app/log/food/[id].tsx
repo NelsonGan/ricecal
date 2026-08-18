@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import {
   ENTRY_FOOD_ID,
@@ -190,6 +191,9 @@ export default function FoodDetail() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const colors = useThemeColors()
+  // For the strip that keeps the photograph out from under the status bar as the
+  // page scrolls. See `overlay` below.
+  const insets = useSafeAreaInsets()
   const toast = useToast()
   const logFood = useLogFood()
   const requirePro = useRequirePro()
@@ -1086,6 +1090,15 @@ export default function FoodDetail() {
          top inset is still applied, which is what keeps the picture out from
          under the status bar. */
       flush
+      /* AN OPAQUE STRIP OVER THE STATUS BAR, and it is the other half of a
+         full-bleed photograph.
+         `flush` leaves the top inset as padding, which clears the clock and the
+         notch while the page is at REST — and says nothing about where the
+         picture goes the moment it is scrolled. It went under both, so the top of
+         the plate was cropped by the notch and the clock sat on somebody's lunch.
+         Canvas-coloured, so what the picture slides under is the page's own
+         background rather than a translucent bar. */
+      overlay={<View className="bg-canvas" style={{ height: insets.top }} />}
       footer={
         existing ? (
           /* ONE BUTTON, and it is not a save. Save used to sit here beside it,
@@ -1477,11 +1490,6 @@ export default function FoodDetail() {
                   </Text>
                 </View>
               ))}
-              <Text variant="meta">
-                {extras.every((row) => row.value === undefined)
-                  ? t('logging:detail.nutrientsUnknown')
-                  : t('logging:detail.nutrientsNote')}
-              </Text>
             </View>
           ) : null}
         </Card>
@@ -1507,31 +1515,37 @@ export default function FoodDetail() {
           >
             {parts.map((ingredient) => (
               <View key={ingredient.id} className="flex-row items-start justify-between gap-3">
-                <View className="min-w-0 flex-1">
-                  {/* NO `numberOfLines`. A part's name is what this card exists to
-                    show — it is the model's own account of what was on the plate
-                    — and with the two stepper buttons gone there is room to read
-                    it. Truncated to one line, "Steamed white rice with sambal"
-                    came out as three words and an ellipsis on the one screen
-                    somebody opens to check exactly that. */}
-                  <Text variant="body">{titleCase(ingredient.name)}</Text>
-                  {/* The count and what it weighs. Its macros were under here for
-                    a while and made every row two lines of small figures — the
-                    plate's totals are the sum of them and are already on the
-                    card above — but the weight is not more of that. It is the
-                    amount itself: "× 6" is six of something whose size nobody
-                    stated, and the scan now knows the size. Absent where the
-                    scan did not weigh the part, since "0 g" would be a claim
-                    about the food rather than about the answer. */}
-                  <Text variant="meta">
-                    {ingredient.grams
-                      ? t('logging:detail.timesWeight', {
-                          amount: ingredient.quantity,
-                          grams: Math.round(ingredient.grams).toLocaleString(),
-                        })
-                      : t('logging:detail.times', { amount: ingredient.quantity })}
-                  </Text>
-                </View>
+                {/* THE NAME AND WHAT IT WEIGHS, ON ONE LINE. The weight used to
+                    sit on a second line behind a multiplier — "× 0.75 · 165 g" —
+                    which led with the number nobody can act on: the multiplier is
+                    how the row STORES an amount, and 165 g is the amount. In
+                    brackets after the name it reads as part of what the thing is,
+                    and the row is one line again.
+
+                    NO `numberOfLines`. A part's name is what this card exists to
+                    show — the model's own account of what was on the plate — and
+                    truncated to one line "Stir fried pork belly with green
+                    peppers" came out as three words and an ellipsis on the one
+                    screen somebody opens to check exactly that. The bracket wraps
+                    with it, being part of the same run of text.
+
+                    A part nobody weighed falls back to its count, and a single
+                    unweighed one says nothing at all: "(× 1)" is a bracket that
+                    answers no question. */}
+                <Text variant="body" className="min-w-0 flex-1">
+                  {titleCase(ingredient.name)}
+                  {ingredient.grams ? (
+                    <Text variant="meta">
+                      {` ${t('logging:detail.grams', {
+                        grams: Math.round(ingredient.grams).toLocaleString(),
+                      })}`}
+                    </Text>
+                  ) : ingredient.quantity === 1 ? null : (
+                    <Text variant="meta">
+                      {` ${t('logging:detail.count', { amount: ingredient.quantity })}`}
+                    </Text>
+                  )}
+                </Text>
                 <View className="flex-row items-baseline gap-1">
                   <Text variant="numeric">{ingredient.kcal.toLocaleString()}</Text>
                   <Text variant="caption">{t('common:unit.kcal')}</Text>

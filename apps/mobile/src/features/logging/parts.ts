@@ -95,6 +95,62 @@ export const PART_STEP = 0.25
 export const PART_MAX = 10
 
 /**
+ * How much a part moves per tap once it is being edited BY WEIGHT.
+ *
+ * Ten grams, flat, rather than a fraction of the portion. A proportional step
+ * reads as arbitrary — "why did that go up by 37" — where a round number in the
+ * unit on screen is a thing you can count in.
+ */
+export const GRAM_STEP = 10
+
+/**
+ * What ONE of a part weighs, recovered from a row that has already been scaled.
+ *
+ * `food_log_ingredients.grams` is stored per unit and the view multiplies it by
+ * the quantity, so this divides it back out. `null` for a part nobody weighed,
+ * which is the whole reason the amount controls have a second shape.
+ */
+export function perUnitGrams(ingredient: Pick<EntryIngredient, 'grams' | 'quantity'>) {
+  if (ingredient.grams === null || ingredient.quantity <= 0) return null
+  return ingredient.grams / ingredient.quantity
+}
+
+/**
+ * The quantity that weighs about this much, which is what actually gets written.
+ *
+ * GRAMS ARE A FACE ON A MULTIPLIER. `set_ingredient_quantity` takes a quantity
+ * and `food_log_ingredients.quantity` is `numeric(6, 2)`, so the finest weight
+ * the row can express is a hundredth of one unit — a gram or two on a typical
+ * portion. Ask for 200 g of something that comes in 220 g units and the row
+ * settles at 202; the number on screen is always what the row actually weighs
+ * rather than what was asked for, which is the honest way round.
+ *
+ * Clamped to the range the function accepts. The floor is why the minus button
+ * removes a part rather than shrinking it forever: below a quarter of one unit
+ * there is no quantity left to write.
+ */
+export function quantityForGrams(grams: number, perUnit: number): number {
+  const raw = grams / perUnit
+  const clamped = Math.min(PART_MAX, Math.max(PART_STEP, raw))
+  return Math.round(clamped * 100) / 100
+}
+
+/**
+ * Where the minus and plus buttons take a part being edited by weight, and
+ * `null` is off the plate.
+ *
+ * Stepping stops where `PART_STEP` does, for the reason above: a part cannot
+ * weigh less than a quarter of one of itself, so the step below that is removal
+ * — which is the same answer the multiplier gives, said in grams.
+ */
+export function stepGrams(grams: number, perUnit: number, direction: 1 | -1): number | null {
+  const floor = PART_STEP * perUnit
+  const next = grams + direction * GRAM_STEP
+  if (direction === -1 && next < floor) return null
+  return Math.min(PART_MAX * perUnit, Math.max(floor, next))
+}
+
+/**
  * Where the minus button takes a part, and `null` is off the plate.
  *
  * At the smallest amount the minus removes the row. A quarter of a thing and

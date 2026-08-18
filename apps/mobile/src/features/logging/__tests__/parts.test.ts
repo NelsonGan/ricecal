@@ -1,5 +1,15 @@
 import type { EntryIngredient } from '@/data/scan'
-import { PART_MAX, PART_STEP, partChanges, stagedParts, stepPart } from '../parts'
+import {
+  GRAM_STEP,
+  PART_MAX,
+  PART_STEP,
+  partChanges,
+  perUnitGrams,
+  quantityForGrams,
+  stagedParts,
+  stepGrams,
+  stepPart,
+} from '../parts'
 
 /**
  * The staged preview of a scanned plate.
@@ -71,4 +81,48 @@ it('takes the last quarter of a part off the plate rather than stopping', () => 
 it('steps in quarters and stops at the ceiling', () => {
   expect(stepPart(1, 1)).toBe(1.25)
   expect(stepPart(PART_MAX, 1)).toBe(PART_MAX)
+})
+
+/**
+ * Editing a part BY WEIGHT, which is a face on the multiplier the row actually
+ * stores. The arithmetic is worth pinning down because the two ends of it
+ * disagree: grams are what the user reads and types, `quantity` at two decimals
+ * is what `set_ingredient_quantity` accepts, and the floor of that range is what
+ * turns the minus button into a delete.
+ */
+
+it('recovers what one of a part weighs from a row already scaled by its amount', () => {
+  // The view multiplies the stored per-unit grams by the quantity, so this
+  // divides it back out: 165 g at three quarters is a 220 g unit.
+  expect(perUnitGrams({ grams: 165, quantity: 0.75 })).toBe(220)
+  expect(perUnitGrams({ grams: null, quantity: 1 })).toBeNull()
+  expect(perUnitGrams({ grams: 100, quantity: 0 })).toBeNull()
+})
+
+it('turns a weight into a quantity the database can hold', () => {
+  expect(quantityForGrams(220, 220)).toBe(1)
+  // Two decimals is the column, so a weight lands within about a hundredth of a
+  // unit of what was asked for. See `quantityForGrams`.
+  expect(quantityForGrams(200, 220)).toBe(0.91)
+  // And is clamped to the range the write function accepts, at both ends.
+  expect(quantityForGrams(1, 220)).toBe(PART_STEP)
+  expect(quantityForGrams(999_999, 220)).toBe(PART_MAX)
+})
+
+it('steps a weight by a round number of grams', () => {
+  expect(stepGrams(165, 220, 1)).toBe(165 + GRAM_STEP)
+  expect(stepGrams(165, 220, -1)).toBe(165 - GRAM_STEP)
+})
+
+it('takes the last of a part off the plate rather than shrinking it forever', () => {
+  // A quarter of one unit is the floor, because below it there is no quantity
+  // left to write — so the step below it is removal, the same answer the
+  // multiplier gives.
+  const floor = PART_STEP * 220
+  expect(stepGrams(floor, 220, -1)).toBeNull()
+  expect(stepGrams(floor + GRAM_STEP, 220, -1)).toBe(floor)
+})
+
+it('stops a weight at the top of the range', () => {
+  expect(stepGrams(PART_MAX * 220, 220, 1)).toBe(PART_MAX * 220)
 })
