@@ -28,8 +28,14 @@
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
-
-import { at, ENTITLEMENT, planOf, type RevenueCatEvent, statusFor } from '../_shared/revenuecat.ts'
+import {
+  at,
+  ENTITLEMENT,
+  isStale,
+  planOf,
+  type RevenueCatEvent,
+  statusFor,
+} from '../_shared/revenuecat.ts'
 
 /**
  * A real uuid, not "36 characters of hex and dashes".
@@ -138,30 +144,27 @@ Deno.serve(async (req: Request) => {
 
   const plan = planOf(event.product_id)
   const expires = at(event.expiration_at_ms)
+  const happenedAt = at(event.event_timestamp_ms)
 
-  // OUT-OF-ORDER DELIVERY, guarded in the one direction that costs money.
+  // OUT-OF-ORDER DELIVERY, ordered by when each event HAPPENED.
   //
-  // RevenueCat retries with a backoff, so a delayed EXPIRATION can arrive
-  // AFTER the RENEWAL that superseded it. Applied blind that takes the app
-  // away from somebody who has just paid for another month, and nothing
-  // afterwards puts it back until their next renewal.
+  // Read `isStale` for why this is not the period-end comparison it used to be:
+  // in short, that test could not tell a delayed event from one that ends a
+  // subscription early, so it dropped every refund and every revoked promotional
+  // grant and left those accounts entitled for good.
   //
-  // Only the downgrade is guarded: if the row already knows about a period
-  // ending later than the one this event is about, the event is stale. An
-  // upgrade arriving out of order is self-correcting, and refusing one would
-  // be the same expensive mistake in the other direction.
-  if (status === 'expired' && expires) {
-    const { data: current } = await db
-      .from('subscriptions')
-      .select('current_period_end')
-      .eq('user_id', appUserId)
-      .maybeSingle()
+  // Checked for EVERY event rather than only for the downgrades. A stale
+  // RENEWAL landing on top of a newer EXPIRATION is the same bug pointing the
+  // other way, and it is the direction that costs money rather than goodwill.
+  const { data: current } = await db
+    .from('subscriptions')
+    .select('last_event_at')
+    .eq('user_id', appUserId)
+    .maybeSingle()
 
-    const known = current?.current_period_end
-    if (known && new Date(known) > new Date(expires)) {
-      console.warn('[revenuecat] ignoring a stale expiration:', expires, '<', known)
-      return json({ ok: true, ignored: 'stale expiration' })
-    }
+  if (isStale(event, current?.last_event_at)) {
+    console.warn('[revenuecat] ignoring an event overtaken by a newer one:', event.type)
+    return json({ ok: true, ignored: 'stale event' })
   }
 
   const { error } = await db.from('subscriptions').upsert(
@@ -179,6 +182,16 @@ Deno.serve(async (req: Request) => {
       store: event.store?.toLowerCase() ?? null,
       product_id: event.product_id ?? null,
       rc_app_user_id: appUserId,
+      // What the NEXT delivery is ordered against. Taken from the payload
+      // rather than from the clock, because the two differ by exactly the
+      // backoff this guards against.
+      //
+      // OMITTED rather than nulled when the payload carries no timestamp:
+      // PostgREST builds its `on conflict do update` column list from the keys
+      // it is given, so leaving it out keeps whatever ordering the row already
+      // had. Written as null it would erase that, and the next genuinely stale
+      // delivery would have nothing left to be measured against.
+      ...(happenedAt ? { last_event_at: happenedAt } : {}),
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'user_id' },

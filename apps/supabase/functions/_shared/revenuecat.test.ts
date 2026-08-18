@@ -1,6 +1,6 @@
 import { assertEquals } from 'jsr:@std/assert@^1'
 
-import { at, planOf, type RevenueCatEvent, statusFor } from './revenuecat.ts'
+import { at, isStale, planOf, type RevenueCatEvent, statusFor } from './revenuecat.ts'
 
 const event = (partial: Partial<RevenueCatEvent>): RevenueCatEvent => partial
 
@@ -70,6 +70,56 @@ Deno.test('events that say nothing about entitlement change nothing', () => {
   // An event type RevenueCat adds later must not be read as a downgrade.
   assertEquals(statusFor(event({ type: 'SOMETHING_NEW_IN_2027' })), null)
   assertEquals(statusFor(event({})), null)
+})
+
+const MARCH = '2026-03-01T00:00:00.000Z'
+const ms = (iso: string) => new Date(iso).getTime()
+
+Deno.test('an event overtaken by one already applied is stale', () => {
+  // The case this exists for: an EXPIRATION held up by failed deliveries lands
+  // after the RENEWAL that superseded it. Applied, it takes the app away from
+  // somebody who has just paid for another month.
+  assertEquals(
+    isStale(event({ type: 'EXPIRATION', event_timestamp_ms: ms('2026-02-01T00:00:00Z') }), MARCH),
+    true,
+  )
+})
+
+Deno.test('an ending inside the paid period is not stale', () => {
+  // A refund, a support cancellation and a revoked promotional grant all expire
+  // a subscription BEFORE the period it paid for. Ordered by period end — as
+  // this was — every one of them read as stale and was dropped, and the account
+  // stayed entitled for good. Ordered by when the event happened, they apply.
+  assertEquals(
+    isStale(
+      event({
+        type: 'EXPIRATION',
+        event_timestamp_ms: ms('2026-03-02T00:00:00Z'),
+        // Ending today, on a subscription that had a year left to run.
+        expiration_at_ms: ms('2026-03-02T00:00:00Z'),
+      }),
+      MARCH,
+    ),
+    false,
+  )
+})
+
+Deno.test('nothing to compare against applies the event', () => {
+  // A row written before the column existed, or corrected by hand, neither of
+  // which came from an event. Refusing here would discard a real event to guard
+  // against a hypothetical ordering.
+  assertEquals(isStale(event({ event_timestamp_ms: ms(MARCH) }), null), false)
+  assertEquals(isStale(event({ event_timestamp_ms: ms(MARCH) }), undefined), false)
+  // And a payload we cannot place is applied for the same reason.
+  assertEquals(isStale(event({}), MARCH), false)
+  assertEquals(isStale(event({ event_timestamp_ms: Number.NaN }), MARCH), false)
+})
+
+Deno.test('a redelivery of the event we already have is applied again', () => {
+  // Equal, not stale. RevenueCat redelivers on any non-2xx, and the write is
+  // the same row with the same values — where turning it away would leave a
+  // half-applied event looking finished.
+  assertEquals(isStale(event({ event_timestamp_ms: ms(MARCH) }), MARCH), false)
 })
 
 Deno.test('at() survives a missing expiry', () => {

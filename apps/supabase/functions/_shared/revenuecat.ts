@@ -17,6 +17,8 @@ export type RevenueCatEvent = {
   entitlement_ids?: string[] | null
   expiration_at_ms?: number | null
   purchased_at_ms?: number | null
+  /** When the event happened, which orders deliveries. See `isStale`. */
+  event_timestamp_ms?: number | null
 }
 
 /** The entitlement this app sells. An event about anything else is not ours. */
@@ -94,4 +96,37 @@ export function statusFor(
     default:
       return null
   }
+}
+
+/**
+ * Has this event been overtaken by one we have already applied?
+ *
+ * RevenueCat retries with a backoff, so deliveries do not arrive in the order
+ * things happened: an EXPIRATION held up by a failed delivery can land after
+ * the RENEWAL that superseded it, and applied blind it takes the app away from
+ * somebody who has just paid for another month.
+ *
+ * ORDERED BY WHEN THE EVENT HAPPENED, and this is the second attempt at it. The
+ * first compared the event's expiry against the stored `current_period_end` and
+ * dropped anything that ended sooner — which is the same test as "is this
+ * stale" only while every ending is the natural one. It is not: a refund, a
+ * support cancellation and a revoked promotional grant all end a subscription
+ * inside the period it had already paid for. Every one of them looked stale,
+ * every one was dropped, and the account stayed entitled with nothing further
+ * coming to correct it.
+ *
+ * BOTH UNKNOWNS APPLY THE EVENT rather than dropping it. A row with no
+ * `last_event_at` predates the column or was corrected by hand; a payload with
+ * no `event_timestamp_ms` is one we cannot place. Refusing either
+ * would mean discarding a real event to protect against a hypothetical
+ * ordering, and the event in hand is the better evidence.
+ *
+ * Equal timestamps apply too, so a redelivery of the event we already have
+ * rewrites the same row with the same values rather than being turned away.
+ */
+export function isStale(event: RevenueCatEvent, lastEventAt: string | null | undefined): boolean {
+  if (!lastEventAt) return false
+  const happened = event.event_timestamp_ms
+  if (typeof happened !== 'number' || !Number.isFinite(happened)) return false
+  return happened < new Date(lastEventAt).getTime()
 }

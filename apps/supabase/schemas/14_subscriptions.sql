@@ -36,6 +36,21 @@ create table public.subscriptions (
   -- the payload's mapping back to our uuid.
   rc_app_user_id      text unique,
 
+  -- When the event this row was last written from HAPPENED, which is not when
+  -- we wrote it. RevenueCat retries with a backoff, so a delayed EXPIRATION can
+  -- arrive after the RENEWAL that superseded it, and applied blind that takes
+  -- the app away from somebody who has just paid for another month.
+  --
+  -- This is what orders them, and it replaced ordering by `current_period_end`
+  -- — which conflated "this event is stale" with "this event ends the period
+  -- early". A refund, a revoked promotional grant and a support-initiated
+  -- cancellation all expire a subscription BEFORE the period it had paid for,
+  -- so every one of them read as stale and was dropped, and the account stayed
+  -- entitled for good. Null for a row written before this column existed, and
+  -- for one corrected by hand: neither came from an event, so there is nothing
+  -- to order the next one against and it applies.
+  last_event_at       timestamptz,
+
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
 );
