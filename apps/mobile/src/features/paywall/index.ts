@@ -5,7 +5,7 @@
  * Separate from `features/shared` because these know what a subscription is
  * and what it costs, which is a narrower thing to know than "meals and foods".
  */
-export { ProPitch, type ProPitchProps } from './ProPitch'
+export { PRO_FEATURES, ProPitch, type ProPitchProps } from './ProPitch'
 export {
   trackPurchaseAbandoned,
   trackPurchaseStarted,

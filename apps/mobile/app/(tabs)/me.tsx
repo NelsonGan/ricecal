@@ -83,7 +83,11 @@ export default function MeScreen() {
   const remindersValue =
     settings && mealTimes ? t('profile:home.remindersValue', { count: activeReminders }) : undefined
 
-  const status = subscription?.status ?? 'none'
+  // `entitled` rather than the status alone, because the two can disagree: a
+  // row whose period has run out still SAYS `active`, and the gates read the
+  // date. Left on the status this line would tell somebody they had Pro on the
+  // same screen whose buttons were about to refuse them.
+  const status = entitled ? (subscription?.status ?? 'none') : 'none'
   const planLine =
     status === 'trial'
       ? t('profile:home.proTrial', {

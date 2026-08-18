@@ -1141,6 +1141,36 @@ auto-renew was turned off and the user keeps what they paid for until
 `EXPIRATION` follows, so reading it as the end takes the app away from somebody
 who has paid for another three weeks of it.
 
+**Out-of-order delivery is ordered by when the event HAPPENED**
+(`subscriptions.last_event_at`, from `event_timestamp_ms`), and the first attempt
+at this compared the event's expiry against the stored `current_period_end`
+instead. That is the same test only while every ending is the natural one, and it
+is not: a refund, a support cancellation and a revoked promotional grant all end
+a subscription inside the period it had already paid for, so every one of them
+looked stale and was dropped. Two promotional grants revoked in the dashboard
+went exactly that way — the accounts kept Pro, and the log line saying why
+(`ignoring a stale expiration: 2026-08-17 < 2027-08-17`) was the only trace.
+Read `isStale`.
+
+**That bug is also a lesson about where to look.** It presented as RevenueCat
+having said nothing: the customer-events API showed no events at all for either
+revoked account, the original grant included. That endpoint reflects the
+transactions a customer CURRENTLY has rather than what was delivered, so a
+revoked grant leaves nothing behind in it, and reading it as a delivery log
+points the investigation at the third party instead of at us. The edge function's
+own logs had both events, received on time.
+
+**Nothing pulls from RevenueCat on a schedule, and that is a decision rather
+than an omission.** A reconciler was written and then removed: it existed for a
+problem that turned out to be ours, and once the ordering guard was right the
+only thing left for it was a delivery lost past RevenueCat's retries. The expiry
+rule below already bounds that to the period somebody paid for rather than for
+ever, which is a small enough exposure not to be worth a second source of truth,
+a second credential and a schedule to forget about. If it ever comes back, the
+one thing it must keep is downgrading ONLY on a positive answer — a job that read
+"RevenueCat did not answer" as "they have nothing" would cancel every paying
+customer the first time the API had a bad night.
+
 **That id is the SUPABASE UUID and must never become the email.** An address is
 the readable choice and it is wrong on three counts at once: it changes, and a
 changed one logs the SDK in as a different customer whose `app_user_id` matches
@@ -1413,6 +1443,22 @@ Break these and the feature is wrong in ways tests may not catch.
   to be wrong in. The METER fails the other way on purpose: a database blip
   while claiming budget lets the request through uncounted, since telling
   somebody who has paid that they are cut off is worse than losing a tally mark.
+- **An entitled status is not enough; the PERIOD has to be running too.**
+  `entitledBy` on the server and `isEntitledRow` on the client both read
+  `current_period_end`, and null means no expiry rather than an expired one —
+  lifetime renews never, so RevenueCat sends no date and reading it the other way
+  round would refuse the one plan that cannot lapse. Written on the status alone,
+  as both were, every missed ending is PERMANENT instead of temporary: a delivery
+  that failed past RevenueCat's retries, or an event the ordering guard wrongly
+  dropped — which is what happened to two revoked promotional grants — leaves a
+  row saying `active` with an expiry in the past and an account reaching the model
+  for ever.
+  It does not replace the webhook and cannot — only RevenueCat knows a
+  subscription ended EARLY — it bounds the damage of never hearing to the period
+  that was actually paid for. The two copies cannot import each other across the
+  Deno / React Native line and have to be changed together. What follows from it
+  on screen: anything PRINTING the plan reads `entitled`, not the status, or the
+  Me tab says "Pro active" on the same screen whose buttons are about to refuse.
 - **The meter counts requests to OpenRouter, not scans, and it is claimed
   BEFORE the request.** Claimed afterwards, an account already over its limit
   would still get to send the one that put it there. The retry inside
