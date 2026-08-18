@@ -75,6 +75,22 @@ const BACK_PERIOD = 5800
 /** How far the surface tips, end to end, at the height of a slosh. In points. */
 const TILT = 7
 
+/** The outline's weight. See `outline` for why the path it follows is inset. */
+const STROKE = 2
+
+/**
+ * Water left in an empty tank, in points.
+ *
+ * A tank with NOTHING in it read as a component that had failed to load rather
+ * than as a day nobody had drunk on — an outlined box with a figure in the
+ * corner. A shallow puddle says "this holds water and there is none in it yet",
+ * which is the same fact drawn as a state rather than as an absence.
+ *
+ * It does mean a day at zero and a day at one mouthful draw alike. That is the
+ * figure's job, and the figure is right there: nothing here claims a quantity.
+ */
+const EMPTY_FILL = 5
+
 /**
  * A day's water, as a tank of it.
  *
@@ -167,8 +183,34 @@ export function WaterTank({
   }, [phase, phaseBack, reduceMotion])
 
   const corner = radius ?? Math.min(14, height / 3)
+
+  // The tank at its full size: what the ground is painted with, and what the
+  // water is clipped to. Flush with the canvas on every side, so nothing of the
+  // card behind it shows through at the edge.
   const tank = Skia.PathBuilder.Make()
     .addRRect({ rect: { x: 0, y: 0, width, height }, rx: corner, ry: corner })
+    .detach()
+
+  /**
+   * The outline, drawn on a path pulled IN by half its own width.
+   *
+   * A stroke straddles the path it follows, so an outline on the full-size
+   * tank puts half its weight outside the canvas, where it is clipped away —
+   * and the bottom edge loses a little more again to the card's own rounded
+   * clip underneath. What that left was a border that was solid along the top
+   * and the sides and a washed-out hairline along the bottom. Inset by half,
+   * the whole stroke lands inside the canvas and the four edges match.
+   *
+   * Inset by a WHOLE stroke width and the border would sit a point clear of the
+   * canvas edge, which shows the card through the gap — the white line this was
+   * meant to remove, one point further in.
+   */
+  const outline = Skia.PathBuilder.Make()
+    .addRRect({
+      rect: { x: STROKE / 2, y: STROKE / 2, width: width - STROKE, height: height - STROKE },
+      rx: Math.max(0, corner - STROKE / 2),
+      ry: Math.max(0, corner - STROKE / 2),
+    })
     .detach()
 
   // Two surfaces. The back one is slower and taller, so the pair beat against
@@ -216,7 +258,7 @@ export function WaterTank({
               <Path path={back} color={colors.waterSoftLine} />
               <Path path={front} color={colors.water} />
             </Group>
-            <Path path={tank} style="stroke" strokeWidth={2} color={colors.waterSoftLine} />
+            <Path path={outline} style="stroke" strokeWidth={STROKE} color={colors.waterSoftLine} />
           </Canvas>
         ) : null}
       </View>
@@ -285,13 +327,13 @@ function useWavePath({
   scale: number
 }) {
   return useDerivedValue(() => {
-    // An EMPTY tank has to be dry, so the level starts a whole amplitude below
-    // the base: a surface parked on the bottom edge still crests above it, and a
-    // day nobody has drunk on drew a blue sliver that read as a mouthful. The
-    // full end keeps two points of tank above the water, because a level flush
-    // with the rim stops reading as a level at all.
+    // Neither end of the range is the edge of the tank. An empty day keeps a
+    // shallow puddle (see `EMPTY_FILL`), and a full one keeps two points of dry
+    // tank above the water, because a level flush with the rim stops reading as
+    // a level at all.
     const amplitude = AMPLITUDE * scale
-    const top = height + amplitude - (height + amplitude - 2) * level.value
+    const floor = height - EMPTY_FILL
+    const top = floor - (floor - 2) * level.value
     const builder = Skia.PathBuilder.Make()
 
     for (let x = 0; x <= width; x += STEP) {
