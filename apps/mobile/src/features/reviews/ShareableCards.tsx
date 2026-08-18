@@ -87,8 +87,8 @@ export type ShareableCardsProps = {
  * the alternative was a dependency that needs a rebuild before anybody can try
  * this.
  *
- * A context rather than a prop on each card: a step lays out two or three cards
- * and none of them should have to be told what a story is.
+ * A context rather than a prop on each card: a section lays out two or three
+ * cards and none of them should have to be told what a review is.
  */
 export function ShareableCards({ message, onShared, children }: ShareableCardsProps) {
   const { t } = useTranslation('reviews')
@@ -162,9 +162,9 @@ export function ShareableCards({ message, onShared, children }: ShareableCardsPr
         }
       >
         {shot ? (
-          // Held to the card's own proportions rather than a fixed height: the
-          // four cards are four different shapes, and a preview that letterboxes
-          // one of them is a preview of something the share does not send.
+          // Held to the card's own proportions rather than a fixed height: no
+          // two cards on the page are the same shape, and a preview that
+          // letterboxes one is a preview of something the share does not send.
           <Image
             source={{ uri: shot.uri }}
             style={{ width: '100%', aspectRatio: shot.width / shot.height }}
@@ -180,7 +180,7 @@ export function ShareableCards({ message, onShared, children }: ShareableCardsPr
 export type ShareableProps = {
   /**
    * The card's own heading. Not drawn anywhere — the picture carries it — but a
-   * screen reader has eight identical "share this card" buttons in a story
+   * screen reader has eight identical "share this card" buttons down one page
    * without it.
    */
   title: string
@@ -211,9 +211,11 @@ export type ShareableProps = {
  * leaves the phone is the one place it earns its space, because a week's
  * calories say nothing about where they came from.
  *
- * A `Pressable` rather than a wrapper with a tap handler, because it has to
- * WIN the press: the page behind it advances the story, and a nested pressable
- * claims a touch before the one around it.
+ * A `Pressable` rather than a wrapper with a tap handler, and it is now the
+ * only press on the page: the review used to page under it, with two strips
+ * over the edges stepping the story, and this card had to win that touch. The
+ * pager is gone and the shape stays, because a card that lifts itself out is
+ * still a button and has to say so.
  */
 export function Shareable({ title, children, className }: ShareableProps) {
   const { t } = useTranslation('reviews')

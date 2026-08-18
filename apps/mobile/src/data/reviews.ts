@@ -99,6 +99,7 @@ function toMeal(row: MealRow): ReviewMeal {
   return {
     name: row.name,
     icon: toIcon(row.icon_set, row.icon_name),
+    photoPath: row.photo_path ?? undefined,
     kcal: orZero(row.kcal_avg),
     carbs: orZero(row.carbs_g_avg),
     protein: orZero(row.protein_g_avg),

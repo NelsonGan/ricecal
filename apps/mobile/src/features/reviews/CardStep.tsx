@@ -16,8 +16,7 @@ export type CardStepProps = {
 }
 
 /**
- * Step 1: the whole period on one card, and the only step meant to leave the
- * app.
+ * The whole period on one card, and the one most likely to leave the app.
  *
  * Everything on it is a headline — the average, how it sat against the budget,
  * which days were logged, the streak, the change on the scale — and nothing on
@@ -49,14 +48,14 @@ export function CardStep({ title, summary, buckets, unit }: CardStepProps) {
           THAN EQUAL. The heading belongs to the figure under it and the labels
           belong to the marks above them, so each group closes up around what it
           is about — but a uniform gap between the groups does not look uniform,
-          because a 42pt numeral carries TWENTY-TWO points of empty line box
-          under its glyphs and an 11pt label carries three. So the marks take no
-          margin at all — the numeral above them has already paid for it — and
-          the stats take twenty. Measured in the captured picture, the two gaps
-          come out within a point of each other, which is the only measurement
-          that counts here. The extra bottom padding is the same correction at
-          the foot of the card: the stat figures leave slack under themselves
-          that the top edge does not. */}
+          because a 42pt numeral carries a couple of DOZEN points of empty line
+          box under its glyphs and an 11pt label carries three. So the marks take
+          no margin at all — the numeral above them has already paid for it — and
+          the stats take twenty. Measured in the captured picture the two gaps
+          come out within two or three points of each other, which is the only
+          measurement that counts here. The extra bottom padding is the same
+          correction at the foot of the card: the stat figures leave slack under
+          themselves that the top edge does not. */}
       <Card contentClassName="gap-0 p-card pb-6">
         {/* The heading is a HEADER ROW, not a label on the figure. It shares
             its line with the app's mark in the captured picture, and a header
@@ -71,7 +70,13 @@ export function CardStep({ title, summary, buckets, unit }: CardStepProps) {
 
           <View className="flex-row items-end justify-between gap-md">
             <View className="flex-row items-baseline gap-2">
-              <Text className="font-display text-[42px] leading-[46px] text-ink">
+              {/* 50, not 46. The display face wants about 1.2× its size for a
+                  line box, which every variant in `ui/Text` gives it; at 46 this
+                  one was the exception, and a line box shorter than the glyphs
+                  crops them — the flat-bottomed zero on a week nobody logged is
+                  what it looked like. Four points more, which the group below
+                  absorbs. */}
+              <Text className="font-display text-[42px] leading-[50px] text-ink">
                 {Math.round(average ?? 0).toLocaleString()}
               </Text>
               <Text variant="label" className="text-muted">

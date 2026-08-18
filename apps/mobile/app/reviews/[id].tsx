@@ -22,15 +22,14 @@ import {
   type ReviewStep,
   reviewSteps,
   ShareableCards,
-  StoryFrame,
-  type StoryPage,
 } from '@/features/reviews'
 import { track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
+import { spacing } from '@/theme/tokens'
 import { AppBar, Card, EmptyState, Screen, Skeleton } from '@/ui'
 
 /**
- * One review, read as a story.
+ * One review, read as a column of cards.
  *
  * THE ID CARRIES EVERYTHING. `week-2026-08-03` names the kind and the first
  * day, and the server works the last day out from those two — so this screen
@@ -39,18 +38,27 @@ import { AppBar, Card, EmptyState, Screen, Skeleton } from '@/ui'
  *
  * Three requests, and the fourth is free: the summary, the chart columns and
  * the dish list are this period's, while the list of every period is the same
- * query the screen behind this one already made, so the comparison chart on
- * step three costs nothing when the story was opened from the list and one
+ * query the screen behind this one already made, so the comparison chart on the
+ * calorie card costs nothing when the review was opened from the list and one
  * small request when it was opened from a link.
  *
- * HOW MANY STEPS THERE ARE IS DATA. `reviewSteps` decides it from what came
- * back, so a month before the watch arrived is three steps rather than four
- * with an empty one at the end. The progress bar counts what it is given.
+ * IT SCROLLS, and it used to page. Four screens of cards, tapped or swiped
+ * through with a progress bar over them, borrowed the shape of a story without
+ * borrowing the thing that makes one work: a story page is a photograph read in
+ * a second, and these are charts and figures somebody wants to compare. Paged,
+ * the answer to "what did that say" was a tap backwards and a hunt, and the
+ * only way to see the food beside the calories was to remember one of them. One
+ * column answers both, and it costs nothing that was being used — the cards are
+ * the same cards, each still liftable into a picture by a tap.
+ *
+ * HOW MANY SECTIONS THERE ARE IS STILL DATA. `reviewSteps` decides it from what
+ * came back, so a month before the watch arrived is three sections rather than
+ * four with an empty one at the end.
  */
-export default function ReviewStoryScreen() {
+export default function ReviewScreen() {
   const { t } = useTranslation(['reviews', 'common'])
   const { id } = useLocalSearchParams<{ id: string }>()
-  const close = useBack('/reviews')
+  const back = useBack('/reviews')
 
   const period = parseReviewId(id)
   const kind = period?.kind ?? 'week'
@@ -79,7 +87,7 @@ export default function ReviewStoryScreen() {
   const meals = useReviewMeals(kind, start)
 
   /**
-   * One `Review Opened` per story, once the period is actually known.
+   * One `Review Opened` per review, once the period is actually known.
    *
    * Waiting on `start` matters: a report notification links to `week-latest`,
    * which resolves against the list a request later, so tracking on mount would
@@ -104,16 +112,10 @@ export default function ReviewStoryScreen() {
   if (loading) {
     return (
       <Screen>
-        {/* The bar is here rather than only under the loaded story, because
-            this presents full screen: without it a request that is slow, or
-            retrying against a network that is not there, is a screen with no
-            way off it. */}
-        <AppBar
-          title={t('reviews:title')}
-          onBack={close}
-          leading="dismiss"
-          backLabel={t('reviews:story.close')}
-        />
+        {/* The bar is here rather than only under the loaded review, because a
+            request that is slow, or retrying against a network that is not
+            there, would otherwise be a screen with no way off it. */}
+        <AppBar title={t('reviews:title')} onBack={back} backLabel={t('common:action.back')} />
         <Card>
           <Skeleton className="h-[320px] w-full" />
         </Card>
@@ -124,7 +126,7 @@ export default function ReviewStoryScreen() {
   // An EMPTY period still gets a review. It used to be turned away here, and
   // that was the same instinct as the sufficiency rule on the list: a week
   // nobody logged is a week worth seeing seven hollow blocks for. `reviewSteps`
-  // already drops the steps that would have nothing on them.
+  // already drops the sections that would have nothing on them.
   if (!found) return <Missing />
 
   const title = periodShortTitle(kind, found.start, found.end)
@@ -141,13 +143,11 @@ export default function ReviewStoryScreen() {
     body: <BodyStep kind={kind} summary={found} buckets={buckets} unit={unit} />,
   }
 
-  const pages: StoryPage[] = steps.map((step) => ({ key: step, node: draw[step] }))
-
   return (
-    /* Around the frame rather than inside it, because the pages are elements
-       this screen builds: context reaches them by where they are RENDERED,
-       which is inside the provider either way, and the sentence a share carries
-       is one this screen knows and the frame does not. */
+    /* Around the whole page rather than around each card, because the cards are
+       elements this screen builds: context reaches them by where they are
+       RENDERED, and the sentence a share carries is one this screen knows and a
+       card does not. */
     <ShareableCards
       message={t('reviews:card.shareText', {
         period: title,
@@ -157,24 +157,21 @@ export default function ReviewStoryScreen() {
       })}
       onShared={() => track('Review Card Shared', { kind })}
     >
-      <StoryFrame
-        // Keyed by the review, so opening a second one from the first's
-        // comparison chart starts at its first card with the pager wound back.
-        // Expo Router reuses this route when only the params move, and a frame
-        // that survived that would keep the scroll position of the story before
-        // it.
-        key={id}
-        title={title}
-        pages={pages}
-        onClose={close}
-        labels={{
-          close: t('reviews:story.close'),
-          previous: t('reviews:story.previous'),
-          next: t('reviews:story.next'),
-          progress: t('reviews:title'),
-        }}
-        counter={(at, total) => t('reviews:story.step', { index: at + 1, total })}
-      />
+      <Screen>
+        <AppBar title={title} onBack={back} backLabel={t('common:action.back')} />
+
+        {/* A section is one or more cards about one thing, and it is wrapped so
+            that the space between two cards of a section and the space between
+            two sections are the same. They are not the same THING — the seam
+            between food and calories is a change of subject — but a column of
+            cards is read by the cards, and a second gap size would be the page
+            claiming a structure the reader has no use for. */}
+        {steps.map((step) => (
+          <View key={step} style={{ gap: spacing.stack }}>
+            {draw[step]}
+          </View>
+        ))}
+      </Screen>
     </ShareableCards>
   )
 }
@@ -188,16 +185,11 @@ export default function ReviewStoryScreen() {
  */
 function Missing() {
   const { t } = useTranslation(['reviews', 'common'])
-  const close = useBack('/reviews')
+  const back = useBack('/reviews')
 
   return (
     <Screen>
-      <AppBar
-        title={t('reviews:title')}
-        onBack={close}
-        leading="dismiss"
-        backLabel={t('reviews:story.close')}
-      />
+      <AppBar title={t('reviews:title')} onBack={back} backLabel={t('common:action.back')} />
       <View className="flex-1 justify-center">
         <Card>
           <EmptyState
