@@ -45,9 +45,10 @@ export type WaterCardProps = {
  * already carries; the drop beside the figure is what identifies it on the days
  * the tank is empty and there is no water to recognise.
  *
- * THE FIGURE IS DRAWN TWICE, once on the dry ground and once in the water, and
- * `WaterTank` explains why: in dark mode the water and the water ink are the
- * same colour, so a single copy would vanish exactly as the day went well.
+ * THE FIGURE IS DRAWN TWICE, once on the dry ground and once in the water:
+ * `WaterTank` does the clipping and `TankFigure` picks the two inks, which is
+ * the half worth reading — in the dark palette the water and the water ink are
+ * the same value, so one copy would vanish exactly as the day went well.
  *
  * THE UNDO IS A TOAST. A button that appears on the card after every drink is a
  * control that exists to be ignored, and there is nowhere left to put one.
@@ -119,7 +120,7 @@ export function WaterCard({
                the figure is fully under water and reads white on blue. */
             <View className="flex-1 items-end pr-1 pt-1">
               <View className="flex-row items-center gap-1.5">
-                <TankFigure ml={ml} goalMl={goalMl} onWater={onWater} loading={loading} />
+                <TankFigure ml={ml} goalMl={goalMl} onWater={onWater} />
 
                 {/* Beside the figure, not opposite it: the two are one control
                     and one readout about the same thing, and a button parked at
@@ -166,12 +167,19 @@ export function WaterCard({
  * scannable without reading, and the figure is what makes it honest. A button
  * labelled "Glass" alone is the unit this whole change removed.
  *
- * `fullHeight` and `scrollable={false}`, which is the shape every short sheet
- * with a field in it has here: a capped panel is padded up off the bottom edge
- * when the pad opens and shows the scrim through the corner of it, and a
- * scrollable one scrolls the field off the top on the first focus, before the
- * pad's real height is known. The button is in the body for the same reason —
- * a footer at full height lands behind the pad.
+ * CAPPED RATHER THAN FULL HEIGHT, and this is the one exception to the rule in
+ * CLAUDE.md that a sheet with a text field in it is always `fullHeight`. That
+ * rule is about the SYSTEM keyboard: `KeyboardAvoidingView` pads a capped panel
+ * up off the bottom edge when one opens, and the strip it leaves shows the
+ * scrim through the curve of the keyboard's corners. This field is on the app's
+ * own pad, which suppresses the system keyboard entirely — so no keyboard event
+ * ever reaches that view, and `Sheet` already grows a capped panel by
+ * `numpad.height` instead. Four rows of content in a full-height sheet was most
+ * of a screen of empty surface under them.
+ *
+ * `scrollable={false}` for the reason short content always is: a scroll view
+ * scrolls itself to reveal the first responder and overshoots on the first
+ * open, before the pad's real height is known.
  */
 function AddWaterSheet({
   visible,
@@ -188,18 +196,19 @@ function AddWaterSheet({
   const { t } = useTranslation(['logging', 'common'])
 
   return (
-    <Sheet
-      visible={visible}
-      onClose={onClose}
-      title={t('logging:water.addTitle')}
-      description={
-        toGo === 0
-          ? t('logging:water.goalMet')
-          : t('logging:water.toGo', { amount: millilitres(toGo) })
-      }
-      fullHeight
-      scrollable={false}
-    >
+    <Sheet visible={visible} onClose={onClose} scrollable={false}>
+      {/* The heading is content rather than the `title` prop, so what is left of
+          the goal can sit on the same line, right aligned. `app/log/index.tsx`
+          does exactly this with "1,460 kcal left", and the two sheets are the
+          same kind of thing opened by the same kind of button — matching them
+          is cheaper for a reader than two arrangements of one idea. */}
+      <View className="flex-row items-center justify-between gap-3">
+        <Text variant="subtitle" className="flex-1" numberOfLines={1}>
+          {t('logging:water.addTitle')}
+        </Text>
+        <Text variant="caption">{t('logging:water.left', { amount: millilitres(toGo) })}</Text>
+      </View>
+
       <View className="flex-row gap-2">
         {WATER_PRESETS.map((preset) => (
           <Squish
@@ -254,7 +263,11 @@ function CustomAmount({ onRecord }: { onRecord: (ml: number) => void }) {
     // and the column cannot hold it.
     decimal: false,
     maxLength: 5,
-    label: t('logging:water.customLabel'),
+    // NO `label`, so the pad's header is the Done key and nothing else. It
+    // named the field for the case the pad covers it, and this sheet is short
+    // enough that it never does — the field is two rows above the keys. The
+    // words are still on the field's own `accessibilityLabel`, which is where
+    // anybody who cannot see that layout was reading them from anyway.
     returnKeyType: 'done',
   })
 

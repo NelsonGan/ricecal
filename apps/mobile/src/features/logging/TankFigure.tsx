@@ -12,9 +12,12 @@ export type TankFigureProps = {
   goalMl: number
   /** Which ground this copy is drawn on. `WaterTank` calls its child with both. */
   onWater: boolean
-  /** Nothing to say yet: the drop holds the space and the figure waits. */
-  loading?: boolean
 }
+
+// No `loading` state. `WaterTank` swaps the whole drawing for a placeholder
+// before it calls its child, so a figure over a tank that has not answered yet
+// is never rendered at all — a prop for it looked like it was doing something
+// and could not have been.
 
 /**
  * The day's water, written on the tank.
@@ -35,7 +38,7 @@ export type TankFigureProps = {
  * summary: it is today, the same figure the home page is showing, and reading
  * "0.5 L" here against "500 ml" there would be two answers to one question.
  */
-export function TankFigure({ ml, goalMl, onWater, loading = false }: TankFigureProps) {
+export function TankFigure({ ml, goalMl, onWater }: TankFigureProps) {
   const { t } = useTranslation(['logging', 'common'])
   const { isDark } = useTheme()
 
@@ -64,9 +67,7 @@ export function TankFigure({ ml, goalMl, onWater, loading = false }: TankFigureP
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
       >
-        {loading
-          ? ''
-          : t('logging:water.count', { filled: millilitres(ml), goal: millilitres(goalMl) })}
+        {t('logging:water.count', { filled: millilitres(ml), goal: millilitres(goalMl) })}
       </Text>
     </View>
   )
@@ -78,9 +79,12 @@ export const TANK_HEIGHT = 88
 /** The overline a tank card wears when it needs to say which day it is about. */
 export function TankLabel({ children, onWater }: { children: string; onWater: boolean }) {
   return (
+    // `opacity-*` rather than the `/60` colour shorthand: every colour in this
+    // app is a CSS variable holding a hex, and the shorthand needs raw channels
+    // to build an alpha from. The utility is what the rest of the app uses.
     <Text
       variant="overline"
-      className={cn(onWater ? 'text-on-water opacity-70' : 'text-water-ink opacity-60')}
+      className={cn('opacity-60', onWater ? 'text-on-water' : 'text-water-ink')}
     >
       {children}
     </Text>
