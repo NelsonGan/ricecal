@@ -1,8 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, BackHandler, Platform, TextInput, View } from 'react-native'
+import { ActivityIndicator, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import {
   ENTRY_FOOD_ID,
@@ -29,13 +30,32 @@ import {
   useUpdateIngredient,
   withCataloguePortions,
 } from '@/data'
-import { FixSheet, IconPicker, ScannedPacket } from '@/features/logging'
+import {
+  type Clock,
+  clockOf,
+  DetailsSheet,
+  dayLabel,
+  type EntryDetails,
+  FixSheet,
+  IconPicker,
+  instantOn,
+  NO_FIGURES,
+  NutritionSheet,
+  type PartEdits,
+  PlateSheet,
+  partChanges,
+  ScannedPacket,
+  sameClock,
+  stagedParts,
+  type TypedFigures,
+} from '@/features/logging'
 import { useRequirePro } from '@/features/paywall'
-import { MacroBars, MealPhoto } from '@/features/shared'
+import { formatTime, MacroBars, MealPhoto } from '@/features/shared'
 import { track } from '@/lib/analytics'
 import { useBack, useDismissTo } from '@/lib/navigation'
 import { entryTotals } from '@/lib/nutrition'
 import { servingUnit, titleCase } from '@/lib/portions'
+import { spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
@@ -52,7 +72,6 @@ import {
   Stepper,
   Tappable,
   Text,
-  useNumpadField,
   useToast,
 } from '@/ui'
 
@@ -70,6 +89,72 @@ const QUICK_FIXES = ['halfPortion', 'noSambal', 'addEgg', 'extraRice'] as const
 const FIGURES = ['kcal', 'carbs', 'protein', 'fat'] as const
 
 /**
+ * How far the content rides up over the photograph.
+ *
+ * Read twice and it has to be: the wrapper lifts by it, and the picture above
+ * grows by it so the overlap covers a strip of the frame instead of cropping the
+ * meal out of it. Two numbers here would be a photo cut short by exactly the
+ * amount nobody could see.
+ */
+const CONTENT_LIFT = 22
+
+/**
+ * How long the portion stepper waits after the last tap before it writes.
+ *
+ * Long enough that "tap tap tap" is one write, short enough that letting go and
+ * looking at the total does not feel like waiting. Nothing else on this screen is
+ * debounced; see `savePortion` for why this one is.
+ */
+const PORTION_DEBOUNCE_MS = 500
+
+/**
+ * The edit control in a card's own header, which is how every editable group on
+ * this screen is opened now.
+ *
+ * The figures and the plate used to be edited WHERE THEY WERE READ: tap the
+ * calorie total and it became a caret in its own place, tap a macro amount and
+ * the same, and every part of a scanned plate carried a pair of stepper buttons.
+ * Read one figure at a time that was a lovely mechanic; read as a form it was a
+ * bad one. Nothing said which of the four figures had already been changed, the
+ * number pad covered the rows whose labels were the only thing distinguishing
+ * them, and two buttons on every ingredient row took enough width that a part's
+ * name was truncated on the one screen whose job is checking what the model
+ * decided the plate was made of.
+ *
+ * So each card says what it holds and carries one way in. `Card` already has an
+ * `action` slot opposite its title, which is where a control about the whole
+ * card belongs.
+ *
+ * THE PENCIL ALONE, with no "Edit" beside it. Three of these sit one under
+ * another on the same screen, so the word was printed three times to say the one
+ * thing the icon already says, and each card's header then read as two labels
+ * rather than a title and a control. The `accessibilityLabel` is where the words
+ * went, and they are the specific ones — "Edit the ingredients", not "Edit" —
+ * because three buttons announcing "Edit" tell a screen reader nothing.
+ */
+function CardEdit({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Tappable
+      /* Padded for a thumb and pulled back out again with a negative margin, so
+         the touch area is bigger than the glyph without the card's header row
+         growing taller than the title beside it. */
+      className="-m-2.5 p-2.5"
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      {/* NOT TINTED, unlike the chrome either side of it. Tinting is right for a
+          chevron or a bin, whose SILHOUETTE is the icon — flatten one of those to
+          a single colour and it still reads. This one is a yellow pencil with a
+          red eraser and every bit of its meaning is in the colour: tinted pandan
+          at 20pt it came out as a plain green lozenge, which is the worst thing
+          an unlabelled control can be. */}
+      <Icon set="ui" name="edit" size={20} />
+    </Tappable>
+  )
+}
+
+/**
  * L6 FOOD DETAIL, in both of its jobs.
  *
  * With an `entryId` it edits something already logged; without one it composes
@@ -84,104 +169,12 @@ const FIGURES = ['kcal', 'carbs', 'protein', 'fat'] as const
  * corrected in four places was four round trips and four refetches, and there
  * was no way to change your mind about any of them except by changing them
  * back.
- */
-/**
- * The calorie total: a heading that becomes a caret in the same place.
  *
- * A component rather than the branch it used to be inline, and the reason is
- * `useNumpadField`. The hook reads which `NumpadHost` is nearest above it, and
- * `Screen` is what provides one — so called up in the route, which RENDERS the
- * screen rather than sitting inside it, it found no host and quietly left the
- * field on the system keyboard. That is the failure the pad exists to remove,
- * wearing the pad's own fallback as a disguise. Anything asking for the pad has
- * to be rendered under the screen, not around it.
+ * The three sheets it opens are a SECOND staging level and deliberately not a
+ * second transaction: each holds a draft, Done hands that draft back to the form
+ * here, and only the footer writes anything. Leaving a sheet any other way drops
+ * what was typed into it.
  */
-function KcalFigure({
-  editing,
-  typed,
-  onChangeText,
-  onDone,
-  total,
-  label,
-  onPress,
-}: {
-  editing: boolean
-  /** What has been typed so far. Empty means the total below is still showing. */
-  typed: string
-  onChangeText: (value: string) => void
-  onDone: () => void
-  /** What the app worked out, shown as the placeholder while the field is empty. */
-  total: number
-  label: string
-  /** Absent before the entry exists, which is what makes the figure a heading. */
-  onPress?: () => void
-}) {
-  const colors = useThemeColors()
-
-  /**
-   * Whole numbers only: this figure is a calorie count, and 220.5 kcal is a
-   * precision nobody has about a plate of food. The three macros beside it are
-   * `MacroBar`'s and ask for the pad themselves.
-   */
-  const numpad = useNumpadField({
-    enabled: editing,
-    value: typed,
-    onChangeText,
-    decimal: false,
-    replaceFirst: true,
-    label,
-    onBlur: onDone,
-    // Through the hook rather than onto the element: see the note beside
-    // `returnKeyType` in `useNumpadField`.
-    returnKeyType: 'done',
-  })
-
-  if (!editing) {
-    return (
-      <Tappable
-        onPress={onPress}
-        accessibilityRole={onPress ? 'button' : undefined}
-        accessibilityLabel={onPress ? label : undefined}
-      >
-        <Text variant="displayMd">{total.toLocaleString()}</Text>
-      </Tappable>
-    )
-  }
-
-  return (
-    // The number's own face and place, with a caret in it. A bordered field
-    // here made a tap on the total look like a form had opened over the card.
-    <TextInput
-      value={typed}
-      onChangeText={onChangeText}
-      onSubmitEditing={onDone}
-      placeholder={String(total)}
-      placeholderTextColor={colors.faint}
-      // Does nothing while the pad is up, and is the fallback if a platform
-      // ever declines to suppress the keyboard.
-      keyboardType="number-pad"
-      autoFocus
-      selectTextOnFocus
-      accessibilityLabel={label}
-      /* No `leading-*` here, unlike the `Text` this replaces. `displayMd` sets
-         a 39pt line on a 32pt Baloo ExtraBold, which `Text` renders happily
-         because it never clips — a glyph taller than its line box simply
-         overflows it. A `TextInput` is a native field that crops to its line
-         box instead, so the same 39 sliced the tops off the digits and left the
-         caret hanging below them. Letting the font choose its own line box is
-         the fix; the row's pinned height is what keeps the two states the same
-         size. */
-      className="min-w-[120px] font-display text-[32px] text-heading"
-      /* And the padding UIKit gives a text field by default, which is space the
-         `Text` does not take. */
-      style={{ paddingVertical: 0, paddingHorizontal: 0 }}
-      cursorColor={colors.pandan}
-      selectionColor={colors.pandan}
-      {...numpad}
-    />
-  )
-}
-
 export default function FoodDetail() {
   const { t } = useTranslation(['logging', 'common'])
   const goBack = useBack('/today')
@@ -195,17 +188,19 @@ export default function FoodDetail() {
    * presented and then replaces, so either shape ends up on Today.
    */
   const finish = useDismissTo('/today')
-  const navigation = useNavigation()
   const router = useRouter()
   const queryClient = useQueryClient()
   const colors = useThemeColors()
+  // For the strip that keeps the photograph out from under the status bar as the
+  // page scrolls. See `overlay` below.
+  const insets = useSafeAreaInsets()
   const toast = useToast()
   const logFood = useLogFood()
   const requirePro = useRequirePro()
   const updateEntry = useUpdateEntry()
   const removeEntry = useRemoveEntry()
   const { data: targets } = useTargets()
-  const { selectedDate } = useSelectedDate()
+  const { selectedDate, todayKey } = useSelectedDate()
 
   const params = useLocalSearchParams<{ id: string; entryId?: string }>()
   // `ENTRY_FOOD_ID` is the placeholder a row with no catalogue food behind it
@@ -287,9 +282,6 @@ export default function FoodDetail() {
   const [quantity, setQuantity] = useState(existing?.quantity ?? 1)
   const [servingId, setServingId] = useState(existing?.servingId ?? '')
   const [confirmDelete, setConfirmDelete] = useState(false)
-  /** Leaving with something staged, which throws it away. */
-  const [confirmDiscard, setConfirmDiscard] = useState(false)
-  const [saving, setSaving] = useState(false)
   /** The fix-by-typing sheet, and the words in it. */
   const [fixing, setFixing] = useState(false)
   const [instruction, setInstruction] = useState('')
@@ -351,6 +343,30 @@ export default function FoodDetail() {
    * cleanup on every shot rather than on the last one.
    */
   const orphanShot = useRef<string | undefined>(undefined)
+  /**
+   * A portion edit waiting for the taps to stop, and the timer that will send it.
+   *
+   * Refs rather than state because nothing on screen depends on either — the
+   * stepper is already showing the new portion. `flushRef` is how the unmount
+   * cleanup reaches the CURRENT flush: registered once with an empty dependency
+   * list, a cleanup closing over the function directly would capture the one from
+   * the first render, whose `existing` was undefined, and send nothing. Backing
+   * out of the screen inside the debounce window would otherwise drop the edit.
+   *
+   * Up here with the rest of the hooks rather than beside the functions that use
+   * them, because those live below the `if (!food)` return and a hook behind a
+   * conditional is a hook that runs in a different order on different renders.
+   */
+  /**
+   * The details sheet moved this entry to another day, so the screen has to leave.
+   *
+   * A ref rather than state because it is read once, in the sheet's `onClose`, and
+   * nothing renders differently for it.
+   */
+  const movedAway = useRef(false)
+  const pendingPortion = useRef<{ quantity: number; servingId: string }>(undefined)
+  const portionTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const flushRef = useRef<() => void>(() => {})
   const [attaching, setAttaching] = useState(false)
   // Collapsed by default. Fibre, sugar and salt are the second question about a
   // dish, and for most of the catalogue the answer is "nobody recorded it".
@@ -361,22 +377,22 @@ export default function FoodDetail() {
    * An empty field is "nothing overridden here", not "zero" — what the app
    * worked out shows through as the placeholder, and a field pre-filled with
    * the app's own number could not tell the user whose number it was.
-   */
-  const [typed, setTyped] = useState<{ kcal: string; carbs: string; protein: string; fat: string }>(
-    { kcal: '', carbs: '', protein: '', fat: '' },
-  )
-  /**
-   * Which figure is being typed, if any.
    *
-   * One at a time and in place: the number on screen becomes a field when it
-   * is tapped and goes back to being a number when the keyboard closes. A
-   * second card repeating all four figures was the other way to offer this,
-   * and it asked the user to read the same numbers twice to change one.
+   * Typed in `NutritionSheet` now, all four at once, and staged here. See
+   * `CardEdit` for why they left the figures they describe.
    */
-  const [editing, setEditing] = useState<'kcal' | 'carbs' | 'protein' | 'fat' | null>(null)
+  const [typed, setTyped] = useState<TypedFigures>(NO_FIGURES)
+  /** Which of the three sheets is open, if any. */
+  const [editingFigures, setEditingFigures] = useState(false)
+  const [editingPlate, setEditingPlate] = useState(false)
+  /**
+   * The entry's own details — the name and the when — behind the pencil on the
+   * line under the title. One flag, because they are one sheet: an entry's
+   * identity was edited in two unrelated places before this.
+   */
+  const [editingDetails, setEditingDetails] = useState(false)
 
-  /** The title, while it is being retyped. */
-  const [renaming, setRenaming] = useState(false)
+  /** What this entry is called, staged. Written to `display_label`. */
   const [name, setName] = useState('')
   /**
    * Parts of a scanned plate that have been moved or taken off, not yet written.
@@ -384,9 +400,20 @@ export default function FoodDetail() {
    * An overlay on the fetched list rather than a copy of it, so a refetch
    * landing mid-edit cannot silently drop a staged change — and so "stepped up
    * and back down again" is not a change at all. `null` is a part on its way
-   * off the plate.
+   * off the plate. `PlateSheet` edits a draft of this and hands it back on Done.
    */
-  const [partEdits, setPartEdits] = useState<Record<string, number | null>>({})
+  const [partEdits, setPartEdits] = useState<PartEdits>({})
+  /**
+   * WHEN this was eaten, staged as the two things the user is shown: the day it
+   * counts towards, and the time on the row.
+   *
+   * The day comes off `log_date` and the time off `logged_at`, which is the way
+   * round the diary already reads them — see the header of `features/logging/
+   * when.ts`. `null` is "the row has not arrived yet", the same wait `seeded`
+   * describes below.
+   */
+  const [whenDate, setWhenDate] = useState('')
+  const [clock, setClock] = useState<Clock | null>(null)
 
   // `isLoading` rather than `isPending`, for the reason the ingredients query
   // above gives: an entry with no photo disables this one, and a disabled query
@@ -408,91 +435,24 @@ export default function FoodDetail() {
   }
 
   /**
-   * The plate as the screen shows it: what the scan found, with the staged
-   * changes laid over it.
-   *
-   * Everything on a row scales with its portion, not only the calories. The
-   * card's total and the entry's macros are a sum of these, so moving kcal
-   * alone would show a plate that disagreed with its own total right up until
-   * Save — which is the same reasoning behind the optimistic patch in
-   * `useUpdateIngredient`, applied here to an edit that has not been sent yet.
+   * The plate as the screen shows it. In `features/logging/parts.ts` because
+   * `PlateSheet` shows the same rows off a draft of the same overlay, and two
+   * copies of that arithmetic would be two previews of one plate. Which parts
+   * actually changed is `savePlate`'s question, asked of the draft it is handed.
    */
-  const parts = ingredients.flatMap((ingredient) => {
-    const staged = partEdits[ingredient.id]
-    if (staged === null) return []
-    if (staged === undefined || staged === ingredient.quantity) return [ingredient]
-    const factor = staged / Math.max(0.01, ingredient.quantity)
-    const tenth = (value: number) => Math.round(value * factor * 10) / 10
-    return [
-      {
-        ...ingredient,
-        quantity: staged,
-        kcal: Math.round(ingredient.kcal * factor),
-        carbs: tenth(ingredient.carbs),
-        protein: tenth(ingredient.protein),
-        fat: tenth(ingredient.fat),
-        // The weight is a quantity like the calories are, so it has to move
-        // with the stepper too — half a portion that still says 180 g is a
-        // preview of a row the server will not write.
-        grams: ingredient.grams === null ? null : Math.round(ingredient.grams * factor),
-      },
-    ]
-  })
-
-  /** The parts whose staged value actually differs from what is on the server. */
-  const partChanges = ingredients.filter((ingredient) => {
-    const staged = partEdits[ingredient.id]
-    return staged === null || (staged !== undefined && staged !== ingredient.quantity)
-  })
+  const parts = stagedParts(ingredients, partEdits)
 
   /**
-   * What each control would write, or `undefined` for one nobody touched.
+   * Whether the controls have been filled in from the row yet.
    *
-   * Computed rather than tracked, so a value edited back to what it was is not
-   * a change — which is what makes the Save button an honest answer to "is
-   * there anything here to save".
-   *
-   * All of it waits on `seeded`. Until the effect below has filled the controls
-   * in from the row, they hold their defaults — one portion, no note — and
-   * against a real entry every one of those reads as an edit the user did not
-   * make. The Save button flashed enabled for a frame on the way in from a
-   * notification for exactly this reason.
+   * They are seeded in an effect, and on the way in from a notification or a cold
+   * deep link the day query has not answered for the first render or two — so
+   * anything reading the staged values has to wait for this or it reads the
+   * defaults instead. A one-portion default against a two-portion entry used to
+   * flash the Save button enabled for a frame; there is no Save button now, but
+   * the preview would still be wrong for that frame.
    */
   const seeded = Boolean(existing) && seededId === existing?.id
-  const nameChange =
-    seeded && name.trim() && name.trim() !== existing?.foodName ? name.trim() : undefined
-  // Only on an entry with no breakdown. An entry with one IS its breakdown, so
-  // the stepper is not on screen and the parts above are what moves.
-  const quantityChange =
-    seeded && !parts.length && quantity !== existing?.quantity ? quantity : undefined
-  const servingChange =
-    seeded && !parts.length && servingId && servingId !== existing?.servingId
-      ? servingId
-      : undefined
-  // All four together or none: `typed` holds the user's answer for every
-  // figure, and an empty field is the deliberate "use the app's number".
-  const overridesChange =
-    seeded && FIGURES.some((key) => figure(typed[key]) !== (existing?.overrides?.[key] ?? null))
-      ? {
-          kcal: figure(typed.kcal),
-          carbs: figure(typed.carbs),
-          protein: figure(typed.protein),
-          fat: figure(typed.fat),
-        }
-      : undefined
-  // A row carries a photo or a drawing, never both, and each of the two
-  // controls clears the other — so at most one of these is ever set. Not gated
-  // on `seeded`: a picture is not seeded from anything, it is only ever chosen.
-  const pictureChange = existing && (shot ? { photoPath: shot.path } : icon ? { icon } : undefined)
-
-  const dirty = Boolean(
-    nameChange ||
-      quantityChange !== undefined ||
-      servingChange ||
-      overridesChange ||
-      pictureChange ||
-      (seeded && partChanges.length),
-  )
 
   // The controls, filled in from the row the first time it is actually here.
   // See `seededFrom` for why once is not the same as at mount.
@@ -508,6 +468,8 @@ export default function FoodDetail() {
     setServingId(existing.servingId ?? '')
     setName(existing.foodName)
     setPartEdits({})
+    setWhenDate(existing.logDate)
+    setClock(clockOf(existing.loggedAt))
     setTyped({
       kcal: existing.overrides?.kcal?.toString() ?? '',
       carbs: existing.overrides?.carbs?.toString() ?? '',
@@ -524,27 +486,17 @@ export default function FoodDetail() {
     [],
   )
 
-  /**
-   * The two ways off this screen that are not the chevron.
-   *
-   * A staged form has to ask before it throws the staging away, and the back
-   * chevron is the only exit this screen owns. The swipe is turned off while
-   * there is something to lose — react-navigation's own "prevent remove" is not
-   * reachable through expo-router's fork — and Android's hardware back is
-   * caught and turned into the same question the chevron asks.
-   */
-  useEffect(() => {
-    navigation.setOptions({ gestureEnabled: !dirty })
-  }, [navigation, dirty])
+  // And a portion edit whose debounce had not fired yet, on the same exits. See
+  // `flushRef` for why the cleanup goes through a ref rather than closing over the
+  // function.
+  useEffect(() => () => flushRef.current(), [])
 
-  useEffect(() => {
-    if (Platform.OS !== 'android' || !dirty) return
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      setConfirmDiscard(true)
-      return true
-    })
-    return () => subscription.remove()
-  }, [dirty])
+  // NO DISCARD PROMPT, and no `gestureEnabled: false` behind it. This screen used
+  // to hold every edit in local state until one Save button in the footer wrote
+  // the lot, so the back chevron, the edge swipe and Android's hardware back were
+  // all ways to throw work away and all had to ask first. Each section saves
+  // itself now — see the four `save*` functions below — so leaving loses nothing
+  // and the swipe is an ordinary swipe again.
 
   /**
    * Back to the day with the log sheet open on the panel that answers this.
@@ -604,6 +556,21 @@ export default function FoodDetail() {
   const hero = storedImageSource(existing?.photoPath, heroUrl, shot?.uri)
 
   /**
+   * How tall the picture at the top of the page is.
+   *
+   * Three terms. The base is enough for a whole plate when there is a photograph
+   * and less when there is only a drawing; `CONTENT_LIFT` is the strip the content
+   * below rides up over, so the box grows by exactly what the curve covers; and
+   * the top inset is what lets it reach BEHIND the status bar rather than stopping
+   * under it — paired with the negative margin that cancels the shell's padding.
+   *
+   * `resolvingPhoto` counts as having a photo, because it means the entry HAS one
+   * and we are waiting on a URL for it. Left out, the box opened short and grew
+   * under the reader a moment later.
+   */
+  const heroHeight = ((hero || resolvingPhoto) && !icon ? 298 : 198) + CONTENT_LIFT + insets.top
+
+  /**
    * The drawing this tile would show, if it is showing one at all.
    *
    * A row carries a photo or an icon, never both, and the view already suppresses
@@ -658,6 +625,17 @@ export default function FoodDetail() {
     : computed
 
   /**
+   * What the app works out for this entry with NOTHING typed over it.
+   *
+   * The placeholders in `NutritionSheet`, and it cannot be `macros`: that has the
+   * typed figures folded into it, so an entry already carrying a hand-typed 400
+   * would offer 400 as the number to go back to — the app's own answer would be
+   * unreachable and unreadable. Same three-source rule as `macros`, minus the
+   * first source.
+   */
+  const appFigures = existing ? entryTotals({ parts, portion: computed }) : computed
+
+  /**
    * The same scaling for the nutrients that are not part of the budget.
    *
    * `undefined` survives it: these columns are null for most of the imported
@@ -703,9 +681,14 @@ export default function FoodDetail() {
    * asked to present while this sheet was dismissing, which iOS cancels — leaving a
    * promise that never settles and a spinner that never stops.
    *
-   * The upload happens here rather than at Save because a key is what the row can
-   * hold; only the key waits for the button. A shot this one replaces never
-   * reached a row, so it is deleted on the spot.
+   * The upload has to happen here whatever else does: a key is what a row can
+   * hold, and turning a 4MB frame into one is the slow part. A shot this one
+   * replaces never reached a row, so it is deleted on the spot.
+   *
+   * ON THE ENTRY, IMMEDIATELY, when there is an entry. The picker has no Save of
+   * its own — picking IS the answer, and it closes on the pick — so with the
+   * footer's Save gone there is nothing left to carry a staged picture. On the add
+   * path it stages as it always did, because there is no row to write to yet.
    */
   const attachPhoto = async (uri: string) => {
     setPickingIcon(false)
@@ -716,11 +699,24 @@ export default function FoodDetail() {
       if (orphanShot.current) void removeMealPhoto(orphanShot.current).catch(() => {})
       orphanShot.current = path
       setShot({ uri, path })
-      // The photo IS the picture now, so an unsaved drawing has been answered.
+      // The photo IS the picture now, so a drawing has been answered.
       setIcon(undefined)
+      if (existing) {
+        // `currentPhotoPath` is what lets the write delete the object it replaces.
+        await patchEntry({ photoPath: path, currentPhotoPath: existing.photoPath })
+        // The row points at it, so it is no longer an orphan for the unmount sweep.
+        orphanShot.current = undefined
+      }
     } catch {
-      // An upload that failed, a bucket that refused it: neither is worth a screen
-      // of its own.
+      // An upload that failed, a bucket that refused it, a patch the server would
+      // not take: none is worth a screen of its own.
+      //
+      // AND THE TILE GOES BACK, which it did not have to when the footer's Save was
+      // the only writer. Left showing the new photograph over a row that still
+      // holds the old one, the screen disagrees with itself and with Today until
+      // the user leaves, and a toast is the only thing that ever said so. The
+      // object stays in `orphanShot` for the unmount sweep.
+      setShot(undefined)
       toast.show({ title: t('logging:detail.photoFailed'), tone: 'error' })
     } finally {
       setAttaching(false)
@@ -730,17 +726,25 @@ export default function FoodDetail() {
   /**
    * A drawing wins the slot, so whatever photo was in it has to go.
    *
-   * A shot staged on this screen has already been uploaded and now points at
-   * nothing, so it is deleted here. The row's OWN photo is left alone — it is
-   * still what the row shows until Save writes the drawing over it, and
-   * `useUpdateEntry` deletes it then.
+   * A shot taken on this screen has already been uploaded and, on the add path,
+   * now points at nothing — so it is deleted here. The row's OWN photo is the
+   * write's business: `useUpdateEntry` deletes it once the icon has landed.
    */
   const applyIcon = (next: IconRef) => {
     setIcon(next)
-    if (!shot) return
-    setShot(undefined)
-    if (orphanShot.current) void removeMealPhoto(orphanShot.current).catch(() => {})
-    orphanShot.current = undefined
+    if (shot) {
+      setShot(undefined)
+      if (orphanShot.current) void removeMealPhoto(orphanShot.current).catch(() => {})
+      orphanShot.current = undefined
+    }
+    if (existing) {
+      // Reverted on failure, for the reason `attachPhoto` gives: a drawing left on
+      // screen over a row that never took it is a screen lying about the diary.
+      void patchEntry({ icon: next, currentPhotoPath: existing.photoPath }).catch(() => {
+        setIcon(undefined)
+        saveFailed()
+      })
+    }
   }
 
   const hasPhoto = Boolean(shot ?? existing?.photoPath)
@@ -775,18 +779,156 @@ export default function FoodDetail() {
   }
 
   /**
-   * Everything staged, written in one go. Throws, so its callers can leave the
-   * user where they are with the form still filled in.
+   * ONE SAVE PER SECTION, and there is no longer a Save button on the page.
    *
-   * Parts first: `set_ingredient_quantity` recomputes the parent entry inside
-   * the same transaction, and the patch that follows carries figures the user
-   * typed against the plate those parts add up to.
+   * Every edit used to stage in local state and one footer button wrote the lot.
+   * That is a coherent model for a page of controls, and it stopped being one when
+   * each group moved behind a pencil into a sheet of its own: a sheet with a Done
+   * button that writes nothing is a second staging level, and nobody reading
+   * "Done" expects to have to find another button afterwards. So each sheet is a
+   * form that saves what it is about, and the footer is left with the one thing
+   * that is not a section of this entry — handing it back to the model.
+   *
+   * Each of these THROWS on failure, so the sheet can stay open with the draft
+   * still in it. They stage the value locally as well, which is the preview: the
+   * write invalidates the day and the refetch is a round trip behind it, and
+   * without the local copy the card would show the old figure for that beat.
+   *
+   * The add path is untouched by all of this. Composing a row genuinely is a
+   * staged form — there is nothing to write until `addToDiary` — which is why the
+   * portion controls are still on the page there and in a sheet here.
    */
-  const commit = async () => {
-    if (!existing) return
+  const saveFailed = () => toast.show({ title: t('logging:detail.saveFailed'), tone: 'error' })
 
-    for (const ingredient of partChanges) {
-      const staged = partEdits[ingredient.id]
+  const patchEntry = async (patch: Omit<EntryPatch, 'id' | 'logDate'>) => {
+    if (!existing) return
+    /**
+     * AN EMPTY PATCH IS NOT A WRITE. Every `save*` below builds its columns
+     * conditionally, so each can come out with nothing in it: the details sheet
+     * saved with neither the name nor the time touched, or a portion stepped up
+     * and back down inside the debounce window. Sent anyway it is a round trip
+     * that invalidates the day for no reason, and PostgREST answers an update with
+     * an empty body with a 400 — which would surface as "could not save those
+     * changes" for an edit nobody made.
+     */
+    if (Object.keys(patch).length === 0) return
+    await updateEntry.mutateAsync({ id: existing.id, logDate: existing.logDate, ...patch })
+  }
+
+  const saveDetails = async (next: EntryDetails) => {
+    if (!existing || !clock) return
+    const named = next.name.trim() || existing.foodName
+    /**
+     * The day and the instant together, or neither.
+     *
+     * Compared as a DAY and a CLOCK FACE rather than as two ISO strings, because
+     * `instantOn` writes whole seconds while Postgres hands back microseconds — so
+     * an untouched `logged_at` would read as an edit and every save would shift
+     * the row inside its own day by however many seconds the original carried.
+     */
+    const moved =
+      next.date !== existing.logDate || !sameClock(next.clock, clockOf(existing.loggedAt))
+    await patchEntry({
+      ...(named === existing.foodName ? {} : { name: named }),
+      ...(moved
+        ? { when: { logDate: next.date, loggedAt: instantOn(next.date, next.clock) } }
+        : {}),
+    })
+    setName(named)
+    setWhenDate(next.date)
+    setClock(next.clock)
+    /**
+     * AND OFF THE SCREEN, when the entry has left the day this screen reads.
+     *
+     * This is not a nicety. `existing` is found in the day query for
+     * `selectedDate`, so the moment the row is filed on another day it is gone
+     * from under the screen — and the screen does not degrade gracefully: `food`
+     * falls back to the CATALOGUE row, which turns the page into the compose-a-new
+     * entry version of itself, portion controls and an "Add to diary" button and
+     * all. For a scanned plate with no catalogue row behind it there is not even
+     * that, only the empty "page not found" bar.
+     *
+     * So it goes back, and the toast says where the meal went — without which the
+     * diary it lands on has one fewer row than it did and a meal moved to
+     * yesterday is indistinguishable from a meal deleted. The SELECTED day is left
+     * alone on purpose: the strip on Today is where the user says which day they
+     * are working on, and answering an edit by moving it would take them off the
+     * day they came from.
+     *
+     * A time change on the same day moves nothing and stays put, which is the
+     * common case by a distance.
+     */
+    if (moved && next.date !== selectedDate) {
+      toast.show({
+        title: t('logging:detail.movedTo', {
+          day: dayLabel(next.date, todayKey, {
+            today: t('common:date.today'),
+            yesterday: t('common:date.yesterday'),
+          }),
+        }),
+      })
+      // Not `goBack()` here. This runs inside the sheet's own save, which closes
+      // itself only AFTER awaiting it — so popping the screen from here unwinds the
+      // navigator while a native modal window is still mounted over it. The flag is
+      // read by the sheet's `onClose`, one step later, once the modal has gone.
+      movedAway.current = true
+    }
+  }
+
+  /**
+   * The four figures, and the whole job here is deciding which of them are the
+   * USER'S.
+   *
+   * The sheet's boxes are pre-filled with the current figure, so a field holding
+   * the app's own answer comes back looking exactly like one somebody typed. Left
+   * as it arrives, opening the sheet and pressing Save would write all four as
+   * overrides — which are stored above the portion in `food_log_details`, so the
+   * next portion change would move the serving and not the calories, silently and
+   * for good.
+   *
+   * So each figure is compared against what the app worked out and only a
+   * DIFFERENT one is an override. An unreadable or empty box means the same thing
+   * as an unchanged one: null, and the figure goes back to the snapshot.
+   *
+   * All four every time rather than only the changed ones, because `overrides` is
+   * one answer about the entry: a field cleared has to be written null, and a
+   * patch that omitted it would leave the old override in place.
+   */
+  const saveFigures = async (next: TypedFigures) => {
+    const own = (field: (typeof FIGURES)[number]) => {
+      const parsed = figure(next[field])
+      return parsed === null || parsed === appFigures[field] ? null : parsed
+    }
+    const overrides = {
+      kcal: own('kcal'),
+      carbs: own('carbs'),
+      protein: own('protein'),
+      fat: own('fat'),
+    }
+    await patchEntry({ overrides })
+    // Staged as what was WRITTEN, not as what the boxes held: the card's "your own
+    // figures" line reads this, and a figure equal to the app's own must not make
+    // it claim otherwise.
+    setTyped({
+      kcal: overrides.kcal === null ? '' : String(overrides.kcal),
+      carbs: overrides.carbs === null ? '' : String(overrides.carbs),
+      protein: overrides.protein === null ? '' : String(overrides.protein),
+      fat: overrides.fat === null ? '' : String(overrides.fat),
+    })
+  }
+
+  /**
+   * The plate's parts, one statement each, because `set_ingredient_quantity` takes
+   * one ingredient.
+   *
+   * It leaves the parent row alone on purpose — `34_food_log_ingredients.sql` says
+   * why it stopped rescaling it — and the entry's totals follow anyway, because
+   * `food_log_details` sums the parts whenever an entry has any.
+   */
+  const savePlate = async (next: PartEdits) => {
+    if (!existing) return
+    for (const ingredient of partChanges(ingredients, next)) {
+      const staged = next[ingredient.id]
       if (staged === null) {
         await removeIngredient.mutateAsync({
           ingredientId: ingredient.id,
@@ -802,72 +944,82 @@ export default function FoodDetail() {
         })
       }
     }
+    // Cleared rather than kept: the server has these amounts now, so the overlay
+    // has nothing left to lay over the refetched list.
+    setPartEdits({})
+  }
 
-    const patch: EntryPatch = {
-      id: existing.id,
-      logDate: existing.logDate,
-      ...(nameChange ? { name: nameChange } : {}),
-      ...(quantityChange === undefined ? {} : { quantity: quantityChange }),
-      // The portion's own NUMBERS travel with its id, and they have to.
-      //
-      // `serving_id` alone was enough while `foods` and `food_servings` were in
-      // Postgres, because `food_log_details` joined to them for the factor and
-      // the label. The catalogue is in D1 now and an entry carries its own
-      // `serving_factor` and `serving_label`, so an id written by itself changes
-      // what the row CLAIMS its portion is and nothing about what it counts:
-      // switching a nasi lemak to Large previewed 975 kcal, saved, and left a
-      // row still labelled "1 serving" and still counting 650.
-      //
-      // `serving` rather than the staged id, because the id is only a key into
-      // the list this screen is showing — which is the entry's own portion when
-      // the catalogue cannot offer it.
-      ...(servingChange
+  /**
+   * THE PORTION IS THE ONE SECTION THAT SAVES ITSELF ON A DEBOUNCE.
+   *
+   * Everything else on this screen is a sheet with a Save button, because a sheet
+   * is a form. The stepper is not: it is a pair of buttons somebody taps three
+   * times to get from one plate to two and a half, and there is nowhere on a
+   * plus/minus row to put a Save. Written per tap it would be three round trips
+   * and three refetches for one decision; behind a short debounce it is one.
+   *
+   * The whole screen used to work this way and it was replaced for good reasons —
+   * "a plate corrected in four places was four round trips, and changing your mind
+   * meant changing the control back". None of that applies to a single control
+   * whose only state is one number: there is nothing to change your mind about
+   * except the number itself, which is what the buttons are for.
+   */
+  const savePortion = async (next: { quantity: number; servingId: string }) => {
+    if (!existing) return
+    const option = food.servings.find((one) => one.id === next.servingId)
+    await patchEntry({
+      ...(next.quantity === existing.quantity ? {} : { quantity: next.quantity }),
+      /**
+       * The portion's own NUMBERS travel with its id, and they have to.
+       *
+       * `serving_id` alone was enough while `foods` and `food_servings` were in
+       * Postgres, because `food_log_details` joined to them for the factor and the
+       * label. The catalogue is in D1 now and an entry carries its own
+       * `serving_factor` and `serving_label`, so an id written by itself changes
+       * what the row CLAIMS its portion is and nothing about what it counts:
+       * switching a nasi lemak to Large previewed 975 kcal, saved, and left a row
+       * still labelled "1 serving" and still counting 650.
+       */
+      ...(next.servingId && next.servingId !== existing.servingId
         ? {
-            servingId: servingChange,
-            servingLabel: serving?.label ?? existing.servingLabel,
-            servingFactor: serving?.factor ?? existing.servingFactor,
+            servingId: next.servingId,
+            servingLabel: option?.label ?? existing.servingLabel,
+            servingFactor: option?.factor ?? existing.servingFactor,
           }
         : {}),
-      ...(overridesChange ? { overrides: overridesChange } : {}),
-      ...(pictureChange ?? {}),
-      // What is on the row now, so whichever picture replaces it can delete the
-      // object it leaves behind.
-      ...(pictureChange ? { currentPhotoPath: existing.photoPath } : {}),
-    }
-    // Two keys is the empty patch: an update with nothing in it is a round trip
-    // that invalidates the day for no reason.
-    if (Object.keys(patch).length > 2) await updateEntry.mutateAsync(patch)
-    // The row points at the photo now. Cleared only after the write, so a patch
-    // that threw leaves the object for the unmount sweep rather than deleting
-    // one the user is about to try saving again.
-    if (patch.photoPath) orphanShot.current = undefined
+    })
+    // Nothing staged afterwards, unlike the other three: the stepper and the chips
+    // already hold the user's answer, which is what scheduled this write.
   }
 
-  const save = async () => {
-    setSaving(true)
-    try {
-      await commit()
-    } catch {
-      toast.show({ title: t('logging:detail.saveFailed'), tone: 'error' })
-      setSaving(false)
-      return
-    }
-    goBack()
+  /**
+   * Send a waiting portion edit NOW, and hand back the write so a caller can wait
+   * for it.
+   *
+   * The promise is what `sendFix` needs: `scan-refine` reads the entry off the
+   * server and rescales what it finds there, so a correction sent while a portion
+   * patch is still pending is a correction applied to the wrong amount — and if the
+   * patch lands afterwards it overwrites the row the model just rebuilt. Every
+   * other caller fires and forgets.
+   */
+  const flushPortion = () => {
+    if (portionTimer.current) clearTimeout(portionTimer.current)
+    portionTimer.current = undefined
+    const next = pendingPortion.current
+    pendingPortion.current = undefined
+    if (!next) return Promise.resolve()
+    return savePortion(next).catch(saveFailed)
   }
+  flushRef.current = () => void flushPortion()
 
-  const leave = () => {
-    if (dirty) {
-      setConfirmDiscard(true)
-      return
-    }
-    goBack()
-  }
-
-  const discard = () => {
-    setConfirmDiscard(false)
-    // A staged photo needs no handling here: it is still in `orphanShot`, and
-    // the unmount sweep takes it whichever way this screen goes.
-    goBack()
+  const schedulePortion = (next: { quantity: number; servingId: string }) => {
+    // Only for an entry that exists, and only once the controls have been filled
+    // in from it. Composing one is a staged form — there is nothing to write until
+    // Add — and a write before the seeding would send the default of one portion.
+    if (!existing || !seeded) return
+    pendingPortion.current = next
+    if (portionTimer.current) clearTimeout(portionTimer.current)
+    portionTimer.current = setTimeout(() => flushRef.current(), PORTION_DEBOUNCE_MS)
   }
 
   /**
@@ -884,30 +1036,37 @@ export default function FoodDetail() {
   /**
    * Send the typed correction and leave.
    *
-   * Whatever is staged is written FIRST. The server interprets the correction
-   * against the entry as it stands there — the parts it is shown, the calories
-   * it is told — so sending "and half the rice" against a plate the user has
-   * already changed on screen would correct a meal neither of them is looking
-   * at. After that it is fire-and-forget: the correction runs for several
-   * seconds and this screen describes the entry's OLD identity the whole time,
-   * so it leaves and the row on Today shows the work.
+   * It used to flush the staged form first, because the server interprets the
+   * words against the entry AS IT STANDS THERE — the parts it is shown, the
+   * calories it is told — so "and half the rice" against a plate changed only on
+   * screen would correct a meal neither of them was looking at. Nothing is staged
+   * across sections any more: every sheet writes on its own save, so the entry on
+   * the server is always the one the user is reading.
+   *
+   * Fire-and-forget after that: the correction runs for several seconds and this
+   * screen describes the entry's OLD identity the whole time, so it leaves and the
+   * row on Today shows the work.
    */
   const sendFix = async () => {
     const text = instruction.trim()
     if (!existing || !text) return
-    // Correcting by describing it is a model call, so it is gated like the
-    // other two — and gated HERE, before `commit()`, or the staged edits would
-    // be written on their way to a paywall that stops the correction. The
-    // server refuses it independently; this is what makes the button honest.
+    // Correcting by describing it is a model call, so it is gated like the other
+    // two. The server refuses it independently; this is what makes the button
+    // honest.
     if (!requirePro('refine')) return
     setSending(true)
-    try {
-      await commit()
-    } catch {
-      toast.show({ title: t('logging:detail.saveFailed'), tone: 'error' })
-      setSending(false)
-      return
-    }
+    /**
+     * THE PENDING PORTION GOES FIRST, and this await is the whole of the old
+     * `commit()` that survives.
+     *
+     * The server interprets the words against the entry as it stands THERE — the
+     * parts it is shown, the calories it is told — so a portion stepped a moment
+     * ago and still sitting in the debounce would have the correction applied to
+     * the amount before it, and the patch would then land on top of the meal the
+     * model had just rebuilt. Everything else on this screen is written by the time
+     * its sheet has closed; this is the one edit that can still be in the air.
+     */
+    await flushPortion()
     refineEntry({
       entryId: existing.id,
       instruction: text,
@@ -926,12 +1085,6 @@ export default function FoodDetail() {
     finish()
   }
 
-  const commitName = () => {
-    setRenaming(false)
-    // A name emptied is not a rename, and the title falls back to the row's.
-    if (!name.trim()) setName(existing?.foodName ?? '')
-  }
-
   const remove = () => {
     if (existing) {
       removeEntry.mutate({
@@ -947,28 +1100,28 @@ export default function FoodDetail() {
 
   return (
     <Screen
+      /* NO GUTTER, so the photograph at the top can reach both edges. Everything
+         under it is wrapped in a view that puts the gutter back — see there. The
+         top inset is still applied, which is what keeps the picture out from
+         under the status bar. */
+      flush
       footer={
         existing ? (
-          /* Two buttons, and the split is what they cost. Save writes what is
-             on screen and stays in the diary; Fix it hands the entry back to
-             the model, which can return a different meal — so it is the
-             secondary, and it is the one that opens a question first. */
-          <View className="flex-row gap-3">
+          /* ONE BUTTON, and it is not a save. Save used to sit here beside it,
+             writing everything the page had staged — and once every section moved
+             into a sheet with a save of its own there was nothing left for a
+             footer button to write. What remains is the thing that is not a
+             section of this entry: handing the whole meal back to the model, which
+             can return a different one, which is why it opens a question first
+             rather than doing anything. */
+          <View>
             <Button
               variant="secondary"
-              className="flex-1"
+              fullWidth
               leftIcon={<Icon set="system" name="sparkle" size={20} />}
               onPress={() => setFixing(true)}
             >
               {t('logging:detail.fixAction')}
-            </Button>
-            <Button
-              className="flex-1"
-              loading={saving}
-              disabled={!dirty}
-              onPress={() => void save()}
-            >
-              {t('logging:detail.save')}
             </Button>
           </View>
         ) : (
@@ -980,417 +1133,455 @@ export default function FoodDetail() {
         )
       }
     >
-      {/* A chevron, not a cross: this is a full page now, pushed from search or
-          from a row on the day, so there is always a screen behind it. `useBack`
-          falls back to Today for the one route that arrives with no history —
-          a deep link straight to a dish. */}
-      <AppBar
-        /* The name the row wears, which for a scanned plate is the model's
-           ("Korean fried chicken with rice and sides") rather than the matched
-           catalogue row's ("MEAL KIT, KOREAN FRIED CHICKEN WITH SWEET
-           GOCHUJANG SAUCE"). Everything else on this screen is the catalogue
-           row's; the title is what the user just tapped. */
-        title={name.trim() || existing?.foodName || food.name}
-        /* Two lines, and this is the one screen that asks for them. A dish
-           name here is whatever the model or the user wrote — "Korean fried
-           chicken with rice and sides" — and on one line that truncates to
-           three words and an ellipsis, which is a meal nobody can recognise
-           on the screen for checking it. The bar only grows when the name
-           actually wraps, so a short one sits exactly where it did. */
-        titleLines={2}
-        // Tapping the title renames THIS entry — the model's guess at a dish
-        // is right about the food and wrong about the words often enough that
-        // correcting it should not require re-describing the meal. It stages
-        // `display_label`, so the catalogue row underneath is untouched and
-        // every other log of the same dish keeps its own name.
-        onPressTitle={existing ? () => setRenaming(true) : undefined}
-        /* And it is retyped where it sits, the way a figure on the totals card
-           is: the heading becomes a caret in the same place, at the same size,
-           and goes back to being a heading when the keyboard closes. Nothing
-           is written either way — the name stages like every other edit on
-           this screen and Save commits it. */
-        titleEdit={
-          renaming
-            ? {
-                value: name,
-                onChangeText: setName,
-                onDone: commitName,
-                label: t('logging:detail.nameField'),
-                maxLength: 120,
-              }
-            : undefined
-        }
-        onBack={leave}
-        backLabel={t('common:a11y.back')}
-        /* Delete lives up here rather than in a card at the foot of the screen.
-           It was the last thing on a page that scrolls, so removing a row meant
-           scrolling past every control for editing it first — and it read as one
-           more editing step rather than as the way out.
+      {/* THE PLATE, FULL WIDTH, WITH THE CHROME FLOATING ON IT.
+          It was a padded tile under an `AppBar`, and the bar and the tile were
+          two boxes doing one job: the bar held the way out and the way to delete,
+          the tile held the picture, and between them they spent about a fifth of
+          the screen on things that are not the meal. The photograph is the first
+          thing anybody is here to look at, so it goes edge to edge at the top and
+          the two controls sit over it — the shape a listing takes in every app
+          that leads with a picture.
 
-           Icon only, and the label is the copy the row used to carry, so a screen
-           reader still says "Delete this entry" rather than naming a picture. The
-           press only opens the confirmation, which is what makes a one-tap
-           destructive control in the chrome safe.
+          Square at the top and rounded at the bottom: it is flush to the screen's
+          edges, so a rounded top corner would leave a triangle of canvas at the
+          edge, while the bottom is where the content begins and wants the card's
+          own radius.
 
-           Absent while composing a new entry: there is nothing logged to delete
-           yet, and the slot falls back to the spacer that keeps the title from
-           drifting right. */
-        action={
-          existing ? (
-            <IconButton
-              size="sm"
-              accessibilityLabel={t('logging:detail.deleteEntry')}
-              onPress={() => setConfirmDelete(true)}
-            >
-              {/* Tinted rather than left in the illustration's own palette, the
-                  way the back chevron is — except to hibiscus rather than to
-                  muted, because this one is not neutral chrome. */}
-              <Icon set="ui" name="delete" size={20} tintColor={colors.hibiscusInk} />
-            </IconButton>
-          ) : undefined
-        }
-      />
+          BELOW the status bar rather than under it. Running the photo up behind
+          the clock is the last few points of the effect and it costs the one thing
+          that cannot be recovered: the status bar draws in the theme's colour, and
+          over an arbitrary photograph of somebody's lunch it is illegible about as
+          often as not. `Screen`'s `flush` already leaves the top inset alone,
+          which is exactly this decision made once.
 
-      {/* Always live, including before the entry exists. Most of the catalogue
-          has no drawing, so a dish being added from the list arrives blank — and
-          picking one then is the natural moment, not after saving and coming back.
+          Still the way in to the picture picker, and still live before the entry
+          exists: most of the catalogue has no drawing, so a dish added from the
+          list arrives blank and picking one then is the natural moment. Straight
+          into the picker whether or not there is a photo — replacing one photo
+          with another is not something to warn about, and the picker leads with
+          the camera; the warning is on the DRAWING, which is the answer that
+          discards a picture of the real plate. */}
+      {/* BEHIND THE STATUS BAR, not below it.
+          `Screen`'s `flush` drops the gutter and keeps the top inset as padding,
+          which is right for content and wrong for a picture that is meant to be
+          the top of the page: it left a band of canvas above the plate at rest and
+          let the plate slide under the clock as soon as the page moved, so the
+          photograph was cut around the notch either way. The negative margin
+          cancels that padding and the height takes it back, so the picture reaches
+          the top of the window and everything below it stays exactly where it was.
 
-          Straight into the picker whether or not there is a photo. Replacing one
-          photo with another is not something to warn about, and the picker's first
-          offer is the camera; the warning is on the drawing, which is the answer
-          that discards a picture of the real plate. */}
-      <Tappable
+          The trade is the status bar, which draws in the theme's colour over
+          whatever is up there — legible on most plates, not on all of them. The
+          alternative was cropping every photograph to clear a notch. */}
+      <View
         className={cn(
-          'items-center justify-center overflow-hidden rounded-card border-[3px] bg-track',
-          // Tall enough for the whole plate when a real photo is in the slot —
-          // 130px was sized for an icon and cropped the meal to a letterbox
-          // strip. Icons and the empty state keep the short box.
-          //
-          // `resolvingPhoto` counts as having one, because it means the entry HAS a
-          // photograph and we are waiting on a URL for it. Left out, the box
-          // opened short and grew by 130px under the reader a moment later.
-          (hero || resolvingPhoto) && !icon ? 'h-[260px]' : 'h-[130px]',
-          // Dashed while there is nothing in it: a solid frame around an empty
-          // box reads as a picture that failed to load.
-          hero || resolvingPhoto || shownIcon ? 'border-line' : 'border-line border-dashed',
+          // SQUARE ON EVERY EDGE. It is not a card hanging off the top of the
+          // screen, it is where the screen starts — and the curve at the bottom of
+          // the picture belongs to the content sliding over it rather than to the
+          // picture itself. See the wrapper below.
+          'overflow-hidden bg-track',
         )}
-        onPress={() => setPickingIcon(true)}
-        accessibilityRole="button"
-        accessibilityLabel={
-          hero ? t('logging:detail.replacePhoto') : t('logging:detail.choosePicture')
-        }
+        style={{ marginTop: -insets.top, height: heroHeight }}
       >
-        {attaching ? (
-          // The upload resizes and encodes a 3–6MB frame before it sends it, so
-          // this is a second or two on a real photo — long enough that a tile which
-          // did not change would read as the camera having done nothing.
-          <ActivityIndicator />
-        ) : hero && !icon ? (
-          <MealPhoto
-            source={hero}
-            accessibilityLabel={t('logging:camera.photoOf', { food: food.name })}
-          />
-        ) : resolvingPhoto && !icon ? (
-          /* This entry HAS a photograph and it is still being signed for.
-             Without this the box drew the dish's illustration first and then
-             replaced it with the photograph — the largest thing on the screen
-             changing into something else while being looked at. */
-          <Skeleton width="100%" height={260} rounded={false} className="bg-line" />
-        ) : shownIcon ? (
-          <Icon {...shownIcon} size={100} />
-        ) : (
-          // Empty, and only a line of copy to say what the box is for. There was
-          // a camera illustration here, and at a glance in a list of dishes that
-          // read as this dish's picture — which is exactly what a row with no
-          // picture must not have.
-          <Text variant="meta">{t('logging:detail.addPicture')}</Text>
-        )}
-      </Tappable>
+        <Tappable
+          className="flex-1 items-center justify-center"
+          onPress={() => setPickingIcon(true)}
+          accessibilityRole="button"
+          accessibilityLabel={
+            hero ? t('logging:detail.replacePhoto') : t('logging:detail.choosePicture')
+          }
+        >
+          {attaching ? (
+            // The upload resizes and encodes a 3–6MB frame before it sends it, so
+            // this is a second or two on a real photo — long enough that a tile
+            // which did not change would read as the camera having done nothing.
+            <ActivityIndicator />
+          ) : hero && !icon ? (
+            <MealPhoto
+              source={hero}
+              accessibilityLabel={t('logging:camera.photoOf', { food: food.name })}
+            />
+          ) : resolvingPhoto && !icon ? (
+            /* This entry HAS a photograph and it is still being signed for.
+               Without this the box drew the dish's illustration first and then
+               replaced it with the photograph — the largest thing on the screen
+               changing into something else while being looked at. */
+            <Skeleton width="100%" height={heroHeight} rounded={false} className="bg-line" />
+          ) : shownIcon ? (
+            <Icon {...shownIcon} size={100} />
+          ) : (
+            // Empty, and only a line of copy to say what the box is for. There was
+            // a camera illustration here, and at a glance in a list of dishes that
+            // read as this dish's picture — which is exactly what a row with no
+            // picture must not have.
+            <Text variant="meta">{t('logging:detail.addPicture')}</Text>
+          )}
+        </Tappable>
 
-      <IconPicker
-        visible={pickingIcon}
-        onClose={() => setPickingIcon(false)}
-        selected={shownIcon}
-        // Held back for the confirmation below when there is a photo to lose.
-        onSelect={(next) => (hasPhoto ? setPendingIcon(next) : applyIcon(next))}
-        // The other way to answer the same question, in the same sheet.
-        onPickPhoto={(uri) => void attachPhoto(uri)}
-      />
+        {/* Over the picture, and AFTER it in the tree so they are on top of it and
+            take the touch before the tile behind them does. A gutter in from each
+            corner, so they sit where a thumb reaches on either side.
 
-      {/* Fires when a drawing is chosen over a photo, which is the one choice in
-          this flow that throws something away. A photo replacing a photo does not
-          come through here. */}
-      <ConfirmSheet
-        visible={pendingIcon !== undefined}
-        onClose={() => setPendingIcon(undefined)}
-        onConfirm={() => {
-          if (pendingIcon) applyIcon(pendingIcon)
-          setPendingIcon(undefined)
-        }}
-        title={t('logging:detail.replacePhotoTitle')}
-        description={t('logging:detail.replacePhotoBody')}
-        confirmLabel={t('logging:detail.replacePhotoConfirm')}
-        tone="danger"
-      />
+            The white surface is what keeps them readable: `IconButton`'s neutral
+            variant is a raised white square, which reads as a control against a
+            photograph of anything. A scrim under them would darken the plate to
+            make the app's own chrome legible, which is the wrong way round. */}
+        {/* Padded down past the status bar, which the box no longer does for them:
+            a back chevron under the notch is a control nobody can reach. */}
+        <View
+          className="absolute inset-x-0 top-0 flex-row justify-between px-3"
+          style={{ paddingTop: insets.top + spacing.sm, paddingBottom: spacing.sm }}
+        >
+          <IconButton size="sm" accessibilityLabel={t('common:a11y.back')} onPress={() => goBack()}>
+            {/* Tinted: chrome is monochrome, and the illustration's own palette
+                reads as a stray accent. */}
+            <Icon set="ui" name="chevron-left" size={20} tintColor={colors.muted} />
+          </IconButton>
 
-      {/* Absent for a plate the scan broke down. An entry with a breakdown IS
-          its breakdown — `food_log_details` reads the sum of the parts and
-          never the parent's portion — so this stepper moved a number on screen
-          and nothing in the diary. The ingredient list below is where that
-          plate's amounts are edited, one part at a time, which is the whole
-          reason the breakdown exists. */}
-      {parts.length ? null : (
-        <Card>
-          <Stepper
-            value={quantity}
-            onChange={setQuantity}
-            // Quarters, matching the parts below — a portion is the same kind
-            // of quantity whether the plate came apart or not, and two controls
-            // on one screen that move by different amounts is a thing to
-            // discover rather than a thing to use. `Stepper` renders 1.25 as
-            // "1¼", so a quarter is as readable as a half.
-            min={0.25}
-            max={20}
-            step={0.25}
-            // And for the amounts halves cannot express — 0.3 of a tub — the
-            // number itself is a field.
-            editable
-            editLabel={t('logging:detail.typeServings')}
-            accessibilityLabel={t('logging:detail.servings')}
-            decrementLabel={t('common:a11y.decrease')}
-            incrementLabel={t('common:a11y.increase')}
-            // The unit is the serving the user picked below, not a generic
-            // "pieces" — a plate and a piece are different amounts of food.
-            // Cleaned of the count and the import's measurement detail, which
-            // the number to its left is already saying.
-            // `serving?.label`, not `serving.label`. `find(...) ?? servings[0]`
-            // is `Serving` to the compiler and `undefined` at runtime when the
-            // list is empty, because `noUncheckedIndexedAccess` is off — and
-            // reading `.label` off it crashed the whole screen. `toFood`
-            // guarantees a portion now, so this is the belt to that braces.
-            unit={servingUnit(serving?.label) ?? t('logging:detail.servingWord')}
-          />
+          {/* THE TWO THINGS YOU CAN DO TO THE WHOLE ENTRY, together, in the order
+              of least to most destructive: edit it, then throw it away.
 
-          <View className="flex-row flex-wrap gap-2">
-            {food.servings.map((option) => (
-              <Chip
-                key={option.id}
-                selected={option.id === chosen}
-                onPress={() => setServingId(option.id)}
+              The pencil was on the line under the title and it did not belong
+              there — that line is the entry's date, and a control at the end of it
+              read as "edit the date" when what it opens is the name and the when.
+              Up here it sits beside the bin, which is the other thing that acts on
+              the entry as a whole, and the date line goes back to being a fact.
+
+              Delete lives up here rather than in a card at the foot of the screen.
+              It was the last thing on a page that scrolls, so removing a row meant
+              scrolling past every control for editing it first, and it read as one
+              more editing step rather than as the way out. The press only opens
+              the confirmation, which is what makes a one-tap destructive control
+              in the chrome safe.
+
+              Both are absent while composing a new entry: there is nothing logged
+              to delete, and nothing whose name and time can be corrected. */}
+          <View className="flex-row gap-2">
+            {existing && clock ? (
+              <IconButton
+                size="sm"
+                accessibilityLabel={t('logging:detail.editDetails')}
+                onPress={() => setEditingDetails(true)}
               >
-                {option.label}
-              </Chip>
-            ))}
+                {/* Untinted, unlike the two chrome icons either side of it: this is
+                    a yellow pencil with a red eraser and all of its meaning is the
+                    colour. See `CardEdit`. */}
+                <Icon set="ui" name="edit" size={20} />
+              </IconButton>
+            ) : null}
+
+            {existing ? (
+              <IconButton
+                size="sm"
+                accessibilityLabel={t('logging:detail.deleteEntry')}
+                onPress={() => setConfirmDelete(true)}
+              >
+                {/* Tinted to hibiscus rather than to muted, because this one is not
+                    neutral chrome. */}
+                <Icon set="ui" name="delete" size={20} tintColor={colors.hibiscusInk} />
+              </IconButton>
+            ) : null}
           </View>
-        </Card>
-      )}
+        </View>
+      </View>
 
-      <Card>
-        {/* Centred rather than on a shared baseline: while the number is a
-            field it is a box, and a box aligned by its text baseline sits
-            visibly low against the caption beside it.
+      {/* Everything else, ON A CURVE THAT RIDES OVER THE PICTURE.
+          A straight cut between the photograph and the content reads as two
+          stacked blocks. Lifting the content by `CONTENT_LIFT` and rounding its
+          top corners leaves the picture showing behind the curve at both edges, so
+          the page reads as one surface sliding up over the plate — which is also
+          why the box above got taller by the same amount: the overlap covers a
+          strip of it rather than cropping the meal.
 
-            The height is pinned so the two states are the same size. A
-            `TextInput` needs more room than the `Text` it stands in for — see
-            the field below — and without this the card grew by a few points
-            the moment the number was tapped. */}
-        <View className="min-h-[44px] flex-row items-center justify-between">
-          {/* Tap the number to type your own. An entry the app got close but
-              not right is corrected here, on the figure being read, rather
-              than in a form underneath that repeats all four of them. */}
-          <KcalFigure
-            editing={editing === 'kcal'}
-            typed={typed.kcal}
-            onChangeText={(value) => setTyped((current) => ({ ...current, kcal: value }))}
-            onDone={() => setEditing(null)}
-            total={macros.kcal}
-            label={t('logging:detail.editKcal')}
-            onPress={existing ? () => setEditing('kcal') : undefined}
-          />
-          <Text variant="overline">{t('logging:detail.total')}</Text>
+          `bg-canvas`, not a card fill. It is the screen's own background carrying
+          on, and a surface colour here would make the whole lower half of the
+          screen look like one enormous card with cards inside it.
+
+          It also carries the gutter, which `Screen`'s `flush` dropped for the
+          whole scroll view so the photograph could reach the edges — this wrapper
+          is the one place that puts it back.
+
+          The negative margin has to clear the shell's own stack gap BEFORE it can
+          overlap anything, hence the sum rather than a bare offset; and the top
+          padding is that same lift plus the gap, so the title still sits its usual
+          distance below the picture rather than up against the curve. */}
+      <View
+        className="gap-stack rounded-t-card bg-canvas px-gutter"
+        style={{
+          marginTop: -(spacing.stack + CONTENT_LIFT),
+          paddingTop: CONTENT_LIFT + spacing.stack,
+        }}
+      >
+        {/* THE NAME AND THE TIME AS ONE BLOCK, which is what "gap-1" is doing:
+            they are a heading and its subtitle, and separated by the stack gap
+            every card gets they read as two unrelated lines with the date
+            floating between the title and the first card.
+
+            The name is the page's own heading now that there is no bar to carry
+            it. Two lines, and this is the one screen that asks for them: a dish
+            name here is whatever the model or the user wrote — "Nasi Lemak with
+            Fried Chicken with pineapple juice" — and on one line that truncates to
+            three words and an ellipsis, which is a meal nobody can recognise on
+            the screen for checking it. Read from the STAGED name first: the
+            entry's own `display_label`, not the catalogue row's ("MEAL KIT, KOREAN
+            FRIED CHICKEN WITH SWEET GOCHUJANG SAUCE").
+
+            The time under it is the same pair of facts the diary row prints under
+            a dish name — the day off `log_date`, the time off `logged_at` — and it
+            is a FACT now rather than a row: it carried the entry's edit control at
+            its end, which read as "edit the date" when what it opens is the name
+            and the when. That pencil is up on the picture beside the bin.
+
+            No icon in front of it either. A clock pictogram before a time says
+            what the time already says, and `system/clock` tinted flat at 16pt is a
+            grey dot.
+
+            Only for an entry that has a timestamp. A row being composed has none,
+            and its day is whatever the strip on Today has selected — a question
+            that screen has already asked. */}
+        <View className="gap-1">
+          <Text variant="title" numberOfLines={2}>
+            {name.trim() || existing?.foodName || food.name}
+          </Text>
+          {existing && clock ? (
+            <Text variant="meta">
+              {t('logging:detail.whenValue', {
+                day: dayLabel(whenDate, todayKey, {
+                  today: t('common:date.today'),
+                  yesterday: t('common:date.yesterday'),
+                }),
+                time: formatTime(instantOn(whenDate, clock)),
+              })}
+            </Text>
+          ) : null}
         </View>
 
-        {targets ? (
-          <MacroBars
-            eaten={macros}
-            targets={targets}
-            onEdit={existing ? (macro) => setEditing(macro) : undefined}
-            editing={editing === 'kcal' ? null : editing}
-            editingValue={editing && editing !== 'kcal' ? typed[editing] : ''}
-            onChangeAmount={(value) =>
-              setTyped((current) =>
-                editing && editing !== 'kcal' ? { ...current, [editing]: value } : current,
-              )
-            }
-            onDoneAmount={() => setEditing(null)}
-          />
-        ) : null}
+        <IconPicker
+          visible={pickingIcon}
+          onClose={() => setPickingIcon(false)}
+          selected={shownIcon}
+          // Held back for the confirmation below when there is a photo to lose.
+          onSelect={(next) => (hasPhoto ? setPendingIcon(next) : applyIcon(next))}
+          // The other way to answer the same question, in the same sheet.
+          onPickPhoto={(uri) => void attachPhoto(uri)}
+        />
 
-        {existing && (typed.kcal || typed.carbs || typed.protein || typed.fat) ? (
-          <Tappable
-            onPress={() => setTyped({ kcal: '', carbs: '', protein: '', fat: '' })}
-            accessibilityRole="button"
-            accessibilityLabel={t('logging:detail.numbersReset')}
-          >
-            <Text variant="meta" className="text-pandan-ink">
-              {t('logging:detail.numbersReset')}
-            </Text>
-          </Tappable>
-        ) : null}
+        {/* Fires when a drawing is chosen over a photo, which is the one choice in
+          this flow that throws something away. A photo replacing a photo does not
+          come through here. */}
+        <ConfirmSheet
+          visible={pendingIcon !== undefined}
+          onClose={() => setPendingIcon(undefined)}
+          onConfirm={() => {
+            if (pendingIcon) applyIcon(pendingIcon)
+            setPendingIcon(undefined)
+          }}
+          title={t('logging:detail.replacePhotoTitle')}
+          description={t('logging:detail.replacePhotoBody')}
+          confirmLabel={t('logging:detail.replacePhotoConfirm')}
+          tone="danger"
+        />
 
-        {/* The rule goes with the section it introduces. See `hasExtras`. */}
-        {hasExtras ? <Divider /> : null}
+        {/* THE PORTION: the stepper and the chips, on the page, on both paths.
 
-        {/* Only when there is something under it. This used to be shown for
+          It spent a moment as a card with a pencil to a sheet, for consistency
+          with the figures and the plate — and a plus and a minus do not want a
+          form around them. What they want is somewhere to save, which is what a
+          SHORT DEBOUNCE is: three taps to reach two and a half plates is one
+          write. See `savePortion`.
+
+          Absent for a plate the scan broke down. An entry with a breakdown IS its
+          breakdown — `food_log_details` reads the sum of the parts and never the
+          parent's portion — so this stepper moved a number on screen and nothing
+          in the diary. The ingredient card below is where that plate's amounts are
+          edited, one part at a time, which is the whole reason the breakdown
+          exists.
+
+          `serving?.label`, not `serving.label`. `find(...) ?? servings[0]` is
+          `Serving` to the compiler and `undefined` at runtime when the list is
+          empty, because `noUncheckedIndexedAccess` is off — and reading `.label`
+          off it crashed the whole screen. `toFood` guarantees a portion now, so
+          this is the belt to that braces. */}
+        {parts.length ? null : (
+          <Card>
+            <Stepper
+              value={quantity}
+              onChange={(next) => {
+                setQuantity(next)
+                schedulePortion({ quantity: next, servingId: chosen })
+              }}
+              // Quarters, matching the parts of a broken-down plate — a portion is
+              // the same kind of quantity whether the plate came apart or not, and
+              // two controls in one app that move by different amounts is a thing
+              // to discover rather than a thing to use. `Stepper` renders 1.25 as
+              // "1¼", so a quarter is as readable as a half.
+              min={0.25}
+              max={20}
+              step={0.25}
+              // And for the amounts quarters cannot express — 0.3 of a tub — the
+              // number itself is a field.
+              editable
+              editLabel={t('logging:detail.typeServings')}
+              accessibilityLabel={t('logging:detail.servings')}
+              decrementLabel={t('common:a11y.decrease')}
+              incrementLabel={t('common:a11y.increase')}
+              // The unit is the serving the user picked below, not a generic
+              // "pieces" — a plate and a piece are different amounts of food.
+              unit={servingUnit(serving?.label) ?? t('logging:detail.servingWord')}
+            />
+
+            <View className="flex-row flex-wrap gap-2">
+              {food.servings.map((option) => (
+                <Chip
+                  key={option.id}
+                  selected={option.id === chosen}
+                  onPress={() => {
+                    setServingId(option.id)
+                    schedulePortion({ quantity, servingId: option.id })
+                  }}
+                >
+                  {option.label}
+                </Chip>
+              ))}
+            </View>
+          </Card>
+        )}
+
+        {/* THE FIGURES, read here and edited in a sheet. The title is the card's
+          own now rather than a caption beside the number, because the header row
+          is what carries the way in — see `CardEdit`. */}
+        <Card
+          title={t('logging:detail.total')}
+          action={
+            existing ? (
+              <CardEdit
+                label={t('logging:detail.editFigures')}
+                onPress={() => setEditingFigures(true)}
+              />
+            ) : undefined
+          }
+        >
+          {/* The figure alone. The card's own title already says KCAL TOTAL, and a
+            "kcal" caption beside the number said it a second time. */}
+          <Text variant="displayMd">{macros.kcal.toLocaleString()}</Text>
+
+          {targets ? <MacroBars eaten={macros} targets={targets} /> : null}
+
+          {/* Whose numbers these are, which the reset link used to say by being
+            there. Without it a typed figure and the app's own answer look the
+            same on the card, and the only way to find out was to open the sheet. */}
+          {existing && FIGURES.some((key) => typed[key].trim()) ? (
+            <Text variant="meta">{t('logging:detail.yourFigures')}</Text>
+          ) : null}
+
+          {/* The rule goes with the section it introduces. See `hasExtras`. */}
+          {hasExtras ? <Divider /> : null}
+
+          {/* Only when there is something under it. This used to be shown for
             every dish so that "nobody recorded it" was still an answer — but
             most of the catalogue has none of these columns, so most rows grew
             a control that opened three dashes. */}
-        {hasExtras ? (
-          <Tappable
-            className="flex-row items-center justify-between"
-            onPress={() => setShowNutrients((open) => !open)}
-            accessibilityRole="button"
-            accessibilityState={{ expanded: showNutrients }}
-            accessibilityLabel={t('logging:detail.moreNutrients')}
-          >
-            <Text variant="label">{t('logging:detail.moreNutrients')}</Text>
-            <Icon set="ui" name={showNutrients ? 'chevron-up' : 'chevron-down'} size={20} />
-          </Tappable>
-        ) : null}
+          {hasExtras ? (
+            <Tappable
+              className="flex-row items-center justify-between"
+              onPress={() => setShowNutrients((open) => !open)}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: showNutrients }}
+              accessibilityLabel={t('logging:detail.moreNutrients')}
+            >
+              <Text variant="label">{t('logging:detail.moreNutrients')}</Text>
+              <Icon set="ui" name={showNutrients ? 'chevron-up' : 'chevron-down'} size={20} />
+            </Tappable>
+          ) : null}
 
-        {showNutrients ? (
-          <View className="gap-2">
-            {extras.map((row) => (
-              <View key={row.key} className="flex-row items-baseline justify-between gap-3">
-                <Text variant="body">{row.label}</Text>
-                <Text variant="label" className={row.value ? undefined : 'text-faint'}>
-                  {/* An em dash rather than "0 g". Null in these columns means
+          {showNutrients ? (
+            <View className="gap-2">
+              {extras.map((row) => (
+                <View key={row.key} className="flex-row items-baseline justify-between gap-3">
+                  <Text variant="body">{row.label}</Text>
+                  <Text variant="label" className={row.value ? undefined : 'text-faint'}>
+                    {/* An em dash rather than "0 g". Null in these columns means
                       nobody recorded the number, and zero is a claim. */}
-                  {row.value ?? '—'}
+                    {row.value ?? '—'}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+        </Card>
+
+        {/* What the scan decided the plate was made of. Read here, edited in
+          `PlateSheet`, and each part written through `set_ingredient_quantity`.
+
+          That function deliberately does NOT touch the parent row — see the note in
+          `34_food_log_ingredients.sql`, which used to rescale the entry's own
+          `quantity` and stopped because scaling a parent moves all four of its
+          macros at once. The totals follow because `food_log_details` SUMS the
+          parts whenever there are any, so the plate and the entry cannot disagree
+          without one of them being wrong about arithmetic. */}
+        {parts.length ? (
+          <Card
+            title={t('logging:detail.plateTitle')}
+            action={
+              <CardEdit
+                label={t('logging:detail.editPlate')}
+                onPress={() => setEditingPlate(true)}
+              />
+            }
+          >
+            {parts.map((ingredient) => (
+              <View key={ingredient.id} className="flex-row items-start justify-between gap-3">
+                {/* THE NAME AND WHAT IT WEIGHS, ON ONE LINE. The weight used to
+                    sit on a second line behind a multiplier — "× 0.75 · 165 g" —
+                    which led with the number nobody can act on: the multiplier is
+                    how the row STORES an amount, and 165 g is the amount. In
+                    brackets after the name it reads as part of what the thing is,
+                    and the row is one line again.
+
+                    NO `numberOfLines`. A part's name is what this card exists to
+                    show — the model's own account of what was on the plate — and
+                    truncated to one line "Stir fried pork belly with green
+                    peppers" came out as three words and an ellipsis on the one
+                    screen somebody opens to check exactly that. The bracket wraps
+                    with it, being part of the same run of text.
+
+                    A part nobody weighed falls back to its count, and a single
+                    unweighed one says nothing at all: "(× 1)" is a bracket that
+                    answers no question. */}
+                <Text variant="body" className="min-w-0 flex-1">
+                  {titleCase(ingredient.name)}
+                  {ingredient.grams ? (
+                    <Text variant="meta">
+                      {` ${t('logging:detail.grams', {
+                        grams: Math.round(ingredient.grams).toLocaleString(),
+                      })}`}
+                    </Text>
+                  ) : ingredient.quantity === 1 ? null : (
+                    <Text variant="meta">
+                      {` ${t('logging:detail.count', { amount: ingredient.quantity })}`}
+                    </Text>
+                  )}
                 </Text>
+                <View className="flex-row items-baseline gap-1">
+                  <Text variant="numeric">{ingredient.kcal.toLocaleString()}</Text>
+                  <Text variant="caption">{t('common:unit.kcal')}</Text>
+                </View>
               </View>
             ))}
-            <Text variant="meta">
-              {extras.every((row) => row.value === undefined)
-                ? t('logging:detail.nutrientsUnknown')
-                : t('logging:detail.nutrientsNote')}
-            </Text>
-          </View>
-        ) : null}
-      </Card>
-
-      {/* What the scan decided the plate was made of, each part with its own
-          portion stepper. The edits stage: the card's total and the entry's
-          calories above both follow them straight away, and Save sends each one
-          through set_ingredient_quantity — which recomputes the entry's own
-          quantity in the same transaction, so the plate total always equals the
-          sum of parts and the shared parent row's macros are never touched. */}
-      {parts.length ? (
-        <Card title={t('logging:detail.plateTitle')}>
-          {parts.map((ingredient) => {
-            // Quarters, whatever the part is sitting at.
-            //
-            // This used to step in whole units for a counted part and quarters
-            // only below one, on the reasoning that a quarter of a satay skewer
-            // is not a thing anyone put on a plate. True of skewers, and wrong
-            // about everything else the scan decomposes: a scoop of rice, a
-            // ladle of curry and a piece of fried chicken are all "× 1" and all
-            // routinely eaten by half. Under the old rule the only way down from
-            // 1 was to 0.25, and there was no way at all to say "a bit more than
-            // one" — the step you needed depended on where you already were,
-            // which is not something a pair of buttons can explain.
-            const size = 0.25
-            // At the smallest portion the minus takes the whole thing off the
-            // plate. A quarter of a thing and "there wasn't any" are different
-            // answers, and only one of them was reachable — the stepper simply
-            // stopped, with nothing to say the row could go.
-            const atFloor = ingredient.quantity <= 0.25
-            const step = (direction: 1 | -1) => {
-              if (direction === -1 && atFloor) {
-                setPartEdits((current) => ({ ...current, [ingredient.id]: null }))
-                return
-              }
-              const next = Math.min(10, Math.max(0.25, ingredient.quantity + direction * size))
-              if (next === ingredient.quantity) return
-              setPartEdits((current) => ({ ...current, [ingredient.id]: next }))
-            }
-            return (
-              <View key={ingredient.id} className="flex-row items-center justify-between gap-3">
-                <View className="min-w-0 flex-1">
-                  <Text variant="body" numberOfLines={1}>
-                    {titleCase(ingredient.name)}
-                  </Text>
-                  {/* The multiplier alone. The catalogue's own serving label
-                      belongs to whatever row the part matched — "1 medium
-                      paper (8-5/8" dia)" for a spoon of rice — and printing it
-                      here described the import rather than the plate. How many
-                      of it there are is the only part of that the user is
-                      changing, and the calories beside it say the rest. */}
-                  {/* The count and what it weighs. Its macros were under here
-                      for a while and made every row two lines of small figures
-                      — the plate's totals are the sum of them and are already
-                      on the card above — but the weight is not more of that. It
-                      is the amount itself: "× 6" is six of something whose size
-                      nobody stated, and the scan now knows the size. Absent
-                      where the scan did not weigh the part, since "0 g" would
-                      be a claim about the food rather than about the answer. */}
-                  <Text variant="meta">
-                    {ingredient.grams
-                      ? t('logging:detail.timesWeight', {
-                          amount: ingredient.quantity,
-                          grams: Math.round(ingredient.grams).toLocaleString(),
-                        })
-                      : t('logging:detail.times', { amount: ingredient.quantity })}
-                  </Text>
-                </View>
-                <View className="flex-row items-center gap-2">
-                  <View className="w-[72px] flex-row items-baseline justify-end gap-1">
-                    <Text variant="numeric">{ingredient.kcal.toLocaleString()}</Text>
-                    <Text variant="caption">{t('common:unit.kcal')}</Text>
-                  </View>
-                  <IconButton
-                    size="sm"
-                    variant="neutral"
-                    accessibilityLabel={t(
-                      atFloor ? 'logging:detail.removeOf' : 'logging:detail.lessOf',
-                      { name: ingredient.name },
-                    )}
-                    onPress={() => step(-1)}
-                  >
-                    <Icon
-                      set="ui"
-                      name={atFloor ? 'delete' : 'minus'}
-                      size={16}
-                      tintColor={atFloor ? colors.hibiscusInk : colors.ink}
-                    />
-                  </IconButton>
-                  <IconButton
-                    size="sm"
-                    variant="neutral"
-                    accessibilityLabel={t('logging:detail.moreOf', { name: ingredient.name })}
-                    disabled={ingredient.quantity >= 10}
-                    onPress={() => step(1)}
-                  >
-                    <Icon set="ui" name="plus" size={16} tintColor={colors.ink} />
-                  </IconButton>
-                </View>
+            <Divider />
+            <View className="flex-row items-baseline justify-between gap-3">
+              <Text variant="bodyStrong">{t('logging:detail.plateTotal')}</Text>
+              <View className="flex-row items-baseline gap-1">
+                <Text variant="numeric">
+                  {parts.reduce((sum, item) => sum + item.kcal, 0).toLocaleString()}
+                </Text>
+                <Text variant="caption">{t('common:unit.kcal')}</Text>
               </View>
-            )
-          })}
-          <Divider />
-          <View className="flex-row items-baseline justify-between gap-3">
-            <Text variant="bodyStrong">{t('logging:detail.plateTotal')}</Text>
-            <View className="flex-row items-baseline gap-1">
-              <Text variant="numeric">
-                {parts.reduce((sum, item) => sum + item.kcal, 0).toLocaleString()}
-              </Text>
-              <Text variant="caption">{t('common:unit.kcal')}</Text>
             </View>
-          </View>
-        </Card>
-      ) : null}
+          </Card>
+        ) : null}
 
-      {/* Correcting a dish by describing it belongs to an entry that already
+        {/* Correcting a dish by describing it belongs to an entry that already
           exists: "no sambal" is a fix to something logged, and on the way IN the
           serving chips and the stepper above say the same thing more precisely.
 
@@ -1400,38 +1591,81 @@ export default function FoodDetail() {
           the app acts on: "Half portion" reaches scan-refine's quantity rung,
           which rescales the entry and every part under it, and does it better
           than the serving swap this screen used to do by hand. */}
-      {existing ? (
-        <FixSheet
-          visible={fixing}
-          onClose={() => setFixing(false)}
-          value={instruction}
-          onChangeText={setInstruction}
-          placeholder={t('logging:detail.fixPlaceholder')}
-          suggestions={fixSuggestions}
-          onSubmit={() => void sendFix()}
-          submitting={sending}
+        {existing ? (
+          <FixSheet
+            visible={fixing}
+            onClose={() => setFixing(false)}
+            value={instruction}
+            onChangeText={setInstruction}
+            placeholder={t('logging:detail.fixPlaceholder')}
+            suggestions={fixSuggestions}
+            onSubmit={() => void sendFix()}
+            submitting={sending}
+          />
+        ) : null}
+
+        {/* The three sheets the cards above open. Each one drafts and hands the
+          draft back; the footer's Save is still the only thing that writes.
+
+          `computed` rather than `macros` for the placeholders: what a field
+          shows through is the app's OWN answer for this portion, and `macros`
+          already has the typed figures folded into it — so an entry with 400
+          typed over it would offer 400 as the number to go back to. */}
+        {existing ? (
+          <NutritionSheet
+            visible={editingFigures}
+            onClose={() => setEditingFigures(false)}
+            value={typed}
+            computed={appFigures}
+            onSave={saveFigures}
+            onError={saveFailed}
+          />
+        ) : null}
+
+        {existing && parts.length ? (
+          <PlateSheet
+            visible={editingPlate}
+            onClose={() => setEditingPlate(false)}
+            ingredients={ingredients}
+            edits={partEdits}
+            onSave={savePlate}
+            onError={saveFailed}
+          />
+        ) : null}
+
+        {existing && clock ? (
+          <DetailsSheet
+            visible={editingDetails}
+            onClose={() => {
+              setEditingDetails(false)
+              // The entry has been filed on another day, so it is no longer in the
+              // day query this screen reads — see `saveDetails` for what the page
+              // turns into if it stays.
+              if (movedAway.current) {
+                movedAway.current = false
+                goBack()
+              }
+            }}
+            details={{ name: name.trim(), date: whenDate, clock }}
+            // What the name falls back to when the field is emptied, and what the
+            // sheet hands back in that case: the row's own name, never blank.
+            namePlaceholder={existing.foodName}
+            today={todayKey}
+            onSave={saveDetails}
+            onError={saveFailed}
+          />
+        ) : null}
+
+        <ConfirmSheet
+          visible={confirmDelete}
+          onClose={() => setConfirmDelete(false)}
+          onConfirm={remove}
+          title={t('logging:detail.deleteTitle')}
+          description={t('logging:detail.deleteBody')}
+          confirmLabel={t('common:action.delete')}
+          tone="danger"
         />
-      ) : null}
-
-      <ConfirmSheet
-        visible={confirmDelete}
-        onClose={() => setConfirmDelete(false)}
-        onConfirm={remove}
-        title={t('logging:detail.deleteTitle')}
-        description={t('logging:detail.deleteBody')}
-        confirmLabel={t('common:action.delete')}
-        tone="danger"
-      />
-
-      <ConfirmSheet
-        visible={confirmDiscard}
-        onClose={() => setConfirmDiscard(false)}
-        onConfirm={discard}
-        title={t('logging:detail.discardTitle')}
-        description={t('logging:detail.discardBody')}
-        confirmLabel={t('logging:detail.discardConfirm')}
-        tone="danger"
-      />
+      </View>
     </Screen>
   )
 }

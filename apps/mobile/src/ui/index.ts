@@ -133,3 +133,4 @@ export {
   WeekStrip,
   type WeekStripProps,
 } from './WeekStrip'
+export { Wheel, type WheelOption, type WheelProps } from './Wheel'

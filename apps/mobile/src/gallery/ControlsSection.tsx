@@ -15,6 +15,7 @@ import {
   Switch,
   Text,
   TextField,
+  Wheel,
 } from '@/ui'
 
 const MEALS = [
@@ -30,6 +31,16 @@ const SOURCES = [
   { value: 'hawker', label: 'Hawker centre' },
 ] as const
 
+/** A wheel's rows are data, and these are the shape a time picker feeds it. */
+const HOURS = Array.from({ length: 12 }, (_, i) => ({
+  value: String(i + 1),
+  label: String(i + 1),
+}))
+const MINUTES = Array.from({ length: 60 }, (_, i) => ({
+  value: String(i),
+  label: String(i).padStart(2, '0'),
+}))
+
 const GOALS = [
   { value: 'lose', label: 'Lose weight' },
   { value: 'maintain', label: 'Maintain' },
@@ -38,6 +49,8 @@ const GOALS = [
 
 export function ControlsSection() {
   const [search, setSearch] = useState('')
+  const [hour, setHour] = useState('8')
+  const [minute, setMinute] = useState('20')
   const [portion, setPortion] = useState('2 pieces')
   const [invalid, setInvalid] = useState('0')
   const [meal, setMeal] = useState<(typeof MEALS)[number]['value']>('lunch')
@@ -165,6 +178,27 @@ export function ControlsSection() {
           max={3000}
           step={50}
         />
+      </Card>
+
+      {/* Two of them side by side, which is how they are used: a wheel on its
+          own is a list, and a row of them is a picker. */}
+      <Card title="Wheel">
+        <View className="flex-row gap-2">
+          <Wheel
+            className="flex-1"
+            options={HOURS}
+            value={hour}
+            onChange={setHour}
+            accessibilityLabel="Hour"
+          />
+          <Wheel
+            className="flex-1"
+            options={MINUTES}
+            value={minute}
+            onChange={setMinute}
+            accessibilityLabel="Minute"
+          />
+        </View>
       </Card>
     </>
   )
