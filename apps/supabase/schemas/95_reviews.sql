@@ -87,7 +87,7 @@ returns table (
   protein_g        numeric,
   fat_g            numeric,
   entry_count      integer,
-  water_glasses    integer,
+  water_ml         integer,
   goal_kcal        integer,
   goal_water       integer,
   weight_kg        numeric,
@@ -125,9 +125,9 @@ as $$
     n.protein_g,
     n.fat_g,
     coalesce(n.entry_count, 0),
-    coalesce(l.water_glasses, 0)::integer,
+    coalesce(l.water_ml, 0)::integer,
     g.kcal,
-    g.water_glasses::integer,
+    g.water_ml::integer,
     w.weight_kg,
     (a.user_id is not null),
     coalesce(a.active_kcal, 0),
@@ -154,7 +154,7 @@ as $$
     where v.user_id = p_user_id and v.log_date = c.at
   ) s on true
   left join lateral (
-    select gg.kcal, gg.water_glasses
+    select gg.kcal, gg.water_ml
     from public.daily_goals gg
     where gg.user_id = p_user_id and gg.effective_from <= c.at
     order by gg.effective_from desc
@@ -411,9 +411,10 @@ as $$
 
     -- Averaged over every day, unlike the calorie figures. A day nobody logged
     -- water on is a day they recorded none, and a hydration average that
-    -- skipped it would only ever describe the days that went well.
-    round(avg(d.water_glasses), 1),
-    (count(*) filter (where d.water_glasses >= coalesce(d.goal_water, 8)))::integer,
+    -- skipped it would only ever describe the days that went well. Whole
+    -- millilitres: a tenth of one is not a fact about anybody's day.
+    round(avg(d.water_ml), 0),
+    (count(*) filter (where d.water_ml >= coalesce(d.goal_water, 2000)))::integer,
 
     (array_agg(d.weight_kg order by d.at desc) filter (where d.weight_kg is not null))[1],
     -- One reading and nothing before it is not a change of zero: the fallback

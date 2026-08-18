@@ -308,7 +308,7 @@ auth.users
        ├── scan_usage ──────── scans spent, one row per LOCAL day, per tier
        ├── food_logs ──────── what was eaten, WITH ITS OWN NUMBERS
        │    └── food_log_ingredients   what a scanned plate was made of
-       ├── daily_logs ─────── water and a day note
+       ├── daily_logs ─────── water in ML, and a day note
        ├── recipes ────────── home cooking       → recipe_ingredients
        ├── weight_logs ────── the source of truth for current weight, TYPED OR SYNCED
        └── health_connections  which health store, and how far back it has read
@@ -1026,6 +1026,44 @@ has no window for `local_today()` to name. `features/logging/week.ts` turns
 those facts into a dot and is unit-tested, because the ORDER is the whole thing:
 ahead-of-today and not-yet-loaded both mean "say nothing", and only then does an
 empty past day mean "missed".
+
+---
+
+## Water is a volume
+
+**MILLILITRES, NOT GLASSES.** `daily_logs.water_ml` and `daily_goals.water_ml`
+are the columns, and the unit change is the whole feature: a glass was one tap
+whether it was a 200 ml kopitiam tumbler, a 350 ml mug or a 500 ml bottle, so a
+day of "six glasses" was anything between 1.2 and 3 litres and a goal expressed
+in them could not be met deliberately. The default goal is 2,000 ml, which is
+what eight glasses used to come to, so the migration converted every stored
+figure at 250 ml a glass and nobody's goal moved by being converted.
+
+**A drink is ADDED, and that is why there is an RPC.** `add_water(ml, date)`
+does the read and the write in one statement and returns the day's new total.
+Glasses were SET — the tracker knew it wanted four, so it could write four —
+while a quick-add row is a thing people drum on, and a read here plus a write
+here loses one of two taps that overlap. A negative amount is the undo, which is
+also why the total is clamped at both ends rather than checked: somebody
+pressing undo has already made their only mistake. `tests/13_water.test.sql`
+drives all of it.
+
+**Millilitres where a figure is chosen, litres where one is summarised.** The
+card on Today, the quick-add sheet and the goal stepper are all ml; a trend
+tile, a range total and a review's daily average are "1.8 L". The rule is per
+SURFACE rather than per figure, and that is the part worth keeping — mixing
+them inside one card produced "0 ml / 2 L", a fraction whose two halves are in
+different units. `volume()` and `millilitres()` in `lib/water.ts` are the two
+forms.
+
+**The picture is a tank, and it is short on purpose.** `ui/WaterTank.tsx` draws
+a level with two waves at different speeds, and tips the surface left and right
+when the card first appears and again on every drink. It was a tall glass beside
+a column of quick-add buttons, which took a third of the screen on a diary whose
+subject is the meals underneath; what is there now is a band and one Add button,
+and the choosing happens in a sheet where a row of buttons costs nothing. The
+undo is a TOAST for the same reason — a button that appears after every drink is
+a control that exists to be ignored.
 
 ---
 

@@ -66,10 +66,23 @@ export const common = {
     gramsLong: '{{value}} grams',
   },
 
+  /**
+   * A volume, in the unit `volume()` in `lib/water.ts` picked for it.
+   *
+   * Two keys rather than one with the unit interpolated, because the space
+   * before a unit is not the same in every language this may one day carry and
+   * a caller assembling "{{value}} {{unit}}" cannot be corrected per language.
+   */
+  volume: {
+    ml: '{{value}} ml',
+    l: '{{value}} L',
+    /** The unit on its own, for a tile that prints the figure in its own type. */
+    mlUnit: 'ml',
+    lUnit: 'L',
+  },
+
   /** Reused counts. i18next picks _one/_other from `count`. */
   count: {
-    glasses_one: '{{count}} glass',
-    glasses_other: '{{count}} glasses',
     dayStreak_one: '{{count}} day streak',
     dayStreak_other: '{{count}} day streak',
     times_one: '{{count}} time',

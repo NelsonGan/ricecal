@@ -15,7 +15,7 @@ export type StepperProps = {
   step?: number
   min?: number
   max?: number
-  /** Unit shown under the value: "plates", "kg", "glasses". */
+  /** Unit shown under the value: "plates", "kg", "ml". */
   unit?: string
   /** Override how the value reads. Defaults to a fraction-aware format. */
   format?: (value: number) => string
@@ -57,7 +57,7 @@ function formatPortion(value: number) {
 }
 
 /**
- * A minus / value / plus control for portions, weights and glasses.
+ * A minus / value / plus control for portions, weights and goals.
  *
  * Clamping lives here rather than in each caller, and the buttons disable at
  * the bounds so the control cannot ask for a value it will refuse to produce.

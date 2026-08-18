@@ -22,8 +22,17 @@
  * subtle in the worst way, because the fields it does still have are right and
  * only the new ones are missing. A diary of the correct meals with no
  * illustrations, no weights and no portions is a plausible-looking screen.
+ *
+ * 5: water became a volume. `daily_logs.water_glasses` is `water_ml`, and the
+ * shapes that carried it followed — a day's `waterGlasses` is `waterMl`, a
+ * budget's is too, and every water figure on the trend and review summaries
+ * means millilitres where it used to mean cups. Both halves of that are
+ * unsurvivable in a rehydrated cache: the renamed field arrives `undefined` and
+ * prints as `NaN`, and the ones that kept their names arrive with the right
+ * type and the wrong unit, so a day of six cups draws as a tank six
+ * millilitres full.
  */
-export const SCHEMA_VERSION = '4'
+export const SCHEMA_VERSION = '5'
 
 /**
  * The free tier's three ceilings, as the app prints them.

@@ -181,7 +181,7 @@ export function PrimitivesSection() {
             <Text variant="meta">We could not reach the food database.</Text>
           </Card>
           <Card tone="water" title="Water">
-            <Text variant="meta">5 of 8 glasses today.</Text>
+            <Text variant="meta">1.25 L of 2 L today.</Text>
           </Card>
           <Card tone="inverse" title="Fasting mode">
             <Text variant="display" className="text-on-inverse">

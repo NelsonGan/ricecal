@@ -118,7 +118,7 @@ auth.users
        ├── subscriptions ──── read-only mirror of RevenueCat
        ├── food_logs ──────── what was eaten, WITH ITS OWN NUMBERS
        │    └── food_log_ingredients   what a scanned plate was made of
-       ├── daily_logs ─────── water and a day note
+       ├── daily_logs ─────── water in ML, and a day note
        ├── recipes ────────── home cooking      → recipe_ingredients
        ├── weight_logs ────── the source of truth for current weight
        └── health_connections  which health store, and how far back it has read

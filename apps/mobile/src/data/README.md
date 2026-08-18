@@ -39,7 +39,7 @@ place a reminder or report job will read. What is left in `src/lib/nutrition.ts`
 is presentation (a bar's fill, which meal a tap means) and one projection: the
 budget onboarding previews before there is a row to read.
 
-**2. Every mutation is a hook.** `useLogFood`, `useSetWater`, `useLogWeight`,
+**2. Every mutation is a hook.** `useLogFood`, `useAddWater`, `useLogWeight`,
 `useUpdateProfile` — each owns what it invalidates, so a screen never has to
 know what its write affects.
 

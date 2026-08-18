@@ -270,7 +270,8 @@ export type Targets = {
   carbs: number
   protein: number
   fat: number
-  waterGlasses: number
+  /** The day's water goal, in millilitres. */
+  waterMl: number
   /** True once the user has typed their own budget, which stops the recompute. */
   isCustom: boolean
 }
@@ -320,7 +321,7 @@ export type TrendBucket = {
   kcalGoal: number | null
   daysUnderGoal: number
 
-  /** Cups a day, averaged across the whole bucket. */
+  /** Millilitres a day, averaged across the whole bucket. */
   water: number
   waterTotal: number
   waterBest: number
@@ -357,7 +358,9 @@ export type TrendSummary = {
   kcalGoal: number | null
   daysUnderGoal: number
 
+  /** Millilitres a day, averaged across the range. */
   water: number
+  /** Millilitres over the whole range, and the fullest single day of it. */
   waterTotal: number
   waterBest: number
   waterGoalDays: number
@@ -446,6 +449,7 @@ export type ReviewSummary = {
   heaviestOn: string | null
   heaviestKcal: number | null
 
+  /** Millilitres a day, averaged over every day in the period. */
   water: number
   waterGoalDays: number
 
@@ -515,7 +519,8 @@ export type ReviewMeal = {
 export type DayLog = {
   date: string
   entries: Entry[]
-  waterGlasses: number
+  /** Millilitres drunk, summed over every drink recorded on this day. */
+  waterMl: number
 }
 
 /**
