@@ -56,27 +56,39 @@ const TIERS: readonly { key: 'post' | 'liked' | 'viral'; icon: IconProps; tone: 
 ]
 
 /**
- * Open the first URL the phone will take.
+ * Open the first URL the phone will take: the app's own scheme, then its
+ * website. See `SOCIAL_PLATFORMS` for the ladder.
  *
- * The app's own scheme first and its website last — see `SOCIAL_PLATFORMS`. The
- * final fallback is attempted WITHOUT asking `canOpenURL`, because that answer
- * is unreliable for http(s) on some Android configurations and a browser is
- * always there: better to try and fail than to decide in advance not to.
+ * IT ASKS BY TRYING, RATHER THAN BY ASKING FIRST. The obvious shape is
+ * `canOpenURL` and then `openURL`, and it is the one that does not work: that
+ * question is gated behind a declaration on both platforms — iOS wants the
+ * scheme in `LSApplicationQueriesSchemes` and Android 11+ wants a `<queries>`
+ * block — and an undeclared scheme answers FALSE rather than erroring. Both are
+ * native manifest keys, so the honest answer would arrive only in a new binary
+ * and never in an OTA update, and until then every tile here would quietly open
+ * a browser on a phone with the app installed. That failure is invisible: the
+ * tap works, it just goes to the wrong place.
+ *
+ * OPENING needs no such declaration on either platform. So this attempts each
+ * URL and lets the rejection be the answer — "no activity found to handle
+ * intent" on Android, an unhandled scheme on iOS — and falls through to the
+ * website, which every phone can open. One fewer thing to declare, and it is
+ * right the day it ships rather than the day a binary does.
  */
 async function openFirst(urls: readonly string[]): Promise<void> {
-  for (const url of urls.slice(0, -1)) {
+  let lastError: unknown
+  for (const url of urls) {
     try {
-      if (await Linking.canOpenURL(url)) {
-        await Linking.openURL(url)
-        return
-      }
-    } catch {
-      // Try the next one. A scheme this phone refuses to answer for is not an
-      // error, it is a platform that is not installed.
+      await Linking.openURL(url)
+      return
+    } catch (error) {
+      // Not an error: a scheme nothing answers for is a platform this phone
+      // does not have. Kept so the caller can report the LAST failure, which is
+      // the website's — the only one that means something went wrong.
+      lastError = error
     }
   }
-  const last = urls[urls.length - 1]
-  if (last) await Linking.openURL(last)
+  throw lastError ?? new Error('no url could be opened')
 }
 
 export default function ShareAndEarnScreen() {

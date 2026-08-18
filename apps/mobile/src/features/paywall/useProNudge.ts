@@ -40,8 +40,14 @@ const DELAY_MS = 1400
  * paid — on the day they paid, most memorably, since a cold launch resolves this
  * in milliseconds and a bad connection does not.
  *
- * Mounted by Today rather than by the tabs layout, so it belongs to the screen
- * it appears over and cannot fire while the user is somewhere else in the app.
+ * Mounted by Today rather than by the tabs layout, so the offer belongs to the
+ * screen it appears over. That is a statement about WHERE it is booked, not a
+ * guarantee: a tab navigator keeps its screens mounted, so a timer booked here
+ * survives a tab change. It is booked on MOUNT, which is the launch, and the
+ * delay is 1.4 seconds — nobody has reached another tab by then, and the worst
+ * case if they have is a dismissible page that lands back where they were. A
+ * focus check would need a navigation dependency this app does not otherwise
+ * carry, for a second and a half of exposure.
  */
 export function useProNudge(): void {
   const router = useRouter()

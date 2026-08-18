@@ -1294,6 +1294,18 @@ the other order strands the bytes for ever, the key being their only name. The
 row keeps a drawing where the plate was (`icon-match.ts` again), or a swept month
 would be a column of grey tiles.
 
+**There is a second way to get Pro, and no code behind it.** Share & Earn
+(`app/settings/share.tsx`) offers a month for a post that reaches 30 likes, a
+year at 100 and lifetime at 500, claimed by bringing the link to the Discord
+server that already carries support. The whole of it is MANUAL — no referral
+code, no attribution, no table, no deep link — and that is the design rather
+than a first cut: a referral system buys automatic credit and costs a claimed-by
+column, a fraud story and a support thread for every code that did not register,
+which at this size is more machinery than the thing it automates. It is also why
+the threshold is LIKES rather than installs: installs need attribution to count
+at all, while likes are on the post itself, where both sides can see them. The
+reward goes out as a RevenueCat promotional grant, by hand.
+
 **Reminders are all local.** A meal reminder is "every day at 08:00 in the
 user's own timezone", which both platforms express as a repeating calendar
 trigger: no server, no push token, nothing to deliver if the phone is offline at

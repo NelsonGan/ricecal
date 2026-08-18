@@ -1,9 +1,11 @@
+import { FREE_RECIPES } from '@ricecal/shared'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import {
+  isRecipeLimit,
   snapshotFromRecipe,
   storedImageSource,
   useDeleteRecipe,
@@ -18,6 +20,7 @@ import {
 import { useRequirePro } from '@/features/paywall'
 import { RecipeSteps, ShareSheet } from '@/features/recipes'
 import { MealPhoto } from '@/features/shared'
+import { track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
 import { energyShare } from '@/lib/nutrition'
 import { useThemeColors } from '@/theme/useTheme'
@@ -164,7 +167,21 @@ export default function RecipeDetailScreen() {
     let newId: string
     try {
       newId = await saveCopy.mutateAsync(recipe.id)
-    } catch {
+    } catch (error) {
+      // The trigger refusing, rather than the write failing. Reachable even
+      // past the guard above: the count this screen read can be a shelf out of
+      // date — another phone saved a third recipe a minute ago — and "could not
+      // save that" would send somebody to try again at a ceiling that is not
+      // going to move. Same answer as the recipe form gives.
+      if (isRecipeLimit(error)) {
+        toast.show({
+          title: t('recipes:edit.limitReached', { count: FREE_RECIPES }),
+          tone: 'warning',
+        })
+        track('Paywall Shown', { screen: 'hard', trigger: 'new_recipe' })
+        router.push('/paywall')
+        return
+      }
       toast.show({ title: t('recipes:detail.saveCopyFailed'), tone: 'error' })
       return
     }

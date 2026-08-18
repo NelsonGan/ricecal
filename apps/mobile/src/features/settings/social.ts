@@ -13,13 +13,12 @@
  * logged-out web page, and the site last as the answer for a phone that does
  * not have it.
  *
- * `canOpenURL` DECIDES, AND IT NEEDS PERMISSION TO ANSWER. On iOS a scheme has
- * to be listed in `LSApplicationQueriesSchemes` (in `app.json`, so it takes a
- * new BINARY rather than an OTA update); on Android package visibility means
- * the same thing and would need a `<queries>` block, which is not there. An
- * undeclared scheme reads as "not installed" and the ladder falls through to
- * the website — which is why the web URL is never the only entry, and why this
- * degrades to something that works everywhere rather than to a dead button.
+ * NOTHING ASKS WHETHER THE APP IS INSTALLED — the ladder is walked by trying.
+ * `canOpenURL` is gated behind a native manifest declaration on both platforms
+ * and answers a flat "no" without one, which would send every tap to a browser
+ * on a phone that has the app. See `openFirst` in the screen. What follows for
+ * this list is that the LAST entry has to be openable by any phone at all,
+ * which means a plain website and not a deep link into one.
  *
  * There is no compose intent in any of these. A post with a photograph in it
  * cannot be prefilled from outside the app on either platform, and a link that
@@ -71,6 +70,9 @@ export const SOCIAL_PLATFORMS: readonly SocialPlatform[] = [
     key: 'x',
     label: 'X',
     logo: require('../../../assets/brand/social/x.jpg'),
-    urls: ['twitter://post', 'https://x.com/compose/post'],
+    // The site's front door, not `/compose/post`: a composer is a login wall to
+    // anybody not signed in on the web, and the last rung of every ladder here
+    // is the one that has to work for everybody.
+    urls: ['twitter://post', 'https://x.com'],
   },
 ]
