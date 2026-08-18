@@ -629,6 +629,17 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
+      # ANDROID LANDS ON CLOSED TESTING, not internal, and the track is in
+      # `eas.json` rather than here so a local `eas submit` cannot disagree with
+      # CI about where a build goes. It was `internal`, which meant every
+      # release then had to be promoted internal to closed by hand — a manual
+      # step in the middle of an automated pipeline, which is the kind that gets
+      # forgotten rather than the kind that gets noticed. The trade is review:
+      # an internal release is available in minutes and a closed one waits for
+      # Google, so a deploy no longer means testers have it.
+      #
+      # iOS is unaffected. `ascAppId` sends it to TestFlight, which is already
+      # the equivalent stage.
       - name: Submit build
         working-directory: apps/mobile
         run: |
