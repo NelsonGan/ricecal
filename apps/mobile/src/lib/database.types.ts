@@ -1619,6 +1619,7 @@ export type Database = {
           icon_set: Database['public']['Enums']['icon_set']
           kcal_avg: number
           name: string
+          photo_path: string
           protein_g_avg: number
         }[]
       }

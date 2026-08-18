@@ -496,6 +496,14 @@ export type ReviewBucket = {
 export type ReviewMeal = {
   name: string
   icon?: IconRef
+  /**
+   * The newest plate photographed under this name, as a stored key.
+   *
+   * Preferred over the icon where there is one, the same way round the diary
+   * prefers it — and a dish logged by camera once and by hand twice can have
+   * both, which is why neither field displaces the other here.
+   */
+  photoPath?: string
   /** What one of them cost, averaged over any repeats. Not the period's total. */
   kcal: number
   carbs: number

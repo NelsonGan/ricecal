@@ -229,15 +229,15 @@ name even for a frame; `ToastProvider` outside the navigator so a "saved"
 confirmation survives the screen that fired it popping.
 
 Routes come in two shapes. **Full pages push** — settings, the reports, search,
-the dish detail, one recipe, the reviews list — and carry a chevron in their own
-`AppBar`. **Modals present** — the quick selector, the paywalls, one review —
-and carry a cross. Every screen draws its own title bar; the native header is
-off everywhere. A tab carries a `ScreenTitle` instead, because there is nothing
-behind it to go back to.
+the dish detail, one recipe, the reviews list and one review — and carry a
+chevron in their own `AppBar`. **Modals present** — the quick selector, the
+paywalls — and carry a cross. Every screen draws its own title bar; the native
+header is off everywhere. A tab carries a `ScreenTitle` instead, because there
+is nothing behind it to go back to.
 
-A review is the one page that presents for a REASON rather than by kind: it
-pages sideways, and a pushed screen would spend that gesture on the interactive
-pop instead.
+A review used to be the exception, presenting for a REASON rather than by kind:
+it paged sideways, so a pushed screen would have spent that gesture on the
+interactive pop. It scrolls now, and the exception went with the pager.
 
 Five tabs — Today, Recipes, Activity, Trends, Me — on the headless
 `expo-router/ui` Tabs rather than a styled navigator, because `NavBar` /
@@ -1028,10 +1028,20 @@ empty past day mean "missed".
 
 ## Looking back at a week
 
-A finished week or month, read as a few cards you tap through. A row at the foot
-of Trends leads to `/reviews`, which lists the periods worth opening, and one of
+A finished week or month, read as one column of cards. A row at the foot of
+Trends leads to `/reviews`, which lists the periods worth opening, and one of
 them opens `/reviews/[id]` — `week-2026-08-03` or `month-2026-07-01`, the kind
 and the first day, from which the server works out the rest.
+
+**IT SCROLLS, and it used to page.** Four screens of cards, tapped or swiped
+through under a progress bar, borrowed the shape of an Instagram story without
+borrowing the thing that makes one work: a story page is a photograph read in a
+second, and these are charts and figures somebody wants to COMPARE. Paged, the
+answer to "what did that say" was a tap backwards and a hunt, and seeing the
+food beside the calories meant remembering one of them. What went with the pager
+is everything that existed to serve it — the step counter, the segmented
+progress bar, the two edge strips that took a tap, and the `fullScreenModal`
+presentation those strips needed. The cards themselves are unchanged.
 
 **Only finished periods, and every one of them.** Weeks reach three months back
 and months reach six, because a weekly review is about something somebody still
@@ -1042,36 +1052,35 @@ hid the weeks whose shape was most worth seeing, while making the route into the
 feature invisible to exactly the person who had not found it yet. The row on
 Trends is always there for the same reason.
 
-**How many steps a story has is data.** `reviewSteps` reads the summary: the
-card, the food and the calories always hold, and the body step exists only if
+**How many sections a review has is data.** `reviewSteps` reads the summary: the
+card, the food and the calories always hold, and the body section exists only if
 there was a weigh-in or a watch. A month before the health store was connected
-is three steps rather than four with an empty one at the end — the progress bar
-counts what it is given, and a segment leading to a card of dashes is a promise
-the tap does not keep. Within the body step each card is conditional again, so
-the same screen is weight-and-water for an older month and weight, steps and
-movement for last week.
+is three sections rather than four, of which the last would be dashes. Within
+the body section each card is conditional again, so the same page is
+weight-and-water for an older month and weight, steps and movement for last
+week.
 
-**A tap on a card shares it; a tap at either edge steps the story.** Every card
-in a story draws ITSELF into a picture through Skia's `makeImageFromView` and
-offers it in a sheet with a Share button — the preview is that captured file
-rather than a second rendering, so what is on screen is exactly what leaves the
-phone. iOS gets the picture, Android the sentence beside it: React Native's
-`Share` takes `url` on iOS alone, and sharing a file on Android needs a
-content:// provider, a dependency and a rebuild.
+**A tap on a card shares it.** Every card draws ITSELF into a picture through
+Skia's `makeImageFromView` and offers it in a sheet with a Share button — the
+preview is that captured file rather than a second rendering, so what is on
+screen is exactly what leaves the phone. iOS gets the picture, Android the
+sentence beside it: React Native's `Share` takes `url` on iOS alone, and sharing
+a file on Android needs a content:// provider, a dependency and a rebuild.
 
-Because a card takes its own press, the navigation moved to narrow strips down
-either EDGE, over the top of everything. Those strips are the second arrangement
-of a lesson worth keeping: the first version put them UNDER the content, on the
-reasoning that a plain View never becomes a touch responder so a tap on a card
-would fall through to them. It does not. React Native offers an unclaimed touch
-to the hit view's ANCESTORS, never to a sibling that overlaps it, so every tap
-that landed on a card did nothing — and since the empty canvas below the last
-card still worked, it looked like one broken page rather than like most of every
-page.
+That press is now the ONLY one on the page, which is what makes a scrolling
+review simpler than a paged one rather than merely different. The pager had to
+share the screen with it, and the arrangement that worked was the second
+attempt: strips down either edge, laid OVER the cards. Under them they did
+nothing, because React Native offers an unclaimed touch to the hit view's
+ANCESTORS and never to a sibling that overlaps it — a lesson worth keeping even
+though the strips are gone.
 
-**No timer.** Instagram advances itself because a photograph is read in a
-second; these pages are a chart and four figures, and a page that leaves while
-it is being read is worse than no animation at all.
+**The biggest plates carry the plate.** Each dish on the food card leads with
+the newest photograph logged under that name and falls back to its drawing, so
+a camera user's week is their own five plates rather than five copies of one
+outline. `review_meals` returns the key beside the icon and the client prefers
+it exactly as the diary does; the five signatures it needs are batched into one
+request by `data/photos.ts`.
 
 **Two reminders open a review**, and they are the only notifications in the app
 that go anywhere. The weekly one fires on MONDAY morning and the monthly on the
