@@ -119,6 +119,7 @@ export { Tappable, type TappableProps } from './Tappable'
 export { Text, type TextProps, type TextVariant } from './Text'
 export { TextField, type TextFieldProps } from './TextField'
 export {
+  type ToastApi,
   type ToastOptions,
   type ToastPlacement,
   ToastProvider,

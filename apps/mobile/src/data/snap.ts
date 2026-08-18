@@ -16,7 +16,7 @@ import { today } from './client'
 import { keys } from './keys'
 import { usePendingSnaps } from './pending-snaps'
 import { uploadMealPhoto } from './photos'
-import { AiLimitError, NotEntitledError, refusalFrom } from './refusals'
+import { announceRefusal, refusalFrom, ScanLimitError } from './refusals'
 import { useUserId } from './session'
 
 export type SnapInput = {
@@ -266,26 +266,29 @@ function useRecogniseMeal() {
           // through `activity_summary`. Without this a meal logged today left
           // the Activity tab still saying "Not enough logged".
           queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
-          // The scan spent somewhere between one and four model requests and
+          // The scan is spent whichever way it turned out, so the count on the
+          // camera panel has to move. Invalidated on the failure paths too, in
+          // the catch below: a scan that ran out of budget is the one moment the
+          // number matters most.
+          queryClient.invalidateQueries({ queryKey: keys.scanQuota(userId) })
         })
         .catch((error: unknown) => {
-          // Out of budget for the month. The user is told, and told what to
-          // do about it, because there is nothing in the app that fixes this.
-          if (error instanceof AiLimitError) {
+          // The two refusals. A snapped plate is REFUSED FOR A DIFFERENT REASON
+          // now than it used to be: the camera is not behind the paywall any
+          // more, so what lands here is a free account's fourth plate of the
+          // day, and the answer to that is the paywall rather than an apology.
+          // `announceRefusal` says what happened and opens it — except to a
+          // subscriber who has somehow reached fifty, who is told and shown
+          // nothing to buy.
+          //
+          // Typing a meal is still Pro, so a described one can also arrive here
+          // as `not_entitled` when a subscription lapsed between the send and
+          // the request.
+          queryClient.invalidateQueries({ queryKey: keys.scanQuota(userId) })
+          if (announceRefusal(toast, error, method === 'describe' ? 'describe' : 'camera')) {
             void booked.then(() => cancelScanNotice(notice))
             pending.fail(id)
-            completed('limit_reached')
-            toast.show({ title: i18n.t('paywall:limit.reached'), tone: 'error' })
-            return
-          }
-          // Entitlement lapsed between the tap and the request. The guard in
-          // front of the shutter catches this almost always; this is what is
-          // left when a subscription ends mid-flight.
-          if (error instanceof NotEntitledError) {
-            void booked.then(() => cancelScanNotice(notice))
-            pending.fail(id)
-            completed('not_entitled')
-            toast.show({ title: i18n.t('paywall:limit.notEntitled'), tone: 'warning' })
+            completed(error instanceof ScanLimitError ? 'limit_reached' : 'not_entitled')
             return
           }
           // The outcome is known and it is no: say so now rather than spinning

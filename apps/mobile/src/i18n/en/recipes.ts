@@ -125,6 +125,15 @@ export const recipes = {
     saved: 'Recipe saved',
     nameRequired: 'Give it a name first',
     saveFailed: 'Could not save that. Try again.',
+    /**
+     * The free tier's ceiling, met at the write. The plus button on the shelf
+     * normally catches this first, so the sentence has to work for the case
+     * where it did not: a recipe saved on another phone since this count was
+     * read, or a subscription that lapsed with the form already open. It names
+     * the number rather than saying "limit reached", because a ceiling somebody
+     * has just met is a ceiling they want to know the size of.
+     */
+    limitReached: 'A free account keeps {{count}} recipes. Pro has no limit.',
     /** The totals card under the ingredient list. */
     totalLabel: 'Per serving, {{count}}',
     totalWhole: 'Whole pot {{kcal}} kcal',

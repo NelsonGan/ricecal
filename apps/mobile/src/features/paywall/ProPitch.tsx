@@ -4,9 +4,9 @@ import { View } from 'react-native'
 
 import type { Plan } from '@/data'
 import { usePlanPrices } from '@/data'
-import { FactRow } from '@/features/onboarding'
 import { PlanPicker } from '@/features/shared'
-import { Button, Card, Icon, type IconProps, Text } from '@/ui'
+import { Button, Icon, Text } from '@/ui'
+import { PlanTable } from './PlanTable'
 
 /**
  * The app's icon, not the mascot.
@@ -17,47 +17,6 @@ import { Button, Card, Icon, type IconProps, Text } from '@/ui'
  * reason, and the two are the first and last screens of the flow.
  */
 const LOGO = require('../../../assets/icon.png')
-
-/**
- * Everything Pro includes, in the order somebody would meet it.
- *
- * ALL OF IT, not a selection. There is no free tier to compare against, so a
- * two-column "free vs Pro" table would have an empty column and an argument to
- * make; a list of what you get has neither. The three-perk summary this
- * replaced sold photo scanning and left the diary, the reviews, the health
- * sync and the recipes unmentioned, which is most of the app.
- *
- * The order is the order of use: the four ways a meal gets in, then what the
- * app does with it, then what it does over time.
- *
- * Copy keys rather than strings so this stays translatable, and one array so
- * adding a feature is one entry rather than a hunt through JSX.
- *
- * EXPORTED because the subscription screen lists the same things under
- * "Included", and it had its own hand-written three: unlimited logging, photo
- * scanning, the food database. Two lists meant the screen somebody reads AFTER
- * paying described a smaller product than the one that sold it to them, and
- * nothing would have caught the drift — a feature added to the pitch simply
- * never appeared there. Same source, two renderings: the pitch has room for a
- * line of body copy under each, and the settings card is a checklist of the
- * titles.
- */
-export const PRO_FEATURES = [
-  { key: 'snap', icon: { set: 'system', name: 'camera' } },
-  { key: 'describe', icon: { set: 'system', name: 'sparkle' } },
-  { key: 'barcode', icon: { set: 'system', name: 'barcode' } },
-  { key: 'search', icon: { set: 'ui', name: 'search' } },
-  { key: 'recipes', icon: { set: 'food', name: 'cooking-pot' } },
-  { key: 'budget', icon: { set: 'body', name: 'target' } },
-  { key: 'health', icon: { set: 'body', name: 'footprints' } },
-  { key: 'trends', icon: { set: 'body', name: 'chart-up' } },
-  { key: 'reviews', icon: { set: 'ui', name: 'diary' } },
-  { key: 'reminders', icon: { set: 'system', name: 'bell' } },
-  // `as const` so each `key` stays a literal. Widened to `string` the copy
-  // lookups below stop typechecking, which is the whole value of the typed
-  // bundle: a feature added here without copy would otherwise ship as a blank
-  // row rather than failing the build.
-] as const satisfies ReadonlyArray<{ key: string; icon: IconProps }>
 
 export type ProPitchProps = {
   plan: Plan
@@ -115,19 +74,12 @@ export function ProPitch({ plan, onPlanChange, onRestore }: ProPitchProps) {
         </Text>
       </View>
 
-      {/* Every feature, not a highlight reel. See `PRO_FEATURES`. */}
-      <Card title={t('hard.everything')}>
-        <View className="gap-4">
-          {PRO_FEATURES.map((feature) => (
-            <FactRow
-              key={feature.key}
-              icon={feature.icon}
-              title={t(`hard.features.${feature.key}.title`)}
-              body={t(`hard.features.${feature.key}.body`)}
-            />
-          ))}
-        </View>
-      </Card>
+      {/* What each tier gets, side by side. It was a list of everything Pro
+          includes, which is the right shape for an app with no free tier and
+          the wrong one for this: a reader whose barcode scanner already works
+          needs to know which of these lines is the one they do not have. See
+          `PlanTable`. */}
+      <PlanTable />
 
       <PlanPicker showLifetime value={plan} onChange={onPlanChange} />
 

@@ -68,3 +68,49 @@ create policy "subscriptions: read own"
   on public.subscriptions for select
   to authenticated
   using ((select auth.uid()) = user_id);
+
+-- ---------------------------------------------------------------------------
+-- Is this account Pro right now?
+--
+-- THE SAME RULE THE EDGE FUNCTIONS AND THE APP APPLY — an entitled status, and
+-- a period that has not run out — written a third time because a third place
+-- now needs it and cannot ask either of the other two. `entitledBy` in
+-- `functions/_shared/entitlement.ts` decides whether a request reaches the
+-- model; `isEntitledRow` in the app's `data/subscription.ts` decides what the
+-- buttons say; this one decides what the DATABASE lets through, which is the
+-- free tier's ceiling on scans and on recipes. All three have to be changed
+-- together, and each is tested against the same cases.
+--
+-- NULL IS NO EXPIRY, not an expired one: lifetime renews never, so RevenueCat
+-- sends no date for it and reading the column the other way round would refuse
+-- the one plan that cannot lapse.
+--
+-- `security definer` because its callers are triggers and quota claims running
+-- as whoever happened to be inserting, and the row it reads is protected by an
+-- RLS policy that only answers for the account itself. A trigger checking
+-- somebody's tier under their own privileges would read their own subscription
+-- fine and see nothing at all when a job sweeps on their behalf.
+-- ---------------------------------------------------------------------------
+create or replace function public.is_entitled(p_user uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+      from public.subscriptions s
+     where s.user_id = p_user
+       and s.status in ('trial', 'active')
+       and (s.current_period_end is null or s.current_period_end > now())
+  );
+$$;
+
+-- Not granted to `authenticated`: it takes a uuid, and a signed-in caller
+-- holding somebody else's would learn whether that account is subscribed. The
+-- app has its own copy of this rule for its own row (`isEntitledRow`), and the
+-- two functions here that need it across accounts — `scan_daily_limit` and the
+-- recipe trigger — are `security definer` and reach it as the owner.
+revoke execute on function public.is_entitled from public, anon, authenticated;
+grant execute on function public.is_entitled to service_role;

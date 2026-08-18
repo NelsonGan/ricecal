@@ -187,9 +187,12 @@ diary appears (`features/tutorial`), and permanently from a row in Me. Nobody
 reads a manual for a thing they have not touched.
 
 The paywall is the last thing rather than a step of its own. "Later" lands on
-the real app, where everything reads and only writing an entry is behind the
-wall; there used to be a read-only preview of the diary behind that button, and
-a mock of the app was a worse answer than the app.
+the real app, and the app it lands on WORKS: three photographed plates a day,
+the barcode scanner, the whole catalogue, three recipes, the week's trends. See
+"Free and Pro" below for the whole of it. "Later" used to land somewhere much
+thinner — every write was gated, so the free app was a search box over a diary
+nobody could add to — and before that on a read-only preview of the diary, which
+was a mock of the app and a worse answer than the app.
 
 **NOTHING IN THIS FLOW HAS AN EDGE SWIPE.** It was off from `finish` onwards
 already, because everything after the account REPLACES its predecessor: the
@@ -302,7 +305,7 @@ auth.users
        ├── meal_times ─────── when each meal is, and whether to remind
        ├── daily_goals ────── the budget, effective-dated
        ├── subscriptions ──── read-only mirror of RevenueCat
-       ├── ai_usage ────────── model requests spent, one row per month
+       ├── scan_usage ──────── scans spent, one row per LOCAL day, per tier
        ├── food_logs ──────── what was eaten, WITH ITS OWN NUMBERS
        │    └── food_log_ingredients   what a scanned plate was made of
        ├── daily_logs ─────── water and a day note
@@ -1220,36 +1223,76 @@ paywall back in front of somebody one tap after they paid, and it is invisible
 on a fast connection. Every purchase and restore awaits `useAwaitEntitlement`,
 which polls the mirror and gives up rather than blocking for ever.
 
-**What Pro gates is WRITING AN ENTRY, and nothing else.** Search works, the
-catalogue is open, a dish page prices itself, the barcode scanner scans and the
-camera frames the plate. `useRequirePro` is the single guard and it is called at
-the last tap on each of the five write paths. A greyed-out shutter tells
-somebody they cannot do something and gives them nowhere to go; one that opens
-the paywall tells them what it costs. Editing an entry that ALREADY exists is
-never gated, because a lapsed subscription must not lock somebody out of their
-own diary.
+### Free and Pro
 
-**Every request to OpenRouter is counted, and 3,000 a month is the ceiling.**
-`ai_usage` is one row per account per month — not a counter on `profiles`, which
-would need something to reset it — and `claim_ai_inference` does the check and
-the increment in ONE statement, because a hard limit two concurrent scans can
-both walk through is not one. The meter is threaded to `chatJSON` as a REQUIRED
-argument so a new model call cannot be added without deciding whose budget it
-comes out of; `deno check` in CI is what enforces that. What counts is a
-REQUEST, not a scan: one photographed plate is a vision call, often a verifier
-call, sometimes an estimate, and a retried 429 is another. Running out is a
-toast asking the user to get in touch, never the archetype floor — falling
-through would put a guessed "Mixed meal" in the diary of somebody who was owed
-an explanation.
+**THE APP USED TO GATE WRITING AN ENTRY, AND NOW IT DOES NOT.** Every write went
+through `useRequirePro` — the shutter, quick add, a dish out of the catalogue,
+logging a recipe — which made a free account a read-only tour of somebody else's
+diary. What replaced it is a free tier that can keep a real diary, and a paid
+tier that takes the limits off:
 
-The COUNT ITSELF IS NOT SHOWN ANYWHERE IN THE APP, and that is deliberate. It
-briefly was, on the subscription screen. It counts requests to the model rather
-than meals — one photographed plate is several — so any figure on screen
-invites the reply that they have only logged forty things this week, which is
-true, and which the number cannot answer. It is an operational limit, so it
-lives where it is enforced: `ai_usage` in Postgres. The only thing a user ever
-sees is the message when they reach it. `ai_usage_this_month()` survives as a
-read for support and a future admin view; nothing in the app calls it.
+| | Free | Pro |
+|---|---|---|
+| photographed plate | 3 a day | 50 a day, sold as unlimited |
+| barcode, search, quick add, logging a saved recipe | yes | yes |
+| a meal typed in words (`describe`) | no | yes |
+| a meal corrected in words (`refine`) | no | yes |
+| a recipe read out of a photograph | no | yes |
+| recipes kept | 3 | unlimited |
+| trends | 7 days | 7d / 30d / a year |
+| reviews | the newest week | every week and month |
+| meal photographs kept | 30 days | for good |
+| budget, health sync, reminders, the whole catalogue | yes | yes |
+
+Three of those numbers live in `packages/shared` for the copy to interpolate,
+and ALL of them are enforced in Postgres — `free_daily_scans()`,
+`free_recipe_limit()`, `free_photo_retention_days()`. The client's copy is what
+makes the buttons read honestly; the database's is what refuses.
+
+**The unit of the meter is a SCAN, and it used to be a request to OpenRouter.**
+`scan_usage` is one row per account per LOCAL day and `claim_scan` does the check
+and the increment in ONE statement, because a hard limit two concurrent scans can
+both walk through is not one. It reads `is_entitled(user)` itself, so the ceiling
+is a property of the tier rather than of the table.
+
+The old unit is why the old ceiling could never be sold: one photographed plate
+is a vision call, often a verifier call, sometimes an estimate, and a retried 429
+is another — three or four requests for one shutter press. "3,000 model requests
+a month" is not a number anybody can hold against their own week, and a user
+refused after logging forty meals had an objection the figure could not answer.
+Counted in scans, the refusal has an answer, and that answer is the paywall.
+
+One scan is one user-initiated pass at the model: a photographed plate, a typed
+meal, a correction, a recipe read out of a picture. Claimed ONCE, at the top of
+the endpoint, before the photo is read and before the first model call. `Meter`
+is still threaded down to `chatJSON` and still required, but it only COUNTS now
+— what it records is what a scan cost us, for the logs and the debug trace.
+
+**A free account's refusal opens the paywall; a Pro account's does not.**
+`claim_scan` returns `entitled` alongside the numbers, and `announceRefusal` in
+`data/refusals.ts` is the one place that decides: a free user gets a toast saying
+they have used today's three and the paywall behind it, and a subscriber who has
+somehow reached fifty in a day gets the message and nothing to buy. Showing a
+paywall to somebody who has already paid is the worst thing this app can do with
+a refusal.
+
+**Pro is also offered without being asked for, once every two days.**
+`useProNudge` on Today, a beat after the diary appears. Everything else in the
+app waits to be refused, and an account that never presses a gated button would
+otherwise never learn there is a paid tier. EVERY paywall resets that clock —
+the refusals, the onboarding one, the nudge itself — so the rule the user
+experiences is "at most one paywall every two days" rather than one nudge plus
+every refusal. It is MMKV and keyed by user, for the reasons the tour flag is.
+
+**Free photographs are swept after thirty days, and only the photographs.**
+The entry stays for ever: its name, its macros and its place in the diary are
+the history somebody came for. `functions/retention` does it rather than a cron
+job in Postgres, because Postgres cannot reach R2 and the ORDER is the whole
+problem — delete the object, then clear the column. A crash between the two is
+picked up by the next run, since deleting a key that is already gone is a no-op;
+the other order strands the bytes for ever, the key being their only name. The
+row keeps a drawing where the plate was (`icon-match.ts` again), or a swept month
+would be a column of grey tiles.
 
 **Reminders are all local.** A meal reminder is "every day at 08:00 in the
 user's own timezone", which both platforms express as a repeating calendar
@@ -1452,6 +1495,12 @@ Break these and the feature is wrong in ways tests may not catch.
   to be wrong in. The METER fails the other way on purpose: a database blip
   while claiming budget lets the request through uncounted, since telling
   somebody who has paid that they are cut off is worse than losing a tally mark.
+  The free tier's other two ceilings are enforced the same way and in the same
+  place: `recipes_enforce_free_limit` is a TRIGGER because a client writes
+  `recipes` directly under RLS with no function in between, and the retention
+  sweep runs as `service_role` with no client involved at all. Only the trend
+  ranges and the older reviews are client-side, and deliberately: they are reads
+  of the user's OWN data, so the worst case is somebody seeing their own year.
 - **An entitled status is not enough; the PERIOD has to be running too.**
   `entitledBy` on the server and `isEntitledRow` on the client both read
   `current_period_end`, and null means no expiry rather than an expired one —
@@ -1468,15 +1517,16 @@ Break these and the feature is wrong in ways tests may not catch.
   Deno / React Native line and have to be changed together. What follows from it
   on screen: anything PRINTING the plan reads `entitled`, not the status, or the
   Me tab says "Pro active" on the same screen whose buttons are about to refuse.
-- **The meter counts requests to OpenRouter, not scans, and it is claimed
-  BEFORE the request.** Claimed afterwards, an account already over its limit
-  would still get to send the one that put it there. The retry inside
-  `chatJSON` claims again, because OpenRouter bills it again.
-- **Running out of budget is never answered with an archetype.**
-  `AiLimitReached` is rethrown through every `.catch` in the cascade rather than
-  being read as "this tier failed, move down" — otherwise each tier below
-  retries the same refusal and the user is handed a guessed "Mixed meal"
-  instead of being told what happened.
+- **The quota counts SCANS, not requests to OpenRouter, and it is claimed once
+  BEFORE any of them.** One user-initiated pass at the model is one unit,
+  whatever it costs underneath. Claimed afterwards, an account already at its
+  ceiling would still get to send the request that put it there.
+  This also retired an invariant rather than restating it. "Running out of
+  budget is never answered with an archetype" used to need `AiLimitReached`
+  rethrown through every `.catch` in the cascade — swallowed anywhere, each tier
+  below retried the same refusal and handed the user a guessed "Mixed meal"
+  instead of an explanation. Claimed at the top of the endpoint, a budget
+  failure can no longer reach the cascade at all, and the rethrows are gone.
 - **The OpenRouter key never reaches the client**, and neither do the R2
   credentials. A client that could name its own object key, or hold a key that
   does not expire, is a client that can read someone else's plate.
@@ -1689,13 +1739,14 @@ Break these and the feature is wrong in ways tests may not catch.
   reads a year and returns nothing — which looks like a broken feature rather
   than an empty device. The Activity tab offers generated data once a connected
   store turns out to have no days in it.
-- **The paywall applies to a local stack too, and nothing seeds a subscription.**
-  `requireEntitlement` runs before the mock-AI branch on purpose — a local stack
-  where the gate did not exist would be the one place every gating bug is
+- **The free tier applies to a local stack too, so the FOURTH scan of the day
+  fails there.** Both gates run before the mock-AI branch on purpose — a local
+  stack where they did not exist would be the one place every gating bug is
   invisible — and `handle_new_user` creates a profile, settings and meal times
-  but no `subscriptions` row. So a fresh local account gets 402 `not_entitled`
-  on every scan, described meal and correction, which reads as a broken
-  pipeline. One row fixes it:
+  but no `subscriptions` row. So a fresh local account is a FREE account: three
+  photographed plates a day work, and describe, fix-by-typing and the recipe
+  reader all answer 402 `not_entitled`, which reads as a broken pipeline if you
+  are not expecting it. One row fixes all of it:
 
   ```sql
   insert into public.subscriptions (user_id, status, plan)
@@ -1703,10 +1754,19 @@ Break these and the feature is wrong in ways tests may not catch.
   on conflict (user_id) do update set status = 'active';
   ```
 
+  Testing the OTHER direction — what a free account actually meets — is the same
+  row with `status = 'none'`, or no row at all. `scan_usage` is where the day's
+  count lives, and deleting the row is how you get your three back without
+  waiting for midnight.
+
   The same applies to the account behind `.secrets/eval.json`: `pnpm eval:scan`
   and `pnpm eval:recipe` drive the DEPLOYED functions, so that account needs a
   real entitlement (a promotional one in RevenueCat) or every case fails
-  identically at the first request.
+  identically at the first request. AND IT NOW HAS A CEILING TOO: Pro is fifty
+  scans a day, `eval:scan` is 27 cases, so a second `--repeat` in one day runs
+  into it and the cases past 50 fail as 429s rather than as bad answers. Clear
+  `scan_usage` for that account between runs, or read the failures for what they
+  are.
 - **Mock AI** is on whenever `OPENROUTER_API_KEY` is unset (or `MOCK_AI=true`),
   so a local stack scans with no config and production can never mock silently.
   Requests may steer it via `body.mock`, honoured in mock mode only.

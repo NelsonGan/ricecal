@@ -273,11 +273,16 @@ export async function chatJSON(
   if (!key) throw new Error('OPENROUTER_API_KEY not set')
 
   const attempt = async (): Promise<unknown> => {
-    // Before the request, not after: a claim that ran on the way back would
-    // let a refused account still send the one that put it over. The retry
-    // below comes back through here and claims again, which is right — a
-    // retried 429 is a second request and OpenRouter bills it as one.
-    await meter.claim()
+    // Counted before the request rather than after, so a call that times out
+    // still shows up in the trace as something we paid for. The retry below
+    // comes back through here and counts again, which is right — a retried 429
+    // is a second request and OpenRouter bills it as one.
+    //
+    // COUNTING ONLY. The ceiling is claimed once per scan at the top of the
+    // endpoint; see `claimScan`. This used to be where an account was refused,
+    // and a limit expressed in requests-to-a-model is a limit no paywall can
+    // state.
+    meter.record()
 
     const res = await fetch(OPENROUTER_URL, {
       method: 'POST',

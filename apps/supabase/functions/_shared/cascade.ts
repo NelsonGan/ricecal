@@ -19,7 +19,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { type CatalogueFood, searchFoods } from './catalogue.ts'
-import { AiLimitReached, type Meter } from './entitlement.ts'
+import type { Meter } from './entitlement.ts'
 import {
   type Archetype,
   classifyArchetype,
@@ -965,14 +965,15 @@ async function resolveByDish(
   // tier has no answer, so fall through rather than settling for a near miss.
   let chosen: SearchRow | null = null
   if (candidates.length) {
-    // A verifier that failed is "no match", and the tier below takes over — but
-    // not when what failed was the budget. Swallowed here that would be spent
-    // again by the estimate tier and answered with an archetype, which is the
-    // one outcome running out of requests must never produce.
-    const idx = await pickCandidate(item, candidates, mock, meter).catch((error: unknown) => {
-      if (error instanceof AiLimitReached) throw error
-      return null
-    })
+    // A verifier that failed is "no match", and the tier below takes over.
+    //
+    // It used to have to re-throw one error rather than swallowing it: the
+    // quota was claimed per model REQUEST, so running out could surface here,
+    // be read as "this tier had no answer", and be answered by an archetype —
+    // a guessed "Mixed meal" in the diary of somebody who was owed an
+    // explanation. The quota is claimed once at the top of the endpoint now, so
+    // there is no longer any way for a budget failure to reach this line.
+    const idx = await pickCandidate(item, candidates, mock, meter).catch(() => null)
     chosen = idx === null ? null : (candidates[idx] ?? null)
   }
   if (!chosen) return null
@@ -1237,11 +1238,12 @@ export async function resolveItem(
   trace?: string[],
 ): Promise<Resolved | null> {
   const note = (stage: string, error: unknown) => {
-    // Running out of budget is not a tier failing. Swallowed here it would be
-    // retried by every tier below and finally answered with an archetype, so
-    // somebody over their limit would get a guessed "Mixed meal" in their
-    // diary rather than being told what happened.
-    if (error instanceof AiLimitReached) throw error
+    // Every failure here is a tier failing, and the tier below takes over. That
+    // is only true because the daily quota is claimed at the top of the
+    // endpoint: while it was claimed per model request, running out arrived
+    // through this function like any other error, was retried by every tier
+    // below, and finally answered with an archetype — a guessed "Mixed meal"
+    // for somebody who was owed an explanation.
     const message = `[cascade] ${stage}: ${describe(error)}`
     console.error(message)
     trace?.push(message)

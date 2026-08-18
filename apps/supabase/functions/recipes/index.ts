@@ -26,11 +26,11 @@ import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 import {
-  AiLimitReached,
+  claimScan,
   createMeter,
   NotEntitled,
-  nullMeter,
   requireEntitlement,
+  ScanLimitReached,
 } from '../_shared/entitlement.ts'
 import { mockActive } from '../_shared/llm.ts'
 import { ownsKey, readObject } from '../_shared/r2.ts'
@@ -139,12 +139,15 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   )
 
-  // Every request to OpenRouter is metered, both actions, whoever asked. The
-  // ENTITLEMENT check below is narrower and only covers `read`: filling a form
-  // in from a photograph is the same kind of AI convenience the scan is, while
-  // the publish review is a gate the app runs on its own behalf and must go on
-  // running for anybody who can reach the publish button.
-  const meter = mockActive() ? nullMeter() : createMeter(db, userId)
+  // Counts what this invocation spends at OpenRouter, for the logs. The QUOTA
+  // is claimed inside `read` alone, one unit for the whole action, and so is
+  // the entitlement check: filling a form in from a photograph is the same kind
+  // of AI convenience a described meal is, and Pro for the same reason. The
+  // publish review is a gate the app runs on its own behalf — it must go on
+  // running for anybody who can reach the publish button, and charging a user's
+  // daily allowance for a check they did not ask for would be the app billing
+  // them for its own moderation.
+  const meter = createMeter()
 
   // -- READ: a photograph of the pot, or a description of it, becomes a
   // filled-in form. One action rather than two, because everything after the
@@ -169,7 +172,8 @@ Deno.serve(async (req: Request) => {
     }
 
     try {
-      await requireEntitlement(db, userId)
+      await requireEntitlement(db, userId, 'read_recipe')
+      await claimScan(db, userId)
       const draft = described
         ? await describeRecipe(described, mock, meter)
         : await readRecipePhoto(
@@ -212,15 +216,24 @@ Deno.serve(async (req: Request) => {
       // "the model could not read it", which the form answers by letting them
       // fill it in themselves.
       if (error instanceof NotEntitled) {
-        return json({ ok: false, code: 'not_entitled', error: 'subscription required' }, 402)
-      }
-      if (error instanceof AiLimitReached) {
         return json(
           {
             ok: false,
-            code: 'ai_limit',
+            code: 'not_entitled',
+            feature: error.feature,
+            error: 'subscription required',
+          },
+          402,
+        )
+      }
+      if (error instanceof ScanLimitReached) {
+        return json(
+          {
+            ok: false,
+            code: 'scan_limit',
             used: error.used,
-            limit: error.monthlyLimit,
+            limit: error.dailyLimit,
+            entitled: error.entitled,
             error: error.message,
           },
           429,

@@ -49,11 +49,11 @@ import {
   writeIngredients,
 } from '../_shared/cascade.ts'
 import {
-  AiLimitReached,
+  claimScan,
   createMeter,
   NotEntitled,
-  nullMeter,
   requireEntitlement,
+  ScanLimitReached,
 } from '../_shared/entitlement.ts'
 import { interpretInstruction, type MockSteer, mockActive } from '../_shared/llm.ts'
 
@@ -247,15 +247,39 @@ Deno.serve(async (req: Request) => {
   // same reasons. Editing the portion by hand on the detail screen is NOT
   // gated: no model is involved, and a subscription that lapses should not
   // trap somebody's existing diary behind a paywall.
+  //
+  // THE WHOLE ENDPOINT IS PRO, unlike the photographed plate that reaches
+  // `scan-meal`. Fixing a meal with a sentence is the most expensive thing a
+  // user can ask for per unit of value — the entry already exists and already
+  // has numbers on it — and it is the one path with a free alternative sitting
+  // right beside it: every figure it would change is editable by hand, on the
+  // same screen, for nothing.
   try {
-    await requireEntitlement(db, userId)
+    await requireEntitlement(db, userId, 'refine')
+    await claimScan(db, userId)
   } catch (error) {
     if (error instanceof NotEntitled) {
-      return json({ ok: false, code: 'not_entitled', error: 'subscription required' }, 402)
+      return json(
+        { ok: false, code: 'not_entitled', feature: error.feature, error: 'subscription required' },
+        402,
+      )
+    }
+    if (error instanceof ScanLimitReached) {
+      return json(
+        {
+          ok: false,
+          code: 'scan_limit',
+          used: error.used,
+          limit: error.dailyLimit,
+          entitled: error.entitled,
+          error: error.message,
+        },
+        429,
+      )
     }
     throw error
   }
-  const meter = mockActive() ? nullMeter() : createMeter(db, userId)
+  const meter = createMeter()
 
   // The entry, with enough context for the interpreter. service_role reads it,
   // so ownership is checked explicitly — this function must not be a way to
@@ -689,22 +713,6 @@ Deno.serve(async (req: Request) => {
     await recordRefine(null, null, null)
     return json({ ok: true, applied: false, reason: interpretation.reason })
   } catch (error) {
-    // Out of budget answers with a code and an HTTP status, unlike every other
-    // failure here. The rest of them are "we could not read that instruction",
-    // which the sheet shows as a reason and the user can reword; this one is
-    // not about the words at all, and rewording will not help.
-    if (error instanceof AiLimitReached) {
-      return json(
-        {
-          ok: false,
-          code: 'ai_limit',
-          used: error.used,
-          limit: error.monthlyLimit,
-          error: error.message,
-        },
-        429,
-      )
-    }
     console.error('[scan-refine] failed:', error)
     return json({
       ok: true,

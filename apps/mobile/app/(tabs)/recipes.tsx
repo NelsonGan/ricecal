@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { type RecipeShelf, useRecipes } from '@/data'
+import { type RecipeShelf, useRecipeQuota, useRecipes } from '@/data'
 import { useRequirePro } from '@/features/paywall'
 import { RecipeRow } from '@/features/recipes'
 import { ROW_TILE, ScreenTitle } from '@/features/shared'
@@ -41,6 +41,7 @@ export default function RecipesScreen() {
   const { t } = useTranslation(['recipes', 'common'])
   const router = useRouter()
   const requirePro = useRequirePro()
+  const quota = useRecipeQuota()
   const colors = useThemeColors()
 
   const [shelf, setShelf] = useState<RecipeShelf>('mine')
@@ -63,10 +64,17 @@ export default function RecipesScreen() {
             variant="primary"
             accessibilityLabel={t('recipes:new.title')}
             onPress={() => {
-              // Writing a recipe is composing something to log later, so it is
-              // gated where logging is. The shelves, the community and
-              // somebody else's recipe all stay readable.
-              if (!requirePro('new_recipe')) return
+              // THE FOURTH ONE IS THE GATED ONE. Writing a recipe used to need
+              // Pro outright, which put the app's one authoring feature behind
+              // the paywall for somebody who had not decided yet whether they
+              // liked the app. Three is enough to keep what you actually cook
+              // — the standing pot, the weekday breakfast, the one you make on
+              // Sundays — and the ceiling arrives to somebody who has used the
+              // feature enough to want a fourth, which is the moment to ask.
+              //
+              // The database enforces the same three (`recipes_enforce_free_limit`).
+              // This is the half that opens the paywall instead of erroring.
+              if (quota.atLimit && !requirePro('new_recipe')) return
               router.push('/recipe/edit')
             }}
           >

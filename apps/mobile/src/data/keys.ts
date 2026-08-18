@@ -17,6 +17,15 @@ export const keys = {
   goals: (userId: string) => ['goals', userId] as const,
   subscription: (userId: string) => ['subscription', userId] as const,
   /**
+   * How many of today's scans are left.
+   *
+   * Keyed by user and not by date. The date it is about is the USER's own, and
+   * only the server knows which one that is — a key carrying the phone's idea
+   * of today would go stale at the wrong midnight for anybody who has flown
+   * anywhere. Every scan invalidates it, and so does a foreground.
+   */
+  scanQuota: (userId: string) => ['scan-quota', userId] as const,
+  /**
    * What each plan costs, as the STORE reports it.
    *
    * Not keyed by user: the price is a property of the device's storefront, not
@@ -78,6 +87,16 @@ export const keys = {
    * search is on screen.
    */
   recipesAll: (userId: string) => ['recipes', userId] as const,
+  /**
+   * How many recipes this account owns, which is the free tier's ceiling.
+   *
+   * Under the same prefix as the shelves ON PURPOSE: every write that could
+   * change the count already invalidates `recipesAll`, so a new recipe, a
+   * deleted one and a saved copy all move this without any of them being told
+   * about it. Keyed with a literal segment rather than a shelf name, which no
+   * shelf can collide with.
+   */
+  recipeCount: (userId: string) => ['recipes', userId, 'count'] as const,
   /** One recipe. Keyed by id alone: only ever asked for by id. */
   recipe: (id: string) => ['recipe', id] as const,
   recipeIngredients: (recipeId: string) => ['recipe-ingredients', recipeId] as const,

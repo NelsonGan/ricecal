@@ -1,3 +1,4 @@
+import { FREE_RECIPES } from '@ricecal/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { track } from '@/lib/analytics'
@@ -6,8 +7,9 @@ import { unwrap, unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
 import { toIcon, toRecipe, toRecipeIngredient } from './mappers'
 import { removeMealPhoto } from './photos'
-import { AiLimitError, refusalFrom } from './refusals'
+import { refusalFrom, ScanLimitError } from './refusals'
 import { useUserId } from './session'
+import { useEntitlement } from './subscription'
 import type { IconRef, Macros, Recipe, RecipeIngredient, RecipeUnit } from './types'
 
 /**
@@ -67,6 +69,83 @@ export function useRecipes(shelf: RecipeShelf, query = '') {
       return unwrap(await request.limit(100)).map(toRecipe)
     },
   })
+}
+
+/**
+ * How many recipes this account owns, and whether it may write another.
+ *
+ * A COUNT QUERY RATHER THAN THE LIST'S LENGTH. The obvious shortcut is to read
+ * `useRecipes('mine')` and count the rows, and it is wrong twice: that query is
+ * filtered by whatever is in the search field, and it is capped at 100. Both
+ * would let somebody past the ceiling by typing a word into a box.
+ *
+ * The database enforces this independently — `recipes_enforce_free_limit`, a
+ * trigger, because the client writes `recipes` directly under RLS. This copy is
+ * what makes the button read honestly; that one is what actually refuses. If
+ * they ever disagree the trigger wins, and the user sees an error where they
+ * should have seen a paywall, so they are worth keeping in step.
+ *
+ * `limit: null` is unlimited, not zero: it is what Pro has, and reading a null
+ * as a number is exactly the mistake `current_period_end` taught.
+ */
+export type RecipeQuota = {
+  count: number
+  limit: number | null
+  atLimit: boolean
+  /** Still finding out. Nothing should be refused on this. */
+  loading: boolean
+}
+
+export function useRecipeQuota(): RecipeQuota {
+  const userId = useUserId()
+  const { entitled, loading: entitlementLoading } = useEntitlement()
+
+  const count = useQuery({
+    queryKey: keys.recipeCount(userId),
+    queryFn: async (): Promise<number> => {
+      const { count: rows, error } = await supabase
+        .from('recipes')
+        .select('id', { count: 'exact', head: true })
+        .eq('owner_id', userId)
+      if (error) throw error
+      return rows ?? 0
+    },
+  })
+
+  const owned = count.data ?? 0
+  const loading = count.isPending || entitlementLoading
+
+  return {
+    count: owned,
+    limit: entitled ? null : FREE_RECIPES,
+    // Never true while either answer is still in flight: a paywall shown to
+    // somebody with two recipes because the count had not landed is the same
+    // mistake as showing one to a subscriber mid-launch.
+    atLimit: !loading && !entitled && owned >= FREE_RECIPES,
+    loading,
+  }
+}
+
+/**
+ * Did this write hit the free tier's recipe ceiling?
+ *
+ * The rule lives in a TRIGGER — `recipes_enforce_free_limit` — because the
+ * client writes `recipes` directly under RLS with no function in between, and a
+ * limit the client is trusted to apply is a limit that applies only to people
+ * running the client. What comes back is a plpgsql exception, which PostgREST
+ * turns into a 400 with the raised message on it.
+ *
+ * MATCHED ON A TOKEN, and the token is why the trigger raises
+ * `recipe_limit_reached` rather than a sentence: an error message is not a
+ * place to write copy, it cannot be translated, and matching on prose would
+ * break the moment somebody improved the wording. The readable half is in the
+ * exception's `hint`, for whoever meets it in a log.
+ */
+const RECIPE_LIMIT = 'recipe_limit_reached'
+
+export function isRecipeLimit(error: unknown): boolean {
+  const message = (error as { message?: unknown })?.message
+  return typeof message === 'string' && message.includes(RECIPE_LIMIT)
 }
 
 export function useRecipe(id: string | undefined) {
@@ -448,13 +527,13 @@ export function useReadRecipe() {
       // model could not read it", which the form answers by letting the user
       // fill it in themselves — and telling somebody to type it out by hand is
       // the wrong answer to "you have not subscribed" and to "you are out of
-      // requests", both of which the caller turns into something actionable.
+      // scans", both of which the caller turns into something actionable.
       if (error) {
         const refusal = await refusalFrom(error)
         if (refusal) {
           track('Recipe Drafted', {
             source: from,
-            outcome: refusal instanceof AiLimitError ? 'limit_reached' : 'not_entitled',
+            outcome: refusal instanceof ScanLimitError ? 'limit_reached' : 'not_entitled',
           })
           throw refusal
         }

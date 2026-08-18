@@ -176,30 +176,6 @@ export type Database = {
         }
         Relationships: []
       }
-      ai_usage: {
-        Row: {
-          created_at: string
-          inferences: number
-          period_start: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          inferences?: number
-          period_start: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          inferences?: number
-          period_start?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       archetypes: {
         Row: {
           carbs_g: number
@@ -926,6 +902,30 @@ export type Database = {
           },
         ]
       }
+      scan_usage: {
+        Row: {
+          created_at: string
+          scans: number
+          updated_at: string
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          scans?: number
+          updated_at?: string
+          usage_date: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          scans?: number
+          updated_at?: string
+          usage_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           created_at: string
@@ -1488,24 +1488,7 @@ export type Database = {
           walking_kcal: number
         }[]
       }
-      ai_monthly_limit: { Args: never; Returns: number }
-      ai_usage_this_month: {
-        Args: never
-        Returns: {
-          monthly_limit: number
-          remaining: number
-          used: number
-        }[]
-      }
       barcode_hourly_limit: { Args: never; Returns: number }
-      claim_ai_inference: {
-        Args: { p_count?: number; p_user: string }
-        Returns: {
-          allowed: boolean
-          monthly_limit: number
-          used: number
-        }[]
-      }
       claim_barcode_scan: {
         Args: { p_user: string }
         Returns: {
@@ -1514,6 +1497,16 @@ export type Database = {
           used: number
         }[]
       }
+      claim_scan: {
+        Args: { p_user: string }
+        Returns: {
+          allowed: boolean
+          daily_limit: number
+          entitled: boolean
+          used: number
+        }[]
+      }
+      clear_meal_photos: { Args: { p_rows: Json }; Returns: number }
       compute_targets: {
         Args: {
           p_activity: Database['public']['Enums']['activity_level']
@@ -1541,6 +1534,16 @@ export type Database = {
           kcal: number
         }[]
       }
+      expired_meal_photos: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          photo_path: string
+        }[]
+      }
+      free_daily_scans: { Args: never; Returns: number }
+      free_photo_retention_days: { Args: never; Returns: number }
+      free_recipe_limit: { Args: never; Returns: number }
       goals_on: {
         Args: { p_date: string; p_user_id?: string }
         Returns: {
@@ -1563,6 +1566,7 @@ export type Database = {
         }
       }
       gtin14: { Args: { code: string }; Returns: string }
+      is_entitled: { Args: { p_user: string }; Returns: boolean }
       local_today: { Args: { p_user_id?: string }; Returns: string }
       logging_streak: {
         Args: { p_user_id?: string }
@@ -1571,6 +1575,7 @@ export type Database = {
           current_days: number
         }[]
       }
+      pro_daily_scans: { Args: never; Returns: number }
       recipe_mark_for_review: {
         Args: { p_recipe_id: string }
         Returns: undefined
@@ -1684,6 +1689,16 @@ export type Database = {
         }[]
       }
       save_recipe_copy: { Args: { p_recipe_id: string }; Returns: string }
+      scan_daily_limit: { Args: { p_user: string }; Returns: number }
+      scan_usage_today: {
+        Args: never
+        Returns: {
+          daily_limit: number
+          entitled: boolean
+          remaining: number
+          used: number
+        }[]
+      }
       search_normalize: { Args: { txt: string }; Returns: string }
       seed_archetype_foods: { Args: never; Returns: undefined }
       set_ingredient_quantity: {

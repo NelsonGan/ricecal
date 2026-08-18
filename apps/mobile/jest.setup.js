@@ -139,6 +139,13 @@ jest.mock('react-native-mmkv', () => {
       return {
         set: (key, value) => store.set(key, String(value)),
         getString: (key) => store.get(key),
+        // Numbers and booleans go in as strings like everything else, so the
+        // typed reads parse on the way out. Without them a store that writes a
+        // timestamp reads back `undefined` and the caller decides it has never
+        // been written — which is a working feature in a test and a broken one
+        // on a device.
+        getNumber: (key) => (store.has(key) ? Number(store.get(key)) : undefined),
+        getBoolean: (key) => (store.has(key) ? store.get(key) === 'true' : undefined),
         remove: (key) => store.delete(key),
         clearAll: () => store.clear(),
         getAllKeys: () => [...store.keys()],

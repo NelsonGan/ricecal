@@ -274,6 +274,70 @@ $$;
 revoke execute on function public.recipes_before_insert from public, anon, authenticated;
 
 -- ---------------------------------------------------------------------------
+-- How many recipes a free account may keep, and the ceiling on it.
+--
+-- IN THE DATABASE, because a client writes `recipes` directly. There is no
+-- edge function between the form and the row — the insert is an ordinary
+-- PostgREST call under RLS — so a limit that lived in the app would be a limit
+-- that applied to people running the app. It is the same argument the
+-- publishing gate makes one section down: a rule the client is trusted to
+-- follow is a rule an attacker declines to.
+--
+-- A SAVED COMMUNITY RECIPE COUNTS. `save_recipe_copy` writes a row owned by
+-- the saver, and the trigger fires on it like any other insert. Exempting
+-- copies would make "save somebody else's" the way past the ceiling, and a
+-- saved copy is a recipe of theirs in every sense that matters here: it is on
+-- their shelf, it is theirs to edit, and logging it takes its numbers.
+--
+-- The message is a TOKEN rather than a sentence. It reaches the client as a
+-- PostgREST error, which is not a place to write copy — the app matches on it
+-- and says the thing in the user's own language, from the copy bundle, beside
+-- a paywall. `hint` carries the readable half for whoever meets it in a log.
+-- ---------------------------------------------------------------------------
+create or replace function public.free_recipe_limit()
+returns integer
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select 3;
+$$;
+
+revoke execute on function public.free_recipe_limit from public, anon;
+grant execute on function public.free_recipe_limit to authenticated, service_role;
+
+create or replace function public.recipes_enforce_free_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if public.is_entitled(new.owner_id) then
+    return new;
+  end if;
+
+  if (
+    select pg_catalog.count(*)
+      from public.recipes r
+     where r.owner_id = new.owner_id
+  ) >= public.free_recipe_limit() then
+    raise exception 'recipe_limit_reached'
+      using errcode = 'P0001',
+            hint = 'A free account may keep ' || public.free_recipe_limit()
+                   || ' recipes. Pro removes the limit.';
+  end if;
+
+  return new;
+end;
+$$;
+
+-- Stated here and applied by a hand-written migration: `db diff` does not
+-- carry grants, so a revoke that only lives in a schema file never happens.
+revoke execute on function public.recipes_enforce_free_limit from public, anon, authenticated;
+
+-- ---------------------------------------------------------------------------
 -- An edit sends a published recipe back to the reviewer.
 --
 -- THE GATE'S SECOND HALF, and without it the first half is decoration. Publish
@@ -379,6 +443,13 @@ revoke execute on function public.recipe_ingredients_after_write from public, an
 create trigger recipes_before_insert
   before insert on public.recipes
   for each row execute function public.recipes_before_insert();
+
+-- Runs after `recipes_before_insert` — Postgres orders before-row triggers by
+-- name and 'b' sorts ahead of 'e' — which costs nothing: the slug the first one
+-- mints is discarded with the row when this one refuses it.
+create trigger recipes_enforce_free_limit
+  before insert on public.recipes
+  for each row execute function public.recipes_enforce_free_limit();
 
 create trigger recipes_set_updated_at
   before update on public.recipes
