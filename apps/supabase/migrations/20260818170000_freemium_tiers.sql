@@ -382,7 +382,13 @@ as $$
          )
      and not public.is_entitled(f.user_id)
    order by f.logged_at
-   limit pg_catalog.least(pg_catalog.greatest(p_limit, 1), 1000);
+   -- `least`/`greatest` are parser CONSTRUCTS rather than catalog functions, so
+   -- they cannot be schema-qualified: `pg_catalog.greatest(...)` is a "function
+   -- does not exist" error even though the bare form resolves fine under
+   -- `search_path = ''`. They need no qualification for the reason the prefix
+   -- exists elsewhere in this file — there is no schema they could be shadowed
+   -- from.
+   limit least(greatest(p_limit, 1), 1000);
 $$;
 
 revoke execute on function public.expired_meal_photos from public, anon, authenticated;
