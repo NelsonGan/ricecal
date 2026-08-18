@@ -556,6 +556,21 @@ export default function FoodDetail() {
   const hero = storedImageSource(existing?.photoPath, heroUrl, shot?.uri)
 
   /**
+   * How tall the picture at the top of the page is.
+   *
+   * Three terms. The base is enough for a whole plate when there is a photograph
+   * and less when there is only a drawing; `CONTENT_LIFT` is the strip the content
+   * below rides up over, so the box grows by exactly what the curve covers; and
+   * the top inset is what lets it reach BEHIND the status bar rather than stopping
+   * under it — paired with the negative margin that cancels the shell's padding.
+   *
+   * `resolvingPhoto` counts as having a photo, because it means the entry HAS one
+   * and we are waiting on a URL for it. Left out, the box opened short and grew
+   * under the reader a moment later.
+   */
+  const heroHeight = ((hero || resolvingPhoto) && !icon ? 298 : 198) + CONTENT_LIFT + insets.top
+
+  /**
    * The drawing this tile would show, if it is showing one at all.
    *
    * A row carries a photo or an icon, never both, and the view already suppresses
@@ -1090,15 +1105,6 @@ export default function FoodDetail() {
          top inset is still applied, which is what keeps the picture out from
          under the status bar. */
       flush
-      /* AN OPAQUE STRIP OVER THE STATUS BAR, and it is the other half of a
-         full-bleed photograph.
-         `flush` leaves the top inset as padding, which clears the clock and the
-         notch while the page is at REST — and says nothing about where the
-         picture goes the moment it is scrolled. It went under both, so the top of
-         the plate was cropped by the notch and the clock sat on somebody's lunch.
-         Canvas-coloured, so what the picture slides under is the page's own
-         background rather than a translucent bar. */
-      overlay={<View className="bg-canvas" style={{ height: insets.top }} />}
       footer={
         existing ? (
           /* ONE BUTTON, and it is not a save. Save used to sit here beside it,
@@ -1155,6 +1161,18 @@ export default function FoodDetail() {
           with another is not something to warn about, and the picker leads with
           the camera; the warning is on the DRAWING, which is the answer that
           discards a picture of the real plate. */}
+      {/* BEHIND THE STATUS BAR, not below it.
+          `Screen`'s `flush` drops the gutter and keeps the top inset as padding,
+          which is right for content and wrong for a picture that is meant to be
+          the top of the page: it left a band of canvas above the plate at rest and
+          let the plate slide under the clock as soon as the page moved, so the
+          photograph was cut around the notch either way. The negative margin
+          cancels that padding and the height takes it back, so the picture reaches
+          the top of the window and everything below it stays exactly where it was.
+
+          The trade is the status bar, which draws in the theme's colour over
+          whatever is up there — legible on most plates, not on all of them. The
+          alternative was cropping every photograph to clear a notch. */}
       <View
         className={cn(
           // SQUARE ON EVERY EDGE. It is not a card hanging off the top of the
@@ -1162,15 +1180,8 @@ export default function FoodDetail() {
           // the picture belongs to the content sliding over it rather than to the
           // picture itself. See the wrapper below.
           'overflow-hidden bg-track',
-          // Tall enough for the whole plate when a real photo is in the slot, plus
-          // the strip the content overlaps: the visible height is this less
-          // `CONTENT_LIFT`, so the box grows by exactly what the overlay covers.
-          //
-          // `resolvingPhoto` counts as having a photo, because it means the entry
-          // HAS one and we are waiting on a URL for it — left out, the box opened
-          // short and grew under the reader a moment later.
-          (hero || resolvingPhoto) && !icon ? 'h-[320px]' : 'h-[220px]',
         )}
+        style={{ marginTop: -insets.top, height: heroHeight }}
       >
         <Tappable
           className="flex-1 items-center justify-center"
@@ -1195,7 +1206,7 @@ export default function FoodDetail() {
                Without this the box drew the dish's illustration first and then
                replaced it with the photograph — the largest thing on the screen
                changing into something else while being looked at. */
-            <Skeleton width="100%" height={320} rounded={false} className="bg-line" />
+            <Skeleton width="100%" height={heroHeight} rounded={false} className="bg-line" />
           ) : shownIcon ? (
             <Icon {...shownIcon} size={100} />
           ) : (
@@ -1215,7 +1226,12 @@ export default function FoodDetail() {
             variant is a raised white square, which reads as a control against a
             photograph of anything. A scrim under them would darken the plate to
             make the app's own chrome legible, which is the wrong way round. */}
-        <View className="absolute inset-x-0 top-0 flex-row justify-between p-3">
+        {/* Padded down past the status bar, which the box no longer does for them:
+            a back chevron under the notch is a control nobody can reach. */}
+        <View
+          className="absolute inset-x-0 top-0 flex-row justify-between px-3"
+          style={{ paddingTop: insets.top + spacing.sm, paddingBottom: spacing.sm }}
+        >
           <IconButton size="sm" accessibilityLabel={t('common:a11y.back')} onPress={() => goBack()}>
             {/* Tinted: chrome is monochrome, and the illustration's own palette
                 reads as a stray accent. */}

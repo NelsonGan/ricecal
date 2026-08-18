@@ -103,19 +103,6 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    * read, and the caller is the only one who knows how much.
    */
   floating?: ReactNode
-  /**
-   * Content laid OVER the top of the scroll area, pinned there — the strip that
-   * keeps a full-bleed photograph from sliding under the status bar.
-   *
-   * The mirror of `floating`, and it exists for the same reason: the scroll
-   * view's top padding clears the status bar at REST, and says nothing about
-   * where the content goes once it moves. A screen whose first element reaches
-   * both edges therefore passes under the clock and the notch as soon as it is
-   * scrolled, and an image cropped by a notch reads as a broken picture.
-   *
-   * Takes no touches, so whatever is underneath is still scrollable through it.
-   */
-  overlay?: ReactNode
   /** Drop the 20pt screen gutter, for content that bleeds to the edge. */
   flush?: boolean
   /** Render children in a plain View instead of a ScrollView. */
@@ -202,7 +189,6 @@ export function Screen({
   children,
   footer,
   floating,
-  overlay,
   flush = false,
   scroll = true,
   gestureScroll = false,
@@ -383,15 +369,6 @@ export function Screen({
           screen's parent happens to be. */}
       <NumpadHost id={numpad.id} onOpen={revealForNumpad}>
         {body}
-
-        {/* Pinned over the top of the scroll area. See `overlay` — it is chrome
-          rather than content, so it takes no touches and does not move with the
-          keyboard the way the two below do. */}
-        {overlay ? (
-          <View className="absolute inset-x-0 top-0" pointerEvents="none">
-            {overlay}
-          </View>
-        ) : null}
 
         {/* Rides up with the footer, so a floating control is never left under an
           open keyboard.
