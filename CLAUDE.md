@@ -702,10 +702,15 @@ for about three words of "Nasi Lemak with Fried Chicken with pineapple juice".
 The name and the time under it are ONE block rather than two stacked children, so
 they read as a heading and its subtitle instead of a date floating between the
 title and the first card. Square on every edge — it is not a card hanging off the
-top of the screen, it is where the screen starts. And it stops BELOW the status
-bar rather than running under it: the status bar draws in the theme's colour, and
-over an arbitrary photograph of somebody's lunch that is illegible about as often
-as not.
+top of the screen, it is where the screen starts — and it runs BEHIND the status
+bar rather than stopping under it. `Screen`'s `flush` keeps the top inset as
+padding, which is right for content and wrong for a picture that is meant to BE
+the top of the page: it left a band of canvas above the plate at rest and let the
+plate slide under the clock as soon as the page moved, so the photograph was cut
+around the notch either way. A negative margin cancels that padding and the height
+takes it back, so everything below stays where it was, and the floating chrome
+pads itself down past the notch. The trade is the status bar, which draws in the
+theme's colour over whatever is up there.
 
 The two ENTRY-level controls are together up there for a reason. The pencil was at
 the end of the date line, which read as "edit the date" when what it opens is the
