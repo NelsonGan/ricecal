@@ -2,7 +2,9 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { TrendBucket, TrendRange, TrendSummary } from '@/data'
-import { DEFAULT_WATER_ML, volume, waterProgress } from '@/lib/water'
+import { TANK_HEIGHT, TankFigure, TankLabel } from '@/features/logging'
+import { DEFAULT_WATER_ML, millilitres, volume, waterProgress } from '@/lib/water'
+import { radius } from '@/theme/tokens'
 import { Badge, Card, EmptyState, Icon, Text, WaterTank } from '@/ui'
 import { bucketLabels, SPAN_KEY } from './axis'
 import { CountRow } from './CountRow'
@@ -74,7 +76,6 @@ export function WaterPanel({ range, buckets, summary }: WaterPanelProps) {
   // The last bucket of a seven-day range IS today, so today's figure is already
   // in hand — no second query for a card that only appears on that range.
   const todayMl = buckets.at(-1)?.waterTotal ?? 0
-  const toGo = Math.max(0, goal - todayMl)
 
   /**
    * The habit card counts MONTHS on the year view and DAYS everywhere else, and
@@ -178,33 +179,36 @@ export function WaterPanel({ range, buckets, summary }: WaterPanelProps) {
       </Card>
 
       {range === '7d' ? (
-        <Card
-          title={t('progress:water.todayTitle')}
-          action={
-            <Text variant="label" className={toGo === 0 ? 'text-pandan-ink' : 'text-water-ink'}>
-              {toGo === 0
-                ? t('progress:water.goalMet')
-                : t('progress:water.toGo', { amount: amount(toGo) })}
-            </Text>
-          }
-        >
-          {/* The same glass Today draws, and nothing to press. Water is
-              recorded where the day is the subject; here it is a reading of the
-              range, and a chart you can edit by brushing it is a chart nobody
-              trusts. */}
-          <View className="gap-md">
-            <WaterTank
-              value={todayMl}
-              goal={goal}
-              accessibilityLabel={t('logging:water.level', {
-                filled: amount(todayMl),
-                goal: amount(goal),
-              })}
-            />
-            <Text variant="meta">
-              {t('progress:water.todayCount', { filled: amount(todayMl), goal: amount(goal) })}
-            </Text>
-          </View>
+        /* THE SAME CARD TODAY DRAWS, and deliberately: this is the same day and
+           the same figure, so two shapes for it would be two answers. The tank
+           IS the card — see `WaterCard` — rather than a small one sitting in a
+           box with a heading and a caption around it, which is what this was
+           and which read as a chart parked on a card.
+
+           What it does NOT have is the Add button. Water is recorded where the
+           day is the subject; here it is a reading of the range, and a chart
+           you can edit by brushing it is a chart nobody trusts. The overline is
+           what the heading used to be, moved onto the tank: without it this
+           card is the only thing on a screen about seven days that is about
+           one. */
+        <Card flush contentClassName="gap-0">
+          <WaterTank
+            value={todayMl}
+            goal={goal}
+            height={TANK_HEIGHT}
+            radius={radius.card}
+            accessibilityLabel={t('logging:water.level', {
+              filled: millilitres(todayMl),
+              goal: millilitres(goal),
+            })}
+          >
+            {(onWater) => (
+              <View className="flex-1 flex-row items-start justify-between px-4 pt-3">
+                <TankLabel onWater={onWater}>{t('progress:water.todayTitle')}</TankLabel>
+                <TankFigure ml={todayMl} goalMl={goal} onWater={onWater} />
+              </View>
+            )}
+          </WaterTank>
         </Card>
       ) : (
         <Card title={t('progress:water.habitTitle')}>
