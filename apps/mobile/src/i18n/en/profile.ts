@@ -58,6 +58,61 @@ export const profile = {
     failed: 'We could not open Discord',
   },
 
+  /**
+   * Share & Earn Pro.
+   *
+   * THE REWARD IS NAMED FIRST AND THE THRESHOLD SECOND, on every rung. "1 month
+   * of Pro" with "30+ likes" beside it reads as an offer with a condition;
+   * written the other way round the card is a list of numbers with prizes
+   * attached, and the thing somebody is deciding about is the prize.
+   *
+   * NOTHING HERE PROMISES A DATE. Rewards are granted by hand, from a Discord
+   * thread, so the copy says what happens rather than when — "we will send you
+   * a code" is a promise we keep, and "within 24 hours" is one we would break
+   * the first weekend somebody claimed on a Saturday night.
+   *
+   * "Likes" is the unit on every platform in the list, including the two that
+   * call it something else. It is the word everybody uses for the number under
+   * a post, and inventing a neutral one ("reactions") would be precise and
+   * unreadable.
+   */
+  shareEarn: {
+    /** The row in Me, and the page's own bar. */
+    row: 'Share and earn Pro',
+    rowValue: 'Free',
+    title: 'Share and earn Pro',
+    heroTitle: 'Post about RiceCal, get Pro free',
+    heroBody:
+      'Show people a plate you logged. The more your post is liked, the longer the Pro we send you.',
+
+    platforms: 'POST IT ON',
+
+    rewards: 'WHAT IT IS WORTH',
+    postReward: '1 month of Pro',
+    postBadge: '30+ likes',
+    postBody: 'Any public post about the app, on any of these.',
+    likedReward: '1 year of Pro',
+    likedBadge: '100+ likes',
+    likedBody: 'Your post found the people it was for.',
+    viralReward: 'Pro for good',
+    viralBadge: '500+ likes',
+    viralBody: 'You went viral. It is yours, no renewals, nothing to cancel.',
+
+    how: 'HOW IT WORKS',
+    step1:
+      'Post about RiceCal anywhere public. A screenshot of your diary, or a plate you scanned, works best.',
+    step2: 'Give it a few days to gather likes.',
+    step3: 'Bring the link to our Discord and we send you a Pro code.',
+
+    claim: 'ALREADY POSTED?',
+    claimBody: 'Drop the link in our Discord and we will check it and send your code.',
+    claimAction: 'Open Discord',
+
+    finePrint:
+      'One reward per person. We check the post is public and count the likes when you claim, so give it time before you do.',
+    openFailed: 'We could not open that app',
+  },
+
   goals: {
     title: 'Goals and targets',
     dailyCalories: 'DAILY CALORIES',

@@ -20,7 +20,15 @@
       "supportsTablet": true,
       "usesAppleSignIn": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": [
+          "instagram",
+          "snssdk1128",
+          "xhsdiscover",
+          "fb",
+          "barcelona",
+          "twitter"
+        ]
       }
     },
     "android": {
