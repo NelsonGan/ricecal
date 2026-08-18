@@ -662,16 +662,151 @@ hand-kept second copy drifts the first time an icon is renamed.
 There are two ways to change a logged entry, and they are separated because
 they cost different things.
 
-**By hand, on `app/log/food/[id].tsx`.** The detail screen is a FORM: the
-portion, the serving, a typed figure, the name, the picture and each part of a
-decomposed plate all stage in local state, and the Save button in the footer
-writes the lot in one go. It used to write as it was edited, on a debounce,
-which was honest about the moment and impossible to think in — a plate corrected
-in four places was four round trips, and changing your mind meant changing the
-control back. The staging is what makes the number on screen a preview: the
-totals card reads `entryTotals` over the staged values, so what Save commits is
-what was being read. Leaving with something staged asks first, since the back
-chevron is now a discard.
+**By hand, on `app/log/food/[id].tsx`.** ONE SAVE PER SECTION, and there is no
+Save button on the page. Every edit used to stage in local state and one footer
+button wrote the lot — a coherent model for a page of controls, and it stopped
+being one when each group moved behind a pencil into a sheet of its own: a sheet
+with a Done button that writes nothing is a second staging level, and nobody
+reading "Done" expects to have to find another button afterwards. So each sheet is
+a form that saves what it is about, the footer is left with the one thing that is
+not a section of this entry (handing the meal back to the model), and leaving the
+screen loses nothing — which is why the discard prompt, the disabled edge swipe
+and the Android back handler behind it are all gone.
+
+Each `save*` function on the screen throws on failure so its sheet can stay open
+with the draft still in it, and stages the value locally as well: the write
+invalidates the day and the refetch is a round trip behind it, so without the
+local copy the card would show the old figure for that beat.
+
+THE PORTION IS THE EXCEPTION, and it saves on a SHORT DEBOUNCE. A plus and a minus
+have nowhere to put a Save, and written per tap they are three round trips to reach
+two and a half plates. The objection to debounced writes was about a whole page of
+them — "a plate corrected in four places was four round trips, and changing your
+mind meant changing the control back" — and none of it applies to one control whose
+only state is one number. A pending edit is flushed on unmount through a ref, so
+backing out inside the debounce window does not drop it.
+
+The ADD path is untouched by all of this: composing a row genuinely is a staged
+form, since there is nothing to write until Add.
+
+**The plate is the top of the screen, full width, with the chrome floating on
+it.** It was a padded tile under an `AppBar`, and the two were one job in two
+boxes: the bar held the way out and the way to delete, the tile held the picture,
+and between them they spent a fifth of the screen on things that are not the
+meal. The photograph goes edge to edge now (the `Screen` is `flush`, and one
+wrapper puts the gutter back for everything under it), the chrome sits over it —
+back on the left, the entry's pencil and the bin on the right, in that order,
+least to most destructive — and the dish name is the page's own heading
+underneath, where it stopped truncating: a bar between two 44pt buttons had room
+for about three words of "Nasi Lemak with Fried Chicken with pineapple juice".
+The name and the time under it are ONE block rather than two stacked children, so
+they read as a heading and its subtitle instead of a date floating between the
+title and the first card. Square on every edge — it is not a card hanging off the
+top of the screen, it is where the screen starts — and it runs BEHIND the status
+bar rather than stopping under it. `Screen`'s `flush` keeps the top inset as
+padding, which is right for content and wrong for a picture that is meant to BE
+the top of the page: it left a band of canvas above the plate at rest and let the
+plate slide under the clock as soon as the page moved, so the photograph was cut
+around the notch either way. A negative margin cancels that padding and the height
+takes it back, so everything below stays where it was, and the floating chrome
+pads itself down past the notch. The trade is the status bar, which draws in the
+theme's colour over whatever is up there.
+
+The two ENTRY-level controls are together up there for a reason. The pencil was at
+the end of the date line, which read as "edit the date" when what it opens is the
+name and the when; beside the bin it reads as what it is — the other thing that
+acts on the whole entry — and the date line goes back to being a fact.
+
+**Each editable group carries one pencil**, and the pencil opens a sheet: the
+entry's own details (`DetailsSheet` — the name and the when), the figures
+(`NutritionSheet`) and the plate (`PlateSheet`). All three were edited WHERE THEY
+WERE READ for a while — tap the calorie total and it became a caret in its own
+place, tap a macro amount and the same, tap the title in the app bar and the
+heading turned into a field, and every ingredient row carried a pair of stepper
+buttons. One figure at a time it was a lovely mechanic; as a form it was a bad
+one. Nothing said which of the four figures had already been changed, the number
+pad covered the bars whose labels were the only thing distinguishing them, and two
+buttons on an ingredient row took enough width that a part's name was truncated on
+the one screen whose job is checking what the model decided the plate was made
+of. The card shows the whole name now.
+
+THE PENCIL IS THE WHOLE CONTROL — no "Edit" beside it. Three of them sit one under
+another, so the word was printed three times to say what the icon says, and each
+card header read as two labels rather than a title and a control. The words moved
+to the `accessibilityLabel`, and they are the specific ones ("Edit the
+ingredients", never "Edit"), because three buttons announcing "Edit" tell a screen
+reader nothing. The glyph is NOT tinted, unlike the chevron and the bin either
+side of it: those are silhouettes and survive being flattened to one colour, while
+this one is a yellow pencil with a red eraser whose whole meaning is the colour —
+tinted pandan at 20pt it came out as a green lozenge.
+
+**A PART IS EDITED BY WEIGHT.** The ingredient card reads "Fried rice (90 g)" — the
+name and what it weighs, one line, the bracket wrapping with the text — where it
+used to read "× 0.5 · 90 g" on a second line and lead with the number nobody can
+act on. The multiplier is how `food_log_ingredients` STORES an amount; the grams
+are the amount, and the only thing about a part somebody can check against the
+plate in front of them. The sheet steps and types in grams too, and
+`quantityForGrams` is the seam: `set_ingredient_quantity` takes a quantity and the
+column is `numeric(6, 2)`, so a weight lands within a gram or two of what was asked
+for, and the number on screen is always what the row actually weighs rather than
+what was typed. A part nobody weighed keeps its multiplier, because a count is the
+only thing that can be said about it.
+
+Each sheet holds a draft and its Save writes it; leaving any other way drops what
+was typed. `stagedParts` in `features/logging/parts.ts` is shared between the card
+and the plate sheet, because two copies of that arithmetic would be two previews of
+one plate. None of them carries a description or a title: four labelled fields with
+numbers in them say what they are, and a paragraph explaining that nothing is saved
+yet was a sentence the Save button already makes.
+
+ONE OF THEM KEEPS ITS STATE ABOVE THE BODY, because it was written with its button
+in the sheet's `footer` rather than in the scrolling half — and that state outlives one opening,
+since a `Sheet` is a `Modal` that stays in the tree with `visible={false}`. Both
+therefore reset the draft AND the saving flag when the sheet opens. Without the
+second half a successful save left the spinner running, and the next time the sheet
+opened its button was already disabled and could not be pressed.
+
+THE FIGURE FIELDS ARE PRE-FILLED, which puts a burden on the save. A box with the
+number in it is a box you can correct, where an empty one asks you to remember what
+you are replacing — but it also means a field holding the app's OWN answer comes
+back looking exactly like one somebody typed. `saveFigures` compares each figure
+against what the app worked out and writes null for a match, so opening the sheet
+and pressing Save changes nothing. Left un-compared it would pin all four as
+overrides, and since those sit above the portion in `food_log_details` the next
+portion change would move the serving and not the calories.
+
+**A DAY AND A TIME ARE PICKED ON WHEELS**, in a panel the details sheet leads to
+rather than in controls laid out flat under the name. It was a week strip that
+paged, an hour field, a minute field and an am/pm control — five things to say
+one, and typing digits into boxes is not what anybody means by picking a time.
+`src/ui/Wheel.tsx` is the column: a `ScrollView` with `snapToInterval`, because
+the platform's own picker is a native module and this app wants the feature in
+builds already on phones. Three things it cost, all written down there. It needs
+an explicit frame or it lays out at its content height inside a parent that clips
+it, which renders perfectly and cannot be scrolled. It needs more rows than it
+shows, so am/pm is two buttons rather than a two-row wheel whose whole range is
+one snap step. And the sheet holding it is `scrollable={false}`, because a
+vertical scroller inside a vertical scroller loses every drag.
+
+**WHEN it was eaten is one question over two columns**, and
+`features/logging/when.ts` is the seam. `log_date` is the day the entry counts
+towards and `logged_at` is the instant; the diary already reads them that way
+round — the row sits under its `log_date` and prints the time off its `logged_at`
+— so the screen prints them as ONE LINE under the title, the same pair of facts
+the diary row prints under a dish name, and `EntryPatch.when` writes them as a
+pair. It had a card of its own headed LOGGED, which gave a date the same weight on
+that screen as the calorie total and made the entry's identity into a form field;
+what replaced it is a line of prose and the pencil that also renames the dish,
+since those are the two things about a logged meal that are not figures.
+
+Sent alone, the timestamp would move the row inside a day it had not left and the
+date would move the row to a day whose ordering still read off the old afternoon.
+Two more consequences: the change detection compares a DAY and a CLOCK FACE rather
+than two ISO strings, because `instantOn` writes whole seconds where Postgres
+hands back microseconds and every Save would otherwise rewrite an untouched
+timestamp; and moving the DATE invalidates both days and the streak, since it is
+the one edit here that changes which days have entries on them. Nothing ahead of
+today can be picked, for the reason the week strip disables those cells.
 
 **By describing it to the model**, through the sparkle button beside Save. That
 opens a sheet with the field and the suggested chips

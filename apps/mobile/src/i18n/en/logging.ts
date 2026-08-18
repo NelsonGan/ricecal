@@ -226,10 +226,6 @@ export const logging = {
     sugar: 'Sugar',
     sodium: 'Salt (sodium)',
     milligrams: '{{value}}mg',
-    /** Under the list, when at least one number is known. */
-    nutrientsNote: 'For the portion above. A dash means the dish has no figure recorded.',
-    /** And when none of them is. */
-    nutrientsUnknown: 'No figures recorded for this dish yet. Its calories and macros are.',
     fixTitle: 'Fix it by typing',
     fixPlaceholder: 'no sambal, and it was half a plate',
     /**
@@ -244,20 +240,33 @@ export const logging = {
     plateTitle: 'INGREDIENTS',
     plateTotal: 'Total',
     /**
+     * Every part taken off. The entry survives as whatever its own portion costs,
+     * so this says what will happen rather than standing in the way.
+     */
+    plateEmptied: 'Nothing left on the plate. The entry goes back to counting as one serving.',
+    /**
      * How many of an ingredient are on the plate. Shown at one as well: a
      * count that appears only above one reads as a badge on the busy rows
      * rather than as the amount every row has.
      */
     times: '× {{amount}}',
     /**
-     * The same count with the weight the scan gave it: "× 6 · 150 g".
+     * WHAT A PART WEIGHS, in brackets after its name.
      *
-     * The count alone says how many, which is only half an amount — six of a
-     * thing whose size nobody stated. The weight is the half a person can check
-     * against the plate in front of them, and it is what the stepper beside it
-     * is actually moving.
+     * The weight is the one thing about a part somebody can check against the
+     * plate in front of them, and it used to sit on a second line behind a
+     * multiplier — "× 0.75 · 165 g" — which put the number nobody can act on
+     * first. The multiplier is an implementation detail of how the row stores an
+     * amount; 165 g is the amount.
      */
-    timesWeight: '× {{amount}} · {{grams}} g',
+    grams: '({{grams}} g)',
+    /** The same for a part nobody weighed, where the count is all there is. */
+    count: '(× {{amount}})',
+    /** What a part costs, on the row in the sheet where its weight is edited. */
+    partKcal: '{{kcal}} kcal',
+    /** The weight in the sheet's own field, and what the number pad calls it. */
+    gramsShort: '{{grams}} g',
+    gramsField: 'Weight in grams',
     /** The per-ingredient portion steppers, and the one that empties a row. */
     lessOf: 'Less {{name}}',
     moreOf: 'More {{name}}',
@@ -271,9 +280,35 @@ export const logging = {
      * macros need no label of their own — the bar beside each one already
      * carries its name.
      */
-    editKcal: 'Edit the calories',
-    /** Renaming one logged entry, which does not rename the dish. */
-    nameField: 'What to call this',
+    editKcal: 'Calories',
+    /**
+     * The sheet those four figures are typed in, and the three "Edit" controls
+     * that open one. Each label names the card rather than repeating the word,
+     * because a screen reader hearing three "Edit" buttons on one screen learns
+     * nothing from any of them.
+     */
+    figuresTitle: 'Your own figures',
+    macrosTitle: 'Macros',
+    /**
+     * The three pencils, and they are the only words those controls have: the
+     * button itself is the icon alone, so a screen reader hearing three of them
+     * on one screen needs each to say WHICH card it opens.
+     */
+    editFigures: 'Edit the calories and macros',
+    editPlate: 'Edit the ingredients',
+    editDetails: 'Edit the name, day and time',
+    /** On the card, when at least one figure was typed. See the reset link. */
+    yourFigures: 'Your own figures, not the app’s.',
+    /**
+     * The two field labels in the details sheet, and they are ONE WORD each.
+     * "What to call this" and "When you ate it" were sentences where a label was
+     * wanted: a field with a value in it and a heading over it does not need the
+     * heading to also explain the field.
+     *
+     * Renaming one logged entry writes `display_label`, so it does not rename the
+     * dish for anyone else who logged it.
+     */
+    nameField: 'Name',
     numbersReset: 'Use the app’s figures',
     /**
      * Stands in for a serving label the catalogue import left unusable — a
@@ -293,6 +328,33 @@ export const logging = {
       extraRice: 'Extra rice',
     },
     editByHand: 'Edit the details by hand',
+    /**
+     * WHEN it was eaten: the day it counts towards and the time on the row.
+     *
+     * Two columns and one question — see `features/logging/when.ts`. It reads as
+     * one line under the title, the same pair of facts the diary row prints under
+     * a dish name, and the sheet asks once.
+     */
+    whenValue: '{{day}} at {{time}}',
+    /**
+     * The row in the details sheet that opens the picker. A value with a way in
+     * rather than the controls themselves — five of those laid out flat is what
+     * the picker replaced.
+     */
+    whenRow: 'Date',
+    /** The four wheels, to a screen reader. Each is a run of near-identical rows. */
+    dayTitle: 'Day',
+    timeTitle: 'Time',
+    hour: 'Hour',
+    minute: 'Minute',
+    am: 'am',
+    pm: 'pm',
+    /**
+     * Said when the entry has left the day the user is looking at. Without it
+     * the diary they land back on has one fewer row and a meal moved to
+     * yesterday reads as a meal deleted.
+     */
+    movedTo: 'Moved to {{day}}',
     /**
      * The footer. Short because it shares the row with "Fix it" — "Save
      * changes" and a sparkle button do not both fit on a small phone.
