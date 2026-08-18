@@ -26,6 +26,7 @@ import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 import {
+  claimRecipeReview,
   claimScan,
   createMeter,
   NotEntitled,
@@ -146,7 +147,8 @@ Deno.serve(async (req: Request) => {
   // publish review is a gate the app runs on its own behalf — it must go on
   // running for anybody who can reach the publish button, and charging a user's
   // daily allowance for a check they did not ask for would be the app billing
-  // them for its own moderation.
+  // them for its own moderation. It has a ceiling of its own instead; see the
+  // claim in that branch.
   const meter = createMeter()
 
   // -- READ: a photograph of the pot, or a description of it, becomes a
@@ -264,6 +266,18 @@ Deno.serve(async (req: Request) => {
     // private row, and the next publish would inherit it without being read.
     if (!loaded.recipe.is_public) {
       return json({ ok: false, error: 'recipe is not public' }, 400)
+    }
+
+    // The one model call in the app that no user quota stands in front of, and
+    // the one nobody asked for: it is our moderation, running because somebody
+    // pressed Publish. So it is bounded by a rate limit rather than by their
+    // scan allowance — ten an hour, which no real use comes near and which
+    // stops `{action: 'review'}` from being a loop somebody can put our
+    // OpenRouter bill through. Refused, the recipe stays `pending` and stays
+    // out of the community tab, which is the same fail-shut answer every other
+    // failure in this branch gives.
+    if (!(await claimRecipeReview(db, userId))) {
+      return json({ ok: false, status: 'pending', error: 'too many reviews, try again later' }, 429)
     }
 
     const input: ReviewInput = {

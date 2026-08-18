@@ -197,6 +197,41 @@ export async function claimScan(db: SupabaseClient, userId: string): Promise<voi
 }
 
 /**
+ * Take one recipe review's worth of budget, or refuse.
+ *
+ * NOT THE USER'S SCAN QUOTA, and that is the whole reason this is a second
+ * claim rather than a call to the one above. The review is the app's own
+ * moderation — it runs because somebody pressed Publish, not because they asked
+ * for a model — and spending their daily allowance on it would be the app
+ * billing them for a check it performs on its own behalf. What it needs instead
+ * is a ceiling that no real use comes near and a loop cannot walk through, which
+ * is what a per-hour rate limit is.
+ *
+ * Returns a BOOLEAN rather than throwing. There is one caller and it answers
+ * the refusal the same way it answers every other failure in that branch — the
+ * recipe stays `pending`, which keeps it out of the community tab — so a class
+ * to carry the numbers across would be a class nobody reads.
+ *
+ * A FAILED CLAIM LETS IT THROUGH, like the scan meter and for the same reason:
+ * a database blip must not become a recipe nobody can publish.
+ */
+export async function claimRecipeReview(db: SupabaseClient, userId: string): Promise<boolean> {
+  const { data, error } = await db
+    .rpc('claim_recipe_review', { p_user: userId })
+    .maybeSingle<{ allowed: boolean; used: number; hourly_limit: number }>()
+
+  if (error) {
+    console.error('[review quota] claim failed, allowing uncounted:', error.message)
+    return true
+  }
+  if (data && !data.allowed) {
+    console.warn(`[review quota] refused: ${data.used}/${data.hourly_limit} this hour`)
+    return false
+  }
+  return true
+}
+
+/**
  * How many requests to OpenRouter one invocation made.
  *
  * COUNTS, AND NO LONGER REFUSES. It used to be the quota itself: `claim()` ran

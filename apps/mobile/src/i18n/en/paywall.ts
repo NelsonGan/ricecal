@@ -121,7 +121,10 @@ export const paywall = {
     rows: {
       snap: {
         label: 'Snap a plate',
-        free: '{{scans}} a day',
+        // "3/day" rather than "3 a day": this is a VALUE in a narrow column
+        // beside "Unlimited", not a sentence, and the slashed form is how a
+        // rate is written when it has to sit in a table cell.
+        free: '{{scans}}/day',
         pro: 'Unlimited',
       },
       describe: {
