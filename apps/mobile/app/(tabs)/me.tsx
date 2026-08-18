@@ -174,8 +174,24 @@ export default function MeScreen() {
           title={t('profile:home.pro')}
           subtitle={planLine}
           leading={<Icon set="system" name="crown" size={42} />}
-          divider={false}
           onPress={() => router.push(entitled ? '/settings/subscription' : '/paywall')}
+        />
+        {/* THE OTHER WAY TO GET PRO, and it belongs in this card rather than
+            down among the settings for exactly that reason: the row above it is
+            the way you pay for it, and this is the way you do not. Somewhere in
+            the list between reminders and units it would read as a setting, and
+            nobody goes looking for a way to earn something in a settings list.
+
+            Shown to subscribers too. A monthly plan can earn a year and a
+            yearly one can earn lifetime, so there is no tier this is pointless
+            for; the copy is about posting rather than about unlocking, which
+            keeps it true for somebody who has already paid. */}
+        <ListRow
+          title={t('profile:shareEarn.row')}
+          subtitle={t('profile:shareEarn.heroTitle')}
+          leading={<Icon set="system" name="gift" size={42} />}
+          divider={false}
+          onPress={() => router.push('/settings/share')}
         />
       </Card>
 

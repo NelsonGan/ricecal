@@ -254,6 +254,19 @@ export type Events = {
     reason: 'cancelled' | 'unavailable' | 'error'
   }
   'Restore Requested': { outcome: 'restored' | 'nothing' | 'unavailable' }
+  /**
+   * Share & Earn: a platform shortcut was tapped, and the Discord claim was
+   * opened.
+   *
+   * The two ends of a funnel nothing else can see. The middle of it — whether
+   * anybody actually posted — happens in somebody else's app and is not ours to
+   * know, so these two numbers and the count of codes we hand out in Discord
+   * are the whole measurement. Which PLATFORM is the interesting half: it says
+   * where this app's users actually are, which is a question no other event in
+   * the plan answers.
+   */
+  'Share Platform Opened': { platform: string }
+  'Share Claim Opened': NoProps
 
   // ── The habit features ───────────────────────────────────────────────────
   /**
