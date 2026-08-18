@@ -5,7 +5,7 @@ import { TextInput, View } from 'react-native'
 import { useAddWater } from '@/data'
 import { DEFAULT_WATER_ML, millilitres, WATER_MAX_ML, WATER_PRESETS } from '@/lib/water'
 import { radius, slab } from '@/theme/tokens'
-import { useTheme, useThemeColors } from '@/theme/useTheme'
+import { useThemeColors } from '@/theme/useTheme'
 import {
   Card,
   Icon,
@@ -17,14 +17,7 @@ import {
   useToast,
   WaterTank,
 } from '@/ui'
-
-/**
- * How tall the tank is, which is how tall the card is.
- *
- * Enough to write a figure across without the water crowding it, and no more:
- * this is one line of information on a screen whose subject is underneath it.
- */
-const TANK_HEIGHT = 88
+import { TANK_HEIGHT, TankFigure } from './TankFigure'
 
 export type WaterCardProps = {
   /** The day the strip has selected. Drinks are recorded against it, not against now. */
@@ -69,7 +62,6 @@ export function WaterCard({
   loading = false,
 }: WaterCardProps) {
   const { t } = useTranslation(['logging', 'common'])
-  const { isDark } = useTheme()
   const toast = useToast()
   const addWater = useAddWater(date)
 
@@ -97,21 +89,9 @@ export function WaterCard({
     })
   }
 
+  // Only the sheet needs this now: the figure on the tank prints the pair
+  // itself, and how far off the goal is belongs with the buttons that close it.
   const toGo = Math.max(0, goalMl - ml)
-  const count = t('logging:water.count', { filled: millilitres(ml), goal: millilitres(goalMl) })
-
-  /**
-   * The figure's colour once the water is over it, and the one place in this
-   * card that asks which theme it is in.
-   *
-   * `on-water` is the design system's pairing for a label on a water fill, and
-   * it is white — which is right on a chip and wrong here, because a 22pt
-   * figure in white on `#4CC9F0` is about 1.9:1 and washes out on exactly the
-   * days somebody most wants to read it. Dark ink on that same blue is 8:1. The
-   * dark palette has no such problem: `on-water` is already near-black there,
-   * against a brighter water, and `ink` would be the near-white that fails.
-   */
-  const wetInk = isDark ? 'text-on-water' : 'text-ink'
 
   return (
     <>
@@ -139,24 +119,7 @@ export function WaterCard({
                the figure is fully under water and reads white on blue. */
             <View className="flex-1 items-end pr-1 pt-1">
               <View className="flex-row items-center gap-1.5">
-                <Icon set="body" name="water-drop" size={14} />
-                {/* `meta` rather than `label`: this is a secondary line about a
-                    picture that has already said the same thing, and the app
-                    writes those at fourteen points in the body weight
-                    everywhere else.
-
-                    Hidden from a screen reader, both copies of it — the tank
-                    announces the same pair of figures as a sentence and as a
-                    progress bar, which is the better of the two. */}
-                <Text
-                  variant="meta"
-                  numberOfLines={1}
-                  className={onWater ? wetInk : 'text-water-ink'}
-                  accessibilityElementsHidden
-                  importantForAccessibility="no-hide-descendants"
-                >
-                  {loading ? '' : count}
-                </Text>
+                <TankFigure ml={ml} goalMl={goalMl} onWater={onWater} loading={loading} />
 
                 {/* Beside the figure, not opposite it: the two are one control
                     and one readout about the same thing, and a button parked at

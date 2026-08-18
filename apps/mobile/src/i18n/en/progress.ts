@@ -91,10 +91,14 @@ export const progress = {
     yearAverage: 'YEAR AVG',
     total: 'TOTAL',
 
+    /**
+     * The overline ON the tank. What is left of a card that used to carry a
+     * heading, a "to go" pill and a caption around a small tank — it is the
+     * same card Today draws now, and the only thing it still has to say for
+     * itself is which day it is about, since everything else on this screen is
+     * about seven of them.
+     */
     todayTitle: 'TODAY',
-    todayCount: '{{filled}} of {{goal}}',
-    toGo: '{{amount}} to go',
-    goalMet: 'Goal reached',
 
     /**
      * The habit card. The line is not a second goal — it is where a day stops
