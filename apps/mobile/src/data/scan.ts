@@ -265,6 +265,10 @@ export function useRefineEntry() {
         queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
         queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
         queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+        // A correction spends a scan like a plate does. Invisible today — the
+        // count is only drawn for a free account and only Pro can refine — and
+        // an off-by-one waiting to happen the moment either of those changes.
+        queryClient.invalidateQueries({ queryKey: keys.scanQuota(userId) })
         return data
       }
 

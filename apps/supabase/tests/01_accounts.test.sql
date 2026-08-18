@@ -10,7 +10,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(18);
+select plan(20);
 
 -- Fixed ids so failures name the same user every run.
 \set user_a '11111111-1111-1111-1111-111111111111'
@@ -83,6 +83,30 @@ select is(
   (select count(*)::integer from public.daily_goals where user_id = :'user_a'),
   0,
   'a described body with no recorded weight still yields no goal'
+);
+
+-- A TIMEZONE THIS DATABASE CAN USE, whatever the client sends.
+--
+-- `authenticated` has a table-wide update grant on `profiles`, and `local_today`
+-- does `now() at time zone <that text>` — which RAISES for anything that is not
+-- an IANA name. Half the server reads that function, and the daily scan quota
+-- reads it inside a claim whose failure is deliberately read as "allow
+-- uncounted": one junk write would buy an account unlimited scans for ever.
+-- So a value that is not a real zone is ignored rather than stored, and the row
+-- keeps the one it had.
+update public.profiles set timezone = 'not/a-zone' where id = :'user_a';
+
+select is(
+  (select timezone from public.profiles where id = :'user_a'),
+  'UTC',
+  'a timezone that is not a real zone is ignored, and the old one stands'
+);
+
+-- The point of the whole exercise: the function that half the server depends on
+-- still answers rather than raising.
+select lives_ok(
+  $$select public.local_today('11111111-1111-1111-1111-111111111111')$$,
+  'so local_today still answers for that account'
 );
 
 -- Onboarding's weight field is written as the first weigh-in, which is what

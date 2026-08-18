@@ -118,9 +118,19 @@ export function useRecipeQuota(): RecipeQuota {
   return {
     count: owned,
     limit: entitled ? null : FREE_RECIPES,
-    // Never true while either answer is still in flight: a paywall shown to
-    // somebody with two recipes because the count had not landed is the same
-    // mistake as showing one to a subscriber mid-launch.
+    /**
+     * Never true while either answer is still in flight: a paywall shown to
+     * somebody with two recipes because the count had not landed is the same
+     * mistake as showing one to a subscriber mid-launch.
+     *
+     * IT ERRS THE OTHER WAY WHEN THE COUNT FAILS. A query that errored, or that
+     * is paused offline with nothing cached, is not pending — so `owned` falls
+     * back to 0 and this reads false. The button then opens a form that the
+     * database refuses at Save. That is the right direction to be wrong in
+     * (nobody is refused something they are entitled to, and the trigger is the
+     * rule anyway), and the screens that call this all route the refusal to the
+     * paywall through `isRecipeLimit` rather than showing "could not save".
+     */
     atLimit: !loading && !entitled && owned >= FREE_RECIPES,
     loading,
   }
@@ -505,7 +515,18 @@ export type RecipeSource = { photoPath: string } | { text: string }
  * good empty form to show.
  */
 export function useReadRecipe() {
+  const queryClient = useQueryClient()
+  const userId = useUserId()
+
   return useMutation({
+    // Reading a pot spends a scan on the server like a photographed plate does,
+    // so the count the camera panel draws has to move. Invisible today — that
+    // caption is only drawn for a free account and only Pro can reach this —
+    // and an off-by-one waiting to happen the moment either changes. `onSettled`
+    // rather than `onSuccess`: a read that came back `null` was still charged.
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: keys.scanQuota(userId) })
+    },
     mutationFn: async (source: RecipeSource): Promise<ScannedRecipe | null> => {
       /**
        * Which of the two offers was taken, and whether it produced anything.

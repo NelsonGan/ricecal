@@ -44,10 +44,26 @@ grant execute on function public.free_photo_retention_days to authenticated, ser
 -- is when the row actually happened, which is the only honest basis for "we
 -- kept this for thirty days".
 --
--- ENTITLEMENT IS CHECKED PER ROW, at sweep time, so a lapsed subscription does
--- not take the photographs with it on the day it lapses — they age out from
--- then on like anybody else's, and a resubscription stops the sweep again with
--- everything that is left still there.
+-- WHAT WAS PAID FOR STAYS PAID FOR, and the second date condition is what makes
+-- that true rather than merely claimed. Entitlement is checked per row at sweep
+-- time, so a lapsed subscription would otherwise hand the sweep a year of
+-- somebody's photographs on the night it lapsed — every one of them older than
+-- thirty days, all deleted at once, unrecoverable. The ugliest version of it is
+-- the one where the user has done nothing at all: a renewal webhook lost past
+-- RevenueCat's retries leaves a paying account reading as expired, which
+-- CLAUDE.md records as having actually happened.
+--
+-- So the window is bounded at BOTH ends: a photograph is swept only if it was
+-- logged AFTER the last paid period ended, which is what "they age out from
+-- then on like anybody else's" actually requires. `current_period_end` is null
+-- for an account that never subscribed — coalesced to -infinity, so all of
+-- their photographs are in scope, which is right — and it is the end of the
+-- last period for everybody else, whether that was yesterday or two years ago.
+--
+-- What it costs is that a lapsed subscriber's Pro-era plates are kept for ever,
+-- at our expense. That is the correct side to be wrong on: the alternative is
+-- deleting the photographs of somebody who paid for them to be kept, on the
+-- evidence of a webhook that may simply not have arrived.
 --
 -- `security definer` and `service_role` only: it reads across every account,
 -- which is exactly what no client may do.
@@ -64,11 +80,16 @@ set search_path = ''
 as $$
   select f.id, f.photo_path
     from public.food_logs f
+    left join public.subscriptions s on s.user_id = f.user_id
    where f.photo_path is not null
      and f.logged_at < now() - pg_catalog.make_interval(
            days => public.free_photo_retention_days()
          )
      and not public.is_entitled(f.user_id)
+     -- Logged AFTER the paid period ended. See the note above: without this,
+     -- a lapsed subscription hands the sweep every photograph the account ever
+     -- took, on the night it lapses.
+     and f.logged_at > coalesce(s.current_period_end, '-infinity'::timestamptz)
    order by f.logged_at
    -- `least`/`greatest` are parser CONSTRUCTS rather than catalog functions, so
    -- they cannot be schema-qualified: `pg_catalog.greatest(...)` is a "function

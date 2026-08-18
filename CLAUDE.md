@@ -1245,9 +1245,13 @@ tier that takes the limits off:
 | budget, health sync, reminders, the whole catalogue | yes | yes |
 
 Three of those numbers live in `packages/shared` for the copy to interpolate,
-and ALL of them are enforced in Postgres — `free_daily_scans()`,
+and all THREE are enforced in Postgres — `free_daily_scans()`,
 `free_recipe_limit()`, `free_photo_retention_days()`. The client's copy is what
-makes the buttons read honestly; the database's is what refuses.
+makes the buttons read honestly; the database's is what refuses. The other two
+rows of that table, the trend ranges and the older reviews, are gated in the
+CLIENT ALONE and deliberately: they are reads of the user's own data, so the
+worst a modified client buys is somebody seeing their own year. Nothing else in
+the table is like that.
 
 **The unit of the meter is a SCAN, and it used to be a request to OpenRouter.**
 `scan_usage` is one row per account per LOCAL day and `claim_scan` does the check
@@ -1267,6 +1271,16 @@ meal, a correction, a recipe read out of a picture. Claimed ONCE, at the top of
 the endpoint, before the photo is read and before the first model call. `Meter`
 is still threaded down to `chatJSON` and still required, but it only COUNTS now
 — what it records is what a scan cost us, for the logs and the debug trace.
+
+**The publish review has a ceiling of its own, and it is not the user's.**
+Reading a recipe somebody asked to publish is the app's own moderation — it runs
+because Publish was pressed, not because a model was asked for — so spending
+their daily scans on it would be the app billing them for its own check. It used
+to be bounded anyway, by the per-request meter; with that gone,
+`{action: 'review'}` was the one model call any signed-in caller could reach in
+a loop. `claim_recipe_review` is the barcode throttle's shape applied to it: ten
+an hour, per account, atomic, no client write grant. Refused, the recipe stays
+`pending`, which is the same fail-shut answer every other failure there gives.
 
 **A free account's refusal opens the paywall; a Pro account's does not.**
 `claim_scan` returns `entitled` alongside the numbers, and `announceRefusal` in

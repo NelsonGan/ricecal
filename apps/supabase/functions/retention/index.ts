@@ -50,6 +50,28 @@ const BATCH = 500
 /** Deletes in flight at once. Enough to be quick, few enough to be polite. */
 const CONCURRENCY = 10
 
+/**
+ * Compare two secrets without leaking their length or their prefix in the time
+ * it takes.
+ *
+ * `!==` returns on the first differing byte, which over enough requests is a
+ * measurable way to learn a token one character at a time. The odds of that
+ * working against an edge function across the internet are poor, and the cost
+ * of removing the question is eight lines — against an endpoint whose whole
+ * power is deleting other people's photographs, that is a trade worth making.
+ *
+ * Written out rather than imported: the standard library's version is a
+ * dependency this function does not otherwise need, and the loop is the whole
+ * of it. Lengths are compared first, which does leak the LENGTH — unavoidable
+ * without hashing, and a token's length is not its secret.
+ */
+function secretsMatch(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let difference = 0
+  for (let i = 0; i < a.length; i++) difference |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return difference === 0
+}
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -67,7 +89,7 @@ Deno.serve(async (req: Request) => {
     console.error('[retention] RETENTION_TOKEN is not set, refusing')
     return json({ ok: false, error: 'retention is not configured' }, 503)
   }
-  if (req.headers.get('x-retention-token') !== secret) {
+  if (!secretsMatch(req.headers.get('x-retention-token') ?? '', secret)) {
     return json({ ok: false, error: 'not authorised' }, 401)
   }
 

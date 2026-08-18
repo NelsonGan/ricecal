@@ -117,6 +117,15 @@ Deno.serve(async (req: Request) => {
   // Steering is a test affordance; outside mock mode it is ignored entirely.
   const mock = mockActive() ? body.mock : undefined
 
+  // NEITHER A PHOTOGRAPH NOR WORDS. There is nothing here to recognise, so the
+  // cascade would fall to the archetype floor and write a guessed "Mixed meal"
+  // — having first spent one of the day's scans on it. Checked before the
+  // claim, because a request that carries no evidence is a bad request rather
+  // than a scan that went badly.
+  if (!photoPath && !description) {
+    return json({ ok: false, error: 'photo_path or text is required' }, 400)
+  }
+
   const db = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',

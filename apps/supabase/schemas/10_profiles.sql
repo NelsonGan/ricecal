@@ -51,10 +51,11 @@ create table public.profiles (
   referral_source   text,
 
   -- IANA name. The server needs it to answer "what day is it for this user"
-  -- without the client saying so — reminders, the weekly report job, and the
-  -- default on `food_logs.log_date` all depend on it. Unconstrained text:
-  -- validating against pg_timezone_names needs a non-immutable function, which
-  -- a CHECK cannot use.
+  -- without the client saying so — reminders, the weekly report job, the
+  -- default on `food_logs.log_date` and the daily scan quota all depend on it.
+  -- The column is plain text because validating against `pg_timezone_names`
+  -- needs a non-immutable read, which a CHECK cannot do; the trigger below is
+  -- where that check happens instead. See it for why this is not merely tidy.
   timezone          text not null default 'Asia/Kuala_Lumpur',
 
   -- Null until the last onboarding step commits. The router reads it to decide
@@ -65,6 +66,64 @@ create table public.profiles (
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now()
 );
+
+-- ---------------------------------------------------------------------------
+-- A timezone this database can actually use.
+--
+-- `authenticated` holds a table-wide update grant on `profiles`, so the client
+-- writes this column directly, and `local_today` does `now() at time zone
+-- <that text>` — which RAISES `invalid_parameter_value` for anything that is
+-- not an IANA name. A single PATCH setting it to "x" therefore turns a function
+-- that half the server depends on into one that throws for that account.
+--
+-- THE EXPENSIVE CASE IS THE SCAN QUOTA. `claim_scan` resolves the day through
+-- `local_today`, and the edge function reads any error from that claim as
+-- "allow uncounted" — deliberately, because a database blip must not tell a
+-- paying user they are cut off. Put together, one junk write buys an account
+-- unlimited scans for ever, and the only trace is a log line. The meter cannot
+-- be the thing that fixes this: failing shut there is the wrong trade for every
+-- other reason it might fail. So it is fixed at the source, where a timezone
+-- gets in.
+--
+-- IGNORED RATHER THAN REFUSED. A junk value keeps whatever the row had before
+-- it, and falls back to the default on an insert. Nobody's write fails over a
+-- string the app never sends anyway — every client writes
+-- `Intl.DateTimeFormat().resolvedOptions().timeZone`, which is an IANA name by
+-- construction — and raising would turn a corrupt value into a failed save on a
+-- screen that has nothing to do with timezones. The column is `not null`, so
+-- blanking it is not available: that would fail the write it is trying to save.
+--
+-- Not `immutable`, hence not a CHECK: `pg_timezone_names` is a catalog read.
+-- ---------------------------------------------------------------------------
+create or replace function public.profiles_valid_timezone()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.timezone is not null
+     and not exists (
+       select 1 from pg_catalog.pg_timezone_names z where z.name = new.timezone
+     ) then
+    -- `old` only exists on an update, and on an insert there is nothing to keep
+    -- but the column's own default.
+    new.timezone := case
+      when tg_op = 'UPDATE' then coalesce(old.timezone, 'Asia/Kuala_Lumpur')
+      else 'Asia/Kuala_Lumpur'
+    end;
+  end if;
+  return new;
+end;
+$$;
+
+-- Stated here and applied by a hand-written migration: `db diff` does not carry
+-- grants, so a revoke that only lives in a schema file never happens.
+revoke execute on function public.profiles_valid_timezone from public, anon, authenticated;
+
+create trigger profiles_valid_timezone
+  before insert or update of timezone on public.profiles
+  for each row execute function public.profiles_valid_timezone();
 
 create trigger profiles_set_updated_at
   before update on public.profiles
