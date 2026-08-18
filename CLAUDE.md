@@ -1072,6 +1072,14 @@ boxes saying one thing. The choosing happens in a sheet, where a row of buttons
 costs nothing, and the undo is a TOAST — a button that appears after every drink
 is a control that exists to be ignored.
 
+**The sheet takes water off as well as on.** A typed amount has a minus beside
+its plus, because the toast's undo is gone the moment it times out, a drink
+logged on the wrong day is only found later, and a bottle nobody finished is an
+ordinary Tuesday. Both are one call — a removal is an addition of a negative
+amount, which is what `add_water` clamps at zero for — and the only thing that
+has to know the difference is the toast, since read off the same figure a
+removal announces itself as a drink.
+
 **The figure over the tank is drawn TWICE**, once on the dry ground and once
 inside the water, the second clipped to the level. One copy cannot do it: in the
 dark palette `water` and `water-ink` are the same value, so a figure that reads

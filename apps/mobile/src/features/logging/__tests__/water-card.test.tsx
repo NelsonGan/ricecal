@@ -95,3 +95,43 @@ it('counts down to the goal, and says so once it is met', async () => {
   await user.press(screen.getByLabelText('Add water'))
   expect(screen.getByText('Goal reached. Nice one.')).toBeOnTheScreen()
 })
+
+/**
+ * The custom amount, in both directions.
+ *
+ * The minus is the half worth a test: it is the same call as the plus with the
+ * sign flipped, which is the shape of mistake that looks right in a screenshot
+ * and takes water off the day when somebody meant to drink it. The toast is
+ * part of the contract too — read off the same figure, a removal announces
+ * itself as a drink, and prints its own minus sign into the sentence.
+ */
+it('adds or takes off an amount somebody types', async () => {
+  await withToast(<WaterCard date="2026-08-18" ml={2000} goalMl={2500} />)
+  await user.press(screen.getByLabelText('Add water'))
+
+  await user.type(screen.getByLabelText('Another amount'), '400')
+
+  await user.press(screen.getByLabelText('Take this amount off'))
+  expect(mockMutate).toHaveBeenLastCalledWith(-400)
+  expect(screen.getByText('400 ml taken off')).toBeOnTheScreen()
+
+  await user.press(screen.getByLabelText('Add water'))
+  await user.type(screen.getByLabelText('Another amount'), '400')
+  await user.press(screen.getByLabelText('Add this amount'))
+  expect(mockMutate).toHaveBeenLastCalledWith(400)
+  expect(screen.getByText('400 ml of water')).toBeOnTheScreen()
+})
+
+// Nothing typed is nothing to do, in either direction: `Number('')` is 0, so
+// the empty field has to be caught by hand or both buttons would fire a no-op
+// write and a toast saying "0 ml of water".
+it('will not record an empty box', async () => {
+  await withToast(<WaterCard date="2026-08-18" ml={2000} goalMl={2500} />)
+  await user.press(screen.getByLabelText('Add water'))
+
+  expect(screen.getByLabelText('Add this amount')).toBeDisabled()
+  expect(screen.getByLabelText('Take this amount off')).toBeDisabled()
+
+  await user.press(screen.getByLabelText('Add this amount'))
+  expect(mockMutate).not.toHaveBeenCalled()
+})
