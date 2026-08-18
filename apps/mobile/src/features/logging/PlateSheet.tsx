@@ -1,12 +1,101 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { TextInput, View } from 'react-native'
 
 import type { EntryIngredient } from '@/data'
 import { titleCase } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, Divider, Icon, IconButton, Sheet, Text } from '@/ui'
-import { PART_MAX, PART_STEP, type PartEdits, stagedParts, stepPart } from './parts'
+import { Button, cn, Divider, Icon, IconButton, Sheet, Text, useNumpadField } from '@/ui'
+import {
+  PART_MAX,
+  PART_STEP,
+  type PartEdits,
+  perUnitGrams,
+  quantityForGrams,
+  stagedParts,
+  stepGrams,
+  stepPart,
+} from './parts'
+
+/**
+ * One part's weight, typed where it is read.
+ *
+ * A bare `TextInput` rather than a `TextField`, because this sits between two
+ * 44pt buttons in a list row: the bordered box, the label above it and the hint
+ * below would make every ingredient three times as tall. The dashed rule under
+ * the number is what says it can be typed into, the same thing `Stepper` does
+ * with its own figure.
+ *
+ * The value is committed on BLUR rather than per keystroke. Each key would
+ * otherwise be a quantity written into the staged overlay and a whole plate
+ * re-priced under the finger — and "20" passes through "2" on its way, which for
+ * a moment is a different meal.
+ */
+function GramsField({
+  grams,
+  label,
+  onChange,
+}: {
+  grams: number
+  label: string
+  onChange: (next: number) => void
+}) {
+  const colors = useThemeColors()
+  const { t } = useTranslation('logging')
+  /** What is in the field while it is being typed, and `null` when it is not. */
+  const [typed, setTyped] = useState<string | null>(null)
+
+  const commit = () => {
+    const raw = (typed ?? '').replace(',', '.').trim()
+    const parsed = Number(raw)
+    setTyped(null)
+    // An empty or unreadable field keeps the weight it had. `Number('')` is 0,
+    // so the empty case has to be caught by hand — and a part weighing nothing
+    // is a part that should have been removed rather than resized.
+    if (!raw || !Number.isFinite(parsed) || parsed <= 0) return
+    onChange(parsed)
+  }
+
+  const numpad = useNumpadField({
+    value: typed ?? '',
+    onChangeText: setTyped,
+    // Whole grams. A tenth of a gram of rice is a precision nobody has about a
+    // plate, and the row cannot store it anyway.
+    decimal: false,
+    maxLength: 5,
+    label: `${label} · ${t('detail.gramsField')}`,
+    // Focus empties the box and the old weight becomes its placeholder, for the
+    // reason `Stepper` gives: where a programmatic selection lands on the frame
+    // it is focused is the platform's business, and typing over the whole number
+    // is what somebody reaching for this wants anyway.
+    onFocus: () => setTyped(''),
+    onBlur: commit,
+    returnKeyType: 'done',
+  })
+
+  return (
+    <TextInput
+      value={typed ?? t('detail.gramsShort', { grams: grams.toLocaleString() })}
+      onChangeText={setTyped}
+      onSubmitEditing={commit}
+      placeholder={typed === '' ? String(grams) : undefined}
+      placeholderTextColor={colors.faint}
+      // Does nothing while the app's own pad is up, and is the fallback if a
+      // platform ever declines to suppress the keyboard.
+      keyboardType="number-pad"
+      underlineColorAndroid="transparent"
+      accessibilityLabel={label}
+      className={cn(
+        'w-[70px] border-b-2 pb-0.5 text-center font-body-black text-[15px] text-ink',
+        typed === null ? 'border-line border-dashed' : 'border-pandan',
+      )}
+      style={{ paddingVertical: 0 }}
+      cursorColor={colors.pandan}
+      selectionColor={colors.pandan}
+      {...numpad}
+    />
+  )
+}
 
 export type PlateSheetProps = {
   visible: boolean
@@ -38,10 +127,15 @@ export type PlateSheetProps = {
  * moves all four of its macros together. The entry's totals follow the parts
  * anyway, because `food_log_details` sums them whenever an entry has any.
  *
- * A CAPPED sheet with a footer, unlike the other two on this screen: there is no
- * text field in here, so no keyboard to pad the panel up off the bottom edge,
- * and the action row belongs pinned under the list rather than scrolling with
- * it.
+ * FULL HEIGHT, AND THE BUTTON IS IN THE BODY. It was capped with a pinned footer
+ * while its rows were only buttons, and that stopped being true the moment the
+ * weight became a field: a capped panel grows by the pad's height and is anchored
+ * to the bottom, so a list of ingredients plus 314pt of keys ran off the top of
+ * the screen and took the first row's name behind the notch with it. CLAUDE.md's
+ * rule is written about the system keyboard and the geometry is the same for the
+ * app's own pad — full height keeps the panel where it is and lets the list inset
+ * itself instead, which also moves the action out of a footer, since a footer at
+ * full height lands behind the keys.
  */
 export function PlateSheet({
   visible,
@@ -82,8 +176,36 @@ export function PlateSheet({
 
   const parts = stagedParts(ingredients, draft)
 
-  const step = (id: string, quantity: number, direction: 1 | -1) => {
-    setDraft((current) => ({ ...current, [id]: stepPart(quantity, direction) }))
+  /**
+   * A tap on the plus or the minus, IN GRAMS wherever grams are known.
+   *
+   * The overlay is still a quantity, because that is what the row stores and what
+   * `set_ingredient_quantity` takes — the grams are a face on it. See
+   * `quantityForGrams` for what that costs at the edges.
+   *
+   * A part nobody weighed keeps the multiplier: there is no weight to move, and
+   * "× 2" is the only thing that can be said about how much of it there was.
+   */
+  const step = (ingredient: EntryIngredient, direction: 1 | -1) => {
+    const perUnit = perUnitGrams(ingredient)
+    const next =
+      perUnit === null || ingredient.grams === null
+        ? stepPart(ingredient.quantity, direction)
+        : (() => {
+            const grams = stepGrams(ingredient.grams, perUnit, direction)
+            return grams === null ? null : quantityForGrams(grams, perUnit)
+          })()
+    setDraft((current) => ({ ...current, [ingredient.id]: next }))
+  }
+
+  /**
+   * A weight typed in by hand, which is the precise way to answer "it was more
+   * like 200 g". The buttons are the nudge.
+   */
+  const setGrams = (ingredient: EntryIngredient, grams: number) => {
+    const perUnit = perUnitGrams(ingredient)
+    if (perUnit === null) return
+    setDraft((current) => ({ ...current, [ingredient.id]: quantityForGrams(grams, perUnit) }))
   }
 
   const save = async () => {
@@ -108,17 +230,17 @@ export function PlateSheet({
          line explaining that nothing is saved yet were two sentences saying what
          the controls already say. */
       closeLabel={t('common:action.close')}
-      footer={
-        <Button fullWidth loading={saving} onPress={() => void save()}>
-          {t('logging:detail.save')}
-        </Button>
-      }
+      fullHeight
     >
       {parts.map((ingredient, index) => {
-        // At the smallest amount the minus takes the whole thing off the plate.
-        // See `stepPart`: a quarter of a thing and "there wasn't any" are
-        // different answers, and only one of them used to be reachable.
+        const perUnit = perUnitGrams(ingredient)
+        const weighed = perUnit !== null && ingredient.grams !== null
+        // At the smallest amount the minus takes the whole thing off the plate:
+        // a quarter of a thing and "there wasn't any" are different answers, and
+        // only one of them used to be reachable. The floor is the same either
+        // way — a quarter of one unit — said in whichever unit the row is in.
         const atFloor = ingredient.quantity <= PART_STEP
+        const atCeiling = ingredient.quantity >= PART_MAX
 
         return (
           <View key={ingredient.id} className="gap-2">
@@ -130,21 +252,12 @@ export function PlateSheet({
             <Text variant="bodyStrong">{titleCase(ingredient.name)}</Text>
 
             <View className="flex-row items-center justify-between gap-3">
-              {/* The count, what it weighs and what it costs: the three facts
-                  the buttons to the right are moving. The weight is absent where
-                  the scan did not weigh the part, since "0 g" would be a claim
-                  about the food rather than about the answer. */}
+              {/* What it costs. The amount used to be here too and has moved to
+                  the field between the buttons, because the amount is the thing
+                  being edited and reading it two inches from the control that
+                  changes it is how the old card ended up truncating its names. */}
               <Text variant="meta" className="min-w-0 flex-1">
-                {ingredient.grams
-                  ? t('logging:detail.timesWeightKcal', {
-                      amount: ingredient.quantity,
-                      grams: Math.round(ingredient.grams).toLocaleString(),
-                      kcal: ingredient.kcal.toLocaleString(),
-                    })
-                  : t('logging:detail.timesKcal', {
-                      amount: ingredient.quantity,
-                      kcal: ingredient.kcal.toLocaleString(),
-                    })}
+                {t('logging:detail.partKcal', { kcal: ingredient.kcal.toLocaleString() })}
               </Text>
 
               <View className="flex-row items-center gap-2">
@@ -155,7 +268,7 @@ export function PlateSheet({
                     atFloor ? 'logging:detail.removeOf' : 'logging:detail.lessOf',
                     { name: ingredient.name },
                   )}
-                  onPress={() => step(ingredient.id, ingredient.quantity, -1)}
+                  onPress={() => step(ingredient, -1)}
                 >
                   <Icon
                     set="ui"
@@ -164,12 +277,34 @@ export function PlateSheet({
                     tintColor={atFloor ? colors.hibiscusInk : colors.ink}
                   />
                 </IconButton>
+
+                {/* THE AMOUNT, IN GRAMS, AND IT IS A FIELD.
+                    A weight is the one thing about a part somebody can check
+                    against the plate in front of them, and "it was more like 200"
+                    is a sentence the buttons answer ten grams at a time. Typed on
+                    the app's own pad, which a capped `Sheet` makes room for.
+
+                    A part nobody weighed keeps its multiplier and keeps it
+                    read-only: there is no weight to type, and a count is what the
+                    buttons move. */}
+                {weighed ? (
+                  <GramsField
+                    grams={Math.round(ingredient.grams ?? 0)}
+                    label={titleCase(ingredient.name)}
+                    onChange={(grams) => setGrams(ingredient, grams)}
+                  />
+                ) : (
+                  <Text variant="label" className="w-[70px] text-center">
+                    {t('logging:detail.times', { amount: ingredient.quantity })}
+                  </Text>
+                )}
+
                 <IconButton
                   size="sm"
                   variant="neutral"
                   accessibilityLabel={t('logging:detail.moreOf', { name: ingredient.name })}
-                  disabled={ingredient.quantity >= PART_MAX}
-                  onPress={() => step(ingredient.id, ingredient.quantity, 1)}
+                  disabled={atCeiling}
+                  onPress={() => step(ingredient, 1)}
                 >
                   <Icon set="ui" name="plus" size={16} tintColor={colors.ink} />
                 </IconButton>
@@ -198,6 +333,12 @@ export function PlateSheet({
           </View>
         </>
       ) : null}
+
+      {/* After the rows rather than in the sheet's footer: at full height a footer
+          lands behind the keys. */}
+      <Button fullWidth loading={saving} onPress={() => void save()}>
+        {t('logging:detail.save')}
+      </Button>
     </Sheet>
   )
 }

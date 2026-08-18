@@ -226,10 +226,6 @@ export const logging = {
     sugar: 'Sugar',
     sodium: 'Salt (sodium)',
     milligrams: '{{value}}mg',
-    /** Under the list, when at least one number is known. */
-    nutrientsNote: 'For the portion above. A dash means the dish has no figure recorded.',
-    /** And when none of them is. */
-    nutrientsUnknown: 'No figures recorded for this dish yet. Its calories and macros are.',
     fixTitle: 'Fix it by typing',
     fixPlaceholder: 'no sambal, and it was half a plate',
     /**
@@ -255,22 +251,22 @@ export const logging = {
      */
     times: '× {{amount}}',
     /**
-     * The same count with the weight the scan gave it: "× 6 · 150 g".
+     * WHAT A PART WEIGHS, in brackets after its name.
      *
-     * The count alone says how many, which is only half an amount — six of a
-     * thing whose size nobody stated. The weight is the half a person can check
-     * against the plate in front of them, and it is what the stepper beside it
-     * is actually moving.
+     * The weight is the one thing about a part somebody can check against the
+     * plate in front of them, and it used to sit on a second line behind a
+     * multiplier — "× 0.75 · 165 g" — which put the number nobody can act on
+     * first. The multiplier is an implementation detail of how the row stores an
+     * amount; 165 g is the amount.
      */
-    timesWeight: '× {{amount}} · {{grams}} g',
-    /**
-     * The same two, plus what the part costs, for the sheet where the amount is
-     * being changed. On the card the calories have a column of their own; in the
-     * sheet that column is where the buttons are, so the figure joins the line
-     * they are moving.
-     */
-    timesWeightKcal: '× {{amount}} · {{grams}} g · {{kcal}} kcal',
-    timesKcal: '× {{amount}} · {{kcal}} kcal',
+    grams: '({{grams}} g)',
+    /** The same for a part nobody weighed, where the count is all there is. */
+    count: '(× {{amount}})',
+    /** What a part costs, on the row in the sheet where its weight is edited. */
+    partKcal: '{{kcal}} kcal',
+    /** The weight in the sheet's own field, and what the number pad calls it. */
+    gramsShort: '{{grams}} g',
+    gramsField: 'Weight in grams',
     /** The per-ingredient portion steppers, and the one that empties a row. */
     lessOf: 'Less {{name}}',
     moreOf: 'More {{name}}',

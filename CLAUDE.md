@@ -735,6 +735,18 @@ side of it: those are silhouettes and survive being flattened to one colour, whi
 this one is a yellow pencil with a red eraser whose whole meaning is the colour —
 tinted pandan at 20pt it came out as a green lozenge.
 
+**A PART IS EDITED BY WEIGHT.** The ingredient card reads "Fried rice (90 g)" — the
+name and what it weighs, one line, the bracket wrapping with the text — where it
+used to read "× 0.5 · 90 g" on a second line and lead with the number nobody can
+act on. The multiplier is how `food_log_ingredients` STORES an amount; the grams
+are the amount, and the only thing about a part somebody can check against the
+plate in front of them. The sheet steps and types in grams too, and
+`quantityForGrams` is the seam: `set_ingredient_quantity` takes a quantity and the
+column is `numeric(6, 2)`, so a weight lands within a gram or two of what was asked
+for, and the number on screen is always what the row actually weighs rather than
+what was typed. A part nobody weighed keeps its multiplier, because a count is the
+only thing that can be said about it.
+
 Each sheet holds a draft and its Save writes it; leaving any other way drops what
 was typed. `stagedParts` in `features/logging/parts.ts` is shared between the card
 and the plate sheet, because two copies of that arithmetic would be two previews of
@@ -742,8 +754,8 @@ one plate. None of them carries a description or a title: four labelled fields w
 numbers in them say what they are, and a paragraph explaining that nothing is saved
 yet was a sentence the Save button already makes.
 
-TWO OF THEM KEEP THEIR STATE ABOVE THE BODY, because their button is in the sheet's
-`footer` rather than in the scrolling half — and that state outlives one opening,
+ONE OF THEM KEEPS ITS STATE ABOVE THE BODY, because it was written with its button
+in the sheet's `footer` rather than in the scrolling half — and that state outlives one opening,
 since a `Sheet` is a `Modal` that stays in the tree with `visible={false}`. Both
 therefore reset the draft AND the saving flag when the sheet opens. Without the
 second half a successful save left the spinner running, and the next time the sheet
