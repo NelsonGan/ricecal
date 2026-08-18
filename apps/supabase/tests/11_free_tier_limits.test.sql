@@ -14,7 +14,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(9);
+select plan(11);
 
 \set free '44444444-4444-4444-4444-444444444444'
 \set pro  '55555555-5555-5555-5555-555555555555'
@@ -122,6 +122,49 @@ select is(
     where user_id = :'free' and item_name = 'Old plate'),
   'rice-bowl',
   'the entry keeps its place in the diary, with a drawing where the plate was'
+);
+
+-- -- WHAT WAS PAID FOR STAYS PAID FOR --------------------------------------
+--
+-- The most expensive thing this sweep could get wrong. Entitlement is read per
+-- row at sweep time, so a lapsed subscription would otherwise hand it every
+-- photograph the account ever took, on the night it lapsed — and the ugliest
+-- version is the one where the user did nothing at all, because a renewal
+-- webhook lost past RevenueCat's retries leaves a paying account reading as
+-- expired. Only what was logged AFTER the last paid period ended is ever in
+-- scope.
+
+\set lapsed '88888888-8888-8888-8888-888888888888'
+
+insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+values (:'lapsed', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'lapsed@example.test', '{}'::jsonb, '{}'::jsonb, now(), now());
+
+insert into public.subscriptions (user_id, status, plan, current_period_end)
+values (:'lapsed', 'expired', 'yearly', now() - interval '60 days');
+
+insert into public.food_logs
+  (user_id, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g,
+   serving_label, serving_factor, photo_path, source, logged_at)
+values
+  -- Logged while they were paying. Kept, for ever.
+  (:'lapsed', 'Paid-for plate', 500, 60, 20, 18, '1 plate', 1,
+   'meals/88888888-8888-8888-8888-888888888888/paid.jpg', 'camera',
+   now() - interval '90 days'),
+  -- Logged after the subscription ended, and now older than the free window.
+  (:'lapsed', 'Since it lapsed', 500, 60, 20, 18, '1 plate', 1,
+   'meals/88888888-8888-8888-8888-888888888888/after.jpg', 'camera',
+   now() - interval '40 days');
+
+select is(
+  (select count(*)::integer from public.expired_meal_photos()),
+  1,
+  'a lapsed account loses only what it logged after the period it paid for'
+);
+
+select is(
+  (select photo_path from public.expired_meal_photos()),
+  'meals/88888888-8888-8888-8888-888888888888/after.jpg',
+  'and the plate from the paid year is not the one being swept'
 );
 
 select * from finish();
