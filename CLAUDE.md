@@ -1056,14 +1056,29 @@ them inside one card produced "0 ml / 2 L", a fraction whose two halves are in
 different units. `volume()` and `millilitres()` in `lib/water.ts` are the two
 forms.
 
-**The picture is a tank, and it is short on purpose.** `ui/WaterTank.tsx` draws
-a level with two waves at different speeds, and tips the surface left and right
-when the card first appears and again on every drink. It was a tall glass beside
-a column of quick-add buttons, which took a third of the screen on a diary whose
-subject is the meals underneath; what is there now is a band and one Add button,
-and the choosing happens in a sheet where a row of buttons costs nothing. The
-undo is a TOAST for the same reason — a button that appears after every drink is
-a control that exists to be ignored.
+**THE CARD IS THE TANK.** `ui/WaterTank.tsx` fills the whole rectangle, carries
+two waves at different speeds so it reads as liquid rather than as a moving
+graph, and tips its surface left and right when the card first appears and again
+on every drink. Everything else is drawn ON it, in the top-right corner: the
+figure, small, and an Add button beside it — the two are one readout and one
+control about the same thing, and the button is small because this is the
+cheapest decision on the screen and should look like one. There is no heading —
+the word "Water" over a tank of water is a label the picture already carries,
+and the drop beside the figure is what identifies it on a day the tank is empty.
+It went through two shapes to get here: a tall glass beside a column of
+quick-add buttons, which took a third of the screen on a diary whose subject is
+the meals underneath, and then a band with the figure above it, which was three
+boxes saying one thing. The choosing happens in a sheet, where a row of buttons
+costs nothing, and the undo is a TOAST — a button that appears after every drink
+is a control that exists to be ignored.
+
+**The figure over the tank is drawn TWICE**, once on the dry ground and once
+inside the water, the second clipped to the level. One copy cannot do it: in the
+dark palette `water` and `water-ink` are the same value, so a figure that reads
+on an empty tank vanishes exactly as the day goes well. The wet copy is not
+`on-water` either, which is white and lands at about 1.9:1 on that blue — it is
+`ink` in the light palette and `on-water` in the dark, which is the one pairing
+that holds in all four combinations of theme and level.
 
 ---
 

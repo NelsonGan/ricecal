@@ -1,9 +1,11 @@
 import { Canvas, Group, Path, Skia } from '@shopify/react-native-skia'
+import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
-import { type LayoutChangeEvent, View } from 'react-native'
-import {
+import { type LayoutChangeEvent, StyleSheet, View } from 'react-native'
+import Animated, {
   Easing,
   type SharedValue,
+  useAnimatedStyle,
   useDerivedValue,
   useReducedMotion,
   useSharedValue,
@@ -27,8 +29,21 @@ export type WaterTankProps = {
   loading?: boolean
   /** Short by design. See the note below on why this is a tank and not a glass. */
   height?: number
+  /** Corner radius. Match the card's own when the tank IS the card. */
+  radius?: number
   /** Names the level to a screen reader. Pass translated copy. */
   accessibilityLabel?: string
+  /**
+   * Drawn over the tank, TWICE: once on the dry ground and once inside the
+   * water, so a figure written across it stays legible whatever the level.
+   *
+   * A render prop rather than plain children because the two copies are not the
+   * same pixels — the caller is told which ground it is drawing on and picks the
+   * colour (`text-water-ink` on the dry part, `text-on-water` in the wet). One
+   * colour cannot do both: in dark mode the water and the water ink are the
+   * same value, so a figure that reads on the empty tank vanishes as it fills.
+   */
+  children?: (onWater: boolean) => ReactNode
   className?: string
 }
 
@@ -50,9 +65,9 @@ const TILT = 7
  * WIDE AND SHORT, which is the whole design. It was a tall glass beside a
  * column of buttons, and between them they took a third of the screen on the
  * one card that is not about food — on a diary whose subject is the meals
- * underneath. A tank is the same reading in a band: the level still says how
- * far through the day's water somebody is, and it costs 56 points rather than
- * 160.
+ * underneath. A tank is the same reading in a band, and on Today it IS the
+ * card: pass it the card's own `radius` and let it fill, and what a user sees
+ * is one object filling up rather than a chart sitting in a box.
  *
  * The surface does two things. It carries two waves at different speeds, which
  * is what makes it read as liquid rather than as a moving graph — one sine is a
@@ -62,13 +77,19 @@ const TILT = 7
  * between a picture of water and a progress bar that happens to be blue.
  *
  * The level springs rather than eases, for the same reason.
+ *
+ * The wave never stops while this is mounted, which is a deliberate cost: it is
+ * two paths of about sixty points rebuilt per frame on the UI thread, and it
+ * buys the one thing a static fill cannot say, which is that this is a liquid.
  */
 export function WaterTank({
   value,
   goal,
   loading = false,
   height = 56,
+  radius,
   accessibilityLabel,
+  children,
   className,
 }: WaterTankProps) {
   const colors = useThemeColors()
@@ -124,9 +145,9 @@ export function WaterTank({
     }
   }, [phase, reduceMotion])
 
-  const radius = Math.min(14, height / 3)
+  const corner = radius ?? Math.min(14, height / 3)
   const tank = Skia.PathBuilder.Make()
-    .addRRect({ rect: { x: 0, y: 0, width, height }, rx: radius, ry: radius })
+    .addRRect({ rect: { x: 0, y: 0, width, height }, rx: corner, ry: corner })
     .detach()
 
   // Two surfaces. The back one is slower and taller, so the pair beat against
@@ -143,6 +164,10 @@ export function WaterTank({
   })
   const front = useWavePath({ width, height, level, phase, tilt, offset: 0, speed: 1, scale: 1 })
 
+  // How much of the overlay is under water. A number and a shared value are all
+  // this worklet captures: see the note on `useWavePath` for why that matters.
+  const wetClip = useAnimatedStyle(() => ({ height: level.value * height }))
+
   if (loading) {
     // The tank's own corners, not `Skeleton`'s pill: the placeholder is exactly
     // the shape of the thing it stands in for, so nothing changes silhouette
@@ -151,35 +176,66 @@ export function WaterTank({
   }
 
   return (
-    <View
-      className={className}
-      style={{ height }}
-      onLayout={onLayout}
-      accessible={Boolean(accessibilityLabel)}
-      accessibilityRole={accessibilityLabel ? 'progressbar' : undefined}
-      accessibilityLabel={accessibilityLabel}
-      accessibilityValue={{ min: 0, max: goal, now: Math.round(value) }}
-    >
-      {width > 0 ? (
-        <Canvas style={{ width, height }}>
-          {/* The empty tank, then the water clipped to it, then the outline over
-              both so the water never covers it.
+    <View className={className} style={{ height }} onLayout={onLayout}>
+      {/* The label sits on the DRAWING rather than on the box, because the box
+          now has children: `accessible` on a container collapses everything
+          under it on iOS, which would swallow the Add button drawn over the
+          water. */}
+      <View
+        accessible={Boolean(accessibilityLabel)}
+        accessibilityRole={accessibilityLabel ? 'progressbar' : undefined}
+        accessibilityLabel={accessibilityLabel}
+        accessibilityValue={{ min: 0, max: goal, now: Math.round(value) }}
+      >
+        {width > 0 ? (
+          <Canvas style={{ width, height }}>
+            {/* The empty tank, then the water clipped to it, then the outline
+                over both so the water never covers it. */}
+            <Path path={tank} color={colors.waterSoft} />
+            <Group clip={tank}>
+              <Path path={back} color={colors.waterSoftLine} />
+              <Path path={front} color={colors.water} />
+            </Group>
+            <Path path={tank} style="stroke" strokeWidth={2} color={colors.waterSoftLine} />
+          </Canvas>
+        ) : null}
+      </View>
 
-              The empty tank is `surface` rather than `waterSoft`: it is drawn on
-              a water-toned card, and pale blue on pale blue left the vessel
-              invisible until there was something in it — which is the one state
-              it most needs to be readable in. */}
-          <Path path={tank} color={colors.surface} />
-          <Group clip={tank}>
-            <Path path={back} color={colors.waterSoftLine} />
-            <Path path={front} color={colors.water} />
-          </Group>
-          <Path path={tank} style="stroke" strokeWidth={2} color={colors.waterSoftLine} />
-        </Canvas>
+      {children ? (
+        <>
+          {/* The dry copy, and the only one anything can touch or announce. */}
+          <View style={StyleSheet.absoluteFill}>{children(false)}</View>
+
+          {/* The wet copy: the same content again, in the water's own colours,
+              inside a box that is exactly as tall as the water and clips. Laid
+              out from the BOTTOM of a full-height child, so the two copies land
+              on the same pixels without a second animated value to keep in step.
+
+              Its edge is the MEAN level, where the water it stands in has a wave
+              on it — so a figure being crossed by the surface is out by a couple
+              of points for the moment it takes to pass. Following the crest
+              would mean clipping to the Skia path, which React Native views
+              cannot do; the alternative was leaving the figure to disappear into
+              the water entirely. */}
+          <Animated.View
+            style={[styles.wet, wetClip]}
+            pointerEvents="none"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          >
+            <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height }}>
+              {children(true)}
+            </View>
+          </Animated.View>
+        </>
       ) : null}
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  wet: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden' },
+})
 
 /**
  * One moving surface, as a path rebuilt per frame on the UI thread.

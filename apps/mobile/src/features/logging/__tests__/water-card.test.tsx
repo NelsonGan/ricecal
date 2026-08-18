@@ -25,11 +25,17 @@ const mockMutate = jest.fn()
 
 jest.mock('@/data', () => ({ useAddWater: () => ({ mutate: mockMutate }) }))
 
-// The tank itself is stubbed. Skia's jest setup installs the web
-// implementation, which has no CanvasKit behind it, so `Skia.PathBuilder` is
-// undefined the moment anything tries to draw — and there is nothing to assert
-// about a drawing anyway. `app/gallery.tsx` is where it is looked at.
-jest.mock('@/ui/WaterTank', () => ({ WaterTank: () => null }))
+// The tank's DRAWING is stubbed, and its overlay is not. Skia's jest setup
+// installs the web implementation, which has no CanvasKit behind it, so
+// `Skia.PathBuilder` is undefined the moment anything tries to draw — and there
+// is nothing to assert about a drawing anyway (`app/gallery.tsx` is where it is
+// looked at). What the card puts ON the tank is the whole interface, so the
+// stub still calls the render prop: once, with the dry ground, which is the
+// copy that carries the real button and the announced figure.
+jest.mock('@/ui/WaterTank', () => ({
+  WaterTank: ({ children }: { children?: (onWater: boolean) => ReactNode }) =>
+    children ? children(false) : null,
+}))
 
 const user = userEvent.setup()
 
