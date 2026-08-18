@@ -85,8 +85,7 @@ export default function TodayScreen() {
    * And the standing offer, for a free account, at most once every two days.
    *
    * Here rather than in the tabs layout for the same reason the tour is: it
-   * appears over this screen, a beat after it, and it should not be able to
-   * fire while the user is somewhere else in the app. The two cannot collide in
+   * appears over this screen, a beat after it. The two cannot collide in
    * practice — the tour is offered once, on an account whose onboarding paywall
    * has just reset the offer's clock. See `features/paywall/nudge.ts`.
    */

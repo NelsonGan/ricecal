@@ -79,7 +79,6 @@ export const profile = {
   shareEarn: {
     /** The row in Me, and the page's own bar. */
     row: 'Share and earn Pro',
-    rowValue: 'Free',
     title: 'Share and earn Pro',
     heroTitle: 'Post about RiceCal, get Pro free',
     heroBody:

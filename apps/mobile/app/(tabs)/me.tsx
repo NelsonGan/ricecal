@@ -165,7 +165,12 @@ export default function MeScreen() {
         </View>
       </Card>
 
-      <Card>
+      {/* `gap-0` because this card holds TWO rows now, and a `ListRow` carries its
+          own divider: at the card's default gap the line under the first row
+          reads as an underline of that row with a band of empty card beneath it,
+          rather than as the seam between two. Same reason the settings card
+          below does it. */}
+      <Card contentClassName="gap-0">
         {/* Somebody who has never paid has nothing to manage. The subscription
             screen is a plan, a renewal date and a way to cancel; for them it
             was three cards of "none" wrapped around a button to the paywall,
