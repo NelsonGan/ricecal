@@ -341,10 +341,19 @@ create policy "activity_sessions: delete own"
 -- every read to know the timezone the write happened in, which is exactly the
 -- bug `log_date` exists to avoid one table up.
 --
--- Only the last month is ever written; older days keep their `activity_days`
--- total and lose their shape. Nothing on any screen asks for the hourly
--- breakdown of a day in March, and 24 rows a day forever to answer a question
--- nobody has is a table that outgrows the diary it decorates.
+-- Only the last month is KEPT; older days keep their `activity_days` total and
+-- lose their shape. Nothing on any screen asks for the hourly breakdown of a
+-- day in March, and 24 rows a day forever to answer a question nobody has is a
+-- table that outgrows the diary it decorates.
+--
+-- The bound lives in the client, in `pruneHours` in `data/health-sync.ts`, and
+-- it has to: the sync is the only writer, so it is the only thing that knows a
+-- day has fallen out of the window. This paragraph described a month-deep table
+-- for a while before anything made one — the sync bounded how far back it would
+-- WRITE hours and nothing removed what fell out behind that, which is a
+-- distinction the reading of this comment does not survive. Said plainly: no
+-- trigger and no scheduled job enforces this, and a second writer would have to
+-- bring its own retention.
 -- ---------------------------------------------------------------------------
 
 create table public.activity_hours (
