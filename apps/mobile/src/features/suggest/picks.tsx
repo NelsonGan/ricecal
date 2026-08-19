@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useContext, useMemo, useState } from 'react'
+import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react'
 
 import type { MealPick, SuggestRequest } from '@/data'
 
@@ -26,24 +26,60 @@ export type PicksValue = {
   request: SuggestRequest | null
   set: (picks: MealPick[], request: SuggestRequest) => void
   clear: () => void
+  /**
+   * Bumped when a pick's page leaves, so the list it came from can come back.
+   *
+   * A COUNTER and not a flag, so two returns in a row are two events rather
+   * than one that has to be cleared in between.
+   *
+   * It exists because focus cannot answer this. The list is opened from the log
+   * sheet, which is a `transparentModal` — the screen under a transparent
+   * presentation never loses focus, so a `useFocusEffect` on the way back never
+   * fires and the list stayed closed after one pick was read. Unmounting is the
+   * signal that actually happens, and it happens whichever way the page is left:
+   * the chevron, the edge swipe, or Android's back button.
+   */
+  closed: number
+  markClosed: () => void
 }
 
 const PicksContext = createContext<PicksValue | null>(null)
 
 export function SuggestProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<{ picks: MealPick[]; request: SuggestRequest | null }>({
-    picks: [],
-    request: null,
-  })
+  const [state, setState] = useState<{
+    picks: MealPick[]
+    request: SuggestRequest | null
+    closed: number
+  }>({ picks: [], request: null, closed: 0 })
+
+  // All three are `useCallback` with functional updates, so their identities
+  // survive a state change. `markClosed` in particular is a dependency of the
+  // effect that fires it on unmount, and a new identity per render would make
+  // that effect run on every one of them.
+  const set = useCallback(
+    (picks: MealPick[], request: SuggestRequest) =>
+      setState((current) => ({ ...current, picks, request })),
+    [],
+  )
+  const clear = useCallback(
+    () => setState((current) => ({ ...current, picks: [], request: null })),
+    [],
+  )
+  const markClosed = useCallback(
+    () => setState((current) => ({ ...current, closed: current.closed + 1 })),
+    [],
+  )
 
   const value = useMemo(
     (): PicksValue => ({
       picks: state.picks,
       request: state.request,
-      set: (picks, request) => setState({ picks, request }),
-      clear: () => setState({ picks: [], request: null }),
+      closed: state.closed,
+      set,
+      clear,
+      markClosed,
     }),
-    [state],
+    [state, set, clear, markClosed],
   )
 
   return <PicksContext.Provider value={value}>{children}</PicksContext.Provider>

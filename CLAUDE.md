@@ -900,20 +900,23 @@ a pot; each has a subject and the model's job is to identify it. Here there is
 nothing to identify: the subject is the REST OF THE DAY, and the answer is a
 suggestion rather than a fact.
 
-A SPARKLE ON THE CALORIE CARD opens it, beside the ring, which is where the
-question is asked: the ring has just said how much room is left, and this is the
-offer to do something with it. It was a tinted card of its own under that one,
-headed "Not sure what to eat?" with a line about how many picks it would give,
-which is a lot of screen for an offer standing between the two things the diary
-is actually about. As a glyph it is the same offer at a tenth of the cost, and
-it is ON the card that states the number it answers. Only on today: the strip
-can put last Tuesday on this screen, and asking what to eat on a day that has
-been and gone is a question with no answer.
+A SPARKLE IN THE LOG SHEET opens it, on the heading's line. That is where
+somebody already is when the question comes up: `/log` is the sheet opened to
+add a meal, and the four ways in underneath it — snap, describe, scan, search —
+all assume the meal has already been decided. This is the one that does not, so
+it belongs to the heading rather than to that row, and it is drawn as a raised
+glyph rather than a fifth `QuickAction` because nothing it leads to writes
+anything.
+
+It has been two other things, and both were the right idea in the wrong place: a
+tinted card on Today headed "Not sure what to eat?", which was a lot of screen
+for an offer standing between the two things the diary is about, and then a glyph
+on the calorie card, which was beside a READING rather than beside the decision.
 
 Four questions in a sheet, five dishes back, and one of them opens as a page.
 
 ```
-sparkle (Today) → ask sheet     meal, macros, cuisine, a calorie ceiling
+sparkle (/log) →  ask sheet     meal, macros, cuisine, a calorie ceiling
                  ↓
                  the same sheet, holding a skeleton while the model works
                  ↓
@@ -922,6 +925,14 @@ sparkle (Today) → ask sheet     meal, macros, cuisine, a calorie ceiling
   /suggest/[index]              the figures, what the day has left after it,
                                 and WHY THIS FITS
 ```
+
+**The list comes back when a pick's page leaves, and FOCUS cannot say when that
+is.** `/log` is a `transparentModal`, and the screen under a transparent
+presentation never loses focus — so the `useFocusEffect` that used to restore the
+list never fired, and reading one pick closed the other four for good. The
+provider carries a counter that the detail bumps as it UNMOUNTS, which happens
+whichever way the page is left: the chevron, the edge swipe, or Android's back
+button.
 
 **EVERY CONTROL OPENS ON AN ANSWER**, which is the opposite of onboarding's first
 screen and right for the opposite reason. There a prefilled body is a calorie

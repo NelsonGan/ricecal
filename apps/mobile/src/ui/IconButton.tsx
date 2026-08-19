@@ -13,6 +13,15 @@ const tones = {
 
 const sizes = {
   /**
+   * As tall as a line of `subtitle` text, for a control that shares a heading's
+   * line — the suggestion glyph beside "Log a dish". Anything larger makes the
+   * heading's row taller than the heading.
+   *
+   * The 44pt floor is MOVED rather than waived here too, and further: a caller
+   * owes this one a `hitSlop` of 8.
+   */
+  xxs: { box: 'w-[28px] h-[28px]', radius: radius.sm - 4, depth: slab.sm },
+  /**
    * Smaller than the 44pt floor, and only where the button has to LINE UP with
    * something that is not a button — the view toggle beside the streak badge on
    * Today, which reads as a mismatched pair at any other height.

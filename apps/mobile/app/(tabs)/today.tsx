@@ -2,7 +2,6 @@ import { format, parseISO, subDays } from 'date-fns'
 import { useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
 
 import {
   dateKey,
@@ -26,7 +25,6 @@ import {
 } from '@/features/logging'
 import { useProNudge } from '@/features/paywall'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
-import { SuggestAction } from '@/features/suggest'
 import { useTutorialOffer } from '@/features/tutorial'
 import { sumMacros } from '@/lib/nutrition'
 import { DEFAULT_WATER_ML } from '@/lib/water'
@@ -457,59 +455,41 @@ export default function TodayScreen() {
                 to "what of the allowance is used". Both readings answer a real
                 question and neither fits beside the other at this size, so they
                 share the space rather than the card growing a second row. */}
-                {/* The reading and the ONE control on it, side by side rather
-                than nested. The suggestion button used to sit outside this card
-                inside a tinted card of its own; inside the summary's `Tappable`
-                it would be a pressable inside a pressable, which works but reads
-                as one target to anything that inspects the tree. As a sibling
-                there is no ambiguity: the reading is tapped to swap its numbers,
-                and the glyph is tapped to ask what to eat. */}
-                <View className="flex-row items-center gap-3">
-                  <Tappable
-                    className="min-w-0 flex-1 flex-row items-center gap-4"
-                    onPress={() => setShowGoals((open) => !open)}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      showGoals ? t('logging:today.showLeft') : t('logging:today.showGoals')
+                {/* Tapping the summary swaps every number in it from "what is
+                left" to "what of the allowance is used". Both readings answer a
+                real question and neither fits beside the other at this size, so
+                they share the space rather than the card growing a second row. */}
+                <Tappable
+                  className="flex-row items-center gap-4"
+                  onPress={() => setShowGoals((open) => !open)}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    showGoals ? t('logging:today.showLeft') : t('logging:today.showGoals')
+                  }
+                >
+                  <CalorieRing
+                    value={eaten.kcal}
+                    goal={budget}
+                    size={132}
+                    thickness={16}
+                    centerLabel={(showGoals ? eaten.kcal : Math.abs(left)).toLocaleString()}
+                    centerCaption={
+                      showGoals
+                        ? t('logging:today.kcalOfGoal', { goal: budget.toLocaleString() })
+                        : over
+                          ? t('logging:today.kcalOver')
+                          : t('logging:today.kcalLeft')
                     }
-                  >
-                    <CalorieRing
-                      value={eaten.kcal}
-                      goal={budget}
-                      size={132}
-                      thickness={16}
-                      centerLabel={(showGoals ? eaten.kcal : Math.abs(left)).toLocaleString()}
-                      centerCaption={
-                        showGoals
-                          ? t('logging:today.kcalOfGoal', { goal: budget.toLocaleString() })
-                          : over
-                            ? t('logging:today.kcalOver')
-                            : t('logging:today.kcalLeft')
-                      }
-                    />
-                    {/* Sharing the row with the ring, so it asks for the space the
+                  />
+                  {/* Sharing the row with the ring, so it asks for the space the
                     ring leaves. Stacked callers do not. */}
-                    <MacroBars
-                      className="flex-1"
-                      eaten={eaten}
-                      targets={targets}
-                      showGoal={showGoals}
-                    />
-                  </Tappable>
-
-                  {/* "What should I eat?", where the number it answers is
-                  stated. Only on today, for the reason the card it replaced
-                  was: the strip can put last Tuesday on this screen, and
-                  asking what to eat on a day that has been and gone is a
-                  question with no answer. */}
-                  {isToday ? (
-                    <SuggestAction
-                      date={selectedDate}
-                      kcalLeft={left}
-                      hasBudget={Boolean(targets)}
-                    />
-                  ) : null}
-                </View>
+                  <MacroBars
+                    className="flex-1"
+                    eaten={eaten}
+                    targets={targets}
+                    showGoal={showGoals}
+                  />
+                </Tappable>
 
                 {/* Where the extra came from.
                 Without this line the goal simply reads higher than the one set
