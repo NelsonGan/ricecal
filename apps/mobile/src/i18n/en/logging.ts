@@ -111,6 +111,35 @@ export const logging = {
     },
   },
 
+  /**
+   * The month view, which is the second way of reading the diary: not "what did
+   * I eat" but "what have I been eating". Its own block rather than more keys
+   * under `week`, because the two views share only their dots.
+   */
+  calendar: {
+    /** The toggle names the view it is OFFERING, in both directions. */
+    showMonth: 'Show the month',
+    showDay: 'Show the day',
+    previousMonth: 'The month before',
+    nextMonth: 'The month after',
+    legend: {
+      under: 'Under goal',
+      /** Never "over budget" and never a failure. The same wording as the strip. */
+      over: 'Over goal',
+      missed: 'Not logged',
+    },
+    /**
+     * The card under the grid, headed by the day it is about. The count is the
+     * meals on it, which is the one figure that says whether the day is worth
+     * opening.
+     */
+    dayHeading_one: '{{day}}, {{count}} meal',
+    dayHeading_other: '{{day}}, {{count}} meals',
+    dayKcal: '{{kcal}} kcal',
+    /** A day with nothing on it. Not a failure, and not scolded. */
+    dayEmpty: 'Nothing logged that day.',
+  },
+
   selector: {
     title: 'Log a dish',
     remaining: '{{count}} kcal left',

@@ -65,7 +65,8 @@ second copy here would be a worse one.
   and resumes at "subscription started" with the whole abandonment step missing.
 - **Screen views.** Automatic route tracking would be the largest event stream
   in the app and would answer almost nothing. The screens worth counting have an
-  event of their own: `Paywall Shown`, `Log Sheet Opened`, `Review Opened`.
+  event of their own: `Paywall Shown`, `Log Sheet Opened`, `Review Opened`,
+  `Suggestions Shown`.
 - **Sessions, installs and updates.** `trackAutomaticEvents` is on, so
   `$ae_session`, `$ae_first_open` and `$ae_updated` arrive without an event of
   ours. An "App Opened" of our own would be a second, slightly different answer
@@ -112,6 +113,12 @@ reading anybody's diary.
 `position` — the live version of what `pnpm foods:gate` grades against thirty
 fixed queries. `Barcode Scanned { outcome: 'not_found' }` is the live version of
 `BARCODE-COVERAGE.md`.
+
+**What people ask for.** `Suggestions Shown` by `meal` and `cuisine`, which is
+the one thing about that feature this app cannot work out for itself: the
+cuisine list is hardcoded, and only the breakdown says whether the four are the
+right four. `count` is zero when the model would not answer, which is the only
+way that failure is visible from outside.
 
 **Money.** `Paywall Shown` by `trigger`, which names the button that was
 refused — the only way to find out which capability sells the app, since the

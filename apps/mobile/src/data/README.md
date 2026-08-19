@@ -15,7 +15,7 @@ D1, and photographs go to R2 through an edge function.
 | `session.tsx` | who is signed in |
 | `auth.ts` | Apple, Google and email sign-in |
 | `profile.ts`, `settings.ts`, `goals.ts` | the account |
-| `day.ts`, `entries.ts` | logging: one day's reads, and the writes to `food_logs` |
+| `day.ts`, `entries.ts` | logging: one day's reads, and the writes to `food_logs`. `useDayMarks` is the dots under the week strip and `useDayPlates` the picture in each cell of the month calendar, kept apart because the strip asks for a week on every swipe and has no use for a picture |
 | `catalogue.ts` | the Worker, reached directly with the user's own JWT |
 | `foods.ts` | search and dish detail, over `catalogue.ts` |
 | `barcodes.ts` | a packet by its code, through the `barcode` function |
@@ -28,6 +28,7 @@ D1, and photographs go to R2 through an edge function.
 | `photos.ts` | every image — upload, signed read, delete — through the `photos` function, since R2 has no idea who a user is. Bytes are cached against the key and asked for from the disk first, so a signature is only fetched for a picture this device has not seen |
 | `purchases.ts`, `subscription.ts` | money. `purchases.ts` buys and restores and can never grant; `subscription.ts` reads the mirror the RevenueCat webhook fills, and `useEntitlement` is the ONE answer to "is this account Pro" that every gate in the app reads. It no longer answers "may this account log a meal": a free account logs, within the ceilings in CLAUDE.md |
 | `refusals.ts` | the two ways the server refuses, read back off the wire, and what the user is told about each. A non-2xx from `functions.invoke` hides the body inside the error, so telling "this needs Pro" from "you have used today's scans" is done once here rather than at each of the four call sites — and so is the answer, since a spent free allowance opens the paywall while a spent Pro one must not |
+| `suggestions.ts` | "what should I eat?", through the `suggest-meal` function. A MUTATION rather than a query, and deliberately: a query is a thing react-query may re-run on focus or on a stale timer, and each of those would be a model call, a scan off the user's allowance, and five different dishes appearing under a finger. Nothing it returns is written anywhere, so the answer has nowhere to live and `features/suggest/picks.tsx` holds it |
 | `selected-date.tsx` | the one piece of genuine client state |
 
 ## The three rules

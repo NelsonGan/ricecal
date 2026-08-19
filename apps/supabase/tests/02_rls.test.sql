@@ -13,7 +13,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(18);
+select plan(21);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -249,6 +249,45 @@ select is(
   'but a signed-in user can read their own week'
 );
 
+-- And for `day_plates`, which is the same read one shape wider: the biggest
+-- plate of each day, for the month grid. Same risk in the same direction — the
+-- revoke has to hold and the grant has to survive, or the calendar draws a month
+-- of empty cells for everybody.
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.proname = 'day_plates'
+     and pg_catalog.has_function_privilege('public', p.oid, 'EXECUTE')),
+  0,
+  'day_plates is not executable by PUBLIC'
+);
+
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.proname = 'day_plates'
+     and pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE')),
+  1,
+  'but a signed-in user can read their own month'
+);
+
+-- It is SECURITY INVOKER, which is what makes the `p_user_id` argument safe to
+-- have a default on: passing somebody else's uuid reaches their rows only if RLS
+-- lets it, and RLS does not. Declared rather than assumed, because a later edit
+-- adding `security definer` to speed something up would turn this function into
+-- a way to read any diary in the database.
+select is(
+  (select p.prosecdef
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public' and p.proname = 'day_plates'),
+  false,
+  'day_plates runs as the caller, so RLS still decides whose diary it reads'
+);
 
 select * from finish();
 
