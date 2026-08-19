@@ -5,15 +5,17 @@
  *   … eval-prompts.ts describe          # just the typed-meal suite
  *   … eval-prompts.ts refine            # just the fix-by-typing suite
  *   … eval-prompts.ts recipe            # just the typed-recipe suite
+ *   … eval-prompts.ts suggest           # just the what-to-eat suite
  *   … eval-prompts.ts refine 3          # three runs of each case
  *
  * WHY THIS EXISTS
  *
- * Three of the model calls decide something the code below them cannot check.
+ * Four of the model calls decide something the code below them cannot check.
  * `describeMeal` decides what a sentence names and how much of it there was;
  * `interpretInstruction` decides whether a correction is a portion change, a
  * part change or a different dish; `describeRecipe` decides what a pot holds
- * and how it is cooked. Each is a paragraph of English with no test around it,
+ * and how it is cooked; `suggestMeals` decides what five things somebody could
+ * eat next. Each is a paragraph of English with no test around it,
  * and each was changed by hand more than once on the strength of a single
  * example that happened to be on screen at the time.
  *
@@ -46,6 +48,11 @@ import {
   refineUserMessage,
 } from '../functions/_shared/llm.ts'
 import { DESCRIBE_RECIPE_PROMPT, describeRecipeUserMessage } from '../functions/_shared/recipe.ts'
+import {
+  type DayContext,
+  SUGGEST_MEAL_PROMPT,
+  suggestUserMessage,
+} from '../functions/_shared/suggest.ts'
 
 const MODEL = Deno.env.get('OPENROUTER_MODEL') ?? 'qwen/qwen3.7-flash'
 const ENDPOINT = Deno.env.get('EVAL_ENDPOINT')
@@ -1040,6 +1047,197 @@ const RECIPE_CASES: Array<Case<RecipeAnswer>> = [
 ]
 
 // ---------------------------------------------------------------------------
+// WHAT TO EAT NEXT
+//
+// Every check here is about a rule the prompt had to be TOLD, and each one was
+// added after the model broke it on a live run. There is nothing about which
+// five dishes come back, because that is taste rather than correctness — what
+// is gradeable is whether they are meals, whether they are the right kitchen,
+// whether they fit the ceiling, and whether the reasons say anything.
+
+type SuggestAnswer = {
+  picks?: Array<{
+    name?: string
+    portion?: string
+    kcal?: number
+    protein_g?: number
+    carbs_g?: number
+    fat_g?: number
+    sodium?: string
+    icon?: string | null
+    why?: Array<{ kind?: string; text?: string }>
+  }>
+}
+
+const picksOf = (answer: SuggestAnswer) => answer.picks ?? []
+
+/**
+ * Words that are an ingredient rather than a meal.
+ *
+ * Matched on the WHOLE name rather than as a substring, because "grilled
+ * chicken breast" is not a meal and "nasi ayam" is, and the difference is
+ * whether anything else is on the plate. A dish that merely contains one of
+ * these words passes.
+ */
+const BARE_INGREDIENT =
+  /^(grilled |steamed |boiled |plain |poached )?(chicken breast|egg|eggs|white fish|fish fillet|tofu|yoghurt|yogurt|protein shake)( with soy sauce)?$/i
+
+const universalSuggest = (answer: SuggestAnswer, ceiling: number): Check[] => {
+  const picks = picksOf(answer)
+  const over = picks.filter((p) => (p.kcal ?? 0) > ceiling)
+  const bare = picks.filter((p) => BARE_INGREDIENT.test((p.name ?? '').trim()))
+  const noReasons = picks.filter((p) => (p.why ?? []).length === 0)
+  const names = picks.map((p) => (p.name ?? '').trim().toLowerCase())
+  // Half the ceiling, which is where "five picks well under the limit" stops
+  // being caution and starts being a different question answered.
+  const tiny = picks.filter((p) => (p.kcal ?? 0) < ceiling / 2)
+
+  return [
+    check('five picks', picks.length === 5, picks.length),
+    check(
+      'all named',
+      picks.every((p) => (p.name ?? '').length > 0),
+      picks.length,
+    ),
+    check(
+      'none over the ceiling',
+      over.length === 0,
+      over.map((p) => `${p.name} ${p.kcal}`),
+    ),
+    check(
+      'no bare ingredients',
+      bare.length === 0,
+      bare.map((p) => p.name),
+    ),
+    check(
+      'every pick says why',
+      noReasons.length === 0,
+      noReasons.map((p) => p.name),
+    ),
+    check('five different dishes', new Set(names).size === picks.length, names),
+    check(
+      'portions stated',
+      picks.every((p) => (p.portion ?? '').length > 0),
+      picks.length,
+    ),
+    // Not all of them: one light option among five is a real answer.
+    check(
+      'most are a real meal size',
+      tiny.length <= 2,
+      tiny.map((p) => `${p.name} ${p.kcal}`),
+    ),
+  ]
+}
+
+/** The reasons, as one string, for the checks that are about what they say. */
+const reasonText = (answer: SuggestAnswer) =>
+  picksOf(answer)
+    .flatMap((p) => (p.why ?? []).map((w) => w.text ?? ''))
+    .join(' | ')
+    .toLowerCase()
+
+type SuggestCase = { label: string; day: DayContext; checks: (a: SuggestAnswer) => Check[] }
+
+const DAY: DayContext = {
+  meal: 'dinner',
+  focus: 'protein',
+  cuisine: 'malay',
+  healthy: true,
+  kcalLimit: 600,
+  kcalLeft: 900,
+  proteinLeftG: 60,
+  carbsLeftG: 120,
+  fatLeftG: 30,
+  eaten: ['Nasi lemak', 'Teh tarik'],
+}
+
+const SUGGEST_CASES: SuggestCase[] = [
+  {
+    label: 'dinner · protein · Malay · 600',
+    day: DAY,
+    checks: (a) => [
+      ...universalSuggest(a, 600),
+      // It answered a dinner request with "to start your day" on the first
+      // live run, twice, before the sitting was made a constraint.
+      check(
+        'no breakfast talk',
+        !/start (your|the) day|morning|wake up|overnight/.test(reasonText(a)),
+        reasonText(a).slice(0, 120),
+      ),
+      // Roti canai and mee goreng mamak came back under "Malay" until the two
+      // kitchens were named as different.
+      check(
+        'not the mamak menu',
+        !picksOf(a).some((p) =>
+          /roti canai|mee goreng mamak|nasi kandar|maggi goreng/i.test(p.name ?? ''),
+        ),
+        picksOf(a).map((p) => p.name),
+      ),
+    ],
+  },
+  {
+    label: 'snack · balanced · Malay · 300',
+    day: { ...DAY, meal: 'snack', focus: 'balanced', kcalLimit: 300 },
+    checks: (a) => [
+      ...universalSuggest(a, 300),
+      // A snack is a KIND of food, not a small meal: asked for one it offered
+      // "nasi lemak, one plate, 280 kcal", which is less than half a plate.
+      check(
+        'no rice plates or noodle bowls sold as snacks',
+        !picksOf(a).some((p) =>
+          /^(nasi|mee|kuey teow|kuay teow|laksa|bihun)\b/i.test((p.name ?? '').trim()),
+        ),
+        picksOf(a).map((p) => p.name),
+      ),
+    ],
+  },
+  {
+    label: 'lunch · balanced · others · 700',
+    day: {
+      ...DAY,
+      meal: 'lunch',
+      focus: 'balanced',
+      cuisine: 'others',
+      kcalLimit: 700,
+      // The shape that broke it: over budget, with a big protein gap and
+      // nothing else left. It answered with chicken breast and boiled eggs.
+      kcalLeft: 0,
+      carbsLeftG: 0,
+      fatLeftG: 0,
+      proteinLeftG: 90,
+    },
+    checks: (a) => universalSuggest(a, 700),
+  },
+  {
+    label: 'breakfast · carbs · Chinese · 400',
+    day: {
+      ...DAY,
+      meal: 'breakfast',
+      focus: 'carbs',
+      cuisine: 'chinese',
+      kcalLimit: 400,
+      eaten: [],
+    },
+    checks: (a) => [
+      ...universalSuggest(a, 400),
+      // The icon list is the largest block in the prompt and the model answered
+      // IN it: five picks named `char-kuey-teow`, `hokkien-mee`, `mee-siam`.
+      // `unslug` is the belt behind this, but the prompt is what should hold.
+      check(
+        'names are not filenames',
+        !picksOf(a).some((p) => (p.name ?? '').includes('-')),
+        picksOf(a).map((p) => p.name),
+      ),
+      check(
+        'the drawings exist',
+        picksOf(a).every((p) => p.icon == null || resolveIcon(p.icon) !== null),
+        picksOf(a).map((p) => p.icon),
+      ),
+    ],
+  },
+]
+
+// ---------------------------------------------------------------------------
 
 async function run(name: string, runs: number) {
   const rows: Array<{ text: string; checks: Check[]; error?: string }> = []
@@ -1061,6 +1259,19 @@ async function run(name: string, runs: number) {
             refineUserMessage(c.context, c.text),
             600,
           )) as Interpretation,
+        ),
+    })),
+    suggest: SUGGEST_CASES.map((c) => ({
+      text: c.label,
+      go: async () =>
+        c.checks(
+          (await call(
+            SUGGEST_MEAL_PROMPT,
+            suggestUserMessage(c.day),
+            // The same ceiling `suggestMeals` calls with. Five picks with eight
+            // fields and three reasons each.
+            2200,
+          )) as SuggestAnswer,
         ),
     })),
     recipe: RECIPE_CASES.map((c) => ({
@@ -1112,3 +1323,4 @@ const runs = Number(Deno.args[1] ?? 1)
 if (which === 'all' || which === 'describe') await run('describe', runs)
 if (which === 'all' || which === 'refine') await run('refine', runs)
 if (which === 'all' || which === 'recipe') await run('recipe', runs)
+if (which === 'all' || which === 'suggest') await run('suggest', runs)

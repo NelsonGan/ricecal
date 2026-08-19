@@ -1,9 +1,10 @@
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, startOfWeek } from 'date-fns'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, View } from 'react-native'
 
 import {
+  dateKey,
   useDayMarks,
   usePrefetchActivityDays,
   usePrefetchDays,
@@ -11,7 +12,7 @@ import {
   useSettings,
 } from '@/data'
 import { DateStrip, type DateStripDay } from '@/ui'
-import { markFor, weekDays, weekStarts } from './week'
+import { markFor, WEEK_STARTS_ON, weekDays, weekStarts } from './week'
 
 type WeekProps = {
   /** Monday of this week, `yyyy-MM-dd`. */
@@ -109,6 +110,29 @@ export function WeekPicker({ className }: { className?: string }) {
 
   const weeks = useMemo(() => weekStarts(todayKey), [todayKey])
 
+  /**
+   * The page the strip OPENS on: the week holding the selected day, not always
+   * the current one.
+   *
+   * They are the same week almost always, because the selection starts on today
+   * and this component stays mounted while it is being changed. The exception is
+   * a MOUNT with an older day already selected, which the calendar toggle made
+   * ordinary: switching to the month view unmounts the strip, and switching back
+   * used to remount it on this week with the selected day nowhere on it — a row
+   * of seven days with no selection in it, under a heading naming a day in
+   * August.
+   *
+   * Read once, at mount, which is all `initialScrollIndex` is for. Picking a day
+   * inside the visible week must not scroll the pager, and paging back to look
+   * at an earlier week must not be undone by the day still being today's.
+   */
+  const initial = useRef(selectedDate).current
+  const page = useMemo(() => {
+    const start = dateKey(startOfWeek(parseISO(initial), { weekStartsOn: WEEK_STARTS_ON }))
+    const found = weeks.indexOf(start)
+    return found === -1 ? weeks.length - 1 : found
+  }, [weeks, initial])
+
   return (
     <View className={className} onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
       {width > 0 ? (
@@ -126,7 +150,7 @@ export function WeekPicker({ className }: { className?: string }) {
           // Opens on the current week. Every page is exactly one list wide, so
           // the offset is arithmetic and the list never has to measure to find
           // it — which is what `initialScrollIndex` needs to land first try.
-          initialScrollIndex={weeks.length - 1}
+          initialScrollIndex={page}
           getItemLayout={(_data, index) => ({ length: width, offset: width * index, index })}
           onScrollToIndexFailed={({ index }) =>
             list.current?.scrollToOffset({ offset: width * index, animated: false })

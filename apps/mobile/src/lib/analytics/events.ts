@@ -1,7 +1,8 @@
 // A type-only import, erased at build time, so nothing about the layering
 // between `lib` and `data` changes. See `activity_level` in `PersonProps` for
 // why this property in particular has to be a union rather than a string.
-import type { ActivityLevel } from '@/data/types'
+import type { Cuisine } from '@/data/suggestions'
+import type { ActivityLevel, Meal } from '@/data/types'
 
 /**
  * THE TRACKING PLAN, AS A TYPE.
@@ -64,6 +65,8 @@ export type ProFeature =
   | 'refine'
   | 'read_recipe'
   | 'new_recipe'
+  /** "What should I eat?" — the model asked for five things, on Today. */
+  | 'suggest'
   /** A range on Trends that a free account cannot see: 30 days, or a year. */
   | 'trend_range'
   /** An older weekly or monthly review. The latest one is free. */
@@ -240,6 +243,18 @@ export type Events = {
    * shown and not followed by a purchase IS the dismissal.
    */
   'Paywall Shown': { screen: PaywallScreen; trigger: ProFeature | PaywallScreen }
+  /**
+   * The model answered "what should I eat?".
+   *
+   * The two CHOICES and how many came back, and nothing else — no dish names,
+   * no calorie figures, no budget. Which is the diary rule holding rather than
+   * an omission: what is worth knowing here is which sitting and which kitchen
+   * people actually ask about, so the cuisine list can stop being a guess.
+   * `count` is 0 when the model would not answer, which is the only way to see
+   * that failure from outside.
+   */
+  'Suggestions Shown': { meal: Meal; cuisine: Cuisine; count: number }
+
   'Plan Selected': { screen: PaywallScreen; plan: Plan }
   /** The store sheet was asked for. RevenueCat reports what happened after. */
   'Purchase Started': { screen: PaywallScreen; plan: Plan }

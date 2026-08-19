@@ -72,7 +72,7 @@ type RefusalBody = {
 }
 
 /** The features the server is allowed to name. Anything else is dropped. */
-const FEATURES = new Set<ProFeature>(['describe', 'refine', 'read_recipe', 'new_recipe'])
+const FEATURES = new Set<ProFeature>(['describe', 'refine', 'read_recipe', 'new_recipe', 'suggest'])
 
 function asFeature(value: unknown): ProFeature | null {
   return typeof value === 'string' && FEATURES.has(value as ProFeature)

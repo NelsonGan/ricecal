@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { WATER_MAX_ML } from '@/lib/water'
 import { datesBetween, seedMissing, unwrap, unwrapMaybe } from './client'
 import { keys } from './keys'
-import { toEntry } from './mappers'
+import { toEntry, toIcon } from './mappers'
 import { pendingAsEntry, usePendingSnaps } from './pending-snaps'
 import { useUserId } from './session'
 import type {
@@ -13,6 +13,8 @@ import type {
   DayLog,
   DayMark,
   DayMarkRow,
+  DayPlate,
+  DayPlateRow,
   EntrySource,
   EntryStatus,
   FoodLogRow,
@@ -421,6 +423,41 @@ export function useDayMarks(from: string, to: string) {
             // day with nothing logged rather than as a failure.
             goalKcal: row.goal_kcal,
             activeKcal: row.active_kcal ?? 0,
+          },
+        ]),
+      )
+    },
+  })
+}
+
+/**
+ * The dish drawn in each day's cell on the month calendar.
+ *
+ * Keyed by date like `useDayMarks`, so a cell asks about its own day rather
+ * than searching a list — thirty-one lookups per month, once per swipe.
+ *
+ * A day with nothing logged is ABSENT from the map rather than present and
+ * empty, which is what `day_plates` returns: the dot already says a day was
+ * missed, and a second way of saying it here would be a picture of nothing.
+ */
+export function useDayPlates(from: string, to: string) {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.dayPlates(userId, from, to),
+    queryFn: async (): Promise<Record<string, DayPlate>> => {
+      const rows = unwrap(
+        await supabase.rpc('day_plates', { p_from: from, p_to: to }),
+      ) as DayPlateRow[]
+
+      return Object.fromEntries(
+        rows.map((row) => [
+          row.at,
+          {
+            date: row.at,
+            name: row.food_name ?? '',
+            icon: toIcon(row.icon_set, row.icon_name),
+            photoPath: row.photo_path ?? undefined,
           },
         ]),
       )
