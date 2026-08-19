@@ -14,10 +14,11 @@
 // row other people's diaries are priced from — which is the mistake tier 4 made
 // and had to be unwound (see the note on the estimate tier in CLAUDE.md).
 //
-// **So the figures are allowed to be approximate, and are labelled as such on
-// screen.** They exist to rank five options against a budget, not to be counted
-// against it. If the user eats one, they log it the ordinary way and the
-// catalogue prices it.
+// **So the figures are allowed to be approximate.** They exist to rank five
+// options against a budget, not to be counted against it. Nothing on screen labels
+// them as estimates, and what carries that instead is the ABSENCE of a way to log:
+// a suggestion has no add button anywhere, so no figure here can reach a diary
+// without somebody logging the meal themselves and the catalogue pricing it.
 //
 // **And the reasons are the product.** Five dish names against a calorie figure
 // is a list anybody could write; "you are 39 g short on protein and one bowl

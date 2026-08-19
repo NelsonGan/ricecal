@@ -147,11 +147,6 @@ export function PicksSheet({
               />
             ))}
           </View>
-
-          {/* Said once, at the foot of the list, rather than beside every
-              figure. These are the model's estimates for dishes nobody has
-              cooked yet, and the app counts nothing until a meal is logged. */}
-          <Text variant="micro">{t('picks.estimateNote')}</Text>
         </Animated.View>
       )}
     </Sheet>

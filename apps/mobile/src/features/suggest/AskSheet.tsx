@@ -5,7 +5,7 @@ import { View } from 'react-native'
 
 import type { Cuisine, Focus, Meal } from '@/data'
 import { useMealTimes } from '@/data'
-import { Button, Chip, Icon, Sheet, Slider, Stepper, Text } from '@/ui'
+import { Badge, Button, Chip, Icon, Sheet, Slider, Stepper, Text } from '@/ui'
 import {
   CUISINES,
   defaultKcal,
@@ -144,6 +144,32 @@ export function AskSheet({
       onClose={onClose}
       fullHeight
       title={t('ask.title')}
+      titleAction={
+        /* What is left of the day, on the title's own line.
+         *
+         * It was a green caption under the slider, which is where a figure goes
+         * when nobody has decided where it belongs: three sections below the
+         * heading, under the one control it is context FOR, and read after the
+         * ceiling had already been set. Beside the heading it is read first, and
+         * it is the fact the whole sheet is answering against.
+         *
+         * A badge rather than a line of text, so it reads as a READING and not
+         * as another control on a sheet that is nothing but controls. The same
+         * pill the detail screen uses for "kcal left after", which is the same
+         * fact one meal later.
+         *
+         * Absent on an account with no budget, and on a day already spent:
+         * "0 kcal left" beside a question about what to eat is a sentence about
+         * failure, and this screen is not the place for it.
+         */
+        showLeft && kcalLeft > 0 ? (
+          <Badge tone="pandan">
+            <Text variant="caption" className="text-pandan-ink">
+              {t('ask.leftToday', { kcal: kcalLeft.toLocaleString() })}
+            </Text>
+          </Badge>
+        ) : undefined
+      }
       closeLabel={t('common:action.close')}
       footer={
         <Button
@@ -213,15 +239,6 @@ export function AskSheet({
             accessibilityLabel={t('ask.limit')}
             format={(value) => value.toLocaleString()}
           />
-          {/* What is left today, beside the ceiling being set against it. Only
-              on a day that HAS a budget and is still in credit: "0 kcal left
-              today" under a slider somebody is using is a sentence about
-              failure, and this screen is not the place for it. */}
-          {showLeft && kcalLeft > 0 ? (
-            <Text variant="caption" className="text-pandan-ink">
-              {t('ask.leftToday', { kcal: kcalLeft.toLocaleString() })}
-            </Text>
-          ) : null}
         </View>
       </View>
     </Sheet>
