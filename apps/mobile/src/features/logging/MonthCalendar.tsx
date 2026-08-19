@@ -22,12 +22,24 @@ import { markFor } from './week'
  */
 const PLACEHOLDER_ICON = { set: 'food', name: 'empty-plate' } as const
 
-/** How the dot under a day's picture is drawn, in each of its three states. */
-const dots: Record<DateStripMark, string> = {
+/**
+ * The verdict, as a dot laid ON the day's picture.
+ *
+ * Under it, the dot cost a row of the cell and the picture had to shrink to pay
+ * for it — which is backwards on the one screen whose whole argument is the
+ * pictures. Over the corner of the plate it costs nothing and is read in the
+ * same glance.
+ *
+ * `missed` is not here. A day with nothing on it has no picture to put a dot on,
+ * and the dashed outline of the cell itself is the marker — see `Cell`.
+ */
+const dots = {
   under: 'bg-pandan',
   over: 'bg-kaya',
-  missed: 'border-[1px] border-faint',
-}
+} as const
+
+/** The picture's own box. Nearly the full width of a cell on a 6.1in phone. */
+const PLATE = 42
 
 type CellProps = {
   date: string | null
@@ -41,12 +53,26 @@ type CellProps = {
 }
 
 /**
- * One day of the month: its number, the biggest thing eaten on it, and the dot.
+ * One day of the month: its number, the biggest thing eaten on it, and how the
+ * day went.
  *
  * The picture is the whole reason this view exists — a month of dots is
  * `day_marks` in a different shape, while a month of plates is a thing nobody
- * can get at any other way. So the cell is mostly picture, with the number
- * small above it and the verdict small below.
+ * can get at any other way. So the cell is almost entirely picture, with the
+ * number small above it and the verdict laid over its corner.
+ *
+ * THREE APPEARANCES, and the difference between the last two is load-bearing:
+ *
+ * - a day with food on it is a filled tile carrying its plate
+ * - a day that has been and gone with nothing on it is a DASHED outline
+ * - anything else — today before breakfast, a day still ahead, a day the account
+ *   had no budget on — is a bare number and no box at all
+ *
+ * The third is not the second in a lighter shade. A day nobody has had yet has
+ * not been missed, and drawing it like a day that was skipped is the app
+ * inventing a failure. `markFor` already draws that line and returns `missed`
+ * for the second case alone; this is the same distinction in the cell's outline
+ * rather than in a dot under it.
  */
 function Cell({ date, plate, mark, selected, ahead, onSelect, label }: CellProps) {
   // Called unconditionally, on `undefined` for a day with no photograph, which
@@ -55,34 +81,39 @@ function Cell({ date, plate, mark, selected, ahead, onSelect, label }: CellProps
   const { data: photoUrl, isLoading: resolving } = useMealPhotoUrl(plate?.photoPath)
   const photo = storedImageSource(plate?.photoPath, photoUrl)
 
-  if (!date) return <View className="h-[62px] flex-1" />
+  if (!date) return <View className="h-[66px] flex-1" />
+
+  /**
+   * A day the diary has something to say about.
+   *
+   * The mark counts as well as the plate, because the two queries land
+   * separately: a day whose verdict has arrived and whose picture has not would
+   * otherwise flip from a dashed outline to a filled tile a moment later, which
+   * is the grid changing its mind about a day the reader has already read.
+   */
+  const logged = Boolean(plate) || mark === 'under' || mark === 'over'
 
   const picture = photo ? (
-    <View className="h-[30px] w-[30px] overflow-hidden rounded-[9px]">
+    <View className="h-full w-full overflow-hidden rounded-[11px]">
       <MealPhoto source={photo} />
     </View>
+  ) : resolving && plate?.photoPath ? (
+    <Skeleton width="100%" height={PLATE} rounded={false} className="rounded-[11px] bg-line" />
   ) : plate ? (
-    resolving && plate.photoPath ? (
-      <Skeleton width={30} height={30} rounded={false} className="rounded-[9px] bg-line" />
-    ) : (
-      <Icon {...(plate.icon ?? PLACEHOLDER_ICON)} size={30} />
-    )
+    <Icon {...(plate.icon ?? PLACEHOLDER_ICON)} size={PLATE} />
   ) : null
 
   return (
     <Tappable
       className={cn(
-        'h-[62px] flex-1 items-center rounded-[14px] py-1.5',
-        // A logged day is a filled tile and an empty one is an outline. The two
-        // are the same size on purpose: a month where only the logged days had
-        // a box would read as a chart of attendance rather than as a calendar.
-        //
-        // What differs is the ARRANGEMENT. A day with a picture spreads its
-        // three parts over the whole cell so the plate is the middle of it; a
-        // day without one centres its number and its dot, because spread apart
-        // they read as two things with a hole between them.
-        plate ? 'justify-between bg-track' : 'justify-center gap-1',
-        plate ? '' : 'border border-dashed border-line-strong',
+        'h-[66px] flex-1 items-center rounded-[14px] px-0.5 pt-1 pb-0.5',
+        logged && 'bg-track',
+        // The outline IS the "missed" marker, so it is drawn for that day and
+        // for no other.
+        // `line` rather than `line-strong`: a month somebody has just started
+        // logging is mostly missed days, and at the strong weight thirty dashed
+        // boxes read as thirty warnings rather than as an empty calendar.
+        !logged && mark === 'missed' && 'border border-line border-dashed',
         selected && 'border-[2px] border-solid border-pandan',
         ahead && 'opacity-40',
       )}
@@ -94,18 +125,31 @@ function Cell({ date, plate, mark, selected, ahead, onSelect, label }: CellProps
     >
       <Text
         className={cn(
-          'font-display text-[11px] leading-[12px]',
+          'font-display text-[11px] leading-[13px]',
           selected ? 'text-pandan-ink' : 'text-faint',
         )}
       >
         {parseISO(date).getDate()}
       </Text>
 
-      {plate ? (
-        <View className="h-[30px] w-[30px] items-center justify-center">{picture}</View>
-      ) : null}
+      {/* Always the same box, whether or not there is a picture in it: a grid
+          where only the logged days reserve the space is a grid of two heights,
+          and the numbers stop lining up across a row. */}
+      <View className="w-full flex-1 items-center justify-center">
+        {picture}
 
-      <View className={cn('h-[5px] w-[5px] rounded-full', mark ? dots[mark] : 'bg-transparent')} />
+        {/* Over the plate's bottom-right corner, ringed in the tile's own
+            colour. The ring is what keeps it legible on a photograph, where a
+            bare pandan dot can land on something green. */}
+        {logged && mark && mark !== 'missed' ? (
+          <View
+            className={cn(
+              'absolute right-0 bottom-0 h-[9px] w-[9px] rounded-full border-2 border-track',
+              dots[mark],
+            )}
+          />
+        ) : null}
+      </View>
     </Tappable>
   )
 }
@@ -243,16 +287,23 @@ export function MonthCalendar({
         ))}
       </View>
 
-      {/* The key to the dots, which a month needs and a week does not: seven
-          cells are read as a set and thirty-one are read one at a time, so the
-          colour has to say what it means without the row around it. */}
+      {/* The key, and each swatch is drawn the way the grid draws it rather
+          than as three dots of different colours. "Not logged" is a dashed
+          square because that is what an empty day looks like up there — as a
+          hollow dot it named a mark the cells no longer carry. */}
       <View className="flex-row items-center gap-4">
-        {(['under', 'over', 'missed'] as const).map((kind) => (
-          <View key={kind} className="flex-row items-center gap-1.5">
-            <View className={cn('h-2 w-2 rounded-full', dots[kind])} />
-            <Text variant="micro">{t(`calendar.legend.${kind}`)}</Text>
-          </View>
-        ))}
+        <View className="flex-row items-center gap-1.5">
+          <View className="h-2 w-2 rounded-full bg-pandan" />
+          <Text variant="micro">{t('calendar.legend.under')}</Text>
+        </View>
+        <View className="flex-row items-center gap-1.5">
+          <View className="h-2 w-2 rounded-full bg-kaya" />
+          <Text variant="micro">{t('calendar.legend.over')}</Text>
+        </View>
+        <View className="flex-row items-center gap-1.5">
+          <View className="h-2.5 w-2.5 rounded-[4px] border border-line border-dashed" />
+          <Text variant="micro">{t('calendar.legend.missed')}</Text>
+        </View>
       </View>
     </View>
   )

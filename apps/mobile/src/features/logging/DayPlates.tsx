@@ -99,7 +99,16 @@ export function DayPlates({
           <Skeleton className="h-[72px] w-[72px]" />
         </View>
       ) : entries.length === 0 ? (
-        <Text variant="meta">{t('calendar.dayEmpty')}</Text>
+        /* Art and a sentence rather than a bare line of text, because this card
+           is under a grid full of pictures and a day with nothing on it is the
+           one cell somebody taps to find out WHY it is empty. Not `EmptyState`,
+           which draws its art at 96pt with a screen's worth of padding — that is
+           the shape for a screen with nothing on it, and this is a card with a
+           grid above it and a tab bar below. */
+        <View className="items-center gap-2 py-2">
+          <Icon set="food" name="empty-plate" size={48} />
+          <Text variant="meta">{t('calendar.dayEmpty')}</Text>
+        </View>
       ) : (
         <ScrollView
           horizontal
