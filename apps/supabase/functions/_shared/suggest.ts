@@ -138,6 +138,42 @@ function titled(name: string): string {
 }
 
 /**
+ * Sentences that belong to a meal other than the one being asked about.
+ *
+ * Only the breakfast register, because that is the only one the model reaches
+ * for unprompted: "to start your day", "in the morning", "after fasting
+ * overnight" turn up on dinners no matter how the prompt is worded. There is no
+ * matching problem in the other direction — nothing has ever described a
+ * breakfast as winding down the evening.
+ */
+const BREAKFAST_TALK =
+  // Loose around "start … your day", because the phrase mutates rather than
+  // stopping: pinned on "start your day" it came back as "start your daily
+  // intake" on the next run. It still needs BOTH halves, so an ordinary
+  // "warming after a long day at work" is left alone.
+  /\b(start\w*( to)? (your|the) da(y|ily)|morning|wake up|woke up|overnight|breakfast|first meal of the day)\b/i
+
+/**
+ * The reasons, with the ones about the wrong sitting taken out.
+ *
+ * A BELT rather than the rule itself. The prompt says this three times — in the
+ * system message, in the last line of the user message, and as a rule about the
+ * words rather than the food — and it took the leak from roughly two reasons a
+ * request to about one in fifteen picks. This removes that last one, on the
+ * screen where it is most read: the first pick's first reason.
+ *
+ * It never empties a pick. A reason is dropped only when another survives,
+ * because `shapePicks` drops a pick with nothing to say for itself and losing a
+ * DISH to a badly worded sentence is a worse answer than the sentence. The
+ * cases this leaves behind are rare and are still a real suggestion.
+ */
+function keepToTheSitting(why: Reason[], meal: Meal | undefined): Reason[] {
+  if (!meal || meal === 'breakfast') return why
+  const kept = why.filter((reason) => !BREAKFAST_TALK.test(reason.text))
+  return kept.length > 0 ? kept : why
+}
+
+/**
  * The model's answer, made safe to render.
  *
  * Every field is clamped or dropped rather than trusted, and a pick that loses
@@ -149,7 +185,7 @@ function titled(name: string): string {
  * Exported for its own test. Everything here has a failure that renders as
  * something odd rather than as an error, which is the kind that ships.
  */
-export function shapePicks(raw: unknown): MealPick[] {
+export function shapePicks(raw: unknown, meal?: Meal): MealPick[] {
   const list = (raw as { picks?: unknown })?.picks
   if (!Array.isArray(list)) return []
 
@@ -177,6 +213,7 @@ export function shapePicks(raw: unknown): MealPick[] {
     // A pick with nothing to say for itself is a dish name on a list, which is
     // the thing this feature exists instead of.
     if (why.length === 0) continue
+    const reasons = keepToTheSitting(why, meal)
 
     picks.push({
       name,
@@ -193,7 +230,7 @@ export function shapePicks(raw: unknown): MealPick[] {
       // anywhere: a suggestion IS its picture in a list of five, and a row with
       // a blank tile reads as a dish the app does not know about.
       icon: resolveIcon(row.icon) ?? guessIcon(name),
-      why,
+      why: reasons,
     })
   }
 
@@ -331,6 +368,21 @@ export const SUGGEST_MEAL_PROMPT =
   'A snack is a small thing eaten between meals: kuih, a drink, fruit, a piece ' +
   'of something fried, a few skewers. It is never a rice plate or a bowl of ' +
   'noodles, however few calories you claim for it. ' +
+  // LEAN HEALTHIER, WITHIN THE DISH SOMEBODY WOULD ACTUALLY ORDER. The line
+  // being walked here is the one this whole prompt is about: told nothing, it
+  // suggests whatever is famous, and told to be healthy it answers with boiled
+  // eggs and steamed fish — which is the failure the rule above exists to
+  // prevent. So the nudge is a TIE-BREAK between real dishes rather than a
+  // filter over them: soto ayam ahead of nasi goreng, ikan bakar ahead of ayam
+  // goreng, the soup version of a noodle rather than the fried one. Every pick
+  // is still something sold at a stall with a name people order it by.
+  'Between dishes that fit equally well, lean towards the healthier one: grilled ' +
+  'or steamed or in broth ahead of deep fried, more vegetables and less oil, a ' +
+  'lighter version of the same dish where one is genuinely sold. This is a ' +
+  'preference between real meals and NEVER a reason to answer with diet food, ' +
+  'plain ingredients or anything a person would not order by name. Do not ' +
+  'mention health, dieting or clean eating in the reasons; the dish speaks for ' +
+  'itself. ' +
   // Likewise the cuisine. Asked for Malay, the same run offered mee goreng mamak
   // and roti canai, which are the neighbouring kitchen.
   'The cuisine you are given is a constraint, not a hint. Every pick belongs to ' +
@@ -418,10 +470,22 @@ export const suggestUserMessage = (day: DayContext): string => {
     // sitting read as a label on a report and the model answered a dinner
     // request with a sentence about starting the day. The three constraints are
     // the question; everything above them is the background to it.
-    `Suggest ${PICK_COUNT} things for their ${day.meal}.`,
+    `Suggest ${PICK_COUNT} things to eat.`,
     `It must be ${CUISINES[day.cuisine]}.`,
     FOCUS[day.focus],
     `No pick may be over ${day.kcalLimit} kcal.`,
+    // And the SITTING is the very last line, twice stated.
+    //
+    // Named once at the top it was read as a label; moved into this group it was
+    // read as one constraint among four, and "to start your day" still came back
+    // on roughly a third of dinners. It is the constraint the model's prior
+    // fights hardest, so it gets the last word — which is the position a model
+    // weights most — and it is spelled out as a rule about the WORDS rather than
+    // only about the food, because the food had already stopped being wrong
+    // while the sentences had not.
+    `This is for their ${day.meal.toUpperCase()}. Every pick and every reason ` +
+      `must belong to that sitting: do not write about starting the day, ` +
+      `breakfast, morning or waking up unless the meal is breakfast.`,
   ]
   return lines.join('\n')
 }
@@ -443,8 +507,8 @@ export async function suggestMeals(
 ): Promise<MealPick[]> {
   if (mockActive()) {
     if (mock?.fail === 'suggest') throw new Error('mocked suggestion failure')
-    if (mock?.picks) return shapePicks({ picks: mock.picks })
-    return shapePicks({ picks: MOCK_PICKS })
+    if (mock?.picks) return shapePicks({ picks: mock.picks }, day.meal)
+    return shapePicks({ picks: MOCK_PICKS }, day.meal)
   }
 
   const raw = await chatJSON(
@@ -457,7 +521,7 @@ export async function suggestMeals(
     // not parse, and a parse failure here costs the whole suggestion.
     2200,
   )
-  return shapePicks(raw)
+  return shapePicks(raw, day.meal)
 }
 
 /**

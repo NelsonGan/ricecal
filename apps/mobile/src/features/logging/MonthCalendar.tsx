@@ -106,7 +106,7 @@ function Cell({ date, plate, mark, selected, ahead, onSelect, label }: CellProps
   return (
     <Tappable
       className={cn(
-        'h-[66px] flex-1 items-center rounded-[14px] px-0.5 pt-1 pb-0.5',
+        'h-[66px] flex-1 items-center justify-center gap-0.5 rounded-[14px] px-0.5 py-1',
         logged && 'bg-track',
         // The outline IS the "missed" marker, so it is drawn for that day and
         // for no other.
@@ -132,19 +132,26 @@ function Cell({ date, plate, mark, selected, ahead, onSelect, label }: CellProps
         {parseISO(date).getDate()}
       </Text>
 
-      {/* Always the same box, whether or not there is a picture in it: a grid
-          where only the logged days reserve the space is a grid of two heights,
-          and the numbers stop lining up across a row. */}
-      <View className="w-full flex-1 items-center justify-center">
+      {/* THE PLATE'S OWN BOX, exactly its size.
+          It was `w-full flex-1`, which is taller than the picture inside it —
+          so the dot, pinned to that box's bottom-right, sat a few points below
+          the plate and read as a mark that had come loose from it. Anchored to a
+          box the size of the picture, the dot lands on the corner it is meant
+          to be on.
+
+          Rendered whether or not there is a picture in it: a grid where only
+          the logged days reserve the space is a grid of two heights, and the
+          numbers stop lining up across a row. */}
+      <View style={{ width: PLATE, height: PLATE }} className="items-center justify-center">
         {picture}
 
-        {/* Over the plate's bottom-right corner, ringed in the tile's own
-            colour. The ring is what keeps it legible on a photograph, where a
-            bare pandan dot can land on something green. */}
+        {/* On the plate's bottom-right corner, ringed in the tile's own colour.
+            The ring is what keeps it legible on a photograph, where a bare
+            pandan dot can land on something green. */}
         {logged && mark && mark !== 'missed' ? (
           <View
             className={cn(
-              'absolute right-0 bottom-0 h-[9px] w-[9px] rounded-full border-2 border-track',
+              'absolute right-0 bottom-0 h-[10px] w-[10px] rounded-full border-2 border-track',
               dots[mark],
             )}
           />

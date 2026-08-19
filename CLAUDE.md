@@ -980,6 +980,24 @@ belt behind the last of them, because the icon list is the largest block in the
 prompt and the model answers in its register: five picks named `char-kuey-teow`,
 `hokkien-mee`, `mee-siam`.
 
+**It leans healthier, and the lean is a TIE-BREAK rather than a filter.** Told
+nothing it suggests whatever is famous; told to be healthy it answers with
+boiled eggs and steamed fish, which is the bare-ingredient failure above wearing
+a different hat. So the rule is written as a preference between dishes that both
+fit — soto ayam ahead of nasi goreng, the soup version of a noodle rather than
+the fried one — and it is told not to mention health, dieting or clean eating in
+the reasons, because a suggestion that argues for itself on those grounds is a
+diet app and this is a diary.
+
+**And the sitting has a belt of its own**, which is the one rule three separate
+statements in the prompt could not make hold. "To start your day" kept turning
+up on dinners; moved to the last line of the user message — the position a model
+weights most — it fell to about one reason in fifteen picks, and mutated rather
+than stopping ("start your daily intake"). `keepToTheSitting` drops a reason
+written in the breakfast register from a meal that is not breakfast, and NEVER
+empties a pick: losing a dish to a badly worded sentence is a worse answer than
+the sentence.
+
 A failure is an EMPTY LIST rather than an HTTP error, arrived at from the other
 end of the cascade's archetype floor: there a diary that refuses the meal is
 worse than one that logs it roughly, and here there is nothing to log, so the
