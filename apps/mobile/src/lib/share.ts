@@ -71,22 +71,53 @@ export async function captureView(view: RefObject<View | null>): Promise<Shot | 
   return { uri: file.uri, width: image.width(), height: image.height() }
 }
 
+export type SharePictureOptions = {
+  /**
+   * Send the picture and NOTHING beside it, where the platform can.
+   *
+   * For a card that already carries every word it needs: a shared meal says the
+   * dish, the calories and the macros on the picture itself, so a sentence in
+   * the share sheet repeating them is the same facts twice — once as a
+   * photograph somebody chose to send, once as text the app wrote for them.
+   *
+   * It reaches iOS alone, and that is the platform's doing rather than a choice
+   * made here: see below for why Android has only the sentence. The message
+   * argument is still required for that reason, and callers passing this are
+   * passing the ANDROID fallback rather than a caption.
+   */
+  pictureAlone?: boolean
+}
+
 /**
  * Hand a captured picture to the OS share sheet, and say whether it went.
  *
  * THE PICTURE ON iOS, THE SENTENCE ON ANDROID. React Native's `Share` takes
  * `url` on iOS only; on Android it carries `message` and drops everything else,
  * so asking it to send a file there shares nothing at all and reports success.
- * Sending the sentence is the honest degradation, and it is the same sentence
- * iOS sends beside the image. Sharing the file on Android needs a content://
- * provider, which needs a dependency, which needs a rebuild.
+ * Sending the sentence is the honest degradation. Sharing the file on Android
+ * needs a content:// provider, which needs a dependency, which needs a rebuild.
+ *
+ * Which is why `pictureAlone` cannot be honoured on both: dropping the message
+ * there would leave the share sheet with nothing in it at all, and a button
+ * that opens an empty chooser is worse than one that sends a sentence.
  *
  * The answer is a REAL yes or no on iOS alone. Android's share intent never
  * tells the app what the user did with it, so `Share` reports `sharedAction`
  * there whatever happens. Worth knowing before the two platforms are compared
  * on a "shared" count; it is not something the app can correct for.
  */
-export async function sharePicture(shot: Shot, message: string): Promise<boolean> {
-  const result = await Share.share(Platform.OS === 'ios' ? { url: shot.uri, message } : { message })
+export async function sharePicture(
+  shot: Shot,
+  message: string,
+  { pictureAlone = false }: SharePictureOptions = {},
+): Promise<boolean> {
+  const content =
+    Platform.OS === 'ios'
+      ? pictureAlone
+        ? { url: shot.uri }
+        : { url: shot.uri, message }
+      : { message }
+
+  const result = await Share.share(content)
   return result.action === Share.sharedAction
 }
