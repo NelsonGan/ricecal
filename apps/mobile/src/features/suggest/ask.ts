@@ -10,17 +10,6 @@ import type { Cuisine, Focus, Meal, MealTime } from '@/data'
  * simply changes it, every time, and never says so.
  */
 
-/**
- * How many dishes come back.
- *
- * The server decides it and this is the copy's copy of the number — the two are
- * separate because edge functions are Deno and outside the pnpm workspace, so
- * there is no module both halves can import (the same reason `icons.generated.ts`
- * exists twice). Nothing here depends on it being right: the list renders
- * whatever arrived. It is here so the card can say what it is offering.
- */
-export const PICK_COUNT = 5
-
 /** The four sittings, in the order the chips are drawn. */
 export const MEALS: readonly Meal[] = ['breakfast', 'lunch', 'dinner', 'snack']
 

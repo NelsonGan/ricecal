@@ -900,13 +900,20 @@ a pot; each has a subject and the model's job is to identify it. Here there is
 nothing to identify: the subject is the REST OF THE DAY, and the answer is a
 suggestion rather than a fact.
 
-"Not sure what to eat?" sits on Today under the ring, which is where the question
-is asked: the ring has just said how much room is left, and this is the offer to
-do something with it. Four questions in a sheet, five dishes back, and one of
-them opens as a page.
+A SPARKLE ON THE CALORIE CARD opens it, beside the ring, which is where the
+question is asked: the ring has just said how much room is left, and this is the
+offer to do something with it. It was a tinted card of its own under that one,
+headed "Not sure what to eat?" with a line about how many picks it would give,
+which is a lot of screen for an offer standing between the two things the diary
+is actually about. As a glyph it is the same offer at a tenth of the cost, and
+it is ON the card that states the number it answers. Only on today: the strip
+can put last Tuesday on this screen, and asking what to eat on a day that has
+been and gone is a question with no answer.
+
+Four questions in a sheet, five dishes back, and one of them opens as a page.
 
 ```
-card (Today)  →  ask sheet      meal, macros, cuisine, a calorie ceiling
+sparkle (Today) → ask sheet     meal, macros, cuisine, a calorie ceiling
                  ↓
                  the same sheet, holding a skeleton while the model works
                  ↓
