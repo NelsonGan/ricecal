@@ -980,14 +980,30 @@ belt behind the last of them, because the icon list is the largest block in the
 prompt and the model answers in its register: five picks named `char-kuey-teow`,
 `hokkien-mee`, `mee-siam`.
 
-**It leans healthier, and the lean is a TIE-BREAK rather than a filter.** Told
-nothing it suggests whatever is famous; told to be healthy it answers with
-boiled eggs and steamed fish, which is the bare-ingredient failure above wearing
-a different hat. So the rule is written as a preference between dishes that both
-fit — soto ayam ahead of nasi goreng, the soup version of a noodle rather than
-the fried one — and it is told not to mention health, dieting or clean eating in
-the reasons, because a suggestion that argues for itself on those grounds is a
-diet app and this is a diary.
+**It leans healthier, ON A TOGGLE, and the lean is a TIE-BREAK rather than a
+filter.** Told nothing it suggests whatever is famous; told to be healthy it
+answers with boiled eggs and steamed fish, which is the bare-ingredient failure
+above wearing a different hat. So the rule is written as a preference between
+dishes that both fit — grilled chicken on a nasi lemak rather than fried, soto
+ayam rather than nasi goreng — and it is told not to mention health, dieting or
+clean eating in the reasons, because a suggestion that argues for itself on
+those grounds is a diet app and this is a diary. The switch is a pill on the
+sheet's own title, "Lighter" against "Anything", and it lives in the USER
+message rather than the system prompt because it changes per request; what stays
+in the system prompt is the half that holds either way. Off is stated rather
+than left out, because silence there reads as the default rather than as its
+absence.
+
+**The sheet remembers what it was told, except the sitting and the ceiling.**
+Somebody who eats Malay food and wants protein wants that again tomorrow, and
+three of four answers being retyped every time is three taps charged for
+nothing. `features/suggest/preferences.ts` keeps the macros, the cuisine and the
+lean in MMKV, keyed by user, saved when the question is ASKED — a chip tapped and
+tapped back is not a preference. The sitting is not among them because it is
+answered by the clock, and the ceiling because it follows the sitting and the
+day's remaining budget: a 300 saved from a snack would open tomorrow's dinner at
+300. What is remembered is the kind of food, which is the part that is genuinely
+the same tomorrow.
 
 **And the sitting has a belt of its own**, which is the one rule three separate
 statements in the prompt could not make hold. "To start your day" kept turning

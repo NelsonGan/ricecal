@@ -147,6 +147,7 @@ const day: DayContext = {
   meal: 'dinner',
   focus: 'protein',
   cuisine: 'malay',
+  healthy: true,
   kcalLimit: 500,
   kcalLeft: 613,
   proteinLeftG: 39,

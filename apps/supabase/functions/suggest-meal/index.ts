@@ -46,6 +46,8 @@ type SuggestRequest = {
   focus?: string
   cuisine?: string
   kcal_limit?: number
+  /** Lean towards the lighter of two dishes that both fit. Defaults on. */
+  healthy?: boolean
   /** The day to suggest against. Defaults to the user's own today. */
   date?: string
   mock?: SuggestMockSteer
@@ -220,6 +222,9 @@ Deno.serve(async (req: Request) => {
     meal: meal as Meal,
     focus: focus as Focus,
     cuisine: cuisine as Cuisine,
+    // Defaults ON for a caller that does not say, which is the version of this
+    // endpoint that existed before the toggle did.
+    healthy: body.healthy !== false,
     kcalLimit,
     /**
      * An account with no budget yet is given the CEILING as its remaining
