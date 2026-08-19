@@ -18,7 +18,8 @@ export const suggest = {
     kcal: 'kcal',
     less: 'Fewer calories',
     more: 'More calories',
-    leftToday: '{{kcal}} kcal left today',
+    /** Beside the heading, so it is short: the sheet is only about today. */
+    leftToday: '{{kcal}} kcal left',
     action: 'Suggest something',
   },
 
@@ -38,11 +39,6 @@ export const suggest = {
      */
     emptyTitle: 'Nothing came to mind',
     emptyBody: 'Ask again, or loosen one of the answers.',
-    /**
-     * Said once under the list rather than beside every figure. Nothing here is
-     * counted against anybody's day until they log the meal themselves.
-     */
-    estimateNote: 'Rough figures. Nothing is logged until you log it.',
   },
 
   /** L10 PICK DETAIL, which is a read. There is no way to log from it. */

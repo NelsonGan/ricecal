@@ -1766,10 +1766,6 @@ Break these and the feature is wrong in ways tests may not catch.
   describing food somebody HAD eaten. It follows that a pick has no id, which is
   why the detail is reached by index out of an in-memory provider rather than by
   a route segment.
-- **Anything that draws a suggestion says the figures are rough.** Once per
-  surface rather than per figure. They exist to rank five options against a
-  budget, not to be counted against it, and a macro panel that looks exactly like
-  a logged entry's is a panel somebody will read as one.
 - **The quota counts SCANS, not requests to OpenRouter, and it is claimed once
   BEFORE any of them.** One user-initiated pass at the model is one unit,
   whatever it costs underneath. Claimed afterwards, an account already at its

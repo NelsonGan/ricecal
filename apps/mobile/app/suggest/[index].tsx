@@ -183,10 +183,6 @@ export default function SuggestedPickScreen() {
           ))}
         </View>
       </Card>
-
-      <Text variant="micro" className="px-1">
-        {t('suggest:picks.estimateNote')}
-      </Text>
     </Screen>
   )
 }
