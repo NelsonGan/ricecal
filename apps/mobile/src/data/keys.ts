@@ -54,6 +54,18 @@ export const keys = {
    * position to know which week is on screen.
    */
   dayMarksAll: (userId: string) => ['day-marks', userId] as const,
+  /**
+   * The picture in each day's cell on the month calendar.
+   *
+   * Its own key rather than a wider `day_marks`, because the two are asked for
+   * by different screens: the week strip wants the dots on every swipe and the
+   * calendar wants both, once a month. Under the same `day-marks` prefix all
+   * the same, so a logged meal invalidating "the dots" moves the picture with
+   * them — a meal that changes a day's verdict is usually the meal that changes
+   * its biggest plate.
+   */
+  dayPlates: (userId: string, from: string, to: string) =>
+    ['day-marks', userId, 'plates', from, to] as const,
   streak: (userId: string) => ['streak', userId] as const,
 
   /**

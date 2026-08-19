@@ -147,6 +147,11 @@ export const paywall = {
         free: '',
         pro: '',
       },
+      suggest: {
+        label: 'Ask what to eat next',
+        free: '',
+        pro: '',
+      },
       recipes: {
         label: 'Save what you cook',
         free: '{{recipes}} recipes',

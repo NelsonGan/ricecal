@@ -24,6 +24,7 @@ import {
 } from '@/data'
 import { LoginLinkHandler } from '@/features/auth'
 import { OnboardingDraftProvider } from '@/features/onboarding'
+import { SuggestProvider } from '@/features/suggest'
 import { initOnlineManager } from '@/lib/online'
 import { persistOptions, queryClient } from '@/lib/query'
 import { initServices } from '@/lib/startup'
@@ -97,15 +98,22 @@ export default Sentry.wrap(function RootLayout() {
                         same shape as pending snaps: the work outlives the
                         screen that started it. */}
                         <RefiningProvider>
-                          {/* Outside the navigator so a toast survives navigation — a
+                          {/* The five suggestions currently on screen. Above the
+                          navigator because the sheet that produced them and the
+                          page that reads one are different routes, and a
+                          suggestion has no id to carry between them. In memory
+                          only: see `features/suggest/picks.tsx`. */}
+                          <SuggestProvider>
+                            {/* Outside the navigator so a toast survives navigation — a
                           "saved" confirmation usually fires as the screen that
                           triggered it pops. */}
-                          <ToastProvider offset={NAV_BAR_HEIGHT}>
-                            {/* Under the toast because its one job on failure is to
+                            <ToastProvider offset={NAV_BAR_HEIGHT}>
+                              {/* Under the toast because its one job on failure is to
                             say the link had expired. Renders nothing. */}
-                            <LoginLinkHandler />
-                            <RootStack />
-                          </ToastProvider>
+                              <LoginLinkHandler />
+                              <RootStack />
+                            </ToastProvider>
+                          </SuggestProvider>
                         </RefiningProvider>
                       </PendingSnapProvider>
                     </OnboardingDraftScope>
@@ -282,6 +290,11 @@ function RootStack() {
           a horizontal swipe there means "next step" and a pushed screen would
           spend that gesture going back. See `reviews/_layout.tsx`. */}
       <Stack.Screen name="reviews" />
+      {/* One suggestion, pushed from the sheet that listed five. A full page
+          rather than a second sheet: it is somewhere you go and come back from,
+          and stacking a modal on a modal would leave the picks' scrim over the
+          app behind it. */}
+      <Stack.Screen name="suggest" />
       {/* The one paywall that is not dismissable by gesture: it replaces the
           tour at the end of onboarding, so there is nothing behind it to swipe
           back to. "Maybe later" is the way out and it is on the screen. */}

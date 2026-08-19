@@ -337,7 +337,8 @@ Read shapes are views, all `security_invoker`:
 `food_log_details`, `food_log_ingredient_details`, `daily_nutrition`,
 `user_food_stats`, `current_daily_goals`, `recipe_details`,
 `recipe_ingredient_details`. Plus `goals_on(date)`,
-`logging_streak()`, `day_marks(from, to)`, and three range families —
+`logging_streak()`, `day_marks(from, to)`, `day_plates(from, to)`, and three
+range families —
 `trend_days` / `trend_series` / `trend_summary` for the diary,
 `activity_days_range` / `activity_series` / `activity_summary` for movement, and
 `review_days` / `review_periods` / `review_summary` / `review_series` /
@@ -884,9 +885,95 @@ Three consequences worth knowing:
   `refineQuantity`, where quarters rounded small corrections back to no change
   at all.
 
-`pnpm eval:prompts` grades the typed-meal prompt, this one and the recipe
-reader against 68 written-down cases. It imports the prompts rather than
-copying them — a harness with its own copy grades a prompt nobody ships.
+`pnpm eval:prompts` grades the typed-meal prompt, this one, the recipe reader
+and the what-to-eat prompt against the cases written down beside them. It
+imports the prompts rather than copying them — a harness with its own copy
+grades a prompt nobody ships.
+
+---
+
+## What to eat next
+
+The one model path that does not start from something the user already has. A
+scan reads a plate, a correction reads a sentence about one, a recipe read reads
+a pot; each has a subject and the model's job is to identify it. Here there is
+nothing to identify: the subject is the REST OF THE DAY, and the answer is a
+suggestion rather than a fact.
+
+"Not sure what to eat?" sits on Today under the ring, which is where the question
+is asked: the ring has just said how much room is left, and this is the offer to
+do something with it. Four questions in a sheet, five dishes back, and one of
+them opens as a page.
+
+```
+card (Today)  →  ask sheet      meal, macros, cuisine, a calorie ceiling
+                 ↓
+                 the same sheet, holding a skeleton while the model works
+                 ↓
+                 five picks     name, kcal, protein, and the drawing
+                 ↓
+  /suggest/[index]              the figures, what the day has left after it,
+                                and WHY THIS FITS
+```
+
+**EVERY CONTROL OPENS ON AN ANSWER**, which is the opposite of onboarding's first
+screen and right for the opposite reason. There a prefilled body is a calorie
+budget worked out for somebody else; here a prefilled sitting costs nothing to be
+wrong about, because the answer is five suggestions rather than a plan. The
+sitting comes off the user's OWN `meal_times` (`mealAt`, nearest within two and a
+half hours, otherwise a snack) rather than a table of hours, so somebody whose
+dinner is at nine gets dinner at nine. The ceiling opens on what is left of the
+day, capped at what one sitting plausibly is — nobody is asking for a 2,400 kcal
+breakfast.
+
+The cuisines are HARDCODED (Malay, Mamak, Chinese, Others) and a list read from
+the catalogue would be a list of whatever happened to be imported. `others` is not
+a fifth kitchen: it is the absence of the constraint.
+
+**NOTHING IT RETURNS IS WRITTEN ANYWHERE, and the picks are view only.** No
+`food_logs` row, no catalogue row, no "Log it" button on the detail. A guess
+about a meal nobody has eaten is the last thing that should become a row other
+diaries are priced from, which is the mistake the estimate tier made and had to
+be unwound for — and that tier was at least describing food somebody HAD eaten.
+Whoever eats one of these logs it the ordinary way and the catalogue prices it.
+Which is also why a pick has no id, why the detail is reached by INDEX, and why
+`features/suggest/picks.tsx` holds the list in memory above navigation: it is not
+a record of anything.
+
+**The reasons are the product.** Five dish names against a calorie figure is a
+list anybody could write; "you are 39 g short on protein and one bowl covers most
+of it" is what makes it a suggestion. So `why` is required per pick and a pick
+without one is dropped, and the reason's `kind` is a closed set of five so the
+screen can draw the right picture beside it.
+
+**The day is assembled on the SERVER, not sent by the client.** The remaining
+budget, the macros still owed and what has already been eaten are read fresh in
+the endpoint. A client-supplied budget decides how big a meal the model offers,
+and a stale one — the app backgrounded since lunch — produces a suggestion for a
+day that has moved on. It is one round trip either way.
+
+**It is Pro, and it claims a scan**, exactly as `scan-refine` does and for the
+same reasons: discretionary, repeatable at the press of a button, and with no
+cheaper tier underneath to fall back to. A refusal goes through `announceRefusal`
+like every other.
+
+`_shared/suggest.ts` holds the prompt and the shaping. Five things it was taught
+the expensive way, each after a live run broke it, and each is a comment there:
+the sitting is a constraint rather than a label (asked for dinner it wrote "to
+start your day"); the cuisine likewise (asked for Malay it offered roti canai);
+a pick is a dish somebody orders by name and never a bare ingredient (released
+from a named cuisine it answered with chicken breast and boiled eggs); a dish's
+calories are never shrunk to fit the ceiling (asked for a 300 kcal snack it
+offered "nasi lemak, one plate, 280 kcal"); and the macros left are context for
+the reasons rather than a specification to hit. `unslug` plus a capital is the
+belt behind the last of them, because the icon list is the largest block in the
+prompt and the model answers in its register: five picks named `char-kuey-teow`,
+`hokkien-mee`, `mee-siam`.
+
+A failure is an EMPTY LIST rather than an HTTP error, arrived at from the other
+end of the cascade's archetype floor: there a diary that refuses the meal is
+worse than one that logs it roughly, and here there is nothing to log, so the
+honest answer is to say nothing came to mind and offer the button again.
 
 ---
 
@@ -1046,6 +1133,41 @@ has no window for `local_today()` to name. `features/logging/week.ts` turns
 those facts into a dot and is unit-tested, because the ORDER is the whole thing:
 ahead-of-today and not-yet-loaded both mean "say nothing", and only then does an
 empty past day mean "missed".
+
+### Or the whole month, as pictures
+
+The toggle beside the heading swaps the week strip for a MONTH GRID, and it
+REPLACES the screen under it rather than sitting above it. The two views answer
+different questions — "what did I eat" and "what have I been eating" — and the
+month can only answer its one by being mostly pictures, which leaves no room for
+the ring, the water and the list. What is under the grid instead is the selected
+day as a row of its plates, scrolling sideways, each opening its entry.
+
+Every cell carries the day's BIGGEST plate, from `day_plates(from, to)` — the
+photograph where there is one and the drawing where there is not, exactly as
+`review_meals` hands both back and for the same reason: `food_log_details` nulls
+an entry's icons whenever it has a photo, so a month of photographed meals would
+draw as a grid of blanks the day the retention sweep took the pictures. Biggest
+rather than newest, because a 44pt cell has room for one dish and "what did I eat
+that day" is answered by the nasi lemak rather than by the teh tarik after it.
+
+It is a SEPARATE function from `day_marks` rather than two more columns on it.
+The strip asks that one for a week on every swipe and has no use for a picture;
+joining the diary twice more per day, fifty-two weeks back, would be a cost paid
+by the screen that does not want it. The calendar wants both and asks for both,
+once a month. The dots are the same three the strip draws, through the same
+`markFor`, because one day cannot have two verdicts.
+
+Arrows rather than a pager, unlike the strip: twelve taps reaches a year where
+the strip needs fifty-two swipes, and a paging grid a screen tall would fight the
+vertical scroll of everything under it. Paging MOVES THE SELECTION with it
+(`dayInMonth`, same day of the month, clamped to the month's length and to
+today), because a card describing a day that is not on screen is a card nobody
+can act on.
+
+The view mode is not persisted, for the reason `showGoals` is not: the diary is
+the screen this app opens on, and a launch landing on a month grid because of a
+tap three days ago would be the app having changed its mind about what it is.
 
 ---
 
@@ -1319,6 +1441,7 @@ tier that takes the limits off:
 | a meal typed in words (`describe`) | no | yes |
 | a meal corrected in words (`refine`) | no | yes |
 | a recipe read out of a photograph | no | yes |
+| asking what to eat (`suggest`) | no | yes |
 | recipes kept | 3 | unlimited |
 | trends | 7 days | 7d / 30d / a year |
 | reviews | the newest week | every week and month |
@@ -1348,8 +1471,9 @@ refused after logging forty meals had an objection the figure could not answer.
 Counted in scans, the refusal has an answer, and that answer is the paywall.
 
 One scan is one user-initiated pass at the model: a photographed plate, a typed
-meal, a correction, a recipe read out of a picture. Claimed ONCE, at the top of
-the endpoint, before the photo is read and before the first model call. `Meter`
+meal, a correction, a recipe read out of a picture, a request for five things to
+eat. Claimed ONCE, at the top of the endpoint, before the photo is read and
+before the first model call. `Meter`
 is still threaded down to `chatJSON` and still required, but it only COUNTS now
 — what it records is what a scan cost us, for the logs and the debug trace.
 
@@ -1624,6 +1748,18 @@ Break these and the feature is wrong in ways tests may not catch.
   Deno / React Native line and have to be changed together. What follows from it
   on screen: anything PRINTING the plan reads `entitled`, not the status, or the
   Me tab says "Pro active" on the same screen whose buttons are about to refuse.
+- **A suggestion is never written, and never becomes a row.** `suggest-meal`
+  makes one model call and returns five dishes; nothing lands in `food_logs`,
+  nothing lands in the catalogue, and the detail screen has no way to log. These
+  are guesses about meals nobody has eaten, and a diary priced from one is the
+  mistake the estimate tier had to be unwound for — that tier was at least
+  describing food somebody HAD eaten. It follows that a pick has no id, which is
+  why the detail is reached by index out of an in-memory provider rather than by
+  a route segment.
+- **Anything that draws a suggestion says the figures are rough.** Once per
+  surface rather than per figure. They exist to rank five options against a
+  budget, not to be counted against it, and a macro panel that looks exactly like
+  a logged entry's is a panel somebody will read as one.
 - **The quota counts SCANS, not requests to OpenRouter, and it is claimed once
   BEFORE any of them.** One user-initiated pass at the model is one unit,
   whatever it costs underneath. Claimed afterwards, an account already at its
@@ -1967,7 +2103,7 @@ scored 28/30 top-1 against Postgres's 26/30 on identical work.
 
 | | what it drives | what it grades |
 |---|---|---|
-| `pnpm eval:prompts` | the prompt alone, imported | the shape of one answer: which action, how many components, whether the band brackets something sane |
+| `pnpm eval:prompts` | the prompt alone, imported | the shape of one answer: which action, how many components, whether the band brackets something sane, whether five suggestions are five meals |
 | `pnpm eval:scan` | the DEPLOYED functions, photographs and all | the row that lands in the diary — 27 cases, with the cascade's `debug: true` trace on every call |
 | `pnpm eval:recipe` | the deployed recipe reader | the arithmetic (calories per serving, macros agreeing) and the WRITING (one action a step, imperative, a doneness cue) |
 

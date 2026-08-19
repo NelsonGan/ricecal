@@ -553,6 +553,34 @@ export type DayMarkRow = {
   active_kcal: number | null
 }
 
+/**
+ * The one dish drawn in a day's cell on the month calendar.
+ *
+ * A photograph AND a drawing, because `day_plates` hands back both and the
+ * client prefers the photograph exactly as the diary does — a swept month has
+ * only the drawing left, and a cell that read the photo alone would go blank.
+ */
+export type DayPlate = {
+  date: string
+  name: string
+  icon?: IconRef
+  /** An object key in R2, never a URL. */
+  photoPath?: string
+}
+
+/**
+ * `day_plates` as PostgREST sends it. Hand-written for the reason `DayMarkRow`
+ * is: the generated types call every column of a returning function non-null,
+ * and three of these four are optional in the row itself.
+ */
+export type DayPlateRow = {
+  at: string
+  food_name: string | null
+  icon_set: string | null
+  icon_name: string | null
+  photo_path: string | null
+}
+
 export type Profile = Tables<'profiles'>
 export type Settings = Tables<'user_settings'>
 export type MealTime = Tables<'meal_times'>

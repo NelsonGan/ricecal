@@ -1587,6 +1587,16 @@ export type Database = {
           kcal: number
         }[]
       }
+      day_plates: {
+        Args: { p_from: string; p_to: string; p_user_id?: string }
+        Returns: {
+          at: string
+          food_name: string
+          icon_name: string
+          icon_set: Database['public']['Enums']['icon_set']
+          photo_path: string
+        }[]
+      }
       expired_meal_photos: {
         Args: { p_limit?: number }
         Returns: {
