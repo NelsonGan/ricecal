@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { supabase } from '@/lib/supabase'
+import { DEFAULT_WATER_ML } from '@/lib/water'
 import { today, unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
 import { useUserId } from './session'
@@ -34,7 +35,7 @@ export function useTargets() {
         carbs: row.carbs_g ?? 0,
         protein: row.protein_g ?? 0,
         fat: row.fat_g ?? 0,
-        waterGlasses: row.water_glasses ?? 8,
+        waterMl: row.water_ml ?? DEFAULT_WATER_ML,
         isCustom: row.is_custom ?? false,
       }
     },
@@ -46,7 +47,8 @@ export type GoalsInput = {
   carbs: number
   protein: number
   fat: number
-  waterGlasses: number
+  /** The day's water goal, in millilitres. */
+  waterMl: number
   /**
    * True when the user typed the numbers. The recompute trigger reads exactly
    * this and stops, so an automatic write must never set it.
@@ -78,7 +80,7 @@ export function useSetTargets() {
               carbs_g: Math.round(input.carbs),
               protein_g: Math.round(input.protein),
               fat_g: Math.round(input.fat),
-              water_glasses: Math.round(input.waterGlasses),
+              water_ml: Math.round(input.waterMl),
               is_custom: input.isCustom,
             },
             { onConflict: 'user_id,effective_from' },

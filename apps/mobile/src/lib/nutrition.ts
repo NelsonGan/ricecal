@@ -1,4 +1,5 @@
 import type { ActivityLevel, Entry, Macros, Targets } from '@/data/types'
+import { DEFAULT_WATER_ML } from './water'
 
 /**
  * Arithmetic the screens share.
@@ -382,7 +383,7 @@ export function computeTargets(body: BodyInput): Omit<Targets, 'isCustom'> {
     FLOOR_KCAL[body.sex],
   )
 
-  return { kcal, ...macroSplit(kcal, body.weightKg), waterGlasses: 8 }
+  return { kcal, ...macroSplit(kcal, body.weightKg), waterMl: DEFAULT_WATER_ML }
 }
 
 /**

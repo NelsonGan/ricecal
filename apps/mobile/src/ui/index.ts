@@ -126,12 +126,6 @@ export {
   type ToastTone,
   useToast,
 } from './Toast'
-export {
-  type DayStatus,
-  WaterTracker,
-  type WaterTrackerProps,
-  type WeekDay,
-  WeekStrip,
-  type WeekStripProps,
-} from './WeekStrip'
+export { WaterTank, type WaterTankProps } from './WaterTank'
+export { type DayStatus, type WeekDay, WeekStrip, type WeekStripProps } from './WeekStrip'
 export { Wheel, type WheelOption, type WheelProps } from './Wheel'

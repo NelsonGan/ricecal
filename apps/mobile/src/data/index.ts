@@ -9,7 +9,7 @@
  *    and a day's budget come from views — `food_log_details`, `daily_nutrition`,
  *    `current_daily_goals` — so the arithmetic is in one place and it is the
  *    same place a reminder or report job will read.
- * 2. **Every mutation is a hook.** `useLogFood`, `useSetWater`, `useLogWeight`,
+ * 2. **Every mutation is a hook.** `useLogFood`, `useAddWater`, `useLogWeight`,
  *    `useUpdateProfile` — each one owns what it invalidates, so a screen never
  *    has to know what its write affects.
  * 3. **Reads go through hooks, not through a client.** No screen imports
@@ -38,12 +38,12 @@ export {
 export { dateKey, today } from './client'
 export {
   type DayView,
+  useAddWater,
   useDay,
   useDayLog,
   useDayMarks,
   useNutritionRange,
   usePrefetchDays,
-  useSetWater,
   useStreak,
 } from './day'
 export {

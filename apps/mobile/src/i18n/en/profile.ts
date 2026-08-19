@@ -187,7 +187,7 @@ export const profile = {
       mealTitle: 'Time for {{meal}}',
       mealBody: 'Log it while you remember. It takes ten seconds.',
       waterTitle: 'Water check',
-      waterBody: 'How many glasses so far today?',
+      waterBody: 'How much water so far today?',
       weighInTitle: 'Morning weigh in',
       weighInBody: 'First thing gives the steadiest reading.',
       weeklyTitle: 'Your week in food',

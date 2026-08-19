@@ -242,7 +242,7 @@ select distinct on (g.user_id)
   g.carbs_g,
   g.protein_g,
   g.fat_g,
-  g.water_glasses,
+  g.water_ml,
   g.is_custom
 from public.daily_goals g
 where g.effective_from <= public.local_today(g.user_id)

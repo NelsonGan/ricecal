@@ -5,6 +5,7 @@ import { View } from 'react-native'
 import type { ReviewBucket, ReviewKind, ReviewSummary } from '@/data'
 import { showChange, showWeight, TrendLine, type WeightUnit } from '@/features/progress'
 import { BarChart } from '@/features/shared'
+import { volume } from '@/lib/water'
 import { Badge, Card, Divider, Icon, Text } from '@/ui'
 import { Shareable } from './ShareableCards'
 
@@ -34,6 +35,12 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
   const hasSteps = summary.activeDays > 0
 
   const distanceKm = summary.distanceM / 1000
+
+  /** A volume as its figure and unit, the same way Today and Trends print one. */
+  const waterAmount = (ml: number) => {
+    const { value, unit: volumeUnit } = volume(ml)
+    return t(`common:volume.${volumeUnit}`, { value })
+  }
 
   return (
     <>
@@ -159,7 +166,7 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
           <OtherRow
             label={t('reviews:body.water')}
             note={t('reviews:body.waterNote', { count: summary.waterGoalDays })}
-            value={t('reviews:body.waterValue', { value: summary.water.toFixed(1) })}
+            value={t('reviews:body.waterValue', { amount: waterAmount(summary.water) })}
           />
           {hasSteps ? (
             <>

@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo } from 'react'
 
 import { supabase } from '@/lib/supabase'
-import { datesBetween, seedMissing, unwrap, unwrapMaybe, unwrapOne } from './client'
+import { WATER_MAX_ML } from '@/lib/water'
+import { datesBetween, seedMissing, unwrap, unwrapMaybe } from './client'
 import { keys } from './keys'
 import { toEntry } from './mappers'
 import { pendingAsEntry, usePendingSnaps } from './pending-snaps'
@@ -36,7 +37,7 @@ async function fetchDay(userId: string, date: string): Promise<DayLog> {
       .order('logged_at'),
     supabase
       .from('daily_logs')
-      .select('water_glasses')
+      .select('water_ml')
       .eq('user_id', userId)
       .eq('log_date', date)
       .maybeSingle(),
@@ -46,8 +47,8 @@ async function fetchDay(userId: string, date: string): Promise<DayLog> {
     date,
     entries: (unwrap(entries) as FoodLogRow[]).map(toEntry),
     // No row means no water logged, not an error: `daily_logs` is written
-    // the first time someone taps a glass.
-    waterGlasses: unwrapMaybe(water)?.water_glasses ?? 0,
+    // the first time somebody records a drink.
+    waterMl: unwrapMaybe(water)?.water_ml ?? 0,
   }
 }
 
@@ -142,7 +143,7 @@ export function useDayLog(date: string): DayView {
 
   const view = useMemo((): DayView & { settled: string[] } => {
     const base = {
-      ...(data ?? { date, entries: [], waterGlasses: 0 }),
+      ...(data ?? { date, entries: [], waterMl: 0 }),
       isPending,
       isPaused,
       settled: [],
@@ -223,23 +224,23 @@ async function fetchDays(userId: string, from: string, to: string): Promise<DayL
       .order('logged_at'),
     supabase
       .from('daily_logs')
-      .select('log_date, water_glasses')
+      .select('log_date, water_ml')
       .eq('user_id', userId)
       .gte('log_date', from)
       .lte('log_date', to),
   ])
 
-  const glasses = new Map(
-    (unwrap(water) as { log_date: string; water_glasses: number }[]).map((row) => [
+  const millilitres = new Map(
+    (unwrap(water) as { log_date: string; water_ml: number }[]).map((row) => [
       row.log_date,
-      row.water_glasses,
+      row.water_ml,
     ]),
   )
 
   const days = new Map<string, DayLog>(
     datesBetween(from, to).map((date) => [
       date,
-      { date, entries: [], waterGlasses: glasses.get(date) ?? 0 },
+      { date, entries: [], waterMl: millilitres.get(date) ?? 0 },
     ]),
   )
 
@@ -306,46 +307,53 @@ export function usePrefetchDays(from: string, to: string) {
 }
 
 /**
- * Sets the water count for a day.
+ * Records a drink: adds millilitres to a day, or takes them back.
  *
- * An upsert: the row may not exist, and tapping the fourth glass should not
- * have to know whether the first one created it.
+ * AN RPC RATHER THAN AN UPSERT, and the difference is why this hook changed
+ * shape with the column. Glasses were SET — the tracker knew it wanted four, so
+ * it could write four — while millilitres are ADDED, and a read here plus a
+ * write here loses one of two taps that overlap. Quick-add is a row of buttons
+ * people drum on, so that is the ordinary case rather than the unlucky one;
+ * `add_water` does the read and the write in one statement.
+ *
+ * A negative amount is an undo. The server clamps at zero rather than raising,
+ * because somebody pressing undo has already made their only mistake.
  */
-export function useSetWater(date: string) {
+export function useAddWater(date: string) {
   const userId = useUserId()
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (glasses: number) =>
-      unwrapOne(
-        await supabase
-          .from('daily_logs')
-          .upsert(
-            { user_id: userId, log_date: date, water_glasses: Math.max(0, glasses) },
-            { onConflict: 'user_id,log_date' },
-          )
-          .select('water_glasses')
-          .single(),
-      ),
-    // The tracker is a row of taps. It has to fill under the finger.
-    onMutate: async (glasses) => {
+    mutationFn: async (ml: number) => {
+      const { data, error } = await supabase.rpc('add_water', { p_ml: ml, p_date: date })
+      if (error) throw error
+      return data
+    },
+    // The tank has to move under the finger, so the day is patched before the
+    // request leaves. Clamped exactly where the server clamps, which is what
+    // lets the answer be THROWN AWAY: `add_water` returns the day's new total,
+    // and writing it here would be a race for nothing. Two taps in flight
+    // resolve in whatever order the network hands them back, so the older
+    // answer can land last and take the newer drink off the screen until the
+    // refetch below puts it back.
+    onMutate: async (ml) => {
       await queryClient.cancelQueries({ queryKey: keys.day(userId, date) })
       const previous = queryClient.getQueryData<DayLog>(keys.day(userId, date))
       if (previous) {
         queryClient.setQueryData(keys.day(userId, date), {
           ...previous,
-          waterGlasses: Math.max(0, glasses),
+          waterMl: Math.min(WATER_MAX_ML, Math.max(0, previous.waterMl + ml)),
         })
       }
       return { previous }
     },
-    onError: (_error, _glasses, context) => {
+    onError: (_error, _ml, context) => {
       if (context?.previous) queryClient.setQueryData(keys.day(userId, date), context.previous)
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: keys.day(userId, date) })
-      // The water tab counts this glass in its bars, its average and its goal
-      // days. Not optimistic, unlike the tracker itself: nothing on Trends is
+      // The water tab counts this drink in its bars, its average and its goal
+      // days. Not optimistic, unlike the tank itself: nothing on Trends is
       // under the finger, so it can wait for the row.
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
     },

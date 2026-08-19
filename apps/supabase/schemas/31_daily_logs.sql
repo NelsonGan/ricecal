@@ -2,8 +2,13 @@
 -- Per-day facts the user records directly, that are not a food entry.
 --
 -- Water today; a day note or a mood next. One row per user per day, written
--- only by the user — there is no background sync anywhere in this app, so this
--- table has a single writer and no upsert to race against.
+-- only by the user — there is no background sync anywhere in this app.
+--
+-- WATER IS A VOLUME, NOT A COUNT OF GLASSES. It was `water_glasses`, a
+-- smallint of taps, and a glass is not a unit: a mug, a bottle and a restaurant
+-- tumbler are all one tap and are 200, 500 and 300 ml. Millilitres are what
+-- everything on a bottle is printed in, they add up, and a goal expressed in
+-- them can be met by any combination of the things somebody actually drinks.
 --
 -- Nothing references this table. `food_logs` carries its own `log_date`, so
 -- logging a meal never has to create a day first, and a day with no water and
@@ -14,7 +19,9 @@ create table public.daily_logs (
   user_id        uuid not null references auth.users (id) on delete cascade,
   log_date       date not null,
 
-  water_glasses  smallint not null default 0 check (water_glasses between 0 and 60),
+  -- Twenty litres is past any real day and well inside water intoxication
+  -- territory; it is a guard against a typo in a custom amount, not a target.
+  water_ml       integer not null default 0 check (water_ml between 0 and 20000),
   note           text check (char_length(note) <= 1000),
 
   created_at     timestamptz not null default now(),
@@ -52,3 +59,57 @@ create policy "daily_logs: delete own"
   on public.daily_logs for delete
   to authenticated
   using ((select auth.uid()) = user_id);
+
+
+-- ---------------------------------------------------------------------------
+-- Add (or take back) a volume of water on one day, atomically.
+--
+-- WHY THIS IS NOT AN UPSERT FROM THE CLIENT. Glasses were SET — tap the fourth
+-- glass and the row becomes four — so the client always knew the answer it
+-- wanted and could write it whole. Millilitres are ADDED, and a read, an
+-- addition and a write from the phone is a lost update the moment two taps
+-- overlap: 250 and 500 pressed together both read 0 and one of them lands.
+-- Quick-add is a row of buttons somebody drums on, so that race is the normal
+-- case rather than the unlucky one.
+--
+-- A negative `p_ml` is how the client takes back what it just added, which is
+-- why the total is clamped rather than checked: undoing 500 ml on a day holding
+-- 200 leaves 0, not a constraint violation on a button the user pressed to fix
+-- a mistake. The ceiling is clamped for the same reason, in the other
+-- direction — the caller is told the real total either way, and reconciles.
+-- ---------------------------------------------------------------------------
+create or replace function public.add_water(
+  p_ml    integer,
+  p_date  date default null
+)
+returns integer
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_user  uuid := (select auth.uid());
+  v_date  date := coalesce(p_date, public.local_today(v_user));
+  v_total integer;
+begin
+  if v_user is null then
+    raise exception 'not authenticated' using errcode = '28000';
+  end if;
+
+  insert into public.daily_logs as l (user_id, log_date, water_ml)
+  values (v_user, v_date, greatest(0, least(20000, p_ml)))
+  on conflict (user_id, log_date) do update
+    set water_ml = greatest(0, least(20000, l.water_ml + p_ml))
+  returning l.water_ml into v_total;
+
+  return v_total;
+end;
+$$;
+
+comment on function public.add_water(integer, date) is
+  'Adds p_ml millilitres of water to a day and returns the day''s new total. '
+  'Negative amounts take water back. The total is clamped to 0..20000 rather '
+  'than checked, so neither an undo nor a fat-fingered custom amount errors.';
+
+revoke all on function public.add_water(integer, date) from public;
+grant execute on function public.add_water(integer, date) to authenticated;
