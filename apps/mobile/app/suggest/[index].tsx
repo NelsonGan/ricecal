@@ -116,9 +116,12 @@ export default function SuggestedPickScreen() {
               "2,250 kcal left afte". The figure is the same size either way,
               so what gives is the line under it. */}
           <View className="min-w-0 flex-1">
-            <Text variant="display" className="text-[34px] leading-[38px] text-ink">
-              {pick.kcal.toLocaleString()}
-            </Text>
+            {/* `displayMd`, which is what the logged-entry screen prints its own
+                calorie total in — and its line box is the point rather than its
+                size. Written as `text-[34px] leading-[38px]`, the leading was
+                tighter than Baloo 2's own line box and the tops of the digits
+                were clipped. A display face needs the room its variant gives it. */}
+            <Text variant="displayMd">{pick.kcal.toLocaleString()}</Text>
             <Text variant="overlineSm" numberOfLines={2}>
               {t('suggest:detail.unit', { portion: pick.portion.toUpperCase() })}
             </Text>
