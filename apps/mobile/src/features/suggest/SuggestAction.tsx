@@ -1,5 +1,5 @@
-import { useFocusEffect, useRouter } from 'expo-router'
-import { useCallback, useRef, useState } from 'react'
+import { useRouter } from 'expo-router'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { SuggestRequest } from '@/data'
@@ -34,19 +34,29 @@ export type SuggestActionProps = {
  * picks reach it through `SuggestProvider` — see `picks.tsx` for why a
  * suggestion has no id to put in a route.
  *
- * IT SITS ON THE CALORIE CARD, beside the ring. That is where the question is
- * asked: the ring has just said how much room is left, and this is the offer to
- * do something with it. It was a tinted card of its own under that one, headed
- * "Not sure what to eat?" with a line about how many picks it would give, which
- * is a lot of screen for an offer standing between the two things the diary is
- * actually about.
+ * IT SITS IN THE LOG SHEET, on the heading's line. That is where somebody
+ * already is when the question comes up: the sheet they opened to add a meal is
+ * the sheet they opened NOT knowing what the meal is, and the four ways in
+ * underneath it all assume they have already decided.
+ *
+ * It has been two other things. A tinted card of its own on Today, headed "Not
+ * sure what to eat?" with a line about how many picks it would give, which was a
+ * lot of screen for an offer standing between the two things the diary is about;
+ * then a glyph on the calorie card, which was the right size in the wrong place —
+ * beside a reading rather than beside the decision.
  */
 export function SuggestAction({ date, kcalLeft, hasBudget }: SuggestActionProps) {
   const { t } = useTranslation('suggest')
   const router = useRouter()
   const toast = useToast()
-  const requirePro = useRequirePro()
-  const { picks, request, set, clear } = useSuggestedPicks()
+  /**
+   * `replace`, because this lives inside the log sheet and the log sheet is a
+   * `transparentModal`. A push from within one stacks the paywall ON the sheet,
+   * half-covering it, with the sheet's own scrim still over the app — see
+   * `useRequirePro`.
+   */
+  const requirePro = useRequirePro({ navigate: 'replace' })
+  const { picks, request, set, clear, closed } = useSuggestedPicks()
   const suggest = useSuggestMeals()
 
   const [asking, setAsking] = useState(false)
@@ -77,13 +87,26 @@ export function SuggestAction({ date, kcalLeft, hasBudget }: SuggestActionProps)
   const showingRef = useRef(false)
   showingRef.current = showing
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!reopen.current) return
-      reopen.current = false
-      setShowing(true)
-    }, []),
-  )
+  /**
+   * The list comes back when a pick's page leaves.
+   *
+   * Driven by the provider's counter rather than by focus: this component lives
+   * inside the log sheet, which is a `transparentModal`, and the screen under a
+   * transparent presentation never loses focus — so `useFocusEffect` never fired
+   * and the list stayed closed after one pick had been read. See `closed` in
+   * `picks.tsx`.
+   *
+   * The ref is still what decides: a dismissal by the handle or the scrim must
+   * not bring the sheet back, and only a tap on a pick sets it.
+   */
+  const seen = useRef(closed)
+  useEffect(() => {
+    if (closed === seen.current) return
+    seen.current = closed
+    if (!reopen.current) return
+    reopen.current = false
+    setShowing(true)
+  }, [closed])
 
   const ask = (next: SuggestRequest) => {
     setAsking(false)
@@ -132,25 +155,19 @@ export function SuggestAction({ date, kcalLeft, hasBudget }: SuggestActionProps)
 
   return (
     <>
-      {/* A GLYPH ON THE CALORIE CARD, not a card of its own.
-       *
-       * It was a full-width tinted card under the ring, headed "Not sure what to
-       * eat?" with a line about how many picks it would give — which is a lot of
-       * screen for an offer, sitting between the two things the diary is
-       * actually about. As a button it is the same offer at a tenth of the cost,
-       * and it is ON the card that states the number it answers: the ring says
-       * how much room is left, and this is what to do with it.
-       *
-       * Raised and pandan-filled, because it is the only thing on that card that
-       * is a CONTROL. Everything else there is a reading.
+      {/* Raised and pandan-filled, because it is an OFFER rather than one of the
+       * four ways in below it. Drawn as a fifth `QuickAction` it would read as
+       * another route into the diary, and it is not one: nothing it leads to
+       * writes anything.
        */}
       <IconButton
-        size="sm"
+        /* As tall as the heading it sits beside, so the row is the height of
+           its own title. The touch target is taken back to 44 with `hitSlop`. */
+        size="xxs"
+        hitSlop={8}
         variant="primary"
         /* `self-center`, because `IconButton` puts `self-start` on its own
-           container and a child's own alignment beats the row's `items-center`.
-           Without it the glyph sits at the top of a 132pt ring rather than
-           beside the middle of it. */
+           container and a child's own alignment beats the row's `items-center`. */
         className="self-center"
         onPress={() => {
           if (!requirePro('suggest')) return
@@ -158,7 +175,7 @@ export function SuggestAction({ date, kcalLeft, hasBudget }: SuggestActionProps)
         }}
         accessibilityLabel={t('card.title')}
       >
-        <Icon set="system" name="sparkle" size={24} />
+        <Icon set="system" name="sparkle" size={18} />
       </IconButton>
 
       <AskSheet

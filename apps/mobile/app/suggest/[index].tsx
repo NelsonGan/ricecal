@@ -1,4 +1,5 @@
 import { useLocalSearchParams } from 'expo-router'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import type { Reason } from '@/data'
@@ -54,7 +55,16 @@ export default function SuggestedPickScreen() {
   const { t } = useTranslation(['suggest', 'common'])
   const back = useBack('/(tabs)/today')
   const { index } = useLocalSearchParams<{ index: string }>()
-  const { picks, request } = useSuggestedPicks()
+  const { picks, request, markClosed } = useSuggestedPicks()
+
+  /**
+   * Tell the list this page has gone, so it can come back.
+   *
+   * On UNMOUNT rather than in the back handler, because there are three ways
+   * off this screen — the chevron, the edge swipe and Android's back button —
+   * and only one of them goes through a handler of ours.
+   */
+  useEffect(() => markClosed, [markClosed])
 
   const pick = picks[Number(index)]
 
