@@ -12,15 +12,15 @@ import {
   useRemoveEntry,
   useSelectedDate,
   useSettings,
-  useSetWater,
   useStreak,
   useTargets,
 } from '@/data'
-import { WeekPicker } from '@/features/logging'
+import { WaterCard, WeekPicker } from '@/features/logging'
 import { useProNudge } from '@/features/paywall'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
 import { useTutorialOffer } from '@/features/tutorial'
 import { sumMacros } from '@/lib/nutrition'
+import { DEFAULT_WATER_ML } from '@/lib/water'
 import {
   Badge,
   Button,
@@ -35,7 +35,6 @@ import {
   Tappable,
   Text,
   useToast,
-  WaterTracker,
 } from '@/ui'
 
 /**
@@ -97,7 +96,6 @@ export default function TodayScreen() {
   const streak = useStreak()
   const removeEntry = useRemoveEntry()
   const pending = usePendingSnaps()
-  const setWater = useSetWater(selectedDate)
   // The day's movement, if a health store is connected. Null on every account
   // that has not connected one, which is what keeps `burned` at zero below.
   const {
@@ -113,10 +111,10 @@ export default function TodayScreen() {
    * Two of these queries are keyed by the selected date, so picking a day puts
    * them both back to "no data" — and every value below reads through a
    * fallback that turns that into a confident statement about the new day. The
-   * ring drew the full budget as remaining, the tracker drew eight empty
-   * glasses, and the list drew "Nothing logged yet", all for as long as the
-   * requests were out. A day someone ate three meals on announced itself as a
-   * day they had skipped.
+   * ring drew the full budget as remaining, the water tank drew itself empty,
+   * and the list drew "Nothing logged yet", all for as long as the requests
+   * were out. A day someone ate three meals on announced itself as a day they
+   * had skipped.
    *
    * The gate is the whole region rather than a flag per card, because these are
    * one sentence about one day: staggering them would reveal the ring's answer
@@ -214,14 +212,14 @@ export default function TodayScreen() {
   const [swipeOpen, setSwipeOpen] = useState(false)
 
   /**
-   * Eight glasses until told otherwise.
+   * Two litres until told otherwise.
    *
    * Unlike the calorie budget this does not wait for onboarding: it is the same
-   * number for every body, `daily_goals` defaults the column to it, and the tracker
-   * is useful on an account that has never described itself. A ring drawn against a
-   * placeholder would be a lie; eight glasses is not a guess about this user.
+   * figure for every body, `daily_goals` defaults the column to it, and the tank
+   * is useful on an account that has never described itself. A ring drawn against
+   * a placeholder would be a lie; two litres is not a guess about this user.
    */
-  const waterGoal = targets?.waterGlasses ?? 8
+  const waterGoal = targets?.waterMl ?? DEFAULT_WATER_ML
 
   // The row that was just added, if it landed in the last few seconds. Derived
   // rather than stored: with a server there is no "last added" flag to keep,
@@ -407,36 +405,16 @@ export default function TodayScreen() {
       </Card>
 
       {/* Water sits under the ring rather than at the foot of the screen: it is
-          logged all day, a tap at a time, and it is the one thing here that a user
-          reaches for without having eaten anything. Below the entry list it would
-          be under however many rows the day has grown.
+          logged all day, a drink at a time, and it is the one thing here that a
+          user reaches for without having eaten anything. Below the entry list it
+          would be under however many rows the day has grown.
 
-          The GOAL is known before the day is — it falls back to eight, which is
-          not a guess about this user — so the grid keeps its size throughout and
-          only the fill waits. That is why the placeholder is inside the tracker
-          rather than a block over the card: the row never changes height, and
-          the count beside the heading is simply absent until there is one. */}
-      <Card
-        tone="water"
-        title={t('logging:water.title')}
-        action={
-          loading ? undefined : (
-            <Text variant="label" className="text-water-ink">
-              {t('logging:water.count', { filled: day.waterGlasses, goal: waterGoal })}
-            </Text>
-          )
-        }
-      >
-        <WaterTracker
-          filled={day.waterGlasses}
-          goal={waterGoal}
-          loading={loading}
-          // `mutate`, not `mutateAsync`: the optimistic update in `useSetWater` is
-          // what fills the glass, and nothing here waits for the row to be written.
-          onChange={(glasses) => setWater.mutate(glasses)}
-          glassLabel={(ordinal, total) => t('logging:water.glass', { ordinal, total })}
-        />
-      </Card>
+          The GOAL is known before the day is — it falls back to two litres,
+          which is not a guess about this user — so the tank keeps its size
+          throughout and only the level waits. That is why the placeholder is
+          inside the card: nothing changes height, and the figure beside the
+          heading is simply absent until there is one. */}
+      <WaterCard date={selectedDate} ml={day.waterMl} goalMl={waterGoal} loading={loading} />
 
       {/* Two rows of placeholder rather than one, because one reads as a card
           with a single meal in it and the point of the block is that nobody yet

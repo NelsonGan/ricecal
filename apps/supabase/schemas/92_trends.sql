@@ -46,7 +46,7 @@ returns table (
   protein_g     numeric,
   fat_g         numeric,
   entry_count   integer,
-  water_glasses integer,
+  water_ml      integer,
   goal_kcal     integer,
   goal_water    integer,
   weight_kg     numeric
@@ -94,16 +94,16 @@ as $$
     -- Zero, not null: "did this day have food logged" is asked by every count
     -- downstream, and one spelling of it beats each caller coalescing.
     coalesce(n.entry_count, 0),
-    coalesce(l.water_glasses, 0)::integer,
+    coalesce(l.water_ml, 0)::integer,
     g.kcal,
-    g.water_glasses::integer,
+    g.water_ml::integer,
     w.weight_kg
   from calendar c
   left join public.daily_nutrition n on n.user_id = p_user_id and n.log_date    = c.at
   left join public.daily_logs      l on l.user_id = p_user_id and l.log_date    = c.at
   left join public.weight_logs     w on w.user_id = p_user_id and w.measured_on = c.at
   left join lateral (
-    select gg.kcal, gg.water_glasses
+    select gg.kcal, gg.water_ml
     from public.daily_goals gg
     where gg.user_id = p_user_id and gg.effective_from <= c.at
     order by gg.effective_from desc
@@ -174,21 +174,22 @@ as $$
     ))::integer,
     -- Water IS averaged over the whole bucket. An unlogged day is a day you
     -- drank nothing you recorded, and a hydration average that skipped it would
-    -- only ever describe the days that went well.
-    round(avg(d.water_glasses), 1),
-    sum(d.water_glasses)::integer,
-    max(d.water_glasses)::integer,
-    (count(*) filter (where d.water_glasses >= coalesce(d.goal_water, 8)))::integer,
-    -- Three quarters of that day's own goal, rounded up: eight becomes six,
-    -- twelve becomes nine. Counted per DAY and therefore here rather than in
+    -- only ever describe the days that went well. Whole millilitres: a tenth of
+    -- one is not a fact about anybody's day.
+    round(avg(d.water_ml), 0),
+    sum(d.water_ml)::integer,
+    max(d.water_ml)::integer,
+    (count(*) filter (where d.water_ml >= coalesce(d.goal_water, 2000)))::integer,
+    -- Three quarters of that day's own goal, rounded up: 2,000 ml becomes
+    -- 1,500. Counted per DAY and therefore here rather than in
     -- the client, which on the thirty-day range only has weekly buckets and
     -- could ask no better question than "did the whole WEEK average above the
     -- line" — which answers 0 of 30 for a month containing several full days.
     (count(*) filter (
-      where d.water_glasses >= ceil(coalesce(d.goal_water, 8) * 0.75)
+      where d.water_ml >= ceil(coalesce(d.goal_water, 2000) * 0.75)
     ))::integer,
-    (count(*) filter (where d.water_glasses > 0))::integer,
-    (array_agg(coalesce(d.goal_water, 8) order by d.at desc))[1],
+    (count(*) filter (where d.water_ml > 0))::integer,
+    (array_agg(coalesce(d.goal_water, 2000) order by d.at desc))[1],
     round(avg(d.weight_kg), 1),
     -- The newest reading in the bucket, which is the point the line joins. A
     -- month's average is the honest summary but the line has to end where the
@@ -263,15 +264,17 @@ as $$
     (count(*) filter (
       where d.entry_count > 0 and d.goal_kcal is not null and d.kcal <= d.goal_kcal
     ))::integer,
-    round(avg(d.water_glasses), 1),
-    sum(d.water_glasses)::integer,
-    max(d.water_glasses)::integer,
-    (count(*) filter (where d.water_glasses >= coalesce(d.goal_water, 8)))::integer,
+    -- Whole millilitres. A tenth of a millilitre is not a fact about
+    -- anybody's day, and it would print as one.
+    round(avg(d.water_ml), 0),
+    sum(d.water_ml)::integer,
+    max(d.water_ml)::integer,
+    (count(*) filter (where d.water_ml >= coalesce(d.goal_water, 2000)))::integer,
     (count(*) filter (
-      where d.water_glasses >= ceil(coalesce(d.goal_water, 8) * 0.75)
+      where d.water_ml >= ceil(coalesce(d.goal_water, 2000) * 0.75)
     ))::integer,
-    (count(*) filter (where d.water_glasses > 0))::integer,
-    (array_agg(coalesce(d.goal_water, 8) order by d.at desc))[1],
+    (count(*) filter (where d.water_ml > 0))::integer,
+    (array_agg(coalesce(d.goal_water, 2000) order by d.at desc))[1],
     -- The newest reading from BEFORE the range, which is where the chart's line
     -- starts. Without it a range that opens on an unweighed day has nothing to
     -- carry forward and the line begins partway across, reading as missing data

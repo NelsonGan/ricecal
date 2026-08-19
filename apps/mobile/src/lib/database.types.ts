@@ -16,10 +16,30 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: '14.5'
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -262,7 +282,7 @@ export type Database = {
           protein_g: number
           updated_at: string
           user_id: string
-          water_glasses: number
+          water_ml: number
         }
         Insert: {
           carbs_g: number
@@ -274,7 +294,7 @@ export type Database = {
           protein_g: number
           updated_at?: string
           user_id: string
-          water_glasses?: number
+          water_ml?: number
         }
         Update: {
           carbs_g?: number
@@ -286,7 +306,7 @@ export type Database = {
           protein_g?: number
           updated_at?: string
           user_id?: string
-          water_glasses?: number
+          water_ml?: number
         }
         Relationships: []
       }
@@ -297,7 +317,7 @@ export type Database = {
           note: string | null
           updated_at: string
           user_id: string
-          water_glasses: number
+          water_ml: number
         }
         Insert: {
           created_at?: string
@@ -305,7 +325,7 @@ export type Database = {
           note?: string | null
           updated_at?: string
           user_id: string
-          water_glasses?: number
+          water_ml?: number
         }
         Update: {
           created_at?: string
@@ -313,7 +333,7 @@ export type Database = {
           note?: string | null
           updated_at?: string
           user_id?: string
-          water_glasses?: number
+          water_ml?: number
         }
         Relationships: []
       }
@@ -1090,7 +1110,7 @@ export type Database = {
           kcal: number | null
           protein_g: number | null
           user_id: string | null
-          water_glasses: number | null
+          water_ml: number | null
         }
         Relationships: []
       }
@@ -1512,6 +1532,7 @@ export type Database = {
           walking_kcal: number
         }[]
       }
+      add_water: { Args: { p_date?: string; p_ml: number }; Returns: number }
       barcode_hourly_limit: { Args: never; Returns: number }
       claim_barcode_scan: {
         Args: { p_user: string }
@@ -1588,7 +1609,7 @@ export type Database = {
           protein_g: number
           updated_at: string
           user_id: string
-          water_glasses: number
+          water_ml: number
         }
         SetofOptions: {
           from: '*'
@@ -1638,7 +1659,7 @@ export type Database = {
           sessions: number
           step_goal: number
           steps: number
-          water_glasses: number
+          water_ml: number
           weight_kg: number
         }[]
       }
@@ -1761,7 +1782,7 @@ export type Database = {
           goal_water: number
           kcal: number
           protein_g: number
-          water_glasses: number
+          water_ml: number
           weight_kg: number
         }[]
       }
@@ -1958,6 +1979,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       activity_level: ['sedentary', 'light', 'on_feet', 'very_active'],

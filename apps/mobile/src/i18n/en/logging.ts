@@ -429,22 +429,55 @@ export const logging = {
   },
 
   /**
-   * The glasses on Today. Water came back when the diary that used to carry it
-   * went — there was nowhere left to record a glass, and `useSetWater` had been
-   * writing `daily_logs` for a screen nobody could reach.
+   * The water card on Today, which is a tank that fills rather than eight boxes
+   * you tick. Everything here is a VOLUME, and in MILLILITRES: see
+   * `lib/water.ts` for why the glasses went and which unit belongs where.
    */
   water: {
     title: 'Water',
     /**
-     * Filled against the goal. A slash rather than the word "of", the same way the
-     * ring and the macro bars write a fraction.
+     * Drunk against the goal. A slash rather than the word "of", the same way
+     * the ring and the macro bars write a fraction — and ONE unit, printed
+     * once at the end, because "0 ml / 2 L" is a fraction whose halves are in
+     * different units and reads as a fault.
      */
-    count: '{{filled}} / {{goal}}',
+    count: '{{filled}} / {{goal}} ml',
     /**
-     * One glass, to a screen reader. The row is otherwise a run of identical boxes
-     * with nothing to tell a user which one they are on.
+     * The sheet behind Add, and what is left of the goal beside its heading.
+     *
+     * "left" rather than "to go", and clamped at zero rather than swapped for a
+     * congratulation, because the sheet this one is a sibling of writes
+     * "1,460 kcal left" in the same corner. Two ways of saying the same thing
+     * in two sheets opened by two buttons on one screen is one too many.
      */
-    glass: 'Glass {{ordinal}} of {{total}}',
+    addTitle: 'Add water',
+    left: '{{amount}} ml left',
+    /**
+     * A quick-add button, to a screen reader. The label on screen is the size
+     * alone, and the vessel is the drawing above it — a button reading "Glass
+     * 250 ml" says the same thing twice in a space with room for one.
+     */
+    add: 'Add {{amount}} ml',
+    customLabel: 'Another amount',
+    /** The example in the empty field. A figure none of the three presets is. */
+    customPlaceholder: '600',
+    /**
+     * The two buttons under it, which are icons on screen — so these are what a
+     * screen reader has to go on, and they name the DIRECTION rather than the
+     * figure, which is in the field above and already announced.
+     */
+    customAdd: 'Add this amount',
+    customRemove: 'Take this amount off',
+    /**
+     * The toast after a drink, and the way back out of it. The amount is in the
+     * message rather than on the button, because "Undo" is what somebody is
+     * looking for and the figure is what tells them whether they want it.
+     */
+    added: '{{amount}} ml of water',
+    removed: '{{amount}} ml taken off',
+    undo: 'Undo',
+    /** The tank itself, to a screen reader. */
+    level: '{{filled}} of {{goal}} ml drunk today',
   },
 
   // No `diary` block. The diary screen and its calendar are gone, and this file's

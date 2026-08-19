@@ -33,7 +33,12 @@ create table public.daily_goals (
   carbs_g         integer not null check (carbs_g >= 0),
   protein_g       integer not null check (protein_g >= 0),
   fat_g           integer not null check (fat_g >= 0),
-  water_glasses   smallint not null default 8 check (water_glasses between 1 and 30),
+  -- Millilitres a day. 2,000 is the default the health advice everybody has
+  -- heard lands on, and it is what eight 250 ml glasses came to before water
+  -- was a volume. The floor is a quarter of a litre because a goal has to be
+  -- reachable in one drink; the ceiling is what a very large person training in
+  -- this climate might set, not a limit anybody should be pushed towards.
+  water_ml        integer not null default 2000 check (water_ml between 250 and 8000),
 
   -- True once the user has overridden the computed budget by hand. The
   -- recompute trigger reads exactly this and stops.

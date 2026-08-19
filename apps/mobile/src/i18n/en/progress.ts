@@ -30,7 +30,7 @@ export const progress = {
     water: 'Water',
     weight: 'Weight',
     caloriesUnit: 'avg',
-    waterUnit: 'cups',
+    waterUnit: 'ml',
     /** Nothing logged in the range at all. Never a zero: zero is a measurement. */
     none: '—',
     a11y: '{{metric}}, {{value}}',
@@ -75,11 +75,12 @@ export const progress = {
   },
 
   water: {
-    cupNote: 'A cup is 250 ml',
-    cupNoteWeekly: 'Weekly average, a cup is 250 ml',
-    cupNoteMonthly: 'Monthly average, a cup is 250 ml',
-    goalPill: 'goal {{goal}}',
-    chart: 'Cups of water a day against a goal of {{goal}}',
+    /** Under the range heading. What the columns are, in one line. */
+    dayNote: 'Each column is one day against your goal',
+    weeklyNote: 'Each column is a week, averaged against your goal',
+    monthlyNote: 'Each column is a month, averaged against your goal',
+    goalPill: 'goal {{amount}}',
+    chart: 'Water a day against a goal of {{amount}}',
 
     reached: 'Reached goal',
     short: 'Short of goal',
@@ -89,26 +90,29 @@ export const progress = {
     bestMonth: 'BEST MONTH',
     yearAverage: 'YEAR AVG',
     total: 'TOTAL',
-    cups: '{{value}} cups',
-
-    todayTitle: 'TODAY',
-    todayCount: '{{filled}} of {{goal}} cups',
-    toGo: '{{count}} to go',
-    goalMet: 'Goal reached',
 
     /**
-     * The habit card. "Six or more" is not a second goal — it is the line below
-     * which a day stops counting as a day you drank, and it moves with the goal
-     * rather than being a number of its own.
+     * The overline ON the tank. What is left of a card that used to carry a
+     * heading, a "to go" pill and a caption around a small tank — it is the
+     * same card Today draws now, and the only thing it still has to say for
+     * itself is which day it is about, since everything else on this screen is
+     * about seven of them.
+     */
+    todayTitle: 'TODAY',
+
+    /**
+     * The habit card. The line is not a second goal — it is where a day stops
+     * counting as a day you drank, and it moves with the goal rather than being
+     * a figure of its own.
      */
     habitTitle: 'HABIT',
-    daysAtLeast: 'Days at {{cups}} cups or more',
+    daysAtLeast: 'Days at {{amount}} or more',
     daysLogged: 'Days logged',
-    monthsAveraging: 'Months averaging {{cups}}+',
+    monthsAveraging: 'Months averaging {{amount}}+',
     monthsLogged: 'Months logged',
 
     emptyTitle: 'No water logged in this range',
-    emptyBody: 'Tap a glass on Today and this fills in.',
+    emptyBody: 'Record a drink on Today and this fills in.',
   },
 
   weight: {

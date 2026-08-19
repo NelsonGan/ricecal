@@ -116,12 +116,12 @@ begin
   -- quietly undo a user's own choice.
   insert into public.daily_goals as g (
     user_id, effective_from, kcal, carbs_g, protein_g, fat_g,
-    water_glasses, is_custom
+    water_ml, is_custom
   )
   values (
     v_user_id, v_today,
     v_computed.kcal, v_computed.carbs_g, v_computed.protein_g, v_computed.fat_g,
-    coalesce(v_current.water_glasses, 8),
+    coalesce(v_current.water_ml, 2000),
     false
   )
   on conflict (user_id, effective_from) do update

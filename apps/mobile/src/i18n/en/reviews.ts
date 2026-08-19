@@ -163,7 +163,8 @@ export const reviews = {
     stepsChart: 'Steps a day',
     others: 'OTHERS',
     water: 'Water',
-    waterValue: '{{value}} cups',
+    /** A daily average, in whichever unit `volume()` chose for it. */
+    waterValue: '{{amount}} a day',
     waterNote_one: 'Full on one day',
     waterNote_other: 'Full on {{count}} days',
     move: 'Active minutes',
