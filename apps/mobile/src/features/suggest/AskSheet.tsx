@@ -5,7 +5,7 @@ import { View } from 'react-native'
 
 import type { Cuisine, Focus, Meal } from '@/data'
 import { useMealTimes, useUserId } from '@/data'
-import { Badge, Button, Chip, Icon, Sheet, Slider, Stepper, Tappable, Text } from '@/ui'
+import { Button, Chip, Icon, Sheet, Slider, Stepper, Text } from '@/ui'
 import {
   CUISINES,
   defaultKcal,
@@ -174,64 +174,51 @@ export function AskSheet({
            * "Healthier" and "Anything" would read as a choice of equal weight
            * with the cuisine and the macros.
            *
-           * Its own colour changes with it — pandan for the lean, kaya for the
-           * other — so the state is legible without reading the word, which is
-           * what a control has to manage when it is this small.
+           * ALWAYS `selected`, so it is always the raised, filled chip — what
+           * changes is its COLOUR, pandan for the lean and kaya for the other.
+           * An unselected chip would read as a thing that is off rather than as
+           * the other half of a switch, and "Anything" is not off; it is the
+           * second of two answers. The colour carries the state, so it is
+           * legible without reading the word.
            */}
-          <Tappable
+          <Chip
+            selected
+            tone={healthy ? 'pandan' : 'kaya'}
             onPress={() => setHealthy((on) => !on)}
             accessibilityRole="switch"
             accessibilityState={{ checked: healthy }}
             accessibilityLabel={t('suggest:ask.healthyA11y')}
+            leftIcon={<Icon set="food" name={healthy ? 'leafy-greens' : 'burger'} size={18} />}
           >
-            <Badge tone={healthy ? 'pandan' : 'kaya'}>
-              <Icon set="food" name={healthy ? 'leafy-greens' : 'burger'} size={16} />
-              <Text variant="caption" className={healthy ? 'text-pandan-ink' : 'text-kaya-ink'}>
-                {t(healthy ? 'suggest:ask.healthy' : 'suggest:ask.anything')}
-              </Text>
-            </Badge>
-          </Tappable>
-
-          {/* What is left of the day, beside the question it is asked against.
-           *
-           * It was a green caption under the slider, which is where a figure
-           * goes when nobody has decided where it belongs: three sections below
-           * the heading, under the one control it is context FOR, and read
-           * after the ceiling had already been set.
-           *
-           * Absent on an account with no budget, and on a day already spent:
-           * "0 kcal left" beside a question about what to eat is a sentence
-           * about failure, and this screen is not the place for it.
-           */}
-          {showLeft && kcalLeft > 0 ? (
-            // NEUTRAL, and it is the one badge on this sheet that should be.
-            // Pandan would collide with the toggle beside it whenever the lean
-            // is on, and water means DRINKING water everywhere else in the app —
-            // a blue pill carrying a calorie figure is the colour system saying
-            // something untrue. This is a reading rather than a state, and grey
-            // is what a reading looks like.
-            <Badge tone="neutral">
-              <Text variant="caption">
-                {t('suggest:ask.leftToday', { kcal: kcalLeft.toLocaleString() })}
-              </Text>
-            </Badge>
-          ) : null}
+            {t(healthy ? 'suggest:ask.healthy' : 'suggest:ask.anything')}
+          </Chip>
         </View>
       }
       closeLabel={t('common:action.close')}
       footer={
-        <Button
-          onPress={() => {
-            // Saved when the question is ASKED. A chip tapped and tapped back is
-            // not a preference, and neither is a sheet opened and dismissed.
-            savePreferences(userId, { focus, cuisine, healthy })
-            onAsk({ meal, focus, cuisine, healthy, kcalLimit })
-          }}
-          loading={busy}
-          leftIcon={<Icon set="system" name="sparkle" size={22} />}
-        >
-          {t('ask.action')}
-        </Button>
+        // CENTRED and sized to its words, not stretched across the sheet. A
+        // full-width bar is the shape of a form's Save, which commits what is
+        // above it; this sends a question and closes the sheet behind it. The
+        // same shape the picks sheet's own action had before it became a glyph.
+        <View className="items-center">
+          <Button
+            /* `self-center`, because `Button` puts `self-start` on its own
+               container and a child's own alignment beats the parent's
+               `items-center`. The same trap the sparkle on Today's calorie card
+               fell into. */
+            className="self-center"
+            onPress={() => {
+              // Saved when the question is ASKED. A chip tapped and tapped back is
+              // not a preference, and neither is a sheet opened and dismissed.
+              savePreferences(userId, { focus, cuisine, healthy })
+              onAsk({ meal, focus, cuisine, healthy, kcalLimit })
+            }}
+            loading={busy}
+            leftIcon={<Icon set="system" name="sparkle" size={22} />}
+          >
+            {t('ask.action')}
+          </Button>
+        </View>
       }
     >
       <View className="gap-md">
@@ -265,7 +252,23 @@ export function AskSheet({
         </Group>
 
         <View className="gap-sm">
-          <Text variant="overlineSm">{t('ask.limit')}</Text>
+          {/* The section's label and what is left of the day, on one line and at
+              one size. The figure was a pill beside the sheet's title, which put
+              it three sections above the only control it is context FOR; here it
+              is read WITH the ceiling being set against it, and at the label's
+              own weight it annotates the section rather than competing with it.
+
+              Absent on an account with no budget, and on a day already spent:
+              "0 kcal left" beside a question about what to eat is a sentence
+              about failure, and this screen is not the place for it. */}
+          <View className="flex-row items-center justify-between gap-md">
+            <Text variant="overlineSm">{t('ask.limit')}</Text>
+            {showLeft && kcalLeft > 0 ? (
+              <Text variant="overlineSm" className="text-pandan-ink">
+                {t('suggest:ask.leftToday', { kcal: kcalLeft.toLocaleString() })}
+              </Text>
+            ) : null}
+          </View>
           {/* The stepper and the slider are one control in two grips, not two
               controls. Fifty at a time is how somebody arrives at "about 500",
               and the slider is how they find out that 500 is most of what is

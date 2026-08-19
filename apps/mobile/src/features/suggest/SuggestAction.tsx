@@ -1,21 +1,18 @@
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
 
 import type { SuggestRequest } from '@/data'
 import { useSuggestMeals } from '@/data'
 import { announceRefusal } from '@/data/refusals'
 import { track } from '@/lib/analytics'
-import { useThemeColors } from '@/theme/useTheme'
-import { Card, Icon, Tappable, Text, useToast } from '@/ui'
+import { Icon, IconButton, useToast } from '@/ui'
 import { useRequirePro } from '../paywall'
 import { AskSheet } from './AskSheet'
-import { PICK_COUNT } from './ask'
 import { PicksSheet } from './PicksSheet'
 import { useSuggestedPicks } from './picks'
 
-export type SuggestCardProps = {
+export type SuggestActionProps = {
   /** The day the suggestion is about, and the budget it is set against. */
   date: string
   kcalLeft: number
@@ -24,7 +21,7 @@ export type SuggestCardProps = {
 }
 
 /**
- * "Not sure what to eat?" on Today, and the whole flow behind it.
+ * The sparkle on the calorie card, and the whole flow behind it.
  *
  * The card is the entry point and it OWNS THE TWO SHEETS, rather than Today
  * owning them. Everything about this feature is a conversation with one button:
@@ -37,15 +34,17 @@ export type SuggestCardProps = {
  * picks reach it through `SuggestProvider` — see `picks.tsx` for why a
  * suggestion has no id to put in a route.
  *
- * IT SITS UNDER THE RING, above the day's meals. That is where the question is
+ * IT SITS ON THE CALORIE CARD, beside the ring. That is where the question is
  * asked: the ring has just said how much room is left, and this is the offer to
- * do something with it.
+ * do something with it. It was a tinted card of its own under that one, headed
+ * "Not sure what to eat?" with a line about how many picks it would give, which
+ * is a lot of screen for an offer standing between the two things the diary is
+ * actually about.
  */
-export function SuggestCard({ date, kcalLeft, hasBudget }: SuggestCardProps) {
+export function SuggestAction({ date, kcalLeft, hasBudget }: SuggestActionProps) {
   const { t } = useTranslation('suggest')
   const router = useRouter()
   const toast = useToast()
-  const colors = useThemeColors()
   const requirePro = useRequirePro()
   const { picks, request, set, clear } = useSuggestedPicks()
   const suggest = useSuggestMeals()
@@ -133,42 +132,34 @@ export function SuggestCard({ date, kcalLeft, hasBudget }: SuggestCardProps) {
 
   return (
     <>
-      {/* A tinted card rather than a white one, and the only one on this screen.
-          Every other card here reports something that happened; this one offers
-          something, and the offer has to be distinguishable from the diary at a
-          glance or it reads as another row of the day. */}
-      <Card tone="pandan" contentClassName="p-4">
-        <Tappable
-          className="flex-row items-center gap-3"
-          onPress={() => {
-            if (!requirePro('suggest')) return
-            setAsking(true)
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={t('card.title')}
-        >
-          <View className="h-[42px] w-[42px] items-center justify-center rounded-tile bg-surface">
-            <Icon set="system" name="sparkle" size={24} />
-          </View>
-          <View className="min-w-0 flex-1 gap-0.5">
-            <Text variant="bodyStrong" className="text-heading">
-              {t('card.title')}
-            </Text>
-            <Text variant="caption" className="text-pandan-ink">
-              {/* What the picks will be measured against, when there is one.
-                  A budget is the whole premise of the offer, so an account that
-                  has not finished onboarding gets the plainer sentence rather
-                  than "picks that fit your 0 kcal left". */}
-              {hasBudget && kcalLeft > 0
-                ? t('card.withBudget', { count: PICK_COUNT, kcal: kcalLeft.toLocaleString() })
-                : t('card.plain', { count: PICK_COUNT })}
-            </Text>
-          </View>
-          {/* Tinted, like every other chevron in the app: the illustration's
-              own blue is the one colour on this card that means nothing. */}
-          <Icon set="ui" name="chevron-right" size={18} tintColor={colors.pandanInk} />
-        </Tappable>
-      </Card>
+      {/* A GLYPH ON THE CALORIE CARD, not a card of its own.
+       *
+       * It was a full-width tinted card under the ring, headed "Not sure what to
+       * eat?" with a line about how many picks it would give — which is a lot of
+       * screen for an offer, sitting between the two things the diary is
+       * actually about. As a button it is the same offer at a tenth of the cost,
+       * and it is ON the card that states the number it answers: the ring says
+       * how much room is left, and this is what to do with it.
+       *
+       * Raised and pandan-filled, because it is the only thing on that card that
+       * is a CONTROL. Everything else there is a reading.
+       */}
+      <IconButton
+        size="sm"
+        variant="primary"
+        /* `self-center`, because `IconButton` puts `self-start` on its own
+           container and a child's own alignment beats the row's `items-center`.
+           Without it the glyph sits at the top of a 132pt ring rather than
+           beside the middle of it. */
+        className="self-center"
+        onPress={() => {
+          if (!requirePro('suggest')) return
+          setAsking(true)
+        }}
+        accessibilityLabel={t('card.title')}
+      >
+        <Icon set="system" name="sparkle" size={24} />
+      </IconButton>
 
       <AskSheet
         visible={asking}

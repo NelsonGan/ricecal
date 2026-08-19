@@ -1,22 +1,16 @@
 export const suggest = {
-  /** The offer on Today, under the ring. */
+  /**
+   * The offer on Today, which is now a glyph on the calorie card rather than a
+   * card of its own — so this is what a screen reader says for it, and the only
+   * words it has.
+   */
   card: {
     title: 'Not sure what to eat?',
-    /** With a budget in force, which is the case this feature is for. */
-    withBudget: 'Get {{count}} picks that fit your {{kcal}} kcal left',
-    /** Before onboarding has computed one, or on a day already over. */
-    plain: 'Get {{count}} ideas for your next meal',
   },
 
   /** L7 ASK MODAL. Every control opens on an answer, so none of this is a prompt. */
   ask: {
-    /**
-     * Short, because the title's line now carries two pills as well: the lean
-     * and what is left of the day. "What are you after?" truncated to "What are
-     * you…" beside them, and a heading with an ellipsis in it is worse than a
-     * shorter heading.
-     */
-    title: 'What next?',
+    title: 'What are you after?',
     meal: 'MEAL',
     focus: 'MACROS',
     cuisine: 'CUISINE',

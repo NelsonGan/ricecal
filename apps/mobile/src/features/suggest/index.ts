@@ -9,9 +9,8 @@ export {
   MEALS,
   MIN_KCAL,
   mealAt,
-  PICK_COUNT,
   REASON_ICONS,
 } from './ask'
 export { PicksSheet, type PicksSheetProps } from './PicksSheet'
 export { type PicksValue, SuggestProvider, useSuggestedPicks } from './picks'
-export { SuggestCard, type SuggestCardProps } from './SuggestCard'
+export { SuggestAction, type SuggestActionProps } from './SuggestAction'
