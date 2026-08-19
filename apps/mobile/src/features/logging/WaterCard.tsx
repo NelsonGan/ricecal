@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { type Ref, useImperativeHandle, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TextInput, View } from 'react-native'
 
@@ -180,6 +180,15 @@ export function WaterCard({
  * `scrollable={false}` for the reason short content always is: a scroll view
  * scrolls itself to reveal the first responder and overshoots on the first
  * open, before the pad's real height is known.
+ *
+ * THE FIELD IS FOCUSED THE MOMENT THE PANEL IS PRESENTED, so a volume none of
+ * the presets covers is a number away rather than a tap and then a number. It
+ * costs the presets nothing: the pad rises under them and the panel grows by
+ * its height, so all three are still on screen and still one tap.
+ *
+ * `onShow` rather than `autoFocus`, because a field inside a `Modal` mounts
+ * before the platform has presented the window and the focus is dropped. See
+ * `onShow` on `Sheet`, and `FixSheet`, which does the same for the keyboard.
  */
 function AddWaterSheet({
   visible,
@@ -194,9 +203,15 @@ function AddWaterSheet({
   toGo: number
 }) {
   const { t } = useTranslation(['logging', 'common'])
+  const amount = useRef<CustomAmountHandle>(null)
 
   return (
-    <Sheet visible={visible} onClose={onClose} scrollable={false}>
+    <Sheet
+      visible={visible}
+      onClose={onClose}
+      scrollable={false}
+      onShow={() => amount.current?.focus()}
+    >
       {/* The heading is content rather than the `title` prop, so what is left of
           the goal can sit on the same line, right aligned. `app/log/index.tsx`
           does exactly this with "1,460 kcal left", and the two sheets are the
@@ -233,10 +248,13 @@ function AddWaterSheet({
       {/* Remounted on every open, which is how the draft is forgotten. A `Sheet`
           is a `Modal` that stays in the tree with `visible={false}`, so a number
           typed and abandoned would otherwise still be there next time. */}
-      <CustomAmount key={visible ? 'open' : 'shut'} onRecord={onRecord} />
+      <CustomAmount ref={amount} key={visible ? 'open' : 'shut'} onRecord={onRecord} />
     </Sheet>
   )
 }
+
+/** The one verb the sheet needs off the field. See `CustomAmount`. */
+type CustomAmountHandle = { focus: () => void }
 
 /**
  * A volume none of the presets covers.
@@ -247,8 +265,19 @@ function AddWaterSheet({
  * finds the host in `Screen` instead, and the pad opens on the screen, behind
  * the sheet's native window. The field is focused, the system keyboard is
  * suppressed, and nothing appears to type with.
+ *
+ * Which is also why the sheet reaches IN here to focus it rather than the field
+ * reaching out: the input's ref belongs to `useNumpadField`, which owns it and
+ * spreads it on last, so the only thing worth handing back up is the one verb
+ * the sheet needs.
  */
-function CustomAmount({ onRecord }: { onRecord: (ml: number) => void }) {
+function CustomAmount({
+  ref,
+  onRecord,
+}: {
+  ref?: Ref<CustomAmountHandle>
+  onRecord: (ml: number) => void
+}) {
   const { t } = useTranslation(['logging', 'common'])
   const colors = useThemeColors()
   const [typed, setTyped] = useState('')
@@ -270,6 +299,10 @@ function CustomAmount({ onRecord }: { onRecord: (ml: number) => void }) {
     // anybody who cannot see that layout was reading them from anyway.
     returnKeyType: 'done',
   })
+
+  // `numpad.ref` is the hook's own `useRef` and never changes identity, so this
+  // handle is written once and the sheet's `onShow` always finds a live input.
+  useImperativeHandle(ref, () => ({ focus: () => numpad.ref.current?.focus() }), [numpad.ref])
 
   return (
     <>
