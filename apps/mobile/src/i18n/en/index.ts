@@ -8,6 +8,7 @@ import { profile } from './profile'
 import { progress } from './progress'
 import { recipes } from './recipes'
 import { reviews } from './reviews'
+import { suggest } from './suggest'
 
 /**
  * The English bundle, and the shape every other locale must satisfy.
@@ -29,6 +30,7 @@ export const en = {
   paywall,
   recipes,
   reviews,
+  suggest,
 } as const
 
 export type Resources = typeof en

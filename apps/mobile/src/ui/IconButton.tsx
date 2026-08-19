@@ -12,6 +12,25 @@ const tones = {
 } as const
 
 const sizes = {
+  /**
+   * As tall as a line of `subtitle` text, for a control that shares a heading's
+   * line — the suggestion glyph beside "Log a dish". Anything larger makes the
+   * heading's row taller than the heading.
+   *
+   * The 44pt floor is MOVED rather than waived here too, and further: a caller
+   * owes this one a `hitSlop` of 8.
+   */
+  xxs: { box: 'w-[28px] h-[28px]', radius: radius.sm - 4, depth: slab.sm },
+  /**
+   * Smaller than the 44pt floor, and only where the button has to LINE UP with
+   * something that is not a button — the view toggle beside the streak badge on
+   * Today, which reads as a mismatched pair at any other height.
+   *
+   * The floor is not waived, it is moved: a caller using this owes the control a
+   * `hitSlop` that takes the touch target back to 44. `IconButton` cannot supply
+   * one itself, because the slop it needs depends on what is next to it.
+   */
+  xs: { box: 'w-[38px] h-[38px]', radius: radius.sm - 2, depth: slab.sm },
   /** The floor for anything tappable. */
   sm: { box: 'w-[44px] h-[44px]', radius: radius.sm, depth: slab.sm },
   md: { box: 'w-[56px] h-[56px]', radius: 18, depth: slab.md },
