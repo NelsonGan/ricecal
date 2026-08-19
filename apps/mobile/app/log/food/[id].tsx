@@ -1123,6 +1123,11 @@ export default function FoodDetail() {
    * is a capture and a share sheet and nothing else: no frames to wait for and
    * no preview to approve. See `ShareOutcome` for why a dismissal is not an
    * error.
+   *
+   * What goes out is the PICTURE, on its own. The sentence below is the Android
+   * fallback — that platform's share intent cannot carry a file, so it is the
+   * sentence or nothing there — and iOS never sends it: the card already says
+   * the dish and the total, and a caption repeating them is the same meal twice.
    */
   const sendMeal = async () => {
     const outcome = await shareMeal.share(
