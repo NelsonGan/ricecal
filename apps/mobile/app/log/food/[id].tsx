@@ -39,6 +39,7 @@ import {
   FixSheet,
   IconPicker,
   instantOn,
+  MealShareCard,
   NO_FIGURES,
   NutritionSheet,
   type PartEdits,
@@ -48,6 +49,7 @@ import {
   sameClock,
   stagedParts,
   type TypedFigures,
+  useMealShare,
 } from '@/features/logging'
 import { useRequirePro } from '@/features/paywall'
 import { formatTime, MacroBars, MealPhoto } from '@/features/shared'
@@ -201,6 +203,9 @@ export default function FoodDetail() {
   const removeEntry = useRemoveEntry()
   const { data: targets } = useTargets()
   const { selectedDate, todayKey } = useSelectedDate()
+  // The card this sends is drawn off to the side of the page — see `MealShareCard`
+  // at the foot of the content, and the button on the photograph.
+  const shareMeal = useMealShare()
 
   const params = useLocalSearchParams<{ id: string; entryId?: string }>()
   // `ENTRY_FOOD_ID` is the placeholder a row with no catalogue food behind it
@@ -1089,6 +1094,44 @@ export default function FoodDetail() {
     finish()
   }
 
+  /**
+   * The dish, as the entry itself names it, wherever it is read.
+   *
+   * The staged name first — the entry's own `display_label` — then the row's,
+   * then the catalogue's, which is the same order the heading under the
+   * photograph reads in. The catalogue's is the last resort for a reason: it is
+   * the one that says "MEAL KIT, KOREAN FRIED CHICKEN WITH SWEET GOCHUJANG
+   * SAUCE".
+   */
+  const dishName = name.trim() || existing?.foodName || food.name
+
+  /**
+   * The photograph the shared card carries, which is the one on screen or none.
+   *
+   * `hero` alone is not that condition. A row holds a photo or a drawing and
+   * never both, so choosing a drawing leaves the photo in place until the write
+   * lands — the tile above is already showing the drawing while `hero` is still
+   * a picture. Read separately in two places this drifted: the card drew the
+   * drawing and the event said "photo".
+   */
+  const sharePhoto = hero && !icon ? hero : null
+
+  /**
+   * Send this meal as a picture.
+   *
+   * The card is already drawn and laid out off to the side of the page, so this
+   * is a capture and a share sheet and nothing else: no frames to wait for and
+   * no preview to approve. See `ShareOutcome` for why a dismissal is not an
+   * error.
+   */
+  const sendMeal = async () => {
+    const outcome = await shareMeal.share(
+      t('logging:share.text', { food: dishName, kcal: Math.round(macros.kcal).toLocaleString() }),
+    )
+    if (outcome === 'sent') track('Meal Shared', { picture: sharePhoto ? 'photo' : 'drawing' })
+    if (outcome === 'failed') toast.show({ title: t('logging:share.failed'), tone: 'error' })
+  }
+
   const remove = () => {
     if (existing) {
       removeEntry.mutate({
@@ -1242,8 +1285,14 @@ export default function FoodDetail() {
             <Icon set="ui" name="chevron-left" size={20} tintColor={colors.muted} />
           </IconButton>
 
-          {/* THE TWO THINGS YOU CAN DO TO THE WHOLE ENTRY, together, in the order
-              of least to most destructive: edit it, then throw it away.
+          {/* THE THINGS YOU CAN DO TO THE WHOLE ENTRY, together, in the order of
+              least to most destructive: send a picture of it, correct it, throw
+              it away.
+
+              Share is first because it changes nothing at all — it is the one
+              control up here that only reads. It also puts the most destructive
+              button furthest from the one somebody reaches for casually, which
+              is the reason this row is ordered rather than grouped.
 
               The pencil was on the line under the title and it did not belong
               there — that line is the entry's date, and a control at the end of it
@@ -1258,9 +1307,24 @@ export default function FoodDetail() {
               the confirmation, which is what makes a one-tap destructive control
               in the chrome safe.
 
-              Both are absent while composing a new entry: there is nothing logged
-              to delete, and nothing whose name and time can be corrected. */}
+              All three are absent while composing a new entry: there is nothing
+              logged to send, nothing to delete, and nothing whose name and time
+              can be corrected. */}
           <View className="flex-row gap-2">
+            {existing ? (
+              <IconButton
+                size="sm"
+                accessibilityLabel={t('logging:detail.shareEntry')}
+                disabled={shareMeal.sharing}
+                onPress={() => void sendMeal()}
+              >
+                {/* Tinted, like the chevron and the bin: the way out, the way to
+                    share and the way to delete are chrome, and the pencil between
+                    them is the one glyph whose colour carries its meaning. */}
+                <Icon set="ui" name="share" size={20} tintColor={colors.muted} />
+              </IconButton>
+            ) : null}
+
             {existing && clock ? (
               <IconButton
                 size="sm"
@@ -1326,9 +1390,8 @@ export default function FoodDetail() {
             name here is whatever the model or the user wrote — "Nasi Lemak with
             Fried Chicken with pineapple juice" — and on one line that truncates to
             three words and an ellipsis, which is a meal nobody can recognise on
-            the screen for checking it. Read from the STAGED name first: the
-            entry's own `display_label`, not the catalogue row's ("MEAL KIT, KOREAN
-            FRIED CHICKEN WITH SWEET GOCHUJANG SAUCE").
+            the screen for checking it. `dishName` is where the fallback order
+            lives, because the shared card reads the same name.
 
             The time under it is the same pair of facts the diary row prints under
             a dish name — the day off `log_date`, the time off `logged_at` — and it
@@ -1345,7 +1408,7 @@ export default function FoodDetail() {
             that screen has already asked. */}
         <View className="gap-1">
           <Text variant="title" numberOfLines={2}>
-            {name.trim() || existing?.foodName || food.name}
+            {dishName}
           </Text>
           {existing && clock ? (
             <Text variant="meta">
@@ -1669,6 +1732,24 @@ export default function FoodDetail() {
           confirmLabel={t('common:action.delete')}
           tone="danger"
         />
+
+        {/* WHAT THE SHARE BUTTON SENDS. It draws itself where nobody can see it
+            — see the root view in `MealShareCard` — and is mounted for as long
+            as the entry is, so a tap is a capture rather than a mount, a layout,
+            a photograph and a share sheet in sequence.
+
+            It reads the same values this screen reads, from the same variables,
+            so a portion stepped or a macro typed a moment ago is on the picture,
+            and the plate somebody is looking at is the plate that gets sent. */}
+        {existing ? (
+          <MealShareCard
+            ref={shareMeal.card}
+            name={dishName}
+            macros={macros}
+            photo={sharePhoto}
+            icon={shownIcon}
+          />
+        ) : null}
       </View>
     </Screen>
   )
