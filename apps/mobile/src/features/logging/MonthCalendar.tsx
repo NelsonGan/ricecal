@@ -23,7 +23,8 @@ import { markFor } from './week'
 const PLACEHOLDER_ICON = { set: 'food', name: 'empty-plate' } as const
 
 /**
- * THE VERDICT IS THE CELL'S OUTLINE, in each of its three states.
+ * THE VERDICT IS THE CELL'S OUTLINE, in each of its three states, on both
+ * backgrounds.
  *
  * It was a dot: first under the picture, where it cost a row of the cell and the
  * plate had to shrink to pay for it, then laid over the plate's corner, where it
@@ -34,11 +35,16 @@ const PLACEHOLDER_ICON = { set: 'food', name: 'empty-plate' } as const
  * `missed` keeps the dashed line it already had, which is now one member of this
  * set rather than a special case: a day with nothing on it is the one outline
  * that is not a colour, because absence is not a result.
+ *
+ * TWO SPELLINGS EACH, for the same reason `DateStrip` carries two: the selected
+ * day is filled pandan, and a pandan outline on pandan is not an outline. Under
+ * goal is the one that has to change — over goal keeps kaya on both, because
+ * there the colour IS the message and a white outline would quietly delete it.
  */
-const outlines: Record<DateStripMark, string> = {
-  under: 'border-pandan',
-  over: 'border-kaya',
-  missed: 'border-line border-dashed',
+const outlines: Record<DateStripMark, { on: string; off: string }> = {
+  under: { on: 'border-on-pandan', off: 'border-pandan' },
+  over: { on: 'border-kaya', off: 'border-kaya' },
+  missed: { on: 'border-on-pandan/60 border-dashed', off: 'border-line border-dashed' },
 }
 
 /**
@@ -122,8 +128,13 @@ function Cell({ date, plate, mark, selected, ahead, onSelect, label }: CellProps
         'h-[66px] flex-1 items-center justify-center gap-0.5 rounded-[14px] px-0.5 py-1',
         BORDER,
         logged && 'bg-track',
-        mark && outlines[mark],
-        selected && 'bg-pandan-soft',
+        /* SOLID PANDAN, which is what selection looks like everywhere else in
+           this app — the week strip's selected day is the same fill. It was
+           `bg-pandan-soft`, which is two greys away from the `bg-track` a logged
+           day already has: picking one changed almost nothing on screen, and on
+           a month where most days are logged the selection was invisible. */
+        selected && 'bg-pandan',
+        mark && outlines[mark][selected ? 'on' : 'off'],
         ahead && 'opacity-40',
       )}
       onPress={ahead ? undefined : () => onSelect(date)}
@@ -135,7 +146,7 @@ function Cell({ date, plate, mark, selected, ahead, onSelect, label }: CellProps
       <Text
         className={cn(
           'font-display text-[11px] leading-[13px]',
-          selected ? 'text-pandan-ink' : 'text-faint',
+          selected ? 'text-on-pandan' : 'text-faint',
         )}
       >
         {parseISO(date).getDate()}
@@ -291,7 +302,7 @@ export function MonthCalendar({
       <View className="flex-row items-center gap-4">
         {(['under', 'over', 'missed'] as const).map((kind) => (
           <View key={kind} className="flex-row items-center gap-1.5">
-            <View className={cn('h-3 w-3 rounded-[5px] border-2', outlines[kind])} />
+            <View className={cn('h-3 w-3 rounded-[3px] border-2', outlines[kind].off)} />
             <Text variant="micro">{t(`calendar.legend.${kind}`)}</Text>
           </View>
         ))}
