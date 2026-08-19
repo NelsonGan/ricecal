@@ -119,8 +119,10 @@ paywall screen cannot know why it was opened. Then `Plan Selected` →
 `Purchase Started` → RevenueCat.
 
 **Retention.** `Health Connected`, `Reminder Toggled`, `Notification Opened`,
-`Review Opened`, `Review Card Shared`. Each is a hook that brings somebody back,
-and none of them can be counted from the diary.
+`Review Opened`, `Review Card Shared`, `Meal Shared`. Each is a hook that brings
+somebody back, and none of them can be counted from the diary. The last two
+carry the SHAPE of what left the app and never its contents — which kind of
+review, and whether the meal went out as a photograph or as an illustration.
 
 ---
 

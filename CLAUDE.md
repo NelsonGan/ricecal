@@ -698,8 +698,8 @@ boxes: the bar held the way out and the way to delete, the tile held the picture
 and between them they spent a fifth of the screen on things that are not the
 meal. The photograph goes edge to edge now (the `Screen` is `flush`, and one
 wrapper puts the gutter back for everything under it), the chrome sits over it —
-back on the left, the entry's pencil and the bin on the right, in that order,
-least to most destructive — and the dish name is the page's own heading
+back on the left, share, the entry's pencil and the bin on the right, in that
+order, least to most destructive — and the dish name is the page's own heading
 underneath, where it stopped truncating: a bar between two 44pt buttons had room
 for about three words of "Nasi Lemak with Fried Chicken with pineapple juice".
 The name and the time under it are ONE block rather than two stacked children, so
@@ -715,10 +715,30 @@ takes it back, so everything below stays where it was, and the floating chrome
 pads itself down past the notch. The trade is the status bar, which draws in the
 theme's colour over whatever is up there.
 
-The two ENTRY-level controls are together up there for a reason. The pencil was at
-the end of the date line, which read as "edit the date" when what it opens is the
-name and the when; beside the bin it reads as what it is — the other thing that
-acts on the whole entry — and the date line goes back to being a fact.
+The three ENTRY-level controls are together up there for a reason. The pencil was
+at the end of the date line, which read as "edit the date" when what it opens is
+the name and the when; beside the bin it reads as what it is — one of the things
+that act on the whole entry — and the date line goes back to being a fact. Share
+leads them because it is the one that changes nothing, which also puts the bin
+furthest from the button somebody reaches for casually.
+
+**A MEAL IS SHARED AS A PICTURE, and the picture is not a screenshot.**
+`features/logging/MealShareCard.tsx` is a card built for the purpose: the plate
+square and full width, the app's mark watermarked into its top corner, and one
+caption under it carrying the dish, the calorie total and the three macros. It
+is drawn OFF TO THE LEFT of the page at full opacity and photographed on demand
+(`lib/share.ts`, Skia's `makeImageFromView`, which the review cards already
+used), because the two other ways to hide a view both break the capture: the
+capture multiplies a view's own alpha into what it draws, so opacity comes out
+blank, and mounting it on the tap would mean waiting frames for a layout before
+there is anything to photograph. Mounted from the start, a tap is a capture and
+a share sheet and nothing else — no preview step, unlike a review card, which
+needs one only because a story has four cards on it and this has one.
+
+What is deliberately NOT on that card is the day, the time, and any comparison
+against a budget. Those are the diary's business rather than the plate's, and a
+card that says how far under goal somebody was is a card they have to think
+about before sending.
 
 **Each editable group carries one pencil**, and the pencil opens a sheet: the
 entry's own details (`DetailsSheet` — the name and the when), the figures
