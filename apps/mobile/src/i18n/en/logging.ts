@@ -418,11 +418,20 @@ export const logging = {
    * the screen reads them.
    */
   share: {
-    /** The watermark on the picture. Not translated: it is a name. */
+    /**
+     * The signature under the figures, in two halves. "Logged by" is the small
+     * half and the name is the half being said, so they are separate strings: a
+     * translation that wanted the name first can put it first, and neither can
+     * be interpolated into the other's weight.
+     */
+    loggedBy: 'Logged by',
+    /** The name on the picture. Not translated: it is a name. */
     brand: 'RiceCal',
     /**
-     * What goes out beside the picture, and INSTEAD of it on Android, where the
-     * share intent carries a message and nothing else.
+     * ANDROID ONLY, now. The share intent there carries a message and nothing
+     * else, so a meal shared on Android is this sentence or it is nothing. iOS
+     * sends the picture ALONE — the card already says the dish and the calories,
+     * and a sentence repeating them beside it is the same facts twice.
      */
     text: '{{food}}, {{kcal}} kcal. Logged with RiceCal',
     /**

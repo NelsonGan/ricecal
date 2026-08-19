@@ -22,6 +22,22 @@ import { cn, Icon, Text } from '@/ui'
 const CARD_WIDTH = 340
 
 /**
+ * And the card is SQUARE, at that width.
+ *
+ * The whole card rather than the plate inside it. A share of a meal is read in
+ * somebody else's feed or story, and every one of those places crops to a
+ * square or pads to one — so a card that is taller than it is wide is a card
+ * whose caption is the part that gets cut off, which is every figure on it.
+ * Sent square, what leaves the phone is what lands.
+ *
+ * The plate takes whatever the caption leaves, which is why the media box is
+ * `flex-1` rather than a height: the dish name runs to two lines on plenty of
+ * entries, and a fixed plate plus a caption that grew would have made the card
+ * square only for short names.
+ */
+const CARD_HEIGHT = CARD_WIDTH
+
+/**
  * Far enough to the left that no part of the card is on the screen. Absolute,
  * so it takes no space in whatever renders it. See the root view for why it is
  * placed rather than hidden.
@@ -29,32 +45,13 @@ const CARD_WIDTH = 340
 const OFFSCREEN = { position: 'absolute', left: -(CARD_WIDTH + 40), top: 0 } as const
 
 /**
- * The box a drawing gets, and the drawing in it.
+ * The drawing, when a dish has one instead of a photograph.
  *
- * Not a square. An illustration is drawn at a size and stays that size, so the
- * box is only as tall as it needs to be to give one room to breathe — the
- * detail screen's own hero makes the same distinction, 298 for a photograph and
- * 198 for a drawing.
+ * A size rather than a box: an illustration is drawn at a size and stays that
+ * size, so it is centred in whatever the caption leaves it rather than filling
+ * it the way a photograph does.
  */
-const DRAWING_HEIGHT = 215
 const DRAWING_SIZE = 165
-
-/**
- * The watermark: how far down it is turned, and the one colour in this file
- * that is a literal rather than a role.
- *
- * `src/ui/README.md` says never write a colour literal, and the reason it gives
- * is that a role resolves per mode where a hex does not. That reason does not
- * reach here: what this text sits on is a PHOTOGRAPH, which is not a themed
- * surface and does not get lighter when somebody turns dark mode off. White is
- * what a watermark is on a picture, in either mode, and naming a role would be
- * asking the palette a question it has no business answering.
- *
- * Every other colour on this card is a role, including the same wordmark when
- * there is no photograph under it.
- */
-const ON_PHOTO = '#FFFFFF'
-const WATERMARK_OPACITY = 0.88
 
 /** The three macro colours, in the order every chart in the app stacks them. */
 const MACROS = [
@@ -101,11 +98,18 @@ export type MealShareCardProps = {
  * pressed, or read by a screen reader. It exists to be photographed.
  *
  * THE PLATE IS THE CARD. A share of a meal is a share of the picture of it, so
- * the photograph takes the whole top at its own square and one caption sits
- * under it on the app's own surface. The colours are the design system's
+ * the photograph takes every pixel the caption does not need and one caption
+ * sits under it on the app's own surface. The colours are the design system's
  * unchanged — the same three macros in the same order as Today, the entry and
  * the weekly report, so somebody who has seen one of those reads this without a
  * legend — and only the type is set by hand, for the reason on `SMALL`.
+ *
+ * SQUARE, AND SQUARE-CORNERED. See `CARD_HEIGHT` for the first. The second
+ * follows from it: a rounded corner is what tells the eye a card is sitting ON
+ * something, and there is nothing under this one — it is not a tile in the app,
+ * it is the whole picture that leaves the phone. Rounded, it arrived in a feed
+ * with four little wedges of whatever that app paints behind an image, which is
+ * white in one client and black in the next.
  *
  * WHAT IS DELIBERATELY NOT ON IT: the day and the time it was eaten, any
  * comparison against a budget, and the portion. The first two are the diary's
@@ -134,8 +138,8 @@ export function MealShareCard({ name, macros, photo, icon, ref }: MealShareCardP
       // card hidden that way comes out blank. Nor is mounting it on the tap — a
       // view has to be laid out before it has a size to capture, so that would
       // be waiting frames for the layout and then for the photograph.
-      style={{ ...OFFSCREEN, width: CARD_WIDTH }}
-      className="overflow-hidden rounded-card bg-surface"
+      style={{ ...OFFSCREEN, width: CARD_WIDTH, height: CARD_HEIGHT }}
+      className="overflow-hidden bg-surface"
       // Out of the way is not enough on its own: nothing here may take a touch
       // meant for the page, and a screen reader must not walk into a second copy
       // of the page's own figures. The two a11y props are one platform each.
@@ -143,23 +147,22 @@ export function MealShareCard({ name, macros, photo, icon, ref }: MealShareCardP
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      {/* SQUARE FOR A PHOTOGRAPH, which is the shape the plate was framed in:
-          the viewfinder is a centre crop of what the shutter records and
-          `MealPhoto` crops back in by the same amount, so a square here is the
-          picture the person took rather than a rectangle cut out of it.
+      {/* WHAT THE CAPTION LEAVES, and nothing about the plate decides it. The
+          card is a fixed square and the caption is as tall as the dish name
+          makes it, so this is the remainder — which is the only way both halves
+          can be right at once. A height here instead, of any value, would have
+          made the card square for one length of name.
 
-          SHORTER FOR A DRAWING, which is the same call the detail screen makes
-          about its own hero and for the same reason. An illustration has a size
-          of its own and cannot fill a box the way a photograph does, so a square
-          left it as a small plate adrift in a third of the card, with the empty
-          tint above and below reading as a picture that failed to load.
+          A photograph FILLS it and crops: `MealPhoto` covers whatever box it is
+          given, and the viewfinder was already a centre crop of what the shutter
+          recorded, so what lands here is the middle of the frame the person
+          composed. A DRAWING is centred at its own size instead — an
+          illustration cannot fill a box the way a photograph does, and stretched
+          to one it reads as a picture that failed to load.
 
           `bg-surface-alt` under both, which is only ever seen behind a drawing:
           the tile the diary already puts an illustration on. */}
-      <View
-        style={{ width: CARD_WIDTH, height: photo ? CARD_WIDTH : DRAWING_HEIGHT }}
-        className="items-center justify-center overflow-hidden bg-surface-alt"
-      >
+      <View className="w-full flex-1 items-center justify-center overflow-hidden bg-surface-alt">
         {photo ? (
           <MealPhoto source={photo} />
         ) : (
@@ -168,44 +171,11 @@ export function MealShareCard({ name, macros, photo, icon, ref }: MealShareCardP
              typecheck against another. */
           <Icon {...(icon ?? PLACEHOLDER_ICON)} size={DRAWING_SIZE} />
         )}
-
-        {/* THE MARK, ON THE PLATE, top right, and a WATERMARK rather than a
-            badge. It was a surface pill for a moment and a pill is a control:
-            it read as something to press, sitting on a photograph where nothing
-            is pressable, and it took a bite out of the picture to say so.
-            Translucent, it belongs to the photograph instead of covering it.
-
-            WHAT COLOUR depends on what is behind it, and the two cases are not
-            the same kind of thing. A drawing sits on `surface-alt`, a themed
-            surface, so the wordmark is `faint` and follows the palette like any
-            other text in the app. A PHOTOGRAPH HAS NO THEME — it is whatever
-            somebody's dinner looked like — so there is no role to name and the
-            answer is white, the way a watermark is white everywhere.
-
-            The honest limit: white at this weight reads on most food, and not on
-            a pale plate shot from above against a white table. The badge was the
-            fix for that and it cost more than it was worth. The ICON carries its
-            own colours and its own frame, so even where the word fades the mark
-            is still legible as ours. */}
-        <View
-          className="absolute right-4 top-4 flex-row items-center gap-1.5"
-          style={{ opacity: WATERMARK_OPACITY }}
-        >
-          <Image source={MARK} style={{ width: 16, height: 16, borderRadius: 5 }} />
-          <Text
-            // The drawing's colour is a ROLE and follows the palette; the
-            // photograph's is not one, for the reason above, so it arrives as a
-            // style and the class list leaves the colour alone.
-            className={cn('font-body-bold text-[12px] leading-[16px]', !photo && 'text-faint')}
-            style={photo ? { color: ON_PHOTO } : undefined}
-          >
-            {t('logging:share.brand')}
-          </Text>
-        </View>
       </View>
 
-      {/* THE CAPTION. Two lines of text and a rule between them, and the second
-          line is every number on the card.
+      {/* THE CAPTION, and it is what makes the card square: the plate above
+          takes whatever is left after this. The dish, a rule that happens to be
+          three colours, every number on the card, and the app signing it.
 
           It started as a panel of headings — macro names in black uppercase
           over display figures, five rows deep — and what took it apart was
@@ -270,6 +240,33 @@ export function MealShareCard({ name, macros, photo, icon, ref }: MealShareCardP
             </View>
           ))}
         </View>
+
+        {/* THE SIGNATURE, and it is a line of prose rather than a mark stamped
+            on the picture. It sat top right on the plate for a while, white and
+            translucent, which is where a watermark goes when its job is to
+            survive being cropped out of — and it bought that at the price of the
+            one thing on the card anybody chose to send: it covered a corner of
+            the food, and on a pale plate shot against a white tablecloth it was
+            not legible anyway.
+
+            Down here it is on a themed surface, so every colour is a ROLE again
+            and the file has no hex in it. "Logged by" is `faint` and the name is
+            `muted` — one phrase, with the weight on the half that is a name.
+            Centred, under the figures, because it is the card signing itself
+            rather than a fourth fact about the meal.
+
+            SMALL ENOUGH TO BE READ SECOND. At 10pt against the total's 22 it is
+            the last thing on the card in every sense; the icon is sized to the
+            line rather than the line to the icon. */}
+        <View className="flex-row items-center justify-center gap-1.5 pt-0.5">
+          <Text className="font-body text-[10px] leading-[14px] text-faint">
+            {t('logging:share.loggedBy')}
+          </Text>
+          <Image source={MARK} style={{ width: 14, height: 14, borderRadius: 4 }} />
+          <Text className="font-body-bold text-[11px] leading-[14px] text-muted">
+            {t('logging:share.brand')}
+          </Text>
+        </View>
       </View>
     </View>
   )
@@ -289,8 +286,14 @@ export type ShareOutcome = 'sent' | 'dismissed' | 'failed'
 export type MealShare = {
   /** Goes on the card. What gets captured is whatever this points at. */
   card: RefObject<View | null>
-  /** Capture and hand it to the OS. */
-  share: (message: string) => Promise<ShareOutcome>
+  /**
+   * Capture and hand it to the OS.
+   *
+   * The picture goes out ALONE — see `pictureAlone` on `sharePicture`. The
+   * sentence is the ANDROID fallback and nothing else, because the share intent
+   * there cannot carry a file; it is not a caption, and iOS never sees it.
+   */
+  share: (androidText: string) => Promise<ShareOutcome>
   /** A capture and a share sheet are in flight. */
   sharing: boolean
 }
@@ -304,17 +307,22 @@ export type MealShare = {
  * card, it is a picture of the plate already filling the screen behind the
  * button, and a confirmation step would be asking somebody to approve their own
  * photograph.
+ *
+ * And THE PICTURE ALONE, with no sentence beside it. The card carries the dish,
+ * the calories and the macros already, so a message repeating them is the same
+ * meal described twice in one share sheet. What the argument is for is Android,
+ * which cannot send the file at all.
  */
 export function useMealShare(): MealShare {
   const card = useRef<View>(null)
   const [sharing, setSharing] = useState(false)
 
-  const share = useCallback(async (message: string): Promise<ShareOutcome> => {
+  const share = useCallback(async (androidText: string): Promise<ShareOutcome> => {
     setSharing(true)
     try {
       const shot = await captureView(card)
       if (!shot) return 'failed'
-      return (await sharePicture(shot, message)) ? 'sent' : 'dismissed'
+      return (await sharePicture(shot, androidText, { pictureAlone: true })) ? 'sent' : 'dismissed'
     } catch {
       // Writing the file, and the share sheet itself. Neither is something the
       // screen can do anything about beyond saying so.
