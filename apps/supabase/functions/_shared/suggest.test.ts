@@ -51,6 +51,63 @@ Deno.test('falls back rather than dropping, for everything else', () => {
   assertEquals(shaped.why[0].kind, 'calories')
 })
 
+Deno.test('takes a breakfast sentence off a dinner, and keeps the dish', () => {
+  const [shaped] = shapePicks(
+    {
+      picks: [
+        pick({
+          why: [
+            { kind: 'protein', text: 'Rendang provides protein to start your day.' },
+            { kind: 'taste', text: 'Grilled over charcoal, so it stays light.' },
+          ],
+        }),
+      ],
+    },
+    'dinner',
+  )
+  assertEquals(shaped.why.length, 1)
+  assertEquals(shaped.why[0].kind, 'taste')
+})
+
+Deno.test('follows the phrase when it mutates', () => {
+  // Pinned on "start your day" it came back as "start your daily intake".
+  const dropped = (text: string) =>
+    shapePicks(
+      {
+        picks: [
+          pick({
+            why: [
+              { kind: 'protein', text },
+              { kind: 'taste', text: 'Charcoal grilled and light with it.' },
+            ],
+          }),
+        ],
+      },
+      'dinner',
+    )[0].why.length === 1
+
+  assertEquals(dropped('Provides protein to start your daily intake.'), true)
+  assertEquals(dropped("A good start to your day's eating."), true)
+  assertEquals(dropped('Warming after a long day at work.'), false)
+})
+
+Deno.test('never empties a pick to enforce that', () => {
+  // Losing a DISH to a badly worded sentence is a worse answer than the
+  // sentence, so a pick whose only reason is wrong keeps it.
+  const [shaped] = shapePicks(
+    { picks: [pick({ why: [{ kind: 'protein', text: 'A good start to your day.' }] })] },
+    'dinner',
+  )
+  assertEquals(shaped.why.length, 1)
+})
+
+Deno.test('leaves breakfast talk alone when it IS breakfast', () => {
+  const why = [{ kind: 'carbs', text: 'Sets you up for the morning.' }]
+  assertEquals(shapePicks({ picks: [pick({ why })] }, 'breakfast')[0].why.length, 1)
+  // And when nothing said which sitting it is.
+  assertEquals(shapePicks({ picks: [pick({ why })] })[0].why.length, 1)
+})
+
 Deno.test('puts a capital on a name the model sent in lower case', () => {
   // It answers in the register of the icon list: `nasi-lemak`, `teh-tarik`.
   assertEquals(shapePicks({ picks: [pick({ name: 'nasi-lemak' })] })[0].name, 'Nasi lemak')
