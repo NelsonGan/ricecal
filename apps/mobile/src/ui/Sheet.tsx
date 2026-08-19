@@ -80,6 +80,17 @@ export type SheetProps = {
    */
   closeLabel?: string
   title?: string
+  /**
+   * One control on the title's own line, right aligned — a refresh, a close, a
+   * filter.
+   *
+   * Beside the heading rather than in the `footer` because some sheet actions
+   * are about the panel rather than about what is IN it: a full-height sheet
+   * has no footer to put them in, and a sheet whose body is a list would push
+   * such a control off the bottom. Ignored when there is no `title`, since
+   * there would be no line to sit on.
+   */
+  titleAction?: ReactNode
   description?: string
   /** Pinned below the scrollable body — the action row. */
   footer?: ReactNode
@@ -169,6 +180,7 @@ export function SheetSurface({
   onClose,
   closeLabel = 'Close',
   title,
+  titleAction,
   description,
   footer,
   scrollable = true,
@@ -425,7 +437,14 @@ export function SheetSurface({
               </Pressable>
             </GestureDetector>
 
-            {title ? <Text variant="subtitle">{title}</Text> : null}
+            {title ? (
+              <View className="flex-row items-center justify-between gap-md">
+                <Text variant="subtitle" className="flex-1" numberOfLines={1}>
+                  {title}
+                </Text>
+                {titleAction}
+              </View>
+            ) : null}
             {description ? <Text variant="body">{description}</Text> : null}
 
             {children ? body : null}

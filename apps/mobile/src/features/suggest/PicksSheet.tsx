@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
+import Animated, { FadeIn } from 'react-native-reanimated'
 
 import type { MealPick, SuggestRequest } from '@/data'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, EmptyState, Icon, ProgressBar, Sheet, Skeleton, Text } from '@/ui'
+import { EmptyState, Icon, IconButton, Sheet, Text } from '@/ui'
 import { ItemRow } from '../shared/ItemRow'
+import { Thinking } from './Thinking'
 
 export type PicksSheetProps = {
   visible: boolean
@@ -12,7 +14,7 @@ export type PicksSheetProps = {
   /** Null while the first answer is still coming. */
   request: SuggestRequest | null
   picks: MealPick[]
-  /** The model is working. Draws L8 THINKING in place of the list. */
+  /** The model is working. Draws the wait in place of the list. */
   busy: boolean
   onRetry: () => void
   onPressPick: (index: number) => void
@@ -40,64 +42,36 @@ function Summary({ request }: { request: SuggestRequest }) {
 }
 
 /**
- * L8 THINKING: the wait, with the question still on screen.
- *
- * The progress bar is INDETERMINATE-looking but is not animated to a number,
- * because there is no number: one model call takes between five and fifteen
- * seconds and nothing on this side knows where in that it is. What it is for is
- * the same thing the skeleton rows are for — saying that five rows are coming,
- * so the sheet does not resize under the reader when they arrive.
- *
- * The question is repeated above it deliberately. The sheet that asked it has
- * closed, and ten seconds is long enough to stop being sure what was asked.
- */
-function Thinking({ request }: { request: SuggestRequest | null }) {
-  const { t } = useTranslation('suggest')
-
-  return (
-    <View className="gap-md">
-      <View className="flex-row items-center gap-3">
-        <View className="h-[52px] w-[52px] items-center justify-center rounded-tile bg-pandan-soft">
-          <Icon set="system" name="sparkle" size={28} />
-        </View>
-        <View className="min-w-0 flex-1 gap-0.5">
-          <Text variant="bodyStrong">
-            {t('picks.thinking', { meal: request ? t(`mealFor.${request.meal}`) : '' })}
-          </Text>
-          {request ? <Summary request={request} /> : null}
-        </View>
-      </View>
-
-      <ProgressBar value={0.66} accessibilityLabel={t('picks.thinkingA11y')} />
-
-      <View className="gap-2">
-        <Skeleton className="h-[72px] w-full" />
-        <Skeleton className="h-[72px] w-full" />
-        <Skeleton className="h-[72px] w-full" />
-      </View>
-    </View>
-  )
-}
-
-/**
  * L9 PICKS SHEET: five things to eat, and the way back to the question.
  *
  * ONE SHEET FOR THE WAIT AND THE ANSWER, rather than a thinking sheet that
  * closes and a picks sheet that opens. Two modals in sequence is two rises, two
  * scrims and a frame of the diary in between; the panel is already up when the
- * answer lands, so the answer simply replaces the skeleton inside it.
+ * answer lands, so the answer simply replaces the wait inside it.
+ *
+ * FULL HEIGHT, so the panel is the same size throughout. A capped sheet sizes
+ * itself to its content, so the wait and the answer would be two different
+ * heights and the panel would jump at the one moment this screen has to feel
+ * settled — with the reader's eye on it. At full height nothing moves but the
+ * content, which is also why the wait draws FIVE skeleton rows rather than
+ * three: it stands in for exactly what is coming.
+ *
+ * TRY AGAIN IS AN ICON, on the title's line. It was a full-width footer button,
+ * which is the shape of a primary action — and on a screen whose whole point is
+ * the five things above it, "ask again" is the secondary one. As a glyph beside
+ * the heading it stays reachable and quiet, and it leaves the panel with no
+ * footer at all, so the list runs the full height of the sheet.
  *
  * The rows are `ItemRow`, which is what every other list in this app is made
  * of, and the detail under each name is its PROTEIN. That is a choice about
- * this screen and not a default: the calorie figure is already on the right of
- * the row, and protein is the number that distinguishes five dishes that all
+ * this screen rather than a default: the calorie figure is already on the right
+ * of the row, and protein is the number that distinguishes five dishes that all
  * come in under the same ceiling.
  *
  * VIEW ONLY. There is no add button on a row and no "Log it" on the detail
- * behind it. These are guesses about meals nobody has eaten, and a diary
- * priced from a guess is the thing the cascade's estimate tier had to be
- * unwound for. Somebody who eats one logs it the ordinary way, and the
- * catalogue prices it.
+ * behind it. These are guesses about meals nobody has eaten, and a diary priced
+ * from a guess is the thing the cascade's estimate tier had to be unwound for.
+ * Somebody who eats one logs it the ordinary way, and the catalogue prices it.
  */
 export function PicksSheet({
   visible,
@@ -111,47 +85,48 @@ export function PicksSheet({
   const { t } = useTranslation(['suggest', 'common'])
   const colors = useThemeColors()
 
+  const summary = request ? <Summary request={request} /> : null
+
   return (
     <Sheet
       visible={visible}
       onClose={onClose}
+      fullHeight
       closeLabel={t('common:action.close')}
-      title={
-        busy ? undefined : t('picks.title', { meal: request ? t(`mealFor.${request.meal}`) : '' })
-      }
-      footer={
-        busy ? (
-          /* A way out while it works, and it says CLOSE rather than Cancel.
-             The scan is claimed at the top of the endpoint, so there is nothing
-             left to cancel by the time this button exists — a label promising
-             otherwise would be the app pretending it can take a request back.
-             It is also what keeps the panel the same height in both states, so
-             the answer replaces the skeleton without the sheet resizing. */
-          <Button variant="secondary" onPress={onClose}>
-            {t('common:action.close')}
-          </Button>
-        ) : (
-          <Button onPress={onRetry} leftIcon={<Icon set="ui" name="refresh" size={20} />}>
-            {t('picks.retry')}
-          </Button>
-        )
+      title={t('picks.title', { meal: request ? t(`mealFor.${request.meal}`) : '' })}
+      titleAction={
+        // Present in both states and DISABLED while the model works, rather
+        // than absent: a control that appears when the answer lands moves the
+        // title beside it, which is the one line that must not move.
+        <IconButton
+          size="sm"
+          onPress={busy ? undefined : onRetry}
+          disabled={busy}
+          accessibilityLabel={t('picks.retry')}
+        >
+          <Icon set="ui" name="refresh" size={18} tintColor={colors.muted} />
+        </IconButton>
       }
     >
       {busy ? (
-        <Thinking request={request} />
+        <Thinking request={request} summary={summary} />
       ) : picks.length === 0 ? (
         /* The model would not answer, which the server reports as an empty list
            rather than as an error — see the note there. Nothing went wrong that
-           the user can act on, so this says what happened and leaves the button
-           in the footer where it already was. */
+           the user can act on, so this says what happened, and the way to ask
+           again is already on the title's line. */
         <EmptyState
           title={t('picks.emptyTitle')}
           description={t('picks.emptyBody')}
           icon={{ set: 'system', name: 'sparkle' }}
         />
       ) : (
-        <View className="gap-md">
-          {request ? <Summary request={request} /> : null}
+        /* Faded in over the skeleton it replaces. The two are the same shape in
+           the same place, so a hard cut reads as the screen flickering rather
+           than as an answer arriving; 220ms is long enough to register as a
+           transition and short enough not to be waited through. */
+        <Animated.View entering={FadeIn.duration(220)} className="gap-md">
+          {summary}
 
           <View className="gap-2">
             {picks.map((pick, index) => (
@@ -177,7 +152,7 @@ export function PicksSheet({
               figure. These are the model's estimates for dishes nobody has
               cooked yet, and the app counts nothing until a meal is logged. */}
           <Text variant="micro">{t('picks.estimateNote')}</Text>
-        </View>
+        </Animated.View>
       )}
     </Sheet>
   )

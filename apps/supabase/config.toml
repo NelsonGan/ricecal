@@ -593,6 +593,17 @@ verify_jwt = false
 import_map = "./functions/scan-refine/deno.json"
 entrypoint = "./functions/scan-refine/index.ts"
 
+# What to eat next: five suggestions against the rest of today's budget. The one
+# model path that writes nothing, so it reads the diary with the caller's own
+# token; `verify_jwt` is off for the same reason as its neighbours, which is that
+# the function checks the Authorization header itself and can then say which half
+# of the request failed.
+[functions.suggest-meal]
+enabled = true
+verify_jwt = false
+import_map = "./functions/suggest-meal/deno.json"
+entrypoint = "./functions/suggest-meal/index.ts"
+
 # The barcode fallback: one product from Open Food Facts, live, when the
 # catalogue has never seen the code. Same auth pattern as the others — it
 # inspects the Authorization header itself. Reads no secrets of its own; it
