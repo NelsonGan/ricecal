@@ -940,6 +940,16 @@ Which is also why a pick has no id, why the detail is reached by INDEX, and why
 `features/suggest/picks.tsx` holds the list in memory above navigation: it is not
 a record of anything.
 
+**The panel is one sheet at one size, throughout.** The wait and the answer are
+two states of the same full-height sheet rather than two sheets: a capped sheet
+sizes itself to its content, so the two were different heights and the panel
+jumped at the one moment this screen has to feel settled. The wait draws five
+skeleton rows at a real row's height, in the places the rows will land, and they
+are faded over rather than cut. "Try again" is an icon on the title's line
+(`Sheet`'s `titleAction`) rather than a footer button — on a screen whose point
+is the five things above it, asking again is the secondary action, and the sheet
+is left with no footer so the list runs its full height.
+
 **The reasons are the product.** Five dish names against a calorie figure is a
 list anybody could write; "you are 39 g short on protein and one bowl covers most
 of it" is what makes it a suggestion. So `why` is required per pick and a pick
