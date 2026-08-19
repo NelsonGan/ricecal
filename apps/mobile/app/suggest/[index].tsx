@@ -97,7 +97,17 @@ export default function SuggestedPickScreen() {
 
   return (
     <Screen>
-      <AppBar title={pick.name} onBack={back} backLabel={t('common:action.back')} />
+      <AppBar
+        title={pick.name}
+        /* A dish name as the model wrote it, which is as long as the dish is:
+           "Nasi kandar ayam goreng berempah" is four words past what fits
+           between two 44pt buttons. Two lines for the same reason the recipe
+           page takes them — every other bar in the app names a SCREEN, and
+           those are short and fixed. */
+        titleLines={2}
+        onBack={back}
+        backLabel={t('common:action.back')}
+      />
 
       {/* The drawing, big, on its own ground. A suggestion has no photograph and
           never will, so this is the only picture of it there is — and a list of

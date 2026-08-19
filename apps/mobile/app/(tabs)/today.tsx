@@ -2,7 +2,6 @@ import { format, parseISO, subDays } from 'date-fns'
 import { useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
 
 import {
   dateKey,
@@ -368,38 +367,38 @@ export default function TodayScreen() {
     >
       <ScreenTitle
         title={title}
-        trailing={
-          // The view toggle and the streak, in that order: the control that
-          // changes the screen sits inboard of the badge that merely reports on
-          // it, so the pill stays where it has always been.
-          <View className="flex-row items-center gap-2">
-            <IconButton
-              size="sm"
-              onPress={() => showCalendar(!calendar)}
-              accessibilityLabel={t(
-                calendar ? 'logging:calendar.showDay' : 'logging:calendar.showMonth',
-              )}
-            >
-              {/* The icon is the view being offered, not the one on screen. A
-                  toggle that shows its own state has to be read twice. */}
-              <Icon set="ui" name={calendar ? 'list-view' : 'calendar-view'} size={20} />
-            </IconButton>
-
-            {/* Nothing at all until the count is known: "0 day streak" is a
-                sentence about the user, and it is the wrong one on every
-                account that has a streak. */}
-            {streak.isPending ? null : (
-              // Badge lays a non-text child out as a row and centres it, so the
-              // flame sits against the middle of the label rather than its
-              // baseline.
-              <Badge tone="kaya">
-                <Icon set="body" name="flame-burn" size={18} />
-                <Text variant="caption" className="text-kaya-ink">
-                  {t('common:count.dayStreak', { count: streak.current })}
-                </Text>
-              </Badge>
+        leading={
+          /* The view toggle goes BEFORE the date, because it is a control about
+             what the date is showing rather than a report on it: the whole
+             screen under the heading changes when it is pressed. The streak, on
+             the other side, only ever reports. */
+          <IconButton
+            size="sm"
+            onPress={() => showCalendar(!calendar)}
+            accessibilityLabel={t(
+              calendar ? 'logging:calendar.showDay' : 'logging:calendar.showMonth',
             )}
-          </View>
+          >
+            {/* The icon is the view being OFFERED, not the one on screen. A
+                toggle that shows its own state has to be read twice. */}
+            <Icon set="ui" name={calendar ? 'list-view' : 'calendar-view'} size={20} />
+          </IconButton>
+        }
+        trailing={
+          // Nothing at all until the count is known: "0 day streak" is a
+          // sentence about the user, and it is the wrong one on every account
+          // that has a streak.
+          streak.isPending ? undefined : (
+            // Badge lays a non-text child out as a row and centres it, so the
+            // flame sits against the middle of the label rather than its
+            // baseline.
+            <Badge tone="kaya">
+              <Icon set="body" name="flame-burn" size={18} />
+              <Text variant="caption" className="text-kaya-ink">
+                {t('common:count.dayStreak', { count: streak.current })}
+              </Text>
+            </Badge>
+          )
         }
       />
 
