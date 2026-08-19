@@ -406,6 +406,30 @@ export const logging = {
     replacePhotoBody:
       'This entry keeps a photo or a picture, not both. Your photo of the real plate goes for good.',
     replacePhotoConfirm: 'Pick a picture',
+    /** The first of the three controls over the photo, before the pencil and the bin. */
+    shareEntry: 'Share this meal',
+  },
+
+  /**
+   * Sending one logged meal out of the app as a picture.
+   *
+   * The card itself carries none of this except the wordmark: the dish name,
+   * the figures and the macro labels are all the entry's own, read from where
+   * the screen reads them.
+   */
+  share: {
+    /** The watermark on the picture. Not translated: it is a name. */
+    brand: 'RiceCal',
+    /**
+     * What goes out beside the picture, and INSTEAD of it on Android, where the
+     * share intent carries a message and nothing else.
+     */
+    text: '{{food}}, {{kcal}} kcal. Logged with RiceCal',
+    /**
+     * The capture came back with nothing. Rare and not worth explaining: the
+     * only thing the user can do about it is press the button again.
+     */
+    failed: 'Could not make that picture',
   },
 
   /**

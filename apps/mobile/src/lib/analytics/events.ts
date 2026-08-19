@@ -303,6 +303,18 @@ export type Events = {
    * pays for itself first is simply whether the loop is used at all.
    */
   'Review Card Shared': { kind: 'week' | 'month' }
+  /**
+   * One logged meal left the app as a picture.
+   *
+   * `picture` is the SHAPE of the card rather than anything off the diary: a
+   * meal shared as a photograph and one shared as an illustration are two
+   * different products, and if nobody ever sends the second the card is really
+   * a photo feature. Nothing about the dish, the calories or the day is here.
+   *
+   * Same caveat as `Review Card Shared`: this is a real send on iOS and every
+   * tap on Android, which has no way to report what became of a share intent.
+   */
+  'Meal Shared': { picture: 'photo' | 'drawing' }
 }
 
 export type EventName = keyof Events

@@ -5,6 +5,12 @@ export { FoodSearchPanel, type FoodSearchPanelProps } from './FoodSearchPanel'
 export { IconPicker, type IconPickerProps } from './IconPicker'
 export { type CaptureMode, InlineCamera, type InlineCameraProps } from './InlineCamera'
 export {
+  MealShareCard,
+  type MealShareCardProps,
+  type ShareOutcome,
+  useMealShare,
+} from './MealShareCard'
+export {
   NO_FIGURES,
   NutritionSheet,
   type NutritionSheetProps,
