@@ -1,5 +1,3 @@
-import { makeImageFromView } from '@shopify/react-native-skia'
-import { File, Paths } from 'expo-file-system'
 import { Image } from 'expo-image'
 import {
   createContext,
@@ -12,41 +10,15 @@ import {
   useState,
 } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Platform, Pressable, Share, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
+import { captureView, type Shot, sharePicture } from '@/lib/share'
 import { spacing } from '@/theme/tokens'
 import { Button, cn, Sheet, Text } from '@/ui'
-
-/** What a captured card is, once it is a file the OS can be handed. */
-type Shot = {
-  uri: string
-  /** Pixels, so the preview can hold the card's own proportions. */
-  width: number
-  height: number
-}
 
 type Capture = (view: RefObject<View | null>) => Promise<void>
 
 const CaptureContext = createContext<Capture | null>(null)
-
-/**
- * A FILE PER CAPTURE, named by the instant, with the one before it deleted as
- * soon as its replacement is on disk.
- *
- * This wrote to one fixed name at first, on the reasoning that a name per shot
- * leaves PNGs in the cache nobody deletes. What that reasoning missed is the
- * rule this app already lives by: A KEY NAMES ONE OBJECT, FOR GOOD. expo-image
- * caches against the URI, so the second card tapped produced a correct file at
- * a URI the cache already had an answer for — and the sheet showed the FIRST
- * card, with its own numbers, over a Share button that would have sent the
- * right one.
- *
- * A counter was the second attempt and the same bug wearing a longer name: it
- * starts at one on every app run, so the first capture of the day collides with
- * yesterday's, which is still in the image cache on disk. The clock is the only
- * part of a capture that cannot repeat.
- */
-const shotName = () => `review-card-${Date.now()}.png`
 
 export type ShareableCardsProps = {
   /**
@@ -82,10 +54,10 @@ export type ShareableCardsProps = {
  * way round: what is on screen in the sheet is the exact image that leaves the
  * phone, and there is no second drawing to drift from the first.
  *
- * Skia does the capture. `makeImageFromView` is already in the app for the
- * charts, so a screenshot costs no new native module — which matters, because
- * the alternative was a dependency that needs a rebuild before anybody can try
- * this.
+ * `lib/share` does the capture and the sending, and the meal detail screen uses
+ * the same two functions — the difference between the two features is entirely
+ * this preview step, which a story needs because it has four cards on it and a
+ * meal does not.
  *
  * A context rather than a prop on each card: a section lays out two or three
  * cards and none of them should have to be told what a review is.
@@ -96,48 +68,16 @@ export function ShareableCards({ message, onShared, children }: ShareableCardsPr
   const [shot, setShot] = useState<Shot | null>(null)
   const [sending, setSending] = useState(false)
 
-  /** The capture still on disk from the last tap, deleted when it is replaced. */
-  const written = useRef<string | null>(null)
-
   const capture = useCallback<Capture>(async (view) => {
-    const image = await makeImageFromView(view as RefObject<never>)
-    if (!image) return
-
-    const file = new File(Paths.cache, shotName())
-    file.create({ overwrite: true })
-    file.write(image.encodeToBase64(), { encoding: 'base64' })
-
-    // Only once the replacement exists, and outside `setShot` — an updater with
-    // a side effect in it runs twice under React's development double render,
-    // and the second delete would be of a file already gone.
-    const stale = written.current
-    written.current = file.uri
-    setShot({ uri: file.uri, width: image.width(), height: image.height() })
-
-    if (stale) {
-      const old = new File(stale)
-      if (old.exists) old.delete()
-    }
+    const taken = await captureView(view)
+    if (taken) setShot(taken)
   }, [])
 
   const send = useCallback(async () => {
     if (!shot) return
     setSending(true)
     try {
-      /**
-       * The picture on iOS, the sentence on Android.
-       *
-       * React Native's `Share` takes `url` on iOS only; on Android it carries
-       * `message` and drops everything else, so asking it to send a file there
-       * shares nothing at all and reports success. Sending the sentence is the
-       * honest degradation, and it is the same sentence iOS sends beside the
-       * image. Sharing the file on Android needs a content:// provider, which
-       * needs a dependency, which needs a rebuild.
-       */
-      const result = await Share.share(
-        Platform.OS === 'ios' ? { url: shot.uri, message } : { message },
-      )
-      if (result.action === Share.sharedAction) onShared?.()
+      if (await sharePicture(shot, message)) onShared?.()
     } finally {
       setSending(false)
     }
