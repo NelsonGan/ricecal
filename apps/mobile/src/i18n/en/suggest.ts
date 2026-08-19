@@ -10,7 +10,13 @@ export const suggest = {
 
   /** L7 ASK MODAL. Every control opens on an answer, so none of this is a prompt. */
   ask: {
-    title: 'What are you after?',
+    /**
+     * Short, because the title's line now carries two pills as well: the lean
+     * and what is left of the day. "What are you after?" truncated to "What are
+     * you…" beside them, and a heading with an ellipsis in it is worse than a
+     * shorter heading.
+     */
+    title: 'What next?',
     meal: 'MEAL',
     focus: 'MACROS',
     cuisine: 'CUISINE',
@@ -19,7 +25,15 @@ export const suggest = {
     less: 'Fewer calories',
     more: 'More calories',
     /** Beside the heading, so it is short: the sheet is only about today. */
-    leftToday: '{{kcal}} kcal left',
+    leftToday: '{{kcal}} left',
+    /**
+     * The lean, as a two-state pill on the title's line. Named for what the
+     * suggestions WILL be rather than for what the switch does, so the word on
+     * screen is always true of the answer.
+     */
+    healthy: 'Lighter',
+    anything: 'Anything',
+    healthyA11y: 'Lean towards lighter dishes',
     action: 'Suggest something',
   },
 

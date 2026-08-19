@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { Cuisine, Focus, Meal } from '@/data'
-import { useMealTimes } from '@/data'
-import { Badge, Button, Chip, Icon, Sheet, Slider, Stepper, Text } from '@/ui'
+import { useMealTimes, useUserId } from '@/data'
+import { Badge, Button, Chip, Icon, Sheet, Slider, Stepper, Tappable, Text } from '@/ui'
 import {
   CUISINES,
   defaultKcal,
@@ -17,8 +17,16 @@ import {
   MIN_KCAL,
   mealAt,
 } from './ask'
+import { readPreferences, savePreferences } from './preferences'
 
-export type AskAnswers = { meal: Meal; focus: Focus; cuisine: Cuisine; kcalLimit: number }
+export type AskAnswers = {
+  meal: Meal
+  focus: Focus
+  cuisine: Cuisine
+  /** Lean towards the lighter of two dishes that both fit. */
+  healthy: boolean
+  kcalLimit: number
+}
 
 export type AskSheetProps = {
   visible: boolean
@@ -75,10 +83,22 @@ export function AskSheet({
 }: AskSheetProps) {
   const { t } = useTranslation(['suggest', 'common'])
   const { data: mealTimes } = useMealTimes()
+  const userId = useUserId()
+
+  /**
+   * The three answers that are about TASTE, seeded from what was sent last time.
+   *
+   * Read once, at mount, rather than on every opening: the state below is the
+   * live answer from the moment the sheet is first drawn, and re-reading storage
+   * over it would undo a choice made and not yet sent. See `preferences.ts` for
+   * why the sitting and the ceiling are not among them.
+   */
+  const remembered = useRef(readPreferences(userId)).current
 
   const [meal, setMeal] = useState<Meal>('snack')
-  const [focus, setFocus] = useState<Focus>('balanced')
-  const [cuisine, setCuisine] = useState<Cuisine>('malay')
+  const [focus, setFocus] = useState<Focus>(remembered.focus)
+  const [cuisine, setCuisine] = useState<Cuisine>(remembered.cuisine)
+  const [healthy, setHealthy] = useState(remembered.healthy)
   const [kcalLimit, setKcalLimit] = useState(MIN_KCAL)
   /**
    * Whether the ceiling is the user's number or the sheet's guess.
@@ -145,35 +165,68 @@ export function AskSheet({
       fullHeight
       title={t('ask.title')}
       titleAction={
-        /* What is left of the day, on the title's own line.
-         *
-         * It was a green caption under the slider, which is where a figure goes
-         * when nobody has decided where it belongs: three sections below the
-         * heading, under the one control it is context FOR, and read after the
-         * ceiling had already been set. Beside the heading it is read first, and
-         * it is the fact the whole sheet is answering against.
-         *
-         * A badge rather than a line of text, so it reads as a READING and not
-         * as another control on a sheet that is nothing but controls. The same
-         * pill the detail screen uses for "kcal left after", which is the same
-         * fact one meal later.
-         *
-         * Absent on an account with no budget, and on a day already spent:
-         * "0 kcal left" beside a question about what to eat is a sentence about
-         * failure, and this screen is not the place for it.
-         */
-        showLeft && kcalLeft > 0 ? (
-          <Badge tone="pandan">
-            <Text variant="caption" className="text-pandan-ink">
-              {t('ask.leftToday', { kcal: kcalLeft.toLocaleString() })}
-            </Text>
-          </Badge>
-        ) : undefined
+        <View className="flex-row items-center gap-2">
+          {/* THE LEAN, ON THE TITLE'S LINE, and tapping it flips it.
+           *
+           * A two-state pill rather than a fifth chip group, because it is not
+           * another thing to choose between: it is one dial on the question the
+           * rest of the sheet is asking, and a group of two chips labelled
+           * "Healthier" and "Anything" would read as a choice of equal weight
+           * with the cuisine and the macros.
+           *
+           * Its own colour changes with it — pandan for the lean, kaya for the
+           * other — so the state is legible without reading the word, which is
+           * what a control has to manage when it is this small.
+           */}
+          <Tappable
+            onPress={() => setHealthy((on) => !on)}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: healthy }}
+            accessibilityLabel={t('suggest:ask.healthyA11y')}
+          >
+            <Badge tone={healthy ? 'pandan' : 'kaya'}>
+              <Icon set="food" name={healthy ? 'leafy-greens' : 'burger'} size={16} />
+              <Text variant="caption" className={healthy ? 'text-pandan-ink' : 'text-kaya-ink'}>
+                {t(healthy ? 'suggest:ask.healthy' : 'suggest:ask.anything')}
+              </Text>
+            </Badge>
+          </Tappable>
+
+          {/* What is left of the day, beside the question it is asked against.
+           *
+           * It was a green caption under the slider, which is where a figure
+           * goes when nobody has decided where it belongs: three sections below
+           * the heading, under the one control it is context FOR, and read
+           * after the ceiling had already been set.
+           *
+           * Absent on an account with no budget, and on a day already spent:
+           * "0 kcal left" beside a question about what to eat is a sentence
+           * about failure, and this screen is not the place for it.
+           */}
+          {showLeft && kcalLeft > 0 ? (
+            // NEUTRAL, and it is the one badge on this sheet that should be.
+            // Pandan would collide with the toggle beside it whenever the lean
+            // is on, and water means DRINKING water everywhere else in the app —
+            // a blue pill carrying a calorie figure is the colour system saying
+            // something untrue. This is a reading rather than a state, and grey
+            // is what a reading looks like.
+            <Badge tone="neutral">
+              <Text variant="caption">
+                {t('suggest:ask.leftToday', { kcal: kcalLeft.toLocaleString() })}
+              </Text>
+            </Badge>
+          ) : null}
+        </View>
       }
       closeLabel={t('common:action.close')}
       footer={
         <Button
-          onPress={() => onAsk({ meal, focus, cuisine, kcalLimit })}
+          onPress={() => {
+            // Saved when the question is ASKED. A chip tapped and tapped back is
+            // not a preference, and neither is a sheet opened and dismissed.
+            savePreferences(userId, { focus, cuisine, healthy })
+            onAsk({ meal, focus, cuisine, healthy, kcalLimit })
+          }}
           loading={busy}
           leftIcon={<Icon set="system" name="sparkle" size={22} />}
         >

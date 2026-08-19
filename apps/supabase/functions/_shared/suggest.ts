@@ -86,6 +86,16 @@ export type DayContext = {
   meal: Meal
   focus: Focus
   cuisine: Cuisine
+  /**
+   * Lean towards the lighter of two dishes that both fit.
+   *
+   * A TIE-BREAK and not a filter, which is the whole difficulty: told to be
+   * healthy outright this model answers with boiled eggs and steamed fish,
+   * which is the bare-ingredient failure the system prompt exists to prevent.
+   * Off, it is told plainly that there is no preference, because silence here
+   * reads as the default rather than as its absence.
+   */
+  healthy: boolean
   /** The ceiling the user set on the sheet. */
   kcalLimit: number
   /** What is left of the day's budget. Zero or less when they are over. */
@@ -368,21 +378,13 @@ export const SUGGEST_MEAL_PROMPT =
   'A snack is a small thing eaten between meals: kuih, a drink, fruit, a piece ' +
   'of something fried, a few skewers. It is never a rice plate or a bowl of ' +
   'noodles, however few calories you claim for it. ' +
-  // LEAN HEALTHIER, WITHIN THE DISH SOMEBODY WOULD ACTUALLY ORDER. The line
-  // being walked here is the one this whole prompt is about: told nothing, it
-  // suggests whatever is famous, and told to be healthy it answers with boiled
-  // eggs and steamed fish — which is the failure the rule above exists to
-  // prevent. So the nudge is a TIE-BREAK between real dishes rather than a
-  // filter over them: soto ayam ahead of nasi goreng, ikan bakar ahead of ayam
-  // goreng, the soup version of a noodle rather than the fried one. Every pick
-  // is still something sold at a stall with a name people order it by.
-  'Between dishes that fit equally well, lean towards the healthier one: grilled ' +
-  'or steamed or in broth ahead of deep fried, more vegetables and less oil, a ' +
-  'lighter version of the same dish where one is genuinely sold. This is a ' +
-  'preference between real meals and NEVER a reason to answer with diet food, ' +
-  'plain ingredients or anything a person would not order by name. Do not ' +
-  'mention health, dieting or clean eating in the reasons; the dish speaks for ' +
-  'itself. ' +
+  // The half of the healthy lean that holds WHICHEVER WAY IT IS SET. The lean
+  // itself is per-request and lives in the user message; this is the guard rail
+  // either side of it, and it is the same rule as the bare-ingredient one above
+  // said about writing rather than about food.
+  'Whatever the person asks for, never answer with diet food, plain ingredients ' +
+  'or anything nobody orders by name, and never mention health, dieting or ' +
+  'clean eating in the reasons. The dish speaks for itself. ' +
   // Likewise the cuisine. Asked for Malay, the same run offered mee goreng mamak
   // and roti canai, which are the neighbouring kitchen.
   'The cuisine you are given is a constraint, not a hint. Every pick belongs to ' +
@@ -474,6 +476,12 @@ export const suggestUserMessage = (day: DayContext): string => {
     `It must be ${CUISINES[day.cuisine]}.`,
     FOCUS[day.focus],
     `No pick may be over ${day.kcalLimit} kcal.`,
+    day.healthy
+      ? 'Between dishes that fit equally well, lean towards the lighter one: grilled, ' +
+        'steamed or in broth ahead of deep fried, more vegetables and less oil, the ' +
+        'lighter version of a dish where one is genuinely sold.'
+      : 'No health preference. Suggest what people actually enjoy eating, the rich ' +
+        'and the fried included, and do not quietly lighten the list.',
     // And the SITTING is the very last line, twice stated.
     //
     // Named once at the top it was read as a label; moved into this group it was

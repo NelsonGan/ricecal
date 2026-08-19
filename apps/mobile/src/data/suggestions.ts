@@ -33,6 +33,13 @@ export type SuggestRequest = {
   meal: Meal
   focus: Focus
   cuisine: Cuisine
+  /**
+   * Lean towards the lighter of two dishes that both fit.
+   *
+   * A tie-break rather than a filter — the server refuses to answer with diet
+   * food either way. See the note on `DayContext.healthy`.
+   */
+  healthy: boolean
   /** The ceiling the user set, in kcal. */
   kcalLimit: number
   /** The day it is about. The selected date, which is usually today. */
@@ -101,6 +108,7 @@ export function useSuggestMeals() {
           meal: request.meal,
           focus: request.focus,
           cuisine: request.cuisine,
+          healthy: request.healthy,
           kcal_limit: Math.round(request.kcalLimit),
           date: request.date,
         },
