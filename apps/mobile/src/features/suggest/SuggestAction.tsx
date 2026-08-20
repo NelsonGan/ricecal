@@ -6,9 +6,11 @@ import type { SuggestRequest } from '@/data'
 import { useSuggestMeals } from '@/data'
 import { announceRefusal } from '@/data/refusals'
 import { track } from '@/lib/analytics'
-import { Icon, IconButton, useToast } from '@/ui'
+import { useThemeColors } from '@/theme/useTheme'
+import { cn, Icon, Tappable, Text, useToast } from '@/ui'
 import { useRequirePro } from '../paywall'
 import { AskSheet } from './AskSheet'
+import { trackedCuisine } from './ask'
 import { PicksSheet } from './PicksSheet'
 import { useSuggestedPicks } from './picks'
 
@@ -18,44 +20,53 @@ export type SuggestActionProps = {
   kcalLeft: number
   /** Whether this account has a budget at all, so the card can say what it fits. */
   hasBudget: boolean
+  className?: string
 }
 
 /**
- * The sparkle on the calorie card, and the whole flow behind it.
+ * The offer on Today, and the whole flow behind it.
  *
- * The card is the entry point and it OWNS THE TWO SHEETS, rather than Today
+ * The row is the entry point and it OWNS THE TWO SHEETS, rather than Today
  * owning them. Everything about this feature is a conversation with one button:
- * the question, the wait, the five answers and the way back to the question.
- * Hoisted into the screen it would be three pieces of state on a file that is
- * already the longest in the app, and every one of them about something Today
- * does not otherwise know exists.
+ * the question, the wait, the answers and the way back to the question. Hoisted
+ * into the screen it would be three pieces of state on a file that is already
+ * the longest in the app, and every one of them about something the diary does
+ * not otherwise know exists.
  *
  * The DETAIL is the one part that is not here, because it is a pushed page. The
  * picks reach it through `SuggestProvider` — see `picks.tsx` for why a
  * suggestion has no id to put in a route.
  *
- * IT SITS IN THE LOG SHEET, on the heading's line. That is where somebody
- * already is when the question comes up: the sheet they opened to add a meal is
- * the sheet they opened NOT knowing what the meal is, and the four ways in
- * underneath it all assume they have already decided.
+ * IT IS A THIN ROW UNDER THE WEEK STRIP, and it has been three other things.
  *
- * It has been two other things. A tinted card of its own on Today, headed "Not
- * sure what to eat?" with a line about how many picks it would give, which was a
- * lot of screen for an offer standing between the two things the diary is about;
- * then a glyph on the calorie card, which was the right size in the wrong place —
- * beside a reading rather than beside the decision.
+ * A tinted card of its own on Today, headed "Not sure what to eat?" with a line
+ * about how many picks it would give — a lot of screen for an offer standing
+ * between the two things the diary is about. Then a glyph on the calorie card,
+ * which was the right size in the wrong place: beside a READING rather than
+ * beside a decision. Then a glyph in the log sheet, beside the heading, on the
+ * argument that somebody opening the sheet to add a meal is somebody who has not
+ * decided what the meal is.
+ *
+ * That last one was true and cost too much to be worth it: the offer was two
+ * taps deep, inside a sheet whose four tiles all assume the meal is settled, and
+ * an account that never pressed the log button never learnt the feature existed
+ * at all. On the diary itself it is one tap, it is READ on the way past, and it
+ * sits directly under the day being asked about — which is the day the answer is
+ * costed against. One row high, because it is an offer rather than one of the
+ * things this screen is for; the ring and the meals underneath it are those.
  */
-export function SuggestAction({ date, kcalLeft, hasBudget }: SuggestActionProps) {
+export function SuggestAction({ date, kcalLeft, hasBudget, className }: SuggestActionProps) {
   const { t } = useTranslation('suggest')
   const router = useRouter()
   const toast = useToast()
+  const colors = useThemeColors()
   /**
-   * `replace`, because this lives inside the log sheet and the log sheet is a
-   * `transparentModal`. A push from within one stacks the paywall ON the sheet,
-   * half-covering it, with the sheet's own scrim still over the app — see
-   * `useRequirePro`.
+   * An ordinary `push`, unlike the version of this that lived in the log sheet.
+   * That one had to `replace`, because a paywall pushed from inside a
+   * `transparentModal` comes up stacked ON the sheet with the sheet's own scrim
+   * still over the app. Today is a plain screen and owes that no thought.
    */
-  const requirePro = useRequirePro({ navigate: 'replace' })
+  const requirePro = useRequirePro()
   const { picks, request, set, clear, closed } = useSuggestedPicks()
   const suggest = useSuggestMeals()
 
@@ -108,26 +119,42 @@ export function SuggestAction({ date, kcalLeft, hasBudget }: SuggestActionProps)
     setShowing(true)
   }, [closed])
 
+  /**
+   * The last question sent, so "Try again" can send it again without asking it.
+   *
+   * A ref rather than the provider's `request`, which is only set once an answer
+   * has LANDED: a retry pressed while the first answer was still coming would
+   * find nothing there. This is written at the moment the request goes out.
+   */
+  const lastAsked = useRef<SuggestRequest | null>(null)
+
   const ask = (next: SuggestRequest) => {
+    lastAsked.current = next
     setAsking(false)
     // The panel goes up BEFORE the request, holding the skeleton. Opened when
     // the answer lands, the ten seconds in between would be the diary with
     // nothing happening on it, which reads as a button that did not work.
     setShowing(true)
-    // Cleared, so a second ask does not show the first ask's five dishes under
+    // Cleared, so a second ask does not show the first ask's dishes under
     // the new question's heading for as long as the request is out.
     clear()
 
     suggest.mutate(next, {
       onSuccess: (result) => {
         set(result, next)
-        track('Suggestions Shown', { meal: next.meal, cuisine: next.cuisine, count: result.length })
+        // `trackedCuisine` and never the string itself: the list is the user's
+        // own now, so a cuisine is free text somebody typed. See the note there.
+        track('Suggestions Shown', {
+          meal: next.meal,
+          cuisine: trackedCuisine(next.cuisine),
+          count: result.length,
+        })
 
         /**
          * The answer arrived and nobody is looking at it.
          *
          * A scan is claimed at the top of the endpoint, so closing the panel
-         * mid-wait spends one and leaves the five dishes unreachable — the card
+         * mid-wait spends one and leaves the dishes unreachable — the row
          * asks the question again from the top, and `ask` clears them on the way
          * past. Offered rather than forced: a sheet that rises on its own, ten
          * seconds after a screen was dismissed, is the app taking the screen
@@ -155,28 +182,36 @@ export function SuggestAction({ date, kcalLeft, hasBudget }: SuggestActionProps)
 
   return (
     <>
-      {/* Raised and pandan-filled, because it is an OFFER rather than one of the
-       * four ways in below it. Drawn as a fifth `QuickAction` it would read as
-       * another route into the diary, and it is not one: nothing it leads to
-       * writes anything.
-       */}
-      <IconButton
-        /* As tall as the heading it sits beside, so the row is the height of
-           its own title. The touch target is taken back to 44 with `hitSlop`. */
-        size="xxs"
-        hitSlop={8}
-        variant="primary"
-        /* `self-center`, because `IconButton` puts `self-start` on its own
-           container and a child's own alignment beats the row's `items-center`. */
-        className="self-center"
+      {/* ONE ROW HIGH, tinted rather than raised, and no slab under it.
+       *
+       * Everything raised on this screen writes something — the log button, the
+       * water Add — and this writes nothing at all: it opens a question whose
+       * answer is a list to read. A flat pandan tint says "offer" where a filled
+       * squishy tile would say "the thing to do next", which on the diary is the
+       * log button and should stay that way.
+       *
+       * 40pt, under the 44 floor, and deliberately: the row is as wide as the
+       * screen, so the target is enormous in the direction that is actually hard
+       * to hit. */}
+      <Tappable
+        className={cn(
+          'h-[40px] flex-row items-center gap-2 rounded-md bg-pandan-soft px-3.5',
+          className,
+        )}
         onPress={() => {
           if (!requirePro('suggest')) return
           setAsking(true)
         }}
+        accessibilityRole="button"
         accessibilityLabel={t('card.title')}
       >
         <Icon set="system" name="sparkle" size={18} />
-      </IconButton>
+        <Text variant="caption" className="flex-1 text-pandan-ink" numberOfLines={1}>
+          {t('card.title')}
+        </Text>
+        {/* Tinted, like the chevron on every other row in the app. */}
+        <Icon set="ui" name="chevron-right" size={16} tintColor={colors.faint} />
+      </Tappable>
 
       <AskSheet
         visible={asking}
@@ -193,13 +228,28 @@ export function SuggestAction({ date, kcalLeft, hasBudget }: SuggestActionProps)
         request={request ?? suggest.variables ?? null}
         picks={picks}
         busy={suggest.isPending}
-        // Back to the question rather than straight to another five. "Try
-        // again" after reading a list usually means "with something else" —
-        // and an identical request is a second scan off the allowance for an
-        // answer the user has just decided against.
+        /**
+         * STRAIGHT TO ANOTHER LIST, not back to the question.
+         *
+         * It used to reopen the ask sheet, on the reasoning that "try again"
+         * after reading a list means "with something else" — and that a second
+         * identical request spends a scan on an answer the user has just decided
+         * against. Watched, that is not what people do with it: the answers to
+         * the four questions are the same answers, the sheet remembers three of
+         * them anyway, and being handed the form back is being asked to confirm
+         * a decision nobody was revisiting. Two taps and a form to see a
+         * different list.
+         *
+         * So it re-sends the same request and the skeleton comes straight up in
+         * place of the list. The model is not deterministic, so the same
+         * question genuinely does answer differently — which is the whole reason
+         * somebody presses this. Changing the question is still one tap away:
+         * close the panel and the row is underneath it.
+         */
         onRetry={() => {
-          setShowing(false)
-          setAsking(true)
+          const again = lastAsked.current ?? request
+          if (!again) return
+          ask(again)
         }}
         onPressPick={(index) => {
           reopen.current = true

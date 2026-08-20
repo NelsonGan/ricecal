@@ -115,10 +115,15 @@ fixed queries. `Barcode Scanned { outcome: 'not_found' }` is the live version of
 `BARCODE-COVERAGE.md`.
 
 **What people ask for.** `Suggestions Shown` by `meal` and `cuisine`, which is
-the one thing about that feature this app cannot work out for itself: the
-cuisine list is hardcoded, and only the breakdown says whether the four are the
-right four. `count` is zero when the model would not answer, which is the only
-way that failure is visible from outside.
+the one thing about that feature this app cannot work out for itself: only the
+breakdown says whether the three cuisines a new account starts with are the right
+three. The cuisine is sent as `TrackedCuisine` and never as the string on the
+request — the list is the user's own now, so a cuisine is free text somebody
+typed on their phone, and free text somebody typed is exactly what the diary rule
+keeps out. `trackedCuisine` maps one of the shipped defaults to itself and
+everything else to `custom`, which still answers the question. `count` is zero
+when the model would not answer, which is the only way that failure is visible
+from outside.
 
 **Money.** `Paywall Shown` by `trigger`, which names the button that was
 refused — the only way to find out which capability sells the app, since the

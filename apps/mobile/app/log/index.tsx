@@ -27,7 +27,6 @@ import {
 } from '@/features/logging'
 import { useRequirePro } from '@/features/paywall'
 import { RecipePanel } from '@/features/recipes'
-import { SuggestAction } from '@/features/suggest'
 import { dateOffset, type LogMethod, track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
 import { sumMacros } from '@/lib/nutrition'
@@ -244,21 +243,19 @@ export default function LogSheet() {
     >
       {/* The heading is rendered here rather than through `title` so the
           remaining count can sit on the same line, right aligned, the way the
-          design puts it. */}
-      <View className="flex-row items-center gap-2">
+          design puts it.
+
+          NO SUGGESTION GLYPH BESIDE IT ANY MORE. "I do not know what to eat"
+          was here for a while, on the argument that somebody who opens this
+          sheet has not decided what the meal is — which is true and was not
+          enough. It was two taps deep, inside a sheet whose four tiles all
+          assume the meal IS decided, so an account that never pressed the log
+          button never learnt the feature existed. It is a row on Today now,
+          under the week strip. See `SuggestAction`. */}
+      <View className="flex-row items-center justify-between gap-2">
         <Text variant="subtitle" className="shrink" numberOfLines={1}>
           {t('logging:selector.title')}
         </Text>
-
-        {/* "I do not know what to eat", beside the heading of the sheet opened
-            by somebody who has come to add a meal. The four ways in below all
-            assume the meal has been decided; this is the one that does not, so
-            it belongs to the heading rather than to that row. */}
-        <SuggestAction date={selectedDate} kcalLeft={left} hasBudget={Boolean(targets)} />
-
-        {/* Pushed to the far edge by a spacer rather than by `justify-between`,
-            which would put the glyph out there with it. */}
-        <View className="flex-1" />
         <Text variant="caption">
           {t('logging:selector.remaining', { count: Math.max(0, left) })}
         </Text>

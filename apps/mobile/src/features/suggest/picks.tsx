@@ -3,12 +3,12 @@ import { createContext, type ReactNode, useCallback, useContext, useMemo, useSta
 import type { MealPick, SuggestRequest } from '@/data'
 
 /**
- * The five picks currently on screen, and what was asked for to get them.
+ * The picks currently on screen, and what was asked for to get them.
  *
  * IN MEMORY, ABOVE NAVIGATION, and nowhere else. A suggestion is not a record
  * of anything: it is a guess about a meal nobody has eaten, made against a
  * budget that changes with the next thing logged. Persisted, it would come back
- * a day later as five dishes that fitted somebody's Tuesday.
+ * a day later as a list of dishes that fitted somebody's Tuesday.
  *
  * It exists at all because the detail screen is a PUSHED PAGE and the list it
  * came from is a sheet. The picks have no id — there is no row, and inventing

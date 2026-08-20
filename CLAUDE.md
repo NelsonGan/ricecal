@@ -900,53 +900,91 @@ a pot; each has a subject and the model's job is to identify it. Here there is
 nothing to identify: the subject is the REST OF THE DAY, and the answer is a
 suggestion rather than a fact.
 
-A SPARKLE IN THE LOG SHEET opens it, on the heading's line. That is where
-somebody already is when the question comes up: `/log` is the sheet opened to
-add a meal, and the four ways in underneath it — snap, describe, scan, search —
-all assume the meal has already been decided. This is the one that does not, so
-it belongs to the heading rather than to that row, and it is drawn as a raised
-glyph rather than a fifth `QuickAction` because nothing it leads to writes
-anything.
+A THIN ROW ON TODAY opens it, directly under the week strip. One line high,
+flat pandan rather than raised, with the words on it: everything raised on that
+screen writes something and this writes nothing at all, so it reads as an offer
+rather than as the thing to do next. It sits under the day it is about, which is
+the day the answer is costed against.
 
-It has been two other things, and both were the right idea in the wrong place: a
+It has been three other things, and each was the right idea in the wrong place. A
 tinted card on Today headed "Not sure what to eat?", which was a lot of screen
-for an offer standing between the two things the diary is about, and then a glyph
-on the calorie card, which was beside a READING rather than beside the decision.
+for an offer standing between the two things the diary is about. Then a glyph on
+the calorie card, which was beside a READING rather than beside a decision. Then
+a glyph in the log sheet, on the heading's line, on the argument that somebody
+opening `/log` has not decided what the meal is and the four ways in underneath
+it all assume they have. That argument was sound and cost too much: the offer was
+two taps deep, inside a sheet whose tiles all point the other way, and an account
+that never pressed the log button never learnt the feature existed.
 
-Four questions in a sheet, five dishes back, and one of them opens as a page.
+Four questions in a sheet, seven dishes back, and one of them opens as a page.
 
 ```
-sparkle (/log) →  ask sheet     meal, macros, cuisine, a calorie ceiling
+row (/today)   →  ask sheet     meal, macros, cuisine, a calorie ceiling
                  ↓
                  the same sheet, holding a skeleton while the model works
                  ↓
-                 five picks     name, kcal, protein, and the drawing
+                 seven picks    name, kcal, protein, and the drawing
                  ↓
   /suggest/[index]              the figures, what the day has left after it,
                                 and WHY THIS FITS
 ```
 
 **The list comes back when a pick's page leaves, and FOCUS cannot say when that
-is.** `/log` is a `transparentModal`, and the screen under a transparent
-presentation never loses focus — so the `useFocusEffect` that used to restore the
-list never fired, and reading one pick closed the other four for good. The
-provider carries a counter that the detail bumps as it UNMOUNTS, which happens
-whichever way the page is left: the chevron, the edge swipe, or Android's back
-button.
+is.** This lived in `/log` for a while, which is a `transparentModal`, and the
+screen under a transparent presentation never loses focus — so the
+`useFocusEffect` that used to restore the list never fired, and reading one pick
+closed the rest for good. The provider carries a counter that the detail bumps as
+it UNMOUNTS, which happens whichever way the page is left: the chevron, the edge
+swipe, or Android's back button. It is on an ordinary screen now and focus would
+work, and the counter stays: it is the narrower signal, and it is the one that
+does not care what the offer is presented from.
 
 **EVERY CONTROL OPENS ON AN ANSWER**, which is the opposite of onboarding's first
 screen and right for the opposite reason. There a prefilled body is a calorie
 budget worked out for somebody else; here a prefilled sitting costs nothing to be
-wrong about, because the answer is five suggestions rather than a plan. The
+wrong about, because the answer is a list of suggestions rather than a plan. The
 sitting comes off the user's OWN `meal_times` (`mealAt`, nearest within two and a
 half hours, otherwise a snack) rather than a table of hours, so somebody whose
 dinner is at nine gets dinner at nine. The ceiling opens on what is left of the
 day, capped at what one sitting plausibly is — nobody is asking for a 2,400 kcal
 breakfast.
 
-The cuisines are HARDCODED (Malay, Mamak, Chinese, Others) and a list read from
-the catalogue would be a list of whatever happened to be imported. `others` is not
-a fifth kitchen: it is the absence of the constraint.
+**THE THREE CHOICES ARE DROPDOWNS, and they were rows of chips.** Chips put every
+answer on screen at once, which is the better control while the options are a
+fixed handful. The cuisines stopped being one: a list the user edits wraps to two
+lines, then three, so the sheet's height depended on how much typing somebody had
+done and the calorie limit moved down the panel every time a kitchen was added.
+The other two follow it, because three questions answered three different ways
+read as three different kinds of question. `features/suggest/Dropdown.tsx` opens
+IN PLACE rather than through `Select`, which opens its options in a `Sheet` — a
+native modal presented from inside another one, which this app has never had a
+reason to build.
+
+**The cuisines are the USER'S OWN LIST, and it lives on the phone.** Malay,
+Chinese and Indian to begin with, and a pencil beside the dropdown opens the
+list as chips that remove themselves plus a field that adds one. It was four
+hardcoded keys — Malay, Mamak, Chinese, Others — on the reasoning that a list
+read from the catalogue would be a list of whatever happened to be imported.
+That still holds against reading it from the catalogue, and it never held
+against letting somebody type their own: a fixed union is a list that cannot say
+Thai, Nyonya or Japanese, and the model has never needed to be told about a
+cuisine in advance.
+
+MMKV and NOT a column, keyed by user, for the reasons the rest of
+`preferences.ts` gives: it is a preference about a control rather than a fact
+about the account, and a column would be a query the sheet has to wait on before
+it can be drawn. The list is saved as it is EDITED rather than when the question
+is asked — the exception to the rule beside it, because a cuisine somebody typed
+out is work rather than a tap.
+
+Two consequences worth knowing. The server has no list left to validate against,
+so `cuisinePhrase` BOUNDS the string instead: trimmed, capped at 40 characters,
+and stripped of the line breaks that would let a text field pose as another
+instruction in the prompt. The four that had curated wording keep it when they
+are typed, because each phrase was arrived at by a failure. And the cuisine can
+no longer be sent to Mixpanel as itself — `trackedCuisine` maps it to one of the
+shipped defaults or to `custom`, because free text somebody typed is exactly what
+the analytics rule keeps out.
 
 **NOTHING IT RETURNS IS WRITTEN ANYWHERE, and the picks are view only.** No
 `food_logs` row, no catalogue row, no "Log it" button on the detail. A guess
@@ -961,15 +999,29 @@ a record of anything.
 **The panel is one sheet at one size, throughout.** The wait and the answer are
 two states of the same full-height sheet rather than two sheets: a capped sheet
 sizes itself to its content, so the two were different heights and the panel
-jumped at the one moment this screen has to feel settled. The wait draws five
-skeleton rows at a real row's height, in the places the rows will land, and they
-are faded over rather than cut. "Try again" is an icon on the title's line
-(`Sheet`'s `titleAction`) rather than a footer button — on a screen whose point
-is the five things above it, asking again is the secondary action, and the sheet
-is left with no footer so the list runs its full height.
+jumped at the one moment this screen has to feel settled. The wait draws one
+skeleton row per pick coming, at a real row's height, in the places the rows will
+land, and they are faded over rather than cut — off `PICK_COUNT` rather than a
+literal, since the two drifted once already when the list went from five to
+seven. "Try again" is an icon on the title's line (`Sheet`'s `titleAction`)
+rather than a footer button — on a screen whose point is the dishes above it,
+asking again is the secondary action, and the sheet is left with no footer so the
+list runs its full height.
 
-**The reasons are the product.** Five dish names against a calorie figure is a
-list anybody could write; "you are 39 g short on protein and one bowl covers most
+**TRY AGAIN ASKS AGAIN. It used to reopen the question.** The old behaviour was
+argued for: "try again" after reading a list usually means "with something else",
+and a second identical request spends a scan on an answer the user has just
+decided against. Watched, that is not what it is used for — the four answers are
+the same answers, the sheet remembers three of them anyway, and being handed the
+form back is being asked to confirm a decision nobody was revisiting. So the
+press re-sends the last request and the skeleton comes straight up in the list's
+place; the model is not deterministic, so the same question genuinely does answer
+differently. Changing the question is still one tap away: close the panel and the
+row is underneath it. The last request is held in a REF rather than read off the
+provider, which is only set once an answer has landed.
+
+**The reasons are the product.** A list of dish names against a calorie figure is
+a list anybody could write; "you are 39 g short on protein and one bowl covers most
 of it" is what makes it a suggestion. So `why` is required per pick and a pick
 without one is dropped, and the reason's `kind` is a closed set of five so the
 screen can draw the right picture beside it.
@@ -995,8 +1047,17 @@ calories are never shrunk to fit the ceiling (asked for a 300 kcal snack it
 offered "nasi lemak, one plate, 280 kcal"); and the macros left are context for
 the reasons rather than a specification to hit. `unslug` plus a capital is the
 belt behind the last of them, because the icon list is the largest block in the
-prompt and the model answers in its register: five picks named `char-kuey-teow`,
+prompt and the model answers in its register: picks named `char-kuey-teow`,
 `hokkien-mee`, `mee-siam`.
+
+**Seven picks rather than five**, which is `PICK_COUNT` on the server and a
+deliberate copy of it in `features/suggest/ask.ts` — the two live either side of
+the Deno / React Native line and cannot import each other. The sheet scrolls, so
+the count was never bounded by what fits on a panel, and with the retry button
+re-asking in one tap a short list is the thing somebody spends a scan escaping.
+The heading stopped counting with it: "Ideas for dinner" rather than "Five for
+dinner", because a heading that names a number lies whenever a pick is dropped
+for having nothing to say for itself.
 
 **It leans healthier, ON A TOGGLE, and the lean is a TIE-BREAK rather than a
 filter.** Told nothing it suggests whatever is famous; told to be healthy it
@@ -1016,8 +1077,9 @@ absence.
 Somebody who eats Malay food and wants protein wants that again tomorrow, and
 three of four answers being retyped every time is three taps charged for
 nothing. `features/suggest/preferences.ts` keeps the macros, the cuisine and the
-lean in MMKV, keyed by user, saved when the question is ASKED — a chip tapped and
-tapped back is not a preference. The sitting is not among them because it is
+lean in MMKV, keyed by user, saved when the question is ASKED — an answer chosen
+and changed back is not a preference. The cuisine LIST is the one exception and
+saves itself as it is edited, for the reason given above. The sitting is not among them because it is
 answered by the clock, and the ceiling because it follows the sitting and the
 day's remaining budget: a 300 saved from a snack would open tomorrow's dinner at
 300. What is remembered is the kind of food, which is the part that is genuinely
@@ -1182,6 +1244,15 @@ water, the entry list, and anything logged while it is selected. The heading
 stops saying "Today" the moment it is used, and the two present-tense lines
 under the ring switch tense with it.
 
+**And a way back, in the bottom-left corner, only while there is one.** The strip
+reaches back a year and the month grid reaches it in twelve taps, at which point
+returning to today means paging forward week by week to the day the screen is
+named after. `Screen`'s `floatingLeading` is a slot of its own rather than a row
+inside `floating` — the two corners hold unrelated things and appear on different
+conditions, and a single row would need an invisible spacer for whichever half is
+absent, over a scroll view, eating taps. Absent on today rather than disabled: a
+control whose only job is to get somewhere you already are has nothing to say.
+
 The dot under each number is that day's verdict, and there are three of them
 plus silence: under goal, over goal, a hollow ring for a past day with nothing
 on it — and NOTHING for today-before-breakfast or a day still ahead. That last
@@ -1203,7 +1274,28 @@ REPLACES the screen under it rather than sitting above it. The two views answer
 different questions — "what did I eat" and "what have I been eating" — and the
 month can only answer its one by being mostly pictures, which leaves no room for
 the ring, the water and the list. What is under the grid instead is the selected
-day as a row of its plates, scrolling sideways, each opening its entry.
+day as a LIST of what was eaten on it, and the water tank for that day.
+
+The list was a row of plates that scrolled sideways — a 72pt picture per meal,
+the calories under it, the time under that — on the argument that the grid above
+is read by looking and the thing under it should be read the same way. Two things
+were wrong with that. The dish's NAME was not on it, so a day of four
+photographed plates was four squares to be opened one at a time to identify; and
+a sideways scroller hides whatever does not fit, which on a day worth looking at
+is most of it, with nothing on screen saying there is more. It is `ItemRow` now,
+which is what the diary's own list is made of, so a meal does not look like two
+different things depending on which view found it. Oldest first, unlike the diary
+— that one leads with the newest because the thing somebody looks at right after
+logging is the thing they just logged, and nobody is logging into a day they came
+to the calendar to read. The heading names the day and nothing else: it carried
+the number of meals, which is a count said twice, once as a figure and once as
+the rows underneath it.
+
+The WATER CARD is under that list, and the month view had no answer for water at
+all before it — the only way to see Tuesday's was to leave the calendar, find
+Tuesday on the strip and come back. The card rather than a figure, because it is
+the app's water surface and somebody looking at yesterday is as likely to be
+correcting a drink as reading one.
 
 Every cell carries the day's BIGGEST plate, from `day_plates(from, to)` — the
 photograph where there is one and the drawing where there is not, exactly as
@@ -1219,6 +1311,19 @@ joining the diary twice more per day, fifty-two weeks back, would be a cost paid
 by the screen that does not want it. The calendar wants both and asks for both,
 once a month. The dots are the same three the strip draws, through the same
 `markFor`, because one day cannot have two verdicts.
+
+**THE SELECTED CELL IS FILLED IN ITS OWN VERDICT'S COLOUR**, not always pandan.
+The verdict is the cell's outline and the selection is its fill, which is the
+separation that lets the outline carry a verdict at all — and while the fill was
+pandan for every selected day the two collided anyway: an over-goal day that
+happened to be selected drew a kaya ring around a green square, so picking a day
+changed what the grid appeared to say about it, and the one cell the reader is
+looking at was the one cell whose colour meant nothing. Under goal fills pandan,
+over goal fills kaya, a missed day fills grey, and a day with no verdict at all
+keeps pandan because that is what selection has always looked like here. The ink
+is PAIRED with the fill rather than assumed: `kaya-ink` is the same value as
+`kaya` in the dark palette, which is the trap the water figure fell into, so
+`on-kaya` and `on-pandan` are the two that hold in all four combinations.
 
 Arrows rather than a pager, unlike the strip: twelve taps reaches a year where
 the strip needs fifty-two swipes, and a paging grid a screen tall would fight the

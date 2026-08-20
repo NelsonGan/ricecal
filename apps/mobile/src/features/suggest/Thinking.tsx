@@ -12,6 +12,16 @@ import Animated, {
 
 import type { SuggestRequest } from '@/data'
 import { Icon, Skeleton, Text } from '@/ui'
+import { PICK_COUNT } from './ask'
+
+/**
+ * One key per skeleton row, minted once.
+ *
+ * The rows are identical and never reorder, so the index IS a stable identity —
+ * but a list keyed by index is a shape worth not having in the codebase at all,
+ * and a frozen array of names costs nothing.
+ */
+const SKELETON_ROWS = Array.from({ length: PICK_COUNT }, (_, row) => `pick-${row}`)
 
 /** How long the shuttle takes to cross the track once. */
 const SWEEP_MS = 1100
@@ -102,9 +112,11 @@ export type ThinkingProps = {
  * The question is repeated deliberately. The sheet that asked it has closed and
  * ten seconds is long enough to stop being sure what was asked.
  *
- * FIVE skeleton rows, not three, and each the height of a real one — this
- * stands in for exactly what is coming, in a panel that must not change height
- * when the answer arrives.
+ * ONE SKELETON ROW PER PICK COMING, not a token three, and each the height of a
+ * real one — this stands in for exactly what is on its way, in a panel that must
+ * not change height when the answer arrives. Which is why the count comes from
+ * `PICK_COUNT` rather than from a literal: the two moved apart once already,
+ * when the list went from five to seven.
  */
 export function Thinking({ request, summary }: ThinkingProps) {
   const { t } = useTranslation('suggest')
@@ -126,7 +138,7 @@ export function Thinking({ request, summary }: ThinkingProps) {
       </View>
 
       <View className="gap-2">
-        {[0, 1, 2, 3, 4].map((row) => (
+        {SKELETON_ROWS.map((row) => (
           // `height` as a prop rather than a class: `Skeleton` puts its own
           // height in an inline style, which wins over anything NativeWind
           // compiles — passed as `h-[72px]` these drew as 14pt pills.
