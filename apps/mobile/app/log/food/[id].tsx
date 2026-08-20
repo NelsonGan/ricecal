@@ -78,11 +78,11 @@ import {
 } from '@/ui'
 
 /**
- * Chips under the fix box for an entry the model offered none of its own for —
+ * Chips under the fix box for an entry the model offered none of its own for:
  * anything hand-logged, and a scan that came back without suggestions.
  *
  * The four most common corrections in any diary, and each is a sentence
- * `scan-refine` reads: "Half portion" is its quantity rung, "No sambal" its
+ * `scan-refine` reads. "Half portion" is its quantity rung, "No sambal" its
  * adjust rung. Nothing here is special-cased on the client.
  */
 const QUICK_FIXES = ['halfPortion', 'noSambal', 'addEgg', 'extraRice'] as const
@@ -111,28 +111,24 @@ const PORTION_DEBOUNCE_MS = 500
 
 /**
  * The edit control in a card's own header, which is how every editable group on
- * this screen is opened now.
+ * this screen is opened.
  *
- * The figures and the plate used to be edited WHERE THEY WERE READ: tap the
- * calorie total and it became a caret in its own place, tap a macro amount and
- * the same, and every part of a scanned plate carried a pair of stepper buttons.
- * Read one figure at a time that was a lovely mechanic; read as a form it was a
- * bad one. Nothing said which of the four figures had already been changed, the
- * number pad covered the rows whose labels were the only thing distinguishing
- * them, and two buttons on every ingredient row took enough width that a part's
- * name was truncated on the one screen whose job is checking what the model
- * decided the plate was made of.
+ * The figures and the plate used to be edited where they were read: tap the
+ * calorie total and it became a caret in its own place, and every part of a
+ * scanned plate carried a pair of stepper buttons. One figure at a time that was
+ * a lovely mechanic; as a form it was a bad one. Nothing said which of the four
+ * figures had already been changed, the number pad covered the rows whose labels
+ * were the only thing distinguishing them, and two buttons on every ingredient
+ * row took enough width that a part's name was truncated on the one screen whose
+ * job is checking what the model decided the plate was made of.
  *
- * So each card says what it holds and carries one way in. `Card` already has an
- * `action` slot opposite its title, which is where a control about the whole
- * card belongs.
+ * So each card says what it holds and carries one way in.
  *
- * THE PENCIL ALONE, with no "Edit" beside it. Three of these sit one under
- * another on the same screen, so the word was printed three times to say the one
- * thing the icon already says, and each card's header then read as two labels
- * rather than a title and a control. The `accessibilityLabel` is where the words
- * went, and they are the specific ones — "Edit the ingredients", not "Edit" —
- * because three buttons announcing "Edit" tell a screen reader nothing.
+ * The pencil alone, with no "Edit" beside it. Three of these sit one under
+ * another on the same screen, so the word was printed three times to say what the
+ * icon already says. The `accessibilityLabel` is where the words went, and they
+ * are the specific ones ("Edit the ingredients", not "Edit") because three
+ * buttons announcing "Edit" tell a screen reader nothing.
  */
 function CardEdit({ label, onPress }: { label: string; onPress: () => void }) {
   return (
@@ -157,25 +153,20 @@ function CardEdit({ label, onPress }: { label: string; onPress: () => void }) {
 }
 
 /**
- * L6 FOOD DETAIL, in both of its jobs.
+ * The food detail screen, in both of its jobs.
  *
- * With an `entryId` it edits something already logged; without one it composes
- * a new entry from the catalogue. The controls are identical either way, so the
+ * With an `entryId` it edits something already logged; without one it composes a
+ * new entry from the catalogue. The controls are identical either way, so the
  * difference is confined to what the button at the foot of it does.
  *
- * NOTHING HERE IS WRITTEN UNTIL SAVE. Every control stages its change in local
- * state and the footer commits the lot — the portion, the serving, the typed
- * figures, the name, the picture and each part of a scanned plate, in one
- * deliberate act. It used to write as it was edited, on a debounce, which made
- * the screen honest about the moment but impossible to think in: a plate being
- * corrected in four places was four round trips and four refetches, and there
- * was no way to change your mind about any of them except by changing them
- * back.
+ * On the edit path each section saves itself, through the sheet that opens it.
+ * The form used to stage everything and write the lot from one footer button,
+ * which stopped making sense once each group moved behind a pencil into a sheet
+ * of its own: a sheet with a Done button that writes nothing is a second staging
+ * level. See `saveDetails` and its neighbours.
  *
- * The three sheets it opens are a SECOND staging level and deliberately not a
- * second transaction: each holds a draft, Done hands that draft back to the form
- * here, and only the footer writes anything. Leaving a sheet any other way drops
- * what was typed into it.
+ * The add path is still a staged form, because there is nothing to write until
+ * Add.
  */
 export default function FoodDetail() {
   const { t } = useTranslation(['logging', 'common'])
@@ -184,10 +175,9 @@ export default function FoodDetail() {
    * Adding a dish ends the whole flow, so it unwinds to the day rather than
    * stepping back one screen.
    *
-   * Still `useDismissTo` even though this screen is a page now: the quick
-   * selector it came through is a transparent modal, and popping one screen would
-   * land on the search page the user is finished with. It dismisses what is
-   * presented and then replaces, so either shape ends up on Today.
+   * Still `useDismissTo` even though this screen is a page now: the quick selector
+   * it came through is a transparent modal, and popping one screen would land on
+   * the search page the user is finished with.
    */
   const finish = useDismissTo('/today')
   const router = useRouter()
@@ -215,10 +205,9 @@ export default function FoodDetail() {
   /**
    * The code, when this screen was arrived at by scanning a packet.
    *
-   * The scanner navigates here the moment it reads one, before anything has
-   * been looked up — so unlike every other way in, this screen can be showing a
-   * food that does not exist yet, or one that turns out not to exist at all.
-   * `useFood` resolves it; the branch below is what those two answers look like.
+   * The scanner navigates here the moment it reads one, before anything has been
+   * looked up, so unlike every other way in this screen can be showing a food that
+   * does not exist yet, or one that turns out not to exist at all.
    */
   const packet = packetCode(params.id)
 
@@ -226,14 +215,13 @@ export default function FoodDetail() {
    * How the scan turned out, recorded once per packet.
    *
    * Here rather than in `lookupPacket`, which the query retries: a lookup that
-   * could not reach the catalogue would otherwise report two failures for one
-   * box held up to a camera. This reads the SETTLED state instead, so a retry
-   * that succeeds is one `found` and nothing else.
+   * could not reach the catalogue would otherwise report two failures for one box
+   * held up to a camera. This reads the settled state instead, so a retry that
+   * succeeds is one `found` and nothing else.
    *
-   * `not_found` is the number this event exists for. It is the live measurement
-   * of what `d1/food-catalogue/BARCODE-COVERAGE.md` argues about: 4,333 rows
-   * carry a GS1 Malaysia prefix out of 3.2 million, and the source is the
-   * ceiling rather than anything in this repo.
+   * `not_found` is the number this event exists for. It is the live measurement of
+   * how thin the Malaysian shelf is: 4,333 rows carry a GS1 Malaysia prefix out of
+   * 3.2 million, and the source is the ceiling rather than anything in this repo.
    */
   const scanRecorded = useRef<string | undefined>(undefined)
   useEffect(() => {
@@ -263,17 +251,15 @@ export default function FoodDetail() {
   )
 
   /**
-   * The food this screen is about, and WHICH ONE depends on why we are here.
+   * The food this screen is about, and which one depends on why we are here.
    *
-   * Adding: the catalogue row is the answer, because there is no entry yet and
-   * its numbers are what the new row will snapshot.
+   * Adding: the catalogue row is the answer, because there is no entry yet and its
+   * numbers are what the new row will snapshot.
    *
-   * Editing: the ENTRY is the answer, always. It states its own numbers — null
-   * `food_id` is ordinary (an estimate, an archetype, a rebuilt plate, a typed
-   * meal, a recipe), and where it is set it is a note about provenance rather
+   * Editing: the entry is the answer, always. It states its own numbers, a null
+   * `food_id` is ordinary, and where it is set it is a note about provenance rather
    * than a live reference. The catalogue row is still fetched, but only for the
-   * other portions it can offer; see `withCataloguePortions` for what happens
-   * when it cannot offer this entry's own.
+   * other portions it can offer.
    *
    * Letting the catalogue win here is what showed a 108 kcal soy milk as 511.
    */
@@ -294,18 +280,17 @@ export default function FoodDetail() {
   /**
    * Which entry the controls above were filled in from.
    *
-   * They are seeded in `useState`, which runs once — and on the way in from a
-   * notification, or a cold start on a deep link, the day query has not
-   * answered yet, so `existing` is undefined for the first render or two. The
-   * screen used to keep those initial values for the rest of its life: a
-   * two-portion entry editing as one, a typed correction the reset link could
-   * not see. Seeding again the first time the row actually arrives is the fix,
-   * and the id is what stops it happening a second time over a live edit.
+   * They are seeded in `useState`, which runs once, and on the way in from a
+   * notification or a cold start on a deep link the day query has not answered yet,
+   * so `existing` is undefined for the first render or two. The screen used to keep
+   * those initial values for the rest of its life. Seeding again the first time the
+   * row arrives is the fix, and the id is what stops it happening a second time
+   * over a live edit.
    *
-   * State rather than a ref, because the change detection below READS it during
-   * render: `existing` lands a render before the seeding effect runs, and
-   * comparing the untouched defaults against the row it has not been filled in
-   * from yet makes every field look edited.
+   * State rather than a ref, because the change detection below reads it during
+   * render: `existing` lands a render before the seeding effect runs, and comparing
+   * the untouched defaults against the row it has not been filled in from yet makes
+   * every field look edited.
    */
   const [seededId, setSeededId] = useState<string>()
   /**
@@ -320,11 +305,10 @@ export default function FoodDetail() {
   /**
    * A drawing chosen while a photo is on the row, waiting on the confirmation.
    *
-   * The warning used to sit on the way IN to the picker — tap a tile with a photo
-   * in it and answer a question before seeing the choices. That was the only way
-   * in when the only thing the picker offered was drawings. It offers the camera
-   * now, so most trips through it are not destructive at all, and the question
-   * belongs where the destructive answer is given.
+   * The warning used to sit on the way in to the picker, which was the only way in
+   * when the only thing the picker offered was drawings. It offers the camera now,
+   * so most trips through it are not destructive at all, and the question belongs
+   * where the destructive answer is given.
    */
   const [pendingIcon, setPendingIcon] = useState<IconRef>()
   /**
@@ -338,35 +322,30 @@ export default function FoodDetail() {
   /**
    * The same key again, as a ref, for as long as no row points at it.
    *
-   * The upload cannot wait for the button — it is what turns a 4MB frame into a
-   * key — so between the shutter and Save the object is real and referenced by
-   * nothing. EVERY way off this screen that is not Save or Add has to take it
-   * with it: backing out, the swipe, a drawing chosen over it, a deep link
-   * replacing the route. An unmount effect is the only place that catches all
-   * of them, and an effect cannot read state it was not told about — hence the
-   * ref beside the state rather than a `shot` dependency, which would fire the
-   * cleanup on every shot rather than on the last one.
+   * The upload cannot wait for the button, since it is what turns a 4MB frame into
+   * a key, so between the shutter and Save the object is real and referenced by
+   * nothing. Every way off this screen that is not Save or Add has to take it with
+   * it: backing out, the swipe, a drawing chosen over it, a deep link replacing the
+   * route. An unmount effect is the only place that catches all of them, and an
+   * effect cannot read state it was not told about, hence the ref beside the state.
    */
   const orphanShot = useRef<string | undefined>(undefined)
   /**
    * A portion edit waiting for the taps to stop, and the timer that will send it.
    *
-   * Refs rather than state because nothing on screen depends on either — the
+   * Refs rather than state because nothing on screen depends on either, since the
    * stepper is already showing the new portion. `flushRef` is how the unmount
-   * cleanup reaches the CURRENT flush: registered once with an empty dependency
+   * cleanup reaches the current flush: registered once with an empty dependency
    * list, a cleanup closing over the function directly would capture the one from
-   * the first render, whose `existing` was undefined, and send nothing. Backing
-   * out of the screen inside the debounce window would otherwise drop the edit.
+   * the first render, whose `existing` was undefined, and send nothing.
    *
    * Up here with the rest of the hooks rather than beside the functions that use
    * them, because those live below the `if (!food)` return and a hook behind a
-   * conditional is a hook that runs in a different order on different renders.
-   */
-  /**
-   * The details sheet moved this entry to another day, so the screen has to leave.
+   * conditional runs in a different order on different renders.
    *
-   * A ref rather than state because it is read once, in the sheet's `onClose`, and
-   * nothing renders differently for it.
+   * The last field is set when the details sheet moves this entry to another day,
+   * so the screen knows it has to leave. A ref rather than state because it is read
+   * once, in the sheet's `onClose`.
    */
   const movedAway = useRef(false)
   const pendingPortion = useRef<{ quantity: number; servingId: string }>(undefined)
@@ -379,12 +358,11 @@ export default function FoodDetail() {
   /**
    * Figures typed by hand, as strings while they are being typed.
    *
-   * An empty field is "nothing overridden here", not "zero" — what the app
-   * worked out shows through as the placeholder, and a field pre-filled with
-   * the app's own number could not tell the user whose number it was.
+   * An empty field is "nothing overridden here", not "zero": what the app worked
+   * out shows through as the placeholder, and a field pre-filled with the app's own
+   * number could not tell the user whose number it was.
    *
-   * Typed in `NutritionSheet` now, all four at once, and staged here. See
-   * `CardEdit` for why they left the figures they describe.
+   * Typed in `NutritionSheet` now, all four at once, and staged here.
    */
   const [typed, setTyped] = useState<TypedFigures>(NO_FIGURES)
   /** Which of the three sheets is open, if any. */
@@ -402,20 +380,17 @@ export default function FoodDetail() {
   /**
    * Parts of a scanned plate that have been moved or taken off, not yet written.
    *
-   * An overlay on the fetched list rather than a copy of it, so a refetch
-   * landing mid-edit cannot silently drop a staged change — and so "stepped up
-   * and back down again" is not a change at all. `null` is a part on its way
-   * off the plate. `PlateSheet` edits a draft of this and hands it back on Done.
+   * An overlay on the fetched list rather than a copy of it, so a refetch landing
+   * mid-edit cannot silently drop a staged change, and so "stepped up and back down
+   * again" is not a change at all. `null` is a part on its way off the plate.
    */
   const [partEdits, setPartEdits] = useState<PartEdits>({})
   /**
-   * WHEN this was eaten, staged as the two things the user is shown: the day it
+   * When this was eaten, staged as the two things the user is shown: the day it
    * counts towards, and the time on the row.
    *
    * The day comes off `log_date` and the time off `logged_at`, which is the way
-   * round the diary already reads them — see the header of `features/logging/
-   * when.ts`. `null` is "the row has not arrived yet", the same wait `seeded`
-   * describes below.
+   * round the diary already reads them. `null` is "the row has not arrived yet".
    */
   const [whenDate, setWhenDate] = useState('')
   const [clock, setClock] = useState<Clock | null>(null)
@@ -451,11 +426,9 @@ export default function FoodDetail() {
    * Whether the controls have been filled in from the row yet.
    *
    * They are seeded in an effect, and on the way in from a notification or a cold
-   * deep link the day query has not answered for the first render or two — so
+   * deep link the day query has not answered for the first render or two, so
    * anything reading the staged values has to wait for this or it reads the
-   * defaults instead. A one-portion default against a two-portion entry used to
-   * flash the Save button enabled for a frame; there is no Save button now, but
-   * the preview would still be wrong for that frame.
+   * defaults instead.
    */
   const seeded = Boolean(existing) && seededId === existing?.id
 
@@ -507,15 +480,13 @@ export default function FoodDetail() {
    * Back to the day with the log sheet open on the panel that answers this.
    *
    * "Scan again" cannot mean "back to where you were": where you were is a
-   * viewfinder inside a sheet that was replaced by this screen, so there is
-   * nothing behind it to return to. It means the day, with the scanner already
-   * open — which is what `/log?panel=` is for.
+   * viewfinder inside a sheet that was replaced by this screen. It means the day
+   * with the scanner already open, which is what `/log?panel=` is for.
    *
-   * The packet's own answer is dropped on the way out. A miss caches like
-   * anything else, and without this a rescan of the same box would show the
-   * cached "we do not have this one" without asking anybody — which is right
-   * about the catalogue and wrong about the case that sent the user back here,
-   * a lookup that could not reach it at all.
+   * The packet's own answer is dropped on the way out. A miss caches like anything
+   * else, and without this a rescan of the same box would show the cached "we do
+   * not have this one" without asking anybody, which is right about the catalogue
+   * and wrong about the case that sent the user back here.
    */
   const reopenLog = (which: 'barcode' | 'describe') => {
     queryClient.removeQueries({ queryKey: keys.food(params.id) })
@@ -529,10 +500,10 @@ export default function FoodDetail() {
     /**
      * A scanned packet, before the answer and when the answer is nothing.
      *
-     * Everything else that reaches this screen has been picked off a list, so
-     * the food is already in hand and this branch is a blank frame nobody sees.
-     * A scan is the exception, and the three ways it can end are the whole
-     * reason the viewfinder no longer waits — see `ScannedPacket`.
+     * Everything else that reaches this screen has been picked off a list, so the
+     * food is already in hand and this branch is a blank frame nobody sees. A scan is
+     * the exception, and the three ways it can end are the whole reason the
+     * viewfinder no longer waits.
      */
     if (packet) {
       return (
@@ -565,11 +536,11 @@ export default function FoodDetail() {
    *
    * Three terms. The base is enough for a whole plate when there is a photograph
    * and less when there is only a drawing; `CONTENT_LIFT` is the strip the content
-   * below rides up over, so the box grows by exactly what the curve covers; and
-   * the top inset is what lets it reach BEHIND the status bar rather than stopping
-   * under it — paired with the negative margin that cancels the shell's padding.
+   * below rides up over, so the box grows by exactly what the curve covers; and the
+   * top inset is what lets it reach behind the status bar rather than stopping
+   * under it.
    *
-   * `resolvingPhoto` counts as having a photo, because it means the entry HAS one
+   * `resolvingPhoto` counts as having a photo, because it means the entry has one
    * and we are waiting on a URL for it. Left out, the box opened short and grew
    * under the reader a moment later.
    */
@@ -579,7 +550,7 @@ export default function FoodDetail() {
    * The drawing this tile would show, if it is showing one at all.
    *
    * A row carries a photo or an icon, never both, and the view already suppresses
-   * its icon columns while a photo exists — so `existing.icon` is undefined for a
+   * its icon columns while a photo exists, so `existing.icon` is undefined for a
    * snapped plate. Only an unsaved choice can override that, which is exactly the
    * swap: pick a drawing and the photo is on its way out.
    */
@@ -602,17 +573,14 @@ export default function FoodDetail() {
   /**
    * What this entry would count as if it were saved now.
    *
-   * `entryTotals` is the client's copy of the `coalesce` in
-   * `food_log_details`: typed, then parts, then portion. Read from the staged
-   * values rather than from the row, which is the whole point of a form — a
-   * figure typed a moment ago, a portion just stepped, an ingredient taken off
-   * the plate all show here before anything is written, and the number the
-   * Save button commits is the number that was on screen.
+   * `entryTotals` is the client's copy of the `coalesce` in `food_log_details`:
+   * typed, then parts, then portion. Read from the staged values rather than from
+   * the row, which is the whole point of a form.
    *
    * While a scanned plate's parts are still on their way, the row's own figure
-   * stands in. It is the same three-source answer, worked out by the view — so
-   * the number is right from the first frame rather than being the parent's
-   * portion for as long as the query takes and then jumping.
+   * stands in. It is the same three-source answer worked out by the view, so the
+   * number is right from the first frame rather than being the parent's portion for
+   * as long as the query takes and then jumping.
    */
   const macros = existing
     ? partsLoading
@@ -630,13 +598,12 @@ export default function FoodDetail() {
     : computed
 
   /**
-   * What the app works out for this entry with NOTHING typed over it.
+   * What the app works out for this entry with nothing typed over it.
    *
    * The placeholders in `NutritionSheet`, and it cannot be `macros`: that has the
    * typed figures folded into it, so an entry already carrying a hand-typed 400
-   * would offer 400 as the number to go back to — the app's own answer would be
-   * unreachable and unreadable. Same three-source rule as `macros`, minus the
-   * first source.
+   * would offer 400 as the number to go back to, and the app's own answer would be
+   * unreachable. Same three-source rule as `macros`, minus the first source.
    */
   const appFigures = existing ? entryTotals({ parts, portion: computed }) : computed
 
@@ -645,8 +612,8 @@ export default function FoodDetail() {
    *
    * `undefined` survives it: these columns are null for most of the imported
    * catalogue, and null means nobody recorded the number rather than zero of it.
-   * One decimal, because a tenth of a gram of fibre is the resolution the
-   * database stores.
+   * One decimal, because a tenth of a gram of fibre is the resolution the database
+   * stores.
    */
   const scale = (value: number | undefined, dp = 1) =>
     value === undefined ? undefined : Math.round(value * factor * 10 ** dp) / 10 ** dp
@@ -668,11 +635,10 @@ export default function FoodDetail() {
   /**
    * Whether there is a "More nutrients" section at all.
    *
-   * Read twice — by the control and by the rule above it — because a divider is
-   * a separator and a separator with nothing on the far side of it is just a
-   * line across the bottom of the card. Most of the catalogue has none of these
-   * columns, so that was the ordinary case rather than the edge one: every
-   * barcoded product with a bare macro panel drew a rule under its last macro
+   * Read twice, by the control and by the rule above it, because a divider with
+   * nothing on the far side of it is just a line across the bottom of the card.
+   * Most of the catalogue has none of these columns, so that was the ordinary case:
+   * every barcoded product with a bare macro panel drew a rule under its last macro
    * and a band of empty space under that.
    */
   const hasExtras = extras.some((row) => row.value !== undefined)
@@ -680,20 +646,19 @@ export default function FoodDetail() {
   /**
    * Put a photo of the actual plate on this row.
    *
-   * The uri comes from the picker's own viewfinder, so by the time this runs the shot
-   * has been taken and there is nothing left to present. That is what fixed the
-   * camera which used to open and shut immediately: it was a native picker being
-   * asked to present while this sheet was dismissing, which iOS cancels — leaving a
-   * promise that never settles and a spinner that never stops.
+   * The uri comes from the picker's own viewfinder, so by the time this runs the
+   * shot has been taken and there is nothing left to present. That is what fixed
+   * the camera which used to open and shut immediately: it was a native picker
+   * being asked to present while this sheet was dismissing, which iOS cancels,
+   * leaving a promise that never settles and a spinner that never stops.
    *
-   * The upload has to happen here whatever else does: a key is what a row can
-   * hold, and turning a 4MB frame into one is the slow part. A shot this one
-   * replaces never reached a row, so it is deleted on the spot.
+   * The upload has to happen here whatever else does: a key is what a row can hold,
+   * and turning a 4MB frame into one is the slow part. A shot this one replaces
+   * never reached a row, so it is deleted on the spot.
    *
-   * ON THE ENTRY, IMMEDIATELY, when there is an entry. The picker has no Save of
-   * its own — picking IS the answer, and it closes on the pick — so with the
-   * footer's Save gone there is nothing left to carry a staged picture. On the add
-   * path it stages as it always did, because there is no row to write to yet.
+   * Written to the entry immediately when there is one. The picker has no Save of
+   * its own, so with the footer's Save gone there is nothing left to carry a staged
+   * picture. On the add path it stages as it always did.
    */
   const attachPhoto = async (uri: string) => {
     setPickingIcon(false)
@@ -713,14 +678,13 @@ export default function FoodDetail() {
         orphanShot.current = undefined
       }
     } catch {
-      // An upload that failed, a bucket that refused it, a patch the server would
-      // not take: none is worth a screen of its own.
+      // An upload that failed, a bucket that refused it, a patch the server would not
+      // take: none is worth a screen of its own.
       //
-      // AND THE TILE GOES BACK, which it did not have to when the footer's Save was
-      // the only writer. Left showing the new photograph over a row that still
-      // holds the old one, the screen disagrees with itself and with Today until
-      // the user leaves, and a toast is the only thing that ever said so. The
-      // object stays in `orphanShot` for the unmount sweep.
+      // And the tile goes back, which it did not have to when the footer's Save was the
+      // only writer. Left showing the new photograph over a row that still holds the
+      // old one, the screen disagrees with itself and with Today until the user leaves.
+      // The object stays in `orphanShot` for the unmount sweep.
       setShot(undefined)
       toast.show({ title: t('logging:detail.photoFailed'), tone: 'error' })
     } finally {
@@ -785,37 +749,34 @@ export default function FoodDetail() {
   }
 
   /**
-   * ONE SAVE PER SECTION, and there is no longer a Save button on the page.
+   * One save per section, and there is no longer a Save button on the page.
    *
    * Every edit used to stage in local state and one footer button wrote the lot.
    * That is a coherent model for a page of controls, and it stopped being one when
    * each group moved behind a pencil into a sheet of its own: a sheet with a Done
-   * button that writes nothing is a second staging level, and nobody reading
-   * "Done" expects to have to find another button afterwards. So each sheet is a
-   * form that saves what it is about, and the footer is left with the one thing
-   * that is not a section of this entry — handing it back to the model.
+   * button that writes nothing is a second staging level, and nobody reading "Done"
+   * expects to have to find another button afterwards. So each sheet is a form that
+   * saves what it is about, and the footer is left with the one thing that is not a
+   * section of this entry, handing it back to the model.
    *
-   * Each of these THROWS on failure, so the sheet can stay open with the draft
+   * Each of these throws on failure, so the sheet can stay open with the draft
    * still in it. They stage the value locally as well, which is the preview: the
-   * write invalidates the day and the refetch is a round trip behind it, and
-   * without the local copy the card would show the old figure for that beat.
+   * write invalidates the day and the refetch is a round trip behind it.
    *
-   * The add path is untouched by all of this. Composing a row genuinely is a
-   * staged form — there is nothing to write until `addToDiary` — which is why the
-   * portion controls are still on the page there and in a sheet here.
+   * The add path is untouched. Composing a row genuinely is a staged form.
    */
   const saveFailed = () => toast.show({ title: t('logging:detail.saveFailed'), tone: 'error' })
 
   const patchEntry = async (patch: Omit<EntryPatch, 'id' | 'logDate'>) => {
     if (!existing) return
     /**
-     * AN EMPTY PATCH IS NOT A WRITE. Every `save*` below builds its columns
-     * conditionally, so each can come out with nothing in it: the details sheet
-     * saved with neither the name nor the time touched, or a portion stepped up
-     * and back down inside the debounce window. Sent anyway it is a round trip
-     * that invalidates the day for no reason, and PostgREST answers an update with
-     * an empty body with a 400 — which would surface as "could not save those
-     * changes" for an edit nobody made.
+     * An empty patch is not a write. Every `save*` below builds its columns
+     * conditionally, so each can come out with nothing in it: the details sheet saved
+     * with neither the name nor the time touched, or a portion stepped up and back
+     * down inside the debounce window. Sent anyway it is a round trip that
+     * invalidates the day for no reason, and PostgREST answers an update with an
+     * empty body with a 400, which would surface as "could not save those changes"
+     * for an edit nobody made.
      */
     if (Object.keys(patch).length === 0) return
     await updateEntry.mutateAsync({ id: existing.id, logDate: existing.logDate, ...patch })
@@ -827,10 +788,10 @@ export default function FoodDetail() {
     /**
      * The day and the instant together, or neither.
      *
-     * Compared as a DAY and a CLOCK FACE rather than as two ISO strings, because
-     * `instantOn` writes whole seconds while Postgres hands back microseconds — so
-     * an untouched `logged_at` would read as an edit and every save would shift
-     * the row inside its own day by however many seconds the original carried.
+     * Compared as a day and a clock face rather than as two ISO strings, because
+     * `instantOn` writes whole seconds while Postgres hands back microseconds, so an
+     * untouched `logged_at` would read as an edit and every save would shift the row
+     * inside its own day by however many seconds the original carried.
      */
     const moved =
       next.date !== existing.logDate || !sameClock(next.clock, clockOf(existing.loggedAt))
@@ -844,25 +805,19 @@ export default function FoodDetail() {
     setWhenDate(next.date)
     setClock(next.clock)
     /**
-     * AND OFF THE SCREEN, when the entry has left the day this screen reads.
+     * And off the screen, when the entry has left the day this screen reads.
      *
-     * This is not a nicety. `existing` is found in the day query for
-     * `selectedDate`, so the moment the row is filed on another day it is gone
-     * from under the screen — and the screen does not degrade gracefully: `food`
-     * falls back to the CATALOGUE row, which turns the page into the compose-a-new
-     * entry version of itself, portion controls and an "Add to diary" button and
-     * all. For a scanned plate with no catalogue row behind it there is not even
-     * that, only the empty "page not found" bar.
+     * This is not a nicety. `existing` is found in the day query for `selectedDate`,
+     * so the moment the row is filed on another day it is gone from under the screen,
+     * and the screen does not degrade gracefully: `food` falls back to the catalogue
+     * row, which turns the page into the compose-a-new-entry version of itself. For a
+     * scanned plate with no catalogue row behind it there is not even that.
      *
-     * So it goes back, and the toast says where the meal went — without which the
-     * diary it lands on has one fewer row than it did and a meal moved to
-     * yesterday is indistinguishable from a meal deleted. The SELECTED day is left
-     * alone on purpose: the strip on Today is where the user says which day they
-     * are working on, and answering an edit by moving it would take them off the
-     * day they came from.
-     *
-     * A time change on the same day moves nothing and stays put, which is the
-     * common case by a distance.
+     * So it goes back, and the toast says where the meal went, without which the
+     * diary it lands on has one fewer row than it did and a meal moved to yesterday
+     * is indistinguishable from a meal deleted. The selected day is left alone on
+     * purpose: the strip on Today is where the user says which day they are working
+     * on.
      */
     if (moved && next.date !== selectedDate) {
       toast.show({
@@ -883,22 +838,21 @@ export default function FoodDetail() {
 
   /**
    * The four figures, and the whole job here is deciding which of them are the
-   * USER'S.
+   * user's.
    *
    * The sheet's boxes are pre-filled with the current figure, so a field holding
    * the app's own answer comes back looking exactly like one somebody typed. Left
    * as it arrives, opening the sheet and pressing Save would write all four as
-   * overrides — which are stored above the portion in `food_log_details`, so the
-   * next portion change would move the serving and not the calories, silently and
-   * for good.
+   * overrides, which are stored above the portion in `food_log_details`, so the
+   * next portion change would move the serving and not the calories.
    *
-   * So each figure is compared against what the app worked out and only a
-   * DIFFERENT one is an override. An unreadable or empty box means the same thing
-   * as an unchanged one: null, and the figure goes back to the snapshot.
+   * So each figure is compared against what the app worked out and only a different
+   * one is an override. An unreadable or empty box means the same as an unchanged
+   * one: null, and the figure goes back to the snapshot.
    *
    * All four every time rather than only the changed ones, because `overrides` is
-   * one answer about the entry: a field cleared has to be written null, and a
-   * patch that omitted it would leave the old override in place.
+   * one answer about the entry: a field cleared has to be written null, and a patch
+   * that omitted it would leave the old override in place.
    */
   const saveFigures = async (next: TypedFigures) => {
     const own = (field: (typeof FIGURES)[number]) => {
@@ -927,9 +881,8 @@ export default function FoodDetail() {
    * The plate's parts, one statement each, because `set_ingredient_quantity` takes
    * one ingredient.
    *
-   * It leaves the parent row alone on purpose — `34_food_log_ingredients.sql` says
-   * why it stopped rescaling it — and the entry's totals follow anyway, because
-   * `food_log_details` sums the parts whenever an entry has any.
+   * It leaves the parent row alone on purpose, and the entry's totals follow
+   * anyway, because `food_log_details` sums the parts whenever an entry has any.
    */
   const savePlate = async (next: PartEdits) => {
     if (!existing) return
@@ -956,19 +909,17 @@ export default function FoodDetail() {
   }
 
   /**
-   * THE PORTION IS THE ONE SECTION THAT SAVES ITSELF ON A DEBOUNCE.
+   * The portion is the one section that saves itself on a debounce.
    *
    * Everything else on this screen is a sheet with a Save button, because a sheet
    * is a form. The stepper is not: it is a pair of buttons somebody taps three
    * times to get from one plate to two and a half, and there is nowhere on a
-   * plus/minus row to put a Save. Written per tap it would be three round trips
-   * and three refetches for one decision; behind a short debounce it is one.
+   * plus/minus row to put a Save. Written per tap it would be three round trips and
+   * three refetches for one decision; behind a short debounce it is one.
    *
-   * The whole screen used to work this way and it was replaced for good reasons —
-   * "a plate corrected in four places was four round trips, and changing your mind
-   * meant changing the control back". None of that applies to a single control
-   * whose only state is one number: there is nothing to change your mind about
-   * except the number itself, which is what the buttons are for.
+   * The whole screen used to work this way and it was replaced for good reasons, a
+   * plate corrected in four places being four round trips. None of that applies to
+   * a single control whose only state is one number.
    */
   const savePortion = async (next: { quantity: number; servingId: string }) => {
     if (!existing) return
@@ -976,15 +927,15 @@ export default function FoodDetail() {
     await patchEntry({
       ...(next.quantity === existing.quantity ? {} : { quantity: next.quantity }),
       /**
-       * The portion's own NUMBERS travel with its id, and they have to.
+       * The portion's own numbers travel with its id, and they have to.
        *
        * `serving_id` alone was enough while `foods` and `food_servings` were in
        * Postgres, because `food_log_details` joined to them for the factor and the
-       * label. The catalogue is in D1 now and an entry carries its own
-       * `serving_factor` and `serving_label`, so an id written by itself changes
-       * what the row CLAIMS its portion is and nothing about what it counts:
-       * switching a nasi lemak to Large previewed 975 kcal, saved, and left a row
-       * still labelled "1 serving" and still counting 650.
+       * label. The catalogue is in D1 now and an entry carries its own `serving_factor`
+       * and `serving_label`, so an id written by itself changes what the row claims its
+       * portion is and nothing about what it counts: switching a nasi lemak to Large
+       * previewed 975 kcal, saved, and left a row still labelled "1 serving" and still
+       * counting 650.
        */
       ...(next.servingId && next.servingId !== existing.servingId
         ? {
@@ -999,12 +950,12 @@ export default function FoodDetail() {
   }
 
   /**
-   * Send a waiting portion edit NOW, and hand back the write so a caller can wait
+   * Send a waiting portion edit now, and hand back the write so a caller can wait
    * for it.
    *
    * The promise is what `sendFix` needs: `scan-refine` reads the entry off the
    * server and rescales what it finds there, so a correction sent while a portion
-   * patch is still pending is a correction applied to the wrong amount — and if the
+   * patch is still pending is a correction applied to the wrong amount, and if the
    * patch lands afterwards it overwrites the row the model just rebuilt. Every
    * other caller fires and forgets.
    */
@@ -1042,15 +993,13 @@ export default function FoodDetail() {
   /**
    * Send the typed correction and leave.
    *
-   * It used to flush the staged form first, because the server interprets the
-   * words against the entry AS IT STANDS THERE — the parts it is shown, the
-   * calories it is told — so "and half the rice" against a plate changed only on
-   * screen would correct a meal neither of them was looking at. Nothing is staged
-   * across sections any more: every sheet writes on its own save, so the entry on
-   * the server is always the one the user is reading.
+   * It used to flush the staged form first, because the server interprets the words
+   * against the entry as it stands there. Nothing is staged across sections any
+   * more: every sheet writes on its own save, so the entry on the server is always
+   * the one the user is reading.
    *
-   * Fire-and-forget after that: the correction runs for several seconds and this
-   * screen describes the entry's OLD identity the whole time, so it leaves and the
+   * Fire and forget after that: the correction runs for several seconds and this
+   * screen describes the entry's old identity the whole time, so it leaves and the
    * row on Today shows the work.
    */
   const sendFix = async () => {
@@ -1065,15 +1014,15 @@ export default function FoodDetail() {
     if (!requirePro('refine')) return
     setSending(true)
     /**
-     * THE PENDING PORTION GOES FIRST, and this await is the whole of the old
+     * The pending portion goes first, and this await is the whole of the old
      * `commit()` that survives.
      *
-     * The server interprets the words against the entry as it stands THERE — the
-     * parts it is shown, the calories it is told — so a portion stepped a moment
-     * ago and still sitting in the debounce would have the correction applied to
-     * the amount before it, and the patch would then land on top of the meal the
-     * model had just rebuilt. Everything else on this screen is written by the time
-     * its sheet has closed; this is the one edit that can still be in the air.
+     * The server interprets the words against the entry as it stands there, so a
+     * portion stepped a moment ago and still sitting in the debounce would have the
+     * correction applied to the amount before it, and the patch would then land on
+     * top of the meal the model had just rebuilt. Everything else on this screen is
+     * written by the time its sheet has closed; this is the one edit that can still
+     * be in the air.
      */
     await flushPortion()
     refineEntry({
@@ -1097,37 +1046,34 @@ export default function FoodDetail() {
   /**
    * The dish, as the entry itself names it, wherever it is read.
    *
-   * The staged name first — the entry's own `display_label` — then the row's,
-   * then the catalogue's, which is the same order the heading under the
-   * photograph reads in. The catalogue's is the last resort for a reason: it is
-   * the one that says "MEAL KIT, KOREAN FRIED CHICKEN WITH SWEET GOCHUJANG
-   * SAUCE".
+   * The staged name first, then the row's, then the catalogue's, which is the same
+   * order the heading under the photograph reads in. The catalogue's is the last
+   * resort for a reason: it is the one that says "MEAL KIT, KOREAN FRIED CHICKEN
+   * WITH SWEET GOCHUJANG SAUCE".
    */
   const dishName = name.trim() || existing?.foodName || food.name
 
   /**
    * The photograph the shared card carries, which is the one on screen or none.
    *
-   * `hero` alone is not that condition. A row holds a photo or a drawing and
-   * never both, so choosing a drawing leaves the photo in place until the write
-   * lands — the tile above is already showing the drawing while `hero` is still
-   * a picture. Read separately in two places this drifted: the card drew the
-   * drawing and the event said "photo".
+   * `hero` alone is not that condition. A row holds a photo or a drawing and never
+   * both, so choosing a drawing leaves the photo in place until the write lands.
+   * Read separately in two places this drifted: the card drew the drawing and the
+   * event said "photo".
    */
   const sharePhoto = hero && !icon ? hero : null
 
   /**
    * Send this meal as a picture.
    *
-   * The card is already drawn and laid out off to the side of the page, so this
-   * is a capture and a share sheet and nothing else: no frames to wait for and
-   * no preview to approve. See `ShareOutcome` for why a dismissal is not an
-   * error.
+   * The card is already drawn and laid out off to the side of the page, so this is
+   * a capture and a share sheet and nothing else: no frames to wait for and no
+   * preview to approve.
    *
-   * What goes out is the PICTURE, on its own. The sentence below is the Android
-   * fallback — that platform's share intent cannot carry a file, so it is the
-   * sentence or nothing there — and iOS never sends it: the card already says
-   * the dish and the total, and a caption repeating them is the same meal twice.
+   * What goes out is the picture, on its own. The sentence below is the Android
+   * fallback, because that platform's share intent cannot carry a file, and iOS
+   * never sends it: the card already says the dish and the total, and a caption
+   * repeating them is the same meal twice.
    */
   const sendMeal = async () => {
     const outcome = await shareMeal.share(
