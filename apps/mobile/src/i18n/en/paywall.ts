@@ -192,7 +192,11 @@ export const paywall = {
         // "Kept 30 days" wrapped to two lines in a column sized for
         // "Unlimited"; the row's own label already supplies the verb.
         free: '{{days}} days',
-        pro: 'For good',
+        // "Unlimited" rather than "For good", which is the word the two rows
+        // above it use for the same answer. A table read down a column is read
+        // for where it CHANGES, and three ways of writing "no ceiling" make a
+        // reader stop and work out whether they mean different things.
+        pro: 'Unlimited',
       },
     },
   },
