@@ -3,9 +3,9 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { useEntitlement, usePlanPrices, useSubscription } from '@/data'
+import { useEntitlement, usePlanPrices } from '@/data'
 import { openManageSubscriptions } from '@/data/purchases'
-import { PLAN_FEATURES } from '@/features/paywall'
+import { PLAN_FEATURES, usePlanSummary } from '@/features/paywall'
 import { CheckList } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { progressOf } from '@/lib/nutrition'
@@ -19,14 +19,22 @@ export default function SubscriptionScreen() {
   const { t } = useTranslation(['profile', 'paywall', 'common'])
   const router = useRouter()
   const goBack = useBack('/me')
-  const { data: subscription } = useSubscription()
   const { data: prices } = usePlanPrices()
   const [confirmCancel, setConfirmCancel] = useState(false)
 
-  const yearly = subscription?.plan === 'yearly'
+  // `usePlanSummary`, not the column. It reads the store's answer as well as
+  // our own mirror of it, so this screen says the right thing in the seconds
+  // after a purchase — and it never guesses a plan it cannot name, which is
+  // what put "Renews at $4.90" under a promotional grant.
+  const plan = usePlanSummary()
+  const yearly = plan.plan === 'yearly'
   // A one-off purchase has no renewal and nothing to switch to, so both the
-  // footer button and the line under the plan have to say something else.
-  const lifetime = subscription?.plan === 'lifetime'
+  // footer button and the line under the plan have to say something else. So
+  // does an entitlement whose plan is unnamed: there is nothing to switch a
+  // promotional grant TO, and offering "Switch to yearly" against one is the
+  // app inviting somebody to buy what they have already been given.
+  const lifetime = plan.plan === 'lifetime'
+  const switchable = plan.plan === 'yearly' || plan.plan === 'monthly'
 
   /**
    * Somebody who has never paid, or whose subscription has lapsed.
@@ -44,12 +52,10 @@ export default function SubscriptionScreen() {
 
   // Whole days left, from the instant the store reported. Not a stored counter:
   // one would need something to decrement it every midnight.
-  const trialDaysLeft = subscription?.trial_ends_at
+  const trialDaysLeft = plan.trialEndsAt
     ? Math.max(
         0,
-        Math.ceil(
-          (new Date(subscription.trial_ends_at).getTime() - Date.now()) / (24 * 60 * 60 * 1000),
-        ),
+        Math.ceil((new Date(plan.trialEndsAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000)),
       )
     : 0
 
@@ -68,7 +74,7 @@ export default function SubscriptionScreen() {
       footer={
         entitled ? (
           <Button variant="neutral" fullWidth onPress={switchPlan}>
-            {lifetime
+            {!switchable
               ? t('profile:subscription.manage')
               : yearly
                 ? t('profile:subscription.switchMonthly')
@@ -97,11 +103,13 @@ export default function SubscriptionScreen() {
                 the date — so left on the status this line would tell somebody
                 they had Pro on the screen offering to sell it to them. */}
             <Text variant="meta">
-              {!entitled
+              {plan.state === 'none'
                 ? t('profile:home.proNone')
-                : subscription?.status === 'trial'
+                : plan.state === 'trial'
                   ? t('profile:subscription.trialLeft', { count: trialDaysLeft })
-                  : t('profile:home.proActive')}
+                  : plan.plan
+                    ? t('profile:home.proActive', { plan: t(`paywall:plans.${plan.plan}`) })
+                    : t('profile:home.proActivePlain')}
             </Text>
           </View>
         </View>
@@ -111,7 +119,7 @@ export default function SubscriptionScreen() {
             to be left of — which told a paying subscriber their trial was
             spent, and told somebody who had bought LIFETIME the same thing
             about a trial they never had. */}
-        {entitled && subscription?.status === 'trial' ? (
+        {plan.state === 'trial' ? (
           <ProgressBar
             value={progressOf(TRIAL_DAYS - trialDaysLeft, TRIAL_DAYS)}
             tone="kaya"
@@ -124,14 +132,21 @@ export default function SubscriptionScreen() {
             quoting a price beside "Free plan" reads as a charge they are
             already committed to. */}
         {entitled ? (
-          <Text variant="meta">
-            {lifetime
-              ? t('profile:subscription.neverRenews')
-              : t('profile:subscription.renews', {
-                  price:
-                    (yearly ? prices?.yearly?.priceString : prices?.monthly?.priceString) ?? '—',
-                })}
-          </Text>
+          /* NOTHING AT ALL when we cannot name the plan, which is the honest
+             answer for a promotional grant. Written as "everything that is not
+             lifetime renews", this quoted the MONTHLY price to every account
+             holding one — a figure they have never been charged, presented as a
+             standing commitment. */
+          lifetime || switchable ? (
+            <Text variant="meta">
+              {lifetime
+                ? t('profile:subscription.neverRenews')
+                : t('profile:subscription.renews', {
+                    price:
+                      (yearly ? prices?.yearly?.priceString : prices?.monthly?.priceString) ?? '—',
+                  })}
+            </Text>
+          ) : null
         ) : (
           <Text variant="meta">
             {t('profile:subscription.freeBody', {

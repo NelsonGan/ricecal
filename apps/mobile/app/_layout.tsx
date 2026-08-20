@@ -24,6 +24,7 @@ import {
 } from '@/data'
 import { LoginLinkHandler } from '@/features/auth'
 import { OnboardingDraftProvider } from '@/features/onboarding'
+import { EntitlementSync } from '@/features/paywall'
 import { SuggestProvider } from '@/features/suggest'
 import { initOnlineManager } from '@/lib/online'
 import { persistOptions, queryClient } from '@/lib/query'
@@ -111,6 +112,12 @@ export default Sentry.wrap(function RootLayout() {
                               {/* Under the toast because its one job on failure is to
                             say the link had expired. Renders nothing. */}
                               <LoginLinkHandler />
+                              {/* Also renders nothing. Keeps the store's answer
+                            about this account and our own mirror of it in step,
+                            so a purchase unlocks the app without waiting on a
+                            webhook. Inside `SessionProvider` because it is
+                            keyed by whoever is signed in. */}
+                              <EntitlementSync />
                               <RootStack />
                             </ToastProvider>
                           </SuggestProvider>

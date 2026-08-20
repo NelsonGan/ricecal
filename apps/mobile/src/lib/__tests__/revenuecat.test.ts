@@ -1,4 +1,11 @@
-import { forgetPurchaser, identifyPurchaser, setPurchasesForTest } from '../revenuecat'
+import {
+  forgetPurchaser,
+  identifyPurchaser,
+  onStoreEntitlementChange,
+  proEntitlementOf,
+  readStoreEntitlement,
+  setPurchasesForTest,
+} from '../revenuecat'
 
 /**
  * The purchase SDK's identity lifecycle, which is the half of the paywall that
@@ -40,6 +47,20 @@ let calls: string[] = []
 let holdLogIn = false
 let releaseLogIn: (() => void) | null = null
 
+/** What the fake SDK will answer `getCustomerInfo` with, per case. */
+type FakeEntitlement = {
+  isActive: boolean
+  willRenew: boolean
+  periodType: string
+  expirationDate: string | null
+  productIdentifier: string
+  isSandbox: boolean
+}
+let activeEntitlements: Record<string, FakeEntitlement> = {}
+let listeners: ((info: { entitlements: { active: typeof activeEntitlements } }) => void)[] = []
+
+const customerInfo = () => ({ entitlements: { active: activeEntitlements } })
+
 function fakeSdk() {
   return {
     configure: () => {},
@@ -53,6 +74,20 @@ function fakeSdk() {
     logOut: async () => void calls.push('logOut'),
     setEmail: async (email: string | null) => void calls.push(`setEmail:${email}`),
     setMixpanelDistinctID: async (id: string | null) => void calls.push(`mixpanel:${id}`),
+    getCustomerInfo: async () => {
+      calls.push('getCustomerInfo')
+      return customerInfo()
+    },
+    addCustomerInfoUpdateListener: (listener: (info: ReturnType<typeof customerInfo>) => void) => {
+      listeners.push(listener)
+    },
+    removeCustomerInfoUpdateListener: (
+      listener: (info: ReturnType<typeof customerInfo>) => void,
+    ) => {
+      const before = listeners.length
+      listeners = listeners.filter((l) => l !== listener)
+      return listeners.length < before
+    },
   }
 }
 
@@ -63,6 +98,8 @@ beforeEach(() => {
   calls = []
   holdLogIn = false
   releaseLogIn = null
+  activeEntitlements = {}
+  listeners = []
   setPurchasesForTest(fakeSdk())
 })
 
@@ -147,4 +184,92 @@ it('finishes with one account before it starts on the next', async () => {
     'setEmail:two@example.com',
     'mixpanel:user-2',
   ])
+})
+
+/**
+ * THE STORE'S OWN ANSWER.
+ *
+ * These are the half of the entitlement that does not go through Postgres, and
+ * they are worth testing precisely because the other half already is: the two
+ * disagree on purpose for the seconds between a purchase settling and the
+ * webhook writing the row, and it is that window this reading exists to cover.
+ */
+
+const entitlement = (over: Partial<FakeEntitlement> = {}): FakeEntitlement => ({
+  isActive: true,
+  willRenew: true,
+  periodType: 'NORMAL',
+  expirationDate: '2027-01-01T00:00:00Z',
+  productIdentifier: 'com.nelsongan.ricecal.pro.yearly',
+  isSandbox: false,
+  ...over,
+})
+
+it('reads the pro entitlement out of the store', async () => {
+  activeEntitlements = { pro: entitlement() }
+
+  await expect(readStoreEntitlement()).resolves.toEqual({
+    active: true,
+    trial: false,
+    expiresAt: '2027-01-01T00:00:00Z',
+    productId: 'com.nelsongan.ricecal.pro.yearly',
+    sandbox: false,
+  })
+})
+
+it('reads a free trial as entitled, and says it is a trial', () => {
+  const read = proEntitlementOf({
+    entitlements: { active: { pro: entitlement({ periodType: 'TRIAL' }) } },
+  })
+
+  // The trial is what the user pressed the button for, so an app that did not
+  // count it as entitled would show the paywall to somebody who had just
+  // started one — which is exactly what a status-only mirror does while the
+  // webhook is in flight.
+  expect(read.active).toBe(true)
+  expect(read.trial).toBe(true)
+})
+
+it('is not entitled by somebody else’s entitlement', () => {
+  // An entitlement that is not ours unlocks nothing. RevenueCat keys `active`
+  // by identifier, so a project that ever sells a second one must not have it
+  // read as this one.
+  const read = proEntitlementOf({ entitlements: { active: { other: entitlement() } } })
+  expect(read.active).toBe(false)
+})
+
+it('takes RevenueCat word for active rather than re-reading the date', () => {
+  // Deliberately the opposite of `isEntitledRow`, which second-guesses its own
+  // row because that row is a copy of an event and can be stale. This is the
+  // SDK's reading of a receipt it has just validated, and it already accounts
+  // for the grace period — an expiry in the past with `isActive` true is a
+  // subscription in its billing grace period, not a lapsed one.
+  const read = proEntitlementOf({
+    entitlements: { active: { pro: entitlement({ expirationDate: '2000-01-01T00:00:00Z' }) } },
+  })
+  expect(read.active).toBe(true)
+})
+
+it('reports nothing to ask rather than a no when the SDK is unusable', async () => {
+  setPurchasesForTest(null)
+  // No key in the test env, so `ensurePurchasesConfigured` answers false. Null
+  // is the answer that keeps "there is no store here" apart from "the store
+  // says you have not paid" — read as the latter, a build with no RevenueCat in
+  // it would override a perfectly good subscription.
+  await expect(readStoreEntitlement()).resolves.toBeNull()
+})
+
+it('forwards store changes until it is unsubscribed', async () => {
+  const seen: boolean[] = []
+  const stop = onStoreEntitlementChange((e) => seen.push(e.active))
+  await settle()
+
+  for (const l of listeners) l({ entitlements: { active: { pro: entitlement() } } })
+  expect(seen).toEqual([true])
+
+  stop()
+  for (const l of listeners) l({ entitlements: { active: { pro: entitlement() } } })
+  // Nothing new: the listener was detached, so a change arriving after the
+  // subscriber has gone cannot write into a cache it no longer owns.
+  expect(seen).toEqual([true])
 })

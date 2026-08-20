@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router'
 import { useEffect, useRef } from 'react'
 
 import { useEntitlement, useSession } from '@/data'
+import { tutorialOffered } from '@/features/tutorial'
 import { track } from '@/lib/analytics'
 import { markPaywallSeen, paywallDue } from './nudge'
 
@@ -72,6 +73,14 @@ export function useProNudge(): void {
     // who has already paid.
     if (entitled || loading || unknown) return
     if (!paywallDue(userId)) return
+    // NOT ON THE LAUNCH THE TOUR IS OFFERED ON. Both are booked by Today at
+    // about the same beat — 1.2 seconds there, 1.4 here — so on a new free
+    // account they landed together: a paywall pushed over the diary with the
+    // tour's toast sitting across its buy button. Two offers at once is one
+    // offer too many anyway, and of the two the tour is the one that belongs to
+    // a first launch. The paywall is a standing offer with a two-day clock on
+    // it and loses nothing by waiting for the next one.
+    if (!tutorialOffered(userId)) return
 
     timer.current = setTimeout(() => {
       offered.current = true

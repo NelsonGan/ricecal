@@ -274,7 +274,40 @@ export const paywall = {
     freeReached: 'That is your {{count}} scans for today. Pro scans as much as you like.',
     proReached: "You have hit today's scanning limit. Please contact admin.",
     notEntitled: 'Your subscription is not active, so this one needs Pro.',
+    /**
+     * The store says this account has paid and our own copy of that has not
+     * caught up yet, which is the few seconds between a purchase settling and
+     * the webhook writing the row.
+     *
+     * A SEPARATE SENTENCE because the alternative is the worst thing this app
+     * can do with a refusal: show a paywall to somebody who has just bought it.
+     * What they need to hear is that the purchase is fine and the app is a
+     * moment behind, not an invitation to pay again.
+     */
+    confirming: 'Your purchase is going through. Give it a moment and try again.',
+    /**
+     * A Pro-only button, pressed by somebody who is not.
+     *
+     * ONE LINE FOR ALL OF THEM, deliberately, and it is the same argument that
+     * left this app with one paywall rather than a variant per feature: the
+     * differences between "describing a meal needs Pro" and "asking what to eat
+     * needs Pro" are writing rather than information. What the sentence is FOR
+     * is that a screen arriving with no explanation reads as the app having
+     * decided to sell something, and the price list behind it cannot say which
+     * button was pressed.
+     */
+    proFeature: 'That one needs RiceCal Pro.',
   },
+
+  /**
+   * The gate was tapped before the answer to "has this account paid" arrived.
+   *
+   * Almost always a fraction of a second, and it used to be silent — the button
+   * simply did nothing, which is indistinguishable from a broken control. It
+   * says what is happening instead, and it does NOT open the paywall: nobody
+   * has been refused anything yet.
+   */
+  checking: 'Just a moment, we are checking your plan.',
 
   welcome: {
     // Was "You are in. Jom makan." — "jom makan" is Malay for "let's eat", and
@@ -282,7 +315,19 @@ export const paywall = {
     // app is for. The catalogue reaches across Asia and beyond, so the welcome
     // greets everybody in the language they are reading it in.
     title: "You are in. Let's eat.",
+    /**
+     * Only when the store actually STARTED a trial.
+     *
+     * It was said to everybody who was not buying lifetime, and the app has no
+     * business promising a trial the store did not give: an introductory offer
+     * is once per account per subscription group, so anybody resubscribing —
+     * or on a storefront where the offer is not configured — was charged
+     * immediately and told they had a week free. `usePlanSummary` reads the
+     * period type off the purchase rather than off the button that was pressed.
+     */
     body: 'Trial active for 7 days. Everything is unlocked, nothing to set up.',
+    /** Paid straight away: a resubscriber, or an account with no offer left. */
+    bodyActive: 'Everything is unlocked, nothing to set up.',
     bodyLifetime: 'RiceCal Pro is yours for good. Everything is unlocked, nothing to set up.',
     perks: {
       // The three ways in, and they have to stay the three ways in: this is a

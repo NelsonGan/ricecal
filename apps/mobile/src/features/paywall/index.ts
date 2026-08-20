@@ -6,9 +6,11 @@
  * and what it costs, which is a narrower thing to know than "meals and foods".
  */
 
+export { EntitlementSync } from './EntitlementSync'
 export { markPaywallSeen, NUDGE_INTERVAL_MS, paywallDue } from './nudge'
 export { PLAN_FEATURES, type PlanFeature, PlanTable } from './PlanTable'
 export { ProPitch, type ProPitchProps } from './ProPitch'
+export { type PlanSummary, planOfProduct, usePlanSummary } from './plan'
 export {
   trackPurchaseAbandoned,
   trackPurchaseStarted,

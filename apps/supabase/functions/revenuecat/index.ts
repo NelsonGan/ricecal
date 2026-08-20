@@ -72,6 +72,27 @@ async function tokenMatches(presented: string, expected: string): Promise<boolea
   return diff === 0
 }
 
+/**
+ * The accounts allowed to be granted Pro by a SANDBOX purchase.
+ *
+ * A comma-separated list of Supabase user ids in `REVENUECAT_SANDBOX_USER_IDS`.
+ * Read per request rather than at module scope so changing the secret takes
+ * effect on the next invocation rather than the next cold start — this is a
+ * testing control, and waiting an unknown number of minutes to find out whether
+ * it took is most of the problem it is there to solve.
+ *
+ * Empty is the safe default and the production setting: with nothing set, every
+ * sandbox event is dropped exactly as before.
+ */
+function sandboxTesters(): Set<string> {
+  return new Set(
+    (Deno.env.get('REVENUECAT_SANDBOX_USER_IDS') ?? '')
+      .split(',')
+      .map((id) => id.trim().toLowerCase())
+      .filter(Boolean),
+  )
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return json({ ok: false, error: 'POST only' }, 405)
 
@@ -99,23 +120,14 @@ Deno.serve(async (req: Request) => {
   const event = payload.event
   if (!event) return json({ ok: false, error: 'no event' }, 400)
 
-  // A SANDBOX PURCHASE IS FREE, and it must not grant the real thing. RevenueCat
-  // forwards sandbox events to the production webhook by default, and a sandbox
-  // buy carries a genuine Supabase user id (the tester signed into the real app)
-  // — so without this an INITIAL_PURCHASE made against Apple's or Play's sandbox
-  // writes `status = 'active'` and unlocks every metered model path for nothing.
-  // Only `PRODUCTION` is a real transaction. Guarded on a defined non-production
-  // value rather than on `!== 'PRODUCTION'`, so a payload that omits the field
-  // entirely is still processed rather than silently dropping real events.
-  if (event.environment && event.environment !== 'PRODUCTION') {
-    return json({ ok: true, ignored: `${event.environment} environment` })
-  }
-
   // `app_user_id` is the id the app told RevenueCat about, which is the
   // Supabase user id — see `identifyPurchaser` in the client. An anonymous id
   // ($RCAnonymousID:...) means the SDK was configured before anybody signed
   // in, and there is no account to credit: 200 so RevenueCat stops retrying,
   // and a log line because it means the client's identify step regressed.
+  //
+  // RESOLVED BEFORE THE ENVIRONMENT CHECK, because that check now has to know
+  // WHO the event is about — see the allow-list below.
   const appUserId = event.app_user_id ?? event.original_app_user_id ?? ''
   if (!appUserId || appUserId.startsWith('$RCAnonymousID')) {
     console.warn('[revenuecat] event with no account to credit:', appUserId)
@@ -124,6 +136,43 @@ Deno.serve(async (req: Request) => {
   if (!UUID.test(appUserId)) {
     console.warn('[revenuecat] app_user_id is not a user id:', appUserId)
     return json({ ok: true, ignored: 'app_user_id is not a uuid' })
+  }
+
+  // A SANDBOX PURCHASE IS FREE, and it must not grant the real thing. RevenueCat
+  // forwards sandbox events to the production webhook by default, and a sandbox
+  // buy carries a genuine Supabase user id (the tester signed into the real app)
+  // — so without this an INITIAL_PURCHASE made against Apple's or Play's sandbox
+  // writes `status = 'active'` and unlocks every metered model path for nothing.
+  // Only `PRODUCTION` is a real transaction. Guarded on a defined non-production
+  // value rather than on `!== 'PRODUCTION'`, so a payload that omits the field
+  // entirely is still processed rather than silently dropping real events.
+  //
+  // WITH ONE ALLOW-LIST, AND IT EXISTS BECAUSE THE RULE MADE THE FLOW
+  // UNTESTABLE. Every way of buying this app outside the App Store's own
+  // checkout is a sandbox transaction — a StoreKit sandbox account, a TestFlight
+  // build, RevenueCat's Test Store — so with the rule alone the purchase path
+  // could never be exercised end to end: the store confirms, RevenueCat records
+  // it, and our own table never hears. The symptom is exactly the one this
+  // function exists to prevent, "I started the trial and it still says free
+  // plan", and it is indistinguishable from the webhook being broken.
+  // `REVENUECAT_SANDBOX_USER_IDS` names the accounts allowed to grant on a
+  // sandbox event. Unset — which is the default, and what production should
+  // stay on — nothing changes.
+  //
+  // AND IT SAYS SO IN THE LOG EITHER WAY. The drop used to be silent, which is
+  // what made this take an afternoon to find: a sandbox event and a delivery
+  // that never arrived leave exactly the same trace, which is none.
+  if (event.environment && event.environment !== 'PRODUCTION') {
+    if (!sandboxTesters().has(appUserId.toLowerCase())) {
+      console.warn(
+        `[revenuecat] ignoring a ${event.environment} ${event.type} for ${appUserId};` +
+          ' add the id to REVENUECAT_SANDBOX_USER_IDS to grant on it',
+      )
+      return json({ ok: true, ignored: `${event.environment} environment` })
+    }
+    console.warn(
+      `[revenuecat] granting on a ${event.environment} ${event.type} for allow-listed ${appUserId}`,
+    )
   }
 
   // An event about a different entitlement is not ours to act on. An empty

@@ -1,11 +1,16 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 
+import {
+  onStoreEntitlementChange,
+  readStoreEntitlement,
+  type StoreEntitlement,
+} from '@/lib/revenuecat'
 import { supabase } from '@/lib/supabase'
 import { unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
 import { fetchPlanPrices } from './purchases'
-import { useUserId } from './session'
+import { useSession, useUserId } from './session'
 
 /**
  * The subscription, as RevenueCat last reported it.
@@ -106,6 +111,7 @@ export type Entitlement = {
  */
 export function useEntitlement(): Entitlement {
   const { data, isLoading, isError, isPaused } = useSubscription()
+  const store = useStoreEntitlement()
 
   // Never fetched, and not fetching either. `isPaused` is the offline case and
   // it matters more than it looks: every query in this app is
@@ -113,17 +119,101 @@ export function useEntitlement(): Entitlement {
   // MMKV this query sits pending FOR EVER. Folded into `loading` it would make
   // every gated button silently do nothing, with no message and no way for the
   // user to tell that from a broken app.
-  const noAnswer = data === undefined && (isError || isPaused)
+  const mirrorNoAnswer = data === undefined && (isError || isPaused)
+  // Paused is not loading. Something that is loading will finish.
+  const mirrorLoading = isLoading && !isPaused
+
+  // Three states, not two. `null` is the SDK saying there is nothing to ask —
+  // a build with a placeholder key — which is not the same as it saying no, and
+  // reading it as a no would let a build with no store attached override an
+  // account that is perfectly well subscribed.
+  const storeYes = store.data?.active === true
+  const storeNo = store.data != null && store.data.active === false
+
+  // EITHER SOURCE SAYING YES IS ENOUGH, and they are yes for different reasons.
+  // The mirror is what the server enforces against and what survives a
+  // reinstall; the store is what knows about the purchase that completed two
+  // seconds ago. Requiring both would mean the paywall stays up until a webhook
+  // lands, which is the complaint this exists to answer.
+  const entitled = isEntitledRow(data) || storeYes
 
   return {
-    entitled: isEntitledRow(data),
-    // Paused is not loading. Something that is loading will finish.
-    loading: isLoading && !isPaused,
+    entitled,
+    // Only while nobody has said yes. Once one has, there is nothing left to
+    // wait for and a gate should open rather than sit through the other.
+    loading: !entitled && (mirrorLoading || store.isLoading),
     // We asked and could not find out. The screens use this to say "we could
     // not check" rather than "you have not paid", which are very different
     // things to read when you have in fact paid.
-    unknown: noAnswer,
+    //
+    // A cached store answer of NO settles it even with the mirror unreachable,
+    // which is the ordinary offline case for a free account: the SDK answers
+    // from its own cache, so the app can stop apologising for a check it has in
+    // fact managed to make.
+    unknown: !entitled && !mirrorLoading && !store.isLoading && mirrorNoAnswer && !storeNo,
   }
+}
+
+/**
+ * What the STORE says, through the RevenueCat SDK.
+ *
+ * `networkMode: 'always'` is the one deliberate departure from the app-wide
+ * rule, and the reason is that this query does not go to the network. The SDK
+ * keeps its own cache of the last customer info it validated and answers out of
+ * it offline; paused with everything else it would sit pending for ever and the
+ * fallback it exists to BE would be the thing that was missing.
+ *
+ * `retry: false` for the reason `usePlanPrices` has it: the common failure is a
+ * build with no RevenueCat in it, and that does not become true on the third
+ * ask. The reader answers null rather than throwing for exactly that case, so a
+ * retry would only ever be about a native call that failed.
+ */
+export function useStoreEntitlement() {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.storeEntitlement(userId),
+    queryFn: readStoreEntitlement,
+    networkMode: 'always',
+    retry: false,
+    // The listener below is what keeps this fresh; the stale time only governs
+    // how often a remount asks again.
+    staleTime: 60 * 1000,
+  })
+}
+
+/**
+ * Keeps the two answers in step, from the one moment that knows they moved.
+ *
+ * MOUNTED ONCE, near the root — see `EntitlementSync`. The SDK fires its
+ * listener on a purchase, a restore, a renewal, an expiry and on its own
+ * refresh, which is every moment the answer could have changed. Two things
+ * follow from each of those and both are done here:
+ *
+ * - The store's answer is written straight into the cache, so a purchase
+ *   unlocks the app in the frame after the store sheet closes rather than after
+ *   a refetch.
+ * - Our OWN mirror is invalidated, because RevenueCat having heard something is
+ *   the earliest possible warning that the webhook is about to write that row.
+ *   Waiting for a stale time instead is how the Me tab went on saying "Free
+ *   plan" for a minute after a purchase landed.
+ *
+ * The scan quota goes with it: its ceiling is a property of the tier, so an
+ * account that has just become Pro has fifty a day rather than three, and the
+ * line under the viewfinder is drawn from that count.
+ */
+export function useEntitlementSync(): void {
+  const queryClient = useQueryClient()
+  const { userId } = useSession()
+
+  useEffect(() => {
+    if (!userId) return
+    return onStoreEntitlementChange((entitlement) => {
+      queryClient.setQueryData<StoreEntitlement | null>(keys.storeEntitlement(userId), entitlement)
+      void queryClient.invalidateQueries({ queryKey: keys.subscription(userId) })
+      void queryClient.invalidateQueries({ queryKey: keys.scanQuota(userId) })
+    })
+  }, [queryClient, userId])
 }
 
 /**
@@ -212,15 +302,45 @@ const ENTITLEMENT_POLL_INTERVAL_MS = 1_500
 
 export function useAwaitEntitlement(): () => Promise<boolean> {
   const queryClient = useQueryClient()
-  const userId = useUserId()
+  // `useSession`, not `useUserId`, and this is not a style choice: `useUserId`
+  // THROWS when there is nobody signed in, and every paywall screen calls this
+  // during render. A route restored cold — a deep link, a saved navigation
+  // state, a Fast Refresh — mounts before the keychain read finishes, and the
+  // paywall came up as a red error screen rather than as a paywall. Nothing
+  // here needs the id until the callback runs, by which time there always is
+  // one, so the hook has no business demanding it a render early.
+  const { userId } = useSession()
 
   return useCallback(async () => {
+    // Nobody to check. Only reachable if a purchase somehow settled before the
+    // session did; the gates recover on their own once it lands.
+    if (!userId) return false
+    // THE STORE FIRST, and usually it is the whole answer. The purchase that
+    // just completed is one the SDK has already validated, so this resolves
+    // immediately and the caller moves on without waiting on a webhook at all.
+    // Before it was asked, every purchase paid the full ten seconds below and
+    // then navigated anyway — which is what put the paywall back in front of
+    // people who had just bought the app.
+    await queryClient.invalidateQueries({ queryKey: keys.storeEntitlement(userId) })
+    const store = queryClient.getQueryData<StoreEntitlement | null>(keys.storeEntitlement(userId))
+
+    // Asked for either way, because it is what the SERVER reads: the gates open
+    // on the store's word, and the requests behind them do not. Not awaited
+    // when the store has already said yes — there is nothing on screen waiting
+    // for it, and the sync listener will pick the row up when it lands.
+    const mirror = queryClient.invalidateQueries({ queryKey: keys.subscription(userId) })
+    if (store?.active) {
+      void mirror
+      return true
+    }
+    await mirror
+
     for (let attempt = 0; attempt < ENTITLEMENT_POLL_ATTEMPTS; attempt++) {
-      await queryClient.invalidateQueries({ queryKey: keys.subscription(userId) })
       const row = queryClient.getQueryData<EntitlementRow>(keys.subscription(userId))
       if (isEntitledRow(row)) return true
       if (attempt < ENTITLEMENT_POLL_ATTEMPTS - 1) {
         await new Promise((resolve) => setTimeout(resolve, ENTITLEMENT_POLL_INTERVAL_MS))
+        await queryClient.invalidateQueries({ queryKey: keys.subscription(userId) })
       }
     }
     return false

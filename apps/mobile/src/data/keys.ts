@@ -17,6 +17,26 @@ export const keys = {
   goals: (userId: string) => ['goals', userId] as const,
   subscription: (userId: string) => ['subscription', userId] as const,
   /**
+   * What the STORE says, as against what our own mirror of it says.
+   *
+   * A SECOND KEY rather than a field on the one above, because the two answer
+   * at different times and from different places: this one is the RevenueCat
+   * SDK's cached reading of the receipt, available the instant a purchase
+   * settles, and `subscription` is the row a webhook writes some seconds later.
+   * `useEntitlement` reads both. See `StoreEntitlement`.
+   *
+   * Keyed by user like everything else, even though the SDK holds exactly one
+   * customer at a time: an account switch clears the cache anyway, and a key
+   * that names its user cannot serve the previous one if that ever regresses.
+   */
+  storeEntitlement: (userId: string) => ['store-entitlement', userId] as const,
+  /**
+   * Every account's store answer, for the one reader that has no session to ask
+   * with — see `storeSaysPaid` in `data/refusals.ts`. There is only ever one
+   * entry under it, since the cache is cleared on an account change.
+   */
+  storeEntitlementAll: () => ['store-entitlement'] as const,
+  /**
    * How many of today's scans are left.
    *
    * Keyed by user and not by date. The date it is about is the USER's own, and
