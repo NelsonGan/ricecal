@@ -1670,12 +1670,15 @@ tier that takes the limits off:
 | recipes kept | 3 | unlimited |
 | trends | 7 days | 7d / 30d / a year |
 | reviews | the newest week | every week and month |
-| meal photographs kept | 30 days | for good |
+| meal photographs kept | 30 days, or 60 past a lapsed subscription | for good |
 | budget, health sync, reminders, the whole catalogue | yes | yes |
 
 Three of those numbers live in `packages/shared` for the copy to interpolate,
 and all THREE are enforced in Postgres — `free_daily_scans()`,
-`free_recipe_limit()`, `free_photo_retention_days()`. The client's copy is what
+`free_recipe_limit()`, `free_photo_retention_days()`. A fourth,
+`lapsed_photo_grace_days()`, is Postgres-only: nothing interpolates it into copy
+because the grace period is not advertised, and a promise about it would be one
+more thing that cannot be narrowed later. The client's copy is what
 makes the buttons read honestly; the database's is what refuses. The other two
 rows of that table, the trend ranges and the older reviews, are gated in the
 CLIENT ALONE and deliberately: they are reads of the user's own data, so the
@@ -1730,13 +1733,45 @@ every refusal. It is MMKV and keyed by user, for the reasons the tour flag is.
 
 **Free photographs are swept after thirty days, and only the photographs.**
 The entry stays for ever: its name, its macros and its place in the diary are
-the history somebody came for. `functions/retention` does it rather than a cron
-job in Postgres, because Postgres cannot reach R2 and the ORDER is the whole
-problem — delete the object, then clear the column. A crash between the two is
-picked up by the next run, since deleting a key that is already gone is a no-op;
-the other order strands the bytes for ever, the key being their only name. The
-row keeps a drawing where the plate was (`icon-match.ts` again), or a swept month
-would be a column of grey tiles.
+the history somebody came for. `functions/retention` does the WORK rather than a
+statement in Postgres, because Postgres cannot reach R2 and the ORDER is the
+whole problem — delete the object, then clear the column. A crash between the
+two is picked up by the next run, since deleting a key that is already gone is a
+no-op; the other order strands the bytes for ever, the key being their only
+name. The row keeps a drawing where the plate was (`icon-match.ts` again), or a
+swept month would be a column of grey tiles.
+
+**A FORMER SUBSCRIBER GETS SIXTY DAYS BEFORE ANY OF IT STARTS.**
+`lapsed_photo_grace_days()` is the third condition in `expired_meal_photos`, and
+it is deliberately not one of the `free_*` numbers: those say what the free tier
+gets, and this says what somebody who used to pay is spared. A subscription ends
+for reasons that are not a decision — a card expires, a renewal webhook is lost
+past RevenueCat's retries, a support cancellation lands early — and the account
+reads as free the same day whichever it was, so the first thing that happens to
+a former subscriber must not be the deletion of their photographs. Sixty days is
+long enough for a failed payment to be noticed and for a wrongly dropped webhook
+to be repaired by `reconcileEntitlement` on their next request. It stacks with
+the paid-era rule rather than replacing it: what they logged WHILE paying is
+kept for ever regardless, and the grace covers what they have logged since. The
+cliff at expiry plus sixty is real and bounded — at most a month of post-expiry
+plates go in one batch — and that is the price of a grace period having an end.
+
+**The CLOCK, though, is in Postgres.** `pg_cron` calls `sweep_meal_photos()`
+every hour, which POSTs to that function with a token read from the vault. It
+was a GitHub Action, and what moved it is that a scheduled workflow is disabled
+after sixty days of repository inactivity: the sweep would simply stop, free
+accounts would keep their photographs for ever, and the first sign of it would
+be a storage bill. Three things that Action had for free are bought back
+explicitly, because `pg_net` is FIRE AND FORGET — it returns a request id and
+the answer lands in `net._http_response` seconds later, garbage collected within
+hours. So `retention_runs` is the history: each run records the request it fired
+and settles the previous one's outcome, which is why the schedule is hourly and
+not daily. The token is in `vault.decrypted_secrets` rather than in the schedule,
+because `cron.job.command` is plain text readable by anything holding
+`service_role`. And the twenty-batch drain loop the Action ran is gone, replaced
+by twenty-four batches a day — a call that cannot read its own response cannot
+loop on it. A missing secret RAISES rather than returning quietly, so it lands
+in `cron.job_run_details` instead of looking like a sweep with nothing to do.
 
 **There is a second way to get Pro, and no code behind it.** Share & Earn
 (`app/settings/share.tsx`) offers a month for a post that reaches 30 likes, a

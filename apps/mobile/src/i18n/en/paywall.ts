@@ -337,6 +337,10 @@ export const paywall = {
     },
     manageNote: 'Manage or cancel any time in Profile, Subscription.',
     manageNoteLifetime: 'Paid once. There is nothing to renew or cancel.',
-    start: 'Log my first meal',
+    // NOT "Log my first meal", which is what it said while this button also
+    // raised the log sheet. That sheet opens on the camera, so the words and the
+    // action agreed with each other and both were wrong: a purchase should hand
+    // somebody their app back, not point them at one feature of it.
+    start: 'Go to my diary',
   },
 } as const

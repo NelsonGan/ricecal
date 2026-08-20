@@ -14,7 +14,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(11);
+select plan(15);
 
 \set free '44444444-4444-4444-4444-444444444444'
 \set pro  '55555555-5555-5555-5555-555555555555'
@@ -133,6 +133,14 @@ select is(
 -- webhook lost past RevenueCat's retries leaves a paying account reading as
 -- expired. Only what was logged AFTER the last paid period ended is ever in
 -- scope.
+--
+-- THIS ACCOUNT IS DELIBERATELY WELL OUTSIDE THE GRACE WINDOW, so that what is
+-- asserted below is the paid-era rule ALONE. It used to lapse exactly sixty
+-- days ago, which stopped meaning "long ago" the moment a sixty day grace
+-- period existed: the account fell on the boundary, every photograph was
+-- spared, and these two cases failed for a reason that had nothing to do with
+-- what they are about. Written off the two functions rather than as intervals
+-- so that neither number can drift out from under it again.
 
 \set lapsed '88888888-8888-8888-8888-888888888888'
 
@@ -140,7 +148,8 @@ insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, ra
 values (:'lapsed', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'lapsed@example.test', '{}'::jsonb, '{}'::jsonb, now(), now());
 
 insert into public.subscriptions (user_id, status, plan, current_period_end)
-values (:'lapsed', 'expired', 'yearly', now() - interval '60 days');
+values (:'lapsed', 'expired', 'yearly',
+        now() - make_interval(days => public.lapsed_photo_grace_days() + 60));
 
 insert into public.food_logs
   (user_id, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g,
@@ -149,11 +158,11 @@ values
   -- Logged while they were paying. Kept, for ever.
   (:'lapsed', 'Paid-for plate', 500, 60, 20, 18, '1 plate', 1,
    'meals/88888888-8888-8888-8888-888888888888/paid.jpg', 'camera',
-   now() - interval '90 days'),
+   now() - make_interval(days => public.lapsed_photo_grace_days() + 90)),
   -- Logged after the subscription ended, and now older than the free window.
   (:'lapsed', 'Since it lapsed', 500, 60, 20, 18, '1 plate', 1,
    'meals/88888888-8888-8888-8888-888888888888/after.jpg', 'camera',
-   now() - interval '40 days');
+   now() - make_interval(days => public.free_photo_retention_days() + 10));
 
 select is(
   (select count(*)::integer from public.expired_meal_photos()),
@@ -165,6 +174,80 @@ select is(
   (select photo_path from public.expired_meal_photos()),
   'meals/88888888-8888-8888-8888-888888888888/after.jpg',
   'and the plate from the paid year is not the one being swept'
+);
+
+-- -- THE LAPSED SUBSCRIBER'S GRACE PERIOD -----------------------------------
+--
+-- A former subscriber is not swept the day they lapse. Three things have to be
+-- true at once before one of their photographs goes, and the whole point of
+-- these cases is that each is load-bearing on its own: old enough, logged after
+-- the paid period ended, AND that period more than `lapsed_photo_grace_days()`
+-- gone. The middle one is asserted above by the `pro` account; these cover the
+-- third, which is the one a naive reading of "they are free now" would drop.
+
+\set lapsed_recent '66666666-6666-6666-6666-666666666666'
+\set lapsed_old    '77777777-7777-7777-7777-777777777777'
+
+insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+values
+  (:'lapsed_recent', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'lapsed-recent@example.test', '{}'::jsonb, '{}'::jsonb, now(), now()),
+  (:'lapsed_old', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'lapsed-old@example.test', '{}'::jsonb, '{}'::jsonb, now(), now());
+
+-- One lapsed inside the grace window, one well outside it.
+insert into public.subscriptions (user_id, status, plan, current_period_end)
+values
+  (:'lapsed_recent', 'expired', 'yearly',
+   now() - make_interval(days => public.lapsed_photo_grace_days() - 10)),
+  (:'lapsed_old', 'expired', 'yearly',
+   now() - make_interval(days => public.lapsed_photo_grace_days() + 10));
+
+select ok(
+  not public.is_entitled(:'lapsed_recent') and not public.is_entitled(:'lapsed_old'),
+  'both lapsed accounts read as unentitled, so only the grace period protects them'
+);
+
+-- Logged after each period ended, and old enough to be swept on the thirty day
+-- rule alone. Only the account whose grace has run out should be picked.
+insert into public.food_logs
+  (user_id, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g,
+   serving_label, serving_factor, photo_path, source, logged_at)
+values
+  (:'lapsed_recent', 'Plate inside the grace window', 500, 60, 20, 18, '1 plate', 1,
+   'meals/66666666-6666-6666-6666-666666666666/inside.jpg', 'camera',
+   now() - make_interval(days => public.free_photo_retention_days() + 1)),
+  (:'lapsed_old', 'Plate past the grace window', 500, 60, 20, 18, '1 plate', 1,
+   'meals/77777777-7777-7777-7777-777777777777/past.jpg', 'camera',
+   now() - make_interval(days => public.free_photo_retention_days() + 1));
+
+select is(
+  (select count(*)::integer from public.expired_meal_photos()
+    where photo_path like 'meals/66666666%'),
+  0,
+  'a photograph is spared while the subscription is still inside its grace period'
+);
+
+select is(
+  (select count(*)::integer from public.expired_meal_photos()
+    where photo_path like 'meals/77777777%'),
+  1,
+  'and is swept once the grace period has run out'
+);
+
+-- The guard the grace period must not weaken: a plate from the PAID era stays
+-- for good, however long ago the subscription ended.
+insert into public.food_logs
+  (user_id, item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g,
+   serving_label, serving_factor, photo_path, source, logged_at)
+values
+  (:'lapsed_old', 'Plate from the paid era', 500, 60, 20, 18, '1 plate', 1,
+   'meals/77777777-7777-7777-7777-777777777777/paid-era.jpg', 'camera',
+   now() - make_interval(days => public.lapsed_photo_grace_days() + 30));
+
+select is(
+  (select count(*)::integer from public.expired_meal_photos()
+    where photo_path like '%paid-era.jpg'),
+  0,
+  'a plate logged while they were paying is never swept, grace period or not'
 );
 
 select * from finish();
