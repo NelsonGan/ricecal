@@ -1,8 +1,15 @@
 import { Linking, Platform } from 'react-native'
 
 import { env, isConfigured } from '@/lib/env'
-import { ensurePurchasesConfigured } from '@/lib/revenuecat'
+import { ensurePurchasesConfigured, PRO_ENTITLEMENT } from '@/lib/revenuecat'
 import type { Plan } from './types'
+
+/**
+ * Re-exported rather than defined here. It moved to `lib/revenuecat.ts` when
+ * that module started reading the entitlement itself, and this file may import
+ * downwards while that one may not import up.
+ */
+export { PRO_ENTITLEMENT }
 
 /**
  * Buying, restoring and managing the subscription.
@@ -187,12 +194,6 @@ export async function fetchPlanPrices(): Promise<PlanPrices> {
     yearlySavingPercent: yearlySavingPercent(monthly?.price, annual?.price),
   }
 }
-
-/**
- * The entitlement this app sells. Must match the identifier in RevenueCat and
- * `ENTITLEMENT` in the `revenuecat` edge function.
- */
-export const PRO_ENTITLEMENT = 'pro'
 
 /**
  * Restores purchases, and says whether anything came back.

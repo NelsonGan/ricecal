@@ -145,8 +145,10 @@ export {
   type ScanQuota,
   useAwaitEntitlement,
   useEntitlement,
+  useEntitlementSync,
   usePlanPrices,
   useScanQuota,
+  useStoreEntitlement,
   useSubscription,
 } from './subscription'
 export {

@@ -1586,12 +1586,36 @@ dash — a plausible wrong number is worse than an obviously absent one. The
 saving on the yearly badge is computed from those two prices for the same
 reason: it is the one figure on that screen a user can check.
 
-**A purchase confirms before our mirror knows about it.** The store answers,
-then RevenueCat, then the webhook writes `subscriptions` — which is what
-`useEntitlement` reads. Navigating on the store's confirmation alone put the
-paywall back in front of somebody one tap after they paid, and it is invisible
-on a fast connection. Every purchase and restore awaits `useAwaitEntitlement`,
-which polls the mirror and gives up rather than blocking for ever.
+**A purchase confirms before our mirror knows about it, so the client reads TWO
+sources.** The store answers, then RevenueCat, then the webhook writes
+`subscriptions`. Read as the only source — which it was — that gap is a user
+shown the paywall again one tap after paying, and the gap is not always small:
+a delivery can be slow, and in a SANDBOX it never arrives at all, which is why
+"I started the trial and it still says free plan" was reproducible and looked
+like a broken webhook.
+
+So `useEntitlement` also reads what the STORE told this device, through
+RevenueCat's own SDK (`readStoreEntitlement`). That is not the client granting
+itself anything: it is the receipt the SDK has already validated, cached on the
+handset, and it unlocks BUTTONS while the server goes on deciding what it
+serves. **Either source saying yes is enough**, and neither is second-guessed
+by the other — three states, not two, because `null` from the SDK means "no
+store to ask" (a build with a placeholder key) and must not read as a no.
+`useEntitlementSync` subscribes to the SDK's customer-info listener and both
+writes that answer into the cache and invalidates our own mirror, because
+RevenueCat having heard something is the earliest warning that the webhook is
+about to write the row.
+
+`useAwaitEntitlement` asks the store FIRST and returns the moment it says yes,
+so a purchase leaves the paywall in the same frame; the mirror is invalidated
+either way and polled only when the store had nothing to say.
+
+The corollary is a state that can now exist on screen: the store says paid and
+the server has not heard. `announceRefusal` handles it by NAME — a
+`not_entitled` or a free-tier `scan_limit` arriving while the store says paid is
+answered with "your purchase is going through", never with a paywall. Selling
+the app to somebody who bought it a minute ago is the worst thing this code can
+do.
 
 ### Free and Pro
 
@@ -1899,6 +1923,34 @@ Break these and the feature is wrong in ways tests may not catch.
   sweep runs as `service_role` with no client involved at all. Only the trend
   ranges and the older reviews are client-side, and deliberately: they are reads
   of the user's OWN data, so the worst case is somebody seeing their own year.
+- **The client asks TWO sources whether this account is Pro; the server asks
+  one.** `useEntitlement` reads our own `subscriptions` mirror AND what the
+  store told this device, and either saying yes opens the buttons — see "Money,
+  and reminders". The server has no second source and needs none: it is the one
+  that refuses, and it refuses on the mirror alone. What follows is that the two
+  can disagree for the seconds between a purchase settling and the webhook
+  landing, and that state has ONE correct answer on screen — say the purchase is
+  going through, never show a paywall. `announceRefusal` is where that is
+  decided, and it is the only place.
+- **A plan is NAMED from data or not named at all.** `profile:home.proActive`
+  was the literal string "Yearly plan, active" and was printed to every
+  subscriber there is: a monthly one, somebody who bought lifetime, and every
+  account holding a promotional grant — whose `subscriptions.plan` is null by
+  design, since `planOf` matches a word in the product id and `rc_promo_pro_*`
+  contains none of the three. `usePlanSummary` is the one reader, it returns
+  null rather than guessing, and a null plan means no plan name, no renewal
+  price and "Manage in the store" rather than an offer to switch to a plan the
+  user may already be on. Quoting the MONTHLY price under a promotional grant is
+  what that bug looked like from the outside.
+- **A toast fired over a sheet needs a host inside the sheet.** A native modal
+  window — `Sheet`'s own `Modal`, or a route the navigator presents as a
+  `transparentModal` — is above the app's root view, so the toast the provider
+  draws in the tree renders UNDERNEATH it: it mounts, joins the accessibility
+  tree, runs its timer and dismisses itself, entirely invisible. `ToastHost` is
+  the same fix `NumpadHost` is, and `SheetSurface` renders one. It pins the
+  placement to the TOP, because the bottom of a sheet is the panel and its
+  buttons. Every toast that opens the paywall does the same, for the same
+  reason: the buy button is a footer, and a bottom toast lands on it.
 - **An entitled status is not enough; the PERIOD has to be running too.**
   `entitledBy` on the server and `isEntitledRow` on the client both read
   `current_period_end`, and null means no expiry rather than an expired one —
@@ -2037,6 +2089,21 @@ Break these and the feature is wrong in ways tests may not catch.
   instead: POP is a stack's action, and a dismissal that arrives twice — the
   handle and the scrim answering one gesture — finds nothing to pop rather than
   taking a bite out of the screen behind.
+- **`instanceof` against a PLATFORM class is a test about the runtime, not
+  about the value.** `refusalFrom` in `data/refusals.ts` read a refusal off a
+  failed `functions.invoke` by checking `error.context instanceof Response`, and
+  that was ALWAYS FALSE in the app: Expo 57 ships its own fetch, so what hangs
+  off a `FunctionsHttpError` is a `FetchResponse` that does not subclass the
+  global `Response`. Every 402 and 429 the server has ever sent — "you have used
+  today's three scans", "this one needs Pro" — was therefore read as an ordinary
+  failure and shown as "could not read this one", with no toast and no paywall.
+  The server was refusing correctly the whole time and the client was
+  mistranslating it, which is exactly the shape of "the paywall never opens".
+  It survived because the TEST was green: jest runs on Node, where `Response` is
+  the global, so the suite exercised a runtime the app does not have. Duck-type
+  what you actually need (a `status`, a `json`) and write at least one case with
+  a foreign response object in it. `data/photos.ts` was already doing this and
+  was never affected.
 - **NativeWind only styles React Native's own components.** A third-party one
   takes `className` as an ordinary prop and drops it silently. `Screen.tsx`
   registers `cssInterop` for gesture-handler's ScrollView for exactly this.
@@ -2186,6 +2253,33 @@ Break these and the feature is wrong in ways tests may not catch.
 - **`supabase db push` and other networked CLI commands** block on an invisible
   login prompt when `~/.supabase/` has no access token. The Supabase MCP tools
   work regardless.
+- **A PURCHASE CANNOT BE TESTED WITH THE REAL STORE, AND THE FLOW THAT COULD NOT
+  BE RUN IS THE ONE THAT WAS BROKEN.** Apple's sandbox wants a sandbox Apple ID
+  on a device, Play's wants a licensed tester on a phone, and an Xcode StoreKit
+  configuration file mints a receipt RevenueCat's backend will not validate. So
+  the paywall's button could be pressed on a simulator and never observed past
+  the store sheet.
+  What works is **RevenueCat's Test Store**: a `test_` SDK key, three products
+  in the project's "Test Store" app attached to the `pro` entitlement and to the
+  three packages, and it sells, mints a real customer, grants the entitlement
+  and delivers a real webhook — all on a simulator, with no store account.
+  `EXPO_PUBLIC_RC_TEST_STORE_KEY` in `.env.local` switches to it, and it is read
+  ONLY under `__DEV__` so a release bundle cannot reach it. Two things it costs:
+  the periods are compressed (a "year" is an hour, a "month" ten minutes), which
+  is a gift for testing expiry and a surprise otherwise; and the products carry
+  no introductory offer, so the purchase comes back `active` rather than `trial`.
+  Its events carry `environment: SANDBOX`, which the webhook drops on purpose —
+  see the next line.
+- **The webhook refuses to grant on a sandbox event, and
+  `REVENUECAT_SANDBOX_USER_IDS` is the one door through it.** A sandbox purchase
+  is free and carries a genuine Supabase user id, so granting on one would unlock
+  every metered path for nothing. The secret is a comma-separated list of user
+  ids allowed to be granted anyway; unset — which is what production stays on —
+  nothing changes. Set it with
+  `supabase secrets set REVENUECAT_SANDBOX_USER_IDS=<uuid>[,<uuid>]`. Either way
+  the decision is now LOGGED: a dropped sandbox event and a delivery that never
+  arrived used to leave the same trace, which is none, and that is most of why
+  "the trial did not apply" took so long to place.
 - **One simulator at a time. Never the iOS simulator and the Android emulator
   together.** This machine does not have the headroom for both, and what it
   costs is not a slow session but wrong answers: a Gradle build running beside

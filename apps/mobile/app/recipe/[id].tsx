@@ -17,10 +17,10 @@ import {
   useSaveRecipeCopy,
   useSelectedDate,
 } from '@/data'
+import { openPaywall } from '@/data/refusals'
 import { useRequirePro } from '@/features/paywall'
 import { RecipeSteps, ShareSheet } from '@/features/recipes'
 import { MealPhoto } from '@/features/shared'
-import { track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
 import { energyShare } from '@/lib/nutrition'
 import { useThemeColors } from '@/theme/useTheme'
@@ -174,12 +174,13 @@ export default function RecipeDetailScreen() {
       // save that" would send somebody to try again at a ceiling that is not
       // going to move. Same answer as the recipe form gives.
       if (isRecipeLimit(error)) {
-        toast.show({
+        // Through `openPaywall` rather than three lines here, so the toast comes
+        // from the top like every other one that opens this screen — the
+        // paywall's buy button is a footer, and a bottom toast lands on it.
+        openPaywall(toast, {
           title: t('recipes:edit.limitReached', { count: FREE_RECIPES }),
-          tone: 'warning',
+          feature: 'new_recipe',
         })
-        track('Paywall Shown', { screen: 'hard', trigger: 'new_recipe' })
-        router.push('/paywall')
         return
       }
       toast.show({ title: t('recipes:detail.saveCopyFailed'), tone: 'error' })

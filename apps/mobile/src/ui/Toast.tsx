@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -80,6 +81,24 @@ const tones = {
   error: { fill: 'bg-hibiscus', title: 'text-on-hibiscus', body: 'text-on-hibiscus opacity-80' },
 } as const
 
+/**
+ * What an outlet needs to draw, and the register of who is drawing.
+ *
+ * Separate from `ToastApi` on purpose: `useToast` is the app-facing half and has
+ * exactly two methods on it, while this is plumbing that only `ToastHost` and
+ * the provider's own outlet read.
+ */
+type ToastStage = {
+  toast: Toast | null
+  dismiss: () => void
+  claim: (id: string) => () => void
+  /** The outlet drawing right now, or null for the provider's own. */
+  drawing: string | null
+  offset: number
+}
+
+const ToastStage = createContext<ToastStage | null>(null)
+
 export type ToastProviderProps = {
   children: ReactNode
   /**
@@ -98,9 +117,20 @@ export type ToastProviderProps = {
  */
 export function ToastProvider({ children, offset = 0 }: ToastProviderProps) {
   const [toast, setToast] = useState<Toast | null>(null)
-  const insets = useSafeAreaInsets()
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const nextId = useRef(0)
+
+  /**
+   * The outlets that have offered to draw, oldest first. Only the last one does.
+   *
+   * State rather than a ref, because whether this provider draws its own outlet
+   * has to be decided in a render — and the answer changes when a sheet opens.
+   */
+  const [hosts, setHosts] = useState<string[]>([])
+  const claim = useCallback((id: string) => {
+    setHosts((current) => [...current, id])
+    return () => setHosts((current) => current.filter((host) => host !== id))
+  }, [])
 
   const clear = useCallback(() => {
     if (timer.current) clearTimeout(timer.current)
@@ -140,66 +170,137 @@ export function ToastProvider({ children, offset = 0 }: ToastProviderProps) {
   useEffect(() => clear, [clear])
 
   const value = useMemo(() => ({ show, dismiss }), [show, dismiss])
-  const palette = tones[toast?.tone ?? 'neutral']
-  const placement = toast?.placement ?? (toast?.tone === 'error' ? 'top' : 'bottom')
-  const fromTop = placement === 'top'
+  const stage = useMemo(
+    () => ({ toast, dismiss, claim, drawing: hosts[hosts.length - 1] ?? null, offset }),
+    [toast, dismiss, claim, hosts, offset],
+  )
 
   return (
     <ToastContext.Provider value={value}>
-      {children}
-
-      {toast ? (
-        <View
-          className={cn('absolute inset-x-0 px-gutter', fromTop ? 'top-0' : 'bottom-0')}
-          style={
-            fromTop
-              ? // No `offset` at the top. It exists to clear a tab bar or a footer
-                // CTA, both of which are at the bottom by definition.
-                { paddingTop: insets.top + spacing.md }
-              : { paddingBottom: insets.bottom + spacing.md + offset }
-          }
-          pointerEvents="box-none"
-        >
-          <Animated.View
-            // Keyed by id so replacing a toast replays the entrance rather than
-            // silently swapping the text of one already on screen.
-            key={toast.id}
-            entering={fromTop ? SlideInUp.duration(280) : SlideInDown.duration(280)}
-            exiting={fromTop ? SlideOutUp.duration(200) : SlideOutDown.duration(200)}
-            className={cn('flex-row items-center gap-md rounded-md p-lg', palette.fill)}
-            accessibilityRole="alert"
-            accessibilityLiveRegion="polite"
-          >
-            {toast.icon ? <Icon {...toast.icon} size={24} /> : null}
-
-            <View className="flex-1 gap-0.5">
-              <Text className={cn('font-body-black text-[16px] leading-[20px]', palette.title)}>
-                {toast.title}
-              </Text>
-              {toast.description ? (
-                <Text className={cn('font-body-bold text-[14px] leading-[18px]', palette.body)}>
-                  {toast.description}
-                </Text>
-              ) : null}
-            </View>
-
-            {toast.action ? (
-              <Tappable
-                onPress={() => {
-                  toast.action?.onPress()
-                  dismiss()
-                }}
-                hitSlop={10}
-                accessibilityRole="button"
-              >
-                <Text className="font-display text-[16px] leading-[20px] text-inverse-accent">
-                  {toast.action.label}
-                </Text>
-              </Tappable>
-            ) : null}
-          </Animated.View>
-        </View>
-      ) : null}
+      <ToastStage.Provider value={stage}>
+        {children}
+        {/* The provider draws it only when nothing above it has claimed the
+            job. See `ToastHost`. */}
+        {stage.drawing === null ? <ToastSurface stage={stage} offset={offset} /> : null}
+      </ToastStage.Provider>
     </ToastContext.Provider>
+  )
+}
+
+/**
+ * WHY A TOAST NEEDS A HOST AT ALL, when it is already at the top of the tree.
+ *
+ * Because the top of the REACT tree is not the top of the screen. A sheet is
+ * presented as a native modal — `Sheet`'s own `Modal`, or a route the navigator
+ * presents as a `transparentModal` — and a native modal is its own window,
+ * above the app's root view. Nothing rendered in the app tree can draw over it,
+ * which is the same rule `NumpadHost` exists for and the same fix.
+ *
+ * The symptom was invisible rather than broken, which is why it lasted: the
+ * toast mounted, took its place in the accessibility tree, ran its timer and
+ * dismissed itself, all underneath the panel. Every message the log sheet has
+ * to give without navigating away went that way — the plan still being checked,
+ * the subscription that could not be looked up, a purchase still confirming,
+ * and a subscriber told they had reached fifty scans. Each of them read as a
+ * button that did nothing.
+ *
+ * THE TOPMOST HOST WINS, and the provider's own outlet is the bottom of that
+ * stack. Registration is by mount order, so the last sheet to open is the one
+ * that draws, and closing it hands the job back to whatever is underneath.
+ */
+export type ToastHostProps = {
+  /** Extra bottom room, for an outlet that has a tab bar or a CTA under it. */
+  offset?: number
+  /**
+   * Overrides the edge every toast in this outlet comes from.
+   *
+   * `Sheet` pins it to `top`, and that is the whole reason this exists. A toast
+   * defaults to the bottom, and the bottom of the screen is exactly where a
+   * sheet's panel and its buttons are — so the first message that arrived over
+   * a sheet landed across the two controls it was asking about. The top of a
+   * sheet is scrim, which is the one part of that screen nothing is using.
+   */
+  placement?: ToastPlacement
+}
+
+export function ToastHost({ offset = 0, placement }: ToastHostProps) {
+  const id = useId()
+  const stage = useContext(ToastStage)
+  const claim = stage?.claim
+
+  useEffect(() => claim?.(id), [claim, id])
+
+  if (!stage || stage.drawing !== id) return null
+  return <ToastSurface stage={stage} offset={offset} placement={placement} />
+}
+
+function ToastSurface({
+  stage,
+  offset,
+  placement: forced,
+}: {
+  stage: ToastStage
+  offset: number
+  placement?: ToastPlacement
+}) {
+  const insets = useSafeAreaInsets()
+  const { toast, dismiss } = stage
+  const palette = tones[toast?.tone ?? 'neutral']
+  const placement = forced ?? toast?.placement ?? (toast?.tone === 'error' ? 'top' : 'bottom')
+  const fromTop = placement === 'top'
+
+  if (!toast) return null
+
+  return (
+    <View
+      className={cn('absolute inset-x-0 px-gutter', fromTop ? 'top-0' : 'bottom-0')}
+      style={
+        fromTop
+          ? // No `offset` at the top. It exists to clear a tab bar or a footer
+            // CTA, both of which are at the bottom by definition.
+            { paddingTop: insets.top + spacing.md }
+          : { paddingBottom: insets.bottom + spacing.md + offset }
+      }
+      pointerEvents="box-none"
+    >
+      <Animated.View
+        // Keyed by id so replacing a toast replays the entrance rather than
+        // silently swapping the text of one already on screen.
+        key={toast.id}
+        entering={fromTop ? SlideInUp.duration(280) : SlideInDown.duration(280)}
+        exiting={fromTop ? SlideOutUp.duration(200) : SlideOutDown.duration(200)}
+        className={cn('flex-row items-center gap-md rounded-md p-lg', palette.fill)}
+        accessibilityRole="alert"
+        accessibilityLiveRegion="polite"
+      >
+        {toast.icon ? <Icon {...toast.icon} size={24} /> : null}
+
+        <View className="flex-1 gap-0.5">
+          <Text className={cn('font-body-black text-[16px] leading-[20px]', palette.title)}>
+            {toast.title}
+          </Text>
+          {toast.description ? (
+            <Text className={cn('font-body-bold text-[14px] leading-[18px]', palette.body)}>
+              {toast.description}
+            </Text>
+          ) : null}
+        </View>
+
+        {toast.action ? (
+          <Tappable
+            onPress={() => {
+              toast.action?.onPress()
+              dismiss()
+            }}
+            hitSlop={10}
+            accessibilityRole="button"
+          >
+            <Text className="font-display text-[16px] leading-[20px] text-inverse-accent">
+              {toast.action.label}
+            </Text>
+          </Tappable>
+        ) : null}
+      </Animated.View>
+    </View>
   )
 }

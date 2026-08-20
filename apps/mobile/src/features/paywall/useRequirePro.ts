@@ -1,8 +1,8 @@
-import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 
 import { useEntitlement } from '@/data'
-import { type ProFeature, track } from '@/lib/analytics'
+import { openPaywall } from '@/data/refusals'
+import type { ProFeature } from '@/lib/analytics'
 import { useToast } from '@/ui'
 
 export type RequireProOptions = {
@@ -67,23 +67,39 @@ export type RequireProOptions = {
  * the only way to find out what actually sells the app: the paywall screen
  * cannot know why it was opened.
  *
- * WAITS FOR THE ANSWER rather than assuming one. While the subscription query
- * is still in flight this refuses and says nothing at all — no paywall, no
- * toast. A cold launch resolves it in milliseconds, and the alternatives are
- * both worse: assume paid and a free account gets a photo upload and a model
- * call before being refused, or assume unpaid and a paying user is shown a
- * paywall for the app they have already bought.
+ * WAITS FOR THE ANSWER rather than assuming one. While the entitlement is still
+ * being worked out this refuses, says so in a toast, and shows no paywall —
+ * nobody has been refused a feature, so there is nothing to sell them yet. A
+ * cold launch resolves it in milliseconds, and the alternatives are both worse:
+ * assume paid and a free account gets a photo upload and a model call before
+ * being refused, or assume unpaid and a paying user is shown a paywall for the
+ * app they have already bought.
+ *
+ * That answer now has TWO sources — our own mirror of the subscription, and
+ * what the store itself told this device. See `useEntitlement`: either saying
+ * yes is enough, which is what stops a purchase spending the webhook's latency
+ * behind the paywall it just paid to get past.
  */
 export function useRequirePro(options: RequireProOptions = {}): (feature: ProFeature) => boolean {
   const { navigate = 'push' } = options
-  const router = useRouter()
   const toast = useToast()
   const { t } = useTranslation('paywall')
   const { entitled, loading, unknown } = useEntitlement()
 
   return (feature: ProFeature) => {
     if (entitled) return true
-    if (loading) return false
+
+    // The answer has not arrived. NOT a refusal — nobody has been told they
+    // cannot do this — so there is no paywall and no funnel event, but there is
+    // a sentence: silence here is indistinguishable from a broken button, and
+    // it was the one path in this hook that left a tap doing nothing at all.
+    // A cold launch resolves this in milliseconds, so it is rarely seen; when
+    // it is, it is somebody tapping into a launch and the honest thing to say
+    // is that we are still looking.
+    if (loading) {
+      toast.show({ title: t('checking') })
+      return false
+    }
 
     // We asked and could not find out — offline, most likely. Saying "you have
     // not paid" here would be a lie told to exactly the people most likely to
@@ -93,15 +109,14 @@ export function useRequirePro(options: RequireProOptions = {}): (feature: ProFea
       return false
     }
 
-    // Fired here rather than on the paywall's own mount, because this is the
-    // only place that knows WHY. The routes that are reached WITHOUT a refusal
-    // fire their own — onboarding, the reminder, the ended trial, and the
-    // standing offer on launch — and so does a limit that was reached on the
-    // server. Everything else arrives through this line.
-    track('Paywall Shown', { screen: 'hard', trigger: feature })
-
-    if (navigate === 'replace') router.replace('/paywall')
-    else router.push('/paywall')
+    // THE TOAST AND THE PAYWALL TOGETHER, which is what `announceRefusal` does
+    // for a refusal that started on the server, and for the same reason. This
+    // used to be the paywall alone: a price list arriving over the screen you
+    // were on, with nothing saying which of the buttons under your thumb had
+    // just declined to work. `openPaywall` also carries the `Paywall Shown`
+    // event, so a gate caught in the app and a limit reached on the server land
+    // in the funnel as one thing rather than two.
+    openPaywall(toast, { title: t('limit.proFeature'), feature, navigate })
     return false
   }
 }

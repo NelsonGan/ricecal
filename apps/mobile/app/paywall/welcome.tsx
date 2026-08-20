@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
+import { usePlanSummary } from '@/features/paywall'
 import { CheckList } from '@/features/shared'
 import { useEnterApp } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
@@ -22,6 +23,11 @@ export default function WelcomeToPro() {
    */
   const { plan } = useLocalSearchParams<{ plan?: string }>()
   const lifetime = plan === 'lifetime'
+  // WHETHER THIS IS ACTUALLY A TRIAL is the store's answer, not the button's.
+  // The line under the title used to claim seven free days to everybody who had
+  // not bought lifetime — including a resubscriber, who has already used the
+  // introductory offer for this subscription group and was charged on the spot.
+  const { state } = usePlanSummary()
   const colors = useThemeColors()
 
   /**
@@ -66,7 +72,11 @@ export default function WelcomeToPro() {
           {t('welcome.title')}
         </Text>
         <Text className="text-center text-[15px] leading-[23px]">
-          {lifetime ? t('welcome.bodyLifetime') : t('welcome.body')}
+          {lifetime
+            ? t('welcome.bodyLifetime')
+            : state === 'trial'
+              ? t('welcome.body')
+              : t('welcome.bodyActive')}
         </Text>
       </View>
 

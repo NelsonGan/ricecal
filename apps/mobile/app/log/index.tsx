@@ -18,6 +18,7 @@ import {
   useSnapFood,
   useTargets,
 } from '@/data'
+import { announceRefusal, scanLimitAhead } from '@/data/refusals'
 import {
   type CaptureMode,
   DescribePanel,
@@ -30,7 +31,7 @@ import { RecipePanel } from '@/features/recipes'
 import { dateOffset, type LogMethod, track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
 import { sumMacros } from '@/lib/nutrition'
-import { SheetSurface, Tabs, Text } from '@/ui'
+import { SheetSurface, Tabs, Text, useToast } from '@/ui'
 
 /**
  * Which of the four quick actions has its panel open below the row, if any.
@@ -176,6 +177,7 @@ export default function LogSheet() {
   // Only ever rendered under the viewfinder, so it is fetched with the sheet
   // rather than with the tab behind it.
   const quota = useScanQuota()
+  const toast = useToast()
 
   /**
    * A dish was picked out of the inline search.
@@ -332,17 +334,24 @@ export default function LogSheet() {
           <InlineCamera
             mode={captureMode}
             onCapture={(photoUri) => {
-              // NO GATE HERE ANY MORE, and that is the whole freemium change.
-              // The shutter used to be the paywall's front door; a free account
-              // now photographs three plates a day, which is what makes the
-              // free tier a diary somebody can actually keep rather than a
-              // demonstration of one.
+              // NOT A GATE ON THE FEATURE — the shutter used to be the
+              // paywall's front door, and a free account now photographs three
+              // plates a day, which is what makes the free tier a diary
+              // somebody can actually keep rather than a demonstration of one.
               //
-              // The ceiling is claimed on the SERVER, one unit per scan, and
-              // the fourth plate comes back refused — `announceRefusal` in
-              // `data/refusals.ts` says so and opens the paywall. Checked here
-              // as well it would be a second copy of the count, wrong whenever
-              // the phone had been offline or another device had scanned.
+              // What this is is the ceiling ARRIVING BEFORE THE REQUEST. The
+              // count is still the server's and it still refuses; but the panel
+              // is already drawing "0 scans left" from that same figure two
+              // lines below, so sending the photograph anyway spends an upload
+              // and several seconds to be told something this screen has
+              // printed on it — and leaves a failed row on the diary saying so.
+              // Answered here, the fourth plate is a toast and the paywall, in
+              // the moment the shutter is pressed.
+              //
+              // `replace` because this route is a `transparentModal`: a push
+              // from inside one lands on the stack WITHIN that presentation.
+              const ahead = scanLimitAhead(quota.data)
+              if (ahead && announceRefusal(toast, ahead, 'camera', { navigate: 'replace' })) return
               snapFood({ photoUri, logDate: selectedDate })
               goBack()
             }}
