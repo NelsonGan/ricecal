@@ -115,20 +115,30 @@ grant execute on function public.lapsed_photo_grace_days to authenticated, servi
 -- an account that never paid passes it unconditionally and is swept on the
 -- thirty day rule alone, which is right.
 --
+-- IT RETURNS THE DISH NAME TOO, which is not what a sweep sounds like it needs.
+-- The caller has to put a drawing where each photograph was — see
+-- `clear_meal_photos` below — and it works that drawing out by running the
+-- entry's own name through `icon-match.ts`. Read separately that was a second
+-- query against `food_logs` for rows this one has already found. Returned here
+-- it is a column on a scan that was happening anyway, and it keeps the job's
+-- whole conversation with Postgres inside `service_role` functions rather than
+-- reaching into a table.
+--
 -- `security definer` and `service_role` only: it reads across every account,
 -- which is exactly what no client may do.
 -- ---------------------------------------------------------------------------
 create or replace function public.expired_meal_photos(p_limit integer default 500)
 returns table (
   id         uuid,
-  photo_path text
+  photo_path text,
+  item_name  text
 )
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select f.id, f.photo_path
+  select f.id, f.photo_path, f.item_name
     from public.food_logs f
     left join public.subscriptions s on s.user_id = f.user_id
    where f.photo_path is not null
