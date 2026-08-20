@@ -37,6 +37,8 @@ and it is folded into the foot of that baseline:
 | what | why |
 |---|---|
 | the `select seed_archetype_foods()` call | the rows are data, and a diff only ever emits structure |
+| `create extension pg_net` / `pg_cron` | the diff engine does not track extensions at all: pg_cron installed locally and absent from `schemas/` still diffs clean |
+| the `cron.schedule('sweep-meal-photos', …)` call | a schedule is a ROW in `cron.job`, so it is data for the same reason the seed call is |
 
 There used to be a second: the `storage` buckets and their object policies,
 invisible to the diff because it ignores the `storage` schema entirely. Images
@@ -300,14 +302,79 @@ the tiles need Cloudflare to exist.
 
 One more belongs to the retention sweep: **`RETENTION_TOKEN`**, a shared secret
 that `functions/retention` checks on every request, matched by the repo secret
-of the same name that `.github/workflows/retention.yml` sends. It is a shared
-secret rather than a user's JWT because the sweep runs across every account and
-there is no user to be — the same shape the RevenueCat webhook uses. UNSET, the
-function refuses every request rather than accepting them: an open version of
-this endpoint deletes strangers' photographs.
+of the same name that the scheduler sends. It is a shared secret rather than a
+user's JWT because the sweep runs across every account and there is no user to
+be — the same shape the RevenueCat webhook uses. UNSET, the function refuses
+every request rather than accepting them: an open version of this endpoint
+deletes strangers' photographs.
 
 ```sh
 supabase secrets set --workdir apps RETENTION_TOKEN="$(openssl rand -hex 32)"
+```
+
+### The retention sweep's schedule
+
+`pg_cron` calls `public.sweep_meal_photos()` at seventeen minutes past every
+hour, and that function POSTs to the `retention` edge function. It used to be
+`.github/workflows/retention.yml`; `20260820120000_retention_runs_on_pg_cron.sql`
+is why it moved and what the move cost.
+
+**Three conditions decide whether a photograph goes**, and each is load-bearing
+on its own. It must be older than `free_photo_retention_days()` (30); it must
+have been logged AFTER the account's last paid period ended, so what somebody
+paid to keep is kept for ever; and that period must be more than
+`lapsed_photo_grace_days()` (60) gone, which is the grace a former subscriber
+gets before any of this starts. An account that never subscribed has a null
+`current_period_end`, coalesced to `-infinity`, so it passes the second and
+third unconditionally and is swept on the thirty day rule alone.
+
+**The migration cannot set the secrets, so a fresh environment needs this once.**
+The same token the edge function holds has to be readable by the database, and
+it goes in the vault rather than in the schedule, because `cron.job.command` is
+plain text that anything holding `service_role` can read:
+
+```sql
+select vault.create_secret(
+  'https://<project-ref>.supabase.co/functions/v1', 'retention_functions_url');
+select vault.create_secret('<the same RETENTION_TOKEN>', 'retention_token');
+```
+
+`create_secret` refuses a name it already holds, so ROTATING is
+`vault.update_secret` and the two halves have to move together — the edge
+function's `RETENTION_TOKEN` and this, or the sweep answers 401 and says so in
+`retention_runs`:
+
+```sh
+supabase secrets set --workdir apps RETENTION_TOKEN="$(openssl rand -hex 32)"
+```
+```sql
+select vault.update_secret(id, '<the new value>')
+  from vault.secrets where name = 'retention_token';
+```
+
+Until both exist the job raises once an hour and says which one is missing, and
+the message lands in `cron.job_run_details`. That is deliberate: a sweep that
+returned quietly when a secret was renamed would stop for ever with nothing to
+show for it. **On a local stack you will see that error hourly** unless you set
+the two secrets or run `select cron.unschedule('sweep-meal-photos')`.
+
+Whether it is working is one query, and it is the only monitoring there is:
+
+```sql
+select started_at, status_code, error, left(body, 120) as body
+  from public.retention_runs order by started_at desc limit 24;
+```
+
+`status_code` and `body` on a row are filled in by the FOLLOWING run — pg_net is
+asynchronous and clears its own response table within hours, which is the whole
+reason `retention_runs` exists. Null on the newest row is ordinary. A run to
+worry about is one with an `error`, a `status_code` that is not 200, or a
+`started_at` gap wider than an hour.
+
+Break glass — the sweep, by hand, without the scheduler:
+
+```sh
+curl -X POST "$FUNCTIONS_URL/retention" -H "x-retention-token: $RETENTION_TOKEN"
 ```
 
 A fifth R2 value is optional and local-only: **`R2_ENDPOINT`** overrides the Cloudflare

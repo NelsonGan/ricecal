@@ -13,7 +13,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(21);
+select plan(24);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -287,6 +287,51 @@ select is(
    where n.nspname = 'public' and p.proname = 'day_plates'),
   false,
   'day_plates runs as the caller, so RLS still decides whose diary it reads'
+);
+
+-- The retention sweep's own trigger, which is the most dangerous function in
+-- this schema by some distance. It is `security definer`, it reads the shared
+-- secret out of the vault, and what it POSTs to deletes photographs across
+-- every account — so a client that could execute it could spend the whole
+-- backlog at will, and one that could read `retention_runs` could read the
+-- responses those calls came back with.
+--
+-- Postgres grants EXECUTE to PUBLIC on a new function and `anon` inherits it,
+-- so the revoke in `35_retention.sql` is the only thing standing here. Asserted
+-- because nothing else would notice: the app never calls this, so the grant
+-- being wrong has no symptom at all until somebody goes looking.
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.proname in ('sweep_meal_photos', 'expired_meal_photos', 'clear_meal_photos')
+     and pg_catalog.has_function_privilege('public', p.oid, 'EXECUTE')),
+  0,
+  'the retention functions are not executable by PUBLIC'
+);
+
+select is(
+  (select count(*)::integer
+   from pg_catalog.pg_proc p
+   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.proname in ('sweep_meal_photos', 'expired_meal_photos', 'clear_meal_photos')
+     and pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE')),
+  0,
+  'nor by a signed-in user, who has no business sweeping anybody'
+);
+
+-- RLS on with no policies is how this table is closed, exactly as
+-- `food_scan_items` is: `service_role` bypasses it and everyone else reads
+-- nothing, so a grant added by mistake still exposes no rows.
+select is(
+  (select relrowsecurity
+   from pg_catalog.pg_class c
+   join pg_catalog.pg_namespace n on n.oid = c.relnamespace
+   where n.nspname = 'public' and c.relname = 'retention_runs'),
+  true,
+  'retention_runs has row level security enabled'
 );
 
 select * from finish();

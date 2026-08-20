@@ -78,8 +78,16 @@ jobs:
           # image is not identical to a live project's baseline. Two differences
           # come out of it every single run and neither is anybody's edit:
           #
-          #   pg_net              installed in the image, absent from the live
-          #                       project, declared by no migration of ours.
+          #   pg_net              NO LONGER EMITTED, and the line stays anyway.
+          #                       It was installed in the base image and absent
+          #                       from the live project, so every run wanted to
+          #                       drop it. `20260820120000_retention_runs_on_pg_cron.sql`
+          #                       installs it for real — the retention sweep's
+          #                       schedule POSTs through it — so the two now
+          #                       agree and the statement stops appearing. Kept
+          #                       because it costs nothing and the day somebody
+          #                       drops the extension by hand is not the day to
+          #                       find out this filter was load-bearing.
           #   sequence privileges the image grants UPDATE on public sequences to
           #                       anon/authenticated/service_role; the live
           #                       project has them revoked.
