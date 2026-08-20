@@ -1,48 +1,44 @@
 -- ---------------------------------------------------------------------------
 -- Read shapes.
 --
--- The mock layer's rule was that screens never compute domain numbers — a
--- calorie total, a macro split and a day's budget all came from `derive.ts`.
--- These views are where those went. A screen selects a row that already has
--- `kcal` on it rather than joining three tables and multiplying.
+-- Screens never compute domain numbers: a calorie total, a macro split and a
+-- day's budget all come from here. A screen selects a row that already has `kcal`
+-- on it rather than joining three tables and multiplying.
 --
--- EVERY VIEW IS security_invoker.
+-- Every view is `security_invoker`.
 --
--- A Postgres view runs as its OWNER by default, and the owner here is
--- `postgres`, who bypasses RLS. A view defined the default way would hand
--- every row of `food_logs` to anyone who selected from it — no error, no
--- warning, just other people's meals. `security_invoker = on` makes the
--- caller's policies apply, so a view is a convenience and never a hole.
+-- A Postgres view runs as its owner by default, and the owner here is `postgres`,
+-- who bypasses RLS. A view defined the default way would hand every row of
+-- `food_logs` to anyone who selected from it: no error, no warning, just other
+-- people's meals. `security_invoker = on` makes the caller's policies apply.
 --
 -- Views take no policies of their own; the policies on the tables underneath
--- are what filter them. They still need an explicit grant, because this
--- project does not auto-expose new entities to the Data API.
+-- filter them. They still need an explicit grant, because this project does not
+-- auto-expose new entities to the Data API.
 -- ---------------------------------------------------------------------------
 
 
 -- ---------------------------------------------------------------------------
--- WHERE `food_details` WENT
+-- Where `food_details` went.
 --
 -- There was a view here that joined a dish to its portions and shaped them into
 -- JSON, and `search_foods` returned `setof food_details`. Both are in Cloudflare
--- D1 now, behind a Worker, and the app reaches them through the `catalogue` edge
--- function. The shape the Worker returns is deliberately the shape this view
--- returned: the callers were written against it, and a move of where the data
--- lives should not become a rewrite of what it looks like.
+-- D1 now, behind a Worker. The shape the Worker returns is deliberately the shape
+-- this view returned: the callers were written against it, and a move of where
+-- the data lives should not become a rewrite of what it looks like.
 -- ---------------------------------------------------------------------------
 
 
 -- ---------------------------------------------------------------------------
 -- A scanned plate's ingredients, with the numbers already worked out.
 --
--- Same arithmetic as food_log_details — the part's own per-serving macros x its
--- portion factor x its quantity — so the breakdown a screen renders under an
--- entry uses the same rounding as everything else. The parent entry's own
--- macros stay authoritative; these rows explain them, and the scan function
--- only writes a breakdown whose sum lands within band of the parent.
+-- Same arithmetic as food_log_details (the part's own per-serving macros times
+-- its portion factor times its quantity) so the breakdown a screen renders under
+-- an entry uses the same rounding as everything else. The parent entry's own
+-- macros stay authoritative; these rows explain them.
 --
--- No joins left. The two this had — into `foods` for the name and macros, into
--- `food_servings` for the factor — are columns on the row now.
+-- No joins left. The two this had, into `foods` for the name and macros and into
+-- `food_servings` for the factor, are columns on the row now.
 -- ---------------------------------------------------------------------------
 create view public.food_log_ingredient_details with (security_invoker = on) as
 select
@@ -71,13 +67,13 @@ grant select on public.food_log_ingredient_details to authenticated, service_rol
 -- ---------------------------------------------------------------------------
 -- One logged item, with the numbers already worked out.
 --
--- macros = the entry's own per-base-serving values x the portion's factor x how
--- many. Rounded here, once, so that a total and the rows that make it up cannot
--- disagree by a calorie the way two independent roundings would.
+-- macros = the entry's own per-base-serving values times the portion's factor
+-- times how many. Rounded here, once, so that a total and the rows that make it
+-- up cannot disagree by a calorie the way two independent roundings would.
 --
--- EVERY COLUMN NAME HERE IS THE ONE IT WAS. The screens, the mappers and four
--- views above this one were written against them, and moving the catalogue out
--- of this database must not become a rename.
+-- Every column name here is the one it was. The screens, the mappers and four
+-- views above this one were written against them, and moving the catalogue out of
+-- this database must not become a rename.
 -- ---------------------------------------------------------------------------
 create view public.food_log_details with (security_invoker = on) as
 select
@@ -95,15 +91,15 @@ select
 
   coalesce(e.display_label, e.item_name) as food_name,
   e.item_brand                           as food_brand,
-  -- `food_verified`, `is_estimate` and `is_archetype` were here, three flags
-  -- that were properties of the catalogue row. They survived the move to D1 as
-  -- constant `false` so the mappers would not have to change shape, and a
-  -- constant is the one kind of column that cannot come back to life: every
-  -- reader downstream was reading a value the view had already decided. So the
-  -- client mapped two of them into fields no screen ever branched on, the third
-  -- was read by nothing at all, and the doc comment on the client type still
-  -- promised a badge that had stopped existing. Anything that needs to exclude
-  -- a guess filters on `food_id is not null`, which is the real test.
+  -- `food_verified`, `is_estimate` and `is_archetype` were here, three flags that
+  -- were properties of the catalogue row. They survived the move to D1 as constant
+  -- `false` so the mappers would not have to change shape, and a constant is the
+  -- one kind of column that cannot come back to life: every reader downstream was
+  -- reading a value the view had already decided. So the client mapped two of them
+  -- into fields no screen ever branched on, and the third was read by nothing at
+  -- all. Anything that needs to exclude a guess filters on `food_id is not null`,
+  -- which is the real test.
+  --
   -- A photo suppresses both icons outright: the entry's own icon wins over the
   -- food's, and a photograph wins over either.
   case when e.photo_path is null then coalesce(e.icon_set,  e.item_icon_set)  end as icon_set,
@@ -153,12 +149,11 @@ select
   round(e.serving_grams  * e.quantity, 1)                          as grams,
   e.recipe_id,
 
-  -- THE SNAPSHOT ITSELF, unmultiplied, because one caller wants to COPY an
-  -- entry rather than read it: "repeat yesterday" writes today's row from
-  -- yesterday's, and every figure above has already been through the portion
-  -- and the quantity. Dividing them back out is lossy — they are rounded — and
-  -- a repeat that lands a calorie off the row it copied is a bug nobody can
-  -- explain. These are the columns as stored.
+  -- The snapshot itself, unmultiplied, because one caller wants to copy an entry
+  -- rather than read it. "Repeat yesterday" writes today's row from yesterday's,
+  -- and every figure above has already been through the portion and the quantity.
+  -- Dividing them back out is lossy, since they are rounded, and a repeat that
+  -- lands a calorie off the row it copied is a bug nobody can explain.
   e.item_name,
   e.item_brand,
   e.base_kcal,
@@ -177,9 +172,9 @@ grant select on public.food_log_details to authenticated, service_role;
 -- ---------------------------------------------------------------------------
 -- A day's totals.
 --
--- Only days with at least one entry appear. An empty day is the absence of a
--- row, not a row of zeros, so callers coalesce — which they have to do anyway
--- for dates before the account existed.
+-- Only days with at least one entry appear. An empty day is the absence of a row,
+-- not a row of zeros, so callers coalesce, which they have to do anyway for dates
+-- before the account existed.
 -- ---------------------------------------------------------------------------
 create view public.daily_nutrition with (security_invoker = on) as
 select
@@ -202,21 +197,18 @@ grant select on public.daily_nutrition to authenticated;
 -- How often this user logs each dish.
 --
 -- Replaces `timesLogged` and `usualMeals`, which the mock catalogue carried as
--- columns on the food itself — they were never facts about the dish, they were
+-- columns on the food itself. They were never facts about the dish, they were
 -- facts about one person's habits, and on a shared catalogue that distinction
 -- stops being cosmetic.
 --
 -- Derived rather than counted into a column: a counter needs incrementing on
--- insert, decrementing on delete, and repairing whenever one of those was
--- missed.
+-- insert, decrementing on delete, and repairing whenever one of those was missed.
 --
 -- The exclusions moved. This used to join `foods` and filter out estimate,
--- archetype and recipe rows: "usual at this time" is a list to log from, and a
--- shared guess should not become a habit the app reinforces. There is no join
--- to filter through now, and `food_id is not null` does the same work by a
--- different route — every one of those three cases writes a null `food_id`,
--- because none of them is a row in a catalogue this database can see. The name
--- comes off the entry, which is where a snapshot puts it.
+-- archetype and recipe rows, because "usual at this time" is a list to log from
+-- and a shared guess should not become a habit the app reinforces. There is no
+-- join to filter through now, and `food_id is not null` does the same work by a
+-- different route: every one of those three cases writes a null `food_id`.
 -- ---------------------------------------------------------------------------
 create view public.user_food_stats with (security_invoker = on) as
 select
@@ -277,9 +269,9 @@ $$;
 -- Gaps and islands: subtracting a row number from a date gives every run of
 -- consecutive days the same constant, so grouping on it counts the runs.
 --
--- The current streak accepts a run ending YESTERDAY as well as today.
--- Otherwise a 30-day streak reads as zero every morning until the user logs
--- breakfast, which is both wrong and discouraging at exactly the wrong moment.
+-- The current streak accepts a run ending yesterday as well as today. Otherwise a
+-- 30-day streak reads as zero every morning until the user logs breakfast, which
+-- is both wrong and discouraging at exactly the wrong moment.
 -- ---------------------------------------------------------------------------
 create or replace function public.logging_streak(p_user_id uuid default auth.uid())
 returns table (current_days integer, best_days integer)

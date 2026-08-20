@@ -1,37 +1,32 @@
 -- ---------------------------------------------------------------------------
--- The archetype fallbacks — tier 5 of the scan cascade.
+-- The archetype fallbacks, tier 5 of the scan cascade.
 --
--- ~60 generic rows ("fried rice", "noodle soup", a terminal "mixed meal") that
--- the cascade lands on when the catalogue, the vision model or the network has
--- failed it. They are resolved by CLASSIFICATION over this fixed list, never by
--- search, which is what makes tier 5 unable to return no-match: the worst
+-- About sixty generic rows ("fried rice", "noodle soup", a terminal "mixed meal")
+-- that the cascade lands on when the catalogue, the vision model or the network
+-- has failed it. They are resolved by classification over this fixed list, never
+-- by search, which is what makes tier 5 unable to return no-match: the worst
 -- answer it can give is the terminal row, whose id is a constant the edge
 -- function carries so that reaching it needs no model call and no query.
 --
--- WHY THIS IS A TABLE OF ITS OWN
---
--- These used to be `foods` rows with `is_archetype`, written by this function
--- into the catalogue. The catalogue is in Cloudflare D1 now, and putting the
+-- Why this is a table of its own: these used to be `foods` rows with
+-- `is_archetype`. The catalogue is in Cloudflare D1 now, and putting the
 -- archetypes there with it would have made the fallback for "the network failed"
--- another network call. They are sixty rows; they stay next to the diary.
+-- another network call. They are sixty rows, so they stay next to the diary.
 --
--- The macros are one figure per archetype, chosen as the middle of the range
--- the catalogue holds for that family of dishes — a deliberate median, not a
--- model's opinion, so the number a failed scan produces is defensible and
--- stable. They live in this function rather than in a CSV so that re-running
--- it is the way to correct one everywhere at once.
+-- The macros are one figure per archetype, chosen as the middle of the range the
+-- catalogue holds for that family of dishes: a deliberate median rather than a
+-- model's opinion, so the number a failed scan produces is defensible and stable.
+-- They live in this function rather than in a CSV so that re-running it is the
+-- way to correct one everywhere at once.
 --
--- There is no serving list any more. Every archetype had the same three
--- portions ("1 serving", "Half", "Large") and the cascade only ever chose the
--- first, because a tier-5 answer picks a food and expresses the size as the
--- quantity beside it. The other two were reachable only from the portion sheet
--- on an entry already logged, which now offers them from the entry's own
--- snapshot rather than from a catalogue row.
+-- There is no serving list any more. Every archetype had the same three portions
+-- and the cascade only ever chose the first, because a tier-5 answer picks a food
+-- and expresses the size as the quantity beside it.
 --
--- Seeding is a FUNCTION rather than inserts in this file because schema files
--- only shape the shadow database during `db diff` — data written here would
--- never reach a migration. A data migration calls it once, and calling it
--- again is always safe: it upserts on slug.
+-- Seeding is a function rather than inserts in this file because schema files
+-- only shape the shadow database during `db diff`, so data written here would
+-- never reach a migration. A data migration calls it once, and calling it again
+-- is always safe: it upserts on slug.
 -- ---------------------------------------------------------------------------
 
 create table if not exists public.archetypes (

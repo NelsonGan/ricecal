@@ -1,18 +1,16 @@
 -- ---------------------------------------------------------------------------
 -- Keeping the calorie budget in step with the body it was computed from.
 --
--- Without this, `daily_goals` is a table somebody has to remember to write.
--- The client would compute the budget on the profile screen, and any other
--- write path — a scale sync, an admin correction, a future web app — would
--- leave a user's target describing a body they no longer have.
+-- Without this, `daily_goals` is a table somebody has to remember to write. The
+-- client would compute the budget on the profile screen, and any other write path
+-- (a scale sync, an admin correction, a future web app) would leave a user's
+-- target describing a body they no longer have.
 --
--- THE ONE RULE: a hand-set target is never overwritten.
---
--- `is_custom` is set by the Goals screen when the user types a number. From
--- that point this trigger reads the flag and returns without touching
--- anything. Recomputing over a deliberate choice is the single worst thing
--- this could do — the user sets 1,800, changes their activity level, and the
--- app silently moves them back to 2,140.
+-- The one rule: a hand-set target is never overwritten. `is_custom` is set by the
+-- Goals screen when the user types a number, and from that point this trigger
+-- reads the flag and returns without touching anything. Recomputing over a
+-- deliberate choice is the single worst thing this could do: the user sets 1,800,
+-- changes their activity level, and the app silently moves them back to 2,140.
 -- ---------------------------------------------------------------------------
 
 
@@ -138,11 +136,11 @@ $$;
 -- `update of <columns>` so that renaming yourself, changing your avatar or
 -- finishing onboarding does not rerun the budget.
 --
--- EVERY INPUT TO `compute_targets` HAS TO BE IN THIS LIST. `target_weight_kg`
--- was not, back when it was a number the app stored and nothing read; now that
--- it IS the plan, a user dragging their target on the goals screen has to move
--- the budget, and the column list is the only thing that decides whether the
--- write is even noticed.
+-- Every input to `compute_targets` has to be in this list. `target_weight_kg`
+-- was not, back when it was a number the app stored and nothing read; now that it
+-- is the plan, a user dragging their target on the goals screen has to move the
+-- budget, and the column list is the only thing that decides whether the write is
+-- even noticed.
 create trigger profiles_sync_daily_goals
   after insert or update of
     sex, birth_date, height_cm, target_weight_kg, activity_level, timezone

@@ -18,32 +18,30 @@ create extension if not exists pg_trgm with schema extensions;
 -- merely `stable`, because it resolves its dictionary through the search path,
 -- and a normalizer that is not `immutable` cannot be indexed on.
 create extension if not exists unaccent with schema extensions;
--- THERE IS NO `pg_cron` AND NO `pg_net` HERE, AND THAT IS DELIBERATE.
+-- There is no `pg_cron` and no `pg_net` here, and that is deliberate.
 --
 -- Both were installed for one caller: the retention sweep's schedule, where
--- `pg_cron` fired `sweep_meal_photos()` and `pg_net` POSTed to an edge
--- function, because Postgres can reach neither R2 nor the logic. That made the
--- sweep a public HTTPS endpoint that deletes photographs, guarded by a shared
--- secret, because a job acting for every account has no user to authenticate.
+-- `pg_cron` fired `sweep_meal_photos()` and `pg_net` POSTed to an edge function,
+-- because Postgres can reach neither R2 nor the logic. That made the sweep a
+-- public HTTPS endpoint that deletes photographs, guarded by a shared secret,
+-- because a job acting for every account has no user to authenticate.
 --
 -- Anything periodic is a Cloudflare Worker on a Cron Trigger now
--- (`apps/cloudflare/workers/jobs`), which has no hostname at all. Nothing in
--- this database schedules anything, and nothing in it makes an outbound
--- request. Adding either extension back would mean re-opening that question,
--- so do it only with the answer in hand.
+-- (`apps/cloudflare/workers/jobs`), which has no hostname at all. Nothing in this
+-- database schedules anything, and nothing in it makes an outbound request.
+-- Adding either extension back would mean re-opening that question.
 --
--- Worth knowing if you go looking: `supabase db diff` does not track
--- extensions, so neither their arrival nor their removal can come from a diff.
+-- Worth knowing if you go looking: `supabase db diff` does not track extensions,
+-- so neither their arrival nor their removal can come from a diff.
 -- `20260820140000_retire_pg_cron_sweep.sql` drops them by hand.
 --
--- AND `pg_net` IS DROPPED HERE AS WELL, which is the one odd statement in this
+-- And `pg_net` is dropped here as well, which is the one odd statement in this
 -- file. The Supabase base image installs it, and the shadow database a diff is
--- built in comes from that image — so with the migration dropping it and this
--- file silent, every `supabase db diff` from now on would emit a spurious
--- `CREATE EXTENSION pg_net` for ever. Measured, not guessed: that is exactly
--- what the first diff after the migration produced. Stating the absence makes
--- the declarative file say what is true — this database does not have pg_net —
--- and diffs go quiet.
+-- built in comes from that image, so with the migration dropping it and this file
+-- silent, every `supabase db diff` from now on would emit a spurious
+-- `CREATE EXTENSION pg_net` for ever. Measured rather than guessed: that is
+-- exactly what the first diff after the migration produced. Stating the absence
+-- makes the declarative file say what is true.
 --
 -- `pg_cron` needs no such line, because the image does not install it.
 drop extension if exists pg_net;
