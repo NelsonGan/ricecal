@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { type QueryClient, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect } from 'react'
 
 import {
@@ -24,13 +24,26 @@ import { useSession, useUserId } from './session'
  * that state, and the paywall is what they see.
  */
 export function useSubscription() {
-  const userId = useUserId()
+  // `useSession`, not `useUserId`, and the same for the store query below.
+  // `useUserId` THROWS when nobody is signed in, and these two are read by
+  // `useEntitlement`, which is read by `EntitlementSync` at the ROOT of the
+  // app — above every session guard, on every launch, before the keychain has
+  // been read. That was a red error screen on cold start. A query with no
+  // account to ask about is DISABLED rather than absent, which react-query
+  // reports as "not loading, no data": exactly the right shape for "signed out
+  // is not subscribed".
+  const { userId } = useSession()
 
   return useQuery({
-    queryKey: keys.subscription(userId),
+    queryKey: keys.subscription(userId ?? ''),
+    enabled: Boolean(userId),
     queryFn: async () =>
       unwrapMaybe(
-        await supabase.from('subscriptions').select('*').eq('user_id', userId).maybeSingle(),
+        await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', userId as string)
+          .maybeSingle(),
       ),
   })
 }
@@ -169,10 +182,11 @@ export function useEntitlement(): Entitlement {
  * retry would only ever be about a native call that failed.
  */
 export function useStoreEntitlement() {
-  const userId = useUserId()
+  const { userId } = useSession()
 
   return useQuery({
-    queryKey: keys.storeEntitlement(userId),
+    queryKey: keys.storeEntitlement(userId ?? ''),
+    enabled: Boolean(userId),
     queryFn: readStoreEntitlement,
     networkMode: 'always',
     retry: false,
@@ -214,6 +228,66 @@ export function useEntitlementSync(): void {
       void queryClient.invalidateQueries({ queryKey: keys.scanQuota(userId) })
     })
   }, [queryClient, userId])
+
+  // The store's answer and our own, as they currently stand.
+  const { data: store } = useStoreEntitlement()
+  const { data: row } = useSubscription()
+  const diverged = store?.active === true && !isEntitledRow(row)
+
+  useEffect(() => {
+    if (!userId || !diverged) return
+    void healEntitlement(queryClient, userId)
+  }, [userId, diverged, queryClient])
+}
+
+/**
+ * The store says paid and our own row does not. Ask the server to settle it.
+ *
+ * WHY THE CLIENT HAS TO PROD. `reconcileEntitlement` on the server already
+ * refills the row from RevenueCat when it is missing — but only from inside a
+ * Pro-gated request, and two of the things this app draws are read straight out
+ * of Postgres by the client instead. The scans-left line under the viewfinder
+ * and the plan on the Me tab both come from that row, so an account whose
+ * webhook was lost went on reading "3 scans left today" over an unlocked app
+ * until it happened to press a Pro button. This is what closes that.
+ *
+ * NOTHING IS TRUSTED FROM HERE. The endpoint takes an empty body, resolves the
+ * account from the JWT, and asks RevenueCat — so the worst this call can do is
+ * make the server look up a subscription that is already the server's business.
+ *
+ * TWO GUARDS, doing different jobs. The effect fires on the EDGE — the moment
+ * the two answers start disagreeing, which for a free account is the moment they
+ * buy — so it asks once and not on every render. The set below is narrower than
+ * that: it stops a second call overlapping one already in flight, which a
+ * re-render during the round trip would otherwise start. It is released
+ * afterwards on purpose, so a LATER divergence (a renewal whose webhook is also
+ * lost) can ask again.
+ */
+const healing = new Set<string>()
+
+async function healEntitlement(queryClient: QueryClient, userId: string): Promise<void> {
+  if (healing.has(userId)) return
+  healing.add(userId)
+  try {
+    const { data } = await supabase.functions.invoke<{ ok: boolean; entitled: boolean }>(
+      'entitlement',
+      { body: {} },
+    )
+    if (!data?.entitled) return
+    // The row is there now. Everything read off it has to be asked again — the
+    // plan line, the scans-left count, and the ceiling behind it.
+    await queryClient.invalidateQueries({ queryKey: keys.subscription(userId) })
+    await queryClient.invalidateQueries({ queryKey: keys.scanQuota(userId) })
+  } catch {
+    // Offline, or the endpoint is not deployed yet. The gates are already open
+    // on the store's word and the webhook may still land; there is nothing to
+    // say to the user about a repair they did not ask for.
+  } finally {
+    // Released so a LATER divergence — a renewal whose webhook is also lost —
+    // can ask again. Within one divergence the guard above is what stops the
+    // effect re-firing.
+    healing.delete(userId)
+  }
 }
 
 /**
