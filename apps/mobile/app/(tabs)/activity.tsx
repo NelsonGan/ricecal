@@ -300,12 +300,6 @@ export default function ActivityScreen() {
       /**
        * The pull the freshness badge implies.
        *
-       * `useSyncHealth` has documented a pull-to-refresh on this screen since it
-       * was written and there was never one, which left `useHealthAutoSync`'s
-       * return value unused by anybody. A stamp reading "13 min ago" is an
-       * invitation to pull, and on a screen whose whole subject is a number that
-       * arrives from somewhere else it is the gesture people try first.
-       *
        * `isSyncing` is the PULL, not every pass. A refreshing control holds the
        * whole scroll view pushed down under its spinner, and the automatic sync
        * runs on mount — so this tab opened with its header parked below the
@@ -365,19 +359,13 @@ export default function ActivityScreen() {
       </Card>
 
       {/**
-       * TWO CARDS, BECAUSE THERE ARE TWO TIMEFRAMES.
-       *
-       * These were one card headed "TODAY" holding four kinds of row, of which
-       * only two were about today. The Balance row printed a SEVEN-DAY average
-       * directly under that heading — "257 deficit", with nothing to say it was
-       * not this morning's — and History's subtitle was the word "sessions",
-       * lowercased from a caps heading and carrying no figure at all.
-       *
-       * Splitting them costs one more card and makes both headings true, which
-       * is also what finally gives the History row something to say: the same
-       * `activity_summary` the screen already has is where its count and its
-       * time come from.
-       */}
+       // TWO CARDS, BECAUSE THERE ARE TWO TIMEFRAMES.
+       //
+       // Splitting them costs one more card and makes both headings true, which
+       // is also what finally gives the History row something to say: the same
+       // `activity_summary` the screen already has is where its count and its
+       // time come from.
+       // /}
       <Card title={t('activity:today.todayTitle')} flush>
         <View className="px-7">
           {loading ? (

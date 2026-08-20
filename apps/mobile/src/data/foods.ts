@@ -13,17 +13,6 @@ import type { Food, FoodDetailsRow } from './types'
 /**
  * The catalogue, which is no longer in this database.
  *
- * `foods` and its portions used to be tables in the same Postgres the session
- * authenticates against, so a search was an RPC and a dish was a select. They
- * are in Cloudflare D1 now — 3.2 million packaged products keyed by barcode and
- * ~48,000 searchable dishes — behind a Worker.
- *
- * The app reads that Worker DIRECTLY, carrying the signed-in user's own
- * Supabase JWT. It went through an edge function for a while, because the only
- * credential the Worker understood was a shared secret and a secret in a phone
- * is not a secret; the Worker verifies user tokens now, so the hop is gone
- * along with the ~390 ms it cost. See `./catalogue.ts`.
- *
  * The row shape is unchanged on purpose. `toFood` still reads what
  * `food_details` used to return, because a move of where the data lives should
  * not become a rewrite of what it looks like — and it has now survived two
@@ -68,11 +57,6 @@ async function statsFor(userId: string, foodIds: string[]): Promise<Map<string, 
  * catalogue, and it returns it WITHOUT asking: fifty arbitrary dishes out of
  * 48,000 is not a browse, and the field is focused on mount, so the panel
  * renders one keystroke before there is anything to ask about.
- *
- * No place filter. The screen used to offer All / Mamak / Kopitiam / Packaged
- * chips, but `place` describes where a dish is *typically* eaten, not what the
- * user is looking for — filtering a ranked result set by it mostly hid the
- * right answer.
  */
 export function useFoodSearch(query: string) {
   const userId = useUserId()
@@ -145,12 +129,6 @@ export function useFood(id: string | undefined) {
 // "top foods", `useUsualFoods` was its per-meal twin for the quick selector,
 // and `useRecentFoods` was the recency answer that replaced them — the LAST
 // LOGGED block under the quick selector's five buttons.
-//
-// That block is gone. It sat between the way in and the day behind the sheet,
-// it was a guess at what somebody was about to log made from what they logged
-// before, and the five buttons above it already say what to do next. What it
-// cost was a second query on every open of the sheet and, on a slow connection,
-// one round trip per dish in it.
 //
 // `user_food_stats` and the history are both still there, so a future screen
 // that wants "what I eat most" can have this back out of git rather than

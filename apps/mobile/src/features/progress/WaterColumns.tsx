@@ -27,12 +27,6 @@ export type WaterColumnsProps = {
  * reads as an unfilled top rather than as a shorter bar — which says "short by
  * a quarter" at a glance, where a bar scaled to its own peak says nothing.
  *
- * This used to be a stack of discrete cups, one segment a glass, and it went
- * with the glasses: a millilitre figure has no natural number of boxes, and
- * rounding 1,700 ml to "seven cups" to draw it would put the old unit back on
- * the screen after taking it out of the database. A continuous fill is the
- * honest picture of a continuous quantity.
- *
  * The unfilled part is dashed for the same reason the empty part of the glass
  * on Today is: an outline is a place for something, a fill is a thing.
  */

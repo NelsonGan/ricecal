@@ -25,12 +25,6 @@ export const unstable_settings = { anchor: 'today' }
 /**
  * Five tabs, and no action among them.
  *
- * The log button used to sit in the middle of this bar, which is what capped it
- * at four tabs: the action is centred by having the same number of tabs either
- * side of it, so a fifth put it a tenth of the bar off to one side. It is a
- * floating button on Today now — see `FloatingAction` there — and the bar is
- * five tabs and nothing else.
- *
  * Still the headless `expo-router/ui` tabs rather than a styled navigator,
  * because `NavBar` / `NavItem` are the design system's and a native tab bar
  * cannot be made to look like them. `TabList asChild` unwraps exactly one layer

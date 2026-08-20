@@ -3,11 +3,6 @@
 // `public.gtin14` in Postgres and `gtin14` in the catalogue Worker. See the
 // header of `barcode.ts` for why there are three.
 //
-// These cases used to be shared with `tests/08_catalogue_search.test.sql`, so
-// that changing one file failed the other. That file went with the catalogue
-// when it moved to D1, and the Worker's copy has no test of its own — which is
-// the one gap left in this arrangement.
-//
 //   deno test --no-lock --config functions/barcode/deno.json functions/_shared/barcode.test.ts
 
 import { assertEquals } from 'jsr:@std/assert@^1'

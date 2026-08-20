@@ -1,21 +1,14 @@
 -- ---------------------------------------------------------------------------
 -- What a scanned plate was made of. One food_log, many ingredients.
 --
--- A decomposed scan used to write one entry per component, which put four
--- rows on Today for one plate of food. The diary is a list of MEALS, so the
--- plate is one `food_logs` row whose macros are the SUM of the resolved
--- components, and this table is the explanation hanging off it: what the sum
--- came from, in what amounts.
---
--- The parent's own macros stay authoritative (the same rule the goal set for
--- a future curated food_ingredients table). These rows are written together
--- with the parent by the scan function, all-or-nothing: a partial breakdown
+-- The parent's own macros stay authoritative. These rows are written together
+-- with the parent by the scan function, all or nothing: a partial breakdown
 -- undercounts, which is the dangerous direction for a calorie app.
 --
--- These carry a snapshot for the same reason the parent does — see the header
--- of `30_food_logs.sql`. A part is often not a catalogue row at all: a plate
--- priced per skewer, or a component the catalogue could not answer for, was
--- always a number the scan worked out rather than one it looked up.
+-- These carry a snapshot for the same reason the parent does. A part is often not
+-- a catalogue row at all: a plate priced per skewer, or a component the catalogue
+-- could not answer for, was always a number the scan worked out rather than one
+-- it looked up.
 -- ---------------------------------------------------------------------------
 
 create table public.food_log_ingredients (
@@ -45,18 +38,16 @@ create table public.food_log_ingredients (
   -- the row it resolved to can be blunter ("Fried chicken").
   display_label text check (char_length(display_label) between 1 and 120),
 
-  -- What ONE of this part weighs, when the scan was able to say.
+  -- What one of this part weighs, when the scan was able to say.
   --
-  -- The scan now sizes a plate by mass before it prices it (see
-  -- `functions/_shared/portion.ts`), and that weight is the only thing on the
-  -- row a person can check against the plate they are looking at. Without it
-  -- the breakdown reads "x 6" against a catalogue serving nobody chose — six of
-  -- WHAT, at what size — and the stepper beside it moves a number with no unit.
+  -- The scan sizes a plate by mass before it prices it, and that weight is the only
+  -- thing on the row a person can check against the plate they are looking at.
+  -- Without it the breakdown reads "x 6" against a catalogue serving nobody chose,
+  -- and the stepper beside it moves a number with no unit.
   --
-  -- PER UNIT, like every other figure here: the view multiplies by `quantity`,
-  -- so halving the portion halves the grams on screen without this column
-  -- moving. Null where it is genuinely unknown — a part added by hand, or one
-  -- the model declined to weigh — and null renders as nothing rather than as a
+  -- Per unit, like every other figure here: the view multiplies by `quantity`, so
+  -- halving the portion halves the grams on screen without this column moving. Null
+  -- where it is genuinely unknown, and null renders as nothing rather than as a
   -- zero, because "0 g" is a claim and "we did not weigh it" is not.
   grams        numeric(7, 1) check (grams > 0 and grams <= 20000),
 
@@ -96,17 +87,16 @@ create policy "food_log_ingredients: read own"
 -- ---------------------------------------------------------------------------
 -- The one ingredient edit a client may make: its portion.
 --
--- A direct UPDATE grant would let anything be written into a list the totals
--- are read from. This function is the write path instead, and all it does is
--- set the portion: `food_log_details` sums the parts, so the entry's calories
--- and macros follow from this row changing and nothing else has to be
--- rewritten. It used to also rescale the parent entry's `quantity` to keep the
--- total in step — which moved all four macros together, so doubling the rice
--- put fat on the plate.
+-- A direct UPDATE grant would let anything be written into a list the totals are
+-- read from. This function is the write path instead, and all it does is set the
+-- portion: `food_log_details` sums the parts, so the entry's calories and macros
+-- follow from this row changing. It used to also rescale the parent entry's
+-- `quantity` to keep the total in step, which moved all four macros together, so
+-- doubling the rice put fat on the plate.
 --
--- SECURITY DEFINER because clients have no update grant on the table at all;
--- ownership is checked against auth.uid() explicitly, so it widens what can
--- be done, not whose rows it can be done to.
+-- Security definer because clients have no update grant on the table at all.
+-- Ownership is checked against auth.uid() explicitly, so it widens what can be
+-- done rather than whose rows it can be done to.
 -- ---------------------------------------------------------------------------
 create or replace function public.set_ingredient_quantity(
   p_ingredient_id uuid,
@@ -151,15 +141,14 @@ grant execute on function public.set_ingredient_quantity to authenticated, servi
 -- ---------------------------------------------------------------------------
 -- Taking something off the plate entirely.
 --
--- A quarter of a thing is the smallest portion the stepper can express, and it
--- is not the same answer as "there was no sambal on mine" — which is the
--- correction people actually want to make. The totals follow the same way a
--- resize does: by being a sum of what is left.
+-- A quarter of a thing is the smallest portion the stepper can express, and it is
+-- not the same answer as "there was no sambal on mine", which is the correction
+-- people actually want to make. The totals follow the same way a resize does, by
+-- being a sum of what is left.
 --
 -- The last ingredient can go too. What is left is an entry with no breakdown,
--- which is exactly what a dish the scan could not decompose looks like — and
--- its numbers fall back to the parent row at its own portion, because
--- `food_log_details` only reads the parts when there are parts.
+-- which is exactly what a dish the scan could not decompose looks like, and its
+-- numbers fall back to the parent row at its own portion.
 -- ---------------------------------------------------------------------------
 create or replace function public.remove_ingredient(p_ingredient_id uuid)
 returns void

@@ -169,11 +169,6 @@ export type FloatingActionProps = NavActionProps
 /**
  * The same pandan tile, floating over a screen instead of sitting in the bar.
  *
- * It used to be `NavAction`, in the middle of the tab bar, and that is what
- * capped the bar at four tabs: a centre action is centred by having the same
- * number of tabs either side of it. Recipes made five, so the action came out
- * and the bar is tabs alone.
- *
  * Bigger than the bar version — 64pt against 62 — because a control with
  * nothing beside it has no neighbours to be measured against, and because it is
  * now the only target on the screen that is not a row of the diary.

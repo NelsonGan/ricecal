@@ -14,41 +14,35 @@ import type { ActivityLevel, Meal } from '@/data/types'
 export type TrackedCuisine = 'malay' | 'chinese' | 'indian' | 'custom'
 
 /**
- * THE TRACKING PLAN, AS A TYPE.
+ * The tracking plan, as a type.
  *
  * Every event the app sends is declared here with the exact properties it
  * carries, and `track` accepts nothing else. This is the same argument
  * `data/keys.ts` makes about query keys: an analytics event is a string agreed
- * between a call site and a chart nobody in this repo can see, so a typo does
- * not fail — it produces a second event with almost the right name, and the
- * dashboard built on the first one silently stops counting half the traffic.
+ * between a call site and a chart nobody in this repo can see, so a typo does not
+ * fail. It produces a second event with almost the right name, and the dashboard
+ * built on the first one silently stops counting half the traffic.
  *
  * A property added here is a property every existing call site has to supply.
- * That is deliberate: the alternative is an event whose shape depends on where
- * it was fired from, which is the analytics equivalent of a nullable column
- * nobody can explain.
+ * That is deliberate: the alternative is an event whose shape depends on where it
+ * was fired from.
  *
- * WHAT IS NOT HERE, and why:
+ * What is not here, and why:
  *
- * - **Purchases.** RevenueCat funnels its own events into Mixpanel, and it is
- *   the only party that actually knows whether a transaction settled. What we
- *   send is the INTENT either side of the store sheet — `Purchase Started` and
- *   `Purchase Abandoned` — which RevenueCat cannot see, because the store never
- *   tells it about a purchase that did not happen.
- * - **Screen views.** An automatic screen-view per route would be the largest
- *   event stream in the app and would answer almost nothing: the interesting
- *   screens already have an event of their own (`Paywall Shown`,
- *   `Log Sheet Opened`, `Review Opened`), and the rest are navigation, not
- *   behaviour.
- * - **Errors.** Sentry has them. A failure that is also a PRODUCT fact — a scan
- *   that found no food, a barcode nothing knows, a request refused for want of
- *   budget — travels as an `outcome` property on the event it belongs to.
- * - **Numbers off the diary.** No calorie totals, no weights, no dish names, no
- *   search text. They are health data, they are not needed to answer any
- *   question below, and Postgres already holds every one of them next to the
- *   arithmetic that produced it. `food_scan_items` and `food_scan_misses` are
- *   where scan quality is measured; this is where BEHAVIOUR is measured.
- * - **Sessions and installs.** `trackAutomaticEvents` is on, so `$ae_session`,
+ * - Purchases. RevenueCat funnels its own events into Mixpanel, and it is the
+ *   only party that actually knows whether a transaction settled. What we send is
+ *   the intent either side of the store sheet, which RevenueCat cannot see
+ *   because the store never tells it about a purchase that did not happen.
+ * - Screen views. An automatic screen-view per route would be the largest event
+ *   stream in the app and would answer almost nothing: the interesting screens
+ *   already have an event of their own.
+ * - Errors. Sentry has them. A failure that is also a product fact travels as an
+ *   `outcome` property on the event it belongs to.
+ * - Numbers off the diary. No calorie totals, no weights, no dish names, no
+ *   search text. They are health data, they are not needed to answer any question
+ *   below, and Postgres already holds every one of them next to the arithmetic
+ *   that produced it.
+ * - Sessions and installs. `trackAutomaticEvents` is on, so `$ae_session`,
  *   `$ae_first_open` and `$ae_updated` arrive without an event of ours.
  */
 
@@ -150,12 +144,12 @@ export type Events = {
   'Login Link Requested': NoProps
   /**
    * A reset was asked for. No address on it, and no answer either: this fires
-   * whether or not the account exists, because Supabase does not say and
-   * neither does the screen.
+   * whether or not the account exists, because Supabase does not say and neither
+   * does the screen.
    *
-   * Worth counting on its own rather than as a failed sign-in. It is the
-   * measure of how much the password is costing people, which is the number
-   * that decides whether offering one was right.
+   * Worth counting on its own rather than as a failed sign-in. It is the measure of
+   * how much the password is costing people, which is the number that decides
+   * whether offering one was right.
    */
   'Password Reset Requested': NoProps
   'Signed In': { method: SignInMethod; is_new_account: boolean }
@@ -178,17 +172,15 @@ export type Events = {
   /**
    * A meal went on the day.
    *
-   * Fired when the app HAS PUT A MEAL ON THE DAY. For search, a recipe, a
-   * packet and a quick add that is the insert succeeding; for the camera and
-   * the describe panel it is the optimistic row appearing, because the entry is
-   * written server-side and the diary already shows it.
+   * Fired when the app has put a meal on the day. For search, a recipe, a packet
+   * and a quick add that is the insert succeeding; for the camera and the describe
+   * panel it is the optimistic row appearing, because the entry is written
+   * server-side and the diary already shows it.
    *
-   * So this over-counts the two scan paths by exactly the scans that came back
-   * with nothing edible or failed outright. The correction is one subtraction —
-   * `Meal Scan Completed` where `outcome` is `no_food` or `failed` — and it is
-   * spelt out here because the alternative, tracking the scan paths only once
-   * the cascade answers, would silently DROP every meal whose request broke
-   * while the edge function went on writing it.
+   * So this over-counts the two scan paths by exactly the scans that came back with
+   * nothing edible or failed outright. The correction is one subtraction, and it is
+   * spelt out here because the alternative would silently drop every meal whose
+   * request broke while the edge function went on writing it.
    */
   'Meal Logged': { method: LogMethod; date_offset: number }
   /**
@@ -207,7 +199,7 @@ export type Events = {
   }
   /**
    * A barcode was read and looked up. `not_found` is the interesting value —
-   * see `d1/food-catalogue/BARCODE-COVERAGE.md` for why Malaysian packets are
+   * see `README.md` for why Malaysian packets are
    * the thin part of the catalogue and what this number is evidence for.
    */
   'Barcode Scanned': { outcome: 'found' | 'not_found' | 'error' }
@@ -226,17 +218,15 @@ export type Events = {
     duration_ms: number
   }
 
-  // ── The catalogue ────────────────────────────────────────────────────────
-  /**
-   * A search the user stopped typing at. NOT one per keystroke and not one per
-   * prefix: only the query a burst of typing settled on, because "nas" finding
-   * nothing says nothing about the catalogue.
-   *
-   * The text itself is deliberately absent. What people type and cannot find is
-   * worth capturing, and the place to capture it is the Worker, which is
-   * already authenticated and rate limited and is where the rest of the
-   * catalogue-widening backlog lives.
-   */
+  // The catalogue.
+  //
+  // A search the user stopped typing at. Not one per keystroke and not one per
+  // prefix: only the query a burst of typing settled on, because "nas" finding
+  // nothing says nothing about the catalogue.
+  //
+  // The text itself is deliberately absent. What people type and cannot find is
+  // worth capturing, and the place to capture it is the Worker, which is already
+  // authenticated and rate limited.
   'Food Searched': { results: number; query_length: number }
   /**
    * A result was opened. `position` is 1-based rank, and its distribution is
@@ -255,20 +245,17 @@ export type Events = {
   /**
    * The model answered "what should I eat?".
    *
-   * The two CHOICES and how many came back, and nothing else — no dish names,
-   * no calorie figures, no budget. Which is the diary rule holding rather than
-   * an omission: what is worth knowing here is which sitting and which kitchen
-   * people actually ask about, so the cuisine list can stop being a guess.
-   * `count` is 0 when the model would not answer, which is the only way to see
-   * that failure from outside.
+   * The two choices and how many came back, and nothing else: no dish names, no
+   * calorie figures, no budget. What is worth knowing here is which sitting and
+   * which kitchen people actually ask about, so the cuisine list can stop being a
+   * guess. `count` is 0 when the model would not answer, which is the only way to
+   * see that failure from outside.
    *
-   * THE CUISINE IS NOT THE USER'S OWN WORDS ANY MORE, and that is why this is a
-   * union rather than the string the request carries. The list is editable now,
-   * so a cuisine is free text somebody typed on their phone — and free text
-   * somebody typed is the one category this file exists to keep out of
-   * Mixpanel, whatever it happens to say. One of the shipped defaults is sent as
-   * itself; anything else is `custom`, which answers the only question worth
-   * asking about them: whether the defaults are enough.
+   * The cuisine is not the user's own words any more, and that is why this is a
+   * union rather than the string the request carries. The list is editable now, so
+   * a cuisine is free text somebody typed on their phone, which is the one category
+   * this file exists to keep out of Mixpanel. One of the shipped defaults is sent
+   * as itself; anything else is `custom`.
    */
   'Suggestions Shown': { meal: Meal; cuisine: TrackedCuisine; count: number }
 
@@ -287,15 +274,13 @@ export type Events = {
   }
   'Restore Requested': { outcome: 'restored' | 'nothing' | 'unavailable' }
   /**
-   * Share & Earn: a platform shortcut was tapped, and the Discord claim was
+   * Share and Earn: a platform shortcut was tapped, and the Discord claim was
    * opened.
    *
-   * The two ends of a funnel nothing else can see. The middle of it — whether
-   * anybody actually posted — happens in somebody else's app and is not ours to
-   * know, so these two numbers and the count of codes we hand out in Discord
-   * are the whole measurement. Which PLATFORM is the interesting half: it says
-   * where this app's users actually are, which is a question no other event in
-   * the plan answers.
+   * The two ends of a funnel nothing else can see. The middle of it, whether
+   * anybody actually posted, happens in somebody else's app and is not ours to
+   * know. Which platform is the interesting half: it says where this app's users
+   * actually are, which is a question no other event in the plan answers.
    */
   'Share Platform Opened': { platform: string }
   'Share Claim Opened': NoProps
@@ -338,13 +323,13 @@ export type Events = {
   /**
    * One logged meal left the app as a picture.
    *
-   * `picture` is the SHAPE of the card rather than anything off the diary: a
-   * meal shared as a photograph and one shared as an illustration are two
-   * different products, and if nobody ever sends the second the card is really
-   * a photo feature. Nothing about the dish, the calories or the day is here.
+   * `picture` is the shape of the card rather than anything off the diary: a meal
+   * shared as a photograph and one shared as an illustration are two different
+   * products, and if nobody ever sends the second the card is really a photo
+   * feature.
    *
-   * Same caveat as `Review Card Shared`: this is a real send on iOS and every
-   * tap on Android, which has no way to report what became of a share intent.
+   * Same caveat as `Review Card Shared`: this is a real send on iOS and every tap
+   * on Android, which has no way to report what became of a share intent.
    */
   'Meal Shared': { picture: 'photo' | 'drawing' }
 }
@@ -361,36 +346,34 @@ export type EventName = keyof Events
  */
 export type PersonProps = {
   /**
-   * The address on the Supabase account, and the one identifier here that names
-   * a real person.
+   * The address on the Supabase account, and the one identifier here that names a
+   * real person.
    *
-   * It is Mixpanel's RESERVED spelling on purpose: a plain `email` is an
-   * ordinary property, while `$email` is the field the profile list shows, the
-   * search box looks in, and the messaging tools send to. Written any other way
-   * it would be a column nobody finds.
+   * It is Mixpanel's reserved spelling on purpose: a plain `email` is an ordinary
+   * property, while `$email` is the field the profile list shows, the search box
+   * looks in, and the messaging tools send to.
    *
    * Set from `identifyUser` alone, from the address on the session, so it moves
-   * with the account rather than with whatever screen last had one to hand. It
-   * is the same value RevenueCat is given, which is what lets somebody writing
-   * in about a purchase be found on both dashboards — see `lib/revenuecat.ts`.
+   * with the account rather than with whatever screen last had one to hand. It is
+   * the same value RevenueCat is given, which is what lets somebody writing in
+   * about a purchase be found on both dashboards.
    *
-   * `undefined` for an account whose provider supplied no address, rather than
-   * an empty string: Mixpanel would file that as a profile whose email is blank
-   * and offer it in a breakdown, which is a worse answer than not knowing.
+   * `undefined` for an account whose provider supplied no address, rather than an
+   * empty string: Mixpanel would file that as a profile whose email is blank and
+   * offer it in a breakdown.
    */
   $email?: string
   onboarded?: boolean
   onboarded_at?: string
   plan_direction?: PlanDirection
   /**
-   * The CLIENT's spelling, and only that one.
+   * The client's spelling, and only that one.
    *
-   * Two places set this — `finish.tsx` from the onboarding draft, and
-   * `useAnalyticsIdentity` from the stored profile — and the draft holds
+   * Two places set this, `finish.tsx` from the onboarding draft and
+   * `useAnalyticsIdentity` from the stored profile, and the draft holds
    * `veryActive` where the column holds `very_active`. As a `string` the two
    * quietly disagreed, and a breakdown on activity showed six values for four
-   * answers, split by nothing more meaningful than which write happened last.
-   * Typed, that mismatch is a compile error.
+   * answers. Typed, that mismatch is a compile error.
    */
   activity_level?: ActivityLevel
   /**
@@ -406,13 +389,13 @@ export type PersonProps = {
 }
 
 /**
- * There are deliberately NO people counters here — no `meals_logged`, no
- * `recipes_created`. Mixpanel builds a cohort from an event count directly
- * ("did Meal Logged at least ten times"), so a counter would be a second,
- * hand-maintained answer to a question the event stream already answers — and
- * one that has to decide for itself whether a scan that failed halfway counts.
+ * There are deliberately no people counters here, no `meals_logged` and no
+ * `recipes_created`. Mixpanel builds a cohort from an event count directly, so a
+ * counter would be a second, hand-maintained answer to a question the event
+ * stream already answers, and one that has to decide for itself whether a scan
+ * that failed halfway counts.
  *
- * The properties above are the ones that CANNOT be derived from events: facts
+ * The properties above are the ones that cannot be derived from events: facts
  * about the person, stated once.
  */
 

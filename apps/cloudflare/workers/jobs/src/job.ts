@@ -6,7 +6,7 @@
  * refusing to start on top of a run already going — happens here, once, for
  * all of them.
  *
- * See `../README.md` for how to add one.
+ * See the root `README.md` for how to add one.
  */
 import type { Env } from './env.ts'
 import { postgres, type Rpc } from './postgres.ts'

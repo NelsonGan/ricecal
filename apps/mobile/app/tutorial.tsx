@@ -22,12 +22,6 @@ import {
 /**
  * HOW RICECAL WORKS — four cards, and no longer part of the flow.
  *
- * It used to be the last thing in onboarding: four screens of prose read by
- * somebody who had been answering questions for two minutes and had still not
- * seen the app. Nobody reads a manual for a thing they have not touched. So the
- * flow ends at the paywall and drops the user on Today, where a toast offers
- * this once — and Me carries a row to it for good.
- *
  * WHAT CHANGED IN THE WRITING
  *
  * Each card is now a MOCK of the thing it is about, drawn from the same design

@@ -1017,7 +1017,7 @@ GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.food_details TO 
 -- before anything can cite it — and the registry is rows, which `supabase db
 -- diff` only ever shapes the shadow database with and never writes out. Same
 -- exception the archetype seed is, for the same reason; see
--- apps/supabase/README.md.
+-- README.md.
 -- ---------------------------------------------------------------------------
 
 select public.seed_food_sources();

@@ -1,14 +1,13 @@
 -- ---------------------------------------------------------------------------
 -- One row per account: who the user is and what their body is doing.
 --
--- The split against `user_settings` is not arbitrary. Everything here is an
--- INPUT TO THE CALORIE BUDGET or an identity fact; everything there is a
--- preference that changes only what is displayed. That line is what makes the
--- recompute trigger in 80_targets_sync.sql safe to attach to this table and
--- only this table — a user switching to imperial must not silently rewrite
--- their targets.
+-- The split against `user_settings` is not arbitrary. Everything here is an input
+-- to the calorie budget or an identity fact; everything there is a preference
+-- that changes only what is displayed. That line is what makes the recompute
+-- trigger safe to attach to this table and only this table, since a user
+-- switching to imperial must not silently rewrite their targets.
 --
--- WHAT IS DELIBERATELY NOT HERE
+-- What is deliberately not here:
 --
 -- `weight_kg`. Current weight is the newest row in `weight_logs`, and a copy on
 -- this table would be a cache with no invalidation story: the scale syncs a
@@ -16,9 +15,8 @@
 -- computed from the stale one. Onboarding writes its weight as the first
 -- weigh-in, which also gives the weight chart a starting point for free.
 --
--- `age`. Stored as `birth_date`, because an integer age is wrong within a
--- year of being written and nothing would ever correct it. The onboarding
--- stepper still collects a number; the client converts.
+-- `age`. Stored as `birth_date`, because an integer age is wrong within a year of
+-- being written and nothing would ever correct it.
 -- ---------------------------------------------------------------------------
 
 create table public.profiles (
@@ -50,12 +48,12 @@ create table public.profiles (
   -- list is marketing's to change, and an unknown value must not fail a write.
   referral_source   text,
 
-  -- IANA name. The server needs it to answer "what day is it for this user"
-  -- without the client saying so — reminders, the weekly report job, the
-  -- default on `food_logs.log_date` and the daily scan quota all depend on it.
-  -- The column is plain text because validating against `pg_timezone_names`
-  -- needs a non-immutable read, which a CHECK cannot do; the trigger below is
-  -- where that check happens instead. See it for why this is not merely tidy.
+  -- IANA name. The server needs it to answer what day it is for this user without
+  -- the client saying so: reminders, the weekly report job, the default on
+  -- `food_logs.log_date` and the daily scan quota all depend on it. The column is
+  -- plain text because validating against `pg_timezone_names` needs a
+  -- non-immutable read, which a CHECK cannot do, so the trigger below is where that
+  -- check happens.
   timezone          text not null default 'Asia/Kuala_Lumpur',
 
   -- Null until the last onboarding step commits. The router reads it to decide
@@ -71,27 +69,24 @@ create table public.profiles (
 -- A timezone this database can actually use.
 --
 -- `authenticated` holds a table-wide update grant on `profiles`, so the client
--- writes this column directly, and `local_today` does `now() at time zone
--- <that text>` — which RAISES `invalid_parameter_value` for anything that is
--- not an IANA name. A single PATCH setting it to "x" therefore turns a function
--- that half the server depends on into one that throws for that account.
+-- writes this column directly, and `local_today` does
+-- `now() at time zone <that text>`, which raises `invalid_parameter_value` for
+-- anything that is not an IANA name. A single PATCH setting it to "x" therefore
+-- turns a function that half the server depends on into one that throws for that
+-- account.
 --
--- THE EXPENSIVE CASE IS THE SCAN QUOTA. `claim_scan` resolves the day through
--- `local_today`, and the edge function reads any error from that claim as
--- "allow uncounted" — deliberately, because a database blip must not tell a
--- paying user they are cut off. Put together, one junk write buys an account
--- unlimited scans for ever, and the only trace is a log line. The meter cannot
--- be the thing that fixes this: failing shut there is the wrong trade for every
--- other reason it might fail. So it is fixed at the source, where a timezone
--- gets in.
+-- The expensive case is the scan quota. `claim_scan` resolves the day through
+-- `local_today`, and the edge function reads any error from that claim as "allow
+-- uncounted", deliberately, because a database blip must not tell a paying user
+-- they are cut off. Put together, one junk write buys an account unlimited scans
+-- for ever, and the only trace is a log line. The meter cannot be the thing that
+-- fixes this, so it is fixed at the source.
 --
--- IGNORED RATHER THAN REFUSED. A junk value keeps whatever the row had before
--- it, and falls back to the default on an insert. Nobody's write fails over a
--- string the app never sends anyway — every client writes
--- `Intl.DateTimeFormat().resolvedOptions().timeZone`, which is an IANA name by
--- construction — and raising would turn a corrupt value into a failed save on a
--- screen that has nothing to do with timezones. The column is `not null`, so
--- blanking it is not available: that would fail the write it is trying to save.
+-- Ignored rather than refused. A junk value keeps whatever the row had before it,
+-- and falls back to the default on an insert. Nobody's write fails over a string
+-- the app never sends anyway, and raising would turn a corrupt value into a
+-- failed save on a screen that has nothing to do with timezones. The column is
+-- `not null`, so blanking it is not available.
 --
 -- Not `immutable`, hence not a CHECK: `pg_timezone_names` is a catalog read.
 -- ---------------------------------------------------------------------------

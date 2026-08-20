@@ -3,7 +3,7 @@
 -- `schemas/19_food_sources.sql`, `97_load_catalogue.sql` and `02_functions.sql`
 -- all end with an explicit `revoke execute ... from public, anon, authenticated`,
 -- and `supabase db diff` emitted none of them — the documented failure in
--- CLAUDE.md ("db diff misses function grants", five functions shipped executable
+-- README.md ("db diff misses function grants", five functions shipped executable
 -- by PUBLIC this way). Supabase's own security advisor is what caught it:
 -- `seed_food_sources` is SECURITY DEFINER and was reachable at
 -- `/rest/v1/rpc/seed_food_sources` by `anon`.

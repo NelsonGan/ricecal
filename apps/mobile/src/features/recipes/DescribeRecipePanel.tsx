@@ -20,7 +20,7 @@ export type DescribeRecipePanelProps = {
  * and an arrow crammed into the field's bottom corner there reads as clipped
  * rather than as an action. A full-width button under the field is what the
  * sibling panel in this same sheet already does — see `IngredientSheet`'s
- * custom ingredient — and it is what CLAUDE.md prescribes for a sheet at full
+ * custom ingredient — and it is what README.md prescribes for a sheet at full
  * height.
  *
  * The hint goes through `TextField`'s own `hint` prop rather than a row built

@@ -1,43 +1,41 @@
 // Fix-by-typing: correct a logged entry with free text.
 //
-// "half portion", "no sambal", "it was rendang not curry", "add a fried egg"
-// — the interpreter turns the instruction plus the entry's current state into
-// one of four decisions, and they are ORDERED BY HOW MUCH OF THE ENTRY THEY
-// KEEP. That order is the whole design: everything about a logged meal except
-// the words just typed is something the user has already accepted, so a
-// correction that reaches further down this list than it had to comes back as
-// a different meal from the one they were fixing.
+// "half portion", "no sambal", "it was rendang not curry", "add a fried egg": the
+// interpreter turns the instruction plus the entry's current state into one of
+// four decisions, and they are ordered by how much of the entry they keep. That
+// order is the whole design: everything about a logged meal except the words just
+// typed is something the user has already accepted, so a correction that reaches
+// further down this list than it had to comes back as a different meal from the
+// one they were fixing.
 //
 //   none        the text is not a food correction, or has no calories in it
 //               ("extra spicy"): nothing changes
-//   quantity    only the amount changed: rescale the entry's quantity, and
-//               every ingredient under it by the same factor. A calorie total
-//               for the whole dish lands here too — "more like 500 calories"
-//               is a different amount of this food, not a different food.
-//               NOT `override_kcal`, which would hit the figure exactly:
-//               the override sits above the parts in `food_log_details`, so
-//               an entry with a breakdown would show the typed number while
-//               its own ingredient list added to something else. Rescaling
-//               keeps the two in lockstep and pays for it in granularity —
-//               twentieths of a portion, so a figure within about 5% of where
-//               the entry already is rounds back to no change at all
-//   adjust      one part of the same meal was added, removed, resized or
-//               SWAPPED: on a plate with a breakdown that part is edited in
-//               place and the entry is re-priced from what is left; on one
-//               without, the delta lands on the entry's own figure
-//   redescribe  the food itself was wrong: describe the corrected dish and
-//               re-run the SAME cascade a fresh scan uses (catalogue first,
-//               estimate, archetype floor), then repoint the entry and its
-//               ingredients
+//   quantity    only the amount changed: rescale the entry's quantity, and every
+//               ingredient under it by the same factor. A calorie total for the
+//               whole dish lands here too, since "more like 500 calories" is a
+//               different amount of this food rather than a different food.
+//               Not `override_kcal`, which would hit the figure exactly: the
+//               override sits above the parts in `food_log_details`, so an entry
+//               with a breakdown would show the typed number while its own
+//               ingredient list added to something else. Rescaling keeps the two
+//               in lockstep and pays for it in granularity, hence twentieths of a
+//               portion.
+//   adjust      one part of the same meal was added, removed, resized or swapped:
+//               on a plate with a breakdown that part is edited in place and the
+//               entry is re-priced from what is left; on one without, the delta
+//               lands on the entry's own figure
+//   redescribe  the food itself was wrong: describe the corrected dish and re-run
+//               the same cascade a fresh scan uses, then repoint the entry and
+//               its ingredients
 //
 // A correction never silently loses the breakdown. It is the only part of an
 // entry the user can edit piece by piece, and every path through here either
 // keeps it, edits it, or replaces it with a new one.
 //
-// The entry keeps its identity — id, photo, scan_id, date — so the diary row
-// updates in place rather than being replaced. Applied or not, the answer
-// after validation is HTTP 200: `applied: false` with a reason is a result,
-// not an error.
+// The entry keeps its identity (id, photo, scan_id, date) so the diary row
+// updates in place rather than being replaced. Applied or not, the answer after
+// validation is HTTP 200: `applied: false` with a reason is a result, not an
+// error.
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
@@ -77,12 +75,7 @@ const REMOVES_THE_PART = 0.6
 /**
  * The entry this function reasons over: the row, the dish it holds, the portion
  * it is measured in, and the parts hanging off it. Exactly the select below,
- * named — see the note there for why it is declared rather than inferred.
- *
- * The dish and the portion used to be two JOINS, into `foods` and
- * `food_servings`. They are columns on the entry now, which is the same
- * information with one fewer thing that can be missing: an entry whose food had
- * been deleted from under it came back with a null relation and threw here.
+ * named.
  */
 type RefineEntry = {
   id: string
@@ -166,13 +159,6 @@ async function rebuildFromParts(
   const round1 = (value: number) => Math.round(value * 10) / 10
 
   // The parent is the sum of these parts, written onto the entry itself.
-  //
-  // It used to be a shared `foods` row upserted on the normalized name, which
-  // meant the figure that came back was not always the figure just computed —
-  // somebody else's plate of the same name may have been priced differently —
-  // and `quantity` existed here to absorb that drift. With the numbers on the
-  // entry there is no other plate to collide with, so this is exactly the sum
-  // at one portion, and `quantity` is 1 by construction.
   const { error: updateError } = await db
     .from('food_logs')
     .update({
@@ -242,18 +228,17 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   )
 
-  // Correcting a meal by describing it is a model call like any other, so it
-  // asks the same two questions scan-meal asks, in the same place and for the
-  // same reasons. Editing the portion by hand on the detail screen is NOT
-  // gated: no model is involved, and a subscription that lapses should not
-  // trap somebody's existing diary behind a paywall.
+  // Correcting a meal by describing it is a model call like any other, so it asks
+  // the same two questions scan-meal asks. Editing the portion by hand on the
+  // detail screen is not gated: no model is involved, and a subscription that
+  // lapses should not trap somebody's existing diary behind a paywall.
   //
-  // THE WHOLE ENDPOINT IS PRO, unlike the photographed plate that reaches
-  // `scan-meal`. Fixing a meal with a sentence is the most expensive thing a
-  // user can ask for per unit of value — the entry already exists and already
-  // has numbers on it — and it is the one path with a free alternative sitting
-  // right beside it: every figure it would change is editable by hand, on the
-  // same screen, for nothing.
+  // The whole endpoint is Pro, unlike the photographed plate that reaches
+  // `scan-meal`. Fixing a meal with a sentence is the most expensive thing a user
+  // can ask for per unit of value, since the entry already exists and already has
+  // numbers on it, and it is the one path with a free alternative sitting right
+  // beside it: every figure it would change is editable by hand, on the same
+  // screen, for nothing.
   try {
     await requireEntitlement(db, userId, 'refine')
     await claimScan(db, userId)
@@ -281,18 +266,17 @@ Deno.serve(async (req: Request) => {
   }
   const meter = createMeter()
 
-  // The entry, with enough context for the interpreter. service_role reads it,
-  // so ownership is checked explicitly — this function must not be a way to
-  // edit someone else's diary.
+  // The entry, with enough context for the interpreter. service_role reads it, so
+  // ownership is checked explicitly: this function must not be a way to edit
+  // someone else's diary.
   //
   // The shape is declared rather than inferred. `createClient` here carries no
   // `Database` generic, so supabase-js parses the select string on its own and
-  // gives up on the embedded relations — every field of the result then comes
-  // back as an error union, and reading `entry.id` off it is a type error the
-  // deployment does not run. Casting each relation separately, which is what
-  // this did, bought silence for three of them and left the other forty
-  // unchecked. One name for the row is the honest version, and it is also the
-  // documentation for what this function needs from the diary.
+  // gives up on the embedded relations, and every field of the result then comes
+  // back as an error union. Casting each relation separately bought silence for
+  // three of them and left the other forty unchecked. One name for the row is the
+  // honest version, and it is also the documentation for what this function needs
+  // from the diary.
   const { data } = await db
     .from('food_logs')
     .select(
@@ -384,19 +368,19 @@ Deno.serve(async (req: Request) => {
     }
 
     if (interpretation.action === 'adjust' && parts.length) {
-      // A plate that has a breakdown is CORRECTED THROUGH IT. "No sambal"
-      // means one row leaves the list and the plate is what is left; "add a
-      // fried egg" means one row joins it. Then the entry is re-priced from
-      // the sum of its parts, exactly the way tier 2 built it in the first
-      // place, so the total and the list can never drift apart.
+      // A plate that has a breakdown is corrected through it. "No sambal" means one row
+      // leaves the list and the plate is what is left; "add a fried egg" means one row
+      // joins it. Then the entry is re-priced from the sum of its parts, exactly the
+      // way tier 2 built it in the first place, so the total and the list can never
+      // drift apart.
       //
-      // The old path could only add the delta to the entry's own figure, and
-      // then had to delete the breakdown to stop it contradicting the total.
-      // That is the bug this replaces: one correction and the plate forgot
-      // what was on it.
-      // Exact name first, then either direction of containment: the model is
-      // asked to copy the ingredient's name and mostly does, but "the chicken"
-      // has to find "fried chicken wing" too.
+      // The old path could only add the delta to the entry's own figure, and then had
+      // to delete the breakdown to stop it contradicting the total. That is the bug
+      // this replaces: one correction and the plate forgot what was on it.
+      //
+      // Exact name first, then either direction of containment: the model is asked to
+      // copy the ingredient's name and mostly does, but "the chicken" has to find
+      // "fried chicken wing" too.
       const findPart = (wanted: string | null) => {
         const needle = wanted?.toLowerCase().trim() ?? ''
         if (!needle) return undefined
@@ -573,17 +557,15 @@ Deno.serve(async (req: Request) => {
     }
 
     if (interpretation.action === 'adjust') {
-      // The same dish, one part changed. The base stays the catalogue figure
-      // the entry already trusts; only the DELTA is the model's — so "no
-      // sambal" can never re-guess the whole plate, and the answer moves in
-      // the direction the words say. Macros scale proportionally, which keeps
-      // Atwater consistency by construction.
+      // The same dish, one part changed. The base stays the catalogue figure the entry
+      // already trusts; only the delta is the model's, so "no sambal" can never
+      // re-guess the whole plate. Macros scale proportionally, which keeps Atwater
+      // consistency by construction.
       //
-      // The delta is for the WHOLE correction, so it has to be divided by the
-      // portion count before it is added to ONE portion — the row below is
-      // priced per serving and then multiplied by the quantity again. Added
-      // flat, "add a fried egg" to an entry logged at half a plate put half an
-      // egg on it: 90 kcal became 45 by the time the quantity had its say.
+      // The delta is for the whole correction, so it has to be divided by the portion
+      // count before it is added to one portion, since the row below is priced per
+      // serving and then multiplied by the quantity again. Added flat, "add a fried
+      // egg" to an entry logged at half a plate put half an egg on it.
       const factor = Number(entry.serving_factor ?? 1)
       const portionKcal = Number(entry.base_kcal ?? 0) * factor
       const perPortionDelta = interpretation.kcal_delta / Math.max(0.25, Number(entry.quantity))
@@ -591,17 +573,16 @@ Deno.serve(async (req: Request) => {
       const scale = target / Math.max(1, portionKcal)
       const round1 = (value: number) => Math.round(value * 10) / 10
 
-      // The adjusted figures replace the entry's own, and the quantity does not
-      // move. It used to: the row was a shared estimate deduped on the name, so
-      // an earlier variant priced differently could come back instead, and the
-      // quantity absorbed that (rule 12 — amount, never macros). Nothing is
-      // shared now, so `target` is what this entry is worth per portion and the
-      // portion count the user chose is left exactly where they put it.
+      // The adjusted figures replace the entry's own, and the quantity does not move.
+      // It used to: the row was a shared estimate deduped on the name, so an earlier
+      // variant priced differently could come back instead, and the quantity absorbed
+      // that. Nothing is shared now, so `target` is what this entry is worth per
+      // portion and the portion count the user chose is left where they put it.
       //
-      // The portion collapses to a plain "1 serving" because these numbers are
-      // no longer per a catalogue serving that a factor scales — the factor is
-      // already IN them, via `portionKcal`. Keeping a "Half" label over a base
-      // that already means half would double the discount at the next read.
+      // The portion collapses to a plain "1 serving" because these numbers are no
+      // longer per a catalogue serving that a factor scales: the factor is already in
+      // them, via `portionKcal`. Keeping a "Half" label over a base that already means
+      // half would double the discount at the next read.
       const quantity = refineQuantity(Number(entry.quantity))
       const { error: updateError } = await db
         .from('food_logs')

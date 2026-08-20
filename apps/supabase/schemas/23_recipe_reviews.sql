@@ -1,22 +1,23 @@
 -- ---------------------------------------------------------------------------
 -- How many recipe reviews an account has asked for in the current hour.
 --
--- THE AI METER USED TO BE THIS CEILING, and it stopped being one. Every request
--- to OpenRouter was claimed against a monthly allowance, so the publish review
--- was bounded along with everything else; the quota counts SCANS now, and the
--- review is deliberately not one — it is the app's own moderation, and charging
--- a user's daily allowance for a check they did not ask for would be the app
--- billing them for it. Which leaves the review as the one model call in the
--- system with nothing in front of it: `{action: 'review'}` takes a recipe id,
--- and a signed-in caller with one public recipe of their own can call it in a
--- loop. That is a denial-of-wallet rather than a data risk, so the control is
--- the same one the barcode path uses — a plain per-account rate limit, one row
--- per hour, an atomic claim, no client write grant.
+-- The AI meter used to be this ceiling and stopped being one. Every request to
+-- OpenRouter was claimed against a monthly allowance, so the publish review was
+-- bounded along with everything else. The quota counts scans now, and the review
+-- is deliberately not one: it is the app's own moderation, and charging a user's
+-- daily allowance for a check they did not ask for would be the app billing them
+-- for it.
 --
--- TEN AN HOUR IS FAR ABOVE ANY REAL USE. A publish is one, an edit to something
+-- Which leaves the review as the one model call in the system with nothing in
+-- front of it: `{action: 'review'}` takes a recipe id, and a signed-in caller
+-- with one public recipe of their own can call it in a loop. That is a
+-- denial-of-wallet rather than a data risk, so the control is the same one the
+-- barcode path uses: a plain per-account rate limit, one row per hour, an atomic
+-- claim, no client write grant.
+--
+-- Ten an hour is far above any real use. A publish is one, an edit to something
 -- already public is one, and a free account may only keep three recipes at all.
--- It is an abuse ceiling rather than a quota, so nothing in the app prints it
--- and nobody legitimate will ever meet it.
+-- It is an abuse ceiling rather than a quota, so nothing in the app prints it.
 -- ---------------------------------------------------------------------------
 
 create table public.recipe_review_usage (

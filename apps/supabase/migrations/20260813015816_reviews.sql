@@ -465,7 +465,7 @@ ALTER TABLE public.user_settings
 -- inherits from PUBLIC, so every function above is callable with the anon key
 -- until this runs. `schemas/95_reviews.sql` says so declaratively and
 -- `supabase db diff` does not look at grants — see the note in the root
--- CLAUDE.md, and the five functions that shipped executable by PUBLIC before
+-- README.md, and the five functions that shipped executable by PUBLIC before
 -- anybody checked.
 REVOKE EXECUTE ON FUNCTION public.review_end(text, date) FROM public, anon;
 REVOKE EXECUTE ON FUNCTION public.review_days(date, date, uuid) FROM public, anon;

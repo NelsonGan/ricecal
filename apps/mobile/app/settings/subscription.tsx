@@ -39,15 +39,10 @@ export default function SubscriptionScreen() {
   /**
    * Somebody who has never paid, or whose subscription has lapsed.
    *
-   * They reach this screen from the Me tab like everybody else, and until now
-   * the only thing on it was "Switch to yearly" — which opens the store to
-   * change a subscription that does not exist. This is also the ONLY way back
-   * to `/paywall`: it used to be reachable from the read-only preview screen,
-   * and when that went the standing paywall became a route nothing linked to.
+   * `useEntitlement`, not a second copy of the rule. It exists so that "what
+   * does Pro include" is answered once; comparing statuses here would be the
+   * screen that silently disagrees when that answer changes.
    */
-  // `useEntitlement`, not a second copy of the rule. It exists so that "what
-  // does Pro include" is answered once; comparing statuses here would be the
-  // screen that silently disagrees when that answer changes.
   const { entitled } = useEntitlement()
 
   // Whole days left, from the instant the store reported. Not a stored counter:

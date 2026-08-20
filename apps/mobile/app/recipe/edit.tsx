@@ -166,13 +166,6 @@ export default function RecipeFormScreen() {
   const [leaving, setLeaving] = useState(false)
   /**
    * The form has been filled in for them already.
-   *
-   * All this does now is retire the two offers at the top: having read the pot
-   * once, a second "Photo" tile above a full form is a button that overwrites
-   * nothing (`applyDraft` only writes over empty fields) and looks like one
-   * that would. There used to be a banner underneath saying which way it was
-   * filled in, and it was a badge congratulating the app on having worked —
-   * the fields it filled in are right there and say it better.
    */
   const [filled, setFilled] = useState(false)
 
@@ -744,7 +737,7 @@ export default function RecipeFormScreen() {
           </Sheet>
 
           {/* A text field, so full height and not scrollable — the two rules a sheet
-          with typing in it always follows. See the note in CLAUDE.md. */}
+          with typing in it always follows. See the note in README.md. */}
           <Sheet
             visible={describing}
             onClose={() => setDescribing(false)}
@@ -834,14 +827,6 @@ function FillOption({
 /**
  * The picture, in whichever of its states it is in: a local file still
  * uploading, a key in the bucket, or a drawing.
- *
- * FULL WIDTH, and the same two heights the logged-entry screen uses. It was a
- * 104x76 thumbnail beside the servings stepper, which is a box sized for an
- * icon — a photograph of a pot went into it as a letterbox strip through the
- * middle of the dish, and a cook who had just taken a picture of their dinner
- * saw a sliver of it. A photo gets 260pt and a drawing keeps the short box,
- * because a 100pt illustration in a 260pt frame is a small picture in a large
- * empty one.
  *
  * There is no empty state and no "add a picture" prompt: a recipe always has
  * one, because the form opens with `DEFAULT_RECIPE_ICON` in it.

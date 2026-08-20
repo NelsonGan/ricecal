@@ -52,8 +52,7 @@ import {
  * The row itself is no longer marked. It used to say "Just added, tap to edit"
  * for this long, which took the portion off the one row worth reading and put an
  * instruction there that was true of every row on the screen. What survives is
- * the toast, which is where an undo belongs — it is offered once, in passing, and
- * does not change what the diary says.
+ * the toast, which is where an undo belongs.
  */
 const ANNOUNCE_MS = 8000
 
@@ -81,11 +80,6 @@ export default function TodayScreen() {
 
   /**
    * The tour, offered once and never again.
-   *
-   * It used to be four screens at the end of onboarding. Here it is a toast a
-   * beat after the diary appears, so the thing being explained is on screen
-   * while the user decides whether they want it explained. See
-   * `features/tutorial`.
    */
   useTutorialOffer()
 
@@ -115,57 +109,44 @@ export default function TodayScreen() {
   const { data: settings, isPending: settingsPending, isPaused: settingsPaused } = useSettings()
 
   /**
-   * EVERYTHING UNDER THE STRIP WAITS TOGETHER.
+   * Everything under the strip waits together.
    *
-   * Two of these queries are keyed by the selected date, so picking a day puts
-   * them both back to "no data" — and every value below reads through a
-   * fallback that turns that into a confident statement about the new day. The
-   * ring drew the full budget as remaining, the water tank drew itself empty,
-   * and the list drew "Nothing logged yet", all for as long as the requests
-   * were out. A day someone ate three meals on announced itself as a day they
-   * had skipped.
+   * Two of these queries are keyed by the selected date, so picking a day puts them
+   * both back to "no data", and every value below reads through a fallback that
+   * turns that into a confident statement about the new day. The ring drew the full
+   * budget as remaining, the water tank drew itself empty, and the list drew
+   * "Nothing logged yet", all for as long as the requests were out. A day someone
+   * ate three meals on announced itself as a day they had skipped.
    *
-   * The gate is the whole region rather than a flag per card, because these are
-   * one sentence about one day: staggering them would reveal the ring's answer
-   * over an empty list, which is the same disagreement in slow motion. Days
-   * already in the cache — the persisted ones, and any week the user is paging
-   * back and forth over — are never pending, so this costs a placeholder only
-   * on a day genuinely being fetched for the first time.
+   * The gate is the whole region rather than a flag per card, because these are one
+   * sentence about one day: staggering them would reveal the ring's answer over an
+   * empty list. Days already in the cache are never pending, so this costs a
+   * placeholder only on a day genuinely being fetched for the first time.
    *
-   * `settings` is in here for a narrower reason: it holds
-   * `activity_extends_budget`, which decides whether the day's movement counts
-   * toward the ring at all. Missing, it defaults to counting — so an account
-   * that turned it off saw the larger budget first and watched the ring
-   * tighten. The strip's dots are drawn against that same sum and gate on the
-   * same query, because the ring and the dot under it describe one day and must
-   * not disagree about it.
+   * `settings` is in here for a narrower reason: it holds `activity_extends_budget`,
+   * which decides whether the day's movement counts toward the ring at all.
+   * Missing, it defaults to counting, so an account that turned it off saw the
+   * larger budget first and watched the ring tighten.
    */
   const waiting = day.isPending || targetsPending || activityPending || settingsPending
 
   /**
    * And a wait that cannot end is not a wait.
    *
-   * A query with nothing cached is PAUSED rather than sent, so
-   * every flag above stays true for as long as the phone is offline and the
-   * placeholders above would sit there until it is not. Which is the right
-   * answer for a day already on this phone — a persisted day is not pending at
-   * all, and the screen draws it without asking anybody — and no answer for one
-   * that never made it here.
+   * A query with nothing cached is paused rather than sent, so every flag above
+   * stays true for as long as the phone is offline and the placeholders would sit
+   * there until it is not. Which is the right answer for a day already on this
+   * phone, and no answer for one that never made it here.
    *
-   * Said once, over the whole region, for the same reason the wait is: these
-   * queries are one sentence about one day, and "we could not read your
-   * movement" over a fully drawn ring is the same disagreement the gate exists
-   * to prevent. The strip stays above it, so the way out is to pick a day the
-   * phone already has.
+   * Said once, over the whole region, for the same reason the wait is. The strip
+   * stays above it, so the way out is to pick a day the phone already has.
    *
-   * The two flags are paired PER QUERY rather than or-ed across the four, and
-   * that is not tidiness. `isPaused` is about a request, `isPending` about
-   * data, and they come apart in the ordinary case: a query that has its answer
-   * from disk and cannot refetch is paused and NOT pending. Compared loosely,
-   * one such query plus one genuinely in flight reads as stalled, and the
-   * screen would say the day is not on this phone over a day that was seconds
-   * from arriving. `blocked` is the whole condition: nothing to draw, and
-   * nothing on its way.
+   * The two flags are paired per query rather than or-ed across the four, and that
+   * is not tidiness. `isPaused` is about a request and `isPending` about data, and
+   * they come apart in the ordinary case: a query that has its answer from disk and
+   * cannot refetch is paused and not pending. Compared loosely, one such query plus
+   * one genuinely in flight reads as stalled, and the screen would say the day is
+   * not on this phone over a day that was seconds from arriving.
    */
   const blocked = (isPending: boolean, isPaused: boolean) => isPending && isPaused
   const stalled =
@@ -184,17 +165,16 @@ export default function TodayScreen() {
   const [showGoals, setShowGoals] = useState(false)
 
   /**
-   * WHICH OF THE TWO WAYS OF READING THE DIARY IS ON SCREEN.
+   * Which of the two ways of reading the diary is on screen.
    *
-   * The day, or the month. They answer different questions — "what did I eat"
-   * and "what have I been eating" — and the month can only answer its one by
-   * being mostly pictures, which leaves no room for the ring, the water and the
-   * list. So it REPLACES them rather than sitting above them.
+   * The day, or the month. They answer different questions, "what did I eat" and
+   * "what have I been eating", and the month can only answer its one by being
+   * mostly pictures, which leaves no room for the ring, the water and the list. So
+   * it replaces them rather than sitting above them.
    *
-   * Not persisted, for the reason `showGoals` is not: the diary is the screen
-   * this app opens on, and a launch that landed on a month grid because of a
-   * tap three days ago would be the app having changed its mind about what it
-   * is. The toggle is one tap away from either.
+   * Not persisted, for the reason `showGoals` is not: the diary is the screen this
+   * app opens on, and a launch that landed on a month grid because of a tap three
+   * days ago would be the app having changed its mind about what it is.
    */
   const [calendar, setCalendar] = useState(false)
   /**
@@ -219,11 +199,10 @@ export default function TodayScreen() {
    * Switching views takes the swipe state with it.
    *
    * `swipeOpen` is reported by `EntryList` when a row opens or closes, and the
-   * calendar UNMOUNTS that list — so a row left open when the toggle is pressed
-   * leaves the flag true with nothing able to clear it, and `floating` renders
-   * nothing. The log button simply disappears, and coming back to the day view
-   * does not bring it back either, since the list remounts with no row open and
-   * has nothing to report. Cleared here because this is the one place that knows
+   * calendar unmounts that list, so a row left open when the toggle is pressed
+   * leaves the flag true with nothing able to clear it and `floating` renders
+   * nothing. The log button simply disappears, and coming back to the day view does
+   * not bring it back either. Cleared here because this is the one place that knows
    * the list is going away.
    */
   const showCalendar = (on: boolean) => {
@@ -252,14 +231,13 @@ export default function TodayScreen() {
   /**
    * Movement extends the budget; it never shrinks what was eaten.
    *
-   * `activeKcal` and not the day's total burn — the goal is already a
-   * Mifflin-St Jeor figure containing basal metabolism, so adding resting
-   * energy would credit a user for being alive twice. The same rule, and the
-   * same reasoning, as `BudgetStrip` on the Activity tab; that screen shows the
-   * arithmetic and this one shows its result.
+   * `activeKcal` and not the day's total burn: the goal is already a
+   * Mifflin-St Jeor figure containing basal metabolism, so adding resting energy
+   * would credit a user for being alive twice. The same rule, and the same
+   * reasoning, as `BudgetStrip` on the Activity tab.
    *
-   * Zero on an account with no health connection, so the ring is exactly what
-   * it was before any of this existed.
+   * Zero on an account with no health connection, so the ring is exactly what it
+   * was before any of this existed.
    */
   const burned = settings?.activity_extends_budget === false ? 0 : (activity?.activeKcal ?? 0)
   const budget = (targets?.kcal ?? 0) + burned
@@ -311,22 +289,19 @@ export default function TodayScreen() {
   }, [justAdded, toast, t, removeEntry])
 
   /**
-   * THE WAY BACK TO TODAY, and only when there is one.
+   * The way back to today, and only when there is one.
    *
-   * The strip can put any day of the last year on this screen, and the month
-   * grid can put one twelve taps away — at which point returning to today means
-   * paging the grid forward month by month, or swiping the strip forward week by
-   * week, to reach the day the screen is named after. One tap instead.
+   * The strip can put any day of the last year on this screen, and the month grid
+   * can put one twelve taps away, at which point returning to today means paging
+   * the grid forward month by month. One tap instead.
    *
-   * Absent on today itself rather than disabled: a control whose only job is to
-   * get somewhere you already are has nothing to say, and this screen is on
-   * today almost always. Bottom left, opposite the log button, because those are
-   * the two corners a thumb reaches and the log button is not moving.
+   * Absent on today itself rather than disabled: a control whose only job is to get
+   * somewhere you already are has nothing to say. Bottom left, opposite the log
+   * button, because those are the two corners a thumb reaches.
    *
-   * Declared up here because the OFFLINE screen below wants it too, and wants it
-   * most: a day this phone has never seen is the one day where the answer really
-   * is "go back to one it has", and the strip only offers that while today is
-   * still in the week on screen.
+   * Declared up here because the offline screen below wants it too, and wants it
+   * most: a day this phone has never seen is the one day where the answer really is
+   * "go back to one it has".
    */
   const backToToday = isToday ? null : (
     <Button
@@ -350,13 +325,13 @@ export default function TodayScreen() {
   /**
    * A day this phone has never seen, with no way to ask for it.
    *
-   * The strip comes too, so the answer to it is on screen: the days already
-   * saved here are one tap away. No retry and no spinner — react-query resumes
-   * a paused query by itself, and this screen redraws when it lands.
+   * The strip comes too, so the answer to it is on screen: the days already saved
+   * here are one tap away. No retry and no spinner, because react-query resumes a
+   * paused query by itself and this screen redraws when it lands.
    *
-   * No streak badge either. `logging_streak()` is a request like any other, and
-   * a confident "0 day streak" is the wrong sentence about somebody who is
-   * merely out of signal.
+   * No streak badge either. `logging_streak()` is a request like any other, and a
+   * confident "0 day streak" is the wrong sentence about somebody who is merely out
+   * of signal.
    */
   if (stalled) {
     return (
@@ -383,18 +358,16 @@ export default function TodayScreen() {
     <Screen
       gestureScroll
       /**
-       * OUT OF THE WAY WHILE A ROW IS OPEN FOR DELETE.
+       * Out of the way while a row is open for delete.
        *
-       * `floating` overlaps the scroll content by design, and this button's
-       * corner is exactly where a swiped row's Delete comes to rest for
-       * whichever entry happens to be at that height. Drawn above the list, it
-       * took the tap: swipe the row, aim at the bin, and the log sheet opened
-       * instead — a confirmation-free destructive action replaced by the wrong
-       * screen, which is at least the safe direction to fail in.
+       * `floating` overlaps the scroll content by design, and this button's corner is
+       * exactly where a swiped row's Delete comes to rest. Drawn above the list, it
+       * took the tap: swipe the row, aim at the bin, and the log sheet opened instead,
+       * which is at least the safe direction to fail in.
        *
-       * Hidden rather than moved. There is nowhere to move it to that is not
-       * over some other row, and a control that jumps aside when you swipe is
-       * a second thing happening.
+       * Hidden rather than moved. There is nowhere to move it to that is not over some
+       * other row, and a control that jumps aside when you swipe is a second thing
+       * happening.
        */
       floating={
         swipeOpen ? null : (

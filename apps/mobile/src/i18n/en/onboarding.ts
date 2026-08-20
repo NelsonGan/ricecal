@@ -144,11 +144,6 @@ export const onboarding = {
   /**
    * THE TOUR, WHICH IS NO LONGER PART OF THE FLOW.
    *
-   * It used to sit between the permissions and the paywall, four screens of
-   * prose read by somebody who had been answering questions for two minutes and
-   * had still not seen the app. It is offered from Today instead, once, as a
-   * toast, and lives in Me afterwards.
-   *
    * So the writing changed with the placement. Each card is now a MOCK of the
    * thing it describes — the log sheet, a diary row, the correction chips, the
    * ring — because a reader who has the real screen one tap away is checking

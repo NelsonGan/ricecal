@@ -10,20 +10,20 @@ import { keys } from './keys'
 import type { ScanQuota } from './subscription'
 
 /**
- * The two ways the server refuses, read back off the wire — and the one place
- * that decides what the user is told about each.
+ * The two ways the server refuses, read back off the wire, and the one place that
+ * decides what the user is told about each.
  *
- * Both arrive as an HTTP status with a `code` in the body, which is the one
- * shape supabase-js makes awkward: a non-2xx turns into a `FunctionsHttpError`
- * with `data` null, and the body — the part that says WHICH refusal — is only
- * reachable through the response hanging off the error. Every caller that
- * needs to tell "this needs Pro" from "you have used today's scans" would
- * otherwise reimplement that, so it is done once here.
+ * Both arrive as an HTTP status with a `code` in the body, which is the one shape
+ * supabase-js makes awkward: a non-2xx turns into a `FunctionsHttpError` with
+ * `data` null, and the body, the part that says which refusal, is only reachable
+ * through the response hanging off the error. Every caller that needs to tell
+ * "this needs Pro" from "you have used today's scans" would otherwise reimplement
+ * that.
  *
- * These exist as classes rather than as a string union because they travel
- * through `.catch()` handlers alongside timeouts and dropped connections, and
- * `instanceof` is the only test that stays honest when an error has been
- * through a promise chain.
+ * These are classes rather than a string union because they travel through
+ * `.catch()` handlers alongside timeouts and dropped connections, and
+ * `instanceof` is the only test that stays honest when an error has been through
+ * a promise chain.
  */
 
 /** The account is not subscribed, and what it asked for is Pro. */
@@ -31,9 +31,9 @@ export class NotEntitledError extends Error {
   /**
    * Which Pro-only thing was refused, as the server named it.
    *
-   * The same strings the client's own gate uses, so a refusal that started on
-   * the server lands in the same funnel as one the button caught first. Null
-   * for an older function that did not send it.
+   * The same strings the client's own gate uses, so a refusal that started on the
+   * server lands in the same funnel as one the button caught first. Null for an
+   * older function that did not send it.
    */
   readonly feature: ProFeature | null
 
@@ -47,11 +47,10 @@ export class NotEntitledError extends Error {
 /**
  * The account has spent today's scans.
  *
- * `entitled` is what decides the message, and it is the reason the server sends
- * it: a free account that has used its three has something to buy and is shown
- * the paywall, while a Pro account that has reached fifty in one day has not,
- * and is asked to get in touch. The numbers alone cannot tell those apart —
- * only somebody who knows both ceilings could read "50" as the paid one.
+ * `entitled` decides the message, and it is why the server sends it: a free
+ * account that has used its three has something to buy and is shown the paywall,
+ * while a Pro account that has reached fifty in one day has not, and is asked to
+ * get in touch. The numbers alone cannot tell those apart.
  */
 export class ScanLimitError extends Error {
   readonly used: number
@@ -94,19 +93,18 @@ type RefusalResponse = {
 /**
  * The response hanging off a `FunctionsHttpError`, if there is one.
  *
- * DUCK-TYPED, AND THIS IS NOT FUSSINESS. It was `context instanceof Response`,
- * which is the obvious spelling and was ALWAYS FALSE in this app: Expo 57 ships
- * its own fetch, and what comes back is a `FetchResponse` that does not
- * subclass the global `Response`. So this function returned null for every
- * refusal there has ever been, and every 402 and 429 the server sent —
- * "you have used today's three scans", "this one needs Pro" — reached the user
- * as a generic "could not read this one" with no toast and no paywall. The
- * server was refusing correctly and the app was mistranslating it, which is why
- * it looked like the paywall never opened.
+ * Duck-typed, and this is not fussiness. It was `context instanceof Response`,
+ * which is the obvious spelling and was always false in this app: Expo 57 ships
+ * its own fetch, and what comes back is a `FetchResponse` that does not subclass
+ * the global `Response`. So this function returned null for every refusal there
+ * has ever been, and every 402 and 429 the server sent reached the user as a
+ * generic "could not read this one" with no toast and no paywall. The server was
+ * refusing correctly and the app was mistranslating it, which is why it looked
+ * like the paywall never opened.
  *
  * An `instanceof` against a class the runtime may swap is the wrong test for a
- * value that arrives from a library. What this actually needs is a status and a
- * body, so that is what it asks for.
+ * value that arrives from a library. What this needs is a status and a body, so
+ * that is what it asks for.
  */
 function asResponse(context: unknown): RefusalResponse | null {
   const candidate = context as Partial<RefusalResponse> | null | undefined
@@ -117,13 +115,13 @@ function asResponse(context: unknown): RefusalResponse | null {
 }
 
 /**
- * Turns a failed `functions.invoke` into one of the two refusals, or null when
- * it is an ordinary failure.
+ * Turns a failed `functions.invoke` into one of the two refusals, or null when it
+ * is an ordinary failure.
  *
- * Null is the common answer and callers must keep their existing handling for
- * it: a timeout and a dropped connection are not refusals, and treating them
- * as one would tell somebody they were out of scans because their train went
- * into a tunnel.
+ * Null is the common answer and callers must keep their existing handling for it.
+ * A timeout and a dropped connection are not refusals, and treating them as one
+ * would tell somebody they were out of scans because their train went into a
+ * tunnel.
  */
 export async function refusalFrom(
   error: unknown,
@@ -137,21 +135,19 @@ export async function refusalFrom(
 
   let body: RefusalBody
   try {
-    // `clone` when it is offered, because the caller's own error handling may
-    // read the body too and a body can only be consumed once. Not every
-    // implementation has it — see `asResponse` — and reading directly is
-    // correct for those: nothing downstream of here looks at it again.
+    // `clone` when it is offered, because the caller's own error handling may read
+    // the body too and a body can only be consumed once. Not every implementation has
+    // it, and reading directly is correct for those: nothing downstream looks again.
     body = (await (response.clone ? response.clone() : response).json()) as RefusalBody
   } catch {
     return null
   }
 
   if (body.code === 'not_entitled') return new NotEntitledError(asFeature(body.feature))
-  // `ai_limit` was this code's name while the meter counted requests to the
-  // model rather than scans. Still accepted, because an app already on a phone
-  // meets the new server before it meets the new bundle, and for that hour a
-  // refusal it cannot parse is a generic "scan failed" over a paywall the user
-  // needed to see.
+  // `ai_limit` was this code's name while the meter counted requests to the model
+  // rather than scans. Still accepted, because an app already on a phone meets the
+  // new server before it meets the new bundle, and for that hour a refusal it
+  // cannot parse is a generic "scan failed" over a paywall the user needed to see.
   if (body.code === 'scan_limit' || body.code === 'ai_limit') {
     return new ScanLimitError(
       Number(body.used ?? 0),
@@ -166,21 +162,20 @@ export type RefusalOptions = {
   /**
    * How to reach the paywall, and it depends on what is refusing.
    *
-   * `replace` is required from inside a MODAL — `/log` is a `transparentModal`,
-   * and a push from within one lands on the stack that lives INSIDE that
-   * presentation, so the paywall comes up stacked on the sheet with the sheet's
-   * own scrim still over the app. Same rule, and the same reason, as
-   * `useRequirePro`.
+   * `replace` is required from inside a modal. `/log` is a `transparentModal`, and
+   * a push from within one lands on the stack that lives inside that presentation,
+   * so the paywall comes up stacked on the sheet with the sheet's own scrim still
+   * over the app. Same rule, and the same reason, as `useRequirePro`.
    */
   navigate?: 'push' | 'replace'
 }
 
 /**
- * Has the STORE told this device the account is paid up?
+ * Has the store told this device the account is paid up?
  *
  * Read straight out of the query cache rather than through a hook, because the
- * one caller is a `catch` handler in a mutation and there is no component to
- * hang a hook off. The cache is a module singleton, so this is the same answer
+ * one caller is a `catch` handler in a mutation and there is no component to hang
+ * a hook off. The cache is a module singleton, so this is the same answer
  * `useEntitlement` is reading a few lines away on screen.
  *
  * Matched across every user's entry rather than by id: this file has no session
@@ -194,19 +189,19 @@ function storeSaysPaid(): boolean {
 }
 
 /**
- * The refusal a free account is ABOUT to get, worked out before the request.
+ * The refusal a free account is about to get, worked out before the request.
  *
- * WHY BOTH ENDS. The ceiling is the server's and stays the server's — a count
- * kept in the client is wrong the first time the phone is offline or a second
- * device scans. But a shutter press that uploads a photograph, waits for a
+ * Why both ends. The ceiling is the server's and stays the server's, since a
+ * count kept in the client is wrong the first time the phone is offline or a
+ * second device scans. But a shutter press that uploads a photograph, waits for a
  * round trip and then answers with a paywall has spent the user's time and our
  * bandwidth to tell them something this device already knew, and left a failed
- * row on the diary saying so. So the quota the camera panel is ALREADY drawing
+ * row on the diary saying so. So the quota the camera panel is already drawing
  * its "2 scans left" line from is read once more at the tap.
  *
  * Null whenever the answer is not certain: no count yet, a Pro account, or
- * anything left. The server is what actually refuses, and this only ever
- * declines to make a request it knows the answer to.
+ * anything left. The server is what actually refuses, and this only ever declines
+ * to make a request it knows the answer to.
  */
 export function scanLimitAhead(quota: ScanQuota | undefined): ScanLimitError | null {
   if (!quota || quota.entitled || quota.remaining > 0) return null
@@ -216,45 +211,40 @@ export function scanLimitAhead(quota: ScanQuota | undefined): ScanLimitError | n
 /**
  * The sentence for a refused feature, naming the feature.
  *
- * ONE SENTENCE PER GATED THING, and it used to be one sentence for all of them:
- * "That one needs RiceCal Pro." The argument for the single line was the same
- * one that left this app with a single paywall rather than a variant per
- * button — the differences between them are writing rather than information —
- * and it holds for the SCREEN and not for the toast. The paywall cannot say
- * which button was pressed; this is the only thing on screen that can, and
- * "that one" points at something the user cannot see.
+ * One sentence per gated thing, and it used to be one sentence for all of them:
+ * "That one needs RiceCal Pro." The argument for the single line was the same one
+ * that left this app with a single paywall rather than a variant per button, and
+ * it holds for the screen and not for the toast. The paywall cannot say which
+ * button was pressed; this is the only thing on screen that can, and "that one"
+ * points at something the user cannot see.
  *
  * Keyed by the same `ProFeature` the funnel is broken down by, so the sentence
  * and the `Paywall Shown` event beside it can never name two different things.
  *
- * `i18n.t` rather than a `t` from a hook, because the two callers are a hook
- * and a `catch` handler in a mutation, and only one of them has a component to
- * hang `useTranslation` off. One place is worth more here than one re-render on
- * a language change: this bundle has one language, and two copies of this
- * lookup are what drifted the last time the copy moved.
+ * `i18n.t` rather than a `t` from a hook, because the two callers are a hook and
+ * a `catch` handler in a mutation, and only one of them has a component to hang
+ * `useTranslation` off.
  *
  * Every number the sentences might want is handed over whether or not the one
- * being read has a slot for it, exactly as `PlanTable` does — a per-feature map
- * of which figure each line needs is a second place to keep in step with the
- * copy, and getting it wrong prints "{{recipes}}" in a toast.
+ * being read has a slot for it, exactly as `PlanTable` does. A per-feature map of
+ * which figure each line needs is a second place to keep in step with the copy,
+ * and getting it wrong prints "{{recipes}}" in a toast.
  */
 export function proFeatureTitle(feature: ProFeature): string {
   return i18n.t(`paywall:limit.feature.${feature}`, { recipes: FREE_RECIPES })
 }
 
 /**
- * SAY WHAT HAPPENED, THEN SHOW THE PRICE. The one place that does both.
+ * Say what happened, then show the price. The one place that does both.
  *
- * Exported because the recipe screens reach the same ending by another route —
- * a trigger in Postgres refusing a fourth recipe, rather than an edge function
- * refusing a scan — and they were open-coding this three-line sequence, which
- * is how the two drifted the last time the copy moved.
+ * Exported because the recipe screens reach the same ending by another route, a
+ * trigger in Postgres refusing a fourth recipe rather than an edge function
+ * refusing a scan, and they were open-coding this three-line sequence.
  *
- * FROM THE TOP, ALWAYS, and that is the whole reason this is a function rather
- * than two lines at each call site. The paywall's buy button is a footer, at the
- * bottom of the screen, and a toast defaults to the bottom too — so the sentence
+ * From the top, always, and that is the whole reason this is a function rather
+ * than two lines at each call site. The paywall's buy button is a footer at the
+ * bottom of the screen, and a toast defaults to the bottom too, so the sentence
  * explaining why somebody needs Pro landed squarely on the button for buying it.
- * Every toast that opens this screen comes from the other edge.
  */
 export function openPaywall(
   toast: ToastApi,
@@ -268,10 +258,10 @@ export function openPaywall(
 ): void {
   const { title, description, tone = 'warning', feature, navigate = 'push' } = options
   toast.show({ title, description, tone, placement: 'top' })
-  // `screen: 'hard'` and the feature that was refused, exactly as
-  // `useRequirePro` reports its own refusals — a limit reached on the server
-  // and a button gated in the app are the same event to the funnel, and
-  // splitting them would make the paywall look half as effective as it is.
+  // `screen: 'hard'` and the feature that was refused, exactly as `useRequirePro`
+  // reports its own refusals. A limit reached on the server and a button gated in
+  // the app are the same event to the funnel, and splitting them would make the
+  // paywall look half as effective as it is.
   track('Paywall Shown', { screen: 'hard', trigger: feature })
   if (navigate === 'replace') router.replace('/paywall')
   else router.push('/paywall')
@@ -280,21 +270,18 @@ export function openPaywall(
 /**
  * Says what happened, and opens the paywall when there is something to buy.
  *
- * ONE PLACE, because there are four call sites — a snapped plate, a typed one,
- * a correction and a recipe read — and they were four copies of the same two
+ * One place, because there are four call sites (a snapped plate, a typed one, a
+ * correction and a recipe read) and they were four copies of the same two
  * branches. They had drifted already: one toasted and the others were silent
  * about the same refusal.
  *
- * THE TOAST AND THE PAYWALL TOGETHER, not one or the other. The paywall alone
+ * The toast and the paywall together, not one or the other. The paywall alone
  * appearing after a shutter press reads as the app having decided to sell
  * something, with no statement of what just failed; the toast alone tells
- * somebody they have run out and leaves them to go and find the way to fix it.
- * The toast says what happened and the screen behind it says what it costs.
+ * somebody they have run out and leaves them to find the way to fix it.
  *
- * The exception is a PAYING account that has hit the daily ceiling. There is
- * nothing to sell it, so it gets the message and no paywall — showing one to
- * somebody who has already paid is the worst thing this app can do with a
- * refusal.
+ * The exception is a paying account that has hit the daily ceiling. There is
+ * nothing to sell it, so it gets the message and no paywall.
  *
  * Returns true when it handled the error, so a caller reads as a single early
  * return in its `catch`.
@@ -312,19 +299,18 @@ export function announceRefusal(
       toast.show({ title: i18n.t('paywall:limit.proReached'), tone: 'error' })
       return true
     }
-    // THE STORE SAYS THEY HAVE PAID and the server has not heard yet, which is
-    // the seconds between a purchase settling and the webhook writing the row.
-    // Selling the app to somebody who bought it a moment ago is the worst
-    // answer available here, so they get told to wait rather than to pay.
+    // The store says they have paid and the server has not heard yet, which is the
+    // seconds between a purchase settling and the webhook writing the row. Selling
+    // the app to somebody who bought it a moment ago is the worst answer available,
+    // so they get told to wait rather than to pay.
     if (storeSaysPaid()) {
       toast.show({ title: i18n.t('paywall:limit.confirming'), tone: 'warning' })
       return true
     }
-    // The SERVER's figure, not the constant. They agree, and when they ever do
-    // not it is because the ceiling moved and this bundle has not caught up —
-    // in which case the number that refused the request is the honest one to
-    // print. `count` also drives the plural, so a ceiling of one reads properly
-    // if it is ever set there.
+    // The server's figure, not the constant. They agree, and when they do not it is
+    // because the ceiling moved and this bundle has not caught up, in which case the
+    // number that refused the request is the honest one to print. `count` also drives
+    // the plural, so a ceiling of one reads properly if it is ever set there.
     openPaywall(toast, {
       title: i18n.t('paywall:limit.freeReached', { count: error.limit || FREE_DAILY_SCANS }),
       tone: 'warning',
@@ -340,11 +326,10 @@ export function announceRefusal(
       toast.show({ title: i18n.t('paywall:limit.confirming'), tone: 'warning' })
       return true
     }
-    // THE FEATURE THE SERVER NAMED, when it named one — a refusal that started
-    // on the server and one a button caught first should read identically, and
-    // the server knows what it refused better than the call site does. Why the
-    // subscription said no goes underneath: which button was pressed is what
-    // the user needs, and our own bookkeeping is the footnote.
+    // The feature the server named, when it named one. A refusal that started on the
+    // server and one a button caught first should read identically, and the server
+    // knows what it refused better than the call site does. Why the subscription said
+    // no goes underneath: which button was pressed is what the user needs.
     const refused = error.feature ?? feature
     openPaywall(toast, {
       title: proFeatureTitle(refused),

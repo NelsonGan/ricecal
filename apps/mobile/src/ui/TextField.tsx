@@ -39,7 +39,7 @@ export type TextFieldProps = Omit<TextInputProps, 'style' | 'className'> & {
   /**
    * Keep the PLATFORM's keyboard on a field whose `keyboardType` is numeric.
    *
-   * The default is the app's own pad, for the reason CLAUDE.md gives about iOS
+   * The default is the app's own pad, for the reason README.md gives about iOS
    * 26's floating "Done" pill, and it is right for every figure the app asks
    * for: a weight, a portion, a calorie total. It is wrong for a code.
    *

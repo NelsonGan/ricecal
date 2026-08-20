@@ -3,25 +3,22 @@
 --
 -- One row per calendar day between two dates, carrying only what a dot needs:
 -- whether anything was logged, what it came to, and the budget that day was
--- judged against. Three facts and no verdict — the strip colours the dot, and
--- it does so from the same three numbers the ring above it already uses.
+-- judged against. Three facts and no verdict, because the strip colours the dot
+-- from the same three numbers the ring above it already uses.
 --
--- Dates rather than a named range, which is the one place this parts company
--- with `trend_days`. A trend range is "the last thirty days" and only
--- `local_today()` knows where that starts; the strip is a CALENDAR week —
--- Monday to Sunday, and whichever earlier week has been swiped back to — so
--- there is no window to name and the client already knows the seven days it is
--- drawing.
+-- Dates rather than a named range, which is the one place this parts company with
+-- `trend_days`. A trend range is "the last thirty days" and only `local_today()`
+-- knows where that starts; the strip is a calendar week, so there is no window to
+-- name and the client already knows the seven days it is drawing.
 --
 -- The goal is joined per day rather than taken once, for the reason `goals_on()`
 -- exists: a budget tightened on Thursday must not repaint Monday's dot.
 --
 -- `active_kcal` comes along because the budget on Today is `goal + active`.
 -- Without it, a day where movement covered the excess draws an over-goal dot
--- under a ring saying there is room left — one screen contradicting itself
--- about one day. It is returned BESIDE the goal rather than added into it,
--- since whether it counts at all is `user_settings.activity_extends_budget`,
--- and Today already applies that rule to the ring.
+-- under a ring saying there is room left, which is one screen contradicting
+-- itself about one day. It is returned beside the goal rather than added into it,
+-- since whether it counts at all is `user_settings.activity_extends_budget`.
 --
 -- Sorts after 93 by name only; it depends on `daily_nutrition` (90) and
 -- `activity_days` (41).
@@ -80,27 +77,27 @@ grant  execute on function public.day_marks to authenticated;
 -- ---------------------------------------------------------------------------
 -- The picture on a day, for the month grid on Today.
 --
--- One row per day that had anything logged on it, carrying the ONE meal worth
+-- One row per day that had anything logged on it, carrying the one meal worth
 -- drawing in a 44pt cell: the day's biggest plate. Biggest rather than newest,
 -- because a cell has room for a single dish and "what did I eat that day" is
 -- answered by the nasi lemak rather than by the teh tarik that followed it.
 --
 -- Separate from `day_marks` rather than two more columns on it. The strip on
--- Today asks that function for a WEEK on every swipe and has no use for a
--- picture; joining the diary twice more per day, fifty-two weeks back, would be
--- a cost paid by the screen that does not want it. The calendar wants both and
--- asks for both, once a month.
+-- Today asks that function for a week on every swipe and has no use for a
+-- picture; joining the diary twice more per day, fifty-two weeks back, would be a
+-- cost paid by the screen that does not want it. The calendar wants both and asks
+-- for both, once a month.
 --
--- Days with nothing logged are ABSENT, unlike `day_marks` where they are
--- present and empty. There the empty row is the answer — a hollow dot is a
--- verdict about a day somebody missed — and here it would be a row of nulls
--- saying what a missing key already says.
+-- Days with nothing logged are absent, unlike `day_marks` where they are present
+-- and empty. There the empty row is the answer, since a hollow dot is a verdict
+-- about a day somebody missed, and here it would be a row of nulls saying what a
+-- missing key already says.
 --
--- The photograph and the drawing are returned TOGETHER and the client prefers
--- the photograph, exactly as `review_meals` does and for the same reason:
--- `food_log_details` nulls an entry's icons whenever it has a photo, and a
--- month whose plates were all photographed would otherwise be a grid of blanks
--- on the day the retention sweep takes the pictures away.
+-- The photograph and the drawing are returned together and the client prefers the
+-- photograph, exactly as `review_meals` does and for the same reason:
+-- `food_log_details` nulls an entry's icons whenever it has a photo, and a month
+-- whose plates were all photographed would otherwise be a grid of blanks on the
+-- day the retention sweep takes the pictures away.
 -- ---------------------------------------------------------------------------
 create or replace function public.day_plates(
   p_from    date,

@@ -64,14 +64,6 @@ export default function RecipesScreen() {
             variant="primary"
             accessibilityLabel={t('recipes:new.title')}
             onPress={() => {
-              // THE FOURTH ONE IS THE GATED ONE. Writing a recipe used to need
-              // Pro outright, which put the app's one authoring feature behind
-              // the paywall for somebody who had not decided yet whether they
-              // liked the app. Three is enough to keep what you actually cook
-              // — the standing pot, the weekday breakfast, the one you make on
-              // Sundays — and the ceiling arrives to somebody who has used the
-              // feature enough to want a fourth, which is the moment to ask.
-              //
               // The database enforces the same three (`recipes_enforce_free_limit`).
               // This is the half that opens the paywall instead of erroring.
               if (quota.atLimit && !requirePro('new_recipe')) return

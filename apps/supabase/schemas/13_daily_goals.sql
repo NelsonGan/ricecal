@@ -1,25 +1,22 @@
 -- ---------------------------------------------------------------------------
 -- The daily budget, effective-dated.
 --
--- WHY THIS IS NOT ONE ROW PER USER
---
--- The weekly report draws each day's intake against that day's target. With a
--- single mutable row, a user who tightens their goal on Thursday redraws
--- Monday through Wednesday against a target that did not exist yet, and every
--- past week silently rewrites itself every time the goal moves. Days are
--- immutable history; the target that applied to them has to be too.
+-- Why this is not one row per user: the weekly report draws each day's intake
+-- against that day's target. With a single mutable row, a user who tightens their
+-- goal on Thursday redraws Monday through Wednesday against a target that did not
+-- exist yet, and every past week silently rewrites itself every time the goal
+-- moves. Days are immutable history, so the target that applied to them has to be
+-- too.
 --
 -- The cost is one extra primary-key column and `order by effective_from desc
--- limit 1` on the read, both of which are in `current_targets` and
--- `targets_on()` so no caller writes them. Retrofitting this later would mean
+-- limit 1` on the read, both of which are in `current_daily_goals` and
+-- `goals_on()` so no caller writes them. Retrofitting this later would mean
 -- reconstructing targets that were never recorded, which is not possible.
 --
--- WHO WRITES IT
---
--- Normally nobody: the trigger in 80_targets_sync.sql recomputes a row when
--- the profile or the current weight changes. The Goals screen writes directly
--- with `is_custom = true`, which is the flag that tells the trigger to leave
--- this user's targets alone from then on.
+-- Who writes it: normally nobody. The trigger in 80_goals_sync.sql recomputes a
+-- row when the profile or the current weight changes. The Goals screen writes
+-- directly with `is_custom = true`, which tells the trigger to leave this user's
+-- targets alone from then on.
 -- ---------------------------------------------------------------------------
 
 create table public.daily_goals (

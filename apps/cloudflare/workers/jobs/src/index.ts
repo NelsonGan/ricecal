@@ -9,7 +9,7 @@
  * gated by a shared secret held in two places; removing the endpoint removes
  * the whole class of question rather than answering it better.
  *
- * See `../README.md` for the format, and `job.ts` for what a job is.
+ * See the root `README.md` for the format, and `job.ts` for what a job is.
  */
 import type { Env } from './env.ts'
 import { runJob } from './job.ts'

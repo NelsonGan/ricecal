@@ -787,7 +787,7 @@ CREATE OR REPLACE VIEW public.user_food_stats WITH (security_invoker=on) AS SELE
   WHERE ((NOT f.is_estimate) AND (NOT f.is_archetype) AND (NOT f.is_recipe))
   GROUP BY e.user_id, e.food_id;
 -- `db diff` does not see grant/revoke deltas on functions — see the note in
--- CLAUDE.md — so these are hand-written. Without them the four ship executable
+-- README.md — so these are hand-written. Without them the four ship executable
 -- by PUBLIC, and two of them are exactly the ones that must not be:
 -- `set_recipe_public` is the door onto the community tab, and
 -- `recipe_mark_for_review` is what sends an edited recipe back through it.

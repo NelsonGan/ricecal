@@ -1,60 +1,49 @@
 -- ---------------------------------------------------------------------------
 -- Movement, as read from the phone's health store.
 --
--- Four tables, and the reason there are four rather than one is that they are
--- written at four different granularities by the same sync pass, and each one
--- answers a screen:
+-- Four tables, and there are four rather than one because they are written at
+-- four different granularities by the same sync pass, and each answers a screen:
 --
 --   health_connections  is this phone connected, and how far back has it read
---   activity_days       the day's totals — the budget, and every chart column
---   activity_sessions   one workout — the list on Activity, and its detail
---   activity_hours      steps by hour — the one chart that needs finer than a day
+--   activity_days       the day's totals: the budget, and every chart column
+--   activity_sessions   one workout: the list on Activity, and its detail
+--   activity_hours      steps by hour, the one chart finer than a day
 --
--- WHY THIS IS STORED AT ALL
+-- Why this is stored at all. Apple Health and Health Connect are both on-device
+-- stores, and a naive reading is that the app should query them when a screen
+-- opens. It cannot:
 --
--- Apple Health and Health Connect are both on-device stores. Nothing about
--- them is a server, and a naive reading is that the app should just query them
--- when a screen opens. It cannot:
---
---   * The budget is computed in the database (`compute_targets`), the charts
---     are computed in the database (`trend_series`), and the weekly report job
---     has no client to ask. A figure that only exists on the handset cannot
---     take part in any of them.
---   * Health data is per-device. Read it live and a user's history restarts
---     when they change phones, while the diary beside it does not.
+--   * The budget is computed in the database, the charts are computed in the
+--     database, and the weekly report job has no client to ask. A figure that
+--     only exists on the handset cannot take part in any of them.
+--   * Health data is per-device. Read it live and a user's history restarts when
+--     they change phones, while the diary beside it does not.
 --   * Apple's store answers slowly enough that a range query per screen is felt.
 --
--- So the phone is the READER and this is the record. Which also fixes the
+-- So the phone is the reader and this is the record. Which also fixes the
 -- direction of trust: the store is authoritative for a day it has data for, and
--- every write here is an upsert keyed so that reading the same day twice — or
--- from two devices — converges rather than doubling.
+-- every write here is an upsert keyed so that reading the same day twice, or from
+-- two devices, converges rather than doubling.
 --
--- WHY NOTHING HERE IS WRITTEN BY A SERVER
+-- Why nothing here is written by a server: unlike the scan cascade, this needs no
+-- edge function and holds no secret. There is no third party to authenticate
+-- against, since the data is already on the device behind a permission the user
+-- granted to the app itself.
 --
--- Unlike the scan cascade, this needs no edge function and holds no secret.
--- There is no third party to authenticate against: the data is already on the
--- device, behind a permission the user granted to the app itself. `authenticated`
--- writes its own rows directly, and the shape of the keys is what makes that
--- safe to do repeatedly.
---
--- WHAT IS DELIBERATELY NOT HERE
---
--- Heart rate samples, sleep, blood glucose, cycle tracking, workout routes.
--- All of them are readable and none of them is on a screen. A calorie diary
--- that quietly hoovers a user's medical history because the permission was
--- already granted is a different app; the permission list in
--- `src/features/activity/providers` is short on purpose and this schema is what
--- holds it short.
+-- What is deliberately not here: heart rate samples, sleep, blood glucose, cycle
+-- tracking, workout routes. All are readable and none is on a screen. A calorie
+-- diary that quietly hoovers a user's medical history because the permission was
+-- already granted is a different app.
 -- ---------------------------------------------------------------------------
 
 
 -- ---------------------------------------------------------------------------
--- 1. THE CONNECTION
+-- 1. The connection.
 --
 -- One row per user per provider, and normally exactly one row: a user has an
 -- iPhone or an Android. The pair is still the key because switching platforms
--- must not lose the old phone's history, and because `demo` coexists with a
--- real provider on a developer's simulator.
+-- must not lose the old phone's history, and because `demo` coexists with a real
+-- provider on a developer's simulator.
 -- ---------------------------------------------------------------------------
 
 create table public.health_connections (
@@ -66,11 +55,10 @@ create table public.health_connections (
   -- reconnecting later must not re-read a year it already has.
   connected      boolean not null default true,
 
-  -- What the store actually said yes to, as the provider's own type names.
-  -- Android grants per record type and a user can grant steps but not workouts;
-  -- iOS will not even tell you a read was denied (see the note in
-  -- `providers/apple.ts`), so on that platform this is what we asked for.
-  -- Either way the Activity screen needs it to explain a missing tile rather
+  -- What the store actually said yes to, as the provider's own type names. Android
+  -- grants per record type and a user can grant steps but not workouts; iOS will
+  -- not even tell you a read was denied, so on that platform this is what we asked
+  -- for. Either way the Activity screen needs it to explain a missing tile rather
   -- than draw a zero.
   permissions    text[] not null default '{}',
 
@@ -123,30 +111,28 @@ create policy "health_connections: delete own"
 
 
 -- ---------------------------------------------------------------------------
--- 2. THE DAY
+-- 2. The day.
 --
--- One row per user per local calendar day. `log_date` rather than an instant,
--- for the reason `food_logs.log_date` is a date: a run at 00:30 belongs to the
--- day the runner thinks it does, and it has to land on the same day as the
--- supper afterwards or the balance chart pairs the wrong two bars.
+-- One row per user per local calendar day. `log_date` rather than an instant, for
+-- the reason `food_logs.log_date` is a date: a run at 00:30 belongs to the day the
+-- runner thinks it does, and it has to land on the same day as the supper
+-- afterwards or the balance chart pairs the wrong two bars.
 --
--- Every column is nullable except steps, and that asymmetry is the whole
--- Android story. Health Connect has no stand hours, frequently no basal rate,
--- and exercise minutes only if something wrote them. Null means the provider
--- does not report it; zero means it reported none. The Activity screen draws a
--- tile for the first and a real zero for the second, and conflating them is
--- what makes an Android user think the app is broken.
+-- Every column is nullable except steps, and that asymmetry is the whole Android
+-- story. Health Connect has no stand hours, frequently no basal rate, and
+-- exercise minutes only if something wrote them. Null means the provider does not
+-- report it; zero means it reported none. The Activity screen draws a tile for
+-- the first and a real zero for the second, and conflating them is what makes an
+-- Android user think the app is broken.
 --
--- ACTIVE ENERGY WAS NOT NULLABLE, and it should have been from the start. The
+-- Active energy was not nullable, and it should have been from the start. The
 -- reasoning was that every provider reports it, which is true of HealthKit and
 -- false of Health Connect: a store there reports what its writers wrote, and
--- Samsung Health writes the day's TOTAL energy and never the active half. The
--- column being not-null meant the sync had to invent a zero for those days, so
--- a user walking 60,000 steps a week had their movement extend their budget by
--- nothing at all, and the arithmetic that derives resting from total minus
--- active filed their entire daily burn as resting. Null is the honest answer
--- and it is now sayable; `activity_days_range` already coalesced it, because a
--- day with no row at all has always produced one.
+-- Samsung Health writes the day's total energy and never the active half. The
+-- column being not-null meant the sync had to invent a zero for those days, so a
+-- user walking 60,000 steps a week had their movement extend their budget by
+-- nothing at all, and the arithmetic that derives resting from total minus active
+-- filed their entire daily burn as resting.
 -- ---------------------------------------------------------------------------
 
 create table public.activity_days (
@@ -172,12 +158,12 @@ create table public.activity_days (
   stand_hours       smallint check (stand_hours between 0 and 24),
   flights           integer check (flights between 0 and 2000),
 
-  -- The ring goals as the WATCH had them that day, which is why they are here
-  -- and not in `user_settings`: Apple's Move goal is set on the watch and can
-  -- change any morning, and a chart drawn against today's goal would silently
-  -- restate every past day. Null where the provider has no such goal — Health
-  -- Connect has none at all, and nobody has a step goal, which is why the step
-  -- goal IS in `user_settings`.
+  -- The ring goals as the watch had them that day, which is why they are here and
+  -- not in `user_settings`: Apple's Move goal is set on the watch and can change
+  -- any morning, and a chart drawn against today's goal would silently restate
+  -- every past day. Null where the provider has no such goal. Health Connect has
+  -- none at all, and nobody has a step goal, which is why the step goal is in
+  -- `user_settings`.
   move_goal_kcal    integer check (move_goal_kcal between 0 and 20000),
   exercise_goal_min integer check (exercise_goal_min between 0 and 1440),
   stand_goal_hr     smallint check (stand_goal_hr between 0 and 24),
@@ -226,20 +212,19 @@ create policy "activity_days: delete own"
 
 
 -- ---------------------------------------------------------------------------
--- 3. THE WORKOUT
+-- 3. The workout.
 --
--- WHY `external_id` IS NOT NULL AND UNIQUE
---
--- This is the table that makes the sync idempotent, and it is the only one that
--- could not get there with a natural key. A day is keyed by its date and an
--- hour by its hour, so re-reading either overwrites itself. A workout has no
--- such key — two badminton sessions can start in the same minute on two
--- devices — so it carries the store's own identifier and every write is an
--- upsert onto it. Without this, "sync the last seven days on every foreground"
--- means a user's Tuesday run appears forty times by Friday.
+-- Why `external_id` is not null and unique: this is the table that makes the sync
+-- idempotent, and it is the only one that could not get there with a natural key.
+-- A day is keyed by its date and an hour by its hour, so re-reading either
+-- overwrites itself. A workout has no such key, since two badminton sessions can
+-- start in the same minute on two devices, so it carries the store's own
+-- identifier and every write is an upsert onto it. Without this, "sync the last
+-- seven days on every foreground" means a user's Tuesday run appears forty times
+-- by Friday.
 --
 -- The id is the provider's: `HKWorkout.uuid` on iOS, the record id on Health
--- Connect. Scoped by user AND provider because neither namespace is global and
+-- Connect. Scoped by user and provider because neither namespace is global and
 -- the same user may hold rows from both after switching phones.
 -- ---------------------------------------------------------------------------
 
@@ -255,12 +240,12 @@ create table public.activity_sessions (
   -- half a workout on a chart nobody would recognise.
   log_date       date not null,
 
-  -- A slug, not an enum, and this is the one place in the schema that breaks
-  -- that convention on purpose. Apple ships around eighty workout types and
-  -- adds to them in point releases; an enum would make a sync fail — silently,
-  -- mid-backfill — the first time somebody logged a type Postgres had never
-  -- heard of. The client normalises to a known set and falls back to `other`,
-  -- so an unrecognised type costs an icon rather than the whole session.
+  -- A slug, not an enum, and this is the one place in the schema that breaks that
+  -- convention on purpose. Apple ships around eighty workout types and adds to them
+  -- in point releases; an enum would make a sync fail, silently and mid-backfill,
+  -- the first time somebody logged a type Postgres had never heard of. The client
+  -- normalises to a known set and falls back to `other`, so an unrecognised type
+  -- costs an icon rather than the whole session.
   kind           text not null check (char_length(kind) between 1 and 60),
   -- What the store called it, kept verbatim for the detail screen's subtitle.
   kind_label     text check (char_length(kind_label) <= 120),
@@ -331,20 +316,19 @@ create policy "activity_sessions: delete own"
 
 
 -- ---------------------------------------------------------------------------
--- 4. THE HOUR
+-- 4. The hour.
 --
 -- Steps by hour, for the one chart on the Activity screens that a daily total
 -- cannot draw: "your busiest hour was 3pm".
 --
 -- Keyed by (date, hour) as two columns rather than by an instant. The hour is a
--- LOCAL hour — "3pm" is the claim being made — and a `timestamptz` would need
--- every read to know the timezone the write happened in, which is exactly the
--- bug `log_date` exists to avoid one table up.
+-- local hour, since "3pm" is the claim being made, and a `timestamptz` would need
+-- every read to know the timezone the write happened in.
 --
 -- Only the last month is ever written; older days keep their `activity_days`
--- total and lose their shape. Nothing on any screen asks for the hourly
--- breakdown of a day in March, and 24 rows a day forever to answer a question
--- nobody has is a table that outgrows the diary it decorates.
+-- total and lose their shape. Nothing on any screen asks for the hourly breakdown
+-- of a day in March, and 24 rows a day for ever to answer a question nobody has
+-- is a table that outgrows the diary it decorates.
 -- ---------------------------------------------------------------------------
 
 create table public.activity_hours (

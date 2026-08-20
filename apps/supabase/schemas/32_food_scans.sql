@@ -4,13 +4,12 @@
 --
 -- `food_scan_items` is the eval set: one row per item the vision model saw,
 -- recording what it claimed, what the catalogue offered, and which tier the
--- cascade settled on. Every accuracy question the feature will ever face —
--- "how often does tier 1 hit", "how far off are the estimates" — is a query
+-- cascade settled on. Every accuracy question the feature will face is a query
 -- over this table, and none of it is reconstructable after the fact.
 --
--- `food_scan_misses` is the catalogue-widening backlog: every query tier 1
--- ran and got nothing usable for. The most frequent strings in it are the
--- next import batch.
+-- `food_scan_misses` is the catalogue-widening backlog: every query tier 1 ran
+-- and got nothing usable for. The most frequent strings in it are the next import
+-- batch.
 -- ---------------------------------------------------------------------------
 
 create table public.food_scan_items (
@@ -83,16 +82,15 @@ grant select, insert, delete on public.food_scan_misses to service_role;
 -- ---------------------------------------------------------------------------
 -- The same backlog for packaged goods.
 --
--- A barcode that resolves to nothing is a more actionable miss than a dish
--- query is: there is no ambiguity about what was wanted, the code names one
--- product exactly, and the fix is either to import it or to notice that Open
--- Food Facts does not have it either. `found` records which of those happened,
--- because "the catalogue was missing it and the live lookup filled it in" and
--- "nobody anywhere knows this packet" are different problems and only the
--- second one needs a human.
+-- A barcode that resolves to nothing is a more actionable miss than a dish query
+-- is: there is no ambiguity about what was wanted, the code names one product
+-- exactly, and the fix is either to import it or to notice that Open Food Facts
+-- does not have it either. `found` records which of those happened, because "the
+-- catalogue was missing it and the live lookup filled it in" and "nobody anywhere
+-- knows this packet" are different problems and only the second needs a human.
 --
--- Written by the `barcode` edge function, which is the only thing that learns
--- the answer — the client's `lookup_barcode` is `stable` and cannot write.
+-- Written by the `barcode` edge function, which is the only thing that learns the
+-- answer, since the client's `lookup_barcode` is `stable` and cannot write.
 -- ---------------------------------------------------------------------------
 create table public.barcode_misses (
   id          uuid primary key default gen_random_uuid(),
@@ -114,20 +112,18 @@ grant select, insert, delete on public.barcode_misses to service_role;
 -- ---------------------------------------------------------------------------
 -- How many packets an account has scanned in the current hour, and the ceiling.
 --
--- The barcode function is the one model-adjacent path with no throttle: unlike
--- a scan or a described meal it spends no scan quota, so `claim_scan`
--- never sees it, and a signed-in caller could loop distinct codes to drive a
--- live Open Food Facts fetch and a `barcode_misses` write on every one. That is
--- a denial-of-wallet rather than a data risk, so the control is a plain
--- per-account rate limit shaped exactly like the scan meter above: one row per
--- hour, an atomic claim, no client write grant.
+-- The barcode function is the one model-adjacent path with no throttle: unlike a
+-- scan or a described meal it spends no scan quota, so `claim_scan` never sees
+-- it, and a signed-in caller could loop distinct codes to drive a live Open Food
+-- Facts fetch and a `barcode_misses` write on every one. That is a
+-- denial-of-wallet rather than a data risk, so the control is a plain per-account
+-- rate limit shaped exactly like the scan meter: one row per hour, an atomic
+-- claim, no client write grant.
 --
--- HOURLY, not monthly. A real person scans a handful of packets in a shopping
--- trip; the ceiling only has to be far above that and far below what a script
--- can do. Fixed hour windows rather than a sliding one for the same reason the
--- AI meter uses calendar months: a window that has to be swept clean needs
--- something to sweep it, and a row keyed by the window is the same fact without
--- the sweeping.
+-- Hourly, not monthly. A real person scans a handful of packets in a shopping
+-- trip, and the ceiling only has to be far above that and far below what a script
+-- can do. Fixed hour windows rather than a sliding one, because a window that has
+-- to be swept clean needs something to sweep it.
 -- ---------------------------------------------------------------------------
 create table public.barcode_scan_usage (
   user_id      uuid not null references auth.users (id) on delete cascade,
@@ -172,9 +168,9 @@ grant execute on function public.barcode_hourly_limit to authenticated, service_
 
 -- ---------------------------------------------------------------------------
 -- Take one packet's worth of budget, or refuse. Atomic, for the reason
--- `claim_scan` is: a read-then-write limit is one two requests can both
--- walk through. The guard is a `where` on the `on conflict do update`, so the
--- check and the increment are one statement under one row lock.
+-- `claim_scan` is: a read-then-write limit is one two requests can both walk
+-- through. The guard is a `where` on the `on conflict do update`, so the check
+-- and the increment are one statement under one row lock.
 -- ---------------------------------------------------------------------------
 create or replace function public.claim_barcode_scan(p_user uuid)
 returns table (
@@ -215,29 +211,29 @@ grant execute on function public.claim_barcode_scan to service_role;
 
 
 -- ---------------------------------------------------------------------------
--- WHERE TIER 4's WRITE PATH WENT
+-- Where tier 4's write path went.
 --
--- `upsert_estimate_food` made one shared `foods` row per normalized name AND
+-- `upsert_estimate_food` made one shared `foods` row per normalized name and
 -- size, so that two people photographing the same unlisted dish landed on one
--- estimate — and so that correcting it corrected every log that had used it.
--- That sharing was the whole argument for estimates being rows rather than
--- inline macros, and `estimate_food_backlog` ranked them by how many entries
--- referenced each, which was the catalogue-widening list.
+-- estimate, and so that correcting it corrected every log that had used it. That
+-- sharing was the whole argument for estimates being rows rather than inline
+-- macros, and `estimate_food_backlog` ranked them by how many entries referenced
+-- each.
 --
 -- Both are gone with the catalogue. An entry carries its own numbers now, so an
--- estimate is just numbers: the cascade writes them straight onto the row with
--- a null `food_id` and there is nothing to create, dedupe or race over.
+-- estimate is just numbers: the cascade writes them straight onto the row with a
+-- null `food_id` and there is nothing to create, dedupe or race over.
 --
--- What is lost is real and worth naming: a corrected estimate no longer
--- corrects the diaries that used it, and there is no backlog ranked by
--- reference count. `food_scan_misses` is still the catalogue-widening list,
--- and it was always the better one — it records what was ASKED FOR and not
--- found, rather than what we guessed at afterwards.
+-- What is lost is real: a corrected estimate no longer corrects the diaries that
+-- used it, and there is no backlog ranked by reference count. `food_scan_misses`
+-- is still the catalogue-widening list, and it was always the better one, because
+-- it records what was asked for and not found rather than what we guessed at
+-- afterwards.
 --
 -- The size-in-the-identity rule that function carried is worth remembering if
--- anything like it is ever rebuilt. Dedup on the name alone made "nasi lemak"
--- one row, and a 366 kcal row is not the plate a 780 kcal photo is of: the
--- entry then had two ways to be wrong, log the reused figure and be 400 kcal
--- light, or absorb the difference into `quantity` and tell somebody they ate
--- two plates when they photographed one. Both were happening.
+-- anything like it is ever rebuilt. Dedup on the name alone made "nasi lemak" one
+-- row, and a 366 kcal row is not the plate a 780 kcal photo is of: the entry then
+-- had two ways to be wrong, log the reused figure and be 400 kcal light, or
+-- absorb the difference into `quantity` and tell somebody they ate two plates
+-- when they photographed one. Both were happening.
 -- ---------------------------------------------------------------------------

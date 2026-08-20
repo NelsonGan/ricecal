@@ -1,12 +1,12 @@
 -- ---------------------------------------------------------------------------
 -- Activity: the arithmetic behind the Activity tab.
 --
--- The same three shapes `92_trends.sql` uses, and for the same reasons — a day
--- generator, a bucketed series, a folded summary — over `activity_days`,
+-- The same three shapes `92_trends.sql` uses and for the same reasons, a day
+-- generator, a bucketed series and a folded summary, over `activity_days`,
 -- `activity_sessions` and the food totals beside them.
 --
--- The one idea here that Trends does not have is the SPLIT. "Where the burn
--- comes from" divides a day's energy three ways:
+-- The one idea here that Trends does not have is the split. "Where the burn comes
+-- from" divides a day's energy three ways:
 --
 --   resting   what the body spent existing            activity_days.resting_kcal
 --   workouts  what the recorded sessions cost         sum over activity_sessions
@@ -26,14 +26,14 @@
 -- One row per calendar day in the range, movement and food side by side.
 --
 -- Days with no row in `activity_days` are present and empty, exactly as in
--- `trend_days` and for a sharper version of the same reason: "goal days: 2 of
--- 7" counts over seven, and a user who left their watch on the charger has a
--- day of no steps rather than no day.
+-- `trend_days`: "goal days: 2 of 7" counts over seven, and a user who left their
+-- watch on the charger has a day of no steps rather than no day.
 --
--- Null and zero stay distinct all the way up. `steps` coalesces to zero — a day
--- the phone was in a pocket genuinely recorded no steps — while `stand_hours`
--- and `resting_kcal` do not, because a provider that never reports them would
--- otherwise show a confident zero for something it has no opinion about.
+-- Null and zero stay distinct all the way up. `steps` coalesces to zero, because
+-- a day the phone was in a pocket genuinely recorded no steps, while
+-- `stand_hours` and `resting_kcal` do not, because a provider that never reports
+-- them would otherwise show a confident zero for something it has no opinion
+-- about.
 -- ---------------------------------------------------------------------------
 create or replace function public.activity_days_range(
   p_range   text,
@@ -142,7 +142,7 @@ comment on function public.activity_days_range is
 -- ---------------------------------------------------------------------------
 -- The columns of whichever Activity chart is on screen.
 --
--- A day on 7d, a seven-day block on 30d, a calendar month on 1y — the same
+-- A day on 7d, a seven-day block on 30d, a calendar month on 1y: the same
 -- bucketing as Trends, so the two tabs' charts line up column for column when a
 -- user switches between them.
 -- ---------------------------------------------------------------------------
@@ -226,8 +226,8 @@ comment on function public.activity_series is
 -- The whole range as one row: the tiles at the top, and every footnote.
 --
 -- Folded here rather than in the client for the reason `trend_summary` is: a
--- range average has to weight each bucket by the days actually in it, and on
--- 30d the oldest block is two days rather than seven.
+-- range average has to weight each bucket by the days actually in it, and on 30d
+-- the oldest block is two days rather than seven.
 -- ---------------------------------------------------------------------------
 create or replace function public.activity_summary(
   p_range   text,
