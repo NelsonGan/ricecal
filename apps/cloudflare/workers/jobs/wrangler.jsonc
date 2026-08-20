@@ -1,0 +1,72 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ricecal-jobs",
+  "main": "src/index.ts",
+  // The newest date the pinned wrangler's bundled runtime actually supports.
+  // The catalogue Worker says 2026-08-01, which deploys fine — the check only
+  // happens when workerd runs locally — but it makes `wrangler dev` refuse to
+  // start with "requires compatibility date 2026-08-01, but the newest date
+  // supported by this server binary is 2026-07-29". A job that cannot be run
+  // locally is a job nobody tests before it deletes something, so this one
+  // tracks the toolchain rather than the calendar. Raise it when wrangler is
+  // upgraded, not before.
+  "compatibility_date": "2026-07-29",
+  "observability": { "enabled": true },
+
+  // Every periodic job in the project. One entry per job, and each one must
+  // match the `cron` of exactly one job in `src/jobs/index.ts` — a job whose
+  // cron is missing here never runs, for ever, and nothing anywhere says so.
+  // `scripts/check-crons.mjs` compares the two lists and fails `pnpm
+  // typecheck`, and the dispatcher logs an error if a cron fires that no job
+  // claims. Both directions, because only one of them is visible at runtime.
+  //
+  // UTC. Cloudflare has no notion of a local timezone here, and no DST.
+  //
+  // Seventeen minutes past, inherited from the pg_cron schedule this replaced:
+  // every naive cron entry in the world fires at :00.
+  //
+  // The INTERVAL buys the runtime. A cron on an interval of an hour or more
+  // gets 15 minutes of CPU, where anything shorter gets 30 seconds — so moving
+  // a job to every half hour would quietly cut its ceiling by thirty times.
+  "triggers": {
+    "crons": ["17 * * * *"]
+  },
+
+  // NO HOSTNAME, AND THAT IS THE ENTIRE POINT OF THIS WORKER EXISTING.
+  //
+  // The sweep used to be a Supabase edge function with `verify_jwt = false`,
+  // reachable by anyone on the internet and gated only by a shared secret held
+  // in two places that had to be rotated together. A `scheduled()` handler with
+  // no route, no workers.dev and no preview URL has nothing to POST to, so the
+  // secret, the vault copy, and the whole question go away together.
+  //
+  // `preview_urls` is stated rather than left out: it defaults to whatever
+  // `workers_dev` is, which is a default the catalogue Worker learnt about from
+  // a warning printed after the deploy had already landed.
+  "workers_dev": false,
+  "preview_urls": false,
+
+  // NO `placement`. On the catalogue Worker `{ "mode": "smart" }` means "run
+  // near D1"; on a CRON-triggered Worker the same key means Green Compute,
+  // which may delay a run by up to 24 hours to find a low-carbon window. For a
+  // retention sweep that would be survivable and for a job with a deadline it
+  // would not, so it is off here and worth a thought before it is ever on.
+
+  // Where the photographs are. A binding rather than the four `R2_*`
+  // credentials the edge function needed: no account id, no access key, no
+  // signing, and nothing in this repo that could read the bucket from anywhere
+  // else.
+  "r2_buckets": [
+    {
+      "binding": "PHOTOS",
+      "bucket_name": "ricecal-assets"
+    }
+  ],
+
+  // The PostgREST host. A public URL, so a var rather than a secret — the
+  // credential is `SUPABASE_SERVICE_ROLE_KEY`, which is set once by hand with
+  // `wrangler secret put` and never lives in this file or in the repo.
+  "vars": {
+    "SUPABASE_URL": "https://wgybijmprafqkshmmxdl.supabase.co"
+  }
+}

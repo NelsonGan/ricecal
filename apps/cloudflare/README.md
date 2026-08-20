@@ -7,13 +7,19 @@ and then by which one:
 apps/cloudflare/
   workers/
     catalogue/           the food catalogue API — see src/index.ts for every route
+    jobs/                every periodic job — see its README for the format
   d1/
     food-catalogue/      schema.sql, and the database's real name in d1.json
 ```
 
 One directory per Worker and one per database, because each has its own deploy
-and its own name in somebody's Cloudflare account. There is one of each today;
-the layout is what stops a second one becoming a decision.
+and its own name in somebody's Cloudflare account. The layout is what stopped
+the second Worker being a decision: `jobs` arrived as a directory and CI picked
+it up without a workflow edit.
+
+The two are different KINDS of thing and it is worth keeping them apart in your
+head. `catalogue` answers requests and has a hostname; `jobs` answers the clock
+and deliberately has none.
 
 A Worker is a pnpm workspace package (`apps/cloudflare/workers/*` in
 `pnpm-workspace.yaml`), so it carries its own `wrangler` and its own typecheck. A
@@ -168,6 +174,39 @@ eas update --branch pr-42                                  # no --environment
 One source for the export to read, and no precedence left to get wrong. The step
 prints the URL it settled on, because the failure it replaced was invisible
 precisely because nothing ever did.
+
+## Periodic jobs
+
+`workers/jobs` is where anything on a schedule lives, and it is the answer to
+"where does a cron job go" for the whole project. Its own README is the format;
+what belongs here is why it is on this side of the fence at all.
+
+**A scheduled job has no user, so it has no business having a URL.** The
+photograph sweep was a Supabase edge function until it moved here, called
+hourly by `pg_cron` over `pg_net`. It could not authenticate a caller — it runs
+across every account — so it ran with `verify_jwt = false` and a shared secret,
+which meant a public endpoint whose only guard was a token held in two places
+that had to be rotated together. Every other awkward part of that design
+followed from the same root: the secret had to live in the vault because
+`cron.job.command` is plain text, `retention_runs` had to exist because a
+`pg_net` POST cannot read its own response, and the drain loop had to be
+abandoned for the same reason.
+
+A Cron Trigger has none of that shape. A `scheduled()` handler is not
+addressable, so with `workers_dev: false` and no route the Worker has no
+hostname at all. R2 is a binding rather than four credentials. And the job knows
+its own outcome, so `job_runs` is written by the run it describes rather than by
+the one after it.
+
+**What it costs** is that the Worker holds a Supabase service-role key — a
+broader credential than the token it replaced, in a second place. That is
+narrowed by what a job can do with it: `src/postgres.ts` exposes `rpc()` and no
+table access, so a job's SQL has to be a `service_role` function in
+`apps/supabase/schemas`, granted deliberately and tested by pgTAP.
+
+**Adding a job is a file, a registry line and a cron** — see
+`workers/jobs/README.md`. No new package, and no workflow edit, for the same
+reason a second Worker needs none.
 
 ## Adding a second Worker
 

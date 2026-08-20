@@ -17,6 +17,7 @@ their own area:
 |---|---|
 | `apps/supabase/README.md` | the declarative schema workflow, the catalogue import, why nothing seeds `foods` |
 | `apps/cloudflare/README.md` | the layout, where it deploys, and how a PR gets a Worker of its own |
+| `apps/cloudflare/workers/jobs/README.md` | every periodic job, and the format a new one follows |
 | `apps/cloudflare/d1/food-catalogue/BARCODE-COVERAGE.md` | why the scanner misses Malaysian packets, measured, and what would actually fix it |
 | `apps/mobile/src/data/README.md` | the data layer, file by file |
 | `apps/mobile/src/features/auth/README.md` | the four ways in, why the mail carries a code, and how to switch Turnstile on |
@@ -320,6 +321,7 @@ archetypes                    the ~60 tier-5 fallbacks the scan cascade lands on
 food_scan_items               what the model claimed, and where it landed
 food_scan_misses              the catalogue-widening backlog
 barcode_misses                the same, for packets
+job_runs                      what each periodic job did, written by the job itself
 ```
 
 `foods`, `food_servings`, `food_aliases` and `food_sources` are NOT here. They
@@ -1759,13 +1761,13 @@ every refusal. It is MMKV and keyed by user, for the reasons the tour flag is.
 
 **Free photographs are swept after thirty days, and only the photographs.**
 The entry stays for ever: its name, its macros and its place in the diary are
-the history somebody came for. `functions/retention` does the WORK rather than a
-statement in Postgres, because Postgres cannot reach R2 and the ORDER is the
-whole problem — delete the object, then clear the column. A crash between the
-two is picked up by the next run, since deleting a key that is already gone is a
-no-op; the other order strands the bytes for ever, the key being their only
-name. The row keeps a drawing where the plate was (`icon-match.ts` again), or a
-swept month would be a column of grey tiles.
+the history somebody came for. The sweep is a JOB rather than a statement in
+Postgres, because Postgres cannot reach R2 and the ORDER is the whole problem —
+delete the object, then clear the column. A crash between the two is picked up
+by the next run, since deleting a key that is already gone is a no-op; the other
+order strands the bytes for ever, the key being their only name. The row keeps a
+drawing where the plate was (`icon-match.ts` again), or a swept month would be a
+column of grey tiles.
 
 **A FORMER SUBSCRIBER GETS SIXTY DAYS BEFORE ANY OF IT STARTS.**
 `lapsed_photo_grace_days()` is the third condition in `expired_meal_photos`, and
@@ -1782,22 +1784,55 @@ kept for ever regardless, and the grace covers what they have logged since. The
 cliff at expiry plus sixty is real and bounded — at most a month of post-expiry
 plates go in one batch — and that is the price of a grace period having an end.
 
-**The CLOCK, though, is in Postgres.** `pg_cron` calls `sweep_meal_photos()`
-every hour, which POSTs to that function with a token read from the vault. It
-was a GitHub Action, and what moved it is that a scheduled workflow is disabled
-after sixty days of repository inactivity: the sweep would simply stop, free
-accounts would keep their photographs for ever, and the first sign of it would
-be a storage bill. Three things that Action had for free are bought back
-explicitly, because `pg_net` is FIRE AND FORGET — it returns a request id and
-the answer lands in `net._http_response` seconds later, garbage collected within
-hours. So `retention_runs` is the history: each run records the request it fired
-and settles the previous one's outcome, which is why the schedule is hourly and
-not daily. The token is in `vault.decrypted_secrets` rather than in the schedule,
-because `cron.job.command` is plain text readable by anything holding
-`service_role`. And the twenty-batch drain loop the Action ran is gone, replaced
-by twenty-four batches a day — a call that cannot read its own response cannot
-loop on it. A missing secret RAISES rather than returning quietly, so it lands
-in `cron.job_run_details` instead of looking like a sweep with nothing to do.
+**THE SWEEP IS A CLOUDFLARE WORKER ON A CRON TRIGGER, and every periodic job
+in this project is.** `apps/cloudflare/workers/jobs` is the whole scheduler:
+`src/jobs/retention.ts` is the sweep, and its README is the format a second job
+follows. It has been three things — a GitHub Action, then `pg_cron` calling an
+edge function over `pg_net`, and now this — and each move fixed the thing that
+killed the last one.
+
+The Action died of a rule nobody would think to look for: a scheduled workflow
+is disabled after sixty days of repository inactivity, so the sweep would simply
+stop, free accounts would keep their photographs for ever, and the first sign of
+it would be a storage bill. `pg_cron` fixed that and cost a PUBLIC ENDPOINT. The
+sweep runs across every account and so has no user to authenticate, which meant
+`verify_jwt = false` on the edge function and a shared secret as the only gate —
+verified by asking: an unauthenticated POST reached the function's own code and
+was refused by the token check alone. Everything else about that arrangement was
+scaffolding for it. The secret lived in `vault.decrypted_secrets` because
+`cron.job.command` is plain text readable by anything holding `service_role`.
+`retention_runs` existed because `pg_net` is FIRE AND FORGET — it returns a
+request id and the answer lands in `net._http_response` seconds later, garbage
+collected within hours — so a run could not know its own outcome and the NEXT
+run had to write down what the last one came back as. And the drain loop was
+abandoned for the same reason: a call that cannot read its own response cannot
+loop on it.
+
+A `scheduled()` handler has no route. With `workers_dev` and `preview_urls` both
+off and no `routes`, that Worker has no hostname at all, so the endpoint, the
+token, its vault copy and the whole question go together. R2 is a BINDING rather
+than four credentials, which also makes a batch of deletes one call instead of
+five hundred signed round trips. And a job knows its own outcome, so `job_runs`
+is written by the run it describes: `claim_job_run` at the start,
+`finish_job_run` at the end, both `service_role` only. The drain loop came back
+with the fifteen minutes of CPU a cron on an hourly interval gets.
+
+Three things about that Worker are load-bearing and easy to undo by accident.
+`placement: { mode: "smart" }` means "run near D1" on the catalogue Worker and
+GREEN COMPUTE on a cron one, which may delay a run by up to 24 hours — so it is
+absent here deliberately. A job's `cron` must appear in `wrangler.jsonc`, or it
+is never delivered to and nothing anywhere says so; `scripts/check-crons.mjs`
+fails the typecheck on that in both directions. And a job must be IDEMPOTENT,
+because cron delivery is at-least-once and Cloudflare retries a failed
+invocation — `claim_job_run` is a guard in front of that rather than a
+substitute for it, since a lease can expire while a run is genuinely still
+going.
+
+What it costs is that the Worker holds a service-role key, which is broader than
+the token it replaced and now lives in a second place. `src/postgres.ts` is what
+narrows it: a job gets `rpc()` and no table access, so a job's SQL has to be a
+`service_role` function in `schemas/` where it is granted deliberately and
+tested by pgTAP.
 
 **There is a second way to get Pro, and no code behind it.** Share & Earn
 (`app/settings/share.tsx`) offers a month for a post that reaches 30 likes, a
@@ -2098,6 +2133,18 @@ Break these and the feature is wrong in ways tests may not catch.
   below retried the same refusal and handed the user a guessed "Mixed meal"
   instead of an explanation. Claimed at the top of the endpoint, a budget
   failure can no longer reach the cascade at all, and the rethrows are gone.
+- **A SCHEDULED JOB HAS NO HTTP ROUTE.** Anything periodic is a Cron Trigger on
+  `apps/cloudflare/workers/jobs`, whose `scheduled()` handler is not
+  addressable — `workers_dev`, `preview_urls` and `routes` are all off, so there
+  is no hostname to reach it on. The rule exists because the alternative was
+  tried: the photo sweep ran as a Supabase edge function with
+  `verify_jwt = false`, since a job that acts for every account has no user to
+  authenticate, and the result was a public endpoint that deletes photographs
+  guarded by one shared secret in two places. A job has no caller to
+  authenticate, so the answer is to have no caller rather than a better check.
+  It follows that a job never gains a `fetch` handler to "make it testable" —
+  `wrangler dev` exposes `/cdn-cgi/handler/scheduled` locally and a deployed
+  Worker with no hostname exposes nothing.
 - **The OpenRouter key never reaches the client**, and neither do the R2
   credentials. A client that could name its own object key, or hold a key that
   does not expire, is a client that can read someone else's plate.

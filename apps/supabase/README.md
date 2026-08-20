@@ -37,8 +37,8 @@ and it is folded into the foot of that baseline:
 | what | why |
 |---|---|
 | the `select seed_archetype_foods()` call | the rows are data, and a diff only ever emits structure |
-| `create extension pg_net` / `pg_cron` | the diff engine does not track extensions at all: pg_cron installed locally and absent from `schemas/` still diffs clean |
-| the `cron.schedule('sweep-meal-photos', …)` call | a schedule is a ROW in `cron.job`, so it is data for the same reason the seed call is |
+| any `create extension` or `drop extension` | the diff engine does not track extensions at all: pg_cron installed locally and absent from `schemas/` still diffs clean, and dropping pg_cron and pg_net had to be hand-written for the same reason |
+| the `cron.schedule(…)` / `cron.unschedule(…)` calls | a schedule is a ROW in `cron.job`, so it is data for the same reason the seed call is. Nothing schedules anything here any more, but the rule is what made both the arrival and the removal hand-written |
 
 There used to be a second: the `storage` buckets and their object policies,
 invisible to the diff because it ignores the `storage` schema entirely. Images
@@ -299,83 +299,36 @@ edge runtime loads. Without them the `photos` function answers 503 in so many
 words rather than failing at the tap, and a local stack still starts, still
 resets and still scans — mock AI never reads the photo, so only the upload and
 the tiles need Cloudflare to exist.
+**`RETENTION_TOKEN` IS GONE, and so is the schedule it belonged to.** The
+photograph sweep was an edge function here, called hourly by `pg_cron` over
+`pg_net`, and it needed a shared secret because a sweep acts for every account
+and so has no user to authenticate — which meant `verify_jwt = false` and a
+public URL that deletes photographs, held shut by a token held in two places
+that had to be rotated together.
 
-One more belongs to the retention sweep: **`RETENTION_TOKEN`**, a shared secret
-that `functions/retention` checks on every request, matched by the repo secret
-of the same name that the scheduler sends. It is a shared secret rather than a
-user's JWT because the sweep runs across every account and there is no user to
-be — the same shape the RevenueCat webhook uses. UNSET, the function refuses
-every request rather than accepting them: an open version of this endpoint
-deletes strangers' photographs.
-
-```sh
-supabase secrets set --workdir apps RETENTION_TOKEN="$(openssl rand -hex 32)"
-```
-
-### The retention sweep's schedule
-
-`pg_cron` calls `public.sweep_meal_photos()` at seventeen minutes past every
-hour, and that function POSTs to the `retention` edge function. It used to be
-`.github/workflows/retention.yml`; `20260820120000_retention_runs_on_pg_cron.sql`
-is why it moved and what the move cost.
-
-**Three conditions decide whether a photograph goes**, and each is load-bearing
-on its own. It must be older than `free_photo_retention_days()` (30); it must
-have been logged AFTER the account's last paid period ended, so what somebody
-paid to keep is kept for ever; and that period must be more than
-`lapsed_photo_grace_days()` (60) gone, which is the grace a former subscriber
-gets before any of this starts. An account that never subscribed has a null
-`current_period_end`, coalesced to `-infinity`, so it passes the second and
-third unconditionally and is swept on the thirty day rule alone.
-
-**The migration cannot set the secrets, so a fresh environment needs this once.**
-The same token the edge function holds has to be readable by the database, and
-it goes in the vault rather than in the schedule, because `cron.job.command` is
-plain text that anything holding `service_role` can read:
+It is a Cloudflare Worker on a Cron Trigger now, with no hostname at all:
+`apps/cloudflare/workers/jobs`, whose README is the format every periodic job
+follows. Nothing in this database schedules anything or makes an outbound
+request, and `pg_cron` and `pg_net` are both uninstalled. If you are looking for
+the sweep's history, it is `public.job_runs`, written by the run it describes
+rather than by the one after it:
 
 ```sql
-select vault.create_secret(
-  'https://<project-ref>.supabase.co/functions/v1', 'retention_functions_url');
-select vault.create_secret('<the same RETENTION_TOKEN>', 'retention_token');
+select job, started_at, finished_at, ok, error, detail
+  from public.job_runs order by started_at desc limit 24;
 ```
 
-`create_secret` refuses a name it already holds, so ROTATING is
-`vault.update_secret` and the two halves have to move together — the edge
-function's `RETENTION_TOKEN` and this, or the sweep answers 401 and says so in
-`retention_runs`:
+Running it by hand no longer means a `curl` at an endpoint, because there is no
+endpoint. It means running the job:
 
 ```sh
-supabase secrets set --workdir apps RETENTION_TOKEN="$(openssl rand -hex 32)"
-```
-```sql
-select vault.update_secret(id, '<the new value>')
-  from vault.secrets where name = 'retention_token';
+cd apps/cloudflare/workers/jobs
+pnpm exec wrangler dev            # then, in another shell:
+curl "http://localhost:8787/cdn-cgi/handler/scheduled?cron=17+*+*+*+*"
 ```
 
-Until both exist the job raises once an hour and says which one is missing, and
-the message lands in `cron.job_run_details`. That is deliberate: a sweep that
-returned quietly when a secret was renamed would stop for ever with nothing to
-show for it. **On a local stack you will see that error hourly** unless you set
-the two secrets or run `select cron.unschedule('sweep-meal-photos')`.
-
-Whether it is working is one query, and it is the only monitoring there is:
-
-```sql
-select started_at, status_code, error, left(body, 120) as body
-  from public.retention_runs order by started_at desc limit 24;
-```
-
-`status_code` and `body` on a row are filled in by the FOLLOWING run — pg_net is
-asynchronous and clears its own response table within hours, which is the whole
-reason `retention_runs` exists. Null on the newest row is ordinary. A run to
-worry about is one with an `error`, a `status_code` that is not 200, or a
-`started_at` gap wider than an hour.
-
-Break glass — the sweep, by hand, without the scheduler:
-
-```sh
-curl -X POST "$FUNCTIONS_URL/retention" -H "x-retention-token: $RETENTION_TOKEN"
-```
+That uses a LOCAL simulated bucket unless you pass `--remote`, which is the
+safer default for a job whose whole purpose is deleting things.
 
 A fifth R2 value is optional and local-only: **`R2_ENDPOINT`** overrides the Cloudflare
 host, so a developer can point the same signing code at any S3 — the one the

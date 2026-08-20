@@ -78,16 +78,22 @@ jobs:
           # image is not identical to a live project's baseline. Two differences
           # come out of it every single run and neither is anybody's edit:
           #
-          #   pg_net              NO LONGER EMITTED, and the line stays anyway.
-          #                       It was installed in the base image and absent
-          #                       from the live project, so every run wanted to
-          #                       drop it. `20260820120000_retention_runs_on_pg_cron.sql`
-          #                       installs it for real — the retention sweep's
-          #                       schedule POSTs through it — so the two now
-          #                       agree and the statement stops appearing. Kept
-          #                       because it costs nothing and the day somebody
-          #                       drops the extension by hand is not the day to
-          #                       find out this filter was load-bearing.
+          #   pg_net              Kept, and its history is worth the space. The
+          #                       base image installs it and the live project
+          #                       did not have it, so every run wanted to drop
+          #                       it and this line absorbed that.
+          #                       `20260820120000` then installed it for real,
+          #                       the two agreed, and the statement stopped
+          #                       appearing. `20260820140000` drops it again —
+          #                       the retention sweep is a Cloudflare Worker now
+          #                       and nothing in this database makes an outbound
+          #                       request — so shadow and live agree once more,
+          #                       by both NOT having it. The line is a no-op in
+          #                       every one of those three states, which is
+          #                       exactly why it stays: it costs nothing, and
+          #                       the day somebody's extension list diverges
+          #                       from the image again is not the day to
+          #                       discover this filter had been deleted.
           #   sequence privileges the image grants UPDATE on public sequences to
           #                       anon/authenticated/service_role; the live
           #                       project has them revoked.

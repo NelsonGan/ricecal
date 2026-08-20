@@ -1,0 +1,15 @@
+{
+  "name": "@ricecal/jobs-worker",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "typecheck": "tsc --noEmit && node --no-warnings scripts/check-crons.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250109.0",
+    "typescript": "~5.9.2",
+    "wrangler": "^4.40.0"
+  }
+}
