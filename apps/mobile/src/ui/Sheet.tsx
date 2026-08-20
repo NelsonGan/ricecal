@@ -61,7 +61,28 @@ const DISMISS_DISTANCE = 96
 const DISMISS_VELOCITY = 900
 
 /** No `onShow`: a surface without a window of its own is never presented. */
-export type SheetSurfaceProps = Omit<SheetProps, 'visible' | 'onShow'>
+export type SheetSurfaceProps = Omit<SheetProps, 'visible' | 'onShow'> & {
+  /**
+   * Whether this surface should draw the app's toasts. See the outlet at the
+   * foot of `SheetSurface`.
+   *
+   * `Sheet` passes its own `visible` here, and that is the whole reason the
+   * prop exists. On iOS a `Modal` keeps its children MOUNTED after `visible`
+   * goes false — until the native `modalDismissed` event arrives, which is at
+   * least a tick later — so the outlet inside a sheet that has just been closed
+   * is still the topmost claim, and a toast fired in the same handler as the
+   * close is drawn inside a window on its way off the screen. Invisible, again,
+   * which is the exact failure the outlet was added to fix.
+   *
+   * It is not hypothetical: "this needs Pro" fired from a sheet's own button
+   * closes the sheet and pushes the paywall, and that toast is the only thing
+   * saying which button was refused.
+   *
+   * A route sheet has no window of its own and never passes it: it is on screen
+   * for exactly as long as it is mounted.
+   */
+  hosting?: boolean
+}
 
 export type SheetProps = {
   visible: boolean
@@ -157,7 +178,8 @@ export function Sheet({ visible, onShow, ...rest }: SheetProps) {
           the library documents for exactly this case. Sheets that are ROUTES do
           not need it: they are in the app tree, under the root in `_layout`. */}
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <SheetSurface {...rest} />
+        {/* The outlet follows the WINDOW, not the mount. See `hosting`. */}
+        <SheetSurface {...rest} hosting={visible} />
       </GestureHandlerRootView>
     </Modal>
   )
@@ -178,6 +200,7 @@ export function Sheet({ visible, onShow, ...rest }: SheetProps) {
  * there.
  */
 export function SheetSurface({
+  hosting = true,
   onClose,
   closeLabel = 'Close',
   title,
@@ -462,8 +485,10 @@ export function SheetSurface({
           does nothing. Outside `NumpadHost` so the toast is not pushed up by a
           pad, and last so it draws over the panel. From the TOP, because the
           bottom of this screen is the panel and its buttons — see
-          `ToastHostProps.placement`. */}
-      <ToastHost placement="top" />
+          `ToastHostProps.placement`. Only while the window is actually up —
+          see `hosting`, which is what stops a sheet that has just been closed
+          from swallowing the toast explaining why. */}
+      {hosting ? <ToastHost placement="top" /> : null}
     </Pressable>
   )
 }
