@@ -2,19 +2,14 @@
 -- Home cooking.
 --
 -- A shared pot has no serving size, which is where logging breaks down. Nobody
--- can answer "how many calories in that" about a wok of nasi goreng, but
--- everybody can answer "what went in, and how many does it feed". A recipe is
--- those two answers, entered once, and every future log of it is one tap.
+-- can answer "how many calories in that" about a wok of nasi goreng, but everyone
+-- can answer "what went in, and how many does it feed". A recipe is those two
+-- answers, entered once, and every future log of it is one tap.
 --
--- The catalogue is in Cloudflare D1 now and that foreign key is gone. An entry
--- carries its own numbers, so logging a pot writes the same snapshot every other
--- entry writes, taken from `recipe_details`, which already computed the
--- per-serving figures the mirror was built out of.
---
--- What that costs is the property people expect: correcting a recipe no longer
--- moves last week's diary. It is the same trade `food_logs` makes with the
--- catalogue at large, and `food_logs.recipe_id` is the provenance a re-snapshot
--- would need.
+-- An entry carries its own numbers, so logging a pot writes the same snapshot
+-- every other entry writes, taken from `recipe_details`. What that costs is the
+-- property people expect: correcting a recipe no longer moves last week's diary.
+-- `food_logs.recipe_id` is the provenance a re-snapshot would need.
 --
 -- Three kinds of row, one table:
 --
@@ -22,9 +17,8 @@
 --   official   owner_id is null, the RiceCal kitchen, written by service_role
 --   community  somebody else's, public and approved
 --
--- Official is the absence of an owner rather than a flag beside one, so there is
--- no way to spell "official and owned by Farah". Clients can only insert rows
--- owned by themselves, so the third state is not reachable from the app.
+-- Official is the absence of an owner rather than a flag beside one, so "official
+-- and owned by Farah" cannot be spelled. Clients can only insert rows they own.
 -- ---------------------------------------------------------------------------
 
 create table public.recipes (
@@ -113,23 +107,18 @@ create index recipes_source_idx
 -- ---------------------------------------------------------------------------
 -- Who has saved a community recipe.
 --
--- One row per person per recipe, and the primary key is what makes that true.
--- `saved_count` used to be bumped on every call to `save_recipe_copy`, so a
--- person who saved the same rendang three times counted as three people, and
--- since the community shelf is ordered by that column, the way to the top of it
--- was to save your own favourite repeatedly.
+-- One row per person per recipe, and the primary key is what makes that true. A
+-- bare `saved_count` counted a person who saved the same rendang three times as
+-- three people, and since the community shelf is ordered by that column, the way
+-- to the top of it was to save your own favourite repeatedly.
 --
--- The row records the fact of the save and outlives the copy it was made from.
--- Deleting your copy does not take the save back: it happened, and "how many
--- people have saved this" is a question about people rather than about how many
--- still have it in their list. Deriving the count from
--- `count(distinct owner_id)` over `source_recipe_id` is one fewer table, gets
--- that question wrong, and puts a subquery under the one shelf query that has an
--- index built for it.
+-- The row outlives the copy it was made from: deleting your copy does not take
+-- the save back, because "how many people have saved this" is a question about
+-- people. Deriving it from `count(distinct owner_id)` gets that wrong and puts a
+-- subquery under the one shelf query that has an index built for it.
 --
--- No client grants at all, not merely no policy. `save_recipe_copy` is
--- `security definer` and is the only writer; a client that could insert here
--- could vote for its own recipe as many times as it liked.
+-- No client grants at all, not merely no policy. `save_recipe_copy` is the only
+-- writer; a client that could insert here could vote for its own recipe.
 -- ---------------------------------------------------------------------------
 create table public.recipe_saves (
   recipe_id uuid not null references public.recipes (id) on delete cascade,
@@ -147,17 +136,15 @@ grant select, insert, delete on public.recipe_saves to service_role;
 -- ---------------------------------------------------------------------------
 -- What went into the pot.
 --
--- Per unit, not per ingredient. The macros here describe one gram, one millilitre
--- or one of the thing, and the amount beside them is how many went in. That is
--- what survives the amount being changed: reopening a recipe and correcting
--- 400 ml of santan to 250 reprices it with no catalogue lookup and no second
--- opinion, because the density was the part that was true.
+-- Per unit, not per ingredient. The macros describe one gram, one millilitre or
+-- one of the thing, and the amount beside them is how many went in. That is what
+-- survives the amount being changed: 400 ml of santan corrected to 250 reprices
+-- with no lookup and no second opinion, because the density was the part that was
+-- true.
 --
--- `food_id` is provenance and nothing more. It records that this ingredient was
--- picked out of the catalogue rather than typed, but the numbers are copied here
--- rather than joined, because an ingredient can also be somebody's own kerisik
--- that exists in no catalogue, and a list where half the rows join and half do
--- not is a list with two shapes.
+-- `food_id` is provenance and nothing more. The numbers are copied rather than
+-- joined, because an ingredient can be somebody's own kerisik that exists in no
+-- catalogue, and a list where half the rows join is a list with two shapes.
 -- ---------------------------------------------------------------------------
 
 create table public.recipe_ingredients (
