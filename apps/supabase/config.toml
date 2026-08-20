@@ -629,10 +629,12 @@ entrypoint = "./functions/barcode/index.ts"
 # The photograph sweep: a free account's plates are kept for thirty days, and
 # this is what deletes them. NOT the same auth pattern as the others — there is
 # no user, since it runs across every account — so it checks a shared secret
-# like the RevenueCat webhook does. Secrets it reads: RETENTION_TOKEN, matching
-# the value in the scheduled workflow, and the R2 four. Unset, it refuses every
-# request rather than accepting them, because an open version of this endpoint
-# deletes strangers' photographs.
+# like the RevenueCat webhook does. Secrets it reads: RETENTION_TOKEN, which must
+# equal the `retention_token` VAULT secret that `public.sweep_meal_photos()`
+# sends, and the R2 four. Unset, it refuses every request rather than accepting
+# them, because an open version of this endpoint deletes strangers'
+# photographs. Nothing calls it on a schedule but pg_cron; see
+# apps/supabase/README.md, "The retention sweep's schedule".
 [functions.retention]
 enabled = true
 verify_jwt = false

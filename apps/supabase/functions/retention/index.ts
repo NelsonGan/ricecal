@@ -24,10 +24,19 @@
 // accepting everything: unconfigured, this endpoint would be a way for anybody
 // to delete other people's photographs.
 //
-// Invoked by `.github/workflows/retention.yml`, daily. A missed day costs
-// nothing: the next run finds the same rows plus a day's worth more, and the
-// batch cap below is what stops a long outage from turning into one enormous
-// request.
+// Invoked hourly by `pg_cron`, which calls `public.sweep_meal_photos()`, which
+// POSTs here with the shared secret read out of the vault. This was a GitHub
+// Action until 20260820120000_retention_runs_on_pg_cron.sql; the migration says
+// why it moved and what the move cost. A missed hour costs nothing: the next
+// run finds the same rows plus an hour's worth more, and the batch cap below is
+// what stops a long outage from turning into one enormous request.
+//
+// NOTHING READS THE ANSWER SYNCHRONOUSLY ANY MORE, which is worth knowing
+// before changing what this returns. `pg_net` fires and forgets, so `remaining`
+// no longer drives a caller's retry loop — it is read by the following hour's
+// run out of `net._http_response` and written into `public.retention_runs`,
+// where it is a diagnostic rather than a control signal. Hourly scheduling is
+// what replaced the loop.
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
