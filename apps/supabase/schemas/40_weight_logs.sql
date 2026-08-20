@@ -1,18 +1,15 @@
 -- ---------------------------------------------------------------------------
--- Body weight over time. The source of truth for "what does this user weigh",
--- which is why `profiles` has no weight column.
+-- Body weight over time. The source of truth for what a user weighs, which is why
+-- `profiles` has no weight column.
 --
 -- One row per user per day: weighing yourself twice before breakfast should not
--- draw two points on the chart, and the last reading of the day is the one a
--- user would recognise as today's weight. A second entry upserts over the
--- first.
+-- draw two points on the chart, and the last reading of the day is the one a user
+-- would recognise as today's weight. A second entry upserts over the first.
 --
--- A row has two possible authors, and `provider` is which. NULL means the user
+-- A row has two possible authors, and `provider` is which. Null means the user
 -- typed it; a `health_provider` means it was read off Apple Health or Health
--- Connect. This column used to be absent, on the stated grounds that there was
--- only one source and the app synced nothing from a watch, a phone or a scale.
--- That is no longer true, and the distinction has to be stored rather than
--- inferred, because the two authors are not equal: see `sync_weight_readings`.
+-- Connect. The distinction has to be stored rather than inferred, because the two
+-- authors are not equal: see `sync_weight_readings`.
 -- ---------------------------------------------------------------------------
 
 create table public.weight_logs (
@@ -73,32 +70,30 @@ create policy "weight_logs: delete own"
 -- ---------------------------------------------------------------------------
 -- Writing a batch of readings from a health store.
 --
--- WHY THIS IS NOT A PLAIN UPSERT FROM THE CLIENT
---
--- One row per day and two authors means the sync and the user compete for the
--- same key, and they must not compete on equal terms: A READING THE USER TYPED
--- IS NEVER OVERWRITTEN BY A SYNCED ONE. Somebody who steps on a scale, dislikes
--- the number and corrects it in the app has said which of the two they mean,
--- and the rolling window re-reads the last seven days on every foreground — so
--- an unguarded upsert would put the scale's figure back within a minute, every
--- minute, and the correction would look like a bug in the text field.
+-- Why this is not a plain upsert from the client: one row per day and two authors
+-- means the sync and the user compete for the same key, and they must not compete
+-- on equal terms. A reading the user typed is never overwritten by a synced one.
+-- Somebody who steps on a scale, dislikes the number and corrects it in the app
+-- has said which of the two they mean, and the rolling window re-reads the last
+-- seven days on every foreground, so an unguarded upsert would put the scale's
+-- figure back within a minute, every minute, and the correction would look like a
+-- bug in the text field.
 --
 -- That rule is a WHERE on the DO UPDATE, and PostgREST's upsert cannot express
--- one, which is the whole reason this function exists rather than a call to
--- `.upsert()` beside the activity tables. `w.provider is not null` reads as:
--- overwrite only what the sync itself wrote.
+-- one, which is the whole reason this function exists. `w.provider is not null`
+-- reads as: overwrite only what the sync itself wrote.
 --
--- SECURITY INVOKER, unlike the other functions here that widen anything. It
--- widens nothing — the client already holds insert and update on this table —
--- so RLS stays in force and the user_id comes from the caller's own token
--- rather than from an argument, which is what makes a forged user_id in the
--- payload impossible rather than merely rejected.
+-- Security invoker, unlike the other functions here that widen anything. It
+-- widens nothing, since the client already holds insert and update on this table,
+-- so RLS stays in force and the user_id comes from the caller's own token rather
+-- than from an argument, which is what makes a forged user_id impossible rather
+-- than merely rejected.
 --
--- OUT-OF-RANGE READINGS ARE DROPPED, NOT RAISED. `weight_kg` and `body_fat_pct`
+-- Out-of-range readings are dropped, not raised. `weight_kg` and `body_fat_pct`
 -- carry check constraints, and a health store is perfectly capable of holding a
 -- 5 kg entry somebody made while testing their scale. Letting one such sample
 -- raise would abort the statement, and this runs inside the same sync pass that
--- writes activity — so a single junk row in Health would cost the user their
+-- writes activity, so a single junk row in Health would cost the user their
 -- steps, their workouts and their calorie budget. A dropped reading costs them
 -- one dot on the weight chart.
 -- ---------------------------------------------------------------------------

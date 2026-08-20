@@ -1,44 +1,37 @@
 -- ---------------------------------------------------------------------------
 -- What the user ate. The busiest table in the app.
 --
--- WHY log_date IS A DATE AND logged_at IS AN INSTANT
+-- Why `log_date` is a date and `logged_at` is an instant: they answer different
+-- questions and neither derives the other reliably. `log_date` is which day this
+-- counts towards, a calendar fact about the user's own day, which is why supper
+-- at 00:30 can be dragged back onto the previous day. `logged_at` is when it
+-- happened, which orders the rows inside a meal and prints "8:20 am" on each one.
 --
--- They answer different questions and neither derives the other reliably.
--- `log_date` is "which day does this count towards" — a calendar fact about
--- the user's own day, which is why supper at 00:30 can be dragged back onto
--- the previous day and why the column is not computed from the timestamp.
--- `logged_at` is "when did this happen", which is what orders the rows inside
--- a meal and prints "8:20 am" on each one.
+-- Why the entry carries its own macros: it did not, for most of this app's life.
+-- An entry was a foreign key and a quantity, every calorie was derived at read
+-- time through a join, and the property that bought was worth having, since
+-- correcting a catalogue row corrected every log that used it.
 --
--- WHY THE ENTRY CARRIES ITS OWN MACROS
---
--- It did not, for most of this app's life. An entry was a foreign key and a
--- quantity, every calorie was derived at read time through a join, and the
--- property that bought was worth having: correcting a catalogue row corrected
--- every log that used it.
---
--- The catalogue is in Cloudflare D1 now — 3.2 million barcoded products behind
--- a Worker — and a foreign key cannot cross into another database. So either
--- the numbers travel with the entry or a day's total becomes a network call,
--- and a diary that cannot add up its own day offline is not a diary.
+-- The catalogue is in Cloudflare D1 now, 3.2 million barcoded products behind a
+-- Worker, and a foreign key cannot cross into another database. So either the
+-- numbers travel with the entry or a day's total becomes a network call, and a
+-- diary that cannot add up its own day offline is not a diary.
 --
 -- The trade is now the other way round: a dish corrected in the catalogue no
--- longer corrects the diaries that used it. `food_id` survives as a SOFT
--- reference, unconstrained, so a future job could re-snapshot entries against
--- the current catalogue. Not automatic. Recoverable.
+-- longer corrects the diaries that used it. `food_id` survives as a soft
+-- reference, unconstrained, so a future job could re-snapshot entries against the
+-- current catalogue. Not automatic, but recoverable.
 --
--- What it buys is that the catalogue became disposable — truncatable,
--- rebuildable, reloadable without touching a diary. That is not hypothetical: a
--- reload of it took this app down to 6,451 foods once, because the delete had
--- to cascade through the entries pointing at the rows being replaced.
+-- What it buys is that the catalogue became disposable: truncatable, rebuildable,
+-- reloadable without touching a diary. That is not hypothetical. A reload of it
+-- took this app down to 6,451 foods once, because the delete had to cascade
+-- through the entries pointing at the rows being replaced.
 --
--- THE SEAM FOR CALORIE SCANNING
---
--- A scan resolves to a food and then writes an ordinary entry: `source =
--- 'camera'` and `photo_path` are already here for that. A photo that matches
--- nothing in the catalogue no longer has nowhere to land — the cascade's lower
--- tiers write their estimate straight into these columns with a null `food_id`,
--- which is what the shared `foods` estimate row used to exist to avoid.
+-- The seam for calorie scanning: a scan resolves to a food and then writes an
+-- ordinary entry, and `source = 'camera'` and `photo_path` are here for that. A
+-- photo that matches nothing in the catalogue has somewhere to land, because the
+-- cascade's lower tiers write their estimate straight into these columns with a
+-- null `food_id`.
 -- ---------------------------------------------------------------------------
 
 create table public.food_logs (
@@ -132,18 +125,17 @@ create table public.food_logs (
 
   -- The numbers, when the user has typed their own.
   --
-  -- Everything else on an entry describes WHICH food and HOW MUCH, and the
-  -- calories follow from the catalogue row. That breaks down for the case this
-  -- exists for: a dish the app got close but not right, where the person
-  -- eating it knows the answer — off a packet, off a recipe, off the kitchen
-  -- scale. Rescaling the portion to reach the right calorie total would lie
-  -- about the portion, and correcting the shared `foods` row would change the
-  -- number for everyone who ever logged it.
+  -- Everything else on an entry describes which food and how much, and the calories
+  -- follow from the catalogue row. That breaks down for the case this exists for: a
+  -- dish the app got close but not right, where the person eating it knows the
+  -- answer, off a packet or off the kitchen scale. Rescaling the portion to reach
+  -- the right calorie total would lie about the portion, and correcting the shared
+  -- `foods` row would change the number for everyone who ever logged it.
   --
   -- Null means "the catalogue is right", which is almost every row. Each field
-  -- stands alone: someone who fixes only the protein keeps the catalogue's
-  -- carbs. `food_log_details` coalesces them over the computed figures, so
-  -- every total in the app follows without knowing this exists.
+  -- stands alone: someone who fixes only the protein keeps the catalogue's carbs.
+  -- `food_log_details` coalesces them over the computed figures, so every total in
+  -- the app follows without knowing this exists.
   override_kcal      integer check (override_kcal between 0 and 20000),
   override_carbs_g   numeric(7, 1) check (override_carbs_g between 0 and 2000),
   override_protein_g numeric(7, 1) check (override_protein_g between 0 and 2000),
@@ -152,13 +144,12 @@ create table public.food_logs (
   -- An illustration the user picked for this row, overriding the food's own.
   --
   -- Here rather than on `foods` because `foods` is shared: the catalogue is
-  -- read-only to users, and most of it has no drawing at all — there are hundreds
-  -- of megabytes of imported rows against a few dozen illustrations. This is the
-  -- one place a user can say what a plate looked like without a photo of it.
+  -- read-only to users, and most of it has no drawing at all. This is the one place
+  -- a user can say what a plate looked like without a photo of it.
   --
   -- Per entry, so it is deliberately not remembered for the next log of the same
-  -- dish. Both columns or neither, for the same reason as on `foods`: half an
-  -- icon cannot be resolved.
+  -- dish. Both columns or neither, for the same reason as on `foods`: half an icon
+  -- cannot be resolved.
   icon_set     public.icon_set,
   icon_name    text,
   constraint food_logs_icon_complete check ((icon_set is null) = (icon_name is null)),
@@ -174,13 +165,13 @@ create table public.food_logs (
   updated_at   timestamptz not null default now()
 
   -- There were two foreign keys here, and the composite one was the point: a
-  -- two-column reference meant the serving was guaranteed to belong to the
-  -- food, where two independent ones would each be satisfiable while together
-  -- describing a plate of nasi lemak measured in cups of teh tarik.
+  -- two-column reference meant the serving was guaranteed to belong to the food,
+  -- where two independent ones would each be satisfiable while together describing
+  -- a plate of nasi lemak measured in cups of teh tarik.
   --
-  -- Neither can exist across databases. What replaced them is that the portion
-  -- is no longer a reference at all: `serving_label` and `serving_factor` are
-  -- on this row, so there is no second table for them to disagree with.
+  -- Neither can exist across databases. What replaced them is that the portion is
+  -- no longer a reference at all: `serving_label` and `serving_factor` are on this
+  -- row, so there is no second table for them to disagree with.
 );
 
 -- Every read in this app is "this user, this day" or "this user, this range".
