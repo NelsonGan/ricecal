@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The ring, empty, for the widget picker only.
+
+  A placed widget draws its ring as a bitmap, which `previewLayout` cannot: the
+  picker renders the layout without running any of our code, so the two ring
+  widgets showed a card with a hole in it where their most recognisable element
+  belongs.
+
+  Drawn in the TRACK colour with nothing filled, which is honest — it is what a
+  day with nothing eaten looks like. A ring drawn part-full here would be the
+  picker quoting a figure the account has not got.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+  android:shape="ring"
+  android:innerRadiusRatio="2.6"
+  android:thicknessRatio="12"
+  android:useLevel="false">
+  <solid android:color="@color/rc_track" />
+</shape>

@@ -311,11 +311,7 @@ export function useAddWater(date: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (ml: number) => {
-      const { data, error } = await supabase.rpc('add_water', { p_ml: ml, p_date: date })
-      if (error) throw error
-      return data
-    },
+    mutationFn: (ml: number) => addWater(ml, date),
     // The tank has to move under the finger, so the day is patched before the request
     // leaves. Clamped exactly where the server clamps, which is what lets the answer
     // be thrown away: `add_water` returns the day's new total, and writing it here
@@ -341,6 +337,39 @@ export function useAddWater(date: string) {
       // The water tab counts this drink in its bars, its average and its goal
       // days. Not optimistic, unlike the tank itself: nothing on Trends is
       // under the finger, so it can wait for the row.
+      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+    },
+  })
+}
+
+/** The one call. Shared so the two hooks around it cannot pass different arguments. */
+async function addWater(ml: number, date: string) {
+  const { data, error } = await supabase.rpc('add_water', { p_ml: ml, p_date: date })
+  if (error) throw error
+  return data
+}
+
+/**
+ * The same drink, from a widget, with the day travelling in the variables.
+ *
+ * A hook of its own rather than a parameter on `useAddWater`, because the two
+ * differ in the part that matters. That one is bound to the day on screen and
+ * patches it optimistically, since the tank has to move under the finger. This
+ * one drains a queue of taps that happened hours ago, possibly on several
+ * different days, with nothing on screen at all — so there is no day to patch
+ * and no finger to keep up with, and binding it to a date would mean a hook per
+ * queued drink.
+ *
+ * See `features/widgets/WidgetSync.tsx` for who calls it and when.
+ */
+export function useAddQueuedWater() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ ml, date }: { ml: number; date: string }) => addWater(ml, date),
+    onSuccess: (_data, { date }) => {
+      queryClient.invalidateQueries({ queryKey: keys.day(userId, date) })
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
     },
   })

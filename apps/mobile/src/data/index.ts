@@ -38,6 +38,7 @@ export {
 export { dateKey, today } from './client'
 export {
   type DayView,
+  useAddQueuedWater,
   useAddWater,
   useDay,
   useDayLog,
