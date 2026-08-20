@@ -1,4 +1,4 @@
-export { DayPlates, type DayPlatesProps } from './DayPlates'
+export { DayMeals, type DayMealsProps } from './DayMeals'
 export { DescribePanel, type DescribePanelProps } from './DescribePanel'
 export { DetailsSheet, type DetailsSheetProps, type EntryDetails } from './DetailsSheet'
 export { FixSheet, type FixSheetProps } from './FixSheet'

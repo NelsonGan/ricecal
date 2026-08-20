@@ -1,6 +1,12 @@
 export const logging = {
   today: {
     title: 'Today',
+    /**
+     * The floating button that comes back from an older day. Its label is the
+     * word above — the button IS the heading it puts back — so what a screen
+     * reader needs is the sentence the visual arrow and position are saying.
+     */
+    backToTodayA11y: 'Go back to today',
     kcalLeft: 'KCAL LEFT',
     kcalOver: 'KCAL OVER',
     /**
@@ -129,12 +135,12 @@ export const logging = {
       missed: 'Not logged',
     },
     /**
-     * The card under the grid, headed by the day it is about. The count is the
-     * meals on it, which is the one figure that says whether the day is worth
-     * opening.
+     * The card under the grid, headed by the day it is about and nothing else.
+     * It carried the number of meals as well — "Thursday 14, 4 meals" — which is
+     * a count said twice, once as a figure and once as the list directly under
+     * it.
      */
-    dayHeading_one: '{{day}}, {{count}} meal',
-    dayHeading_other: '{{day}}, {{count}} meals',
+    dayHeading: '{{day}}',
     dayKcal: '{{kcal}} kcal',
     /** A day with nothing on it. Not a failure, and not scolded. */
     dayEmpty: 'Nothing logged that day.',

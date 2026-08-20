@@ -14,7 +14,7 @@ import type { IconRef, Meal } from './types'
  * request twice would be a fair thing to cache — but a query is a thing
  * react-query is entitled to RE-RUN: on focus, on reconnect, on a stale timer.
  * Each of those is a model call, a scan off the user's daily allowance, and a
- * different five dishes appearing under a finger. The user presses a button and
+ * different set of dishes appearing under a finger. The user presses a button and
  * gets an answer; that is a mutation whatever the verb.
  *
  * What it costs is that the answer has nowhere to live, which is what
@@ -25,7 +25,19 @@ import type { IconRef, Meal } from './types'
 // the generated database types. Re-declaring it here would be a second spelling
 // of a four-value union that Postgres owns.
 export type Focus = 'protein' | 'balanced' | 'carbs'
-export type Cuisine = 'malay' | 'mamak' | 'chinese' | 'others'
+/**
+ * Which kitchen, as the word the user keeps it under.
+ *
+ * A FREE STRING, and it was a union of four. The four were a fair guess at what
+ * a Malaysian eater picks between and they are still the defaults, but a fixed
+ * union is a list nobody can add Thai or Nyonya to — so the list is the user's
+ * own now, lives on their phone (`features/suggest/preferences.ts`), and the
+ * server bounds the string rather than checking it against anything.
+ *
+ * The alias survives rather than being replaced by `string` at every call site,
+ * because it is what says the string is a cuisine.
+ */
+export type Cuisine = string
 export type Sodium = 'low' | 'medium' | 'high'
 export type ReasonKind = 'protein' | 'carbs' | 'fat' | 'calories' | 'taste'
 
@@ -89,7 +101,7 @@ type PickRow = {
 }
 
 /**
- * Five things to eat, or an empty list.
+ * Seven things to eat, or an empty list.
  *
  * Empty is a real answer rather than a failure: the endpoint returns it when
  * the model would not answer in the shape asked for, and the sheet says "we

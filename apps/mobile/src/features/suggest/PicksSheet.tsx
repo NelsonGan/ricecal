@@ -25,7 +25,7 @@ export type PicksSheetProps = {
  *
  * "Protein heavy, Malay, under 500 kcal" — the three constraints in the order
  * they were set, which is also the order they matter in. The MEAL is not in it:
- * the heading already says "Five for dinner", and a subtitle repeating it is a
+ * the heading already says "Ideas for dinner", and a subtitle repeating it is a
  * line spent saying nothing.
  */
 function Summary({ request }: { request: SuggestRequest }) {
@@ -34,7 +34,10 @@ function Summary({ request }: { request: SuggestRequest }) {
     <Text variant="meta">
       {t('picks.summary', {
         focus: t(`focusShort.${request.focus}`),
-        cuisine: t(`cuisine.${request.cuisine}`),
+        // The cuisine as the user keeps it, not through a translation key:
+        // the list is theirs to edit, so most of what can be in here is a word
+        // this repo has never seen.
+        cuisine: request.cuisine,
         kcal: request.kcalLimit.toLocaleString(),
       })}
     </Text>
@@ -42,7 +45,7 @@ function Summary({ request }: { request: SuggestRequest }) {
 }
 
 /**
- * L9 PICKS SHEET: five things to eat, and the way back to the question.
+ * L9 PICKS SHEET: seven things to eat, and the way back to the question.
  *
  * ONE SHEET FOR THE WAIT AND THE ANSWER, rather than a thinking sheet that
  * closes and a picks sheet that opens. Two modals in sequence is two rises, two
@@ -53,20 +56,24 @@ function Summary({ request }: { request: SuggestRequest }) {
  * itself to its content, so the wait and the answer would be two different
  * heights and the panel would jump at the one moment this screen has to feel
  * settled — with the reader's eye on it. At full height nothing moves but the
- * content, which is also why the wait draws FIVE skeleton rows rather than
- * three: it stands in for exactly what is coming.
+ * content, which is also why the wait draws as many skeleton rows as there are
+ * picks coming: it stands in for exactly what is on its way.
  *
  * TRY AGAIN IS AN ICON, on the title's line. It was a full-width footer button,
  * which is the shape of a primary action — and on a screen whose whole point is
- * the five things above it, "ask again" is the secondary one. As a glyph beside
- * the heading it stays reachable and quiet, and it leaves the panel with no
- * footer at all, so the list runs the full height of the sheet.
+ * the dishes above it, "ask again" is the secondary one. As a glyph beside the
+ * heading it stays reachable and quiet, and it leaves the panel with no footer
+ * at all, so the list runs the full height of the sheet.
+ *
+ * It ASKS AGAIN rather than reopening the question — see `onRetry` in
+ * `SuggestAction` — so the skeleton comes straight back up in the list's place
+ * and the sheet never closes.
  *
  * The rows are `ItemRow`, which is what every other list in this app is made
  * of, and the detail under each name is its PROTEIN. That is a choice about
  * this screen rather than a default: the calorie figure is already on the right
- * of the row, and protein is the number that distinguishes five dishes that all
- * come in under the same ceiling.
+ * of the row, and protein is the number that distinguishes a list of dishes that
+ * all come in under the same ceiling.
  *
  * VIEW ONLY. There is no add button on a row and no "Log it" on the detail
  * behind it. These are guesses about meals nobody has eaten, and a diary priced

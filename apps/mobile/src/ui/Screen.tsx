@@ -103,6 +103,17 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    * read, and the caller is the only one who knows how much.
    */
   floating?: ReactNode
+  /**
+   * The same overlay, pinned to the bottom LEFT instead.
+   *
+   * Its own slot rather than a row inside `floating`, because the two corners
+   * hold unrelated things and appear on different conditions: Today's log
+   * button is always there and hides only while a row is open for delete, while
+   * the way back to today exists only when the screen is showing some other
+   * day. A single row would have to render an invisible spacer for whichever
+   * half is absent, and a spacer over a scroll view eats taps.
+   */
+  floatingLeading?: ReactNode
   /** Drop the 20pt screen gutter, for content that bleeds to the edge. */
   flush?: boolean
   /** Render children in a plain View instead of a ScrollView. */
@@ -189,6 +200,7 @@ export function Screen({
   children,
   footer,
   floating,
+  floatingLeading,
   flush = false,
   scroll = true,
   gestureScroll = false,
@@ -398,6 +410,25 @@ export function Screen({
             pointerEvents="box-none"
           >
             {floating}
+          </Reanimated.View>
+        ) : null}
+
+        {/* The other corner, on the same lift and the same reasoning about the
+            safe area. See `floatingLeading`. */}
+        {floatingLeading ? (
+          <Reanimated.View
+            style={[
+              {
+                position: 'absolute',
+                left: spacing.gutter,
+                bottom: spacing.gutter,
+                alignItems: 'flex-start',
+              },
+              lift,
+            ]}
+            pointerEvents="box-none"
+          >
+            {floatingLeading}
           </Reanimated.View>
         ) : null}
 

@@ -1,8 +1,9 @@
 export const suggest = {
   /**
-   * The offer on Today, which is now a glyph on the calorie card rather than a
-   * card of its own — so this is what a screen reader says for it, and the only
-   * words it has.
+   * The offer on Today: a thin row under the week strip. The words are on
+   * screen now rather than only in the accessibility tree, which is what a
+   * glyph in the log sheet could never manage — nobody discovers a feature from
+   * an icon two taps inside another screen.
    */
   card: {
     title: 'Not sure what to eat?',
@@ -15,6 +16,15 @@ export const suggest = {
     focus: 'MACROS',
     cuisine: 'CUISINE',
     limit: 'CALORIE LIMIT',
+    /**
+     * The cuisine list is the user's own. The pencil says what it opens rather
+     * than saying "Edit", which is what three buttons on the food detail screen
+     * were saying before their labels were made specific.
+     */
+    editCuisines: 'Edit the cuisines',
+    addCuisine: 'Add a cuisine',
+    addCuisinePlaceholder: 'Thai, Nyonya, Japanese',
+    removeCuisine: 'Remove {{cuisine}}',
     kcal: 'kcal',
     less: 'Fewer calories',
     more: 'More calories',
@@ -33,8 +43,13 @@ export const suggest = {
 
   /** L8 THINKING and L9 PICKS SHEET, which are one sheet in two states. */
   picks: {
-    /** "Five for dinner". The count is in the copy because it never varies. */
-    title: 'Five for {{meal}}',
+    /**
+     * "Ideas for dinner". It used to name the count — "Five for dinner" — on
+     * the reasoning that the count never varies. It varied: the list went to
+     * seven, and a heading that counts is a heading that lies whenever a pick is
+     * dropped for having nothing to say for itself.
+     */
+    title: 'Ideas for {{meal}}',
     thinking: 'Looking for something for {{meal}}',
     thinkingA11y: 'Working out what to suggest',
     /** The three constraints, in the order they were set. */
@@ -67,7 +82,7 @@ export const suggest = {
     goneBody: 'Ask again from Today and it will be there.',
   },
 
-  /** The four sittings, as the chips say them. */
+  /** The four sittings, as the dropdown says them. */
   meal: {
     breakfast: 'Breakfast',
     lunch: 'Lunch',
@@ -76,7 +91,7 @@ export const suggest = {
   },
   /**
    * The same four INSIDE a sentence, which is a different word each time.
-   * "Five for Dinner" has a capital in the middle of a heading, and "Five for
+   * "Ideas for Dinner" has a capital in the middle of a heading, and "Ideas for
    * Snacks" is not what anybody says. Two blocks rather than one is the cost of
    * copy that reads properly in both places.
    */
@@ -91,19 +106,18 @@ export const suggest = {
     balanced: 'Balanced',
     carbs: 'Carbs',
   },
-  /** The same three inside a sentence, where the chip's own word will not fit. */
+  /** The same three inside a sentence, where the dropdown's own word will not fit. */
   focusShort: {
     protein: 'Protein heavy',
     balanced: 'Balanced',
     carbs: 'Carb heavy',
   },
-  cuisine: {
-    malay: 'Malay',
-    mamak: 'Mamak',
-    chinese: 'Chinese',
-    /** Not a fifth kitchen: the absence of the constraint. */
-    others: 'Others',
-  },
+  // No `cuisine` block. The kitchens are a list the user edits and keeps on
+  // their own phone, so a cuisine is a word this repo has never seen — it goes
+  // on screen as it was typed, and there is nothing here to translate it
+  // against. The defaults a new account starts with are in
+  // `features/suggest/ask.ts`.
+
   /** How salty, in the three words the model can honestly answer. */
   sodium: {
     low: 'low',

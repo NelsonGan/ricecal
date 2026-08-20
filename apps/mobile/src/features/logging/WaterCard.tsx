@@ -28,6 +28,8 @@ export type WaterCardProps = {
   goalMl?: number
   /** The day has not answered yet. The tank holds its size and waits. */
   loading?: boolean
+  /** Layout, for a caller that has to clear something below it. */
+  className?: string
 }
 
 /**
@@ -61,6 +63,7 @@ export function WaterCard({
   ml,
   goalMl = DEFAULT_WATER_ML,
   loading = false,
+  className,
 }: WaterCardProps) {
   const { t } = useTranslation(['logging', 'common'])
   const toast = useToast()
@@ -99,7 +102,7 @@ export function WaterCard({
       {/* `flush`, and the tank carries the card's own corner radius: the two
           silhouettes coincide, so what the user sees is one object filling up
           rather than a chart sitting in a box. */}
-      <Card flush contentClassName="gap-0">
+      <Card flush className={className} contentClassName="gap-0">
         <WaterTank
           value={ml}
           goal={goalMl}
