@@ -62,7 +62,7 @@ GRANT ALL ON FUNCTION public.lapsed_photo_grace_days() TO service_role;
 -- wrote the two grants above and nothing about PUBLIC, which Postgres grants
 -- EXECUTE to on every new function and which `anon` inherits. That is the exact
 -- mechanism by which five functions once shipped executable by PUBLIC — see the
--- note in the root CLAUDE.md — so the revoke from `schemas/35_retention.sql` is
+-- note in README.md — so the revoke from `schemas/35_retention.sql` is
 -- copied here by hand rather than trusted to the diff.
 --
 -- The function returns a constant and leaks nothing, so this is hygiene rather

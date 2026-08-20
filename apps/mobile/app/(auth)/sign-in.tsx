@@ -25,12 +25,6 @@ type Mode = 'sign-in' | 'sign-up'
  * question, so it takes an address here and asks the rest on the next screen:
  * a password, or a code in the post, whichever the person wants.
  *
- * It used to end here, with one button that mailed a link. What that could not
- * survive is somebody who opens this app every day, for whom "wait for an
- * email" is the whole cost of coming back, and somebody on a work address whose
- * employer's link scanner spends the link before they can. So the address is
- * still all this screen asks for, and `password.tsx` owns the rest.
- *
  * `mode` decides the heading and which side of the next screen opens. It does
  * NOT change what any of these buttons do: Supabase makes the account when the
  * identity is new either way.

@@ -97,7 +97,7 @@ const SETTINGS = {
  * is fixed, and the script will not do the last step for you:
  *
  *   1. Create the Turnstile widget on Cloudflare (see
- *      apps/mobile/src/features/auth/README.md).
+ *      README.md).
  *   2. `pnpm auth:config --captcha-secret <secret>` stores the SECRET and
  *      selects turnstile, with the gate still open.
  *   3. Ship a build carrying EXPO_PUBLIC_TURNSTILE_SITE_KEY.

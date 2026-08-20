@@ -6,8 +6,8 @@
 -- ingredients and that sum divided by the servings, and doing it here means the
 -- list, the detail screen and the share card cannot round it three ways.
 --
--- Every view is `security_invoker`, so the read policy on `recipes` — mine, the
--- kitchen's, or public AND approved — is what filters them.
+-- Every view is `security_invoker`, so the read policy on `recipes` is what
+-- filters them.
 -- ---------------------------------------------------------------------------
 
 
@@ -44,15 +44,14 @@ grant select on public.recipe_ingredient_details to authenticated, service_role;
 -- One recipe: the whole pot, and one serving of it.
 --
 -- Both figures, because both are read on the same screen and they answer
--- different questions — "is this pot worth cooking" and "what do I log". The
--- per-serving numbers used to be computed here AND carried on a mirror `foods`
--- row, deliberately by two routes so a drifted mirror showed up as a
--- discrepancy rather than hiding behind the view. There is no mirror now, and
--- this is the one place they are worked out.
+-- different questions, "is this pot worth cooking" and "what do I log". The
+-- per-serving numbers used to be computed here and carried on a mirror `foods`
+-- row, deliberately by two routes so a drifted mirror showed up as a discrepancy.
+-- There is no mirror now, and this is the one place they are worked out.
 --
--- `is_official` is the absence of an owner. `is_mine` is what the list tabs
--- split on, and it is computed here so no screen has to hold the session's user
--- id next to a row to know whether it may edit it.
+-- `is_official` is the absence of an owner. `is_mine` is what the list tabs split
+-- on, and it is computed here so no screen has to hold the session's user id next
+-- to a row to know whether it may edit it.
 -- ---------------------------------------------------------------------------
 create view public.recipe_details with (security_invoker = on) as
 select
@@ -114,16 +113,16 @@ grant select on public.recipe_details to authenticated, service_role;
 -- Asking for a recipe to be published, and taking it back.
 --
 -- A function rather than an update, because `is_public` and `review_status` are
--- not in the client's column grant — see the header in 22_recipes.sql. What
--- this can do is put a recipe in front of a reviewer; what it cannot do, at
--- all, is approve one. Every publish starts at `pending`, including the second
--- publish of a recipe that was approved and then edited, which is the case that
--- makes the reset matter: an approved recipe rewritten into something else
--- would otherwise stay approved on the strength of a review of the old text.
+-- not in the client's column grant. What this can do is put a recipe in front of
+-- a reviewer; what it cannot do at all is approve one. Every publish starts at
+-- `pending`, including the second publish of a recipe that was approved and then
+-- edited, which is the case that makes the reset matter: an approved recipe
+-- rewritten into something else would otherwise stay approved on the strength of
+-- a review of the old text.
 --
--- Unpublishing leaves the verdict where it was. It is a fact about the text,
--- and re-publishing unchanged text does not need a second opinion — but it gets
--- one anyway, because the app cannot tell "unchanged" from "changed back".
+-- Unpublishing leaves the verdict where it was. It is a fact about the text, and
+-- re-publishing unchanged text does not need a second opinion, but it gets one
+-- anyway, because the app cannot tell "unchanged" from "changed back".
 -- ---------------------------------------------------------------------------
 create or replace function public.set_recipe_public(
   p_recipe_id uuid,
@@ -172,18 +171,17 @@ grant execute on function public.set_recipe_public to authenticated, service_rol
 -- ---------------------------------------------------------------------------
 -- Saving somebody else's recipe as your own.
 --
--- A COPY, not a reference. The whole promise of the community tab is "cook it
--- your way" — change the servings, drop an ingredient, rewrite the steps — and
--- a saved recipe that pointed back at the original would either forbid that or
--- let one person's edit rewrite everybody's diary. `source_recipe_id` keeps the
--- provenance that a reference would have given, at none of the cost.
+-- A copy, not a reference. The whole promise of the community tab is "cook it
+-- your way", and a saved recipe that pointed back at the original would either
+-- forbid that or let one person's edit rewrite everybody's diary.
+-- `source_recipe_id` keeps the provenance a reference would have given, at none
+-- of the cost.
 --
--- SECURITY DEFINER for one line of it: bumping `saved_count` on a row the
--- caller does not own and has no update grant on. Everything else here is
--- something the caller could have done itself, and the source is re-read
--- through the same visibility rule the client would have got — official, public
--- and approved, or already theirs — so this widens what can be done and not
--- what can be seen.
+-- Security definer for one line of it: bumping `saved_count` on a row the caller
+-- does not own and has no update grant on. Everything else here is something the
+-- caller could have done itself, and the source is re-read through the same
+-- visibility rule the client would have got, so this widens what can be done and
+-- not what can be seen.
 -- ---------------------------------------------------------------------------
 create or replace function public.save_recipe_copy(p_recipe_id uuid)
 returns uuid

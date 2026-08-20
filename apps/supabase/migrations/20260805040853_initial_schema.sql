@@ -2179,7 +2179,7 @@ create policy "weight_logs: delete own"
 -- All of them are readable and none of them is on a screen. A calorie diary
 -- that quietly hoovers a user's medical history because the permission was
 -- already granted is a different app; the permission list in
--- `src/features/activity/providers` is short on purpose and this schema is what
+-- `src/lib/health` is short on purpose and this schema is what
 -- holds it short.
 -- ---------------------------------------------------------------------------
 
@@ -2205,7 +2205,7 @@ create table public.health_connections (
   -- What the store actually said yes to, as the provider's own type names.
   -- Android grants per record type and a user can grant steps but not workouts;
   -- iOS will not even tell you a read was denied (see the note in
-  -- `providers/apple.ts`), so on that platform this is what we asked for.
+  -- `src/lib/health/apple.ts`), so on that platform this is what we asked for.
   -- Either way the Activity screen needs it to explain a missing tile rather
   -- than draw a zero.
   permissions    text[] not null default '{}',
@@ -4243,7 +4243,7 @@ comment on function public.import_foods is
 -- Grants are the outer gate, and this one writes the catalogue. `service_role`
 -- only — the same role the CSV loader sets before its COPY. The revoke is not
 -- redundant: a function is executable by PUBLIC on creation, and `db diff`
--- does not notice when it stays that way (see the note in CLAUDE.md).
+-- does not notice when it stays that way (see the note in README.md).
 revoke execute on function public.import_foods from public, anon, authenticated;
 grant execute on function public.import_foods to service_role;
 

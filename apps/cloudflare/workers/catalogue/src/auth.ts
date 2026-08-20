@@ -4,30 +4,29 @@
  * There are two kinds of caller and they are authenticated completely
  * differently, which is the whole point of this file.
  *
- * A SUPABASE EDGE FUNCTION carries a shared secret. It is our own server, it
+ * A Supabase edge function carries a shared secret. It is our own server, it
  * needs every route including the write, and a constant-time compare is the end
- * of it (see `tokenMatches` in `index.ts`).
+ * of it.
  *
- * THE APP ITSELF carries the signed-in user's Supabase JWT, and it reads the
- * catalogue directly. That used to be impossible: the only credential this
- * Worker understood was the shared secret, and a secret shipped in a phone is
- * not a secret — so every search went phone → Supabase edge function → here,
- * which is a detour to Singapore and back for a query that takes D1 about two
+ * The app itself carries the signed-in user's Supabase JWT and reads the
+ * catalogue directly. That used to be impossible: the only credential this Worker
+ * understood was the shared secret, and a secret shipped in a phone is not a
+ * secret, so every search went phone to Supabase edge function to here, which is
+ * a detour to Singapore and back for a query that takes D1 about two
  * milliseconds.
  *
- * WHAT MAKES IT POSSIBLE NOW is that the project signs its tokens
- * ASYMMETRICALLY. Supabase publishes an ES256 public key at
+ * What makes it possible now is that the project signs its tokens
+ * asymmetrically. Supabase publishes an ES256 public key at
  * `/auth/v1/.well-known/jwks.json`, so this Worker can check a user's signature
  * while holding nothing that could forge one. On the legacy HS256 setup the
  * verifying key and the signing key are the same string, and putting that here
- * would mean a Worker that can mint a token for any user in the project — this
- * would have been the wrong idea entirely.
+ * would mean a Worker that can mint a token for any user in the project.
  *
- * WHAT THIS DOES NOT DO is ask Supabase whether the user still exists. A
+ * What this does not do is ask Supabase whether the user still exists. A
  * signature is checked locally, so a token stays good until it expires even if
  * the account was deleted a minute ago. That is the trade for the round trip we
- * just removed, and it is why only the READ routes accept one: the worst a
- * stale token buys is a minute of reading a public food catalogue.
+ * just removed, and it is why only the read routes accept one: the worst a stale
+ * token buys is a minute of reading a public food catalogue.
  */
 
 /** The claims worth reading off a verified token. */
@@ -49,12 +48,11 @@ const JWKS_TTL_MS = 10 * 60_000
 /**
  * The floor on refetching after an unknown `kid`.
  *
- * A rotation publishes a new key id, and the cached set will not have it — so
- * an unknown kid is a reason to look again rather than to reject. Left
- * unbounded that is also a free way to make this Worker hammer Supabase Auth:
- * send a token with a made-up kid, get a fetch, repeat. So an unknown kid may
- * force a refetch at most this often, and outside that window it is simply a
- * token we cannot verify.
+ * A rotation publishes a new key id, and the cached set will not have it, so an
+ * unknown kid is a reason to look again rather than to reject. Left unbounded
+ * that is also a free way to make this Worker hammer Supabase Auth: send a token
+ * with a made-up kid, get a fetch, repeat. So an unknown kid may force a refetch
+ * at most this often.
  */
 const REFETCH_FLOOR_MS = 30_000
 let lastFetchAttempt = 0
@@ -110,11 +108,10 @@ async function keys(supabaseUrl: string, force: boolean): Promise<Jwk[]> {
 /**
  * A verified user, or null.
  *
- * Null covers every way this can fail — no header, a malformed token, an
- * algorithm we do not accept, a bad signature, an expired or misaddressed
- * token. The caller answers all of them with the same 401, because telling an
- * unauthenticated caller WHICH part of their token we disliked is help they
- * have not earned.
+ * Null covers every way this can fail: no header, a malformed token, an algorithm
+ * we do not accept, a bad signature, an expired or misaddressed token. The caller
+ * answers all of them with the same 401, because telling an unauthenticated
+ * caller which part of their token we disliked is help they have not earned.
  */
 export async function verifyUser(token: string, supabaseUrl: string): Promise<User | null> {
   const parts = token.split('.')
@@ -126,13 +123,13 @@ export async function verifyUser(token: string, supabaseUrl: string): Promise<Us
   if (!header || !payload) return null
 
   /**
-   * ES256 AND NOTHING ELSE, checked before a key is chosen.
+   * ES256 and nothing else, checked before a key is chosen.
    *
-   * This is the line that matters most in the file. `alg` comes out of the
-   * token, which is to say out of the caller — so a verifier that trusts it
-   * accepts `{"alg":"none"}` with no signature at all, and accepts HS256 with
-   * the public key used as an HMAC secret, which is a public string. Both are
-   * the classic JWT forgeries and both are one missing check away.
+   * This is the line that matters most in the file. `alg` comes out of the token,
+   * which is to say out of the caller, so a verifier that trusts it accepts
+   * `{"alg":"none"}` with no signature at all, and accepts HS256 with the public
+   * key used as an HMAC secret, which is a public string. Both are the classic JWT
+   * forgeries and both are one missing check away.
    */
   if (header.alg !== 'ES256') return null
 

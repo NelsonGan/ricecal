@@ -1,14 +1,12 @@
 /**
  * Every query key in the app.
  *
- * One file so that a mutation invalidating "the day" cannot spell it a
- * different way from the query that reads it — the failure mode there is a
- * screen that silently does not refresh, which looks like a caching bug and is
- * really a typo.
+ * One file, so a mutation invalidating "the day" cannot spell it differently
+ * from the query that reads it. That mistake shows up as a screen that
+ * silently does not refresh, which looks like a caching bug and is a typo.
  *
- * Keys are user-scoped even though RLS already scopes the data. The cache is
- * cleared on sign-in and sign-out, but a key that names its user is also a key
- * that cannot be read by the wrong account if that clearing ever regresses.
+ * Keys are scoped to the user even though RLS already scopes the data, so
+ * the wrong account cannot read them if the sign-out cache clear regresses.
  */
 export const keys = {
   profile: (userId: string) => ['profile', userId] as const,
@@ -17,40 +15,33 @@ export const keys = {
   goals: (userId: string) => ['goals', userId] as const,
   subscription: (userId: string) => ['subscription', userId] as const,
   /**
-   * What the STORE says, as against what our own mirror of it says.
+   * What the store says, as against what our own mirror says.
    *
-   * A SECOND KEY rather than a field on the one above, because the two answer
-   * at different times and from different places: this one is the RevenueCat
-   * SDK's cached reading of the receipt, available the instant a purchase
-   * settles, and `subscription` is the row a webhook writes some seconds later.
-   * `useEntitlement` reads both. See `StoreEntitlement`.
-   *
-   * Keyed by user like everything else, even though the SDK holds exactly one
-   * customer at a time: an account switch clears the cache anyway, and a key
-   * that names its user cannot serve the previous one if that ever regresses.
+   * A second key rather than a field on the one above, because the two answer
+   * at different times: this is the RevenueCat SDK's cached receipt, ready the
+   * instant a purchase settles, and `subscription` is the row a webhook writes
+   * some seconds later. `useEntitlement` reads both.
    */
   storeEntitlement: (userId: string) => ['store-entitlement', userId] as const,
   /**
-   * Every account's store answer, for the one reader that has no session to ask
-   * with — see `storeSaysPaid` in `data/refusals.ts`. There is only ever one
-   * entry under it, since the cache is cleared on an account change.
+   * Every account's store answer, for the one reader with no session to ask
+   * with (`storeSaysPaid` in `data/refusals.ts`). Only ever one entry, since
+   * the cache is cleared on an account change.
    */
   storeEntitlementAll: () => ['store-entitlement'] as const,
   /**
    * How many of today's scans are left.
    *
-   * Keyed by user and not by date. The date it is about is the USER's own, and
-   * only the server knows which one that is — a key carrying the phone's idea
-   * of today would go stale at the wrong midnight for anybody who has flown
-   * anywhere. Every scan invalidates it, and so does a foreground.
+   * Keyed by user and not by date. The date is the user's own and only the
+   * server knows which one that is, so a key carrying the phone's idea of today
+   * would go stale at the wrong midnight for anybody who has flown anywhere.
    */
   scanQuota: (userId: string) => ['scan-quota', userId] as const,
   /**
-   * What each plan costs, as the STORE reports it.
+   * What each plan costs, as the store reports it.
    *
-   * Not keyed by user: the price is a property of the device's storefront, not
-   * of who is signed in. Refetched rarely — a price change is a store-side
-   * event measured in days.
+   * Not keyed by user: the price belongs to the device's storefront, not to who
+   * is signed in. Refetched rarely, since a price change takes days.
    */
   planPrices: () => ['plan-prices'] as const,
 
@@ -58,31 +49,33 @@ export const keys = {
   /**
    * Every day of this account.
    *
-   * The prefix exists for the health sync, which is the one writer that changes
-   * a figure on a day it cannot name: a watch backfilling Tuesday moves
-   * Tuesday's budget, and the pass that wrote it has a window rather than a
-   * date on screen.
+   * The prefix exists for the health sync, the one writer that changes a figure
+   * on a day it cannot name: a watch backfilling Tuesday moves Tuesday's
+   * budget, and the pass that wrote it has a window rather than a date.
    */
   dayAll: (userId: string) => ['day', userId] as const,
-  /** Totals for a date range, for the charts and the weekly report. */
+  /**
+   * Totals for a date range, for the charts and the weekly report.
+   */
   nutrition: (userId: string, from: string, to: string) => ['nutrition', userId, from, to] as const,
-  /** One week of dots under the strip on Today: eaten, goal and movement per day. */
+  /**
+   * One week of dots under the strip on Today: eaten, goal and movement per day.
+   */
   dayMarks: (userId: string, from: string, to: string) => ['day-marks', userId, from, to] as const,
   /**
-   * Every week of them. What the write side wants: a logged meal moves one
-   * day's dot and a health sync moves seven, and neither mutation is in a
-   * position to know which week is on screen.
+   * Every week of them, which is what the write side wants. A logged meal moves
+   * one day's dot and a health sync moves seven, and neither mutation knows
+   * which week is on screen.
    */
   dayMarksAll: (userId: string) => ['day-marks', userId] as const,
   /**
    * The picture in each day's cell on the month calendar.
    *
-   * Its own key rather than a wider `day_marks`, because the two are asked for
-   * by different screens: the week strip wants the dots on every swipe and the
-   * calendar wants both, once a month. Under the same `day-marks` prefix all
-   * the same, so a logged meal invalidating "the dots" moves the picture with
-   * them — a meal that changes a day's verdict is usually the meal that changes
-   * its biggest plate.
+   * Its own key rather than a wider `day_marks`, because the week strip wants
+   * the dots on every swipe while the calendar wants both, once a month. Still
+   * under the `day-marks` prefix, so a logged meal invalidating the dots moves
+   * the picture too: a meal that changes a day's verdict is usually the meal
+   * that changes its biggest plate.
    */
   dayPlates: (userId: string, from: string, to: string) =>
     ['day-marks', userId, 'plates', from, to] as const,
@@ -91,10 +84,8 @@ export const keys = {
   /**
    * The parts of one scanned plate.
    *
-   * Keyed by entry rather than by user: an ingredient list is only ever asked
-   * for from the screen editing that one entry, and every write to it — a
-   * portion, a removal, a correction applied on the server — has the id in
-   * hand.
+   * Keyed by entry rather than by user. An ingredient list is only asked for
+   * from the screen editing that entry, and every write to it has the id.
    */
   entryIngredients: (entryId: string) => ['entry-ingredients', entryId] as const,
 
@@ -106,62 +97,63 @@ export const keys = {
    * with whatever is in the search field.
    *
    * The shelf is part of the key rather than a filter over one cached list,
-   * because the three are three different queries — different ordering,
-   * different visibility rule — and folding them together would mean a write to
-   * my own recipe invalidating the kitchen's.
+   * because the three are different queries with different ordering and
+   * visibility. Folded together, a write to my own recipe would invalidate the
+   * kitchen's.
    */
   recipes: (userId: string, shelf: string, query: string) =>
     ['recipes', userId, shelf, query] as const,
   /**
    * The prefix of all of them, which is what the write side wants. Publishing a
-   * recipe moves it off my shelf and onto the community's, and saving a copy
-   * moves one the other way — neither mutation knows which shelf or which
-   * search is on screen.
+   * recipe moves it off my shelf onto the community's and saving a copy moves
+   * one the other way, and neither mutation knows which shelf is on screen.
    */
   recipesAll: (userId: string) => ['recipes', userId] as const,
   /**
    * How many recipes this account owns, which is the free tier's ceiling.
    *
-   * Under the same prefix as the shelves ON PURPOSE: every write that could
+   * Under the same prefix as the shelves on purpose: every write that could
    * change the count already invalidates `recipesAll`, so a new recipe, a
-   * deleted one and a saved copy all move this without any of them being told
-   * about it. Keyed with a literal segment rather than a shelf name, which no
-   * shelf can collide with.
+   * deleted one and a saved copy all move this without being told. The literal
+   * segment cannot collide with a shelf name.
    */
   recipeCount: (userId: string) => ['recipes', userId, 'count'] as const,
-  /** One recipe. Keyed by id alone: only ever asked for by id. */
+  /**
+   * One recipe. Keyed by id alone, since it is only ever asked for by id.
+   */
   recipe: (id: string) => ['recipe', id] as const,
   recipeIngredients: (recipeId: string) => ['recipe-ingredients', recipeId] as const,
 
   weighIns: (userId: string) => ['weigh-ins', userId] as const,
 
-  /** The chart columns for one range of the Trends screen. */
+  /**
+   * The chart columns for one range of the Trends screen.
+   */
   trendSeries: (userId: string, range: string) => ['trends', userId, range, 'series'] as const,
-  /** The same range folded to one row: the metric tiles and the footnotes. */
+  /**
+   * The same range folded to one row: the metric tiles and the footnotes.
+   */
   trendSummary: (userId: string, range: string) => ['trends', userId, range, 'summary'] as const,
   /**
-   * The prefix of both, across all three ranges — which is what the write side
+   * The prefix of both, across all three ranges, which is what the write side
    * wants. A logged meal, a glass of water and a weigh-in each move a number on
-   * every range, and no mutation is in a position to know which one is on
-   * screen.
+   * every range, and no mutation knows which one is on screen.
    */
   trendsAll: (userId: string) => ['trends', userId] as const,
 
   /**
-   * Reviews. The list of finished weeks or months, and the three reads one
+   * Reviews: the list of finished weeks or months, and the three reads one
    * story makes of a single period.
    *
-   * `reviewPeriods` is shared deliberately: Trends asks it whether there is
+   * `reviewPeriods` is shared deliberately. Trends asks it whether there is
    * anything to review, the list draws from it, and a story reads the same rows
-   * as its comparison chart. Three screens, one entry.
+   * as its comparison chart.
    *
-   * There is NO `reviewsAll`, unlike every other area in this file, and that is
-   * a decision rather than an omission. A review is of a period that has ENDED,
-   * so nothing logged today can move one. The only write that can is a meal
-   * backdated into a finished week, and the default thirty-second stale time
-   * already covers it — the review refetches the next time it is opened. A
-   * prefix here would mean a line in a dozen mutations for a case that repairs
-   * itself.
+   * There is no `reviewsAll`, unlike every other area here, and that is a
+   * decision. A review covers a period that has ended, so nothing logged today
+   * can move one. The only write that can is a meal backdated into a finished
+   * week, and the thirty-second stale time already covers it. A prefix would
+   * mean a line in a dozen mutations for a case that repairs itself.
    */
   reviewPeriods: (userId: string, kind: string) => ['reviews', userId, kind, 'periods'] as const,
   reviewSummary: (userId: string, kind: string, start: string) =>
@@ -172,11 +164,11 @@ export const keys = {
     ['reviews', userId, kind, start, 'meals'] as const,
 
   /**
-   * Movement. The same series/summary pair as Trends, plus the two lists the
-   * Activity tab needs — a day's sessions, and a day's hours.
+   * Movement: the same series and summary pair as Trends, plus the two lists
+   * the Activity tab needs, a day's sessions and a day's hours.
    *
    * `activitySessions` takes a nullable date because one query serves both the
-   * day's list and the whole history; the null is part of the key so the two
+   * day's list and the whole history. The null is part of the key so the two
    * cannot overwrite each other.
    */
   activityDay: (userId: string, date: string) => ['activity', userId, 'day', date] as const,
@@ -187,12 +179,14 @@ export const keys = {
   activitySummary: (userId: string, range: string) =>
     ['activity', userId, range, 'summary'] as const,
   /**
-   * The prefix of all of the above. What the sync invalidates: one pass moves
-   * a day, a chart column, a summary tile and possibly a session list, and it
-   * is in no position to know which range or which date is on screen.
+   * The prefix of all of the above, and what the sync invalidates. One pass
+   * moves a day, a chart column, a summary tile and possibly a session list,
+   * and it does not know which range or date is on screen.
    */
   activityAll: (userId: string) => ['activity', userId] as const,
-  /** Keyed by session rather than by user: only ever asked for by id. */
+  /**
+   * Keyed by session rather than by user, since it is only asked for by id.
+   */
   activitySession: (id: string) => ['activity-session', id] as const,
   healthConnection: (userId: string) => ['health-connection', userId] as const,
 

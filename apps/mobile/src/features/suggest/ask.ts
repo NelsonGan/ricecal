@@ -21,14 +21,6 @@ export const FOCUSES: readonly Focus[] = ['protein', 'balanced', 'carbs']
  * The kitchens a new account starts with, and nothing more than a starting
  * point.
  *
- * It was a HARDCODED FOUR — malay, mamak, chinese, others — chosen as the ones
- * a Malaysian eater picks between, on the reasoning that a list read from the
- * catalogue would be a list of whatever happened to be imported. That reasoning
- * still holds against reading it from the catalogue and does not hold against
- * letting somebody type their own: a fixed list is a list that cannot say Thai,
- * Japanese, or the Nyonya cooking somebody grew up on, and the model has never
- * needed to be told about a cuisine in advance.
- *
  * So these three are a DEFAULT the user edits, kept as the words that go on
  * screen rather than as keys — see `preferences.ts` for where the edited list
  * lives, and `cuisinePhrase` on the server for the four that still carry

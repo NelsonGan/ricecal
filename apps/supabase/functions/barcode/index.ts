@@ -13,7 +13,7 @@
 // rather than returning loose macros: `food_logs.food_id` is not null, and a
 // diary that cannot reference what it logged has nowhere to put it.
 //
-// No client writes the catalogue — see the invariant in CLAUDE.md — which is
+// No client writes the catalogue — see the invariant in README.md — which is
 // why a lookup the client could have done itself is a function at all. The
 // client could fetch openfoodfacts.org directly; it could not turn the answer
 // into a row.

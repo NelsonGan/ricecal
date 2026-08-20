@@ -28,10 +28,9 @@ export const logging = {
     /**
      * Under the ring when a health store credited movement.
      *
-     * Present so the goal reading higher than the one in Settings is explained
-     * where it is noticed. "+360 from moving" and not "360 burned": the plus
-     * sign is the whole message, and this feature's one invariant is that
-     * movement adds.
+     * Present so the goal reading higher than the one in Settings is explained where
+     * it is noticed. "+360 from moving" and not "360 burned": the plus sign is the
+     * whole message, and this feature's one invariant is that movement adds.
      */
     burnedNote: '+{{kcal}} from moving today',
     /** The same line about a day the strip went back to. */
@@ -168,11 +167,9 @@ export const logging = {
     /**
      * What a free account has left today, under the viewfinder.
      *
-     * Plural because the last one is the one that matters: "1 scan left today"
-     * is the line somebody reads before deciding whether to spend it, and "1
-     * scans" would undermine the only sentence on this screen that is asking
-     * for a decision. Zero reads as none rather than as a number, since by then
-     * the sentence is about tomorrow.
+     * Plural because the last one is the one that matters: "1 scan left today" is the
+     * line somebody reads before deciding whether to spend it. Zero reads as none
+     * rather than as a number, since by then the sentence is about tomorrow.
      */
     scansLeft_zero: 'No scans left today. They come back tomorrow.',
     scansLeft_one: '{{count}} scan left today',
@@ -182,16 +179,14 @@ export const logging = {
   /**
    * The barcode scanner, and the page a scan lands on.
    *
-   * The viewfinder itself now says one thing and only one: point the camera. It
-   * used to carry four lines under the window — aiming, looking up, we do not
-   * know this packet, something went wrong — because the lookup happened there
-   * and the user watched it. A scan leaves the sheet the moment a code is read,
-   * so three of those four belong to the page it leaves for.
+   * The viewfinder says one thing and only one: point the camera. It used to carry
+   * four lines under the window, because the lookup happened there and the user
+   * watched it. A scan leaves the sheet the moment a code is read, so three of those
+   * four belong to the page it leaves for.
    *
-   * "We do not have this one yet" rather than "not found": the packet exists,
-   * it is in the user's hand, and OUR RECORD of it is what is missing. The
-   * difference matters because the next thing offered is Describe rather than
-   * an apology.
+   * "We do not have this one yet" rather than "not found": the packet exists, it is
+   * in the user's hand, and our record of it is what is missing. The difference
+   * matters because the next thing offered is Describe rather than an apology.
    */
   barcode: {
     permissionTitle: 'Let RiceCal use the camera',
@@ -298,13 +293,7 @@ export const logging = {
      */
     times: '× {{amount}}',
     /**
-     * WHAT A PART WEIGHS, in brackets after its name.
-     *
-     * The weight is the one thing about a part somebody can check against the
-     * plate in front of them, and it used to sit on a second line behind a
-     * multiplier — "× 0.75 · 165 g" — which put the number nobody can act on
-     * first. The multiplier is an implementation detail of how the row stores an
-     * amount; 165 g is the amount.
+     * What a part weighs, in brackets after its name.
      */
     grams: '({{grams}} g)',
     /** The same for a part nobody weighed, where the count is all there is. */
@@ -319,13 +308,12 @@ export const logging = {
     moreOf: 'More {{name}}',
     removeOf: 'Remove {{name}}',
     /**
-     * Typing a number in by hand, for the dish the app got close but not right
-     * — off a packet, off a recipe, off the kitchen scale.
+     * Typing a number in by hand, for the dish the app got close but not right: off a
+     * packet, off a recipe, off the kitchen scale.
      *
-     * Each figure is edited where it is read: the number becomes a field in
-     * place, so this labels a control rather than heading a form. The three
-     * macros need no label of their own — the bar beside each one already
-     * carries its name.
+     * All four figures are edited together, in `NutritionSheet`, so this labels a
+     * form rather than one control. The three macros need no label of their own,
+     * because the bar beside each one already carries its name.
      */
     editKcal: 'Calories',
     /**
@@ -347,10 +335,10 @@ export const logging = {
     /** On the card, when at least one figure was typed. See the reset link. */
     yourFigures: 'Your own figures, not the app’s.',
     /**
-     * The two field labels in the details sheet, and they are ONE WORD each.
-     * "What to call this" and "When you ate it" were sentences where a label was
-     * wanted: a field with a value in it and a heading over it does not need the
-     * heading to also explain the field.
+     * The two field labels in the details sheet, and they are one word each. "What to
+     * call this" and "When you ate it" were sentences where a label was wanted: a
+     * field with a value in it and a heading over it does not need the heading to
+     * also explain the field.
      *
      * Renaming one logged entry writes `display_label`, so it does not rename the
      * dish for anyone else who logged it.
@@ -514,9 +502,9 @@ export const logging = {
      * The sheet behind Add, and what is left of the goal beside its heading.
      *
      * "left" rather than "to go", and clamped at zero rather than swapped for a
-     * congratulation, because the sheet this one is a sibling of writes
-     * "1,460 kcal left" in the same corner. Two ways of saying the same thing
-     * in two sheets opened by two buttons on one screen is one too many.
+     * congratulation, because the sheet this one is a sibling of writes "1,460 kcal
+     * left" in the same corner. Two ways of saying the same thing in two sheets
+     * opened by two buttons on one screen is one too many.
      */
     addTitle: 'Add water',
     left: '{{amount}} ml left',

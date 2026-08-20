@@ -10,12 +10,6 @@
  * user's own timezone. `time` and not `timestamptz` on purpose: "breakfast is
  * at eight" is a rule about the user's clock, and it stays true when they fly
  * somewhere else.
- *
- * `isQuiet` used to live here, deciding whether a reminder fell inside a
- * do-not-disturb window. Nothing calls it: the filter silently dropped
- * reminders the user had explicitly asked for — a meal at 22:30 was scheduled,
- * skipped, and never explained — against a window that was not editable
- * anywhere in the app.
  */
 
 /** "08:00:00" → { hour: 8, minute: 0 }. Postgres `time` includes seconds. */

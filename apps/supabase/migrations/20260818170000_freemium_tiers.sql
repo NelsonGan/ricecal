@@ -363,7 +363,7 @@ grant execute on function public.free_photo_retention_days to authenticated, ser
 -- thirty days, all deleted at once, unrecoverable. The ugliest version of it is
 -- the one where the user has done nothing at all: a renewal webhook lost past
 -- RevenueCat's retries leaves a paying account reading as expired, which
--- CLAUDE.md records as having actually happened.
+-- README.md records as having actually happened.
 --
 -- So the window is bounded at BOTH ends: a photograph is swept only if it was
 -- logged AFTER the last paid period ended, which is what "they age out from

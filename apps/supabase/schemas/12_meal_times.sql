@@ -3,9 +3,9 @@
 --
 -- Four columns on `user_settings` would have been fewer moving parts, but the
 -- reminder scheduler's query is "give me every user whose lunch reminder is on
--- and whose lunch time is now", and that wants rows, not columns. It is also
--- the shape that survives a fifth meal (supper is a real meal here) without a
--- migration to every query that mentions the four.
+-- and whose lunch time is now", and that wants rows rather than columns. It is
+-- also the shape that survives a fifth meal without a migration to every query
+-- that mentions the four.
 -- ---------------------------------------------------------------------------
 
 create table public.meal_times (

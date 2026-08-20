@@ -19,59 +19,29 @@ import type {
 } from './types'
 
 /**
- * Health Connect: the Android path, and by 2026 the only Android path.
+ * Health Connect: the Android path, and by 2026 the only Android path. Google Fit
+ * stopped taking new developers in May 2024 and is switched off through late
+ * 2026, so everything a phone knows about movement reaches us through this one
+ * API.
  *
- * Google Fit's REST and Android APIs stopped taking new developers in May 2024
- * and are switched off through late 2026, with no automatic data migration.
- * Health Connect replaced them, and since Android 14 it is part of the
- * framework rather than an app you install. Everything a user's phone knows
- * about their movement — Samsung Health, Fitbit, Garmin Connect, Strava, Mi Fit
- * — reaches us through it, which is why this file talks to one API and the
- * connect screen talks about several apps.
+ * It is an aggregator, so what it holds depends on what wrote to it: no stand
+ * hours at all, heart rate at whatever resolution the writer chose, and hourly
+ * steps only if the writer recorded short segments. None of that is an error
+ * state, and the screens report it rather than hiding it behind zeros.
  *
- * WHAT IS RELIABLY MISSING HERE, AND WHY THAT IS THE DESIGN
+ * Two things this file refuses to take at face value, both learnt from a Samsung
+ * user whose diary disagreed with the app on their own phone:
  *
- * Health Connect is an aggregator, so what it holds depends entirely on what
- * wrote to it:
+ *   1. A sum across every app that wrote. Health Connect dedupes by a priority
+ *      list the user owns and can empty, so the same walk can arrive twice.
+ *      `aggregated` picks one origin and filters to it.
+ *   2. A zero. The native bridge reads a missing metric as `0.0`, so "nothing
+ *      wrote this" and "the user burned nothing" are the same number.
+ *      `dataOrigins` tells them apart.
  *
- *   * No stand hours. There is no such record type. Apple's Stand ring has no
- *     equivalent and the Activity screen shows steps in its place.
- *   * Heart rate at whatever resolution the writer chose. A watch writes a
- *     sample a second and gives real zones; Strava writes one average per
- *     session and gives none. `hr_zones` is null for the second, which is
- *     exactly the N4 screen in the design.
- *   * Hourly steps only if the writer recorded short segments. Samsung Health
- *     writes one record for the whole day, so `readHours` returns nothing for
- *     it rather than a flat carpet — see `informativeHours`.
- *
- * None of that is an error state. It is the shape of the platform, and the
- * screens are written to report it rather than to hide it behind zeros.
- *
- * TWO THINGS THIS FILE NOW REFUSES TO TAKE AT FACE VALUE, both learnt from a
- * Samsung user whose diary disagreed with the app on their own phone.
- *
- * 1. A SUM ACROSS EVERY APP THAT WROTE. Health Connect dedupes Activity by a
- *    priority list the user owns and can empty, so the same walk can arrive
- *    twice from two sources and be counted twice. `aggregated` picks one origin
- *    and filters to it — see `connectOrigins.ts` for the whole argument.
- *
- * 2. A ZERO. The native bridge reads a missing metric out of an aggregate as
- *    `0.0`, so "nothing wrote active energy on this phone" and "this user
- *    burned nothing" are the same number coming back. `dataOrigins` is what
- *    tells them apart, and `hasOrigins` is the one place that check lives.
- *    Believing the zero is what filed a Samsung user's entire daily burn as
- *    RESTING — active came back 0, resting is total minus active, and two hours
- *    of badminton went into the column the budget never reads.
- *
- * ENERGY IS THE PART WHERE PROVIDERS DIFFER MOST, so it is worth naming the
- * split this file works around. `ActiveCaloriesBurned` is the figure the budget
- * wants and plenty of sources never write it: Samsung Health writes
- * `TotalCaloriesBurned` and nothing else, Garmin writes both, and a phone with
- * only its own pedometer writes neither. `energyFor` is the ladder that comes
- * out of that — measured active first, then total minus a basal, then nothing
- * at all, which is a real answer and not a zero.
- *
- * The `require` is lazy for the same reason as `apple.ts` — see the note there.
+ * `ActiveCaloriesBurned` is the figure the budget wants and plenty of sources
+ * never write it, so `energyFor` is a ladder. The `require` is lazy for the same
+ * reason as `apple.ts`.
  */
 
 type ConnectModule = typeof import('react-native-health-connect')
@@ -113,41 +83,20 @@ const between = (from: LocalDate, to: LocalDate) =>
 type Bucket = { result: Record<string, unknown>; startTime: string }
 
 /**
- * Whether anything actually WROTE the data behind an aggregate bucket.
+ * Whether anything actually wrote the data behind an aggregate bucket.
  *
- * The one guard that keeps this file honest, and it exists because the native
- * bridge reads a missing metric as zero:
+ * The native bridge reads a missing metric as zero:
  *
  *     putDouble("COUNT_TOTAL", record[StepsRecord.COUNT_TOTAL]?.toDouble() ?: 0.0)
  *
- * So every bucket comes back with a number in it whether or not a single record
- * fell inside it, and a type nobody on the phone writes is indistinguishable
- * from a type everybody wrote a zero to. `dataOrigins` is the difference: it
- * lists the packages that contributed, and it is empty when none did.
+ * so a type nobody on the phone writes is indistinguishable from one everybody
+ * wrote a zero to. `dataOrigins` lists the packages that contributed, and it is
+ * empty when none did.
  *
- * AND THE NUMBER IS NOT ALWAYS ZERO, which is the part worth measuring rather
- * than reasoning about. Probed against a Health Connect with nothing at all in
- * it, on a Pixel API 36 emulator, eight daily buckets each:
- *
- *     Steps                { dataOrigins: [], COUNT_TOTAL: 0 }
- *     ActiveCaloriesBurned { dataOrigins: [], ACTIVE_CALORIES_TOTAL: 0 kcal }
- *     Distance             { dataOrigins: [], DISTANCE: 0 m }
- *     TotalCaloriesBurned  { dataOrigins: [], ENERGY_TOTAL: 1564.5 kcal }
- *     BasalMetabolicRate   { dataOrigins: [], BASAL_CALORIES_TOTAL: 1564.5 kcal }
- *
- * The last two are the ones to remember: Health Connect DERIVES an energy
- * figure rather than declining to answer, so a store holding nothing reports
- * 1,564.5 kcal a day as confidently as a watch would. Nothing about the number
- * says it came from nowhere; only the empty `dataOrigins` does.
- *
- * Run the old code over that payload and it wrote eight rows of `active_kcal
- * 0, resting_kcal 1565, distance_m 0` for a phone that had never recorded a
- * step — which is the shape the Samsung account's rows were actually in. So
- * the constant "resting" figure in a user's diary is not necessarily their
- * store's basal at all; it can be this, and the same guard drops both.
- *
- * The project's rule that null is not zero in `activity_days` has always been
- * written down; this is what makes it true on Android.
+ * And the number is not always zero. Probed against an empty Health Connect on a
+ * Pixel API 36 emulator, `TotalCaloriesBurned` and `BasalMetabolicRate` both came
+ * back at 1,564.5 kcal a day with no origins at all: Health Connect derives an
+ * energy figure rather than declining to answer.
  */
 function hasOrigins(result: Record<string, unknown>): boolean {
   return Array.isArray(result.dataOrigins) && result.dataOrigins.length > 0
@@ -212,25 +161,15 @@ type Aggregated = {
 const nothing = (): Aggregated => ({ values: new Map(), origin: null })
 
 /**
- * An aggregate, read from ONE app rather than summed across all of them.
+ * An aggregate, read from one app rather than summed across all of them.
  *
- * Two calls in the case that needs two, and one in the case that does not. The
- * first is unfiltered and is what discovers who wrote — with a single origin,
- * which is most phones, its numbers are already the answer and nothing else
- * happens. Only a genuinely contested type pays for the second call.
+ * The first call is unfiltered and is what discovers who wrote; with a single
+ * origin, which is most phones, its numbers are already the answer.
  *
- * A FAILED SECOND CALL RETURNS NOTHING rather than the first call's totals, and
- * that direction is deliberate. The unfiltered numbers are the double count
- * this function exists to avoid, so falling back to them would answer a
- * transient failure by writing a figure known to be wrong. Returning nothing
- * writes no row for those days at all and leaves whatever the last good sync
- * stored — the incremental pass comes round again on the next foreground, and
- * stale is a better failure than wrong.
- *
- * A failure of the FIRST call is caught the same way and for the older reason:
- * one denied record type must not take the whole sync with it. A user who
- * granted steps but not workouts has a working Activity screen with an
- * explained gap, which is the N1 and N6 screens in the design.
+ * A failed second call returns nothing rather than the first call's totals. Those
+ * are the double count this function exists to avoid, so falling back to them
+ * would answer a transient failure with a figure known to be wrong. Stale is a
+ * better failure than wrong.
  */
 async function aggregated<T extends string>(
   hc: ConnectModule,
@@ -313,18 +252,13 @@ export const healthConnect: HealthProvider = {
       /**
        * And it carries record types we never asked for.
        *
-       * A permission covers a FAMILY of record classes, and the library answers
-       * in record types by reporting every class the granted permission
-       * implies. Granting the list here comes back longer than it went in:
-       * `READ_EXERCISE` drags in `CyclingPedalingCadence` and `READ_STEPS`
-       * drags in `StepsCadence`, neither of which this file reads. Observed on
-       * a Pixel API 36 emulator, not inferred — which is also why the count is
-       * not written down, since only the platform decides what a permission
-       * implies and it has no reason to tell us when that changes.
+       * A permission covers a family of record classes, so `READ_EXERCISE` drags in
+       * `CyclingPedalingCadence` and `READ_STEPS` drags in `StepsCadence`. Observed on
+       * a Pixel API 36 emulator rather than inferred, which is why the count is not
+       * written down.
        *
-       * They are dropped because this list is what `health_connections
-       * .permissions` stores and what the Activity screens explain a gap from,
-       * and a column claiming a reading the app never takes is a lie waiting
+       * They are dropped because this list is what `health_connections.permissions`
+       * stores, and a column claiming a reading the app never takes is a lie waiting
        * for somebody to build on it.
        */
       if (!isConnectReadType(permission.recordType)) continue
@@ -350,22 +284,15 @@ export const healthConnect: HealthProvider = {
       ),
       aggregated(hc, 'Distance', from, to, (r) => length(r.DISTANCE)),
       /**
-       * The one type where filtering to one origin can UNDERCOUNT, so the
-       * asymmetry with the session list below is worth naming.
+       * The one type where filtering to one origin can undercount.
        *
-       * Steps and energy describe the whole day, so two sources are two
-       * descriptions of the same thing and taking one is right. Exercise
-       * sessions are events, and two apps more often hold DIFFERENT ones — a
-       * Strava ride and a watch-recorded walk — than two copies of the same. So
-       * the filter costs minutes here where elsewhere it only removes
-       * duplicates.
+       * Steps and energy describe the whole day, so two sources are two descriptions of
+       * the same thing. Exercise sessions are events, and two apps more often hold
+       * different ones than two copies of the same.
        *
-       * It stays, for two reasons. It only engages when more than one app wrote
-       * sessions at all, which is exactly the population that can double count;
-       * and this figure feeds a tile, while `readWorkouts` below reads records
-       * UNFILTERED so no workout ever disappears from the list. A tile that
-       * undercounts is a smaller failure than a workout the user did that the
-       * app never shows them.
+       * It stays because it only engages when more than one app wrote sessions, which
+       * is exactly the population that can double count, and because this figure feeds
+       * a tile while `readWorkouts` reads records unfiltered.
        */
       aggregated(hc, 'ExerciseSession', from, to, (r) => {
         const duration = r.EXERCISE_DURATION_TOTAL as { inSeconds?: number } | undefined
@@ -434,27 +361,21 @@ export const healthConnect: HealthProvider = {
  * The day's energy, split into the half the budget reads and the half it must
  * not, out of whichever of three figures this phone actually has.
  *
- * A LADDER, because providers disagree about which of them they write:
+ *   active measured      Garmin and anything with a real tracker. Resting is
+ *                        total minus active, the store's own arithmetic.
+ *   total measured only  Samsung Health. Total is basal plus movement, so it has
+ *                        to be split before any of it reaches a budget that is
+ *                        already Mifflin-St Jeor. Subtract the store's own basal
+ *                        when it wrote one, else the profile's.
+ *   neither              Null. Not zero.
  *
- *   active measured        Garmin, and anything with a real activity tracker.
- *                          Resting is then total minus active — the store's own
- *                          arithmetic, not ours.
- *   total measured only    Samsung Health. Total is basal PLUS movement, so it
- *                          has to be split before any of it reaches a budget
- *                          that is already a Mifflin-St Jeor figure. Subtract
- *                          the basal: the store's own `BasalMetabolicRate` when
- *                          it wrote one, else the profile's.
- *   neither                Null. Not zero — see the header.
+ * The middle rung is the point. Without it a Samsung user's active energy is zero
+ * every day, so movement never extends their budget and their whole daily burn
+ * lands in `resting_kcal`: two hours of badminton showed as 0 kcal on the session
+ * and 2,524 kcal of "resting" on the day.
  *
- * THE MIDDLE RUNG IS THE WHOLE POINT OF THIS FUNCTION. Without it a Samsung
- * user's active energy is zero every day, so movement never extends their
- * budget, and their entire daily burn lands in `resting_kcal` where nothing
- * reads it. Two hours of badminton showed as 0 kcal on the session and 2,524
- * kcal of "resting" on the day.
- *
- * The subtraction is clamped at zero rather than allowed to go negative, and
- * the resting half is capped at the total, so a basal estimate that overshoots
- * a quiet day reports no movement instead of negative movement.
+ * The subtraction is clamped at zero and the resting half capped at the total, so
+ * an overshooting basal estimate reports no movement rather than negative.
  */
 export function energyFor(input: {
   active: number | undefined
@@ -495,22 +416,14 @@ export function energyFor(input: {
 /**
  * Weigh-ins, and the body fat recorded alongside them.
  *
- * Records rather than an aggregate, which is the opposite of every other read in
- * this file. `Weight` does have a `WEIGHT_AVG`/`WEIGHT_MIN`/`WEIGHT_MAX`
- * aggregate, and none of the three is the number wanted: a day's weight is its
- * LAST reading, the same rule `weight_logs` has always applied to somebody
- * weighing themselves twice before breakfast. The dedup-across-sources argument
- * that makes an aggregate mandatory for steps does not apply to a quantity
- * nobody adds up — two apps reporting the same weigh-in is one value repeated,
- * not one value doubled.
+ * Records rather than an aggregate, which is the opposite of every other read
+ * here. A day's weight is its last reading, and none of `WEIGHT_AVG`/`MIN`/`MAX`
+ * is that. The dedup argument that makes an aggregate mandatory for steps does
+ * not apply to a quantity nobody adds up.
  *
- * Keyed off the WEIGHT: a day with body fat and no weight is skipped, because
- * `weight_logs.weight_kg` is not null and there is no honest row to write.
- *
- * Both reads are wrapped separately, so a user who granted weight but declined
- * body measurements still gets their weigh-ins — and either failing costs the
- * caller nothing else, since this runs beside the reads that fill the Activity
- * tab.
+ * Keyed off the weight, since `weight_logs.weight_kg` is not null. Both reads are
+ * wrapped separately, so a user who granted weight but declined body measurements
+ * still gets their weigh-ins.
  */
 async function readWeights(
   hc: ConnectModule,
@@ -620,22 +533,15 @@ async function readWorkouts(
 }
 
 /**
- * A session's calories, which are NOT on the session record.
+ * A session's calories, which are not on the session record.
  *
  * Health Connect models energy as its own record type over a time range, so the
- * cost of a workout is an aggregate over the workout's window. That window can
- * legitimately hold energy the session did not cause — a walk that overlapped
- * the end of a gym session — and the number is still the best available answer,
- * because the alternative is showing no calories at all for every Android
- * workout.
+ * cost of a workout is an aggregate over its window. That window can hold energy
+ * the session did not cause, and it is still the best available answer.
  *
- * The same ladder as `energyFor`, for the same reason and with one extra step.
- * Asked for active energy alone, a Samsung Health session came back at zero
- * against the 1,210 kcal Samsung's own screen showed for it, because Samsung
- * writes total and not active. Falling through to the total means subtracting
- * the basal the body would have spent lying still for those two hours — hence
- * the proration, which is the only part of this that a day-long window does not
- * need.
+ * The same ladder as `energyFor`, plus a proration: falling through to the total
+ * means subtracting the basal the body would have spent lying still for those
+ * hours, which a day-long window does not need.
  */
 async function sessionEnergy(
   hc: ConnectModule,
@@ -718,16 +624,11 @@ async function readHeartRate(
 /**
  * Steps by hour, for the days that genuinely have an hourly shape.
  *
- * `aggregateGroupByDuration` with an hour slice, filtered to the app the day
- * totals came from. What comes back depends on how that source recorded, and
- * the two cases look nothing alike: a watch writing per-minute segments fills
- * the hours it moved in, while Samsung Health writes ONE record spanning the
- * whole calendar day.
- *
- * Health Connect apportions a record across the buckets it overlaps, so that
- * one record does not land in one bucket — it lands in all 24, divided by 24.
- * The chart drawn off it is a flat carpet claiming the user took 117 steps at
- * three in the morning, every morning. `informativeHours` is what drops it.
+ * A watch writing per-minute segments fills the hours it moved in; Samsung Health
+ * writes one record spanning the whole calendar day. Health Connect apportions a
+ * record across the buckets it overlaps, so that one lands in all 24 divided by
+ * 24, and the chart is a flat carpet claiming 117 steps at three in the morning.
+ * `informativeHours` drops it.
  */
 async function readHours(
   hc: ConnectModule,
@@ -771,15 +672,10 @@ async function readHours(
  * Whether a day's hourly steps say anything the daily total does not.
  *
  * One record spread over a whole day arrives as 24 buckets holding the same
- * number, give or take the rounding of dividing by 24. There is no shape in
- * that — every hour is the mean — so drawing it invents a night of walking and
- * flattens the evening the user actually did.
+ * number, so drawing it invents a night of walking and flattens the evening.
  *
- * Both halves of the test matter. The SPREAD is what identifies an apportioned
- * record; the COUNT is what stops it firing on a real day that happens to be
- * flat, because somebody who took 30 steps in each of three hours took them,
- * and a day with only a few populated hours could not have come from a record
- * spanning all of them.
+ * Both halves of the test matter. The spread identifies an apportioned record;
+ * the count stops it firing on a real day that happens to be flat.
  */
 export function informativeHours(hours: readonly HourReading[]): boolean {
   if (hours.length < 12) return true

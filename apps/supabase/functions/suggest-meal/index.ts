@@ -61,14 +61,6 @@ const FOCUSES = new Set(['protein', 'balanced', 'carbs'])
  * The cuisine is NOT checked against a list, and there is no longer one to
  * check it against.
  *
- * It used to be a set of four, matching the four chips on the sheet. The chips
- * are gone: the list is the user's own, kept on their phone, and somebody who
- * wants Thai or Nyonya can type it. So all this end can do is bound the string
- * — which `cuisinePhrase` does, since it is the thing that puts the value into
- * a prompt — and refuse a value that is not a string at all. It reaches nothing
- * but one line of one model message, and an empty one is a request with no
- * constraint on the kitchen rather than a bad request.
- *
  * The bound is imported rather than restated. `cuisinePhrase` applies it again
  * on the way into the prompt, which is the one that matters; this one only
  * keeps an absurd body out of the rest of the function.

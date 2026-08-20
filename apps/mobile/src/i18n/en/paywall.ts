@@ -1,18 +1,20 @@
 export const paywall = {
   /**
-   * NO PRICES LIVE HERE, and that is the point.
+   * No prices live here, and that is the point.
    *
-   * They used to. It was wrong three ways at once: a Malaysian user read
-   * "$29.99" while being charged RM119.90, Apple and Play disagreed on the
-   * lifetime figure because Apple has no 119.90 price point for a one-time
-   * purchase, and every repricing needed an app release before the paywall
-   * stopped lying. Every price on screen now comes from `usePlanPrices`, which
-   * reads the store's own localised `priceString` through RevenueCat.
+   * They used to. It was wrong three ways at once: a Malaysian user read "$29.99"
+   * while being charged RM119.90, Apple and Play disagreed on the lifetime figure
+   * because Apple has no 119.90 price point for a one-time purchase, and every
+   * repricing needed an app release before the paywall stopped lying. Every price
+   * on screen now comes from `usePlanPrices`, which reads the store's own localised
+   * `priceString` through RevenueCat.
    *
-   * What is left here is the words around the number, and the interpolation
-   * slots those numbers drop into.
+   * What is left here is the words around the number, and the interpolation slots
+   * those numbers drop into.
+   *
+   * The line below is for offline, or a check that failed. Not the same as "you
+   * have not paid".
    */
-  /** Offline, or the check itself failed. Not the same as "you have not paid". */
   couldNotCheck: 'We could not check your subscription. Try again in a moment.',
 
   plans: {
@@ -49,11 +51,10 @@ export const paywall = {
     /**
      * The same reassurance for a plan with nothing to cancel.
      *
-     * Shown over the lifetime small print, which says "One payment. No
-     * subscription, no renewal." — so the shared line was promising the reader
-     * they could cancel a thing the sentence beneath it had just told them did
-     * not renew. What a one-off purchase actually offers instead is the store's
-     * own refund window, which is the true version of the same comfort.
+     * Shown over the lifetime small print, which says "One payment. No subscription,
+     * no renewal.", so the shared line was promising the reader they could cancel a
+     * thing the sentence beneath it had just told them did not renew. What a one-off
+     * purchase actually offers instead is the store's own refund window.
      */
     assuranceLifetime: 'One payment, refundable through the store',
     /**
@@ -84,39 +85,34 @@ export const paywall = {
   /**
    * The comparison table.
    *
-   * WRITTEN AS TWO ANSWERS PER LINE, never as one sentence with a "but" in it.
-   * A cell has room for about three words, and the discipline is what keeps the
-   * table honest: "3 a day" against "Unlimited" is a fact a reader can act on,
-   * where "limited scanning" against "unlimited scanning" is a sales line
-   * repeated twice.
+   * Written as two answers per line, never as one sentence with a "but" in it. A
+   * cell has room for about three words, and the discipline is what keeps the table
+   * honest: "3 a day" against "Unlimited" is a fact a reader can act on, where
+   * "limited scanning" against "unlimited scanning" is a sales line repeated twice.
    *
-   * The free column is mostly ticks and that is the point of having one. What
-   * is being said is "you already have a working diary, here is what it does
-   * not do yet", which only reads as generous if the ticks are real.
+   * The free column is mostly ticks and that is the point of having one. What is
+   * being said is "you already have a working diary, here is what it does not do
+   * yet", which only reads as generous if the ticks are real.
    *
-   * NO NUMBER ON THE PRO SIDE OF `snap`. There is a ceiling — fifty a day — and
+   * No number on the Pro side of `snap`. There is a ceiling, fifty a day, and
    * printing it would turn the row being sold into a restriction. Fifty
-   * photographed meals in a day is not a diary, so "unlimited" is what the
-   * sentence means to everybody who will ever read it.
+   * photographed meals in a day is not a diary.
    */
   table: {
     title: 'FREE VS PRO',
     free: 'Free',
     pro: 'Pro',
     /**
-     * THE NUMBERS ARE INTERPOLATED, not written into the sentences. Each of
-     * them is enforced in Postgres and mirrored in `@ricecal/shared`, and a
-     * table that spelled "3 a day" in prose would be the copy nobody thinks to
-     * change when the ceiling moves — a paywall promising three while the
-     * database allows five is a support thread, and the other way round is a
-     * refusal nobody can explain.
-     */
-    /**
-     * Every row carries `free` and `pro`, including the ones drawn as a tick or
-     * a dash, where they are empty. The bundle is TYPED — `t()` is checked
-     * against these keys — and the table looks a row's value up by a template
-     * literal, so a row missing one half would not typecheck at the call site
-     * rather than at the row. Empty is also what they mean: a tick has no words.
+     * The numbers are interpolated rather than written into the sentences. Each is
+     * enforced in Postgres and mirrored in `@ricecal/shared`, and a table that spelled
+     * "3 a day" in prose would be the copy nobody thinks to change when the ceiling
+     * moves: a paywall promising three while the database allows five is a support
+     * thread, and the other way round is a refusal nobody can explain.
+     *
+     * Every row carries `free` and `pro`, including the ones drawn as a tick or a
+     * dash, where they are empty. The bundle is typed and the table looks a row's
+     * value up by a template literal, so a row missing one half would not typecheck.
+     * Empty is also what they mean: a tick has no words.
      */
     rows: {
       snap: {
@@ -204,15 +200,14 @@ export const paywall = {
   /**
    * The paywall at the end of onboarding.
    *
-   * Distinct copy from `hard` because the moment is different: this is the
-   * first thing after the two permissions, addressed to somebody who has just
-   * finished setting up and has not seen the app yet. "Later" is a real option
-   * and is worded as one, not as a dismissal.
+   * Distinct copy from `hard` because the moment is different: this is the first
+   * thing after the two permissions, addressed to somebody who has just finished
+   * setting up and has not seen the app yet. "Later" is a real option and is worded
+   * as one.
    *
    * There is no note under the buttons any more. It read "You can look around
-   * first. Logging a meal needs Pro." — an apology for the button above it, and
-   * a second statement of the offer to somebody who has just read the whole
-   * page. "Maybe later" says what it does.
+   * first. Logging a meal needs Pro.", which was an apology for the button above it
+   * and a second statement of the offer.
    */
   intro: {
     title: 'You are all set. Ready to log?',
@@ -261,69 +256,56 @@ export const paywall = {
   /**
    * What a refusal says.
    *
-   * A REFUSAL NAMES WHAT IT REFUSED, and it used to name nothing. There was one
-   * line for every Pro-only button in the app — "That one needs RiceCal Pro." —
-   * argued for on the grounds that the difference between "describing a meal
-   * needs Pro" and "asking what to eat needs Pro" is writing rather than
-   * information. That is true of the PAYWALL, which is why there is still only
-   * one of those, and it is false of the toast: the toast is the only thing on
-   * screen that can say which of the buttons under a thumb declined to work,
-   * and "that one" is the app pointing at something the user cannot see. A
-   * price list arriving over a sentence naming no feature is exactly what the
-   * generic line was written to prevent.
+   * A refusal names what it refused, and it used to name nothing. There was one line
+   * for every Pro-only button in the app, argued for on the grounds that the
+   * difference between "describing a meal needs Pro" and "asking what to eat needs
+   * Pro" is writing rather than information. That is true of the paywall, which is
+   * why there is still only one of those, and false of the toast: the toast is the
+   * only thing on screen that can say which of the buttons under a thumb declined
+   * to work.
    *
-   * Beyond that there are three messages about the ALLOWANCE rather than about
-   * a feature. A free account that has used today's three scans has somewhere
-   * to go, and the paywall opens behind this toast; a Pro account that has
-   * somehow reached fifty in one day has nowhere to go, so it is asked to get
-   * in touch and shown nothing to buy; and an account whose subscription has
-   * lapsed mid-request is told which of the two halves failed.
+   * Beyond that there are three messages about the allowance rather than about a
+   * feature. A free account that has used today's three scans has somewhere to go,
+   * and the paywall opens behind this toast; a Pro account that has somehow reached
+   * fifty in one day has nowhere to go, so it is asked to get in touch; and an
+   * account whose subscription lapsed mid-request is told which half failed.
    *
-   * The free message names the number, unlike its predecessor, because the
-   * number can now be said: it counts plates rather than requests to a model,
-   * so "3 today" is a sentence somebody can hold against their own morning.
+   * The free message names the number, unlike its predecessor, because the number
+   * can now be said: it counts plates rather than requests to a model.
    */
   limit: {
     freeReached: 'That is your {{count}} scans for today. Pro scans as much as you like.',
     proReached: "You have hit today's scanning limit. Please contact admin.",
     /**
-     * The lapsed case, as the SECOND line under the feature sentence.
-     *
-     * It was the whole message — "Your subscription is not active, so this one
-     * needs Pro." — which led with our bookkeeping and never said what had been
-     * refused. Which button was pressed is the part the user needs; why the
-     * server said no is the footnote, so it is written as one.
+     * The lapsed case, as the second line under the feature sentence.
      */
     notEntitledDetail: 'Your subscription is not active.',
     /**
-     * The store says this account has paid and our own copy of that has not
-     * caught up yet, which is the few seconds between a purchase settling and
-     * the webhook writing the row.
+     * The store says this account has paid and our own copy of that has not caught up
+     * yet, which is the few seconds between a purchase settling and the webhook
+     * writing the row.
      *
-     * A SEPARATE SENTENCE because the alternative is the worst thing this app
-     * can do with a refusal: show a paywall to somebody who has just bought it.
-     * What they need to hear is that the purchase is fine and the app is a
-     * moment behind, not an invitation to pay again.
+     * A separate sentence because the alternative is the worst thing this app can do
+     * with a refusal: show a paywall to somebody who has just bought it. What they
+     * need to hear is that the purchase is fine and the app is a moment behind.
      */
     confirming: 'Your purchase is going through. Give it a moment and try again.',
     /**
-     * ONE LINE PER GATED THING, keyed by the same `ProFeature` the funnel is
-     * broken down by — so a sentence and the event that goes with it cannot
-     * name two different features.
+     * One line per gated thing, keyed by the same `ProFeature` the funnel is broken
+     * down by, so a sentence and the event that goes with it cannot name two
+     * different features.
      *
-     * Written as the thing that was just attempted, not as the feature's name
-     * in a table: "Fixing a meal by describing it" rather than "Fix". The
-     * reader has a finger on the button, and a sentence that repeats what they
-     * did is what makes the price list behind it read as an answer.
+     * Written as the thing that was just attempted rather than as the feature's name
+     * in a table: "Fixing a meal by describing it" rather than "Fix". The reader has
+     * a finger on the button, and a sentence that repeats what they did is what makes
+     * the price list behind it read as an answer.
      *
-     * Kept to ONE SHORT SENTENCE each. A toast is on screen for four seconds
-     * and the paywall arrives underneath it, so anything that takes longer than
-     * a glance to read is a sentence nobody finishes.
+     * Kept to one short sentence each. A toast is on screen for four seconds and the
+     * paywall arrives underneath it.
      *
-     * `camera` is here for completeness rather than for the common case: a
-     * fourth photographed plate is an allowance, and `freeReached` above is
-     * what says so. This is the line for a camera scan refused because the
-     * subscription itself lapsed.
+     * `camera` is here for completeness rather than for the common case: a fourth
+     * photographed plate is an allowance, and `freeReached` above is what says so.
+     * This is the line for a camera scan refused because the subscription lapsed.
      */
     feature: {
       camera: 'Scanning another plate today needs RiceCal Pro.',
@@ -345,10 +327,10 @@ export const paywall = {
   /**
    * The gate was tapped before the answer to "has this account paid" arrived.
    *
-   * Almost always a fraction of a second, and it used to be silent — the button
-   * simply did nothing, which is indistinguishable from a broken control. It
-   * says what is happening instead, and it does NOT open the paywall: nobody
-   * has been refused anything yet.
+   * Almost always a fraction of a second, and it used to be silent: the button
+   * simply did nothing, which is indistinguishable from a broken control. It says
+   * what is happening instead, and it does not open the paywall, because nobody has
+   * been refused anything yet.
    */
   checking: 'Just a moment, we are checking your plan.',
 
@@ -359,34 +341,32 @@ export const paywall = {
     // greets everybody in the language they are reading it in.
     title: "You are in. Let's eat.",
     /**
-     * ONE SHORT LINE, and every one of these used to be two.
+     * One short line, and every one of these used to be two.
      *
-     * "Everything is unlocked, nothing to set up" is the same fact twice: there
-     * is nothing to set up BECAUSE everything is unlocked. A receipt is read in
-     * a second and left, and what somebody wants off it is confirmation that
-     * the thing they paid for is theirs. The three squares under it say what
-     * that is; this line says only which of the three purchases happened.
+     * "Everything is unlocked, nothing to set up" is the same fact twice: there is
+     * nothing to set up because everything is unlocked. A receipt is read in a second
+     * and left, and what somebody wants off it is confirmation that the thing they
+     * paid for is theirs.
      *
-     * Said at all only when the store actually STARTED a trial. It was said to
-     * everybody who was not buying lifetime, and the app has no business
-     * promising a trial the store did not give: an introductory offer is once
-     * per account per subscription group, so anybody resubscribing — or on a
-     * storefront where the offer is not configured — was charged immediately
-     * and told they had a week free. `usePlanSummary` reads the period type off
-     * the purchase rather than off the button that was pressed.
+     * Said at all only when the store actually started a trial. It was said to
+     * everybody who was not buying lifetime, and the app has no business promising a
+     * trial the store did not give: an introductory offer is once per account per
+     * subscription group, so anybody resubscribing was charged immediately and told
+     * they had a week free. `usePlanSummary` reads the period type off the purchase
+     * rather than off the button that was pressed.
      */
     body: 'Your 7 free days start now. Everything is unlocked.',
     /** Paid straight away: a resubscriber, or an account with no offer left. */
     bodyActive: 'Everything is unlocked.',
     bodyLifetime: 'RiceCal Pro is yours for good. Everything is unlocked.',
     /**
-     * THREE OR FOUR WORDS EACH, because they are captions under a glyph rather
-     * than lines of a list. See `PERKS` in `app/paywall/welcome.tsx`.
+     * Three or four words each, because they are captions under a glyph rather than
+     * lines of a list. See `PERKS` in `app/paywall/welcome.tsx`.
      *
-     * The three ways in have to stay one of them: this is a promise made to
-     * somebody at the moment they pay. What is new is the third, which is the
-     * newest thing Pro does and was missing from a screen that went on
-     * describing a two-feature product.
+     * The three ways in have to stay one of them: this is a promise made to somebody
+     * at the moment they pay. What is new is the third, which is the newest thing Pro
+     * does and was missing from a screen that went on describing a two-feature
+     * product.
      */
     perks: {
       log: 'Snap, scan or say it',

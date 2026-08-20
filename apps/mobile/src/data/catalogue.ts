@@ -4,14 +4,6 @@ import { supabase } from '@/lib/supabase'
 /**
  * The catalogue, reached directly.
  *
- * Every read of a dish used to go through the `catalogue` edge function: the
- * app invoked it, it authenticated the user, and it asked the Worker on their
- * behalf holding a shared secret. That indirection existed for exactly one
- * reason — a secret shipped in a phone is not a secret — and it cost a detour
- * to Singapore and back for a query D1 answers in about two milliseconds.
- * Measured, the whole round trip was ~420 ms; reaching the Worker alone is
- * ~30 ms.
- *
  * The Worker verifies the user's own Supabase JWT now, against the public key
  * the project publishes. So the phone still holds no secret, and the hop is
  * gone. See `apps/cloudflare/workers/catalogue/src/auth.ts`.

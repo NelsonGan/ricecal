@@ -142,11 +142,6 @@ export const profile = {
      * beside these already says "Weekly pace", so "0.25 kg / week" under it
      * would say week twice.
      *
-     * The direction used to be a Lose / Maintain / Gain control above the
-     * slider; it is the gap between the two weights now, and this line is where
-     * that gap is read back. "-0.50 kg" states the same thing and makes the
-     * reader do the arithmetic to find out which way they are going.
-     *
      * The UNIT is interpolated rather than written in, because this screen is
      * read in whichever one the account asked for and the figure beside it is
      * converted. Spelt "kg" here it contradicted the pounds above it.

@@ -1,19 +1,17 @@
 -- ---------------------------------------------------------------------------
 -- A read-only mirror of what RevenueCat says about this account.
 --
--- RevenueCat is the source of truth; this table exists so that a server-side
--- check ("may this user see the weekly report") is a join and not an HTTP call
--- to a third party, and so the paywall screens have something to render before
--- the SDK finishes its first fetch.
+-- RevenueCat is the source of truth. This table exists so that a server-side
+-- check ("may this user see the weekly report") is a join rather than an HTTP
+-- call to a third party, and so the paywall screens have something to render
+-- before the SDK finishes its first fetch.
 --
--- THE CLIENT CANNOT WRITE HERE. There are no insert/update grants for
--- `authenticated` at all — not merely no policy, no grant either, so a
--- forgotten policy cannot quietly become an entitlement grant. Rows arrive
--- from the RevenueCat webhook running as `service_role`.
+-- The client cannot write here. There are no insert or update grants for
+-- `authenticated` at all, not merely no policy, so a forgotten policy cannot
+-- quietly become an entitlement grant. Rows arrive from the RevenueCat webhook
+-- running as `service_role`.
 --
--- Until that webhook exists this table stays empty, and an empty row is
--- correctly read as "no subscription" by `subscription_status` defaulting to
--- 'none' in the client.
+-- An empty table is correctly read as "no subscription".
 -- ---------------------------------------------------------------------------
 
 create table public.subscriptions (
@@ -36,19 +34,20 @@ create table public.subscriptions (
   -- the payload's mapping back to our uuid.
   rc_app_user_id      text unique,
 
-  -- When the event this row was last written from HAPPENED, which is not when
-  -- we wrote it. RevenueCat retries with a backoff, so a delayed EXPIRATION can
-  -- arrive after the RENEWAL that superseded it, and applied blind that takes
-  -- the app away from somebody who has just paid for another month.
+  -- When the event this row was last written from happened, which is not when we
+  -- wrote it. RevenueCat retries with a backoff, so a delayed EXPIRATION can arrive
+  -- after the RENEWAL that superseded it, and applied blind that takes the app away
+  -- from somebody who has just paid for another month.
   --
-  -- This is what orders them, and it replaced ordering by `current_period_end`
-  -- — which conflated "this event is stale" with "this event ends the period
-  -- early". A refund, a revoked promotional grant and a support-initiated
-  -- cancellation all expire a subscription BEFORE the period it had paid for,
-  -- so every one of them read as stale and was dropped, and the account stayed
-  -- entitled for good. Null for a row written before this column existed, and
-  -- for one corrected by hand: neither came from an event, so there is nothing
-  -- to order the next one against and it applies.
+  -- This is what orders them, and it replaced ordering by `current_period_end`,
+  -- which conflated "this event is stale" with "this event ends the period early".
+  -- A refund, a revoked promotional grant and a support-initiated cancellation all
+  -- expire a subscription before the period it had paid for, so every one of them
+  -- read as stale and was dropped, and the account stayed entitled for good.
+  --
+  -- Null for a row written before this column existed, and for one corrected by
+  -- hand: neither came from an event, so there is nothing to order the next one
+  -- against and it applies.
   last_event_at       timestamptz,
 
   created_at          timestamptz not null default now(),
@@ -72,24 +71,23 @@ create policy "subscriptions: read own"
 -- ---------------------------------------------------------------------------
 -- Is this account Pro right now?
 --
--- THE SAME RULE THE EDGE FUNCTIONS AND THE APP APPLY — an entitled status, and
--- a period that has not run out — written a third time because a third place
--- now needs it and cannot ask either of the other two. `entitledBy` in
--- `functions/_shared/entitlement.ts` decides whether a request reaches the
--- model; `isEntitledRow` in the app's `data/subscription.ts` decides what the
--- buttons say; this one decides what the DATABASE lets through, which is the
--- free tier's ceiling on scans and on recipes. All three have to be changed
--- together, and each is tested against the same cases.
+-- The same rule the edge functions and the app apply, an entitled status and a
+-- period that has not run out, written a third time because a third place now
+-- needs it and cannot ask either of the other two. `entitledBy` in
+-- `functions/_shared/entitlement.ts` decides whether a request reaches the model;
+-- `isEntitledRow` in the app's `data/subscription.ts` decides what the buttons
+-- say; this one decides what the database lets through, which is the free tier's
+-- ceiling on scans and on recipes. All three have to be changed together.
 --
--- NULL IS NO EXPIRY, not an expired one: lifetime renews never, so RevenueCat
+-- Null is no expiry, not an expired one: lifetime renews never, so RevenueCat
 -- sends no date for it and reading the column the other way round would refuse
 -- the one plan that cannot lapse.
 --
--- `security definer` because its callers are triggers and quota claims running
--- as whoever happened to be inserting, and the row it reads is protected by an
--- RLS policy that only answers for the account itself. A trigger checking
--- somebody's tier under their own privileges would read their own subscription
--- fine and see nothing at all when a job sweeps on their behalf.
+-- `security definer` because its callers are triggers and quota claims running as
+-- whoever happened to be inserting, and the row it reads is protected by an RLS
+-- policy that only answers for the account itself. A trigger checking somebody's
+-- tier under their own privileges would read their own subscription fine and see
+-- nothing at all when a job sweeps on their behalf.
 -- ---------------------------------------------------------------------------
 create or replace function public.is_entitled(p_user uuid)
 returns boolean

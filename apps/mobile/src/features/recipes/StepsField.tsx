@@ -30,7 +30,7 @@ export type StepsFieldProps = {
  * stayed under the keyboard however many times it was tapped, because two
  * mechanisms were insetting for one keyboard and each undid the other's work.
  * `Screen` has one owner now and the reveal is reliable, but the sheet stays:
- * it is the shape CLAUDE.md prescribes for a sheet with typing in it, the same
+ * it is the shape README.md prescribes for a sheet with typing in it, the same
  * one the describe panel and the fix sheet use, and it is the only one that
  * puts the field at the TOP of the screen with the keyboard covering nothing
  * but empty panel below it.
@@ -116,7 +116,7 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
       </Tappable>
 
       {/* A text field, so full height and not scrollable — the two rules a
-          sheet with typing in it always follows. See CLAUDE.md. No footer
+          sheet with typing in it always follows. See README.md. No footer
           either: at full height a footer lands behind the keyboard, so Done
           goes in the body under the field. */}
       <Sheet

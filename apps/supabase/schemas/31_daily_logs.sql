@@ -1,18 +1,18 @@
 -- ---------------------------------------------------------------------------
 -- Per-day facts the user records directly, that are not a food entry.
 --
--- Water today; a day note or a mood next. One row per user per day, written
--- only by the user — there is no background sync anywhere in this app.
+-- Water today; a day note or a mood next. One row per user per day, written only
+-- by the user, since there is no background sync anywhere in this app.
 --
--- WATER IS A VOLUME, NOT A COUNT OF GLASSES. It was `water_glasses`, a
--- smallint of taps, and a glass is not a unit: a mug, a bottle and a restaurant
--- tumbler are all one tap and are 200, 500 and 300 ml. Millilitres are what
--- everything on a bottle is printed in, they add up, and a goal expressed in
--- them can be met by any combination of the things somebody actually drinks.
+-- Water is a volume, not a count of glasses. It was `water_glasses`, a smallint
+-- of taps, and a glass is not a unit: a mug, a bottle and a restaurant tumbler
+-- are all one tap and are 200, 500 and 300 ml. Millilitres are what everything on
+-- a bottle is printed in, they add up, and a goal expressed in them can be met by
+-- any combination of the things somebody actually drinks.
 --
 -- Nothing references this table. `food_logs` carries its own `log_date`, so
--- logging a meal never has to create a day first, and a day with no water and
--- no note simply has no row — which is why every read of it coalesces.
+-- logging a meal never has to create a day first, and a day with no water and no
+-- note simply has no row, which is why every read of it coalesces.
 -- ---------------------------------------------------------------------------
 
 create table public.daily_logs (
@@ -64,19 +64,17 @@ create policy "daily_logs: delete own"
 -- ---------------------------------------------------------------------------
 -- Add (or take back) a volume of water on one day, atomically.
 --
--- WHY THIS IS NOT AN UPSERT FROM THE CLIENT. Glasses were SET — tap the fourth
--- glass and the row becomes four — so the client always knew the answer it
--- wanted and could write it whole. Millilitres are ADDED, and a read, an
--- addition and a write from the phone is a lost update the moment two taps
--- overlap: 250 and 500 pressed together both read 0 and one of them lands.
--- Quick-add is a row of buttons somebody drums on, so that race is the normal
--- case rather than the unlucky one.
+-- Why this is not an upsert from the client: glasses were set, so the client
+-- always knew the answer it wanted and could write it whole. Millilitres are
+-- added, and a read, an addition and a write from the phone is a lost update the
+-- moment two taps overlap: 250 and 500 pressed together both read 0 and one of
+-- them lands. Quick-add is a row of buttons somebody drums on, so that race is
+-- the normal case rather than the unlucky one.
 --
--- A negative `p_ml` is how the client takes back what it just added, which is
--- why the total is clamped rather than checked: undoing 500 ml on a day holding
--- 200 leaves 0, not a constraint violation on a button the user pressed to fix
--- a mistake. The ceiling is clamped for the same reason, in the other
--- direction — the caller is told the real total either way, and reconciles.
+-- A negative `p_ml` is how the client takes back what it just added, which is why
+-- the total is clamped rather than checked: undoing 500 ml on a day holding 200
+-- leaves 0, not a constraint violation on a button the user pressed to fix a
+-- mistake. The ceiling is clamped for the same reason, in the other direction.
 -- ---------------------------------------------------------------------------
 create or replace function public.add_water(
   p_ml    integer,

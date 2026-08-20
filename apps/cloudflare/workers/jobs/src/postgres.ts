@@ -8,7 +8,7 @@
  * grant checks the `migrations` workflow runs — rather than as an ad-hoc query
  * inside a Worker that nothing in the database's own test suite can see.
  *
- * It also keeps the division CLAUDE.md already draws: Postgres owns the
+ * It also keeps the division README.md already draws: Postgres owns the
  * numbers and the rules, and a job is only the part that has to reach
  * something Postgres cannot. Enforced by what is reachable rather than by
  * anybody remembering.

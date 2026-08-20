@@ -334,11 +334,6 @@ export default function LogSheet() {
           <InlineCamera
             mode={captureMode}
             onCapture={(photoUri) => {
-              // NOT A GATE ON THE FEATURE — the shutter used to be the
-              // paywall's front door, and a free account now photographs three
-              // plates a day, which is what makes the free tier a diary
-              // somebody can actually keep rather than a demonstration of one.
-              //
               // What this is is the ceiling ARRIVING BEFORE THE REQUEST. The
               // count is still the server's and it still refuses; but the panel
               // is already drawing "0 scans left" from that same figure two

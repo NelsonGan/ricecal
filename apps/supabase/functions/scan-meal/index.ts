@@ -105,9 +105,6 @@ Deno.serve(async (req: Request) => {
   // so the key has to be checked HERE or not at all. Without this the caller
   // could name someone else's plate and be told what was on it — not the image
   // back, but the dish name and the calories, which is most of the answer.
-  //
-  // It was equally unchecked when this read Supabase Storage: the download ran
-  // as `service_role` there too, and the bucket policies never saw it.
   if (photoPath && !ownsKey(photoPath, userId, 'meal')) {
     return json({ ok: false, error: 'not your photo' }, 403)
   }

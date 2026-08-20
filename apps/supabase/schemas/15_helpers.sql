@@ -7,11 +7,11 @@
 -- What day it is where the user is.
 --
 -- The server clock is UTC. Kuala Lumpur is UTC+8, so between 00:00 and 08:00
--- local, `current_date` on the server is still yesterday — a supper logged at
--- 00:30 would land on the previous day's total and quietly ruin both days.
--- Every server-side date decision goes through here instead.
+-- local, `current_date` on the server is still yesterday, and a supper logged at
+-- 00:30 would land on the previous day's total and quietly ruin both days. Every
+-- server-side date decision goes through here instead.
 --
--- The client still sends `log_date` explicitly on writes it initiates; this is
+-- The client still sends `log_date` explicitly on writes it initiates. This is
 -- the default for the paths that do not, and the basis for the reminder and
 -- report jobs that have no client at all.
 -- ---------------------------------------------------------------------------

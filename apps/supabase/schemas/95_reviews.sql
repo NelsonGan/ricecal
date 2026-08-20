@@ -1,31 +1,27 @@
 -- ---------------------------------------------------------------------------
 -- Reviews: a finished week or month, folded into the cards one story shows.
 --
--- Nothing here is a new fact. Every figure a review draws was already stored —
--- what was missing was a way to ask for a NAMED CALENDAR PERIOD. `trend_days`
+-- Nothing here is a new fact. Every figure a review draws was already stored, and
+-- what was missing was a way to ask for a named calendar period. `trend_days`
 -- takes '7d', '30d' or '1y' anchored to today, which is the right shape for a
 -- chart that always ends now and the wrong one for "the week of 3 August", a
 -- window that stopped moving when the week ended.
 --
 -- Three ideas run through the file.
 --
---   A PERIOD IS ITS START. Everything downstream takes `(kind, start)` and
---   works its own end out through `review_end()`. The alternative — passing a
---   pair of dates from the client — puts a month's length in the app, where a
---   February computed with `+30 days` is a review that quietly drops two days
---   of food.
+-- A period is its start. Everything downstream takes `(kind, start)` and works
+-- its own end out through `review_end()`. Passing a pair of dates from the client
+-- instead puts a month's length in the app, where a February computed with
+-- `+30 days` is a review that quietly drops two days of food.
 --
---   ONLY FINISHED PERIODS. `review_periods` stops at the last completed week or
---   month. A review is a look back at something that is over; a week still
---   being lived has a Sunday nobody has eaten yet, and averaging it in makes
---   every review of the current week read as a light one until it ends.
+-- Only finished periods. `review_periods` stops at the last completed week or
+-- month. A week still being lived has a Sunday nobody has eaten yet, and
+-- averaging it in makes every review of the current week read as a light one.
 --
---   EVERY PERIOD IN THE WINDOW, thin ones included. There was a `qualifies`
---   column here that said whether a period had enough logged days to be worth
---   opening, and the list hid the ones that failed it. It is gone: a week you
---   barely logged is the week you most want to see the shape of, and a list
---   with holes in it reads as a list that lost something. The comparison bars
---   inside a story wanted them all along for the same reason.
+-- Every period in the window, thin ones included. There was a `qualifies` column
+-- that said whether a period had enough logged days to be worth opening, and the
+-- list hid the ones that failed it. It is gone: a week you barely logged is the
+-- week you most want to see the shape of.
 --
 -- These sort after 94 by name only; they read `daily_nutrition` (90),
 -- `activity_days` (41) and `weight_logs` (40).
@@ -59,21 +55,19 @@ comment on function public.review_end is
 -- One row per calendar day between two dates: food, water, weight and movement
 -- side by side.
 --
--- The day generator every function below folds. Same shape and same reasoning
--- as `trend_days` and `activity_days_range` — days with nothing logged are
--- present and empty, because "5 of 7 days under goal" counts over seven — with
--- one difference that matters: this takes DATES. A review's window is a
--- calendar week or a calendar month, so there is no range for `local_today()`
--- to name, which is the same reason `day_marks` takes dates too.
+-- The day generator every function below folds. Same shape and same reasoning as
+-- `trend_days` and `activity_days_range`, where days with nothing logged are
+-- present and empty because "5 of 7 days under goal" counts over seven. One
+-- difference matters: this takes dates. A review's window is a calendar week or
+-- month, so there is no range for `local_today()` to name.
 --
--- Food and movement in one generator rather than two. A review reads both on
--- one screen, and a story that made two round trips would draw its weight line
--- a beat after the steps under it.
+-- Food and movement in one generator rather than two. A review reads both on one
+-- screen, and a story that made two round trips would draw its weight line a beat
+-- after the steps under it.
 --
--- Null and zero stay distinct, exactly as they do upstream: `steps` coalesces
--- to zero because a day in a pocket recorded none, while `resting_kcal` and
--- `stand_hours` do not, because a provider with no opinion must not be quoted
--- as having one.
+-- Null and zero stay distinct, exactly as upstream: `steps` coalesces to zero
+-- because a day in a pocket recorded none, while `resting_kcal` and `stand_hours`
+-- do not, because a provider with no opinion must not be quoted as having one.
 -- ---------------------------------------------------------------------------
 create or replace function public.review_days(
   p_from    date,
@@ -172,17 +166,17 @@ comment on function public.review_days is
 -- Every review period in the window, newest first, whether or not it has enough
 -- in it to be worth opening.
 --
--- Weeks run Monday to Sunday, which `date_trunc('week', …)` already means, and
--- months are calendar months. The window is three months of weeks and six
--- months of months: a weekly review a quarter old is still a week somebody
--- remembers, and one older than that is a chart, not a story. Both windows are
--- truncated to a period boundary BEFORE the range is generated, so the oldest
+-- Weeks run Monday to Sunday, which `date_trunc('week', ...)` already means, and
+-- months are calendar months. The window is three months of weeks and six months
+-- of months: a weekly review a quarter old is still a week somebody remembers,
+-- and one older than that is a chart rather than a story. Both windows are
+-- truncated to a period boundary before the range is generated, so the oldest
 -- period in the list is a whole one rather than the tail of one.
 --
--- `marks` is the sparkline on the list row: a week's seven days, or a month's
--- four or five weeks. Null entries are days that were not logged, and they draw
--- as gaps — which is the whole point of a sparkline here, since the figure
--- beside it is an average and an average cannot show that Tuesday is missing.
+-- `marks` is the sparkline on the list row. Null entries are days that were not
+-- logged and they draw as gaps, which is the whole point of a sparkline here,
+-- since the figure beside it is an average and an average cannot show that
+-- Tuesday is missing.
 -- ---------------------------------------------------------------------------
 create or replace function public.review_periods(
   p_kind    text,
@@ -301,14 +295,14 @@ comment on function public.review_periods is
 -- ---------------------------------------------------------------------------
 -- One period as one row: everything the four steps of a story put in a headline.
 --
--- Wide rather than several narrow functions for the reason `trend_summary` is:
--- a story is one screen's worth of reading and these are one screen's worth of
--- numbers, so they should cost one request. The client decides which STEPS to
+-- Wide rather than several narrow functions for the reason `trend_summary` is: a
+-- story is one screen's worth of reading and these are one screen's worth of
+-- numbers, so they should cost one request. The client decides which steps to
 -- show from what came back null.
 --
--- Folded here rather than in the app, because an average over a period has to
--- be weighted by the days that actually have food in them — a week with two
--- days logged averaged over seven describes a fast rather than a diet.
+-- Folded here rather than in the app, because an average over a period has to be
+-- weighted by the days that actually have food in them. A week with two days
+-- logged averaged over seven describes a fast rather than a diet.
 -- ---------------------------------------------------------------------------
 create or replace function public.review_summary(
   p_kind    text,
@@ -443,11 +437,9 @@ as $$
 $$;
 
 -- Deliberately narrower than `trend_summary`. Every column here is drawn by a
--- card in the story, and each one that stopped being drawn came out with it —
--- the step total, the best day, the workout minutes, the first weigh-in, and
--- then the meal count and what was cooked at home when the line under the food
--- step went. A returned figure nothing reads is one a future reader trusts
--- without checking that it means what its name suggests.
+-- card in the story, and each one that stopped being drawn came out with it. A
+-- returned figure nothing reads is one a future reader trusts without checking
+-- that it means what its name suggests.
 comment on function public.review_summary is
   'One review period folded to a single row: the calorie headline, the macro '
   'split, the lightest and heaviest day, the weigh-ins and the movement. The '
@@ -459,12 +451,12 @@ comment on function public.review_summary is
 -- The columns of the charts inside a story: a day of a week, a week of a month.
 --
 -- One row per column carrying calories, macros, steps and the weigh-in, because
--- three of the four steps draw a chart and none of them should cost a request
--- of its own.
+-- three of the four steps draw a chart and none of them should cost a request of
+-- its own.
 --
--- A month's first and last weeks are CLIPPED to the month. Left whole they
--- would reach into the months either side, and a bar labelled W1 would be
--- counting days that belong to somebody else's review.
+-- A month's first and last weeks are clipped to the month. Left whole they would
+-- reach into the months either side, and a bar labelled W1 would be counting days
+-- that belong to somebody else's review.
 -- ---------------------------------------------------------------------------
 create or replace function public.review_series(
   p_kind    text,
@@ -530,25 +522,23 @@ comment on function public.review_series is
 -- ---------------------------------------------------------------------------
 -- What was eaten, by dish, over one period.
 --
--- Grouped on the FOLDED name rather than on `food_id`, and that is the whole
--- design of this function. An entry carries its own numbers and its `food_id`
--- is nullable — a tier-4 estimate, an archetype and a plate rebuilt from its
--- parts all write null — so grouping on the id would drop exactly the meals a
+-- Grouped on the folded name rather than on `food_id`, and that is the whole
+-- design of this function. An entry carries its own numbers and its `food_id` is
+-- nullable, since a tier-4 estimate, an archetype and a plate rebuilt from its
+-- parts all write null, so grouping on the id would drop exactly the meals a
 -- review is most interesting about, and would split one dish across a catalogue
 -- row, a recipe and a guess that all say "nasi lemak".
 --
--- HEAVIEST FIRST, and this was "most often first" for about a day. Counting
--- repeats assumes a diary in which the same dish arrives under the same name,
--- and this one mostly does not: a scanned plate is named by a model and a
--- searched one by the catalogue, so a fortnight of eating nasi lemak four times
--- can be four spellings and four counts of one. Calories need no such
--- agreement, and "the five biggest plates" is a question a week can answer
--- honestly however its rows were written.
+-- Heaviest first, and this was "most often first" for about a day. Counting
+-- repeats assumes a diary in which the same dish arrives under the same name, and
+-- this one mostly does not: a scanned plate is named by a model and a searched
+-- one by the catalogue, so a fortnight of eating nasi lemak four times can be four
+-- spellings and four counts of one. Calories need no such agreement.
 --
--- Still grouped by name rather than listed row by row: where a name DOES repeat,
--- five identical lines would be a worse answer than four dishes and a fifth.
--- The macros are averaged over those repeats, because the figure beside a name
--- is what one of them costs.
+-- Still grouped by name rather than listed row by row: where a name does repeat,
+-- five identical lines would be a worse answer than four dishes and a fifth. The
+-- macros are averaged over those repeats, because the figure beside a name is
+-- what one of them costs.
 -- ---------------------------------------------------------------------------
 create or replace function public.review_meals(
   p_kind    text,

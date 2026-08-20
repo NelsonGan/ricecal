@@ -1,40 +1,24 @@
 -- ---------------------------------------------------------------------------
 -- Home cooking.
 --
--- A shared pot has no serving size, which is where logging breaks down: nobody
--- can answer "how many calories in that" about a wok of nasi goreng, but
--- everybody can answer "what went in, and how many does it feed". A recipe is
--- those two answers, entered once, and every future log of it is one tap.
+-- A shared pot has no serving size, which is where logging breaks down. Nobody
+-- can answer "how many calories in that" about a wok of nasi goreng, but everyone
+-- can answer "what went in, and how many does it feed". A recipe is those two
+-- answers, entered once, and every future log of it is one tap.
 --
--- WHERE THE MIRROR WENT
+-- An entry carries its own numbers, so logging a pot writes the same snapshot
+-- every other entry writes, taken from `recipe_details`. What that costs is the
+-- property people expect: correcting a recipe no longer moves last week's diary.
+-- `food_logs.recipe_id` is the provenance a re-snapshot would need.
 --
--- A recipe used to be copied into a `foods` row — `is_recipe`, priced per
--- serving, carrying the portions the detail screen offers — rebuilt by triggers
--- on every write. It existed for ONE reason: `food_logs.food_id` was not null
--- and referenced `foods`, so a recipe that could not be a catalogue row could
--- not be logged without a second shape for the day view, the trends, the week
--- strip and the reports.
---
--- The catalogue is in Cloudflare D1 now and that foreign key is gone. An entry
--- carries its own numbers, so logging a pot writes the same snapshot every
--- other entry writes, taken from `recipe_details` — which already computed the
--- per-serving figures the mirror was built out of.
---
--- What that costs is the property people expect here: correcting a recipe no
--- longer moves last week's diary, because realising the pot was six servings
--- rather than four does not reach entries that already took their copy. It is
--- the same trade `food_logs` makes with the catalogue at large, for the same
--- reason, and `food_logs.recipe_id` is the provenance a re-snapshot would need.
---
--- THREE KINDS OF ROW, ONE TABLE
+-- Three kinds of row, one table:
 --
 --   mine       owner_id = me
---   official   owner_id is null — the RiceCal kitchen, written by service_role
---   community  somebody else's, public AND approved
+--   official   owner_id is null, the RiceCal kitchen, written by service_role
+--   community  somebody else's, public and approved
 --
--- Official is the absence of an owner rather than a flag beside one, so there
--- is no way to spell "official and owned by Farah". Clients can only insert
--- rows owned by themselves, so the third state is not reachable from the app.
+-- Official is the absence of an owner rather than a flag beside one, so "official
+-- and owned by Farah" cannot be spelled. Clients can only insert rows they own.
 -- ---------------------------------------------------------------------------
 
 create table public.recipes (
@@ -64,12 +48,12 @@ create table public.recipes (
   -- paragraph.
   steps         text check (char_length(steps) <= 4000),
 
-  -- PUBLISHING
+  -- Publishing.
   --
-  -- Two columns rather than one, because they are two different facts: the
-  -- owner asked for this to be public, and a reviewer decided whether it may
-  -- be. The community tab requires BOTH, so a recipe whose review never ran is
-  -- invisible rather than published — the failure direction that matters.
+  -- Two columns rather than one, because they are two different facts: the owner
+  -- asked for this to be public, and a reviewer decided whether it may be. The
+  -- community tab requires both, so a recipe whose review never ran is invisible
+  -- rather than published, which is the failure direction that matters.
   is_public     boolean not null default false,
   review_status public.recipe_review not null default 'pending',
   -- Why it was turned down, in the reviewer's words, shown to the owner. Null
@@ -78,10 +62,10 @@ create table public.recipes (
 
   -- Who to credit on a community row.
   --
-  -- Copied off the profile rather than joined at read time, because `profiles`
-  -- is readable only by its owner and widening that policy to put a name on a
-  -- recipe card would expose every profile in the table. Refreshed on every
-  -- write of the recipe, which is as fresh as a display name needs to be.
+  -- Copied off the profile rather than joined at read time, because `profiles` is
+  -- readable only by its owner and widening that policy to put a name on a recipe
+  -- card would expose every profile in the table. Refreshed on every write of the
+  -- recipe, which is as fresh as a display name needs to be.
   author_name   text not null default '' check (char_length(author_name) <= 60),
 
   -- The link. `ricecal.my/r/<share_slug>`, minted once and never rotated, so a
@@ -123,25 +107,18 @@ create index recipes_source_idx
 -- ---------------------------------------------------------------------------
 -- Who has saved a community recipe.
 --
--- ONE ROW PER PERSON PER RECIPE, and the primary key is what makes that true.
--- `saved_count` used to be bumped on every call to `save_recipe_copy`, so a
--- person who saved the same rendang three times to try three variations of it
--- counted as three people — and since the community shelf is ORDERED by that
--- column, the way to the top of it was to save your own favourite repeatedly.
--- A counter with no ledger behind it cannot tell those apart.
+-- One row per person per recipe, and the primary key is what makes that true. A
+-- bare `saved_count` counted a person who saved the same rendang three times as
+-- three people, and since the community shelf is ordered by that column, the way
+-- to the top of it was to save your own favourite repeatedly.
 --
--- The row records the FACT of the save and outlives the copy it was made from.
--- Deleting your copy does not take the save back: it happened, and "how many
--- people have saved this" is a question about people rather than about how many
--- of them still have it in their list. The alternative — deriving the count
--- from `count(distinct owner_id)` over `source_recipe_id` — is one fewer table
--- and gets that question wrong, and it puts a subquery under the one shelf
--- query that has an index built for it.
+-- The row outlives the copy it was made from: deleting your copy does not take
+-- the save back, because "how many people have saved this" is a question about
+-- people. Deriving it from `count(distinct owner_id)` gets that wrong and puts a
+-- subquery under the one shelf query that has an index built for it.
 --
--- NO CLIENT GRANTS AT ALL, not merely no policy. `save_recipe_copy` is
--- `security definer` and is the only writer there is; a client that could
--- insert here could vote for its own recipe as many times as it liked, which
--- is the thing this table exists to stop.
+-- No client grants at all, not merely no policy. `save_recipe_copy` is the only
+-- writer; a client that could insert here could vote for its own recipe.
 -- ---------------------------------------------------------------------------
 create table public.recipe_saves (
   recipe_id uuid not null references public.recipes (id) on delete cascade,
@@ -159,20 +136,15 @@ grant select, insert, delete on public.recipe_saves to service_role;
 -- ---------------------------------------------------------------------------
 -- What went into the pot.
 --
--- PER UNIT, NOT PER INGREDIENT
+-- Per unit, not per ingredient. The macros describe one gram, one millilitre or
+-- one of the thing, and the amount beside them is how many went in. That is what
+-- survives the amount being changed: 400 ml of santan corrected to 250 reprices
+-- with no lookup and no second opinion, because the density was the part that was
+-- true.
 --
--- The macros here describe ONE gram, ONE millilitre or ONE of the thing, and
--- the amount beside them is how many went in. That is what survives the amount
--- being changed: reopening a recipe and correcting 400 ml of santan to 250
--- reprices it with no catalogue lookup and no second opinion, because the
--- density was the part that was true.
---
--- `food_id` is provenance and nothing more. It records that this ingredient was
--- picked out of the catalogue rather than typed, so the row can say where its
--- numbers came from — but the numbers are copied here rather than joined,
--- because an ingredient can also be somebody's own kerisik that exists in no
--- catalogue, and a list where half the rows join and half do not is a list with
--- two shapes.
+-- `food_id` is provenance and nothing more. The numbers are copied rather than
+-- joined, because an ingredient can be somebody's own kerisik that exists in no
+-- catalogue, and a list where half the rows join is a list with two shapes.
 -- ---------------------------------------------------------------------------
 
 create table public.recipe_ingredients (
@@ -209,29 +181,21 @@ create index recipe_ingredients_recipe_idx
 
 
 -- ---------------------------------------------------------------------------
--- WHERE `recipe_sync_food` WENT
+-- Where `recipe_sync_food` went.
 --
 -- A recipe was rebuilt into a `foods` row on every write of it or its
--- ingredients — one function, called from four triggers, because the mirror was
--- a pure function of the recipe and there was no incremental update to get
--- wrong. It offered the portions the detail screen shows: half, one, two and
--- the whole pot, the last two created only where they meant something.
---
--- All of it is gone with the mirror. `recipe_details` computes the per-serving
--- figures directly from the ingredient list, which is what the mirror was built
--- out of in the first place, and the portions are the detail screen's to offer
--- against a snapshot rather than a catalogue row's to hold.
--- ---------------------------------------------------------------------------
+-- ingredients: one function, called from four triggers, because the mirror was a
+-- pure function of the recipe and there was no incremental update to get wrong.
+-- It offered the portions the detail screen shows.
 
 
 -- ---------------------------------------------------------------------------
--- Everything a recipe needs settled before it exists: its share link and the
--- name to credit.
+-- Everything a recipe needs settled before it exists: its share link and the name
+-- to credit.
 --
--- The share slug is minted from the name plus eight hex characters. Random
--- rather than sequential so a link cannot be guessed by counting, and appended
--- rather than replacing the name so a link pasted into a chat still says what
--- it is.
+-- The share slug is minted from the name plus eight hex characters. Random rather
+-- than sequential so a link cannot be guessed by counting, and appended rather
+-- than replacing the name so a link pasted into a chat still says what it is.
 -- ---------------------------------------------------------------------------
 
 create or replace function public.recipes_before_insert()
@@ -276,23 +240,20 @@ revoke execute on function public.recipes_before_insert from public, anon, authe
 -- ---------------------------------------------------------------------------
 -- How many recipes a free account may keep, and the ceiling on it.
 --
--- IN THE DATABASE, because a client writes `recipes` directly. There is no
--- edge function between the form and the row — the insert is an ordinary
--- PostgREST call under RLS — so a limit that lived in the app would be a limit
--- that applied to people running the app. It is the same argument the
--- publishing gate makes one section down: a rule the client is trusted to
--- follow is a rule an attacker declines to.
+-- In the database, because a client writes `recipes` directly. There is no edge
+-- function between the form and the row, so a limit that lived in the app would
+-- be a limit that applied to people running the app.
 --
--- A SAVED COMMUNITY RECIPE COUNTS. `save_recipe_copy` writes a row owned by
--- the saver, and the trigger fires on it like any other insert. Exempting
--- copies would make "save somebody else's" the way past the ceiling, and a
--- saved copy is a recipe of theirs in every sense that matters here: it is on
--- their shelf, it is theirs to edit, and logging it takes its numbers.
+-- A saved community recipe counts. `save_recipe_copy` writes a row owned by the
+-- saver, and the trigger fires on it like any other insert. Exempting copies
+-- would make "save somebody else's" the way past the ceiling, and a saved copy is
+-- a recipe of theirs in every sense that matters: it is on their shelf, it is
+-- theirs to edit, and logging it takes its numbers.
 --
--- The message is a TOKEN rather than a sentence. It reaches the client as a
--- PostgREST error, which is not a place to write copy — the app matches on it
--- and says the thing in the user's own language, from the copy bundle, beside
--- a paywall. `hint` carries the readable half for whoever meets it in a log.
+-- The message is a token rather than a sentence. It reaches the client as a
+-- PostgREST error, which is not a place to write copy: the app matches on it and
+-- says the thing in the user's own language, beside a paywall. `hint` carries the
+-- readable half for whoever meets it in a log.
 -- ---------------------------------------------------------------------------
 create or replace function public.free_recipe_limit()
 returns integer
@@ -340,18 +301,17 @@ revoke execute on function public.recipes_enforce_free_limit from public, anon, 
 -- ---------------------------------------------------------------------------
 -- An edit sends a published recipe back to the reviewer.
 --
--- THE GATE'S SECOND HALF, and without it the first half is decoration. Publish
+-- The gate's second half, and without it the first half is decoration. Publish
 -- something bland, collect an `approved`, then rewrite the name and the steps
--- into an advert: the row is still `is_public and review_status = 'approved'`,
--- so the new text is live in the community tab and no reviewer has ever seen
--- it. `set_recipe_public` only runs when the toggle is flipped, so it cannot be
--- what catches this.
+-- into an advert: the row is still `is_public and review_status = 'approved'`, so
+-- the new text is live in the community tab and no reviewer has seen it.
+-- `set_recipe_public` only runs when the toggle is flipped, so it cannot catch
+-- this.
 --
--- Here rather than in the client for the usual reason: `review_status` is not
--- in anybody's column grant, so a client CANNOT reset it, and a rule the client
--- is trusted to follow is a rule an attacker declines to. The recipe stays
--- public and goes back to `pending`, which is invisible — the same failure
--- direction as everywhere else in this feature.
+-- Here rather than in the client for the usual reason: `review_status` is not in
+-- anybody's column grant, so a client cannot reset it, and a rule the client is
+-- trusted to follow is a rule an attacker declines to. The recipe stays public
+-- and goes back to `pending`, which is invisible.
 --
 -- Private recipes are left alone. There is nothing to re-review about a recipe
 -- nobody but its author can see, and marking one `pending` would mean the next
@@ -396,11 +356,11 @@ grant execute on function public.recipe_mark_for_review to service_role;
 --
 -- The credit is copied onto the recipe rather than joined at read time, because
 -- `profiles` is readable only by its owner and widening that to put a name on a
--- community card would expose every profile in the table. The cost of the copy
--- is that it goes stale, and this is what pays it: the change that makes it
--- stale is an update to PROFILES, not to any recipe, so the trigger belongs
--- there. Hung off the recipe instead it would only ever fire when a recipe was
--- edited for some other reason — which is to say, mostly never.
+-- community card would expose every profile in the table. The cost of the copy is
+-- that it goes stale, and this is what pays it: the change that makes it stale is
+-- an update to profiles rather than to any recipe, so the trigger belongs there.
+-- Hung off the recipe instead it would only fire when a recipe was edited for
+-- some other reason, which is to say mostly never.
 create or replace function public.profiles_sync_recipe_author()
 returns trigger
 language plpgsql
@@ -483,36 +443,33 @@ create trigger recipe_ingredients_set_updated_at
 --
 -- Read is the interesting one, and it is three cases in one policy: mine, the
 -- kitchen's, and anybody's that is both public and approved. `review_status`
--- being in the predicate is what makes moderation real rather than advisory —
--- a client that ignored the flag would still not be shown the row.
+-- being in the predicate is what makes moderation real rather than advisory, so a
+-- client that ignored the flag would still not be shown the row.
 --
 -- Write is own-only. There is no policy under which a client can create an
--- official recipe or edit somebody else's, and `owner_id` is checked on the
--- way in and on the way out of an update so a recipe cannot be handed away.
+-- official recipe or edit somebody else's, and `owner_id` is checked on the way
+-- in and on the way out of an update so a recipe cannot be handed away.
 -- ---------------------------------------------------------------------------
 
 alter table public.recipes enable row level security;
 
 grant select, delete on public.recipes to authenticated;
--- Insert AND update are COLUMN LEVEL, and that is the moderation gate.
+-- Insert and update are column level, and that is the moderation gate.
 --
--- `is_public` and `review_status` are deliberately absent from BOTH grants.
+-- `is_public` and `review_status` are deliberately absent from both grants.
 -- Absent from UPDATE, a client that asks to publish could otherwise write
--- `review_status = 'approved'` itself and the review would be a formality the
--- app performs on itself. Absent from INSERT for the same reason one statement
--- earlier: a table-wide insert grant let a client create the row already
--- `is_public = true, review_status = 'approved'`, landing it in the community
--- tab having never been reviewed — the before-insert trigger mints the slug
--- and the author but does not touch these, so the row's own values would
--- stand. Publishing goes through `set_recipe_public` below, which can only ever
--- move the row to `pending`; only `service_role` — the review function — can
--- approve one. This is the same hole the update grant closes, and it has to be
--- closed on the way in as well as the way through.
+-- `review_status = 'approved'` itself and the review would be a formality the app
+-- performs on itself. Absent from INSERT for the same reason: a table-wide insert
+-- grant let a client create the row already public and approved, landing it in
+-- the community tab having never been reviewed, since the before-insert trigger
+-- mints the slug and the author but does not touch these. Publishing goes through
+-- `set_recipe_public`, which can only ever move the row to `pending`; only
+-- `service_role` can approve one.
 --
 -- `author_name`, `share_slug`, `food_id`, `saved_count` and `source_recipe_id`
--- are absent for a quieter reason: they are derived (or `save_recipe_copy`'s to
--- set), and a client that could write them could credit somebody else, collide
--- two share links, vote for its own recipe, or point at a dish it did not cook.
+-- are absent for a quieter reason: they are derived, and a client that could
+-- write them could credit somebody else, collide two share links, vote for its
+-- own recipe, or point at a dish it did not cook.
 grant insert (owner_id, name, servings, steps, icon_set, icon_name, photo_path)
   on public.recipes to authenticated;
 grant update (name, photo_path, icon_set, icon_name, servings, steps)

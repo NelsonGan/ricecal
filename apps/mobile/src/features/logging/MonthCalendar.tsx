@@ -26,23 +26,9 @@ const PLACEHOLDER_ICON = { set: 'food', name: 'empty-plate' } as const
  * THE VERDICT IS THE CELL'S OUTLINE, in each of its three states, on both
  * backgrounds.
  *
- * It was a dot: first under the picture, where it cost a row of the cell and the
- * plate had to shrink to pay for it, then laid over the plate's corner, where it
- * fitted but was a second small thing to find in a grid of thirty-one. The
- * outline is the whole cell, so it is read at the same distance as the month
- * itself, and it costs the picture nothing.
- *
  * `missed` keeps the dashed line it already had, which is now one member of this
  * set rather than a special case: a day with nothing on it is the one outline
  * that is not a colour, because absence is not a result.
- *
- * TWO SPELLINGS EACH, and what the second one is for has changed. The selected
- * day used to be filled pandan whatever its verdict, so an outline had to fight
- * its own fill — under goal went white on the selected cell, and a white ring
- * around a green square is a cell saying two things. The selection is now filled
- * in the verdict's OWN colour (see `selections`), so the outline can simply stay
- * the colour it is; the only pair that still differs is `missed`, whose line has
- * to darken to stay visible against the grey it is now filled with.
  */
 const outlines: Record<DateStripMark, { on: string; off: string }> = {
   under: { on: 'border-pandan', off: 'border-pandan' },
