@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["RiceCalWidgetsModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.ricecalwidgets.RiceCalWidgetsModule"]
+  }
+}

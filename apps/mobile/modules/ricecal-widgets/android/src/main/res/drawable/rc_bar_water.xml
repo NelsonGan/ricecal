@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The water bar is the one with a line around it, which is what makes an
+     empty tank read as a tank rather than as a missing bar. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+  <item android:id="@android:id/background">
+    <shape android:shape="rectangle">
+      <corners android:radius="999dp" />
+      <solid android:color="@color/rc_water_soft" />
+      <stroke android:width="2dp" android:color="@color/rc_water_soft_line" />
+    </shape>
+  </item>
+  <item android:id="@android:id/progress">
+    <clip>
+      <shape android:shape="rectangle">
+        <corners android:radius="999dp" />
+        <solid android:color="@color/rc_water" />
+      </shape>
+    </clip>
+  </item>
+</layer-list>

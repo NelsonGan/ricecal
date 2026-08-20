@@ -1,0 +1,99 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!--
+    The six widgets, and the receiver behind the water presets.
+
+    Declared in the MODULE's manifest rather than in the app's, and merged into
+    it by Gradle. That is the whole reason Android needs no config plugin where
+    iOS needs a hundred lines of one: an Android widget is a broadcast receiver
+    and some layouts, which are ordinary library code, while a WidgetKit widget
+    is a separate binary with its own bundle and entitlements.
+
+    `exported="true"` on the providers is not optional. The update broadcast
+    comes from the system rather than from this app, and a receiver that is not
+    exported never hears it — which shows up as six widgets that install and
+    then never draw anything.
+  -->
+  <application>
+    <receiver
+      android:name=".KcalWidgetProvider"
+      android:exported="true"
+      android:label="Calories left">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/rc_widget_info_kcal" />
+    </receiver>
+
+    <receiver
+      android:name=".WaterWidgetProvider"
+      android:exported="true"
+      android:label="Water">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/rc_widget_info_water" />
+    </receiver>
+
+    <receiver
+      android:name=".WeightWidgetProvider"
+      android:exported="true"
+      android:label="Weight">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/rc_widget_info_weight" />
+    </receiver>
+
+    <receiver
+      android:name=".DayWidgetProvider"
+      android:exported="true"
+      android:label="Today">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/rc_widget_info_day" />
+    </receiver>
+
+    <receiver
+      android:name=".QuickLogWidgetProvider"
+      android:exported="true"
+      android:label="Quick log">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/rc_widget_info_quick_log" />
+    </receiver>
+
+    <receiver
+      android:name=".TodayWidgetProvider"
+      android:exported="true"
+      android:label="The whole day">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/rc_widget_info_today" />
+    </receiver>
+
+    <!--
+      The +250 and +500 buttons. NOT exported: the only thing that may send it
+      is a PendingIntent this app made, and an exported receiver that adds water
+      to somebody's diary is an exported receiver that adds water to somebody's
+      diary.
+    -->
+    <receiver
+      android:name=".WaterActionReceiver"
+      android:exported="false" />
+  </application>
+</manifest>

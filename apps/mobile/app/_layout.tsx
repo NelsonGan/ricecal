@@ -26,6 +26,7 @@ import { LoginLinkHandler } from '@/features/auth'
 import { OnboardingDraftProvider } from '@/features/onboarding'
 import { EntitlementSync } from '@/features/paywall'
 import { SuggestProvider } from '@/features/suggest'
+import { WidgetSync } from '@/features/widgets'
 import { initOnlineManager } from '@/lib/online'
 import { persistOptions, queryClient } from '@/lib/query'
 import { initServices } from '@/lib/startup'
@@ -118,6 +119,13 @@ export default Sentry.wrap(function RootLayout() {
                             webhook. Inside `SessionProvider` because it is
                             keyed by whoever is signed in. */}
                               <EntitlementSync />
+                              {/* And renders nothing either. Publishes today
+                            into the App Group the home screen widgets read,
+                            sends the drinks the water widget could not, and
+                            notices which widgets are actually on a home
+                            screen. Inside `SessionProvider` because all three
+                            are about one account's day. */}
+                              <WidgetSync />
                               <RootStack />
                             </ToastProvider>
                           </SuggestProvider>
@@ -244,6 +252,11 @@ function RootStack() {
           invisibly behind it. No gesture, for the same reason as the groups
           either side: there is nothing behind a link opened cold. */}
       <Stack.Screen name="auth/[action]" options={{ gestureEnabled: false }} />
+      {/* Where a home screen widget lands, for the same reason the line above
+          exists: the router matches paths against files, and `ricecal://widget/camera`
+          with no file behind it opens the app on "Page not found". It is a
+          spinner that redirects, and it is where a widget tap is counted. */}
+      <Stack.Screen name="widget/[action]" options={{ gestureEnabled: false }} />
       <Stack.Screen name="(onboarding)" options={{ gestureEnabled: false }} />
       {/* The one screen with no back gesture. Everything else in this stack is
           somewhere you went and can leave; the tabs are where the app IS.

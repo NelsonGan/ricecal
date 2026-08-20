@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A rounded track with a rounded fill clipped into it. The design's one
+     progress shape, and the only way a RemoteViews ProgressBar gets a colour:
+     there is no remotable tint below API 31, so it is a drawable per colour. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+  <item android:id="@android:id/background">
+    <shape android:shape="rectangle">
+      <corners android:radius="999dp" />
+      <solid android:color="@color/rc_track" />
+    </shape>
+  </item>
+  <item android:id="@android:id/progress">
+    <clip>
+      <shape android:shape="rectangle">
+        <corners android:radius="999dp" />
+        <solid android:color="@color/rc_pandan" />
+      </shape>
+    </clip>
+  </item>
+</layer-list>

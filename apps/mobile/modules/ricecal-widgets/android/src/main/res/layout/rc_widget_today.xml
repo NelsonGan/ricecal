@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  LARGE · TODAY — the Today screen without chrome or nav.
+
+  Four meal rows, laid out rather than in a `ListView`: a list in a widget means
+  a `RemoteViewsService` and a second process binding to it for four lines of
+  text. Four is what the frame holds with the names still readable, and the
+  design system's rule when something does not fit is to remove a card rather
+  than shrink the type — so the fifth row goes, not the type size.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/rc_today_root"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:orientation="vertical"
+  android:background="@drawable/rc_widget_card"
+  android:padding="16dp">
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
+
+    <TextView
+      android:layout_width="0dp"
+      android:layout_weight="1"
+      android:layout_height="wrap_content"
+      android:fontFamily="@font/rc_baloo2_extrabold"
+      android:textSize="17sp"
+      android:textColor="@color/rc_heading"
+      android:text="Today" />
+
+    <TextView
+      android:id="@+id/rc_today_verdict"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:paddingStart="10dp"
+      android:paddingEnd="10dp"
+      android:paddingTop="5dp"
+      android:paddingBottom="5dp"
+      android:background="@drawable/rc_widget_pill_pandan"
+      android:fontFamily="@font/rc_nunito_extrabold"
+      android:textSize="11sp"
+      android:textColor="@color/rc_pandan_ink"
+      android:text="On track" />
+  </LinearLayout>
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="13dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
+
+    <ImageView
+      android:id="@+id/rc_today_ring"
+      android:layout_width="104dp"
+      android:layout_height="104dp"
+      android:contentDescription="Calories left"
+      android:scaleType="fitCenter"
+      android:src="@drawable/rc_widget_ring_preview" />
+
+    <LinearLayout
+      android:layout_width="0dp"
+      android:layout_weight="1"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="14dp"
+      android:orientation="vertical">
+
+      <TextView
+        android:id="@+id/rc_today_carbs_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/rc_nunito_extrabold"
+        android:textSize="10sp"
+        android:textColor="@color/rc_muted"
+        android:text="Carbs 182g" />
+      <ProgressBar
+        android:id="@+id/rc_today_carbs"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="7dp"
+        android:layout_marginTop="4dp"
+        android:minHeight="7dp"
+        android:maxHeight="7dp"
+        android:progressDrawable="@drawable/rc_bar_carbs" />
+
+      <TextView
+        android:id="@+id/rc_today_protein_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="@font/rc_nunito_extrabold"
+        android:textSize="10sp"
+        android:textColor="@color/rc_muted"
+        android:text="Protein 61g" />
+      <ProgressBar
+        android:id="@+id/rc_today_protein"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="7dp"
+        android:layout_marginTop="4dp"
+        android:minHeight="7dp"
+        android:maxHeight="7dp"
+        android:progressDrawable="@drawable/rc_bar_protein" />
+
+      <TextView
+        android:id="@+id/rc_today_fat_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="@font/rc_nunito_extrabold"
+        android:textSize="10sp"
+        android:textColor="@color/rc_muted"
+        android:text="Fat 44g" />
+      <ProgressBar
+        android:id="@+id/rc_today_fat"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="7dp"
+        android:layout_marginTop="4dp"
+        android:minHeight="7dp"
+        android:maxHeight="7dp"
+        android:progressDrawable="@drawable/rc_bar_fat" />
+    </LinearLayout>
+  </LinearLayout>
+
+  <FrameLayout
+    android:layout_width="match_parent"
+    android:layout_height="2dp"
+    android:layout_marginTop="13dp"
+    android:background="@drawable/rc_widget_divider" />
+
+  <LinearLayout
+    android:id="@+id/rc_today_meals"
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:layout_marginTop="12dp"
+    android:orientation="vertical">
+
+    <TextView
+      android:id="@+id/rc_today_empty"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:visibility="gone"
+      android:fontFamily="@font/rc_nunito_bold"
+      android:textSize="12sp"
+      android:textColor="@color/rc_muted"
+      android:text="Nothing logged yet." />
+
+    <!-- FOUR ROWS SPELT OUT, not an `include` repeated and not a `ListView`.
+         An include would give all four rows the same child ids, so setting one
+         name would set every name; a list would mean a `RemoteViewsService` and
+         a second process binding to it for four lines of text. -->
+
+    <LinearLayout
+      android:id="@+id/rc_today_meal_1"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="0dp"
+      android:orientation="horizontal"
+      android:baselineAligned="true">
+      <TextView
+        android:id="@+id/rc_today_meal_1_name"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:fontFamily="@font/rc_nunito_extrabold"
+        android:textSize="12sp"
+        android:textColor="@color/rc_ink"
+        android:text="Nasi lemak ayam" />
+      <TextView
+        android:id="@+id/rc_today_meal_1_kcal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:fontFamily="@font/rc_baloo2_extrabold"
+        android:textSize="13sp"
+        android:textColor="@color/rc_ink"
+        android:text="640" />
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="2dp"
+        android:fontFamily="@font/rc_nunito_extrabold"
+        android:textSize="10sp"
+        android:textColor="@color/rc_muted"
+        android:text="kcal" />
+    </LinearLayout>
+
+    <LinearLayout
+      android:id="@+id/rc_today_meal_2"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="9dp"
+      android:orientation="horizontal"
+      android:baselineAligned="true">
+      <TextView
+        android:id="@+id/rc_today_meal_2_name"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:fontFamily="@font/rc_nunito_extrabold"
+        android:textSize="12sp"
+        android:textColor="@color/rc_ink"
+        android:text="Teh tarik" />
+      <TextView
+        android:id="@+id/rc_today_meal_2_kcal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:fontFamily="@font/rc_baloo2_extrabold"
+        android:textSize="13sp"
+        android:textColor="@color/rc_ink"
+        android:text="135" />
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="2dp"
+        android:fontFamily="@font/rc_nunito_extrabold"
+        android:textSize="10sp"
+        android:textColor="@color/rc_muted"
+        android:text="kcal" />
+    </LinearLayout>
+
+    <LinearLayout
+      android:id="@+id/rc_today_meal_3"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="9dp"
+      android:orientation="horizontal"
+      android:baselineAligned="true">
+      <TextView
+        android:id="@+id/rc_today_meal_3_name"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:fontFamily="@font/rc_nunito_extrabold"
+        android:textSize="12sp"
+        android:textColor="@color/rc_ink"
+        android:text="Char kuey teow" />
+      <TextView
+        android:id="@+id/rc_today_meal_3_kcal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:fontFamily="@font/rc_baloo2_extrabold"
+        android:textSize="13sp"
+        android:textColor="@color/rc_ink"
+        android:text="742" />
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="2dp"
+        android:fontFamily="@font/rc_nunito_extrabold"
+        android:textSize="10sp"
+        android:textColor="@color/rc_muted"
+        android:text="kcal" />
+    </LinearLayout>
+
+    <LinearLayout
+      android:id="@+id/rc_today_meal_4"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="9dp"
+      android:orientation="horizontal"
+      android:baselineAligned="true">
+      <TextView
+        android:id="@+id/rc_today_meal_4_name"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:fontFamily="@font/rc_nunito_extrabold"
+        android:textSize="12sp"
+        android:textColor="@color/rc_ink"
+        android:text="Kopi O kosong" />
+      <TextView
+        android:id="@+id/rc_today_meal_4_kcal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:fontFamily="@font/rc_baloo2_extrabold"
+        android:textSize="13sp"
+        android:textColor="@color/rc_ink"
+        android:text="22" />
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="2dp"
+        android:fontFamily="@font/rc_nunito_extrabold"
+        android:textSize="10sp"
+        android:textColor="@color/rc_muted"
+        android:text="kcal" />
+    </LinearLayout>
+  </LinearLayout>
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="43dp"
+    android:layout_marginTop="10dp"
+    android:orientation="horizontal">
+
+    <LinearLayout
+      android:id="@+id/rc_today_snap"
+      android:layout_width="0dp"
+      android:layout_weight="1"
+      android:layout_height="match_parent"
+      android:orientation="horizontal"
+      android:gravity="center"
+      android:background="@drawable/rc_widget_tile_pandan">
+      <ImageView
+        android:layout_width="19dp"
+        android:layout_height="19dp"
+        android:contentDescription="@null"
+        android:src="@drawable/rc_widget_camera" />
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:fontFamily="@font/rc_baloo2_extrabold"
+        android:textSize="14sp"
+        android:textColor="@color/rc_ink"
+        android:text="Snap" />
+    </LinearLayout>
+
+    <LinearLayout
+      android:id="@+id/rc_today_search"
+      android:layout_width="0dp"
+      android:layout_weight="1"
+      android:layout_height="match_parent"
+      android:layout_marginStart="10dp"
+      android:orientation="horizontal"
+      android:gravity="center"
+      android:background="@drawable/rc_widget_tile_pandan">
+      <ImageView
+        android:layout_width="19dp"
+        android:layout_height="19dp"
+        android:contentDescription="@null"
+        android:src="@drawable/rc_widget_search" />
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:fontFamily="@font/rc_baloo2_extrabold"
+        android:textSize="14sp"
+        android:textColor="@color/rc_ink"
+        android:text="Search" />
+    </LinearLayout>
+  </LinearLayout>
+</LinearLayout>

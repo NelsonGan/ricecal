@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  What every widget draws when it has nothing to draw.
+
+  Four situations reach it and three of them are deliberately not
+  distinguished: signed out, never opened since installing, and a snapshot that
+  has aged past midnight all mean "open the app". The fourth, an account with no
+  calorie budget yet, has a different answer and overrides the copy.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/rc_empty_root"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:orientation="vertical"
+  android:gravity="center_vertical"
+  android:background="@drawable/rc_widget_card"
+  android:padding="16dp">
+
+  <ImageView
+    android:layout_width="28dp"
+    android:layout_height="28dp"
+    android:contentDescription="@null"
+    android:src="@drawable/rc_widget_mark" />
+
+  <TextView
+    android:id="@+id/rc_empty_title"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="6dp"
+    android:fontFamily="@font/rc_baloo2_extrabold"
+    android:textSize="17sp"
+    android:textColor="@color/rc_heading" />
+
+  <TextView
+    android:id="@+id/rc_empty_body"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="2dp"
+    android:fontFamily="@font/rc_nunito_bold"
+    android:textSize="12sp"
+    android:textColor="@color/rc_muted" />
+</LinearLayout>

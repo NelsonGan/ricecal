@@ -1,9 +1,9 @@
 import * as AppleAuthentication from 'expo-apple-authentication'
-import Constants from 'expo-constants'
 import { Platform } from 'react-native'
 
 import { type SignInMethod, track } from '@/lib/analytics'
 import { env, isConfigured } from '@/lib/env'
+import { appScheme } from '@/lib/scheme'
 import { supabase } from '@/lib/supabase'
 
 /**
@@ -35,17 +35,12 @@ import { supabase } from '@/lib/supabase'
  * simulator and `ricecal:///auth/callback` in a release. The URL in the mail has
  * to be identical everywhere, since a stranger's mail client opens it.
  *
- * The scheme is read off the resolved config, because the development build is a
- * separate app with its own (`ricecal-dev`), and two apps registering
- * `ricecal://` on one phone is undefined behaviour.
+ * The scheme comes from `lib/scheme.ts`, which is where it moved once the home
+ * screen widgets needed the same answer. See the note there for why it is read
+ * off the resolved config rather than written down.
  */
-function scheme(): string {
-  const declared = Constants.expoConfig?.scheme
-  return (Array.isArray(declared) ? declared[0] : declared) ?? 'ricecal'
-}
-
 export function loginLinkRedirect(): string {
-  return `${scheme()}://auth/callback`
+  return `${appScheme()}://auth/callback`
 }
 
 /**
@@ -59,7 +54,7 @@ export function loginLinkRedirect(): string {
  * so a reset is not counted as a sign-in, and `app/auth/[action].tsx`.
  */
 export function passwordResetRedirect(): string {
-  return `${scheme()}://auth/reset`
+  return `${appScheme()}://auth/reset`
 }
 
 /**
