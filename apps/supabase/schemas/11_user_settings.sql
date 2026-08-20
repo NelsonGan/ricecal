@@ -1,23 +1,21 @@
 -- ---------------------------------------------------------------------------
--- Preferences: everything that changes what the app shows or does, and
--- nothing that changes what the numbers are.
+-- Preferences: everything that changes what the app shows or does, and nothing
+-- that changes what the numbers are.
 --
--- WHY ONE WIDE TABLE AND NOT SEVERAL
---
--- The Me screens read display, notifications and privacy as separate cards, so
--- the obvious move is a table each. But all of it is strictly 1:1 with the
--- user, always read together on that screen, and always written a field at a
--- time. Separate tables would mean a select, an upsert and a set of policies
--- each, all to be kept identical, in exchange for a normalisation that buys
--- nothing — there is no cardinality to model.
+-- Why one wide table and not several: the Me screens read display, notifications
+-- and privacy as separate cards, so the obvious move is a table each. But all of
+-- it is strictly 1:1 with the user, always read together on that screen, and
+-- always written a field at a time. Separate tables would mean a select, an
+-- upsert and a set of policies each, all to be kept identical, in exchange for a
+-- normalisation that buys nothing.
 --
 -- Adding a preference is a migration either way. Columns are grouped and
 -- commented so the file still reads as sections.
 --
--- Meal reminder toggles are NOT here. They live on `meal_times` next to the
--- time they fire at, because "remind me about lunch" and "lunch is at 13:00"
--- are one fact, and splitting them means a scheduler joins two tables to
--- answer one question.
+-- Meal reminder toggles are not here. They live on `meal_times` next to the time
+-- they fire at, because "remind me about lunch" and "lunch is at 13:00" are one
+-- fact, and splitting them means a scheduler joins two tables to answer one
+-- question.
 -- ---------------------------------------------------------------------------
 
 create table public.user_settings (
@@ -44,13 +42,12 @@ create table public.user_settings (
   quiet_from             time not null default '22:00',
   quiet_to               time not null default '07:00',
 
-  -- Activity ----------------------------------------------------------------
-  -- The one movement goal nobody's watch supplies. Apple's Move, Exercise and
-  -- Stand goals are set on the watch and arrive per day on `activity_days`; a
-  -- step goal is not a HealthKit concept at all and Health Connect has no goals
-  -- of any kind, so this is the app's own number and the same one on both
-  -- platforms. 8,000 rather than the folk 10,000, which comes from a 1960s
-  -- Japanese pedometer's brand name.
+  -- Activity. The one movement goal nobody's watch supplies. Apple's Move, Exercise
+  -- and Stand goals are set on the watch and arrive per day on `activity_days`; a
+  -- step goal is not a HealthKit concept at all and Health Connect has no goals of
+  -- any kind, so this is the app's own number and the same one on both platforms.
+  -- 8,000 rather than the folk 10,000, which comes from a 1960s Japanese
+  -- pedometer's brand name.
   step_goal              integer not null default 8000 check (step_goal between 1000 and 50000),
   -- Whether burned calories extend the day's budget. On by default once a
   -- provider is connected, because a user who linked their watch did it for

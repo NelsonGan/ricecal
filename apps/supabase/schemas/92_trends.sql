@@ -1,21 +1,19 @@
 -- ---------------------------------------------------------------------------
 -- Trends: the arithmetic behind three tabs and three ranges.
 --
--- The Trends screen reads calories, water and weight over seven days, thirty
--- days or a year. No table here changed to support it — every figure it draws
--- was already stored. What was missing was a way to READ it: water lives in
+-- The Trends screen reads calories, water and weight over seven days, thirty days
+-- or a year. No table here changed to support it, because every figure it draws
+-- was already stored. What was missing was a way to read it: water lives in
 -- `daily_logs` and food in `daily_nutrition`, so nothing could answer "how much
--- of each, per day, for the last thirty days" in one request, and there was no
--- range query over water at all.
+-- of each, per day, for the last thirty days" in one request.
 --
 -- The bucketing is here rather than in the client for the reason every other
--- total in this schema is a view: a weekly average computed in the app is one
--- the reminder and report jobs cannot reuse, and two of them will drift.
+-- total in this schema is a view: a weekly average computed in the app is one the
+-- reminder and report jobs cannot reuse, and two of them will drift.
 --
--- The ranges are NAMED rather than passed as a pair of dates. What "the last
+-- The ranges are named rather than passed as a pair of dates. What "the last
 -- thirty days" means depends on the user's timezone, and `local_today()` is the
--- only thing that knows it — a client computing `today - 29` in device time
--- gets the wrong window for anybody travelling.
+-- only thing that knows it.
 --
 -- These sort after 90_views.sql because `trend_days` reads `daily_nutrition`.
 -- ---------------------------------------------------------------------------
@@ -25,14 +23,12 @@
 -- One row per calendar day in the range, whether anything was logged or not.
 --
 -- The absent day is the point. `daily_nutrition` has no row for a day with no
--- food and `daily_logs` has none for a day with no water, but "5 of 7 days
--- under goal" and "2 of 7 days at goal" are both counts over SEVEN — so the
--- days have to be generated and the facts joined onto them, not the other way
--- round.
+-- food and `daily_logs` has none for a day with no water, but "5 of 7 days under
+-- goal" is a count over seven, so the days have to be generated and the facts
+-- joined onto them rather than the other way round.
 --
 -- The goal is joined per day rather than taken once, because `daily_goals` is
--- effective-dated: a budget tightened on Thursday must not redraw Monday, which
--- is the same rule `goals_on()` exists for.
+-- effective-dated: a budget tightened on Thursday must not redraw Monday.
 -- ---------------------------------------------------------------------------
 create or replace function public.trend_days(
   p_range   text,
@@ -123,8 +119,8 @@ comment on function public.trend_days is
 -- block, or a month.
 --
 -- One row per column of the chart, carrying all three tabs' numbers. Three
--- separate readers would be three round trips for one screen, and the tab
--- switch is instant only if the data for all three is already in hand.
+-- separate readers would be three round trips for one screen, and the tab switch
+-- is instant only if the data for all three is already in hand.
 -- ---------------------------------------------------------------------------
 create or replace function public.trend_series(
   p_range   text,
@@ -212,10 +208,9 @@ comment on function public.trend_series is
 -- The whole range as one row: the three header cards, and the footnotes under
 -- each chart.
 --
--- Not derivable from `trend_series` without weighting every bucket by its
--- logged days, which is arithmetic the screens are not allowed to do — and
--- would get wrong on the 30d range, whose oldest block is two days rather than
--- seven.
+-- Not derivable from `trend_series` without weighting every bucket by its logged
+-- days, which is arithmetic the screens are not allowed to do, and would get
+-- wrong on the 30d range whose oldest block is two days rather than seven.
 -- ---------------------------------------------------------------------------
 create or replace function public.trend_summary(
   p_range   text,
