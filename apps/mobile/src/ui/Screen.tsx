@@ -27,11 +27,10 @@ import { NumpadHost, useNumpadZone } from './Numpad'
 /**
  * The scroll view, taught `className`.
  *
- * NativeWind converts className to style for the components it ships support
- * for, which are React Native's own. A third-party component takes `className`
- * as an ordinary prop and drops it — no warning, no error, an element with
- * none of the styling it was asked for. Without this registration the scroll
- * view below loses its `flex-1`.
+ * NativeWind converts className to style for the components it ships support for,
+ * which are React Native's own. A third-party component takes `className` as an
+ * ordinary prop and drops it, with no warning and no error. Without this
+ * registration the scroll view below loses its `flex-1`.
  */
 const AwareScrollView = cssInterop(KeyboardAwareScrollView, {
   className: 'style',
@@ -44,13 +43,12 @@ const KeyboardShell = cssInterop(KeyboardAvoidingView, { className: 'style' })
 /**
  * Gesture-handler's ScrollView, animated so it can stand in as the scroller
  * above. `KeyboardAwareScrollView` drives its inner view's insets through
- * `animatedProps`, which only a Reanimated component accepts — a plain one
- * would take the whole keyboard mechanism as inert props and drop it.
+ * `animatedProps`, which only a Reanimated component accepts.
  *
  * The cast is nominal rather than structural: the slot is typed as an animated
- * copy of React Native's OWN ScrollView, which this is not and cannot be, while
- * the only thing the library actually needs from it is that `animatedProps`
- * reaches a scroll view. Gesture-handler's takes the same props.
+ * copy of React Native's own ScrollView, which this is not and cannot be, while
+ * the only thing the library needs from it is that `animatedProps` reaches a
+ * scroll view.
  */
 const GestureScrollView = Reanimated.createAnimatedComponent(
   RawGestureScrollView,
@@ -59,32 +57,24 @@ const GestureScrollView = Reanimated.createAnimatedComponent(
 /**
  * How far above the footer a focused field is brought to rest.
  *
- * A GAP PLUS THE PART OF THE FIELD NOBODY MEASURES, and the second half is the
+ * A gap plus the part of the field nobody measures, and the second half is the
  * whole reason this is not simply `spacing.md`.
  *
- * `KeyboardAwareScrollView` reveals the focused NODE, and the focused node is
- * the `TextInput` — not the field. `TextField` centres a line of text about
+ * `KeyboardAwareScrollView` reveals the focused node, and the focused node is the
+ * `TextInput` rather than the field. `TextField` centres a line of text about
  * 22pt tall inside a bordered box at least 60pt tall, so roughly 19pt of the
- * thing the user sees sits BELOW the thing the library measures, and the label
- * and any hint sit outside it entirely. At a 14pt gap that arithmetic left the
- * field's bottom border within a point or two of the footer's canvas: the
- * account screen's email field came to rest looking cropped, and whether it
- * actually was depended on the screen height, the home indicator's inset and
- * whichever keyboard the platform put up. "Slightly covered", and only
- * sometimes, which is the worst version of a layout bug to chase.
+ * thing the user sees sits below the thing the library measures, and the label
+ * and any hint sit outside it entirely. At a 14pt gap that left the field's
+ * bottom border within a point or two of the footer's canvas, and whether it was
+ * actually cropped depended on the screen height and the keyboard.
  *
- * So the clearance is the box first and the gap after it. Costing a scroll
- * position a few points higher is not a trade worth thinking about.
+ * So the clearance is the box first and the gap after it.
  *
- * AND THE LINE UNDER THE FIELD, which is the third term and was the one
- * missing. `TextField` renders its error or hint BELOW the input — outside the
- * measured node, like the label above it — so a field revealed to exactly the
- * footer's top edge left that line under the footer's canvas. The account
- * screen showed it: tap Continue with an empty address, tap the field, and
- * "That does not look like an email address" came to rest half-covered by the
- * button it was explaining. `spacing.lg` is 22 against a `meta` line box of 19,
- * so it clears one of those with a little to spare — which is the right side to
- * be wrong on, since the cost is a scroll position a few points higher.
+ * And the line under the field is the third term, which was the one missing.
+ * `TextField` renders its error or hint below the input, outside the measured
+ * node, so a field revealed to exactly the footer's top edge left that line under
+ * the footer's canvas. `spacing.lg` is 22 against a `meta` line box of 19, so it
+ * clears one of those with a little to spare.
  */
 const FIELD_CLEARANCE = spacing.lg + spacing.md + spacing.lg
 
@@ -93,25 +83,23 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   /** Content pinned below the scroll area — the footer CTA. Never scrolls away. */
   footer?: ReactNode
   /**
-   * Content laid OVER the scroll area, pinned to its bottom-right corner — the
+   * Content laid over the scroll area, pinned to its bottom-right corner: the
    * floating action on Today.
    *
-   * Not the same thing as `footer`, which is a row the content is laid out
-   * above: this overlaps, so the last card scrolls under it. That is the trade a
-   * floating button makes and the reason it is a separate slot — a screen using
-   * it owes its scroll content enough bottom padding that the last row can be
-   * read, and the caller is the only one who knows how much.
+   * Not the same thing as `footer`, which is a row the content is laid out above.
+   * This overlaps, so the last card scrolls under it. That is the trade a floating
+   * button makes and the reason it is a separate slot: a screen using it owes its
+   * scroll content enough bottom padding that the last row can be read.
    */
   floating?: ReactNode
   /**
-   * The same overlay, pinned to the bottom LEFT instead.
+   * The same overlay, pinned to the bottom left instead.
    *
-   * Its own slot rather than a row inside `floating`, because the two corners
-   * hold unrelated things and appear on different conditions: Today's log
-   * button is always there and hides only while a row is open for delete, while
-   * the way back to today exists only when the screen is showing some other
-   * day. A single row would have to render an invisible spacer for whichever
-   * half is absent, and a spacer over a scroll view eats taps.
+   * Its own slot rather than a row inside `floating`, because the two corners hold
+   * unrelated things and appear on different conditions: Today's log button is
+   * always there, while the way back to today exists only when the screen is
+   * showing some other day. A single row would have to render an invisible spacer
+   * for whichever half is absent, and a spacer over a scroll view eats taps.
    */
   floatingLeading?: ReactNode
   /** Drop the 20pt screen gutter, for content that bleeds to the edge. */
@@ -119,42 +107,36 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   /** Render children in a plain View instead of a ScrollView. */
   scroll?: boolean
   /**
-   * Scroll with gesture-handler's ScrollView instead of the platform one, for
-   * a screen whose rows carry pan gestures of their own.
+   * Scroll with gesture-handler's ScrollView instead of the platform one, for a
+   * screen whose rows carry pan gestures of their own.
    *
-   * The swipe-to-delete on a diary row needs it: inside the platform
-   * ScrollView its pan never activates at all — no drag, no error, nothing to
-   * debug — because the two are arbitrating through different systems. Inside
-   * this one they negotiate, and the row slides.
+   * The swipe-to-delete on a diary row needs it: inside the platform ScrollView its
+   * pan never activates at all, with no drag and nothing to debug, because the two
+   * are arbitrating through different systems. Inside this one they negotiate.
    *
-   * Off by default, and only Today asks for it — the only screen that renders
+   * Off by default, and only Today asks for it, being the only screen that renders
    * a swipeable row.
    *
-   * It was briefly on everywhere, and the entry screen's macro rows collapsed
-   * under a keyboard. That turned out to be `MacroBars` carrying its own
-   * `flex-1` into a column, which is fixed at the source; how much this scroll
-   * view contributed is not something the evidence separates, since swapping
-   * it back also made the symptom go. Left scoped because the narrow thing is
+   * It was briefly on everywhere, and the entry screen's macro rows collapsed under
+   * a keyboard. That turned out to be `MacroBars` carrying its own `flex-1` into a
+   * column, which is fixed at the source. Left scoped because the narrow thing is
    * the safe thing and nothing else needs it.
    */
   gestureScroll?: boolean
   className?: string
   /**
-   * Layout for the box the children sit in — `justify-center`, `items-center`.
+   * Layout for the box the children sit in: `justify-center`, `items-center`.
    *
-   * The CONTENT BOX in both modes, which it did not used to be. On the
-   * scrolling path this landed on the ScrollView's own `className`, where
-   * `justify-center` styles the wrong box and does nothing at all: a scroll
-   * view's alignment belongs to its content container. Nothing caught it
-   * because every caller happened to pass `scroll={false}` as well, so the
-   * broken half had no users — it was a trap set for whoever wrote the next
-   * screen rather than a live bug.
+   * The content box in both modes, which it did not used to be. On the scrolling
+   * path this landed on the ScrollView's own `className`, where `justify-center`
+   * styles the wrong box and does nothing at all, because a scroll view's alignment
+   * belongs to its content container. Nothing caught it because every caller
+   * happened to pass `scroll={false}` as well.
    *
-   * Passing it also makes the content box FILL the viewport before it scrolls
-   * (`flexGrow: 1`), because centring inside a box that is only as tall as its
-   * contents is a no-op. Only when it is passed: a content container with a
-   * definite height changes what a `flex-1` child does, and screens that never
-   * asked for alignment should not have their layout quietly reinterpreted.
+   * Passing it also makes the content box fill the viewport before it scrolls,
+   * because centring inside a box only as tall as its contents is a no-op. Only
+   * when it is passed: a content container with a definite height changes what a
+   * `flex-1` child does.
    */
   contentClassName?: string
 }
@@ -163,34 +145,30 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
  * The screen shell: canvas background, safe-area insets, gutter, and keyboard
  * handling.
  *
- * Keyboard behaviour is the reason this exists rather than each screen wiring
- * its own ScrollView, and ONE LIBRARY OWNS IT ON BOTH PLATFORMS.
- * `react-native-keyboard-controller` reports the keyboard's position every
- * frame on the UI thread, which is the thing none of React Native's own
- * primitives can do:
+ * Keyboard behaviour is the reason this exists rather than each screen wiring its
+ * own ScrollView, and one library owns it on both platforms.
+ * `react-native-keyboard-controller` reports the keyboard's position every frame
+ * on the UI thread, which is the thing none of React Native's own primitives can
+ * do:
  *
  * - `KeyboardAwareScrollView` insets the scroll view and reveals the focused
- *   field, and it takes a `bottomOffset` — the one number the platform cannot
- *   be told. UIKit's `automaticallyAdjustKeyboardInsets` always reveals a field
- *   to the KEYBOARD'S top, and knows nothing about a footer sitting on the
- *   keyboard: tapping the fat figure on a logged entry scrolled it neatly to
- *   the top of the keys and left it behind the Save button, so the number being
- *   typed was the one thing on screen the user could not see.
+ *   field, and it takes a `bottomOffset`, the one number the platform cannot be
+ *   told. UIKit's `automaticallyAdjustKeyboardInsets` always reveals a field to
+ *   the keyboard's top and knows nothing about a footer sitting on it, so tapping
+ *   the fat figure on a logged entry scrolled it neatly to the top of the keys
+ *   and left it behind the Save button.
  * - `KeyboardStickyView` moves the footer, on the UI thread, in the keyboard's
  *   own animation. What it replaces was a `keyboardWillChangeFrame` listener
  *   driving an `Animated.timing` over a bezier approximating UIKit's private
- *   curve — close, but visibly not the same motion, and no help at all during
- *   an interactive dismissal, where no JS event fires while the finger drags
- *   the keyboard down and the footer simply hung in the air until it let go.
- * - Android used to be a different mechanism entirely: `adjustResize` shrank
- *   the window, and the footer's dead bottom padding was corrected by hand off
+ *   curve: close, visibly not the same motion, and no help at all during an
+ *   interactive dismissal.
+ * - Android used to be a different mechanism entirely: `adjustResize` shrank the
+ *   window, and the footer's dead bottom padding was corrected by hand off
  *   `keyboardDidShow`. `KeyboardProvider` takes the window edge-to-edge and
- *   reports the keyboard instead, so both platforms now run the code above and
- *   there is one behaviour to reason about rather than two.
+ *   reports the keyboard instead, so both platforms now run the code above.
  *
  * `KeyboardAvoidingView` is still the root, but it only does anything for a
- * screen that does NOT scroll — there is no scroll view to inset there, so
- * padding the shell is the only way a field in one stays visible.
+ * screen that does not scroll, since there is no scroll view to inset there.
  *
  * `keyboardShouldPersistTaps="handled"` is the third piece: it makes the first
  * tap on a button activate it instead of being eaten dismissing the keyboard.
@@ -225,41 +203,37 @@ export function Screen({
   /**
    * How much room to keep between the focused field and the keyboard.
    *
-   * The footer rises to sit on the keyboard, so the part of it standing ABOVE
-   * the keys is what a field has to clear — its height less the home
-   * indicator's inset, which the lift already takes off (see the footer). Plus
-   * `FIELD_CLEARANCE`, for the reason written on it.
+   * The footer rises to sit on the keyboard, so the part of it standing above the
+   * keys is what a field has to clear: its height less the home indicator's inset,
+   * which the lift already takes off. Plus `FIELD_CLEARANCE`.
    */
   const bottomOffset = Math.max(footerHeight - insets.bottom, 0) + FIELD_CLEARANCE
 
   /**
-   * How far the footer and the floating action ride up, tracked on the UI
-   * thread. `height` runs from 0 to MINUS the keyboard's height, so this reads
-   * as "up by the keyboard, less the home indicator's inset" — that padding is
-   * there to clear the indicator, and with a keyboard over it the inset would
-   * otherwise be a band of canvas between the buttons and the keys.
+   * How far the footer and the floating action ride up, tracked on the UI thread.
+   * `height` runs from 0 to minus the keyboard's height, so this reads as "up by
+   * the keyboard, less the home indicator's inset": that padding is there to clear
+   * the indicator, and with a keyboard over it the inset would otherwise be a band
+   * of canvas between the buttons and the keys.
    *
-   * The clamp is the whole reason this is not `KeyboardStickyView`, which is
-   * the same expression without one. NEVER DOWNWARDS: a keyboard shorter than
-   * the bottom inset makes the subtraction positive and pushes the footer off
-   * the bottom of the screen. That is not hypothetical — a floating IME on
-   * Android reports a height of almost nothing while still counting as open,
-   * and the Android emulator sat in exactly that state with the sign-in button
-   * hanging over the gesture bar.
+   * The clamp is the whole reason this is not `KeyboardStickyView`, which is the
+   * same expression without one. Never downwards: a keyboard shorter than the
+   * bottom inset makes the subtraction positive and pushes the footer off the
+   * bottom of the screen. That is not hypothetical, since a floating IME on Android
+   * reports a height of almost nothing while still counting as open.
    *
-   * Not on a screen with nothing to scroll, where the shell below is padding
-   * the whole thing — the footer included — out of the keyboard's way. Lifted
-   * as well it would rise twice.
+   * Not on a screen with nothing to scroll, where the shell below is padding the
+   * whole thing out of the keyboard's way. Lifted as well it would rise twice.
    */
   const keyboard = useReanimatedKeyboardAnimation()
 
   /**
-   * The app's own number pad, which every numeric field opens instead of the
-   * system keyboard. It is a view rather than a window, so nothing reports it
-   * and this screen has to add it to the same two sums the keyboard feeds:
-   * how far the footer rides up, and how much room the scroll view leaves at
-   * the bottom. The two never coincide — a field is either numeric or it is
-   * not — but they add rather than branch, so there is one expression to read.
+   * The app's own number pad, which every numeric field opens instead of the system
+   * keyboard. It is a view rather than a window, so nothing reports it and this
+   * screen has to add it to the same two sums the keyboard feeds: how far the
+   * footer rides up, and how much room the scroll view leaves at the bottom. The
+   * two never coincide, since a field is either numeric or it is not, but they add
+   * rather than branch so there is one expression to read.
    */
   const numpad = useNumpadZone()
 
