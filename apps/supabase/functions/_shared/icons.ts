@@ -1,21 +1,18 @@
 // Which drawing goes on a typed meal or a described recipe.
 //
-// Neither of those arrives with a photograph — that is the whole difference
-// between them and a snap — so the row would otherwise be a name over an empty
-// grey square, in a diary where the meals beside it have pictures. The
-// catalogue cannot be illustrated (a few hundred drawings against half a
-// million imported rows), but the model that just read "nasi lemak with fried
-// chicken" knows perfectly well which of our drawings that is.
+// Neither arrives with a photograph, which is the whole difference between them
+// and a snap, so the row would otherwise be a name over an empty grey square in a
+// diary where the meals beside it have pictures. The catalogue cannot be
+// illustrated, a few hundred drawings against half a million imported rows, but
+// the model that just read "nasi lemak with fried chicken" knows which of our
+// drawings that is.
 //
-// So the prompt carries the list and the model picks a name out of it. It is
-// the one thing on this path that CANNOT be hallucinated usefully: an invented
-// name renders nothing, so `resolveIcon` below only ever answers with something
-// that exists. Everything else about a scan degrades to a worse answer; this
-// degrades to no answer, which is what the row showed anyway.
+// So the prompt carries the list and the model picks a name out of it. It is the
+// one thing on this path that cannot be hallucinated usefully: an invented name
+// renders nothing, so `resolveIcon` below only ever answers with something that
+// exists.
 //
 // The names come from `icons.generated.ts`, written by the same script that
-// builds the app's icon registry — see the note there about why a hand-kept
-// second copy was not an option.
 
 import { ICON_NAMES } from './icons.generated.ts'
 

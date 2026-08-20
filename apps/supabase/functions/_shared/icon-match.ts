@@ -1,57 +1,48 @@
 /**
  * A drawing for a catalogue row, worked out from its name.
  *
- * WHY NOT `guessIcon`
+ * Why not `guessIcon`: that one scores shared words, which is right for what it
+ * does, since a model has already named the dish in ordinary words and "char kway
+ * teow" finding `char-kuey-teow` on two of three words is exactly the near-miss it
+ * exists to catch.
  *
- * The edge functions' `guessIcon` scores SHARED WORDS, which is right for what
- * it does: a model has already named the dish in ordinary words, so "char kway
- * teow" finding `char-kuey-teow` on two of three words is exactly the near-miss
- * it exists to catch.
+ * Imported catalogue names are not that. They are descriptors ("Beef, round,
+ * bottom round, steak, separable lean and fat, trimmed to 0 inch fat") and word
+ * overlap has no idea which word is the food. Measured over the 31,262 undrawn
+ * rows it matched 2.8%, and some of those were wrong in the way that matters:
+ * "Fried Rice with Egg and Prawn" scored `fried-egg`, because it shares two words
+ * with it and nothing knows that the rice is the dish.
  *
- * Imported catalogue names are not that. They are descriptors — "Beef, round,
- * bottom round, steak, separable lean and fat, trimmed to 0 inch fat" — and
- * word overlap has no idea which word is the food. Measured over the 31,262
- * undrawn rows it matched 2.8%, and some of those were wrong in the way that
- * matters: "Fried Rice with Egg and Prawn" scored `fried-egg`, because it
- * shares two words with it and nothing knows that the rice is the dish.
+ * So: phrases, longest first. The table below is ordered by specificity at match
+ * time rather than in the source. `PHRASES` is sorted by word count and then by
+ * length, so "fried rice" is tried before "rice" and "ice cream" before "cream".
+ * First hit wins.
  *
- * SO: PHRASES, LONGEST FIRST
+ * Matching is on word boundaries (the name is padded with spaces and searched for
+ * " phrase "), so "cream" does not fire inside "creamer".
  *
- * The table below is ordered by specificity at match time, not in the source —
- * `PHRASES` is sorted by word count and then by length, so "fried rice" is
- * tried before "rice" and "ice cream" before "cream". First hit wins.
- *
- * Matching is on WORD BOUNDARIES (the name is padded with spaces and searched
- * for " phrase "), so "cream" does not fire inside "creamer" and "ham" does not
- * fire inside "hamburger".
- *
- * WHAT IS DELIBERATELY ABSENT
- *
- * The set has no drawing for a sandwich, a pizza, crisps, flour or salt, and
- * those are thousands of rows between them. They stay undrawn. The app's own
- * rule is that a wrong picture is worse than none (see ICON_INSTRUCTION), and
- * the empty plate is a fine answer — borrowing `bread-loaf` for a sandwich
- * would put a loaf beside every sandwich in the catalogue for ever.
+ * What is deliberately absent: the set has no drawing for a sandwich, a pizza,
+ * crisps, flour or salt, and those are thousands of rows between them. They stay
+ * undrawn. A wrong picture is worse than none, and borrowing `bread-loaf` for a
+ * sandwich would put a loaf beside every sandwich in the catalogue for ever.
  */
 
 import { ICON_NAMES } from './icons.generated.ts'
 import type { IconChoice, IconSet } from './icons.ts'
 
 /**
- * phrase -> icon name. Set is resolved by `SET_OF` in the caller, so a name
- * here only has to exist; whether it is `dishes` or `food` is not this table's
- * business.
+ * phrase to icon name. The set is resolved by `SET_OF` in the caller, so a name
+ * here only has to exist.
  *
- * A value of `null` means STOP, no drawing — the phrase is longer than the one
+ * A value of `null` means stop, no drawing: the phrase is longer than the one
  * that would otherwise fire, so it wins the ordering and suppresses it. Nothing
- * uses it today: "salad dressing" needed it until there was a drawing of a
- * dressing bottle to point at. It stays because the next wrong-picture case
- * will want it, and because `matchIcon` has to keep treating null as an answer
- * rather than as a miss.
+ * uses it today, and it stays because the next wrong-picture case will want it,
+ * and because `matchIcon` has to keep treating null as an answer rather than as a
+ * miss.
  *
  * Malay, French and Spanish terms are in because the catalogue is full of them:
- * Malaysian products are often entered by European contributors ("Nouilles
- * instantanées"), and MyFCD is bilingual.
+ * Malaysian products are often entered by European contributors, and MyFCD is
+ * bilingual.
  */
 export const TABLE: Record<string, string | null> = {
   // -- Malaysian and regional dishes ---------------------------------------
@@ -849,11 +840,11 @@ export const TABLE: Record<string, string | null> = {
  * load-bearing rather than tidy. Length alone gets it backwards: `chocolate` is
  * nine characters and `milk` is four, so "Chocolate Milk" drew a bar of
  * chocolate, and `strawberry` beat `yogurt` on every fruit yogurt in the
- * catalogue. The icon should be the FOOD — a carton, a tub, a slice of cake —
- * and the flavour is what is written on the front of it.
+ * catalogue. The icon should be the food, and the flavour is what is written on
+ * the front of it.
  *
- * A weak phrase still wins when nothing else matches, which is the case they
- * are here for: "Dark Chocolate 70%" is a bar of chocolate and nothing else.
+ * A weak phrase still wins when nothing else matches, which is the case they are
+ * here for: "Dark Chocolate 70%" is a bar of chocolate and nothing else.
  */
 const WEAK = new Set([
   'chocolate',
@@ -929,29 +920,26 @@ const WEAK = new Set([
  * The same idea again, for names that are not written in Latin letters.
  *
  * `normaliseName` drops everything outside `[a-z0-9]`, which is correct for the
- * Latin table — accents fold, punctuation goes — and total for a script it does
- * not cover. A Thai name normalises to the empty string, and `matchIcon` used to
- * return null on the first line without looking at anything. Measured against
- * the catalogue that was **4,573 undrawn rows, a third of all of them**, and it
- * read as a missing vocabulary when it was really a missing alphabet.
+ * Latin table and total for a script it does not cover. A Thai name normalises to
+ * the empty string, and `matchIcon` used to return null on the first line.
+ * Measured against the catalogue that was 4,573 undrawn rows, a third of all of
+ * them, and it read as a missing vocabulary when it was really a missing
+ * alphabet.
  *
- * Two things make this a separate table rather than more rows in the one above.
- * Thai does not put spaces between words, so the boundary test that stops
- * `cream` firing inside `creamer` cannot work here and the match has to be a
- * plain substring. And with no boundaries the ORDERING is doing all of the
- * safety work, so the entries have to be chosen against the corpus rather than
- * from a dictionary: `มันฝรั่ง` (potato) and `หมากฝรั่ง` (chewing gum) both
- * contain `ฝรั่ง` (guava), and `คาปูชิโน` (cappuccino) contains `ปู` (crab).
- * Each of those longer phrases is here to win before the short one can.
+ * Two things make this a separate table. Thai does not put spaces between words,
+ * so the boundary test cannot work here and the match has to be a plain
+ * substring. And with no boundaries the ordering does all of the safety work, so
+ * the entries have to be chosen against the corpus rather than from a dictionary:
+ * `มันฝรั่ง` (potato) and `หมากฝรั่ง` (chewing gum) both contain `ฝรั่ง` (guava),
+ * and `คาปูชิโน` (cappuccino) contains `ปู` (crab). Each longer phrase is here to
+ * win before the short one can.
  */
 const SCRIPT_TABLE: Record<string, string | null> = {
-  // -- Japanese ------------------------------------------------------------
-  //
-  // The 45x and 49x shelves are 34,736 packets, the largest in Asia here, and
-  // they were at 30% because kana and kanji were as invisible to the matcher as
+  // Japanese. The 45x and 49x shelves are 34,736 packets, the largest in Asia here,
+  // and they were at 30% because kana and kanji were as invisible to the matcher as
   // Thai. Same rules: no spaces, so the compounds have to outrank the single
-  // characters — 牛乳 (milk) contains 牛 (beef), 豆腐 (tofu) and 納豆 (natto)
-  // and 豆乳 (soy milk) all contain 豆 (bean), and アイスコーヒー is a coffee.
+  // characters. 牛乳 (milk) contains 牛 (beef), and 豆腐 (tofu), 納豆 (natto) and
+  // 豆乳 (soy milk) all contain 豆 (bean).
   ミルクチョコレート: 'chocolate-bar',
   アイスコーヒー: 'coffee',
   アイスティー: 'tea-cup',
@@ -1048,13 +1036,11 @@ const SCRIPT_TABLE: Record<string, string | null> = {
   มักกะโรนี: 'macaroni',
   ผัดไทย: 'pad-thai',
 
-  // -- Thai: the bread words, which is most of what `ขนม` turned out to be --
-  //
-  // 287 rows contain `ขนม` and almost none of them are a generic sweet: they
-  // are `ขนมปัง` (bread), `ขนมปังกรอบ` (a cracker), `ขนมขาไก่` (a stick
-  // snack). Bare `ขนม` is deliberately absent — it covers everything from a
-  // rusk to a peanut brittle, and there is no drawing that is right for all of
-  // them.
+  // Thai: the bread words, which is most of what `ขนม` turned out to be. 287 rows
+  // contain it and almost none are a generic sweet: they are `ขนมปัง` (bread),
+  // `ขนมปังกรอบ` (a cracker), `ขนมขาไก่` (a stick snack). Bare `ขนม` is
+  // deliberately absent, because it covers everything from a rusk to a peanut
+  // brittle and no drawing is right for all of them.
   ขนมปังกรอบ: 'crackers',
   ขนมปัง: 'bread-loaf',
   // `ขนม` is the trap that made the null value earn its keep. It means a snack
@@ -1197,12 +1183,11 @@ const SCRIPT_TABLE: Record<string, string | null> = {
 }
 
 /**
- * The script phrases that describe a flavour or a liquid rather than a food,
- * held back for the same reason the Latin `WEAK` set is: `ช็อกโกแลต` is nine
- * characters and `นม` is two, so "chocolate milk" would draw a bar rather than
- * a carton. `น้ำ` is the broadest of them — it prefixes oil, sugar, fish sauce
- * and juice alike, and every one of those is spelled out above, so what is left
- * for it really is a glass of something.
+ * The script phrases that describe a flavour or a liquid rather than a food, held
+ * back for the same reason the Latin `WEAK` set is: `ช็อกโกแลต` is nine
+ * characters and `นม` is two, so "chocolate milk" would draw a bar rather than a
+ * carton. `น้ำ` is the broadest of them, since it prefixes oil, sugar, fish sauce
+ * and juice alike, and every one of those is spelled out above.
  */
 const SCRIPT_WEAK = new Set([
   'ช็อกโกแลต',
@@ -1254,8 +1239,8 @@ for (const [phrase, icon] of Object.entries({
  *
  * `นม` (milk) is two characters, and Thai runs its words together: it turned up
  * inside `กลิ่นมะลิ` (jasmine scent) and drew a carton of milk on a green tea.
- * These must start the name or follow something that is not itself a Thai
- * letter — which is what a word boundary means in a script that has none.
+ * These must start the name or follow something that is not itself a Thai letter,
+ * which is what a word boundary means in a script that has none.
  */
 const SCRIPT_ANCHORED = new Set(['นม', 'ชา', 'ปู', 'ส้ม', '茶', '豆', '米', '牛', '鶏', '豚', '魚'])
 
@@ -1305,13 +1290,13 @@ const PHRASES = [...STRONG_PHRASES, ...WEAK_PHRASES]
 /** Exported so a test can assert each one is a real key. */
 export { WEAK_PHRASES }
 
-/** Lowercased, non-alphanumerics to single spaces, padded for boundary tests. */
 /**
- * Phrases that describe the SHAPE of the food rather than an ingredient in it.
+ * Lowercased, non-alphanumerics to single spaces, padded for boundary tests.
  *
- * Only these are allowed to win from a name's first segment. A bowl of soup is
- * a bowl of soup whatever is floating in it, and a sandwich cookie is a cookie;
- * but "Beef, ..., steak" is a steak, so `beef` is deliberately not here.
+ * Phrases that describe the shape of the food rather than an ingredient in it.
+ * Only these are allowed to win from a name's first segment. A bowl of soup is a
+ * bowl of soup whatever is floating in it, and a sandwich cookie is a cookie, but
+ * "Beef, ..., steak" is a steak, so `beef` is deliberately not here.
  */
 const FORM_HEADS = new Set([
   'soup',
@@ -1385,26 +1370,24 @@ export function matchIcon(name: unknown): string | null {
   // not a miss, it is a different alphabet — see `SCRIPT_TABLE`.
   if (text.trim().length === 0) return matchScript(raw)
 
-  // A FORM DECLARED FIRST WINS.
+  // A form declared first wins.
   //
   // Composition tables write "Head, qualifier, qualifier": "Soup, vegetable
-  // chicken, canned", "Cookie, vanilla sandwich", "Pastry, made with bean paste
-  // and salted egg yolk". Scanning the whole string lets a qualifier win on
-  // length alone, and those three were drawn as a chicken, a sandwich and a
-  // boiled egg.
+  // chicken, canned", "Cookie, vanilla sandwich". Scanning the whole string lets a
+  // qualifier win on length alone, and those two were drawn as a chicken and a
+  // sandwich.
   //
-  // Restricted to FORM_HEADS, and that restriction is the whole subtlety. A
-  // head noun does not always outrank what follows it: "Beef, round, bottom
-  // round, steak" is a steak, and preferring the head there turned 401 steaks
-  // into slices. The difference is that a soup or a cookie is a SHAPE the
-  // drawing is about, where "beef" is an ingredient the rest of the name goes
-  // on to refine.
-  // The FIRST phrase to match the head decides whether this pass applies at
-  // all. Skipping straight to the form words instead lets a shorter one reach
-  // past a longer phrase that was meant to block it: "Salad dressing, caesar"
-  // has `salad dressing` mapped to nothing on purpose, and scanning only for
-  // form words found `salad` behind it and drew a plate of greens on 60 bottles
-  // of dressing.
+  // Restricted to FORM_HEADS, and that restriction is the whole subtlety. A head
+  // noun does not always outrank what follows it: "Beef, round, bottom round,
+  // steak" is a steak, and preferring the head there turned 401 steaks into slices.
+  // A soup or a cookie is a shape the drawing is about, where "beef" is an
+  // ingredient the rest of the name goes on to refine.
+  //
+  // The first phrase to match the head decides whether this pass applies at all.
+  // Skipping straight to the form words lets a shorter one reach past a longer
+  // phrase that was meant to block it: "Salad dressing, caesar" has `salad
+  // dressing` mapped to nothing on purpose, and scanning only for form words found
+  // `salad` behind it and drew a plate of greens on 60 bottles of dressing.
   const comma = String(name).indexOf(',')
   if (comma > 0) {
     const head = normaliseName(String(name).slice(0, comma))
@@ -1423,9 +1406,9 @@ export function matchIcon(name: unknown): string | null {
  * The non-Latin scan: a plain substring, longest phrase first.
  *
  * Runs only after the Latin pass has found nothing, which keeps it strictly
- * additive — no name that already had a drawing can change its mind here. It
- * also means a mixed name is read in Latin first, which is the right way round:
- * "KitKat Gold (Japan)" is a Latin name that happens to sit beside Thai ones.
+ * additive. It also means a mixed name is read in Latin first, which is the right
+ * way round: "KitKat Gold (Japan)" is a Latin name that happens to sit beside
+ * Thai ones.
  */
 function matchScript(raw: string): string | null {
   // Nothing to do for a name that is entirely ASCII, which is most of them.
@@ -1453,10 +1436,9 @@ export const PHRASE_COUNT = PHRASES.length
 /**
  * The same answer as `matchIcon`, resolved to the set the drawing lives in.
  *
- * `SET_OF` is rebuilt here rather than imported from `icons.ts` because that
- * one drops everything on its NOT_A_MEAL list, and this table is allowed to
- * name things that list excludes — `crackers` for keropok, say. What matters is
- * that a name resolves to a real file, which is what this checks.
+ * `SET_OF` is rebuilt here rather than imported from `icons.ts` because that one
+ * drops everything on its NOT_A_MEAL list, and this table is allowed to name
+ * things that list excludes. What matters is that a name resolves to a real file.
  */
 const SET_OF = new Map<string, IconSet>()
 for (const set of Object.keys(ICON_NAMES) as IconSet[]) {
