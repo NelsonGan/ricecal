@@ -1,6 +1,13 @@
 import { assertEquals } from 'jsr:@std/assert@^1'
 
-import { at, isStale, planOf, type RevenueCatEvent, statusFor } from './revenuecat.ts'
+import {
+  at,
+  isStale,
+  planOf,
+  type RevenueCatEvent,
+  sandboxAllowed,
+  statusFor,
+} from './revenuecat.ts'
 
 const event = (partial: Partial<RevenueCatEvent>): RevenueCatEvent => partial
 
@@ -129,4 +136,33 @@ Deno.test('at() survives a missing expiry', () => {
   assertEquals(at(undefined), null)
   assertEquals(at(Number.NaN), null)
   assertEquals(at(0), '1970-01-01T00:00:00.000Z')
+})
+
+Deno.test('the sandbox policy reads its three shapes', () => {
+  // A sandbox purchase costs nothing, so this setting is the one here that can
+  // hand the paid app out for free. All three spellings are worth pinning.
+  const withPolicy = (value: string | null, id: string) => {
+    if (value === null) Deno.env.delete('REVENUECAT_SANDBOX_SUBSCRIBERS')
+    else Deno.env.set('REVENUECAT_SANDBOX_SUBSCRIBERS', value)
+    try {
+      return sandboxAllowed(id)
+    } finally {
+      Deno.env.delete('REVENUECAT_SANDBOX_SUBSCRIBERS')
+    }
+  }
+
+  const id = '849A9370-8B72-439A-B8B0-0336BB8FB772'
+
+  // Unset is nobody, which is the safe default a fresh project starts on.
+  assertEquals(withPolicy(null, id), false)
+  assertEquals(withPolicy('', id), false)
+  // `*` is everybody. See the warning on `sandboxPolicy`.
+  assertEquals(withPolicy('*', id), true)
+  // A list is just those, and the comparison is case-insensitive because a uuid
+  // copied out of a dashboard and one out of Postgres differ in case and in
+  // nothing else.
+  assertEquals(withPolicy(id.toLowerCase(), id), true)
+  assertEquals(withPolicy('some-other-id', id), false)
+  // Whitespace around a pasted list is not a typo worth punishing.
+  assertEquals(withPolicy(` other , ${id.toLowerCase()} `, id), true)
 })
