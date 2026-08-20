@@ -12,6 +12,7 @@ const raw = {
   EXPO_PUBLIC_CATALOGUE_URL: process.env.EXPO_PUBLIC_CATALOGUE_URL,
   EXPO_PUBLIC_RC_IOS_KEY: process.env.EXPO_PUBLIC_RC_IOS_KEY,
   EXPO_PUBLIC_RC_ANDROID_KEY: process.env.EXPO_PUBLIC_RC_ANDROID_KEY,
+  EXPO_PUBLIC_RC_TEST_STORE_KEY: process.env.EXPO_PUBLIC_RC_TEST_STORE_KEY,
   EXPO_PUBLIC_MIXPANEL_TOKEN: process.env.EXPO_PUBLIC_MIXPANEL_TOKEN,
   EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
@@ -39,6 +40,27 @@ const schema = z.object({
   EXPO_PUBLIC_CATALOGUE_URL: z.string().min(1),
   EXPO_PUBLIC_RC_IOS_KEY: z.string().min(1),
   EXPO_PUBLIC_RC_ANDROID_KEY: z.string().min(1),
+  /**
+   * RevenueCat's TEST STORE key, and the only way the purchase flow can be
+   * walked on a simulator.
+   *
+   * Every other way to buy this app needs a real store: Apple's sandbox wants a
+   * sandbox Apple ID on a device, Play's wants a licensed tester on a phone, and
+   * a StoreKit configuration file produces a receipt RevenueCat's backend will
+   * not validate. So on a simulator the paywall's button could be pressed and
+   * never observed — which is how "I started the trial and it still says free
+   * plan" survived: the one flow nobody could run was the one that was broken.
+   *
+   * The test store is RevenueCat's own: it sells the same packages, mints a real
+   * customer, grants the real `pro` entitlement and delivers a real webhook,
+   * with `environment: SANDBOX` on it. Which is also why the webhook has
+   * `REVENUECAT_SANDBOX_USER_IDS` — see the `revenuecat` edge function.
+   *
+   * OPTIONAL, and read ONLY in a development build. `.optional()` here and
+   * `__DEV__` at the one place it is used, so a release bundle cannot reach it
+   * whatever is in the environment it was built from.
+   */
+  EXPO_PUBLIC_RC_TEST_STORE_KEY: z.string().min(1).optional(),
   EXPO_PUBLIC_MIXPANEL_TOKEN: z.string().min(1),
   EXPO_PUBLIC_SENTRY_DSN: z.string().min(1),
   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: z.string().min(1),
@@ -80,6 +102,9 @@ if (!parsed.success) {
 export const env = parsed.data
 
 /** True once a key holds a real provisioned value rather than the sentinel. */
-export function isConfigured(value: string): boolean {
-  return value !== PLACEHOLDER
+export function isConfigured(value: string | undefined): boolean {
+  // Undefined is not configured either. It became reachable when the first
+  // OPTIONAL key landed (`EXPO_PUBLIC_RC_TEST_STORE_KEY`), and reading an
+  // absent key as configured would hand the SDK the string "undefined".
+  return Boolean(value) && value !== PLACEHOLDER
 }

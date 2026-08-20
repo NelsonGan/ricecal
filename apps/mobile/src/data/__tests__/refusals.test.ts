@@ -23,6 +23,25 @@ const failure = (status: number, body: unknown) => ({
   context: new Response(JSON.stringify(body), { status }),
 })
 
+/**
+ * The same failure, carrying a response that is NOT the global `Response`.
+ *
+ * THIS IS THE CASE THE APP ACTUALLY MEETS, and the reason every case above
+ * passed while nothing worked on a phone. Expo 57 ships its own fetch, so what
+ * hangs off a `FunctionsHttpError` there is a `FetchResponse` that does not
+ * subclass `Response` — and the check used to be `instanceof Response`, which
+ * is true under jest (Node has the global) and false in the app. Every refusal
+ * the server has ever sent was read as an ordinary failure: no toast, no
+ * paywall, just "could not read this one".
+ *
+ * Written without `clone` as well, since a foreign implementation is not
+ * obliged to have it.
+ */
+const foreignFailure = (status: number, body: unknown) => ({
+  name: 'FunctionsHttpError',
+  context: { status, json: async () => body },
+})
+
 describe('refusalFrom', () => {
   it('reads a spent daily allowance, and whether there is anything to sell', async () => {
     const free = await refusalFrom(
@@ -73,5 +92,30 @@ describe('refusalFrom', () => {
 
   it('is null for a refusal status with an unreadable body', async () => {
     expect(await refusalFrom({ context: new Response('<html>', { status: 429 }) })).toBeNull()
+  })
+})
+
+describe('refusalFrom, against a fetch that is not the platform one', () => {
+  it('reads a refusal off a response class it has never heard of', async () => {
+    // See `foreignFailure`. The test that matters most here, because the one it
+    // replaces was green throughout the entire time this was broken.
+    const limit = await foreignFailure(429, {
+      code: 'scan_limit',
+      used: 3,
+      limit: 3,
+      entitled: false,
+    })
+    expect(await refusalFrom(limit)).toBeInstanceOf(ScanLimitError)
+
+    const pro = foreignFailure(402, { code: 'not_entitled', feature: 'describe' })
+    expect(await refusalFrom(pro)).toBeInstanceOf(NotEntitledError)
+  })
+
+  it('is not fooled by something that merely has a status', async () => {
+    // A duck-typed check has to stay narrow: an object with a status and no way
+    // to read a body is not a response, and treating it as one would turn a
+    // parse failure into a refusal nobody was given.
+    expect(await refusalFrom({ name: 'FunctionsHttpError', context: { status: 402 } })).toBeNull()
+    expect(await refusalFrom({ name: 'FunctionsFetchError', context: undefined })).toBeNull()
   })
 })

@@ -7,16 +7,15 @@ import {
   storedImageSource,
   useAvatarUrl,
   useCurrentWeight,
-  useEntitlement,
   useHealthConnection,
   useMealTimes,
   useProfile,
   useSettings,
   useStreak,
-  useSubscription,
   useTargets,
 } from '@/data'
 import { signOut } from '@/data/auth'
+import { usePlanSummary } from '@/features/paywall'
 import { showWeight, UNIT_KEY, unitFor } from '@/features/progress'
 import { HelpSheet } from '@/features/settings'
 import { ScreenTitle, SettingRow } from '@/features/shared'
@@ -24,7 +23,7 @@ import { Avatar, Button, Card, ConfirmSheet, Icon, ListRow, Screen, StatTile, Te
 
 /** U1 PROFILE */
 export default function MeScreen() {
-  const { t } = useTranslation(['profile', 'activity', 'common'])
+  const { t } = useTranslation(['profile', 'activity', 'common', 'paywall'])
   const router = useRouter()
 
   const { data: profile } = useProfile()
@@ -39,8 +38,7 @@ export default function MeScreen() {
   const avatar = storedImageSource(profile?.avatar_path ?? undefined, avatarUri)
   const { data: settings } = useSettings()
   const { data: targets, isPending: targetsPending } = useTargets()
-  const { data: subscription } = useSubscription()
-  const { entitled } = useEntitlement()
+  const plan = usePlanSummary()
   const { data: mealTimes } = useMealTimes()
   const streak = useStreak()
   const weight = useCurrentWeight()
@@ -83,22 +81,27 @@ export default function MeScreen() {
   const remindersValue =
     settings && mealTimes ? t('profile:home.remindersValue', { count: activeReminders }) : undefined
 
-  // `entitled` rather than the status alone, because the two can disagree: a
-  // row whose period has run out still SAYS `active`, and the gates read the
-  // date. Left on the status this line would tell somebody they had Pro on the
-  // same screen whose buttons were about to refuse them.
-  const status = entitled ? (subscription?.status ?? 'none') : 'none'
+  // `usePlanSummary` rather than the status column, and it reads both sources
+  // for the reason written out there. Two things it fixes on this line: a row
+  // whose period has run out still SAYS `active` while the gates read the date,
+  // and a purchase that has settled at the store has not yet reached that row
+  // at all — which is how this screen came to say "Free plan" to somebody whose
+  // trial had just started and whose buttons had already unlocked.
   const planLine =
-    status === 'trial'
+    plan.state === 'trial'
       ? t('profile:home.proTrial', {
-          when: subscription?.trial_ends_at
+          when: plan.trialEndsAt
             ? t('profile:home.proTrialOn', {
-                date: format(parseISO(subscription.trial_ends_at), 'd MMM'),
+                date: format(parseISO(plan.trialEndsAt), 'd MMM'),
               })
             : t('profile:home.proTrialTomorrow'),
         })
-      : status === 'active'
-        ? t('profile:home.proActive')
+      : plan.state === 'active'
+        ? // Named where we can name it. `proActive` used to be the literal
+          // "Yearly plan, active" and said that to every subscriber there is.
+          plan.plan
+          ? t('profile:home.proActive', { plan: t(`paywall:plans.${plan.plan}`) })
+          : t('profile:home.proActivePlain')
         : t('profile:home.proNone')
 
   return (
@@ -179,7 +182,7 @@ export default function MeScreen() {
           title={t('profile:home.pro')}
           subtitle={planLine}
           leading={<Icon set="system" name="crown" size={42} />}
-          onPress={() => router.push(entitled ? '/settings/subscription' : '/paywall')}
+          onPress={() => router.push(plan.state === 'none' ? '/paywall' : '/settings/subscription')}
         />
         {/* THE OTHER WAY TO GET PRO, and it belongs in this card rather than
             down among the settings for exactly that reason: the row above it is
