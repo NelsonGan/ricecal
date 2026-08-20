@@ -1,0 +1,81 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.ricecalwidgets'
+version = '1.0.0'
+
+android {
+  namespace 'expo.modules.ricecalwidgets'
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}
+
+/**
+ * The icons and the two typefaces, copied in rather than committed twice.
+ *
+ * `assets/icons` is the app's own icon set and the fonts come out of the same
+ * `@expo-google-fonts` packages `theme/fonts.ts` loads at runtime. Committing a
+ * second copy of either under `res/` would be a copy that goes stale silently:
+ * an icon redrawn in the design system would keep its old shape on the home
+ * screen and nothing would fail.
+ *
+ * Renamed on the way in because Android resource names may only be lowercase
+ * letters, digits and underscores, and half of these are hyphenated.
+ *
+ * The iOS half of this is in `plugins/withWidgets.js`, which copies the same
+ * files into the widget extension.
+ */
+def widgetRes = layout.buildDirectory.dir('generated/widgetRes')
+def appRoot = "${projectDir}/../../.."
+
+def copyWidgetAssets = tasks.register('copyWidgetAssets', Copy) {
+  into widgetRes
+
+  into('drawable-xxhdpi') {
+    from("${appRoot}/assets/icons/system") {
+      include 'camera.png'
+      rename 'camera.png', 'rc_widget_camera.png'
+    }
+    from("${appRoot}/assets/icons/system") {
+      include 'barcode.png'
+      rename 'barcode.png', 'rc_widget_barcode.png'
+    }
+    from("${appRoot}/assets/icons/ui") {
+      include 'search.png'
+      rename 'search.png', 'rc_widget_search.png'
+    }
+    from("${appRoot}/assets/icons/food") {
+      include 'cooking-pot.png'
+      rename 'cooking-pot.png', 'rc_widget_recipe.png'
+    }
+    from("${appRoot}/assets/icons/food") {
+      include 'rice-bowl.png'
+      rename 'rice-bowl.png', 'rc_widget_mark.png'
+    }
+  }
+
+  into('font') {
+    from("${appRoot}/node_modules/@expo-google-fonts/baloo-2/800ExtraBold") {
+      include 'Baloo2_800ExtraBold.ttf'
+      rename '.*', 'rc_baloo2_extrabold.ttf'
+    }
+    from("${appRoot}/node_modules/@expo-google-fonts/nunito/800ExtraBold") {
+      include 'Nunito_800ExtraBold.ttf'
+      rename '.*', 'rc_nunito_extrabold.ttf'
+    }
+    from("${appRoot}/node_modules/@expo-google-fonts/nunito/700Bold") {
+      include 'Nunito_700Bold.ttf'
+      rename '.*', 'rc_nunito_bold.ttf'
+    }
+  }
+}
+
+android.sourceSets.main.res.srcDirs += widgetRes
+
+tasks.named('preBuild').configure {
+  dependsOn(copyWidgetAssets)
+}

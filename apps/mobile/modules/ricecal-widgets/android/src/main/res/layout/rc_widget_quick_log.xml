@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  MEDIUM · QUICK LOG — four taps to the four ways of logging.
+
+  The four match the log sheet's own row, in the same order and the same
+  accents, because they are the same four things. Scan is a tab inside the
+  camera rather than a fifth panel, which is why its link carries `barcode`.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/rc_quick_root"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:orientation="vertical"
+  android:background="@drawable/rc_widget_card"
+  android:padding="16dp">
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
+
+    <TextView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:fontFamily="@font/rc_baloo2_extrabold"
+      android:textSize="16sp"
+      android:textColor="@color/rc_heading"
+      android:text="Log something" />
+
+    <TextView
+      android:id="@+id/rc_quick_left"
+      android:layout_width="0dp"
+      android:layout_weight="1"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="6dp"
+      android:gravity="end"
+      android:maxLines="1"
+      android:fontFamily="@font/rc_nunito_extrabold"
+      android:textSize="11sp"
+      android:textColor="@color/rc_muted"
+      android:text="613 kcal left" />
+  </LinearLayout>
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:layout_marginTop="11dp"
+    android:orientation="horizontal">
+
+    <LinearLayout
+      android:id="@+id/rc_quick_snap"
+      android:layout_width="0dp"
+      android:layout_weight="1"
+      android:layout_height="match_parent"
+      android:orientation="vertical"
+      android:gravity="center"
+      android:background="@drawable/rc_widget_tile_pandan">
+      <ImageView
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:contentDescription="@null"
+        android:src="@drawable/rc_widget_camera" />
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:fontFamily="@font/rc_nunito_extrabold"
+        android:textSize="11sp"
+        android:textColor="@color/rc_ink"
+        android:text="Snap" />
+    </LinearLayout>
+
+    <LinearLayout
+      android:id="@+id/rc_quick_scan"
+      android:layout_width="0dp"
+      android:layout_weight="1"
+      android:layout_height="match_parent"
+      android:layout_marginStart="10dp"
+      android:orientation="vertical"
+      android:gravity="center"
+      android:background="@drawable/rc_widget_tile_kaya">
+      <ImageView
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:contentDescription="@null"
+        android:src="@drawable/rc_widget_barcode" />
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:fontFamily="@font/rc_nunito_extrabold"
+        android:textSize="11sp"
+        android:textColor="@color/rc_ink"
+        android:text="Scan" />
+    </LinearLayout>
+
+    <LinearLayout
+      android:id="@+id/rc_quick_search"
+      android:layout_width="0dp"
+      android:layout_weight="1"
+      android:layout_height="match_parent"
+      android:layout_marginStart="10dp"
+      android:orientation="vertical"
+      android:gravity="center"
+      android:background="@drawable/rc_widget_tile_hibiscus">
+      <ImageView
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:contentDescription="@null"
+        android:src="@drawable/rc_widget_search" />
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:fontFamily="@font/rc_nunito_extrabold"
+        android:textSize="11sp"
+        android:textColor="@color/rc_ink"
+        android:text="Search" />
+    </LinearLayout>
+
+    <LinearLayout
+      android:id="@+id/rc_quick_recipe"
+      android:layout_width="0dp"
+      android:layout_weight="1"
+      android:layout_height="match_parent"
+      android:layout_marginStart="10dp"
+      android:orientation="vertical"
+      android:gravity="center"
+      android:background="@drawable/rc_widget_tile_water">
+      <ImageView
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:contentDescription="@null"
+        android:src="@drawable/rc_widget_recipe" />
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:fontFamily="@font/rc_nunito_extrabold"
+        android:textSize="11sp"
+        android:textColor="@color/rc_ink"
+        android:text="Recipe" />
+    </LinearLayout>
+  </LinearLayout>
+</LinearLayout>

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  MEDIUM · DAY — the ring, the macros, and two ways in that really are two.
+
+  The ring is a bitmap. `RemoteViews` can draw an arc no other way: there is no
+  remotable sweep, and a `ProgressBar` bent into a circle is a drawable per
+  angle. `WidgetBitmaps.ring` draws it at the density the launcher is using.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/rc_day_root"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:orientation="horizontal"
+  android:gravity="center_vertical"
+  android:background="@drawable/rc_widget_card"
+  android:padding="16dp">
+
+  <ImageView
+    android:id="@+id/rc_day_ring"
+    android:layout_width="124dp"
+    android:layout_height="124dp"
+    android:contentDescription="Calories left"
+    android:scaleType="fitCenter"
+    android:src="@drawable/rc_widget_ring_preview" />
+
+  <LinearLayout
+    android:layout_width="0dp"
+    android:layout_weight="1"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="16dp"
+    android:orientation="vertical">
+
+    <TextView
+      android:id="@+id/rc_day_total"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:fontFamily="@font/rc_baloo2_extrabold"
+      android:textSize="15sp"
+      android:maxLines="1"
+      android:textColor="@color/rc_heading"
+      android:text="1,847 of 2,100 kcal" />
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="11dp"
+      android:orientation="horizontal">
+
+      <LinearLayout
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <TextView
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:fontFamily="@font/rc_nunito_extrabold"
+          android:textSize="10sp"
+          android:textColor="@color/rc_muted"
+          android:text="Carbs" />
+        <ProgressBar
+          android:id="@+id/rc_day_carbs"
+          style="?android:attr/progressBarStyleHorizontal"
+          android:layout_width="match_parent"
+          android:layout_height="7dp"
+          android:layout_marginTop="4dp"
+          android:minHeight="7dp"
+          android:maxHeight="7dp"
+          android:progressDrawable="@drawable/rc_bar_carbs" />
+      </LinearLayout>
+
+      <LinearLayout
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:orientation="vertical">
+        <TextView
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:fontFamily="@font/rc_nunito_extrabold"
+          android:textSize="10sp"
+          android:textColor="@color/rc_muted"
+          android:text="Protein" />
+        <ProgressBar
+          android:id="@+id/rc_day_protein"
+          style="?android:attr/progressBarStyleHorizontal"
+          android:layout_width="match_parent"
+          android:layout_height="7dp"
+          android:layout_marginTop="4dp"
+          android:minHeight="7dp"
+          android:maxHeight="7dp"
+          android:progressDrawable="@drawable/rc_bar_protein" />
+      </LinearLayout>
+
+      <LinearLayout
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:orientation="vertical">
+        <TextView
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:fontFamily="@font/rc_nunito_extrabold"
+          android:textSize="10sp"
+          android:textColor="@color/rc_muted"
+          android:text="Fat" />
+        <ProgressBar
+          android:id="@+id/rc_day_fat"
+          style="?android:attr/progressBarStyleHorizontal"
+          android:layout_width="match_parent"
+          android:layout_height="7dp"
+          android:layout_marginTop="4dp"
+          android:minHeight="7dp"
+          android:maxHeight="7dp"
+          android:progressDrawable="@drawable/rc_bar_fat" />
+      </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="50dp"
+      android:layout_marginTop="14dp"
+      android:orientation="horizontal">
+
+      <FrameLayout
+        android:id="@+id/rc_day_snap"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="match_parent"
+        android:background="@drawable/rc_widget_tile_pandan">
+        <ImageView
+          android:layout_width="20dp"
+          android:layout_height="20dp"
+          android:layout_gravity="center"
+          android:contentDescription="Snap a plate"
+          android:src="@drawable/rc_widget_camera" />
+      </FrameLayout>
+
+      <FrameLayout
+        android:id="@+id/rc_day_search"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="match_parent"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/rc_widget_tile_pandan">
+        <ImageView
+          android:layout_width="20dp"
+          android:layout_height="20dp"
+          android:layout_gravity="center"
+          android:contentDescription="Search for a dish"
+          android:src="@drawable/rc_widget_search" />
+      </FrameLayout>
+    </LinearLayout>
+  </LinearLayout>
+</LinearLayout>

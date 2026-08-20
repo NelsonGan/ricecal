@@ -1,7 +1,13 @@
-// A type-only import, erased at build time, so nothing about the layering
-// between `lib` and `data` changes. Both of these are database enums, which is
-// the only kind of type this file borrows: a union Postgres owns cannot drift
-// from what the dashboard is grouping by. See `activity_level` in `PersonProps`.
+// Both of these are type-only, so they are erased at build time and nothing
+// about the layering around `lib` changes.
+//
+// They are also the only kind of type this file borrows: a union somebody ELSE
+// owns, where a copy here would drift from what the dashboard is grouping by.
+// `ActivityLevel` and `Meal` are database enums (see `activity_level` in
+// `PersonProps`); `WidgetKind` is the same argument from the other end, since
+// the six widgets are declared next to the native code that publishes them and
+// a seventh has to be named there before anything can report it.
+import type { WidgetKind } from '@modules/ricecal-widgets'
 import type { ActivityLevel, Meal } from '@/data/types'
 
 /**
@@ -111,6 +117,17 @@ export type SignInMethod = 'apple' | 'google' | 'email' | 'password'
  * segment would be built on.
  */
 export type PlanDirection = 'lose' | 'gain' | 'maintain'
+
+/**
+ * Where a widget tap was aiming.
+ *
+ * The four logging panels are spelt as the log sheet's own route param spells
+ * them, so a breakdown here lines up with `Log Sheet Opened`'s `panel` without
+ * anybody having to translate. `open` is a widget with one tap target and
+ * nothing more specific to say; `water` and `weight` are the two screens a
+ * widget leads to that are not the log sheet.
+ */
+export type WidgetTarget = 'open' | 'camera' | 'search' | 'barcode' | 'recipes' | 'water' | 'weight'
 
 /** An event that carries nothing. Written out so the call site still says `{}`. */
 type NoProps = Record<string, never>
@@ -332,6 +349,52 @@ export type Events = {
    * on Android, which has no way to report what became of a share intent.
    */
   'Meal Shared': { picture: 'photo' | 'drawing' }
+
+  // ── The home screen ──────────────────────────────────────────────────────
+  /**
+   * A widget was put on a home screen.
+   *
+   * NEITHER PLATFORM ANNOUNCES THIS, which is the whole difficulty. WidgetKit
+   * and `AppWidgetManager` will each say what is installed right now, and
+   * nothing at all about the moment it changed — so this is a diff, taken when
+   * the app comes forward, against the set last seen on this handset. See
+   * `features/widgets/adoption.ts`.
+   *
+   * Two consequences worth knowing before building a chart on it. It is late:
+   * a widget added on Tuesday and noticed on Thursday is reported on Thursday.
+   * And it is per install rather than per account, because the set is a fact
+   * about the phone; signing out does not remove a widget from a home screen.
+   *
+   * Worth having anyway, and worth more than a people property alone, because
+   * the question this answers — WHICH of the six anybody actually wants — is
+   * the one that decides whether the other five should have been built.
+   */
+  'Widget Added': { widget: WidgetKind }
+  /** The same diff, in the other direction. A removal is the clearest verdict. */
+  'Widget Removed': { widget: WidgetKind }
+  /**
+   * A widget was tapped, and the app opened because of it.
+   *
+   * The one number that says whether a widget is used rather than merely
+   * installed. `target` separates the widgets that are a shortcut into logging
+   * from the ones that are a figure to glance at, which is the difference
+   * between the two halves of the set.
+   */
+  'Widget Opened': { widget: WidgetKind; target: WidgetTarget }
+  /**
+   * A drink logged on the widget, without the app being opened at all.
+   *
+   * Fired when the app drains the queue rather than when the button was
+   * pressed, because the button runs in a process with no Mixpanel in it. So
+   * this arrives late by however long it took somebody to next open RiceCal,
+   * and a drink whose sync failed is never counted — which is the honest
+   * direction to be wrong in.
+   *
+   * `preset` is which of the two buttons, not a figure off the diary: it says
+   * whether people reach for the tumbler or the bottle, which is what would
+   * decide a third preset.
+   */
+  'Widget Water Added': { preset: number }
 }
 
 export type EventName = keyof Events
@@ -386,6 +449,21 @@ export type PersonProps = {
   health_provider?: string | null
   /** How many of the three meal reminders are switched on. */
   meal_reminders?: number
+  /**
+   * How many RiceCal widgets are on this phone's home screens.
+   *
+   * The one counter here, and it is not the thing `events.ts` argues against
+   * further down. That argument is about counters DERIVED from the event
+   * stream: `meals_logged` would be a hand-maintained second answer to
+   * something Mixpanel already knows. This is not derivable from events at all
+   * — a widget is added in the OS, where the app is not running — so without
+   * the property there is no way to cut any report by "has a widget".
+   *
+   * A fact about the handset rather than the account, like `health_provider`
+   * beside it. It is written whenever the app comes forward and the set has
+   * changed.
+   */
+  widgets_installed?: number
 }
 
 /**

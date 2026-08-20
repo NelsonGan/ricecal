@@ -29,6 +29,13 @@ dist
 /apps/*/ios
 /apps/*/android
 
+# A local Expo module keeps its SOURCE under `modules/`, which is tracked — but
+# Gradle drops its own output next to it, and biome reads this file, so a build
+# left the checks failing on a generated `navigation.json`.
+/apps/*/modules/*/android/build
+/apps/*/modules/*/android/.gradle
+/apps/*/modules/*/android/.cxx
+
 # Build artifacts
 *.tsbuildinfo
 coverage
