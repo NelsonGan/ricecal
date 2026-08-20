@@ -4,14 +4,13 @@
 -- Anything that reads a table lives in a file numbered after that table:
 -- `language sql` bodies are parsed and validated at CREATE time, so a function
 -- here that referenced `public.profiles` would fail when the shadow database
--- builds the schema files in order. (`language plpgsql` bodies are not
--- validated, which is a trap rather than a workaround — the failure just moves
--- to the first call at runtime.)
+-- builds the schema files in order. (`language plpgsql` bodies are not validated,
+-- which is a trap rather than a workaround: the failure just moves to the first
+-- call at runtime.)
 --
--- Every function sets `search_path = ''` and schema-qualifies every name.
--- Without it a caller can prepend a schema of their own and have a function
--- resolve to their table instead of ours; Supabase's security advisor flags
--- the omission as "Function Search Path Mutable".
+-- Every function sets `search_path = ''` and schema-qualifies every name. Without
+-- it a caller can prepend a schema of their own and have a function resolve to
+-- their table instead of ours.
 -- ---------------------------------------------------------------------------
 
 
@@ -34,13 +33,13 @@ $$;
 -- Search text.
 --
 -- This was the catalogue's, and the catalogue has left. What kept it is the one
--- caller that never searched anything: `recipes_before_insert` mints a share
--- slug out of a recipe's name, and "Ayam Masak Merah" has to become
+-- caller that never searched anything: `recipes_before_insert` mints a share slug
+-- out of a recipe's name, and "Ayam Masak Merah" has to become
 -- `ayam-masak-merah` by the same rule every time or a link stops opening.
 -- ---------------------------------------------------------------------------
 
--- Canonical form for matching: lowercase, accent-folded, punctuation collapsed
--- to single spaces.
+-- Canonical form for matching: lowercase, accent-folded, punctuation collapsed to
+-- single spaces.
 --
 -- `immutable`, honestly: the two-argument `unaccent` names its dictionary
 -- explicitly instead of resolving it through the search path. That is what lets
@@ -72,18 +71,17 @@ comment on function public.search_normalize is
   'it writes a token the query form can never produce.';
 
 
--- WHERE THE TEXT-SEARCH HELPERS WENT
+-- Where the text-search helpers went.
 --
--- `search_tsquery` and `search_tsquery_all` turned free text into an OR-ed and
--- an AND-ed tsquery, and existed for `search_foods` and nothing else. The
--- catalogue is in Cloudflare D1 now, where the equivalent is FTS5 — see
--- `apps/cloudflare/workers/catalogue/src/index.ts`, which carries the same stopword list
--- and the same rule about ORing terms so that a dish name can carry the match
--- while the narration around it is free to miss.
+-- `search_tsquery` and `search_tsquery_all` turned free text into an OR-ed and an
+-- AND-ed tsquery, and existed for `search_foods` and nothing else. The catalogue
+-- is in Cloudflare D1 now, where the equivalent is FTS5. See
+-- `apps/cloudflare/workers/catalogue/src/index.ts`, which carries the same
+-- stopword list and the same rule about ORing terms, so that a dish name can
+-- carry the match while the narration around it is free to miss.
 --
--- `food_name_norm` and `foods_set_search` went with them. Both were about
--- keeping `foods.name_norm` and `foods.search_text` in step with a row in a
--- table that is not here.
+-- `food_name_norm` and `foods_set_search` went with them. Both were about keeping
+-- columns in step with a row in a table that is not here.
 
 -- ---------------------------------------------------------------------------
 -- One barcode, one spelling.
@@ -93,22 +91,21 @@ comment on function public.search_normalize is
 -- things of the same length, and a UPC-A is an EAN-13 with a leading zero that
 -- American scanners drop. So the same product read twice can hand back two
 -- different strings, and matching them literally would put one product in two
--- catalogue rows and make a lookup depend on which packet the user happened to
--- be holding.
+-- catalogue rows.
 --
 -- GTIN-14 is the superset every one of them zero-pads into, so that is what is
--- stored and that is what a lookup asks for. Both ends of the comparison go
--- through here.
+-- stored and what a lookup asks for. Both ends of the comparison go through here.
 --
--- WHAT IT DOES NOT DO is validate the check digit. It is tempting — the last
--- digit is a checksum and a mistyped code fails it — but Open Food Facts holds
--- hundreds of thousands of codes that fail it: in-store codes, weighted-item
--- codes, and plain typos on real products that are nonetheless the code printed
--- on the packet. Refusing to look those up would be refusing the answer we
--- have. Length is checked, because a 3-digit "barcode" is a misread.
+-- What it does not do is validate the check digit. It is tempting, since the last
+-- digit is a checksum, but Open Food Facts holds hundreds of thousands of codes
+-- that fail it: in-store codes, weighted-item codes, and plain typos on real
+-- products that are nonetheless the code printed on the packet. Refusing to look
+-- those up would be refusing the answer we have. Length is checked, because a
+-- 3-digit "barcode" is a misread.
 --
--- Returns null for anything unusable, which every caller reads as "not a
--- barcode" rather than as "no such product".
+-- Returns null for anything unusable, which every caller reads as "not a barcode"
+-- rather than as "no such product".
+--
 create or replace function public.gtin14(code text)
 returns text
 language sql
@@ -142,58 +139,54 @@ grant execute on function public.gtin14 to authenticated, service_role;
 -- ---------------------------------------------------------------------------
 -- The calorie budget.
 --
--- Mifflin-St Jeor, an activity multiplier, then a delta for the distance still
--- to run. The same arithmetic as `computeTargets` in
+-- Mifflin-St Jeor, an activity multiplier, then a delta for the distance still to
+-- run. The same arithmetic as `computeTargets` in
 -- apps/mobile/src/lib/nutrition.ts, which exists only because onboarding shows a
--- budget before the account that would store it. Change one and change the
--- other; there is a test asserting they agree, and the numbers below are the
--- reason it is worth having.
+-- budget before the account that would store it. Change one and change the other;
+-- there is a test asserting they agree.
 --
 -- `stable`, not `immutable`: age depends on `current_date`.
 --
--- THE GAP BETWEEN THE TWO WEIGHTS IS THE WHOLE PLAN. Its sign says which way,
--- its size says how hard, and equal says neither. There was a `weight_goal`
--- enum here as well — lose/maintain/gain/track, asked for on its own onboarding
--- screen — and a second source of the same fact could only agree with the
--- weights or contradict them. Agreeing it was noise; contradicting, it forced
--- the function to decide which of the user's own answers to ignore, and the
--- answer it ignored was usually the one they had just changed.
+-- The gap between the two weights is the whole plan. Its sign says which way, its
+-- size says how hard, and equal says neither. There was a `weight_goal` enum here
+-- as well, asked for on its own onboarding screen, and a second source of the
+-- same fact could only agree with the weights or contradict them. Agreeing it was
+-- noise; contradicting, it forced the function to decide which of the user's own
+-- answers to ignore, and the answer it ignored was usually the one they had just
+-- changed.
 --
 -- Every constant here is somebody's published guidance rather than a taste:
 --
---   * Loss at 0.5 kg/week, the gentle end of the 0.5–1 kg NHS and CDC both call
---     safe. Gain at 0.25 kg/week, the lean-gain rate — muscle has a ceiling on
---     how fast it can be built and quicker is mostly fat. 7700 kcal per kg of
---     tissue turns either into a daily figure.
+--   * Loss at 0.5 kg/week, the gentle end of the 0.5 to 1 kg NHS and CDC both
+--     call safe. Gain at 0.25 kg/week, the lean-gain rate, because muscle has a
+--     ceiling on how fast it can be built and quicker is mostly fat. 7700 kcal
+--     per kg of tissue turns either into a daily figure.
 --   * That pace is the most a direction ever asks for. The distance left decides
 --     the rest: inside half a kilo of the target nothing happens at all (body
 --     weight swings that far on water inside a day, and it is also how a user
 --     says they have no goal), and past that the plan never runs quicker than
---     closing the remaining gap over four weeks — which leaves the pace
---     untouched for anyone more than 2 kg out and tapers the landing for
---     everyone else. Both used to be missing: one deficit was handed to someone
---     30 kg out and someone 1 kg out alike, and it carried on after they
---     arrived, because nothing in the arithmetic could tell that they had.
---   * That figure is then capped at 20% of maintenance for a cut and 15% for a
---     surplus. A flat 550 kcal deficit is a fifth of a large man's day and
---     nearly half a small woman's; the cap is what stops one number being gentle
---     for one body and a crash diet for another.
---   * Protein from BODY WEIGHT at 1.6 g/kg, the point past which the
---     meta-analytic evidence stops improving. Taking it as a share of energy —
---     which this did, at 22% — has it backwards: it hands out less protein
---     exactly when a deficit makes it matter most. Capped at the AMDR's 35% of
---     energy so a floored budget stays inside the range.
---   * Fat at 25% of energy, the low end of the AMDR's 20–35%, because what is
+--     closing the remaining gap over four weeks. Both used to be missing: one
+--     deficit was handed to someone 30 kg out and someone 1 kg out alike, and it
+--     carried on after they arrived.
+--   * That figure is capped at 20% of maintenance for a cut and 15% for a
+--     surplus. A flat 550 kcal deficit is a fifth of a large man's day and nearly
+--     half a small woman's; the cap is what stops one number being gentle for one
+--     body and a crash diet for another.
+--   * Protein from body weight at 1.6 g/kg, the point past which the
+--     meta-analytic evidence stops improving. Taking it as a share of energy has
+--     it backwards: that hands out less protein exactly when a deficit makes it
+--     matter most. Capped at the AMDR's 35% of energy so a floored budget stays
+--     inside the range.
+--   * Fat at 25% of energy, the low end of the AMDR's 20 to 35%, because what is
 --     left becomes carbohydrate and this is an app for people who eat rice twice
 --     a day. Carbohydrate is that remainder, computed last so the macros add up
---     to the budget exactly instead of to a rounding error.
+--     to the budget exactly.
 --   * Floored at 1200 kcal for women and 1500 for men, below which the guidance
 --     says medical supervision. Mifflin-St Jeor plus a percentage cut reaches
---     those easily for a small, older, sedentary body — the old 1000 was one
---     number for both sexes and lower than either.
+--     those easily for a small, older, sedentary body.
 --
--- kcal is rounded to the nearest 10 so the number on screen reads as a target
--- and not as the output of a formula.
+-- kcal is rounded to the nearest 10 so the number on screen reads as a target and
+-- not as the output of a formula.
 -- ---------------------------------------------------------------------------
 create or replace function public.compute_targets(
   p_sex              public.sex,

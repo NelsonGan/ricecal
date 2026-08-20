@@ -1,37 +1,30 @@
 -- ---------------------------------------------------------------------------
 -- How many scans this account has spent today, and the ceiling on it.
 --
--- WHAT COUNTS IS A SCAN, NOT A REQUEST TO OPENROUTER. This table replaced
--- `ai_usage`, which counted the latter, and the difference is the whole point
--- of it. One photographed plate is a vision call, often a verifier call and
--- sometimes an estimate, and a retried 429 is another — three or four requests
--- for what the user experienced as one shutter press. A ceiling written in
--- those units cannot be said out loud: "3,000 model requests a month" is not a
--- number anybody can hold against their own week, and a user who has logged
--- forty meals and been refused has an objection the figure cannot answer. A
--- scan is the thing the user did, so a scan is the thing that is counted, and
--- the cost of one is ours to know.
+-- What counts is a scan, not a request to OpenRouter. This table replaced
+-- `ai_usage`, which counted the latter, and the difference is the whole point of
+-- it. One photographed plate is a vision call, often a verifier call and
+-- sometimes an estimate, and a retried 429 is another: three or four requests for
+-- what the user experienced as one shutter press. A ceiling written in those
+-- units cannot be said out loud, and a user who has logged forty meals and been
+-- refused has an objection the figure cannot answer.
 --
 -- What a scan means, exactly: one user-initiated pass at the model. A
--- photographed plate, a typed meal, a correction through "Fix it", or reading
--- a recipe out of a photograph. Each takes one unit whatever it costs
--- underneath. Everything else in the app — the barcode scanner, the catalogue
--- search, quick add, logging a saved recipe — reaches no model and takes
--- nothing, which is what makes the free tier a usable diary rather than a
--- demo.
+-- photographed plate, a typed meal, a correction, or reading a recipe out of a
+-- photograph. Each takes one unit whatever it costs underneath. Everything else
+-- in the app reaches no model and takes nothing, which is what makes the free
+-- tier a usable diary rather than a demo.
 --
--- ONE ROW PER ACCOUNT PER LOCAL DAY, and the day is the user's own. `ai_usage`
--- keyed its month by UTC on the grounds that a quota is a billing period
--- rather than a diary day; a DAILY allowance is the other case. Refusing a
--- fourth plate at eight in the morning because a server in Virginia has not
--- reached midnight yet is the app being wrong about what day it is, which is
--- the thing `local_today` exists to stop everywhere else.
+-- One row per account per local day, and the day is the user's own. `ai_usage`
+-- keyed its month by UTC on the grounds that a quota is a billing period rather
+-- than a diary day; a daily allowance is the other case. Refusing a fourth plate
+-- at eight in the morning because a server in Virginia has not reached midnight
+-- is the app being wrong about what day it is.
 --
--- The client cannot write here. Like `subscriptions` there is no insert or
--- update grant for `authenticated` at all, so a forgotten policy cannot become
--- a way to zero your own meter. Every write goes through `claim_scan`, which
--- is `security definer` and granted to `service_role` alone — the edge
--- functions, holding the key the client never sees.
+-- The client cannot write here. Like `subscriptions` there is no insert or update
+-- grant for `authenticated` at all, so a forgotten policy cannot become a way to
+-- zero your own meter. Every write goes through `claim_scan`, which is
+-- `security definer` and granted to `service_role` alone.
 -- ---------------------------------------------------------------------------
 
 create table public.scan_usage (
@@ -66,17 +59,17 @@ create policy "scan_usage: read own"
 -- The two ceilings, in one place.
 --
 -- Functions rather than constants in TypeScript because the check that matters
--- happens in `claim_scan` below, and a second copy in the edge functions would
--- be the number that is wrong when somebody changes one of them. The app is
--- told what its limit is by `scan_usage_today()` and by the refusal itself,
--- for the same reason: a paywall promising 50 while the database enforces 3 is
--- a support thread.
+-- happens in `claim_scan` below, and a second copy in the edge functions would be
+-- the number that is wrong when somebody changes one of them. The app is told
+-- what its limit is by `scan_usage_today()` and by the refusal itself, for the
+-- same reason: a paywall promising 50 while the database enforces 3 is a support
+-- thread.
 --
--- The Pro ceiling is NOT sold as a number. The comparison table says
--- "unlimited", because 50 photographed meals in one day is not a diary and
--- nobody eating normally will meet it — it is an abuse ceiling wearing a
--- quota's clothes, and printing it would invite the one reading where it is a
--- restriction. The free one is sold exactly as it is: three a day.
+-- The Pro ceiling is not sold as a number. The comparison table says "unlimited",
+-- because 50 photographed meals in one day is not a diary and nobody eating
+-- normally will meet it. It is an abuse ceiling wearing a quota's clothes, and
+-- printing it would invite the reading where it is a restriction. The free one is
+-- sold exactly as it is: three a day.
 -- ---------------------------------------------------------------------------
 create or replace function public.free_daily_scans()
 returns integer
@@ -131,22 +124,21 @@ grant execute on function public.scan_daily_limit to service_role;
 -- ---------------------------------------------------------------------------
 -- Take one scan's worth of budget, or refuse.
 --
--- ATOMIC ON PURPOSE, and inherited from the meter this replaced. Read-then-
--- write would let two scans running at once both read the last unit and both
--- proceed, and a hard limit a second tap can walk through is not one. The
--- guard is a `where` on the `on conflict do update`, so the check and the
--- increment are the same statement and the row lock serialises them.
+-- Atomic on purpose, and inherited from the meter this replaced. Read-then-write
+-- would let two scans running at once both read the last unit and both proceed,
+-- and a hard limit a second tap can walk through is not one. The guard is a
+-- `where` on the `on conflict do update`, so the check and the increment are the
+-- same statement and the row lock serialises them.
 --
--- CLAIMED ONCE PER SCAN, at the top of the endpoint, before the photo is read
--- and before the first model call. Claimed afterwards, an account already at
--- its ceiling would still get to send the request that put it there.
+-- Claimed once per scan, at the top of the endpoint, before the photo is read and
+-- before the first model call. Claimed afterwards, an account already at its
+-- ceiling would still get to send the request that put it there.
 --
--- Returns the outcome rather than raising. A refusal is an ordinary answer
--- here — the caller turns it into a paywall — and an exception would have to
--- be caught and re-read to find out what the number even was. `entitled` rides
--- along because the two refusals read differently: a free account that has
--- spent its three has something to buy, and a Pro account that has spent its
--- fifty has not.
+-- Returns the outcome rather than raising. A refusal is an ordinary answer here,
+-- and an exception would have to be caught and re-read to find out what the
+-- number even was. `entitled` rides along because the two refusals read
+-- differently: a free account that has spent its three has something to buy, and
+-- a Pro account that has spent its fifty has not.
 -- ---------------------------------------------------------------------------
 create or replace function public.claim_scan(p_user uuid)
 returns table (
@@ -199,17 +191,16 @@ grant execute on function public.claim_scan to service_role;
 -- ---------------------------------------------------------------------------
 -- What the account has spent today, for the app to render.
 --
--- UNLIKE ITS PREDECESSOR, THIS IS SHOWN. `ai_usage_this_month()` existed for
+-- Unlike its predecessor, this is shown. `ai_usage_this_month()` existed for
 -- support and an admin view nobody built, because the number it returned could
--- not be put in front of a user: it counted requests to a model, and no user
--- has any idea how many of those a plate costs. This one counts the thing they
--- did, so "1 of 3 scans left today" is a sentence that answers itself, and a
--- free user who cannot see the count meets the ceiling as a surprise.
+-- not be put in front of a user: it counted requests to a model, and no user has
+-- any idea how many of those a plate costs. This one counts the thing they did,
+-- so "1 of 3 scans left today" is a sentence that answers itself.
 --
--- Always exactly one row, including for somebody who has never scanned
--- anything — a query that returned nothing would have every caller coalescing
--- the same zeroes, and the screen would have to tell "no row yet" apart from
--- "no answer yet".
+-- Always exactly one row, including for somebody who has never scanned anything.
+-- A query that returned nothing would have every caller coalescing the same
+-- zeroes, and the screen would have to tell "no row yet" apart from "no answer
+-- yet".
 -- ---------------------------------------------------------------------------
 create or replace function public.scan_usage_today()
 returns table (
