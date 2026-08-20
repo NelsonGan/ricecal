@@ -20,34 +20,21 @@ import { Button, Text } from '@/ui'
 /**
  * Cloudflare Turnstile, in front of Supabase's auth endpoints.
  *
- * Supabase supports two captcha providers and this is one of them: with
- * `security_captcha_enabled` on, it refuses any sign-in, sign-up, mailed code or
- * password reset that arrives without a token it can verify against the secret.
- * That is the actual gate. Everything in this file exists to produce the token
- * that gets through it.
+ * With `security_captcha_enabled` on, Supabase refuses any sign-in, sign-up,
+ * mailed code or password reset arriving without a token it can verify. That is
+ * the gate; everything here exists to produce the token.
  *
- * Why there is a WebView in an auth screen: Turnstile is a browser widget. It
- * decides whether to challenge by watching a page, and there is no way to run
- * that outside one. So the page is inline HTML in a hidden `WebView`.
+ * Turnstile decides whether to challenge by watching a page, so the page is
+ * inline HTML in a hidden `WebView`.
  *
- * Two things about this are deliberate and easy to get backwards.
+ * It fails open. No site key, a widget that will not load, a network that drops:
+ * all end with `undefined` and the request goes without a token. The control is
+ * on the server, so failing closed here adds no protection and does add a way for
+ * a broken WebView to lock somebody out of their own account.
  *
- * It fails open. A build with no site key, a widget that will not load, a network
- * that drops halfway: all of them end with `undefined` and the request goes
- * without a token. That looks like the wrong direction for a security control and
- * is not, because the control is on the server. Failing closed here adds no
- * protection Supabase is not already providing, and does add a way for a broken
- * WebView to lock somebody out of their own account.
- *
- * And it is interaction-only. The widget runs invisibly and shows itself only
- * when Cloudflare wants a human to click something, which for a real person on a
- * phone is rare. That case cannot be answered silently, so the same WebView is
- * restyled into a panel over the screen.
- *
- * Restyled, not remounted, and that is the one structural decision here. A
- * WebView moved to a different parent, or unmounted and brought back, reloads the
- * page and throws away the challenge in progress, so there is one instance,
- * always mounted at one size.
+ * And it is interaction-only, showing itself only when Cloudflare wants a human.
+ * The same WebView is then restyled into a panel, never remounted: a WebView
+ * moved or remounted reloads the page and throws away the challenge in progress.
  */
 
 /** Whether this build can produce a token at all. */
@@ -58,14 +45,12 @@ export function captchaConfigured(): boolean {
 /**
  * `react-native-webview`, if this binary actually has it.
  *
- * Required rather than imported, for the reason `src/lib/health` gives about its
- * own native modules. A TurboModule throws at import time on a build made before
- * the dependency landed, and a top-level import puts that throw in the module
- * graph of every screen in `(auth)`. The symptom is not a broken captcha, it is a
- * white screen where sign-in used to be.
+ * Required rather than imported. A TurboModule throws at import time on a build
+ * made before the dependency landed, and a top-level import puts that throw in
+ * the module graph of every screen in `(auth)`: the symptom is a white screen
+ * where sign-in used to be.
  *
- * Absent, this file behaves exactly as it does with no site key: no widget, no
- * token, and the request goes as it did before any of this existed.
+ * Absent, this file behaves as it does with no site key.
  */
 function loadWebView(): typeof WebView | null {
   try {
@@ -112,30 +97,22 @@ type Pending = {
 const RETRIES_ALLOWED = 1
 
 /**
- * Whether a Turnstile error code is worth waiting through, which is the
- * difference between "try again" and "this will never work".
+ * Whether a Turnstile error code is worth waiting through: the difference between
+ * "try again" and "this will never work".
  *
- * Cloudflare marks each of its codes retryable or not, and the two want opposite
- * treatment:
+ * `300*` and `600*` are "bot behaviour detected" and are retryable. The widget's
+ * own `retry: 'auto'` has another go, and Managed mode escalates a visitor who
+ * keeps scoring badly to a checkbox. Settling on the first one turns a score that
+ * would have cleared into "we could not confirm you are a person".
  *
- * - `300*` and `600*` are "bot behaviour detected" and they are retryable. The
- *   widget's own `retry: 'auto'` has another go, and in Managed mode a visitor
- *   who keeps scoring badly is escalated to a checkbox instead. Settling on the
- *   first one turns a score that would have cleared into "we could not confirm
- *   you are a person".
- * - The ones listed below are configuration, and they never recover. The first
- *   one ends it for the session rather than costing every later tap a round trip
- *   to rediscover the same thing.
+ * The codes listed below are configuration and never recover.
  *
  * Enumerated rather than matched by prefix, because `110` is not one family:
- * `110100`, `110110` and `110200` are a bad sitekey and an unlisted hostname, and
- * `110600` and `110620` are timeouts sitting in the middle of them that
- * Cloudflare marks retryable. A `/^110/` would have given up on a challenge that
- * had merely taken too long.
+ * `110600` and `110620` are retryable timeouts sitting between the bad-sitekey
+ * and unlisted-hostname codes, so `/^110/` would give up on a slow challenge.
  *
- * Anything unrecognised is treated as retryable, because the cost of waiting is
- * one timeout and the cost of giving up wrongly is an account nobody can get
- * into.
+ * Anything unrecognised is retryable: waiting costs one timeout, and giving up
+ * wrongly costs an account nobody can get into.
  */
 const FATAL_CODES = new Set([
   'unsupported', // ours: Turnstile says it cannot run in this browser at all
@@ -158,21 +135,15 @@ function fatalCode(code: string): boolean {
 /**
  * The page the WebView runs.
  *
- * `execution: 'execute'` means nothing happens until `window.rcExecute()` is
- * called, so the widget is not solving a challenge on every screen that mounts
- * this. `appearance: 'interaction-only'` means it stays invisible unless a human
- * is actually wanted.
+ * `execution: 'execute'` means nothing happens until `window.rcExecute()`, so the
+ * widget is not solving a challenge on every screen that mounts this.
+ * `refresh-expired: 'never'` because a token is used within seconds of arriving.
  *
- * `refresh-expired: 'never'` because a token is used within seconds of arriving,
- * and a widget quietly refreshing itself in a hidden WebView for the rest of the
- * session is work nobody asked for.
- *
- * `error-callback` returns false, and returning true is what it did. A truthy
- * return tells Turnstile the page has taken charge of the error, and what this
- * page then did was give up on the spot, so a `300*` score that Cloudflare
- * documents as retryable became a hard refusal on the first attempt. That is the
- * failure a real person hits: a phone in a hidden WebView is exactly the profile
- * that scores badly once. The native side is posted the code either way.
+ * `error-callback` returns false. A truthy return tells Turnstile the page has
+ * taken charge of the error, and this page then gave up on the spot, so a `300*`
+ * score Cloudflare documents as retryable became a hard refusal on the first
+ * attempt. A phone in a hidden WebView is exactly the profile that scores badly
+ * once.
  */
 function page(siteKey: string): string {
   return `<!doctype html>
@@ -225,22 +196,14 @@ function page(siteKey: string): string {
 /**
  * Says why the widget refused, somewhere a developer can read it.
  *
- * Every failure on this path looks the same from the outside, and that is what
- * made the first one expensive. The gate is on the server, so a widget that
- * cannot produce a token and a token the server will not accept both end as "we
- * could not confirm you are a person", and so does a hostname missing from the
- * widget's list, a site key that never reached the build, and a visitor
- * Cloudflare has scored as a bot. Five causes, one sentence, and four of the five
- * live in a dashboard rather than in this repo.
+ * Every failure on this path looks the same from outside: a widget that cannot
+ * produce a token, a token the server will not accept, a missing hostname, a site
+ * key that never reached the build, and a visitor scored as a bot all end as "we
+ * could not confirm you are a person". Five causes, one sentence, and four of
+ * them live in a dashboard rather than in this repo.
  *
- * A console warning only reaches somebody holding a cable. This goes to Sentry as
- * a message rather than an exception: nothing has thrown, the app is working
- * exactly as designed, and what is wanted is the code attached to a build and a
- * date.
- *
- * The code and nothing else. No address, no token, nothing about who was signing
- * in; see the analytics note in README.md for why that line is drawn where it
- * is.
+ * Sentry as a message rather than an exception: nothing has thrown, and what is
+ * wanted is the code attached to a build and a date. The code and nothing else.
  */
 function report(what: string) {
   Sentry.captureMessage(`[captcha] ${what}`, 'warning')
@@ -277,15 +240,12 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
   /**
    * The failure with no symptom at all, and the one worth catching hardest.
    *
-   * A build whose `EXPO_PUBLIC_TURNSTILE_SITE_KEY` never arrived, or whose binary
-   * predates `react-native-webview`, asks for no token and sends none, and with the
-   * gate on Supabase then refuses every sign-in, signup, code and reset that build
-   * ever makes. Nothing throws, nothing logs, and the app says the same sentence it
-   * says for a captcha that was merely wrong.
+   * A build whose site key never arrived, or whose binary predates
+   * `react-native-webview`, sends no token, and with the gate on Supabase refuses
+   * every sign-in that build ever makes. Nothing throws and nothing logs.
    *
    * `EXPO_PUBLIC_` values are inlined at bundle time, so this is a property of the
-   * build rather than of the phone, and one report per launch is enough to tell the
-   * two apart for good.
+   * build rather than of the phone.
    */
   useEffect(() => {
     if (enabled || announcedAbsent) return
@@ -307,16 +267,12 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
   /**
    * Set once this widget has proved it cannot produce a token.
    *
-   * Without this, a broken widget costs twenty seconds per tap. The failure modes
-   * are all silent (a site key the account does not recognise, a hostname missing
-   * from the widget's list, a `render()` that throws before `ready` is ever posted)
-   * and every one of them ends in the timeout rather than in an error. So the first
-   * request waits, and every request after it is answered immediately with
-   * `undefined`.
+   * Without it a broken widget costs twenty seconds per tap: every failure mode is
+   * silent and ends in the timeout rather than in an error. The first request
+   * waits, and every one after it is answered immediately with `undefined`.
    *
-   * The outcome for the user is the same either way, and that is the point: with
-   * the gate on, a request with no token is refused, so the choice is between being
-   * told at once and being told after twenty seconds of spinner.
+   * The outcome is the same either way, so the choice is between being told at once
+   * and being told after twenty seconds of spinner.
    */
   const broken = useRef(false)
 
@@ -545,16 +501,12 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
                *
                * Turnstile builds its challenge frame as an iframe with a `srcdoc` attribute,
                * which the WebView sees as a navigation to `about:srcdoc`. `originWhitelist`
-               * governs iframe navigations as well as top-level ones, so a list of `https://*`
-               * alone does not merely ignore that frame: react-native-webview refuses to load
-               * it internally and hands the URL to the OS instead, which answers "Unable to
-               * open URL: about:srcdoc" in the log and nothing anywhere else.
+               * governs iframe navigations too, so a list of `https://*` made
+               * react-native-webview refuse to load it internally and hand the URL to the OS,
+               * which answers in the log and nowhere else.
                *
                * The result is a widget that loads, renders, reports `ready` and can never
-               * produce a token, on a page where every key, hostname and mode is correct. It
-               * cost a day: the symptom is on the server, so the search starts in the
-               * Cloudflare dashboard, where everything looks right because everything there is
-               * right.
+               * produce a token, on a page where every key, hostname and mode is correct.
                */
               originWhitelist={['https://*', 'about:*']}
               scrollEnabled={false}

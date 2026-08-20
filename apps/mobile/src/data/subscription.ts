@@ -58,23 +58,19 @@ export type EntitlementRow = {
 /**
  * The whole rule: an entitled status, and a period that has not run out.
  *
- * The date is part of it. Read on the status alone, as this was, a missed ending
- * is permanent rather than temporary: a webhook delivery that failed past
- * RevenueCat's retries, or an event the server's ordering guard wrongly
- * discarded, leaves a row saying `active` with an expiry in the past, and the app
- * goes on unlocking itself for ever.
+ * The date is part of it. Read on the status alone a missed ending is permanent
+ * rather than temporary: a delivery that failed past RevenueCat's retries leaves
+ * a row saying `active` with an expiry in the past, and the app goes on unlocking
+ * itself for ever.
  *
- * Null is no expiry. Lifetime renews never, so RevenueCat sends no expiry and the
- * column is null by design. Read as expired it would refuse the one plan that
- * cannot lapse.
+ * Null is no expiry. Lifetime renews never, so RevenueCat sends none, and reading
+ * it as expired would refuse the one plan that cannot lapse.
  *
- * The server enforces the same rule independently in `entitledBy`. The two cannot
- * import each other across the Deno / React Native line, so they are two copies
- * of one rule and have to be changed together. This copy decides what the buttons
- * say; that one actually refuses.
+ * The server enforces the same rule in `entitledBy`. The two cannot import each
+ * other across the Deno / React Native line and change together: this copy
+ * decides what the buttons say, that one actually refuses.
  *
- * `now` is a parameter so the boundary can be tested from both sides without
- * moving the clock.
+ * `now` is a parameter so the boundary can be tested from both sides.
  */
 export function isEntitledRow(row: EntitlementRow | undefined, now: Date = new Date()): boolean {
   if (!ENTITLED.has(row?.status ?? 'none')) return false
@@ -103,15 +99,13 @@ export type Entitlement = {
 /**
  * Whether this account may use the paid parts of the app.
  *
- * One hook, and every gate in the app reads it, so "what does Pro include" is
- * answered in one place rather than by each screen comparing statuses. The server
- * enforces the same rule independently, because a check that only exists in the
- * client only applies to people running the client.
+ * One hook, read by every gate, so "what does Pro include" is answered in one
+ * place. The server enforces the same rule independently.
  *
- * It defaults to false while loading, and callers are expected to wait on
- * `loading` rather than act on the false. The alternative, assuming paid until
- * told otherwise, puts a non-paying user into the camera, spends a photo upload
- * and a model call, and then refuses them at the end.
+ * It defaults to false while loading, and callers wait on `loading` rather than
+ * acting on the false. Assuming paid until told otherwise puts a non-paying user
+ * into the camera, spends an upload and a model call, and refuses them at the
+ * end.
  */
 export function useEntitlement(): Entitlement {
   const { data, isLoading, isError, isPaused } = useSubscription()
@@ -159,13 +153,12 @@ export function useEntitlement(): Entitlement {
  * What the store says, through the RevenueCat SDK.
  *
  * `networkMode: 'always'` is the one deliberate departure from the app-wide rule,
- * because this query does not go to the network. The SDK keeps its own cache of
- * the last customer info it validated and answers out of it offline. Paused with
- * everything else it would sit pending for ever, and the fallback it exists to be
- * would be the thing that was missing.
+ * because this query does not go to the network: the SDK answers out of its own
+ * cache offline. Paused with everything else it would sit pending for ever, and
+ * the fallback it exists to be would be the thing that was missing.
  *
- * `retry: false` for the reason `usePlanPrices` has it: the common failure is a
- * build with no RevenueCat in it, and that does not become true on the third ask.
+ * `retry: false` because the common failure is a build with no RevenueCat in it,
+ * which does not become true on the third ask.
  */
 export function useStoreEntitlement() {
   const { userId } = useSession()
