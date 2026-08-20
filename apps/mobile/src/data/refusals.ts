@@ -1,4 +1,4 @@
-import { FREE_DAILY_SCANS } from '@ricecal/shared'
+import { FREE_DAILY_SCANS, FREE_RECIPES } from '@ricecal/shared'
 import { router } from 'expo-router'
 
 import i18n from '@/i18n'
@@ -214,6 +214,35 @@ export function scanLimitAhead(quota: ScanQuota | undefined): ScanLimitError | n
 }
 
 /**
+ * The sentence for a refused feature, naming the feature.
+ *
+ * ONE SENTENCE PER GATED THING, and it used to be one sentence for all of them:
+ * "That one needs RiceCal Pro." The argument for the single line was the same
+ * one that left this app with a single paywall rather than a variant per
+ * button — the differences between them are writing rather than information —
+ * and it holds for the SCREEN and not for the toast. The paywall cannot say
+ * which button was pressed; this is the only thing on screen that can, and
+ * "that one" points at something the user cannot see.
+ *
+ * Keyed by the same `ProFeature` the funnel is broken down by, so the sentence
+ * and the `Paywall Shown` event beside it can never name two different things.
+ *
+ * `i18n.t` rather than a `t` from a hook, because the two callers are a hook
+ * and a `catch` handler in a mutation, and only one of them has a component to
+ * hang `useTranslation` off. One place is worth more here than one re-render on
+ * a language change: this bundle has one language, and two copies of this
+ * lookup are what drifted the last time the copy moved.
+ *
+ * Every number the sentences might want is handed over whether or not the one
+ * being read has a slot for it, exactly as `PlanTable` does — a per-feature map
+ * of which figure each line needs is a second place to keep in step with the
+ * copy, and getting it wrong prints "{{recipes}}" in a toast.
+ */
+export function proFeatureTitle(feature: ProFeature): string {
+  return i18n.t(`paywall:limit.feature.${feature}`, { recipes: FREE_RECIPES })
+}
+
+/**
  * SAY WHAT HAPPENED, THEN SHOW THE PRICE. The one place that does both.
  *
  * Exported because the recipe screens reach the same ending by another route —
@@ -229,10 +258,16 @@ export function scanLimitAhead(quota: ScanQuota | undefined): ScanLimitError | n
  */
 export function openPaywall(
   toast: ToastApi,
-  options: { title: string; tone?: 'warning' | 'error'; feature: ProFeature } & RefusalOptions,
+  options: {
+    title: string
+    /** A second, quieter line under the title. See `announceRefusal`. */
+    description?: string
+    tone?: 'warning' | 'error'
+    feature: ProFeature
+  } & RefusalOptions,
 ): void {
-  const { title, tone = 'warning', feature, navigate = 'push' } = options
-  toast.show({ title, tone, placement: 'top' })
+  const { title, description, tone = 'warning', feature, navigate = 'push' } = options
+  toast.show({ title, description, tone, placement: 'top' })
   // `screen: 'hard'` and the feature that was refused, exactly as
   // `useRequirePro` reports its own refusals — a limit reached on the server
   // and a button gated in the app are the same event to the funnel, and
@@ -305,10 +340,17 @@ export function announceRefusal(
       toast.show({ title: i18n.t('paywall:limit.confirming'), tone: 'warning' })
       return true
     }
+    // THE FEATURE THE SERVER NAMED, when it named one — a refusal that started
+    // on the server and one a button caught first should read identically, and
+    // the server knows what it refused better than the call site does. Why the
+    // subscription said no goes underneath: which button was pressed is what
+    // the user needs, and our own bookkeeping is the footnote.
+    const refused = error.feature ?? feature
     openPaywall(toast, {
-      title: i18n.t('paywall:limit.notEntitled'),
+      title: proFeatureTitle(refused),
+      description: i18n.t('paywall:limit.notEntitledDetail'),
       tone: 'warning',
-      feature: error.feature ?? feature,
+      feature: refused,
       navigate,
     })
     return true

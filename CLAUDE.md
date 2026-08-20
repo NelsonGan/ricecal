@@ -1037,6 +1037,19 @@ same reasons: discretionary, repeatable at the press of a button, and with no
 cheaper tier underneath to fall back to. A refusal goes through `announceRefusal`
 like every other.
 
+**THE GATE IS ON "SUGGEST SOMETHING", NOT ON THE ROW.** It was on the row, so a
+free account met the price list one tap after seeing the offer and never saw
+what was being offered: the question IS the feature — the sitting, the macros,
+the user's own kitchens, the day's remaining budget on the same line as the
+ceiling — and a paywall in its place is an offer with the product hidden. It
+also refused a tap that costs nothing, since a scan is claimed by the request
+and the request is not sent until that button. What the move costs is one piece
+of plumbing: the ask sheet is a `Sheet`, which is a native `Modal` and therefore
+its own window, so a paywall pushed from under it would arrive behind it.
+`useRequirePro`'s `beforePaywall` closes the sheet first, and only on an actual
+refusal — being told "just a moment, we are checking your plan" must not throw
+away a form somebody has just filled in.
+
 `_shared/suggest.ts` holds the prompt and the shaping. Five things it was taught
 the expensive way, each after a live run broke it, and each is a comment there:
 the sitting is a constraint rather than a label (asked for dinner it wrote "to
@@ -1715,6 +1728,19 @@ a loop. `claim_recipe_review` is the barcode throttle's shape applied to it: ten
 an hour, per account, atomic, no client write grant. Refused, the recipe stays
 `pending`, which is the same fail-shut answer every other failure there gives.
 
+**A REFUSAL NAMES WHAT IT REFUSED.** `proFeatureTitle` in `data/refusals.ts`
+holds one sentence per `ProFeature` and both gates read it — the one in the app
+(`useRequirePro`) and the one that arrives from an edge function — so the same
+button refused in either place reads identically. It was one line for all of
+them, "That one needs RiceCal Pro", on the argument that left this app with a
+single paywall rather than a variant per button: the differences are writing
+rather than information. That holds for the SCREEN and fails for the toast,
+which is the only thing on screen that can say which of the buttons under a
+thumb declined to work. A price list over a sentence naming nothing is exactly
+what the sentence was added to prevent. The lapsed case keeps its own line, as
+the toast's DESCRIPTION under that sentence: which button was pressed is what
+the user needs, and why our own record said no is the footnote.
+
 **A free account's refusal opens the paywall; a Pro account's does not.**
 `claim_scan` returns `entitled` alongside the numbers, and `announceRefusal` in
 `data/refusals.ts` is the one place that decides: a free user gets a toast saying
@@ -2029,6 +2055,15 @@ Break these and the feature is wrong in ways tests may not catch.
   placement to the TOP, because the bottom of a sheet is the panel and its
   buttons. Every toast that opens the paywall does the same, for the same
   reason: the buy button is a footer, and a bottom toast lands on it.
+  AND THE HOST HAS TO GO WHEN THE WINDOW DOES, which is not the same as when the
+  component does: on iOS a `Modal` keeps its children mounted after `visible`
+  turns false, until the native `modalDismissed` event arrives a tick or more
+  later. So a sheet that has just been closed still held the topmost claim, and
+  a toast fired in the same handler as the close was drawn inside a window on
+  its way off the screen — invisible again, in the one flow that most needs the
+  words: a Pro-only button inside a sheet closes it, pushes the paywall, and the
+  toast is all that says which button was refused. `Sheet` passes its own
+  `visible` to `SheetSurface` as `hosting` for exactly this.
 - **An entitled status is not enough; the PERIOD has to be running too.**
   `entitledBy` on the server and `isEntitledRow` on the client both read
   `current_period_end`, and null means no expiry rather than an expired one —

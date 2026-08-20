@@ -39,7 +39,7 @@ export type ToastOptions = {
   /** An inline action, e.g. { label: 'Undo', onPress }. */
   action?: { label: string; onPress: () => void }
   icon?: IconProps
-  /** Milliseconds on screen. Defaults to 6s, or 4.5s when there is an action. */
+  /** Milliseconds on screen. Defaults to 4s, or 3.5s when there is an action. */
   duration?: number
   /** Overrides the tone's default edge. Rarely needed. */
   placement?: ToastPlacement
@@ -159,8 +159,16 @@ export function ToastProvider({ children, offset = 0 }: ToastProviderProps) {
        * somebody who has just logged a meal or a drink knows immediately
        * whether they meant to. Eight seconds stopped reading as a chance to
        * take it back and started reading as something in the way.
+       *
+       * SIX AND FOUR AND A HALF WENT THE SAME WAY, for the same reason carried
+       * one step further. Every toast in this app is one short sentence, and a
+       * sentence is read in about a second — the rest of the time is a bar the
+       * user has already finished with, sitting over the screen they are trying
+       * to use. It is worst where the toast is followed somewhere: a refusal
+       * says what happened and pushes the paywall underneath it, so six seconds
+       * of it lay across the top of a screen the user had been taken to.
        */
-      timer.current = setTimeout(dismiss, options.duration ?? (options.action ? 4500 : 6000))
+      timer.current = setTimeout(dismiss, options.duration ?? (options.action ? 3500 : 4000))
     },
     [clear, dismiss],
   )
