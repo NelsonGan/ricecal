@@ -1,5 +1,13 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config'
 
+// The plugin owns the three derived names; see `withEasExtension` below for why
+// this file needs them rather than working them out again.
+const { WIDGET_TARGET, appGroupFor, widgetBundleId } = require('./plugins/withWidgets') as {
+  WIDGET_TARGET: string
+  appGroupFor: (bundleId: string) => string
+  widgetBundleId: (bundleId: string) => string
+}
+
 const appJson = require('./app.json') as { expo: ExpoConfig }
 const baseConfig = appJson.expo
 
@@ -95,9 +103,62 @@ function applySimulatorVariant(cfg: ExpoConfig): ExpoConfig {
   return { ...cfg, ios, plugins: [...plugins, './plugins/withoutAppleSignIn'] }
 }
 
+/**
+ * TELLS EAS THAT THE WIDGET EXTENSION EXISTS.
+ *
+ * EAS resolves credentials before it builds anything, from the app config —
+ * NOT from the Xcode project, which under Continuous Native Generation does not
+ * exist yet: `plugins/withWidgets.js` creates the extension target during the
+ * prebuild that runs on the build server, minutes later. So without this block
+ * EAS registers a bundle id and a profile for the app alone, the server then
+ * prebuilds a second target it has no profile for, and the build fails at
+ * signing with "no profile matching com.nelsongan.ricecal.widgets".
+ *
+ * The names come from the plugin rather than being written out again, because
+ * they are derived from the bundle id and the derivation has to agree in both
+ * places. A hand-copied `com.nelsongan.ricecal.widgets` here is a credential
+ * for a target that no longer exists the first time the app is renamed.
+ *
+ * Applied AFTER the variants, so a development build declares
+ * `com.nelsongan.ricecal.dev.widgets` and `group.com.nelsongan.ricecal.dev` —
+ * which is the whole reason it is a function of the resolved config.
+ */
+function withEasExtension(cfg: ExpoConfig): ExpoConfig {
+  const bundleId = cfg.ios?.bundleIdentifier
+  if (!bundleId) return cfg
+
+  return {
+    ...cfg,
+    extra: {
+      ...cfg.extra,
+      eas: {
+        ...cfg.extra?.eas,
+        build: {
+          ...cfg.extra?.eas?.build,
+          experimental: {
+            ...cfg.extra?.eas?.build?.experimental,
+            ios: {
+              ...cfg.extra?.eas?.build?.experimental?.ios,
+              appExtensions: [
+                {
+                  targetName: WIDGET_TARGET,
+                  bundleIdentifier: widgetBundleId(bundleId),
+                  entitlements: {
+                    'com.apple.security.application-groups': [appGroupFor(bundleId)],
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+  }
+}
+
 export default ({ config }: ConfigContext): ExpoConfig => {
   const merged: ExpoConfig = { ...baseConfig, ...config }
 
-  if (IS_SIMULATOR_VARIANT) return applySimulatorVariant(merged)
-  return IS_DEV_VARIANT ? applyDevVariant(merged) : merged
+  if (IS_SIMULATOR_VARIANT) return withEasExtension(applySimulatorVariant(merged))
+  return withEasExtension(IS_DEV_VARIANT ? applyDevVariant(merged) : merged)
 }

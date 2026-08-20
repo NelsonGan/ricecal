@@ -1698,6 +1698,16 @@ suffix and an App Group has to be a real entitlement on whichever app is
 running. The plugin writes it into both targets' entitlements AND both
 Info.plists, which is how `RiceCalWidgetStore` finds it without a constant.
 
+**EAS has to be TOLD the extension exists.** It resolves credentials from the
+app config before it builds, and under CNG the Xcode project does not exist yet
+— the target is created by the prebuild that runs on the build server minutes
+later. Without the `extra.eas.build.experimental.ios.appExtensions` block that
+`app.config.ts` derives, EAS registers a bundle id and a profile for the app
+alone and the build fails at signing on a target it has never heard of. The
+names come from `plugins/withWidgets.js` so the two cannot disagree, and so a
+development build declares `.dev.widgets` and `group.…dev` without a second
+copy of the arithmetic.
+
 **Editing a widget means running the prebuild.** The extension's sources are
 COPIED into `ios/` by the plugin, so `expo run:ios` on its own rebuilds the copy
 that is already there — the edit compiles cleanly and changes nothing on screen,
