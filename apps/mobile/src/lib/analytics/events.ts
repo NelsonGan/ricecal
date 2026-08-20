@@ -1,8 +1,17 @@
 // A type-only import, erased at build time, so nothing about the layering
-// between `lib` and `data` changes. See `activity_level` in `PersonProps` for
-// why this property in particular has to be a union rather than a string.
-import type { Cuisine } from '@/data/suggestions'
+// between `lib` and `data` changes. Both of these are database enums, which is
+// the only kind of type this file borrows: a union Postgres owns cannot drift
+// from what the dashboard is grouping by. See `activity_level` in `PersonProps`.
 import type { ActivityLevel, Meal } from '@/data/types'
+
+/**
+ * The kitchens this file is willing to name, and one word for all the rest.
+ *
+ * A closed union rather than `Cuisine`, which is a free string now: see
+ * `Suggestions Shown`. `trackedCuisine` in `features/suggest` is what maps one
+ * to the other, and it is the only thing that may.
+ */
+export type TrackedCuisine = 'malay' | 'chinese' | 'indian' | 'custom'
 
 /**
  * THE TRACKING PLAN, AS A TYPE.
@@ -65,7 +74,7 @@ export type ProFeature =
   | 'refine'
   | 'read_recipe'
   | 'new_recipe'
-  /** "What should I eat?" — the model asked for five things, on Today. */
+  /** "What should I eat?" — the model asked what to eat next, from Today. */
   | 'suggest'
   /** A range on Trends that a free account cannot see: 30 days, or a year. */
   | 'trend_range'
@@ -252,8 +261,16 @@ export type Events = {
    * people actually ask about, so the cuisine list can stop being a guess.
    * `count` is 0 when the model would not answer, which is the only way to see
    * that failure from outside.
+   *
+   * THE CUISINE IS NOT THE USER'S OWN WORDS ANY MORE, and that is why this is a
+   * union rather than the string the request carries. The list is editable now,
+   * so a cuisine is free text somebody typed on their phone — and free text
+   * somebody typed is the one category this file exists to keep out of
+   * Mixpanel, whatever it happens to say. One of the shipped defaults is sent as
+   * itself; anything else is `custom`, which answers the only question worth
+   * asking about them: whether the defaults are enough.
    */
-  'Suggestions Shown': { meal: Meal; cuisine: Cuisine; count: number }
+  'Suggestions Shown': { meal: Meal; cuisine: TrackedCuisine; count: number }
 
   'Plan Selected': { screen: PaywallScreen; plan: Plan }
   /** The store sheet was asked for. RevenueCat reports what happened after. */

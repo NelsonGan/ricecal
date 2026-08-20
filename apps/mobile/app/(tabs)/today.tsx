@@ -16,7 +16,7 @@ import {
   useTargets,
 } from '@/data'
 import {
-  DayPlates,
+  DayMeals,
   dayInMonth,
   MonthCalendar,
   monthStart,
@@ -25,6 +25,7 @@ import {
 } from '@/features/logging'
 import { useProNudge } from '@/features/paywall'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
+import { SuggestAction } from '@/features/suggest'
 import { useTutorialOffer } from '@/features/tutorial'
 import { sumMacros } from '@/lib/nutrition'
 import { DEFAULT_WATER_ML } from '@/lib/water'
@@ -310,6 +311,43 @@ export default function TodayScreen() {
   }, [justAdded, toast, t, removeEntry])
 
   /**
+   * THE WAY BACK TO TODAY, and only when there is one.
+   *
+   * The strip can put any day of the last year on this screen, and the month
+   * grid can put one twelve taps away — at which point returning to today means
+   * paging the grid forward month by month, or swiping the strip forward week by
+   * week, to reach the day the screen is named after. One tap instead.
+   *
+   * Absent on today itself rather than disabled: a control whose only job is to
+   * get somewhere you already are has nothing to say, and this screen is on
+   * today almost always. Bottom left, opposite the log button, because those are
+   * the two corners a thumb reaches and the log button is not moving.
+   *
+   * Declared up here because the OFFLINE screen below wants it too, and wants it
+   * most: a day this phone has never seen is the one day where the answer really
+   * is "go back to one it has", and the strip only offers that while today is
+   * still in the week on screen.
+   */
+  const backToToday = isToday ? null : (
+    <Button
+      size="sm"
+      variant="neutral"
+      onPress={() => {
+        // The grid comes too. Left where it was, a jump made from a July
+        // calendar would select today and go on drawing July around it — the
+        // same disagreement `onMonthChange` moves the selection to avoid, in the
+        // other direction.
+        setMonth(monthStart(todayKey))
+        setSelectedDate(todayKey)
+      }}
+      leftIcon={<Icon set="ui" name="arrow-right" size={16} />}
+      accessibilityLabel={t('logging:today.backToTodayA11y')}
+    >
+      {t('logging:today.title')}
+    </Button>
+  )
+
+  /**
    * A day this phone has never seen, with no way to ask for it.
    *
    * The strip comes too, so the answer to it is on screen: the days already
@@ -324,7 +362,7 @@ export default function TodayScreen() {
     return (
       // Plain `Screen`: nothing here swipes, so this one does not need
       // gesture-handler's scroll view the way the day below does.
-      <Screen>
+      <Screen floatingLeading={backToToday}>
         <ScreenTitle title={title} />
         <WeekPicker />
         <Card>
@@ -363,6 +401,7 @@ export default function TodayScreen() {
           <FloatingAction onPress={() => router.push('/log')} label={t('common:nav.log')} />
         )
       }
+      floatingLeading={backToToday}
     >
       <ScreenTitle
         title={title}
@@ -423,11 +462,7 @@ export default function TodayScreen() {
             today={todayKey}
           />
 
-          <DayPlates
-            /* Clear of the floating action, which overlaps the scroll content
-               by design. The list view owes its own last row the same thing;
-               here there is exactly one card, so the padding is on it. */
-            className="mb-[76px]"
+          <DayMeals
             date={selectedDate}
             entries={day.entries}
             loading={loading}
@@ -438,6 +473,27 @@ export default function TodayScreen() {
               })
             }
           />
+
+          {/* And what they drank, which the month view had no answer for at all.
+              A day read back through the calendar is the same day the diary
+              shows, and water is half of what this app records about one — the
+              tank being missing here meant the only way to see Tuesday's water
+              was to leave the calendar, find Tuesday on the strip and come back.
+
+              The card, not a figure: it is the app's water surface, it knows how
+              to say "1.2 of 2 litres" in one picture, and somebody looking at
+              yesterday is as likely to be correcting a drink as reading one.
+
+              The bottom padding is on the LAST card rather than on the block,
+              for the reason the floating slot documents: it overlaps the scroll
+              content, so whatever ends the screen owes itself room to be read. */}
+          <WaterCard
+            className="mb-[76px]"
+            date={selectedDate}
+            ml={day.waterMl}
+            goalMl={waterGoal}
+            loading={loading}
+          />
         </>
       ) : (
         <>
@@ -445,6 +501,14 @@ export default function TodayScreen() {
           whole screen below follows it — the ring, the water, the entries and
           anything logged while it is selected. */}
           <WeekPicker />
+
+          {/* "I do not know what to eat", one row high, directly under the day
+              it would be answering about. It lived in the log sheet, beside the
+              heading, which was two taps deep inside a sheet whose four tiles
+              all assume the meal has been decided — so an account that never
+              pressed the log button never learnt the feature was there. See
+              `SuggestAction`. */}
+          <SuggestAction date={selectedDate} kcalLeft={left} hasBudget={Boolean(targets)} />
 
           <Card>
             {loading ? (

@@ -36,16 +36,47 @@ const PLACEHOLDER_ICON = { set: 'food', name: 'empty-plate' } as const
  * set rather than a special case: a day with nothing on it is the one outline
  * that is not a colour, because absence is not a result.
  *
- * TWO SPELLINGS EACH, for the same reason `DateStrip` carries two: the selected
- * day is filled pandan, and a pandan outline on pandan is not an outline. Under
- * goal is the one that has to change — over goal keeps kaya on both, because
- * there the colour IS the message and a white outline would quietly delete it.
+ * TWO SPELLINGS EACH, and what the second one is for has changed. The selected
+ * day used to be filled pandan whatever its verdict, so an outline had to fight
+ * its own fill — under goal went white on the selected cell, and a white ring
+ * around a green square is a cell saying two things. The selection is now filled
+ * in the verdict's OWN colour (see `selections`), so the outline can simply stay
+ * the colour it is; the only pair that still differs is `missed`, whose line has
+ * to darken to stay visible against the grey it is now filled with.
  */
 const outlines: Record<DateStripMark, { on: string; off: string }> = {
-  under: { on: 'border-on-pandan', off: 'border-pandan' },
+  under: { on: 'border-pandan', off: 'border-pandan' },
   over: { on: 'border-kaya', off: 'border-kaya' },
-  missed: { on: 'border-on-pandan/60 border-dashed', off: 'border-line border-dashed' },
+  missed: { on: 'border-line-strong border-dashed', off: 'border-line border-dashed' },
 }
+
+/**
+ * THE SELECTED CELL IS FILLED IN ITS OWN VERDICT'S COLOUR.
+ *
+ * It was `bg-pandan` for every selected day, which is the fill the week strip
+ * uses and was right while the outline was the only thing carrying the verdict.
+ * It stopped being right the moment both were on the same cell: an over-goal day
+ * that happened to be selected drew a kaya ring around a green square, so
+ * picking a day changed what the grid appeared to say about it, and the one cell
+ * the reader is looking at was the one cell whose colour did not mean anything.
+ *
+ * The ink is paired with the fill here rather than assumed, because `kaya-ink`
+ * is the same value as `kaya` in the dark palette — the trap the water figure
+ * fell into. `on-kaya` and `on-pandan` are the two that hold in all four
+ * combinations of theme and verdict.
+ */
+const selections: Record<DateStripMark, { fill: string; ink: string }> = {
+  under: { fill: 'bg-pandan', ink: 'text-on-pandan' },
+  over: { fill: 'bg-kaya', ink: 'text-on-kaya' },
+  missed: { fill: 'bg-line', ink: 'text-ink' },
+}
+
+/**
+ * And the selection on a day with no verdict: today before breakfast, or a day
+ * the account had no budget on. Pandan, which is what selection has always
+ * looked like in this app and is not a claim about the day.
+ */
+const PLAIN_SELECTION = { fill: 'bg-pandan', ink: 'text-on-pandan' } as const
 
 /**
  * Every cell reserves the border's width, drawn or not.
@@ -84,8 +115,11 @@ type CellProps = {
  * outline usable for the verdict at all. They collided while the selected day
  * was drawn with a pandan border, which is also what an under-goal day looks
  * like — one cell claiming two different things with one mark. The selected day
- * is tinted and its number takes the accent instead, which reads on top of any
- * of the three outlines.
+ * is filled and its number takes the ink that reads on that fill.
+ *
+ * WHICH fill is the verdict's own — see `selections`. A cell says one thing in
+ * two ways rather than two things in two ways, and selecting a day no longer
+ * changes what the grid appears to say about it.
  *
  * A day that has been and gone with nothing on it is the dashed outline; today
  * before breakfast, a day still ahead and a day the account had no budget on
@@ -122,18 +156,20 @@ function Cell({ date, plate, mark, selected, ahead, onSelect, label }: CellProps
     <Icon {...(plate.icon ?? PLACEHOLDER_ICON)} size={PLATE} />
   ) : null
 
+  /* A SOLID fill, which is what selection looks like everywhere else in this app
+     — the week strip's selected day is the same. It was `bg-pandan-soft`, which
+     is two greys away from the `bg-track` a logged day already has: picking one
+     changed almost nothing on screen, and on a month where most days are logged
+     the selection was invisible. */
+  const selection = selected ? (mark ? selections[mark] : PLAIN_SELECTION) : null
+
   return (
     <Tappable
       className={cn(
         'h-[66px] flex-1 items-center justify-center gap-0.5 rounded-[14px] px-0.5 py-1',
         BORDER,
         logged && 'bg-track',
-        /* SOLID PANDAN, which is what selection looks like everywhere else in
-           this app — the week strip's selected day is the same fill. It was
-           `bg-pandan-soft`, which is two greys away from the `bg-track` a logged
-           day already has: picking one changed almost nothing on screen, and on
-           a month where most days are logged the selection was invisible. */
-        selected && 'bg-pandan',
+        selection?.fill,
         mark && outlines[mark][selected ? 'on' : 'off'],
         ahead && 'opacity-40',
       )}
@@ -144,10 +180,7 @@ function Cell({ date, plate, mark, selected, ahead, onSelect, label }: CellProps
       accessibilityLabel={label}
     >
       <Text
-        className={cn(
-          'font-display text-[11px] leading-[13px]',
-          selected ? 'text-on-pandan' : 'text-faint',
-        )}
+        className={cn('font-display text-[11px] leading-[13px]', selection?.ink ?? 'text-faint')}
       >
         {parseISO(date).getDate()}
       </Text>

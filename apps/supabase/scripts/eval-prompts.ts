@@ -14,10 +14,10 @@
  * `describeMeal` decides what a sentence names and how much of it there was;
  * `interpretInstruction` decides whether a correction is a portion change, a
  * part change or a different dish; `describeRecipe` decides what a pot holds
- * and how it is cooked; `suggestMeals` decides what five things somebody could
- * eat next. Each is a paragraph of English with no test around it,
- * and each was changed by hand more than once on the strength of a single
- * example that happened to be on screen at the time.
+ * and how it is cooked; `suggestMeals` decides what somebody could eat next.
+ * Each is a paragraph of English with no test around it, and each was changed by
+ * hand more than once on the strength of a single example that happened to be on
+ * screen at the time.
  *
  * So the cases below are the examples, written down. They assert the SHAPE of
  * the answer — which action, how many components, whether the count matched,
@@ -50,6 +50,7 @@ import {
 import { DESCRIBE_RECIPE_PROMPT, describeRecipeUserMessage } from '../functions/_shared/recipe.ts'
 import {
   type DayContext,
+  PICK_COUNT,
   SUGGEST_MEAL_PROMPT,
   suggestUserMessage,
 } from '../functions/_shared/suggest.ts'
@@ -1051,7 +1052,7 @@ const RECIPE_CASES: Array<Case<RecipeAnswer>> = [
 //
 // Every check here is about a rule the prompt had to be TOLD, and each one was
 // added after the model broke it on a live run. There is nothing about which
-// five dishes come back, because that is taste rather than correctness — what
+// which dishes come back, because that is taste rather than correctness — what
 // is gradeable is whether they are meals, whether they are the right kitchen,
 // whether they fit the ceiling, and whether the reasons say anything.
 
@@ -1088,12 +1089,12 @@ const universalSuggest = (answer: SuggestAnswer, ceiling: number): Check[] => {
   const bare = picks.filter((p) => BARE_INGREDIENT.test((p.name ?? '').trim()))
   const noReasons = picks.filter((p) => (p.why ?? []).length === 0)
   const names = picks.map((p) => (p.name ?? '').trim().toLowerCase())
-  // Half the ceiling, which is where "five picks well under the limit" stops
+  // Half the ceiling, which is where "every pick well under the limit" stops
   // being caution and starts being a different question answered.
   const tiny = picks.filter((p) => (p.kcal ?? 0) < ceiling / 2)
 
   return [
-    check('five picks', picks.length === 5, picks.length),
+    check(`${PICK_COUNT} picks`, picks.length === PICK_COUNT, picks.length),
     check(
       'all named',
       picks.every((p) => (p.name ?? '').length > 0),
@@ -1114,13 +1115,13 @@ const universalSuggest = (answer: SuggestAnswer, ceiling: number): Check[] => {
       noReasons.length === 0,
       noReasons.map((p) => p.name),
     ),
-    check('five different dishes', new Set(names).size === picks.length, names),
+    check('all different dishes', new Set(names).size === picks.length, names),
     check(
       'portions stated',
       picks.every((p) => (p.portion ?? '').length > 0),
       picks.length,
     ),
-    // Not all of them: one light option among five is a real answer.
+    // Not all of them: one light option on the list is a real answer.
     check(
       'most are a real meal size',
       tiny.length <= 2,
@@ -1268,9 +1269,9 @@ async function run(name: string, runs: number) {
           (await call(
             SUGGEST_MEAL_PROMPT,
             suggestUserMessage(c.day),
-            // The same ceiling `suggestMeals` calls with. Five picks with eight
-            // fields and three reasons each.
-            2200,
+            // The same ceiling `suggestMeals` calls with. Seven picks with
+            // eight fields and three reasons each.
+            3000,
           )) as SuggestAnswer,
         ),
     })),

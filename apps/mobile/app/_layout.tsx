@@ -98,7 +98,7 @@ export default Sentry.wrap(function RootLayout() {
                         same shape as pending snaps: the work outlives the
                         screen that started it. */}
                         <RefiningProvider>
-                          {/* The five suggestions currently on screen. Above the
+                          {/* The suggestions currently on screen. Above the
                           navigator because the sheet that produced them and the
                           page that reads one are different routes, and a
                           suggestion has no id to carry between them. In memory

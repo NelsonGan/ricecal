@@ -85,12 +85,32 @@ export function Slider({
       dragging.value = false
     })
 
-  const fillStyle = useAnimatedStyle(() => ({
-    width: `${ratio(current.value, min, max) * 100}%`,
-  }))
+  /**
+   * THE THUMB TRAVELS INSIDE THE TRACK, not across it.
+   *
+   * It used to be laid out at `ratio * width - THUMB / 2`, which puts half the
+   * thumb outside the track at each end — 17pt of it, hanging into whatever the
+   * slider is sitting in. In a card with padding that is a thumb overlapping the
+   * gutter; in the ask sheet it was a thumb CUT IN HALF at both ends of the
+   * calorie limit, because a sheet's body clips at its own edge and the value
+   * somebody drags to most often is one of the two extremes.
+   *
+   * So the travel is the track less the thumb's own width, and the fill runs to
+   * the thumb's CENTRE rather than to its leading edge — otherwise the two come
+   * apart by 17pt in the middle of the range, which reads as a fill that does
+   * not reach its own handle. Both halves have to move together, and so does
+   * `positionToValue`, or the finger and the thumb disagree near the ends.
+   */
+  const fillStyle = useAnimatedStyle(() => {
+    const travel = Math.max(0, width.value - THUMB)
+    // Nothing at all before the first layout: a stub of pandan under a thumb
+    // that has not been placed yet is a slider drawing a value it does not have.
+    if (travel <= 0) return { width: 0 }
+    return { width: ratio(current.value, min, max) * travel + THUMB / 2 }
+  })
 
   const thumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: ratio(current.value, min, max) * width.value - THUMB / 2 }],
+    transform: [{ translateX: ratio(current.value, min, max) * Math.max(0, width.value - THUMB) }],
   }))
 
   return (
@@ -144,8 +164,13 @@ function ratio(value: number, min: number, max: number) {
 
 function positionToValue(x: number, width: number, min: number, max: number, step: number) {
   'worklet'
-  if (width <= 0) return min
-  const raw = min + (Math.min(width, Math.max(0, x)) / width) * (max - min)
+  // The finger is read against the thumb's own travel, for the reason written
+  // on `thumbStyle`: the thumb's centre starts half a thumb in from each end,
+  // so a touch mapped over the full width would land the handle short of the
+  // finger at one end and past it at the other.
+  const travel = width - THUMB
+  if (travel <= 0) return min
+  const raw = min + (Math.min(travel, Math.max(0, x - THUMB / 2)) / travel) * (max - min)
   if (step <= 0) return raw
   const snapped = Math.round(raw / step) * step
   // Snapping in floating point is where "75.60000000000001" comes from: 756 * 0.1
