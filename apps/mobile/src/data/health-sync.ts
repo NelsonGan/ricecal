@@ -15,68 +15,37 @@ import { keys } from './keys'
 import { useUserId } from './session'
 
 /**
- * Reading the phone's health store into the database.
+ * Reading the phone's health store into the database. The only place in the app
+ * that writes `activity_days`, `activity_sessions` and `activity_hours`.
  *
- * The only place in the app that writes `activity_days`, `activity_sessions`
- * and `activity_hours`.
+ * Three mechanisms, each covering what the others cannot: a week-deep backfill on
+ * connect, chunked so the UI keeps painting; a rolling window on every
+ * foreground; and a refetch of the affected queries when either lands.
  *
- * What "seamless" means here: the user connects once and never thinks about it
- * again. There is no sync button on any screen that matters, no spinner between
- * them and their numbers, and no state where the app is right and the watch is
- * not. Three mechanisms get there, and each exists because the others cannot
- * cover its case.
+ * The incremental pass re-reads a window rather than tracking a cursor, and that
+ * is the decision the file is shaped around. Health data arrives late and arrives
+ * edited: a watch out of range writes Tuesday on Wednesday, Strava back-dates an
+ * upload, Apple recomputes a day when a second source appears. "Everything since
+ * the last sync" misses all three permanently, because the data's timestamp is
+ * older than the cursor by the time it exists.
  *
- *   1. A backfill on connect, a week deep, chunked so the UI keeps painting.
- *      Without it the Activity tab is empty on the day it is turned on, which
- *      reads as broken rather than as new.
- *   2. A rolling window on every foreground. Not "since last sync", see below.
- *   3. A refetch of the affected queries when either lands, so Today's budget
- *      moves without the user pulling anything.
+ * Every key in the schema exists to make that repetition free: days by date,
+ * hours by date and hour, sessions by the store's own id.
  *
- * Why the incremental sync re-reads a window rather than tracking a cursor:
- * this is the decision the whole file is shaped around, and the naive
- * alternative is wrong in a way that only shows up in the field.
- *
- * Health data arrives late and it arrives edited. A watch out of Bluetooth range
- * writes Tuesday's calories on Wednesday evening. Strava back-dates a run
- * uploaded from a laptop. Apple recomputes a day's active energy when a second
- * source turns up. A cursor, meaning "everything since the last sync instant",
- * misses all three permanently, because the data's timestamp is older than the
- * cursor by the time it exists.
- *
- * So the incremental pass re-reads the last seven days every time and upserts
- * them. Seven because that is comfortably longer than any late arrival anyone
- * has observed and short enough to be one round trip. Every key in the schema
- * was chosen to make that repetition free: days are keyed by date, hours by date
- * and hour, and sessions by the store's own id.
- *
- * Why it is not an edge function: nothing here needs a secret and there is
- * nothing to authenticate against. The data is on the device, behind a
- * permission the user granted to this app, and the server could not fetch it if
- * it wanted to. This is the one write path in RiceCal that belongs on the
- * client.
+ * No edge function, because there is nothing to authenticate against: the data is
+ * on the device behind a permission the user granted to this app.
  */
 
 /**
  * How far back a first connection reads.
  *
- * A week. It was a year, then a month, and each cut was the same argument
- * carried further: the backfill exists so the Activity tab has something in it
- * on the day it is turned on, and a week answers that. Nothing about future
- * syncing is affected.
+ * A week. The backfill exists so the Activity tab has something in it on the day
+ * it is turned on, and a week answers that in a single query, which matters
+ * because the ask sits inside onboarding.
  *
- * It is also the difference between a connect that finishes while the user is
- * looking at it and one they wait through. This ask sits inside onboarding, a
- * screen away from an account a minute old, and a week is a single query.
- *
- * What it costs is the 30-day range on the Activity tab, which starts three
- * quarters empty and fills in over the following weeks. That is the accepted
- * trade: a range that fills up is legible, while a permission screen somebody
- * waits through during their first minute is not.
- *
- * Deeper history is not lost, only unread. The store still has it, and
- * `backfilled_from` records how far this account has gone, so a future screen
- * that wants more can ask for the part it has not seen.
+ * What it costs is the 30-day range, which starts three quarters empty and fills
+ * in over the following weeks. Deeper history is unread rather than lost, and
+ * `backfilled_from` records how far this account has gone.
  */
 const BACKFILL_DAYS = 7
 
@@ -181,22 +150,15 @@ async function persist(
   /**
    * Hours are replaced for the window rather than upserted into it.
    *
-   * An upsert cannot express "this hour no longer has any steps", and that happens
-   * for real: a duplicate source is removed in Health, or a day is re-attributed,
-   * and the hour that had 400 steps now has none. Left alone it would sit on the
-   * chart for ever, because nothing would write a zero over it. Deleting the
-   * window first is the only version that converges.
+   * An upsert cannot express "this hour no longer has any steps", and that happens:
+   * a duplicate source is removed in Health and the hour that had 400 steps now has
+   * none. Nothing would ever write a zero over it.
    *
-   * Safe only because the delete covers exactly the dates the reading can contain,
-   * which is the chunk that was just read, end to end. That equality is the whole
-   * correctness argument, and getting it wrong is not cosmetic: the insert is an
-   * `insert`, not an upsert, so a row the delete missed is a duplicate-key error
-   * that fails the entire sync.
-   *
-   * It was wrong once. The delete was clamped to the start of the hourly retention
-   * window while the providers kept returning hours for the whole chunk, so the
-   * one chunk straddling that boundary inserted rows outside the delete. Invisible
-   * on a first backfill against empty tables, and a hard failure on the second.
+   * Safe only because the delete covers exactly the dates the reading can contain.
+   * The insert is an `insert`, not an upsert, so a row the delete missed is a
+   * duplicate-key error that fails the entire sync. Clamping the delete to the
+   * hourly retention window while the providers returned the whole chunk did
+   * exactly that: invisible on a first backfill, a hard failure on the second.
    */
   if (window.withHours) {
     const { error: deleteError } = await supabase
@@ -224,19 +186,14 @@ async function persist(
 
   /**
    * Weigh-ins go through a function rather than an upsert, and that is the one
-   * asymmetry in this file worth reading twice.
+   * asymmetry in this file.
    *
-   * The three tables above are the sync's own: nothing else writes them, so an
-   * upsert onto their key is unambiguous and re-running it is free. Weight is not
-   * like that. `weight_logs` is shared with the user, who types into it from the
-   * Trends tab, and one row per day means the two authors compete for the same
-   * key, with the rolling window re-reading the last seven days on every
-   * foreground.
+   * The three tables above are the sync's own, so an upsert onto their key is
+   * unambiguous. `weight_logs` is shared with the user, and one row per day means
+   * the two authors compete for the same key on every foreground.
    *
    * A reading the user typed always wins. That is a WHERE on the DO UPDATE, which
-   * PostgREST's `.upsert()` cannot express, so `sync_weight_readings` owns it. See
-   * the header on `schemas/40_weight_logs.sql` for why it also drops out-of-range
-   * readings instead of raising on them.
+   * PostgREST's `.upsert()` cannot express, so `sync_weight_readings` owns it.
    */
   if (reading.weights.length > 0) {
     const { error } = await supabase.rpc('sync_weight_readings', {
@@ -254,24 +211,16 @@ async function persist(
 /**
  * The two facts about the person that a provider needs and cannot know.
  *
- * Read here rather than inside a provider because both are about the user and
- * the providers only know about the store. One round trip for the pair, since
- * they come off the same row.
+ * `age` bands a heart rate: the zones are fractions of an estimated maximum.
+ * Without it every session was banded against a 40-year-old, which for a
+ * 29-year-old puts the Peak threshold seven beats too low. Not `ageFrom` alone,
+ * which returns 0 for a missing birth date, and 0 through Tanaka is a maximum of
+ * 208.
  *
- * `age` is what bands a heart rate: the zones are fractions of an estimated
- * maximum, and that maximum is a function of age. Without it every session was
- * banded against a 40-year-old, which for a 29-year-old puts the Peak threshold
- * seven beats too low and turns a steady run into twenty minutes of Peak. Not
- * `ageFrom` alone: that returns 0 for a missing birth date, and 0 through the
- * Tanaka formula is a maximum of 208, which would band nothing as hard at all.
- *
- * `basalKcal` is what splits a store's total energy into the active half that
- * may extend a budget and the resting half that may not. Mifflin-St Jeor, the
- * same formula `compute_targets()` runs in Postgres, so the figure the split
- * uses is the same one the budget it feeds was built from. Null unless all four
- * inputs are on the profile: a partial body cannot be guessed at here, because
- * every fallback would be a number invented on the client and then written to
- * the database as if a watch had measured it.
+ * `basalKcal` splits a store's total energy into the active half that may extend
+ * a budget and the resting half that may not. Null unless all four inputs are on
+ * the profile: every fallback would be a number invented on the client and then
+ * written as if a watch had measured it.
  */
 async function personOf(userId: string): Promise<{ age: number | null; basalKcal: number | null }> {
   // Two rows, because a body is spread over two tables: the parts that do not
@@ -321,15 +270,12 @@ async function personOf(userId: string): Promise<{ age: number | null; basalKcal
 /**
  * Read a range from a provider and write it, a chunk at a time.
  *
- * Returns the number of days actually written, which is what the connect screen
- * reports and, more usefully, what tells a caller whether a granted-looking
- * permission produced anything. On iOS that is the only way to know, since
- * HealthKit will not say whether a read was denied.
+ * Returns the number of days actually written, which is what tells a caller
+ * whether a granted-looking permission produced anything. On iOS that is the only
+ * way to know, since HealthKit will not say whether a read was denied.
  *
- * It also returns whatever hardware named itself along the way. That used to be
- * thrown away and re-fetched by a second `read` immediately afterwards, and the
- * extra read only covered the connect path, so an account that connected before
- * a watch was paired never learned its name at all.
+ * It also returns whatever hardware named itself along the way, so every sync
+ * keeps the device name current rather than only a connect.
  */
 export async function syncRange(
   userId: string,
@@ -414,16 +360,13 @@ async function noteSync(
 /**
  * What a sync can have moved.
  *
- * Shared by the connect and the incremental pass because they write exactly the
- * same tables. The only difference between them is how far back they read, and a
- * list that drifted between the two would mean a screen that refreshes after one
- * kind of sync and not the other.
+ * Shared by the connect and the incremental pass because they write the same
+ * tables, and a list that drifted between the two would mean a screen that
+ * refreshes after one kind of sync and not the other.
  *
- * The weight three are here for a reason that is easy to miss: a synced weigh-in
- * fires `weight_logs_sync_daily_goals` in the database, which rewrites
- * `daily_goals`. So a sync can change the user's calorie target without anything
- * in the app having asked it to, and a stale `keys.goals` would leave Today
- * showing a budget the server has already replaced.
+ * The weight three are easy to miss: a synced weigh-in fires
+ * `weight_logs_sync_daily_goals`, so a sync can change the user's calorie target
+ * without anything in the app having asked it to.
  */
 function invalidateAfterSync(queryClient: QueryClient, userId: string): void {
   queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
@@ -443,25 +386,17 @@ function invalidateAfterSync(queryClient: QueryClient, userId: string): void {
 /**
  * What each provider was last asked to read, on this device.
  *
- * MMKV rather than `health_connections.permissions`, and the difference is the
- * point: a permission is granted to an install, while that column belongs to an
- * account. The same account on a new phone has been asked nothing.
+ * MMKV rather than `health_connections.permissions`: a permission is granted to
+ * an install, while that column belongs to an account, and the same account on a
+ * new phone has been asked nothing.
  *
- * Why this exists at all. A connection is made once, and the incremental pass
- * deliberately does not ask for access, because it runs on every foreground and
- * a permission sheet that appeared every time somebody opened the app would be
- * intolerable. So when a release starts reading a type the last one did not,
- * nobody who was already connected is ever asked for it: on iOS the type stays
- * `notDetermined` and reads return nothing, and on Android it is simply absent.
- * The feature is then silently dead for every existing install while working
- * perfectly on a fresh one, which is the worst shape a bug can have.
- *
- * Weight was the first release to do this, and it was caught only because the
- * developer's own account was already connected with the previous list.
+ * The incremental pass deliberately does not ask for access, because it runs on
+ * every foreground. So when a release starts reading a type the last one did not,
+ * nobody already connected is ever asked for it, and the feature is silently dead
+ * for every existing install while working perfectly on a fresh one.
  *
  * The stored value is the list itself rather than a version number somebody has
- * to remember to bump, so adding a type re-asks exactly once per device with no
- * second thing to keep in step.
+ * to remember to bump.
  */
 const asked = createMMKV({ id: 'ricecal-health-permissions' })
 
@@ -601,14 +536,13 @@ export function useSyncHealth() {
 /**
  * Keeps a connected account in step, without anybody asking.
  *
- * Mounted once, high in the tree, next to `useReminderSync` and for the same
- * reason: it is a background rule about the account rather than anything a
- * screen owns.
+ * Mounted once, high in the tree: it is a background rule about the account
+ * rather than anything a screen owns.
  *
- * Runs on mount and on every return to the foreground, throttled so that
- * flicking between apps does not become a request per switch. The throttle is a
- * ref rather than state, because it must not cause a render and it is read
- * inside an effect that would otherwise re-subscribe on every tick.
+ * Runs on mount and on every foreground, throttled so flicking between apps does
+ * not become a request per switch. The throttle is a ref rather than state,
+ * because it must not cause a render and it is read inside an effect that would
+ * otherwise re-subscribe on every tick.
  */
 export function useHealthAutoSync(provider: ProviderId | null): {
   syncNow: () => void

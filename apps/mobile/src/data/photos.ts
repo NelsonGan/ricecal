@@ -14,18 +14,13 @@ import { useUserId } from './session'
 /**
  * Images, in Cloudflare R2.
  *
- * The app still deals in keys. `food_logs.photo_path` and `profiles.avatar_path`
- * hold exactly what they always did, but nothing here talks to a bucket. Every
- * operation goes through the `photos` edge function, which is the only thing
- * holding an R2 credential and the only thing that can decide whether a key
- * belongs to the caller.
+ * The app deals in keys; nothing here talks to a bucket. Every operation goes
+ * through the `photos` edge function, which is the only thing holding an R2
+ * credential and the only thing that can decide whether a key belongs to the
+ * caller. R2 has no notion of a user, so that check cannot live in the database
+ * the way it did under Supabase Storage.
  *
- * That indirection is not ceremony. Supabase Storage let this file talk to the
- * bucket directly because Postgres checked each request against `auth.uid()`. R2
- * has no such notion, so the check moved to the server.
- *
- * Uploads still go phone to R2 with no proxy in between: the function signs a PUT
- * and the bytes take the short path.
+ * Uploads still go phone to R2 with no proxy: the function signs a PUT.
  */
 
 /**
@@ -44,13 +39,9 @@ const READ_TTL_SECONDS = 60 * 60
  * How long signing waits for company.
  *
  * A day of diary mounts a dozen rows in the same frame, each wanting a URL for
- * its own plate. Against Supabase Storage that was a dozen cheap calls to an
- * always-warm service; against an edge function it is a dozen invocations and
- * possibly a dozen cold starts. So the keys asked for within a frame or two are
- * collected and signed in one request.
- *
- * Long enough for a list to finish mounting, short enough that a single tile
- * appearing on its own does not feel like it is waiting.
+ * its own plate, and against an edge function that is a dozen invocations and
+ * possibly a dozen cold starts. Keys asked for within a frame or two are signed
+ * in one request.
  */
 const BATCH_WINDOW_MS = 24
 
@@ -59,16 +50,12 @@ const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012
 /**
  * Base64 to bytes, by hand.
  *
- * The documented Expo path is `expo-file-system` plus `base64-arraybuffer`, and
- * both are avoided deliberately. `expo-file-system` is a native module, so adding
- * it invalidates every installed dev client and forces a rebuild to upload a
- * photo, which is a large bill for thirty lines of arithmetic. `atob` is not
+ * `expo-file-system` is a native module, so adding it would invalidate every
+ * installed dev client to save thirty lines of arithmetic, and `atob` is not
  * guaranteed on Hermes across the versions this app supports.
  *
- * React Native's networking layer takes a `Uint8Array` body directly
- * (`convertRequestBody` base64s it back for the native side), so these bytes can
- * be PUT at a signed URL without a Blob. That matters, because RN's Blob cannot
- * be built from a typed array at all.
+ * React Native's networking layer takes a `Uint8Array` body directly, so these
+ * bytes can be PUT without a Blob, which RN cannot build from a typed array.
  */
 function decodeBase64(input: string): Uint8Array {
   const clean = input.replace(/[^A-Za-z0-9+/]/g, '')
@@ -211,19 +198,13 @@ function signRead(key: string): Promise<string> {
  * Where the bytes for a key already sit on this device, as a `file://` uri, or
  * null when they do not.
  *
- * This is the half of local caching that keying on `photo_path` did not buy. The
- * bytes survive a relaunch and always did, but nothing can be drawn until there
- * is a `source` to draw, and the uri in that source was a signature this app
- * deliberately never persists. So a cold launch showed a day of grey tiles while
- * it waited on the `photos` function to sign for photographs that were already on
- * the disk. The pictures were local; the permission to name them was not.
+ * The bytes survive a relaunch, but nothing can be drawn until there is a
+ * `source`, and the uri in that source was a signature this app never persists.
+ * So a cold launch showed a day of grey tiles while it waited on the `photos`
+ * function to sign for photographs already on the disk.
  *
- * Asking expo-image where it put them turns that wait into a local stat. The path
- * it hands back is the cache entry rather than a copy of it, so nothing is
- * duplicated by rendering it.
- *
- * Never throws. A device that cannot answer is a device that has to sign, which
- * is exactly what happens next.
+ * The path expo-image hands back is the cache entry rather than a copy of it.
+ * Never throws: a device that cannot answer is one that has to sign.
  */
 async function cachedFile(key: string): Promise<string | null> {
   try {
@@ -256,20 +237,13 @@ export function resolveStoredImage(key: string): Promise<string> {
 /**
  * Downsizes an image and uploads it, returning the key to store on the row.
  *
- * The resize is not an optimisation, it is what makes the upload possible. A
- * modern phone camera produces 3 to 6 MB per frame and the endpoint refuses
- * anything over 10 MB, so a burst of unshrunk plates would start failing on the
- * third one. JPEG for the same reason the endpoint lists HEIC as *accepted*
- * rather than expected: HEIC arriving means this step was skipped.
+ * The resize is what makes the upload possible: a phone camera produces 3 to 6 MB
+ * a frame and the endpoint refuses anything over 10 MB. The cap is on the longer
+ * edge, so the aspect ratio is preserved and an image already within budget is
+ * re-encoded but never upscaled.
  *
- * The cap is on the longer edge, so the aspect ratio is preserved and a portrait
- * shot costs the same tokens as a landscape one. An image already within budget
- * is re-encoded but never upscaled.
- *
- * Three steps, in this order: shrink, ask for a URL, PUT. The key comes back from
- * the server rather than being made up here, because the server enforces that a
- * key sits inside the caller's own folder and the cheapest way to be sure of that
- * is for it to be the one who wrote it.
+ * Shrink, ask for a URL, PUT. The key comes back from the server, because the
+ * server is what enforces that a key sits inside the caller's own folder.
  */
 async function uploadImage(kind: AssetKind, localUri: string): Promise<string> {
   const maxEdge = MAX_EDGE[kind]
@@ -322,14 +296,11 @@ async function uploadImage(kind: AssetKind, localUri: string): Promise<string> {
    * File the picture under the key it now has, so the phone never downloads back a
    * photograph it took.
    *
-   * Without this the bytes make a full round trip for no reason: the row is written
-   * with a key nothing has cached, and the first time the diary draws it, it signs
-   * for the object and fetches it. What is seeded is exact rather than approximate.
    * `image.uri` is the downsized JPEG that was PUT a line ago, so it is byte for
    * byte what the bucket holds.
    *
    * Never fails the upload. The object is in R2 by this point, and a cache that
-   * would not take a copy is a slow first render, not a lost photo.
+   * would not take a copy is a slow first render rather than a lost photo.
    */
   try {
     await ImageCache.writeToCacheAsync(image.uri, key)
@@ -357,16 +328,13 @@ export function uploadAvatar(localUri: string): Promise<string> {
 /**
  * Whether this key is one the caller could possibly be handed a URL for.
  *
- * The server's `ownsKey` is the real check and this cannot replace it. It is the
- * same rule asked one round trip earlier, and it exists because of what a refusal
- * costs here: `signRead` batches every key requested inside a 24 ms window into
- * one call and rejects the whole promise if any of them is refused, so a single
- * foreign key takes down the signing of every photograph beside it.
+ * The server's `ownsKey` is the real check; this is the same rule asked one round
+ * trip earlier, and it exists because of what a refusal costs. `signRead` batches
+ * every key in a 24 ms window into one call and rejects the whole promise if any
+ * is refused, so a single foreign key takes down every photograph beside it.
  *
- * A recipe list is where that first showed up. The community shelf renders other
- * people's cooking, and asking for their photographs blanked the user's own.
- * Filtered here, a foreign key is never asked for and the row falls back to its
- * illustration.
+ * The community recipe shelf is where that showed up: asking for other people's
+ * photographs blanked the user's own.
  */
 function ownKey(path: string | undefined, userId: string): boolean {
   if (!path) return false
@@ -376,31 +344,18 @@ function ownKey(path: string | undefined, userId: string): boolean {
 /**
  * A uri for a stored image: a local file, or a signed URL.
  *
- * The bucket is private and has no public route at all, since a photo of a meal
- * is a photo of where somebody was and when, so anything fetched over the network
- * is fetched with a signature that expires within the hour. Held for slightly
- * less than the signature lasts, so a diary left open across the hour re-signs
- * rather than drawing broken tiles.
+ * The bucket is private and has no public route, so anything fetched over the
+ * network carries a signature that expires within the hour. Held for slightly
+ * less than that, so a diary left open across the hour re-signs rather than
+ * drawing broken tiles.
  *
- * Not persisted to disk. `lib/query.ts` drops everything under the `photo` key on
- * dehydrate, since a week-old cache full of hour-old URLs is a pile of strings
- * that are wrong by the time anything reads them, and the local path beside them
- * belongs to an app container that a reinstall renumbers.
+ * Not persisted to disk: an hour-old URL is wrong by the time anything reads it,
+ * and the local path beside it belongs to a container a reinstall renumbers.
  *
- * So this query is re-run on every cold launch, and `resolveStoredImage` is what
- * makes that cheap: the answer usually comes off the disk.
- *
- * This is the one query in the app that overrides the global `gcTime`, and the
- * only one that should. `Infinity` is set in `lib/query.ts` so the persister gets
- * a chance to write a query to disk before it is collected, and this is the query
- * deliberately never written to disk. Kept forever, it also kept every key the
- * user has ever deleted. Collected after the signature's own lifetime instead. A
- * tile still on screen is unaffected, since nothing is collected while it is
- * being observed.
- *
- * A local answer refreshing on the same clock as a signed one is deliberate. It
- * costs a stat, and the refetch is what promotes an entry that was signed for an
- * hour ago to the copy the download has since left on the disk.
+ * The one query that overrides the global `gcTime`, and the only one that should.
+ * `Infinity` exists so the persister can write a query to disk before it is
+ * collected, and this is the query never written to disk. Kept for ever it also
+ * kept every key the user has ever deleted.
  */
 function useStoredImageUri(path: string | undefined) {
   const userId = useUserId()
@@ -414,15 +369,11 @@ function useStoredImageUri(path: string | undefined) {
      * The one query in the app worth running with no connection.
      *
      * `lib/query.ts` pauses a query rather than send a request that cannot arrive,
-     * which is right for every query that has to ask the server and wrong for the
-     * only one that asks the disk first. A paused query does not run its `queryFn` at
-     * all, so the local path `resolveStoredImage` would have returned is never
-     * fetched, and a diary of plates this phone has already downloaded draws as a
-     * column of empty tiles the moment it goes offline.
+     * which is wrong for the only one that asks the disk first: a paused query never
+     * runs its `queryFn`, so a diary of plates this phone has already downloaded
+     * draws as a column of empty tiles the moment it goes offline.
      *
-     * What it costs is a doomed round trip per photograph this device has not seen,
-     * which is the one case where there was nothing to show anyway. Nothing waits on
-     * it: the row draws, and the tile fills in or does not.
+     * What it costs is a doomed round trip per photograph this device has not seen.
      */
     networkMode: 'offlineFirst',
     queryFn: () => resolveStoredImage(path as string),
@@ -455,34 +406,19 @@ export type StoredImageSource = { uri: string; cacheKey?: string }
 /**
  * What to hand `<Image source>` for a picture that lives in the bucket.
  *
- * This exists because of a mismatch between two lifetimes. The bytes never
- * change, since an object is written once under a UUID key and never rewritten,
- * but the URL naming them is a signature that expires within the hour. expo-image
- * caches on the URL by default, signing parameters and all, which made a stable
- * photograph look like a different image every time it was signed for: a cold
- * launch re-downloaded every plate on the day, and a diary left open across the
- * hour re-downloaded them again. Bytes moving because a credential rotated.
+ * The bytes never change, but the URL naming them expires within the hour, and
+ * expo-image caches on the URL by default. So a stable photograph looked like a
+ * new image every time it was signed for, and a cold launch re-downloaded every
+ * plate on the day.
  *
- * So the cache is keyed on `photo_path` instead. The key is what the row stores,
- * it is minted per upload and never reused, and it names exactly one object,
- * which makes it both a stable cache key and the invalidation. A photo replaced
- * by hand is a new key, so the new picture cannot be served from the old one's
- * entry. There is no cache to bust because the thing being asked for has a
- * different name.
+ * The cache is keyed on `photo_path` instead: minted per upload, never reused,
+ * naming exactly one object, which makes it both a stable key and the
+ * invalidation. An upload path that reused a key on replace would leave this
+ * cache serving the previous photograph for ever.
  *
- * That last part is load-bearing. An upload path that reused a key on replace
- * would leave this cache confidently serving the previous photograph for ever, on
- * a key whose bytes it has no way of knowing changed.
- *
- * A local uri wins over a stored one and is deliberately given no cache key: a
- * file on disk is not a download, and its path already names it uniquely.
- *
- * That covers two different files. One is a shot taken on the screen doing the
- * asking. The other is the cache's own copy, handed back by `resolveStoredImage`
- * when the picture was already here, and that one must not be keyed either for a
- * plainer reason: it *is* the entry under that key, so filing it again would ask
- * the cache to store what it just produced. Both platforms ignore a `cacheKey` on
- * a local file anyway.
+ * A local uri is given no cache key. A file on disk is not a download, and the
+ * cache's own copy *is* the entry under that key, so filing it again would ask
+ * the cache to store what it just produced.
  */
 export function storedImageSource(
   path: string | undefined,
@@ -498,45 +434,31 @@ export function storedImageSource(
 }
 
 /**
- * Deletes stored images. Called when the row that owned one is deleted, or when a
- * new picture takes its place.
+ * Deletes stored images, when the row that owned one is deleted or a new picture
+ * takes its place.
  *
- * Never rejects, and that is load-bearing rather than lazy. Every call site runs
- * this *after* the row it belongs to is written: `useUpdateEntry` and
- * `useRemoveEntry` both `await` it at the end of their `mutationFn` on purpose,
- * so an object deleted for a row that then failed to save cannot leave an entry
- * pointing at nothing. Rejecting here would invert that. The database work has
- * already succeeded, and throwing would fail the mutation around it, so a deleted
- * entry would spring back onto the day because the picture it used to have could
- * not be tidied up.
+ * Never rejects, and that is load-bearing. Every call site runs this *after* the
+ * row is written, so an object deleted for a row that then failed to save cannot
+ * leave an entry pointing at nothing. Rejecting would invert that: the database
+ * work has succeeded, and throwing would fail the mutation around it, springing a
+ * deleted entry back onto the day.
  *
- * A failure leaves an orphaned object and nothing worse, which is what the bucket
- * call this replaced did too. The warning is the difference: it was silent
- * before.
+ * A failure leaves an orphaned object and nothing worse.
  */
 async function removeImages(paths: string[]): Promise<void> {
   if (paths.length === 0) return
 
   /**
-   * Nothing is evicted here, deliberately, and both halves of that look like
-   * omissions.
+   * Nothing is evicted here, deliberately, and both halves look like omissions.
    *
-   * The signed URL is left to `gcTime` on `useStoredImageUrl` rather than removed
-   * on the spot. Removing it was tried and was worse than doing nothing: a screen
-   * that replaces a photo is still mounted on the old key while its own mutation
-   * runs, so the invalidation in `onSuccess` re-renders it, the observer finds its
-   * query gone, and it signs the key that was deleted a moment ago. `signGet` does
-   * not check that an object exists, so that request succeeds, paying a round trip
-   * to put a URL for a deleted object back in the cache the removal had just
-   * cleared.
+   * The signed URL is left to `gcTime`. Removing it on the spot was worse than
+   * doing nothing: a screen replacing a photo is still mounted on the old key while
+   * its mutation runs, so the invalidation re-renders it and it signs the key that
+   * was deleted a moment ago. `signGet` does not check that an object exists, so
+   * that request succeeds.
    *
-   * The disk bytes are left alone because there is no API to do otherwise:
-   * expo-image can clear its cache entirely or not at all, and evicting one dead
-   * plate by throwing away every other plate on the day is the worse trade. Its own
-   * LRU reclaims a key nothing asks for again.
-   *
-   * Neither can be served stale in the meantime, because a replacement photo
-   * arrives under a key of its own.
+   * The disk bytes are left alone because expo-image can clear its cache entirely
+   * or not at all. Its own LRU reclaims a key nothing asks for again.
    */
   try {
     await photos({ action: 'delete', keys: paths })
@@ -562,25 +484,17 @@ export function removeAvatar(path: string): Promise<void> {
 /**
  * Forgets every cached picture, on the way out of an account.
  *
- * This is the one moment where clearing the whole cache is the right shape rather
- * than a blunt instrument, because the point is that nothing is kept.
+ * Keyed on the signed URL, a plate was re-downloaded under a new name every hour
+ * and the old entries aged out on their own. Keyed on `photo_path` they do not:
+ * they are exactly the long-lived entries that change set out to create, and a
+ * device that has been handed on should not still hold a year of somebody's
+ * meals.
  *
- * It became necessary when the cache started keying on `photo_path`. Keyed on the
- * signed URL, a plate was re-downloaded under a new name every hour and the old
- * entries aged out on their own, so a signed-out account's photographs left the
- * device by accident. Keyed on something stable they do not: they are exactly the
- * long-lived entries this change set out to create. A meal photo is a picture of
- * where somebody was and when, and a device that has been handed on or sold
- * should not still be holding a year of them.
+ * SIGNED_OUT only. Signing in cannot expose anything, and if a future supabase-js
+ * reported a restored session as a sign-in, clearing here would throw away the
+ * disk cache on every launch.
  *
- * SIGNED_OUT only, deliberately, though `session.tsx` clears its query cache on
- * both edges. Signing in cannot expose anything, since a key names its owner and
- * the `photos` function refuses to sign one that is not the caller's. And if a
- * future supabase-js reported a restored session as a sign-in, clearing here
- * would quietly throw away the disk cache on every launch.
- *
- * Never rejects: this runs while an account is being torn down, and a cache that
- * would not empty is not a reason to fail a sign-out.
+ * Never rejects: this runs while an account is being torn down.
  */
 export async function clearImageCache(): Promise<void> {
   try {
