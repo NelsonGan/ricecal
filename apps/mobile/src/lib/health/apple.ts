@@ -18,39 +18,31 @@ import type {
 /**
  * Apple Health.
  *
- * WHY EVERY IMPORT OF THE LIBRARY IS A `require` INSIDE A FUNCTION
+ * Why every import of the library is a `require` inside a function:
+ * `@kingstinct/react-native-healthkit` is a Nitro module. On iOS, Metro resolves
+ * `healthkit.ios.ts`, which reaches for a native HybridObject at module scope, so
+ * a top-level `import` throws during the bundle's first evaluation on any build
+ * whose native side does not have it. That is not hypothetical: it is every dev
+ * client built before this dependency landed, and the failure is a white screen
+ * on launch rather than a broken Activity tab.
  *
- * `@kingstinct/react-native-healthkit` is a Nitro module. On iOS, Metro
- * resolves `healthkit.ios.ts`, which reaches for a native HybridObject at
- * module scope — so a top-level `import` throws during the bundle's first
- * evaluation on any build whose native side does not have it. That is not a
- * hypothetical: it is every dev client built before this dependency landed, and
- * the failure is a white screen on launch rather than a broken Activity tab.
+ * Loading it lazily costs one `require` per call and turns that class of mistake
+ * into `not-linked` on one screen, which the connect screen can explain.
  *
- * Loading it lazily costs one `require` per call and turns that class of
- * mistake into `not-linked` on one screen, which is a thing the connect screen
- * can explain.
+ * Why the simulator is a first-class answer: `HKHealthStore.isHealthDataAvailable()`
+ * is false on the iOS Simulator, so every screen below has to work with no
+ * provider at all, which is why `demo.ts` exists.
  *
- * WHY THE SIMULATOR IS A FIRST-CLASS ANSWER
- *
- * `HKHealthStore.isHealthDataAvailable()` is false on the iOS Simulator — there
- * is no Health app there and no store to read. Every screen below therefore has
- * to work with no provider at all, which is why `demo.ts` exists and why this
- * file reports the state rather than throwing.
- *
- * WHAT WE ASK FOR, AND WHY IT IS SHORT
- *
- * Nine read types and nothing else. HealthKit's permission sheet lists exactly
- * what you request, and a calorie diary asking for sleep and cycle tracking
- * because it might want them later is a diary people decline. Nothing is
- * requested for WRITING at all — RiceCal never writes to Health.
+ * What we ask for, and why it is short: nine read types and nothing else.
+ * HealthKit's permission sheet lists exactly what you request, and a calorie
+ * diary asking for sleep and cycle tracking because it might want them later is a
+ * diary people decline. Nothing is requested for writing at all.
  *
  * Body mass and body fat are the two that are not about movement. They are here
  * because a weigh-in is an input to the calorie budget rather than a statistic
- * beside it: `weight_logs` is what `compute_targets` reads, so a user whose
- * scale writes to Health gets a budget that follows their weight without them
- * typing anything. What the app does with them is `sync_weight_readings`, and
- * the rule there is that a reading the user typed always wins.
+ * beside it: `weight_logs` is what `compute_targets` reads, so a user whose scale
+ * writes to Health gets a budget that follows their weight without them typing
+ * anything.
  */
 
 const QUANTITY = {
@@ -108,12 +100,12 @@ function endOf(date: LocalDate): Date {
  *
  * A statistics collection is the right tool and not merely a fast one: HealthKit
  * deduplicates across sources inside it. Reading raw samples and summing them
- * double-counts every step on a phone that has both an iPhone and a Watch
- * writing step counts, which is most of them — the classic "12,000 steps in the
- * app, 6,000 in Health" bug.
+ * double-counts every step on a phone that has both an iPhone and a Watch writing
+ * step counts, which is the classic "12,000 steps in the app, 6,000 in Health"
+ * bug.
  *
- * The anchor is local midnight of the first day, so the day boundaries Apple
- * cuts on are the ones the diary uses.
+ * The anchor is local midnight of the first day, so the day boundaries Apple cuts
+ * on are the ones the diary uses.
  */
 async function dailyTotals(
   hk: HealthKitModule,
@@ -174,24 +166,21 @@ async function hourlyTotals(
 }
 
 /**
- * The last sample of each local day, for a DISCRETE quantity.
+ * The last sample of each local day, for a discrete quantity.
  *
- * `dailyTotals` above is the wrong tool for a weight and not merely a
- * roundabout one: it asks for `cumulativeSum`, and the sum of three weigh-ins
- * on a Saturday is 217 kg. HealthKit rejects a cumulative statistic over a
- * discrete type outright, so the mistake surfaces as a thrown query rather than
- * as a wrong number — but the reason it is wrong is worth stating, because the
- * two helpers otherwise look interchangeable.
+ * `dailyTotals` above is the wrong tool for a weight and not merely a roundabout
+ * one: it asks for `cumulativeSum`, and the sum of three weigh-ins on a Saturday
+ * is 217 kg. HealthKit rejects a cumulative statistic over a discrete type
+ * outright, so the mistake surfaces as a thrown query rather than as a wrong
+ * number, but the reason it is wrong is worth stating.
  *
- * Samples are asked for ASCENDING and written into the map as they come, so the
+ * Samples are asked for ascending and written into the map as they come, so the
  * last write for a date is the last reading of that day. That is the same rule
- * `weight_logs` applies to somebody weighing themselves twice before breakfast:
- * the later number is the one they would recognise as the day's weight.
+ * `weight_logs` applies to somebody weighing themselves twice before breakfast.
  *
  * Deduplication across sources is not a concern here the way it is for steps. A
- * scale and a phone writing the same weigh-in twice is one value repeated, not
- * one value doubled — the failure mode that makes summing raw samples unsafe
- * simply does not arise for a quantity nobody adds up.
+ * scale and a phone writing the same weigh-in twice is one value repeated rather
+ * than doubled.
  */
 async function latestPerDay(
   hk: HealthKitModule,
@@ -228,29 +217,28 @@ async function latestPerDay(
 /**
  * A body-fat figure as a percentage, whichever way the store expressed it.
  *
- * `HKUnit.percent()` is documented as a FRACTION — 22% body fat reads as 0.22 —
+ * `HKUnit.percent()` is documented as a fraction, so 22% body fat reads as 0.22,
  * where Health Connect's `BodyFat.percentage` is already 22. Multiplying blind
  * would be right on one platform and give 2,200 on the other.
  *
  * The branch is on 1 rather than on the platform because 1% body fat is not a
  * body: the column's own floor is 1, the lowest figure ever measured in a living
  * person is around 3, and a scale reporting under 1 has therefore reported a
- * fraction. So the whole plausible range is unambiguous, and this stays correct
- * if a library version ever starts converting for us.
+ * fraction.
  */
 const asPercent = (value: number): number => (value <= 1 ? value * 100 : value)
 
 /**
  * Weigh-ins, and the body fat recorded alongside them.
  *
- * Keyed off the WEIGHT: a day with a body-fat reading and no weight is skipped,
+ * Keyed off the weight: a day with a body-fat reading and no weight is skipped,
  * because `weight_logs.weight_kg` is not null and there is no honest row to
- * write. Body fat is a column on a weigh-in here, not a measurement of its own.
+ * write.
  *
  * The whole thing is wrapped, like `readHeartRate`, because a user can grant
- * movement and decline body measurements — the two sit in different sections of
- * the permission sheet — and an account with no weigh-ins in Health is the
- * ordinary case rather than a failure. Neither may cost the caller its steps.
+ * movement and decline body measurements, and an account with no weigh-ins in
+ * Health is the ordinary case rather than a failure. Neither may cost the caller
+ * its steps.
  */
 async function readWeights(
   hk: HealthKitModule,
@@ -303,18 +291,17 @@ export const appleHealth: HealthProvider = {
     if (!hk) return { granted: false, permissions: [] }
 
     /**
-     * The second argument is the WRITE list, and it is empty on purpose.
+     * The second argument is the write list, and it is empty on purpose.
      *
-     * iOS will not tell you whether a READ was granted — `authorizationStatusFor`
+     * iOS will not tell you whether a read was granted: `authorizationStatusFor`
      * returns `sharingDenied`/`sharingAuthorized` for writes only, and reports
-     * `notDetermined` for reads however the sheet was answered. That is a
-     * deliberate Apple privacy decision: knowing an app was denied is itself
-     * information about the user.
+     * `notDetermined` for reads however the sheet was answered. That is a deliberate
+     * Apple privacy decision, since knowing an app was denied is itself information
+     * about the user.
      *
-     * So `granted` here means "the sheet was shown and dismissed", and what
-     * actually proves access is whether the first read returns anything. The
-     * connect flow syncs immediately afterwards for exactly that reason, and
-     * the empty state on the Activity tab is the honest report of a denial.
+     * So `granted` here means "the sheet was shown and dismissed", and what actually
+     * proves access is whether the first read returns anything. The connect flow
+     * syncs immediately afterwards for exactly that reason.
      */
     await hk.requestAuthorization({
       toRead: APPLE_READ_TYPES as never,
@@ -460,19 +447,16 @@ async function readWorkouts(
  *
  * Both were `null` here until this was written, and the null was load-bearing in
  * the wrong direction: `deviceName` on the connection is derived from these, so
- * the health-settings screen could never name a watch, and the two strings that
- * name a source — "From Strava", and the sentence explaining why a session has
- * no heart-rate zones — were unreachable on iOS however the data arrived.
+ * the health-settings screen could never name a watch.
  *
- * `source` is the APP that wrote the sample ("Strava", "Fitness") and `device`
- * is the hardware it came off ("Apple Watch"). They answer different questions,
- * so both are kept: the workout screen credits the app, and the settings screen
+ * `source` is the app that wrote the sample ("Strava", "Fitness") and `device` is
+ * the hardware it came off ("Apple Watch"). They answer different questions, so
+ * both are kept: the workout screen credits the app, and the settings screen
  * names the watch.
  *
  * Wrapped because these are Nitro hybrid objects reached through a proxy. A
- * sample written by an app that has since been deleted, or by an older build,
- * can leave either side absent — and a workout whose provenance we cannot read
- * is still a workout, so it must not fail the sync around it.
+ * sample written by an app that has since been deleted can leave either side
+ * absent, and a workout whose provenance we cannot read is still a workout.
  */
 function names(sample: {
   sourceRevision?: { source?: { name?: string } }
