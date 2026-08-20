@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The dark twins, following the conversion table in the design system notes.
+
+  The rule that is easy to get wrong and is written out there: a filled button
+  flips its label to near-black, because the accents get BRIGHTER in dark mode
+  rather than darker. That is `rc_on_water`.
+-->
+<resources>
+  <color name="rc_surface">#1A2220</color>
+  <color name="rc_track">#2E3936</color>
+  <color name="rc_ink">#F2F5F3</color>
+  <color name="rc_heading">#F2F5F3</color>
+  <color name="rc_muted">#8B9A94</color>
+  <color name="rc_faint">#6E7B74</color>
+
+  <color name="rc_pandan">#38D07E</color>
+  <color name="rc_pandan_slab">#1C6E44</color>
+  <color name="rc_pandan_soft">#14291F</color>
+  <color name="rc_pandan_soft_line">#2E4A3C</color>
+  <color name="rc_pandan_ink">#38D07E</color>
+
+  <color name="rc_hibiscus">#FF6B87</color>
+  <color name="rc_hibiscus_soft">#33161C</color>
+  <color name="rc_hibiscus_soft_line">#5E2A35</color>
+
+  <color name="rc_kaya">#FFCE5E</color>
+  <color name="rc_kaya_soft">#3A3115</color>
+  <color name="rc_kaya_soft_line">#6B5A2A</color>
+
+  <color name="rc_water">#63D3F2</color>
+  <color name="rc_water_slab">#1E6E86</color>
+  <color name="rc_water_soft">#12262E</color>
+  <color name="rc_water_soft_line">#2E5A6B</color>
+  <color name="rc_on_water">#0C1310</color>
+
+  <color name="rc_teh">#D6A277</color>
+</resources>

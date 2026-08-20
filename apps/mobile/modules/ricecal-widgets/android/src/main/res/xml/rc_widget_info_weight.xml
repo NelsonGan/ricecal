@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SMALL · WEIGHT, two cells square.
+
+     `targetCellWidth`/`targetCellHeight` are what a launcher on Android 12 and
+     later prefers. `minWidth`/`minHeight` are not just the fallback for older
+     ones: a launcher falls back to them whenever the target cells do not fit
+     its own grid, so they have to agree. The arithmetic is 70n MINUS 30 —
+     70n asks for one row more than it looks like, which is how a 2x2 widget
+     was placed 2x3 with a band of empty card down the middle.
+
+     `updatePeriodMillis` is zero on purpose. The app publishes and asks for a
+     redraw the moment the day changes, so a poll would be a second, slower
+     answer to a question already answered, and the shortest period the system
+     honours is half an hour. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+  android:minWidth="110dp"
+  android:minHeight="110dp"
+  android:targetCellWidth="2"
+  android:targetCellHeight="2"
+  android:updatePeriodMillis="0"
+  android:resizeMode="none"
+  android:widgetCategory="home_screen"
+  android:previewLayout="@layout/rc_widget_weight"
+  android:initialLayout="@layout/rc_widget_weight" />

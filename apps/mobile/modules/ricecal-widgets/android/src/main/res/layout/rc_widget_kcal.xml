@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SMALL · KCAL — one number, one bar, and two ways in.
+
+  THE TYPE AND THE TILES ARE LARGER THAN THE DESIGN'S, and that is the design
+  followed rather than departed from. A design frame is 170 x 170; a two-cell
+  Android widget is about 0.72 of that in aspect, so the same layout on this
+  card leaves a third of its height over. Spent as one gap it reads as a card
+  that failed to load. Spent on the figure and on the touch targets it reads as
+  the same card drawn for a taller frame, which is what it is.
+
+  The other three small widgets carry the same adjustment for the same reason.
+
+  Two progress bars stacked in the same frame rather than one that changes
+  colour: `RemoteViews` has no remotable tint below API 31, so a bar's colour is
+  the drawable it was inflated with. `WidgetRenderer` shows whichever of the two
+  the day calls for.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/rc_kcal_root"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:orientation="vertical"
+  android:background="@drawable/rc_widget_card"
+  android:padding="16dp">
+
+  <TextView
+    android:id="@+id/rc_kcal_caption"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:fontFamily="@font/rc_nunito_extrabold"
+    android:textSize="11sp"
+    android:letterSpacing="0.08"
+    android:textColor="@color/rc_faint"
+    android:text="KCAL LEFT" />
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:baselineAligned="true">
+
+    <TextView
+      android:id="@+id/rc_kcal_value"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:fontFamily="@font/rc_baloo2_extrabold"
+      android:textSize="36sp"
+      android:includeFontPadding="false"
+      android:maxLines="1"
+      android:textColor="@color/rc_heading"
+      android:text="613" />
+
+    <TextView
+      android:id="@+id/rc_kcal_of"
+      android:layout_width="0dp"
+      android:layout_weight="1"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="5dp"
+      android:fontFamily="@font/rc_nunito_extrabold"
+      android:textSize="11sp"
+      android:maxLines="1"
+      android:textColor="@color/rc_muted"
+      android:text="of 2,100" />
+  </LinearLayout>
+
+  <FrameLayout
+    android:layout_width="match_parent"
+    android:layout_height="14dp"
+    android:layout_marginTop="12dp">
+
+    <ProgressBar
+      android:id="@+id/rc_kcal_bar"
+      style="?android:attr/progressBarStyleHorizontal"
+      android:layout_width="match_parent"
+      android:layout_height="12dp"
+      android:minHeight="12dp"
+      android:maxHeight="12dp"
+      android:progressDrawable="@drawable/rc_bar_pandan" />
+
+    <ProgressBar
+      android:id="@+id/rc_kcal_bar_over"
+      style="?android:attr/progressBarStyleHorizontal"
+      android:layout_width="match_parent"
+      android:layout_height="12dp"
+      android:minHeight="12dp"
+      android:maxHeight="12dp"
+      android:visibility="gone"
+      android:progressDrawable="@drawable/rc_bar_hibiscus" />
+  </FrameLayout>
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="54dp"
+    android:layout_marginTop="14dp"
+    android:orientation="horizontal">
+
+    <FrameLayout
+      android:id="@+id/rc_kcal_snap"
+      android:layout_width="0dp"
+      android:layout_weight="1"
+      android:layout_height="match_parent"
+      android:background="@drawable/rc_widget_tile_pandan">
+      <ImageView
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_gravity="center"
+        android:contentDescription="Snap a plate"
+        android:src="@drawable/rc_widget_camera" />
+    </FrameLayout>
+
+    <FrameLayout
+      android:id="@+id/rc_kcal_search"
+      android:layout_width="0dp"
+      android:layout_weight="1"
+      android:layout_height="match_parent"
+      android:layout_marginStart="8dp"
+      android:background="@drawable/rc_widget_tile_pandan">
+      <ImageView
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_gravity="center"
+        android:contentDescription="Search for a dish"
+        android:src="@drawable/rc_widget_search" />
+    </FrameLayout>
+  </LinearLayout>
+</LinearLayout>

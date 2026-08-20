@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The widget's own surface. Flat, unlike a card inside the app: the design's
+     slab belongs to a card sitting on the app's canvas, and a widget sits on
+     the wallpaper inside a container the launcher draws. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+  <corners android:radius="26dp" />
+  <solid android:color="@color/rc_surface" />
+</shape>

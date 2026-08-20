@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The design system's colours, for a process that cannot import it.
+
+  A hand-copied subset of `src/theme/tokens.ts` — only the roles the six widgets
+  draw with. Copied rather than generated because a widget is inflated by the
+  launcher from compiled resources, and because the list is short enough that a
+  drift is visible in a screenshot.
+
+  The dark twin is in `values-night/`, and the system picks between them by the
+  launcher's configuration. See the note at the foot of `WidgetSnapshot.kt` for
+  why the app's own light/dark preference does not override that here.
+-->
+<resources>
+  <color name="rc_surface">#FFFFFF</color>
+  <color name="rc_track">#EDF1EE</color>
+  <color name="rc_ink">#1C2321</color>
+  <color name="rc_heading">#1B3A2B</color>
+  <color name="rc_muted">#6E7B74</color>
+  <color name="rc_faint">#9AA5A0</color>
+
+  <color name="rc_pandan">#2FBF71</color>
+  <color name="rc_pandan_slab">#1B8A4E</color>
+  <color name="rc_pandan_soft">#EAF9F0</color>
+  <color name="rc_pandan_soft_line">#CFEBDA</color>
+  <color name="rc_pandan_ink">#1B8A4E</color>
+
+  <color name="rc_hibiscus">#FF4D6D</color>
+  <color name="rc_hibiscus_soft">#FFEEF1</color>
+  <color name="rc_hibiscus_soft_line">#F7D2DA</color>
+
+  <color name="rc_kaya">#FFC145</color>
+  <color name="rc_kaya_soft">#FFF6E3</color>
+  <color name="rc_kaya_soft_line">#F0DDAE</color>
+
+  <color name="rc_water">#4CC9F0</color>
+  <color name="rc_water_slab">#1B87A8</color>
+  <color name="rc_water_soft">#EAF7FC</color>
+  <color name="rc_water_soft_line">#BEE6F5</color>
+  <color name="rc_on_water">#FFFFFF</color>
+
+  <color name="rc_teh">#C98B5E</color>
+</resources>

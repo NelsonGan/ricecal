@@ -20,5 +20,6 @@ export type {
   ScanOutcome,
   SignInMethod,
   TrackedCuisine,
+  WidgetTarget,
 } from './events'
 export { dateOffset, planDirection } from './props'

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SMALL · WEIGHT — a weekly average, and the eight weeks behind it.
+
+  The eight bars are ONE ImageView holding a bitmap rather than eight views.
+  Their heights are data, and `RemoteViews` cannot set a child's height below
+  API 31 — so laid out as views they would all be the same size, which is a
+  chart that says nothing. `WidgetBitmaps.bars` draws them.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/rc_weight_root"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:orientation="vertical"
+  android:background="@drawable/rc_widget_card"
+  android:padding="16dp">
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
+
+    <TextView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:fontFamily="@font/rc_nunito_extrabold"
+      android:textSize="11sp"
+      android:letterSpacing="0.08"
+      android:textColor="@color/rc_faint"
+      android:text="WEIGHT" />
+
+    <TextView
+      android:id="@+id/rc_weight_change"
+      android:layout_width="0dp"
+      android:layout_weight="1"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="4dp"
+      android:gravity="end"
+      android:maxLines="1"
+      android:fontFamily="@font/rc_nunito_extrabold"
+      android:textSize="10sp"
+      android:textColor="@color/rc_pandan_ink"
+      android:text="−1.8 kg" />
+  </LinearLayout>
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:orientation="horizontal"
+    android:baselineAligned="true">
+
+    <TextView
+      android:id="@+id/rc_weight_value"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:fontFamily="@font/rc_baloo2_extrabold"
+      android:textSize="36sp"
+      android:includeFontPadding="false"
+      android:maxLines="1"
+      android:textColor="@color/rc_heading"
+      android:text="68.4" />
+
+    <TextView
+      android:id="@+id/rc_weight_unit"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="4dp"
+      android:fontFamily="@font/rc_nunito_extrabold"
+      android:textSize="12sp"
+      android:textColor="@color/rc_muted"
+      android:text="kg" />
+  </LinearLayout>
+
+  <ImageView
+    android:id="@+id/rc_weight_bars"
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:layout_marginTop="10dp"
+    android:minHeight="64dp"
+    android:contentDescription="Eight weekly averages"
+    android:scaleType="fitXY" />
+
+  <TextView
+    android:id="@+id/rc_weight_caption"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="6dp"
+    android:fontFamily="@font/rc_nunito_extrabold"
+    android:textSize="10sp"
+    android:textColor="@color/rc_muted"
+    android:text="8 week average" />
+</LinearLayout>
