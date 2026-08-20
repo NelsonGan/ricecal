@@ -1,4 +1,4 @@
-// What to eat next: one model call, five dishes, and why each one fits.
+// What to eat next: one model call, seven dishes, and why each one fits.
 //
 // The only model path in this app that does not start from something the user
 // already has. A scan reads a plate, a refine reads a correction, a recipe read
@@ -14,15 +14,15 @@
 // row other people's diaries are priced from — which is the mistake tier 4 made
 // and had to be unwound (see the note on the estimate tier in CLAUDE.md).
 //
-// **So the figures are allowed to be approximate.** They exist to rank five
+// **So the figures are allowed to be approximate.** They exist to rank a few
 // options against a budget, not to be counted against it. Nothing on screen labels
 // them as estimates, and what carries that instead is the ABSENCE of a way to log:
 // a suggestion has no add button anywhere, so no figure here can reach a diary
 // without somebody logging the meal themselves and the catalogue pricing it.
 //
-// **And the reasons are the product.** Five dish names against a calorie figure
-// is a list anybody could write; "you are 39 g short on protein and one bowl
-// covers most of it" is the thing that makes it a suggestion. Which is why
+// **And the reasons are the product.** A list of dish names against a calorie
+// figure is a list anybody could write; "you are 39 g short on protein and one
+// bowl covers most of it" is the thing that makes it a suggestion. Which is why
 // `why` is required per pick and a pick without one is dropped.
 
 import type { Meter } from './entitlement.ts'
@@ -36,15 +36,21 @@ export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 export type Focus = 'protein' | 'balanced' | 'carbs'
 
 /**
- * Which kitchen. Hardcoded rather than read from anywhere, because these are
- * the four a Malaysian eater picks between and a list assembled from the
- * catalogue would be a list of whatever happens to have been imported.
+ * Which kitchen, in the words the person keeps it under.
  *
- * `others` is not a fifth cuisine, it is the absence of the constraint: it
- * tells the model to pick on the merits rather than to go looking for a fourth
- * tradition.
+ * FREE TEXT, and it used to be a union of four. The four were the ones a
+ * Malaysian eater picks between and a list assembled from the catalogue would
+ * have been a list of whatever happened to be imported — but a fixed list is
+ * also a list somebody wanting Thai, Japanese or their own grandmother's
+ * Nyonya cooking cannot reach, and the model has no trouble whatever with the
+ * name of a cuisine it was not told about in advance.
+ *
+ * The list itself lives on the phone (`features/suggest/preferences.ts`), which
+ * is why nothing here validates against one. What this end does is bound the
+ * string — see `cuisinePhrase` — and keep the curated phrasing for the four
+ * that had one, because those were worded to fix specific failures.
  */
-export type Cuisine = 'malay' | 'mamak' | 'chinese' | 'others'
+export type Cuisine = string
 
 /**
  * How salty, in three words rather than in milligrams.
@@ -114,8 +120,15 @@ export type SuggestMockSteer = {
   picks?: unknown
 }
 
-/** How many dishes come back. Five is what the sheet shows without scrolling. */
-export const PICK_COUNT = 5
+/**
+ * How many dishes come back.
+ *
+ * Seven rather than five. The sheet scrolls, so the count is not bounded by
+ * what fits on a panel — and the retry button re-asks the same question with
+ * one tap, which makes a short list the thing somebody spends a scan escaping.
+ * Seven is enough that a list usually holds something worth eating.
+ */
+export const PICK_COUNT = 7
 
 const REASON_KINDS = new Set<ReasonKind>(['protein', 'carbs', 'fat', 'calories', 'taste'])
 const SODIUMS = new Set<Sodium>(['low', 'medium', 'high'])
@@ -359,9 +372,9 @@ export const SUGGEST_MEAL_PROMPT =
   "NEVER shrink a dish's calories to make it fit. If it does not fit at the way " +
   'it is normally served, either say the smaller portion honestly in "portion" ' +
   '("half a plate", "two pieces") and price THAT, or suggest something else. ' +
-  // Five DIFFERENT things. Left unsaid, the list came back as one dish with the
+  // ALL DIFFERENT THINGS. Left unsaid, the list came back as one dish with the
   // garnish changed.
-  'The five are five different dishes, not one dish in five styles. Vary the ' +
+  'Every pick is a different dish, not one dish in several styles. Vary the ' +
   'main ingredient and the way it is cooked. ' +
   // THE SITTING GOVERNS, and it has to be said outright. Asked for dinner, the
   // first live run answered with a reason about starting the day — the meal was
@@ -406,16 +419,62 @@ export const SUGGEST_MEAL_PROMPT =
   ' ' +
   ICON_INSTRUCTION
 
-const CUISINES: Record<Cuisine, string> = {
-  malay: 'Malay food',
-  mamak: 'mamak food',
-  chinese: 'Chinese food, the Malaysian kind',
-  // Said as a release rather than as a category, or the model looks for a
-  // cuisine literally called "other".
-  // Still real food sold somewhere, which is the half that needed saying:
-  // released from a cuisine the model reached for diet food rather than for a
-  // wider menu.
-  others: 'any cuisine at all, whatever fits best, as long as it is a dish people order',
+/**
+ * No constraint on the kitchen at all.
+ *
+ * Said as a RELEASE rather than as a category, or the model goes looking for a
+ * cuisine literally called "other". "Still real food sold somewhere" is the half
+ * that needed saying: released from a cuisine, the model reached for diet food
+ * rather than for a wider menu.
+ */
+const ANY_CUISINE = 'any cuisine at all, whatever fits best, as long as it is a dish people order'
+
+/**
+ * The names that carry curated wording, which were the whole list once.
+ *
+ * Each phrase was arrived at by a failure: "Chinese" alone fetched mainland
+ * dishes nobody sells here, and the release above had to be spelled out twice.
+ * Everything else a user types is phrased as "<name> food", which is all a name
+ * this repo has never seen can honestly be turned into.
+ *
+ * A `Map` and not an object, because the key is whatever somebody typed into a
+ * text field: an object literal answers `constructor` and `toString` off
+ * `Object.prototype`, so those two words would come back as the phrase and be
+ * interpolated into the prompt as `function Object() { [native code] }`.
+ */
+const KNOWN_CUISINES = new Map<string, string>([
+  ['malay', 'Malay food'],
+  ['mamak', 'mamak food'],
+  ['chinese', 'Chinese food, the Malaysian kind'],
+  ['indian', 'Indian food, the kind eaten in Malaysia'],
+  ['others', ANY_CUISINE],
+  ['anything', ANY_CUISINE],
+])
+
+/**
+ * The longest a cuisine may be. The client holds the same bound, and the phone's
+ * copy is the one a user meets — this is the one that holds for anything else
+ * that reaches the endpoint.
+ */
+export const MAX_CUISINE_LENGTH = 40
+
+/**
+ * The cuisine, as a phrase the prompt can put after "It must be".
+ *
+ * BOUNDED rather than validated, because there is no list left to validate
+ * against: the name is whatever the user typed on their own phone, so it is
+ * trimmed, capped at a length no cuisine reaches, and stripped of the line
+ * breaks that would let it pose as another instruction in the message. An empty
+ * one is the release rather than an error — a request with no kitchen named is
+ * a request with no constraint on the kitchen.
+ */
+export const cuisinePhrase = (cuisine: string): string => {
+  const clean = String(cuisine ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_CUISINE_LENGTH)
+  if (!clean) return ANY_CUISINE
+  return KNOWN_CUISINES.get(clean.toLowerCase()) ?? `${clean} food`
 }
 
 const FOCUS: Record<Focus, string> = {
@@ -473,7 +532,7 @@ export const suggestUserMessage = (day: DayContext): string => {
     // request with a sentence about starting the day. The three constraints are
     // the question; everything above them is the background to it.
     `Suggest ${PICK_COUNT} things to eat.`,
-    `It must be ${CUISINES[day.cuisine]}.`,
+    `It must be ${cuisinePhrase(day.cuisine)}.`,
     FOCUS[day.focus],
     `No pick may be over ${day.kcalLimit} kcal.`,
     day.healthy
@@ -499,7 +558,7 @@ export const suggestUserMessage = (day: DayContext): string => {
 }
 
 /**
- * Five things to eat, or an empty list.
+ * Seven things to eat, or an empty list.
  *
  * Empty is a real answer and the endpoint treats it as one — it is what a model
  * that would not answer in the shape asked for comes to, and the screen says
@@ -525,9 +584,10 @@ export async function suggestMeals(
       { role: 'system', content: SUGGEST_MEAL_PROMPT },
       { role: 'user', content: suggestUserMessage(day) },
     ],
-    // Five picks with eight fields and three reasons each. Truncated JSON does
-    // not parse, and a parse failure here costs the whole suggestion.
-    2200,
+    // Seven picks with eight fields and three reasons each. Truncated JSON does
+    // not parse, and a parse failure here costs the whole suggestion, so the
+    // ceiling moved with the count rather than being left at the old one.
+    3000,
   )
   return shapePicks(raw, day.meal)
 }
@@ -536,7 +596,7 @@ export async function suggestMeals(
  * What a local stack answers with.
  *
  * Real dishes with real-ish figures rather than "Mock dish 1", because the
- * thing being exercised locally is the SCREEN — five rows, a macro panel, three
+ * thing being exercised locally is the SCREEN — a list of rows, a macro panel, three
  * reasons and an icon — and lorem ipsum draws a layout nobody can judge.
  */
 const MOCK_PICKS = [
@@ -608,6 +668,34 @@ const MOCK_PICKS = [
     why: [
       { kind: 'carbs', text: 'A full plate if you want dinner to actually be dinner.' },
       { kind: 'taste', text: 'The herbs make it the least heavy rice plate going.' },
+    ],
+  },
+  {
+    name: 'Popiah basah',
+    portion: 'two rolls',
+    kcal: 240,
+    protein_g: 9,
+    carbs_g: 34,
+    fat_g: 8,
+    sodium: 'medium',
+    icon: 'popiah',
+    why: [
+      { kind: 'calories', text: 'Small enough to sit beside something else later.' },
+      { kind: 'taste', text: 'Mostly turnip and egg, so it does not sit heavy.' },
+    ],
+  },
+  {
+    name: 'Ikan bakar with rice',
+    portion: 'one plate',
+    kcal: 520,
+    protein_g: 38,
+    carbs_g: 55,
+    fat_g: 14,
+    sodium: 'high',
+    icon: 'ikan-bakar',
+    why: [
+      { kind: 'protein', text: 'Grilled fish puts the protein in without the oil.' },
+      { kind: 'fat', text: 'Over the coals rather than the wok, so very little added fat.' },
     ],
   },
 ]

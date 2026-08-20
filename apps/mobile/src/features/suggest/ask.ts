@@ -1,4 +1,5 @@
 import type { Cuisine, Focus, Meal, MealTime } from '@/data'
+import type { TrackedCuisine } from '@/lib/analytics'
 
 /**
  * What the sheet asks, and what it answers on the user's behalf before they
@@ -17,21 +18,73 @@ export const MEALS: readonly Meal[] = ['breakfast', 'lunch', 'dinner', 'snack']
 export const FOCUSES: readonly Focus[] = ['protein', 'balanced', 'carbs']
 
 /**
- * The kitchens, hardcoded.
+ * The kitchens a new account starts with, and nothing more than a starting
+ * point.
  *
- * These are the four a Malaysian eater picks between, and a list read from the
- * catalogue would be a list of whatever happened to be imported. `others` is
- * last and is not a fifth cuisine: it is the absence of the constraint, for
- * somebody who wants Japanese or simply does not care.
+ * It was a HARDCODED FOUR — malay, mamak, chinese, others — chosen as the ones
+ * a Malaysian eater picks between, on the reasoning that a list read from the
+ * catalogue would be a list of whatever happened to be imported. That reasoning
+ * still holds against reading it from the catalogue and does not hold against
+ * letting somebody type their own: a fixed list is a list that cannot say Thai,
+ * Japanese, or the Nyonya cooking somebody grew up on, and the model has never
+ * needed to be told about a cuisine in advance.
+ *
+ * So these three are a DEFAULT the user edits, kept as the words that go on
+ * screen rather than as keys — see `preferences.ts` for where the edited list
+ * lives, and `cuisinePhrase` on the server for the four that still carry
+ * curated wording when they are typed.
+ *
+ * The `satisfies` is what ties this list to `TrackedCuisine`, which is the
+ * closed set of cuisine names allowed to reach Mixpanel. A fourth default added
+ * here without a fourth member added there would compile fine and then report
+ * itself as `custom` for ever — a silent wrong answer on the one dashboard that
+ * exists to say whether these three are the right three. This way it does not
+ * compile.
  */
-export const CUISINES: readonly Cuisine[] = ['malay', 'mamak', 'chinese', 'others']
+export const DEFAULT_CUISINES = [
+  'Malay',
+  'Chinese',
+  'Indian',
+] as const satisfies readonly Capitalize<Exclude<TrackedCuisine, 'custom'>>[]
 
-/** The drawing beside each focus chip. */
-export const FOCUS_ICONS = {
-  protein: { set: 'food', name: 'chicken-drumstick' },
-  balanced: { set: 'body', name: 'target' },
-  carbs: { set: 'food', name: 'rice-bowl' },
-} as const
+/** The longest a cuisine can be. The server holds the same bound. */
+export const MAX_CUISINE_LENGTH = 40
+
+/**
+ * The cuisine, in a form that may be sent to Mixpanel.
+ *
+ * The list is the user's own now, so a cuisine is free text somebody typed on
+ * their phone — and free text somebody typed is the one category the analytics
+ * rule keeps out. One of the shipped defaults goes as itself, because those are
+ * words this repo wrote; everything else goes as `custom`, which still answers
+ * the only question worth asking about the list: whether three were enough.
+ *
+ * See `TrackedCuisine` in `lib/analytics/events.ts`, which is the type that
+ * makes this the only route from one to the other.
+ */
+export function trackedCuisine(cuisine: Cuisine): TrackedCuisine {
+  const typed = cuisine.trim().toLowerCase()
+  const known = DEFAULT_CUISINES.find((name) => name.toLowerCase() === typed)
+  // The cast is what the `satisfies` above pays for: every member of that list
+  // is the capitalised form of a `TrackedCuisine`, so its lower case is one.
+  return known ? (known.toLowerCase() as TrackedCuisine) : 'custom'
+}
+
+/**
+ * A cuisine as it is stored: trimmed, bounded, and with the whitespace inside
+ * it collapsed so "Nasi   Padang" and "Nasi Padang" are not two entries.
+ */
+export const cleanCuisine = (value: string): string =>
+  value.replace(/\s+/g, ' ').trim().slice(0, MAX_CUISINE_LENGTH)
+
+/*
+ * No `FOCUS_ICONS`. There was a drawing beside each focus chip — a drumstick, a
+ * target, a rice bowl — and the chips are a dropdown now. A dropdown row could
+ * carry one, but the sitting and the cuisine beside it cannot: their lists are
+ * four meals and whatever the user has typed. One of three fields wearing icons
+ * reads as three different kinds of question, which is the thing the dropdowns
+ * were adopted to stop.
+ */
 
 /** The drawing beside a reason on the detail screen. */
 export const REASON_ICONS = {
@@ -90,6 +143,18 @@ export function mealAt(now: Date, times: MealTime[] | undefined): Meal {
 
   return best && best.distance <= WINDOW_MINUTES ? best.meal : 'snack'
 }
+
+/**
+ * How many dishes a request comes back with.
+ *
+ * The client's copy of the server's `PICK_COUNT`, and it is a copy for the
+ * ordinary reason: the two live either side of the Deno / React Native line and
+ * cannot import each other. Nothing here DEPENDS on it being right — the list
+ * draws whatever arrives — but the wait draws a skeleton row per pick, and a
+ * skeleton that does not match what lands is a panel that changes height at the
+ * one moment it must not.
+ */
+export const PICK_COUNT = 7
 
 /** The ceiling's bounds. The server holds the same two. */
 export const MIN_KCAL = 100

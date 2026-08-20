@@ -1,4 +1,4 @@
-// What to eat next: five suggestions against the rest of today's budget.
+// What to eat next: seven suggestions against the rest of today's budget.
 //
 // One model call and no writes. Every other model path in this app ends in a
 // row — `scan-meal` writes the entry itself, `scan-refine` edits one, the
@@ -36,6 +36,7 @@ import {
   type Cuisine,
   type DayContext,
   type Focus,
+  MAX_CUISINE_LENGTH,
   type Meal,
   type SuggestMockSteer,
   suggestMeals,
@@ -55,7 +56,23 @@ type SuggestRequest = {
 
 const MEALS = new Set(['breakfast', 'lunch', 'dinner', 'snack'])
 const FOCUSES = new Set(['protein', 'balanced', 'carbs'])
-const CUISINES = new Set(['malay', 'mamak', 'chinese', 'others'])
+
+/**
+ * The cuisine is NOT checked against a list, and there is no longer one to
+ * check it against.
+ *
+ * It used to be a set of four, matching the four chips on the sheet. The chips
+ * are gone: the list is the user's own, kept on their phone, and somebody who
+ * wants Thai or Nyonya can type it. So all this end can do is bound the string
+ * — which `cuisinePhrase` does, since it is the thing that puts the value into
+ * a prompt — and refuse a value that is not a string at all. It reaches nothing
+ * but one line of one model message, and an empty one is a request with no
+ * constraint on the kitchen rather than a bad request.
+ *
+ * The bound is imported rather than restated. `cuisinePhrase` applies it again
+ * on the way into the prompt, which is the one that matters; this one only
+ * keeps an absurd body out of the rest of the function.
+ */
 
 /**
  * The bounds on the ceiling the user can ask for.
@@ -101,9 +118,10 @@ Deno.serve(async (req: Request) => {
 
   const meal = body.meal ?? ''
   const focus = body.focus ?? ''
-  const cuisine = body.cuisine ?? ''
-  if (!MEALS.has(meal) || !FOCUSES.has(focus) || !CUISINES.has(cuisine)) {
-    return json({ ok: false, error: 'meal, focus and cuisine are required' }, 400)
+  const cuisine =
+    typeof body.cuisine === 'string' ? body.cuisine.trim().slice(0, MAX_CUISINE_LENGTH) : ''
+  if (!MEALS.has(meal) || !FOCUSES.has(focus)) {
+    return json({ ok: false, error: 'meal and focus are required' }, 400)
   }
   const kcalLimit = Math.round(Number(body.kcal_limit))
   if (!Number.isFinite(kcalLimit) || kcalLimit < MIN_KCAL || kcalLimit > MAX_KCAL) {
@@ -231,7 +249,7 @@ Deno.serve(async (req: Request) => {
      * budget rather than zero. `daily_goals` is deliberately empty until
      * onboarding computes a target, and "you have used today's budget" is the
      * wrong sentence about somebody who has never had one — the model would
-     * spend all five reasons apologising for a day that has not gone wrong.
+     * spend every reason apologising for a day that has not gone wrong.
      */
     kcalLeft: goals?.kcal ? shortfall(goals.kcal + burned, Number(eatenRow?.kcal ?? 0)) : kcalLimit,
     proteinLeftG: shortfall(Number(goals?.protein_g ?? 0), Number(eatenRow?.protein_g ?? 0)),
