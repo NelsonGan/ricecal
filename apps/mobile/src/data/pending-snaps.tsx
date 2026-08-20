@@ -16,26 +16,22 @@ import type { Entry } from './types'
 /**
  * Snaps that have no row yet.
  *
- * A photographed plate becomes a row the instant the shutter fires, but there
- * is nothing to insert until recognition names a dish — `food_logs.food_id` is
- * not null, and inventing a placeholder dish to satisfy it would put rubbish
- * in the catalogue.
+ * A photographed plate becomes a row the instant the shutter fires, but there is
+ * nothing to insert until recognition names a dish.
  *
- * So a pending snap lives here and `useDayLog` merges it into the day it
- * belongs to. That is also what makes a FAILED snap survivable: it is not in
- * the query cache, so a refetch cannot quietly delete the photo the user is
- * about to fix by hand.
+ * So a pending snap lives here and `useDayLog` merges it into the day it belongs
+ * to. That is also what makes a failed snap survivable: it is not in the query
+ * cache, so a refetch cannot quietly delete the photo the user is about to fix by
+ * hand.
  *
- * PERSISTED, because the app being gone is exactly when it matters. A user who
- * snaps a plate and switches away — or gets killed by the OS, which is what
- * happens to a backgrounded app — came back to a day with no sign of the meal
- * they just photographed, while the scan carried on and landed a minute later.
- * The row now survives the restart with its spinner, and is swept when it is
- * older than any scan can be.
+ * Persisted, because the app being gone is exactly when it matters. A user who
+ * snaps a plate and switches away, or gets killed by the OS, came back to a day
+ * with no sign of the meal they just photographed while the scan carried on and
+ * landed a minute later. The row now survives the restart with its spinner, and
+ * is swept when it is older than any scan can be.
  *
- * The photo behind it is a temporary file that the OS may reclaim, so a
- * restored row may have no picture. `ItemRow` falls back to the camera icon,
- * which is the honest version of "the plate is being read" anyway.
+ * The photo behind it is a temporary file the OS may reclaim, so a restored row
+ * may have no picture. `ItemRow` falls back to the camera icon.
  */
 
 export type PendingSnap = {
@@ -44,39 +40,37 @@ export type PendingSnap = {
   /** Local `file://` uri. There is no stored key until the upload finishes. */
   photoUri?: string
   /**
-   * The meal as the user typed it, when they typed it instead of photographing
-   * it. The row is the same row for the same reason — there is no `food_id`
-   * yet — but a typed meal has no picture to stand in for it, so the words do:
-   * "Nasi lemak with fried chicken" reads as the meal being counted, where an
-   * empty row with a spinner reads as the app having lost it.
+   * The meal as the user typed it, when they typed it instead of photographing it.
+   * The row is the same row for the same reason, but a typed meal has no picture to
+   * stand in for it, so the words do: "Nasi lemak with fried chicken" reads as the
+   * meal being counted, where an empty row with a spinner reads as the app having
+   * lost it.
    */
   text?: string
   /**
-   * `analysing` is a request in flight IN THIS SESSION — something will call
-   * back. `waiting` is the same scan with nothing left holding it: the request
-   * timed out, or the app restarted and took the promise with it. The scan
-   * itself is almost certainly still running on the server, so the row keeps
-   * its spinner and the day is polled until the entry shows up.
+   * `analysing` is a request in flight in this session, so something will call back.
+   * `waiting` is the same scan with nothing left holding it: the request timed out,
+   * or the app restarted and took the promise with it. The scan itself is almost
+   * certainly still running on the server, so the row keeps its spinner and the day
+   * is polled until the entry shows up.
    *
-   * That distinction is the whole fix for two complaints that look opposite.
-   * A scan slower than the platform's 60s request timeout used to reject, be
-   * called `failed`, and then have its entry land anyway a few seconds later —
-   * the user got an error message AND the meal. And a scan the app was killed
-   * during used to spin until a sweep silently deleted the row, which is the
-   * same failure wearing patience.
+   * That distinction fixes two complaints that look opposite. A scan slower than
+   * the platform's 60s request timeout used to reject, be called `failed`, and then
+   * have its entry land anyway a few seconds later, so the user got an error
+   * message and the meal. And a scan the app was killed during used to spin until a
+   * sweep silently deleted the row.
    *
-   * `nofood` is the scan answering that the photo has nothing edible in it. It
-   * is a state of the row rather than an entry, because no entry was written:
-   * the user dismisses it and the row goes.
+   * `nofood` is the scan answering that the photo has nothing edible in it. It is a
+   * state of the row rather than an entry, because no entry was written.
    */
   status: 'analysing' | 'waiting' | 'failed' | 'nofood'
   loggedAt: string
   /**
    * Read back from storage rather than started in this session.
    *
-   * The row still says it is working, but it does not get the progress bar:
-   * the bar is theatre timed from the shutter, and restarting it at zero for a
-   * scan that began two minutes ago would be theatre about a lie.
+   * The row still says it is working, but it does not get the progress bar: the bar
+   * is theatre timed from the shutter, and restarting it at zero for a scan that
+   * began two minutes ago would be theatre about a lie.
    */
   restored?: boolean
 }
@@ -99,24 +93,24 @@ const PendingContext = createContext<PendingValue | null>(null)
  *
  * Generously past the slowest one the server can produce: the vision call alone
  * allows 25s and retries once, and the cascade below it makes catalogue and
- * estimate calls of its own. The platform gives up on the REQUEST at 60s, which
- * is why this number cannot be the request's timeout — the answer routinely
+ * estimate calls of its own. The platform gives up on the request at 60s, which
+ * is why this number cannot be the request's timeout, since the answer routinely
  * outlives the asking.
  *
  * Reaching it turns the row `failed` rather than deleting it. Deleting was the
- * old behaviour and it is the one outcome with no story: the user photographed
- * a plate, watched a spinner, and then had neither a meal nor an error.
+ * old behaviour and it is the one outcome with no story: the user photographed a
+ * plate, watched a spinner, and then had neither a meal nor an error.
  */
 const WAIT_MS = 150_000
 
 /**
  * How far back a stored snap is still worth restoring.
  *
- * Anything within this window either landed — in which case `useDayLog` claims
- * the row the moment the day loads and it disappears — or did not, in which
- * case it becomes a failed row the user can act on. A day is long enough to
- * cover a phone that was off overnight, and short enough that an unanswered
- * row does not haunt a diary for a week.
+ * Anything within this window either landed, in which case `useDayLog` claims the
+ * row the moment the day loads, or did not, in which case it becomes a failed row
+ * the user can act on. A day is long enough to cover a phone that was off
+ * overnight, and short enough that an unanswered row does not haunt a diary for a
+ * week.
  */
 const RESTORE_MS = 24 * 60 * 60 * 1000
 
@@ -131,10 +125,10 @@ const STORE_KEY = 'snaps'
  *
  * Called on sign-out, alongside the query cache and the image cache. A pending
  * snap carries a meal's photo key and the day it was logged against, and this
- * store outlives the process — so without wiping it a signed-out relaunch, or
- * the next account on the same phone, would rehydrate the previous person's
- * in-flight meals. It is unencrypted like the rest of MMKV, which is the other
- * reason not to leave a departed account's data sitting in it.
+ * store outlives the process, so without wiping it a signed-out relaunch or the
+ * next account on the same phone would rehydrate the previous person's in-flight
+ * meals. It is unencrypted like the rest of MMKV, which is the other reason not
+ * to leave a departed account's data in it.
  */
 export function clearPendingSnaps(): void {
   try {
@@ -196,11 +190,10 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
   /**
    * The request went away; the scan did not.
    *
-   * Called when the round trip rejects for a reason that says nothing about
-   * whether the meal was recognised — a timeout, a dropped connection, an app
-   * that got suspended mid-flight. The server writes the entry itself as
-   * `service_role`, so there is a real answer coming whatever happened to the
-   * asking, and the row's job now is to notice it arrive.
+   * Called when the round trip rejects for a reason that says nothing about whether
+   * the meal was recognised. The server writes the entry itself as `service_role`,
+   * so there is a real answer coming whatever happened to the asking, and the row's
+   * job now is to notice it arrive.
    */
   const detach = useCallback((id: string) => {
     setSnaps((current) =>
@@ -223,23 +216,21 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
   /**
    * Watch for the scans nobody is holding.
    *
-   * iOS suspends an app within seconds of it going to the background, and a
-   * scan takes twenty; the request that was in flight then never settles — not
-   * as success, not as failure — while on the server the entry it was waiting
-   * for lands a minute later. The same is true of a scan slower than the
-   * platform's request timeout, and of one the user force-quit through.
+   * iOS suspends an app within seconds of it going to the background, and a scan
+   * takes twenty. The request that was in flight then never settles, as neither
+   * success nor failure, while on the server the entry it was waiting for lands a
+   * minute later. The same is true of a scan slower than the platform's request
+   * timeout, and of one the user force-quit through.
    *
-   * There is nothing to wait ON in any of those, so the day is asked again
-   * instead, every few seconds, until either the entry appears — `useDayLog`
-   * claims the row and it disappears — or the deadline passes and the row says
-   * plainly that it could not be read. Polling `day` and not some scan-status
-   * endpoint is deliberate: the entry IS the answer, the day query already
-   * fetches it, and a second way to ask the same question is a second way for
-   * the two to disagree.
+   * There is nothing to wait on in any of those, so the day is asked again instead,
+   * every few seconds, until either the entry appears or the deadline passes and
+   * the row says plainly that it could not be read. Polling `day` rather than a
+   * scan-status endpoint is deliberate: the entry is the answer, the day query
+   * already fetches it, and a second way to ask the same question is a second way
+   * for the two to disagree.
    *
-   * The poll only runs while a row is in `waiting`. A request still in flight
-   * will call back on its own, and asking the server about work we are already
-   * holding a promise for is traffic that buys nothing.
+   * The poll only runs while a row is in `waiting`. A request still in flight will
+   * call back on its own.
    */
   const watching = snaps.some((snap) => snap.status === 'waiting')
 
@@ -254,12 +245,10 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
           if (snap.status !== 'analysing' && snap.status !== 'waiting') return snap
           if (Date.parse(snap.loggedAt) > deadline) return snap
           changed = true
-          // Past the deadline it becomes a failed row rather than nothing at
-          // all: the photo stays, and so does the chance to log it by hand.
-          // Should the entry turn up later anyway, `useDayLog` still claims
-          // this row — a failed snap is reconciled against the day exactly
-          // like a waiting one, which is what stops a slow scan showing up as
-          // an error message beside the meal it produced.
+          // Past the deadline it becomes a failed row rather than nothing at all: the photo
+          // stays, and so does the chance to log it by hand. Should the entry turn up later
+          // anyway, `useDayLog` still claims this row, which is what stops a slow scan
+          // showing up as an error message beside the meal it produced.
           return { ...snap, status: 'failed' as const }
         })
         if (changed) queryClient.invalidateQueries({ queryKey: ['day'] })

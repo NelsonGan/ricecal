@@ -9,68 +9,52 @@ import { supabase } from '@/lib/supabase'
 /**
  * Signing in.
  *
- * Three ways in, in the order they matter on a phone:
+ * Three ways in:
  *
- * - **Apple** is the native flow. It authenticates against the bundle id
- *   alone, which is why no Services ID or six-monthly key rotation is needed;
- *   the identity token goes straight to Supabase, which verifies it against
- *   Apple's keys.
+ * - **Apple** is the native flow. It authenticates against the bundle id alone,
+ *   so no Services ID or six-monthly key rotation is needed. The identity token
+ *   goes straight to Supabase, which verifies it against Apple's keys.
  * - **Google** is written but gated: its client ids are still placeholders, so
  *   the button is hidden rather than offered and broken.
- * - **Email**, which is now two things rather than one: a password, or a code
- *   in the post.
+ * - **Email**, which is a password or a code in the post.
  *
- * THE EMAIL PATH USED TO BE A LINK AND NOTHING ELSE, and the argument for that
- * was good as far as it went: nothing to remember, nothing to reset, no second
- * field to mistype. What it did not survive is the rest of the world. A link is
- * consumed by whatever reads the mail first, which for anybody on a corporate
- * address is their employer's link scanner, so the mail arrives already spent
- * and the app says it expired. And a link only works when the mail is opened on
- * the phone the app is on, which is not where most people read mail.
+ * The mail leads with a six digit code. It was a link alone, and a link is spent
+ * by whatever reads the mail first, which for a corporate address is the
+ * employer's link scanner, so the mail arrived already spent and the app said it
+ * expired. A link also only works when the mail is opened on the phone the app is
+ * on. The link is still there as the second offer.
  *
- * So the mail now carries a SIX DIGIT CODE, in the subject line as well as the
- * body, and the app has a screen that takes it. The link is still there and
- * still works; it is the second offer rather than the only one. Nothing can
- * consume a code by reading a mailbox.
+ * A password is offered because the alternative to remembering one is waiting for
+ * an email every time, which is the worse deal for somebody opening a diary
+ * daily. An account made with a code has no password until it sets one.
  *
- * And a password is offered because the alternative to remembering one turned
- * out to be waiting for an email EVERY TIME, which is the worse deal for
- * somebody opening a diary daily. It is optional in the strict sense: an
- * account made with a code has no password until it sets one, and one made with
- * a password can still ask for a code.
+ * Everything reaching Supabase's mailer or password endpoints takes a
+ * `captchaToken`, which is `undefined` on a build with no Turnstile key. The
+ * argument exists at every call site so that turning the gate on is a
+ * configuration change rather than a code change.
  *
- * Everything that reaches Supabase's mailer or its password endpoints takes a
- * `captchaToken`, which is `undefined` on a build with no Turnstile key. See
- * `features/auth/turnstile.tsx` — the argument exists at every call site so
- * that turning the gate on is a configuration change rather than a code change.
- *
- * None of these create the profile — `on_auth_user_created` does, inside the
- * same transaction as the account, so a signed-in user always has rows to read.
+ * None of these create the profile. `on_auth_user_created` does, inside the same
+ * transaction as the account, so a signed-in user always has rows to read.
  */
 
 /**
  * Where Supabase sends the browser once it has verified a login link.
  *
  * Built by hand rather than with `Linking.createURL`, which is the obvious choice
- * and the wrong one. `createURL` appends the Metro dev-server host to the
- * authority in a development build, so it returns
- * `ricecal://localhost:8081/auth/callback` on a simulator and
- * `ricecal:///auth/callback` in a release — a link that reads as broken when it
- * arrives, and a redirect that has to be allow-listed twice.
+ * and the wrong one: it appends the Metro dev-server host to the authority, so it
+ * returns `ricecal://localhost:8081/auth/callback` on a simulator and
+ * `ricecal:///auth/callback` in a release. That reads as broken when it arrives,
+ * and has to be allow-listed twice.
  *
- * Expo says as much in `createURL`'s own docs: for authorization callbacks, use a
- * build and provide the scheme. This is a fixed string for the same reason the
- * allow-list needs one — the URL in the mail must be identical everywhere, since
- * it is a stranger's mail client that opens it, and nothing there knows which
- * build sent it.
+ * Expo says as much in `createURL`'s own docs. A fixed string is also what the
+ * allow-list needs: the URL in the mail must be identical everywhere, since a
+ * stranger's mail client opens it and nothing there knows which build sent it.
  *
  * The scheme is read off the resolved config rather than written here, because
- * the development build is a separate app with its own (`ricecal-dev`) — two apps
+ * the development build is a separate app with its own (`ricecal-dev`). Two apps
  * registering `ricecal://` on one phone is undefined behaviour, and the loser is
- * whichever one the login link was meant for. `Constants.expoConfig` is the same
- * object app.config.ts returned, and native registers the scheme at build time
- * from it, so the two cannot drift without a rebuild. The fallback is for the
- * test environment, where there is no embedded manifest to read.
+ * whichever one the login link was meant for. The fallback is for tests, where
+ * there is no embedded manifest.
  */
 function scheme(): string {
   const declared = Constants.expoConfig?.scheme
@@ -84,70 +68,85 @@ export function loginLinkRedirect(): string {
 /**
  * Where a password-reset link comes back to, and why it is not the one above.
  *
- * Both end in a session, so either path COULD land on the callback. What only
- * this one knows is that the person who opened it is in the middle of choosing
- * a new password: land them on `/today` with a session and the reset is over
- * before they typed anything, and the password they were resetting is still the
- * one they could not remember.
+ * Both end in a session, so either path could land on the callback. What only
+ * this one knows is that the person is in the middle of choosing a new password.
+ * Land them on `/today` with a session and the reset is over before they typed
+ * anything, and the password they were resetting is still the one they could not
+ * remember.
  *
- * The path is the whole signal, and TWO things read it: `completeLoginFromUrl`,
- * so a reset is not counted as a sign-in, and `app/auth/[action].tsx`, which is
- * the route the link lands on and the thing that decides where to go next.
+ * The path is the whole signal, and two things read it: `completeLoginFromUrl`,
+ * so a reset is not counted as a sign-in, and `app/auth/[action].tsx`, which
+ * decides where to go next.
  */
 export function passwordResetRedirect(): string {
   return `${scheme()}://auth/reset`
 }
 
 /**
- * WHAT WENT WRONG, in terms a screen can write a sentence about.
+ * What went wrong, in terms a screen can write a sentence about.
  *
- * Supabase's own messages are written for whoever is reading a server log:
- * "Invalid login credentials", "For security purposes, you can only request
- * this after 47 seconds", "Email link is invalid or has expired". They were
- * being shown to users verbatim, which was survivable while the only failure
- * was a stale link and is not now that there are passwords, codes, resends and
- * a rate limit in the way.
+ * Supabase's messages are written for whoever is reading a server log: "Invalid
+ * login credentials", "For security purposes, you can only request this after 47
+ * seconds". They were being shown to users verbatim, which was survivable while
+ * the only failure was a stale link and is not now that there are passwords,
+ * codes, resends and a rate limit in the way.
  *
- * So every call in this file throws one of these instead, and the screens
- * translate the `reason`. The original is kept on `cause` for Sentry, because
- * a reason of `unknown` with nothing under it is a bug report nobody can act
- * on.
+ * Every call in this file throws one of these instead, and the screens translate
+ * the `reason`. The original is kept on `cause` for Sentry, because a reason of
+ * `unknown` with nothing under it is a bug report nobody can act on.
  */
 export type AuthProblemReason =
-  /** The password does not match the address, or there is no such account. */
+  /**
+   * The password does not match the address, or there is no such account.
+   */
   | 'invalid_credentials'
-  /** Right password, but the address was never confirmed. Recoverable: resend. */
+  /**
+   * Right password, but the address was never confirmed. Recoverable: resend.
+   */
   | 'email_not_confirmed'
-  /** Signing up at an address that already has an account. */
+  /**
+   * Signing up at an address that already has an account.
+   */
   | 'account_exists'
   /**
    * The six digits were wrong, or belonged to an earlier mail, or expired.
    *
-   * ONE REASON FOR ALL THREE, because the server gives one answer for all
-   * three: a wrong code and an expired one both come back 403 `otp_expired`,
-   * "Token has expired or is invalid". That is deliberate on Supabase's part —
-   * "it merely expired" would confirm to a stranger that the address has an
-   * account — so a reason called `code_expired` could only ever be a guess
-   * dressed as a fact, and its copy would tell somebody who mistyped to go and
-   * wait for a new mail.
+   * One reason for all three, because the server gives one answer for all three: a
+   * wrong code and an expired one both come back 403 `otp_expired`. That is
+   * deliberate on Supabase's part, since "it merely expired" would confirm to a
+   * stranger that the address has an account. So a reason called `code_expired`
+   * could only be a guess dressed as a fact, and its copy would tell somebody who
+   * mistyped to go and wait for a new mail.
    */
   | 'code_invalid'
-  /** Shorter than the project's minimum, or otherwise refused. */
+  /**
+   * Shorter than the project's minimum, or otherwise refused.
+   */
   | 'weak_password'
-  /** The new password is the old one, which Supabase refuses on a reset. */
+  /**
+   * The new password is the old one, which Supabase refuses on a reset.
+   */
   | 'same_password'
-  /** One mail a minute, and this was the second. Carries the wait. */
+  /**
+   * One mail a minute, and this was the second. Carries the wait.
+   */
   | 'rate_limited'
-  /** The captcha gate is on and this request arrived without a usable token. */
+  /**
+   * The captcha gate is on and this request arrived without a usable token.
+   */
   | 'captcha'
-  /** No connection, or the request never landed. */
+  /**
+   * No connection, or the request never landed.
+   */
   | 'offline'
   | 'unknown'
 
 export class AuthProblem extends Error {
   constructor(
     readonly reason: AuthProblemReason,
-    /** Seconds until the same request would be accepted. `rate_limited` only. */
+    /**
+     * Seconds until the same request would be accepted. `rate_limited` only.
+     */
     readonly retryAfter?: number,
     cause?: unknown,
   ) {
@@ -160,11 +159,11 @@ export class AuthProblem extends Error {
 /**
  * How many seconds Supabase says to wait, out of a message written in prose.
  *
- * There is no header and no field for it: the number lives in the sentence
- * ("you can only request this after 47 seconds"), so this is a regex over a
- * message or it is a fixed guess that is wrong in both directions. A guess of
- * 60 shows a countdown that ends before the server agrees, and the resend fails
- * again in front of somebody who waited exactly as long as they were told.
+ * There is no header and no field for it. The number lives in the sentence ("you
+ * can only request this after 47 seconds"), so this is a regex over a message or
+ * it is a fixed guess that is wrong in both directions. A guess of 60 shows a
+ * countdown that ends before the server agrees, and the resend fails again in
+ * front of somebody who waited exactly as long as they were told.
  */
 function retryAfterIn(message: string): number | undefined {
   const seconds = message.match(/after (\d+) seconds?/i)?.[1]
@@ -174,14 +173,14 @@ function retryAfterIn(message: string): number | undefined {
 /**
  * Whether this is already one of ours.
  *
- * BRANDED RATHER THAN `instanceof`, and that is not fussiness. `AuthProblem`
+ * Branded rather than `instanceof`, and that is not fussiness. `AuthProblem`
  * extends `Error`, Babel rewrites a native subclass through `_wrapNativeSuper`,
  * and the identity of the class then depends on which copy of this module the
- * thrower and the checker each got — which is one copy in the app and can be
- * two under Jest the moment anything mocks `data/auth`. The failure is silent
- * and it is the worst kind: every branch falls through to `unknown`, so the
- * screens go on working and say "something went wrong" for errors they have
- * exact sentences for.
+ * thrower and the checker each got. That is one copy in the app and can be two
+ * under Jest the moment anything mocks `data/auth`. The failure is silent and it
+ * is the worst kind: every branch falls through to `unknown`, so the screens go
+ * on working and say "something went wrong" for errors they have exact sentences
+ * for.
  */
 function isAuthProblem(error: unknown): error is AuthProblem {
   const candidate = error as { name?: string; reason?: unknown } | null
@@ -191,9 +190,9 @@ function isAuthProblem(error: unknown): error is AuthProblem {
 /**
  * Supabase's answer, read once, in one place.
  *
- * Matched on `code` where there is one — it is stable, and the messages are
- * not — with the message as the fallback for the older errors that carry no
- * code and for the rate limit, whose wait is only ever in the prose.
+ * Matched on `code` where there is one, since it is stable and the messages are
+ * not. The message is the fallback for older errors that carry no code, and for
+ * the rate limit, whose wait is only ever in the prose.
  */
 export function asAuthProblem(error: unknown): AuthProblem {
   if (isAuthProblem(error)) return error
@@ -213,7 +212,7 @@ export function asAuthProblem(error: unknown): AuthProblem {
     case 'user_already_exists':
     case 'email_exists':
       return problem('account_exists')
-    // Returned for a code that is WRONG as well as one that is old. See the
+    // Returned for a code that is wrong as well as one that is old. See the
     // note on `code_invalid`.
     case 'otp_expired':
       return problem('code_invalid')
@@ -234,15 +233,14 @@ export function asAuthProblem(error: unknown): AuthProblem {
   }
   // The two the app meets most often, matched on their text as well as their
   // code. `AuthError.code` is populated by every supabase-js this project has
-  // shipped, so these are belt and braces — but they are the two failures a
-  // person actually hits, and reporting either as `unknown` would replace the
-  // sentence that says what to do next with the one that says nothing.
+  // shipped, so these are belt and braces. But they are the two failures a person
+  // actually hits, and reporting either as `unknown` would replace the sentence
+  // that says what to do next with the one that says nothing.
   if (/invalid login credentials/i.test(message)) return problem('invalid_credentials')
   if (/email not confirmed/i.test(message)) return problem('email_not_confirmed')
   // An expired code and a wrong one arrive as the same error from an endpoint
-  // that will not say which — deliberately, since telling an attacker that the
-  // code merely expired confirms the address has an account. `code_invalid`
-  // covers both, and its copy says so.
+  // that will not say which, since telling an attacker that the code merely expired
+  // confirms the address has an account. `code_invalid` covers both.
   if (/token has expired or is invalid|invalid or has expired/i.test(message)) {
     return problem('code_invalid')
   }
@@ -257,10 +255,10 @@ export function asAuthProblem(error: unknown): AuthProblem {
  * Runs a Supabase call and rethrows whatever it says as an `AuthProblem`.
  *
  * Returns the whole `{ data, error }` rather than just the data, because every
- * supabase-js auth method answers with a DISCRIMINATED UNION — the success arm
- * has a `User`, the failure arm has `null` in the same place — and a generic
- * that tries to name the data alone cannot unify the two. Handing back the
- * result keeps the inference trivial and costs the caller one destructure.
+ * supabase-js auth method answers with a discriminated union: the success arm has
+ * a `User` and the failure arm has `null` in the same place, and a generic that
+ * tries to name the data alone cannot unify the two. Handing back the result
+ * keeps the inference trivial and costs the caller one destructure.
  */
 async function attempt<R extends { error: unknown }>(work: () => Promise<R>): Promise<R> {
   let result: R
@@ -278,10 +276,10 @@ async function attempt<R extends { error: unknown }>(work: () => Promise<R>): Pr
 /**
  * Mails a sign-in code, creating the account if the address is new.
  *
- * The mail carries both halves. `emailRedirectTo` is what makes the LINK in it
- * open this build rather than a web page: the project's redirect allow-list has
- * to contain the app's scheme or Supabase drops the parameter and substitutes
- * `site_url` — which is why the hosted project's empty allow-list and its
+ * The mail carries both halves. `emailRedirectTo` is what makes the link open
+ * this build rather than a web page: the project's redirect allow-list has to
+ * contain the app's scheme, or Supabase drops the parameter and substitutes
+ * `site_url`. That is why the hosted project's empty allow-list and its
  * `http://localhost:3000` site URL were one bug rather than two, and why
  * `pnpm auth:config` now owns both.
  */
@@ -296,10 +294,10 @@ export async function sendLoginLink(email: string, captchaToken?: string): Promi
       },
     }),
   )
-  // The mail path is the one sign-in with a gap in the middle of it — the link
-  // is opened in another app, minutes later, on a device that may not be this
-  // one. Recording the request separately from `Signed In` is what turns that
-  // gap into a number: how many people ask for a link and never come back.
+  // The mail path is the one sign-in with a gap in the middle: the link is
+  // opened in another app, minutes later, on a device that may not be this one.
+  // Recording the request separately from `Signed In` turns that gap into a number,
+  // which is how many people ask for a link and never come back.
   track('Login Link Requested', {})
 }
 
@@ -309,27 +307,25 @@ export async function sendLoginLink(email: string, captchaToken?: string): Promi
  * `confirm` is the ordinary answer on this project, because email confirmations
  * are on: the account exists, nobody is signed in, and a code is in the post.
  * `signed-in` is what a stack with confirmations off returns, and the screens
- * handle it rather than assuming — the two differ by one project setting and
- * the flow must not break the day somebody flips it.
+ * handle it rather than assuming. The two differ by one project setting and the
+ * flow must not break the day somebody flips it.
  */
 export type SignUpOutcome = 'signed-in' | 'confirm'
 
 /**
  * Creates an account with a password.
  *
- * THE HARD PART IS THE ADDRESS THAT ALREADY HAS AN ACCOUNT, and Supabase will
- * not say so. Answering "that email is taken" turns a signup form into an
- * oracle for whether a given person uses this app, so with confirmations on it
- * returns a perfectly ordinary-looking success: a user object, no session, and
- * `identities: []`. No mail is sent. Read naively that is indistinguishable
- * from a fresh signup, and the user is marched to a code screen to wait for a
- * mail that will never arrive.
+ * The hard part is the address that already has an account, and Supabase will not
+ * say so. Answering "that email is taken" turns a signup form into an oracle for
+ * whether a given person uses this app, so with confirmations on it returns an
+ * ordinary-looking success: a user object, no session, and `identities: []`. No
+ * mail is sent. Read naively that is indistinguishable from a fresh signup, and
+ * the user is marched to a code screen to wait for a mail that will never arrive.
  *
- * The empty identities array is the documented tell, and it is the only one.
- * What the screen does with it is the honest half: it does not announce that
- * the account exists either, it offers to sign in or to mail a code, both of
- * which are safe to offer to a stranger and both of which get the real owner
- * where they were going.
+ * The empty identities array is the documented tell, and it is the only one. What
+ * the screen does with it is the honest half: it does not announce that the
+ * account exists either, it offers to sign in or to mail a code, and both are safe
+ * to offer to a stranger.
  */
 export async function signUpWithPassword(
   email: string,
@@ -355,7 +351,9 @@ export async function signUpWithPassword(
   return 'confirm'
 }
 
-/** Signs in with a password. Throws `email_not_confirmed` if the code is owed. */
+/**
+ * Signs in with a password. Throws `email_not_confirmed` if the code is owed.
+ */
 export async function signInWithPassword(
   email: string,
   password: string,
@@ -374,10 +372,10 @@ export async function signInWithPassword(
 /**
  * Mails a password reset.
  *
- * Never says whether the address has an account, and neither does the screen
- * that calls it: Supabase answers the same way either way, and a screen that
- * reported "no account with that address" would give away the one thing this
- * endpoint is careful not to.
+ * Never says whether the address has an account, and neither does the screen that
+ * calls it. Supabase answers the same way either way, and a screen that reported
+ * "no account with that address" would give away the one thing this endpoint is
+ * careful not to.
  */
 export async function sendPasswordReset(email: string, captchaToken?: string): Promise<void> {
   await attempt(async () => {
@@ -394,9 +392,9 @@ export async function sendPasswordReset(email: string, captchaToken?: string): P
  * Sends the confirmation mail again, for an account that never confirmed.
  *
  * Separate from `sendLoginLink` because it is a different template and a
- * different token: `signInWithOtp` on an unconfirmed account signs them in
- * without ever confirming the address, which leaves the row in a state the
- * password path then refuses.
+ * different token. `signInWithOtp` on an unconfirmed account signs them in
+ * without confirming the address, which leaves the row in a state the password
+ * path then refuses.
  */
 export async function resendConfirmation(email: string, captchaToken?: string): Promise<void> {
   await attempt(async () => {
@@ -410,21 +408,20 @@ export async function resendConfirmation(email: string, captchaToken?: string): 
 }
 
 /**
- * What a mailed code is FOR, which decides how Supabase verifies it.
+ * What a mailed code is for, which decides how Supabase verifies it.
  *
- * Not cosmetic. Each of these is a different column on `auth.users` holding a
- * different token, and asking about the wrong one answers "invalid" for a code
- * that is perfectly good:
+ * Not cosmetic. Each is a different column on `auth.users` holding a different
+ * token, and asking about the wrong one answers "invalid" for a code that is
+ * perfectly good.
  *
  * - `signup` confirms the address on an account just created with a password.
- * - `email` is the passwordless code, and covers BOTH halves of what
- *   `signInWithOtp` does — a new address gets the signup token, a known one
- *   gets the magic-link token, and the caller cannot tell which because
- *   `shouldCreateUser` deliberately does not report it. This is the one type
- *   that reads either, which was checked against the deployed project rather
- *   than assumed: a brand new address stores its code in `confirmation_token`
- *   with `recovery_token` empty, and verifying it as `email` both returns a
- *   session and sets `email_confirmed_at`.
+ * - `email` is the passwordless code, and covers both halves of what
+ *   `signInWithOtp` does: a new address gets the signup token, a known one gets
+ *   the magic-link token, and the caller cannot tell which because
+ *   `shouldCreateUser` does not report it. This is the one type that reads
+ *   either, checked against the deployed project rather than assumed. A brand new
+ *   address stores its code in `confirmation_token` with `recovery_token` empty,
+ *   and verifying it as `email` returns a session and sets `email_confirmed_at`.
  * - `recovery` is the password reset, and the session it returns is the licence
  *   to call `updatePassword`.
  */
@@ -433,8 +430,7 @@ export type CodePurpose = 'signup' | 'email' | 'recovery'
 /**
  * Turns six digits into a session.
  *
- * This is the path the emails now lead with, and the reason is in
- * `apps/supabase/templates/README.md`: a link is spent by whatever fetches it
+ * This is the path the emails lead with. A link is spent by whatever fetches it
  * first, and on a corporate address that is the employer's scanner rather than
  * the person. A code cannot be consumed by something reading the mail, and it
  * works when the mail was opened on a different device from the app.
@@ -447,8 +443,8 @@ export async function verifyEmailCode(
   await attempt(() =>
     supabase.auth.verifyOtp({
       email: email.trim(),
-      // Whitespace, because a code read off a banner is pasted as often as it
-      // is typed and the clipboard brings the spaces with it.
+      // Whitespace, because a code read off a banner is pasted as often as it is
+      // typed and the clipboard brings the spaces with it.
       token: code.replace(/\s/g, ''),
       type: purpose,
     }),
@@ -456,54 +452,54 @@ export async function verifyEmailCode(
 
   // A recovery code is not a sign-in worth reporting: the person is halfway
   // through changing a password and is about to be asked for the new one. The
-  // event that matters there is the password write, not this.
+  // event that matters is the password write, not this.
   if (purpose !== 'recovery') await announceSignIn('email')
 }
 
 /**
  * Sets the password on the account this session belongs to.
  *
- * Used from two places and it is the same call in both: the end of a reset,
- * where the session came from a recovery code, and a signed-in user changing
- * their password. Supabase refuses a password identical to the current one,
- * which arrives as `same_password` and is worth its own sentence — on a reset
- * it means they have remembered the old one, which is a different situation
- * from having typed something too short.
+ * Used from two places and it is the same call in both: the end of a reset, where
+ * the session came from a recovery code, and a signed-in user changing their
+ * password. Supabase refuses a password identical to the current one, which
+ * arrives as `same_password` and is worth its own sentence. On a reset it means
+ * they have remembered the old one, which is a different situation from having
+ * typed something too short.
  */
 export async function updatePassword(password: string): Promise<void> {
   await attempt(() => supabase.auth.updateUser({ password }))
 }
 
 /**
- * How fresh an account has to be for this sign-in to have CREATED it.
+ * How fresh an account has to be for this sign-in to have created it.
  *
- * There is no sign-up call to hang the distinction off — `signInWithOtp` and
- * `signInWithIdToken` both make the account when the identity is new and sign
- * in when it is not — so the only evidence available is the age of the row.
- * A minute is far longer than any of these three flows takes and far shorter
- * than any plausible second sign-in, so the two cases cannot overlap.
+ * There is no sign-up call to hang the distinction off, since `signInWithOtp` and
+ * `signInWithIdToken` both make the account when the identity is new and sign in
+ * when it is not. So the only evidence is the age of the row. A minute is far
+ * longer than any of these three flows takes and far shorter than any plausible
+ * second sign-in, so the two cases cannot overlap.
  */
 const NEW_ACCOUNT_WINDOW_MS = 60_000
 
 /**
  * Record a sign-in that actually happened.
  *
- * Deliberately NOT in the session provider, which is where `identify` lives.
- * That one fires on every launch with a restored session — supabase announces
- * `SIGNED_IN` whenever it finds a usable token in the keychain — so counting it
- * as a sign-in would report a returning user's every cold start as an
- * acquisition. These three call sites are the moments a person signed in.
+ * Deliberately not in the session provider, which is where `identify` lives. That
+ * one fires on every launch with a restored session, because Supabase announces
+ * `SIGNED_IN` whenever it finds a usable token in the keychain, so counting it as
+ * a sign-in would report a returning user's every cold start as an acquisition.
+ * These three call sites are the moments a person signed in.
  */
 async function announceSignIn(method: SignInMethod): Promise<void> {
   /**
-   * WRAPPED, and this is the one place in the tracking plan where it matters.
+   * Wrapped, and this is the one place in the tracking plan where it matters.
    *
-   * Every other `track` is a call into a module that cannot throw. This one
-   * reads the session first, to find out whether the account was just created,
-   * and it sits on the success path of all three sign-ins — so a rejection here
-   * would come out of `completeLoginFromUrl`, which the link handler reads as
-   * "that link had expired". A property on a report is not worth a sign-in that
-   * says it failed after it worked.
+   * Every other `track` is a call into a module that cannot throw. This one reads
+   * the session first, to find out whether the account was just created, and it
+   * sits on the success path of all three sign-ins. So a rejection here would come
+   * out of `completeLoginFromUrl`, which the link handler reads as "that link had
+   * expired". A property on a report is not worth a sign-in that says it failed
+   * after it worked.
    */
   try {
     const { data } = await supabase.auth.getSession()
@@ -523,14 +519,14 @@ async function announceSignIn(method: SignInMethod): Promise<void> {
  * What a deep link turned out to be.
  *
  * `recovery` is not a flavour of `signed-in`. Both end in a session; only one
- * of them means the person is still halfway through changing a password, and
- * counting that as a sign-in would report an acquisition every time somebody
- * forgot one. So the distinction is load-bearing HERE, for `announceSignIn`.
+ * means the person is still halfway through changing a password, and counting
+ * that as a sign-in would report an acquisition every time somebody forgot one.
+ * So the distinction is load-bearing here, for `announceSignIn`.
  *
- * WHERE the person then lands is not decided from this value. That is the
- * route's business (`app/auth/[action].tsx`), because this function is called
- * from outside the navigator and a redirect chosen here would race the root
- * layout on a cold start from the mail.
+ * Where the person then lands is not decided from this value. That is the route's
+ * business (`app/auth/[action].tsx`), because this function is called from
+ * outside the navigator and a redirect chosen here would race the root layout on
+ * a cold start from the mail.
  */
 export type LinkOutcome = 'none' | 'signed-in' | 'recovery'
 
@@ -538,15 +534,15 @@ export type LinkOutcome = 'none' | 'signed-in' | 'recovery'
  * Turns a login link back into a session.
  *
  * The link in the mail goes to Supabase, which verifies it and redirects to the
- * app's own scheme with a one-time `?code=` on the end. `exchangeCodeForSession`
- * trades that code for a session, and under PKCE (see `flowType` in
- * `lib/supabase.ts`) the trade only succeeds with the verifier THIS install
- * generated when it asked for the link — so a code lifted from a mail, or a
- * whole link forwarded to another device, is inert.
+ * app's own scheme with a one-time `?code=` on the end.
+ * `exchangeCodeForSession` trades that code for a session, and under PKCE the
+ * trade only succeeds with the verifier this install generated when it asked for
+ * the link. So a code lifted from a mail, or a whole link forwarded to another
+ * device, is inert.
  *
- * A TOKEN PAIR IN THE URL IS DELIBERATELY IGNORED. The implicit flow puts a
+ * A token pair in the URL is deliberately ignored. The implicit flow puts a
  * ready-to-use `access_token`/`refresh_token` in the fragment, and this function
- * once called `setSession` with whatever it found there — which made any
+ * once called `setSession` with whatever it found there. That made any
  * `ricecal://` link a login: an attacker mails the victim a link carrying the
  * attacker's own tokens, one tap opens the app signed into the attacker's
  * account, and the victim's next photographed meals and weigh-ins land in rows
@@ -564,12 +560,12 @@ export async function completeLoginFromUrl(url: string): Promise<LinkOutcome> {
   if (failure) throw asAuthProblem(new Error(failure.replace(/\+/g, ' ')))
 
   /**
-   * Whether this link was a password reset, told by its PATH.
+   * Whether this link was a password reset, told by its path.
    *
-   * Both a reset and a sign-in come back as a code that ends in a session, so
-   * the code alone cannot tell them apart. `sendPasswordReset` asks Supabase to
+   * Both a reset and a sign-in come back as a code that ends in a session, so the
+   * code alone cannot tell them apart. `sendPasswordReset` asks Supabase to
    * redirect to `ricecal://auth/reset` rather than `/auth/callback`, and that is
-   * ours to choose: read as a sign-in, a reset would carry the user off to Today
+   * ours to choose. Read as a sign-in, a reset would carry the user off to Today
    * with the password they came to change still in force.
    */
   const recovery = /\/auth\/reset\b/.test(url)
@@ -587,15 +583,15 @@ export async function completeLoginFromUrl(url: string): Promise<LinkOutcome> {
  * Every parameter in a deep link, from wherever it is hiding.
  *
  * The query string and the fragment both. PKCE puts the `code` in the query and
- * an error in either, so reading both misses nothing; a token pair in the
+ * an error in either, so reading both misses nothing. A token pair in the
  * fragment is read out here but ignored by `completeLoginFromUrl`, which acts on
  * the code alone.
  *
  * And one level inside a `url` parameter, because a launcher can hand the app a
- * wrapper pointing at itself with the real link nested in it — the Expo dev
- * launcher does exactly that. Our own redirect is a plain `ricecal://` URL and
- * never arrives wrapped, so this is belt and braces; it costs four lines and
- * turns "the link silently does nothing" into a working sign-in.
+ * wrapper pointing at itself with the real link nested in it, which the Expo dev
+ * launcher does. Our own redirect is a plain `ricecal://` URL and never arrives
+ * wrapped, so this is belt and braces. It costs four lines and turns "the link
+ * silently does nothing" into a working sign-in.
  */
 function paramsIn(url: string, depth = 0): URLSearchParams {
   const merged = new URLSearchParams()
@@ -616,12 +612,11 @@ function paramsIn(url: string, depth = 0): URLSearchParams {
 /**
  * Whether this build can actually complete an Apple sign-in.
  *
- * `Platform.OS === 'ios'` was not enough, and the gap is not hypothetical: a
+ * `Platform.OS === 'ios'` was not enough, and the gap is not hypothetical. A
  * local simulator build (`pnpm ios`, APP_VARIANT=simulator) deliberately drops
  * the `com.apple.developer.applesignin` entitlement so it can compile without a
- * signing identity — see apps/mobile/app.config.ts. On that build the button
- * rendered, and tapping it failed inside Apple's own sheet with an error the
- * user could do nothing about.
+ * signing identity. On that build the button rendered, and tapping it failed
+ * inside Apple's own sheet with an error the user could do nothing about.
  *
  * `isAvailableAsync` answers the OS-capability half. The entitlement half only
  * surfaces when the request is made, which is why `signInWithApple` also
@@ -632,7 +627,9 @@ export async function appleSignInAvailable(): Promise<boolean> {
   return AppleAuthentication.isAvailableAsync()
 }
 
-/** Thrown when the build has no Apple Sign-In entitlement to use. */
+/**
+ * Thrown when the build has no Apple Sign-In entitlement to use.
+ */
 export class AppleSignInUnavailable extends Error {
   constructor() {
     super('Apple sign-in is not available in this build. Use email instead.')
@@ -665,10 +662,10 @@ export async function signInWithApple(): Promise<void> {
     if (error) throw error
 
     /**
-     * Apple sends the name on the FIRST sign-in only, and never again. The
-     * signup trigger reads it out of the token's metadata, which does not
-     * carry it, so if we do not write it here it is gone for good — the
-     * onboarding name step is the only other chance.
+     * Apple sends the name on the first sign-in only, and never again. The signup
+     * trigger reads it out of the token's metadata, which does not carry it, so if we
+     * do not write it here it is gone for good. The onboarding name step is the only
+     * other chance.
      */
     const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
       .filter(Boolean)
@@ -686,21 +683,19 @@ export async function signInWithApple(): Promise<void> {
       }
     }
   } catch (error) {
-    // The user closing the sheet is not an error to report; every other
-    // failure is.
+    // The user closing the sheet is not an error to report; every other failure is.
     const code = (error as { code?: string }).code
     if (code === 'ERR_REQUEST_CANCELED') {
-      // Tracked, unlike most cancellations, because backing out of Apple's own
-      // sheet is the single biggest drop in this funnel and it is invisible
-      // everywhere else: nothing is thrown to Sentry and nothing reaches the
-      // database.
+      // Tracked, unlike most cancellations, because backing out of Apple's own sheet
+      // is the single biggest drop in this funnel and it is invisible everywhere else:
+      // nothing is thrown to Sentry and nothing reaches the database.
       track('Sign In Failed', { method: 'apple', reason: 'cancelled' })
       throw new SignInCancelled()
     }
     // A build with no entitlement fails here rather than at `isAvailableAsync`,
-    // with a message written for a developer ("The operation couldn't be
-    // completed. com.apple.AuthenticationServices.AuthorizationError 1000").
-    // Say the useful thing instead: use email.
+    // with a message written for a developer ("The operation couldn't be completed.
+    // com.apple.AuthenticationServices.AuthorizationError 1000"). Say the useful
+    // thing instead: use email.
     if (code === 'ERR_REQUEST_UNKNOWN' || code === 'ERR_APPLE_AUTHENTICATION_UNAVAILABLE') {
       track('Sign In Failed', { method: 'apple', reason: 'unavailable' })
       throw new AppleSignInUnavailable()
@@ -709,19 +704,19 @@ export async function signInWithApple(): Promise<void> {
     throw error
   }
 
-  // OUTSIDE the try, so the two events cannot both fire for one attempt. The
+  // Outside the try, so the two events cannot both fire for one attempt. The
   // catch above turns anything thrown in there into a `Sign In Failed`, and it
-  // covers the profile write as well as the sign-in itself — so a success
-  // announced from inside it would be a sign-in reported as both.
+  // covers the profile write as well as the sign-in itself, so a success announced
+  // from inside it would be a sign-in reported as both.
   await announceSignIn('apple')
 }
 
 /**
  * Whether Google sign-in can work at all.
  *
- * The gate is the same one `startup.ts` uses for the other SDKs: a key still
- * set to the placeholder means the account was never provisioned, and showing
- * a button that cannot succeed is worse than showing one fewer option.
+ * The gate is the same one `startup.ts` uses for the other SDKs: a key still set
+ * to the placeholder means the account was never provisioned, and showing a
+ * button that cannot succeed is worse than showing one fewer option.
  */
 export function googleSignInAvailable(): boolean {
   return (
@@ -764,6 +759,6 @@ export async function signOut(): Promise<void> {
   const { error } = await supabase.auth.signOut()
   if (error) throw error
   // Before the provider's own `reset`, which the `SIGNED_OUT` event triggers a
-  // tick later — so this event is still filed against the account it is about.
+  // tick later, so this event is still filed against the account it is about.
   track('Signed Out', {})
 }

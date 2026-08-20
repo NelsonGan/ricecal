@@ -14,18 +14,16 @@ import { toDbSource } from './types'
  * Writes to `food_logs`.
  *
  * An entry used to be a foreign key and a quantity, with no macros copied,
- * because correcting a dish had to correct every log that used it. The
- * catalogue is in another database now and the numbers travel with the entry
- * instead — see `snapshot.ts`, which is where every write path's copy of them
- * is built. Everything these mutations touch is invalidated by day, since that
- * is the only shape anything reads.
+ * because correcting a dish had to correct every log that used it. The catalogue
+ * is in another database now and the numbers travel with the entry instead. See
+ * `snapshot.ts`, which is where every write path's copy of them is built.
  */
 
 export type LogInput = {
   /**
-   * What this entry IS: the name, the numbers and the portion, taken at the
-   * moment of logging. Built by one of the three builders in `snapshot.ts` —
-   * never assembled at a call site, because the portion is easy to count twice.
+   * What this entry is: the name, the numbers and the portion, taken at the moment
+   * of logging. Built by one of the three builders in `snapshot.ts`, never
+   * assembled at a call site, because the portion is easy to count twice.
    */
   snapshot: LogSnapshot
   quantity?: number
@@ -36,9 +34,8 @@ export type LogInput = {
    * An illustration for this row, when the user picked one before adding.
    *
    * Most of the catalogue has no drawing, so a dish added from the list arrives
-   * blank and the pre-add screen is where one gets chosen. Mutually exclusive
-   * with `photoPath` — a check constraint refuses both — but nothing sends the
-   * two together: a snap has a photo and no picker, a manual add is the reverse.
+   * blank and the pre-add screen is where one gets chosen. Mutually exclusive with
+   * `photoPath`, and a check constraint refuses both.
    */
   icon?: IconRef
   /** The day it counts towards. Defaults to the day being viewed. */
@@ -46,16 +43,11 @@ export type LogInput = {
   /**
    * How the user got here, for analytics and for nothing else.
    *
-   * SEPARATE FROM `source`, which is a database column and a narrower question.
-   * `entry_source` has no value for a barcode, a recipe or a dish re-logged
-   * from an entry that already existed — all three arrive as `search` or
-   * `quickAdd` — because the column is about how the NUMBERS were obtained and
-   * these are about which door the user came through. Widening the enum to
-   * carry the difference would be a migration, four views and a generated type
-   * for the sake of a report.
-   *
-   * Defaulted from `source` so a call site that has nothing to add says
-   * nothing.
+   * Separate from `source`, which is a database column and a narrower question.
+   * `entry_source` has no value for a barcode, a recipe or a dish re-logged from an
+   * entry that already existed, because the column is about how the numbers were
+   * obtained and these are about which door the user came through. Widening the
+   * enum would be a migration, four views and a generated type for a report.
    */
   method?: LogMethod
 }
@@ -127,11 +119,10 @@ export function useLogFood() {
 /**
  * Which parts of an entry a patch actually moves.
  *
- * Sent with `Entry Updated` rather than the values themselves. What the report
- * is for is whether the catalogue offers the right PORTIONS — an app where most
- * corrections are the serving is an app whose serving list is wrong — and the
- * names of the fields answer that while the numbers would only add a calorie
- * count to a table that has no business holding one.
+ * Sent with `Entry Updated` rather than the values themselves. What the report is
+ * for is whether the catalogue offers the right portions, and the names of the
+ * fields answer that while the numbers would only add a calorie count to a table
+ * that has no business holding one.
  */
 function changedFields(patch: EntryPatch): string[] {
   const changed: string[] = []
@@ -154,18 +145,17 @@ export type EntryPatch = {
    */
   logDate: string
   /**
-   * WHEN this was eaten, and both columns of it.
+   * When this was eaten, and both columns of it.
    *
-   * `log_date` is the day the entry counts towards and `logged_at` is the
-   * instant, and they are written together for the same reason a portion writes
-   * all three of its columns: sent alone, the timestamp would move the row inside
-   * a day it had not left, and the date would move the row to a day whose
-   * ordering still read off the old afternoon. The screen asks one question and
-   * `when.ts` turns the answer into the pair.
+   * `log_date` is the day the entry counts towards and `logged_at` is the instant,
+   * and they are written together for the same reason a portion writes all three of
+   * its columns. Sent alone, the timestamp would move the row inside a day it had
+   * not left, and the date would move the row to a day whose ordering still read
+   * off the old afternoon.
    *
-   * Moving the DATE is what makes this more than an edit: the entry leaves one
+   * Moving the date is what makes this more than an edit: the entry leaves one
    * day's totals and joins another's, so `onSuccess` invalidates both and the
-   * streak as well — an emptied day can break one.
+   * streak as well, since an emptied day can break one.
    */
   when?: { logDate: string; loggedAt: string }
   quantity?: number
@@ -174,17 +164,17 @@ export type EntryPatch = {
    *
    * The id alone is a dangling note: nothing in Postgres can resolve it, since
    * `food_servings` is in D1 and no view joins to it. What the entry counts is
-   * `base_* x serving_factor x quantity`, so a caller that sends the id and
-   * keeps the factor has changed the row's label and not its arithmetic — which
-   * reads, on the day, as a portion change that silently did nothing.
+   * `base_* x serving_factor x quantity`, so a caller that sends the id and keeps
+   * the factor has changed the row's label and not its arithmetic, which reads on
+   * the day as a portion change that silently did nothing.
    */
   servingId?: string
   servingLabel?: string
   servingFactor?: number
   note?: string | null
   /**
-   * What THIS entry is called. Written to `display_label`, which sits over the
-   * catalogue row's own name — so renaming a plate never renames the dish for
+   * What this entry is called. Written to `display_label`, which sits over the
+   * catalogue row's own name, so renaming a plate never renames the dish for
    * anyone else who logged it.
    */
   name?: string
@@ -192,14 +182,14 @@ export type EntryPatch = {
    * An illustration for this row, overriding whatever the food carries. `null`
    * clears it and falls back to the food's own.
    *
-   * On the entry rather than on the food because `foods` is shared and read-only
-   * to users, and most of the catalogue has no drawing to begin with.
+   * On the entry rather than on the food because `foods` is shared and read-only to
+   * users, and most of the catalogue has no drawing to begin with.
    */
   icon?: IconRef | null
   /**
-   * A photo for this row, already uploaded — the key `uploadMealPhoto` returned.
+   * A photo for this row, already uploaded: the key `uploadMealPhoto` returned.
    *
-   * A row carries a photo or an icon, never both: the picture of the actual plate
+   * A row carries a photo or an icon, never both. The picture of the actual plate
    * and a drawing of the dish are answers to the same question, and a check
    * constraint refuses to hold both. So this clears the icon columns in the same
    * statement, and `icon` clears this one.
@@ -211,9 +201,9 @@ export type EntryPatch = {
    */
   currentPhotoPath?: string
   /**
-   * Figures the user typed for THIS entry, each overriding what the catalogue
-   * computes. `null` clears one and goes back to the computed number; omitting
-   * a field leaves whatever is stored alone.
+   * Figures the user typed for this entry, each overriding what the catalogue
+   * computes. `null` clears one and goes back to the computed number; omitting a
+   * field leaves whatever is stored alone.
    */
   overrides?: {
     kcal?: number | null
@@ -243,10 +233,10 @@ export function useUpdateEntry() {
       overrides,
     }: EntryPatch) => {
       /**
-       * The old object is orphaned when either kind of picture arrives to take
-       * its place: an icon, or a newer photo. `photoPath !== currentPhotoPath`
-       * because a patch that carries the same key it already has is not a
-       * replacement, and deleting that object would blank the row.
+       * The old object is orphaned when either kind of picture arrives to take its
+       * place, an icon or a newer photo. `photoPath !== currentPhotoPath` because a
+       * patch carrying the same key it already has is not a replacement, and deleting
+       * that object would blank the row.
        */
       const replacesPhoto =
         Boolean(currentPhotoPath) &&
@@ -268,15 +258,14 @@ export function useUpdateEntry() {
             ...(servingFactor === undefined ? {} : { serving_factor: servingFactor }),
             ...(note === undefined ? {} : { note }),
             ...(name === undefined ? {} : { display_label: name }),
-            // Both columns together: a check constraint refuses half an icon,
-            // and `null` is how the row goes back to the food's own.
+            // Both columns together: a check constraint refuses half an icon, and `null` is
+            // how the row goes back to the food's own.
             //
-            // Cast because `database.types.ts` is generated from a running local
-            // stack and does not know these two columns until someone runs
-            // `pnpm db:reset && pnpm db:types` against the migration that adds
-            // them. Deliberately the narrowest possible seam — reads need no cast,
-            // since the view already types both columns nullable — and it goes
-            // away the moment the types are regenerated.
+            // Cast because `database.types.ts` is generated from a running local stack and
+            // does not know these two columns until someone runs `pnpm db:reset &&
+            // pnpm db:types` against the migration that adds them. Reads need no cast, since
+            // the view already types both columns nullable, and this goes away the moment
+            // the types are regenerated.
             ...((icon === undefined
               ? {}
               : {
@@ -284,11 +273,10 @@ export function useUpdateEntry() {
                   icon_name: icon?.name ?? null,
                   ...(replacesPhoto ? { photo_path: null } : {}),
                 }) as object),
-            // A photo and an icon cannot be on the row together, so this nulls the
-            // icon columns in the same statement rather than trusting the caller
-            // to have sent `icon: null` alongside. Written after the block above,
-            // so a patch carrying both — which nothing sends — resolves to the
-            // photo rather than to a constraint violation.
+            // A photo and an icon cannot be on the row together, so this nulls the icon
+            // columns in the same statement rather than trusting the caller to have sent
+            // `icon: null` alongside. Written after the block above, so a patch carrying both
+            // resolves to the photo rather than to a constraint violation.
             ...((photoPath === undefined
               ? {}
               : { photo_path: photoPath, icon_set: null, icon_name: null }) as object),
@@ -345,11 +333,11 @@ export function useRemoveEntry() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    // `logDate` is not read here — it is what `onMutate` and `onSettled` need
-    // to find the day this row belongs to. `source` is read by neither: it is
-    // carried so the analytics event can say WHICH KIND of entry was thrown
-    // away, which is the closest thing the app has to a quality signal on the
-    // scan cascade that does not involve reading anybody's diary.
+    // `logDate` is not read here: it is what `onMutate` and `onSettled` need to find
+    // the day this row belongs to. `source` is read by neither, and is carried so the
+    // analytics event can say which kind of entry was thrown away, which is the
+    // closest thing the app has to a quality signal on the scan cascade that does not
+    // involve reading anybody's diary.
     mutationFn: async ({
       id,
       photoPath,
