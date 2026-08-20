@@ -289,23 +289,29 @@ select is(
   'day_plates runs as the caller, so RLS still decides whose diary it reads'
 );
 
--- The retention sweep's own trigger, which is the most dangerous function in
--- this schema by some distance. It is `security definer`, it reads the shared
--- secret out of the vault, and what it POSTs to deletes photographs across
--- every account — so a client that could execute it could spend the whole
--- backlog at will, and one that could read `retention_runs` could read the
--- responses those calls came back with.
+-- The retention sweep's two functions, which between them are the most
+-- dangerous pair in this schema by some distance. Both are `security definer`
+-- and both act across EVERY account: one lists the photographs due to be
+-- deleted, the other forgets them. A client that could execute them could read
+-- the sweep backlog for the whole userbase and then clear other people's
+-- plates out of their diaries.
+--
+-- `sweep_meal_photos` used to be asserted here too. It is gone — the schedule
+-- was `pg_cron` POSTing to an edge function, and the sweep is a Cloudflare
+-- Worker now with no endpoint to POST at.
 --
 -- Postgres grants EXECUTE to PUBLIC on a new function and `anon` inherits it,
 -- so the revoke in `35_retention.sql` is the only thing standing here. Asserted
--- because nothing else would notice: the app never calls this, so the grant
--- being wrong has no symptom at all until somebody goes looking.
+-- because nothing else would notice: the app never calls these, so the grant
+-- being wrong has no symptom at all until somebody goes looking. `db diff` does
+-- not emit grant changes either, which is how five functions once shipped
+-- executable by PUBLIC.
 select is(
   (select count(*)::integer
    from pg_catalog.pg_proc p
    join pg_catalog.pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
-     and p.proname in ('sweep_meal_photos', 'expired_meal_photos', 'clear_meal_photos')
+     and p.proname in ('expired_meal_photos', 'clear_meal_photos')
      and pg_catalog.has_function_privilege('public', p.oid, 'EXECUTE')),
   0,
   'the retention functions are not executable by PUBLIC'
@@ -316,7 +322,7 @@ select is(
    from pg_catalog.pg_proc p
    join pg_catalog.pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
-     and p.proname in ('sweep_meal_photos', 'expired_meal_photos', 'clear_meal_photos')
+     and p.proname in ('expired_meal_photos', 'clear_meal_photos')
      and pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE')),
   0,
   'nor by a signed-in user, who has no business sweeping anybody'
@@ -325,13 +331,17 @@ select is(
 -- RLS on with no policies is how this table is closed, exactly as
 -- `food_scan_items` is: `service_role` bypasses it and everyone else reads
 -- nothing, so a grant added by mistake still exposes no rows.
+--
+-- `job_runs` inherited this assertion from `retention_runs`, which it replaced
+-- when the sweep's schedule left Postgres. It is the same kind of thing — a
+-- scheduler's working notes — and it is now every job's rather than one job's.
 select is(
   (select relrowsecurity
    from pg_catalog.pg_class c
    join pg_catalog.pg_namespace n on n.oid = c.relnamespace
-   where n.nspname = 'public' and c.relname = 'retention_runs'),
+   where n.nspname = 'public' and c.relname = 'job_runs'),
   true,
-  'retention_runs has row level security enabled'
+  'job_runs has row level security enabled'
 );
 
 select * from finish();
