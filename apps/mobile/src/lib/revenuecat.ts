@@ -33,6 +33,32 @@ type PurchasesSdk = {
   logOut(): Promise<unknown>
   setEmail(email: string | null): Promise<void>
   setMixpanelDistinctID(distinctId: string | null): Promise<void>
+  getCustomerInfo(): Promise<StoreCustomerInfo>
+  addCustomerInfoUpdateListener(listener: (info: StoreCustomerInfo) => void): void
+  removeCustomerInfoUpdateListener(listener: (info: StoreCustomerInfo) => void): boolean
+}
+
+/**
+ * The slice of RevenueCat's `CustomerInfo` this app reads.
+ *
+ * Written out for the same reason the rest of `PurchasesSdk` is, and checked
+ * against the real thing at the loader below. The methods above are declared
+ * with method shorthand deliberately: TypeScript checks those bivariantly, so
+ * a listener typed against this subset still accepts the SDK's own wider one.
+ */
+type StoreCustomerInfo = {
+  entitlements: {
+    active: Record<string, StoreEntitlementInfo | undefined>
+  }
+}
+
+type StoreEntitlementInfo = {
+  isActive: boolean
+  willRenew: boolean
+  periodType: string
+  expirationDate: string | null
+  productIdentifier: string
+  isSandbox: boolean
 }
 
 const loadPurchases = async (): Promise<PurchasesSdk> =>
@@ -78,6 +104,13 @@ export function ensurePurchasesConfigured(): Promise<boolean> {
 }
 
 function purchasesApiKey(): string {
+  // THE TEST STORE WINS IN DEVELOPMENT, and only there. `__DEV__` is a literal
+  // Metro replaces, so this branch is not merely unreachable in a release
+  // bundle — it is not in it. See `EXPO_PUBLIC_RC_TEST_STORE_KEY` for why a
+  // simulator needs a store of its own at all.
+  if (__DEV__ && isConfigured(env.EXPO_PUBLIC_RC_TEST_STORE_KEY)) {
+    return env.EXPO_PUBLIC_RC_TEST_STORE_KEY as string
+  }
   return Platform.OS === 'ios' ? env.EXPO_PUBLIC_RC_IOS_KEY : env.EXPO_PUBLIC_RC_ANDROID_KEY
 }
 
@@ -234,4 +267,128 @@ export function forgetPurchaser(): Promise<void> {
       if (__DEV__) console.log('[revenuecat] logOut failed:', error)
     }
   })
+}
+
+/**
+ * The entitlement this app sells. Must match the identifier in RevenueCat and
+ * `ENTITLEMENT` in the `revenuecat` edge function.
+ *
+ * HERE rather than in `data/purchases.ts`, where it used to live, because the
+ * reader below needs it and this module is the one that may not import upwards.
+ * `data/purchases.ts` re-exports it, so every existing call site is unchanged.
+ */
+export const PRO_ENTITLEMENT = 'pro'
+
+/**
+ * What the STORE says this account is entitled to, as RevenueCat's SDK holds it.
+ *
+ * THE SECOND SOURCE, and the app needs both. `subscriptions` in Postgres is
+ * what the SERVER reads, and it is the only thing that can refuse a request —
+ * but it is filled by a webhook, so it lags the purchase by however long
+ * RevenueCat takes to deliver one, and in a sandbox it never arrives at all.
+ * Read as the sole answer, that gap is a user who has just paid being shown the
+ * paywall again on the next tap, which is the worst thing this app can do with
+ * a purchase.
+ *
+ * The SDK, meanwhile, knows the moment the store settles: it holds the receipt
+ * it just validated. It is not a claim the CLIENT is making about itself — it
+ * is the store's own answer, cached on the device — so reading it unlocks the
+ * buttons without weakening anything. The server still decides what it serves.
+ *
+ * Null means there is nothing to ask: a build with a placeholder key, or one
+ * with no RevenueCat pod in it. That is deliberately NOT the same as "not
+ * entitled", and the caller keeps them apart.
+ */
+export type StoreEntitlement = {
+  active: boolean
+  /** Whether this period is the free trial, which the plan line prints. */
+  trial: boolean
+  /** Null for a plan that never expires, exactly as `current_period_end` is. */
+  expiresAt: string | null
+  productId: string | null
+  /**
+   * A sandbox purchase. Worth having on hand: the webhook deliberately refuses
+   * to grant on one, so a tester whose store says yes and whose mirror says no
+   * is looking at that rule rather than at a bug.
+   */
+  sandbox: boolean
+}
+
+/**
+ * Reads the `pro` entitlement out of a customer info payload.
+ *
+ * Exported for tests, which is the only way to exercise this: the SDK is behind
+ * a dynamic import that jest cannot follow.
+ */
+export function proEntitlementOf(info: StoreCustomerInfo): StoreEntitlement {
+  const pro = info?.entitlements?.active?.[PRO_ENTITLEMENT]
+  // `active` is RevenueCat's own answer and it already accounts for the expiry,
+  // the grace period and a refund. It is not second-guessed against the date
+  // here, unlike the mirror in Postgres — that one is a copy of an event and can
+  // be stale, this one is the SDK's own reading of a receipt.
+  if (!pro?.isActive) {
+    return { active: false, trial: false, expiresAt: null, productId: null, sandbox: false }
+  }
+  return {
+    active: true,
+    trial: pro.periodType?.toUpperCase() === 'TRIAL',
+    expiresAt: pro.expirationDate ?? null,
+    productId: pro.productIdentifier ?? null,
+    sandbox: pro.isSandbox === true,
+  }
+}
+
+/** Asks the SDK. Null when there is no SDK to ask — see `StoreEntitlement`. */
+export async function readStoreEntitlement(): Promise<StoreEntitlement | null> {
+  if (!(await ensurePurchasesConfigured())) return null
+  try {
+    const Purchases = await load()
+    return proEntitlementOf(await Purchases.getCustomerInfo())
+  } catch (error) {
+    if (__DEV__) console.log('[revenuecat] could not read customer info:', error)
+    return null
+  }
+}
+
+/**
+ * Calls back whenever RevenueCat's idea of this customer changes, and returns
+ * the way to stop.
+ *
+ * THIS IS WHAT MAKES A PURCHASE LAND WITHOUT A REFETCH. The SDK fires it on a
+ * purchase, a restore, a renewal, an expiry and on its own periodic refresh —
+ * every moment the answer could have moved. It is also the app's earliest
+ * warning that the webhook is about to write our own mirror, which is why the
+ * subscriber to it invalidates that query too rather than waiting for a stale
+ * time to lapse.
+ *
+ * A no-op unsubscribe when the SDK is unusable, so a caller's cleanup is the
+ * same shape either way.
+ */
+export function onStoreEntitlementChange(
+  listener: (entitlement: StoreEntitlement) => void,
+): () => void {
+  let cancelled = false
+  let detach: (() => void) | null = null
+
+  void (async () => {
+    if (!(await ensurePurchasesConfigured())) return
+    try {
+      const Purchases = await load()
+      const forward = (info: StoreCustomerInfo) => listener(proEntitlementOf(info))
+      // The await above means this can resolve after the caller has already
+      // unmounted, so the latch is checked before anything is attached rather
+      // than only in the cleanup.
+      if (cancelled) return
+      Purchases.addCustomerInfoUpdateListener(forward)
+      detach = () => Purchases.removeCustomerInfoUpdateListener(forward)
+    } catch (error) {
+      if (__DEV__) console.log('[revenuecat] could not listen for changes:', error)
+    }
+  })()
+
+  return () => {
+    cancelled = true
+    detach?.()
+    detach = null
+  }
 }

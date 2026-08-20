@@ -27,6 +27,7 @@ import { spacing } from '@/theme/tokens'
 import { cn } from './cn'
 import { NumpadHost, useNumpadZone } from './Numpad'
 import { Text } from './Text'
+import { ToastHost } from './Toast'
 
 /**
  * The panel is a Pressable so a tap inside it can swallow the event before it
@@ -452,6 +453,17 @@ export function SheetSurface({
           </AnimatedPressable>
         </KeyboardAvoidingView>
       </NumpadHost>
+
+      {/* AND ITS OWN TOAST OUTLET, for the reason the numpad host above it
+          exists: a sheet is a native window, and the toast the provider draws
+          in the app's root view is underneath it. It mounted, ran its timer and
+          dismissed itself behind the panel — so every message this sheet gives
+          WITHOUT navigating away was invisible, which reads as a button that
+          does nothing. Outside `NumpadHost` so the toast is not pushed up by a
+          pad, and last so it draws over the panel. From the TOP, because the
+          bottom of this screen is the panel and its buttons — see
+          `ToastHostProps.placement`. */}
+      <ToastHost placement="top" />
     </Pressable>
   )
 }

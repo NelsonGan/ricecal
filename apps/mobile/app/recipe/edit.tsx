@@ -16,7 +16,7 @@ import {
   useRecipeIngredients,
   useSaveRecipe,
 } from '@/data'
-import { announceRefusal } from '@/data/refusals'
+import { announceRefusal, openPaywall } from '@/data/refusals'
 import { IconPicker, InlineCamera } from '@/features/logging'
 import { useRequirePro } from '@/features/paywall'
 import {
@@ -29,7 +29,6 @@ import {
   StepsField,
 } from '@/features/recipes'
 import { MealPhoto } from '@/features/shared'
-import { track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
 import {
@@ -399,12 +398,13 @@ export default function RecipeFormScreen() {
       // PostgREST error is not a place to write copy — so the words are ours and
       // the answer is the paywall, not "save failed".
       if (isRecipeLimit(error)) {
-        toast.show({
+        // Through `openPaywall` rather than three lines here, so the toast comes
+        // from the top like every other one that opens this screen — the
+        // paywall's buy button is a footer, and a bottom toast lands on it.
+        openPaywall(toast, {
           title: t('recipes:edit.limitReached', { count: FREE_RECIPES }),
-          tone: 'warning',
+          feature: 'new_recipe',
         })
-        track('Paywall Shown', { screen: 'hard', trigger: 'new_recipe' })
-        router.push('/paywall')
         return
       }
       // Stay on the form. Everything the user typed is still staged, so Save is

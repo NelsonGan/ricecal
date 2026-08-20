@@ -120,6 +120,7 @@ export { Text, type TextProps, type TextVariant } from './Text'
 export { TextField, type TextFieldProps } from './TextField'
 export {
   type ToastApi,
+  ToastHost,
   type ToastOptions,
   type ToastPlacement,
   ToastProvider,

@@ -15,7 +15,22 @@ export const profile = {
     signOutBody: 'Your log stays safe. Sign back in on any phone to pick it up.',
     proTrialIn_one: 'in {{count}} day',
     proTrialIn_other: 'in {{count}} days',
-    proActive: 'Yearly plan, active',
+    /**
+     * THE PLAN IS INTERPOLATED, and it was written into the sentence.
+     *
+     * "Yearly plan, active" was printed to every subscriber there is: a monthly
+     * one, somebody who bought LIFETIME, and every account holding a
+     * promotional grant. The name comes from `paywall:plans` now, which is the
+     * same list the paywall sells them under, so the two cannot disagree.
+     */
+    proActive: '{{plan}} plan, active',
+    /**
+     * For an entitlement whose plan we cannot name — a promotional grant, or a
+     * store product this build has never heard of. `subscriptions.plan` is null
+     * there by design (see `planOf`), and guessing one is how the screen came
+     * to claim a yearly subscription for somebody who had been given a month.
+     */
+    proActivePlain: 'Pro, active',
     proNone: 'Free plan',
     metric: 'Metric',
     imperial: 'Imperial',

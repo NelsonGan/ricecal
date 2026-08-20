@@ -3,7 +3,11 @@ import { router } from 'expo-router'
 
 import i18n from '@/i18n'
 import { type ProFeature, track } from '@/lib/analytics'
+import { queryClient } from '@/lib/query'
+import type { StoreEntitlement } from '@/lib/revenuecat'
 import type { ToastApi } from '@/ui'
+import { keys } from './keys'
+import type { ScanQuota } from './subscription'
 
 /**
  * The two ways the server refuses, read back off the wire — and the one place
@@ -80,6 +84,38 @@ function asFeature(value: unknown): ProFeature | null {
     : null
 }
 
+/** The part of a fetch response this file reads. See `asResponse`. */
+type RefusalResponse = {
+  status: number
+  json: () => Promise<unknown>
+  clone?: () => RefusalResponse
+}
+
+/**
+ * The response hanging off a `FunctionsHttpError`, if there is one.
+ *
+ * DUCK-TYPED, AND THIS IS NOT FUSSINESS. It was `context instanceof Response`,
+ * which is the obvious spelling and was ALWAYS FALSE in this app: Expo 57 ships
+ * its own fetch, and what comes back is a `FetchResponse` that does not
+ * subclass the global `Response`. So this function returned null for every
+ * refusal there has ever been, and every 402 and 429 the server sent —
+ * "you have used today's three scans", "this one needs Pro" — reached the user
+ * as a generic "could not read this one" with no toast and no paywall. The
+ * server was refusing correctly and the app was mistranslating it, which is why
+ * it looked like the paywall never opened.
+ *
+ * An `instanceof` against a class the runtime may swap is the wrong test for a
+ * value that arrives from a library. What this actually needs is a status and a
+ * body, so that is what it asks for.
+ */
+function asResponse(context: unknown): RefusalResponse | null {
+  const candidate = context as Partial<RefusalResponse> | null | undefined
+  if (!candidate || typeof candidate !== 'object') return null
+  if (typeof candidate.status !== 'number') return null
+  if (typeof candidate.json !== 'function') return null
+  return candidate as RefusalResponse
+}
+
 /**
  * Turns a failed `functions.invoke` into one of the two refusals, or null when
  * it is an ordinary failure.
@@ -92,8 +128,8 @@ function asFeature(value: unknown): ProFeature | null {
 export async function refusalFrom(
   error: unknown,
 ): Promise<NotEntitledError | ScanLimitError | null> {
-  const response = (error as { context?: unknown })?.context
-  if (!(response instanceof Response)) return null
+  const response = asResponse((error as { context?: unknown })?.context)
+  if (!response) return null
   // 402 and 429 are the only two statuses these endpoints use for a refusal.
   // Reading the body of everything else would be a wasted parse on the far
   // more common 401.
@@ -101,9 +137,11 @@ export async function refusalFrom(
 
   let body: RefusalBody
   try {
-    // `clone` because the caller's own error handling may read it too, and a
-    // Response body can only be consumed once.
-    body = (await response.clone().json()) as RefusalBody
+    // `clone` when it is offered, because the caller's own error handling may
+    // read the body too and a body can only be consumed once. Not every
+    // implementation has it — see `asResponse` — and reading directly is
+    // correct for those: nothing downstream of here looks at it again.
+    body = (await (response.clone ? response.clone() : response).json()) as RefusalBody
   } catch {
     return null
   }
@@ -122,6 +160,86 @@ export async function refusalFrom(
     )
   }
   return null
+}
+
+export type RefusalOptions = {
+  /**
+   * How to reach the paywall, and it depends on what is refusing.
+   *
+   * `replace` is required from inside a MODAL — `/log` is a `transparentModal`,
+   * and a push from within one lands on the stack that lives INSIDE that
+   * presentation, so the paywall comes up stacked on the sheet with the sheet's
+   * own scrim still over the app. Same rule, and the same reason, as
+   * `useRequirePro`.
+   */
+  navigate?: 'push' | 'replace'
+}
+
+/**
+ * Has the STORE told this device the account is paid up?
+ *
+ * Read straight out of the query cache rather than through a hook, because the
+ * one caller is a `catch` handler in a mutation and there is no component to
+ * hang a hook off. The cache is a module singleton, so this is the same answer
+ * `useEntitlement` is reading a few lines away on screen.
+ *
+ * Matched across every user's entry rather than by id: this file has no session
+ * to ask, the cache is cleared on every account change, and one entry is all
+ * there ever is.
+ */
+function storeSaysPaid(): boolean {
+  return queryClient
+    .getQueriesData<StoreEntitlement | null>({ queryKey: keys.storeEntitlementAll() })
+    .some(([, value]) => value?.active === true)
+}
+
+/**
+ * The refusal a free account is ABOUT to get, worked out before the request.
+ *
+ * WHY BOTH ENDS. The ceiling is the server's and stays the server's — a count
+ * kept in the client is wrong the first time the phone is offline or a second
+ * device scans. But a shutter press that uploads a photograph, waits for a
+ * round trip and then answers with a paywall has spent the user's time and our
+ * bandwidth to tell them something this device already knew, and left a failed
+ * row on the diary saying so. So the quota the camera panel is ALREADY drawing
+ * its "2 scans left" line from is read once more at the tap.
+ *
+ * Null whenever the answer is not certain: no count yet, a Pro account, or
+ * anything left. The server is what actually refuses, and this only ever
+ * declines to make a request it knows the answer to.
+ */
+export function scanLimitAhead(quota: ScanQuota | undefined): ScanLimitError | null {
+  if (!quota || quota.entitled || quota.remaining > 0) return null
+  return new ScanLimitError(quota.used, quota.dailyLimit, quota.entitled)
+}
+
+/**
+ * SAY WHAT HAPPENED, THEN SHOW THE PRICE. The one place that does both.
+ *
+ * Exported because the recipe screens reach the same ending by another route —
+ * a trigger in Postgres refusing a fourth recipe, rather than an edge function
+ * refusing a scan — and they were open-coding this three-line sequence, which
+ * is how the two drifted the last time the copy moved.
+ *
+ * FROM THE TOP, ALWAYS, and that is the whole reason this is a function rather
+ * than two lines at each call site. The paywall's buy button is a footer, at the
+ * bottom of the screen, and a toast defaults to the bottom too — so the sentence
+ * explaining why somebody needs Pro landed squarely on the button for buying it.
+ * Every toast that opens this screen comes from the other edge.
+ */
+export function openPaywall(
+  toast: ToastApi,
+  options: { title: string; tone?: 'warning' | 'error'; feature: ProFeature } & RefusalOptions,
+): void {
+  const { title, tone = 'warning', feature, navigate = 'push' } = options
+  toast.show({ title, tone, placement: 'top' })
+  // `screen: 'hard'` and the feature that was refused, exactly as
+  // `useRequirePro` reports its own refusals — a limit reached on the server
+  // and a button gated in the app are the same event to the funnel, and
+  // splitting them would make the paywall look half as effective as it is.
+  track('Paywall Shown', { screen: 'hard', trigger: feature })
+  if (navigate === 'replace') router.replace('/paywall')
+  else router.push('/paywall')
 }
 
 /**
@@ -150,10 +268,21 @@ export function announceRefusal(
   toast: ToastApi,
   error: unknown,
   feature: ProFeature,
+  options: RefusalOptions = {},
 ): error is NotEntitledError | ScanLimitError {
+  const { navigate = 'push' } = options
+
   if (error instanceof ScanLimitError) {
     if (error.entitled) {
       toast.show({ title: i18n.t('paywall:limit.proReached'), tone: 'error' })
+      return true
+    }
+    // THE STORE SAYS THEY HAVE PAID and the server has not heard yet, which is
+    // the seconds between a purchase settling and the webhook writing the row.
+    // Selling the app to somebody who bought it a moment ago is the worst
+    // answer available here, so they get told to wait rather than to pay.
+    if (storeSaysPaid()) {
+      toast.show({ title: i18n.t('paywall:limit.confirming'), tone: 'warning' })
       return true
     }
     // The SERVER's figure, not the constant. They agree, and when they ever do
@@ -161,22 +290,27 @@ export function announceRefusal(
     // in which case the number that refused the request is the honest one to
     // print. `count` also drives the plural, so a ceiling of one reads properly
     // if it is ever set there.
-    toast.show({
+    openPaywall(toast, {
       title: i18n.t('paywall:limit.freeReached', { count: error.limit || FREE_DAILY_SCANS }),
       tone: 'warning',
+      feature,
+      navigate,
     })
-    // `screen: 'hard'` and the feature that was refused, exactly as
-    // `useRequirePro` reports its own refusals — a limit reached on the server
-    // and a button gated in the app are the same event to the funnel, and
-    // splitting them would make the paywall look half as effective as it is.
-    track('Paywall Shown', { screen: 'hard', trigger: feature })
-    router.push('/paywall')
     return true
   }
   if (error instanceof NotEntitledError) {
-    toast.show({ title: i18n.t('paywall:limit.notEntitled'), tone: 'warning' })
-    track('Paywall Shown', { screen: 'hard', trigger: error.feature ?? feature })
-    router.push('/paywall')
+    // Same exception, same reason: a lapsed-looking mirror over a store that
+    // says otherwise is our record being behind, not the user being unpaid.
+    if (storeSaysPaid()) {
+      toast.show({ title: i18n.t('paywall:limit.confirming'), tone: 'warning' })
+      return true
+    }
+    openPaywall(toast, {
+      title: i18n.t('paywall:limit.notEntitled'),
+      tone: 'warning',
+      feature: error.feature ?? feature,
+      navigate,
+    })
     return true
   }
   return false
