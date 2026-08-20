@@ -39,6 +39,18 @@ importers:
         specifier: ^4.40.0
         version: 4.114.0(@cloudflare/workers-types@4.20260702.1)
 
+  apps/cloudflare/workers/jobs:
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20250109.0
+        version: 4.20260702.1
+      typescript:
+        specifier: ~5.9.2
+        version: 5.9.3
+      wrangler:
+        specifier: ^4.40.0
+        version: 4.114.0(@cloudflare/workers-types@4.20260702.1)
+
   apps/mobile:
     dependencies:
       '@expo-google-fonts/baloo-2':
