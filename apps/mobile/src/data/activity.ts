@@ -13,18 +13,18 @@ import type { TrendRange } from './types'
 /**
  * Movement, on the read side.
  *
- * The same three shapes Trends uses — a day, a bucketed series, a folded
- * summary — plus two lists the Activity tab needs that Trends has no analogue
- * for: the sessions of a day, and the hours of one.
+ * The same three shapes Trends uses (a day, a bucketed series, a folded summary)
+ * plus two lists the Activity tab needs: the sessions of a day, and the hours of
+ * one.
  *
- * The bucketing and every average is in `activity_series` / `activity_summary`,
- * not here, for the reason stated at the top of `data/index.ts`: a figure
- * computed in the client is one the weekly report cannot reuse.
+ * The bucketing and every average is in `activity_series` and `activity_summary`
+ * rather than here, because a figure computed in the client is one the weekly
+ * report cannot reuse.
  *
- * The WRITE side is `data/health-sync.ts`. It is a separate file because it is
- * a different kind of thing: nothing on a screen calls it directly, it talks to
- * the phone's health store rather than to a user's tap, and it is the only
- * place in the app that writes these tables.
+ * The write side is `data/health-sync.ts`. It is a separate file because it is a
+ * different kind of thing: nothing on a screen calls it directly, it talks to the
+ * phone's health store rather than to a user's tap, and it is the only place in
+ * the app that writes these tables.
  */
 
 type SeriesRow = Database['public']['Functions']['activity_series']['Returns'][number]
@@ -40,12 +40,10 @@ export type ActivityDay = {
   /**
    * Energy spent moving. The figure that extends the budget.
    *
-   * Null where the store has no opinion, which is an ordinary Android state
-   * rather than an error: Health Connect reports what its writers wrote, and a
-   * phone whose only tracker writes total energy has no active figure at all.
-   * The Move tile draws a dash for it, the same as every other nullable
-   * measurement — see `energyFor` in `lib/health/androidHealth.ts` for the
-   * ladder that tries to avoid ever getting here.
+   * Null where the store has no opinion, which is an ordinary Android state rather
+   * than an error: Health Connect reports what its writers wrote, and a phone whose
+   * only tracker writes total energy has no active figure at all. The Move tile
+   * draws a dash for it.
    */
   activeKcal: number | null
   restingKcal: number | null
@@ -259,9 +257,9 @@ function toSummary(row: SummaryRow): ActivitySummary {
  * One day's movement, or null.
  *
  * Null is the ordinary answer for most dates: the watch was on the charger, the
- * account predates the connection, the day has not happened. Every caller
- * treats it as "nothing to show" rather than as zero — which is why this
- * returns the row and not a zero-filled shape.
+ * account predates the connection, the day has not happened. Every caller treats
+ * it as "nothing to show" rather than as zero, which is why this returns the row
+ * and not a zero-filled shape.
  */
 export function useActivityDay(date: string) {
   const userId = useUserId()
@@ -286,13 +284,12 @@ export function useActivityDay(date: string) {
  * Warms a week of movement, alongside `usePrefetchDays`.
  *
  * The other query Today keys by the selected date, and therefore the other half
- * of the wait a tap on the strip used to cost — the ring's budget is
- * `goal + active - eaten`, so a day whose meals were ready and whose movement
- * was not would still have had to hold. That file carries the reasoning for the
- * whole approach; this is the same shape over one table.
+ * of the wait a tap on the strip used to cost: the ring's budget is
+ * `goal + active - eaten`, so a day whose meals were ready and whose movement was
+ * not would still have had to hold.
  *
- * A day with no row is seeded as `null`, which is what `useActivityDay`
- * promises and what most dates genuinely are.
+ * A day with no row is seeded as `null`, which is what `useActivityDay` promises
+ * and what most dates genuinely are.
  */
 export function usePrefetchActivityDays(from: string, to: string) {
   const userId = useUserId()
@@ -435,8 +432,8 @@ export function useActivitySummary(range: TrendRange) {
  * This account's health connection, or null when it has never had one.
  *
  * One row at most in practice. `maybeSingle` over a filter on `connected` would
- * be wrong: a disconnected row still holds `backfilled_from`, which is what
- * stops a reconnection re-reading a year it already has.
+ * be wrong: a disconnected row still holds `backfilled_from`, which is what stops
+ * a reconnection re-reading a year it already has.
  */
 export function useHealthConnection() {
   const userId = useUserId()
@@ -459,12 +456,12 @@ export function useHealthConnection() {
 }
 
 /**
- * Stop syncing, and forget the permission — but keep the history.
+ * Stop syncing, and forget the permission, but keep the history.
  *
  * The rows stay. They are history the same way a weigh-in is, and a user who
- * disconnects to stop the battery drain has not asked for their last six
- * months of runs to be deleted. What changes is that nothing writes any more
- * and the Activity tab goes back to its connect screen.
+ * disconnects to stop the battery drain has not asked for their last six months
+ * of runs to be deleted. What changes is that nothing writes any more and the
+ * Activity tab goes back to its connect screen.
  *
  * `backfilled_from` deliberately survives, so reconnecting picks up where this
  * left off instead of re-reading a year the tables already hold.
@@ -499,10 +496,10 @@ export function useDisconnectHealth() {
 /**
  * Wipe the generated data.
  *
- * Only ever offered for the `demo` provider, and it is a real delete rather
- * than a disconnect: made-up rows are not history, and leaving them in place
- * would put invented runs on a chart beside real ones the moment a developer
- * tested on a physical phone with the same account.
+ * Only ever offered for the `demo` provider, and it is a real delete rather than
+ * a disconnect: made-up rows are not history, and leaving them in place would put
+ * invented runs on a chart beside real ones the moment a developer tested on a
+ * physical phone with the same account.
  */
 export function useClearDemoActivity() {
   const userId = useUserId()
@@ -511,18 +508,18 @@ export function useClearDemoActivity() {
   return useMutation({
     mutationFn: async () => {
       /**
-       * Hours FIRST, and scoped by the days they belong to.
+       * Hours first, and scoped by the days they belong to.
        *
-       * `activity_hours` has no `provider` column — it is only ever written
-       * beside a day — so the demo rows have to be identified by the demo days
-       * they were written with. That means reading those dates before deleting
-       * the days, and it means this cannot be part of the parallel batch below.
+       * `activity_hours` has no `provider` column, since it is only ever written beside
+       * a day, so the demo rows have to be identified by the demo days they were
+       * written with. That means reading those dates before deleting the days, and it
+       * means this cannot be part of the parallel batch below.
        *
-       * The first version deleted every hour the account had, on the reasoning
-       * that an account with demo data has nothing else. That is not true and
-       * was disproved on the first device it ran on: connecting Apple Health,
-       * finding the store empty and then loading demo data leaves both, and
-       * clearing the demo took the real hours with it.
+       * The first version deleted every hour the account had, on the reasoning that an
+       * account with demo data has nothing else. That is not true and was disproved on
+       * the first device it ran on: connecting Apple Health, finding the store empty
+       * and then loading demo data leaves both, and clearing the demo took the real
+       * hours with it.
        */
       const demoDays = unwrap(
         await supabase
