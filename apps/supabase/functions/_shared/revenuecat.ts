@@ -24,6 +24,51 @@ export type RevenueCatEvent = {
 /** The entitlement this app sells. An event about anything else is not ours. */
 export const ENTITLEMENT = 'pro'
 
+/**
+ * Who a SANDBOX purchase may grant Pro to.
+ *
+ * A sandbox purchase costs nothing and carries a genuine Supabase user id, so
+ * this is the one setting here that can hand the paid app out for free.
+ * `REVENUECAT_SANDBOX_SUBSCRIBERS` decides:
+ *
+ *   unset / empty   nobody. Every sandbox event is dropped.
+ *   `*`             EVERYBODY. See the warning below.
+ *   a list of uuids just those accounts.
+ *
+ * `*` IS THE CURRENT SETTING AND IT IS DELIBERATE. Every purchase made outside
+ * the App Store's own checkout is a sandbox transaction — a sandbox Apple ID, a
+ * TestFlight build, RevenueCat's test store — so with an allow-list the paid app
+ * cannot be exercised by anybody whose id somebody remembered to add, which is
+ * how a real purchase came to sit in RevenueCat for hours while the app went on
+ * refusing it. What it costs is that TESTFLIGHT TESTERS GET PRO WITHOUT PAYING,
+ * because TestFlight always transacts against the sandbox. That is a known and
+ * accepted trade, not an oversight; narrow it to a list, or to nothing, when the
+ * tester group stops being people you know.
+ *
+ * HERE RATHER THAN IN THE WEBHOOK, because two places apply it now: the webhook
+ * when an event arrives, and `reconcileEntitlement` when it asks RevenueCat
+ * directly. A second copy of this rule would be a way around the first.
+ *
+ * Read per call rather than at module scope, so changing the secret takes effect
+ * on the next invocation rather than the next cold start.
+ */
+export function sandboxPolicy(): '*' | Set<string> {
+  const raw = (Deno.env.get('REVENUECAT_SANDBOX_SUBSCRIBERS') ?? '').trim()
+  if (raw === '*') return '*'
+  return new Set(
+    raw
+      .split(',')
+      .map((id) => id.trim().toLowerCase())
+      .filter(Boolean),
+  )
+}
+
+/** May a sandbox purchase grant this account? */
+export function sandboxAllowed(appUserId: string): boolean {
+  const policy = sandboxPolicy()
+  return policy === '*' || policy.has(appUserId.toLowerCase())
+}
+
 export const at = (ms: number | null | undefined): string | null =>
   typeof ms === 'number' && Number.isFinite(ms) ? new Date(ms).toISOString() : null
 

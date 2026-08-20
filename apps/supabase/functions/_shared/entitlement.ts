@@ -25,6 +25,8 @@
 // client is trusted to follow is a rule an attacker declines to.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { planOf, sandboxAllowed } from './revenuecat.ts'
+import { fetchSubscriber } from './revenuecat-api.ts'
 
 /** Statuses that may reach the model. Everything else is behind the paywall. */
 const ENTITLED = new Set(['trial', 'active'])
@@ -122,6 +124,10 @@ export class ScanLimitReached extends Error {
  * would mean an outage in this one query hands the Pro features to everybody,
  * which is the expensive direction to be wrong in; failing shut costs a paying
  * user one refused describe and a retry.
+ *
+ * AND A "NO" IS NOW CHECKED WITH REVENUECAT BEFORE IT IS BELIEVED. See
+ * `reconcileEntitlement`: the row is a cache of a webhook, and a webhook can be
+ * lost. Only on the miss, so an entitled account never pays for the extra call.
  */
 export async function isEntitled(db: SupabaseClient, userId: string): Promise<boolean> {
   const { data, error } = await db
@@ -132,9 +138,83 @@ export async function isEntitled(db: SupabaseClient, userId: string): Promise<bo
 
   if (error) {
     console.error('[entitlement] read failed, refusing:', error.message)
+    // NOT reconciled. A failed read is our database being unwell, and asking a
+    // third party about it would only add a second way for the request to hang.
     return false
   }
-  return entitledBy(data)
+  if (entitledBy(data)) return true
+
+  return await reconcileEntitlement(db, userId)
+}
+
+/**
+ * The row says no. Ask RevenueCat whether it is right, and fix it if not.
+ *
+ * THE MIRROR IS A CACHE, AND THIS IS THE MISS PATH. `subscriptions` is written
+ * by one thing only — the `revenuecat` webhook — so anything that stops a single
+ * delivery leaves an account that has paid being refused for ever, with nothing
+ * in the system that would ever notice. A delivery lost past RevenueCat's
+ * retries, an event our ordering guard drops, a function down for the ninety
+ * seconds it was delivered, or a sandbox purchase the environment rule refuses:
+ * every one of those used to be permanent. Now every one of them costs one extra
+ * HTTP call on the first Pro request after it, and then corrects itself.
+ *
+ * IT ONLY EVER HEALS UPWARD. If RevenueCat says active we write the row; if it
+ * says nothing we write nothing. Taking the app away is left to the webhook and
+ * to `entitledBy`'s expiry check, because RevenueCat is the only party that
+ * knows a subscription ended EARLY and a reconcile that could downgrade would
+ * make every timeout a cancellation.
+ *
+ * THE SANDBOX RULE STILL APPLIES, and it has to: RevenueCat reports a sandbox
+ * entitlement as perfectly active, so a reconcile that ignored `is_sandbox`
+ * would be a way around the rule the webhook applies. Same policy, from the same
+ * place — see `sandboxPolicy`.
+ *
+ * `last_event_at` is deliberately NOT written. PostgREST builds its update
+ * column list from the keys it is handed, so leaving it out preserves whatever
+ * ordering the row already had — a reconcile is a statement about NOW rather
+ * than an event with a place in the sequence, and stamping it would let this
+ * call silently discard a real delivery arriving a moment later.
+ */
+export async function reconcileEntitlement(db: SupabaseClient, userId: string): Promise<boolean> {
+  const store = await fetchSubscriber(userId)
+  // Could not ask. The row's own verdict stands, which is a refusal.
+  if (!store) return false
+  if (!store.active) return false
+
+  if (store.sandbox && !sandboxAllowed(userId)) {
+    console.warn(
+      `[entitlement] ${userId} is entitled in RevenueCat but only in the SANDBOX;` +
+        ' REVENUECAT_SANDBOX_SUBSCRIBERS does not cover it',
+    )
+    return false
+  }
+
+  const { error } = await db.from('subscriptions').upsert(
+    {
+      user_id: userId,
+      status: store.trial ? 'trial' : 'active',
+      plan: planOf(store.productId ?? undefined),
+      trial_ends_at: store.trial ? store.expiresAt : null,
+      current_period_end: store.expiresAt,
+      store: store.store,
+      product_id: store.productId,
+      rc_app_user_id: userId,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id' },
+  )
+
+  if (error) {
+    // The account IS entitled — RevenueCat just said so — and failing to record
+    // that is our problem rather than theirs. Let the request through and let
+    // the next one try the write again.
+    console.error('[entitlement] reconciled but could not write:', error.message)
+    return true
+  }
+
+  console.warn(`[entitlement] reconciled ${userId} from RevenueCat; the webhook had not landed`)
+  return true
 }
 
 /**
@@ -183,14 +263,37 @@ export async function requireEntitlement(
  * off" to somebody who has paid.
  */
 export async function claimScan(db: SupabaseClient, userId: string): Promise<void> {
-  const { data, error } = await db
-    .rpc('claim_scan', { p_user: userId })
-    .maybeSingle<{ allowed: boolean; used: number; daily_limit: number; entitled: boolean }>()
+  const claim = async () =>
+    await db
+      .rpc('claim_scan', { p_user: userId })
+      .maybeSingle<{ allowed: boolean; used: number; daily_limit: number; entitled: boolean }>()
+
+  let { data, error } = await claim()
 
   if (error) {
     console.error('[quota] claim failed, allowing uncounted:', error.message)
     return
   }
+
+  // REFUSED AT THE FREE CEILING, ON AN ACCOUNT THE ROW THINKS IS FREE. That is
+  // the one refusal here that might be about a lost webhook rather than about
+  // the user, and it is the only path to the model that does NOT go through
+  // `isEntitled` — photographing a plate is free, so nothing has asked the
+  // entitlement question before this point. Without this, a Pro account whose
+  // webhook never landed is silently capped at three photographs a day, which is
+  // a far more confusing refusal than being told to subscribe.
+  //
+  // Once only, and only in this direction: `reconcileEntitlement` writes nothing
+  // unless RevenueCat says the account is paid, so an ordinary free user pays one
+  // extra HTTP call on the scan that refuses them and nothing else changes.
+  if (data && !data.allowed && !data.entitled && (await reconcileEntitlement(db, userId))) {
+    ;({ data, error } = await claim())
+    if (error) {
+      console.error('[quota] re-claim failed, allowing uncounted:', error.message)
+      return
+    }
+  }
+
   if (data && !data.allowed) {
     throw new ScanLimitReached(data.used, data.daily_limit, data.entitled)
   }

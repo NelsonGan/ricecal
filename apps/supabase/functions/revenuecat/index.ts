@@ -34,6 +34,7 @@ import {
   isStale,
   planOf,
   type RevenueCatEvent,
+  sandboxAllowed,
   statusFor,
 } from '../_shared/revenuecat.ts'
 
@@ -70,27 +71,6 @@ async function tokenMatches(presented: string, expected: string): Promise<boolea
   let diff = 0
   for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]
   return diff === 0
-}
-
-/**
- * The accounts allowed to be granted Pro by a SANDBOX purchase.
- *
- * A comma-separated list of Supabase user ids in `REVENUECAT_SANDBOX_USER_IDS`.
- * Read per request rather than at module scope so changing the secret takes
- * effect on the next invocation rather than the next cold start — this is a
- * testing control, and waiting an unknown number of minutes to find out whether
- * it took is most of the problem it is there to solve.
- *
- * Empty is the safe default and the production setting: with nothing set, every
- * sandbox event is dropped exactly as before.
- */
-function sandboxTesters(): Set<string> {
-  return new Set(
-    (Deno.env.get('REVENUECAT_SANDBOX_USER_IDS') ?? '')
-      .split(',')
-      .map((id) => id.trim().toLowerCase())
-      .filter(Boolean),
-  )
 }
 
 Deno.serve(async (req: Request) => {
@@ -147,32 +127,30 @@ Deno.serve(async (req: Request) => {
   // value rather than on `!== 'PRODUCTION'`, so a payload that omits the field
   // entirely is still processed rather than silently dropping real events.
   //
-  // WITH ONE ALLOW-LIST, AND IT EXISTS BECAUSE THE RULE MADE THE FLOW
-  // UNTESTABLE. Every way of buying this app outside the App Store's own
-  // checkout is a sandbox transaction — a StoreKit sandbox account, a TestFlight
-  // build, RevenueCat's Test Store — so with the rule alone the purchase path
-  // could never be exercised end to end: the store confirms, RevenueCat records
-  // it, and our own table never hears. The symptom is exactly the one this
-  // function exists to prevent, "I started the trial and it still says free
-  // plan", and it is indistinguishable from the webhook being broken.
-  // `REVENUECAT_SANDBOX_USER_IDS` names the accounts allowed to grant on a
-  // sandbox event. Unset — which is the default, and what production should
-  // stay on — nothing changes.
+  // EXCEPT THAT THE RULE ALONE MADE THE PAID PATH UNTESTABLE. Every way of
+  // buying this app outside the App Store's own checkout is a sandbox
+  // transaction — a sandbox Apple ID, a TestFlight build, RevenueCat's test
+  // store — so with a flat refusal the purchase pipeline could never be
+  // exercised end to end: the store confirms, RevenueCat records it, and our own
+  // table never hears. The symptom is the one this function exists to prevent,
+  // "I subscribed and it still says free plan", and from the outside it is
+  // indistinguishable from the webhook being broken.
+  //
+  // `sandboxPolicy` is what decides now, and it is currently `*` — everybody.
+  // Read the warning on it before narrowing or widening that.
   //
   // AND IT SAYS SO IN THE LOG EITHER WAY. The drop used to be silent, which is
-  // what made this take an afternoon to find: a sandbox event and a delivery
-  // that never arrived leave exactly the same trace, which is none.
+  // most of why this took an afternoon to place: a dropped sandbox event and a
+  // delivery that never arrived leave exactly the same trace, which is none.
   if (event.environment && event.environment !== 'PRODUCTION') {
-    if (!sandboxTesters().has(appUserId.toLowerCase())) {
+    if (!sandboxAllowed(appUserId)) {
       console.warn(
         `[revenuecat] ignoring a ${event.environment} ${event.type} for ${appUserId};` +
-          ' add the id to REVENUECAT_SANDBOX_USER_IDS to grant on it',
+          ' REVENUECAT_SANDBOX_SUBSCRIBERS does not cover it',
       )
       return json({ ok: true, ignored: `${event.environment} environment` })
     }
-    console.warn(
-      `[revenuecat] granting on a ${event.environment} ${event.type} for allow-listed ${appUserId}`,
-    )
+    console.warn(`[revenuecat] granting on a ${event.environment} ${event.type} for ${appUserId}`)
   }
 
   // An event about a different entitlement is not ours to act on. An empty
