@@ -552,6 +552,17 @@ verify_jwt = false
 import_map = "./functions/scan-meal/deno.json"
 entrypoint = "./functions/scan-meal/index.ts"
 
+# Settles a disagreement between what the store told the app and what our own
+# `subscriptions` row says, by asking RevenueCat. Grants nothing on the caller's
+# word: the account comes from a verified JWT and the answer comes from
+# RevenueCat. Same self-inspected Authorization header as its neighbours.
+# Secrets it reads: REVENUECAT_API_KEY, REVENUECAT_SANDBOX_SUBSCRIBERS.
+[functions.entitlement]
+enabled = true
+verify_jwt = false
+import_map = "./functions/entitlement/deno.json"
+entrypoint = "./functions/entitlement/index.ts"
+
 # Signed URLs for images in R2: one action to upload, one to read a batch of
 # keys, one to delete. Same auth pattern as the others — it inspects the
 # Authorization header itself so a failure says which half broke. Secrets it

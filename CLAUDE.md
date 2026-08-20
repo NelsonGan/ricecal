@@ -1586,6 +1586,40 @@ dash — a plausible wrong number is worse than an obviously absent one. The
 saving on the yearly badge is computed from those two prices for the same
 reason: it is the one figure on that screen a user can check.
 
+**THE MIRROR IS A CACHE, NOT THE RECORD, and the miss path is asking RevenueCat.**
+`subscriptions` is written by one thing — the `revenuecat` webhook — so anything
+that stops a single delivery used to leave an account that had paid being
+refused for ever, with nothing in the system that would ever notice. A delivery
+lost past RevenueCat's retries, an event the ordering guard drops, a function
+down for the ninety seconds it was delivered, a sandbox purchase the environment
+rule refuses: every one of those was permanent.
+
+So `isEntitled` no longer believes a "no". On a miss it calls
+`reconcileEntitlement`, which asks RevenueCat's v1 `/subscribers` endpoint and
+writes the row if the answer is yes. Three things make that safe rather than
+expensive:
+
+- **Only on the miss.** An entitled account never pays for the extra call, and a
+  free one reaches it only on a request its own client gate should have caught.
+- **It heals UPWARD ONLY.** RevenueCat saying active writes the row; RevenueCat
+  saying nothing writes nothing. Taking the app away stays the webhook's job and
+  `entitledBy`'s expiry check, because a reconcile that could downgrade would
+  make every timeout a cancellation.
+- **`last_event_at` is not stamped.** A reconcile is a statement about NOW rather
+  than an event with a place in the sequence, so leaving the column alone keeps
+  the ordering guard able to judge the delivery that arrives a moment later.
+
+The key it uses is the PUBLIC SDK key. `GET /v1/subscribers/{id}` is the same
+call the app's own SDK makes and accepts it by design; it can grant nothing, and
+nothing here trusts the client — the id comes from a verified JWT.
+
+**`functions/entitlement` is the same repair, reachable by the app.** The server
+heals inside a Pro-gated request, which is the wrong moment for the two things
+the client reads straight out of Postgres: the scans-left line under the
+viewfinder and the plan on Me. So `useEntitlementSync` calls that endpoint the
+moment it sees the store and the mirror disagree, and everything read off the row
+is invalidated when it answers.
+
 **A purchase confirms before our mirror knows about it, so the client reads TWO
 sources.** The store answers, then RevenueCat, then the webhook writes
 `subscriptions`. Read as the only source — which it was — that gap is a user
@@ -1909,6 +1943,15 @@ Break these and the feature is wrong in ways tests may not catch.
   provider picks one origin and re-reads with `dataOriginFilter`;
   `connectOrigins.ts` holds the order and what it costs. Apple needs none of
   this: a statistics collection merges across sources itself.
+- **A "no" from the mirror is checked with RevenueCat before it is believed.**
+  `subscriptions` is a cache of a webhook, and a webhook can be lost; the row
+  saying no is therefore evidence rather than a verdict. `isEntitled` reconciles
+  on the miss and `functions/entitlement` exposes the same repair to the app. Two
+  rules keep that from being a hole: it heals upward only (RevenueCat saying
+  nothing never downgrades anybody), and the sandbox policy applies to a
+  reconcile exactly as it does to a webhook event — RevenueCat reports a sandbox
+  entitlement as perfectly active, so a reconcile that ignored `is_sandbox`
+  would be the way around the rule the webhook applies.
 - **A paywall enforced only in the client is enforced only on people running
   the client.** `useRequirePro` makes the buttons read honestly;
   `requireEntitlement` in the edge functions is what actually stops the request,
@@ -2270,16 +2313,21 @@ Break these and the feature is wrong in ways tests may not catch.
   no introductory offer, so the purchase comes back `active` rather than `trial`.
   Its events carry `environment: SANDBOX`, which the webhook drops on purpose —
   see the next line.
-- **The webhook refuses to grant on a sandbox event, and
-  `REVENUECAT_SANDBOX_USER_IDS` is the one door through it.** A sandbox purchase
-  is free and carries a genuine Supabase user id, so granting on one would unlock
-  every metered path for nothing. The secret is a comma-separated list of user
-  ids allowed to be granted anyway; unset — which is what production stays on —
-  nothing changes. Set it with
-  `supabase secrets set REVENUECAT_SANDBOX_USER_IDS=<uuid>[,<uuid>]`. Either way
-  the decision is now LOGGED: a dropped sandbox event and a delivery that never
-  arrived used to leave the same trace, which is none, and that is most of why
-  "the trial did not apply" took so long to place.
+- **`REVENUECAT_SANDBOX_SUBSCRIBERS` decides who a sandbox purchase may grant to,
+  and it is currently `*`.** A sandbox purchase costs nothing and carries a
+  genuine Supabase user id, so this is the one setting that can hand the paid app
+  out for free. Unset is nobody, a list of uuids is just those, and `*` is
+  everybody. `*` is deliberate: every purchase made outside the App Store's own
+  checkout is a sandbox transaction, so an allow-list meant the paid path could
+  only be exercised by whoever somebody remembered to add — which is how a real
+  purchase sat in RevenueCat for hours while the app went on refusing it. **What
+  it costs is that TestFlight testers get Pro without paying**, because TestFlight
+  always transacts against the sandbox. Narrow it when the tester group stops
+  being people you know. Both the webhook and `reconcileEntitlement` read the
+  same policy, from `sandboxPolicy` — a second copy would be a way around the
+  first. Either way the decision is LOGGED: a dropped sandbox event and a
+  delivery that never arrived used to leave the same trace, which is none, and
+  that is most of why "the trial did not apply" took so long to place.
 - **One simulator at a time. Never the iOS simulator and the Android emulator
   together.** This machine does not have the headroom for both, and what it
   costs is not a slow session but wrong answers: a Gradle build running beside
