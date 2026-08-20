@@ -62,7 +62,7 @@ export type NutritionSheetProps = {
  *
  * Full height because it raises the pad, and the button is in the BODY rather
  * than a footer: at full height a footer lands behind the keyboard. Both rules
- * are in CLAUDE.md.
+ * are in README.md.
  */
 export function NutritionSheet({
   visible,

@@ -91,7 +91,7 @@ function Group({
  * FULL HEIGHT, and now for two reasons. The form plus the ceiling comes to more
  * than the 440pt a capped body gets, and what a capped sheet does with the
  * overflow is hide the calorie limit behind the footer. And the cuisine editor
- * raises the KEYBOARD, which is the rule in CLAUDE.md about a sheet with typing
+ * raises the KEYBOARD, which is the rule in README.md about a sheet with typing
  * in it: capped, `KeyboardAvoidingView` pads the panel up off the bottom edge
  * and the scrim shows through the curve of the keyboard's corners.
  *

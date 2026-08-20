@@ -5,7 +5,7 @@
 -- anybody with the anon key. Calling one outside a trigger throws rather than
 -- doing damage, but it is API surface nothing should have, and this repo has
 -- shipped this exact class before — see the note on `db diff` missing function
--- grants in CLAUDE.md, which is why this is a hand-written migration and not a
+-- grants in README.md, which is why this is a hand-written migration and not a
 -- line in a schema file waiting for a diff that will not see it.
 --
 -- Scoped to the two `20260811160000_catalogue_moves_to_d1` recreated. Three more

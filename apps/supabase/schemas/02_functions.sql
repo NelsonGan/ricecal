@@ -132,7 +132,7 @@ comment on function public.gtin14 is
 -- for it: normalizing a scanned code before asking. Stated explicitly rather
 -- than left at the default, because the default is PUBLIC — and a revoke that
 -- only exists in a schema file is a revoke that never happened (see the note on
--- function grants in CLAUDE.md).
+-- function grants in README.md).
 revoke execute on function public.gtin14 from public, anon;
 grant execute on function public.gtin14 to authenticated, service_role;
 

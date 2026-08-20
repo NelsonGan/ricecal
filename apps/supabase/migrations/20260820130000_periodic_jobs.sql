@@ -16,7 +16,7 @@
 -- about the EXECUTE that Postgres gives PUBLIC by default. Left as generated,
 -- all three functions below ship callable by `anon` over
 -- `/rest/v1/rpc/...`, and `expired_meal_photos` in particular would hand every
--- account's photo keys to anybody who asked. This is the same trap CLAUDE.md
+-- account's photo keys to anybody who asked. This is the same trap README.md
 -- records five functions having already fallen into; the `migrations` CI job is
 -- what proves the revokes landed, because a local diff will go on reporting
 -- clean either way.

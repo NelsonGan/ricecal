@@ -251,7 +251,7 @@ function page(siteKey: string): string {
  * `400020` is a site key, `300*` is a score — attached to a build and a date.
  *
  * The code and nothing else. No address, no token, nothing about who was
- * signing in; see the analytics note in CLAUDE.md for why that line is drawn
+ * signing in; see the analytics note in README.md for why that line is drawn
  * where it is.
  */
 function report(what: string) {

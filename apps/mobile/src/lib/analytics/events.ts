@@ -207,7 +207,7 @@ export type Events = {
   }
   /**
    * A barcode was read and looked up. `not_found` is the interesting value —
-   * see `d1/food-catalogue/BARCODE-COVERAGE.md` for why Malaysian packets are
+   * see `README.md` for why Malaysian packets are
    * the thin part of the catalogue and what this number is evidence for.
    */
   'Barcode Scanned': { outcome: 'found' | 'not_found' | 'error' }

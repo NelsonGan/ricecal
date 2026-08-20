@@ -65,7 +65,7 @@ export type DetailsSheetProps = {
  *
  * Full height because the name field raises a keyboard, and the button is in the
  * BODY rather than a footer: at full height a footer lands behind the keyboard.
- * Both rules are in CLAUDE.md.
+ * Both rules are in README.md.
  */
 export function DetailsSheet({
   visible,
@@ -85,7 +85,7 @@ export function DetailsSheet({
       closeLabel={t('common:action.close')}
       fullHeight
       /* NOT SCROLLABLE, and here that is load-bearing rather than the tidiness
-         CLAUDE.md asks for on a short full-height sheet.
+         README.md asks for on a short full-height sheet.
          The picker's wheels are vertical scroll views, and a vertical scroller
          inside another vertical scroller is a fight: the sheet's body took every
          drag that started on a wheel, so the wheels simply did not turn. Both

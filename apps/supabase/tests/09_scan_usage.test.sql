@@ -67,7 +67,7 @@ select ok(
 
 -- PUBLIC keeps no execute right on any of them. `db diff` does not report
 -- grant deltas, so this is the only thing that notices a `revoke` that never
--- reached a migration — see the note in CLAUDE.md.
+-- reached a migration — see the note in README.md.
 select ok(
   not (select bool_or(pg_catalog.has_function_privilege('public', p.oid, 'EXECUTE'))
        from pg_catalog.pg_proc p

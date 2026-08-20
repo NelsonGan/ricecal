@@ -7,7 +7,7 @@
  * three months later. `onboarding.account` keeps the copy that is genuinely
  * about arriving; this is about credentials.
  *
- * No long dashes anywhere in here. See the conventions note in CLAUDE.md.
+ * No long dashes anywhere in here. See the conventions note in README.md.
  */
 export const auth = {
   /**

@@ -12,7 +12,7 @@
 -- There used to be a block here about `search_foods` (guesses never leak into
 -- search) and one about `upsert_estimate_food` (an estimate is one shared row
 -- no matter how many users produce it). Both objects are gone: search is FTS5
--- in Cloudflare D1 and is graded by `scripts/search-gate-d1.mjs` against the
+-- in Cloudflare D1 and is graded by `pnpm foods:gate` against the
 -- same thirty cases the Postgres one used, and an estimate is no longer a
 -- shared row at all — the cascade writes its numbers straight onto the entry.
 -- ---------------------------------------------------------------------------
