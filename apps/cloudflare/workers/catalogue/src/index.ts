@@ -4,42 +4,34 @@
  * The food catalogue used to be four tables in the same Postgres as the diary,
  * which is what made every entry's calories a join and every catalogue reload a
  * risk to the diary. It lives here now: 3.2 million packaged products keyed by
- * barcode, and ~48,000 dishes with a full-text index over their names and
+ * barcode, and about 48,000 dishes with a full-text index over their names and
  * aliases.
  *
- * WHY A WORKER AND NOT A DIRECT CONNECTION
+ * Why a Worker and not a direct connection: a D1 binding only exists inside a
+ * Cloudflare Worker. The app's edge functions are Deno on Supabase, so something
+ * has to stand between them, and it may as well be the thing that owns the query.
  *
- * A D1 binding only exists inside a Cloudflare Worker. The app's edge functions
- * are Deno on Supabase, so something has to stand between them, and it may as
- * well be the thing that owns the query: the search below is four arms fused by
- * rank, which is a paragraph of SQL nobody wants to write twice.
+ * What protects it: three callers, and which routes each may reach is the policy
+ * in `ROUTES` below.
  *
- * WHAT PROTECTS IT
- *
- * Three callers, and which routes each may reach is the policy in `ROUTES`
- * below.
- *
- * A SHARED SECRET in `Authorization` is our own server: the Supabase edge
+ * A shared secret in `Authorization` is our own server, the Supabase edge
  * functions, which reach everything including the write. Compared in constant
- * time, because a timing oracle on a bearer token is free to avoid and
- * embarrassing to leave in.
+ * time, because a timing oracle on a bearer token is free to avoid.
  *
- * A USER'S SUPABASE JWT is the app, reading the catalogue directly. It reaches
+ * A user's Supabase JWT is the app, reading the catalogue directly. It reaches
  * the two read routes and nothing else. See `auth.ts` for why this is safe now
  * and would not have been before: the project signs tokens with ES256, so this
- * Worker verifies against a PUBLIC key and holds nothing that could forge one.
+ * Worker verifies against a public key and holds nothing that could forge one.
  *
- * NO CREDENTIAL AT ALL is the marketing site, on `/public/*`. Anonymous on
- * purpose: a token shipped inside a web page is readable by everybody the page
- * is served to, so minting one would have bought nothing and implied a great
- * deal. What stands in for it is a smaller answer and a per-IP cap.
+ * No credential at all is the marketing site, on `/public/*`. Anonymous on
+ * purpose: a token shipped inside a web page is readable by everybody the page is
+ * served to. What stands in for it is a smaller answer and a per-IP cap.
  *
- * WHAT CHANGED WITH THE PUBLIC TIER, stated plainly because it used to read the
- * other way here: reading this catalogue no longer costs an account. It costs an
- * account AT SCALE. `/public/search` hands a trimmed row to anybody who asks,
- * and the things holding it in shape are the cache, the per-IP limit, and the
- * fields `publicShape` refuses to return — not a credential. Writing is
- * unchanged and still reachable only from our own server.
+ * So reading this catalogue no longer costs an account. It costs an account at
+ * scale. `/public/search` hands a trimmed row to anybody who asks, and the things
+ * holding it in shape are the cache, the per-IP limit, and the fields
+ * `publicShape` refuses to return. Writing is unchanged and still reachable only
+ * from our own server.
  */
 
 import { verifyUser } from './auth.ts'
@@ -56,29 +48,26 @@ export interface Env {
   /** Per-IP cap for `/public/*`, which has no account to key on. */
   PUBLIC_RL: { limit: (options: { key: string }) => Promise<{ success: boolean }> }
   /**
-   * The marketing site's SERVER, exempting it from the per-IP cap.
+   * The marketing site's server, exempting it from the per-IP cap.
    *
-   * Unlike the browser, this one is a real secret: it lives in Vercel's
-   * environment and is read by a server component, so it is never part of a page
-   * anybody is served. Set with `wrangler secret put WEB_CATALOGUE_TOKEN`.
+   * Unlike the browser, this one is a real secret: it lives in Vercel's environment
+   * and is read by a server component, so it is never part of a page anybody is
+   * served. Set with `wrangler secret put WEB_CATALOGUE_TOKEN`.
    *
    * It exists because of an accident of how rendering works rather than because
-   * anybody deserves more quota. A dish page nobody has visited yet is rendered
-   * on demand by a Vercel function, and every one of those comes from a handful
-   * of egress addresses — so keyed on IP they would all share one bucket and
-   * start refusing each other the moment a crawler walked the catalogue. It
-   * buys exactly that exemption and reaches no route the public cannot.
+   * anybody deserves more quota. A dish page nobody has visited yet is rendered on
+   * demand by a Vercel function, and every one of those comes from a handful of
+   * egress addresses, so keyed on IP they would all share one bucket and start
+   * refusing each other the moment a crawler walked the catalogue.
    *
-   * NAMED FOR BOTH ENDS, and the identical string is used in Vercel, so that it
-   * reads correctly from either side: here it says which caller, and over there
-   * it says which service. It was `WEB_TOKEN` against `RICECAL_WEB_TOKEN`, and
-   * each said only the thing you already knew from where you were standing.
+   * Named for both ends, and the identical string is used in Vercel, so it reads
+   * correctly from either side: here it says which caller, and over there it says
+   * which service.
    *
    * Not `CATALOGUE_WEB_TOKEN`, deliberately. That sorts directly beside
-   * `CATALOGUE_TOKEN` in `wrangler secret list`, and the two are a long way
-   * apart in what they permit — that one reaches the write route, this one
-   * reaches nothing a stranger cannot already reach. Near-identical names
-   * guarding different powers is a rotation waiting to go wrong.
+   * `CATALOGUE_TOKEN` in `wrangler secret list`, and the two are a long way apart
+   * in what they permit. Near-identical names guarding different powers is a
+   * rotation waiting to go wrong.
    */
   WEB_CATALOGUE_TOKEN: string
 }
@@ -89,20 +78,18 @@ export interface Env {
  * `user` means a signed-in person's token is enough; the shared secret works
  * everywhere. Least privilege rather than symmetry: the app only ever calls the
  * two read routes, so those are the only two it may call. `/barcode` is a read
- * too and is deliberately NOT here — the app reaches a packet through the
+ * too and is deliberately not here, because the app reaches a packet through the
  * `barcode` edge function, which also falls back to Open Food Facts and writes
- * what it finds, and a second door onto half of that is a door to keep shut.
+ * what it finds.
  *
- * `public` means no credential is asked for. Those routes are SEPARATE PATHS
- * rather than relaxations of `/search` and `/food`, so that the two pairs cannot
- * drift into each other: the public ones have their own cache namespace, their
- * own rate limit, their own reply shape, and their own path prefix for a WAF
- * rule to name.
+ * `public` means no credential is asked for. Those routes are separate paths
+ * rather than relaxations of `/search` and `/food`, so the two pairs cannot drift
+ * into each other: the public ones have their own cache namespace, rate limit,
+ * reply shape and path prefix for a WAF rule to name.
  *
- * `/public/food` takes a SLUG where `/food` takes the internal `id` — which is
- * the whole reason both exist. `publicShape` never hands out an id, so a public
- * caller has no way to name a row the app's way, and the app has no reason to
- * learn the website's way.
+ * `/public/food` takes a slug where `/food` takes the internal `id`, which is the
+ * whole reason both exist. `publicShape` never hands out an id, so a public
+ * caller has no way to name a row the app's way.
  */
 const ROUTES: Record<string, 'public' | 'user' | 'service'> = {
   '/search': 'user',
@@ -148,14 +135,13 @@ const D1_MAX_BOUND_PARAMS = 100
 /**
  * The longest search string worth honouring, in characters.
  *
- * `q` was clamped nowhere — only `limit` was. A real dish name is well under
- * this; a 20 KB string is not a search, it is a way to make one request cost
- * what a thousand should. `ftsQuery` ORs every term and `trigramQuery` ORs one
- * arm per character, so an unbounded query expands into an FTS5 MATCH with
- * thousands of clauses, each its own index scan that D1 bills by rows read. On
- * `/public/search` the answer cache is keyed on the normalized query, so
- * distinct long random strings miss it every time and hit the database. Cutting
- * the input here is the one place that covers both callers and both FTS arms.
+ * `q` was clamped nowhere, only `limit` was. A real dish name is well under this;
+ * a 20 KB string is not a search, it is a way to make one request cost what a
+ * thousand should. `ftsQuery` ORs every term and `trigramQuery` ORs one arm per
+ * character, so an unbounded query expands into an FTS5 MATCH with thousands of
+ * clauses, each its own index scan that D1 bills by rows read. On
+ * `/public/search` the answer cache is keyed on the normalized query, so distinct
+ * long random strings miss it every time.
  */
 const MAX_QUERY_CHARS = 100
 
@@ -177,16 +163,15 @@ async function foodDetails(env: Env, ids: string[]): Promise<Map<string, FoodRow
   for (const s of servings.results as Record<string, unknown>[]) {
     const food = byId.get(s.food_id as string)
     if (!food) continue
-    // SHAPED, not passed through, and this is the whole reason the function is
-    // called `foodDetails`. The client maps what comes back with the same
-    // `toFood` it used against the Postgres view, and that reads `id`, `label`
-    // and `factor` off each portion. D1 has no serving id — the row is keyed
-    // (food_id, slug), which is a better key and the wrong shape — so the id is
-    // MINTED here, once, rather than left for two callers to invent differently.
+    // Shaped, not passed through, and this is the whole reason the function is called
+    // `foodDetails`. The client maps what comes back with the same `toFood` it used
+    // against the Postgres view, and that reads `id`, `label` and `factor` off each
+    // portion. D1 has no serving id, since the row is keyed (food_id, slug), so the
+    // id is minted here once rather than left for two callers to invent differently.
     //
-    // Getting this wrong is silent in exactly the way that hurts: `toServings`
-    // drops any entry without a string `id`, so a food came back with an empty
-    // portion list and the picker rendered nothing at all rather than erroring.
+    // Getting this wrong is silent in exactly the way that hurts: `toServings` drops
+    // any entry without a string `id`, so a food came back with an empty portion list
+    // and the picker rendered nothing at all rather than erroring.
     ;(food.servings as unknown[]).push({
       id: `${s.food_id}:${s.slug}`,
       label: s.label,
@@ -225,16 +210,15 @@ async function search(env: Env, q: string, limit: number): Promise<unknown[]> {
   const match = ftsQuery(bounded)
   const trgm = trigramQuery(qn)
 
-  // One round trip for all four arms. D1 charges per query and each of these is
-  // an index scan, so batching is the difference between four sequential hops
-  // to the database and one.
-  // Both exact arms match against a stored NORMALIZED column, not against
-  // `lower(name)`. That was two bugs in one expression: no index can serve it,
-  // so each arm scanned its whole table on every search (48,000 rows and 25,000
-  // rows, before the two FTS arms had done anything at all), and `lower()` is
-  // not the folding the query went through — so "Chicken Rice (Nasi Ayam)"
-  // could not be reached by typing its own words, because the brackets survive
-  // on one side and not on the other.
+  // One round trip for all four arms. D1 charges per query and each of these is an
+  // index scan, so batching is the difference between four sequential hops to the
+  // database and one.
+  //
+  // Both exact arms match against a stored normalized column rather than against
+  // `lower(name)`. That was two bugs in one expression: no index can serve it, so
+  // each arm scanned its whole table on every search before the two FTS arms had
+  // done anything at all, and `lower()` is not the folding the query went through,
+  // so "Chicken Rice (Nasi Ayam)" could not be reached by typing its own words.
   const statements = [
     env.DB.prepare('select id from food where name_norm = ? limit 200').bind(qn),
     env.DB.prepare(
@@ -275,16 +259,15 @@ async function search(env: Env, q: string, limit: number): Promise<unknown[]> {
   }
   if (fused.size === 0) return []
 
-  // Over-fetch four to one so the prior below has room to re-rank, but never
-  // past D1's ceiling on bound parameters.
+  // Over-fetch four to one so the prior below has room to re-rank, but never past
+  // D1's ceiling on bound parameters.
   //
-  // `foodDetails` binds one `?` per id, so the candidate list IS the parameter
-  // count — and D1 rejects a statement with more than 100 of them. Unbounded,
-  // this broke at exactly `limit` 26 (104 ids) and the app asks for 50: search
-  // returned "query failed" for every query, which the edge function turned
-  // into an empty result and the panel drew as "No dish by that name". Nothing
-  // was wrong with the index, the data or the ranking. Tested at limit 1 and 3
-  // it looked perfect.
+  // `foodDetails` binds one `?` per id, so the candidate list is the parameter
+  // count, and D1 rejects a statement with more than 100 of them. Unbounded, this
+  // broke at exactly `limit` 26 (104 ids) and the app asks for 50: search returned
+  // "query failed" for every query, which the edge function turned into an empty
+  // result and the panel drew as "No dish by that name". Nothing was wrong with the
+  // index, the data or the ranking, and tested at limit 1 and 3 it looked perfect.
   const top = [...fused.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, Math.min(limit * 4, D1_MAX_BOUND_PARAMS))
@@ -317,14 +300,13 @@ async function search(env: Env, q: string, limit: number): Promise<unknown[]> {
 }
 
 /**
- * Where the preview search may be called FROM.
+ * Where the preview search may be called from.
  *
  * Not a security boundary, and worth being blunt about that rather than letting
- * the list imply otherwise: `Origin` is set by the browser, so it is honest
- * about a page and says nothing whatsoever about curl. Anybody who wants these
- * rows without a browser simply takes them. What the list actually does is stop
- * OTHER people's pages from spending our rate limit through their visitors'
- * browsers, which is the only thing CORS was ever able to do.
+ * the list imply otherwise: `Origin` is set by the browser, so it is honest about
+ * a page and says nothing whatsoever about curl. Anybody who wants these rows
+ * without a browser simply takes them. What the list actually does is stop other
+ * people's pages from spending our rate limit through their visitors' browsers.
  */
 const PUBLIC_ORIGINS = ['https://www.ricecal.app', 'https://ricecal.app']
 
@@ -346,9 +328,8 @@ function allowedOrigin(request: Request): string | null {
  *
  * The dish rows move when a catalogue import runs, which is days apart, so an
  * hour is conservative. It is also the single biggest lever on what this costs:
- * D1 bills rows READ, one fused search reads on the order of 1,500 of them, and
- * a marketing page concentrates its queries onto a handful of famous dishes. The
- * queries everybody types should be answered from the colo, not the database.
+ * D1 bills rows read, one fused search reads on the order of 1,500 of them, and a
+ * marketing page concentrates its queries onto a handful of famous dishes.
  */
 const PUBLIC_CACHE_SECONDS = 3600
 
@@ -358,28 +339,25 @@ const PUBLIC_MAX_LIMIT = 10
 /**
  * The part of a row a stranger gets.
  *
- * Every field withheld here is withheld for a reason rather than out of
- * nervousness:
+ * Every field withheld here is withheld for a reason.
  *
  * `id` is the app's key and the only thing `/food` accepts, so publishing it
- * would hand out a second way to read rows one at a time — one that answers by
+ * would hand out a second way to read rows one at a time, one that answers by
  * primary key and never goes near the fused search. `slug` names the same dish,
  * is unique, and is what the website's own URLs are built from.
  *
- * `popularity`, `source_priority` and `is_local` are the RANKING, not the food.
- * They are the part of this that took judgement rather than data entry, and
- * together they would let somebody reproduce the ordering without reproducing
- * the catalogue.
+ * `popularity`, `source_priority` and `is_local` are the ranking rather than the
+ * food. They are the part of this that took judgement rather than data entry, and
+ * together they would let somebody reproduce the ordering without reproducing the
+ * catalogue.
  *
- * `servings` — the portion matrix, 75,000 rows of it — is the other piece of
- * curation, and a preview needs one portion rather than all of them. The default
- * has already been flattened onto the row by `foodDetails`.
+ * `servings`, the portion matrix at 75,000 rows, is the other piece of curation,
+ * and a preview needs one portion rather than all of them.
  *
- * `source_name` and `source_attribution` STAY, and they are the one thing here
- * that is required rather than chosen. Half these rows come from Open Food
- * Facts, whose licence is attribution-bearing, so a page showing the numbers has
- * to be able to show where they came from. Withholding them would make the site
- * that renders this non-compliant, which is a strange way to protect anything.
+ * `source_name` and `source_attribution` stay, and they are the one thing here
+ * that is required rather than chosen. Half these rows come from Open Food Facts,
+ * whose licence is attribution-bearing, so a page showing the numbers has to be
+ * able to show where they came from.
  */
 function publicShape(food: FoodRow): Record<string, unknown> {
   return {
@@ -408,17 +386,15 @@ function publicShape(food: FoodRow): Record<string, unknown> {
 /**
  * The marketing site's search: anonymous, cached, and deliberately small.
  *
- * THE ORDER IS CACHE → LIMITER → DATABASE, not the obvious limiter → cache, and
- * that is the one decision in here worth arguing about. A hit costs no D1 rows
- * and no work, so charging somebody's allowance for one would mean twenty a
- * minute had to cover every REPEAT of the same query — and a marketing page
- * repeats enormously, because everyone arrives and types the same four dishes.
- * Spending the allowance only on questions we have not already answered is what
- * lets the number stay small enough to be worth having. Volume of repeats is a
- * job for the WAF rule in front, which never wakes this Worker at all.
+ * The order is cache, then limiter, then database, rather than the obvious
+ * limiter first, and that is the one decision in here worth arguing about. A hit
+ * costs no D1 rows and no work, so charging somebody's allowance for one would
+ * mean twenty a minute had to cover every repeat of the same query, and a
+ * marketing page repeats enormously because everyone arrives and types the same
+ * four dishes. Volume of repeats is a job for the WAF rule in front.
  *
- * The cache is keyed on the NORMALIZED query, so `Nasi Lemak`, `nasi lemak` and
- * `nasi  lemak` are one entry rather than three. It is stored WITHOUT the CORS
+ * The cache is keyed on the normalized query, so `Nasi Lemak`, `nasi lemak` and
+ * `nasi  lemak` are one entry rather than three. It is stored without the CORS
  * header and the header is added on the way out, so one visitor's allowed origin
  * can never be served from cache to another visitor's browser.
  */
@@ -443,12 +419,12 @@ async function withinLimit(request: Request, env: Env): Promise<boolean> {
   if (env.WEB_CATALOGUE_TOKEN && tokenMatches(presented, env.WEB_CATALOGUE_TOKEN)) return true
 
   /*
-   * `cf-connecting-ip` rather than anything in `x-forwarded-for`: Cloudflare
-   * sets the first from the connection itself, and a caller cannot forge it. The
-   * second is caller-supplied and would make this limit opt-out.
+   * `cf-connecting-ip` rather than anything in `x-forwarded-for`: Cloudflare sets
+   * the first from the connection itself and a caller cannot forge it. The second
+   * is caller-supplied and would make this limit opt-out.
    *
-   * The fallback shares ONE bucket among every request arriving without it,
-   * which is the safe direction to fail. In production there are none; under
+   * The fallback shares one bucket among every request arriving without it, which
+   * is the safe direction to fail. In production there are none; under
    * `wrangler dev` there are all of them.
    */
   const ip = request.headers.get('cf-connecting-ip') ?? ''
@@ -542,15 +518,13 @@ async function publicSearch(
  * One dish, by the name its URL is built from.
  *
  * This is the other half of the marketing site, and the cheaper half by a wide
- * margin: `food_slug_idx` is UNIQUE, so it is an index probe rather than the
- * four fused arms `/public/search` runs. A dish page costs about as much as
- * looking up a barcode.
+ * margin: `food_slug_idx` is unique, so it is an index probe rather than the four
+ * fused arms `/public/search` runs.
  *
  * It exists because the site prerenders only the first few thousand dishes and
  * renders the rest the first time somebody asks. Without a way to fetch one row
- * by slug, that long tail would have to be found by SEARCHING for its own name
- * and hoping the right row came back first — which is a guess, on a page whose
- * whole job is to state a number accurately.
+ * by slug, that long tail would have to be found by searching for its own name
+ * and hoping the right row came back first.
  */
 async function publicFood(
   request: Request,
@@ -704,15 +678,14 @@ export default {
       if (!user) return json({ ok: false, error: 'unauthorized' }, 401)
 
       /**
-       * Per user, not per IP. An account is what it costs to read the
-       * catalogue, so an account is the thing worth limiting — a phone on
-       * mobile data shares an IP with a whole carrier, and one on wifi changes
-       * IP by walking outside.
+       * Per user, not per IP. An account is what it costs to read the catalogue, so an
+       * account is the thing worth limiting: a phone on mobile data shares an IP with a
+       * whole carrier, and one on wifi changes IP by walking outside.
        *
-       * The number is sized for typing, not for browsing: search fires once per
-       * keystroke on a 140 ms debounce, so a person hunting for a dish spends
-       * ten or so in a burst. A hundred a minute is far above anybody real and
-       * far below what makes this an interesting way to copy a database.
+       * The number is sized for typing rather than for browsing: search fires once per
+       * keystroke on a 140 ms debounce, so a person hunting for a dish spends ten or so
+       * in a burst. A hundred a minute is far above anybody real and far below what
+       * makes this an interesting way to copy a database.
        */
       const { success } = await env.CATALOGUE_RL.limit({ key: user.id })
       if (!success) return json({ ok: false, error: 'slow down' }, 429)
@@ -746,15 +719,14 @@ export default {
           return json({ ok: true, food: found.get(id) ?? null })
         }
 
-        // A product Open Food Facts had and the catalogue did not. Written so
-        // the SECOND person to scan that packet gets the index probe instead of
-        // a round trip to openfoodfacts.org — the same reason the old
-        // `barcode` function wrote the row into Postgres.
+        // A product Open Food Facts had and the catalogue did not. Written so the second
+        // person to scan that packet gets the index probe instead of a round trip to
+        // openfoodfacts.org.
         //
-        // `insert or ignore`: two people scanning one new packet at the same
-        // moment is a race with one right answer, and the loser has nothing to
-        // do. The catalogue is rebuilt from source data anyway, so a row that
-        // arrives this way is a cache entry, not an authority.
+        // `insert or ignore`: two people scanning one new packet at the same moment is a
+        // race with one right answer, and the loser has nothing to do. The catalogue is
+        // rebuilt from source data anyway, so a row that arrives this way is a cache
+        // entry rather than an authority.
         case '/product': {
           if (request.method !== 'POST') {
             return json({ ok: false, error: 'POST only' }, 405)
