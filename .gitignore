@@ -60,6 +60,13 @@ deno.lock
 # here needs `--remote`, and nothing in this directory is ever the truth.
 .wrangler/
 
+# What `wrangler dev` loads instead of the deployed secrets. The jobs Worker's
+# copy holds a service-role key — the local stack's, which is a published
+# constant, but the file is the same shape as one holding production's and the
+# habit is what matters.
+.dev.vars
+.dev.vars.*
+
 # Photographs the scan eval fetches from their source URLs. The cases carry
 # the URL; this is only the copy.
 apps/supabase/data/scan-eval/.cache/

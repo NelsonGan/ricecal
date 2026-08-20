@@ -673,6 +673,36 @@ export type Database = {
         }
         Relationships: []
       }
+      job_runs: {
+        Row: {
+          detail: Json | null
+          error: string | null
+          finished_at: string | null
+          id: number
+          job: string
+          ok: boolean | null
+          started_at: string
+        }
+        Insert: {
+          detail?: Json | null
+          error?: string | null
+          finished_at?: string | null
+          id?: never
+          job: string
+          ok?: boolean | null
+          started_at?: string
+        }
+        Update: {
+          detail?: Json | null
+          error?: string | null
+          finished_at?: string | null
+          id?: never
+          job?: string
+          ok?: boolean | null
+          started_at?: string
+        }
+        Relationships: []
+      }
       meal_times: {
         Row: {
           at: string
@@ -945,36 +975,6 @@ export type Database = {
             referencedColumns: ['id']
           },
         ]
-      }
-      retention_runs: {
-        Row: {
-          body: string | null
-          error: string | null
-          id: number
-          request_id: number
-          settled_at: string | null
-          started_at: string
-          status_code: number | null
-        }
-        Insert: {
-          body?: string | null
-          error?: string | null
-          id?: never
-          request_id: number
-          settled_at?: string | null
-          started_at?: string
-          status_code?: number | null
-        }
-        Update: {
-          body?: string | null
-          error?: string | null
-          id?: never
-          request_id?: number
-          settled_at?: string | null
-          started_at?: string
-          status_code?: number | null
-        }
-        Relationships: []
       }
       scan_usage: {
         Row: {
@@ -1572,6 +1572,10 @@ export type Database = {
           used: number
         }[]
       }
+      claim_job_run: {
+        Args: { p_job: string; p_lease_seconds?: number }
+        Returns: number
+      }
       claim_recipe_review: {
         Args: { p_user: string }
         Returns: {
@@ -1631,8 +1635,13 @@ export type Database = {
         Args: { p_limit?: number }
         Returns: {
           id: string
+          item_name: string
           photo_path: string
         }[]
+      }
+      finish_job_run: {
+        Args: { p_detail?: Json; p_error?: string; p_id: number; p_ok: boolean }
+        Returns: undefined
       }
       free_daily_scans: { Args: never; Returns: number }
       free_photo_retention_days: { Args: never; Returns: number }
@@ -1804,7 +1813,6 @@ export type Database = {
         Args: { p_public: boolean; p_recipe_id: string }
         Returns: Database['public']['Enums']['recipe_review']
       }
-      sweep_meal_photos: { Args: never; Returns: number }
       sync_weight_readings: {
         Args: {
           p_provider: Database['public']['Enums']['health_provider']
