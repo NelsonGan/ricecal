@@ -25,12 +25,6 @@ export const SPAN_KEY = {
  * index, which is the one that needs translating and therefore the one passed
  * in rather than formatted here.
  *
- * Both of the first two used to be single initials, and both were wrong for the
- * same reason: an initial is not a name. Seven days read "M T W T F S S", where
- * the three pairs are only told apart by position — so the axis had to be
- * counted rather than read. Twelve months were worse than ambiguous: "A" is
- * April and August, "M" is March and May, "J" is January, June and July.
- *
  * Three letters fit a seventh of the width comfortably and a twelfth not at
  * all, so the year labels every OTHER month rather than shortening the name
  * further. A named month every eight weeks still tells you where you are; "8"

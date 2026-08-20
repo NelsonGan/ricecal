@@ -13,12 +13,6 @@ export type RecipeRowProps = {
 /**
  * One recipe in a list.
  *
- * A ROW and not a card. It used to carry its own `Card`, which put 28pt of
- * padding and a slab under every recipe and spread eight of them over three
- * screens of scrolling — the shelf read as eight separate things rather than as
- * one list. The caller groups them into a single card now, the way the day's
- * entries are grouped on Today, and the rows sit at the card's own `gap-3`.
- *
  * The detail line answers a different question on each shelf, which is why it
  * is built here rather than passed in: on my own recipes it is the portion
  * ("4 servings · 6 ingredients"), and on the community it is who cooked it

@@ -12,11 +12,6 @@ import { toDbSource } from './types'
 
 /**
  * Writes to `food_logs`.
- *
- * An entry used to be a foreign key and a quantity, with no macros copied,
- * because correcting a dish had to correct every log that used it. The catalogue
- * is in another database now and the numbers travel with the entry instead. See
- * `snapshot.ts`, which is where every write path's copy of them is built.
  */
 
 export type LogInput = {

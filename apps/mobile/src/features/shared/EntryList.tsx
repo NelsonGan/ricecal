@@ -49,13 +49,6 @@ export type EntryListProps = {
 /**
  * Everything logged today, in one list, in the order it was eaten.
  *
- * This was four cards — breakfast, lunch, dinner, snack — and the grouping cost
- * more than it explained. Three of them were usually empty and each empty one still
- * took a heading and an add button, so a day with two entries in it filled a screen
- * with furniture. A chronological list says the same thing in the order it happened,
- * and an entry no longer carries a meal at all: the column is gone, and meal TIMES
- * survive only where they mean something, as the hours a reminder fires.
- *
  * Which is why the detail line carries the time. It is the only thing saying where
  * in the day a row belongs, and it is the more useful half of what the meal headings
  * were doing.

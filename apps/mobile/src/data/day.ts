@@ -252,10 +252,6 @@ async function fetchDays(userId: string, from: string, to: string): Promise<DayL
 /**
  * Warms a week of the strip, so picking a day in it draws that day at once.
  *
- * `usePrefetchDays` used to live here, warming the days either side of the
- * diary's pager. The pager went with the diary and this is the same idea against
- * the week strip, which can put any of seven days on Today with one tap.
- *
  * Why this rather than a better placeholder: Today already refuses to draw a day
  * it has not got, which is what stopped the strip announcing every unfetched day
  * as a day nobody ate on. But a placeholder is still a swap, and on a tap that

@@ -1,13 +1,5 @@
 /**
  * Trends: three tabs over one range.
- *
- * The screen used to be weight and only weight, and this file used to be its
- * copy. It is now three panels — calories, water, weight — each of which reads
- * differently at seven days, thirty days and a year, which is why so much of
- * what follows comes in threes. A panel picks the one that matches its range
- * rather than assembling a sentence out of fragments: "Weekly average, goal
- * 2,100 a day" is one string in every language, and in some of them the word
- * order is not this one.
  */
 export const progress = {
   title: 'Trends',

@@ -43,15 +43,6 @@ import { AppBar, Card, EmptyState, Screen, Skeleton } from '@/ui'
  * calorie card costs nothing when the review was opened from the list and one
  * small request when it was opened from a link.
  *
- * IT SCROLLS, and it used to page. Four screens of cards, tapped or swiped
- * through with a progress bar over them, borrowed the shape of a story without
- * borrowing the thing that makes one work: a story page is a photograph read in
- * a second, and these are charts and figures somebody wants to compare. Paged,
- * the answer to "what did that say" was a tap backwards and a hunt, and the
- * only way to see the food beside the calories was to remember one of them. One
- * column answers both, and it costs nothing that was being used — the cards are
- * the same cards, each still liftable into a picture by a tap.
- *
  * HOW MANY SECTIONS THERE ARE IS STILL DATA. `reviewSteps` decides it from what
  * came back, so a month before the watch arrived is three sections rather than
  * four with an empty one at the end.

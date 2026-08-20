@@ -47,14 +47,6 @@ export type NutritionSheetProps = {
  * stands alone, the way `food_logs`'s four `override_*` columns do, so somebody
  * who corrects only the protein keeps the catalogue's carbs.
  *
- * A SHEET RATHER THAN THE FIGURES THEMSELVES. Each of these used to be tapped
- * where it was read — the calorie total became a caret in its own place, and each
- * macro amount became one on its bar — which is a lovely mechanic and a bad form:
- * one figure at a time, no way to see which of the four you had already changed,
- * a card that grew and shrank as the field swapped in, and the pad covering the
- * three bars whose names were the only thing saying which number was which. Four
- * labelled fields in one place is what "edit these figures" actually looks like.
- *
  * IT SAVES ITSELF. The screen had one Save button in its footer that wrote every
  * staged section at once, and a sheet whose button said "Done" and wrote nothing
  * was a second staging level nobody asked for. This is a form now: Save writes the

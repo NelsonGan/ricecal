@@ -1,11 +1,5 @@
 // The image endpoint: mint a signed upload, mint signed reads, delete objects.
 //
-// This function exists because R2 is not the database. Supabase Storage let the
-// client talk to the bucket directly and let Postgres decide whether it was
-// allowed to; R2 has no idea who a user is, so something authenticated has to
-// stand in front of it and sign. That something is this file, and the check it
-// performs — `ownsKey` — is the whole of what eight RLS policies used to do.
-//
 // Three actions rather than three functions. Each function costs a config
 // block, an import map and a full restart of the local stack to appear, and
 // these three share their auth, their ownership check and their error shape

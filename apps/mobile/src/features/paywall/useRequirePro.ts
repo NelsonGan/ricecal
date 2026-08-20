@@ -42,14 +42,6 @@ export type RequireProOptions = {
 /**
  * The one place a paid feature is refused, and it always refuses the same way.
  *
- * WHAT IT GUARDS IS NOW A SHORT LIST, and it used to be most of the app. Every
- * write went through here — the shutter, quick add, a dish out of the
- * catalogue, logging a recipe — which made a free account a read-only tour of
- * somebody else's diary. What is left behind this guard is the model: typing a
- * meal, fixing one with words, reading a recipe out of a photograph. Plus the
- * three ceilings that are not refusals of a feature but of a fourth use of one
- * — a fourth recipe, a longer trend range, an older review.
- *
  * THE SHUTTER IS NOT HERE ANY MORE, deliberately. A free account photographs
  * three plates a day and the count is the server's, claimed per scan; a copy of
  * it in the client would be wrong the first time the phone was offline or a

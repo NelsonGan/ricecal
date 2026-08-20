@@ -19,11 +19,6 @@
 -- `apps/cloudflare/workers/jobs/src/jobs/retention.ts`: it reads the keys,
 -- deletes the objects, and only then clears the column. A failure anywhere in
 -- that leaves the row intact and the next run picks it up.
---
--- Nothing here schedules anything any more. The clock was a `pg_cron` job calling
--- a `pg_net` POST for a while, and the note at the foot of this file says what
--- that cost.
--- ---------------------------------------------------------------------------
 
 create or replace function public.free_photo_retention_days()
 returns integer
@@ -230,11 +225,6 @@ grant execute on function public.clear_meal_photos to service_role;
 
 -- ---------------------------------------------------------------------------
 -- Where the clock went.
---
--- `retention_runs` and `sweep_meal_photos()` used to sit here: `pg_cron` fired
--- the function hourly and it POSTed to the `retention` edge function with a token
--- out of the vault. Both are gone, along with the `pg_cron` and `pg_net`
--- extensions and the endpoint itself.
 --
 -- The sweep is a Cloudflare Worker on a Cron Trigger now
 -- (`apps/cloudflare/workers/jobs`), which is not addressable over HTTP at all.

@@ -113,15 +113,6 @@ const PORTION_DEBOUNCE_MS = 500
  * The edit control in a card's own header, which is how every editable group on
  * this screen is opened.
  *
- * The figures and the plate used to be edited where they were read: tap the
- * calorie total and it became a caret in its own place, and every part of a
- * scanned plate carried a pair of stepper buttons. One figure at a time that was
- * a lovely mechanic; as a form it was a bad one. Nothing said which of the four
- * figures had already been changed, the number pad covered the rows whose labels
- * were the only thing distinguishing them, and two buttons on every ingredient
- * row took enough width that a part's name was truncated on the one screen whose
- * job is checking what the model decided the plate was made of.
- *
  * So each card says what it holds and carries one way in.
  *
  * The pencil alone, with no "Edit" beside it. Three of these sit one under
@@ -159,11 +150,9 @@ function CardEdit({ label, onPress }: { label: string; onPress: () => void }) {
  * new entry from the catalogue. The controls are identical either way, so the
  * difference is confined to what the button at the foot of it does.
  *
- * On the edit path each section saves itself, through the sheet that opens it.
- * The form used to stage everything and write the lot from one footer button,
- * which stopped making sense once each group moved behind a pencil into a sheet
- * of its own: a sheet with a Done button that writes nothing is a second staging
- * level. See `saveDetails` and its neighbours.
+ * On the edit path each section saves itself, through the sheet that opens
+ * it. The add path is still a staged form, because there is nothing to write
+ * until Add.
  *
  * The add path is still a staged form, because there is nothing to write until
  * Add.
@@ -304,11 +293,6 @@ export default function FoodDetail() {
   const [pickingIcon, setPickingIcon] = useState(false)
   /**
    * A drawing chosen while a photo is on the row, waiting on the confirmation.
-   *
-   * The warning used to sit on the way in to the picker, which was the only way in
-   * when the only thing the picker offered was drawings. It offers the camera now,
-   * so most trips through it are not destructive at all, and the question belongs
-   * where the destructive answer is given.
    */
   const [pendingIcon, setPendingIcon] = useState<IconRef>()
   /**
@@ -681,9 +665,8 @@ export default function FoodDetail() {
       // An upload that failed, a bucket that refused it, a patch the server would not
       // take: none is worth a screen of its own.
       //
-      // And the tile goes back, which it did not have to when the footer's Save was the
-      // only writer. Left showing the new photograph over a row that still holds the
-      // old one, the screen disagrees with itself and with Today until the user leaves.
+      // And the tile goes back. Left showing the new photograph over a row that
+      // still holds the old one, the screen disagrees with itself and with Today.
       // The object stays in `orphanShot` for the unmount sweep.
       setShot(undefined)
       toast.show({ title: t('logging:detail.photoFailed'), tone: 'error' })
@@ -750,14 +733,6 @@ export default function FoodDetail() {
 
   /**
    * One save per section, and there is no longer a Save button on the page.
-   *
-   * Every edit used to stage in local state and one footer button wrote the lot.
-   * That is a coherent model for a page of controls, and it stopped being one when
-   * each group moved behind a pencil into a sheet of its own: a sheet with a Done
-   * button that writes nothing is a second staging level, and nobody reading "Done"
-   * expects to have to find another button afterwards. So each sheet is a form that
-   * saves what it is about, and the footer is left with the one thing that is not a
-   * section of this entry, handing it back to the model.
    *
    * Each of these throws on failure, so the sheet can stay open with the draft
    * still in it. They stage the value locally as well, which is the preview: the
@@ -916,10 +891,6 @@ export default function FoodDetail() {
    * times to get from one plate to two and a half, and there is nowhere on a
    * plus/minus row to put a Save. Written per tap it would be three round trips and
    * three refetches for one decision; behind a short debounce it is one.
-   *
-   * The whole screen used to work this way and it was replaced for good reasons, a
-   * plate corrected in four places being four round trips. None of that applies to
-   * a single control whose only state is one number.
    */
   const savePortion = async (next: { quantity: number; servingId: string }) => {
     if (!existing) return
@@ -993,10 +964,8 @@ export default function FoodDetail() {
   /**
    * Send the typed correction and leave.
    *
-   * It used to flush the staged form first, because the server interprets the words
-   * against the entry as it stands there. Nothing is staged across sections any
-   * more: every sheet writes on its own save, so the entry on the server is always
-   * the one the user is reading.
+   * Nothing is staged across sections: every sheet writes on its own save, so
+   * the entry on the server is always the one the user is reading.
    *
    * Fire and forget after that: the correction runs for several seconds and this
    * screen describes the entry's old identity the whole time, so it leaves and the

@@ -116,11 +116,6 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
    *
    * Off by default, and only Today asks for it, being the only screen that renders
    * a swipeable row.
-   *
-   * It was briefly on everywhere, and the entry screen's macro rows collapsed under
-   * a keyboard. That turned out to be `MacroBars` carrying its own `flex-1` into a
-   * column, which is fixed at the source. Left scoped because the narrow thing is
-   * the safe thing and nothing else needs it.
    */
   gestureScroll?: boolean
   className?: string

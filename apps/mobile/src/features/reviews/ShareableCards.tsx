@@ -140,22 +140,12 @@ export type ShareableProps = {
  * grey block around a white card, the one seam a preview must not have. The
  * capture is the card and nothing else now.
  *
- * That every card can spare its top right corner is a small thing this feature
- * had to arrange: `CardStep` used to put a badge there, and its heading now has
- * the line to itself like every other card's.
- *
  * THE MARK IS NOT ON SCREEN. It is absolutely positioned, so it costs no layout
  * and moves nothing, and it is transparent until the moment of the capture —
  * the story is a diary, not an advertisement, and three copies of a logo down a
  * page of somebody's own week is the wrong side of that. The picture that
  * leaves the phone is the one place it earns its space, because a week's
  * calories say nothing about where they came from.
- *
- * A `Pressable` rather than a wrapper with a tap handler, and it is now the
- * only press on the page: the review used to page under it, with two strips
- * over the edges stepping the story, and this card had to win that touch. The
- * pager is gone and the shape stays, because a card that lifts itself out is
- * still a button and has to say so.
  */
 export function Shareable({ title, children, className }: ShareableProps) {
   const { t } = useTranslation('reviews')

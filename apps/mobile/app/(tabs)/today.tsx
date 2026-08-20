@@ -80,11 +80,6 @@ export default function TodayScreen() {
 
   /**
    * The tour, offered once and never again.
-   *
-   * It used to be four screens at the end of onboarding. Here it is a toast a
-   * beat after the diary appears, so the thing being explained is on screen
-   * while the user decides whether they want it explained. See
-   * `features/tutorial`.
    */
   useTutorialOffer()
 

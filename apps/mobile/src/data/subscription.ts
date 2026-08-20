@@ -85,10 +85,6 @@ export function isEntitledRow(row: EntitlementRow | undefined, now: Date = new D
 export type Entitlement = {
   /**
    * Is this account Pro?
-   *
-   * It used to be "may this account log a meal", and it is not that any more: a
-   * free account logs. What this decides is the Pro-only features and which of the
-   * two daily ceilings applies. See the README, "Money: free and Pro".
    */
   entitled: boolean
   /**

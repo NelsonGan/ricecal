@@ -11,12 +11,6 @@
 //                              ceiling depends on the answer above: three a day
 //                              free, fifty a day Pro.
 //
-// The second question used to be "has it spent its month", counted in requests to
-// OpenRouter, and the unit was the problem: one photographed plate is three or
-// four of them, so the number could never be said out loud and the refusal had
-// nothing to offer. Counted in scans, a free account's refusal has an answer,
-// which is the whole point of a free tier.
-//
 // Both are checked server-side and that is the point. The client gates the same
 // two things so the buttons read honestly, but a paywall enforced only in the app
 // is a paywall enforced by anyone who has not modified the app.

@@ -692,40 +692,27 @@ Four ways in and one screen that picks between them.
 ```
 
 `data/auth.ts` is every call. `features/auth` is the pieces the screens share:
-the provider buttons, the password box with the eye on it, the error-to-sentence
-hook, the deep-link handler, and the Turnstile widget.
+the provider buttons, the password box, the error-to-sentence hook, the
+deep-link handler, and the Turnstile widget.
 
-### The mail leads with a code, and the link is the second offer
+**The mail leads with a code, and the link is the second offer.** A Supabase
+confirmation link is single use, and corporate mail security follows every link
+in an incoming message to check it, so the mail arrives already spent and the
+app says it expired ten seconds after it was sent. A link also only works on the
+phone the app is on. `{{ .Token }}` is in the subject line as well as the body,
+so a signup can be finished from a notification banner.
 
-It was a link alone, and the reasoning was sound until it met the rest of the
-world.
-
-**A link is spent by whatever fetches it first.** Corporate mail security
-follows every link in an incoming message to check it, and a Supabase
-confirmation link is single use. So the mail arrives already spent and the app
-says it expired ten seconds after it was sent.
-
-**A link only works on the phone the app is on**, which is not where most people
-read mail. Six digits have neither problem. `{{ .Token }}` is in the subject
-line as well as the body, so a signup can be finished from a notification
-banner.
-
-The link is still in every mail and `LoginLinkHandler` still catches it.
-
-### A password is an option, never a wall
-
-The alternative to remembering one turned out to be waiting for an email every
-single time, which is the wrong trade for somebody opening a diary daily. An
-account made with a code has no password until it sets one; an account made with
-a password can still ask for a code. Every screen in the flow offers the code.
+**A password is an option, never a wall.** An account made with a code has no
+password until it sets one; one made with a password can still ask for a code.
+Every screen in the flow offers the code.
 
 ### Three things that were actually broken
 
-**`site_url` was `http://localhost:3000` and `uri_allow_list` was empty** on the
-hosted project. Supabase drops an `emailRedirectTo` that is not allow-listed and
-substitutes the site URL, so every login link in every mail opened localhost on
-somebody's phone. It read as a bug in the app and was two fields in a settings
-page. `pnpm auth:config` owns both now and prints a diff before it writes.
+**`site_url` was `http://localhost:3000` and `uri_allow_list` was empty.**
+Supabase drops an `emailRedirectTo` that is not allow-listed and substitutes the
+site URL, so every login link opened localhost on somebody's phone. It read as a
+bug in the app and was two fields in a settings page. `pnpm auth:config` owns
+both now and prints a diff before it writes.
 
 **A repeat signup looks like a success.** Supabase will not tell a signup form
 that an address is taken, because that turns the form into an oracle for who
@@ -734,127 +721,33 @@ uses this app. With confirmations on it returns an ordinary user object with
 the screen switches to sign-in and offers a code, and neither says why.
 
 **A wrong code and an expired one are one error.** Both come back 403
-`otp_expired`, for the same non-disclosure reason. So there is one
+`otp_expired`, for the same non-disclosure reason, so there is one
 `code_invalid` reason and its copy covers both. Copy that said "expired" would
 tell somebody who mistyped to go and wait for another mail.
 
 ### The reset is one screen, and that is a race not a taste
 
-Verifying a recovery code creates the session. That session is the licence to
-change the password, and it is also what `(auth)/_layout` watches to decide the
-sign-in stack is finished.
-
-Split across two screens, the code screen verifies, the session lands, the guard
-carries the user to Today, and the password they came to change is still the
-password. So the code and the new password are on one screen, nothing is sent
-until Save, and the layout leaves `new-password` alone while it is on top.
+Verifying a recovery code creates the session, and that session is both the
+licence to change the password and what `(auth)/_layout` watches to decide the
+sign-in stack is finished. Split across two screens, the guard carries the user
+to Today and the password they came to change is still the password. So the code
+and the new password are on one screen, nothing is sent until Save, and the
+layout leaves `new-password` alone while it is on top.
 
 Somebody arriving through the link already has a session, so that screen drops
 the code field. It tests for the session rather than for a parameter.
 
-### Cloudflare Turnstile
-
-`features/auth/turnstile.tsx`. Supabase supports it as a captcha provider: with
-`security_captcha_enabled` on, it refuses any sign-in, sign-up, mailed code or
-password reset arriving without a token it can verify.
-
-Turnstile is a browser widget, so the app hosts one in a hidden `WebView` in
-`execute` mode with `interaction-only` appearance. It normally produces a token
-without the user seeing anything. When Cloudflare wants a human, the same
-WebView is restyled into a panel over the screen. Restyled, never remounted: a
-reload throws away the challenge in progress.
-
-**It fails open, on purpose.** No site key, no WebView in the binary, a script
-that will not load, a network that drops: all of them end with `undefined` and
-the request goes without a token. The gate is on the server, so failing closed
-here adds no protection Supabase is not already providing, and does add a way
-for a broken WebView to lock somebody out of their own account.
-
-#### Turning it on
-
-The order matters, because `security_captcha_enabled` can lock every existing
-install out at once. A build already on a phone has no idea it is meant to send
-a token.
-
-1. **Create the widget** at Cloudflare dashboard → Turnstile → Add widget. Mode
-   **Managed**, and add the hostname you will use as the WebView's origin.
-
-   **Managed, not Invisible.** The three modes differ in one thing: what happens
-   to a visitor Cloudflare judges suspicious. Managed escalates to a checkbox.
-   Non-Interactive and Invisible never do, so a real person whose score comes
-   out badly has no way to prove otherwise and simply cannot sign in, ever. A
-   hidden WebView on a phone scores badly more often than a browser does.
-   `appearance: 'interaction-only'` keeps a Managed widget invisible until that
-   escalation actually happens.
-
-   **List the apex, because `www` is not the same entry.** `ricecal.app` covers
-   the apex and every subdomain under it, while `www.ricecal.app` covers that
-   subdomain and explicitly not the parent. The app sends the apex, which is
-   what `EXPO_PUBLIC_TURNSTILE_ORIGIN` holds. A `www`-only list answers the app
-   with `110200` on every request, for ever.
-
-   `npx wrangler turnstile widget list` prints the sitekey, mode and domains,
-   and `widget get <sitekey>` adds the secret. That is the only way to see the
-   secret at all, since Supabase will not give its copy back.
-
-2. **Store the secret on Supabase**, gate still open:
-   `pnpm auth:config --captcha-secret 0x4AAA... --push`
-3. **Ship a build carrying the site key**: `EXPO_PUBLIC_TURNSTILE_SITE_KEY` and
-   `EXPO_PUBLIC_TURNSTILE_ORIGIN` in `.env.local` and in the EAS environment.
-   `react-native-webview` is a native dependency, so this needs a real build.
-4. **Close the gate** once that build is what people are running:
-   `pnpm auth:config --captcha-on --push`. Reversible with `--captcha-off`.
-
-#### `about:srcdoc`
-
-Turnstile builds its challenge frame as an iframe with a `srcdoc` attribute,
-which the WebView sees as a navigation to `about:srcdoc`. `originWhitelist`
-governs iframe navigations as well as top-level ones, so a list of `https://*`
-did not merely ignore that frame: react-native-webview refused to load it
-internally and handed the URL to the OS instead. The only trace was one line in
-the Metro log, and the widget then loaded, rendered, reported `ready`, and could
-never produce a token.
-
-The symptom is on the server, so that is where the search starts, and everything
-there is correct. Two days can go into confirming that a correct configuration
-is correct. The fix is `'about:*'` in one array.
-
-#### When it refuses a real person
-
-Five things fail identically, and four of them are not in this repo. The gate is
-on the server, so the app says "we could not confirm you are a person" whether
-the widget never loaded, never produced a token, produced one Cloudflare scored
-badly, or produced a good one that `siteverify` refused.
-
-So every failure is reported: a `[captcha]` line to the console, and the same
-text to Sentry as a warning. The code is what separates them.
-
-| what Sentry says | what it is | where the fix is |
-|---|---|---|
-| `absent: no site key in this build` | `EXPO_PUBLIC_TURNSTILE_SITE_KEY` never reached the bundle | the EAS environment for that build profile |
-| `absent: no WebView in this binary` | the binary predates `react-native-webview` | a native rebuild; OTA cannot add it |
-| `unusable: 110200` | the WebView's origin is not on the widget's hostname list | add it under Hostname Management |
-| `unusable: 110100` / `110110` / `400020` / `400070` | wrong, unknown or disabled site key | the key, or the widget |
-| `gave up after N retryable errors` | Cloudflare scored the visitor a bot, twice | the widget's mode |
-| `timed out with no answer` | executed, then twenty seconds of silence | usually the network |
-
-**Nothing at all in Sentry, with sign-in still failing, is the sixth case: the
-secret.** It has to belong to the same widget as the site key. A mismatched pair
-produces a token the app is happy with that `siteverify` then rejects. Silence
-is the evidence: the widget did its job, so the problem is on the other side.
-
-
 ### The eight auth emails
 
-`apps/supabase/templates/` holds them: one layout, eight bodies, and a script
-that puts them on the project.
+`apps/supabase/templates/`: one layout, eight bodies, and a script that puts
+them on the project.
 
 ```
-_layout.html          the shell: doctype, palette, card, footer
-_partials.html        the code block, the button, the rule
-logo.png              the app icon at 96px, inlined into every message
-<message>.html        one body per email, with its subject in a metadata block
-build/                what the three of them make. Committed. Do not edit.
+_layout.html    the shell: doctype, palette, card, footer
+_partials.html  the code block, the button, the rule
+logo.png        the app icon at 96px, inlined into every message
+<message>.html  one body per email, with its subject in a metadata block
+build/          what the three of them make. Committed. Do not edit.
 ```
 
 ```sh
@@ -863,37 +756,26 @@ pnpm email:check   # fail if build/ is stale (CI runs this)
 pnpm email:push    # build, then send to the project named by .env.local
 ```
 
-**Nothing pushes these for you, and that is the trap this folder sets.** `build/`
-being committed and green in CI means the local stack is right and a reviewer
-read the right file. It says nothing about what the hosted project sends.
-`email:push` is a hand-run command, and the whole of the app's design landed here
-once and sat unpushed, so every real signup for a while got the previous design.
-The symptom cannot be found in the repo, because the repo is correct. To see what
-production actually sends, ask it:
+**Nothing pushes these for you, and that is the trap this folder sets.**
+`build/` being committed and green in CI says nothing about what the hosted
+project sends. `email:push` is hand-run, and the whole of the app's design
+landed here once and sat unpushed, so every real signup got the previous design.
+To see what production actually sends, ask it:
 
 ```sh
 curl -s -H "Authorization: Bearer $(security find-generic-password -s 'Supabase CLI' -w)" \
   "https://api.supabase.com/v1/projects/<ref>/config/auth" | jq -r .mailer_templates_recovery_content
 ```
 
-Push after any change here, and remember it is one PATCH for all eight.
-
-`email:check` also compares each **subject** against the copy of it in
-`config.toml`, which the CLI wants separately from the body. Kept in step by hand
-those two agree until somebody edits one, and the symptom is invisible: the mail
-on a local stack has a different subject line from the one production sends.
+`email:check` also compares each **subject** against the copy in `config.toml`,
+which the CLI wants separately from the body. Kept in step by hand those two
+agree until somebody edits one, and the symptom is invisible.
 
 One trap the CLI sets, and it costs a `supabase start` to find. A
-`[auth.email.template.*]` `content_path` is resolved from the workdir, which here
-is `apps`, so it reads `./supabase/templates/build/…`. A
-`[auth.email.notification.*]` path is resolved from the supabase directory
-itself, so it reads `./templates/build/…`. Supabase's own commented defaults show
-the same split without remarking on it.
-
-**Why a folder rather than the dashboard.** The dashboard keeps each template in
-its own text box. You cannot see two at once, there is no history, nothing is
-reviewed, and the shared footer exists in eight places, so the first person to
-change it changes one of them.
+`[auth.email.template.*]` `content_path` resolves from the workdir, which is
+`apps`, so it reads `./supabase/templates/build/…`. A
+`[auth.email.notification.*]` path resolves from the supabase directory, so it
+reads `./templates/build/…`.
 
 A body looks like this:
 
@@ -909,66 +791,123 @@ preheader: Use this code to choose a new password.
 <!--PARTIAL:button|Choose a new password-->
 ```
 
-`key` is the Supabase template name, and everything else is derived from it: the
-API fields (`mailer_subjects_<key>`, `mailer_templates_<key>_content`) and, for a
-key ending `_notification`, the `mailer_notifications_<...>_enabled` flag that
-decides whether it is ever sent. `preheader` is the line a mail list shows under
-the subject; left out, the client shows the wordmark and then the heading twice.
+`key` is the Supabase template name and everything else is derived from it: the
+API fields, and for a key ending `_notification` the flag that decides whether
+it is ever sent. `preheader` is the line a mail list shows under the subject;
+left out, the client shows the wordmark and then the heading twice.
 
-**One idea a message, and the shared lines live in the layout.** A request mail
-is a heading, one sentence, the code, and how long it lasts; then the rule, one
-line for the reader holding the phone the app is on, and the button. The
-reassurance every message used to end on is the footer's job now, written once,
-because eight copies of one sentence is eight chances to word it differently.
-
-The footer carries **support@ricecal.app**, and the sentence around it is
-deliberately not "ignore this email": a password-changed notice is precisely the
-mail nobody should ignore.
+**One idea a message, and the shared lines live in the layout.** The footer
+carries **support@ricecal.app**, and the sentence around it is deliberately not
+"ignore this email": a password-changed notice is precisely the mail nobody
+should ignore.
 
 A tail line survives on a body only where it says something the reader cannot
-work out from the rest of the mail:
+work out from the rest:
 
 | | |
 |---|---|
 | `recovery` | nothing has happened to the password yet |
 | `email-change` | the change needs a code from both addresses |
 | `reauthentication` | nobody from RiceCal will ever ask for the code |
-| `email-changed`, `password-changed` | what to do, since these are notifications rather than requests |
-
-**The design is RiceCal's own**, and every value comes from
-`apps/mobile/src/theme/tokens.ts`. It was Supabase's roles painted in one RiceCal
-colour for a while, which produced a mail that looked like a developer tool.
-Nothing in it said which app it had come from, and for a new account this mail
-arrives *before* the app does.
+| `email-changed`, `password-changed` | what to do, since these are notifications |
 
 Four constraints shape the markup, and all four are about mail clients:
 
 - **Tables, not flex or grid.** Outlook renders through Word's engine.
-- **The palette is declared twice**, once inline on the element and once in a
-  `prefers-color-scheme` block. A client that drops the `<style>` block still
-  gets the light palette; one that keeps it gets dark mode. Declared only in the
-  style block, Outlook renders black on black.
-- **The fonts are an enhancement, never a dependency.** Baloo 2 and Nunito come
-  from Google Fonts, which Apple Mail honours and Gmail ignores, so every family
-  declaration carries the full system fallback behind it. What makes the mail
-  recognisable without them is the colour, the corners and the slab under the
-  button.
-- **The one image is inline.** Most clients block a remote image until the reader
-  asks, so a hosted logo is an empty box at the top of every message. The app
-  icon is a `data:` URI spliced in at build time. It costs about 9KB a message
-  against Gmail's 102KB clipping threshold, and these build to roughly 17KB. A
-  client that drops data URIs shows the `alt` text, styled as the wordmark.
+- **The palette is declared twice**, once inline and once in a
+  `prefers-color-scheme` block. Declared only in the style block, Outlook
+  renders black on black.
+- **The fonts are an enhancement, never a dependency.** Gmail ignores Google
+  Fonts, so every family declaration carries a full system fallback.
+- **The one image is inline.** Most clients block a remote image, so the app
+  icon is a `data:` URI spliced in at build time. It costs about 9KB against
+  Gmail's 102KB clipping threshold.
 
 Two of the eight are never sent by the app. `invite.html` is an admin call,
-reachable only from the dashboard or a service-role script, and it is written and
-pushed anyway because the alternative is not "no invitation mail" but Supabase's
-unstyled default going out the first time somebody invites a tester.
-`reauthentication.html` carries no link, because there is no
-`{{ .ConfirmationURL }}` for it: the answer has to come back into the session the
-person is already sitting in.
+written and pushed anyway because the alternative is Supabase's unstyled default
+going out the first time somebody invites a tester. `reauthentication.html`
+carries no link, because the answer has to come back into the session the person
+is already sitting in.
 
-Replacing `logo.png` is `sips -Z 96` over `apps/mobile/assets/icon.png`, and a
-rebuild.
+### Cloudflare Turnstile
+
+`features/auth/turnstile.tsx`. With `security_captcha_enabled` on, Supabase
+refuses any sign-in, sign-up, mailed code or password reset arriving without a
+token it can verify.
+
+Turnstile is a browser widget, so the app hosts one in a hidden `WebView` in
+`execute` mode with `interaction-only` appearance. When Cloudflare wants a
+human, the same WebView is restyled into a panel over the screen. Restyled,
+never remounted: a reload throws away the challenge in progress.
+
+**It fails open, on purpose.** No site key, no WebView in the binary, a script
+that will not load: all of them send no token and Supabase decides. Failing
+closed here adds no protection the gate is not already providing, and does add a
+way for a broken WebView to lock somebody out of their own account.
+
+#### Turning it on
+
+The order matters, because a build already on a phone has no idea it is meant to
+send a token.
+
+1. **Create the widget** at Cloudflare → Turnstile → Add widget, mode
+   **Managed**, with the hostname the WebView uses as its origin.
+
+   **Managed, not Invisible.** The three modes differ in what happens to a
+   visitor Cloudflare judges suspicious: Managed escalates to a checkbox, and
+   the other two never do, so a real person who scores badly simply cannot sign
+   in. A hidden WebView on a phone scores badly more often than a browser does.
+   `appearance: 'interaction-only'` keeps a Managed widget invisible until that
+   escalation happens.
+
+   **List the apex.** `ricecal.app` covers the apex and every subdomain;
+   `www.ricecal.app` covers that subdomain and explicitly not the parent. The
+   app sends the apex, so a `www`-only list answers it with `110200` for ever.
+
+   `npx wrangler turnstile widget list` prints the sitekey, mode and domains,
+   and `widget get <sitekey>` adds the secret. That is the only way to see the
+   secret at all, since Supabase will not give its copy back.
+
+2. **Store the secret on Supabase**, gate still open:
+   `pnpm auth:config --captcha-secret 0x4AAA... --push`
+3. **Ship a build carrying the site key**: `EXPO_PUBLIC_TURNSTILE_SITE_KEY` and
+   `EXPO_PUBLIC_TURNSTILE_ORIGIN`. `react-native-webview` is native, so this
+   needs a real build.
+4. **Close the gate** once that build is what people are running:
+   `pnpm auth:config --captcha-on --push`. Reversible with `--captcha-off`.
+
+#### `about:srcdoc`
+
+Turnstile builds its challenge frame as an iframe with a `srcdoc` attribute,
+which the WebView sees as a navigation to `about:srcdoc`. `originWhitelist`
+governs iframe navigations too, so a list of `https://*` made
+react-native-webview refuse to load it internally and hand the URL to the OS.
+The only trace was one line in the Metro log, and the widget then loaded,
+rendered, reported `ready`, and could never produce a token.
+
+The symptom is on the server, so that is where the search starts, and everything
+there is correct. Two days can go into confirming that a correct configuration
+is correct. The fix is `'about:*'` in one array.
+
+#### When it refuses a real person
+
+Five things fail identically and four of them are not in this repo, so every
+failure is reported: a `[captcha]` line to the console, and the same text to
+Sentry as a warning. The code is what separates them.
+
+| what Sentry says | what it is | where the fix is |
+|---|---|---|
+| `absent: no site key in this build` | never reached the bundle | the EAS environment for that build profile |
+| `absent: no WebView in this binary` | binary predates `react-native-webview` | a native rebuild; OTA cannot add it |
+| `unusable: 110200` | origin is not on the widget's hostname list | add it under Hostname Management |
+| `unusable: 110100` / `110110` / `400020` / `400070` | wrong or disabled site key | the key, or the widget |
+| `gave up after N retryable errors` | scored a bot, twice | the widget's mode |
+| `timed out with no answer` | executed, then twenty seconds of silence | usually the network |
+
+**Nothing at all in Sentry, with sign-in still failing, is the sixth case: the
+secret.** It has to belong to the same widget as the site key. A mismatched pair
+produces a token the app is happy with that `siteverify` then rejects. Silence
+is the evidence: the widget did its job.
 
 ---
 
@@ -977,7 +916,7 @@ rebuild.
 Four ways in, and the FAB opens all of them in one sheet (`app/log/index.tsx`):
 **Snap** a photo, **Describe** it in words, **Scan** the barcode, or **Search**
 the catalogue. Whatever the route, the entry is written against `selectedDate`,
-the day the strip on Today has selected, not necessarily today.
+the day the strip on Today has selected.
 
 Search, scan and quick-add are ordinary writes. The other two run the cascade.
 
@@ -997,24 +936,23 @@ camera reads a code → leave immediately for /log/food/packet:<code>
 ```
 
 **The viewfinder does not wait for the answer**, and that is the whole shape of
-this flow. It used to: the panel awaited the lookup, put a spinner over the
-camera and said which of four things was happening underneath. Three of those
-four states were a person standing in a shop watching a camera not move (the
-live fallback allows six seconds for Open Food Facts), and the one state that
-worked then replaced the sheet with a different screen anyway.
+this flow. Waiting put a spinner over the camera and said which of four things
+was happening underneath; three of those four were a person standing in a shop
+watching a camera not move (the live fallback allows six seconds for Open Food
+Facts) and the fourth replaced the sheet with a different screen anyway.
 
 So the code is the answer as far as the scanner is concerned, and the page it
-hands the code to owns every way the lookup can turn out: a skeleton of the
-product page while it waits, the product when it lands, and a screen with
-Describe and Scan again on it when nothing knows the packet.
+hands the code to owns every way the lookup can turn out: a skeleton while it
+waits, the product when it lands, and a screen with Describe and Scan again on
+it when nothing knows the packet.
 
 A packet reaches that page under an id of its own, `packet:<code>`. A packaged
 product lives in D1's `product` table keyed by the barcode and has no `foods.id`
-at all, so before this the scanner had nothing to put in the `[id]` segment and
-the app answered a correctly identified packet with its own "page not found".
+at all, so the scanner had nothing to put in the `[id]` segment and the app
+answered a correctly identified packet with its own "page not found".
 `packetFoodId` mints the placeholder, `useFood` resolves it through the
-scanner's endpoint rather than the catalogue's, and `snapshotFromFood` drops it
-again before it can reach `food_logs.food_id`, which is a uuid column.
+scanner's endpoint, and `snapshotFromFood` drops it before it can reach
+`food_logs.food_id`, which is a uuid column.
 
 "Scan again" goes to the day with the scanner already open (`/log?panel=`),
 because where the user was is a viewfinder inside a sheet this screen replaced.
@@ -1023,15 +961,13 @@ could not reach the catalogue would be answered from the cached failure.
 
 **Codes are stored as GTIN-14, zero-padded**, because one packet has four
 spellings (UPC-E, EAN-8, UPC-A, EAN-13) and an American scanner drops the
-leading zero an EAN-13 carries. Padding both ends makes them one key. `gtin14`
-exists in SQL and again in the edge function, deliberately duplicated and
-separately tested, because the function has to normalize before it can ask Open
-Food Facts anything.
+leading zero an EAN-13 carries. `gtin14` exists in SQL and again in the edge
+function, deliberately duplicated and separately tested, because the function
+has to normalize before it can ask Open Food Facts anything.
 
 The live fallback is what makes the stored slice an acceptable trade. D1 holds
 3.2 million packaged products; Open Food Facts has 4.7 million, and the ones
-anybody actually scans get written into the catalogue permanently the first time
-they are scanned.
+anybody actually scans get written into the catalogue the first time.
 
 **The check digit is deliberately not validated.** Real packets and OFF both
 carry codes that fail it, and a lookup that refuses to try is worse than a miss.
@@ -1040,132 +976,20 @@ carry codes that fail it, and a lookup that refuses to try is worse than a miss.
 neighbours are `not null`, so the only way to store one is to fabricate zeros,
 and "0 g protein" against a tin of tuna is worse than not having it.
 
-**Malaysia is the thin part of all of it.** Of those 3.2 million rows, 4,333
-carry a GS1 Malaysia prefix, which is fewer than Thailand and 0.13% of the
-catalogue. That is not a filter in this repo: the pipeline takes every OFF
-product with a panel and a code, and 4,333 is 96.5% of every Malaysian-prefix
-row Open Food Facts has that is usable at all. The source is the ceiling.
-
-
-### Why the scanner misses Malaysian packets
-
-Measured 12 August 2026 and again on 14 August, against the live D1 catalogue and
-the Open Food Facts nightly dump.
-
-**We are already carrying almost everything Open Food Facts has for Malaysia, and
-Open Food Facts barely has Malaysia.** Nothing in this repo filters Malaysian
-packets out. The source is the ceiling.
-
-```
-Open Food Facts, GS1 Malaysia prefix (955…)   9,280
-  …with a product name                        8,624
-  …with a full macro panel                    4,489   (52%)
-  …named, with NO energy figure at all        4,049   (47%)
-
-held in D1                                    4,366   = 96.5% of the usable ones
-```
-
-The remainder is drift between the dump we loaded and the one on disk, not a
-filter. `sources/open_food_facts.py` in the sibling `ricecal-food-database` repo
-already takes **every** product in the dump with a name, a code and a full panel.
-
-**And the rows we do hold are thin.** Of the Malaysian-prefix products: 21% have
-no brand recorded, 43% have no serving weight, and about 5% are named in French
-rather than English or Malay.
-
-The French names are the tell, and they explain the whole shape of this. The
-Malaysian products Open Food Facts knows about are largely the ones **exported to
-Europe and scanned there**: Mamee instant noodles entered as "Nouilles
-instantanées saveur poulet". Asking Open Food Facts for an English or Malay name
-for each returned a usable alternative for 3 of 168, so this is not a field we
-failed to read. The packet was scanned in France and nobody has ever entered it
-in English or Malay.
-
-What is missing is the ordinary middle of a Malaysian aisle: 99 Speedmart house
-brands, Gardenia and Massimo bread, Yeo's and F&N drinks, Julie's and Munchy's
-biscuits, Adabi and Babas spice mixes, the Ramly and Ayamas freezer.
-
-#### What was tried, and what it was worth
-
-**The Open Food Facts daily delta pays a standing dividend.**
-`static.openfoodfacts.org/data/delta/` publishes a file a day and keeps about a
-fortnight. Reading thirteen gave 7,745 codes D1 did not hold, and the next two
-days added another 2,829. Roughly 1,400 a day, so a weekly pass costs a few
-minutes. Nothing else here adds a row without a contract or a code change.
-
-That load also found something the sibling repo needs to know: **Open Food Facts
-moved the panel out of `nutriments`.** It is now
-`nutrition.aggregated_set.nutrients.<key>.value`, with the basis in
-`aggregated_set.per`. A reader written against the old key does not error. It
-found four usable products in 85,000 and looked like a quiet fortnight.
-
-**USDA FoodData Central Branded** collapses to 441,858 distinct GTINs, and only
-16,500 were new. Open Food Facts already carries almost all of it.
-
-**Walking Open Food Facts per country was abandoned, and the abandonment is the
-finding.** Sampling six countries found 97% already held. A sequential sweep of
-Malaysia read 1,000 products from page one and added zero. Open Food Facts is
-exhausted for these shelves.
-
-Three national sources would have helped and did not. **Korea (MFDS)** publishes
-a barcode-to-product join, but every route needs a registered account.
-**Taiwan (TFDA)** serves open datasets with no auth, and the one useful dataset
-was the composition table, which is loaded; no packaged-product register with
-barcodes. **Philippines (FNRI)** is behind a registration wall and is a
-composition table in any case.
-
-#### The options, in order
-
-1. **Close the loop in the app.** Every piece already exists, which makes it the
-   cheapest thing on the list and the only one that improves with use.
-   `scan-meal` already reads a nutrition panel off a photograph as its first
-   tier; the `barcode` function already writes catalogue rows as `service_role`;
-   `barcode_misses` already records every code that missed, which is a
-   demand-ordered work list far better than 9,100 GS1 members; and a miss now
-   lands on its own screen that can carry the offer.
-
-   Two things make it convert rather than nag. **Name the packet even when we
-   cannot price it**: those 4,049 named rows with no energy figure belong in a
-   `product_stub(barcode, name, brand)` table, so a miss becomes "Gardenia
-   Original Classic. We do not have its numbers yet: point the camera at the
-   label." And **decide what one person's photograph is worth**: a panel read
-   from one user's photo is a claim, not a measurement, so the cheap version is
-   provenance (`source_id = 'user_panel'`, unverified, never outranking a
-   measured row) and the strong version is agreement between two independent
-   captures before it is promoted.
-
-2. **Work `barcode_misses` by hand** while volume is low. A few hundred codes
-   entered from photographs of real shelves covers the top of the distribution,
-   which is where almost all scans land.
-
-3. **Ask FatSecret the narrow question.** Their Premier edition claims 90%+
-   global barcode coverage, but Malaysia is not in their published market list
-   and a global figure is dominated by the US and Europe. Ask: *how many GTINs
-   beginning 955 do you hold with a complete macro panel, and may we store them?*
-   Anything under a few tens of thousands is not worth a contract. Nutritionix
-   and Edamam are US-centric and will be worse. Syndigo and 1WorldSync are priced
-   for brand owners.
-
-4. **Contribute back to Open Food Facts.** They take writes at
-   `/cgi/product_jqm2.pl` with an app account, and ask for `app_name`,
-   `app_version` and a salted per-user `app_uuid` so their moderators can ban one
-   bad contributor rather than the whole app. We serve their data under ODbL and
-   already credit them, so feeding the panel back is both the decent answer and a
-   direct investment in the source we depend on.
-
-**GS1 Malaysia** is worth one email to `databank@gs1my.org` and not worth
-planning around: `databank.gs1my.com` is web-only with no public API, and
-Verified by GS1 returns identity attributes rather than nutrition.
-**The Ministry of Health's Healthier Choice list** is a good target list of which
-Malaysian SKUs exist and who makes them, and carries no barcode and no nutrition.
+**And Malaysia is the thin part of all of it.** Of those 3.2 million rows, 4,333
+carry a GS1 Malaysia prefix, fewer than Thailand and 0.13% of the catalogue.
+That is not a filter in this repo: the pipeline takes every OFF product with a
+panel and a code, and 4,333 is 96.5% of every Malaysian-prefix row Open Food
+Facts has that is usable at all. The source is the ceiling. See "Why the scanner
+misses Malaysian packets" above.
 
 ### The scan cascade
 
 **Client** (`src/data/snap.ts`):
 
-1. The shutter (or the send button) puts a *pending snap* on the day
-   immediately, in context and MMKV (`data/pending-snaps.tsx`), because there is
-   no row to insert yet. `useDayLog` merges it into the day.
+1. The shutter puts a *pending snap* on the day immediately, in context and MMKV
+   (`data/pending-snaps.tsx`), because there is no row to insert yet.
+   `useDayLog` merges it into the day.
 2. It also **schedules** the "your plate is counted" notice right there. iOS
    suspends a backgrounded app within seconds, so code that runs when the answer
    arrives may never run; a notification already scheduled still fires. It is
@@ -1173,52 +997,44 @@ Malaysian SKUs exist and who makes them, and carries no barcode and no nutrition
 3. Upload first, then invoke. The function reads the photo out of the bucket, so
    there is nothing to recognise until the object exists. A typed meal skips
    this and is one call shorter.
-4. On success the pending row is dropped and the day refetches into the real
-   entries. A pending row whose entry arrived by another route is recognised by
-   source and timestamp and dropped, or the meal appears twice for a second.
+4. On success the pending row is dropped and the day refetches. A pending row
+   whose entry arrived by another route is recognised by source and timestamp
+   and dropped, or the meal appears twice for a second.
 
 **Server** (`functions/scan-meal/index.ts`, cascade in `_shared/cascade.ts`,
-model calls in `_shared/llm.ts`):
-
-One vision call returns queries, per-component sizing and a kcal *range*, never
-nutrients.
+model calls in `_shared/llm.ts`). One vision call returns queries, per-component
+sizing and a kcal *range*, never nutrients.
 
 **Sizing is a weight before it is a calorie count**, and `_shared/portion.ts` is
 what that buys. Grams are the one thing about a portion a picture actually
 carries, and unlike a calorie figure they can be checked: against the macro
-grams the model reports beside them (matter cannot outweigh the thing it is in,
-and a cooked food is mostly water), and against catalogue rows that state their
+grams the model reports beside them, and against catalogue rows that state their
 own serving weight, where 30 g of the thing is arithmetic rather than a second
 opinion.
 
-Everything downstream used to be anchored to the model's kcal instead, which is
-how one bad guess became a bad entry. Told a satay stick was 180 kcal, the
-catalogue search accepted rows within a band around that figure, so the
-catalogue's own 36 kcal a stick was excluded and four skewers were logged at
-720. Weights only ever bound a figure downwards: a number too big for its mass
-is impossible, while a number too small for it usually means the mass was
-measured against the wrong thing.
+Anchored to the model's kcal instead, one bad guess became a bad entry: told a
+satay stick was 180 kcal, the catalogue search accepted rows within a band
+around that figure, so the catalogue's own 36 kcal a stick was excluded and four
+skewers were logged at 720. Weights only ever bound a figure downwards.
 
 Then, in order:
 
-- **Nutrition panel** → read the figures off the label and stop. Nothing is
-  searched or estimated; somebody photographing a panel is saying the answer is
-  printed here.
+- **Nutrition panel** → read the figures off the label and stop. Somebody
+  photographing a panel is saying the answer is printed here.
 - **No food** → answer `{ok: true, food: false}`, write nothing. A blurred plate
   is still a meal; a photo of a cat is not.
 - **Tier 2, components** → when the model *listed* two or more parts. Each
-  resolves to its own catalogue row (or a per-unit estimate row) and the entry is
-  their sum. Gated on the list, not on `scene`: a banana leaf of satay came back
-  "single" with three components on it.
+  resolves to its own catalogue row and the entry is their sum. Gated on the
+  list, not on `scene`: a banana leaf of satay came back "single" with three
+  components on it.
 - **Count** → several of one countable thing. Three durian are three, priced per
-  unit, counted in the portion where the stepper reaches it.
-- **Tier 1/3, dish** → the Worker's search (specific, then generic, then head
-  noun), a verifier picks one, a wide ratio gate accepts it. Identity is what a
-  vision model is good at; calories are what it is worst at.
-- **Tier 4, estimate** → a second model call, Atwater-checked, kept as numbers on
-  the entry. It used to write a shared catalogue row deduped on name and size; a
-  guess reused is still a guess, and it cost a client-facing table the scan
-  pipeline wrote to.
+  unit.
+- **Tier 1/3, dish** → the Worker's search (specific, generic, head noun), a
+  verifier picks one, a wide ratio gate accepts it. Identity is what a vision
+  model is good at; calories are what it is worst at.
+- **Tier 4, estimate** → a second model call, Atwater-checked, kept as numbers
+  on the entry. It used to write a shared catalogue row; a guess reused is still
+  a guess.
 - **Tier 5, archetype** → classification over the seeded generic rows, bottoming
   out at a terminal "Mixed meal" at a hardcoded id that needs no model and no
   network.
@@ -1233,29 +1049,25 @@ A meal can be typed ("nasi lemak with fried chicken and a teh tarik") and that
 is the same endpoint and the same cascade. Only the first model call differs:
 `describeMeal` instead of `analysePhoto`, both answering in the same `Vision`
 shape. `food_logs.source` (`text` vs `camera`) is the only place the two part
-company afterwards.
+company.
 
 **The difference is who the authority is.** A photo has one witness and it is
 the model, so everything it says is inference the catalogue then checks. A
-sentence was written by the person who ate the meal, so what it states (the
-dish, the number of them, the size, a calorie figure) is the answer, and the
-model's job is only to name it searchably and price the portion it was told
-about.
-
-The shared parts of both prompts are shared constants in `llm.ts`. The size
-anchors in them were expensive to derive, and a second prompt with its own copy
-would have relearned them wrong.
+sentence was written by the person who ate the meal, so what it states is the
+answer, and the model's job is only to name it searchably and price the portion
+it was told about. The shared parts of both prompts are shared constants in
+`llm.ts`; the size anchors were expensive to derive and a second prompt with its
+own copy would have relearned them wrong.
 
 **A stated portion is a `count` below one, and a dish the person named as one
 thing stays one thing.** Both were prompt rules that did not hold. "Half a plate
 of char kuey teow" put the half in the calorie bounds and in the words, neither
-of which the app can act on, and logged a whole plate three times out of three.
-So a fraction of a serving now lives in `count`, the one number that survives
-into the logged portion, and `grams` stays the weight of one whole unit.
+of which the app can act on, and logged a whole plate three times out of three;
+a fraction of a serving now lives in `count`, and `grams` stays the weight of
+one whole unit.
 
-And "chicken rice" came back decomposed into coconut rice plus roast chicken
-(wrong twice over, since the rice under a chicken rice is not coconut rice) no
-matter how the prompt was worded. So on the typed path it is enforced instead:
+And "chicken rice" came back decomposed into coconut rice plus roast chicken no
+matter how the prompt was worded, so on the typed path it is enforced instead:
 `keepDishesWhole` drops a breakdown when the sentence contains nothing that
 could join two foods. That check is possible here and only here, because this is
 the one path where the app knows exactly what the person wrote.
@@ -1265,22 +1077,19 @@ sentence until the dish lands, because a snapped row has its photograph and a
 typed one would otherwise be a spinner over an empty line.
 
 **A typed meal also picks its own drawing**, and only a typed one. It has no
-photograph, so the row would be a name over an empty square in a diary where its
-neighbours have pictures, and the model that just read "nasi lemak with fried
-chicken" knows which of our illustrations that is. The prompt carries the list of
-icon names and the answer is validated against it in `_shared/icons.ts`, the one
-place in a scan where a hallucination cannot be useful, since an invented name
-renders nothing. A photographed meal is never asked: it has the better picture,
-and `food_logs` holds one or the other.
+photograph, so the row would be a name over an empty square, and the model that
+just read "nasi lemak with fried chicken" knows which of our illustrations that
+is. The prompt carries the list of icon names and the answer is validated
+against it in `_shared/icons.ts`, the one place in a scan where a hallucination
+cannot be useful. A photographed meal is never asked: `food_logs` holds one or
+the other.
 
 Two things about that list were learnt immediately. Two hundred hyphenated slugs
 is the largest block of example text in either prompt, and a model reads a long
 list of names as the vocabulary it should answer in: asked for "Fried flat rice
-noodles with prawns" it came back named `Char-kuey-teow`. So the block goes last,
-after every field it could contaminate, and says outright that these are
-filenames. And a rejected name is logged, because it is the one failure on this
-path with no symptom: a near miss looks exactly like a row that never had a
-drawing.
+noodles with prawns" it came back named `Char-kuey-teow`. So the block goes
+last, after every field it could contaminate. And a rejected name is logged,
+because it is the one failure on this path with no symptom.
 
 The names come from `icons.generated.ts`, written by the same script that builds
 the app's icon registry. Edge functions are Deno and cannot import it, and a
@@ -1290,195 +1099,138 @@ hand-kept second copy drifts the first time an icon is renamed.
 
 ## Correcting an entry
 
-Two ways, and they are separated because they cost different things.
+Two ways, separated because they cost different things.
 
 ### By hand, on `app/log/food/[id].tsx`
 
-**One save per section, and there is no Save button on the page.** Every edit
-used to stage in local state and one footer button wrote the lot. That was a
-coherent model for a page of controls, and it stopped being one when each group
-moved behind a pencil into a sheet of its own: a sheet with a Done button that
-writes nothing is a second staging level, and nobody reading "Done" expects to
-have to find another button afterwards.
+**One save per section, and there is no Save button on the page.** Each group
+sits behind a pencil that opens a sheet, and each sheet is a form that saves
+what it is about. The footer is left with the one thing that is not a section of
+this entry: handing the meal back to the model.
 
-So each sheet is a form that saves what it is about, the footer is left with the
-one thing that is not a section of this entry (handing the meal back to the
-model), and leaving the screen loses nothing. That is why the discard prompt, the
-disabled edge swipe and the Android back handler behind it are all gone.
-
-Each `save*` function throws on failure so its sheet can stay open with the draft
-still in it, and stages the value locally as well: the write invalidates the day
-and the refetch is a round trip behind it, so without the local copy the card
-would show the old figure for that beat.
+Each `save*` function throws on failure so its sheet can stay open with the
+draft still in it, and stages the value locally as well: the write invalidates
+the day and the refetch is a round trip behind it.
 
 **The portion is the exception**, and it saves on a short debounce. A plus and a
 minus have nowhere to put a Save, and written per tap they are three round trips
 to reach two and a half plates. A pending edit is flushed on unmount through a
-ref, so backing out inside the debounce window does not drop it.
+ref.
 
-The add path is untouched by all of this: composing a row genuinely is a staged
-form, since there is nothing to write until Add.
+The add path is a staged form, because there is nothing to write until Add.
 
 ### The layout
 
 **The plate is the top of the screen, full width, with the chrome floating on
-it.** It was a padded tile under an `AppBar`, and the two were one job in two
-boxes: between them they spent a fifth of the screen on things that are not the
-meal.
+it.** The `Screen` is `flush` and one wrapper puts the gutter back for
+everything under it; back on the left, then share, the pencil and the bin on the
+right, least to most destructive. The dish name is the page's heading
+underneath, where it stopped truncating: a bar between two 44pt buttons had room
+for about three words of "Nasi Lemak with Fried Chicken with pineapple juice".
 
-The photograph goes edge to edge now (the `Screen` is `flush`, and one wrapper
-puts the gutter back for everything under it), the chrome sits over it (back on
-the left, then share, the entry's pencil and the bin on the right, least to most
-destructive), and the dish name is the page's own heading underneath, where it
-stopped truncating. A bar between two 44pt buttons had room for about three
-words of "Nasi Lemak with Fried Chicken with pineapple juice".
-
-The name and the time under it are one block rather than two stacked children, so
-they read as a heading and its subtitle. Square on every edge, because it is not
-a card hanging off the top of the screen, it is where the screen starts. And it
-runs behind the status bar rather than stopping under it: `Screen`'s `flush`
-keeps the top inset as padding, which is right for content and wrong for a
-picture meant to *be* the top of the page. A negative margin cancels that padding
-and the height takes it back. The trade is the status bar, which draws in the
-theme's colour over whatever is up there.
-
-The three entry-level controls are together for a reason. The pencil was at the
-end of the date line, which read as "edit the date" when what it opens is the
-name and the when. Beside the bin it reads as one of the things that act on the
-whole entry. Share leads them because it is the one that changes nothing, which
-also puts the bin furthest from the button somebody reaches for casually.
+It runs behind the status bar rather than stopping under it. `flush` keeps the
+top inset as padding, which is right for content and wrong for a picture meant
+to *be* the top of the page, so a negative margin cancels that padding and the
+height takes it back. The trade is the status bar, which draws in the theme's
+colour over whatever is up there.
 
 ### Sharing a meal
 
 **A meal is shared as a picture, and the picture is not a screenshot.**
-`features/logging/MealShareCard.tsx` is a card built for the purpose: the plate
-square and full width, the app's mark watermarked into its top corner, and one
-caption under it carrying the dish, the calorie total and the three macros.
+`features/logging/MealShareCard.tsx` is a card built for it: the plate square
+and full width, the app's mark watermarked in, and one caption carrying the
+dish, the calorie total and the three macros.
 
 It is drawn off to the left of the page at full opacity and photographed on
-demand (`lib/share.ts`, Skia's `makeImageFromView`). The two other ways to hide a
-view both break the capture: the capture multiplies a view's own alpha into what
-it draws, so opacity comes out blank, and mounting it on the tap would mean
-waiting frames for a layout before there is anything to photograph. Mounted from
-the start, a tap is a capture and a share sheet and nothing else.
+demand (Skia's `makeImageFromView`). The two other ways to hide a view break the
+capture: it multiplies a view's own alpha into what it draws, so opacity comes
+out blank, and mounting on the tap would mean waiting frames for a layout.
 
-What is deliberately not on that card is the day, the time, and any comparison
-against a budget. Those are the diary's business rather than the plate's, and a
-card that says how far under goal somebody was is a card they have to think about
-before sending.
+What is deliberately not on the card is the day, the time, and any comparison
+against a budget. Those are the diary's business rather than the plate's.
 
 ### The sheets
 
-Each editable group carries one pencil, and the pencil opens a sheet: the entry's
-own details (`DetailsSheet`, the name and the when), the figures
+Three pencils: the entry's own details (`DetailsSheet`), the figures
 (`NutritionSheet`) and the plate (`PlateSheet`).
 
-All three were edited where they were read for a while. Tap the calorie total and
-it became a caret in its own place; tap a macro amount and the same; every
-ingredient row carried a pair of stepper buttons. One figure at a time it was a
-lovely mechanic; as a form it was a bad one. Nothing said which of the four
-figures had already been changed, the number pad covered the bars whose labels
-were the only thing distinguishing them, and two buttons on an ingredient row
-took enough width that a part's name was truncated on the one screen whose job is
-checking what the model decided the plate was made of.
-
-**The pencil is the whole control**, with no "Edit" beside it. Three of them sit
-one under another, so the word was printed three times to say what the icon says.
+**The pencil is the whole control**, with no "Edit" beside it. Three sit one
+under another, so the word was printed three times to say what the icon says.
 The words moved to the `accessibilityLabel`, and they are specific ("Edit the
 ingredients", never "Edit"), because three buttons announcing "Edit" tell a
-screen reader nothing. The glyph is not tinted, unlike the chevron and the bin
-either side of it: those are silhouettes and survive being flattened to one
-colour, while this one is a yellow pencil with a red eraser whose whole meaning
-is the colour.
+screen reader nothing. The glyph is not tinted: it is a yellow pencil with a red
+eraser whose whole meaning is the colour.
 
-**A part is edited by weight.** The ingredient card reads "Fried rice (90 g)",
-where it used to read "× 0.5 · 90 g" and lead with the number nobody can act on.
-The multiplier is how `food_log_ingredients` stores an amount; the grams are the
-amount, and the only thing about a part somebody can check against the plate in
-front of them.
+**A part is edited by weight.** The card reads "Fried rice (90 g)". The
+multiplier is how `food_log_ingredients` stores an amount; the grams are the
+amount, and the only thing about a part somebody can check against the plate.
+`quantityForGrams` is the seam: `set_ingredient_quantity` takes a quantity and
+the column is `numeric(6, 2)`, so a weight lands within a gram or two of what
+was asked for. A part nobody weighed keeps its multiplier.
 
-The sheet steps and types in grams too, and `quantityForGrams` is the seam:
-`set_ingredient_quantity` takes a quantity and the column is `numeric(6, 2)`, so
-a weight lands within a gram or two of what was asked for, and the number on
-screen is always what the row actually weighs. A part nobody weighed keeps its
-multiplier, because a count is the only thing that can be said about it.
+Each sheet holds a draft and its Save writes it; leaving any other way drops
+what was typed. `stagedParts` in `features/logging/parts.ts` is shared between
+the card and the plate sheet, so there are not two previews of one plate.
 
-Each sheet holds a draft and its Save writes it; leaving any other way drops what
-was typed. `stagedParts` in `features/logging/parts.ts` is shared between the
-card and the plate sheet, because two copies of that arithmetic would be two
-previews of one plate.
+**One of them keeps its state above the body**, because its button is in the
+sheet's `footer` rather than in the scrolling half, and that state outlives one
+opening since a `Sheet` is a `Modal` that stays in the tree with
+`visible={false}`. Both reset the draft *and* the saving flag when the sheet
+opens: without the second half a successful save left the spinner running and
+the next opening had a disabled button.
 
-**One of them keeps its state above the body**, because it was written with its
-button in the sheet's `footer` rather than in the scrolling half. That state
-outlives one opening, since a `Sheet` is a `Modal` that stays in the tree with
-`visible={false}`. So both reset the draft *and* the saving flag when the sheet
-opens. Without the second half, a successful save left the spinner running, and
-the next time the sheet opened its button was already disabled.
-
-**The figure fields are pre-filled**, which puts a burden on the save. A box with
-the number in it is a box you can correct, where an empty one asks you to
-remember what you are replacing. But it also means a field holding the app's own
-answer comes back looking exactly like one somebody typed. `saveFigures` compares
-each figure against what the app worked out and writes null for a match, so
-opening the sheet and pressing Save changes nothing. Left uncompared it would pin
-all four as overrides, and since those sit above the portion in
-`food_log_details`, the next portion change would move the serving and not the
-calories.
+**The figure fields are pre-filled**, which puts a burden on the save. A field
+holding the app's own answer comes back looking exactly like one somebody typed,
+so `saveFigures` compares each against what the app worked out and writes null
+for a match. Left uncompared it would pin all four as overrides, and since those
+sit above the portion in `food_log_details` the next portion change would move
+the serving and not the calories.
 
 ### Picking a day and a time
 
-**On wheels**, in a panel the details sheet leads to. It was a week strip that
-paged, an hour field, a minute field and an am/pm control: five things to say
-one, and typing digits into boxes is not what anybody means by picking a time.
+**On wheels**, in a panel the details sheet leads to. `src/ui/Wheel.tsx` is a
+`ScrollView` with `snapToInterval`, because the platform's own picker is a
+native module and this app wants the feature in builds already on phones. Three
+things it cost:
 
-`src/ui/Wheel.tsx` is the column, a `ScrollView` with `snapToInterval`, because
-the platform's own picker is a native module and this app wants the feature in
-builds already on phones. Three things it cost:
-
-- It needs an explicit frame, or it lays out at its content height inside a
-  parent that clips it, which renders perfectly and cannot be scrolled.
-- It needs more rows than it shows, so am/pm is two buttons rather than a two-row
-  wheel whose whole range is one snap step.
-- The sheet holding it is `scrollable={false}`, because a vertical scroller
+- it needs an explicit frame, or it lays out at its content height inside a
+  parent that clips it, which renders perfectly and cannot be scrolled;
+- it needs more rows than it shows, so am/pm is two buttons rather than a
+  two-row wheel whose whole range is one snap step;
+- the sheet holding it is `scrollable={false}`, because a vertical scroller
   inside a vertical scroller loses every drag.
 
 **When it was eaten is one question over two columns**, and
 `features/logging/when.ts` is the seam. `log_date` is the day the entry counts
-towards and `logged_at` is the instant. The diary already reads them that way
-round, so the screen prints them as one line under the title and
-`EntryPatch.when` writes them as a pair.
+towards and `logged_at` is the instant, and `EntryPatch.when` writes them as a
+pair. Sent alone, the timestamp would move the row inside a day it had not left,
+and the date would move the row to a day whose ordering still read off the old
+afternoon.
 
-Sent alone, the timestamp would move the row inside a day it had not left, and
-the date would move the row to a day whose ordering still read off the old
-afternoon. Two more consequences: change detection compares a day and a clock
-face rather than two ISO strings, because `instantOn` writes whole seconds where
-Postgres hands back microseconds and every Save would otherwise rewrite an
-untouched timestamp. And moving the date invalidates both days and the streak,
-since it is the one edit here that changes which days have entries on them.
-Nothing ahead of today can be picked.
+Two more consequences: change detection compares a day and a clock face rather
+than two ISO strings, because `instantOn` writes whole seconds where Postgres
+hands back microseconds; and moving the date invalidates both days and the
+streak. Nothing ahead of today can be picked.
 
 ### By describing it to the model
 
-Through the sparkle button beside Save. That opens a sheet with the field and the
-suggested chips (`features/logging/FixSheet.tsx`). It is a sheet rather than a
-card on the page because it is not one more staged control: the words go to the
-server, come back as a different meal, and leave the screen behind.
+Through the sparkle button beside Save, which opens `features/logging/FixSheet.tsx`.
+It is a sheet rather than a card because the words go to the server, come back
+as a different meal, and leave the screen behind.
 
-Anything staged is written **before** the correction is sent. The server
-interprets the words against the entry as it stands there, so "and half the rice"
-against a plate already changed on screen would correct a meal neither of them is
-looking at.
+Anything staged is written **before** the correction is sent: the server
+interprets the words against the entry as it stands there, so "and half the
+rice" against a plate changed only on screen would correct a meal neither of
+them is looking at.
 
-There is one behaviour here, not one per source. `scan-refine` reads `scan_id` as
-optional everywhere it touches it, so a hand-logged entry corrects exactly like a
-photographed one. The chips are instructions to the model rather than text the
-client acts on, which is why "Half portion" is no longer a serving swap the
-screen performs itself.
+There is one behaviour, not one per source. `scan-refine` reads `scan_id` as
+optional everywhere, so a hand-logged entry corrects exactly like a photographed
+one, and the chips are instructions to the model rather than text the client
+acts on.
 
-**`scan-refine/index.ts`** turns free text against a logged entry into one of
-four things, and they are a ladder ordered by how much of the entry survives. The
-interpreter's prompt is written as one, and it is told to stop at the first rung
-that fits:
+**`scan-refine/index.ts`** turns free text into one of four things, and they are
+a ladder ordered by how much of the entry survives. The model is told to stop at
+the first rung that fits:
 
 ```
 none        not a correction, or has no calories in it ("extra spicy")
@@ -1487,27 +1239,24 @@ adjust      one part added, removed, resized or swapped; re-price from the parts
 redescribe  the food itself was wrong: re-run the whole cascade
 ```
 
-Offered as a flat menu instead, the model reached for `redescribe` whenever it
-was unsure, which is the one answer that throws away everything the user has
-already accepted. "This was more like 500 calories" re-guessed a dish nobody said
-was wrong, and "it was rendang chicken not fried chicken" binned the rice, the
+Offered as a flat menu the model reached for `redescribe` whenever it was
+unsure, which is the one answer that throws away everything the user has already
+accepted: "this was more like 500 calories" re-guessed a dish nobody said was
+wrong, and "it was rendang chicken not fried chicken" binned the rice, the
 sambal and the egg to fix one side.
 
 Three consequences:
 
-- A part that turned out to be a different food is a **swap**: one row out, one
-  row in, the rest untouched. It is priced by asking what the new food costs,
-  never by asking how it differs from the old one. As a delta the model put
-  rendang chicken 172 kcal below fried chicken.
-- The interpreter is shown each part's **count and calories**, not just its name.
-  "I left half the rice" cannot be answered by a model that has only been told
-  the word "rice".
+- A part that turned out to be a different food is a **swap**, and it is priced
+  by asking what the new food costs rather than how it differs from the old one.
+  As a delta the model put rendang chicken 172 kcal below fried chicken.
+- The interpreter is shown each part's **count and calories**, not just its
+  name. "I left half the rice" cannot be answered from the word "rice".
 - A stated calorie total **rescales** rather than overrides. `override_kcal`
   would hit the number exactly, but it sits above the parts in
   `food_log_details`, so an entry with a breakdown would show the typed figure
-  over an ingredient list adding to something else. Rescaling keeps the two in
-  lockstep and pays for it in granularity, hence twentieths in `refineQuantity`,
-  where quarters rounded small corrections back to no change at all.
+  over an ingredient list adding to something else. Rescaling pays for it in
+  granularity, hence twentieths in `refineQuantity`.
 
 ---
 
@@ -1515,20 +1264,12 @@ Three consequences:
 
 The one model path that does not start from something the user already has. A
 scan reads a plate, a correction reads a sentence about one, a recipe read reads
-a pot; each has a subject. Here there is nothing to identify: the subject is the
-rest of the day, and the answer is a suggestion rather than a fact.
+a pot; each has a subject. Here the subject is the rest of the day, and the
+answer is a suggestion rather than a fact.
 
-**A thin row on Today opens it**, directly under the week strip. One line high,
-flat pandan rather than raised, with the words on it. Everything raised on that
-screen writes something and this writes nothing at all, so it reads as an offer
-rather than as the thing to do next.
-
-It has been three other things, and each was the right idea in the wrong place: a
-tinted card on Today, then a glyph on the calorie card (beside a *reading* rather
-than a decision), then a glyph in the log sheet. That last argument was sound and
-cost too much: the offer was two taps deep, inside a sheet whose tiles all point
-the other way, and an account that never pressed the log button never learnt the
-feature existed.
+A thin row on Today opens it, under the week strip: one line high, flat rather
+than raised, because everything raised on that screen writes something and this
+writes nothing.
 
 ```
 row (/today)   →  ask sheet     meal, macros, cuisine, a calorie ceiling
@@ -1542,102 +1283,68 @@ row (/today)   →  ask sheet     meal, macros, cuisine, a calorie ceiling
 ```
 
 **The list comes back when a pick's page leaves, and focus cannot say when that
-is.** This lived in `/log` for a while, which is a `transparentModal`, and the
-screen under a transparent presentation never loses focus. So the
-`useFocusEffect` that used to restore the list never fired, and reading one pick
-closed the rest for good. The provider carries a counter that the detail bumps as
-it unmounts, which happens whichever way the page is left.
+is.** A screen under a transparent presentation never loses focus, so a
+`useFocusEffect` never fires. The provider carries a counter that the detail
+bumps as it unmounts, which happens whichever way the page is left.
 
-**Every control opens on an answer**, which is the opposite of onboarding's first
-screen and right for the opposite reason. There a prefilled body is a calorie
-budget worked out for somebody else; here a prefilled sitting costs nothing to be
-wrong about, because the answer is a list of suggestions.
-
-The sitting comes off the user's own `meal_times` (nearest within two and a half
-hours, otherwise a snack) rather than a table of hours, so somebody whose dinner
-is at nine gets dinner at nine. The ceiling opens on what is left of the day,
-capped at what one sitting plausibly is.
-
-**The three choices are dropdowns**, and they were rows of chips. Chips put every
-answer on screen at once, which is the better control while the options are a
-fixed handful. The cuisines stopped being one: a list the user edits wraps to two
-lines, then three, so the sheet's height depended on how much typing somebody had
-done. `features/suggest/Dropdown.tsx` opens in place rather than through
-`Select`, which opens its options in a `Sheet`, and a native modal presented from
-inside another one is something this app has never had a reason to build.
+**Every control opens on an answer.** A prefilled sitting costs nothing to be
+wrong about, because the answer is a list of suggestions. The sitting comes off
+the user's own `meal_times` (nearest within two and a half hours, otherwise a
+snack) so somebody whose dinner is at nine gets dinner at nine, and the ceiling
+opens on what is left of the day, capped at what one sitting plausibly is.
 
 **The cuisines are the user's own list, and it lives on the phone.** Malay,
-Chinese and Indian to begin with, and a pencil beside the dropdown opens the list
-as chips that remove themselves plus a field that adds one. It was four hardcoded
-keys, on the reasoning that a list read from the catalogue would be a list of
-whatever happened to be imported. That still holds against reading it from the
-catalogue, and it never held against letting somebody type their own: a fixed
-union cannot say Thai, Nyonya or Japanese.
-
-MMKV and not a column, keyed by user: it is a preference about a control rather
-than a fact about the account, and a column would be a query the sheet has to
-wait on. The list is saved as it is *edited* rather than when the question is
-asked, which is the exception to the rule beside it, because a cuisine somebody
-typed out is work rather than a tap.
+Chinese and Indian to begin with, and a pencil beside the dropdown edits them.
+MMKV rather than a column: it is a preference about a control rather than a fact
+about the account, and a column would be a query the sheet has to wait on.
 
 Two consequences. The server has no list to validate against, so `cuisinePhrase`
 bounds the string instead: trimmed, capped at 40 characters, and stripped of the
 line breaks that would let a text field pose as another instruction in the
-prompt. And the cuisine can no longer be sent to Mixpanel as itself:
-`trackedCuisine` maps it to one of the shipped defaults or to `custom`, because
-free text somebody typed is exactly what the analytics rule keeps out.
+prompt. And the cuisine cannot be sent to Mixpanel as itself, so
+`trackedCuisine` maps it to one of the shipped defaults or to `custom`.
 
 **Nothing it returns is written anywhere, and the picks are view only.** No
-`food_logs` row, no catalogue row, no "Log it" button on the detail. A guess
-about a meal nobody has eaten is the last thing that should become a row other
-diaries are priced from. Whoever eats one of these logs it the ordinary way and
-the catalogue prices it. That is also why a pick has no id, why the detail is
-reached by index, and why `features/suggest/picks.tsx` holds the list in memory
-above navigation.
+`food_logs` row, no catalogue row, no "Log it" button. A guess about a meal
+nobody has eaten is the last thing that should become a row other diaries are
+priced from. That is also why a pick has no id, why the detail is reached by
+index, and why `features/suggest/picks.tsx` holds the list in memory above
+navigation.
 
-**The panel is one sheet at one size, throughout.** The wait and the answer are
-two states of the same full-height sheet: a capped sheet sizes itself to its
-content, so the two were different heights and the panel jumped at the one moment
-this screen has to feel settled. The wait draws one skeleton row per pick coming,
-at a real row's height, off `PICK_COUNT` rather than a literal. "Try again" is an
-icon on the title's line (`Sheet`'s `titleAction`) rather than a footer button.
+**The panel is one sheet at one size throughout.** A capped sheet sizes itself
+to its content, so the wait and the answer would be different heights and the
+panel would jump at the one moment this screen has to feel settled. The wait
+draws one skeleton row per pick, off `PICK_COUNT` rather than a literal.
 
-**Try again asks again. It used to reopen the question.** The old behaviour was
-argued for: "try again" after reading a list usually means "with something else".
-Watched, that is not what it is used for. The four answers are the same answers,
-the sheet remembers three of them anyway, and being handed the form back is being
-asked to confirm a decision nobody was revisiting. So the press re-sends the last
-request and the skeleton comes straight up. The model is not deterministic, so
-the same question genuinely does answer differently. The last request is held in
-a ref rather than read off the provider, which is only set once an answer has
-landed.
+**Try again re-sends the last request** rather than reopening the question. The
+model is not deterministic, so the same question genuinely answers differently,
+and changing the question is one tap away. The last request is held in a ref
+rather than read off the provider, which is only set once an answer has landed.
 
-**The reasons are the product.** A list of dish names against a calorie figure is
-a list anybody could write; "you are 39 g short on protein and one bowl covers
-most of it" is what makes it a suggestion. So `why` is required per pick and a
+**The reasons are the product.** A list of dish names against a calorie figure
+is a list anybody could write; "you are 39 g short on protein and one bowl
+covers most of it" is what makes it a suggestion. `why` is required per pick, a
 pick without one is dropped, and the reason's `kind` is a closed set of five so
 the screen can draw the right picture beside it.
 
-**The day is assembled on the server, not sent by the client.** The remaining
-budget, the macros still owed and what has already been eaten are read fresh in
-the endpoint. A client-supplied budget decides how big a meal the model offers,
-and a stale one (the app backgrounded since lunch) produces a suggestion for a
-day that has moved on.
+**The day is assembled on the server, not sent by the client.** A
+client-supplied budget decides how big a meal the model offers, and a stale one
+produces a suggestion for a day that has moved on. It is one round trip either
+way.
 
 **It is Pro, and it claims a scan**, exactly as `scan-refine` does: discretionary,
 repeatable at the press of a button, and with no cheaper tier underneath.
 
-**The gate is on "Suggest something", not on the row.** It was on the row, so a
-free account met the price list one tap after seeing the offer and never saw what
-was being offered. The question *is* the feature. It also refused a tap that
-costs nothing, since a scan is claimed by the request. What the move costs is one
-piece of plumbing: the ask sheet is a `Sheet`, which is a native `Modal` and
-therefore its own window, so a paywall pushed from under it would arrive behind
-it. `useRequirePro`'s `beforePaywall` closes the sheet first, and only on an
-actual refusal.
+**The gate is on "Suggest something", not on the row.** The question is the
+feature (the sitting, the macros, the user's own kitchens, the day's remaining
+budget) and a paywall in its place is an offer with the product hidden. It also
+refused a tap that costs nothing, since a scan is claimed by the request. The
+ask sheet is a `Sheet`, which is its own window, so a paywall pushed from under
+it would arrive behind it: `useRequirePro`'s `beforePaywall` closes the sheet
+first, and only on an actual refusal.
 
-`_shared/suggest.ts` holds the prompt and the shaping. Five things it was taught
-the expensive way, each after a live run broke it:
+`_shared/suggest.ts` holds the prompt. Five things it was taught after a live
+run broke it:
 
 - the sitting is a constraint rather than a label (asked for dinner it wrote "to
   start your day");
@@ -1646,50 +1353,41 @@ the expensive way, each after a live run broke it:
   from a named cuisine it answered with chicken breast and boiled eggs);
 - a dish's calories are never shrunk to fit the ceiling (asked for a 300 kcal
   snack it offered "nasi lemak, one plate, 280 kcal");
-- the macros left are context for the reasons rather than a specification to hit.
+- the macros left are context for the reasons rather than a specification to
+  hit.
 
-`unslug` plus a capital is the belt behind the last of them, because the icon
-list is the largest block in the prompt and the model answers in its register:
-picks named `char-kuey-teow`, `hokkien-mee`, `mee-siam`.
+`unslug` plus a capital is the belt behind the last of them: the icon list is
+the largest block in the prompt and the model answers in its register, with
+picks named `char-kuey-teow` and `hokkien-mee`.
 
-**Seven picks**, which is `PICK_COUNT` on the server and a deliberate copy of it
-in `features/suggest/ask.ts`. The two live either side of the Deno / React Native
-line and cannot import each other. The sheet scrolls, so the count was never
-bounded by what fits on a panel, and with the retry button re-asking in one tap a
-short list is the thing somebody spends a scan escaping. The heading stopped
-counting with it ("Ideas for dinner", not "Five for dinner"), because a heading
-that names a number lies whenever a pick is dropped.
+**Seven picks**, which is `PICK_COUNT` on the server and a deliberate copy in
+`features/suggest/ask.ts`. The two live either side of the Deno / React Native
+line and cannot import each other. The heading does not count them, because a
+heading that names a number lies whenever a pick is dropped.
 
-**It leans healthier, on a toggle, and the lean is a tie-break rather than a
-filter.** Told nothing it suggests whatever is famous; told to be healthy it
-answers with boiled eggs and steamed fish. So the rule is written as a preference
-between dishes that both fit (grilled chicken on a nasi lemak rather than fried,
-soto ayam rather than nasi goreng), and it is told not to mention health, dieting
-or clean eating in the reasons, because a suggestion that argues for itself on
-those grounds is a diet app and this is a diary. The switch lives in the *user*
-message rather than the system prompt because it changes per request. Off is
-stated rather than left out, because silence reads as the default.
+**It leans healthier on a toggle, and the lean is a tie-break rather than a
+filter.** Told to be healthy outright the model answers with boiled eggs and
+steamed fish, which is the bare-ingredient failure again. So the rule is written
+as a preference between dishes that both fit, and it is told not to mention
+health or dieting in the reasons. The switch lives in the *user* message because
+it changes per request, and Off is stated rather than left out, because silence
+reads as the default.
 
-**The sheet remembers what it was told, except the sitting and the ceiling.**
-`features/suggest/preferences.ts` keeps the macros, the cuisine and the lean in
-MMKV, keyed by user, saved when the question is asked. An answer chosen and
-changed back is not a preference. The sitting is not among them because it is
-answered by the clock, and the ceiling because it follows the sitting and the
-day's remaining budget: a 300 saved from a snack would open tomorrow's dinner at
-300.
+**The sheet remembers the macros, the cuisine and the lean**, in MMKV, keyed by
+user, saved when the question is asked. Not the sitting, which is answered by
+the clock, and not the ceiling, which follows the sitting and the day's
+remaining budget: a 300 saved from a snack would open tomorrow's dinner at 300.
 
-**The sitting has a belt of its own.** "To start your day" kept turning up on
-dinners. Moved to the last line of the user message, the position a model weights
-most, it fell to about one reason in fifteen picks, and mutated rather than
-stopping ("start your daily intake"). `keepToTheSitting` drops a reason written
-in the breakfast register from a meal that is not breakfast, and never empties a
-pick: losing a dish to a badly worded sentence is a worse answer than the
-sentence.
+**And the sitting has a belt of its own.** "To start your day" kept turning up
+on dinners; moved to the last line of the user message it fell to about one
+reason in fifteen picks and mutated rather than stopping.
+`keepToTheSitting` drops a reason written in the breakfast register from a meal
+that is not breakfast, and never empties a pick: losing a dish to a badly worded
+sentence is a worse answer than the sentence.
 
-A failure is an empty list rather than an HTTP error. In the cascade a diary that
-refuses the meal is worse than one that logs it roughly; here there is nothing to
-log, so the honest answer is to say nothing came to mind and offer the button
-again.
+A failure is an empty list rather than an HTTP error. In the cascade a diary
+that refuses the meal is worse than one that logs it roughly; here there is
+nothing to log, so the honest answer is to say nothing came to mind.
 
 ---
 
@@ -1822,59 +1520,35 @@ out of the middle.
 ## The diary screen
 
 A week strip above the ring, Monday to Sunday, paged back a year, one page per
-calendar week, each fetching only its own seven days as it scrolls into view.
-Picking a day moves `selectedDate` (`data/selected-date.tsx`, the one piece of
-genuinely client-owned state), and everything below follows it: the ring, the
-water, the entry list, and anything logged while it is selected. The heading
-stops saying "Today" the moment it is used.
+calendar week, each fetching only its own seven days. Picking a day moves
+`selectedDate` (`data/selected-date.tsx`, the one piece of genuinely
+client-owned state) and everything below follows it: the ring, the water, the
+entry list, and anything logged while it is selected.
 
-**And a way back, in the bottom-left corner, only while there is one.** The strip
-reaches back a year and the month grid reaches it in twelve taps, at which point
-returning to today means paging forward week by week. `Screen`'s `floatingLeading`
-is a slot of its own rather than a row inside `floating`: the two corners hold
-unrelated things and appear on different conditions, and a single row would need
-an invisible spacer for whichever half is absent, over a scroll view, eating
-taps. Absent on today rather than disabled, because a control whose only job is
-to get somewhere you already are has nothing to say.
+**A way back to today sits in the bottom-left corner, only while there is one.**
+`Screen`'s `floatingLeading` is its own slot rather than a row inside
+`floating`: the two corners hold unrelated things and appear on different
+conditions, and a single row would need an invisible spacer over a scroll view,
+eating taps. Absent on today rather than disabled.
 
 **The dot under each number is that day's verdict**, and there are three plus
 silence: under goal, over goal, a hollow ring for a past day with nothing on it,
-and nothing at all for today-before-breakfast or a day still ahead. That last
-distinction is the one worth keeping: a day nobody has had yet has not been
-missed, and marking it would be the app inventing a failure.
+and nothing at all for today-before-breakfast or a day still ahead. A day nobody
+has had yet has not been missed.
 
-`day_marks(from, to)` returns the three facts a dot needs (what was eaten, the
-goal effective that day, what movement added) and no verdict.
-`features/logging/week.ts` turns those facts into a dot and is unit-tested,
-because the order is the whole thing: ahead-of-today and not-yet-loaded both mean
-"say nothing", and only then does an empty past day mean "missed".
+`day_marks(from, to)` returns the three facts a dot needs and no verdict.
+`features/logging/week.ts` turns them into a dot and is unit-tested, because the
+order is the whole thing: ahead-of-today and not-yet-loaded both mean "say
+nothing", and only then does an empty past day mean "missed".
 
 ### Or the whole month, as pictures
 
 The toggle beside the heading swaps the week strip for a month grid, and it
-**replaces** the screen under it rather than sitting above it. The two views
-answer different questions ("what did I eat" and "what have I been eating"), and
-the month can only answer its one by being mostly pictures, which leaves no room
-for the ring, the water and the list.
-
-What is under the grid instead is the selected day as a list of what was eaten on
-it, and the water tank for that day.
-
-That list was a row of plates that scrolled sideways, on the argument that the
-grid above is read by looking. Two things were wrong with it. The dish's *name*
-was not on it, so a day of four photographed plates was four squares to be opened
-one at a time to identify. And a sideways scroller hides whatever does not fit,
-with nothing on screen saying there is more.
-
-It is `ItemRow` now, which is what the diary's own list is made of, so a meal does
-not look like two different things depending on which view found it. Oldest first,
-unlike the diary: that one leads with the newest because the thing somebody looks
-at right after logging is the thing they just logged, and nobody is logging into a
-day they came to the calendar to read.
-
-The water card is under that list. Before it, the month view had no answer for
-water at all, and the only way to see Tuesday's was to leave the calendar, find
-Tuesday on the strip and come back.
+**replaces** the screen under it. The two views answer different questions
+("what did I eat" and "what have I been eating") and the month can only answer
+its one by being mostly pictures, which leaves no room for the ring, the water
+and the list. What is under the grid instead is the selected day as an
+`ItemRow` list, oldest first, and the water tank for that day.
 
 **Every cell carries the day's biggest plate**, from `day_plates(from, to)`: the
 photograph where there is one and the drawing where there is not. Biggest rather
@@ -1887,21 +1561,17 @@ joining the diary twice more per day, fifty-two weeks back, would be a cost paid
 by the screen that does not want it.
 
 **The selected cell is filled in its own verdict's colour**, not always pandan.
-The verdict is the cell's outline and the selection is its fill, which is the
-separation that lets the outline carry a verdict at all. While the fill was
-pandan for every selected day the two collided anyway: an over-goal day that
-happened to be selected drew a kaya ring around a green square, so picking a day
-changed what the grid appeared to say about it. Under goal fills pandan, over
-goal fills kaya, a missed day fills grey, and a day with no verdict keeps pandan.
-The ink is paired with the fill rather than assumed, because `kaya-ink` is the
-same value as `kaya` in the dark palette.
+The verdict is the cell's outline and the selection is its fill, and while the
+fill was pandan for every selected day an over-goal day drew a kaya ring around
+a green square. Under goal fills pandan, over goal kaya, a missed day grey. The
+ink is paired with the fill rather than assumed, because `kaya-ink` is the same
+value as `kaya` in the dark palette.
 
-Arrows rather than a pager, unlike the strip: twelve taps reaches a year where
-the strip needs fifty-two swipes, and a paging grid a screen tall would fight the
-vertical scroll of everything under it. Paging moves the selection with it
-(`dayInMonth`, same day of the month, clamped to the month's length and to
-today), because a card describing a day that is not on screen is a card nobody
-can act on.
+Arrows rather than a pager: twelve taps reaches a year where the strip needs
+fifty-two swipes, and a paging grid a screen tall would fight the vertical
+scroll of everything under it. Paging moves the selection with it (`dayInMonth`,
+same day of the month, clamped to the month's length and to today), because a
+card describing a day that is not on screen is a card nobody can act on.
 
 The view mode is not persisted. The diary is the screen this app opens on, and a
 launch landing on a month grid because of a tap three days ago would be the app
@@ -2174,14 +1844,12 @@ skipped the resize, and would not stop a client that lied.
 **Entitlement is the store's to decide and RevenueCat's to report.**
 `subscriptions` is a read-only mirror with no client write grant at all, filled
 by the `revenuecat` edge function. `data/purchases.ts` buys and restores but can
-never grant. A client that could write that table is not a paywall. Every SDK in
-`lib/startup.ts` is gated on its key being real.
+never grant. Every SDK in `lib/startup.ts` is gated on its key being real.
 
 Three products on both stores and in RevenueCat: monthly, yearly, and a one-off
 lifetime. The two subscriptions carry a seven-day free trial and lifetime does
 not, which is why the button and the small print on `paywall/intro.tsx` change
-with the selection. "Start free trial" over a one-off purchase is a promise the
-store does not keep.
+with the selection.
 
 ### What each tier gets
 
@@ -2199,104 +1867,90 @@ store does not keep.
 | meal photographs kept | 30 days, or 60 past a lapsed subscription | for good |
 | budget, health sync, reminders, the whole catalogue | yes | yes |
 
-**The app used to gate writing an entry, and now it does not.** Every write went
-through `useRequirePro`, which made a free account a read-only tour of somebody
-else's diary. What replaced it is a free tier that can keep a real diary.
+Three of those numbers live in `packages/shared` for the copy to interpolate,
+and all three are enforced in Postgres: `free_daily_scans()`,
+`free_recipe_limit()`, `free_photo_retention_days()`. A fourth,
+`lapsed_photo_grace_days()`, is Postgres-only, because the grace period is not
+advertised and a promise about it would be one more thing that cannot be
+narrowed later.
 
-Three of those numbers live in `packages/shared` for the copy to interpolate, and
-all three are enforced in Postgres: `free_daily_scans()`, `free_recipe_limit()`,
-`free_photo_retention_days()`. A fourth, `lapsed_photo_grace_days()`, is
-Postgres-only, because the grace period is not advertised and a promise about it
-would be one more thing that cannot be narrowed later.
-
-The client's copy is what makes the buttons read honestly; the database's is what
-refuses. The trend ranges and the older reviews are gated in the **client alone**
-and deliberately: they are reads of the user's own data, so the worst a modified
-client buys is somebody seeing their own year.
+The client's copy makes the buttons read honestly; the database's is what
+refuses. The trend ranges and the older reviews are gated in the **client
+alone** and deliberately: they are reads of the user's own data, so the worst a
+modified client buys is somebody seeing their own year.
 
 ### The scan meter
 
-**The unit is a scan, and it used to be a request to OpenRouter.** `scan_usage`
-is one row per account per local day, and `claim_scan` does the check and the
-increment in one statement, because a hard limit two concurrent scans can both
-walk through is not one. It reads `is_entitled(user)` itself, so the ceiling is a
-property of the tier rather than of the table.
+**The unit is a scan, not a request to OpenRouter.** `scan_usage` is one row per
+account per local day, and `claim_scan` does the check and the increment in one
+statement, because a hard limit two concurrent scans can both walk through is
+not one. It reads `is_entitled(user)` itself, so the ceiling is a property of
+the tier rather than of the table.
 
 The old unit is why the old ceiling could never be sold: one photographed plate
-is a vision call, often a verifier call, sometimes an estimate, and a retried 429
-is another. Three or four requests for one shutter press. "3,000 model requests a
-month" is not a number anybody can hold against their own week.
+is a vision call, often a verifier call, sometimes an estimate, and a retried
+429 is another. "3,000 model requests a month" is not a number anybody can hold
+against their own week.
 
-One scan is one user-initiated pass at the model: a photographed plate, a typed
-meal, a correction, a recipe read out of a picture, a request for things to eat.
-Claimed **once**, at the top of the endpoint, before the photo is read and before
-the first model call. `Meter` is still threaded down to `chatJSON` and still
-required, but it only counts now: what it records is what a scan cost us, for the
-logs and the debug trace.
+One scan is one user-initiated pass at the model, claimed **once**, at the top
+of the endpoint, before the photo is read and before the first model call.
+`Meter` is still threaded down to `chatJSON` and still required, but it only
+counts: what it records is what a scan cost us.
 
 ### The webhook
 
 **It is the load-bearing part, and it depends on the client.** `app_user_id` is
 the only thing tying a purchase to a row, and it is whatever the app told
-RevenueCat. So `identifyPurchaser` in `lib/revenuecat.ts` has to run on sign-in,
-or every purchase arrives as `$RCAnonymousID:...` with no account to credit.
+RevenueCat, so `identifyPurchaser` has to run on sign-in or every purchase
+arrives as `$RCAnonymousID:...` with no account to credit.
 
 **`CANCELLATION` is deliberately not an ending.** In RevenueCat it means
 auto-renew was turned off and the user keeps what they paid for until
-`EXPIRATION` follows, so reading it as the end takes the app away from somebody
-who has paid for another three weeks.
+`EXPIRATION` follows.
 
 **Out-of-order delivery is ordered by when the event happened**
-(`subscriptions.last_event_at`, from `event_timestamp_ms`). The first attempt at
-this compared the event's expiry against the stored `current_period_end` instead.
-That is the same test only while every ending is the natural one, and it is not: a
-refund, a support cancellation and a revoked promotional grant all end a
-subscription inside the period it had already paid for, so every one of them
-looked stale and was dropped. Two promotional grants revoked in the dashboard
-went exactly that way. The accounts kept Pro, and the log line saying why was the
-only trace.
+(`subscriptions.last_event_at`). Comparing the event's expiry against the stored
+`current_period_end` is the same test only while every ending is the natural
+one, and it is not: a refund, a support cancellation and a revoked promotional
+grant all end a subscription inside the period it had already paid for, so every
+one of them looked stale and was dropped. Two promotional grants revoked in the
+dashboard went exactly that way, and the log line saying why was the only trace.
 
 **That bug is also a lesson about where to look.** It presented as RevenueCat
 having said nothing: the customer-events API showed no events at all for either
-revoked account, the original grant included. That endpoint reflects the
-transactions a customer *currently* has rather than what was delivered, so a
-revoked grant leaves nothing behind in it. The edge function's own logs had both
-events, received on time.
+revoked account. That endpoint reflects the transactions a customer *currently*
+has rather than what was delivered, so a revoked grant leaves nothing in it. The
+edge function's own logs had both events, received on time.
 
-**Nothing pulls from RevenueCat on a schedule**, and that is a decision rather
-than an omission. A reconciler was written and then removed: it existed for a
-problem that turned out to be ours, and once the ordering guard was right the
-only thing left for it was a delivery lost past RevenueCat's retries. The expiry
-rule already bounds that to the period somebody paid for rather than for ever. If
-it ever comes back, the one thing it must keep is downgrading **only on a
-positive answer**: a job that read "RevenueCat did not answer" as "they have
-nothing" would cancel every paying customer the first time the API had a bad
-night.
+**Nothing pulls from RevenueCat on a schedule**, and that is a decision. The
+expiry rule bounds a lost delivery to the period somebody paid for rather than
+for ever, which is a small enough exposure not to be worth a second source of
+truth and a schedule to forget about. If it ever comes back, the one thing it
+must keep is downgrading **only on a positive answer**: a job reading "RevenueCat
+did not answer" as "they have nothing" would cancel every paying customer the
+first time the API had a bad night.
 
 ### Identity
 
 **The id is the Supabase uuid and must never become the email.** An address is
-the readable choice and it is wrong on three counts at once: it changes, and a
-changed one logs the SDK in as a different customer whose `app_user_id` matches
-no row, so a paying user silently stops being entitled; not every way in supplies
-one; and it is guessable, which with a public SDK key is enough to ask about
-somebody else's purchases.
-
-What the dashboard needs is the address as an **attribute**, and `$email` is set
-right after the log in, never before, or it is filed against the anonymous
-customer the process started with.
+wrong on three counts: it changes, and a changed one logs the SDK in as a
+different customer whose `app_user_id` matches no row, so a paying user silently
+stops being entitled; not every way in supplies one; and it is guessable, which
+with a public SDK key is enough to ask about somebody else's purchases. The
+address travels as an **attribute** instead, set right after the log in, never
+before, or it is filed against the anonymous customer.
 
 **Two platforms are told who this is, and they have to agree.** RevenueCat
-forwards its purchase events into Mixpanel under the `$mixpanelDistinctId`
-attribute, falling back to `app_user_id` when nothing set it, and Mixpanel knows
-the person by whatever `identifyUser` registered. Both are the user's uuid, so
-the fallback lands correctly by coincidence rather than by design. That is why
-`identifyUser` **returns** its distinct id and `SessionProvider` hands that same
-string to `identifyPurchaser`.
+forwards its purchase events into Mixpanel under `$mixpanelDistinctId`, falling
+back to `app_user_id` when nothing set it, and Mixpanel knows the person by
+whatever `identifyUser` registered. Both are the user's uuid, so the fallback
+lands correctly by coincidence rather than by design. That is why `identifyUser`
+**returns** its distinct id and `SessionProvider` hands that same string to
+`identifyPurchaser`.
 
 Wrong, it is invisible from both dashboards: the subscription attaches to a
-profile with no behaviour and the behaviour to a profile that never paid, and the
-paywall funnel reads as zero conversions.
+profile with no behaviour and the behaviour to a profile that never paid, and
+the paywall funnel reads as zero conversions.
 
 ### Prices
 
@@ -2304,10 +1958,10 @@ paywall funnel reads as zero conversions.
 current offering and uses RevenueCat's localised `priceString`, so a Malaysian
 user sees ringgit because that is what they will be charged.
 
-They were strings in the copy bundle and were wrong three ways at once: dollars
-shown to somebody billed in ringgit, Apple and Play disagreeing on lifetime
-because Apple has no 119.90 price point for a one-time purchase, and every
-repricing needing an app release before the paywall stopped lying.
+As strings in the copy bundle they were wrong three ways at once: dollars shown
+to somebody billed in ringgit, Apple and Play disagreeing on lifetime because
+Apple has no 119.90 price point for a one-time purchase, and every repricing
+needing an app release before the paywall stopped lying.
 
 Until the store answers, a price is a dash. A plausible wrong number is worse
 than an obviously absent one. The saving on the yearly badge is computed from
@@ -2317,8 +1971,8 @@ can check.
 ### The mirror is a cache, not the record
 
 `subscriptions` is written by one thing, the `revenuecat` webhook, so anything
-that stops a single delivery used to leave an account that had paid being refused
-for ever, with nothing in the system that would ever notice.
+that stops a single delivery used to leave an account that had paid being
+refused for ever, with nothing that would ever notice.
 
 So `isEntitled` no longer believes a "no". On a miss it calls
 `reconcileEntitlement`, which asks RevenueCat's v1 `/subscribers` endpoint and
@@ -2326,22 +1980,21 @@ writes the row if the answer is yes. Three things make that safe:
 
 - **Only on the miss.** An entitled account never pays for the extra call.
 - **It heals upward only.** RevenueCat saying active writes the row; RevenueCat
-  saying nothing writes nothing. Taking the app away stays the webhook's job,
-  because a reconcile that could downgrade would make every timeout a
-  cancellation.
+  saying nothing writes nothing. A reconcile that could downgrade would make
+  every timeout a cancellation.
 - **`last_event_at` is not stamped.** A reconcile is a statement about *now*
   rather than an event with a place in the sequence, so leaving the column alone
   keeps the ordering guard able to judge the delivery that arrives a moment
   later.
 
-The key it uses is the **public SDK key**. `GET /v1/subscribers/{id}` is the same
-call the app's own SDK makes and accepts it by design. It can grant nothing, and
-the id comes from a verified JWT.
+The key it uses is the **public SDK key**. `GET /v1/subscribers/{id}` is the
+same call the app's own SDK makes and accepts it by design; it can grant
+nothing, and the id comes from a verified JWT.
 
 **`functions/entitlement` is the same repair, reachable by the app.** The server
 heals inside a Pro-gated request, which is the wrong moment for the two things
 the client reads straight out of Postgres: the scans-left line under the
-viewfinder and the plan on Me. So `useEntitlementSync` calls that endpoint the
+viewfinder and the plan on Me. `useEntitlementSync` calls that endpoint the
 moment it sees the store and the mirror disagree.
 
 ### The purchase gap
@@ -2349,51 +2002,42 @@ moment it sees the store and the mirror disagree.
 **A purchase confirms before our mirror knows about it, so the client reads two
 sources.** The store answers, then RevenueCat, then the webhook writes
 `subscriptions`. Read as the only source, that gap is a user shown the paywall
-again one tap after paying, and the gap is not always small: in a sandbox it
-never arrives at all, which is why "I started the trial and it still says free
-plan" was reproducible and looked like a broken webhook.
+again one tap after paying, and in a sandbox it never arrives at all.
 
 So `useEntitlement` also reads what the store told this device, through
 RevenueCat's own SDK. That is not the client granting itself anything: it is the
 receipt the SDK has already validated, cached on the handset, and it unlocks
 *buttons* while the server goes on deciding what it serves.
 
-**Either source saying yes is enough**, and neither is second-guessed by the
-other. Three states, not two: `null` from the SDK means "no store to ask" (a
-build with a placeholder key) and must not read as a no.
+**Either source saying yes is enough.** Three states, not two: `null` from the
+SDK means "no store to ask" and must not read as a no.
 
-`useAwaitEntitlement` asks the store first and returns the moment it says yes, so
-a purchase leaves the paywall in the same frame.
+`useAwaitEntitlement` asks the store first and returns the moment it says yes,
+so a purchase leaves the paywall in the same frame.
 
-The corollary is a state that can now exist on screen: the store says paid and
-the server has not heard. `announceRefusal` handles it by name. A `not_entitled`
-or a free-tier `scan_limit` arriving while the store says paid is answered with
-"your purchase is going through", never with a paywall. Selling the app to
-somebody who bought it a minute ago is the worst thing this code can do.
+The corollary is a state that can exist on screen: the store says paid and the
+server has not heard. `announceRefusal` handles it by name. A `not_entitled` or
+a free-tier `scan_limit` arriving while the store says paid is answered with
+"your purchase is going through", never with a paywall.
 
 ### Refusals
 
 **A refusal names what it refused.** `proFeatureTitle` in `data/refusals.ts`
-holds one sentence per `ProFeature` and both gates read it, the one in the app
-and the one that arrives from an edge function, so the same button refused in
-either place reads identically.
-
-It was one line for all of them ("That one needs RiceCal Pro") on the argument
-that this left the app with a single paywall rather than a variant per button.
-That holds for the *screen* and fails for the toast, which is the only thing on
+holds one sentence per `ProFeature` and both gates read it, so the same button
+refused in the app or by an edge function reads identically. One line for all of
+them holds for the *screen* and fails for the toast, which is the only thing on
 screen that can say which of the buttons under a thumb declined to work.
 
 **A free account's refusal opens the paywall; a Pro account's does not.**
 `claim_scan` returns `entitled` alongside the numbers, and `announceRefusal` is
-the one place that decides. A free user gets a toast saying they have used
-today's three and the paywall behind it; a subscriber who has somehow reached
-fifty in a day gets the message and nothing to buy.
+the one place that decides. Showing a paywall to somebody who has already paid
+is the worst thing this app can do with a refusal.
 
 **Pro is also offered without being asked for, once every two days.**
-`useProNudge` on Today, a beat after the diary appears. Everything else waits to
-be refused, and an account that never presses a gated button would otherwise
-never learn there is a paid tier. Every paywall resets that clock, so the rule
-the user experiences is "at most one paywall every two days".
+`useProNudge` on Today, a beat after the diary appears, because an account that
+never presses a gated button would otherwise never learn there is a paid tier.
+Every paywall resets that clock, so the rule the user experiences is "at most
+one paywall every two days".
 
 ### Photo retention
 
@@ -2405,21 +2049,18 @@ The sweep is a job rather than a statement in Postgres, because Postgres cannot
 reach R2 and the **order** is the whole problem. Delete the object, then clear
 the column. A crash between the two is picked up by the next run, since deleting
 a key that is already gone is a no-op; the other order strands the bytes for
-ever, the key being their only name. The row keeps a drawing where the plate was,
-or a swept month would be a column of grey tiles.
+ever, the key being their only name. The row keeps a drawing where the plate
+was, or a swept month would be a column of grey tiles.
 
-**A former subscriber gets sixty days before any of it starts.**
-`lapsed_photo_grace_days()` is deliberately not one of the `free_*` numbers:
-those say what the free tier gets, and this says what somebody who used to pay is
-spared. A subscription ends for reasons that are not a decision, and the account
-reads as free the same day whichever it was, so the first thing that happens to a
-former subscriber must not be the deletion of their photographs.
+**A former subscriber gets sixty days before any of it starts.** A subscription
+ends for reasons that are not a decision (a card expires, a renewal webhook is
+lost, a support cancellation lands early) and the account reads as free the same
+day whichever it was, so the first thing that happens to a former subscriber
+must not be the deletion of their photographs.
 
 It stacks with the paid-era rule rather than replacing it: what they logged
-*while paying* is kept for ever regardless, and the grace covers what they have
-logged since. The cliff at expiry plus sixty is real and bounded (at most a month
-of post-expiry plates go in one batch) and that is the price of a grace period
-having an end.
+*while paying* is kept for ever regardless. The cliff at expiry plus sixty is
+real and bounded, at most a month of post-expiry plates in one batch.
 
 ### Share and Earn
 
@@ -2429,19 +2070,17 @@ at 100 and lifetime at 500, claimed by bringing the link to the Discord server
 that already carries support.
 
 The whole of it is manual: no referral code, no attribution, no table, no deep
-link. That is the design rather than a first cut. A referral system buys
-automatic credit and costs a claimed-by column, a fraud story and a support
-thread for every code that did not register, which at this size is more machinery
-than the thing it automates. It is also why the threshold is *likes* rather than
-installs: installs need attribution to count at all, while likes are on the post
-itself, where both sides can see them.
+link. A referral system buys automatic credit and costs a claimed-by column, a
+fraud story and a support thread for every code that did not register. It is
+also why the threshold is *likes* rather than installs: installs need
+attribution to count at all, while likes are on the post itself, where both
+sides can see them.
 
 ### Reminders
 
 **All local.** A meal reminder is "every day at 08:00 in the user's own
 timezone", which both platforms express as a repeating calendar trigger. No
 server, no push token, nothing to deliver if the phone is offline at breakfast.
-Push, when it exists, is for what the phone cannot know by itself.
 
 ---
 

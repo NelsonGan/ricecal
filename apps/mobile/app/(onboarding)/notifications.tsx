@@ -54,11 +54,6 @@ function NotificationsStep() {
 
   /**
    * Straight to the offer, and then to the diary.
-   *
-   * The tour used to sit here — four screens of prose between the last
-   * permission and the app. It is offered from Today instead, once, as a toast,
-   * so somebody who wants to start logging can, and somebody who wants the tour
-   * is one tap from it. See `features/tutorial`.
    */
   const next = () => router.replace('/paywall/intro')
 

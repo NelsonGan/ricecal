@@ -278,11 +278,6 @@ export const paywall = {
     proReached: "You have hit today's scanning limit. Please contact admin.",
     /**
      * The lapsed case, as the second line under the feature sentence.
-     *
-     * It was the whole message ("Your subscription is not active, so this one needs
-     * Pro.") which led with our bookkeeping and never said what had been refused.
-     * Which button was pressed is the part the user needs; why the server said no is
-     * the footnote.
      */
     notEntitledDetail: 'Your subscription is not active.',
     /**

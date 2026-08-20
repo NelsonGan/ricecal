@@ -21,12 +21,6 @@ const DURATION_MS = 12000
 /**
  * Offers the tour, once per account, on Today.
  *
- * THE TOUR MOVED HERE FROM ONBOARDING. It was the last of eleven screens
- * standing between a new account and the diary they signed up for, and it was
- * four cards about an app they had not seen. Offering it on the real screen, one
- * beat after arriving, means the user has the thing in front of them while
- * deciding whether they want it explained.
- *
  * Declining is silence: the toast dismisses itself and never returns. That is
  * only acceptable because Me carries a permanent row to the same screen, which
  * is the answer for somebody who looked away and then wanted it.

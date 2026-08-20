@@ -11,11 +11,6 @@
  * change that can silently make the app worse: nothing errors, "nasi lemak"
  * just starts returning something else. Run `--save before`, load, then
  * `--against before`.
- *
- * There were two of these for a while, one grading Postgres and one grading the
- * Worker, reading the same `search-gate.cases.json` so that the move could be
- * answered rather than hoped about — D1 scored 28/30 top-1 against Postgres's
- * 26/30 on identical work. The Postgres half went with the catalogue.
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'

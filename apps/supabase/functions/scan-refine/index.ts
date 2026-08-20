@@ -76,11 +76,6 @@ const REMOVES_THE_PART = 0.6
  * The entry this function reasons over: the row, the dish it holds, the portion
  * it is measured in, and the parts hanging off it. Exactly the select below,
  * named.
- *
- * The dish and the portion used to be two joins, into `foods` and
- * `food_servings`. They are columns on the entry now, which is the same
- * information with one fewer thing that can be missing: an entry whose food had
- * been deleted from under it came back with a null relation and threw here.
  */
 type RefineEntry = {
   id: string
@@ -164,13 +159,6 @@ async function rebuildFromParts(
   const round1 = (value: number) => Math.round(value * 10) / 10
 
   // The parent is the sum of these parts, written onto the entry itself.
-  //
-  // It used to be a shared `foods` row upserted on the normalized name, which
-  // meant the figure that came back was not always the figure just computed —
-  // somebody else's plate of the same name may have been priced differently —
-  // and `quantity` existed here to absorb that drift. With the numbers on the
-  // entry there is no other plate to collide with, so this is exactly the sum
-  // at one portion, and `quantity` is 1 by construction.
   const { error: updateError } = await db
     .from('food_logs')
     .update({
