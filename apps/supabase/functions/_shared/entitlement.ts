@@ -1,19 +1,16 @@
 // Who may reach the model, and how often.
 //
-// Two separate questions, deliberately kept apart because they fail differently
-// and the user can do something about exactly one of them:
+// Two separate questions, kept apart because they fail differently:
 //
-//   Has this account paid?  -> decides which features it may reach at all.
-//                              Describing a meal, correcting one with words and
-//                              reading a recipe out of a photograph are Pro;
-//                              photographing a plate is not.
-//   Has it spent today?     -> decides how many scans it may spend, and the
-//                              ceiling depends on the answer above: three a day
-//                              free, fifty a day Pro.
+//   Has this account paid?  -> which features it may reach at all. Describing a
+//                              meal, correcting one and reading a recipe out of a
+//                              photograph are Pro; photographing a plate is not.
+//   Has it spent today?     -> how many scans, and the ceiling depends on the
+//                              answer above: three a day free, fifty a day Pro.
 //
-// Both are checked server-side and that is the point. The client gates the same
-// two things so the buttons read honestly, but a paywall enforced only in the app
-// is a paywall enforced by anyone who has not modified the app.
+// Both are checked server-side. The client gates the same two things so the
+// buttons read honestly, but a paywall enforced only in the app is a paywall
+// enforced by anyone who has not modified the app.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { planOf, sandboxAllowed } from './revenuecat.ts'
@@ -25,24 +22,20 @@ const ENTITLED = new Set(['trial', 'active'])
 /**
  * The whole rule: an entitled status, and a period that has not run out.
  *
- * The date is part of it, and for a long time it was not. Both gates read the
- * status alone, so `current_period_end` was a column the webhook wrote and
- * nothing ever read, which made every missed ending permanent rather than
- * temporary. A delivery that failed past RevenueCat's retries, or an event the
- * ordering guard wrongly discarded, leaves a row saying `active` with an expiry
- * in the past, and the account goes on reaching the model for ever.
+ * The date is part of it. Read on the status alone, a missed ending is permanent
+ * rather than temporary: a delivery that failed past RevenueCat's retries, or an
+ * event the ordering guard wrongly discarded, leaves a row saying `active` with
+ * an expiry in the past and an account reaching the model for ever.
  *
- * It does not replace the webhook and cannot: RevenueCat is still the only thing
- * that knows a subscription ended early. What it does is bound the damage of
- * never hearing to the period that was actually paid for.
+ * It does not replace the webhook, which is the only thing that knows a
+ * subscription ended early. It bounds the damage of never hearing.
  *
- * Null is no expiry, not an expired one. Lifetime is bought once and renews
- * never, so RevenueCat sends no expiry for it and the column is null by design.
- * Read the other way round, this would refuse the one plan nobody can renew.
+ * Null is no expiry, not an expired one: lifetime renews never, so RevenueCat
+ * sends no date and reading it the other way would refuse the one plan that
+ * cannot lapse.
  *
- * Mirrored by `isEntitledRow` in the client's `data/subscription.ts`. The two
- * cannot import each other across the Deno / React Native line, so they are two
- * copies of one rule and have to be changed together.
+ * Mirrored by `isEntitledRow` in `data/subscription.ts`. The two cannot import
+ * each other across the Deno / React Native line and change together.
  */
 export function entitledBy(
   row: { status?: string | null; current_period_end?: string | null } | null | undefined,
@@ -100,20 +93,15 @@ export class ScanLimitReached extends Error {
 /**
  * Is this account entitled right now?
  *
- * Read as `service_role`: the caller has already been resolved from their own
- * JWT, and `subscriptions` has no client write grant, so there is nothing here a
- * user could have put in place themselves.
+ * Read as `service_role`: the caller is already resolved from their own JWT, and
+ * `subscriptions` has no client write grant.
  *
- * A missing row is "no", not an error. Most accounts have never subscribed.
+ * A missing row is "no" rather than an error, since most accounts have never
+ * subscribed. A failed read is also "no": failing open would hand the Pro
+ * features to everybody during an outage in this one query, and failing shut
+ * costs a paying user one refused describe and a retry.
  *
- * A failed read is also "no", and that is the uncomfortable half. Failing open
- * would mean an outage in this one query hands the Pro features to everybody,
- * which is the expensive direction to be wrong in; failing shut costs a paying
- * user one refused describe and a retry.
- *
- * And a "no" is now checked with RevenueCat before it is believed. The row is a
- * cache of a webhook, and a webhook can be lost. Only on the miss, so an entitled
- * account never pays for the extra call.
+ * And a "no" is checked with RevenueCat before it is believed, on the miss only.
  */
 export async function isEntitled(db: SupabaseClient, userId: string): Promise<boolean> {
   const { data, error } = await db
@@ -136,30 +124,12 @@ export async function isEntitled(db: SupabaseClient, userId: string): Promise<bo
 /**
  * The row says no. Ask RevenueCat whether it is right, and fix it if not.
  *
- * The mirror is a cache, and this is the miss path. `subscriptions` is written by
- * one thing only, the `revenuecat` webhook, so anything that stops a single
- * delivery leaves an account that has paid being refused for ever, with nothing
- * in the system that would ever notice. A delivery lost past RevenueCat's
- * retries, an event our ordering guard drops, a function down for the ninety
- * seconds it was delivered, or a sandbox purchase the environment rule refuses:
- * every one of those used to be permanent. Now every one costs one extra HTTP
- * call on the first Pro request after it, and then corrects itself.
- *
- * It only ever heals upward. If RevenueCat says active we write the row; if it
- * says nothing we write nothing. Taking the app away is left to the webhook and
- * to `entitledBy`'s expiry check, because RevenueCat is the only party that knows
- * a subscription ended early and a reconcile that could downgrade would make
- * every timeout a cancellation.
- *
- * The sandbox rule still applies, and it has to: RevenueCat reports a sandbox
- * entitlement as perfectly active, so a reconcile that ignored `is_sandbox` would
- * be a way around the rule the webhook applies.
- *
- * `last_event_at` is deliberately not written. PostgREST builds its update column
- * list from the keys it is handed, so leaving it out preserves whatever ordering
- * the row already had. A reconcile is a statement about now rather than an event
- * with a place in the sequence, and stamping it would let this call silently
- * discard a real delivery arriving a moment later.
+ * The mirror is a cache and this is the miss path. `subscriptions` is written by
+ * one thing only, so anything that stops a single delivery leaves an account that
+ * has paid being refused for ever with nothing that would notice: a delivery lost
+ * past RevenueCat's retries, an event the ordering guard drops, a function down
+ * for the ninety seconds it was delivered. Each now costs one extra HTTP call on
+ * the next Pro request, and then corrects itself.
  */
 export async function reconcileEntitlement(db: SupabaseClient, userId: string): Promise<boolean> {
   const store = await fetchSubscriber(userId)

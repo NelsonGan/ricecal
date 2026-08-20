@@ -9,52 +9,35 @@ import { supabase } from '@/lib/supabase'
 /**
  * Signing in.
  *
- * Three ways in:
- *
- * - **Apple** is the native flow. It authenticates against the bundle id alone,
- *   so no Services ID or six-monthly key rotation is needed. The identity token
- *   goes straight to Supabase, which verifies it against Apple's keys.
+ * - **Apple** authenticates against the bundle id alone, so no Services ID and no
+ *   six-monthly key rotation. The identity token goes straight to Supabase.
  * - **Google** is written but gated: its client ids are still placeholders, so
  *   the button is hidden rather than offered and broken.
  * - **Email**, which is a password or a code in the post.
  *
- * The mail leads with a six digit code. It was a link alone, and a link is spent
- * by whatever reads the mail first, which for a corporate address is the
- * employer's link scanner, so the mail arrived already spent and the app said it
- * expired. A link also only works when the mail is opened on the phone the app is
- * on. The link is still there as the second offer.
- *
- * A password is offered because the alternative to remembering one is waiting for
- * an email every time, which is the worse deal for somebody opening a diary
- * daily. An account made with a code has no password until it sets one.
+ * The mail leads with a six digit code. A link is spent by whatever reads the
+ * mail first, which for a corporate address is the employer's link scanner, and
+ * it only works on the phone the app is on.
  *
  * Everything reaching Supabase's mailer or password endpoints takes a
- * `captchaToken`, which is `undefined` on a build with no Turnstile key. The
- * argument exists at every call site so that turning the gate on is a
- * configuration change rather than a code change.
+ * `captchaToken`, `undefined` on a build with no Turnstile key. The argument
+ * exists at every call site so turning the gate on is a configuration change.
  *
- * None of these create the profile. `on_auth_user_created` does, inside the same
- * transaction as the account, so a signed-in user always has rows to read.
+ * None of these create the profile. `on_auth_user_created` does, in the same
+ * transaction as the account.
  */
 
 /**
  * Where Supabase sends the browser once it has verified a login link.
  *
- * Built by hand rather than with `Linking.createURL`, which is the obvious choice
- * and the wrong one: it appends the Metro dev-server host to the authority, so it
- * returns `ricecal://localhost:8081/auth/callback` on a simulator and
- * `ricecal:///auth/callback` in a release. That reads as broken when it arrives,
- * and has to be allow-listed twice.
+ * Built by hand rather than with `Linking.createURL`, which appends the Metro
+ * dev-server host to the authority: `ricecal://localhost:8081/auth/callback` on a
+ * simulator and `ricecal:///auth/callback` in a release. The URL in the mail has
+ * to be identical everywhere, since a stranger's mail client opens it.
  *
- * Expo says as much in `createURL`'s own docs. A fixed string is also what the
- * allow-list needs: the URL in the mail must be identical everywhere, since a
- * stranger's mail client opens it and nothing there knows which build sent it.
- *
- * The scheme is read off the resolved config rather than written here, because
- * the development build is a separate app with its own (`ricecal-dev`). Two apps
- * registering `ricecal://` on one phone is undefined behaviour, and the loser is
- * whichever one the login link was meant for. The fallback is for tests, where
- * there is no embedded manifest.
+ * The scheme is read off the resolved config, because the development build is a
+ * separate app with its own (`ricecal-dev`), and two apps registering
+ * `ricecal://` on one phone is undefined behaviour.
  */
 function scheme(): string {
   const declared = Constants.expoConfig?.scheme
@@ -68,15 +51,12 @@ export function loginLinkRedirect(): string {
 /**
  * Where a password-reset link comes back to, and why it is not the one above.
  *
- * Both end in a session, so either path could land on the callback. What only
- * this one knows is that the person is in the middle of choosing a new password.
- * Land them on `/today` with a session and the reset is over before they typed
- * anything, and the password they were resetting is still the one they could not
- * remember.
+ * Both end in a session. What only this one knows is that the person is in the
+ * middle of choosing a new password: land them on `/today` and the reset is over
+ * before they typed anything.
  *
  * The path is the whole signal, and two things read it: `completeLoginFromUrl`,
- * so a reset is not counted as a sign-in, and `app/auth/[action].tsx`, which
- * decides where to go next.
+ * so a reset is not counted as a sign-in, and `app/auth/[action].tsx`.
  */
 export function passwordResetRedirect(): string {
   return `${scheme()}://auth/reset`
@@ -85,15 +65,10 @@ export function passwordResetRedirect(): string {
 /**
  * What went wrong, in terms a screen can write a sentence about.
  *
- * Supabase's messages are written for whoever is reading a server log: "Invalid
- * login credentials", "For security purposes, you can only request this after 47
- * seconds". They were being shown to users verbatim, which was survivable while
- * the only failure was a stale link and is not now that there are passwords,
- * codes, resends and a rate limit in the way.
- *
- * Every call in this file throws one of these instead, and the screens translate
- * the `reason`. The original is kept on `cause` for Sentry, because a reason of
- * `unknown` with nothing under it is a bug report nobody can act on.
+ * Supabase's messages are written for whoever is reading a server log ("Invalid
+ * login credentials", "you can only request this after 47 seconds") and were
+ * being shown to users verbatim. Every call in this file throws one of these
+ * instead, keeping the original on `cause` for Sentry.
  */
 export type AuthProblemReason =
   /**

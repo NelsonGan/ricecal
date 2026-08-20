@@ -1,26 +1,18 @@
 // Mass, and what it is worth in calories.
 //
-// Measured against real photos: a chicken satay stick came back at 180 kcal,
-// which put the acceptance band at 45-360 and so excluded the catalogue's own 36
-// kcal a stick, and four skewers were logged at 720 instead of 150. A slice of
-// lap cheong came back at 217. Both are the same mistake: a piece priced as a
-// portion, with nothing in the loop that knows how big a piece is.
+// Sized on the model's kcal alone, one bad guess became a bad entry: a satay
+// stick came back at 180 kcal, which put the acceptance band at 45-360 and
+// excluded the catalogue's own 36 kcal a stick, so four skewers were logged at
+// 720 instead of 150.
 //
-// So the model is asked for grams as well, and this file is what grams are for.
-// Mass is the thing a picture actually carries, and it buys three checks that
-// calories alone cannot:
+// So the model is asked for grams, and mass buys three checks calories cannot:
 //
-//   1. Energy density. 180 kcal in 30 g is 6 kcal/g, which is denser than cheese;
-//      the figure refutes itself without knowing anything about satay.
-//   2. Mass conservation. The macro grams of one unit cannot outweigh the unit. A
-//      cooked food is mostly water, so they cannot even come close.
-//   3. Conversion. A catalogue row that states its own weight knows its density
-//      exactly, and 30 g of the thing it describes is arithmetic rather than a
-//      second opinion.
+//   1. Energy density. 180 kcal in 30 g is 6 kcal/g, denser than cheese.
+//   2. Mass conservation. The macro grams of one unit cannot outweigh the unit,
+//      and a cooked food is mostly water.
+//   3. Conversion. A row that states its own weight knows its density exactly.
 //
-// The division of labour that falls out of it is the one the rest of the cascade
-// already believes in: the model says what and how much, the catalogue says what
-// that is worth.
+// The model says what and how much; the catalogue says what that is worth.
 
 const MASS_UNITS: Record<string, number> = {
   g: 1,
@@ -50,19 +42,15 @@ const MASS_UNITS: Record<string, number> = {
 /**
  * What one serving of a catalogue row weighs, when the label says so.
  *
- * Three shapes cover most of what the import produced: a pure weight ("100 g",
- * the commonest label in the table), a weight in parentheses after a human
- * portion ("1 bowl (400 g)"), and an imperial unit ("3.0 oz").
+ * Three shapes cover most of what the import produced: a pure weight, a weight in
+ * parentheses after a human portion ("1 bowl (400 g)"), and an imperial unit.
  *
- * Volumes in millilitres are read as grams. That is wrong for oil and for syrup
- * and right for everything a Malaysian drinks, which is what the ml labels in
- * this catalogue are.
+ * Millilitres are read as grams. Wrong for oil and syrup, right for everything a
+ * Malaysian drinks, which is what the ml labels here are.
  *
- * Cups and spoons are deliberately not read. Between them they are over 9,000 of
- * the catalogue's 70,000 portions, so the temptation is real, but a cup of cooked
- * rice is 200 g, a cup of oil is 218 g, and a cup of cornflakes is 30 g. Reading
- * them with any single density would put a confident, precisely wrong number
- * where there is currently an honest null.
+ * Cups and spoons are deliberately not read. A cup of cooked rice is 200 g, a cup
+ * of oil is 218 g, and a cup of cornflakes is 30 g, so any single density would
+ * put a confident, precisely wrong number where there is an honest null.
  */
 export function servingGrams(label: string | null | undefined): number | null {
   const text = (label ?? '').trim()
@@ -106,20 +94,17 @@ const usableGrams = (grams: number): number | null =>
 /**
  * Does this row's portion name a whole meal rather than a helping of one food?
  *
- * A plate, a set, a bento: the vessel a complete meal arrives in. The catalogue
- * is full of rows measured that way, because most of what people look up by
- * typing is a whole dish. Right for the dish tier and wrong for a part of a
+ * A plate, a set, a bento. Right for the dish tier and wrong for a part of a
  * breakdown, where charging one component for a whole plate counts the meal
  * twice.
  *
- * A label alone is weak evidence, so read `componentCandidates`, which is the
- * only caller, before reaching for this. A composition table states a household
- * portion of one food as "1 plate" too, and "Rice, Coconut Milk (Nasi Lemak)" is
- * a plate of nothing but rice. The label only settles it where there is no weight
- * to take a helping from, which is exactly where it has to settle it.
+ * A label alone is weak evidence, so read `componentCandidates`, the only caller,
+ * before reaching for this: a composition table states a household portion of one
+ * food as "1 plate" too. The label only settles it where there is no weight to
+ * take a helping from.
  *
  * "Bowl" is deliberately absent. A bowl of laksa is a whole meal and a bowl of
- * soup beside a rice plate is a part of one, and nothing in the label says which.
+ * soup beside a rice plate is a part of one.
  */
 const WHOLE_MEAL_SERVING = /\b(plates?|sets?|meals?|platters?|combos?|bentos?)\b/i
 
