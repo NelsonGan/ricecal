@@ -171,7 +171,7 @@ export function WaterCard({
  * labelled "Glass" alone is the unit this whole change removed.
  *
  * CAPPED RATHER THAN FULL HEIGHT, and this is the one exception to the rule in
- * CLAUDE.md that a sheet with a text field in it is always `fullHeight`. That
+ * README.md that a sheet with a text field in it is always `fullHeight`. That
  * rule is about the SYSTEM keyboard: `KeyboardAvoidingView` pads a capped panel
  * up off the bottom edge when one opens, and the strip it leaves shows the
  * scrim through the curve of the keyboard's corners. This field is on the app's

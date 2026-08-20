@@ -680,7 +680,7 @@ export const REVIEW_RECIPE_PROMPT =
   'doubt, approve. ' +
   'The reason is one sentence, addressed to the author, and is empty when approved. ' +
   // The reason is SHOWN, so it is copy and the house rule reaches it: no long
-  // dashes anywhere a user reads. See the conventions in CLAUDE.md.
+  // dashes anywhere a user reads. See the conventions in README.md.
   'Write it in plain sentences with no em dashes or en dashes; use a comma, a ' +
   'full stop or a semicolon instead. ' +
   // Prompt injection. The submission is user-written and reaches the model

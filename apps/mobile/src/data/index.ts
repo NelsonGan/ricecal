@@ -3,16 +3,16 @@
  *
  * Everything the screens read and write goes through here. Most of it goes to
  * Supabase; the catalogue goes to the Cloudflare Worker in front of D1. Three
- * rules hold throughout, and `README.md` beside this file has the detail:
+ * rules hold throughout, and `README.md` at the repo root has the detail.
  *
- * 1. **Screens never compute domain numbers.** A calorie total, a macro split
- *    and a day's budget come from views — `food_log_details`, `daily_nutrition`,
- *    `current_daily_goals` — so the arithmetic is in one place and it is the
+ * 1. Screens never compute domain numbers. A calorie total, a macro split and
+ *    a day's budget come from views (`food_log_details`, `daily_nutrition`,
+ *    `current_daily_goals`) so the arithmetic is in one place, and it is the
  *    same place a reminder or report job will read.
- * 2. **Every mutation is a hook.** `useLogFood`, `useAddWater`, `useLogWeight`,
- *    `useUpdateProfile` — each one owns what it invalidates, so a screen never
- *    has to know what its write affects.
- * 3. **Reads go through hooks, not through a client.** No screen imports
+ * 2. Every mutation is a hook. `useLogFood`, `useAddWater`, `useLogWeight` and
+ *    `useUpdateProfile` each own what they invalidate, so a screen never has
+ *    to know what its write affects.
+ * 3. Reads go through hooks, not through a client. No screen imports
  *    `supabase` directly.
  */
 export {

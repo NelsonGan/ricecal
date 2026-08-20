@@ -337,7 +337,7 @@ export function IngredientAmountSheet({ ingredient, onClose, onSave }: Ingredien
       // A text field, so full height. And short content, so not scrollable:
       // a scroll view scrolls itself to reveal the first responder and, before
       // the keyboard's real height is known, carries the field off the top.
-      // Both rules are in CLAUDE.md.
+      // Both rules are in README.md.
       fullHeight
       scrollable={false}
     >

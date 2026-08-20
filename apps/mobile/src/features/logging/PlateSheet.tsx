@@ -131,7 +131,7 @@ export type PlateSheetProps = {
  * while its rows were only buttons, and that stopped being true the moment the
  * weight became a field: a capped panel grows by the pad's height and is anchored
  * to the bottom, so a list of ingredients plus 314pt of keys ran off the top of
- * the screen and took the first row's name behind the notch with it. CLAUDE.md's
+ * the screen and took the first row's name behind the notch with it. README.md's
  * rule is written about the system keyboard and the geometry is the same for the
  * app's own pad — full height keeps the panel where it is and lets the list inset
  * itself instead, which also moves the action out of a footer, since a footer at

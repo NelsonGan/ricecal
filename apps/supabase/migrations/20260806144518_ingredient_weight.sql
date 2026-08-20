@@ -1,6 +1,6 @@
 -- What one of a scanned plate's parts weighs.
 --
--- HAND-WRITTEN, which the declarative workflow in supabase/README.md otherwise
+-- HAND-WRITTEN, which the declarative workflow in README.md otherwise
 -- forbids. `supabase db diff` generates this change as DROP VIEW on both
 -- `food_log_details` and `food_log_ingredient_details` — the first only because
 -- it reads the second — followed by CREATE VIEW and a set of grants of the
@@ -17,7 +17,7 @@
 -- fields; the dependent view is never dropped and no grant moves.
 --
 -- The view body below is copied verbatim out of `schemas/90_views.sql`, per the
--- rule in CLAUDE.md about restating a block rather than retyping it.
+-- rule in README.md about restating a block rather than retyping it.
 
 alter table public.food_log_ingredients
   add column grams numeric(7, 1) check (grams > 0 and grams <= 20000);

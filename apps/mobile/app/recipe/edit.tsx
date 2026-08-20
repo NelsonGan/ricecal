@@ -744,7 +744,7 @@ export default function RecipeFormScreen() {
           </Sheet>
 
           {/* A text field, so full height and not scrollable — the two rules a sheet
-          with typing in it always follows. See the note in CLAUDE.md. */}
+          with typing in it always follows. See the note in README.md. */}
           <Sheet
             visible={describing}
             onClose={() => setDescribing(false)}
