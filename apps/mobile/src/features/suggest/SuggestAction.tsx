@@ -60,18 +60,26 @@ export function SuggestAction({ date, kcalLeft, hasBudget, className }: SuggestA
   const router = useRouter()
   const toast = useToast()
   const colors = useThemeColors()
-  /**
-   * An ordinary `push`, unlike the version of this that lived in the log sheet.
-   * That one had to `replace`, because a paywall pushed from inside a
-   * `transparentModal` comes up stacked ON the sheet with the sheet's own scrim
-   * still over the app. Today is a plain screen and owes that no thought.
-   */
-  const requirePro = useRequirePro()
   const { picks, request, set, clear, closed } = useSuggestedPicks()
   const suggest = useSuggestMeals()
 
   const [asking, setAsking] = useState(false)
   const [showing, setShowing] = useState(false)
+
+  /**
+   * An ordinary `push`, unlike the version of this that lived in the log sheet.
+   * That one had to `replace`, because a paywall pushed from inside a
+   * `transparentModal` comes up stacked ON the sheet with the sheet's own scrim
+   * still over the app. Today is a plain screen and owes that no thought.
+   *
+   * The ASK SHEET does, though, and that is what `beforePaywall` is for. It is a
+   * `Sheet`, which is a native `Modal` and therefore its own window above the
+   * whole app, so a paywall pushed while it is up arrives behind it. The sheet
+   * closes first, and only on an actual refusal: the "still checking" and
+   * "could not check" answers stay put and say so in a toast, which the sheet
+   * hosts itself, rather than throwing away a form somebody has just filled in.
+   */
+  const requirePro = useRequirePro({ beforePaywall: () => setAsking(false) })
 
   /**
    * Whether the list should come back when this screen does.
@@ -198,10 +206,16 @@ export function SuggestAction({ date, kcalLeft, hasBudget, className }: SuggestA
           'h-[40px] flex-row items-center gap-2 rounded-md bg-pandan-soft px-3.5',
           className,
         )}
-        onPress={() => {
-          if (!requirePro('suggest')) return
-          setAsking(true)
-        }}
+        /* NO GATE HERE, and there used to be one.
+         *
+         * The row opened the paywall on the first tap, which meant a free
+         * account never saw what it was being sold: the question is the feature
+         * — four controls, the user's own kitchens, the day's remaining budget
+         * on the same line as the ceiling — and a price list shown in its place
+         * is an offer with the product hidden. It also refused a tap that costs
+         * nothing. Nothing is spent until the request goes out, so the gate went
+         * where the spending is, on the sheet's own button. See `onAsk`. */
+        onPress={() => setAsking(true)}
         accessibilityRole="button"
         accessibilityLabel={t('card.title')}
       >
@@ -216,7 +230,13 @@ export function SuggestAction({ date, kcalLeft, hasBudget, className }: SuggestA
       <AskSheet
         visible={asking}
         onClose={() => setAsking(false)}
-        onAsk={(answers) => ask({ ...answers, date })}
+        /* THE GATE IS HERE, on the button that spends a scan, rather than on
+           the row that opens this sheet. Refused, `requirePro` closes the sheet
+           through `beforePaywall` and puts the paywall up behind it. */
+        onAsk={(answers) => {
+          if (!requirePro('suggest')) return
+          ask({ ...answers, date })
+        }}
         kcalLeft={kcalLeft}
         showLeft={hasBudget}
         busy={suggest.isPending}

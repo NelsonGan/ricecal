@@ -192,7 +192,11 @@ export const paywall = {
         // "Kept 30 days" wrapped to two lines in a column sized for
         // "Unlimited"; the row's own label already supplies the verb.
         free: '{{days}} days',
-        pro: 'For good',
+        // "Unlimited" rather than "For good", which is the word the two rows
+        // above it use for the same answer. A table read down a column is read
+        // for where it CHANGES, and three ways of writing "no ceiling" make a
+        // reader stop and work out whether they mean different things.
+        pro: 'Unlimited',
       },
     },
   },
@@ -257,23 +261,40 @@ export const paywall = {
   /**
    * What a refusal says.
    *
-   * THREE MESSAGES, because there are three different things to say and they
-   * used to be two. A free account that has used today's three scans has
-   * somewhere to go, and the paywall opens behind this toast; a Pro account
-   * that has somehow reached fifty in one day has nowhere to go, so it is asked
-   * to get in touch and shown nothing to buy; and an account whose subscription
-   * has lapsed mid-request is told which of the two halves failed.
+   * A REFUSAL NAMES WHAT IT REFUSED, and it used to name nothing. There was one
+   * line for every Pro-only button in the app — "That one needs RiceCal Pro." —
+   * argued for on the grounds that the difference between "describing a meal
+   * needs Pro" and "asking what to eat needs Pro" is writing rather than
+   * information. That is true of the PAYWALL, which is why there is still only
+   * one of those, and it is false of the toast: the toast is the only thing on
+   * screen that can say which of the buttons under a thumb declined to work,
+   * and "that one" is the app pointing at something the user cannot see. A
+   * price list arriving over a sentence naming no feature is exactly what the
+   * generic line was written to prevent.
+   *
+   * Beyond that there are three messages about the ALLOWANCE rather than about
+   * a feature. A free account that has used today's three scans has somewhere
+   * to go, and the paywall opens behind this toast; a Pro account that has
+   * somehow reached fifty in one day has nowhere to go, so it is asked to get
+   * in touch and shown nothing to buy; and an account whose subscription has
+   * lapsed mid-request is told which of the two halves failed.
    *
    * The free message names the number, unlike its predecessor, because the
    * number can now be said: it counts plates rather than requests to a model,
    * so "3 today" is a sentence somebody can hold against their own morning.
-   * "Tomorrow" is the other half of it — a ceiling with no stated end reads as
-   * the feature being taken away.
    */
   limit: {
     freeReached: 'That is your {{count}} scans for today. Pro scans as much as you like.',
     proReached: "You have hit today's scanning limit. Please contact admin.",
-    notEntitled: 'Your subscription is not active, so this one needs Pro.',
+    /**
+     * The lapsed case, as the SECOND line under the feature sentence.
+     *
+     * It was the whole message — "Your subscription is not active, so this one
+     * needs Pro." — which led with our bookkeeping and never said what had been
+     * refused. Which button was pressed is the part the user needs; why the
+     * server said no is the footnote, so it is written as one.
+     */
+    notEntitledDetail: 'Your subscription is not active.',
     /**
      * The store says this account has paid and our own copy of that has not
      * caught up yet, which is the few seconds between a purchase settling and
@@ -286,17 +307,39 @@ export const paywall = {
      */
     confirming: 'Your purchase is going through. Give it a moment and try again.',
     /**
-     * A Pro-only button, pressed by somebody who is not.
+     * ONE LINE PER GATED THING, keyed by the same `ProFeature` the funnel is
+     * broken down by — so a sentence and the event that goes with it cannot
+     * name two different features.
      *
-     * ONE LINE FOR ALL OF THEM, deliberately, and it is the same argument that
-     * left this app with one paywall rather than a variant per feature: the
-     * differences between "describing a meal needs Pro" and "asking what to eat
-     * needs Pro" are writing rather than information. What the sentence is FOR
-     * is that a screen arriving with no explanation reads as the app having
-     * decided to sell something, and the price list behind it cannot say which
-     * button was pressed.
+     * Written as the thing that was just attempted, not as the feature's name
+     * in a table: "Fixing a meal by describing it" rather than "Fix". The
+     * reader has a finger on the button, and a sentence that repeats what they
+     * did is what makes the price list behind it read as an answer.
+     *
+     * Kept to ONE SHORT SENTENCE each. A toast is on screen for four seconds
+     * and the paywall arrives underneath it, so anything that takes longer than
+     * a glance to read is a sentence nobody finishes.
+     *
+     * `camera` is here for completeness rather than for the common case: a
+     * fourth photographed plate is an allowance, and `freeReached` above is
+     * what says so. This is the line for a camera scan refused because the
+     * subscription itself lapsed.
      */
-    proFeature: 'That one needs RiceCal Pro.',
+    feature: {
+      camera: 'Scanning another plate today needs RiceCal Pro.',
+      describe: 'Saying what you ate in words needs RiceCal Pro.',
+      refine: 'Fixing a meal by describing it needs RiceCal Pro.',
+      read_recipe: 'Filling a recipe in from a photo needs RiceCal Pro.',
+      new_recipe: 'Keeping more than {{recipes}} recipes needs RiceCal Pro.',
+      suggest: 'Asking what to eat next needs RiceCal Pro.',
+      trend_range: 'Looking back further than a week needs RiceCal Pro.',
+      review: 'Reading an older review needs RiceCal Pro.',
+      /**
+       * The standing offer, which no button refused. See `useProNudge`: nothing
+       * was declined here, so the sentence is an offer rather than a refusal.
+       */
+      nudge: 'RiceCal Pro takes the limits off.',
+    },
   },
 
   /**
@@ -316,24 +359,39 @@ export const paywall = {
     // greets everybody in the language they are reading it in.
     title: "You are in. Let's eat.",
     /**
-     * Only when the store actually STARTED a trial.
+     * ONE SHORT LINE, and every one of these used to be two.
      *
-     * It was said to everybody who was not buying lifetime, and the app has no
-     * business promising a trial the store did not give: an introductory offer
-     * is once per account per subscription group, so anybody resubscribing —
-     * or on a storefront where the offer is not configured — was charged
-     * immediately and told they had a week free. `usePlanSummary` reads the
-     * period type off the purchase rather than off the button that was pressed.
+     * "Everything is unlocked, nothing to set up" is the same fact twice: there
+     * is nothing to set up BECAUSE everything is unlocked. A receipt is read in
+     * a second and left, and what somebody wants off it is confirmation that
+     * the thing they paid for is theirs. The three squares under it say what
+     * that is; this line says only which of the three purchases happened.
+     *
+     * Said at all only when the store actually STARTED a trial. It was said to
+     * everybody who was not buying lifetime, and the app has no business
+     * promising a trial the store did not give: an introductory offer is once
+     * per account per subscription group, so anybody resubscribing — or on a
+     * storefront where the offer is not configured — was charged immediately
+     * and told they had a week free. `usePlanSummary` reads the period type off
+     * the purchase rather than off the button that was pressed.
      */
-    body: 'Trial active for 7 days. Everything is unlocked, nothing to set up.',
+    body: 'Your 7 free days start now. Everything is unlocked.',
     /** Paid straight away: a resubscriber, or an account with no offer left. */
-    bodyActive: 'Everything is unlocked, nothing to set up.',
-    bodyLifetime: 'RiceCal Pro is yours for good. Everything is unlocked, nothing to set up.',
+    bodyActive: 'Everything is unlocked.',
+    bodyLifetime: 'RiceCal Pro is yours for good. Everything is unlocked.',
+    /**
+     * THREE OR FOUR WORDS EACH, because they are captions under a glyph rather
+     * than lines of a list. See `PERKS` in `app/paywall/welcome.tsx`.
+     *
+     * The three ways in have to stay one of them: this is a promise made to
+     * somebody at the moment they pay. What is new is the third, which is the
+     * newest thing Pro does and was missing from a screen that went on
+     * describing a two-feature product.
+     */
     perks: {
-      // The three ways in, and they have to stay the three ways in: this is a
-      // promise made to somebody at the moment they pay.
-      log: 'Log by photo, by barcode or in your own words',
-      database: 'The full food database',
+      log: 'Snap, scan or say it',
+      database: 'Every dish and packet',
+      suggest: 'Ask what to eat',
     },
     manageNote: 'Manage or cancel any time in Profile, Subscription.',
     manageNoteLifetime: 'Paid once. There is nothing to renew or cancel.',

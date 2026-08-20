@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 
 import { useEntitlement } from '@/data'
-import { openPaywall } from '@/data/refusals'
+import { openPaywall, proFeatureTitle } from '@/data/refusals'
 import type { ProFeature } from '@/lib/analytics'
 import { useToast } from '@/ui'
 
@@ -19,6 +19,24 @@ export type RequireProOptions = {
    * sheet, half-covering it, with the sheet's own scrim still over the app.
    */
   navigate?: 'push' | 'replace'
+
+  /**
+   * Run once, immediately before the paywall is presented, and only then.
+   *
+   * FOR A CALLER THAT IS INSIDE A `Sheet`, which is a native `Modal` and so its
+   * own window above the whole app: a paywall pushed from under one arrives
+   * BEHIND it, and the user is left looking at the sheet they were already in.
+   * `replace` does not help, unlike the `transparentModal` case above — that is
+   * a route, and this is a window. The sheet has to actually close, and only
+   * the caller can close it.
+   *
+   * Called on the REFUSAL alone, which is the whole reason it is a callback
+   * rather than something the caller does before asking. The other two answers
+   * — still checking, could not check — say so in a toast and go nowhere, and a
+   * caller that dismissed its own sheet up front would throw away a form the
+   * user had just filled in to be told "just a moment".
+   */
+  beforePaywall?: () => void
 }
 
 /**
@@ -38,8 +56,14 @@ export type RequireProOptions = {
  * second device scanned. So that refusal arrives as a 429 and
  * `announceRefusal` in `data/refusals.ts` opens the same paywall this does.
  *
- * ONE PAYWALL, NOT A VARIANT PER BUTTON. There were three: "Photo logging is a
- * Pro feature", "Describing a meal is a Pro feature", "Logging a meal is a Pro
+ * ONE PAYWALL, NOT A VARIANT PER BUTTON — AND ONE SENTENCE PER BUTTON. The
+ * screen is shared and the toast in front of it is not: which capability was
+ * refused is the one thing the paywall cannot say for itself, and it is the
+ * thing the person with a finger on the button needs to hear. See
+ * `proFeatureTitle`.
+ *
+ * There were three whole paywall SCREENS once: "Photo logging is a Pro
+ * feature", "Describing a meal is a Pro feature", "Logging a meal is a Pro
  * feature", each with its own hero icon and its own three bullet points about
  * what that particular button would have done. They were three ways of saying
  * one thing — this needs Pro — and the differences between them were writing
@@ -81,7 +105,7 @@ export type RequireProOptions = {
  * behind the paywall it just paid to get past.
  */
 export function useRequirePro(options: RequireProOptions = {}): (feature: ProFeature) => boolean {
-  const { navigate = 'push' } = options
+  const { navigate = 'push', beforePaywall } = options
   const toast = useToast()
   const { t } = useTranslation('paywall')
   const { entitled, loading, unknown } = useEntitlement()
@@ -116,7 +140,14 @@ export function useRequirePro(options: RequireProOptions = {}): (feature: ProFea
     // just declined to work. `openPaywall` also carries the `Paywall Shown`
     // event, so a gate caught in the app and a limit reached on the server land
     // in the funnel as one thing rather than two.
-    openPaywall(toast, { title: t('limit.proFeature'), feature, navigate })
+    // The caller's own window gets out of the way first, if it has one. See
+    // `beforePaywall`: a paywall pushed from under a `Sheet` is a paywall
+    // nobody can see.
+    beforePaywall?.()
+    // NAMED, not "that one". `proFeatureTitle` is shared with the refusals that
+    // start on the server, so the same button refused by the app and by an edge
+    // function reads identically.
+    openPaywall(toast, { title: proFeatureTitle(feature), feature, navigate })
     return false
   }
 }
