@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -11,7 +11,6 @@ import { Button, Icon, Screen, Squish, Text } from '@/ui'
 /** W5 WELCOME TO PRO */
 export default function WelcomeToPro() {
   const { t } = useTranslation('paywall')
-  const router = useRouter()
   const enterApp = useEnterApp()
   /**
    * Which plan was just bought.
@@ -31,29 +30,33 @@ export default function WelcomeToPro() {
   const colors = useThemeColors()
 
   /**
-   * Land on Today, then raise the log sheet over it.
+   * Land on Today, and stop there.
    *
-   * Two calls rather than one: the sheet is a root-level modal and needs the
-   * day underneath it, or it floats over an empty stack with nothing behind
-   * its scrim. The router queues both actions in order, so the replace lands
-   * first.
+   * IT USED TO RAISE THE LOG SHEET AS WELL, and that put a camera in front of
+   * somebody who had just paid. `/log` with no `panel` param does not open on
+   * the four tiles: `openingPanel` falls through to `'camera'`, so the viewfinder
+   * is what a bare push presents. Whatever the user was doing when they hit the
+   * paywall — reading their trends, opening a recipe, finishing onboarding —
+   * they were not asking to photograph a plate, and being handed a live camera
+   * as the first thing Pro does is a demand rather than a reward.
+   *
+   * So the button goes to the diary and the FloatingAction is right there when
+   * they want it. A purchase should return people to the app, not redirect them
+   * into one feature of it.
    *
    * `enterApp` rather than a bare replace, because this screen is the end of
    * onboarding as often as it is a purchase made from the app — and a replace
    * leaves every screen the user walked to get here standing under the diary.
    * See `useEnterApp`.
    */
-  const logFirstMeal = () => {
-    enterApp()
-    router.push('/log')
-  }
+  const goToDiary = () => enterApp()
 
   return (
     <Screen
       scroll={false}
       contentClassName="justify-center"
       footer={
-        <Button fullWidth onPress={logFirstMeal}>
+        <Button fullWidth onPress={goToDiary}>
           {t('welcome.start')}
         </Button>
       }

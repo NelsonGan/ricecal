@@ -946,6 +946,36 @@ export type Database = {
           },
         ]
       }
+      retention_runs: {
+        Row: {
+          body: string | null
+          error: string | null
+          id: number
+          request_id: number
+          settled_at: string | null
+          started_at: string
+          status_code: number | null
+        }
+        Insert: {
+          body?: string | null
+          error?: string | null
+          id?: never
+          request_id: number
+          settled_at?: string | null
+          started_at?: string
+          status_code?: number | null
+        }
+        Update: {
+          body?: string | null
+          error?: string | null
+          id?: never
+          request_id?: number
+          settled_at?: string | null
+          started_at?: string
+          status_code?: number | null
+        }
+        Relationships: []
+      }
       scan_usage: {
         Row: {
           created_at: string
@@ -1630,6 +1660,7 @@ export type Database = {
       }
       gtin14: { Args: { code: string }; Returns: string }
       is_entitled: { Args: { p_user: string }; Returns: boolean }
+      lapsed_photo_grace_days: { Args: never; Returns: number }
       local_today: { Args: { p_user_id?: string }; Returns: string }
       logging_streak: {
         Args: { p_user_id?: string }
@@ -1773,6 +1804,7 @@ export type Database = {
         Args: { p_public: boolean; p_recipe_id: string }
         Returns: Database['public']['Enums']['recipe_review']
       }
+      sweep_meal_photos: { Args: never; Returns: number }
       sync_weight_readings: {
         Args: {
           p_provider: Database['public']['Enums']['health_provider']
