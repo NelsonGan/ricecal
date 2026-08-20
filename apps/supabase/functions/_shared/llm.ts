@@ -184,11 +184,10 @@ export type Interpretation =
        * The part `part` takes the place of, when one thing on the plate turned out to
        * be a different thing.
        *
-       * "It was rendang chicken not fried chicken" is one correction to one side of a
-       * four-part plate, and without somewhere to put it the interpreter had to call
+       * "It was rendang chicken not fried chicken" is one correction to one side of
+       * a four-part plate. Without somewhere to put it the interpreter had to call
        * the whole meal misidentified, which re-resolved the rice, the sambal and the
-       * egg nobody had mentioned. With it the swap is what it looks like: one row out,
-       * one row in, and the entry re-priced from the parts.
+       * egg nobody had mentioned.
        *
        * Null for every other kind of adjustment, including additions and removals,
        * which are the presence of a part changing rather than its identity.
@@ -262,9 +261,8 @@ export async function chatJSON(
     // through here and counts again, which is right: a retried 429 is a second
     // request and OpenRouter bills it as one.
     //
-    // Counting only. The ceiling is claimed once per scan at the top of the endpoint.
-    // This used to be where an account was refused, and a limit expressed in
-    // requests-to-a-model is a limit no paywall can state.
+    // Counting only. The ceiling is claimed once per scan at the top of the
+    // endpoint.
     meter.record()
 
     const res = await fetch(OPENROUTER_URL, {
@@ -605,13 +603,11 @@ const COMPONENT_FIELDS =
 
 // Size, as a weight rather than as a calorie count.
 //
-// Everything in this block used to be denominated in kcal, and the failures it
-// was written to stop went on happening: a satay stick priced at 180 kcal, a
-// slice of lap cheong at 217, four pork rinds at 160 each. A model has no way to
-// check a calorie figure, so an inflated one stands, and the cascade below then
-// searched the catalogue within a band around it, which threw out the very rows
-// that disagreed. A weight it can check, twice over: against the macro grams it
-// reports beside it, and against the fact that food is mostly water.
+// Denominated in kcal it did not hold: a satay stick priced at 180, a slice of
+// lap cheong at 217. A model has no way to check a calorie figure, so an
+// inflated one stands, and the cascade then searched the catalogue within a
+// band around it, throwing out the very rows that disagreed. A weight it can
+// check, against the macro grams beside it and against food being mostly water.
 const SIZE_ANCHORS =
   'SIZE IS A WEIGHT AND THE WEIGHT COMES FIRST. For every part decide "grams" — what ONE of ' +
   'it weighs, edible parts only, no bone, shell, skewer or wrapper — and only then work out ' +
@@ -1075,11 +1071,8 @@ function keepDishesWhole(text: string, vision: Vision): Vision {
 /**
  * One photo, one entry, enforced in code rather than only asked of the model.
  *
- * The vision prompt says everything eaten together is one item, but a model that
- * splits a tray anyway used to put four rows in the diary for one meal. This fold
- * makes the invariant structural: however many items come back, they collapse
- * into a single composite item, the kcal bounds sum, and the largest item names
- * the meal. The parts stay visible as the entry's ingredient breakdown.
+ * The vision prompt says everything eaten together is one item, and a model
+ * that splits a tray anyway put four rows in the diary for one meal.
  */
 export function foldMealItems(vision: Vision): Vision {
   const items = vision.items

@@ -294,12 +294,6 @@ export const logging = {
     times: '× {{amount}}',
     /**
      * What a part weighs, in brackets after its name.
-     *
-     * The weight is the one thing about a part somebody can check against the plate
-     * in front of them, and it used to sit on a second line behind a multiplier
-     * ("x 0.75 . 165 g") which put the number nobody can act on first. The multiplier
-     * is an implementation detail of how the row stores an amount; 165 g is the
-     * amount.
      */
     grams: '({{grams}} g)',
     /** The same for a part nobody weighed, where the count is all there is. */

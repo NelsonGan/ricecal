@@ -33,13 +33,6 @@ export const ROW_TILE_ICON = 52
 /**
  * What a row shows when it has neither a photograph nor a drawing of its own.
  *
- * The tile used to stay empty, on the reasoning that one stand-in plate beside
- * a thousand different dishes says nothing about any of them. It says one
- * useful thing, though — that this row is food and its picture is missing —
- * and a grey square says that less clearly than a plate does. Kept deliberately
- * neutral: a cream outline reads as a gap where a photograph goes, where a
- * colourful drawing would compete with the real plates around it.
- *
  * There was also a `textOnly` prop that dropped the tile, for catalogue search
  * results where a drawing was the rare exception and a column of identical
  * plates indented every dish name for the sake of the few that had one. That

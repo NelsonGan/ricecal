@@ -17,13 +17,6 @@
  *
  * WHY THE SIMILARITY IS COMPUTED HERE
  *
- * It used to be `pg_trgm`'s `%` operator riding a GIN index, with one side of
- * the pair pinned so the planner had ~1,500 rows to scan rather than 15,000
- * squared. SQLite has no trigram similarity — its FTS5 trigram tokenizer
- * matches substrings and does not score — so the comparison came back to the
- * client: ~21,000 searchable non-packaged names is a couple of megabytes, and
- * Jaccard over trigram sets is plain JavaScript with no index to build.
- *
  * **The pinning matters more here than it did in Postgres, not less.** There is
  * no index to fall back on, so a bare `pnpm foods:dupes` really does compare
  * every row against every other — 230 million pairs, which is minutes rather

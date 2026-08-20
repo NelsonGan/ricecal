@@ -79,9 +79,6 @@ comment on function public.search_normalize is
 -- `apps/cloudflare/workers/catalogue/src/index.ts`, which carries the same
 -- stopword list and the same rule about ORing terms, so that a dish name can
 -- carry the match while the narration around it is free to miss.
---
--- `food_name_norm` and `foods_set_search` went with them. Both were about keeping
--- columns in step with a row in a table that is not here.
 
 -- ---------------------------------------------------------------------------
 -- One barcode, one spelling.

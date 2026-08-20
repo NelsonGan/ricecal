@@ -28,14 +28,6 @@ export type DescribePanelProps = {
  * said the same thing again in the abstract, and prose explaining an example
  * that already demonstrates itself is prose nobody reads.
  *
- * The send button is UNDER the field, full width, and the sheet closes on it.
- * It was an arrow tucked into the field's bottom-right corner — the shape the
- * fix-by-typing box uses — and at this size that corner is where the third line
- * of a three-line meal wants to be. The arrow crowded the text it was waiting
- * for, and a 32pt target inside a box that is itself a target is an ambiguous
- * tap: the sibling panel in this same sheet already puts a full-width button
- * under its field, and so does the recipe describe panel.
- *
  * Either way the sheet closes on it and the wait belongs on the row on Today,
  * not on a spinner in a sheet the user is finished with.
  */

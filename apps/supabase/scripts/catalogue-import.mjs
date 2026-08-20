@@ -11,18 +11,6 @@
  *
  * WHY THE DEDUP IS HERE NOW
  *
- * It used to be inside `public.import_foods`, deliberately: a loader that
- * fetched the catalogue first and decided locally would have had to pull
- * 457,000 names to answer a question about 200, and two runs at once would each
- * conclude the same new dish was new.
- *
- * Neither argument survived the move. The searchable catalogue is ~48,000 rows
- * — the three million packaged products are in `product`, which nothing here
- * touches — so "pull every slug and normalized name" is one query and a couple
- * of megabytes. And D1 has no stored procedures to put the check inside the
- * write, so the choice is here or nowhere. Concurrency is the one thing lost,
- * and it was never real: these payloads are loaded by one person at a time.
- *
  * IDEMPOTENT BY SLUG AND BY NAME. Re-running a payload writes nothing the
  * second time, which is what makes recovery from a half-finished run "run it
  * again" rather than a question about which rows landed.

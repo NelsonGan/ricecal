@@ -36,15 +36,6 @@ export type PlanPickerProps = {
  * Radio cards rather than `RadioGroup`, because each option carries a price
  * block and a badge that a plain label cannot hold. The selection state and the
  * accessibility role are the same either way.
- *
- * THE THREE CARDS ARE ONE SHAPE: a name, a line of small print under it, and a
- * price on the right. Every difference between them then reads as information
- * rather than as three cards drawn to different rules. The yearly one earns two
- * additions and no more — a small pill beside its name for the saving, and the
- * per-month figure under its price — which is exactly the comparison it is
- * asking somebody to make. It used to carry the saving as a full-size status
- * pill on a row of its own and no billing line at all, which left one card a
- * head taller than the two below it and the odd one out.
  */
 export function PlanPicker({ value, onChange, showLifetime = false, className }: PlanPickerProps) {
   const { t } = useTranslation('paywall')

@@ -113,12 +113,6 @@ export type PlateSheetProps = {
 /**
  * EDIT THE PLATE: how much of each part of a scanned meal there was.
  *
- * The steppers used to sit on the detail screen's ingredient card, and moving
- * them here is what let that card show a part's whole name. Two buttons and a
- * calorie figure took about half the row, so every name longer than "Fried
- * chicken" was truncated on the one screen whose job is checking what the model
- * decided the plate was made of.
- *
  * IT SAVES ITSELF, one part at a time, because `set_ingredient_quantity` takes one
  * ingredient. The taps in here are free; only Save is a round trip.
  *

@@ -259,10 +259,6 @@ export function forgetPurchaser(): Promise<void> {
 /**
  * The entitlement this app sells. Must match the identifier in RevenueCat and
  * `ENTITLEMENT` in the `revenuecat` edge function.
- *
- * HERE rather than in `data/purchases.ts`, where it used to live, because the
- * reader below needs it and this module is the one that may not import upwards.
- * `data/purchases.ts` re-exports it, so every existing call site is unchanged.
  */
 export const PRO_ENTITLEMENT = 'pro'
 

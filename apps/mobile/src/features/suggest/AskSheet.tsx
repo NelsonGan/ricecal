@@ -78,16 +78,6 @@ function Group({
  * The sitting comes off the user's OWN meal times rather than off a table of
  * hours — see `mealAt` — and the ceiling off what is left of the day.
  *
- * THE THREE CHOICES ARE DROPDOWNS, and they were rows of chips. Chips put every
- * answer on screen at once, which is the better control while the options are a
- * fixed handful — and the cuisines stopped being one. A list the user edits is
- * a row that wraps to two lines, then three, so the sheet's height depended on
- * how much typing somebody had done and the calorie limit moved down the panel
- * every time they added a kitchen. Three fields of one height each say the same
- * thing in a form that does not move, and the two that could have stayed chips
- * follow the one that could not: three questions answered three different ways
- * would read as three different kinds of question.
- *
  * FULL HEIGHT, and now for two reasons. The form plus the ceiling comes to more
  * than the 440pt a capped body gets, and what a capped sheet does with the
  * overflow is hide the calorie limit behind the footer. And the cuisine editor

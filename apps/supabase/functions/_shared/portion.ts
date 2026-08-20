@@ -1,12 +1,5 @@
 // Mass, and what it is worth in calories.
 //
-// The cascade used to size a plate with one number: the model's kcal for one unit
-// of each part. That number is the single worst thing a vision model produces,
-// and everything downstream was anchored to it. The acceptance band for a
-// catalogue row was a quarter to double of it, so a bad guess did not merely
-// price the part badly, it rejected the catalogue row that would have corrected
-// it.
-//
 // Measured against real photos: a chicken satay stick came back at 180 kcal,
 // which put the acceptance band at 45-360 and so excluded the catalogue's own 36
 // kcal a stick, and four skewers were logged at 720 instead of 150. A slice of

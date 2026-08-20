@@ -251,15 +251,6 @@ export function SuggestAction({ date, kcalLeft, hasBudget, className }: SuggestA
         /**
          * STRAIGHT TO ANOTHER LIST, not back to the question.
          *
-         * It used to reopen the ask sheet, on the reasoning that "try again"
-         * after reading a list means "with something else" — and that a second
-         * identical request spends a scan on an answer the user has just decided
-         * against. Watched, that is not what people do with it: the answers to
-         * the four questions are the same answers, the sheet remembers three of
-         * them anyway, and being handed the form back is being asked to confirm
-         * a decision nobody was revisiting. Two taps and a form to see a
-         * different list.
-         *
          * So it re-sends the same request and the skeleton comes straight up in
          * place of the list. The model is not deterministic, so the same
          * question genuinely does answer differently — which is the whole reason

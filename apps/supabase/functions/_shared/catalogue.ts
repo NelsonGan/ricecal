@@ -1,11 +1,5 @@
 // The catalogue, which is not in this database any more.
 //
-// `foods`, `food_servings` and `food_aliases` used to live in the same Postgres
-// as the diary. They are in Cloudflare D1 now, behind a Worker, for one reason:
-// the barcode layer is 3.2 million rows, and holding it beside the diary meant
-// the catalogue's size was the diary's problem. It crossed a plan ceiling once
-// and took the whole database read-only mid-load.
-//
 // So this is the seam. Everything the server needs to know about a food goes
 // through here, and the shapes it returns are deliberately the shapes the old
 // `food_details` view returned — the callers were written against that, and a

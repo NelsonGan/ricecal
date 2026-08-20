@@ -135,11 +135,6 @@ export default function GoalsScreen() {
    * to the stored budget only while nothing has been touched. That fallback is
    * what preserves a hand-set number for someone who came in to change their
    * water goal.
-   *
-   * The recommendation is also what stands in when there is no stored budget at
-   * all, which used to be a zero: `daily_goals.kcal` is checked `between 800 and
-   * 10000`, so saving the water goal on an account whose budget had not been
-   * computed yet failed on a constraint rather than saving anything.
    */
   const currentKcal = kcal ?? (planChanged ? recommended : (targets?.kcal ?? recommended))
 

@@ -36,14 +36,6 @@ import { Card, Icon, ListRow, Screen, SegmentedControl, Skeleton } from '@/ui'
  * Both queries live here rather than in the panels. One range is one pair of
  * requests whichever tab is showing, so switching tabs is instant and the tile
  * a user just tapped cannot say something different from the panel it opened.
- *
- * This replaces a screen that was weight and only weight — a `WeightPanel` under
- * a title, with the chart, the BMI band and the history list all on one scroll.
- * Everything that screen did is still here, on the weight tab, and the two
- * things it did that the design drops went with it: the BMI band (context that
- * nobody asked this screen for) and the full-width "Log weigh in" button (which
- * is the Add pill on the readings card now, next to the list where you notice a
- * reading is missing).
  */
 export default function TrendsScreen() {
   const { t } = useTranslation(['progress', 'common', 'reviews'])

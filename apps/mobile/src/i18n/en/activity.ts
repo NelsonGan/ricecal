@@ -154,11 +154,6 @@ export const activity = {
 
     /**
      * The badge while a pass is running, in place of the "13 min ago" stamp.
-     *
-     * This is the ONLY thing an automatic sync is allowed to move. It used to
-     * report itself through the pull-to-refresh spinner, which holds the whole
-     * scroll view down while it spins — so the tab opened with its header parked
-     * below the notch and stayed there until the sync finished.
      */
     syncing: 'Syncing…',
 
@@ -312,12 +307,6 @@ export const activity = {
     noRestingTitle: 'No resting energy',
     /**
      * What is missing and what it costs, and nothing more.
-     *
-     * This used to promise that "the balance uses the estimate from your profile
-     * instead". There is no such fallback: `activity_summary` filters the
-     * balance to days that HAVE a resting figure, so with none at all the
-     * headline is null and the chart's burn columns are stubs. Describing a
-     * substitution that does not happen is worse than describing the gap.
      */
     noRestingBody:
       'Your health app does not report what your body burns at rest, so there is no daily balance to draw. Steps, workouts and active energy are unaffected.',

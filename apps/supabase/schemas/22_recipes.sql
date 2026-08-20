@@ -6,12 +6,6 @@
 -- everybody can answer "what went in, and how many does it feed". A recipe is
 -- those two answers, entered once, and every future log of it is one tap.
 --
--- Where the mirror went: a recipe used to be copied into a `foods` row, priced
--- per serving and rebuilt by triggers on every write. It existed for one reason,
--- which is that `food_logs.food_id` was not null and referenced `foods`, so a
--- recipe that could not be a catalogue row could not be logged without a second
--- shape for the day view, the trends, the week strip and the reports.
---
 -- The catalogue is in Cloudflare D1 now and that foreign key is gone. An entry
 -- carries its own numbers, so logging a pot writes the same snapshot every other
 -- entry writes, taken from `recipe_details`, which already computed the
@@ -206,11 +200,6 @@ create index recipe_ingredients_recipe_idx
 -- ingredients: one function, called from four triggers, because the mirror was a
 -- pure function of the recipe and there was no incremental update to get wrong.
 -- It offered the portions the detail screen shows.
---
--- All of it is gone with the mirror. `recipe_details` computes the per-serving
--- figures directly from the ingredient list, which is what the mirror was built
--- out of, and the portions are the detail screen's to offer against a snapshot.
--- ---------------------------------------------------------------------------
 
 
 -- ---------------------------------------------------------------------------

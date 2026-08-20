@@ -45,12 +45,6 @@ export type DetailsSheetProps = {
  * WHAT THIS ENTRY IS AND WHEN IT WAS EATEN: the two things about a logged meal
  * that are not figures.
  *
- * One sheet rather than two affordances, and that is the point. The name used to
- * be retyped in the app bar where it sat and the day and time had a card of their
- * own with an edit control of their own — so an entry's identity was edited in two
- * places, neither of which looked like the other, and one of them was a heading
- * that turned into a caret.
- *
  * TWO PANELS, A PATH RATHER THAN TABS. The name and the when read as one short
  * form; tapping the when opens the picker over it, the way `IngredientSheet`
  * leads from a search to an amount. The when used to be laid out flat underneath

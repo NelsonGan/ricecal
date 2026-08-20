@@ -19,26 +19,11 @@ export type DayMealsProps = {
 /**
  * The day the calendar has selected, as a LIST of what was eaten on it.
  *
- * It was a row of plates that scrolled sideways — a 72pt picture per meal, the
- * calorie figure under it and the time under that — on the argument that the
- * grid above is read by looking, so the thing under it should be readable the
- * same way. Two things were wrong with that. The dish's NAME was not on it at
- * all, so a day of four photographed plates was four squares somebody had to
- * open one at a time to identify; and a sideways scroller hides whatever does
- * not fit, which on a day worth looking at is most of it, with nothing on screen
- * saying there is more. The pictures survive as the row's own tile, and the
- * names, the times and the portions come with them.
- *
  * `ItemRow` rather than a row of this file's own, which is what makes it the
  * same list the diary draws — the same tile at the same size, the same figure on
  * the right. The month view and the day view are two ways of finding a meal, and
  * a meal should not look like two different things depending on which one found
  * it.
- *
- * It was called `DayPlates` while it drew plates. The name is worth keeping
- * distinct from `DayPlate` and `day_plates(from, to)`, which are the GRID's
- * pictures and are a different thing entirely: one photograph per day, the
- * biggest one, for the cell above this card.
  *
  * NO COUNT IN THE HEADING. It read "Thursday 14, 4 meals", and the four rows
  * under it are the count — said twice, once as a number to trust and once as a

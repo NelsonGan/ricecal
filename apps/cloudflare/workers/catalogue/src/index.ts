@@ -1,12 +1,6 @@
 /**
  * The catalogue, in front of D1.
  *
- * The food catalogue used to be four tables in the same Postgres as the diary,
- * which is what made every entry's calories a join and every catalogue reload a
- * risk to the diary. It lives here now: 3.2 million packaged products keyed by
- * barcode, and about 48,000 dishes with a full-text index over their names and
- * aliases.
- *
  * Why a Worker and not a direct connection: a D1 binding only exists inside a
  * Cloudflare Worker. The app's edge functions are Deno on Supabase, so something
  * has to stand between them, and it may as well be the thing that owns the query.

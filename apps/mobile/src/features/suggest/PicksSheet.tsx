@@ -59,12 +59,6 @@ function Summary({ request }: { request: SuggestRequest }) {
  * content, which is also why the wait draws as many skeleton rows as there are
  * picks coming: it stands in for exactly what is on its way.
  *
- * TRY AGAIN IS AN ICON, on the title's line. It was a full-width footer button,
- * which is the shape of a primary action — and on a screen whose whole point is
- * the dishes above it, "ask again" is the secondary one. As a glyph beside the
- * heading it stays reachable and quiet, and it leaves the panel with no footer
- * at all, so the list runs the full height of the sheet.
- *
  * It ASKS AGAIN rather than reopening the question — see `onRetry` in
  * `SuggestAction` — so the skeleton comes straight back up in the list's place
  * and the sheet never closes.
