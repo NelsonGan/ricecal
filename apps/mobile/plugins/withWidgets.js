@@ -67,6 +67,19 @@ const FONTS = [
 
 const appGroupFor = (bundleId) => `group.${bundleId}`
 
+const widgetBundleId = (bundleId) => `${bundleId}.widgets`
+
+/**
+ * The three derived names, exported because `app.config.ts` needs the same
+ * answers and must not work them out again.
+ *
+ * EAS reads the extension's bundle id and entitlements out of app config, not
+ * out of the Xcode project — `ios/` is build output and does not exist when
+ * credentials are resolved. So the target this plugin creates has to be
+ * declared there as well, and a second copy of `${bundleId}.widgets` written
+ * by hand is a credential for a bundle id that no longer matches the one being
+ * built the first time either moves.
+ */
 module.exports = function withWidgets(config) {
   const bundleId = config.ios?.bundleIdentifier
   if (!bundleId) {
@@ -222,7 +235,7 @@ function withWidgetTarget(config, { bundleId, appGroup }) {
 
     // `app_extension` is what puts the .appex into the app's own Embed phase
     // and gives it the right product type. See `addTarget` in the xcode package.
-    const target = project.addTarget(TARGET, 'app_extension', TARGET, `${bundleId}.widgets`)
+    const target = project.addTarget(TARGET, 'app_extension', TARGET, widgetBundleId(bundleId))
 
     project.addBuildPhase(
       sources.map((name) => `${TARGET}/${name}`),
@@ -268,7 +281,7 @@ function applyBuildSettings(project, target, { bundleId, appGroup, version }) {
   for (const key of Object.keys(configurations)) {
     if (!wanted.has(key)) continue
     const settings = configurations[key].buildSettings
-    settings.PRODUCT_BUNDLE_IDENTIFIER = `"${bundleId}.widgets"`
+    settings.PRODUCT_BUNDLE_IDENTIFIER = `"${widgetBundleId(bundleId)}"`
     settings.PRODUCT_NAME = `"${TARGET}"`
     settings.INFOPLIST_FILE = `"${TARGET}/Info.plist"`
     settings.CODE_SIGN_ENTITLEMENTS = `"${TARGET}/${TARGET}.entitlements"`
@@ -350,3 +363,7 @@ function entitlementsPlist(appGroup) {
 </plist>
 `
 }
+
+module.exports.WIDGET_TARGET = TARGET
+module.exports.widgetBundleId = widgetBundleId
+module.exports.appGroupFor = appGroupFor
