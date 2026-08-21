@@ -422,6 +422,11 @@ export const ko = {
       body: 'Cloudflare가 사람인지 확인하려고 합니다. 잠깐이면 됩니다.',
     },
 
+    ended: {
+      title: '로그아웃되었습니다',
+      body: '이 세션이 종료되었습니다. 다시 로그인하면 이어서 사용할 수 있습니다.',
+    },
+
     errors: {
       passwordShort: '8자 이상 사용하세요.',
       passwordRequired: '비밀번호를 입력하세요.',

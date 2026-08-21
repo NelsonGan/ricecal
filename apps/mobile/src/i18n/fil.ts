@@ -435,6 +435,11 @@ export const fil = {
       body: 'Gustong kumpirmahin ng Cloudflare na tao ka. Isang segundo lang ito.',
     },
 
+    ended: {
+      title: 'Naka-sign out',
+      body: 'Tapos na ang session na ito. Mag-sign in ulit para magpatuloy.',
+    },
+
     errors: {
       passwordShort: 'Gumamit ng hindi bababa sa 8 karakter.',
       passwordRequired: 'Ilagay ang password mo.',
