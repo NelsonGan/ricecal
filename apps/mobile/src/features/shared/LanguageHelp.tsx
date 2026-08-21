@@ -22,9 +22,9 @@ import { Icon, IconButton, Sheet, Text } from '@/ui'
  */
 
 /**
- * The always-present half. Sits beside the control rather than under it,
- * because a reader who has not chosen anything yet is not being warned about
- * anything — they are being offered a detail.
+ * The always-present half. Sits beside the card's HEADING rather than under the
+ * control, because a reader who has not chosen anything yet is not being warned
+ * about anything — they are being offered a detail about the word above it.
  */
 export function LanguageHelpButton() {
   const { t } = useTranslation('common')
@@ -51,6 +51,10 @@ export function LanguageHelpButton() {
         <View className="gap-3 pb-2">
           <Text>{t('aiLanguage.body')}</Text>
           <Text>{t('aiLanguage.results')}</Text>
+          {/* And the other direction: what a person has already written down is
+              left alone. It used to sit under the picker as a second line of
+              small print; it is the same subject as the two above it. */}
+          <Text>{t('aiLanguage.dishes')}</Text>
         </View>
       </Sheet>
     </>

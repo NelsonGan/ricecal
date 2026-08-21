@@ -792,9 +792,23 @@ are all stored in English.
 That is a real limit rather than one to hide, so it is said next to the control
 in both places the control appears — the setup step and the preferences card. In
 two strengths: a line under it for anybody who has actually chosen something
-other than English, and the full version behind an info button that is always
-there. `LanguageAiNote` renders nothing at all in English, because there is
-nothing to tell somebody already reading the language the model speaks.
+other than English, and the full version behind an info button beside the card's
+heading, always there. `LanguageAiNote` renders nothing at all in English,
+because there is nothing to tell somebody already reading the language the model
+speaks.
+
+The third thing the sheet says is the other direction: a dish already written
+down keeps the spelling it was written in, whatever the interface is set to. It
+used to sit under the picker as its own line of small print, which put two
+caveats under one control and left the sheet answering only half the question.
+
+The picker's own label is not drawn. One card holding one picker was saying
+"LANGUAGE" and then "App language" directly beneath it; `Select` takes
+`hideLabel` so the string still names the control for a screen reader and still
+titles the sheet listing the thirteen languages. `Card` takes `titleAction` for
+the same reason the info button is not `action`: `action` is the far edge of the
+header, and a question mark pushed over there reads as a control for the card's
+contents rather than for the word it sits beside.
 
 **Chinese is why the device language is resolved rather than looked up.**
 `languageCode` is `zh` for both scripts and the two are not mutually readable, so

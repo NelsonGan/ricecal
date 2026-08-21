@@ -114,6 +114,13 @@ export const common = {
     body: 'Snapping a plate, saying what you ate in words and asking what to eat next all go to a model that reads English best. Describe your food in English and it understands you more closely.',
     results:
       'What comes back is in English too. Dish names, ingredients and serving sizes are stored in English in the food catalogue, so that is the language they arrive in whatever the app is set to.',
+    /**
+     * Moved here from under the control. A dish is data: it goes on screen in
+     * the spelling it was written in, whatever the interface is set to. That
+     * belongs with the rest of what the language setting does not change,
+     * rather than as a second line of small print beside it.
+     */
+    dishes: 'Dish names stay in the language they were written in.',
     note: 'Describe food in English for the closest read. Results come back in English.',
   },
 

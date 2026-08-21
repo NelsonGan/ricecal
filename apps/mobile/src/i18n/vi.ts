@@ -81,6 +81,7 @@ export const vi = {
       body: 'Chụp một đĩa, nói bằng lời bạn đã ăn gì và hỏi nên ăn gì tiếp đều được gửi tới một mô hình đọc tiếng Anh tốt nhất. Hãy mô tả món ăn bằng tiếng Anh để nó hiểu bạn sát hơn.',
       results:
         'Thứ trả về cũng bằng tiếng Anh. Tên món, nguyên liệu và khẩu phần đều được lưu bằng tiếng Anh trong danh mục món ăn, nên đó là ngôn ngữ chúng xuất hiện, dù ứng dụng đang đặt ở ngôn ngữ nào.',
+      dishes: 'Tên món ăn giữ nguyên ngôn ngữ lúc được viết ra.',
       note: 'Mô tả món ăn bằng tiếng Anh để đọc sát nhất. Kết quả trả về bằng tiếng Anh.',
     },
 
@@ -1160,7 +1161,6 @@ export const vi = {
       title: 'Ngôn ngữ và đơn vị',
       language: 'NGÔN NGỮ',
       languageLabel: 'Ngôn ngữ ứng dụng',
-      languageNote: 'Tên món ăn giữ nguyên ngôn ngữ lúc được viết ra.',
       units: 'ĐƠN VỊ',
       weight: 'Cân nặng',
       kg: 'kg',
