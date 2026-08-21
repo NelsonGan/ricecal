@@ -921,6 +921,62 @@ layout leaves `new-password` alone while it is on top.
 Somebody arriving through the link already has a session, so that screen drops
 the code field. It tests for the session rather than for a parameter.
 
+### Signing out when the server already has
+
+A session can end on the server while this phone still holds an access token
+that looks perfect: signing out every device, an account deleted, a session
+revoked in the dashboard, GoTrue timing one out. The token stays validly
+**signed** until it expires, so for up to an hour the two halves of the project
+disagree about it.
+
+- PostgREST and the catalogue Worker check the signature and nothing else. The
+  diary loads, search works, the app looks signed in.
+- Every edge function calls `auth.getUser()`, which asks GoTrue, which answers
+  `session_not_found`. The function returns 401.
+
+So scanning, refining, recipes, suggestions, photos and barcodes all stop working
+while the app insists there is an account, and the only sign of it is
+`/user session not found` in the Supabase logs. Nothing noticed: `refusalFrom`
+reads 402 and 429 and hands a 401 straight to the caller's generic "that did not
+work".
+
+**auth-js does not catch this either, on purpose.** `_callRefreshToken` keeps the
+session when a refresh fails while the access token is still valid, reasoning
+that "destroying it now would log out a user whose access token works". That is
+right for a refresh the network ate and wrong for one the server refused: the
+token here works for exactly the consumers that never ask GoTrue, which is not
+the same as working.
+
+`lib/supabase.ts` hands the client its own `fetch`, which is the one place that
+sees PostgREST, storage and all eight functions. A 401 from any of them starts a
+probe, and `lib/revocation.ts` holds the two judgement calls it needs:
+
+- **A 401 from `/auth/v1/` is not evidence.** A wrong password is a 401. Acting
+  on one would end the session of somebody in the middle of starting one.
+- **A refused refresh is the proof, not the 401.** The 401 is a symptom a stale
+  token produces too, so the probe asks `refreshSession()`: the server either
+  mints a new pair, in which case this is already fixed, or refuses the refresh
+  token, in which case there is nothing left to be signed in with. Only a refusal
+  counts, which is a 400, 401, 403 or 404. A 429 is a rate limit and a 5xx is an
+  outage, and auth-js reports an unreachable server as status 0.
+
+Then `signOut({ scope: 'local' })`, because there is no session on the server to
+revoke and a global sign-out would be asking to end other devices' sessions,
+which is not what happened. `SIGNED_OUT` does the rest through `SessionProvider`,
+which is the same path the account screen's button takes.
+
+Two things that would break it. The probe is skipped when `storedSession()` is
+empty: once signed out every request carries the anon key and every function
+answers 401 to it, so without that guard the app would announce a fresh sign-out
+forever. And it is single-flight, because a screen fires several requests at once
+and a revoked session produces a handful of 401s within a frame.
+
+`SessionEndedNotice` says what happened, and it sits under `ToastProvider` for
+the reason that provider sits outside the navigator: the sign-out empties the
+cache and the layout guards send the user out to sign-in a tick later, so a
+message belonging to the screen they were on would go with it. Arriving there
+unannounced is the other half of the complaint.
+
 ### The eight auth emails
 
 `apps/supabase/templates/`: one layout, eight bodies, and a script that puts
