@@ -210,6 +210,7 @@ function AddWaterSheet({
 
   return (
     <Sheet
+      closeLabel={t('common:action.close')}
       visible={visible}
       onClose={onClose}
       scrollable={false}
@@ -264,7 +265,8 @@ type CustomAmountHandle = { focus: () => void }
  *
  * ITS OWN COMPONENT, and that is load-bearing rather than tidy. `useNumpadField`
  * reads the nearest `NumpadHost` through context, and a hook called in the
- * component that RETURNS a `<Sheet>` runs outside that sheet's subtree — so it
+ * component that RETURNS a `<Sheet
+  closeLabel={t('common:action.close')}>` runs outside that sheet's subtree — so it
  * finds the host in `Screen` instead, and the pad opens on the screen, behind
  * the sheet's native window. The field is focused, the system keyboard is
  * suppressed, and nothing appears to type with.

@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next'
 
 import { type ReviewKind, useEntitlement, useReviewPeriods, useSettings } from '@/data'
 import { useRequirePro } from '@/features/paywall'
-import { unitFor } from '@/features/progress'
 import { ReviewRow, reviewId } from '@/features/reviews'
 import { useBack } from '@/lib/navigation'
+import { unitFor } from '@/lib/units'
 import { AppBar, Card, EmptyState, Screen, SegmentedControl, Skeleton } from '@/ui'
 
 /**

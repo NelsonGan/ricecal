@@ -17,6 +17,7 @@ export const ko = {
       delete: '삭제',
       add: '추가',
       undo: '실행 취소',
+      keep: '유지',
       skip: '건너뛰기',
       retry: '다시 시도',
       close: '닫기',
@@ -72,6 +73,15 @@ export const ko = {
       dayStreak_other: '{{count}}일 연속',
       times_one: '{{count}}회',
       times_other: '{{count}}회',
+    },
+
+    aiLanguage: {
+      open: 'AI 기능이 쓰는 언어',
+      title: 'AI 기능은 영어로 작동합니다',
+      body: '접시 촬영, 먹은 것을 말로 적기, 다음에 뭘 먹을지 묻기는 모두 영어를 가장 잘 읽는 모델로 갑니다. 음식을 영어로 적어 주시면 더 정확하게 읽습니다.',
+      results:
+        '돌아오는 것도 영어입니다. 음식 이름, 재료, 1인분 크기는 모두 음식 목록에 영어로 저장되어 있어서, 앱을 어떤 언어로 설정하든 영어로 도착합니다.',
+      note: '영어로 적으면 가장 정확합니다. 결과도 영어로 옵니다.',
     },
 
     notFound: {
@@ -432,9 +442,14 @@ export const ko = {
   },
 
   onboarding: {
-    language: {
-      title: '언어를 선택하세요',
-      subtitle: '나중에 내 정보에서 바꿀 수 있습니다.',
+    setup: {
+      title: '시작하기 전에',
+      subtitle: '두 가지 모두 다음 화면들의 언어와 단위를 바꿉니다.',
+      unitsTitle: '단위',
+      metric: '미터법',
+      imperial: '야드파운드법',
+      metricNote: '센티미터와 킬로그램.',
+      imperialNote: '피트, 인치, 파운드.',
     },
 
     welcome: {
@@ -458,6 +473,12 @@ export const ko = {
       heightPlaceholder: '170',
       weight: '몸무게',
       weightPlaceholder: '65',
+      feet: 'ft',
+      inches: 'in',
+      feetPlaceholder: '5',
+      inchesPlaceholder: '9',
+      inchesLabel: '인치',
+      weightPlaceholderLb: '145',
       sex: '성별',
       female: '여성',
       male: '남성',

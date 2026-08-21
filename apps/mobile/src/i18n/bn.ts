@@ -17,6 +17,7 @@ export const bn = {
       delete: 'মুছুন',
       add: 'যোগ করুন',
       undo: 'ফিরিয়ে নিন',
+      keep: 'রাখুন',
       skip: 'এড়িয়ে যান',
       retry: 'আবার চেষ্টা করুন',
       close: 'বন্ধ করুন',
@@ -72,6 +73,15 @@ export const bn = {
       dayStreak_other: 'টানা {{count}} দিন',
       times_one: '{{count}} বার',
       times_other: '{{count}} বার',
+    },
+
+    aiLanguage: {
+      open: 'AI সুবিধাগুলো কোন ভাষায় চলে',
+      title: 'AI সুবিধাগুলো ইংরেজিতে কাজ করে',
+      body: 'থালার ছবি তোলা, কী খেয়েছেন তা লিখে বলা আর এরপর কী খাবেন জিজ্ঞাসা করা, সবই এমন একটি মডেলের কাছে যায় যা ইংরেজি সবচেয়ে ভালো পড়ে। আপনার খাবার ইংরেজিতে লিখলে এটি আরও নিখুঁতভাবে বুঝবে।',
+      results:
+        'যা ফিরে আসে তাও ইংরেজিতে। পদের নাম, উপকরণ আর পরিবেশনের মাপ সবই খাবারের তালিকায় ইংরেজিতে রাখা আছে, তাই অ্যাপ যে ভাষাতেই থাকুক, সেগুলো ইংরেজিতেই আসবে।',
+      note: 'সবচেয়ে নিখুঁত পড়ার জন্য খাবার ইংরেজিতে লিখুন। ফলও ইংরেজিতে আসে।',
     },
 
     notFound: {
@@ -429,9 +439,14 @@ export const bn = {
   },
 
   onboarding: {
-    language: {
-      title: 'আপনার ভাষা বাছুন',
-      subtitle: 'পরে আমি পাতা থেকে এটি বদলাতে পারবেন।',
+    setup: {
+      title: 'শুরু করার আগে',
+      subtitle: 'দুটোই পরের কয়েকটি পর্দার ভাষা আর মাপ বদলে দেয়।',
+      unitsTitle: 'একক',
+      metric: 'মেট্রিক',
+      imperial: 'ইম্পেরিয়াল',
+      metricNote: 'সেন্টিমিটার আর কিলোগ্রাম।',
+      imperialNote: 'ফুট, ইঞ্চি আর পাউন্ড।',
     },
 
     welcome: {
@@ -452,6 +467,12 @@ export const bn = {
       heightPlaceholder: '170',
       weight: 'ওজন',
       weightPlaceholder: '65',
+      feet: 'ফুট',
+      inches: 'ইঞ্চি',
+      feetPlaceholder: '5',
+      inchesPlaceholder: '9',
+      inchesLabel: 'ইঞ্চি',
+      weightPlaceholderLb: '145',
       sex: 'লিঙ্গ',
       female: 'নারী',
       male: 'পুরুষ',

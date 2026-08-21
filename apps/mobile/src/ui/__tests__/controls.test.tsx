@@ -112,17 +112,39 @@ describe('CountBadge', () => {
 
 describe('Stepper', () => {
   it('formats halves as vulgar fractions', async () => {
-    await render(<Stepper value={1.5} onChange={() => {}} unit="plates" />)
+    await render(
+      <Stepper
+        decrementLabel="Decrease"
+        incrementLabel="Increase"
+        value={1.5}
+        onChange={() => {}}
+        unit="plates"
+      />,
+    )
     expect(screen.getByText('1½')).toBeTruthy()
   })
 
   it('formats a bare half without a leading zero', async () => {
-    await render(<Stepper value={0.5} onChange={() => {}} />)
+    await render(
+      <Stepper
+        decrementLabel="Decrease"
+        incrementLabel="Increase"
+        value={0.5}
+        onChange={() => {}}
+      />,
+    )
     expect(screen.getByText('½')).toBeTruthy()
   })
 
   it('falls back to a number for values that are not clean quarters', async () => {
-    await render(<Stepper value={1.3} onChange={() => {}} />)
+    await render(
+      <Stepper
+        decrementLabel="Decrease"
+        incrementLabel="Increase"
+        value={1.3}
+        onChange={() => {}}
+      />,
+    )
     expect(screen.getByText('1.3')).toBeTruthy()
   })
 
@@ -132,14 +154,25 @@ describe('Stepper', () => {
    * other screens and none of them should become a text input.
    */
   it('renders the value as a label unless it is editable', async () => {
-    await render(<Stepper value={2} onChange={() => {}} />)
+    await render(
+      <Stepper decrementLabel="Decrease" incrementLabel="Increase" value={2} onChange={() => {}} />,
+    )
 
     expect(screen.getByText('2')).toBeTruthy()
     expect(screen.queryByDisplayValue('2')).toBeNull()
   })
 
   it('renders the value as a field when it is editable', async () => {
-    await render(<Stepper value={2} onChange={() => {}} editable editLabel="Type the amount" />)
+    await render(
+      <Stepper
+        decrementLabel="Decrease"
+        incrementLabel="Increase"
+        value={2}
+        onChange={() => {}}
+        editable
+        editLabel="Type the amount"
+      />,
+    )
 
     expect(screen.getByDisplayValue('2')).toBeTruthy()
   })
@@ -152,7 +185,16 @@ describe('Stepper', () => {
    */
   it('takes an exact amount typed into it', async () => {
     const onChange = jest.fn()
-    await render(<Stepper value={1} onChange={onChange} editable editLabel="Type the amount" />)
+    await render(
+      <Stepper
+        decrementLabel="Decrease"
+        incrementLabel="Increase"
+        value={1}
+        onChange={onChange}
+        editable
+        editLabel="Type the amount"
+      />,
+    )
 
     await user.type(screen.getByLabelText('Type the amount'), '0.35')
 
@@ -162,7 +204,15 @@ describe('Stepper', () => {
   it('clamps what was typed rather than accepting it', async () => {
     const onChange = jest.fn()
     await render(
-      <Stepper value={1} max={10} onChange={onChange} editable editLabel="Type the amount" />,
+      <Stepper
+        decrementLabel="Decrease"
+        incrementLabel="Increase"
+        value={1}
+        max={10}
+        onChange={onChange}
+        editable
+        editLabel="Type the amount"
+      />,
     )
 
     await user.type(screen.getByLabelText('Type the amount'), '99')
@@ -174,7 +224,15 @@ describe('Stepper', () => {
   it('keeps the value it had when the field is left empty', async () => {
     const onChange = jest.fn()
     await render(
-      <Stepper value={2} min={0.5} onChange={onChange} editable editLabel="Type the amount" />,
+      <Stepper
+        decrementLabel="Decrease"
+        incrementLabel="Increase"
+        value={2}
+        min={0.5}
+        onChange={onChange}
+        editable
+        editLabel="Type the amount"
+      />,
     )
 
     const field = screen.getByLabelText('Type the amount')
@@ -186,20 +244,38 @@ describe('Stepper', () => {
 
   /** Without `editable` the number is not a control, and must not announce as one. */
   it('is not typeable unless asked', async () => {
-    await render(<Stepper value={1} onChange={() => {}} />)
+    await render(
+      <Stepper decrementLabel="Decrease" incrementLabel="Increase" value={1} onChange={() => {}} />,
+    )
     expect(screen.queryByLabelText('Type the amount')).toBeNull()
   })
 
   it('stops at the floor', async () => {
     const onChange = jest.fn()
-    await render(<Stepper value={0} min={0} onChange={onChange} />)
+    await render(
+      <Stepper
+        decrementLabel="Decrease"
+        incrementLabel="Increase"
+        value={0}
+        min={0}
+        onChange={onChange}
+      />,
+    )
     await user.press(screen.getByLabelText('Decrease'))
     expect(onChange).not.toHaveBeenCalled()
   })
 
   it('stops at the ceiling', async () => {
     const onChange = jest.fn()
-    await render(<Stepper value={10} max={10} onChange={onChange} />)
+    await render(
+      <Stepper
+        decrementLabel="Decrease"
+        incrementLabel="Increase"
+        value={10}
+        max={10}
+        onChange={onChange}
+      />,
+    )
     await user.press(screen.getByLabelText('Increase'))
     expect(onChange).not.toHaveBeenCalled()
   })
@@ -207,7 +283,15 @@ describe('Stepper', () => {
   // 0.1 + 0.2 is 0.30000000000000004, and this number is rendered.
   it('does not leak floating point noise', async () => {
     const onChange = jest.fn()
-    await render(<Stepper value={0.1} step={0.2} onChange={onChange} />)
+    await render(
+      <Stepper
+        decrementLabel="Decrease"
+        incrementLabel="Increase"
+        value={0.1}
+        step={0.2}
+        onChange={onChange}
+      />,
+    )
     await user.press(screen.getByLabelText('Increase'))
     expect(onChange).toHaveBeenCalledWith(0.3)
   })

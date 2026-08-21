@@ -17,6 +17,7 @@ import {
   LANGUAGES,
   type Language,
   SUPPORTED_LANGUAGES,
+  scriptFor,
 } from './languages'
 import { ms } from './ms'
 import { storedLanguage, storeLanguage } from './preference'
@@ -34,6 +35,7 @@ export {
   LANGUAGES,
   type Language,
   SUPPORTED_LANGUAGES,
+  scriptFor,
 }
 
 /**

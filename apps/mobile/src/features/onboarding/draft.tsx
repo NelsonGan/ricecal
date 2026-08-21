@@ -10,7 +10,7 @@ import {
 } from 'react'
 import { createMMKV } from 'react-native-mmkv'
 
-import type { ActivityLevel, Sex } from '@/data'
+import type { ActivityLevel, Sex, Units } from '@/data'
 
 /**
  * The onboarding answers, before there is an account to put them in.
@@ -36,6 +36,15 @@ const storage = createMMKV({ id: 'ricecal-onboarding' })
 const KEY = 'draft'
 
 export type OnboardingDraft = {
+  /**
+   * Metric or imperial, asked on the first screen alongside the language.
+   *
+   * In the draft rather than `user_settings` for the reason every other answer
+   * is: the row does not exist until the account does, and the screen right
+   * after this one asks for a height and a weight that have to be in the units
+   * the person just chose.
+   */
+  units?: Units
   sex?: Sex
   /** Kept as an age, converted to a birth date only on the way to the database. */
   age?: number
@@ -71,7 +80,8 @@ export type CompleteDraft = Required<OnboardingDraft>
  */
 export function isComplete(draft: OnboardingDraft): draft is CompleteDraft {
   return Boolean(
-    draft.sex &&
+    draft.units &&
+      draft.sex &&
       draft.age &&
       draft.heightCm &&
       draft.weightKg &&

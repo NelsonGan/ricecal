@@ -24,6 +24,7 @@ export const fil = {
       delete: 'Burahin',
       add: 'Idagdag',
       undo: 'I-undo',
+      keep: 'Panatilihin',
       skip: 'Laktawan',
       retry: 'Subukan ulit',
       close: 'Isara',
@@ -79,6 +80,15 @@ export const fil = {
       dayStreak_other: '{{count}} araw na sunod-sunod',
       times_one: '{{count}} beses',
       times_other: '{{count}} beses',
+    },
+
+    aiLanguage: {
+      open: 'Anong wika ang ginagamit ng mga AI feature',
+      title: 'Gumagana sa Ingles ang mga AI feature',
+      body: 'Ang pagkuha ng litrato ng plato, ang pagsasabi sa salita kung ano ang kinain mo at ang pagtatanong kung ano ang susunod na kakainin ay pumupunta lahat sa isang modelong pinakamahusay sa Ingles. Ilarawan ang pagkain mo sa Ingles at mas malapit ang pagkakaintindi nito.',
+      results:
+        'Sa Ingles din ang bumabalik. Nakaimbak sa Ingles ang mga pangalan ng ulam, sangkap at laki ng serving sa food catalogue, kaya iyon ang wikang darating anuman ang naka-set sa app.',
+      note: 'Ilarawan ang pagkain sa Ingles para sa pinakatumpak. Sa Ingles din ang resulta.',
     },
 
     notFound: {
@@ -448,9 +458,14 @@ export const fil = {
   },
 
   onboarding: {
-    language: {
-      title: 'Piliin ang wika mo',
-      subtitle: 'Mababago mo ito mamaya sa Ako.',
+    setup: {
+      title: 'Bago tayo magsimula',
+      subtitle: 'Parehong nagbabago ang wika at sukat ng susunod na ilang screen.',
+      unitsTitle: 'MGA UNIT',
+      metric: 'Metric',
+      imperial: 'Imperial',
+      metricNote: 'Sentimetro at kilo.',
+      imperialNote: 'Talampakan, pulgada at libra.',
     },
 
     welcome: {
@@ -480,6 +495,12 @@ export const fil = {
       heightPlaceholder: '170',
       weight: 'TIMBANG',
       weightPlaceholder: '65',
+      feet: 'ft',
+      inches: 'in',
+      feetPlaceholder: '5',
+      inchesPlaceholder: '9',
+      inchesLabel: 'PULGADA',
+      weightPlaceholderLb: '145',
       sex: 'KASARIAN',
       female: 'Babae',
       male: 'Lalaki',

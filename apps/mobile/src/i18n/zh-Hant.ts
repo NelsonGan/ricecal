@@ -23,6 +23,7 @@ export const zhHant = {
       delete: '刪除',
       add: '新增',
       undo: '復原',
+      keep: '保留',
       skip: '略過',
       retry: '再試一次',
       close: '關閉',
@@ -78,6 +79,15 @@ export const zhHant = {
       dayStreak_other: '連續 {{count}} 天',
       times_one: '{{count}} 次',
       times_other: '{{count}} 次',
+    },
+
+    aiLanguage: {
+      open: 'AI 功能用什麼語言',
+      title: 'AI 功能以英文運作',
+      body: '拍照辨識、用文字描述、問接下來吃什麼，都會交給一個最擅長英文的模型。用英文描述你的食物，它能理解得更準確。',
+      results:
+        '回傳的內容也是英文。菜名、食材和份量在食物資料庫裡都是以英文存放的，所以不管 App 設成哪種語言，它們都會以英文出現。',
+      note: '用英文描述食物最準確，回傳的結果也是英文。',
     },
 
     notFound: {
@@ -432,9 +442,14 @@ export const zhHant = {
   },
 
   onboarding: {
-    language: {
-      title: '選擇你的語言',
-      subtitle: '之後可以在「我的」裡更改。',
+    setup: {
+      title: '開始之前',
+      subtitle: '這兩項會影響接下來幾個畫面的語言和計量單位。',
+      unitsTitle: '單位',
+      metric: '公制',
+      imperial: '英制',
+      metricNote: '公分和公斤。',
+      imperialNote: '英尺、英吋和磅。',
     },
 
     welcome: {
@@ -455,6 +470,12 @@ export const zhHant = {
       heightPlaceholder: '170',
       weight: '體重',
       weightPlaceholder: '65',
+      feet: '呎',
+      inches: '吋',
+      feetPlaceholder: '5',
+      inchesPlaceholder: '9',
+      inchesLabel: '吋',
+      weightPlaceholderLb: '145',
       sex: '性別',
       female: '女',
       male: '男',

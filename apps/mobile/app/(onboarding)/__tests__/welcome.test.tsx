@@ -46,7 +46,7 @@ it('starts the questions without asking for an account', async () => {
   await render(<Welcome />)
   await user.press(screen.getByText('Get started'))
 
-  expect(mockPush).toHaveBeenCalledWith('/about')
+  expect(mockPush).toHaveBeenCalledWith('/setup')
 })
 
 it('sends a returning user to the sign-in side of the account screen', async () => {

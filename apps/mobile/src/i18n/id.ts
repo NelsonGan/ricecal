@@ -22,6 +22,7 @@ export const id = {
       delete: 'Hapus',
       add: 'Tambah',
       undo: 'Urungkan',
+      keep: 'Pertahankan',
       skip: 'Lewati',
       retry: 'Coba lagi',
       close: 'Tutup',
@@ -77,6 +78,15 @@ export const id = {
       dayStreak_other: 'rentetan {{count}} hari',
       times_one: '{{count}} kali',
       times_other: '{{count}} kali',
+    },
+
+    aiLanguage: {
+      open: 'Bahasa yang dipakai fitur AI',
+      title: 'Fitur AI bekerja dalam bahasa Inggris',
+      body: 'Memotret piring, menceritakan apa yang kamu makan dan bertanya mau makan apa berikutnya semuanya dikirim ke model yang paling paham bahasa Inggris. Ceritakan makananmu dalam bahasa Inggris dan ia memahamimu lebih tepat.',
+      results:
+        'Yang kembali juga dalam bahasa Inggris. Nama hidangan, bahan dan ukuran porsi disimpan dalam bahasa Inggris di katalog makanan, jadi itulah bahasa yang muncul apa pun setelan aplikasinya.',
+      note: 'Ceritakan makanan dalam bahasa Inggris agar paling akurat. Hasilnya juga dalam bahasa Inggris.',
     },
 
     notFound: {
@@ -444,9 +454,14 @@ export const id = {
   },
 
   onboarding: {
-    language: {
-      title: 'Pilih bahasamu',
-      subtitle: 'Kamu bisa mengubahnya nanti di Saya.',
+    setup: {
+      title: 'Sebelum kita mulai',
+      subtitle: 'Keduanya mengubah bahasa dan satuan di beberapa layar berikutnya.',
+      unitsTitle: 'SATUAN',
+      metric: 'Metrik',
+      imperial: 'Imperial',
+      metricNote: 'Sentimeter dan kilogram.',
+      imperialNote: 'Kaki, inci dan pon.',
     },
 
     welcome: {
@@ -473,6 +488,12 @@ export const id = {
       heightPlaceholder: '170',
       weight: 'BERAT',
       weightPlaceholder: '65',
+      feet: 'ft',
+      inches: 'in',
+      feetPlaceholder: '5',
+      inchesPlaceholder: '9',
+      inchesLabel: 'INCI',
+      weightPlaceholderLb: '145',
       sex: 'JENIS KELAMIN',
       female: 'Perempuan',
       male: 'Laki-laki',

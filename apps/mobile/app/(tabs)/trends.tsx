@@ -15,12 +15,12 @@ import {
   CaloriesPanel,
   MetricTabs,
   type TrendMetric,
-  unitFor,
   WaterPanel,
   WeighInSheet,
   WeightPanel,
 } from '@/features/progress'
 import { ScreenTitle } from '@/features/shared'
+import { unitFor } from '@/lib/units'
 import { Card, Icon, ListRow, Screen, SegmentedControl, Skeleton } from '@/ui'
 
 /**

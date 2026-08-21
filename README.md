@@ -60,6 +60,8 @@ src/ui/          the design system, which knows nothing about food
 src/theme/       colour roles and the palette swap
 src/i18n/en/     all user-facing copy, and the shape every locale must meet
 src/i18n/*.ts    one file per translated locale
+src/lib/dates.ts date and time patterns, per language, in token order
+src/lib/units.ts kg <-> lb and cm <-> ft/in, for a database that stores metric
 ```
 
 ---
@@ -637,6 +639,10 @@ store or a failed write says so in a toast and carries on, because there is a
 whole tab for trying again and no version of a permission screen should stand
 between a new account and their diary.
 
+The flow opens on `setup`, which asks for a language and a unit system before
+anything is measured. See [Language](#language) for why both are on one screen
+and why it is the first one.
+
 Step numbers come from `ONBOARDING_STEPS` in `features/onboarding/steps.ts` and
 nowhere else. Written per screen they lasted until a screen was inserted: the
 questions said "of 4" while the permissions after them said "of 9", and nothing
@@ -750,24 +756,45 @@ week; it does not here, because every `startOfWeek` passes `WEEK_STARTS_ON`
 explicitly. date-fns ships no Filipino locale, so that one bundle formats its
 dates in English.
 
-### The picker is the first screen, and it is asked once
+### It is asked on the first question, beside the units
 
-`(onboarding)/language` sits ahead of the welcome, because the welcome is a pitch
-and a pitch nobody can read is not one. It opens on the phone's own language, so
-for most people it is a confirmation rather than a decision. It is asked at all
-because the phone is wrong often enough to matter here: a Malaysian handset set
-to English is a household norm rather than a preference about apps.
+`(onboarding)/setup` is step one of the flow, and it asks two things: the
+language the app is read in and whether it measures in metric or imperial. Both
+are there because both are answered by the screen immediately after it. `about`
+asks for a height and a weight, and the fields it draws are centimetres and
+kilograms or feet and pounds depending on what `setup` chose; asking afterwards
+would mean converting what somebody had already typed or asking them to type it
+again.
 
-Tapping a card applies the language immediately rather than on Continue. The
-screen is its own preview, which is the only way somebody can tell they picked
-the right one from a list of names they may not be able to read. Continue writes
-the selection again, and that is not redundant: somebody who agrees with the
-preselection never taps a card.
+It opens on the phone's own language and on metric, so for most people it is a
+confirmation rather than a decision, and Continue is live on arrival — the only
+step in the flow where that is true, because it is the only one that is a
+preference rather than a fact about a body.
 
-`app/index.tsx` routes here only while nothing has been stored, so every launch
-after the first goes straight to welcome. It is not one of `ONBOARDING_STEPS` and
-draws no progress bar — that bar counts questions about a body which produce a
-calorie budget, and this is a setting.
+Choosing a language applies it immediately rather than on Continue. The screen is
+its own preview, which is the only way somebody can tell they picked the right
+one from a list of names they may not be able to read. Continue writes the
+selection again, and that is not redundant: somebody who agrees with the
+preselection never touches the control.
+
+The units answer goes into the onboarding draft and reaches `user_settings.units`
+with the rest of the flush. The database stores kilograms and centimetres in
+every language and every unit system; `src/lib/units.ts` converts at the edges,
+and `about` is where both directions are exercised.
+
+### What the language does NOT change, said where it is chosen
+
+Every word of the interface is translated. The model that reads a plate, reads a
+typed meal and answers "what should I eat" is not: it works best in English, and
+it answers against a catalogue whose dish names, ingredients and serving labels
+are all stored in English.
+
+That is a real limit rather than one to hide, so it is said next to the control
+in both places the control appears — the setup step and the preferences card. In
+two strengths: a line under it for anybody who has actually chosen something
+other than English, and the full version behind an info button that is always
+there. `LanguageAiNote` renders nothing at all in English, because there is
+nothing to tell somebody already reading the language the model speaks.
 
 **Chinese is why the device language is resolved rather than looked up.**
 `languageCode` is `zh` for both scripts and the two are not mutually readable, so
@@ -777,8 +804,49 @@ MO write traditional, everywhere else simplified. `zh-Hant` is not a script
 conversion of `zh-Hans` either — 大卡 rather than 千卡, 資料 rather than 数据 —
 so an edit to one is not an edit to the other.
 
-The second way in is Me, Language, units and appearance, which is the same
-`setLanguage()` behind a dropdown.
+The second way in is Me, Language and units, which is the same `setLanguage()`
+behind a dropdown.
+
+### Type has to be set differently in a different script
+
+Two things went wrong on a Mandarin phone, both of them invisible to anybody
+testing in English.
+
+**The leading is Latin's.** Every Baloo 2 line height in `src/ui/Text.tsx` is
+about 1.2x its size, measured against a Latin lowercase that uses two thirds of
+the em box. A CJK glyph fills the box in both directions, and Thai, Devanagari,
+Tamil and Bengali stack marks above and below the base letter. At 1.2x the line
+box crops them: 没有上限 came back with the tops sheared off. `TextScriptProvider`
+tells the design system which of three scripts it is setting — a metric, not a
+word — and `Text` raises the leading to a floor of 1.36x or 1.5x for the two that
+need it. English is a floor of 1x, so it renders in exactly the leading it was
+designed with.
+
+**Dynamic Type scaled the size and not the leading.** An absolute `lineHeight`
+stays where it is while the platform multiplies the font size, so at the largest
+setting a 1.19x ramp is nearer 0.9x and every script crops. `Text` multiplies by
+`PixelRatio.getFontScale()` to hold the ratio. Callers that set their own
+`text-[34px] leading-[42px]` pair — around forty of them, sizing type against a
+ring or a stepper — are parsed back out of the class string and scaled the same
+way rather than overridden.
+
+`src/ui/__tests__/typography.test.tsx` pins the arithmetic, because the failure
+is silent and only visible in a language the person changing the code probably
+cannot read.
+
+### A date is more than its words
+
+date-fns localises every token it is given, and cannot localise the order they
+are written in. `format(date, 'EEE d MMM')` produced "周一 17 8月": three correct
+words in an order nobody writes, and long enough that the Today title ran out of
+room and ellipsised.
+
+`src/lib/dates.ts` holds one pattern table per language and `datePattern()` picks
+from it, so Chinese, Japanese and Korean get largest-unit-first and their own
+day and month markers. The patterns live in `lib` rather than in a bundle because
+they are date-fns tokens with meanings rather than copy: editing one is
+reordering, never translating, and a bundle full of strings that must not be
+translated is a trap for the next person in it.
 
 ---
 
@@ -2707,6 +2775,16 @@ rarely needed: appearance belongs to `variant` and `tone`.
 **Everything interactive is controlled.** No component owns the value it
 displays. That is what lets an optimistic update be rolled back when the server
 rejects it.
+
+**Every word is a required prop.** `src/ui` owns no copy, and the way that is
+enforced is the type: a label a component draws is required rather than
+defaulted. Nine of them used to have English defaults — `cancelLabel = 'Keep'`,
+`centerCaption = 'kcal left'`, `placeholder = 'Select'` — and twelve call sites
+relied on one, which shipped an English "Keep" under a Chinese question. A
+default is a word the design system has no business having; a missing label is
+now a compile error. `ConfirmSheet` passes its own `cancelLabel` down as the
+sheet's `closeLabel` rather than asking for a third, because the drag handle
+does what the neutral button does.
 
 **Never write a colour literal.** Use a role (`bg-pandan`, `text-muted`). Roles
 resolve per mode automatically; a hex does not. For Skia, charts and other

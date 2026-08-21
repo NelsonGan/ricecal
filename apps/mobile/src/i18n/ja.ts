@@ -17,6 +17,7 @@ export const ja = {
       delete: '削除',
       add: '追加',
       undo: '元に戻す',
+      keep: '残す',
       skip: 'スキップ',
       retry: 'もう一度試す',
       close: '閉じる',
@@ -72,6 +73,15 @@ export const ja = {
       dayStreak_other: '{{count}} 日連続',
       times_one: '{{count}} 回',
       times_other: '{{count}} 回',
+    },
+
+    aiLanguage: {
+      open: 'AI 機能が読み書きする言語',
+      title: 'AI 機能は英語で動きます',
+      body: '皿の撮影、食べたものを言葉で書くこと、次に何を食べるか尋ねること。どれも英語をいちばんよく読むモデルに渡されます。英語で書いていただくほど、正確に読み取れます。',
+      results:
+        '返ってくるものも英語です。料理名、材料、分量はいずれも食品カタログに英語で保存されているため、アプリをどの言語に設定していても英語で届きます。',
+      note: '英語で書くといちばん正確に読み取れます。結果も英語で返ります。',
     },
 
     notFound: {
@@ -438,9 +448,14 @@ export const ja = {
   },
 
   onboarding: {
-    language: {
-      title: '言語を選んでください',
-      subtitle: 'あとから「自分」で変更できます。',
+    setup: {
+      title: 'はじめる前に',
+      subtitle: 'どちらも、この先の画面の言葉と単位を変えます。',
+      unitsTitle: '単位',
+      metric: 'メートル法',
+      imperial: 'ヤード・ポンド法',
+      metricNote: 'センチメートルとキログラム。',
+      imperialNote: 'フィート、インチ、ポンド。',
     },
 
     welcome: {
@@ -464,6 +479,12 @@ export const ja = {
       heightPlaceholder: '170',
       weight: '体重',
       weightPlaceholder: '65',
+      feet: 'ft',
+      inches: 'in',
+      feetPlaceholder: '5',
+      inchesPlaceholder: '9',
+      inchesLabel: 'インチ',
+      weightPlaceholderLb: '145',
       sex: '性別',
       female: '女性',
       male: '男性',

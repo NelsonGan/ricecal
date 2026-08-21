@@ -5,7 +5,7 @@ import type { Macros, Targets, WeighIn } from '@/data'
 // which reach the whole data layer and expo-router with it — and this file is
 // pure arithmetic that a test should be able to import on its own. Deep imports
 // are otherwise avoided here; this is the exception and the reason for it.
-import { showChange, showWeight, type WeightUnit } from '@/features/progress/units'
+import { showChange, showWeight, type WeightUnit } from '@/lib/units'
 
 /**
  * Today, flattened into the one document the home screen can read.

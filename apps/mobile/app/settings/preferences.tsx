@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSettings, useUpdateSettings } from '@/data'
+import { LanguageAiNote, LanguageHelpButton } from '@/features/shared'
 import { currentLanguage, LANGUAGES, type Language, setLanguage } from '@/i18n'
 import { useBack } from '@/lib/navigation'
 import { useTheme } from '@/theme/useTheme'
@@ -45,17 +46,21 @@ export default function PreferencesScreen() {
         whatever it is given; this one is answered by MMKV, synchronously, from
         the first frame, so there is no wrong state to hide.
       */}
-      <Card title={t('preferences.language')}>
+      <Card title={t('preferences.language')} action={<LanguageHelpButton />}>
         <Select
           label={t('preferences.languageLabel')}
           options={LANGUAGES.map((language) => ({
             value: language.code,
             label: language.label,
           }))}
+          closeLabel={t('common:action.close')}
           value={currentLanguage()}
           onChange={(language: Language) => setLanguage(language)}
         />
         <Text variant="meta">{t('preferences.languageNote')}</Text>
+        {/* Only for somebody who has chosen a language the model and the
+            catalogue do not speak. See `LanguageHelp`. */}
+        <LanguageAiNote />
       </Card>
 
       <Card title={t('preferences.units')}>
