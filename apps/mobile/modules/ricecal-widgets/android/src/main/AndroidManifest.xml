@@ -95,5 +95,14 @@
     <receiver
       android:name=".WaterActionReceiver"
       android:exported="false" />
+
+    <!--
+      The day ending, which is the one redraw the app cannot push because it is
+      not running. NOT exported, for the same reason: the only thing that may
+      send it is the alarm this app booked. See `MidnightReceiver`.
+    -->
+    <receiver
+      android:name=".MidnightReceiver"
+      android:exported="false" />
   </application>
 </manifest>

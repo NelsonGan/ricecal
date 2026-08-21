@@ -1,5 +1,7 @@
 package expo.modules.ricecalwidgets
 
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -9,6 +11,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -190,6 +193,56 @@ object WidgetStore {
       if (manager.getAppWidgetIds(component).isEmpty()) continue
       manager.updateAppWidget(component, WidgetRenderer.render(context, kind, snapshot))
     }
+
+    scheduleRollover(context)
+  }
+
+  /**
+   * Book the next midnight, or cancel one that is no longer worth waking for.
+   *
+   * Owned here rather than by the receiver, because every path that redraws a
+   * widget goes through this file: the app publishing, a provider being asked
+   * to update (which is also what a reboot and a newly placed widget produce),
+   * and the alarm itself firing. Booking it in one of those and not the others
+   * is a schedule that survives until the first time it matters.
+   *
+   * The alarm is replaced rather than added to — one `PendingIntent`, one
+   * request code — so calling this on every write is not a queue of alarms.
+   *
+   * See `MidnightReceiver` for why this exists at all and why it is inexact.
+   */
+  fun scheduleRollover(context: Context) {
+    val alarms = context.getSystemService(AlarmManager::class.java) ?: return
+    val pending = PendingIntent.getBroadcast(
+      context,
+      0,
+      Intent(context, MidnightReceiver::class.java).apply {
+        action = MidnightReceiver.ACTION
+        setPackage(context.packageName)
+      },
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+
+    // Nothing on any home screen: cancel rather than keep waking to redraw
+    // nothing. Removing the last widget does not itself reach this — a provider
+    // hears `onDeleted`, not `onUpdate` — so the alarm that is already booked
+    // fires once more, finds an empty home screen and cancels itself here.
+    if (installed(context).isEmpty()) {
+      alarms.cancel(pending)
+      return
+    }
+
+    // Five seconds past, not on the stroke. `todayKey` is read when the alarm
+    // fires and a wake-up a millisecond early would read the day that is ending.
+    val at = Calendar.getInstance().apply {
+      add(Calendar.DAY_OF_YEAR, 1)
+      set(Calendar.HOUR_OF_DAY, 0)
+      set(Calendar.MINUTE, 0)
+      set(Calendar.SECOND, 5)
+      set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
+
+    alarms.set(AlarmManager.RTC, at, pending)
   }
 
   /** Which widgets are on a home screen right now, in the app's own words. */

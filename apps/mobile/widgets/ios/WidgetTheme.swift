@@ -34,6 +34,7 @@ struct Palette {
   let kaya: Color
   let kayaSoft: Color
   let kayaSoftLine: Color
+  let kayaInk: Color
 
   let water: Color
   let waterSlab: Color
@@ -61,8 +62,9 @@ struct Palette {
     hibiscusSoft: hex("FFEEF1"),
     hibiscusSoftLine: hex("F7D2DA"),
     kaya: hex("FFC145"),
-    kayaSoft: hex("FFF6E3"),
+    kayaSoft: hex("FFF3D6"),
     kayaSoftLine: hex("F0DDAE"),
+    kayaInk: hex("3D2B14"),
     water: hex("4CC9F0"),
     waterSlab: hex("1B87A8"),
     waterSoft: hex("EAF7FC"),
@@ -98,6 +100,7 @@ struct Palette {
     kaya: hex("FFCE5E"),
     kayaSoft: hex("3A3115"),
     kayaSoftLine: hex("6B5A2A"),
+    kayaInk: hex("FFCE5E"),
     water: hex("63D3F2"),
     waterSlab: hex("1E6E86"),
     waterSoft: hex("12262E"),

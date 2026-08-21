@@ -136,7 +136,8 @@ function weight(input: SnapshotInput): WidgetSnapshot['weight'] {
 
   const current = averages[averages.length - 1] as number
   const first = averages[0] as number
-  const change = showChange(current - first, input.unit)
+  const delta = current - first
+  const change = showChange(delta, input.unit)
 
   return {
     value: showWeight(current, input.unit),
@@ -145,6 +146,10 @@ function weight(input: SnapshotInput): WidgetSnapshot['weight'] {
     // nothing changed is a pill worth not drawing, and `showChange` returns
     // "0.0" without a sign for exactly that case.
     change: change === '0.0' ? '' : `${change} ${input.unit}`,
+    // Decided here rather than in Swift and Kotlin, for the reason the pill's
+    // own note in `types.ts` gives: Trends already colours a gain kaya and a
+    // loss pandan, and the widget has only the formatted string to go on.
+    up: delta > 0,
     weeks: normalise(averages),
   }
 }

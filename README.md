@@ -1682,6 +1682,14 @@ movement extended the budget.
 The one number the native side reads rather than prints is `water.ml`, because
 the preset buttons add to it in place.
 
+**And no verdicts.** Whether a day reads as on track or a bit over, and whether
+a weight change is a gain or a loss, are decided beside the arithmetic that
+produced them and travel as `kcal.over` and `weight.up`. A widget cannot work
+either out for itself — what reaches it is a formatted string — and one that
+guessed would be a second opinion about a figure the screen one tap away has
+already ruled on. Trends paints a gain kaya and a loss pandan; so do both
+widgets, from that flag.
+
 ### The two platforms are not symmetrical, and it is not laziness
 
 **iOS needs a config plugin; Android does not.** An Android widget is a
@@ -1708,6 +1716,14 @@ names come from `plugins/withWidgets.js` so the two cannot disagree, and so a
 development build declares `.dev.widgets` and `group.…dev` without a second
 copy of the arithmetic.
 
+**The extension's version pair has to match the app's.** Apple rejects an upload
+whose extension disagrees with its container about `CFBundleShortVersionString`
+or `CFBundleVersion` (ITMS-90473), and `autoIncrement` in `eas.json` moves the
+build number on every production build. So the plugin writes the resolved
+`ios.buildNumber` into the extension's Info.plist rather than a constant. It is
+the worst shape a bug can have: everything compiles, installs and runs, and the
+failure arrives at the App Store Connect gate on the second release.
+
 **Editing a widget means running the prebuild.** The extension's sources are
 COPIED into `ios/` by the plugin, so `expo run:ios` on its own rebuilds the copy
 that is already there — the edit compiles cleanly and changes nothing on screen,
@@ -1731,6 +1747,13 @@ theme is what every other Android widget does.
 ignored there. So the whole card opens the camera, which is what the log button
 does and what somebody reaching for that widget almost always means. Android has
 never had the limitation, so there the two really are two.
+
+**A medium or large widget needs both.** A `Link` claims its own region and
+nothing claims what is between them, so a widget built out of `Link`s alone has
+dead space wherever it draws something that is not a tile — the ring, the
+macros, the meal list, the heading. Day, Quick log and Today carry a card-wide
+`widgetURL` underneath their links for that, which is the same root target
+`WidgetRenderer` sets on every Android card.
 
 **The Android cards are drawn a size larger than the design.** A design frame is
 170 x 170; a two-cell Android widget is about 0.72 of that in aspect, because a
@@ -1761,6 +1784,25 @@ that asks for 16, on all six widgets at once. `widgetInset()` defers to the
 system from 17 and pads only below it. The other way round —
 `contentMarginsDisabled()` — cannot be written behind one opaque return type,
 because it is iOS 17 only and returns a different `WidgetConfiguration`.
+
+### The day ending is the one redraw the app cannot push
+
+Every other redraw is pushed: the app writes the snapshot and asks for a redraw
+the moment the diary moves, which is why `updatePeriodMillis` is zero on all six
+Android providers and the iOS timeline has no refresh policy worth the name.
+
+Midnight is different, because nothing about the diary changes and yet every
+figure on the card becomes wrong. Both stores already refuse a document
+describing a day that has ended — but a refusal nobody consults is not a
+refusal, and neither platform re-reads anything on its own.
+
+iOS answers with a second timeline entry, dated midnight and carrying no
+snapshot, so WidgetKit swaps in the placeholder by itself. Android has no
+timeline, so `WidgetStore.scheduleRollover` books an inexact alarm and
+`MidnightReceiver` redraws and rebooks. Inexact deliberately: an exact alarm is
+for something somebody is waiting on at a particular second, and this is a card
+nobody is looking at. Without either, a phone left on a bedside table presents
+last night's calories, water and meals as this morning's.
 
 ### Water is the only widget that writes
 

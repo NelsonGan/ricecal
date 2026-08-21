@@ -55,6 +55,12 @@ struct QuickLogWidgetView: View {
       }
       .widgetInset()
       .widgetSurface(palette)
+      // The rest of the card, which is not dead space. A `Link` claims its own
+      // region and nothing claims what is between them, so without this a tap
+      // on the heading or the figure beside it does nothing at all — while the
+      // same tap on Android opens the app, because `WidgetRenderer` sets a root
+      // target there. `widgetURL` is the fallback the two `Link`s sit on top of.
+      .widgetURL(WidgetLink.open(.quickLog, target: "open"))
     } else {
       WidgetPlaceholder(palette: palette, kind: .quickLog)
     }

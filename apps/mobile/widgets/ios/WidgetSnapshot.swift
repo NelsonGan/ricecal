@@ -57,6 +57,17 @@ struct WidgetSnapshot: Codable {
     let value: String
     let unit: String
     let change: String
+    /**
+     Whether the change is a gain, which is what colours the pill.
+
+     OPTIONAL BECAUSE THE STORE OUTLIVES THE BUILD THAT WROTE IT. `Codable`
+     throws on a missing key and `load` turns a throw into six blank widgets,
+     so a field added after a snapshot was written has to be allowed to be
+     absent — a phone that updates the app overnight renders the old document
+     until the app is next opened. Missing reads as "not a gain", which is the
+     colour this pill had before the field existed.
+     */
+    let up: Bool?
     let weeks: [Double]
   }
 

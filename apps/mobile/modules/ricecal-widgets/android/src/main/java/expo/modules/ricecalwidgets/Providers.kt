@@ -29,6 +29,13 @@ abstract class RiceCalWidgetProvider : AppWidgetProvider() {
     val snapshot = WidgetStore.snapshot(context)
     val views = build(context, snapshot)
     for (id in appWidgetIds) manager.updateAppWidget(id, views)
+
+    // The other end of `MidnightReceiver`. This is the callback a newly placed
+    // widget and a rebooted phone both produce, and both are moments where
+    // there may be no alarm booked at all — the app itself books one whenever
+    // it publishes, but a widget can be added to a home screen months after
+    // anybody last opened RiceCal.
+    WidgetStore.scheduleRollover(context)
   }
 }
 
