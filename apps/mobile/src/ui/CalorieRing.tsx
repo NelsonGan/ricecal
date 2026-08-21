@@ -16,7 +16,8 @@ export type CalorieRingProps = {
   /** Big number in the middle. Defaults to calories remaining. */
   centerLabel?: string
   /** Small caps line under it. */
-  centerCaption?: string
+  /** The word under the figure. Always drawn, so always the caller's. */
+  centerCaption: string
   size?: number
   thickness?: number
   /**
@@ -43,7 +44,7 @@ export function CalorieRing({
   value,
   goal,
   centerLabel,
-  centerCaption = 'kcal left',
+  centerCaption,
   size = 196,
   thickness = 21,
   tone,

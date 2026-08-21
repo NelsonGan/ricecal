@@ -42,7 +42,7 @@ export function DataSection() {
     <>
       <Card title="Calorie ring" action={<Badge>On track</Badge>}>
         <View className="items-center gap-md">
-          <CalorieRing value={eaten} goal={2100} />
+          <CalorieRing centerCaption="kcal left" value={eaten} goal={2100} />
           <View className="flex-row gap-2">
             <Button size="sm" variant="neutral" onPress={() => setEaten(900)}>
               40%

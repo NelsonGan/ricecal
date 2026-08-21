@@ -2,7 +2,6 @@ import { format, parseISO } from 'date-fns'
 import { useLocalSearchParams } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import { useActivitySession } from '@/data'
 import {
   clock,
@@ -17,6 +16,7 @@ import {
   workoutKindKey,
 } from '@/features/activity'
 import { type Stat, StatRow } from '@/features/shared'
+import { datePattern } from '@/lib/dates'
 import { ZONE_KEY, ZONE_ORDER, type ZoneName } from '@/lib/health'
 import { useBack } from '@/lib/navigation'
 import { AppBar, Card, EmptyState, Icon, Screen, Skeleton, Text } from '@/ui'
@@ -137,7 +137,7 @@ export default function WorkoutScreen() {
   return (
     <Screen>
       <AppBar
-        title={format(parseISO(session.startedAt), 'EEE h:mm a')}
+        title={format(parseISO(session.startedAt), datePattern('weekdayTime'))}
         onBack={goBack}
         backLabel={t('common:action.back')}
       />

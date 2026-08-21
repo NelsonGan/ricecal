@@ -23,6 +23,7 @@ export const ms = {
       delete: 'Padam',
       add: 'Tambah',
       undo: 'Buat asal',
+      keep: 'Kekalkan',
       skip: 'Langkau',
       retry: 'Cuba lagi',
       close: 'Tutup',
@@ -78,6 +79,15 @@ export const ms = {
       dayStreak_other: 'rentetan {{count}} hari',
       times_one: '{{count}} kali',
       times_other: '{{count}} kali',
+    },
+
+    aiLanguage: {
+      open: 'Bahasa yang digunakan ciri AI',
+      title: 'Ciri AI berfungsi dalam bahasa Inggeris',
+      body: 'Snap pinggan, cakap apa yang anda makan dan tanya apa hendak dimakan seterusnya semuanya pergi kepada model yang paling memahami bahasa Inggeris. Terangkan makanan anda dalam bahasa Inggeris dan ia memahami anda dengan lebih tepat.',
+      results:
+        'Apa yang kembali juga dalam bahasa Inggeris. Nama hidangan, bahan dan saiz hidangan disimpan dalam bahasa Inggeris di dalam katalog makanan, jadi itulah bahasa yang akan muncul walau apa pun tetapan apl.',
+      note: 'Terangkan makanan dalam bahasa Inggeris untuk bacaan paling tepat. Hasilnya juga dalam bahasa Inggeris.',
     },
 
     notFound: {
@@ -448,9 +458,14 @@ export const ms = {
   },
 
   onboarding: {
-    language: {
-      title: 'Pilih bahasa anda',
-      subtitle: 'Anda boleh tukar ini kemudian dalam Saya.',
+    setup: {
+      title: 'Sebelum kita mula',
+      subtitle: 'Kedua-duanya mengubah bahasa dan ukuran beberapa skrin seterusnya.',
+      unitsTitle: 'UNIT',
+      metric: 'Metrik',
+      imperial: 'Imperial',
+      metricNote: 'Sentimeter dan kilogram.',
+      imperialNote: 'Kaki, inci dan paun.',
     },
 
     welcome: {
@@ -480,6 +495,12 @@ export const ms = {
       heightPlaceholder: '170',
       weight: 'BERAT',
       weightPlaceholder: '65',
+      feet: 'ft',
+      inches: 'in',
+      feetPlaceholder: '5',
+      inchesPlaceholder: '9',
+      inchesLabel: 'INCI',
+      weightPlaceholderLb: '145',
       sex: 'JANTINA',
       female: 'Perempuan',
       male: 'Lelaki',

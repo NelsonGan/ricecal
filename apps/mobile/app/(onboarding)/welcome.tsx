@@ -59,7 +59,7 @@ export default function Welcome() {
     // is also where a returning user lands, so rendering it is not the same
     // thing as starting — pressing this button is.
     track('Onboarding Started', {})
-    router.push('/about')
+    router.push('/setup')
   }
 
   /**

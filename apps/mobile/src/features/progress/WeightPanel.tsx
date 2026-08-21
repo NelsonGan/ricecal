@@ -1,7 +1,6 @@
 import { differenceInCalendarDays, format, isToday, parseISO } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import {
   bodyFrom,
   type TrendBucket,
@@ -11,13 +10,14 @@ import {
   useProfile,
   useWeighIns,
 } from '@/data'
+import { datePattern } from '@/lib/dates'
 import { goalDate } from '@/lib/nutrition'
+import { showChange, showWeight, UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { radius } from '@/theme/tokens'
 import { Badge, Button, Card, Divider, EmptyState, Icon, ListRow, Squish, Text } from '@/ui'
 import { bucketLabels, chunk, SPAN_KEY } from './axis'
 import { StatTrio } from './StatTrio'
 import { TrendLine } from './TrendLine'
-import { showChange, showWeight, UNIT_KEY, type WeightUnit } from './units'
 
 export type WeightPanelProps = {
   range: TrendRange
@@ -145,7 +145,7 @@ export function WeightPanel({ range, buckets, summary, unit, onEdit }: WeightPan
                   : t('progress:weight.peakOn', {
                       value: showWeight(summary.weightPeak, unit),
                       unit: unitLabel,
-                      date: format(parseISO(summary.weightPeakOn), 'd MMMM'),
+                      date: format(parseISO(summary.weightPeakOn), datePattern('dayMonthLong')),
                     })}
             </Text>
           </View>
@@ -251,7 +251,7 @@ export function WeightPanel({ range, buckets, summary, unit, onEdit }: WeightPan
               subtitle={
                 isToday(parseISO(entry.date))
                   ? t('progress:weight.readingToday')
-                  : format(parseISO(entry.date), 'EEE d MMM')
+                  : format(parseISO(entry.date), datePattern('weekdayDayMonth'))
               }
               // Every row leads to the same sheet, on its own day — which is the
               // only way to correct a reading typed at the wrong scale.

@@ -239,6 +239,7 @@ export default function LogSheet() {
      * sheet one size is the same argument, one level up.
      */
     <SheetSurface
+      closeLabel={t('common:action.close')}
       onClose={() => goBack()}
       scrollable={panel !== 'describe'}
       fullHeight={panel !== null}

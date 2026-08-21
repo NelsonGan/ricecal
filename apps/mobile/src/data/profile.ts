@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { today, unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
 import { useSession, useUserId } from './session'
-import type { ActivityLevel, Profile, Sex } from './types'
+import type { ActivityLevel, Profile, Sex, Units } from './types'
 import { fromDbActivity, toDbActivity } from './types'
 
 /**
@@ -164,6 +164,14 @@ export function bodyFrom(
 export type OnboardingAnswers = ProfilePatch & {
   /** Becomes the first weigh-in. There is no `weight_kg` on `profiles`. */
   weightKg: number
+  /**
+   * Asked on the first screen and written to `user_settings`, not `profiles`.
+   *
+   * It is a display preference rather than a fact about the body: the database
+   * stores kilograms and centimetres whatever this says, and every screen
+   * converts on the way out. See `features/progress/units.ts`.
+   */
+  units: Units
 }
 
 /**
@@ -177,6 +185,9 @@ export type OnboardingAnswers = ProfilePatch & {
  *
  * 1. **The profile.** `compute_targets()` reads sex, birth date, height, activity
  *    and goal, so all of them have to be in place before anything asks it to run.
+ * 1b. **The units.** A different table and no bearing on the budget, so it rides
+ *    along with the profile write rather than earning a step of its own. The row
+ *    is seeded by the signup trigger, so this is always an update.
  * 2. **The weigh-in.** This is what asks. The trigger recomputes `daily_goals`
  *    from the newest reading, so a budget exists from here on.
  * 3. **`onboarded_at`.** Last, because it is what the router reads. Setting it
@@ -188,9 +199,18 @@ export function useFinishOnboarding() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ weightKg, ...patch }: OnboardingAnswers) => {
+    mutationFn: async ({ weightKg, units, ...patch }: OnboardingAnswers) => {
       unwrapOne(
         await supabase.from('profiles').update(toRow(patch)).eq('id', userId).select('id').single(),
+      )
+
+      unwrapOne(
+        await supabase
+          .from('user_settings')
+          .update({ units })
+          .eq('user_id', userId)
+          .select('user_id')
+          .single(),
       )
 
       unwrapOne(

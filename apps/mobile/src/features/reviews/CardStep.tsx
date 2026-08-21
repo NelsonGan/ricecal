@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { ReviewBucket, ReviewKind, ReviewSummary } from '@/data'
-import { showChange, type WeightUnit } from '@/features/progress'
 import { StatRow } from '@/features/shared'
+import { showChange, type WeightUnit } from '@/lib/units'
 import { Badge, Card, cn, Icon, Text } from '@/ui'
 import { Shareable } from './ShareableCards'
 

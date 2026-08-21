@@ -5,6 +5,7 @@ import { View } from 'react-native'
 import { useCurrentWeight, usePlanPrices, useStreak, useSubscription, useWeighIns } from '@/data'
 import { useTrackPaywallShown } from '@/features/paywall'
 import { StatRow } from '@/features/shared'
+import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
 import { Button, Card, Icon, Screen, Text } from '@/ui'
 
@@ -92,7 +93,7 @@ export default function TrialReminder() {
         <Text variant="caption" className="text-center text-faint">
           {t('paywall:reminder.starts', {
             date: subscription?.trial_ends_at
-              ? format(parseISO(subscription.trial_ends_at), 'd MMMM')
+              ? format(parseISO(subscription.trial_ends_at), datePattern('dayMonthLong'))
               : '',
             price: prices?.yearly?.priceString ?? '—',
           })}

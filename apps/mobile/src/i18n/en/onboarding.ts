@@ -1,21 +1,21 @@
 export const onboarding = {
   /**
-   * The very first screen of the app, before the welcome.
+   * The first question, and the only one nobody can get wrong.
    *
-   * It opens on the phone's own language rather than on English, so for most
-   * people this is a confirmation rather than a decision: the list is already
-   * scrolled to their answer and Continue is live. It is asked at all because
-   * the phone is wrong often enough to matter here, where a Malaysian handset
-   * set to English is a household norm rather than a preference about apps.
-   *
-   * Nothing on it mentions food. Dish names are not translated in any language
-   * and saying so on the first screen would answer a question nobody has asked
-   * yet; the preferences card says it, where somebody changing the setting can
-   * act on it.
+   * Both controls open on an answer — the phone's own language, and metric — so
+   * Continue is live on arrival. Every question after this one starts empty on
+   * purpose; this one is a preference somebody either agrees with or does not,
+   * and a screen that made them confirm a default would be a tap for nothing.
    */
-  language: {
-    title: 'Choose your language',
-    subtitle: 'You can change this later in Me.',
+  setup: {
+    title: 'Before we start',
+    subtitle: 'Both of these change what the next few screens say and how they measure.',
+    unitsTitle: 'UNITS',
+    metric: 'Metric',
+    imperial: 'Imperial',
+    /** Named as the fields they turn into, because the next screen is where they land. */
+    metricNote: 'Centimetres and kilograms.',
+    imperialNote: 'Feet, inches and pounds.',
   },
 
   welcome: {
@@ -57,6 +57,18 @@ export const onboarding = {
     heightPlaceholder: '170',
     weight: 'WEIGHT',
     weightPlaceholder: '65',
+    /**
+     * The imperial height, as two boxes. Nobody knows their height in
+     * inches, so the pair is the answer and `settleHeight` clamps them
+     * together.
+     */
+    feet: 'ft',
+    inches: 'in',
+    feetPlaceholder: '5',
+    inchesPlaceholder: '9',
+    /** Over the second box. The right slot carries the symbol; this names it. */
+    inchesLabel: 'INCHES',
+    weightPlaceholderLb: '145',
     sex: 'SEX',
     female: 'Female',
     male: 'Male',

@@ -2,10 +2,10 @@ import { format, isToday, parseISO } from 'date-fns'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import { useDeleteWeighIn, useLogWeight, useWeighIns } from '@/data'
+import { datePattern } from '@/lib/dates'
+import { fromKg, showWeight, toKg, UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { Button, ConfirmSheet, Icon, SegmentedControl, Sheet, Stepper, Text, useToast } from '@/ui'
-import { fromKg, showWeight, toKg, UNIT_KEY, type WeightUnit } from './units'
 
 export type WeighInSheetProps = {
   /** The day being recorded or corrected. Null while the sheet is shut. */
@@ -110,11 +110,14 @@ export function WeighInSheet({ date, onClose, unit, onUnitChange }: WeighInSheet
           the order they present in is the platform's business. `date` is
           untouched, so cancelling brings this straight back. */}
       <Sheet
+        closeLabel={t('common:action.close')}
         visible={date !== null && !confirmDelete}
         onClose={onClose}
         title={
           date && !isToday(parseISO(date))
-            ? t('progress:weight.sheetEditTitle', { date: format(parseISO(date), 'd MMMM') })
+            ? t('progress:weight.sheetEditTitle', {
+                date: format(parseISO(date), datePattern('dayMonthLong')),
+              })
             : t('progress:weight.sheetTitle')
         }
         // Only for today. "This morning" under a heading that says "Weigh in on
@@ -194,6 +197,7 @@ export function WeighInSheet({ date, onClose, unit, onUnitChange }: WeighInSheet
         title={t('progress:weight.removeTitle')}
         description={t('progress:weight.removeBody')}
         confirmLabel={t('common:action.delete')}
+        cancelLabel={t('common:action.keep')}
         tone="danger"
       />
     </>
@@ -205,5 +209,5 @@ function dayName(date: string | undefined) {
   if (!date) return ''
   const parsed = parseISO(date)
   const daysAgo = (Date.now() - parsed.getTime()) / 86_400_000
-  return daysAgo < 7 ? format(parsed, 'EEEE') : format(parsed, 'd MMMM')
+  return daysAgo < 7 ? format(parsed, 'EEEE') : format(parsed, datePattern('dayMonthLong'))
 }

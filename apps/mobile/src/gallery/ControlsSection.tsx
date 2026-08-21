@@ -150,6 +150,7 @@ export function ControlsSection() {
 
       <Card title="Select">
         <Select
+          closeLabel="Close"
           label="Source"
           options={SOURCES}
           value={source}
@@ -160,6 +161,8 @@ export function ControlsSection() {
 
       <Card title="Stepper">
         <Stepper
+          decrementLabel="Decrease"
+          incrementLabel="Increase"
           value={plates}
           onChange={setPlates}
           unit="plates"

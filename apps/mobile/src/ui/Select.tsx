@@ -18,7 +18,17 @@ export type SelectProps<T extends string> = {
   value: T | null
   onChange: (value: T) => void
   label?: string
+  /**
+   * Shown until something is chosen, and read out as the value.
+   *
+   * Optional with NO default. It used to default to 'Select', which is an
+   * English word the design system had no business owning. A `Select` whose
+   * value cannot be null never renders this and should not be made to invent
+   * one; a `Select` whose value can be null has to pass it.
+   */
   placeholder?: string
+  /** Screen-reader name for the sheet's drag handle. Translated. */
+  closeLabel: string
   disabled?: boolean
   className?: string
 }
@@ -37,7 +47,8 @@ export function Select<T extends string>({
   value,
   onChange,
   label,
-  placeholder = 'Select',
+  placeholder,
+  closeLabel,
   disabled = false,
   className,
 }: SelectProps<T>) {
@@ -70,7 +81,7 @@ export function Select<T extends string>({
         <Icon set="ui" name="chevron-down" size={20} />
       </Tappable>
 
-      <Sheet visible={open} onClose={() => setOpen(false)} title={label}>
+      <Sheet visible={open} onClose={() => setOpen(false)} title={label} closeLabel={closeLabel}>
         <View>
           {options.map((option, index) => {
             const isSelected = option.value === value

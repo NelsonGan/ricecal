@@ -24,6 +24,7 @@ export const zhHans = {
       delete: '删除',
       add: '添加',
       undo: '撤销',
+      keep: '保留',
       skip: '跳过',
       retry: '重试',
       close: '关闭',
@@ -79,6 +80,15 @@ export const zhHans = {
       dayStreak_other: '连续 {{count}} 天',
       times_one: '{{count}} 次',
       times_other: '{{count}} 次',
+    },
+
+    aiLanguage: {
+      open: 'AI 功能用什么语言',
+      title: 'AI 功能以英文运作',
+      body: '拍照识别、用文字描述、问接下来吃什么，都会交给一个最擅长英文的模型。用英文描述你的食物，它能理解得更准确。',
+      results:
+        '返回的内容也是英文。菜名、食材和份量在食物库里都是以英文存放的，所以不管应用设成哪种语言，它们都会以英文出现。',
+      note: '用英文描述食物最准确，返回的结果也是英文。',
     },
 
     notFound: {
@@ -433,9 +443,14 @@ export const zhHans = {
   },
 
   onboarding: {
-    language: {
-      title: '选择你的语言',
-      subtitle: '之后可以在「我的」里更改。',
+    setup: {
+      title: '开始之前',
+      subtitle: '这两项会影响接下来几屏的语言和计量单位。',
+      unitsTitle: '单位',
+      metric: '公制',
+      imperial: '英制',
+      metricNote: '厘米和公斤。',
+      imperialNote: '英尺、英寸和磅。',
     },
 
     welcome: {
@@ -456,6 +471,12 @@ export const zhHans = {
       heightPlaceholder: '170',
       weight: '体重',
       weightPlaceholder: '65',
+      feet: '英尺',
+      inches: '英寸',
+      feetPlaceholder: '5',
+      inchesPlaceholder: '9',
+      inchesLabel: '英寸',
+      weightPlaceholderLb: '145',
       sex: '性别',
       female: '女',
       male: '男',

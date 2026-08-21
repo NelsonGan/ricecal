@@ -1,8 +1,8 @@
 import { format, parseISO } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import type { ActivitySession } from '@/data'
+import { datePattern } from '@/lib/dates'
 import { useThemeColors } from '@/theme/useTheme'
 import { cn, Icon, Tappable, Text } from '@/ui'
 import { count, distance, duration } from './format'
@@ -42,7 +42,7 @@ export function SessionRow({ session, dayLabel, onPress, divider = true }: Sessi
   const title = session.kindLabel ?? t(workoutKindKey(session.kind))
 
   const parts = [
-    dayLabel ?? format(parseISO(session.startedAt), 'h:mm a').toLowerCase(),
+    dayLabel ?? format(parseISO(session.startedAt), datePattern('time')).toLowerCase(),
     duration(session.durationS),
   ]
   const far = showsDistance(session.kind) ? distance(session.distanceM) : null

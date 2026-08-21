@@ -1,14 +1,19 @@
 import type { Units } from '@/data'
 
 /**
- * Kilograms are what the database stores, and pounds are what half the people
- * reading this screen own a scale for.
+ * Kilograms and centimetres are what the database stores. Pounds, feet and
+ * inches are what half the people using this app own a scale and a tape for.
  *
- * The conversion lives here rather than in each panel because it has to be
+ * The conversion lives here rather than in each screen because it has to be
  * SYMMETRIC: the sheet takes pounds in and must write back the kilograms it came
  * from, or a weigh-in that is opened and saved unchanged drifts by a gram every
  * time. One pair of functions, one constant, no rounding in between — the
  * rounding happens once, at the point of display.
+ *
+ * In `lib` rather than beside the weight panel because onboarding asks the same
+ * question before any of those screens exist: the height and weight on the
+ * first questionnaire screen are typed in whichever system the screen before it
+ * chose.
  */
 const LB_PER_KG = 2.2046226218
 
@@ -53,4 +58,30 @@ export const showChange = (kgDelta: number, unit: WeightUnit) => {
   const value = Math.abs(shown).toFixed(1)
   if (Math.abs(shown) < 0.05) return '0.0'
   return shown > 0 ? `+${value}` : `−${value}`
+}
+
+const CM_PER_INCH = 2.54
+const INCHES_PER_FOOT = 12
+
+export type HeightUnit = 'cm' | 'ftin'
+
+/** The other half of `user_settings.units`, and the one height is measured in. */
+export const heightUnitFor = (units: Units | undefined): HeightUnit =>
+  units === 'imperial' ? 'ftin' : 'cm'
+
+/**
+ * Centimetres as whole feet and inches.
+ *
+ * Rounded to the inch on the way out, which is the precision anybody reports a
+ * height in, and the reason `fromFeetInches` is not its exact inverse. Nothing
+ * round-trips a height the way a weigh-in round-trips a weight: it is typed
+ * once and stored, so a centimetre of drift has nowhere to accumulate.
+ */
+export function toFeetInches(cm: number): { feet: number; inches: number } {
+  const total = Math.round(cm / CM_PER_INCH)
+  return { feet: Math.floor(total / INCHES_PER_FOOT), inches: total % INCHES_PER_FOOT }
+}
+
+export function fromFeetInches(feet: number, inches: number): number {
+  return (feet * INCHES_PER_FOOT + inches) * CM_PER_INCH
 }

@@ -1366,6 +1366,7 @@ export default function FoodDetail() {
           title={t('logging:detail.replacePhotoTitle')}
           description={t('logging:detail.replacePhotoBody')}
           confirmLabel={t('logging:detail.replacePhotoConfirm')}
+          cancelLabel={t('common:action.keep')}
           tone="danger"
         />
 
@@ -1650,6 +1651,7 @@ export default function FoodDetail() {
           title={t('logging:detail.deleteTitle')}
           description={t('logging:detail.deleteBody')}
           confirmLabel={t('common:action.delete')}
+          cancelLabel={t('common:action.keep')}
           tone="danger"
         />
 

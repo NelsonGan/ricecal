@@ -2,10 +2,10 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { TrendSummary } from '@/data'
+import { showWeight, UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { volume } from '@/lib/water'
 import { radius, slab } from '@/theme/tokens'
 import { cn, Icon, type IconProps, Skeleton, Squish, Text } from '@/ui'
-import { showWeight, UNIT_KEY, type WeightUnit } from './units'
 
 export type TrendMetric = 'calories' | 'water' | 'weight'
 

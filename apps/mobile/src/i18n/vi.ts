@@ -17,6 +17,7 @@ export const vi = {
       delete: 'Xoá',
       add: 'Thêm',
       undo: 'Hoàn tác',
+      keep: 'Giữ lại',
       skip: 'Bỏ qua',
       retry: 'Thử lại',
       close: 'Đóng',
@@ -72,6 +73,15 @@ export const vi = {
       dayStreak_other: 'chuỗi {{count}} ngày',
       times_one: '{{count}} lần',
       times_other: '{{count}} lần',
+    },
+
+    aiLanguage: {
+      open: 'Các tính năng AI dùng ngôn ngữ nào',
+      title: 'Các tính năng AI hoạt động bằng tiếng Anh',
+      body: 'Chụp một đĩa, nói bằng lời bạn đã ăn gì và hỏi nên ăn gì tiếp đều được gửi tới một mô hình đọc tiếng Anh tốt nhất. Hãy mô tả món ăn bằng tiếng Anh để nó hiểu bạn sát hơn.',
+      results:
+        'Thứ trả về cũng bằng tiếng Anh. Tên món, nguyên liệu và khẩu phần đều được lưu bằng tiếng Anh trong danh mục món ăn, nên đó là ngôn ngữ chúng xuất hiện, dù ứng dụng đang đặt ở ngôn ngữ nào.',
+      note: 'Mô tả món ăn bằng tiếng Anh để đọc sát nhất. Kết quả trả về bằng tiếng Anh.',
     },
 
     notFound: {
@@ -436,9 +446,14 @@ export const vi = {
   },
 
   onboarding: {
-    language: {
-      title: 'Chọn ngôn ngữ của bạn',
-      subtitle: 'Bạn có thể đổi sau trong mục Tôi.',
+    setup: {
+      title: 'Trước khi bắt đầu',
+      subtitle: 'Cả hai đều thay đổi ngôn ngữ và đơn vị của vài màn hình tiếp theo.',
+      unitsTitle: 'ĐƠN VỊ',
+      metric: 'Hệ mét',
+      imperial: 'Hệ Anh',
+      metricNote: 'Xăng ti mét và ki lô gam.',
+      imperialNote: 'Foot, inch và pound.',
     },
 
     welcome: {
@@ -462,6 +477,12 @@ export const vi = {
       heightPlaceholder: '170',
       weight: 'CÂN NẶNG',
       weightPlaceholder: '65',
+      feet: 'ft',
+      inches: 'in',
+      feetPlaceholder: '5',
+      inchesPlaceholder: '9',
+      inchesLabel: 'INCH',
+      weightPlaceholderLb: '145',
       sex: 'GIỚI TÍNH',
       female: 'Nữ',
       male: 'Nam',

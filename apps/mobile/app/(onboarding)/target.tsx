@@ -2,10 +2,10 @@ import { format } from 'date-fns'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import { useSession } from '@/data'
 import { StepHeader, stepNumber, TOTAL_STEPS, useOnboardingDraft } from '@/features/onboarding'
 import { track } from '@/lib/analytics'
+import { datePattern } from '@/lib/dates'
 import { computeTargets, goalDate } from '@/lib/nutrition'
 import type { StatTileTone } from '@/ui'
 import { Button, CalorieRing, Card, Icon, type IconProps, Screen, StatTile, Text } from '@/ui'
@@ -212,7 +212,9 @@ export default function TargetStep() {
             )
           }
           label={reachedOn ? t('target.goalBy') : t('target.maintain')}
-          value={reachedOn ? format(reachedOn, 'd MMM yyyy') : t('target.maintainValue')}
+          value={
+            reachedOn ? format(reachedOn, datePattern('dayMonthYear')) : t('target.maintainValue')
+          }
         />
       </View>
     </Screen>
