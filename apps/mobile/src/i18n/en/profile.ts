@@ -81,16 +81,18 @@ export const profile = {
    * answered. Neither word may lean on the other, so "I like it" and "Not
    * really" are the same size and neither is dressed as the correct one.
    *
-   * `note` says where a yes leads, because a sheet that answers a friendly
-   * question by opening the App Store is a sheet that tricked somebody.
+   * ONE LINE UNDER THE QUESTION, and it stays one line. There was a second
+   * saying a yes would open the store's own rating dialog, which is true and was
+   * still the wrong thing to put here: it explained a mechanism to somebody who
+   * had been asked an opinion, and it made a sheet with three sentences in it
+   * out of one that needed two.
    */
   rate: {
     title: 'Enjoying RiceCal?',
-    body: 'It is a small team, and your answer decides what we build next.',
+    body: 'Your answer decides what we build next.',
     yes: 'I like it',
     no: 'Not really',
     later: 'Maybe later',
-    note: 'If you like it, we will ask the store for a rating. It takes a moment.',
 
     /**
      * The second screen, after "Not really".
@@ -101,8 +103,7 @@ export const profile = {
      * be a slower way to reach the same three people.
      */
     feedbackTitle: 'What would fix it?',
-    feedbackBody:
-      'Tell us on Discord and we will read it. Most of what is in the app got there this way.',
+    feedbackBody: 'Tell us on Discord. Most of what is in the app got there that way.',
     feedbackOpen: 'Open Discord',
     feedbackSkip: 'Not now',
   },

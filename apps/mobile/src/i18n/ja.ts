@@ -1063,14 +1063,12 @@ export const ja = {
 
     rate: {
       title: 'RiceCal は気に入っていますか',
-      body: '小さなチームで作っています。次に何を作るかは、あなたの答えで決まります。',
+      body: '次に何を作るかは、あなたの答えで決まります。',
       yes: '好きです',
       no: 'あまり',
       later: 'あとで',
-      note: '気に入っていただけたら、ストアの評価画面をお願いします。すぐ終わります。',
       feedbackTitle: 'どこを直せばよいですか',
-      feedbackBody:
-        'Discord で教えてください。読みます。アプリにあるものの多くは、そこから生まれました。',
+      feedbackBody: 'Discord で教えてください。アプリにあるものの多くは、そこから生まれました。',
       feedbackOpen: 'Discord を開く',
       feedbackSkip: 'やめておく',
     },

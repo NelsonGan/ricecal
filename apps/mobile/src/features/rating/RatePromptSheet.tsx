@@ -16,8 +16,7 @@ import {
   ratingLiked,
   subscribeToRatingPrompt,
 } from '@/lib/rating'
-import { radius, slab } from '@/theme/tokens'
-import { Button, Icon, Sheet, Squish, Text, useToast } from '@/ui'
+import { Button, Icon, Sheet, useToast } from '@/ui'
 
 /**
  * The question the app asks before the store does.
@@ -141,26 +140,23 @@ export function RatePromptSheet() {
         )
       }
     >
-      {/* The same raised plate `HelpSheet` puts the Discord mark on, and for the
-          same reason: a flat illustration on a transparent field floats next to
-          a design where everything else carries an edge. */}
-      <Squish
-        depth={slab.md}
-        radius={radius.tile}
-        containerClassName="self-center"
-        slabClassName="bg-line-strong"
-        className="bg-track p-3.5"
-      >
-        <Icon set="system" name={asking ? 'star' : 'chat'} size={48} />
-      </Squish>
-      {/* Said once, under the plate, and only on the first screen: what the
-          answer is FOR. Somebody deciding whether to tap "I like it" should know
-          it leads to a review rather than to a survey. */}
-      {asking ? (
-        <Text variant="meta" className="text-center">
-          {t('profile:rate.note')}
-        </Text>
-      ) : null}
+      {/* NO PLATE UNDER IT, unlike the Discord mark in `HelpSheet`. That one is
+          a flat foreign vector and needs an edge of its own to stop it floating;
+          these two are the app's own illustrations, which are already raised and
+          already carry a shadow. On a tile they read as a logo bolted into the
+          middle of the sheet rather than as part of it.
+
+          Large, and the only thing in the body, because the body is now one
+          picture: the question and its line live in the sheet's own header and
+          the answers in its footer. */}
+      <View className="items-center py-1">
+        {/* Centred by the wrapper rather than by `self-center` on the icon:
+            `Icon` draws an expo-image, and NativeWind only turns `className`
+            into a style for React Native's own components. A third-party one
+            takes it as an ordinary prop and drops it in silence, which is
+            exactly what this looked like on the first attempt. */}
+        <Icon set="system" name={asking ? 'star' : 'chat'} size={72} />
+      </View>
     </Sheet>
   )
 }

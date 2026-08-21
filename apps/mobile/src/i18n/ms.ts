@@ -1089,14 +1089,12 @@ export const ms = {
 
     rate: {
       title: 'Suka RiceCal?',
-      body: 'Kami pasukan kecil, dan jawapan anda menentukan apa yang kami bina seterusnya.',
+      body: 'Jawapan anda menentukan apa yang kami bina seterusnya.',
       yes: 'Saya suka',
       no: 'Tidak juga',
       later: 'Nanti dulu',
-      note: 'Jika anda suka, kami akan minta penilaian di gedung aplikasi. Ia ambil sekejap sahaja.',
       feedbackTitle: 'Apa yang perlu diperbaiki?',
-      feedbackBody:
-        'Beritahu kami di Discord dan kami akan membacanya. Kebanyakan isi aplikasi ini bermula begitu.',
+      feedbackBody: 'Beritahu kami di Discord. Kebanyakan isi aplikasi ini bermula begitu.',
       feedbackOpen: 'Buka Discord',
       feedbackSkip: 'Bukan sekarang',
     },

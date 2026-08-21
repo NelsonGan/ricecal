@@ -1063,14 +1063,13 @@ export const vi = {
 
     rate: {
       title: 'Bạn thấy RiceCal thế nào?',
-      body: 'Chúng tôi là một nhóm nhỏ, và câu trả lời của bạn quyết định điều chúng tôi làm tiếp theo.',
+      body: 'Câu trả lời của bạn quyết định điều chúng tôi làm tiếp theo.',
       yes: 'Tôi thích',
       no: 'Không hẳn',
       later: 'Để sau',
-      note: 'Nếu bạn thích, chúng tôi sẽ mở phần đánh giá trên cửa hàng ứng dụng. Chỉ mất một chút thôi.',
       feedbackTitle: 'Cần sửa điều gì?',
       feedbackBody:
-        'Hãy nói với chúng tôi trên Discord, chúng tôi sẽ đọc. Phần lớn những gì có trong ứng dụng đều bắt đầu từ đó.',
+        'Hãy nói với chúng tôi trên Discord. Phần lớn những gì có trong ứng dụng đều bắt đầu từ đó.',
       feedbackOpen: 'Mở Discord',
       feedbackSkip: 'Thôi',
     },

@@ -1085,14 +1085,12 @@ export const fil = {
 
     rate: {
       title: 'Nagugustuhan mo ba ang RiceCal?',
-      body: 'Maliit lang ang team namin, at ang sagot mo ang magpapasya kung ano ang susunod naming gagawin.',
+      body: 'Ang sagot mo ang magpapasya kung ano ang susunod naming gagawin.',
       yes: 'Gusto ko',
       no: 'Hindi masyado',
       later: 'Mamaya na lang',
-      note: 'Kung gusto mo, hihingi kami ng rating sa app store. Sandali lang.',
       feedbackTitle: 'Ano ang dapat ayusin?',
-      feedbackBody:
-        'Sabihin mo sa amin sa Discord at babasahin namin. Karamihan sa laman ng app ay nagsimula doon.',
+      feedbackBody: 'Sabihin mo sa amin sa Discord. Karamihan sa laman ng app ay nagsimula doon.',
       feedbackOpen: 'Buksan ang Discord',
       feedbackSkip: 'Huwag na',
     },
