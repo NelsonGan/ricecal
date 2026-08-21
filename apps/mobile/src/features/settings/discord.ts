@@ -14,7 +14,7 @@ export const DISCORD_INVITE = 'https://discord.gg/DCtQ47tEMh'
  *
  * `assets/icons` is written by `scripts/sync-icons.mjs`, which starts a full
  * import by deleting the directory and refilling it from the design system — a
- * mark that is not ours would not survive the next sync. Brand art has always
- * lived beside the mascot for the same reason.
+ * mark that is not ours would not survive the next sync. `assets/brand` is
+ * where art that nobody else writes goes.
  */
 export const DISCORD_LOGO = require('../../../assets/brand/discord.png')
