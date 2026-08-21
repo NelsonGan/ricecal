@@ -423,6 +423,11 @@ export const zhHans = {
       body: 'Cloudflare 想确认你是真人，只要一秒。',
     },
 
+    ended: {
+      title: '已退出登录',
+      body: '这次登录已经结束。重新登录就能接着用。',
+    },
+
     errors: {
       passwordShort: '至少要用 8 个字符。',
       passwordRequired: '请输入密码。',
