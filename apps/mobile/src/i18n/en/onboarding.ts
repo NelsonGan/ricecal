@@ -1,18 +1,30 @@
 export const onboarding = {
   welcome: {
-    title: 'Every dish, already counted',
     /**
-     * Asian rather than Malaysian, and the size of the book rather than a
-     * region.
+     * WHO IT IS FOR, said first, because that is the whole of the pitch.
      *
-     * The catalogue was never only Malaysian — seven national composition
-     * tables, the Open Food Facts slice and the researched dishes make it an
-     * Asian book with a Malaysian centre — and "Made for Malaysia" told
-     * everybody else in the region the app was not for them. What replaces it
-     * is the one fact a first screen can offer that a competitor cannot: how
-     * much is already in there.
+     * "Every dish, already counted" was a claim any tracker could make and none
+     * of them would be lying: they all count what is in their catalogue. What
+     * they do not have is this food, which is the reason somebody downloads
+     * this app instead of the one they already deleted.
+     *
+     * Asian rather than Malaysian, and the reasoning is the same as the line
+     * below. The catalogue was never only Malaysian — seven national
+     * composition tables, the Open Food Facts slice and the researched dishes
+     * make it an Asian book with a Malaysian centre — and "Made for Malaysia"
+     * told everybody else in the region the app was not for them.
      */
-    subtitle: 'Nasi lemak, pho, laksa, char siu rice. Asian food, counted properly.',
+    title: 'The calorie tracker made for Asians',
+    /**
+     * The proof under the claim, and it is four dish names rather than a
+     * sentence about dish names.
+     *
+     * It used to end "Asian food, counted properly", which was the heading
+     * again, and the third perk says how much is in there in numbers. Three
+     * claims of one thing on one screen. What is left is the part nothing else
+     * on it says: the food itself.
+     */
+    subtitle: 'Nasi lemak, pho, laksa, char siu rice.',
     perks: {
       track: { title: 'Track every calorie', subtitle: 'Snap a photo or search in seconds' },
       habit: { title: 'Build a healthier habit', subtitle: 'Gentle goals, streaks, no shaming' },
@@ -78,7 +90,17 @@ export const onboarding = {
 
   calculating: {
     title: 'Building your plan',
-    subtitle: 'Your height, your weight, your target and how you spend the day.',
+    /**
+     * Short, because this screen is on for about two and a half seconds and the
+     * three lines under it are already moving.
+     *
+     * It listed the answers back: "Your height, your weight, your target and
+     * how you spend the day." Nobody reads twelve words while a ring fills and
+     * three ticks land, and the job of the line is not the list — it is to say
+     * the number about to appear was worked out for THEM, which is the whole
+     * reason this beat exists.
+     */
+    subtitle: 'Worked out from your answers, not an average.',
     steps: {
       budget: 'Daily calorie goal',
       macros: 'Carbs, protein and fat split',
@@ -97,7 +119,11 @@ export const onboarding = {
     goalBy: 'ON TRACK FOR',
     maintain: 'MAINTAIN',
     maintainValue: 'Steady',
-    splitTitle: 'YOUR DAILY SPLIT',
+    /**
+     * No `splitTitle`. The card over the three macro tiles used to be headed
+     * "YOUR DAILY SPLIT", above tiles reading CARBS, PROTEIN and FAT — the
+     * heading and the contents were the same sentence.
+     */
     looksRight: 'This looks right',
     /** Walks back to the first question rather than opening an editor. */
     adjust: 'Change my answers',

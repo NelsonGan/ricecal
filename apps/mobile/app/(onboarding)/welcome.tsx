@@ -7,13 +7,15 @@ import { track } from '@/lib/analytics'
 import { Button, Icon, type IconProps, Screen, Text } from '@/ui'
 
 /**
- * The app's own icon, not the mascot.
+ * The app's own icon, and the FILE rather than a copy of the drawing.
  *
- * The mascot is a character and the first screen is an introduction to a
- * PRODUCT: the thing a user is about to install on their home screen is this
- * square, and showing it here is what makes the icon they tap tomorrow
- * recognisable. It carries its own background, so it is clipped to the same
- * corner radius the platform gives it.
+ * The first screen is an introduction to a PRODUCT: the thing a user is about
+ * to install on their home screen is this square, and showing it here is what
+ * makes the icon they tap tomorrow recognisable. Pointing at the icon itself is
+ * what keeps the two from drifting when one of them is redrawn.
+ *
+ * It carries its own background, so it is clipped to the same corner radius the
+ * platform gives it.
  */
 const LOGO = require('../../assets/icon.png')
 
@@ -32,22 +34,32 @@ export default function Welcome() {
   const { t } = useTranslation('onboarding')
   const router = useRouter()
 
+  /**
+   * Three claims, each with the drawing of the thing it claims.
+   *
+   * `scenes` rather than a single object apiece, which is what these were: a
+   * flame for tracking, a heart-rate line for the habit. Those are symbols for
+   * the CATEGORY — a flame means calories the way a heart means health — and
+   * the three of them said nothing about what the app does. A phone with a tick
+   * on it is the photo being counted, the ring is the day filling up, and the
+   * plate is the catalogue, which is the pitch this screen exists to make.
+   */
   const perks: { key: string; icon: IconProps; title: string; subtitle: string }[] = [
     {
       key: 'track',
-      icon: { set: 'body', name: 'flame-burn' },
+      icon: { set: 'scenes', name: 'phone' },
       title: t('welcome.perks.track.title'),
       subtitle: t('welcome.perks.track.subtitle'),
     },
     {
       key: 'habit',
-      icon: { set: 'body', name: 'heart-rate' },
+      icon: { set: 'scenes', name: 'ring' },
       title: t('welcome.perks.habit.title'),
       subtitle: t('welcome.perks.habit.subtitle'),
     },
     {
       key: 'local',
-      icon: { set: 'dishes', name: 'nasi-lemak' },
+      icon: { set: 'scenes', name: 'plate' },
       title: t('welcome.perks.local.title'),
       subtitle: t('welcome.perks.local.subtitle'),
     },
@@ -120,7 +132,7 @@ export default function Welcome() {
             className="flex-row items-center gap-3.5 rounded-md border-2 border-line bg-surface p-4"
             accessible
           >
-            <Icon {...perk.icon} size={40} />
+            <Icon {...perk.icon} size={48} />
             <View className="min-w-0 flex-1">
               <Text variant="bodyStrong" className="text-[16px]">
                 {perk.title}
