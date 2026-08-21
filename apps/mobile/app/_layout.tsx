@@ -22,7 +22,7 @@ import {
   SessionProvider,
   useSession,
 } from '@/data'
-import { LoginLinkHandler } from '@/features/auth'
+import { LoginLinkHandler, SessionEndedNotice } from '@/features/auth'
 import { OnboardingDraftProvider } from '@/features/onboarding'
 import { EntitlementSync } from '@/features/paywall'
 import { LanguageSync } from '@/features/settings'
@@ -113,6 +113,14 @@ export default Sentry.wrap(function RootLayout() {
                               {/* Under the toast because its one job on failure is to
                             say the link had expired. Renders nothing. */}
                               <LoginLinkHandler />
+                              {/* Under the toast for the same reason, and it is
+                            the only thing that says why the app signed somebody
+                            out who did not ask to be: a session the server has
+                            revoked is found by whichever request happened to be
+                            in flight, and without this the sign-out that follows
+                            puts the user on the sign-in screen with no
+                            explanation at all. */}
+                              <SessionEndedNotice />
                               {/* Also renders nothing. Keeps the store's answer
                             about this account and our own mirror of it in step,
                             so a purchase unlocks the app without waiting on a

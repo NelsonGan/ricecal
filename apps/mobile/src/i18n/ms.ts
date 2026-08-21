@@ -435,6 +435,11 @@ export const ms = {
       body: 'Cloudflare mahu mengesahkan anda seorang manusia. Ia ambil masa sesaat sahaja.',
     },
 
+    ended: {
+      title: 'Telah log keluar',
+      body: 'Sesi ini telah tamat. Log masuk semula untuk meneruskan.',
+    },
+
     errors: {
       passwordShort: 'Guna sekurang-kurangnya 8 aksara.',
       passwordRequired: 'Masukkan kata laluan anda.',
