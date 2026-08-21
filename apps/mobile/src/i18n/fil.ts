@@ -470,8 +470,8 @@ export const fil = {
     },
 
     welcome: {
-      title: 'Bawat ulam, kalkulado na',
-      subtitle: 'Nasi lemak, pho, laksa, char siu rice. Pagkaing Asyano, tamang bilang.',
+      title: 'Calorie tracker na gawa para sa mga Asyano',
+      subtitle: 'Nasi lemak, pho, laksa, char siu rice.',
       perks: {
         track: {
           title: 'Bilangin ang bawat calorie',
@@ -540,7 +540,7 @@ export const fil = {
 
     calculating: {
       title: 'Binubuo ang plano mo',
-      subtitle: 'Ang taas mo, timbang mo, target mo at kung paano mo ginugugol ang araw.',
+      subtitle: 'Kinuwenta mula sa mga sagot mo, hindi sa average.',
       steps: {
         budget: 'Target na calorie kada araw',
         macros: 'Hati ng carbs, protina at taba',
@@ -558,7 +558,6 @@ export const fil = {
       goalBy: 'INAASAHANG MAABOT',
       maintain: 'PANATILIHIN',
       maintainValue: 'Matatag',
-      splitTitle: 'ANG HATI MO KADA ARAW',
       looksRight: 'Tama naman ito',
       adjust: 'Baguhin ang mga sagot ko',
     },

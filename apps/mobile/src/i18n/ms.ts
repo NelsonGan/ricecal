@@ -470,8 +470,8 @@ export const ms = {
     },
 
     welcome: {
-      title: 'Setiap hidangan, sudah dikira',
-      subtitle: 'Nasi lemak, pho, laksa, nasi char siu. Makanan Asia, dikira betul-betul.',
+      title: 'Penjejak kalori untuk orang Asia',
+      subtitle: 'Nasi lemak, pho, laksa, nasi char siu.',
       perks: {
         track: {
           title: 'Jejak setiap kalori',
@@ -543,7 +543,7 @@ export const ms = {
 
     calculating: {
       title: 'Membina pelan anda',
-      subtitle: 'Tinggi anda, berat anda, sasaran anda dan bagaimana anda mengisi hari.',
+      subtitle: 'Dikira daripada jawapan anda, bukan purata.',
       steps: {
         budget: 'Sasaran kalori harian',
         macros: 'Pecahan karbo, protein dan lemak',
@@ -561,7 +561,6 @@ export const ms = {
       goalBy: 'DIJANGKA MENJELANG',
       maintain: 'KEKALKAN',
       maintainValue: 'Stabil',
-      splitTitle: 'PECAHAN HARIAN ANDA',
       looksRight: 'Ini nampak betul',
       adjust: 'Tukar jawapan saya',
     },

@@ -466,8 +466,8 @@ export const id = {
     },
 
     welcome: {
-      title: 'Setiap hidangan, sudah dihitung',
-      subtitle: 'Nasi lemak, pho, laksa, nasi char siu. Makanan Asia, dihitung dengan benar.',
+      title: 'Pelacak kalori untuk orang Asia',
+      subtitle: 'Nasi lemak, pho, laksa, nasi char siu.',
       perks: {
         track: { title: 'Lacak setiap kalori', subtitle: 'Foto atau cari dalam hitungan detik' },
         habit: {
@@ -533,7 +533,7 @@ export const id = {
 
     calculating: {
       title: 'Menyusun rencanamu',
-      subtitle: 'Tinggimu, beratmu, targetmu dan bagaimana kamu mengisi hari.',
+      subtitle: 'Dihitung dari jawabanmu, bukan rata-rata.',
       steps: {
         budget: 'Target kalori harian',
         macros: 'Pembagian karbo, protein dan lemak',
@@ -551,7 +551,6 @@ export const id = {
       goalBy: 'DIPERKIRAKAN',
       maintain: 'PERTAHANKAN',
       maintainValue: 'Stabil',
-      splitTitle: 'PEMBAGIAN HARIANMU',
       looksRight: 'Ini sudah pas',
       adjust: 'Ubah jawabanku',
     },

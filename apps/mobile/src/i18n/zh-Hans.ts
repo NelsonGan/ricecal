@@ -455,8 +455,8 @@ export const zhHans = {
     },
 
     welcome: {
-      title: '每一道菜，都已经算好',
-      subtitle: '椰浆饭、河粉、叻沙、叉烧饭。亚洲菜，认真算。',
+      title: '为亚洲人做的卡路里记录',
+      subtitle: '椰浆饭、河粉、叻沙、叉烧饭。',
       perks: {
         track: { title: '记下每一卡', subtitle: '拍张照，或者几秒钟搜出来' },
         habit: { title: '养成更健康的习惯', subtitle: '温和的目标，连续记录，不说教' },
@@ -516,7 +516,7 @@ export const zhHans = {
 
     calculating: {
       title: '正在做你的方案',
-      subtitle: '你的身高、体重、目标，还有你一天怎么过。',
+      subtitle: '根据你的回答算出来的，不是平均值。',
       steps: {
         budget: '每日热量目标',
         macros: '碳水、蛋白质和脂肪的比例',
@@ -534,7 +534,6 @@ export const zhHans = {
       goalBy: '预计达成',
       maintain: '维持',
       maintainValue: '稳住',
-      splitTitle: '你的每日分配',
       looksRight: '看起来没问题',
       adjust: '改一下我的回答',
     },
