@@ -454,8 +454,8 @@ export const ko = {
     },
 
     welcome: {
-      title: '모든 한 그릇, 이미 계산되어 있습니다',
-      subtitle: '나시르막, 쌀국수, 락사, 차슈덮밥. 아시아 음식을 제대로 셉니다.',
+      title: '아시아 사람을 위한 칼로리 기록',
+      subtitle: '나시르막, 쌀국수, 락사, 차슈덮밥.',
       perks: {
         track: { title: '칼로리를 하나하나 기록', subtitle: '사진을 찍거나 몇 초 만에 검색' },
         habit: {
@@ -518,7 +518,7 @@ export const ko = {
 
     calculating: {
       title: '계획을 만드는 중',
-      subtitle: '키, 몸무게, 목표, 그리고 하루를 보내는 방식.',
+      subtitle: '평균이 아니라, 답해주신 내용으로 계산합니다.',
       steps: {
         budget: '하루 칼로리 목표',
         macros: '탄수화물, 단백질, 지방 비율',
@@ -536,7 +536,6 @@ export const ko = {
       goalBy: '도달 예상',
       maintain: '유지',
       maintainValue: '그대로',
-      splitTitle: '하루 비율',
       looksRight: '이대로 좋아요',
       adjust: '답변 바꾸기',
     },
