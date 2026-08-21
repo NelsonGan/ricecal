@@ -5,6 +5,7 @@ import * as SecureStore from 'expo-secure-store'
 
 import type { Database } from './database.types'
 import { env } from './env'
+import { sessionIsGone, tokenWasRefused } from './revocation'
 
 /**
  * SecureStore, not AsyncStorage. What is stored here is a refresh token — on
@@ -232,6 +233,12 @@ export const supabase = createClient<Database>(
   env.EXPO_PUBLIC_SUPABASE_URL,
   env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
   {
+    // Every request the client makes goes through here, which is what makes one
+    // watch cover PostgREST, storage and all eight edge functions. Declared
+    // below, after the client it reads: a function declaration is hoisted, and
+    // the guard is easier to follow next to the rest of the revocation handling
+    // than wedged in above the thing it guards.
+    global: { fetch: guardedFetch },
     auth: {
       storage: SecureStoreAdapter,
       autoRefreshToken: true,
@@ -250,3 +257,124 @@ export const supabase = createClient<Database>(
     },
   },
 )
+
+/**
+ * WHEN THE SERVER STOPS RECOGNISING THIS SESSION.
+ *
+ * A session can end on the server while this phone still holds a perfectly
+ * good-looking access token: signing out every device, an account deleted, a
+ * session revoked in the dashboard, GoTrue timing one out. The token stays
+ * validly SIGNED until it expires, so the two halves of the project disagree
+ * about it for up to an hour:
+ *
+ * - PostgREST and the catalogue Worker check the signature and nothing else, so
+ *   the diary goes on loading and the app looks signed in.
+ * - Every edge function calls `auth.getUser()`, which asks GoTrue, which answers
+ *   `session_not_found`. The function returns 401 and the action fails.
+ *
+ * So scanning, refining, recipes, suggestions, photos and barcodes all stop
+ * working while the app insists there is an account. Nothing used to notice:
+ * `refusalFrom` reads 402 and 429 and passes a 401 straight through to a generic
+ * "that did not work".
+ *
+ * AND AUTH-JS WILL NOT CATCH IT EITHER, by design. `_callRefreshToken` keeps the
+ * session when a refresh fails while the access token is still valid, on the
+ * reasoning that "destroying it now would log out a user whose access token
+ * works". That is right for a refresh that failed because the network dropped
+ * and wrong for one the server refused: here the token works for exactly the
+ * consumers that never ask GoTrue, which is not the same as working.
+ *
+ * Hence the probe below. A 401 is the symptom; a refused refresh is the proof.
+ */
+
+/**
+ * Who wants telling that the session ended without the user asking.
+ *
+ * An event rather than a call into the UI, because this file is imported by a
+ * background task and a widget sync as well as by the app, and neither of those
+ * has a toast to show. `SessionEndedNotice` subscribes for the one that does.
+ */
+const sessionEndedListeners = new Set<() => void>()
+
+export function onSessionEnded(listener: () => void): () => void {
+  sessionEndedListeners.add(listener)
+  return () => {
+    sessionEndedListeners.delete(listener)
+  }
+}
+
+/**
+ * One probe at a time.
+ *
+ * A screen fires several requests at once, so a revoked session produces a
+ * handful of 401s within a frame or two of each other and each of them would
+ * otherwise start its own refresh. auth-js coalesces concurrent refreshes and
+ * caches a recent failure, so the extra ones are cheap rather than harmful, but
+ * a single flight also means the sign-out and its announcement happen once.
+ */
+let probe: Promise<void> | null = null
+
+/**
+ * Ends the session locally if, and only if, the server has ended it.
+ *
+ * `refreshSession()` is the question, because the refresh token is the only
+ * credential that can be checked without guessing: hand it over and the server
+ * either mints a new pair, in which case the 401 was a stale token and this is
+ * already fixed, or refuses it, in which case there is nothing left to be signed
+ * in with.
+ *
+ * `scope: 'local'` for the sign-out. There is no session on the server to
+ * revoke, and a global sign-out would be asking to end other devices' sessions,
+ * which is not what happened and not ours to do. This forgets our copy.
+ *
+ * Never throws. It is called from inside a fetch, whose caller is expecting a
+ * response and has its own error to handle.
+ */
+async function endSessionIfGone(): Promise<void> {
+  // Nothing to end, so nothing to announce. This is also the guard that stops a
+  // signed-out app announcing a sign-out on every request: `removeItem` clears
+  // what `storedSession` reads, so the second 401 after a sign-out is a no-op.
+  if (!storedSession()) return
+
+  probe ??= (async () => {
+    try {
+      const { error } = await supabase.auth.refreshSession()
+      if (!sessionIsGone(error)) return
+      await supabase.auth.signOut({ scope: 'local' })
+      for (const listener of sessionEndedListeners) listener()
+    } catch (error) {
+      console.warn('[auth] could not check whether the session is still good', error)
+    } finally {
+      probe = null
+    }
+  })()
+
+  return probe
+}
+
+/**
+ * The client's fetch, with a 401 watched for on the way past.
+ *
+ * The response is handed back untouched and the probe is not awaited: whatever
+ * asked is still owed its answer, and the request that noticed has already
+ * failed. What it gets from this is the NEXT one, and the sign-out.
+ */
+async function guardedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const response = await fetch(input, init)
+  if (tokenWasRefused(requestUrl(input), response.status)) void endSessionIfGone()
+  return response
+}
+
+/**
+ * The URL out of whichever of the three shapes `fetch` accepts.
+ *
+ * Structural rather than `instanceof Request`, for the same reason the errors in
+ * `revocation.ts` are: the constructor a polyfill installs is not necessarily
+ * the one a value was made with. `String()` covers `URL`, whose `toString` is
+ * its href.
+ */
+function requestUrl(input: RequestInfo | URL): string {
+  if (typeof input === 'string') return input
+  const url = (input as { url?: unknown }).url
+  return typeof url === 'string' ? url : String(input)
+}
