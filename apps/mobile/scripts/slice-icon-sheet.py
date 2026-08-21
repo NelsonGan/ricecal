@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Cut a grid sheet of icons into individual PNGs in the app's icon format.
 
-    python3 scripts/slice-icon-sheet.py sheet.png --names names.txt --check
+    python3 scripts/slice-icon-sheet.py sheet.png --names names.txt
     python3 scripts/slice-icon-sheet.py sheet.png --names names.txt --write
+
+Without `--write` it cuts nothing and only reports what it found, which is the
+way to check a sheet before it lands in `assets/`.
 
 `--names` is one `set/name` per line in the sheet's own reading order, written
 per sheet and thrown away after.
@@ -24,6 +27,22 @@ So the fill starts from the sheet's outside edges and spreads only through
 pixels that are close to the background colour AND connected to the border.
 Interior whites are never reached, because the drawing encloses them.
 
+WHEN THE SHEET HAS DROP SHADOWS: `--shadows`
+
+A shadow is not a colour a tolerance can be set for. Measured on the onboarding
+sheet, the shadow under the plate is DARKER than the rice beside it, so any
+tolerance wide enough to clear the first punches through the second. Widening it
+is worse than useless: the sneakers' collar linings are a cool grey that reads
+exactly like a mid shadow, and the collar is a WIDE opening in the silhouette
+rather than a thin gap that could be sealed, so a wider fill strolled in and left
+two holes through the shoes.
+
+What separates them is not brightness but CONTINUITY. A shadow fades smoothly
+out to paper; the artwork's own pale parts are walled off from the paper by a
+hard edge. So under `--shadows` the fill may only step to a neighbour within
+`SHADOW_STEP` of the brightness it is standing on — it follows a shadow all the
+way out and cannot cross an edge to get in.
+
 THE PADDING RULE, MEASURED FROM THE EXISTING SET
 
 Every icon in `assets/icons` is 192x192 with its artwork scaled so the LONGER
@@ -44,6 +63,23 @@ CANVAS = 192
 CONTENT = 172
 # Below this the pixel is background as far as bbox and bleed checks care.
 ALPHA_FLOOR = 32
+
+# How big a jump in brightness the `--shadows` fill may take in one pixel. The
+# sneakers decide the number: at 8 every collar-lining pixel survives and every
+# shadow pixel still goes, and by 10 the fill has started eating the linings.
+SHADOW_STEP = 8
+
+# Where that fill is allowed to go at all: neutral, and no darker than this.
+# Shadows read about 3 chroma against the palest cream in the artwork at 36, so
+# colour is what holds the fill out of the drawing once brightness cannot.
+SHADOW_CHROMA = 25
+SHADOW_DARK = 110
+
+# A hole straight THROUGH the artwork — the middle of the ring — is enclosed, so
+# no fill starting at the border can reach it. What tells it from the artwork's
+# own whites is that it IS the paper: the ring's middle sits 1 away from white
+# where the rice sits 29.
+PAPER = 6
 
 
 def flood_background(im: Image.Image, tolerance: int) -> Image.Image:
@@ -83,6 +119,115 @@ def flood_background(im: Image.Image, tolerance: int) -> Image.Image:
         px[x, y] = (r, g, b, 0)
         queue.extend(((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)))
     return im
+
+
+def shade(px, x: int, y: int) -> tuple[int, int]:
+    """How neutral a pixel is, and how far below the paper it sits.
+
+    Both numbers, because the fill needs one of each: colour is what keeps it
+    out of the drawing, and brightness is what lets it follow a shadow.
+    """
+    r, g, b = px[x, y][:3]
+    lo = min(r, g, b)
+    return max(r, g, b) - lo, 255 - lo
+
+
+def is_ground(px, x: int, y: int) -> bool:
+    """Whether a pixel could be the paper, or a shadow cast on it."""
+    chroma, dark = shade(px, x, y)
+    return chroma < SHADOW_CHROMA and dark < SHADOW_DARK
+
+
+def gradient_background(im: Image.Image) -> Image.Image:
+    """Clear the background and its drop shadows, without stepping over an edge.
+
+    Same starting point as `flood_background` — the border, spreading inwards —
+    and one difference: each step is measured against the pixel it is coming
+    FROM rather than against the background colour, so the fill can follow a
+    shadow down to any darkness as long as it got there gradually.
+
+    ASSUMES THE GROUND IS PAPER, unlike `flood_background`, which reads whatever
+    colour the corners agree on. `SHADOW_CHROMA` and `SHADOW_DARK` are measured
+    from white, so a sheet on a coloured ground needs both re-measured against
+    it before this is any use.
+    """
+    im = im.convert("RGBA")
+    w, h = im.size
+    px = im.load()
+
+    seen = bytearray(w * h)
+    queue: deque = deque()
+
+    def offer(x, y):
+        if seen[y * w + x] or not is_ground(px, x, y):
+            return
+        seen[y * w + x] = 1
+        queue.append((x, y))
+
+    for x in range(w):
+        offer(x, 0)
+        offer(x, h - 1)
+    for y in range(h):
+        offer(0, y)
+        offer(w - 1, y)
+
+    while queue:
+        x, y = queue.popleft()
+        _, here = shade(px, x, y)
+        for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            if not (0 <= nx < w and 0 <= ny < h) or seen[ny * w + nx]:
+                continue
+            if not is_ground(px, nx, ny):
+                continue
+            if abs(shade(px, nx, ny)[1] - here) <= SHADOW_STEP:
+                seen[ny * w + nx] = 1
+                queue.append((nx, ny))
+
+    for i in range(w * h):
+        if seen[i]:
+            x, y = i % w, i // w
+            r, g, b, _ = px[x, y]
+            px[x, y] = (r, g, b, 0)
+
+    clear_paper_holes(im, seen)
+    return im
+
+
+def clear_paper_holes(im: Image.Image, filled: bytearray) -> None:
+    """Clear enclosed regions that are the paper itself rather than artwork.
+
+    Only the ring needs this today, and only because its middle is a hole the
+    border can never reach. Judged per region rather than per pixel: a specular
+    highlight on cream can touch pure white for a few pixels, and clearing those
+    one at a time would pinhole the artwork.
+    """
+    w, h = im.size
+    px = im.load()
+    seen = bytearray(filled)
+
+    for start in range(w * h):
+        sx, sy = start % w, start // w
+        if seen[start] or not is_ground(px, sx, sy):
+            continue
+
+        region = []
+        stack = [(sx, sy)]
+        seen[start] = 1
+        while stack:
+            x, y = stack.pop()
+            region.append((x, y))
+            for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if not (0 <= nx < w and 0 <= ny < h) or seen[ny * w + nx]:
+                    continue
+                if is_ground(px, nx, ny):
+                    seen[ny * w + nx] = 1
+                    stack.append((nx, ny))
+
+        darks = sorted(shade(px, x, y)[1] for x, y in region)
+        if darks[len(darks) // 2] < PAPER:
+            for x, y in region:
+                r, g, b, _ = px[x, y]
+                px[x, y] = (r, g, b, 0)
 
 
 def already_transparent(im: Image.Image) -> bool:
@@ -157,11 +302,41 @@ def components(im: Image.Image, min_area: int):
     return out
 
 
+def bleed_edges(art: Image.Image, rounds: int = 3) -> Image.Image:
+    """Push the artwork's colour outwards into the pixels that were cleared.
+
+    Alpha is cut hard, and PIL resamples the colour channels without regard to
+    it — so a cleared pixel still contributes its RGB to whatever edge pixel
+    lands on top of it. Cleared pixels are transparent BLACK, which is how a
+    clean cut ends up with a dark rim once it is scaled down. Giving them their
+    neighbour's colour first means the only thing the resample can mix in is
+    more of the drawing.
+    """
+    art = art.copy()
+    w, h = art.size
+    px = art.load()
+    for _ in range(rounds):
+        edge = []
+        for y in range(h):
+            for x in range(w):
+                if px[x, y][3]:
+                    continue
+                for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                    if 0 <= nx < w and 0 <= ny < h and px[nx, ny][3]:
+                        edge.append((x, y, px[nx, ny][:3]))
+                        break
+        if not edge:
+            break
+        for x, y, rgb in edge:
+            px[x, y] = (*rgb, 0)
+    return art
+
+
 def to_icon(cell: Image.Image) -> Image.Image:
     box = solid_bbox(cell)
     if box is None:
         raise ValueError("cell is empty")
-    art = cell.crop(box)
+    art = bleed_edges(cell.crop(box))
     scale = CONTENT / max(art.width, art.height)
     size = (max(1, round(art.width * scale)), max(1, round(art.height * scale)))
     art = art.resize(size, Image.LANCZOS)
@@ -190,6 +365,11 @@ def main() -> None:
     ap.add_argument("--cols", type=int, default=5)
     ap.add_argument("--rows", type=int, default=5)
     ap.add_argument("--tolerance", type=int, default=40)
+    ap.add_argument(
+        "--shadows",
+        action="store_true",
+        help="the sheet's icons carry drop shadows; fill by gradient, not tolerance",
+    )
     ap.add_argument("--min-area", type=int, default=60, help="ignore blobs smaller than this")
     ap.add_argument("--out", default="assets/icons")
     ap.add_argument("--write", action="store_true")
@@ -203,6 +383,9 @@ def main() -> None:
     im = Image.open(args.sheet).convert("RGBA")
     if already_transparent(im):
         print("sheet already has a transparent background")
+    elif args.shadows:
+        print(f"gradient-filling background and shadows (step {SHADOW_STEP})")
+        im = gradient_background(im)
     else:
         print(f"flood-filling background (tolerance {args.tolerance})")
         im = flood_background(im, args.tolerance)
