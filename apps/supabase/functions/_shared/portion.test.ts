@@ -13,6 +13,7 @@ import {
   boundGramsToServing,
   isWholeMealServing,
   namesAPortion,
+  namesOneArticle,
   plausibleForGrams,
   reconcile,
   rowIsMeatier,
@@ -316,4 +317,75 @@ Deno.test('plausibleForGrams judges a catalogue row against a weight', () => {
   eq(plausibleForGrams(36, 30), true, 'a satay stick from the catalogue')
   eq(plausibleForGrams(720, 50), false, 'a 50 g meatball is not 720 kcal')
   eq(plausibleForGrams(0, 30), false, 'a free lunch')
+})
+
+Deno.test('unfoldCounts repairs a plate the fixed ceiling used to let through', () => {
+  // The one that got away, off a real diary. A Filet-O-Fish with three nuggets:
+  // the nugget line is 84 g and 150 kcal for all three, in fields the prompt
+  // defines as one unit's, and the model's own band is the giveaway. Read per
+  // unit the parts are 830, half again over the top of it; read as stated they
+  // are 530, which is the middle of it.
+  //
+  // The old test was a ceiling at 1.8x the band's top, so 830 against 1008
+  // passed and the meal was logged at 889 kcal.
+  const filetOFish = [
+    {
+      name: 'Filet-O-Fish',
+      count: 1,
+      grams: 180,
+      kcal: 380,
+      carbs_g: 29,
+      protein_g: 17,
+      fat_g: 20,
+    },
+    {
+      name: 'chicken nuggets',
+      count: 3,
+      grams: 84,
+      kcal: 150,
+      carbs_g: 10,
+      protein_g: 7,
+      fat_g: 8,
+    },
+  ]
+  const fixed = unfoldCounts(filetOFish, 500, 560)
+  const total = fixed.reduce((sum, c) => sum + c.kcal * c.count, 0)
+  if (total < 500 || total > 560) throw new Error(`parts now total ${total}, outside the band`)
+  eq(fixed[1].kcal, 50, 'one nugget')
+  eq(fixed[1].grams, 28, 'and what one weighs')
+  eq(fixed[1].protein_g, 2.3, 'macros come down with it')
+  eq(fixed[0].kcal, 380, 'the burger is a count of one and is left alone')
+})
+
+Deno.test('unfoldCounts trusts the band over the size of the disagreement', () => {
+  // Both halves of the comparison, on the same parts. A band the per-unit
+  // reading fits is a breakdown that has not been folded, however far the
+  // as-stated reading is from it; a band neither reading fits cannot referee
+  // anything, so nothing is touched. The second case is the one a bare "is the
+  // per-unit total too big" test gets wrong, because 900 IS too big.
+  const wings = [
+    { name: 'chicken wing', count: 6, grams: 40, kcal: 110, carbs_g: 2, protein_g: 9, fat_g: 7 },
+    { name: 'celery', count: 1, grams: 30, kcal: 5, carbs_g: 1, protein_g: 0, fat_g: 0 },
+  ]
+  eq(unfoldCounts(wings, 620, 700), wings, 'six wings really are six wings')
+  eq(unfoldCounts(wings, 200, 250), wings, 'neither 665 nor 115 fits, so neither is trusted')
+})
+
+Deno.test('namesOneArticle tells a whole article from a helping', () => {
+  eq(namesOneArticle('1 burger'), true, 'a Filet-O-Fish is 142 g because of what it is')
+  eq(namesOneArticle('1.0 sandwich'), true, 'the import writes its counts with a decimal')
+  eq(namesOneArticle('1 can'), true, 'and a can holds what it holds')
+  eq(namesOneArticle('1 bar'), true, 'so does a bar')
+
+  eq(namesOneArticle('1 serving'), false, 'a helping is whatever was served')
+  eq(namesOneArticle('1 bowl (400 g)'), false, 'so is a bowl, however precisely stated')
+  eq(namesOneArticle('1 portion (100 g)'), false, 'and a portion')
+  // Countable, but the size is whatever was cut, so the catalogue's weight is no
+  // better evidence than the model's.
+  eq(namesOneArticle('1 piece'), false, 'a piece of what, and cut how')
+  eq(namesOneArticle('1.0 fillet'), false, 'a fillet is not a fixed size')
+
+  eq(namesOneArticle('2 bars'), false, 'two of them is not one of them')
+  eq(namesOneArticle('100 g'), false, 'a bare measurement names nothing')
+  eq(namesOneArticle(null), false, 'and a row may state no portion at all')
 })

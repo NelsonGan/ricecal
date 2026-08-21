@@ -7,7 +7,13 @@
 // the rice flour that outranks rice, the restaurant portion that is four times
 // the plate. Each of these was a wrong entry in someone's diary first.
 
-import { bestFit, componentCandidates, priceRow, type SearchRow } from './cascade.ts'
+import {
+  bestFit,
+  componentCandidates,
+  oneArticleGrams,
+  priceRow,
+  type SearchRow,
+} from './cascade.ts'
 
 const eq = (got: unknown, want: unknown, what: string) => {
   if (got !== want) throw new Error(`${what}: expected ${want}, got ${got}`)
@@ -240,4 +246,31 @@ Deno.test('priceRow still falls back to the label when there is no stated weight
 
   const plate = priceRow(row('Mystery plate', 500, '1 plate', null), 200)
   eq(plate.byWeight, false, 'no weight anywhere, so the unit count is all there is')
+})
+
+Deno.test('a whole article is not rescaled to the weight a photograph guessed', () => {
+  // The catalogue's own row for the burger, and a real reading of a real
+  // photograph of one: 330 kcal for 142 g, guessed at 180 g. Priced by weight
+  // that is 418, and 418 is the number that went into the diary.
+  const filet = row("McDonald's Filet-O-Fish", 330, '1 burger', 142)
+  near(priceRow(filet, 180).kcal, 418, 'what pricing it by weight used to charge')
+
+  eq(oneArticleGrams(priceRow(filet, 180), 180), 142, 'the catalogue knows what one weighs')
+  const whole = priceRow(filet, null)
+  eq(whole.kcal, 330, 'so one of them costs what the row says')
+  eq(whole.units, 1, 'one to a serving')
+  eq(whole.byWeight, false, 'and the entry points straight at the row')
+})
+
+Deno.test('the article rule stays out of the helping cap and out of a helping', () => {
+  const filet = row("McDonald's Filet-O-Fish", 330, '1 burger', 142)
+  // Far over the article is evidence the row is the wrong size of the thing, a
+  // single-burger row under a photograph of a double, and that is the cap's
+  // question rather than this one's.
+  eq(oneArticleGrams(priceRow(filet, 400), 400), null, '400 g is not one burger')
+  // Under it, weight still prices it: a weight only ever bounds a figure down.
+  eq(oneArticleGrams(priceRow(filet, 120), 120), null, 'a smaller burger is priced smaller')
+
+  const laksa = row('Laksa', 500, '1 bowl (400 g)', 400)
+  eq(oneArticleGrams(priceRow(laksa, 480), 480), null, 'a bowl is a helping, and helpings vary')
 })
