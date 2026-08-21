@@ -17,9 +17,7 @@ function authError(name: string, status: number, code?: string) {
 
 describe('tokenWasRefused', () => {
   it('reads a 401 from an edge function as the token being refused', () => {
-    expect(
-      tokenWasRefused('https://ref.supabase.co/functions/v1/scan-meal', 401),
-    ).toBe(true)
+    expect(tokenWasRefused('https://ref.supabase.co/functions/v1/scan-meal', 401)).toBe(true)
   })
 
   it('reads a 401 from PostgREST the same way', () => {
