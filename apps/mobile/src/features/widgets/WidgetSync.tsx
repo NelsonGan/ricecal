@@ -10,6 +10,7 @@ import { AppState, type AppStateStatus } from 'react-native'
 import {
   useActivityDay,
   useAddQueuedWater,
+  useDay,
   useDayLog,
   useSelectedDate,
   useSession,
@@ -86,6 +87,22 @@ function SignedInWidgetSync() {
    * an hour later with no idea what changed it.
    */
   const day = useDayLog(todayKey)
+  /**
+   * READINESS COMES FROM THE QUERY, not from the view above it.
+   *
+   * `useDayLog` reports a day carrying an unresolved snap as settled however
+   * the request is doing, and that is right for a SCREEN: the photograph is
+   * content, and Today hiding behind a skeleton would take it off the day it
+   * was just added to. It is wrong here. Everything around the snap is still
+   * the empty-day fallback at that point, so publishing it writes "nothing
+   * eaten today" onto a home screen for as long as the request takes, on the
+   * one kind of launch where somebody has just logged something.
+   *
+   * Not a second request: `useDayLog` is reading this very query underneath,
+   * and react-query keys on the query key, so the two share one cache entry
+   * and one fetch in flight.
+   */
+  const dayQuery = useDay(todayKey)
   const targets = useTargets()
   const activity = useActivityDay(todayKey)
   const settings = useSettings()
@@ -116,7 +133,7 @@ function SignedInWidgetSync() {
    * than or-ed across all of them, for the reason written out on Today.
    */
   const ready =
-    settled(day.isPending, day.isPaused) &&
+    settled(dayQuery.isPending, dayQuery.isPaused) &&
     settled(targets.isPending, targets.isPaused) &&
     settled(settings.isPending, settings.isPaused) &&
     settled(activity.isPending, activity.isPaused) &&

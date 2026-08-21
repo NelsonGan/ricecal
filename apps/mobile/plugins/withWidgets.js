@@ -136,6 +136,13 @@ function withWidgetFiles(config, { appGroup, scheme }) {
           scheme,
           displayName: cfg.name ?? 'RiceCal',
           version: cfg.version ?? '1.0.0',
+          // THE APP'S OWN BUILD NUMBER, not a constant. Apple rejects an
+          // upload whose extension disagrees with its container about either
+          // half of the version pair (ITMS-90473), and `autoIncrement` in
+          // eas.json moves this on every production build — so a hardcoded
+          // `1` here is a build that compiles, installs, runs, and then fails
+          // at the App Store Connect gate on the second release.
+          build: String(cfg.ios?.buildNumber ?? '1'),
         }),
       )
 
@@ -309,7 +316,7 @@ function applyBuildSettings(project, target, { bundleId, appGroup, version }) {
   }
 }
 
-function infoPlist({ appGroup, scheme, displayName, version }) {
+function infoPlist({ appGroup, scheme, displayName, version, build }) {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -331,7 +338,7 @@ function infoPlist({ appGroup, scheme, displayName, version }) {
   <key>CFBundleShortVersionString</key>
   <string>${version}</string>
   <key>CFBundleVersion</key>
-  <string>1</string>
+  <string>${build}</string>
   <key>NSExtension</key>
   <dict>
     <key>NSExtensionPointIdentifier</key>

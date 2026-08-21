@@ -111,6 +111,18 @@ export type WidgetSnapshot = {
     /** "−1.8 kg", with a real minus sign. Empty when nothing has moved. */
     change: string
     /**
+     * Whether that change is a gain, which is what decides the pill's colour.
+     *
+     * A COLOUR THE APP OWNS, like every other verdict here. Trends paints a
+     * gain in kaya and a loss in pandan, so a widget that painted both green
+     * would be the same figure disagreeing with itself one tap away. The
+     * widget cannot work it out for itself either: `change` is a formatted
+     * string by the time it arrives.
+     *
+     * Meaningless when `change` is empty, since nothing is drawn then.
+     */
+    up: boolean
+    /**
      * Eight weekly averages, oldest first, each 0..1 against the range they
      * span. The last is the current week and is drawn in pandan.
      *

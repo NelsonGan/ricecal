@@ -30,8 +30,9 @@
   <color name="rc_hibiscus_soft_line">#F7D2DA</color>
 
   <color name="rc_kaya">#FFC145</color>
-  <color name="rc_kaya_soft">#FFF6E3</color>
+  <color name="rc_kaya_soft">#FFF3D6</color>
   <color name="rc_kaya_soft_line">#F0DDAE</color>
+  <color name="rc_kaya_ink">#3D2B14</color>
 
   <color name="rc_water">#4CC9F0</color>
   <color name="rc_water_slab">#1B87A8</color>
