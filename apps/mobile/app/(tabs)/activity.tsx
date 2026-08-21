@@ -365,7 +365,7 @@ export default function ActivityScreen() {
        // is also what finally gives the History row something to say: the same
        // `activity_summary` the screen already has is where its count and its
        // time come from.
-       // /}
+       */}
       <Card title={t('activity:today.todayTitle')} flush>
         <View className="px-7">
           {loading ? (
