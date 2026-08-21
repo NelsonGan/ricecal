@@ -1267,7 +1267,10 @@ Then, in order:
 - **Tier 2, components** → when the model *listed* two or more parts. Each
   resolves to its own catalogue row and the entry is their sum. Gated on the
   list, not on `scene`: a banana leaf of satay came back "single" with three
-  components on it.
+  components on it. Both ways this tier gets a plate wrong are about size rather
+  than identity, and both are in [Rules you must not
+  break](#rules-you-must-not-break): a count applied twice, and a whole article
+  rescaled to a guessed weight.
 - **Count** → several of one countable thing. Three durian are three, priced per
   unit.
 - **Tier 1/3, dish** → the Worker's search (specific, generic, head noun), a
@@ -3335,6 +3338,28 @@ the list is about whatever the model chose to enumerate. A basket of wings came
 back as celery and a pot of dip, and since the entry is priced from the parts, a
 meal the model itself bounded at 780-900 kcal was logged at 160. A breakdown far
 outside its own band is dropped, not repaired.
+
+**The band is also what says whether the counts have been applied**, and that is
+a comparison and not a tolerance. A component states what ONE of it costs and
+`count` says how many, so two readings of the same answer exist: `sum(kcal x
+count)` and `sum(kcal)`. `unfoldCounts` divides the counts back out when the
+second lands in the band and the first does not, and does nothing when the first
+lands in it (the parts really do multiply) or when neither does (the band cannot
+referee anything). Measured against a fixed ceiling instead, it could not see the
+case it exists for: a Filet-O-Fish with three nuggets read per unit at 830 and as
+stated at 530 against the model's own 500-560 band, the ceiling was 1.8x the top
+of that band, and 830 slipped under 1008. The meal was logged at 889.
+
+**A catalogue row that names one whole article already knows what it weighs.**
+A helping varies with who served it, so `boundGramsToServing` lets the model's
+weight run to half again the row's. An article does not vary: a Filet-O-Fish is
+142 g because that is what one is. Priced by weight against a photograph guessed
+at 180 g, the catalogue's own 330 kcal row charged 418 for it. `namesOneArticle`
+holds the short list of words that mean one whole thing (burger, sandwich, can,
+bar), and `piece`, `slice` and `fillet` are deliberately not on it: they are
+countable but their size is whatever was cut. The dish tier never had this bug,
+because `SAME_PORTION_LOW`/`HIGH` already let a row stand when the two weights
+are within 0.7-1.4 of each other.
 
 **A signup form never says an address is taken.** Supabase will not, because that
 turns the form into an oracle for who uses this app.
