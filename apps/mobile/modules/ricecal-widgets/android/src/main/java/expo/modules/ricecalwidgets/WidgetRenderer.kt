@@ -106,6 +106,13 @@ object WidgetRenderer {
     views.setTextViewText(R.id.rc_weight_value, weight.value)
     views.setTextViewText(R.id.rc_weight_unit, weight.unit)
     views.setTextViewText(R.id.rc_weight_change, weight.change)
+    // Kaya on a gain, pandan on a loss, which is what the weight list on Trends
+    // does with the same figure. The direction is the app's answer rather than
+    // this widget's: see `up` in the module's `types.ts`.
+    views.setTextColor(
+      R.id.rc_weight_change,
+      context.getColor(if (weight.up) R.color.rc_kaya_ink else R.color.rc_pandan_ink),
+    )
     // Empty on a window that has not moved: a pill saying nothing changed is a
     // pill worth not drawing.
     views.setViewVisibility(

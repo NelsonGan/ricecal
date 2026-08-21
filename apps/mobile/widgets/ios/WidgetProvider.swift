@@ -82,6 +82,7 @@ extension WidgetSnapshot {
       value: "68.4",
       unit: "kg",
       change: "\u{2212}1.8 kg",
+      up: false,
       weeks: [0.62, 0.70, 0.56, 0.64, 0.48, 0.52, 0.44, 0.38]
     ),
     entries: [
