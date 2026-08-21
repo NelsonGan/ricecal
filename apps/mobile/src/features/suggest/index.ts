@@ -14,6 +14,6 @@ export {
   REASON_ICONS,
   trackedCuisine,
 } from './ask'
+export { PickDetail, type PickDetailProps } from './PickDetail'
 export { PicksSheet, type PicksSheetProps } from './PicksSheet'
-export { type PicksValue, SuggestProvider, useSuggestedPicks } from './picks'
 export { SuggestAction, type SuggestActionProps } from './SuggestAction'

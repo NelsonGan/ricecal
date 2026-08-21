@@ -25,7 +25,6 @@ import {
 import { LoginLinkHandler } from '@/features/auth'
 import { OnboardingDraftProvider } from '@/features/onboarding'
 import { EntitlementSync } from '@/features/paywall'
-import { SuggestProvider } from '@/features/suggest'
 import { WidgetSync } from '@/features/widgets'
 import { initOnlineManager } from '@/lib/online'
 import { persistOptions, queryClient } from '@/lib/query'
@@ -100,35 +99,28 @@ export default Sentry.wrap(function RootLayout() {
                         same shape as pending snaps: the work outlives the
                         screen that started it. */}
                         <RefiningProvider>
-                          {/* The suggestions currently on screen. Above the
-                          navigator because the sheet that produced them and the
-                          page that reads one are different routes, and a
-                          suggestion has no id to carry between them. In memory
-                          only: see `features/suggest/picks.tsx`. */}
-                          <SuggestProvider>
-                            {/* Outside the navigator so a toast survives navigation — a
+                          {/* Outside the navigator so a toast survives navigation — a
                           "saved" confirmation usually fires as the screen that
                           triggered it pops. */}
-                            <ToastProvider offset={NAV_BAR_HEIGHT}>
-                              {/* Under the toast because its one job on failure is to
+                          <ToastProvider offset={NAV_BAR_HEIGHT}>
+                            {/* Under the toast because its one job on failure is to
                             say the link had expired. Renders nothing. */}
-                              <LoginLinkHandler />
-                              {/* Also renders nothing. Keeps the store's answer
+                            <LoginLinkHandler />
+                            {/* Also renders nothing. Keeps the store's answer
                             about this account and our own mirror of it in step,
                             so a purchase unlocks the app without waiting on a
                             webhook. Inside `SessionProvider` because it is
                             keyed by whoever is signed in. */}
-                              <EntitlementSync />
-                              {/* And renders nothing either. Publishes today
+                            <EntitlementSync />
+                            {/* And renders nothing either. Publishes today
                             into the App Group the home screen widgets read,
                             sends the drinks the water widget could not, and
                             notices which widgets are actually on a home
                             screen. Inside `SessionProvider` because all three
                             are about one account's day. */}
-                              <WidgetSync />
-                              <RootStack />
-                            </ToastProvider>
-                          </SuggestProvider>
+                            <WidgetSync />
+                            <RootStack />
+                          </ToastProvider>
                         </RefiningProvider>
                       </PendingSnapProvider>
                     </OnboardingDraftScope>

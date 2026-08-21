@@ -1,13 +1,17 @@
-import { useLocalSearchParams } from 'expo-router'
-import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import type { Reason } from '@/data'
+
+import type { MealPick, Reason } from '@/data'
 import { useActivityDay, useDayLog, useSelectedDate, useSettings, useTargets } from '@/data'
-import { REASON_ICONS, useSuggestedPicks } from '@/features/suggest'
-import { useBack } from '@/lib/navigation'
 import { sumMacros } from '@/lib/nutrition'
-import { AppBar, Badge, Card, EmptyState, Icon, MacroBar, Screen, Text } from '@/ui'
+import { Badge, Card, Icon, MacroBar, Text } from '@/ui'
+import { REASON_ICONS } from './ask'
+
+export type PickDetailProps = {
+  pick: MealPick
+  /** The day it was suggested against. Falls back to whichever day is selected. */
+  date?: string
+}
 
 /**
  * One reason, with the picture that says what it is about.
@@ -33,6 +37,14 @@ function Why({ reason }: { reason: Reason }) {
 /**
  * L10 PICK DETAIL: one suggestion, read.
  *
+ * INSIDE THE PICKS SHEET rather than on a page of its own, which is what it was.
+ * A pushed screen meant the panel had to close on the way in and rise again on
+ * the way out, so reading two picks was four transitions and two frames of the
+ * diary in between — and the way back had to be reconstructed from a counter on
+ * a provider, because a screen under a transparent presentation never loses
+ * focus. The list and the pick it drills into are the same panel now: the body
+ * swaps, the panel does not move, and going back is a chevron in the title row.
+ *
  * THERE IS NO WAY TO LOG FROM HERE, and that is the feature rather than an
  * unfinished corner of it. A pick is the model's guess about a dish nobody has
  * cooked: its calorie figure came from a sentence rather than from a catalogue
@@ -42,86 +54,42 @@ function Why({ reason }: { reason: Reason }) {
  * eaten. Whoever eats one of these logs it the ordinary way, and the catalogue
  * prices it.
  *
- * So what the screen owes the reader is the OTHER thing: enough to decide. The
- * figures, what they are a figure for, what the day would look like afterwards,
- * and why this one was offered.
- *
- * Reached by INDEX rather than by id, because a suggestion has no id — see
- * `picks.tsx`. Which means it can be reached with nothing behind it: a deep
- * link, or a return to a route the app has since cleared. That is a real state
- * and it says so.
+ * So what it owes the reader is the OTHER thing: enough to decide. The figures,
+ * what they are a figure for, what the day would look like afterwards, and why
+ * this one was offered.
  */
-export default function SuggestedPickScreen() {
-  const { t } = useTranslation(['suggest', 'common'])
-  const back = useBack('/(tabs)/today')
-  const { index } = useLocalSearchParams<{ index: string }>()
-  const { picks, request, markClosed } = useSuggestedPicks()
-
-  /**
-   * Tell the list this page has gone, so it can come back.
-   *
-   * On UNMOUNT rather than in the back handler, because there are three ways
-   * off this screen — the chevron, the edge swipe and Android's back button —
-   * and only one of them goes through a handler of ours.
-   */
-  useEffect(() => markClosed, [markClosed])
-
-  const pick = picks[Number(index)]
+export function PickDetail({ pick, date }: PickDetailProps) {
+  const { t } = useTranslation('suggest')
 
   /**
    * The day this was suggested against, so the badge can say what eating it
    * would leave.
    *
-   * Read here rather than carried from the card, because the day moves: a meal
+   * Read here rather than carried from the row, because the day moves: a meal
    * logged while the picks were on screen changes what is left, and a figure
    * frozen at the moment of asking would be quietly wrong by the time anybody
    * acted on it. The same three queries and the same arithmetic Today does —
    * `goal + active - eaten` — because a second answer to "what is left" on a
-   * second screen is how two screens come to disagree about one day.
+   * second surface is how two surfaces come to disagree about one day.
    */
   const { selectedDate } = useSelectedDate()
-  const date = request?.date ?? selectedDate
-  const day = useDayLog(date)
+  // The day it was asked about, or the one on screen: a pick is only ever drawn
+  // with the request that produced it, so the fallback is a belt.
+  const on = date ?? selectedDate
+  const day = useDayLog(on)
   const { data: targets } = useTargets()
-  const { data: activity } = useActivityDay(date)
+  const { data: activity } = useActivityDay(on)
   const { data: settings } = useSettings()
-
-  if (!pick) {
-    return (
-      <Screen>
-        <AppBar onBack={back} backLabel={t('common:action.back')} />
-        <Card>
-          <EmptyState
-            title={t('suggest:detail.goneTitle')}
-            description={t('suggest:detail.goneBody')}
-            icon={{ set: 'system', name: 'sparkle' }}
-          />
-        </Card>
-      </Screen>
-    )
-  }
 
   const burned = settings?.activity_extends_budget === false ? 0 : (activity?.activeKcal ?? 0)
   const left = targets ? (targets.kcal ?? 0) + burned - sumMacros(day.entries).kcal : null
   const after = left === null ? null : left - pick.kcal
 
   return (
-    <Screen>
-      <AppBar
-        title={pick.name}
-        /* A dish name as the model wrote it, which is as long as the dish is:
-           "Nasi kandar ayam goreng berempah" is four words past what fits
-           between two 44pt buttons. Two lines for the same reason the recipe
-           page takes them — every other bar in the app names a SCREEN, and
-           those are short and fixed. */
-        titleLines={2}
-        onBack={back}
-        backLabel={t('common:action.back')}
-      />
-
+    <>
       {/* The drawing, big, on its own ground. A suggestion has no photograph and
           never will, so this is the only picture of it there is — and a list of
-          five that each led with a 52pt tile deserves one screen where the dish
+          seven that each led with a 52pt tile deserves one view where the dish
           is the thing being looked at. */}
       <View className="h-[118px] items-center justify-center rounded-card bg-track">
         <Icon {...(pick.icon ?? { set: 'food', name: 'empty-plate' })} size={88} />
@@ -143,7 +111,7 @@ export default function SuggestedPickScreen() {
                 were clipped. A display face needs the room its variant gives it. */}
             <Text variant="displayMd">{pick.kcal.toLocaleString()}</Text>
             <Text variant="overlineSm" numberOfLines={2}>
-              {t('suggest:detail.unit', { portion: pick.portion.toUpperCase() })}
+              {t('detail.unit', { portion: pick.portion.toUpperCase() })}
             </Text>
           </View>
 
@@ -154,34 +122,34 @@ export default function SuggestedPickScreen() {
             <Badge className="shrink-0" tone={after >= 0 ? 'pandan' : 'kaya'}>
               <Text variant="caption" className={after >= 0 ? 'text-pandan-ink' : 'text-kaya-ink'}>
                 {after >= 0
-                  ? t('suggest:detail.leftAfter', { kcal: after.toLocaleString() })
-                  : t('suggest:detail.overAfter', { kcal: Math.abs(after).toLocaleString() })}
+                  ? t('detail.leftAfter', { kcal: after.toLocaleString() })
+                  : t('detail.overAfter', { kcal: Math.abs(after).toLocaleString() })}
               </Text>
             </Badge>
           ) : null}
         </View>
 
         {/* The macros as bars rather than as a row of figures, because the point
-            of the panel on this screen is the SHAPE of the dish — heavy in what
-            — and three numbers side by side do not have a shape. Each is drawn
+            of the panel here is the SHAPE of the dish — heavy in what — and
+            three numbers side by side do not have a shape. Each is drawn
             against a plausible ceiling for one meal rather than against the
             day's target: the bar is about this dish, and a 42 g protein bowl
             filling a tenth of the day says nothing about the bowl. */}
         <View className="gap-3 pt-3">
           <MacroBar
-            label={t('suggest:detail.protein')}
+            label={t('detail.protein')}
             amount={`${pick.proteinG}g`}
             value={pick.proteinG / MEAL_MACRO_CEILING.protein}
             tone="hibiscus"
           />
           <MacroBar
-            label={t('suggest:detail.carbs')}
+            label={t('detail.carbs')}
             amount={`${pick.carbsG}g`}
             value={pick.carbsG / MEAL_MACRO_CEILING.carbs}
             tone="kaya"
           />
           <MacroBar
-            label={t('suggest:detail.fat')}
+            label={t('detail.fat')}
             amount={`${pick.fatG}g`}
             value={pick.fatG / MEAL_MACRO_CEILING.fat}
             tone="teh"
@@ -190,7 +158,7 @@ export default function SuggestedPickScreen() {
               dish nobody has cooked is a number with no provenance, and it
               would borrow the authority of the three bars above it. */}
           <View className="flex-row items-center justify-between">
-            <Text variant="label">{t('suggest:detail.sodium')}</Text>
+            <Text variant="label">{t('detail.sodium')}</Text>
             {/* Interpolated into the key, which typed i18n cannot narrow on its
                 own — the union is the server's `Sodium` and the three keys are
                 written out beside it. */}
@@ -199,19 +167,19 @@ export default function SuggestedPickScreen() {
         </View>
       </Card>
 
-      <Card title={t('suggest:detail.why')}>
+      <Card title={t('detail.why')}>
         <View className="gap-3">
           {pick.why.map((reason: Reason) => (
             <Why key={reason.text} reason={reason} />
           ))}
         </View>
       </Card>
-    </Screen>
+    </>
   )
 }
 
 /**
- * What a bar on this screen is drawn against.
+ * What a bar here is drawn against.
  *
  * A plausible ceiling for ONE MEAL rather than the day's own target, because
  * these bars are about the dish and not about the budget: read against a daily
@@ -224,7 +192,7 @@ const MEAL_MACRO_CEILING = { protein: 50, carbs: 90, fat: 40 } as const
 
 /** The three saltiness keys, written out so the lookup is typed. */
 const SODIUM_KEY = {
-  low: 'suggest:sodium.low',
-  medium: 'suggest:sodium.medium',
-  high: 'suggest:sodium.high',
+  low: 'sodium.low',
+  medium: 'sodium.medium',
+  high: 'sodium.high',
 } as const
