@@ -1,8 +1,7 @@
-import { useRouter } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { SuggestRequest } from '@/data'
+import type { MealPick, SuggestRequest } from '@/data'
 import { useSuggestMeals } from '@/data'
 import { announceRefusal } from '@/data/refusals'
 import { track } from '@/lib/analytics'
@@ -12,7 +11,6 @@ import { useRequirePro } from '../paywall'
 import { AskSheet } from './AskSheet'
 import { trackedCuisine } from './ask'
 import { PicksSheet } from './PicksSheet'
-import { useSuggestedPicks } from './picks'
 
 export type SuggestActionProps = {
   /** The day the suggestion is about, and the budget it is set against. */
@@ -26,16 +24,18 @@ export type SuggestActionProps = {
 /**
  * The offer on Today, and the whole flow behind it.
  *
- * The row is the entry point and it OWNS THE TWO SHEETS, rather than Today
- * owning them. Everything about this feature is a conversation with one button:
- * the question, the wait, the answers and the way back to the question. Hoisted
- * into the screen it would be three pieces of state on a file that is already
- * the longest in the app, and every one of them about something the diary does
- * not otherwise know exists.
+ * The row is the entry point and it OWNS THE TWO SHEETS AND EVERYTHING IN THEM,
+ * rather than Today owning any of it. This feature is a conversation with one
+ * button: the question, the wait, the answers, the one being read and the way
+ * back to the question. Hoisted into the screen it would be four pieces of
+ * state on a file that is already the longest in the app, and every one of them
+ * about something the diary does not otherwise know exists.
  *
- * The DETAIL is the one part that is not here, because it is a pushed page. The
- * picks reach it through `SuggestProvider` — see `picks.tsx` for why a
- * suggestion has no id to put in a route.
+ * The picks are ORDINARY STATE here, and they were a provider above the
+ * navigator. That existed because the detail was a pushed page and a suggestion
+ * has no id to put in a route; the detail is a body inside the picks sheet now,
+ * so the answers never have to outlive this component — and this component is
+ * on Today, which does not unmount while its own sheet is up.
  *
  * IT IS A THIN ROW UNDER THE WEEK STRIP, and it has been three other things.
  *
@@ -57,44 +57,30 @@ export type SuggestActionProps = {
  */
 export function SuggestAction({ date, kcalLeft, hasBudget, className }: SuggestActionProps) {
   const { t } = useTranslation('suggest')
-  const router = useRouter()
   const toast = useToast()
   const colors = useThemeColors()
-  const { picks, request, set, clear, closed } = useSuggestedPicks()
   const suggest = useSuggestMeals()
 
   const [asking, setAsking] = useState(false)
   const [showing, setShowing] = useState(false)
+  const [picks, setPicks] = useState<MealPick[]>([])
+  /** What was asked to get them. Set once an answer has LANDED, not when it is sent. */
+  const [request, setRequest] = useState<SuggestRequest | null>(null)
+  /** Which pick the panel is showing, or null for the list. */
+  const [reading, setReading] = useState<number | null>(null)
 
   /**
-   * An ordinary `push`, unlike the version of this that lived in the log sheet.
-   * That one had to `replace`, because a paywall pushed from inside a
-   * `transparentModal` comes up stacked ON the sheet with the sheet's own scrim
-   * still over the app. Today is a plain screen and owes that no thought.
+   * The paywall is pushed onto Today, from under a sheet, which is what
+   * `beforePaywall` is for.
    *
-   * The ASK SHEET does, though, and that is what `beforePaywall` is for. It is a
-   * `Sheet`, which is a native `Modal` and therefore its own window above the
-   * whole app, so a paywall pushed while it is up arrives behind it. The sheet
-   * closes first, and only on an actual refusal: the "still checking" and
-   * "could not check" answers stay put and say so in a toast, which the sheet
-   * hosts itself, rather than throwing away a form somebody has just filled in.
+   * The ask sheet is a `Sheet`, which is a native `Modal` and therefore its own
+   * window above the whole app, so a paywall pushed while it is up arrives
+   * behind it. The sheet closes first, and only on an actual refusal: the "still
+   * checking" and "could not check" answers stay put and say so in a toast,
+   * which the sheet hosts itself, rather than throwing away a form somebody has
+   * just filled in.
    */
   const requirePro = useRequirePro({ beforePaywall: () => setAsking(false) })
-
-  /**
-   * Whether the list should come back when this screen does.
-   *
-   * A `Sheet` is a native `Modal`, so it draws over the whole app rather than
-   * over the screen that opened it: pushed under one, the detail page arrived
-   * with the list still covering it. So the sheet is closed on the way out, and
-   * a ref remembers that it was the DETAIL that closed it — a dismissal by the
-   * handle or the scrim must not bring it back.
-   *
-   * A ref rather than state because nothing renders from it, and because the
-   * focus effect below would otherwise have to list it as a dependency and
-   * re-run on every one of its own changes.
-   */
-  const reopen = useRef(false)
 
   /**
    * Whether the panel is up, readable from inside a callback.
@@ -107,32 +93,11 @@ export function SuggestAction({ date, kcalLeft, hasBudget, className }: SuggestA
   showingRef.current = showing
 
   /**
-   * The list comes back when a pick's page leaves.
-   *
-   * Driven by the provider's counter rather than by focus: this component lives
-   * inside the log sheet, which is a `transparentModal`, and the screen under a
-   * transparent presentation never loses focus — so `useFocusEffect` never fired
-   * and the list stayed closed after one pick had been read. See `closed` in
-   * `picks.tsx`.
-   *
-   * The ref is still what decides: a dismissal by the handle or the scrim must
-   * not bring the sheet back, and only a tap on a pick sets it.
-   */
-  const seen = useRef(closed)
-  useEffect(() => {
-    if (closed === seen.current) return
-    seen.current = closed
-    if (!reopen.current) return
-    reopen.current = false
-    setShowing(true)
-  }, [closed])
-
-  /**
    * The last question sent, so "Try again" can send it again without asking it.
    *
-   * A ref rather than the provider's `request`, which is only set once an answer
-   * has LANDED: a retry pressed while the first answer was still coming would
-   * find nothing there. This is written at the moment the request goes out.
+   * A ref rather than `request`, which is only set once an answer has LANDED: a
+   * retry pressed while the first answer was still coming would find nothing
+   * there. This is written at the moment the request goes out.
    */
   const lastAsked = useRef<SuggestRequest | null>(null)
 
@@ -144,12 +109,17 @@ export function SuggestAction({ date, kcalLeft, hasBudget, className }: SuggestA
     // nothing happening on it, which reads as a button that did not work.
     setShowing(true)
     // Cleared, so a second ask does not show the first ask's dishes under
-    // the new question's heading for as long as the request is out.
-    clear()
+    // the new question's heading for as long as the request is out. Including
+    // the one being read: the panel is showing a list on its way in, and an
+    // index into the answers this is about to replace points at nothing.
+    setPicks([])
+    setRequest(null)
+    setReading(null)
 
     suggest.mutate(next, {
       onSuccess: (result) => {
-        set(result, next)
+        setPicks(result)
+        setRequest(next)
         // `trackedCuisine` and never the string itself: the list is the user's
         // own now, so a cuisine is free text somebody typed. See the note there.
         track('Suggestions Shown', {
@@ -244,7 +214,13 @@ export function SuggestAction({ date, kcalLeft, hasBudget, className }: SuggestA
 
       <PicksSheet
         visible={showing}
-        onClose={() => setShowing(false)}
+        /* Back to the list on the way out, so the panel that comes up next
+           opens on the answers rather than on whichever one was last read.
+           Safe to do here: `onClose` fires once the panel is off screen. */
+        onClose={() => {
+          setShowing(false)
+          setReading(null)
+        }}
         request={request ?? suggest.variables ?? null}
         picks={picks}
         busy={suggest.isPending}
@@ -262,11 +238,9 @@ export function SuggestAction({ date, kcalLeft, hasBudget, className }: SuggestA
           if (!again) return
           ask(again)
         }}
-        onPressPick={(index) => {
-          reopen.current = true
-          setShowing(false)
-          router.push({ pathname: '/suggest/[index]', params: { index } })
-        }}
+        reading={reading}
+        onPressPick={setReading}
+        onBack={() => setReading(null)}
       />
     </>
   )

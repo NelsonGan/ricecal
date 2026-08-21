@@ -64,7 +64,7 @@ export const suggest = {
     emptyBody: 'Ask again, or loosen one of the answers.',
   },
 
-  /** L10 PICK DETAIL, which is a read. There is no way to log from it. */
+  /** L10 PICK DETAIL, inside the picks sheet. It is a read: there is no way to log from it. */
   detail: {
     /** "420 KCAL, ONE BOWL" — the figure and what it is a figure for. */
     unit: 'KCAL, {{portion}}',
@@ -77,9 +77,9 @@ export const suggest = {
     carbs: 'Carbs',
     fat: 'Fat',
     sodium: 'Sodium',
-    /** A suggestion the user has come back to after the picks were cleared. */
-    goneTitle: 'That suggestion has gone',
-    goneBody: 'Ask again from Today and it will be there.',
+    // No "that suggestion has gone". It was for a pick reached by a route, on a
+    // day the picks behind it had been cleared; a pick is a body inside the
+    // sheet that holds them now, so an index with nothing at it shows the list.
   },
 
   /** The four sittings, as the dropdown says them. */

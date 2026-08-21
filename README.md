@@ -1279,14 +1279,30 @@ row (/today)   →  ask sheet     meal, macros, cuisine, a calorie ceiling
                  ↓
                  seven picks    name, kcal, protein, and the drawing
                  ↓
-  /suggest/[index]              the figures, what the day has left after it,
+                 one pick       the figures, what the day has left after it,
                                 and why this fits
 ```
 
-**The list comes back when a pick's page leaves, and focus cannot say when that
-is.** A screen under a transparent presentation never loses focus, so a
-`useFocusEffect` never fires. The provider carries a counter that the detail
-bumps as it unmounts, which happens whichever way the page is left.
+**All four are one panel, and the last of them was a pushed page.** A `Sheet` is
+a native window drawing over the whole app, so a screen pushed under one arrives
+behind it: the panel had to be closed on the way into a pick and raised again on
+the way out, which made reading two picks four transitions with a frame of the
+diary in each gap. The pick is a body inside the picks sheet now. It slides in
+from the right, the title row swaps its "Try again" for a back chevron, and the
+panel itself does not move.
+
+Two things went with the page. The provider that held the picks above the
+navigator, which existed only because the sheet that produced them and the page
+that read one were different routes; `SuggestAction` holds them in ordinary
+state. And the counter that told the list a pick's page had left, which was
+there because focus cannot say when that is: a screen under a transparent
+presentation never loses focus, so a `useFocusEffect` never fired.
+
+`Sheet` grew three props for it: `titleLeading` (the back control, in the title
+row rather than at the top of a body that scrolls), `titleLines` (a dish name is
+not a screen name, and one line of "Nasi kandar ayam goreng berempah" identifies
+nothing), and `scrollResetKey` (the scroll view is the same instance either side
+of the swap, so a list read half way down opened its pick half way down too).
 
 **Every control opens on an answer.** A prefilled sitting costs nothing to be
 wrong about, because the answer is a list of suggestions. The sitting comes off
@@ -1308,16 +1324,17 @@ prompt. And the cuisine cannot be sent to Mixpanel as itself, so
 **Nothing it returns is written anywhere, and the picks are view only.** No
 `food_logs` row, no catalogue row, no "Log it" button. A guess about a meal
 nobody has eaten is the last thing that should become a row other diaries are
-priced from. That is also why a pick has no id, why the detail is reached by
-index, and why `features/suggest/picks.tsx` holds the list in memory above
-navigation.
+priced from. That is also why a pick has no id and why the detail is reached by
+index into a list that lives in memory and nowhere else.
 
 **The panel is one sheet at one size throughout.** A capped sheet sizes itself
 to its content, so the wait and the answer would be different heights and the
 panel would jump at the one moment this screen has to feel settled. The wait
 draws one skeleton row per pick, off `PICK_COUNT` rather than a literal.
 
-**Try again re-sends the last request** rather than reopening the question. The
+**Try again re-sends the last request** rather than reopening the question. It
+is absent while a pick is being read rather than disabled, because a new list
+under a dish reached by index is a different dish under the same heading. The
 model is not deterministic, so the same question genuinely answers differently,
 and changing the question is one tap away. The last request is held in a ref
 rather than read off the provider, which is only set once an answer has landed.
