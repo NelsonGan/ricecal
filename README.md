@@ -2822,8 +2822,16 @@ placeholder of an AutoFill target and there is no prop that stops it.
 
 ### Icons
 
-484 illustrated icons across five sets (`ui`, `system`, `body`, `food`, `dishes`)
-in `assets/icons`, with a generated require map in `icons.generated.ts`.
+593 illustrated icons across six sets (`ui`, `system`, `body`, `food`, `dishes`,
+`scenes`) in `assets/icons`, with a generated require map in
+`icons.generated.ts`.
+
+`scenes` is the odd one out and is nine drawings rather than a library: a desk,
+sneakers, an apron, a dumbbell, a ring, capsules, a plate, an alarm clock and a
+phone. They are whole little scenes rather than single objects, cut from one
+sheet, and they exist for onboarding, where a screen has room for a picture that
+says what a question is about. Eight of them are placed there; `capsules` is not
+used yet and is kept because the set was drawn as a set.
 
 ```tsx
 <Icon set="dishes" name="nasi-lemak" size={44} />
@@ -2833,8 +2841,15 @@ in `assets/icons`, with a generated require map in `icons.generated.ts`.
 are full-colour illustrations and are not tinted by default; `tintColor` exists
 for the few places that need a monochrome treatment.
 
+**The six files at the top of `assets/` are not part of this.** `icon`,
+`icon-dark`, `icon-tinted`, the two `android-icon-*` layers and `splash-icon`
+are wired into `app.json` and feed the native pipelines, and `sync-icons.mjs`
+never touches them. They are stored losslessly, deliberately: do not quantise
+them to match the icon set. It turns all six into palette PNGs, and on softly
+shaded artwork it made `icon-tinted` bigger when it was tried.
+
 To re-import them after the source set changes: `node scripts/sync-icons.mjs`.
-That script downscales and quantises (37 MB → 5.7 MB) and needs the design system
+That script downscales and quantises (38 MB → 8.4 MB) and needs the design system
 checked out at `.secrets/RiceCal Design System`. The processed PNGs are
 committed, so CI and EAS never run it.
 
@@ -2842,7 +2857,17 @@ committed, so CI and EAS never run it.
 sheet (`slice-icon-sheet.py`, or `sync-icons.mjs` for a single file), then
 `sync-icons.mjs --registry-only`, then a phrase in
 `functions/_shared/icon-match.ts` pointing at it. An icon nothing points at is a
-file nothing draws.
+file nothing draws. The third step is only for `dishes` and `food`, which are
+the two sets a model is allowed to pick from; an icon a screen names directly
+needs the first two.
+
+**A sheet with drop shadows needs `slice-icon-sheet.py --shadows`.** The default
+fill spreads through whatever is within a tolerance of the background colour,
+and a shadow is not a colour that can be given one — on the `scenes` sheet the
+shadow under the plate is darker than the rice beside it. The flag fills by
+continuity instead: a shadow fades smoothly out to paper, so a fill that may
+only step a little at a time follows it out and cannot cross an edge to get back
+in.
 
 Naming follows the set already in `assets/icons`: kebab-case, with `dishes` for
 prepared Malaysian and regional food and `food` for ingredients, packaged goods

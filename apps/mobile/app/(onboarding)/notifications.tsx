@@ -6,7 +6,7 @@ import { View } from 'react-native'
 import { type Meal, useSession, useUpdateMealTime } from '@/data'
 import { FactRow, OnboardingStep } from '@/features/onboarding'
 import { ensureNotificationPermission } from '@/lib/notifications'
-import { Card, Text, useToast } from '@/ui'
+import { Card, Icon, Text, useToast } from '@/ui'
 
 /**
  * 09 ENABLE NOTIFICATIONS
@@ -121,6 +121,18 @@ function NotificationsStep() {
       secondaryLabel={t('onboarding:notifications.later')}
       onSecondary={next}
     >
+      {/* A clock and a bowl, which is the whole ask in one picture.
+          96 because that is the ceiling `Icon` documents for art, and on an SE
+          it is what leaves the promise line clear of the CTA.
+
+          This screen has room for a picture where the other permission does
+          not: the health step already carries a card of read rows, a reason
+          card when the store is unusable and a demo button, and a hero on top
+          of that is what pushes its CTA off a small phone. */}
+      <View className="items-center pb-1">
+        <Icon set="scenes" name="clock" size={96} />
+      </View>
+
       {/* Three lines and no card title. What each row said underneath itself
           ("breakfast, lunch and dinner, at your own times") is now the screen's
           own subtitle, said once — the rows were repeating the heading in

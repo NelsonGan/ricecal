@@ -158,7 +158,31 @@ export default function TargetStep() {
         <CalorieRing
           value={targets.kcal}
           goal={targets.kcal}
-          size={196}
+          /**
+           * 156 AND A THINNER STROKE, because at the default 196 this screen
+           * did not fit.
+           *
+           * The ring, the split card and the two plan tiles ran past the CTA on
+           * a 6.3" phone: "GOAL WEIGHT" and "ON TRACK FOR" sat behind the
+           * footer until you scrolled, so the two figures the plan is FOR were
+           * the ones you had to go looking for. Forty points off the ring and
+           * five off its stroke buys 37, and dropping the card's heading buys
+           * another 28: there is 65 points of clear space under the tiles now.
+           *
+           * IT STILL SCROLLS ON AN SE, and the ring is not why. Measured there,
+           * the content still runs 74 points past the CTA — take the ring out
+           * altogether and it would only just fit. What is left is five tall
+           * `StatTile`s at about 123 points each, so the fix for a 4.7" screen
+           * is a slimmer tile or fewer of them, not a smaller circle.
+           *
+           * It reads quieter too, which is right for what it is. A full ring is
+           * the whole budget rather than progress through one, so it has
+           * nothing to animate and no state to report — it is a number in a
+           * circle, and the number is the part worth looking at. The centre
+           * label scales with the ring, so it stays the biggest thing here.
+           */
+          size={156}
+          thickness={16}
           // A full ring here is the plan, not a day gone over, so the automatic
           // "you are at 100%" kaya would say the wrong thing.
           tone="pandan"
@@ -170,7 +194,12 @@ export default function TargetStep() {
         </Text>
       </View>
 
-      <Card title={t('target.splitTitle')}>
+      {/* No card title. It read "YOUR DAILY SPLIT" over three tiles labelled
+          CARBS, PROTEIN and FAT, which is the same thing said twice: the tiles
+          ARE the split, and nothing else on the screen could be mistaken for
+          it. Dropping the heading also buys back the height the ring above it
+          was asked to give up. */}
+      <Card>
         <View className="flex-row gap-2.5">
           {MACROS.map((macro) => (
             <StatTile
