@@ -1050,7 +1050,22 @@ export const ko = {
       units: '언어와 단위',
       tutorial: 'RiceCal 사용법',
       help: '고객 지원',
+      rate: 'RiceCal 평가하기',
       signOut: '로그아웃',
+    },
+
+    rate: {
+      title: 'RiceCal 마음에 드시나요?',
+      body: '작은 팀이 만들고 있어요. 다음에 무엇을 만들지는 여러분의 답이 정합니다.',
+      yes: '마음에 들어요',
+      no: '별로예요',
+      later: '나중에',
+      note: '마음에 드신다면 스토어 평가 화면을 띄울게요. 잠깐이면 됩니다.',
+      feedbackTitle: '무엇을 고치면 좋을까요?',
+      feedbackBody:
+        'Discord에서 알려주시면 읽어보겠습니다. 앱에 있는 것 대부분이 거기에서 시작했어요.',
+      feedbackOpen: 'Discord 열기',
+      feedbackSkip: '괜찮아요',
     },
 
     help: {

@@ -58,6 +58,23 @@ jest.mock('expo-image', () => ({
   }),
 }))
 
+/**
+ * `expo-store-review` resolves to `requireNativeModule('ExpoStoreReview')` on a
+ * native platform, which throws the moment it is required. `lib/rating` already
+ * survives that on a device by requiring it lazily inside a try, so this mock is
+ * not what keeps the suite running: it is what keeps it QUIET and deterministic,
+ * since the real module would otherwise print a warning from every test that
+ * answers the rating sheet.
+ *
+ * `isAvailableAsync` answers "no store here" by default, which is the branch a
+ * test would want: nothing should be able to open a review dialog from a suite.
+ */
+jest.mock('expo-store-review', () => ({
+  isAvailableAsync: jest.fn(() => Promise.resolve(false)),
+  requestReview: jest.fn(() => Promise.resolve()),
+  storeUrl: jest.fn(() => null),
+}))
+
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(() => Promise.resolve()),
   ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },

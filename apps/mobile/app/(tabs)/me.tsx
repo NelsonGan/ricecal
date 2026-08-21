@@ -13,12 +13,14 @@ import {
   useSettings,
   useStreak,
   useTargets,
+  useUserId,
 } from '@/data'
 import { signOut } from '@/data/auth'
 import { usePlanSummary } from '@/features/paywall'
 import { HelpSheet } from '@/features/settings'
 import { ScreenTitle, SettingRow } from '@/features/shared'
 import { datePattern } from '@/lib/dates'
+import { askForRating } from '@/lib/rating'
 import { showWeight, UNIT_KEY, unitFor } from '@/lib/units'
 import { Avatar, Button, Card, ConfirmSheet, Icon, ListRow, Screen, StatTile, Text } from '@/ui'
 
@@ -43,6 +45,7 @@ export default function MeScreen() {
   const { data: mealTimes } = useMealTimes()
   const streak = useStreak()
   const weight = useCurrentWeight()
+  const userId = useUserId()
   const weightUnit = unitFor(settings?.units)
   const health = useHealthConnection()
   const [confirmSignOut, setConfirmSignOut] = useState(false)
@@ -278,8 +281,22 @@ export default function MeScreen() {
         <SettingRow
           icon={{ set: 'system', name: 'help' }}
           title={t('profile:home.help')}
-          divider={false}
           onPress={() => setHelpOpen(true)}
+        />
+        {/* The rating sheet's permanent home, for the reason the tour's row
+            above it exists: the automatic ask is gated to about once a release
+            and dismissing it stamps a sixty-day silence, so without this a
+            change of mind has nowhere to go.
+
+            It opens the same two-answer sheet rather than the store directly.
+            Somebody who came here to say the app is not working should reach
+            Discord, not a five-star field. `askForRating` skips every threshold
+            and stamps the cooldown all the same. */}
+        <SettingRow
+          icon={{ set: 'system', name: 'star' }}
+          title={t('profile:home.rate')}
+          divider={false}
+          onPress={() => askForRating(userId)}
         />
       </Card>
 
