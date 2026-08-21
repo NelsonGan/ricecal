@@ -1,6 +1,7 @@
 export { LoginLinkHandler } from './LoginLinkHandler'
 export { PasswordField, type PasswordFieldProps } from './PasswordField'
 export { type Provider, ProviderButton, type ProviderButtonProps } from './ProviderButton'
+export { SessionEndedNotice } from './SessionEndedNotice'
 export {
   CaptchaProvider,
   captchaConfigured,

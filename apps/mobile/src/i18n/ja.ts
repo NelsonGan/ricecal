@@ -427,6 +427,11 @@ export const ja = {
       body: 'Cloudflare があなたが人間であることを確認します。1 秒で終わります。',
     },
 
+    ended: {
+      title: 'ログアウトしました',
+      body: 'このセッションは終了しました。もう一度ログインすると続きから使えます。',
+    },
+
     errors: {
       passwordShort: '8 文字以上にしてください。',
       passwordRequired: 'パスワードを入力してください。',
