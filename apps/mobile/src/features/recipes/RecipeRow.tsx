@@ -21,7 +21,7 @@ export type RecipeRowProps = {
  * pot would put 2,630 next to a bowl of rendang.
  */
 export function RecipeRow({ recipe, onPress }: RecipeRowProps) {
-  const { t } = useTranslation('recipes')
+  const { t } = useTranslation(['recipes', 'common'])
 
   // The number on the right is already "what one serving costs", so the detail
   // line does not repeat it — said twice it truncated on a 393pt screen, and the
@@ -44,7 +44,7 @@ export function RecipeRow({ recipe, onPress }: RecipeRowProps) {
         icon={recipe.icon}
         photoPath={recipe.photoPath}
         value={recipe.perServing.kcal}
-        unit="kcal"
+        unit={t('common:unit.kcal')}
         onPress={onPress}
       />
       {/* Only on your own, and only when there is something to say. The badge
@@ -64,7 +64,7 @@ export function RecipeRow({ recipe, onPress }: RecipeRowProps) {
 }
 
 function ReviewBadge({ recipe }: { recipe: Recipe }) {
-  const { t } = useTranslation('recipes')
+  const { t } = useTranslation(['recipes', 'common'])
 
   if (recipe.review === 'approved') {
     return <Badge tone="pandan">{t('review.badgePublic')}</Badge>

@@ -71,6 +71,9 @@ function Flush({ draft }: { draft: CompleteDraft }) {
 
     finishOnboarding.mutate(
       {
+        // Not a fact about the body, so it lands in `user_settings` rather
+        // than `profiles`. Every screen converts kilograms on the way out.
+        units: draft.units,
         sex: draft.sex,
         // Stored as a birth date: an integer age is wrong within a year of being
         // written and nothing would ever correct it.

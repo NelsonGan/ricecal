@@ -2,7 +2,6 @@ import { format, parseISO, subDays } from 'date-fns'
 import { useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-
 import {
   dateKey,
   ENTRY_FOOD_ID,
@@ -27,6 +26,7 @@ import { useProNudge } from '@/features/paywall'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
 import { SuggestAction } from '@/features/suggest'
 import { useTutorialOffer } from '@/features/tutorial'
+import { datePattern } from '@/lib/dates'
 import { sumMacros } from '@/lib/nutrition'
 import { DEFAULT_WATER_ML } from '@/lib/water'
 import {
@@ -226,7 +226,7 @@ export default function TodayScreen() {
     ? t('logging:today.title')
     : selectedDate === yesterday(todayKey)
       ? t('common:date.yesterday')
-      : format(parseISO(selectedDate), 'EEE d MMM')
+      : format(parseISO(selectedDate), datePattern('weekdayDayMonth'))
 
   /**
    * Movement extends the budget; it never shrinks what was eaten.

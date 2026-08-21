@@ -11,7 +11,6 @@ import {
   useReviewSummary,
   useSettings,
 } from '@/data'
-import { unitFor } from '@/features/progress'
 import {
   BodyStep,
   CaloriesStep,
@@ -26,6 +25,7 @@ import {
 } from '@/features/reviews'
 import { track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
+import { unitFor } from '@/lib/units'
 import { spacing } from '@/theme/tokens'
 import { AppBar, Card, EmptyState, Screen, Skeleton } from '@/ui'
 

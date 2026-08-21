@@ -14,6 +14,12 @@ export const common = {
     delete: 'Delete',
     add: 'Add',
     undo: 'Undo',
+    /**
+     * The neutral half of a destructive confirmation: keep the photo, keep the
+     * entry, keep the plan. `cancel` is the word for backing out of a form;
+     * this is the word for declining to destroy something.
+     */
+    keep: 'Keep',
     skip: 'Skip',
     retry: 'Try again',
     close: 'Close',
@@ -87,6 +93,35 @@ export const common = {
     dayStreak_other: '{{count}} day streak',
     times_one: '{{count}} time',
     times_other: '{{count}} times',
+  },
+
+  /**
+   * What the language setting does NOT change.
+   *
+   * Every word of the interface is translated. The model that reads a plate,
+   * reads a typed meal and answers "what should I eat" is not: it works best in
+   * English, and it answers against a catalogue whose dish names, ingredients
+   * and serving labels are all stored in English.
+   *
+   * Said where a language is chosen rather than buried in a help centre, and
+   * said twice: `note` under the control for anybody who picked something other
+   * than English, and the longer version behind an info button for anybody who
+   * wants the reason.
+   */
+  aiLanguage: {
+    open: 'What the AI features read and write',
+    title: 'The AI features work in English',
+    body: 'Snapping a plate, saying what you ate in words and asking what to eat next all go to a model that reads English best. Describe your food in English and it understands you more closely.',
+    results:
+      'What comes back is in English too. Dish names, ingredients and serving sizes are stored in English in the food catalogue, so that is the language they arrive in whatever the app is set to.',
+    /**
+     * Moved here from under the control. A dish is data: it goes on screen in
+     * the spelling it was written in, whatever the interface is set to. That
+     * belongs with the rest of what the language setting does not change,
+     * rather than as a second line of small print beside it.
+     */
+    dishes: 'Dish names stay in the language they were written in.',
+    note: 'Describe food in English for the closest read. Results come back in English.',
   },
 
   notFound: {

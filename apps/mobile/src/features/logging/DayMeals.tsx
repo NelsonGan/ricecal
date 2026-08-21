@@ -1,8 +1,8 @@
 import { format, parseISO } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import type { Entry } from '@/data'
+import { datePattern } from '@/lib/dates'
 import { sumMacros } from '@/lib/nutrition'
 import { portionLabel } from '@/lib/portions'
 import { Card, Icon, SkeletonRow, Text } from '@/ui'
@@ -39,13 +39,13 @@ export function DayMeals({
   onPressEntry,
   className,
 }: DayMealsProps) {
-  const { t } = useTranslation('logging')
+  const { t } = useTranslation(['logging', 'common'])
   const total = sumMacros(entries)
 
   return (
     <Card
       className={className}
-      title={t('calendar.dayHeading', { day: format(parseISO(date), 'EEEE d') })}
+      title={t('calendar.dayHeading', { day: format(parseISO(date), datePattern('weekdayDay')) })}
       action={
         entries.length > 0 ? (
           <Text variant="numeric" className="text-[16px] leading-[20px]">
@@ -88,8 +88,8 @@ export function DayMeals({
               photoPath={entry.photoPath}
               photoUri={entry.localPhotoUri}
               value={entry.macros.kcal}
-              unit="kcal"
-              detail={`${format(parseISO(entry.loggedAt), 'h:mm a')} · ${portionLabel(
+              unit={t('common:unit.kcal')}
+              detail={`${format(parseISO(entry.loggedAt), datePattern('time'))} · ${portionLabel(
                 entry.quantity,
                 entry.servingLabel,
                 t('detail.servingWord'),

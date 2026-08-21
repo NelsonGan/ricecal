@@ -122,6 +122,7 @@ export function FeedbackSection() {
         </View>
 
         <Sheet
+          closeLabel="Close"
           visible={sheetOpen}
           onClose={() => setSheetOpen(false)}
           title="Change unit"
@@ -136,6 +137,7 @@ export function FeedbackSection() {
         </Sheet>
 
         <ConfirmSheet
+          cancelLabel="Keep"
           visible={confirmOpen}
           onClose={() => setConfirmOpen(false)}
           onConfirm={() =>

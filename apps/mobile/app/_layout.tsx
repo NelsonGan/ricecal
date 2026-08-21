@@ -25,14 +25,16 @@ import {
 import { LoginLinkHandler } from '@/features/auth'
 import { OnboardingDraftProvider } from '@/features/onboarding'
 import { EntitlementSync } from '@/features/paywall'
+import { LanguageSync } from '@/features/settings'
 import { WidgetSync } from '@/features/widgets'
+import { currentLanguage, scriptFor } from '@/i18n'
 import { initOnlineManager } from '@/lib/online'
 import { persistOptions, queryClient } from '@/lib/query'
 import { initServices } from '@/lib/startup'
 import { fontMap } from '@/theme/fonts'
 import { storedThemePreference, storeThemePreference } from '@/theme/preference'
 import { ThemeProvider } from '@/theme/ThemeProvider'
-import { NAV_BAR_HEIGHT, NumpadProvider, ToastProvider } from '@/ui'
+import { NAV_BAR_HEIGHT, NumpadProvider, TextScriptProvider, ToastProvider } from '@/ui'
 
 // Bind react-query to NetInfo at module scope so the very first query already
 // has a correct view of connectivity, rather than one render late.
@@ -79,61 +81,88 @@ export default Sentry.wrap(function RootLayout() {
             {/* Above the navigator so every screen and every Modal inherits the
             palette — the variable scope follows the React tree, not the native
             view hierarchy. */}
-            <ThemeScope>
-              <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
-                {/* Inside the query provider, because signing in and out clears the
+            {/* Above the navigator for the reason the palette is: every screen
+            and every Modal reads it, and the scope follows the React tree. It
+            decides how much vertical room a line of type needs, which is a
+            property of the script the app is currently set in. */}
+            <TextScriptScope>
+              <ThemeScope>
+                <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+                  {/* Inside the query provider, because signing in and out clears the
                 cache — one account's diary must never appear under another's
                 name, even for a frame. */}
-                <SessionProvider>
-                  {/* Which day the diary is showing, and snaps whose dish is not
+                  <SessionProvider>
+                    {/* Which day the diary is showing, and snaps whose dish is not
                   known yet. Both are the client's own state: nothing to fetch,
                   nothing to invalidate. */}
-                  <SelectedDateProvider>
-                    {/* Above the navigator because the index route reads it to
+                    <SelectedDateProvider>
+                      {/* Above the navigator because the index route reads it to
                     decide where a launch belongs, and the questions are answered
                     before there is an account to write them to. Backed by MMKV,
                     so it survives the app being killed mid-flow. */}
-                    <OnboardingDraftScope>
-                      <PendingSnapProvider>
-                        {/* Entries with a fix-by-typing correction in flight —
+                      <OnboardingDraftScope>
+                        <PendingSnapProvider>
+                          {/* Entries with a fix-by-typing correction in flight —
                         same shape as pending snaps: the work outlives the
                         screen that started it. */}
-                        <RefiningProvider>
-                          {/* Outside the navigator so a toast survives navigation — a
+                          <RefiningProvider>
+                            {/* Outside the navigator so a toast survives navigation — a
                           "saved" confirmation usually fires as the screen that
                           triggered it pops. */}
-                          <ToastProvider offset={NAV_BAR_HEIGHT}>
-                            {/* Under the toast because its one job on failure is to
+                            <ToastProvider offset={NAV_BAR_HEIGHT}>
+                              {/* Under the toast because its one job on failure is to
                             say the link had expired. Renders nothing. */}
-                            <LoginLinkHandler />
-                            {/* Also renders nothing. Keeps the store's answer
+                              <LoginLinkHandler />
+                              {/* Also renders nothing. Keeps the store's answer
                             about this account and our own mirror of it in step,
                             so a purchase unlocks the app without waiting on a
                             webhook. Inside `SessionProvider` because it is
                             keyed by whoever is signed in. */}
-                            <EntitlementSync />
-                            {/* And renders nothing either. Publishes today
+                              <EntitlementSync />
+                              {/* Renderless too. Copies the chosen language into
+                            `user_settings.language` so the server knows which
+                            one to write back in, one direction only — see the
+                            component for why reading the row would undo the
+                            setting. Inside `SessionProvider` because the row
+                            belongs to whoever is signed in. */}
+                              <LanguageSync />
+                              {/* And renders nothing either. Publishes today
                             into the App Group the home screen widgets read,
                             sends the drinks the water widget could not, and
                             notices which widgets are actually on a home
                             screen. Inside `SessionProvider` because all three
                             are about one account's day. */}
-                            <WidgetSync />
-                            <RootStack />
-                          </ToastProvider>
-                        </RefiningProvider>
-                      </PendingSnapProvider>
-                    </OnboardingDraftScope>
-                  </SelectedDateProvider>
-                </SessionProvider>
-              </PersistQueryClientProvider>
-            </ThemeScope>
+                              <WidgetSync />
+                              <RootStack />
+                            </ToastProvider>
+                          </RefiningProvider>
+                        </PendingSnapProvider>
+                      </OnboardingDraftScope>
+                    </SelectedDateProvider>
+                  </SessionProvider>
+                </PersistQueryClientProvider>
+              </ThemeScope>
+            </TextScriptScope>
           </NumpadScope>
         </SafeAreaProvider>
       </KeyboardProvider>
     </GestureHandlerRootView>
   )
 })
+
+/**
+ * Tells the design system which writing system it is setting type in.
+ *
+ * `useTranslation` is here for the subscription rather than for `t`: it
+ * re-renders this on `languageChanged`, which is what makes the leading follow
+ * a switch in the preferences card without a reload. See `src/ui/TextScript.tsx`
+ * for what the three answers mean and why a metric is not a word.
+ */
+function TextScriptScope({ children }: { children: ReactNode }) {
+  useTranslation()
+
+  return <TextScriptProvider script={scriptFor(currentLanguage())}>{children}</TextScriptProvider>
+}
 
 /**
  * Holds the two ends of `ThemeProvider`'s persistence contract together.

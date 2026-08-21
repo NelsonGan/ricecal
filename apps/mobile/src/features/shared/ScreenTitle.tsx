@@ -33,7 +33,26 @@ export function ScreenTitle({ title, leading, trailing, className }: ScreenTitle
       accessibilityRole="header"
     >
       {leading}
-      <Text variant="screenTitle" className="flex-1" numberOfLines={1}>
+      {/*
+        Shrinks rather than ellipsises.
+
+        The title shares its row with a streak pill and a view toggle, and what
+        goes in it is sometimes a date. "8月17日 周一" at the largest Dynamic Type
+        setting did not fit and came back as "8月17日…", which is a title that
+        has stopped saying which day it is about. A point or two smaller is
+        legible; a truncated date is not.
+
+        Safe beside `adjustsFontSizeToFit` because `Text` deliberately sets no
+        `lineHeight` when it sees that prop — the React Native bug `StatTile`
+        documents needs both together.
+      */}
+      <Text
+        variant="screenTitle"
+        className="flex-1"
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.85}
+      >
         {title}
       </Text>
       {trailing}

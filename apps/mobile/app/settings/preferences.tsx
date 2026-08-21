@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSettings, useUpdateSettings } from '@/data'
+import { LanguageAiNote, LanguageHelpButton } from '@/features/shared'
+import { currentLanguage, LANGUAGES, type Language, setLanguage } from '@/i18n'
 import { useBack } from '@/lib/navigation'
 import { useTheme } from '@/theme/useTheme'
-import { AppBar, Card, Screen, SegmentedControl, Skeleton, Text } from '@/ui'
+import { AppBar, Card, Screen, SegmentedControl, Select, Skeleton, Text } from '@/ui'
 
 /** U5 PREFERENCES */
 export default function PreferencesScreen() {
@@ -32,13 +34,34 @@ export default function PreferencesScreen() {
         backLabel={t('common:a11y.back')}
       />
 
-      {/* No language card. It offered English and Bahasa, and only English is
-          bundled — so the control recorded a preference into `user_settings`
-          and changed not one word on screen. A setting that appears to work and
-          does nothing is worse than an absent one, and it was the first thing
-          on the screen. The column stays where it is; dropping it is a
-          migration, and a choice nobody can make cannot mislead anybody. Put
-          the card back when there is a second bundle to switch to. */}
+      {/*
+        The language card is back, and the note under it is the reason it can
+        be. It used to offer English and Bahasa with only English bundled, so
+        the control wrote a preference into `user_settings` and changed not one
+        word on screen. There are thirteen bundles now and the switch is
+        immediate.
+
+        Not wrapped in `segment()` like the two below it. Those wait because
+        `user_settings` decides them and a segmented control shows a selection
+        whatever it is given; this one is answered by MMKV, synchronously, from
+        the first frame, so there is no wrong state to hide.
+      */}
+      <Card title={t('preferences.language')} titleAction={<LanguageHelpButton />}>
+        <Select
+          label={t('preferences.languageLabel')}
+          hideLabel
+          options={LANGUAGES.map((language) => ({
+            value: language.code,
+            label: language.label,
+          }))}
+          closeLabel={t('common:action.close')}
+          value={currentLanguage()}
+          onChange={(language: Language) => setLanguage(language)}
+        />
+        {/* Only for somebody who has chosen a language the model and the
+            catalogue do not speak. See `LanguageHelp`. */}
+        <LanguageAiNote />
+      </Card>
 
       <Card title={t('preferences.units')}>
         <Text variant="label">{t('preferences.weight')}</Text>

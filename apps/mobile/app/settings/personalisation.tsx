@@ -129,6 +129,7 @@ export default function PersonalisationScreen() {
       </Text>
 
       <Sheet
+        closeLabel={t('common:action.close')}
         visible={editing !== null}
         onClose={apply}
         title={editing ? t(`common:meal.${editing}`) : ''}

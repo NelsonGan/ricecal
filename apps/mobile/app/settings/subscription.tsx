@@ -181,6 +181,7 @@ export default function SubscriptionScreen() {
         title={t('profile:subscription.cancelTitle')}
         description={t('profile:subscription.cancelBody')}
         confirmLabel={t('profile:subscription.cancelConfirm')}
+        cancelLabel={t('common:action.keep')}
         tone="danger"
       />
     </Screen>

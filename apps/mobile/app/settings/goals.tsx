@@ -14,9 +14,9 @@ import {
   useWeighIns,
 } from '@/data'
 import { count } from '@/features/activity'
-import { fromKg, showWeight, UNIT_KEY, unitFor } from '@/features/progress'
 import { useBack } from '@/lib/navigation'
 import { computeTargets, macroSplit, weeklyPace } from '@/lib/nutrition'
+import { fromKg, showWeight, UNIT_KEY, unitFor } from '@/lib/units'
 import {
   DEFAULT_WATER_ML,
   millilitres,

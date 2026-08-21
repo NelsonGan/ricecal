@@ -221,7 +221,7 @@ function EntryRow({
       icon={entry.icon}
       photoPath={entry.photoPath}
       value={entry.macros.kcal}
-      unit="kcal"
+      unit={t('common:unit.kcal')}
       // When, and how much. Both fit, and each answers a question the other does
       // not — the time is where in the day this was, the portion is what the
       // calories are for.

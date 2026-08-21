@@ -113,7 +113,8 @@ export type SheetProps = {
    * target. Defaulted rather than required, the same way `Stepper` defaults its
    * two — a sheet that forgot it would otherwise announce nothing at all.
    */
-  closeLabel?: string
+  /** Screen-reader name for the drag handle. Pass translated copy. */
+  closeLabel: string
   title?: string
   /**
    * One control on the title's own line, right aligned: a refresh, a close, a
@@ -238,7 +239,7 @@ export function Sheet({ visible, onShow, ...rest }: SheetProps) {
 export function SheetSurface({
   hosting = true,
   onClose,
-  closeLabel = 'Close',
+  closeLabel,
   title,
   titleAction,
   titleLeading,

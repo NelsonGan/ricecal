@@ -1,10 +1,10 @@
 import { format, getISOWeek, parseISO } from 'date-fns'
-
 // From the type module rather than from `@/data`, which is a barrel over the
 // whole data layer: importing it here drags expo-notifications into a file that
 // does date arithmetic, and the unit test for that arithmetic cannot load a
 // native module. Same reason `features/logging/week.ts` reaches past the barrel.
 import { REVIEW_KINDS, type ReviewKind, type ReviewSummary } from '@/data/types'
+import { datePattern } from '@/lib/dates'
 
 /**
  * A period as a route segment: `week-2026-08-03`.
@@ -54,14 +54,14 @@ export function parseReviewId(id: string | undefined): { kind: ReviewKind; start
  * only reason this is three cases rather than one format string.
  */
 export function periodTitle(kind: ReviewKind, start: string, end: string): string {
-  if (kind === 'month') return format(parseISO(start), 'LLLL yyyy')
+  if (kind === 'month') return format(parseISO(start), datePattern('monthYear'))
 
   const from = parseISO(start)
   const to = parseISO(end)
   if (from.getMonth() === to.getMonth()) {
-    return `${format(from, 'd')} to ${format(to, 'd LLLL')}`
+    return `${format(from, 'd')} to ${format(to, datePattern('dayMonthLong'))}`
   }
-  return `${format(from, 'd LLLL')} to ${format(to, 'd LLLL')}`
+  return `${format(from, datePattern('dayMonthLong'))} to ${format(to, datePattern('dayMonthLong'))}`
 }
 
 /** The short form, for the counter beside a story's title bar. */
