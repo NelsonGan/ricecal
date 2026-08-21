@@ -1043,7 +1043,20 @@ export const bn = {
       units: 'ভাষা ও একক',
       tutorial: 'RiceCal কীভাবে কাজ করে',
       help: 'সহায়তা কেন্দ্র',
+      rate: 'RiceCal রেটিং দিন',
       signOut: 'সাইন আউট',
+    },
+
+    rate: {
+      title: 'RiceCal ভালো লাগছে?',
+      body: 'এরপর কী বানাব তা আপনার উত্তরেই ঠিক হয়।',
+      yes: 'ভালো লাগছে',
+      no: 'তেমন নয়',
+      later: 'পরে দেখব',
+      feedbackTitle: 'কী ঠিক করলে ভালো হয়?',
+      feedbackBody: 'Discord-এ আমাদের বলুন। অ্যাপে যা আছে তার বেশিরভাগই এভাবেই এসেছে।',
+      feedbackOpen: 'Discord খুলুন',
+      feedbackSkip: 'এখন নয়',
     },
 
     help: {

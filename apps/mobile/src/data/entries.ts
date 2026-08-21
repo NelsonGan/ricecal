@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { dateOffset, type LogMethod, track } from '@/lib/analytics'
+import { recordMealLogged } from '@/lib/rating'
 import { supabase } from '@/lib/supabase'
 import { today, unwrap, unwrapOne } from './client'
 import { keys } from './keys'
@@ -93,6 +94,11 @@ export function useLogFood() {
         method: input.method ?? METHOD_FOR_SOURCE[input.source ?? 'search'],
         date_offset: dateOffset(input.logDate, today()),
       })
+      // Beside the event and for the same reason: this is the moment a meal
+      // exists. It counts towards the rating prompt's milestone and may put the
+      // sheet on screen a beat later. Synchronous and cannot throw, so nothing
+      // below it is at risk. See `lib/rating`.
+      recordMealLogged(userId)
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
       // A first entry can start a streak, and both feed the badges.
       queryClient.invalidateQueries({ queryKey: keys.streak(userId) })

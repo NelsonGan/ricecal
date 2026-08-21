@@ -25,4 +25,4 @@ export function render(ui: ReactElement) {
   return rntlRender(ui, { wrapper: Providers })
 }
 
-export { fireEvent, screen, userEvent, waitFor, within } from '@testing-library/react-native'
+export { act, fireEvent, screen, userEvent, waitFor, within } from '@testing-library/react-native'

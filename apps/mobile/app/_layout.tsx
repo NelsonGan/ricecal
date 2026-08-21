@@ -25,6 +25,7 @@ import {
 import { LoginLinkHandler, SessionEndedNotice } from '@/features/auth'
 import { OnboardingDraftProvider } from '@/features/onboarding'
 import { EntitlementSync } from '@/features/paywall'
+import { RatePromptSheet } from '@/features/rating'
 import { LanguageSync } from '@/features/settings'
 import { WidgetSync } from '@/features/widgets'
 import { currentLanguage, scriptFor } from '@/i18n'
@@ -141,6 +142,14 @@ export default Sentry.wrap(function RootLayout() {
                             screen. Inside `SessionProvider` because all three
                             are about one account's day. */}
                               <WidgetSync />
+                              {/* The one thing here that DOES render, and it
+                            is here for the same reason the toast host is:
+                            the moment it appears is a moment on whichever
+                            screen the user was already on, three pushes deep
+                            or on the diary, so it cannot belong to any of
+                            them. Silent until `lib/rating` decides an
+                            account has earned the question. */}
+                              <RatePromptSheet />
                               <RootStack />
                             </ToastProvider>
                           </RefiningProvider>

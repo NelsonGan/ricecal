@@ -1044,7 +1044,20 @@ export const th = {
       units: 'ภาษาและหน่วย',
       tutorial: 'RiceCal ทำงานยังไง',
       help: 'ศูนย์ช่วยเหลือ',
+      rate: 'ให้คะแนน RiceCal',
       signOut: 'ออกจากระบบ',
+    },
+
+    rate: {
+      title: 'ชอบ RiceCal ไหม',
+      body: 'คำตอบของคุณกำหนดว่าเราจะทำอะไรต่อ',
+      yes: 'ชอบ',
+      no: 'ไม่ค่อย',
+      later: 'ไว้ก่อน',
+      feedbackTitle: 'อยากให้แก้อะไร',
+      feedbackBody: 'บอกเราใน Discord สิ่งที่อยู่ในแอปส่วนใหญ่มาจากทางนั้น',
+      feedbackOpen: 'เปิด Discord',
+      feedbackSkip: 'ไม่เป็นไร',
     },
 
     help: {

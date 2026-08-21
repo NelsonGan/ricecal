@@ -9,6 +9,11 @@
 // a seventh has to be named there before anything can report it.
 import type { WidgetKind } from '@modules/ricecal-widgets'
 import type { ActivityLevel, Meal } from '@/data/types'
+// Type-only as well, and from a sibling in `lib` rather than a copy: the trigger
+// list and the skip reasons ARE the rating gate, so a trigger added there and
+// forgotten here should be a compile error rather than an event property nobody
+// declared.
+import type { RatingSkipReason, RatingTrigger } from '@/lib/rating/state'
 
 /**
  * The kitchens this file is willing to name, and one word for all the rest.
@@ -395,6 +400,52 @@ export type Events = {
    * decide a third preset.
    */
   'Widget Water Added': { preset: number }
+
+  // ── Asking to be rated ───────────────────────────────────────────────────
+  /**
+   * The app's own question, "enjoying RiceCal?", reached a screen.
+   *
+   * `trigger` is the moment it rode in on. Worth breaking down because the
+   * whole design rests on picking a good one: a meal milestone and a review
+   * somebody came back to are two different kinds of goodwill, and if one of
+   * them converts and the other does not, the other should stop firing.
+   *
+   * This is NOT the store's dialog. Nothing in this file counts that, because
+   * nothing can: `requestReview` reports neither whether it drew anything nor
+   * what the user did with it. See `lib/rating/prompt.ts`.
+   */
+  'Rating Prompt Shown': { trigger: RatingTrigger }
+  /**
+   * A trigger fired and the gate turned it down, with the first reason it
+   * failed on.
+   *
+   * The only way to see a silent gate from outside. Every threshold in
+   * `lib/rating/state.ts` is a guess, and this is the number that says which
+   * guess is wrong: "3,900 of 4,000 skipped for `too_few_meals`" means fifteen
+   * meals is too many, and without it the feature simply looks unused.
+   *
+   * Bounded volume, despite one of its two triggers sitting on a write path. A
+   * meal only fires a trigger on a checkpoint crossing, so that side is at most
+   * one event per fifteen meals; the review side is rarer still.
+   */
+  'Rating Prompt Skipped': { trigger: RatingTrigger; reason: RatingSkipReason }
+  /**
+   * What they said. `dismissed` is the scrim, the back gesture and "maybe
+   * later", which are one answer as far as the sixty-day cooldown is concerned.
+   */
+  'Rating Prompt Answered': {
+    trigger: RatingTrigger
+    answer: 'liked' | 'disliked' | 'dismissed'
+  }
+  /**
+   * Somebody who said "not really" took the offer of a conversation and opened
+   * the Discord.
+   *
+   * There is no `Rating Feedback Declined`, for the same reason there is no
+   * `Paywall Dismissed`: a `disliked` answer with none of these after it IS the
+   * decline, and the subtraction is better than a second event.
+   */
+  'Rating Feedback Opened': { trigger: RatingTrigger }
 }
 
 export type EventName = keyof Events

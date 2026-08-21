@@ -1057,7 +1057,21 @@ export const vi = {
       units: 'Ngôn ngữ và đơn vị',
       tutorial: 'RiceCal hoạt động thế nào',
       help: 'Trung tâm trợ giúp',
+      rate: 'Đánh giá RiceCal',
       signOut: 'Đăng xuất',
+    },
+
+    rate: {
+      title: 'Bạn thấy RiceCal thế nào?',
+      body: 'Câu trả lời của bạn quyết định điều chúng tôi làm tiếp theo.',
+      yes: 'Tôi thích',
+      no: 'Không hẳn',
+      later: 'Để sau',
+      feedbackTitle: 'Cần sửa điều gì?',
+      feedbackBody:
+        'Hãy nói với chúng tôi trên Discord. Phần lớn những gì có trong ứng dụng đều bắt đầu từ đó.',
+      feedbackOpen: 'Mở Discord',
+      feedbackSkip: 'Thôi',
     },
 
     help: {

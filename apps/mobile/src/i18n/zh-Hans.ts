@@ -1046,7 +1046,20 @@ export const zhHans = {
       units: '语言和单位',
       tutorial: 'RiceCal 怎么用',
       help: '帮助中心',
+      rate: '给 RiceCal 评分',
       signOut: '退出登录',
+    },
+
+    rate: {
+      title: '喜欢 RiceCal 吗？',
+      body: '接下来做什么，由你的回答决定。',
+      yes: '挺喜欢',
+      no: '不太喜欢',
+      later: '以后再说',
+      feedbackTitle: '哪里需要改？',
+      feedbackBody: '在 Discord 上告诉我们。应用里的大部分东西都是这么来的。',
+      feedbackOpen: '打开 Discord',
+      feedbackSkip: '算了',
     },
 
     help: {

@@ -1045,7 +1045,20 @@ export const hi = {
       units: 'भाषा और इकाई',
       tutorial: 'RiceCal कैसे काम करता है',
       help: 'मदद केंद्र',
+      rate: 'RiceCal को रेटिंग दें',
       signOut: 'साइन आउट',
+    },
+
+    rate: {
+      title: 'RiceCal पसंद आ रहा है?',
+      body: 'आगे क्या बने यह आपके जवाब से तय होता है।',
+      yes: 'पसंद है',
+      no: 'ज़्यादा नहीं',
+      later: 'बाद में',
+      feedbackTitle: 'क्या ठीक होना चाहिए?',
+      feedbackBody: 'Discord पर बताइए। ऐप में जो कुछ है, उसका बड़ा हिस्सा वहीं से आया है।',
+      feedbackOpen: 'Discord खोलें',
+      feedbackSkip: 'अभी नहीं',
     },
 
     help: {
