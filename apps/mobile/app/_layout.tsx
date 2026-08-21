@@ -25,6 +25,7 @@ import {
 import { LoginLinkHandler } from '@/features/auth'
 import { OnboardingDraftProvider } from '@/features/onboarding'
 import { EntitlementSync } from '@/features/paywall'
+import { LanguageSync } from '@/features/settings'
 import { WidgetSync } from '@/features/widgets'
 import { initOnlineManager } from '@/lib/online'
 import { persistOptions, queryClient } from '@/lib/query'
@@ -112,6 +113,13 @@ export default Sentry.wrap(function RootLayout() {
                             webhook. Inside `SessionProvider` because it is
                             keyed by whoever is signed in. */}
                             <EntitlementSync />
+                            {/* Renderless too. Copies the chosen language into
+                            `user_settings.language` so the server knows which
+                            one to write back in, one direction only — see the
+                            component for why reading the row would undo the
+                            setting. Inside `SessionProvider` because the row
+                            belongs to whoever is signed in. */}
+                            <LanguageSync />
                             {/* And renders nothing either. Publishes today
                             into the App Group the home screen widgets read,
                             sends the drinks the water widget could not, and

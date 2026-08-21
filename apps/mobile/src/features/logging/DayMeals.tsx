@@ -39,7 +39,7 @@ export function DayMeals({
   onPressEntry,
   className,
 }: DayMealsProps) {
-  const { t } = useTranslation('logging')
+  const { t } = useTranslation(['logging', 'common'])
   const total = sumMacros(entries)
 
   return (
@@ -88,7 +88,7 @@ export function DayMeals({
               photoPath={entry.photoPath}
               photoUri={entry.localPhotoUri}
               value={entry.macros.kcal}
-              unit="kcal"
+              unit={t('common:unit.kcal')}
               detail={`${format(parseISO(entry.loggedAt), 'h:mm a')} · ${portionLabel(
                 entry.quantity,
                 entry.servingLabel,

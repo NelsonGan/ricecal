@@ -1,4 +1,23 @@
 export const onboarding = {
+  /**
+   * The very first screen of the app, before the welcome.
+   *
+   * It opens on the phone's own language rather than on English, so for most
+   * people this is a confirmation rather than a decision: the list is already
+   * scrolled to their answer and Continue is live. It is asked at all because
+   * the phone is wrong often enough to matter here, where a Malaysian handset
+   * set to English is a household norm rather than a preference about apps.
+   *
+   * Nothing on it mentions food. Dish names are not translated in any language
+   * and saying so on the first screen would answer a question nobody has asked
+   * yet; the preferences card says it, where somebody changing the setting can
+   * act on it.
+   */
+  language: {
+    title: 'Choose your language',
+    subtitle: 'You can change this later in Me.',
+  },
+
   welcome: {
     title: 'Every dish, already counted',
     /**
