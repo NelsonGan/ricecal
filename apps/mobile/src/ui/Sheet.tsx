@@ -1,5 +1,5 @@
 import { cssInterop } from 'nativewind'
-import { type ReactNode, useCallback, useLayoutEffect, useRef } from 'react'
+import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import {
   Modal,
   type NativeScrollEvent,
@@ -60,8 +60,11 @@ const FALL_MS = 180
 const DISMISS_DISTANCE = 96
 const DISMISS_VELOCITY = 900
 
-/** No `onShow`: a surface without a window of its own is never presented. */
-export type SheetSurfaceProps = Omit<SheetProps, 'visible' | 'onShow'> & {
+/**
+ * No `onShow` and no `onBack`: a surface without a window of its own is never
+ * presented, and never takes a back press — the route hosting it does.
+ */
+export type SheetSurfaceProps = Omit<SheetProps, 'visible' | 'onShow' | 'onBack'> & {
   /**
    * Whether this surface should draw the app's toasts. See the outlet at the foot
    * of `SheetSurface`.
@@ -87,6 +90,17 @@ export type SheetProps = {
   visible: boolean
   onClose: () => void
   /**
+   * Android's hardware back, for a sheet that has somewhere to go that is not
+   * closed: the body it has drilled into, with the list still behind it.
+   *
+   * Absent — which is every sheet at its top level — back dismisses, which is
+   * what it should do there. It is the same move a `titleLeading` chevron makes,
+   * and it exists because that chevron is otherwise the only way up: `Modal`
+   * hands the back press to `onRequestClose`, so a `BackHandler` listener inside
+   * the window never sees it.
+   */
+  onBack?: () => void
+  /**
    * The window is on screen. For a sheet that has to focus a field: `autoFocus`
    * inside a `Modal` is applied while the field is still off screen and is
    * routinely dropped, so the keyboard never comes up. This fires once the
@@ -111,11 +125,38 @@ export type SheetProps = {
    * control off the bottom.
    */
   titleAction?: ReactNode
+  /**
+   * One control on the other end of that line, left aligned: the way back up.
+   *
+   * For a sheet whose body DRILLS IN — the picks list and the pick being read
+   * are one panel, not a panel and a page. It belongs in the title row rather
+   * than at the top of the body because the body scrolls, and a back control
+   * that scrolls away is one somebody has to scroll back up to find.
+   */
+  titleLeading?: ReactNode
+  /**
+   * How many lines the title may take before it truncates. One everywhere it
+   * names the SHEET, since those are short and fixed; two where it is a thing
+   * the model named, which "Nasi kandar ayam goreng berempah" is and one line
+   * of which identifies no dish at all. Same prop and the same reason as
+   * `AppBar`'s.
+   */
+  titleLines?: 1 | 2
   description?: string
   /** Pinned below the scrollable body — the action row. */
   footer?: ReactNode
   /** Let the body scroll. Off for short, fixed content. */
   scrollable?: boolean
+  /**
+   * Sends the scrolling body back to its top whenever this changes.
+   *
+   * For a sheet that swaps one body for another without closing. The scroll
+   * view is the same instance either side of the swap, so a list read half way
+   * down opened what it drilled into half way down as well. A key rather than a
+   * remount, which would take the incoming body's entrance animation with it —
+   * see `Sheet` on why a view mounting alongside its container loses one.
+   */
+  scrollResetKey?: string | number
   /**
    * Grows the panel to the full height of the screen, less the status bar.
    *
@@ -166,7 +207,8 @@ export function Sheet({ visible, onShow, ...rest }: SheetProps) {
       transparent
       animationType="none"
       onShow={onShow}
-      onRequestClose={rest.onClose}
+      /* Up one level if there is one, and only then out. See `onBack`. */
+      onRequestClose={rest.onBack ?? rest.onClose}
     >
       {/* A `Modal` is its own window, and on Android gesture-handler's root view
           does not reach into one — the app's root is outside it, so the handle's
@@ -199,9 +241,12 @@ export function SheetSurface({
   closeLabel = 'Close',
   title,
   titleAction,
+  titleLeading,
+  titleLines = 1,
   description,
   footer,
   scrollable = true,
+  scrollResetKey,
   fullHeight = false,
   children,
   className,
@@ -320,6 +365,17 @@ export function SheetSurface({
   const trackScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     scrolled.current = event.nativeEvent.contentOffset.y
   }, [])
+
+  // A new body starts at its top. Unanimated: the body it belongs to is not on
+  // screen yet, so there is nothing for a scroll to read as movement of. The
+  // early return is what a sheet that never swaps its body gets, and it is also
+  // what keeps the key an honest dependency rather than a bare trigger.
+  // See `scrollResetKey`.
+  useEffect(() => {
+    if (scrollResetKey === undefined) return
+    scroller.current?.scrollTo({ y: 0, animated: false })
+    scrolled.current = 0
+  }, [scrollResetKey])
 
   const revealForNumpad = useCallback(
     (measure: (report: (top: number, fieldHeight: number) => void) => void) => {
@@ -448,7 +504,8 @@ export function SheetSurface({
 
             {title ? (
               <View className="flex-row items-center justify-between gap-md">
-                <Text variant="subtitle" className="flex-1" numberOfLines={1}>
+                {titleLeading}
+                <Text variant="subtitle" className="flex-1" numberOfLines={titleLines}>
                   {title}
                 </Text>
                 {titleAction}

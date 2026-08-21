@@ -17,8 +17,9 @@ import type { IconRef, Meal } from './types'
  * different set of dishes appearing under a finger. The user presses a button and
  * gets an answer; that is a mutation whatever the verb.
  *
- * What it costs is that the answer has nowhere to live, which is what
- * `SuggestProvider` in `features/suggest` is for.
+ * What it costs is that the answer has nowhere to live, so `SuggestAction`
+ * holds it: the picks, what was asked to get them, and which one is open. In
+ * memory and nowhere else, because a suggestion is not a record of anything.
  */
 
 // `Meal` is the `public.meal` enum and is already declared in `types.ts`, off
