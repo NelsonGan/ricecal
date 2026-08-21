@@ -31,6 +31,8 @@ import {
   isWholeMealServing,
   MAX_KCAL_PER_G,
   namesAPortion,
+  namesOneArticle,
+  PORTION_OVER_SERVING,
   plausibleForGrams,
   rowIsMeatier,
   servingGrams,
@@ -290,6 +292,38 @@ const rowProteinFor = (row: SearchRow, grams: number | null): number | null => {
 const isWholeUnit = (fit: Priced): boolean => !fit.byWeight && fit.units === 1
 
 /**
+ * What one of this part weighs when the row it matched IS one of the thing, and
+ * null when the row is a helping like any other.
+ *
+ * `bestFit` prices a row by weight whenever both sides state one, which is right
+ * for a helping and wrong for an article: the catalogue knows what one
+ * Filet-O-Fish weighs and a photograph does not, so scaling its 330 kcal up to
+ * the model's guess of 180 g charged 418 for a burger the catalogue had exactly
+ * right. Answering the weight here rather than a boolean lets the caller both
+ * re-price the row as the whole unit it is and put the article's own weight on
+ * the ingredient, so the row does not read "180 g" beside a figure for 142.
+ *
+ * Upwards only, and only as far as the helping cap already allows, so the two
+ * hand off cleanly: at or under `PORTION_OVER_SERVING` the article's own weight
+ * settles it, and past that the part is no longer one of them and the cap takes
+ * over. Under the article's weight nothing happens either, because pricing a
+ * smaller-looking portion by weight is what the path below already does and a
+ * weight is only ever allowed to bound a figure downwards.
+ *
+ * The dish tier never had this bug: `SAME_PORTION_LOW`/`HIGH` let the row stand
+ * whenever the two weights are within 0.7-1.4 of each other, so the same burger
+ * photographed as a whole dish was logged at 330 all along. The breakdown was the
+ * one path with nothing to say that a small disagreement about weight is a
+ * disagreement about weight rather than a different amount of food.
+ */
+export const oneArticleGrams = (fit: Priced | null, grams: number | null): number | null => {
+  if (!fit || !grams || !namesOneArticle(fit.row.serving_label)) return null
+  const article = rowGrams(fit.row)
+  if (!article || grams < article || grams > article * PORTION_OVER_SERVING) return null
+  return article
+}
+
+/**
  * The rows a part of a meal may be priced from: two checks about identity, where
  * everything in `bestFit` below is about size.
  *
@@ -522,7 +556,18 @@ async function resolveByComponents(
     // (Satay Ayam)" is 365 kcal for TEN STICKS, and "Chicken, fried" is per
     // 100 g — so a row's own figure is almost never the price of one of the
     // thing on the plate. `bestFit` converts before it compares.
-    const fit = bestFit(candidates, component.grams, component.kcal)
+    const ranked = bestFit(candidates, component.grams, component.kcal)
+    // A row that names one whole article and states its weight is one of the
+    // thing, however the ranking priced it, so it is re-priced as one before
+    // anything below asks whether it is.
+    const article = oneArticleGrams(ranked, component.grams)
+    const fit = ranked && article ? priceRow(ranked.row, null) : ranked
+    if (ranked && article) {
+      trace?.push(
+        `[cascade] components: "${q}" ${component.grams} g taken as one ` +
+          `"${ranked.row.serving_label}" (${article} g) of ${ranked.row.name}`,
+      )
+    }
 
     if (fit && isWholeUnit(fit)) {
       // A row that IS one of the thing. The quantity is the count and nothing
@@ -534,7 +579,9 @@ async function resolveByComponents(
         food: asFood(fit.row),
         quantity: component.count * meals,
         label: component.name.slice(0, 120),
-        grams: component.grams,
+        // The article's weight when that is what settled it, so the row cannot
+        // read "180 g" beside a figure the catalogue quotes for 142.
+        grams: article ?? component.grams,
         kcal: fit.row.kcal * component.count * meals,
       })
       continue

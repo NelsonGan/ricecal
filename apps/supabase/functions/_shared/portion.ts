@@ -134,6 +134,38 @@ export const namesAPortion = (label: string | null | undefined): boolean => {
 }
 
 /**
+ * Does this label name exactly ONE whole article of a food, rather than a helping
+ * of one?
+ *
+ * A helping is an amount somebody served: a bowl, a plate, a portion, a scoop.
+ * How much of it there is varies, and `boundGramsToServing` allows for that. An
+ * article does not vary. A Filet-O-Fish is 142 g because that is what a
+ * Filet-O-Fish is, and nobody is served 1.27 of one, so a row that names one and
+ * states its weight has already given the exact answer a photograph can only
+ * guess at.
+ *
+ * That mattered: a photographed Filet-O-Fish was matched to the catalogue's own
+ * 330 kcal row, and then priced by weight at the model's guess of 180 g, which
+ * charged it 418. The helping cap did not save it, because 180 g is 1.27x of
+ * 142 g and the cap allows half again.
+ *
+ * The list is deliberately short and only holds things that come in one piece of
+ * a size the food itself decides. `piece`, `slice`, `fillet` and `steak` are
+ * absent on purpose: they are countable but their size is whatever was cut, so
+ * the catalogue's weight is no better evidence than the model's. So are `serving`
+ * and `portion`, which are helpings wearing a countable word.
+ *
+ * The leading `1` is required. "2 bars" holds two of them and `servingUnitCount`
+ * does not read that label, so treating it as one article would charge for half
+ * the food.
+ */
+const ONE_ARTICLE =
+  /^1(?:\.0+)?\s+(burger|sandwich|wrap|bun|roll|bar|can|bottle|packet|sachet|pouch|tub|jar|cone|egg|pie|pizza|muffin|doughnut|donut|cookie|biscuit)s?\b/i
+
+export const namesOneArticle = (label: string | null | undefined): boolean =>
+  ONE_ARTICLE.test((label ?? '').trim())
+
+/**
  * How much a part may weigh when the catalogue names a helping of that food.
  *
  * A weight is the one thing about a portion a photograph carries, and it is why
@@ -316,11 +348,22 @@ export function unfoldCounts<T extends Sized & { count: number }>(
 
   const perUnit = components.reduce((sum, c) => sum + c.kcal * c.count, 0)
   const asStated = components.reduce((sum, c) => sum + c.kcal, 0)
-  // The same tolerances the breakdown guard in the cascade applies, and for the
-  // same reason: a band is not a measurement, so this only fires on a
-  // disagreement too large to be about portion size.
-  if (perUnit <= kcalHigh * 1.8) return components
-  if (asStated < kcalLow * 0.6 || asStated > kcalHigh * 1.8) return components
+
+  // Which of the two readings did the model itself use? The prompt asks it to add
+  // up (kcal x count) and put that total between the bounds, so the reading that
+  // lands in the band is the one it was working from and the other is the slip.
+  //
+  // That comparison is the test, and it replaced a fixed ceiling that could not
+  // see this. A photographed Filet-O-Fish with three nuggets came back per unit
+  // at 830 and as stated at 530 against the model's own 500-560 band: the ceiling
+  // was 1.8x the top of the band, 830 was under 1008, so nothing fired and the
+  // meal was logged at 889 kcal. Against the band there is no argument — 530 is
+  // inside it and 830 is half again over it.
+  //
+  // The slack is small and identical on both sides, because what is being asked
+  // is which reading fits and not how loose a band is allowed to be.
+  const fitsBand = (total: number) => total >= kcalLow * 0.9 && total <= kcalHigh * 1.1
+  if (fitsBand(perUnit) || !fitsBand(asStated)) return components
 
   const share = (value: number | null, count: number): number | null =>
     value === null ? null : Math.round((value / count) * 10) / 10
