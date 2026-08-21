@@ -63,7 +63,48 @@ export const profile = {
     /** The four-card tour, which is offered once on Today and lives here after. */
     tutorial: 'How RiceCal works',
     help: 'Help centre',
+    /**
+     * The permanent way to the rating sheet, for the same reason the tour has
+     * one: the automatic ask is gated to roughly once a release, so somebody who
+     * dismissed it and then changed their mind has no other route back.
+     */
+    rate: 'Rate RiceCal',
     signOut: 'Sign out',
+  },
+
+  /**
+   * The question the app asks before the store does.
+   *
+   * IT IS A QUESTION, not a request. "Rate us five stars" is the copy that earns
+   * one star, and the sheet has two answers because both of them are wanted: a
+   * yes goes to the store, a no goes to Discord where it can actually be
+   * answered. Neither word may lean on the other, so "I like it" and "Not
+   * really" are the same size and neither is dressed as the correct one.
+   *
+   * `note` says where a yes leads, because a sheet that answers a friendly
+   * question by opening the App Store is a sheet that tricked somebody.
+   */
+  rate: {
+    title: 'Enjoying RiceCal?',
+    body: 'It is a small team, and your answer decides what we build next.',
+    yes: 'I like it',
+    no: 'Not really',
+    later: 'Maybe later',
+    note: 'If you like it, we will ask the store for a rating. It takes a moment.',
+
+    /**
+     * The second screen, after "Not really".
+     *
+     * It does not apologise twice and it does not argue. What it offers is a
+     * place to be specific, which is the same Discord the help row opens: there
+     * is no support inbox behind this, and a form that pretended otherwise would
+     * be a slower way to reach the same three people.
+     */
+    feedbackTitle: 'What would fix it?',
+    feedbackBody:
+      'Tell us on Discord and we will read it. Most of what is in the app got there this way.',
+    feedbackOpen: 'Open Discord',
+    feedbackSkip: 'Not now',
   },
 
   /**

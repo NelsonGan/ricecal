@@ -1070,7 +1070,22 @@ export const id = {
       units: 'Bahasa dan satuan',
       tutorial: 'Cara kerja RiceCal',
       help: 'Pusat bantuan',
+      rate: 'Beri nilai RiceCal',
       signOut: 'Keluar',
+    },
+
+    rate: {
+      title: 'Suka dengan RiceCal?',
+      body: 'Kami tim kecil, dan jawaban kamu menentukan apa yang kami buat berikutnya.',
+      yes: 'Saya suka',
+      no: 'Kurang',
+      later: 'Nanti saja',
+      note: 'Kalau kamu suka, kami akan meminta penilaian di toko aplikasi. Cuma sebentar.',
+      feedbackTitle: 'Apa yang perlu diperbaiki?',
+      feedbackBody:
+        'Ceritakan di Discord dan kami akan membacanya. Sebagian besar isi aplikasi ini datang dari sana.',
+      feedbackOpen: 'Buka Discord',
+      feedbackSkip: 'Tidak usah',
     },
 
     help: {

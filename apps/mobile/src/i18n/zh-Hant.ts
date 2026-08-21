@@ -1045,7 +1045,21 @@ export const zhHant = {
       units: '語言和單位',
       tutorial: 'RiceCal 怎麼用',
       help: '說明中心',
+      rate: '為 RiceCal 評分',
       signOut: '登出',
+    },
+
+    rate: {
+      title: '喜歡 RiceCal 嗎？',
+      body: '我們是個小團隊，接下來要做什麼，由你的回答決定。',
+      yes: '蠻喜歡',
+      no: '不太喜歡',
+      later: '以後再說',
+      note: '如果你喜歡，我們會開啟商店的評分視窗，很快就好。',
+      feedbackTitle: '哪裡需要改？',
+      feedbackBody: '在 Discord 上告訴我們，我們會看。應用程式裡大部分的東西都是這樣來的。',
+      feedbackOpen: '開啟 Discord',
+      feedbackSkip: '算了',
     },
 
     help: {
