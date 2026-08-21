@@ -87,6 +87,7 @@ export const zhHant = {
       body: '拍照辨識、用文字描述、問接下來吃什麼，都會交給一個最擅長英文的模型。用英文描述你的食物，它能理解得更準確。',
       results:
         '回傳的內容也是英文。菜名、食材和份量在食物資料庫裡都是以英文存放的，所以不管 App 設成哪種語言，它們都會以英文出現。',
+      dishes: '菜名會保持它被寫下時的語言。',
       note: '用英文描述食物最準確，回傳的結果也是英文。',
     },
 
@@ -1146,7 +1147,6 @@ export const zhHant = {
       title: '語言和單位',
       language: '語言',
       languageLabel: 'App 語言',
-      languageNote: '菜名會保持它被寫下時的語言。',
       units: '單位',
       weight: '體重',
       kg: '公斤',

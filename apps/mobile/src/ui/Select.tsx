@@ -19,6 +19,14 @@ export type SelectProps<T extends string> = {
   onChange: (value: T) => void
   label?: string
   /**
+   * Keep the label as the control's NAME without drawing it.
+   *
+   * For a picker that already sits under a card heading saying the same word.
+   * The label still titles the sheet and still names the control for a screen
+   * reader, so hiding it costs nothing but the duplicated line.
+   */
+  hideLabel?: boolean
+  /**
    * Shown until something is chosen, and read out as the value.
    *
    * Optional with NO default. It used to default to 'Select', which is an
@@ -47,6 +55,7 @@ export function Select<T extends string>({
   value,
   onChange,
   label,
+  hideLabel = false,
   placeholder,
   closeLabel,
   disabled = false,
@@ -57,7 +66,7 @@ export function Select<T extends string>({
 
   return (
     <View className={cn('gap-1.5', className)}>
-      {label ? <Text variant="label">{label}</Text> : null}
+      {label && !hideLabel ? <Text variant="label">{label}</Text> : null}
 
       <Tappable
         onPress={() => setOpen(true)}

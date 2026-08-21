@@ -87,6 +87,7 @@ export const ms = {
       body: 'Snap pinggan, cakap apa yang anda makan dan tanya apa hendak dimakan seterusnya semuanya pergi kepada model yang paling memahami bahasa Inggeris. Terangkan makanan anda dalam bahasa Inggeris dan ia memahami anda dengan lebih tepat.',
       results:
         'Apa yang kembali juga dalam bahasa Inggeris. Nama hidangan, bahan dan saiz hidangan disimpan dalam bahasa Inggeris di dalam katalog makanan, jadi itulah bahasa yang akan muncul walau apa pun tetapan apl.',
+      dishes: 'Nama hidangan kekal dalam bahasa ia ditulis.',
       note: 'Terangkan makanan dalam bahasa Inggeris untuk bacaan paling tepat. Hasilnya juga dalam bahasa Inggeris.',
     },
 
@@ -1187,7 +1188,6 @@ export const ms = {
       title: 'Bahasa dan unit',
       language: 'BAHASA',
       languageLabel: 'Bahasa apl',
-      languageNote: 'Nama hidangan kekal dalam bahasa ia ditulis.',
       units: 'UNIT',
       weight: 'Berat',
       kg: 'kg',

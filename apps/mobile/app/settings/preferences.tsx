@@ -46,9 +46,10 @@ export default function PreferencesScreen() {
         whatever it is given; this one is answered by MMKV, synchronously, from
         the first frame, so there is no wrong state to hide.
       */}
-      <Card title={t('preferences.language')} action={<LanguageHelpButton />}>
+      <Card title={t('preferences.language')} titleAction={<LanguageHelpButton />}>
         <Select
           label={t('preferences.languageLabel')}
+          hideLabel
           options={LANGUAGES.map((language) => ({
             value: language.code,
             label: language.label,
@@ -57,7 +58,6 @@ export default function PreferencesScreen() {
           value={currentLanguage()}
           onChange={(language: Language) => setLanguage(language)}
         />
-        <Text variant="meta">{t('preferences.languageNote')}</Text>
         {/* Only for somebody who has chosen a language the model and the
             catalogue do not speak. See `LanguageHelp`. */}
         <LanguageAiNote />

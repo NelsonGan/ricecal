@@ -88,6 +88,7 @@ export const fil = {
       body: 'Ang pagkuha ng litrato ng plato, ang pagsasabi sa salita kung ano ang kinain mo at ang pagtatanong kung ano ang susunod na kakainin ay pumupunta lahat sa isang modelong pinakamahusay sa Ingles. Ilarawan ang pagkain mo sa Ingles at mas malapit ang pagkakaintindi nito.',
       results:
         'Sa Ingles din ang bumabalik. Nakaimbak sa Ingles ang mga pangalan ng ulam, sangkap at laki ng serving sa food catalogue, kaya iyon ang wikang darating anuman ang naka-set sa app.',
+      dishes: 'Nananatili ang pangalan ng ulam sa wikang isinulat ito.',
       note: 'Ilarawan ang pagkain sa Ingles para sa pinakatumpak. Sa Ingles din ang resulta.',
     },
 
@@ -1183,7 +1184,6 @@ export const fil = {
       title: 'Wika at unit',
       language: 'WIKA',
       languageLabel: 'Wika ng app',
-      languageNote: 'Nananatili ang pangalan ng ulam sa wikang isinulat ito.',
       units: 'MGA UNIT',
       weight: 'Timbang',
       kg: 'kg',

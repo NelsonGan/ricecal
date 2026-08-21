@@ -80,15 +80,15 @@ export default function SetupStep() {
       primaryLabel={t('common:action.continue')}
       onPrimary={next}
     >
-      <Card title={t('profile:preferences.language')} action={<LanguageHelpButton />}>
+      <Card title={t('profile:preferences.language')} titleAction={<LanguageHelpButton />}>
         <Select
           label={t('profile:preferences.languageLabel')}
+          hideLabel
           options={LANGUAGES.map((entry) => ({ value: entry.code, label: entry.label }))}
           closeLabel={t('common:action.close')}
           value={currentLanguage()}
           onChange={chooseLanguage}
         />
-        <Text variant="meta">{t('profile:preferences.languageNote')}</Text>
         <LanguageAiNote />
       </Card>
 

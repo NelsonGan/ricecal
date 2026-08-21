@@ -224,22 +224,16 @@ export const profile = {
      * about what the screen is called. */
     title: 'Language and units',
     /**
-     * The card, and the label on the control inside it.
+     * The card heading, and the name of the control inside it.
      *
-     * Two strings rather than one reused twice, because they are not saying the
-     * same thing: the heading names the section and the label names WHICH
-     * language is being set. The distinction is real in this app, and the note
-     * under it is why.
+     * `languageLabel` is no longer drawn: one card holding one picker was
+     * saying "LANGUAGE" and then "App language" directly under it, which is the
+     * same word twice for the price of a line. It is still the control's name
+     * for a screen reader and the title of the sheet that lists the thirteen
+     * languages, and both of those need a phrase rather than a section marker.
      */
     language: 'LANGUAGE',
     languageLabel: 'App language',
-    /**
-     * Said here rather than on the onboarding picker. A dish is data — it goes
-     * on screen in the spelling it was written in, whatever the interface is set
-     * to — and the person who needs to know that is the one changing this
-     * setting and expecting their diary to change with it.
-     */
-    languageNote: 'Dish names stay in the language they were written in.',
     units: 'UNITS',
     weight: 'Weight',
     kg: 'kg',

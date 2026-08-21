@@ -86,6 +86,7 @@ export const id = {
       body: 'Memotret piring, menceritakan apa yang kamu makan dan bertanya mau makan apa berikutnya semuanya dikirim ke model yang paling paham bahasa Inggris. Ceritakan makananmu dalam bahasa Inggris dan ia memahamimu lebih tepat.',
       results:
         'Yang kembali juga dalam bahasa Inggris. Nama hidangan, bahan dan ukuran porsi disimpan dalam bahasa Inggris di katalog makanan, jadi itulah bahasa yang muncul apa pun setelan aplikasinya.',
+      dishes: 'Nama hidangan tetap dalam bahasa saat ditulis.',
       note: 'Ceritakan makanan dalam bahasa Inggris agar paling akurat. Hasilnya juga dalam bahasa Inggris.',
     },
 
@@ -1173,7 +1174,6 @@ export const id = {
       title: 'Bahasa dan satuan',
       language: 'BAHASA',
       languageLabel: 'Bahasa aplikasi',
-      languageNote: 'Nama hidangan tetap dalam bahasa saat ditulis.',
       units: 'SATUAN',
       weight: 'Berat',
       kg: 'kg',
