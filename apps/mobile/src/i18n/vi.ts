@@ -426,6 +426,11 @@ export const vi = {
       body: 'Cloudflare muốn xác nhận bạn là người thật. Chỉ mất một giây.',
     },
 
+    ended: {
+      title: 'Đã đăng xuất',
+      body: 'Phiên này đã kết thúc. Đăng nhập lại để tiếp tục.',
+    },
+
     errors: {
       passwordShort: 'Dùng ít nhất 8 ký tự.',
       passwordRequired: 'Nhập mật khẩu của bạn.',
