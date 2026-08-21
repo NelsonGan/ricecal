@@ -460,8 +460,8 @@ export const ja = {
     },
 
     welcome: {
-      title: 'どの一皿も、もう数えてあります',
-      subtitle: 'ナシレマ、フォー、ラクサ、チャーシュー飯。アジアの料理を、きちんと数える。',
+      title: 'アジアの人のためのカロリー記録',
+      subtitle: 'ナシレマ、フォー、ラクサ、チャーシュー飯。',
       perks: {
         track: { title: '1 kcal まで記録', subtitle: '写真を撮るか、数秒で検索' },
         habit: { title: 'より健康な習慣をつくる', subtitle: 'ゆるい目標、連続記録、責めません' },
@@ -524,7 +524,7 @@ export const ja = {
 
     calculating: {
       title: 'プランを組み立てています',
-      subtitle: '身長、体重、目標、そして 1 日の過ごし方から。',
+      subtitle: '平均ではなく、あなたの答えから計算しています。',
       steps: {
         budget: '1 日のカロリー目標',
         macros: '炭水化物、たんぱく質、脂質の配分',
@@ -542,7 +542,6 @@ export const ja = {
       goalBy: '到達見込み',
       maintain: '維持',
       maintainValue: '安定',
-      splitTitle: '1 日の配分',
       looksRight: 'これで良さそう',
       adjust: '回答を変更する',
     },

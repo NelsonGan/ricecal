@@ -458,8 +458,8 @@ export const vi = {
     },
 
     welcome: {
-      title: 'Mọi món ăn, đã được tính sẵn',
-      subtitle: 'Nasi lemak, phở, laksa, cơm xá xíu. Món châu Á, tính cho đúng.',
+      title: 'Ứng dụng đếm calo làm cho người châu Á',
+      subtitle: 'Nasi lemak, phở, laksa, cơm xá xíu.',
       perks: {
         track: { title: 'Theo dõi từng calo', subtitle: 'Chụp một tấm hoặc tìm trong vài giây' },
         habit: {
@@ -522,7 +522,7 @@ export const vi = {
 
     calculating: {
       title: 'Đang dựng kế hoạch cho bạn',
-      subtitle: 'Chiều cao, cân nặng, mục tiêu và cách bạn trải qua một ngày.',
+      subtitle: 'Tính từ câu trả lời của bạn, không phải số trung bình.',
       steps: {
         budget: 'Mục tiêu calo hằng ngày',
         macros: 'Tỷ lệ tinh bột, đạm và chất béo',
@@ -540,7 +540,6 @@ export const vi = {
       goalBy: 'DỰ KIẾN ĐẠT',
       maintain: 'GIỮ NGUYÊN',
       maintainValue: 'Ổn định',
-      splitTitle: 'TỶ LỆ HẰNG NGÀY CỦA BẠN',
       looksRight: 'Nhìn ổn rồi',
       adjust: 'Sửa câu trả lời của tôi',
     },
