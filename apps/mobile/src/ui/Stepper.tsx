@@ -32,8 +32,9 @@ export type StepperProps = {
   disabled?: boolean
   accessibilityLabel?: string
   /** Screen-reader names for the two buttons. Pass translated copy. */
-  decrementLabel?: string
-  incrementLabel?: string
+  /** The two buttons are icons, so these are all a screen reader gets. */
+  decrementLabel: string
+  incrementLabel: string
   className?: string
 }
 
@@ -74,8 +75,8 @@ export function Stepper({
   editLabel,
   disabled = false,
   accessibilityLabel,
-  decrementLabel = 'Decrease',
-  incrementLabel = 'Increase',
+  decrementLabel,
+  incrementLabel,
   className,
 }: StepperProps) {
   const atMin = value - step < min

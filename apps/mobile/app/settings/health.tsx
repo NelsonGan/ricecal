@@ -223,6 +223,8 @@ function HealthSettingsScreen() {
             {/* A stepper rather than a slider: a step goal is a round number
                 people name — 8,000, 10,000 — not a value swept to. */}
             <Stepper
+              decrementLabel={t('common:a11y.decrease')}
+              incrementLabel={t('common:a11y.increase')}
               value={settings?.step_goal ?? 8000}
               onChange={(value) => updateSettings.mutate({ step_goal: value })}
               min={1000}

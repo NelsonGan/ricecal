@@ -10,8 +10,14 @@ export type ConfirmSheetProps = {
   onConfirm: () => void | Promise<void>
   title: string
   description?: string
-  confirmLabel?: string
-  cancelLabel?: string
+  /**
+   * REQUIRED, both of them. They were `'Confirm'` and `'Keep'` by default, and
+   * a default is a word the design system does not have: five call sites left
+   * the cancel label off and shipped an English "Keep" under a Chinese
+   * question. The type is what stops that happening again.
+   */
+  confirmLabel: string
+  cancelLabel: string
   /** `danger` for anything that removes data. */
   tone?: Extract<ButtonVariant, 'primary' | 'danger'>
 }
@@ -34,8 +40,8 @@ export function ConfirmSheet({
   onConfirm,
   title,
   description,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Keep',
+  confirmLabel,
+  cancelLabel,
   tone = 'danger',
 }: ConfirmSheetProps) {
   const [pending, setPending] = useState(false)
@@ -54,6 +60,9 @@ export function ConfirmSheet({
     <Sheet
       visible={visible}
       onClose={pending ? () => {} : onClose}
+      // The drag handle dismisses, which is exactly what the neutral button
+      // does, so it says the same word rather than asking for a third label.
+      closeLabel={cancelLabel}
       title={title}
       description={description}
       footer={

@@ -38,6 +38,14 @@ export type CardProps = Omit<SquishProps, 'className' | 'slabClassName' | 'depth
   title?: string
   /** Rendered opposite the title — a status pill, a total. */
   action?: ReactNode
+  /**
+   * Rendered immediately AFTER the title, not opposite it.
+   *
+   * For something that belongs to the heading rather than to the card: the info
+   * button beside "LANGUAGE" is asking about that word, and pushed to the far
+   * edge by `action` it reads as a control for the card's contents instead.
+   */
+  titleAction?: ReactNode
   /** Drop the interior padding, for content that bleeds to the card edge. */
   flush?: boolean
   /** Layout. Lands on the box the parent measures. */
@@ -59,6 +67,7 @@ export function Card({
   tone = 'surface',
   title,
   action,
+  titleAction,
   flush = false,
   className,
   contentClassName,
@@ -100,7 +109,16 @@ export function Card({
         <View
           className={cn('flex-row items-center justify-between gap-3', flush && 'px-card pt-card')}
         >
-          {title ? <Text variant="overline">{title}</Text> : null}
+          {title ? (
+            // `shrink` on both, so a long translated heading gives up width to
+            // wrap rather than shouldering the button off the card.
+            <View className="min-w-0 shrink flex-row items-center gap-1.5">
+              <Text variant="overline" className="shrink">
+                {title}
+              </Text>
+              {titleAction}
+            </View>
+          ) : null}
           {action}
         </View>
       ) : null}

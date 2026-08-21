@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { ReviewPeriod } from '@/data'
-import { showChange, type WeightUnit } from '@/features/progress'
+import { showChange, type WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
 import { cn, Divider, Icon, Tappable, Text } from '@/ui'
 import { periodTitle, weekOfYear } from './period'

@@ -18,10 +18,10 @@ import {
   useTargets,
   useWeighIns,
 } from '@/data'
-import { unitFor } from '@/features/progress'
 import { track } from '@/lib/analytics'
 import { sumMacros } from '@/lib/nutrition'
 import { appScheme } from '@/lib/scheme'
+import { unitFor } from '@/lib/units'
 import { DEFAULT_WATER_ML } from '@/lib/water'
 import { useTheme } from '@/theme/useTheme'
 import { reportWidgets } from './adoption'

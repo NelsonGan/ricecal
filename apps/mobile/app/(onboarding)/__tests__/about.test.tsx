@@ -196,3 +196,78 @@ it('clamps a height below the bottom of the range', async () => {
 
   expect(saved()).toEqual(expect.objectContaining({ heightCm: 120 }))
 })
+
+/**
+ * IMPERIAL, which `setup` chooses one screen earlier.
+ *
+ * The database is centimetres and kilograms whatever this says, so every one of
+ * these is really about the conversion at the edge: what a stored answer looks
+ * like coming back into a field, and what a typed one becomes on the way to the
+ * draft. The bounds are metric too, which is why a pounds field has to be
+ * clamped against a converted limit rather than against 30.
+ */
+describe('imperial', () => {
+  const IMPERIAL: OnboardingDraft = { ...COMPLETE, units: 'imperial' }
+
+  it('asks for a height as feet and inches', async () => {
+    seed({ units: 'imperial' })
+    await render(<AboutStep />)
+
+    expect(screen.getByLabelText('HEIGHT')).toHaveDisplayValue('')
+    expect(screen.getByLabelText('INCHES')).toHaveDisplayValue('')
+    // The centimetres field is not merely relabelled; it is not rendered.
+    expect(screen.queryByDisplayValue('cm')).toBeNull()
+  })
+
+  it('shows a stored metric answer in the units it was asked for', async () => {
+    seed(IMPERIAL)
+    await render(<AboutStep />)
+
+    // 170 cm is 5 feet 7; 65 kg is 143.3 lb.
+    expect(screen.getByLabelText('HEIGHT')).toHaveDisplayValue('5')
+    expect(screen.getByLabelText('INCHES')).toHaveDisplayValue('7')
+    expect(screen.getByLabelText('WEIGHT')).toHaveDisplayValue('143.3')
+  })
+
+  it('stores what was typed as metric', async () => {
+    seed({ units: 'imperial', sex: 'female', targetWeightKg: 60 })
+    await render(<AboutStep />)
+
+    await user.type(screen.getByLabelText('HEIGHT'), '5')
+    await user.type(screen.getByLabelText('INCHES'), '10')
+    await user.type(screen.getByLabelText('WEIGHT'), '160')
+    await user.type(screen.getByLabelText('AGE'), '35')
+    await continueOn()
+
+    const draft = saved()
+    // 5 feet 10 is 177.8 cm, 160 lb is 72.57 kg. Neither is rounded on the way
+    // in: the rounding happens once, where it is displayed.
+    expect(draft.heightCm).toBeCloseTo(177.8, 1)
+    expect(draft.weightKg).toBeCloseTo(72.6, 1)
+  })
+
+  /**
+   * A lone "5" in the feet box is 152 cm, which is a real height and would let
+   * Continue go live halfway through typing one.
+   */
+  it('does not read half a height as an answer', async () => {
+    seed({ units: 'imperial', sex: 'female', targetWeightKg: 60 })
+    await render(<AboutStep />)
+
+    await user.type(screen.getByLabelText('HEIGHT'), '5')
+    await user.type(screen.getByLabelText('WEIGHT'), '160')
+    await user.type(screen.getByLabelText('AGE'), '35')
+
+    expect(advance()).toBeDisabled()
+  })
+
+  it('clamps a weight against the limit in the unit it was typed in', async () => {
+    seed({ units: 'imperial', sex: 'female', targetWeightKg: 60 })
+    await render(<AboutStep />)
+
+    // 200 kg is the ceiling, which is 440.9 lb. A pounds field clamped against
+    // 200 would refuse almost every weight anybody using pounds would type.
+    await user.type(screen.getByLabelText('WEIGHT'), '175')
+    expect(screen.getByLabelText('WEIGHT')).toHaveDisplayValue('175')
+  })
+})

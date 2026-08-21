@@ -2,7 +2,6 @@ import { format, parseISO, startOfWeek } from 'date-fns'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, View } from 'react-native'
-
 import {
   dateKey,
   useDayMarks,
@@ -11,6 +10,7 @@ import {
   useSelectedDate,
   useSettings,
 } from '@/data'
+import { datePattern } from '@/lib/dates'
 import { DateStrip, type DateStripDay } from '@/ui'
 import { markFor, WEEK_STARTS_ON, weekDays, weekStarts } from './week'
 
@@ -79,7 +79,7 @@ function Week({ start, width, selected, today, onSelect }: WeekProps) {
       mark,
       disabled: date > today,
       accessibilityLabel: t(`week.a11y.${mark ?? (date > today ? 'ahead' : 'plain')}`, {
-        day: format(at, 'EEEE d MMMM'),
+        day: format(at, datePattern('weekdayDayMonthLong')),
       }),
     }
   })

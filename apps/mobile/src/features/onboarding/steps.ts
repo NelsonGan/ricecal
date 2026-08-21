@@ -14,6 +14,10 @@
  * does not typecheck.
  */
 export const ONBOARDING_STEPS = [
+  // Language and units, and it is first because everything after it is read in
+  // one and measured in the other. The height and weight on `about` are typed
+  // in whichever this screen chose.
+  'setup',
   'about',
   'activity',
   // No `foodStyle`. The question ("how do you usually makan") fed a

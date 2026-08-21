@@ -2,9 +2,9 @@ import { format, parseISO } from 'date-fns'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import type { DayPlate } from '@/data'
 import { storedImageSource, useDayMarks, useDayPlates, useMealPhotoUrl, useSettings } from '@/data'
+import { datePattern } from '@/lib/dates'
 import { useThemeColors } from '@/theme/useTheme'
 import type { DateStripMark } from '@/ui'
 import { cn, Icon, IconButton, Skeleton, Tappable, Text } from '@/ui'
@@ -253,7 +253,7 @@ export function MonthCalendar({
               accent beside a month name. */}
           <Icon set="ui" name="chevron-left" size={18} tintColor={colors.muted} />
         </IconButton>
-        <Text variant="subtitle">{format(parseISO(month), 'MMMM yyyy')}</Text>
+        <Text variant="subtitle">{format(parseISO(month), datePattern('monthYear'))}</Text>
         <IconButton
           size="sm"
           onPress={next ? () => onMonthChange(next) : undefined}
@@ -303,7 +303,7 @@ export function MonthCalendar({
                   label={
                     at
                       ? t(`week.a11y.${mark ?? (ahead ? 'ahead' : 'plain')}`, {
-                          day: format(at, 'EEEE d MMMM'),
+                          day: format(at, datePattern('weekdayDayMonthLong')),
                         })
                       : undefined
                   }

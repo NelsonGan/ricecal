@@ -125,7 +125,7 @@ export function RecipePanel({ onLog, onOpen, autoFocus = false }: RecipePanelPro
                 })
           }
           value={recipe.perServing.kcal}
-          unit="kcal"
+          unit={t('common:unit.kcal')}
           onPress={() => onOpen(recipe)}
           trailing={
             recipe.isMine ? (

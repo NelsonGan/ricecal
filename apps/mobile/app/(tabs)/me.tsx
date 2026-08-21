@@ -16,9 +16,10 @@ import {
 } from '@/data'
 import { signOut } from '@/data/auth'
 import { usePlanSummary } from '@/features/paywall'
-import { showWeight, UNIT_KEY, unitFor } from '@/features/progress'
 import { HelpSheet } from '@/features/settings'
 import { ScreenTitle, SettingRow } from '@/features/shared'
+import { datePattern } from '@/lib/dates'
+import { showWeight, UNIT_KEY, unitFor } from '@/lib/units'
 import { Avatar, Button, Card, ConfirmSheet, Icon, ListRow, Screen, StatTile, Text } from '@/ui'
 
 /** U1 PROFILE */
@@ -92,7 +93,7 @@ export default function MeScreen() {
       ? t('profile:home.proTrial', {
           when: plan.trialEndsAt
             ? t('profile:home.proTrialOn', {
-                date: format(parseISO(plan.trialEndsAt), 'd MMM'),
+                date: format(parseISO(plan.trialEndsAt), datePattern('dayMonth')),
               })
             : t('profile:home.proTrialTomorrow'),
         })
@@ -315,6 +316,7 @@ export default function MeScreen() {
         title={t('profile:home.signOutTitle')}
         description={t('profile:home.signOutBody')}
         confirmLabel={t('profile:home.signOut')}
+        cancelLabel={t('common:action.cancel')}
       />
     </Screen>
   )

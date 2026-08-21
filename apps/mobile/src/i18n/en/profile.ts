@@ -48,7 +48,18 @@ export const profile = {
      * that row has to be able to say without being opened.
      */
     healthOff: 'Not connected',
-    units: 'Units and appearance',
+    /**
+     * SHORT, and it has to be. This row carries a value ("Metric") and a
+     * chevron beside it, and the screen it opens puts the same words in an
+     * `AppBar`; both truncate past about twenty characters. "Language, units
+     * and appearance" named all three cards and rendered as "Language, units
+     * and a…" in the row and "Language, units and ap…" in the bar.
+     *
+     * So the name gives up the third card rather than the first two. Appearance
+     * is one segmented control found the moment the screen opens; language is
+     * what somebody would come to Me looking for, and it now says so.
+     */
+    units: 'Language and units',
     /** The four-card tour, which is offered once on Today and lives here after. */
     tutorial: 'How RiceCal works',
     help: 'Help centre',
@@ -208,7 +219,21 @@ export const profile = {
   },
 
   preferences: {
-    title: 'Units and appearance',
+    /** Kept identical to `home.units` above, which is where the length limit is
+     * explained. A row and the bar of the screen it opens should not disagree
+     * about what the screen is called. */
+    title: 'Language and units',
+    /**
+     * The card heading, and the name of the control inside it.
+     *
+     * `languageLabel` is no longer drawn: one card holding one picker was
+     * saying "LANGUAGE" and then "App language" directly under it, which is the
+     * same word twice for the price of a line. It is still the control's name
+     * for a screen reader and the title of the sheet that lists the thirteen
+     * languages, and both of those need a phrase rather than a section marker.
+     */
+    language: 'LANGUAGE',
+    languageLabel: 'App language',
     units: 'UNITS',
     weight: 'Weight',
     kg: 'kg',

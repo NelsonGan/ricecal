@@ -2,10 +2,10 @@ import { differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-
 import { today as todayKey, useActivitySessions, useActivitySummary } from '@/data'
 import { count, duration, SessionRow } from '@/features/activity'
 import { type Stat, StatRow } from '@/features/shared'
+import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
 import { AppBar, Card, EmptyState, Screen, Skeleton } from '@/ui'
 
@@ -114,5 +114,5 @@ function dayLabel(date: string, named: { today: string; yesterday: string }): st
   if (days === 0) return named.today
   if (days === 1) return named.yesterday
   if (days < 7) return format(parseISO(date), 'EEE')
-  return format(parseISO(date), 'd MMM')
+  return format(parseISO(date), datePattern('dayMonth'))
 }

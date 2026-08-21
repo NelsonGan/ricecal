@@ -16,6 +16,7 @@ export {
   ROW_TILE,
   ROW_TILE_ICON,
 } from './ItemRow'
+export { LanguageAiNote, LanguageHelpButton } from './LanguageHelp'
 export { MacroBars, type MacroBarsProps } from './MacroBars'
 export { MealPhoto, type MealPhotoProps } from './MealPhoto'
 export { PlanPicker, type PlanPickerProps } from './PlanPicker'

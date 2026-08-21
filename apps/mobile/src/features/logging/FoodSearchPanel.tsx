@@ -190,7 +190,7 @@ export function FoodSearchPanel({ onPick, autoFocus = false }: FoodSearchPanelPr
               // majority row now has a picture and the exception is the blank.
               icon={food.icon}
               value={food.macros.kcal}
-              unit="kcal"
+              unit={t('common:unit.kcal')}
               detail={`${t(`logging:search.place.${food.place}`)} · ${food.servingLabel}`}
               onPress={() => {
                 // 1-based rank, which is the live version of what
