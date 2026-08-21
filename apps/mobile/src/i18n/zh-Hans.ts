@@ -1052,13 +1052,12 @@ export const zhHans = {
 
     rate: {
       title: '喜欢 RiceCal 吗？',
-      body: '我们是个小团队，接下来做什么，由你的回答决定。',
+      body: '接下来做什么，由你的回答决定。',
       yes: '挺喜欢',
       no: '不太喜欢',
       later: '以后再说',
-      note: '如果你喜欢，我们会打开商店的评分窗口，很快就好。',
       feedbackTitle: '哪里需要改？',
-      feedbackBody: '在 Discord 上告诉我们，我们会看。应用里的大部分东西都是这么来的。',
+      feedbackBody: '在 Discord 上告诉我们。应用里的大部分东西都是这么来的。',
       feedbackOpen: '打开 Discord',
       feedbackSkip: '算了',
     },

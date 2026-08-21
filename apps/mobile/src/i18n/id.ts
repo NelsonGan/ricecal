@@ -1076,14 +1076,12 @@ export const id = {
 
     rate: {
       title: 'Suka dengan RiceCal?',
-      body: 'Kami tim kecil, dan jawaban kamu menentukan apa yang kami buat berikutnya.',
+      body: 'Jawaban kamu menentukan apa yang kami buat berikutnya.',
       yes: 'Saya suka',
       no: 'Kurang',
       later: 'Nanti saja',
-      note: 'Kalau kamu suka, kami akan meminta penilaian di toko aplikasi. Cuma sebentar.',
       feedbackTitle: 'Apa yang perlu diperbaiki?',
-      feedbackBody:
-        'Ceritakan di Discord dan kami akan membacanya. Sebagian besar isi aplikasi ini datang dari sana.',
+      feedbackBody: 'Ceritakan di Discord. Sebagian besar isi aplikasi ini datang dari sana.',
       feedbackOpen: 'Buka Discord',
       feedbackSkip: 'Tidak usah',
     },
