@@ -165,6 +165,17 @@ describe('the weight widget', () => {
     expect(snapshot.weight?.value).toBe('68.0')
   })
 
+  it('says which way the weight went, because the pill is coloured by it', () => {
+    // Trends paints a gain kaya and a loss pandan. The widget has only the
+    // formatted string, so the direction has to travel with it or the two
+    // surfaces disagree about one figure a tap apart.
+    const lost = build({ weighIns: [weighIn(21, 70), weighIn(0, 68)] })
+    const gained = build({ weighIns: [weighIn(21, 68), weighIn(0, 70)] })
+
+    expect(lost.weight?.up).toBe(false)
+    expect(gained.weight?.up).toBe(true)
+  })
+
   it('reports the change in the unit the account reads in', () => {
     const snapshot = build({
       unit: 'lb',

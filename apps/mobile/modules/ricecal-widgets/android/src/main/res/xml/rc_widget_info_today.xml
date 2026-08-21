@@ -11,7 +11,8 @@
      `updatePeriodMillis` is zero on purpose. The app publishes and asks for a
      redraw the moment the day changes, so a poll would be a second, slower
      answer to a question already answered, and the shortest period the system
-     honours is half an hour. -->
+     honours is half an hour. The one redraw the app cannot push is the day
+     ending, and that is an alarm rather than a poll: see `MidnightReceiver`. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
   android:minWidth="250dp"
   android:minHeight="250dp"

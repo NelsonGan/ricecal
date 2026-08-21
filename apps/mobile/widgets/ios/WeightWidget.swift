@@ -30,10 +30,13 @@ struct WeightWidgetView: View {
             // The pill states a figure, so it gives up nothing. Without the
             // priority the caption beside it wins the width and "−1.8 kg"
             // renders as "−1…", which is a pill saying nothing at all.
+            // Kaya on a gain, pandan on a loss, which is what the weight list
+            // on Trends does with the same figure. The direction is the app's
+            // answer rather than this widget's: see `up` in `types.ts`.
             WidgetPill(
               text: weight.change,
-              fill: palette.pandanSoft,
-              ink: palette.pandanInk,
+              fill: weight.up == true ? palette.kayaSoft : palette.pandanSoft,
+              ink: weight.up == true ? palette.kayaInk : palette.pandanInk,
               size: 10
             )
             .layoutPriority(1)

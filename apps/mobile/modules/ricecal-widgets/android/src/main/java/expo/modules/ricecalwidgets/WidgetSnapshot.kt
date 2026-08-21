@@ -52,6 +52,17 @@ data class WidgetSnapshot(
     val value: String,
     val unit: String,
     val change: String,
+    /**
+     * Whether the change is a gain, which is what colours the pill.
+     *
+     * READ WITH A DEFAULT rather than required, because the store outlives the
+     * build that wrote it: a phone that updates the app overnight renders the
+     * document the previous build left until the app is next opened, and a
+     * required field added after that document was written would fail the whole
+     * parse and blank six widgets. False reads as "not a gain", which is the
+     * colour this pill had before the field existed.
+     */
+    val up: Boolean,
     val weeks: List<Double>,
   )
 
@@ -97,6 +108,7 @@ data class WidgetSnapshot(
             value = it.getString("value"),
             unit = it.getString("unit"),
             change = it.getString("change"),
+            up = it.optBoolean("up", false),
             weeks = (0 until weeks.length()).map { index -> weeks.getDouble(index) },
           )
         },
