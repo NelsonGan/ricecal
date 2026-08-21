@@ -452,6 +452,17 @@ export const icons = {
     yogurt: require('../../assets/icons/food/yogurt.png'),
     'yogurt-drink': require('../../assets/icons/food/yogurt-drink.png'),
   },
+  scenes: {
+    apron: require('../../assets/icons/scenes/apron.png'),
+    capsules: require('../../assets/icons/scenes/capsules.png'),
+    clock: require('../../assets/icons/scenes/clock.png'),
+    desk: require('../../assets/icons/scenes/desk.png'),
+    dumbbell: require('../../assets/icons/scenes/dumbbell.png'),
+    phone: require('../../assets/icons/scenes/phone.png'),
+    plate: require('../../assets/icons/scenes/plate.png'),
+    ring: require('../../assets/icons/scenes/ring.png'),
+    sneakers: require('../../assets/icons/scenes/sneakers.png'),
+  },
   system: {
     accessibility: require('../../assets/icons/system/accessibility.png'),
     'at-sign': require('../../assets/icons/system/at-sign.png'),

@@ -9,12 +9,13 @@ import { Button, Icon, Text } from '@/ui'
 import { PlanTable } from './PlanTable'
 
 /**
- * The app's icon, not the mascot.
+ * The app's icon.
  *
- * The mascot is a character; this screen is asking somebody to buy a PRODUCT,
- * and the square at the top of it should be the one they are about to keep on
- * their home screen. It is the same swap the welcome screen made, for the same
- * reason, and the two are the first and last screens of the flow.
+ * This screen is asking somebody to buy a PRODUCT, and the square at the top of
+ * it should be the one they are about to keep on their home screen. Same rule
+ * as the welcome screen, and the two are the first and last screens of the
+ * flow: both render the icon FILE, so neither can drift from the home screen
+ * when the icon changes.
  */
 const LOGO = require('../../../assets/icon.png')
 

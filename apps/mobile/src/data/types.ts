@@ -68,10 +68,19 @@ export const fromDbSource = (source: Enums<'entry_source'>): EntrySource =>
  * Written as a distributive conditional rather than `Pick<IconProps, …>` because
  * `Pick` over a union collapses it, which would let a `dishes` set pair with a
  * `ui` name.
+ *
+ * NARROWED TO THE SETS THE DATABASE HAS, which is not all of them. `icon_set` is
+ * a Postgres enum, so a set that exists only in the app cannot be stored in one
+ * — `scenes` is onboarding art and no food row will ever point at it. Deriving
+ * this from the enum means adding a set to `assets/icons` cannot silently break
+ * every insert that carries an icon, and a set that genuinely belongs on a row
+ * has to arrive with a migration.
  */
 export type IconRef = IconProps extends infer T
   ? T extends { set: infer S; name: infer N }
-    ? { set: S; name: N }
+    ? S extends Enums<'icon_set'>
+      ? { set: S; name: N }
+      : never
     : never
   : never
 

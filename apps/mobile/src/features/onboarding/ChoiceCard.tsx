@@ -1,6 +1,6 @@
 import { View } from 'react-native'
 
-import { cn, Squish, Text } from '@/ui'
+import { cn, Icon, type IconProps, Squish, Text } from '@/ui'
 import type { Accent } from './OnboardingStep'
 
 const selectedStyles: Record<Accent, { border: string; fill: string; slab: string; dot: string }> =
@@ -37,6 +37,16 @@ export type ChoiceCardProps = {
   selected: boolean
   onPress: () => void
   accent: Accent
+  /**
+   * A drawing of the answer, at the TRAILING edge.
+   *
+   * Not beside the radio, which is where it wanted to go: the dot, the
+   * illustration and two lines of text share one row, and putting the picture
+   * on the left leaves "Retail, nursing, site work" about 200px to fit on a
+   * small phone. On the right it costs the description nothing, and the column
+   * of drawings gives the four options something to scan down.
+   */
+  icon?: IconProps
   className?: string
 }
 
@@ -53,6 +63,7 @@ export function ChoiceCard({
   selected,
   onPress,
   accent,
+  icon,
   className,
 }: ChoiceCardProps) {
   const tone = selectedStyles[accent]
@@ -85,6 +96,20 @@ export function ChoiceCard({
         <Text variant="bodyStrong">{title}</Text>
         {description ? <Text variant="meta">{description}</Text> : null}
       </View>
+
+      {/* 44, AND THE NUMBER IS THE iPHONE SE.
+          The drawing is taller than the two lines of text, so it is what sets
+          the card's height, and four of these plus a heading and a footer is
+          the whole of a small screen. Measured on an SE: at 56 the fourth
+          option sat under the CTA, at 48 its bottom edge landed exactly on it
+          with nothing to spare, and 44 leaves about 13pt — which is the margin
+          somebody running larger text needs. The question is "pick one of
+          four", so an option below the fold is the one failure this screen
+          cannot have.
+
+          Decorative: the title beside it already says what it is, and the row
+          carries one accessibility label for the whole card. */}
+      {icon ? <Icon {...icon} size={44} /> : null}
     </Squish>
   )
 }
