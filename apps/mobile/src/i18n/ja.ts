@@ -1057,7 +1057,20 @@ export const ja = {
       units: '言語と単位',
       tutorial: 'RiceCal の使い方',
       help: 'ヘルプセンター',
+      rate: 'RiceCal を評価する',
       signOut: 'ログアウト',
+    },
+
+    rate: {
+      title: 'RiceCal は気に入っていますか',
+      body: '次に何を作るかは、あなたの答え次第です。',
+      yes: '好きです',
+      no: 'あまり',
+      later: 'あとで',
+      feedbackTitle: 'どこを直せばよいですか',
+      feedbackBody: 'Discord で教えてください。アプリにあるものの多くは、そこから生まれました。',
+      feedbackOpen: 'Discord を開く',
+      feedbackSkip: 'やめておく',
     },
 
     help: {

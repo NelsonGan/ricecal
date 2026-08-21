@@ -10,6 +10,7 @@ import {
   useReviewSeries,
   useReviewSummary,
   useSettings,
+  useUserId,
 } from '@/data'
 import {
   BodyStep,
@@ -25,6 +26,7 @@ import {
 } from '@/features/reviews'
 import { track } from '@/lib/analytics'
 import { useBack } from '@/lib/navigation'
+import { recordReviewOpened } from '@/lib/rating'
 import { unitFor } from '@/lib/units'
 import { spacing } from '@/theme/tokens'
 import { AppBar, Card, EmptyState, Screen, Skeleton } from '@/ui'
@@ -57,6 +59,7 @@ export default function ReviewScreen() {
 
   const { data: settings } = useSettings()
   const unit = unitFor(settings?.units)
+  const userId = useUserId()
 
   const periods = useReviewPeriods(kind)
 
@@ -129,6 +132,27 @@ export default function ReviewScreen() {
     track('Paywall Shown', { screen: 'hard', trigger: 'review' })
     router.replace('/paywall')
   }, [locked])
+
+  /**
+   * A review that was actually READ counts towards the rating prompt.
+   *
+   * Not `Review Opened` above, which fires as soon as the period resolves. A
+   * free account opening a locked review fires that event and is then replaced
+   * onto the paywall, and a sheet asking whether they are enjoying the app over
+   * a page telling them to pay for it is the worst pairing in the app.
+   *
+   * So this waits for every answer the lock waits for, and for the summary to
+   * have landed: at that point the review is on screen. A ref of its own rather
+   * than `openedPeriod` above, because the two become true at different moments
+   * and sharing one would let whichever fired first silence the other.
+   */
+  const counted = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    if (locked || checkingPlan || planUnknown || !start || summary.data === undefined) return
+    if (counted.current === start) return
+    counted.current = start
+    recordReviewOpened(userId)
+  }, [locked, checkingPlan, planUnknown, start, summary.data, userId])
 
   if (!period) return <Missing />
 

@@ -1083,7 +1083,20 @@ export const ms = {
       units: 'Bahasa dan unit',
       tutorial: 'Bagaimana RiceCal berfungsi',
       help: 'Pusat bantuan',
+      rate: 'Nilai RiceCal',
       signOut: 'Log keluar',
+    },
+
+    rate: {
+      title: 'Suka RiceCal?',
+      body: 'Jawapan anda menentukan apa yang kami bina seterusnya.',
+      yes: 'Saya suka',
+      no: 'Tidak juga',
+      later: 'Nanti dulu',
+      feedbackTitle: 'Apa yang perlu diperbaiki?',
+      feedbackBody: 'Beritahu kami di Discord. Kebanyakan isi aplikasi ini bermula begitu.',
+      feedbackOpen: 'Buka Discord',
+      feedbackSkip: 'Bukan sekarang',
     },
 
     help: {

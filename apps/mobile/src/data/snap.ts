@@ -10,6 +10,7 @@ import {
   ensureNotificationPermission,
   scheduleScanNotice,
 } from '@/lib/notifications'
+import { recordMealLogged } from '@/lib/rating'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/ui'
 import { today } from './client'
@@ -249,6 +250,14 @@ function useRecogniseMeal() {
           // the day refetches into them. Removing first avoids one frame with
           // both on screen.
           completed('logged', result)
+          // HERE rather than beside `Meal Logged` above, which fires at the
+          // commit. The counter is the same either way, but crossing a
+          // checkpoint can put a sheet on screen, and the commit is the moment a
+          // scan STARTS: the banner is up, the placeholder row is spinning, and
+          // a question about the app over the top of it is the app interrupting
+          // itself. A plate with nothing edible in it does not count for the
+          // same reason it is not a meal.
+          recordMealLogged(userId)
           pending.remove(id)
           queryClient.invalidateQueries({ queryKey: keys.day(userId, logDate) })
           queryClient.invalidateQueries({ queryKey: keys.streak(userId) })

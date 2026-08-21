@@ -29,6 +29,7 @@ project works is here.
 - [Activity and health](#activity-and-health)
 - [Photos](#photos)
 - [Money: free and Pro](#money-free-and-pro)
+- [Asking for a rating](#asking-for-a-rating)
 - [Periodic jobs](#periodic-jobs)
 - [Analytics](#analytics)
 - [The design system](#the-design-system)
@@ -2561,6 +2562,128 @@ server, no push token, nothing to deliver if the phone is offline at breakfast.
 
 ---
 
+## Asking for a rating
+
+A star rating is the single cheapest thing that moves an app up a store listing,
+and the app has exactly one lever on it: `StoreReview.requestReview()`. Fired
+carelessly it is worse than not firing at all, so the whole feature is a gate in
+front of one call.
+
+**The OS allows about three a year per device**, counts them itself, and tells
+the app nothing. Over the limit `requestReview` draws nothing and resolves
+successfully, so there is no way to find out from inside the app that an ask was
+wasted. Everything below exists because that budget cannot be replenished or
+inspected.
+
+**So the app asks its own question first.** A sheet says "Enjoying RiceCal?" with
+two answers. "I like it" stamps the cooldown and hands over to the OS. "Not
+really" stamps the same cooldown and offers the Discord instead, which is where
+support already lives. The store therefore only ever hears from people who have
+just said they like the app, and the people who do not get a conversation rather
+than a five-star field they were going to answer with one star.
+
+**The browser is never opened for somebody who is unhappy.** The second screen
+asks; a tap is what opens Discord. Throwing an annoyed user into another app is
+the same mistake as the review dialog, one step further along.
+
+**Every way out stamps the cooldown**, including the scrim, the back gesture and
+"Maybe later". They mean the same thing as "not really" as far as the next sixty
+days are concerned: the question has been put.
+
+### The gate
+
+`src/lib/rating/state.ts` is pure arithmetic over a stored object with the clock
+passed in, and `state.test.ts` is where it is actually checked. The thresholds,
+and what each is for:
+
+| Gate | Value | What it excludes |
+| --- | --- | --- |
+| Days since the account was first seen | 5 | Somebody still deciding whether to keep the app |
+| Days since the app version changed | 2 | A release whose first days are its worst, rated by somebody who has not used it |
+| Meals logged | a multiple of 15 | An account the app has not yet done anything for |
+| Distinct days with activity | 3 | The person who logged a fortnight in one sitting to see what it did |
+| Days since the last ask | 60 | Everything the OS budget cannot afford |
+| Asked on this version | never twice | A second ask on a build that has not changed |
+
+The active-days floor is **three rather than two**, and the reason is worth
+knowing before anybody lowers it. The stored state is created by the first
+counted action, so `installedAt` is that day; a fifteenth meal that clears the
+five-day gate has by definition been logged on a second day already. At two the
+gate could never turn anything down.
+
+### What sets it off
+
+Two automatic triggers and one row.
+
+**A meal that crosses a multiple of fifteen.** A crossing rather than
+`meals % 15 === 0`, so a counter that ever moves by more than one cannot step
+over a checkpoint and wait silently for the next.
+
+The counter moves in two places, and the *scan* path is the interesting one. It
+is recorded when the cascade comes back, not at the commit where `Meal Logged`
+fires: the commit is the moment a scan STARTS, with the banner up and a
+placeholder row spinning, and a question about the app over the top of that is
+the app interrupting itself. A photograph with nothing edible in it never
+counts, because it never became a meal.
+
+**A weekly or monthly review that was actually read.** The second one, then every
+fifth. `Review Opened` fires as soon as the period resolves, which is *before*
+the entitlement check has decided whether to send a free account to the paywall,
+so the rating counter waits for every answer the lock waits for. A sheet asking
+whether somebody is enjoying the app, over a page telling them to pay for it, is
+the worst pairing available.
+
+**A settled purchase is deliberately not a trigger.** It is the strongest signal
+of goodwill in the app and still the wrong moment: `paywall/welcome` is already a
+celebration, and a favour asked in the same breath as taking somebody's money
+reads as exactly that. Their next meal is a few hours away.
+
+**And a row in Me**, which skips every threshold because the user went looking
+for it, and stamps the cooldown anyway because what follows is the same
+once-a-year dialog.
+
+**An automatic ask waits 1.2 seconds; the row does not.** The same reasoning as
+`useProNudge`'s 1.4: a trigger fires when a write lands, and the dish screen
+navigates away in the same breath as it calls `mutate`, so the sheet would
+otherwise present a native modal window into the middle of a dismissal. Only one
+ask is ever booked at a time, since two sheets racing for one answer would stamp
+the cooldown twice. The row answers a tap and so answers at once.
+
+### Where the pieces live
+
+`src/lib/rating/` holds the state, the gate and the store call. It is in `lib`
+rather than in `features` because `src/data` calls the counters where a meal is
+written, and the data layer does not import a feature.
+
+`src/features/rating/RatePromptSheet.tsx` is the only screen, mounted once at the
+root beside the renderless syncs. The moment it appears belongs to whichever
+screen the user was already on, three pushes deep or on the diary, so it cannot
+belong to any of them. A module-level bridge carries the request, and it reports
+how many listeners took it: **nothing is stamped or tracked unless a sheet
+actually received it**, or a trigger firing before the root had mounted would
+spend the account's ask on a dialog nobody saw.
+
+The state is MMKV, keyed by user, for the reason `features/paywall/nudge.ts`
+gives about the standing offer: it is a question about this handset answered
+before anything can be shown, and a phone two people sign into in turn must not
+ask the second person a question the first one answered.
+
+**No store URL is configured, and that is a decision to revisit at launch.**
+`expo-store-review` falls back to opening `ios.appStoreUrl` / `android.playStoreUrl`
+when the native module is missing, and neither is set in `app.json`: the iOS one
+needs an App Store id this repo does not have yet. The fallback only runs on a
+build without the module linked, which ours always have, so today it costs
+nothing. Fill both in once the listings exist.
+
+**Nothing counts what the store did.** There is no "Rating Submitted" event
+anywhere, because `requestReview` reports neither whether it drew anything nor
+what the user did with it. The four events in the plan stop at the app's own
+question. `Rating Prompt Skipped` carries the first gate that refused, and it is
+the only way to see a silent gate from outside: without it a threshold that is
+too tight looks exactly like a feature nobody uses.
+
+---
+
 ## Periodic jobs
 
 `apps/cloudflare/workers/jobs` is the whole scheduler. One Worker, one job per
@@ -3197,6 +3320,13 @@ on update.
 **An LLM figure is never averaged with a catalogue figure**, and the nutrition
 call is never told the vision call's guess. Anchored, the model answered 450 kcal
 for a plate of apple slices, and 120 without.
+
+**`StoreReview.requestReview()` is called from one place, on one branch.** It
+lives behind "I like it" in `lib/rating/prompt.ts` and nowhere else. The OS
+allows about three dialogs a year per device, counts them itself, and tells the
+app nothing when it draws none, so a second call site cannot be tested into
+existence and cannot be noticed once it ships. See
+[Asking for a rating](#asking-for-a-rating).
 
 **A breakdown must account for the meal.** The parts and the calorie band are two
 answers from the same model to the same question, and when they contradict each
