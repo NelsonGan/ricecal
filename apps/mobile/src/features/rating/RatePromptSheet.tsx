@@ -109,6 +109,27 @@ export function RatePromptSheet() {
       closeLabel={t('common:action.close')}
       title={asking ? t('profile:rate.title') : t('profile:rate.feedbackTitle')}
       description={asking ? t('profile:rate.body') : t('profile:rate.feedbackBody')}
+      /* BESIDE THE TITLE, which is what leaves the sheet with no body at all:
+         a question, a line under it and two answers. Centred over its own
+         picture the panel was three stacked blocks with a gap between each,
+         and the gap was doing the work a heading should do.
+
+         No plate under it either, unlike the Discord mark in `HelpSheet`.
+         That one is a flat foreign vector and floats without an edge of its
+         own; these two are the app's own illustrations, already raised and
+         already carrying a shadow.
+
+         `titleLeading` is documented for the chevron of a sheet that drills
+         in, and this is the same slot put to its other use: the row is
+         `items-center` with the title on `flex-1`, so the mark sits on the
+         title's own line. The line under it still runs the panel's full
+         width, which is what keeps this a heading rather than a list row. */
+      titleLeading={<Icon set="system" name={asking ? 'star' : 'chat'} size={34} />}
+      /* TWO, because the mark has taken 34 points off the line the question
+         has to fit on and the question is translated thirteen ways. Truncated,
+         "RiceCal は気に入っていますか" is a sheet asking half a question; wrapped, it is
+         a sheet one line taller. */
+      titleLines={2}
       footer={
         asking ? (
           <View className="gap-1">
@@ -139,24 +160,6 @@ export function RatePromptSheet() {
           </View>
         )
       }
-    >
-      {/* NO PLATE UNDER IT, unlike the Discord mark in `HelpSheet`. That one is
-          a flat foreign vector and needs an edge of its own to stop it floating;
-          these two are the app's own illustrations, which are already raised and
-          already carry a shadow. On a tile they read as a logo bolted into the
-          middle of the sheet rather than as part of it.
-
-          Large, and the only thing in the body, because the body is now one
-          picture: the question and its line live in the sheet's own header and
-          the answers in its footer. */}
-      <View className="items-center py-1">
-        {/* Centred by the wrapper rather than by `self-center` on the icon:
-            `Icon` draws an expo-image, and NativeWind only turns `className`
-            into a style for React Native's own components. A third-party one
-            takes it as an ordinary prop and drops it in silence, which is
-            exactly what this looked like on the first attempt. */}
-        <Icon set="system" name={asking ? 'star' : 'chat'} size={72} />
-      </View>
-    </Sheet>
+    />
   )
 }
