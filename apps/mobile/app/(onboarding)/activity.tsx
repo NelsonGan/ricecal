@@ -2,8 +2,21 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import type { ActivityLevel } from '@/data'
 import { ChoiceCard, OnboardingStep, useOnboardingDraft } from '@/features/onboarding'
+import type { IconProps } from '@/ui'
 
-const OPTIONS: ActivityLevel[] = ['sedentary', 'light', 'onFeet', 'veryActive']
+/**
+ * The four answers, each with the drawing that stands for it.
+ *
+ * A picture per option rather than a picture for the screen. The question is
+ * "which of these is your day", and four days are easier to tell apart side by
+ * side than to read: the desk is the one nobody has to finish the sentence for.
+ */
+const OPTIONS = [
+  { id: 'sedentary', icon: { set: 'scenes', name: 'desk' } },
+  { id: 'light', icon: { set: 'scenes', name: 'sneakers' } },
+  { id: 'onFeet', icon: { set: 'scenes', name: 'apron' } },
+  { id: 'veryActive', icon: { set: 'scenes', name: 'dumbbell' } },
+] as const satisfies ReadonlyArray<{ id: ActivityLevel; icon: IconProps }>
 
 /** 03 ACTIVITY */
 export default function ActivityStep() {
@@ -30,12 +43,13 @@ export default function ActivityStep() {
     >
       {OPTIONS.map((option) => (
         <ChoiceCard
-          key={option}
+          key={option.id}
           accent="hibiscus"
-          title={t(`activity.${option}.title`)}
-          description={t(`activity.${option}.subtitle`)}
-          selected={draft.activity === option}
-          onPress={() => patch({ activity: option })}
+          icon={option.icon}
+          title={t(`activity.${option.id}.title`)}
+          description={t(`activity.${option.id}.subtitle`)}
+          selected={draft.activity === option.id}
+          onPress={() => patch({ activity: option.id })}
         />
       ))}
     </OnboardingStep>
