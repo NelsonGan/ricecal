@@ -16,6 +16,7 @@ project works is here.
 - [The database](#the-database)
 - [The food catalogue](#the-food-catalogue)
 - [Launching, and where a user lands](#launching-and-where-a-user-lands)
+- [Language](#language)
 - [Signing in](#signing-in)
 - [Logging a meal](#logging-a-meal)
 - [Correcting an entry](#correcting-an-entry)
@@ -57,7 +58,8 @@ src/features/    screens' building blocks, grouped by feature
 src/lib/         helpers that are not UI: health stores, analytics, nutrition
 src/ui/          the design system, which knows nothing about food
 src/theme/       colour roles and the palette swap
-src/i18n/en/     all user-facing copy
+src/i18n/en/     all user-facing copy, and the shape every locale must meet
+src/i18n/*.ts    one file per translated locale
 ```
 
 ---
@@ -678,6 +680,105 @@ is the tab, and `/recipe/[id]` and `/recipe/edit` are pages you go to and come
 back from. Those two have a layout of their own that waits for the session,
 because a shared recipe is a link and a link is opened cold, before the keychain
 read has finished.
+
+---
+
+## Language
+
+Thirteen languages, all of them left to right: English, 简体中文, 繁體中文,
+Bahasa Melayu, Bahasa Indonesia, ไทย, Tiếng Việt, Filipino, 日本語, 한국어,
+हिन्दी, தமிழ் and বাংলা. `src/i18n/languages.ts` is the list, and it is the only
+place a language is declared.
+
+**No right-to-left bundle, and it is not an oversight.** Nothing in `src/ui`
+mirrors: padding, chevrons, the progress bar and the week strip all read one way.
+An Arabic or Urdu bundle would render as correctly translated copy in an app laid
+out backwards, which is worse than English. Adding one is a layout project.
+
+**Food is never translated.** A dish goes on screen in the spelling it was
+written in, whatever the interface is set to: the catalogue, the recipes people
+type and everything a model writes back. Nothing in `src/i18n` names a food, and
+the preferences card says so out loud, where somebody changing the setting can
+act on it.
+
+### English is the source, and the type system enforces the rest
+
+`src/i18n/en/` is a directory, one file per feature, carrying the reasoning: why
+a string is worded the way it is, which bug it came from, what must not be said.
+Every other locale is a single file that owes only the words.
+
+What holds them together is `src/i18n/bundle.ts`. `Resources` is `typeof en` on
+an `as const` object, so its leaves are literal types and a bundle declared to
+satisfy it directly would only accept the English words back. `Bundle` widens
+every leaf to `string` and keeps the shape, and each locale ends
+`satisfies Bundle`:
+
+- a key nobody translated is a missing property
+- a key renamed in `en/` breaks every locale still carrying the old name
+- a typo in a nested block is an excess property
+
+So a bundle goes wrong in `pnpm check`, not in the simulator, and there is no
+such thing as a string that silently falls back to English at runtime.
+
+Plurals are the one place the shape lies a little. Most of these languages have a
+single plural category, so `_one` and `_other` carry the same words and i18next
+only ever selects `_other`. The `_one` keys exist because the shape is shared.
+Filipino, Hindi, Tamil and Bengali genuinely have two, and are written out
+separately.
+
+### Where the choice lives
+
+`src/i18n/preference.ts`, in MMKV, for the reason the theme preference is there:
+it is read on the very first frame, before the query client, the session or a
+network request exist. i18next is initialised synchronously at import time or the
+first render paints raw keys, and it cannot wait for a row. It is also the only
+store that works during onboarding, where the language is chosen on screen one
+and the account does not exist until the last.
+
+`user_settings.language` is still written, by `LanguageSync`, **in one direction
+only**. The row is a copy the server can read; it never decides what is on
+screen. Reading it back would undo the setting: a phone switched to Thai would
+flip to whatever the row said one frame after the user watched the screen change.
+
+`setLanguage()` is the only way to switch, and it moves three things that have to
+agree: what i18next hands to `t`, what date-fns formats a date in, and what the
+next launch opens in. The date locale matters more than it looks — month and
+weekday names come from date-fns, not from a bundle, so without it a Japanese
+interface prints "Thursday 14 October" in the middle of itself. Setting a default
+locale also sets `weekStartsOn`, which would ordinarily move what the app calls a
+week; it does not here, because every `startOfWeek` passes `WEEK_STARTS_ON`
+explicitly. date-fns ships no Filipino locale, so that one bundle formats its
+dates in English.
+
+### The picker is the first screen, and it is asked once
+
+`(onboarding)/language` sits ahead of the welcome, because the welcome is a pitch
+and a pitch nobody can read is not one. It opens on the phone's own language, so
+for most people it is a confirmation rather than a decision. It is asked at all
+because the phone is wrong often enough to matter here: a Malaysian handset set
+to English is a household norm rather than a preference about apps.
+
+Tapping a card applies the language immediately rather than on Continue. The
+screen is its own preview, which is the only way somebody can tell they picked
+the right one from a list of names they may not be able to read. Continue writes
+the selection again, and that is not redundant: somebody who agrees with the
+preselection never taps a card.
+
+`app/index.tsx` routes here only while nothing has been stored, so every launch
+after the first goes straight to welcome. It is not one of `ONBOARDING_STEPS` and
+draws no progress bar — that bar counts questions about a body which produce a
+calorie budget, and this is a setting.
+
+**Chinese is why the device language is resolved rather than looked up.**
+`languageCode` is `zh` for both scripts and the two are not mutually readable, so
+a Taiwanese phone answering `zh` and getting 简体中文 is the wrong app. The script
+code decides it where the OS sets one, and the region is the fallback: TW, HK and
+MO write traditional, everywhere else simplified. `zh-Hant` is not a script
+conversion of `zh-Hans` either — 大卡 rather than 千卡, 資料 rather than 数据 —
+so an edit to one is not an edit to the other.
+
+The second way in is Me, Language, units and appearance, which is the same
+`setLanguage()` behind a dropdown.
 
 ---
 
@@ -3411,7 +3512,8 @@ prefix.
 
 **No long dashes in copy.** Anything a user reads is written without em dashes or
 en dashes. Use a comma, a full stop, a semicolon or a pair of brackets instead.
-That covers `src/i18n/en/*`, any string that reaches a screen, a notification, a
+That covers every bundle in `src/i18n`, any string that reaches a screen, a
+notification, a
 share sheet or a toast, and the model prompts that produce text we display back.
 
 Two things it does not cover. **Comments and this file** are prose for whoever is

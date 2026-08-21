@@ -105,7 +105,7 @@ export default function TrialEnded() {
             title={entry.foodName}
             icon={entry.icon}
             value={entry.macros.kcal}
-            unit="kcal"
+            unit={t('common:unit.kcal')}
             detail={t('paywall:ended.lockedEntry')}
           />
         </Card>

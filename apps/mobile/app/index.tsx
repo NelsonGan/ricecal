@@ -6,6 +6,7 @@ import { View } from 'react-native'
 import { useProfile, useSession } from '@/data'
 import { signOut } from '@/data/auth'
 import { isComplete, useOnboardingDraft } from '@/features/onboarding'
+import { storedLanguage } from '@/i18n'
 import { useEnterApp } from '@/lib/navigation'
 import { EmptyState, Spinner } from '@/ui'
 
@@ -20,6 +21,10 @@ import { EmptyState, Spinner } from '@/ui'
  * - **Looking.** The keychain read and the profile fetch both take a moment, and
  *   redirecting during either flashes the wrong screen at a returning user. A
  *   spinner is the honest answer to "we do not know yet".
+ * - **No session, no language chosen.** The language picker, which is the first
+ *   screen of a fresh install and is shown exactly once. It is asked before the
+ *   welcome because the welcome is a pitch, and a pitch nobody can read is not
+ *   one. A stored choice sends everybody past it for good.
  * - **No session.** Start at the beginning, every time. It used to resume at the
  *   target screen when a draft was complete, on the theory that somebody who had
  *   answered everything should not tap through it again — but a draft outlives the
@@ -71,7 +76,10 @@ export default function Index() {
 
   if (loading) return <Loading />
 
-  if (!session) return <Redirect href="/welcome" />
+  // Read at render rather than held in state: the picker writes MMKV
+  // synchronously and replaces itself, so this route is not mounted across the
+  // change and has nothing to re-read.
+  if (!session) return <Redirect href={storedLanguage() ? '/welcome' : '/language'} />
 
   // The profile query only runs once there is a session, so this wait is the
   // one round trip between launching and knowing where the user belongs.

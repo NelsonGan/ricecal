@@ -109,7 +109,7 @@ export function IngredientSheet({ visible, onClose, onAdd }: IngredientSheetProp
 
 /** The catalogue, filtered. Same debounce and the same states as the log sheet's. */
 function SearchPanel({ onPick, onOwn }: { onPick: (foodId: string) => void; onOwn: () => void }) {
-  const { t } = useTranslation(['recipes', 'logging'])
+  const { t } = useTranslation(['recipes', 'logging', 'common'])
   const [query, setQuery] = useState('')
   const debounced = useDebouncedValue(query)
   const { data = [], isFetching } = useFoodSearch(debounced)
@@ -147,7 +147,7 @@ function SearchPanel({ onPick, onOwn }: { onPick: (foodId: string) => void; onOw
             icon={food.icon}
             detail={food.servingLabel}
             value={food.macros.kcal}
-            unit="kcal"
+            unit={t('common:unit.kcal')}
             onPress={() => onPick(food.id)}
           />
         </Card>

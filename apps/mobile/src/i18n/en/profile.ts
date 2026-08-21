@@ -48,7 +48,18 @@ export const profile = {
      * that row has to be able to say without being opened.
      */
     healthOff: 'Not connected',
-    units: 'Units and appearance',
+    /**
+     * SHORT, and it has to be. This row carries a value ("Metric") and a
+     * chevron beside it, and the screen it opens puts the same words in an
+     * `AppBar`; both truncate past about twenty characters. "Language, units
+     * and appearance" named all three cards and rendered as "Language, units
+     * and a…" in the row and "Language, units and ap…" in the bar.
+     *
+     * So the name gives up the third card rather than the first two. Appearance
+     * is one segmented control found the moment the screen opens; language is
+     * what somebody would come to Me looking for, and it now says so.
+     */
+    units: 'Language and units',
     /** The four-card tour, which is offered once on Today and lives here after. */
     tutorial: 'How RiceCal works',
     help: 'Help centre',
@@ -208,7 +219,27 @@ export const profile = {
   },
 
   preferences: {
-    title: 'Units and appearance',
+    /** Kept identical to `home.units` above, which is where the length limit is
+     * explained. A row and the bar of the screen it opens should not disagree
+     * about what the screen is called. */
+    title: 'Language and units',
+    /**
+     * The card, and the label on the control inside it.
+     *
+     * Two strings rather than one reused twice, because they are not saying the
+     * same thing: the heading names the section and the label names WHICH
+     * language is being set. The distinction is real in this app, and the note
+     * under it is why.
+     */
+    language: 'LANGUAGE',
+    languageLabel: 'App language',
+    /**
+     * Said here rather than on the onboarding picker. A dish is data — it goes
+     * on screen in the spelling it was written in, whatever the interface is set
+     * to — and the person who needs to know that is the one changing this
+     * setting and expecting their diary to change with it.
+     */
+    languageNote: 'Dish names stay in the language they were written in.',
     units: 'UNITS',
     weight: 'Weight',
     kg: 'kg',

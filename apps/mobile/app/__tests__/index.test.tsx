@@ -17,6 +17,14 @@ const mockProfile = jest.fn()
 const mockDraft = jest.fn()
 const mockSignOut = jest.fn(() => Promise.resolve())
 const mockEnterApp = jest.fn()
+const mockStoredLanguage = jest.fn()
+
+// The real module, with only the MMKV read swapped: importing it for real is
+// what initialises i18next, which the offline fallback below renders through.
+jest.mock('@/i18n', () => ({
+  ...jest.requireActual('@/i18n'),
+  storedLanguage: () => mockStoredLanguage(),
+}))
 
 jest.mock('expo-router', () => ({
   Redirect: ({ href }: { href: string }) => {
@@ -68,6 +76,7 @@ beforeEach(() => {
   mockSession.mockReturnValue({ session, loading: false })
   mockProfile.mockReturnValue(loaded({ onboarded_at: '2026-01-01T00:00:00Z' }))
   mockDraft.mockReturnValue(null)
+  mockStoredLanguage.mockReturnValue('en')
 })
 
 const redirectTo = (href: string) => screen.getByText(`redirect:${href}`)
@@ -88,6 +97,21 @@ it('starts a visitor with no session at the top of the flow', async () => {
 
   // Even with answers on disk: the draft outlives the account it was flushed for.
   expect(redirectTo('/welcome')).toBeTruthy()
+})
+
+/**
+ * The language picker is the one screen ahead of the welcome, and the stored
+ * choice is the only thing that decides it. A fresh install has none; every
+ * launch after the first does, which is what keeps it a one-time question
+ * rather than a screen between a returning visitor and the app.
+ */
+it('asks a fresh install for a language before it pitches anything', async () => {
+  mockSession.mockReturnValue({ session: null, loading: false })
+  mockStoredLanguage.mockReturnValue(null)
+
+  await render(<Index />)
+
+  expect(redirectTo('/language')).toBeTruthy()
 })
 
 it('sends an onboarded user to the app', async () => {
