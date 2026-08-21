@@ -422,6 +422,11 @@ export const zhHant = {
       body: 'Cloudflare 想確認你是真人，只要一秒。',
     },
 
+    ended: {
+      title: '已登出',
+      body: '這次登入已經結束。重新登入就能接著用。',
+    },
+
     errors: {
       passwordShort: '至少要用 8 個字元。',
       passwordRequired: '請輸入密碼。',

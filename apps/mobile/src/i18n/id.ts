@@ -433,6 +433,11 @@ export const id = {
       body: 'Cloudflare ingin memastikan kamu manusia. Cuma sedetik.',
     },
 
+    ended: {
+      title: 'Telah keluar',
+      body: 'Sesi ini sudah berakhir. Masuk lagi untuk melanjutkan.',
+    },
+
     errors: {
       passwordShort: 'Pakai minimal 8 karakter.',
       passwordRequired: 'Masukkan kata sandimu.',
