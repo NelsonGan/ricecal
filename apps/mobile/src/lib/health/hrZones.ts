@@ -39,6 +39,19 @@ const BANDS = {
   hard: 0.85,
 } as const
 
+/**
+ * The fewest readings that will be banded.
+ *
+ * Below ten a session has no shape to draw, and four bars over three readings
+ * are a texture invented for a workout rather than measured from it.
+ *
+ * Exported because it is also the question `apple.ts` asks of its FIRST answer.
+ * A recorder that attaches a handful of samples to a workout satisfies "did we
+ * get anything" while leaving nothing to band, and a reader that stops there
+ * puts an average on the screen over an empty chart.
+ */
+export const MIN_ZONE_SAMPLES = 10
+
 export type HeartBeatSample = {
   bpm: number
   /**
@@ -67,7 +80,7 @@ export function hrZonesFromSamples(
   samples: readonly HeartBeatSample[],
   age: number | null = null,
 ): HrZones | null {
-  if (samples.length < 10) return null
+  if (samples.length < MIN_ZONE_SAMPLES) return null
 
   const ordered = [...samples].sort((a, b) => a.at - b.at)
   const max = estimatedMaxHr(age)
