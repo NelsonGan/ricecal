@@ -223,13 +223,6 @@ export const ja = {
       metres: '{{value}} m',
 
       zonesTitle: '心拍ゾーン',
-      zonesNone: 'セッション平均のみ、ゾーンなし',
-      zonesNoneBody:
-        '{{source}} はセッションごとに平均値を1つ送るだけです。ゾーンとスプリットを見るには、1分ごとに記録する時計をつないでください。',
-      zonesNoneBodyGeneric:
-        'このセッションは1分ごとの値ではなく平均値1つだけで届いたため、ゾーンに分けられません。',
-
-      noHeartRate: '心拍数は記録されていません',
 
       from: '{{source}} より',
       missing: 'このワークアウトはヘルスアプリにもう存在しません。',

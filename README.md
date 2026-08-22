@@ -2266,6 +2266,24 @@ the Fitness app shows, which have no samples behind them and so cannot be
 banded. Android needs none of this: Health Connect has no notion of attachment
 and the window is the only question there is.
 
+**What sends it down to the second rung is a thin answer, not an empty one.** It
+was emptiness, and the screen showed the cost: an average and a maximum over a
+zone card with nothing in it. Bands need ten readings (`MIN_ZONE_SAMPLES`), so a
+recorder that attaches a handful satisfies "did we get anything" while leaving
+nothing to draw, and stopping there hides the window read that would have found
+the watch's own minute-by-minute samples. The window is asked whenever the
+attached set is too thin to band, and the fuller of the two answers wins.
+
+**An average with no zone chart under it usually means heart-rate samples are
+not readable at all.** `HKWorkout.statistics(for:)` reads figures carried on the
+workout object the workout query already returned, so it answers whether or not
+the *Heart Rate* type was granted — while both sample queries return an empty
+list rather than an error, because HealthKit will not tell an app it was denied.
+Deleting and reinstalling the app clears its Health authorisations, so a dev
+build reinstalled mid-week can lose zones on every session while every other
+figure on the screen stays correct. The check is Health → Sharing → Apps →
+RiceCal, not the code.
+
 **A percentage means different things on the two platforms.** HealthKit's `%`
 unit is a fraction (22% body fat reads as `0.22`) while Health Connect's
 `BodyFat.percentage` is already `22`. Converting on both sides gives 2,200 on one

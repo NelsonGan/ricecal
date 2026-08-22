@@ -225,12 +225,6 @@ export const zhHant = {
       metres: '{{value}} 公尺',
 
       zonesTitle: '心率區間',
-      zonesNone: '只有整段平均值，沒有區間',
-      zonesNoneBody:
-        '{{source}} 每次運動只送出一個平均值。連接一支會逐分鐘記錄的手錶，才看得到區間和分段。',
-      zonesNoneBodyGeneric: '這次運動只帶了一個平均值，而不是每分鐘一次的讀數，所以沒辦法分區間。',
-
-      noHeartRate: '沒有記錄心率',
 
       from: '來自 {{source}}',
       missing: '這次運動已經不在你的健康 App 裡了。',
