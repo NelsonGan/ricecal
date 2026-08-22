@@ -237,10 +237,6 @@ export const ms = {
         'Sesi ini datang dengan satu purata dan bukan bacaan setiap minit, jadi tiada apa-apa untuk dibahagikan kepada zon.',
 
       noHeartRate: 'Tiada kadar denyutan direkodkan',
-      noHeartRateBody:
-        '{{source}} merekod sesi ini tanpa kadar denyutan. Jam tangan akan menambahkannya.',
-      noHeartRateBodyGeneric:
-        'Tiada apa-apa yang merekod nadi untuk sesi ini. Telefon boleh mengira masa senaman tetapi tidak boleh mengambil nadi.',
 
       from: 'Daripada {{source}}',
       missing: 'Senaman ini sudah tiada dalam apl kesihatan anda.',

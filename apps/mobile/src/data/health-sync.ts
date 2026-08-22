@@ -5,7 +5,8 @@ import { AppState } from 'react-native'
 import { createMMKV } from 'react-native-mmkv'
 
 import { setPersonProps, track } from '@/lib/analytics'
-import type { HealthProvider, HealthReading, ProviderId } from '@/lib/health'
+import type { TablesInsert } from '@/lib/database.types'
+import type { HealthProvider, HealthReading, ProviderId, WorkoutReading } from '@/lib/health'
 import { providerFor } from '@/lib/health'
 import { ageFrom, basalRate } from '@/lib/nutrition'
 import { supabase } from '@/lib/supabase'
@@ -86,6 +87,71 @@ export type SyncProgress = {
   total: number
 }
 
+type SessionRow = TablesInsert<'activity_sessions'>
+
+/**
+ * Sessions as rows, grouped into the batches PostgREST will accept.
+ *
+ * A HEART RATE WE COULD NOT READ LEAVES ITS COLUMNS OUT, rather than writing
+ * nulls into them. An upsert only touches the columns the payload names, so an
+ * omitted one keeps whatever the last good read stored.
+ *
+ * That is the rule the whole function exists for. An empty read is not a
+ * measurement of nothing, and this window is re-read on every foreground: one
+ * release that could not associate heart-rate samples with a workout erased a
+ * fortnight of averages and zone charts, a day at a time, with nothing on any
+ * screen to say why. What it costs is a session whose heart rate somebody
+ * DELETES in Health keeping the figure we already had. Stale beats wrong, the
+ * same call the Android reader makes when its second aggregate fails.
+ *
+ * Hence the grouping. PostgREST builds its column list from the payload and
+ * rejects a batch whose objects disagree about their keys, so rows go out one
+ * request per shape: at most three, and one whenever a phone answers the same
+ * way for every session it wrote, which is the ordinary case.
+ */
+export function sessionBatches(
+  userId: string,
+  provider: ProviderId,
+  workouts: readonly WorkoutReading[],
+): Array<Array<SessionRow>> {
+  const batches = new Map<string, SessionRow[]>()
+
+  for (const workout of workouts) {
+    // Avg and max go together because they are one reading: all three ways
+    // `apple.ts` asks for a heart rate return both or neither. Zones are their
+    // own question, since a writer that sent a single average has a real
+    // average and nothing to band.
+    const heart = {
+      ...(workout.avgHr == null ? {} : { avg_hr: workout.avgHr, max_hr: workout.maxHr }),
+      ...(workout.hrZones == null ? {} : { hr_zones: workout.hrZones }),
+    }
+
+    const row = {
+      user_id: userId,
+      provider,
+      external_id: workout.externalId,
+      log_date: workout.date,
+      kind: workout.kind,
+      kind_label: workout.kindLabel,
+      started_at: workout.startedAt,
+      ended_at: workout.endedAt,
+      duration_s: workout.durationS,
+      active_kcal: workout.activeKcal,
+      distance_m: workout.distanceM,
+      elevation_m: workout.elevationM,
+      source_name: workout.sourceName,
+      ...heart,
+    }
+
+    const shape = Object.keys(heart).join(',')
+    const batch = batches.get(shape)
+    if (batch) batch.push(row)
+    else batches.set(shape, [row])
+  }
+
+  return [...batches.values()]
+}
+
 /**
  * Writes one reading.
  *
@@ -122,28 +188,12 @@ async function persist(
     if (error) throw error
   }
 
-  if (reading.workouts.length > 0) {
-    const { error } = await supabase.from('activity_sessions').upsert(
-      reading.workouts.map((workout) => ({
-        user_id: userId,
-        provider,
-        external_id: workout.externalId,
-        log_date: workout.date,
-        kind: workout.kind,
-        kind_label: workout.kindLabel,
-        started_at: workout.startedAt,
-        ended_at: workout.endedAt,
-        duration_s: workout.durationS,
-        active_kcal: workout.activeKcal,
-        distance_m: workout.distanceM,
-        avg_hr: workout.avgHr,
-        max_hr: workout.maxHr,
-        elevation_m: workout.elevationM,
-        hr_zones: workout.hrZones,
-        source_name: workout.sourceName,
-      })),
-      { onConflict: 'user_id,provider,external_id' },
-    )
+  // One request per row shape. See `sessionBatches` for why there can be more
+  // than one, and for the rule that makes the difference.
+  for (const batch of sessionBatches(userId, provider, reading.workouts)) {
+    const { error } = await supabase
+      .from('activity_sessions')
+      .upsert(batch, { onConflict: 'user_id,provider,external_id' })
     if (error) throw error
   }
 

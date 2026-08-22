@@ -1,7 +1,7 @@
 import { Platform } from 'react-native'
 
 import { dateKey } from '@/data/client'
-import { hrZonesFromSamples } from './hrZones'
+import { type HeartBeatSample, hrZonesFromSamples } from './hrZones'
 import { fromAppleWorkoutType } from './kinds'
 import type {
   AccessResult,
@@ -10,6 +10,7 @@ import type {
   HealthProvider,
   HealthReading,
   HourReading,
+  HrZones,
   LocalDate,
   WeightReading,
   WorkoutReading,
@@ -415,11 +416,15 @@ async function readWorkouts(
      * Heart rate is read per workout rather than for the whole window, and only
      * for workouts long enough to have shape.
      *
-     * A statistics query per session is N round trips, which is why the floor
+     * A session costs a round trip and can cost three, which is why the floor
      * exists: a four-minute "workout" is a mis-tap or a stretch, and zone bands
-     * over it are noise drawn at the same size as a marathon's.
+     * over it are noise drawn at the same size as a marathon's. Only a session
+     * whose first read comes back empty pays for the rungs below it.
      */
-    const hr = durationS >= 5 * 60 ? await readHeartRate(hk, sample, age) : null
+    const hr =
+      durationS >= 5 * 60
+        ? await readHeartRate(hk, sample, { startDate: started, endDate: ended }, age)
+        : null
 
     readings.push({
       externalId: sample.uuid,
@@ -445,26 +450,29 @@ async function readWorkouts(
 /**
  * Who recorded this session, and on what.
  *
- * Both were `null` here until this was written, and the null was load-bearing in
- * the wrong direction: `deviceName` on the connection is derived from these, so
- * the health-settings screen could never name a watch.
- *
  * `source` is the app that wrote the sample ("Strava", "Fitness") and `device` is
  * the hardware it came off ("Apple Watch"). They answer different questions, so
  * both are kept: the workout screen credits the app, and the settings screen
  * names the watch.
  *
- * Wrapped because these are Nitro hybrid objects reached through a proxy. A
- * sample written by an app that has since been deleted can leave either side
- * absent, and a workout whose provenance we cannot read is still a workout.
+ * The source is read through `toJSON()` and never as `source.name`, which is the
+ * trap this function exists to hold shut. `source` is a Nitro HybridObject, and
+ * every HybridObject carries a built-in `name` giving the name of the CLASS. So
+ * the plain read compiled, type-checked, and put the string "SourceProxy" on
+ * every workout anybody had ever recorded. `device` is a plain struct, which is
+ * why the same field name is safe one line down.
+ *
+ * Wrapped because a sample written by an app that has since been deleted can
+ * leave either side absent, and a workout whose provenance we cannot read is
+ * still a workout.
  */
 function names(sample: {
-  sourceRevision?: { source?: { name?: string } }
+  sourceRevision?: { source?: { toJSON?: () => { name?: string } } }
   device?: { name?: string }
 }): { sourceName: string | null; deviceName: string | null } {
   try {
     return {
-      sourceName: sample.sourceRevision?.source?.name ?? null,
+      sourceName: sample.sourceRevision?.source?.toJSON?.()?.name ?? null,
       deviceName: sample.device?.name ?? null,
     }
   } catch {
@@ -472,39 +480,113 @@ function names(sample: {
   }
 }
 
+type HeartRate = { avg: number; max: number; zones: HrZones | null }
+
+/**
+ * A session's heart rate, asked for three ways.
+ *
+ * The workout predicate alone was the whole of this and it is the wrong shape of
+ * question to ask only once. `predicateForObjects(from:)` matches the samples
+ * the recorder ATTACHED to the workout, so an app that saves a session it
+ * imported from somewhere else attaches none, and the answer for a game a watch
+ * measured throughout comes back empty. A fortnight of basketball and badminton
+ * read as pulseless that way.
+ *
+ * So the second rung asks the session's own start and end, strictly on both
+ * sides. On a watch worn all day the readings inside a workout's window ARE that
+ * workout's heart rate; strictness is what keeps the beat before the whistle out
+ * of it. Zones survive this rung, since it is still samples.
+ *
+ * The third rung is the average and maximum HealthKit stores ON the workout,
+ * which is what the Fitness app shows. Two numbers and nothing to band.
+ */
 async function readHeartRate(
   hk: HealthKitModule,
   // biome-ignore lint/suspicious/noExplicitAny: WorkoutProxy is only typed on iOS
   workout: any,
+  window: { startDate: Date; endDate: Date },
   age: number | null,
-): Promise<{ avg: number; max: number; zones: ReturnType<typeof hrZonesFromSamples> } | null> {
+): Promise<HeartRate | null> {
+  const attached = await heartBeats(hk, { workout })
+  const beats =
+    attached.length > 0
+      ? attached
+      : await heartBeats(hk, {
+          date: { ...window, strictStartDate: true, strictEndDate: true },
+        })
+
+  return summariseHeartRate(beats, age) ?? storedHeartRate(workout)
+}
+
+/**
+ * Readings to an average, a maximum and four bands.
+ *
+ * The bands are the part that can come back empty on their own:
+ * `hrZonesFromSamples` wants ten readings before it will draw anything, and a
+ * writer that sends one average per session gives it three. The average and the
+ * maximum are still real, so they are computed apart from the banding rather
+ * than inside the same answer — a session with six readings has a heart rate,
+ * and the screen has a tile for it.
+ */
+export function summariseHeartRate(
+  beats: readonly HeartBeatSample[],
+  age: number | null,
+): HeartRate | null {
+  if (beats.length === 0) return null
+
+  return {
+    avg: Math.round(beats.reduce((sum, beat) => sum + beat.bpm, 0) / beats.length),
+    max: Math.round(Math.max(...beats.map((beat) => beat.bpm))),
+    zones: hrZonesFromSamples(beats, age),
+  }
+}
+
+/** Heart-rate samples matching one filter. An empty list for anything else. */
+async function heartBeats(
+  hk: HealthKitModule,
+  filter: Record<string, unknown>,
+): Promise<HeartBeatSample[]> {
   try {
     const samples = await hk.queryQuantitySamples(
-      // biome-ignore lint/suspicious/noExplicitAny: as above
+      // biome-ignore lint/suspicious/noExplicitAny: the identifier union is generated per-platform
       QUANTITY.heartRate as any,
-      // Scoped BY THE WORKOUT rather than by its time window. HealthKit's
-      // workout predicate is what associates a sample with the session, and a
-      // time filter also catches the heart rate of whatever came before it —
-      // which on a watch worn all day is everything.
-      // biome-ignore lint/suspicious/noExplicitAny: as above
-      { filter: { workout }, limit: -1, unit: 'count/min' } as any,
+      // biome-ignore lint/suspicious/noExplicitAny: same
+      { filter, limit: -1, unit: 'count/min' } as any,
     )
 
-    if (samples.length === 0) return null
-
-    const beats = samples.map((s) => ({
-      bpm: s.quantity,
-      at: new Date(s.startDate).getTime(),
-    }))
-
-    return {
-      avg: Math.round(beats.reduce((sum, b) => sum + b.bpm, 0) / beats.length),
-      max: Math.round(Math.max(...beats.map((b) => b.bpm))),
-      zones: hrZonesFromSamples(beats, age),
+    const beats: HeartBeatSample[] = []
+    for (const sample of samples) {
+      // A sample carrying no number is not a beat of zero. One of those through
+      // `summariseHeartRate` is a NaN average, which JSON writes as `null` and
+      // the column accepts without complaint.
+      if (!Number.isFinite(sample.quantity) || !sample.startDate) continue
+      beats.push({ bpm: sample.quantity, at: new Date(sample.startDate).getTime() })
     }
+    return beats
   } catch {
     // A workout with no heart rate is ordinary — a phone-only walk, a session
     // imported from Strava. It must not fail the sync around it.
+    return []
+  }
+}
+
+/**
+ * The average and maximum HealthKit keeps on the workout itself.
+ *
+ * `HKWorkout.statistics(for:)`, the figures the Fitness app puts on a session.
+ * Last of the three because there are no samples behind them: the tiles can be
+ * filled from here and the zone chart cannot.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: WorkoutProxy is only typed on iOS
+async function storedHeartRate(workout: any): Promise<HeartRate | null> {
+  try {
+    const stat = await workout.getStatistic?.(QUANTITY.heartRate, 'count/min')
+    const avg = stat?.averageQuantity?.quantity
+    if (!Number.isFinite(avg)) return null
+
+    const max = stat?.maximumQuantity?.quantity
+    return { avg: Math.round(avg), max: Math.round(Number.isFinite(max) ? max : avg), zones: null }
+  } catch {
     return null
   }
 }

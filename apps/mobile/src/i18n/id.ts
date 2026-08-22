@@ -236,10 +236,6 @@ export const id = {
         'Sesi ini datang dengan satu rata-rata, bukan pembacaan tiap menit, jadi tidak ada yang bisa dibagi ke zona.',
 
       noHeartRate: 'Detak jantung tidak terekam',
-      noHeartRateBody:
-        '{{source}} mencatat sesi ini tanpa detak jantung. Jam tangan akan menambahkannya.',
-      noHeartRateBodyGeneric:
-        'Tidak ada yang merekam denyut untuk sesi ini. Ponsel bisa menghitung waktu, tapi tidak bisa mengukur denyut.',
 
       from: 'Dari {{source}}',
       missing: 'Olahraga ini sudah tidak ada di aplikasi kesehatanmu.',
