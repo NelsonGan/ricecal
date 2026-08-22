@@ -3716,6 +3716,20 @@ line box and pin the row's height instead.
 their line box; React Native clips them. `lineHeight: 52` on 52px type shears the
 top off "1,847".
 
+**An Expo patch range can pull in a module built against a newer core.**
+`expo-store-review@57.0.2` swapped its own scene lookup for
+`SceneGeometry.foregroundScene()`, a helper that first ships in
+`expo-modules-core@57.0.11`. SDK 57.0.8 pins core to `~57.0.7`, so the EAS build
+stopped at `cannot find 'SceneGeometry' in scope` while compiling somebody
+else's Swift.
+
+Nothing catches it: the peer range is `expo: *`, the SDK's own
+`bundledNativeModules` asks for `~57.0.1`, and `~` lets 57.0.2 through.
+`expo-store-review` is therefore pinned **exactly**, at `57.0.1`, and it costs
+nothing: the two versions differ only in that one function, and the JS build is
+byte for byte the same. Anything that widens the range back to `~`, a helpful
+`expo install --check` included, brings the build failure back.
+
 ### Sheets and the keyboard
 
 **A sheet with a text field in it is `fullHeight`. Every time.** This has been
