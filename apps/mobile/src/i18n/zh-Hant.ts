@@ -231,8 +231,6 @@ export const zhHant = {
       zonesNoneBodyGeneric: '這次運動只帶了一個平均值，而不是每分鐘一次的讀數，所以沒辦法分區間。',
 
       noHeartRate: '沒有記錄心率',
-      noHeartRateBody: '{{source}} 記錄這次運動時沒有心率。戴上手錶就會有。',
-      noHeartRateBodyGeneric: '這次運動沒有任何裝置記錄心跳。手機能計時，但量不了脈搏。',
 
       from: '來自 {{source}}',
       missing: '這次運動已經不在你的健康 App 裡了。',

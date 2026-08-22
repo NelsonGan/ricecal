@@ -229,10 +229,6 @@ export const vi = {
         'Buổi này chỉ kèm một giá trị trung bình thay vì số đo mỗi phút, nên không có gì để chia vùng.',
 
       noHeartRate: 'Không ghi nhịp tim',
-      noHeartRateBody:
-        '{{source}} ghi buổi này mà không có nhịp tim. Một chiếc đồng hồ sẽ bổ sung.',
-      noHeartRateBodyGeneric:
-        'Không có gì ghi lại mạch cho buổi này. Điện thoại bấm giờ được, nhưng không đo mạch được.',
 
       from: 'Từ {{source}}',
       missing: 'Buổi tập này không còn trong ứng dụng sức khoẻ của bạn.',

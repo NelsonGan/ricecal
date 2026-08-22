@@ -232,8 +232,6 @@ export const zhHans = {
       zonesNoneBodyGeneric: '这次锻炼只带了一个平均值，而不是每分钟一次的读数，所以没法分区间。',
 
       noHeartRate: '没有记录心率',
-      noHeartRateBody: '{{source}} 记录这次锻炼时没有心率。戴上手表就会有。',
-      noHeartRateBodyGeneric: '这次锻炼没有任何设备记录心率。手机能计时，但量不了脉搏。',
 
       from: '来自 {{source}}',
       missing: '这次锻炼已经不在你的健康应用里了。',

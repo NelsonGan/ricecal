@@ -1,6 +1,7 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config'
 import { energyFor, informativeHours } from '../androidHealth'
-import { preferredOrigin } from '../connectOrigins'
+import { summariseHeartRate } from '../apple'
+import { preferredOrigin, sourceLabel } from '../connectOrigins'
 import { ANDROID_HEALTH_PERMISSIONS } from '../connectPermissions'
 import { demoHealth } from '../demo'
 import { estimatedMaxHr, hrZonesFromSamples } from '../hrZones'
@@ -212,6 +213,58 @@ describe('heart rate zones', () => {
     // Ten seconds of readings plus at most two minutes for the gap and two
     // for the tail — nowhere near the hour the timestamps span.
     expect(zones?.easy).toBeLessThanOrEqual(60 * 5)
+  })
+})
+
+describe("summarising a session's heart rate", () => {
+  const beats = (bpm: number[]) => bpm.map((value, index) => ({ bpm: value, at: index * 30_000 }))
+
+  /**
+   * The property the workout screen's tiles depend on.
+   *
+   * Zones and figures used to be one answer, so a session banded as null lost
+   * its average and its maximum with it. Six readings are too few to draw four
+   * bars and are plenty to say what the heart rate was.
+   */
+  it('reports an average without bands when there are too few readings to band', () => {
+    const summary = summariseHeartRate(beats([120, 130, 140, 150, 160, 170]), 30)
+
+    expect(summary?.avg).toBe(145)
+    expect(summary?.max).toBe(170)
+    expect(summary?.zones).toBeNull()
+  })
+
+  it('bands a session that has enough readings', () => {
+    expect(summariseHeartRate(beats(Array(20).fill(140)), 40)?.zones?.hard).toBeGreaterThan(0)
+  })
+
+  /**
+   * Nothing read is nothing said. Null here is what sends `readHeartRate` down
+   * to the figures HealthKit stores on the workout itself.
+   */
+  it('has nothing to say about a session with no readings', () => {
+    expect(summariseHeartRate([], 30)).toBeNull()
+  })
+})
+
+describe('naming the app that wrote a session', () => {
+  it('turns a Health Connect package into something a person would recognise', () => {
+    expect(sourceLabel('com.sec.android.app.shealth')).toBe('Samsung Health')
+  })
+
+  /**
+   * An app nobody has written down still must not reach a screen as a package.
+   */
+  it('falls back to the last segment of a package it does not know', () => {
+    expect(sourceLabel('com.acme.tracker')).toBe('Tracker')
+  })
+
+  it('credits the phone rather than a platform token', () => {
+    expect(sourceLabel('android')).toBe('This phone')
+  })
+
+  it('has no name for a session that arrived without one', () => {
+    expect(sourceLabel(null)).toBeNull()
   })
 })
 

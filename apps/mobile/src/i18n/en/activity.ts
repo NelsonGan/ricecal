@@ -212,17 +212,18 @@ export const activity = {
       'This session came with one average rather than a reading a minute, so there is nothing to band.',
 
     /**
-     * No pulse data AT ALL, which is a different sentence from the three above.
+     * No pulse data at all, which is a different state from the three above.
      *
      * Those describe a session that arrived with one average; this one arrived
      * with none, and saying "session average only" over it described a figure
      * the screen was not showing and the store had never sent. A phone-logged
      * walk and a treadmill entered by hand both land here.
+     *
+     * One line, with nothing under it. It carried a sentence naming the writing
+     * app and promising a watch would fix it, which was wrong twice over on a
+     * game a watch had measured all the way through.
      */
     noHeartRate: 'No heart rate recorded',
-    noHeartRateBody: '{{source}} logged this session without heart rate. A watch would add it.',
-    noHeartRateBodyGeneric:
-      'Nothing recorded a pulse for this session. A phone can time a workout but cannot take one.',
 
     from: 'From {{source}}',
     missing: 'This workout is no longer in your health app.',

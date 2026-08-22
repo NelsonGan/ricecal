@@ -238,10 +238,6 @@ export const fil = {
         'Isang average lang ang kasama ng session na ito imbes na basa kada minuto, kaya walang mahahati sa mga zone.',
 
       noHeartRate: 'Walang naitalang tibok ng puso',
-      noHeartRateBody:
-        'Nilog ng {{source}} ang session na ito nang walang tibok ng puso. Madadagdag ito ng relo.',
-      noHeartRateBodyGeneric:
-        'Walang nag-record ng pulso para sa session na ito. Kayang mag-time ng telepono, pero hindi kayang kumuha ng pulso.',
 
       from: 'Mula sa {{source}}',
       missing: 'Wala na ang workout na ito sa health app mo.',

@@ -229,9 +229,6 @@ export const ko = {
         '이 세션은 분 단위 측정값이 아니라 평균값 하나만 들어와서 구간으로 나눌 수 없습니다.',
 
       noHeartRate: '심박수가 기록되지 않았습니다',
-      noHeartRateBody: '{{source}}는 이 세션을 심박수 없이 기록했습니다. 시계가 있으면 채워집니다.',
-      noHeartRateBodyGeneric:
-        '이 세션의 맥박을 기록한 것이 없습니다. 휴대폰은 시간은 재도 맥박은 재지 못합니다.',
 
       from: '{{source}}에서',
       missing: '이 운동은 건강 앱에 더 이상 없습니다.',
