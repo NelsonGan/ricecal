@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 
 import { setPersonProps, track } from '@/lib/analytics'
 import type { Database, Tables } from '@/lib/database.types'
-import { type ProviderId, parseHrZones, providerFor } from '@/lib/health'
+import { type ProviderId, parseHrZones, providerFor, sourceLabel } from '@/lib/health'
 import { supabase } from '@/lib/supabase'
 import { dateKey, datesBetween, seedMissing, unwrap, unwrapMaybe } from './client'
 import { keys } from './keys'
@@ -165,6 +165,21 @@ function toDay(row: Tables<'activity_days'>): ActivityDay {
   }
 }
 
+/**
+ * What wrote a row, as something a person would recognise.
+ *
+ * Health Connect identifies a writer by its PACKAGE, so `source_name` and
+ * `device_name` hold `com.sec.android.app.shealth` on Android and an app's own
+ * name on iOS. `sourceLabel` knows the difference; nothing was calling it, so a
+ * Samsung user's workout screen read "From com.sec.android.app.shealth".
+ *
+ * Done here rather than in the provider because the rows already written hold
+ * the package either way, and the rolling window only ever rewrites a week of
+ * them.
+ */
+const writer = (provider: ProviderId, name: string | null): string | null =>
+  provider === 'health_connect' ? sourceLabel(name) : name
+
 function toSession(row: Tables<'activity_sessions'>): ActivitySession {
   return {
     id: row.id,
@@ -181,7 +196,7 @@ function toSession(row: Tables<'activity_sessions'>): ActivitySession {
     maxHr: row.max_hr,
     elevationM: row.elevation_m,
     hrZones: parseHrZones(row.hr_zones),
-    sourceName: row.source_name,
+    sourceName: writer(row.provider, row.source_name),
   }
 }
 
@@ -190,7 +205,7 @@ function toConnection(row: Tables<'health_connections'>): HealthConnection {
     provider: row.provider,
     connected: row.connected,
     permissions: row.permissions,
-    deviceName: row.device_name,
+    deviceName: writer(row.provider, row.device_name),
     backfilledFrom: row.backfilled_from,
     lastSyncedAt: row.last_synced_at,
   }
