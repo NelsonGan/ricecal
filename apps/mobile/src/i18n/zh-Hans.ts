@@ -226,12 +226,6 @@ export const zhHans = {
       metres: '{{value}} 米',
 
       zonesTitle: '心率区间',
-      zonesNone: '只有整段平均值，没有区间',
-      zonesNoneBody:
-        '{{source}} 每次锻炼只发送一个平均值。连接一块会逐分钟记录的手表，才能看到区间和分段。',
-      zonesNoneBodyGeneric: '这次锻炼只带了一个平均值，而不是每分钟一次的读数，所以没法分区间。',
-
-      noHeartRate: '没有记录心率',
 
       from: '来自 {{source}}',
       missing: '这次锻炼已经不在你的健康应用里了。',
