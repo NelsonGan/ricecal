@@ -229,13 +229,6 @@ export const id = {
       metres: '{{value}} m',
 
       zonesTitle: 'ZONA DETAK JANTUNG',
-      zonesNone: 'Hanya rata-rata sesi, tanpa zona',
-      zonesNoneBody:
-        '{{source}} mengirim satu rata-rata per sesi. Hubungkan jam tangan yang menulis data per menit untuk zona dan split.',
-      zonesNoneBodyGeneric:
-        'Sesi ini datang dengan satu rata-rata, bukan pembacaan tiap menit, jadi tidak ada yang bisa dibagi ke zona.',
-
-      noHeartRate: 'Detak jantung tidak terekam',
 
       from: 'Dari {{source}}',
       missing: 'Olahraga ini sudah tidak ada di aplikasi kesehatanmu.',

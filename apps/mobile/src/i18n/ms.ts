@@ -230,13 +230,6 @@ export const ms = {
       metres: '{{value}} m',
 
       zonesTitle: 'ZON KADAR DENYUTAN',
-      zonesNone: 'Purata sesi sahaja, tiada zon',
-      zonesNoneBody:
-        '{{source}} menghantar satu purata setiap sesi. Sambungkan jam tangan yang menulis bacaan setiap minit untuk zon dan pecahan.',
-      zonesNoneBodyGeneric:
-        'Sesi ini datang dengan satu purata dan bukan bacaan setiap minit, jadi tiada apa-apa untuk dibahagikan kepada zon.',
-
-      noHeartRate: 'Tiada kadar denyutan direkodkan',
 
       from: 'Daripada {{source}}',
       missing: 'Senaman ini sudah tiada dalam apl kesihatan anda.',

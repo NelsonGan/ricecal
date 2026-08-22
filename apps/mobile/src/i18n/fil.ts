@@ -231,13 +231,6 @@ export const fil = {
       metres: '{{value}} m',
 
       zonesTitle: 'MGA ZONE NG TIBOK NG PUSO',
-      zonesNone: 'Average ng session lang, walang zone',
-      zonesNoneBody:
-        'Isang average kada session lang ang ipinapadala ng {{source}}. Ikonekta ang relong nagsusulat kada minuto para sa mga zone at split.',
-      zonesNoneBodyGeneric:
-        'Isang average lang ang kasama ng session na ito imbes na basa kada minuto, kaya walang mahahati sa mga zone.',
-
-      noHeartRate: 'Walang naitalang tibok ng puso',
 
       from: 'Mula sa {{source}}',
       missing: 'Wala na ang workout na ito sa health app mo.',

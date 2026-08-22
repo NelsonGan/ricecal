@@ -222,13 +222,6 @@ export const ko = {
       metres: '{{value}} m',
 
       zonesTitle: '심박 구간',
-      zonesNone: '세션 평균만 있고 구간은 없음',
-      zonesNoneBody:
-        '{{source}}는 세션마다 평균값 하나만 보냅니다. 구간과 구역을 보려면 분 단위로 기록하는 시계를 연결하세요.',
-      zonesNoneBodyGeneric:
-        '이 세션은 분 단위 측정값이 아니라 평균값 하나만 들어와서 구간으로 나눌 수 없습니다.',
-
-      noHeartRate: '심박수가 기록되지 않았습니다',
 
       from: '{{source}}에서',
       missing: '이 운동은 건강 앱에 더 이상 없습니다.',
