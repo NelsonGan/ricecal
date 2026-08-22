@@ -15,25 +15,26 @@ import {
   workoutIcon,
   workoutKindKey,
 } from '@/features/activity'
-import { type Stat, StatRow } from '@/features/shared'
+import type { Stat } from '@/features/shared'
 import { datePattern } from '@/lib/dates'
 import { ZONE_KEY, ZONE_ORDER, type ZoneName } from '@/lib/health'
 import { useBack } from '@/lib/navigation'
-import { AppBar, Card, EmptyState, Icon, Screen, Skeleton, Text } from '@/ui'
+import { AppBar, Card, EmptyState, Icon, Screen, Skeleton, StatTile, Text } from '@/ui'
 
 /**
  * A3 / N4: one workout.
  *
- * The screen is the same on both platforms and the DIFFERENCE between them is
- * the point of its lower half. A watch writing per-minute heart rate produces
- * four zone bands; Strava writing one session average produces none, and the
- * empty state there names the app and says what would fix it. Hiding the
- * section on Android would have been easier and would have left an Android user
- * assuming the feature does not exist.
+ * Everything the session measured is one grid of tiles, and the zone chart is
+ * the only thing under it. The heart rate used to sit BELOW the chart, so a
+ * game whose zones could not be banded put an explanation where the numbers
+ * should have been and the numbers below the fold.
  *
- * The third state — no pulse at all — says only that, because it is the one the
- * screen cannot explain: `apple.ts` asks three ways before it accepts the
- * answer, so by the time this card draws there is nothing left to suggest.
+ * NO EMPTY STATE FOR THE ZONE CARD. It carried three of them — one average
+ * only, one average from a named app, no pulse at all — and each was a
+ * paragraph telling the reader what their watch should have written. Two of the
+ * three were wrong on a session an Apple Watch had measured all the way
+ * through, because the reason those bands are missing is on the phone rather
+ * than in the session. A card with nothing to draw is not drawn.
  */
 export default function WorkoutScreen() {
   const { t } = useTranslation(['activity', 'common'])
@@ -88,9 +89,13 @@ export default function WorkoutScreen() {
   const perKm = showsPace(session.kind) ? pace(session.durationS, session.distanceM) : null
   const kmh = showsSpeed(session.kind) ? speed(session.durationS, session.distanceM) : null
 
-  // Assembled rather than a fixed three, because a badminton game has no
-  // distance and a treadmill run has no speed worth printing. A tile row that
-  // renders a dash for two of its three columns says nothing.
+  // Assembled rather than a fixed set, because a badminton game has no distance
+  // and a treadmill run has no speed worth printing. A tile that renders a dash
+  // says nothing, and three of them beside a real figure hide it.
+  //
+  // One list rather than two. The heart rate was a second row under the zone
+  // chart, which put the two numbers most sessions have furthest from the top
+  // and left a lone TIME tile above a card explaining itself.
   const stats: Stat[] = []
   if (far) stats.push({ key: 'distance', label: t('activity:workout.distance'), value: far })
   stats.push({ key: 'time', label: t('activity:workout.time'), value: clock(session.durationS) })
@@ -111,24 +116,22 @@ export default function WorkoutScreen() {
       value: t('activity:workout.speedUnit', { value: kmh }),
     })
   }
-
-  const heart: Stat[] = []
   if (session.avgHr) {
-    heart.push({
+    stats.push({
       key: 'avg-hr',
       label: t('activity:workout.avgHr'),
       value: t('activity:workout.bpm', { value: session.avgHr }),
     })
   }
   if (session.maxHr) {
-    heart.push({
+    stats.push({
       key: 'max-hr',
       label: t('activity:workout.maxHr'),
       value: t('activity:workout.bpm', { value: session.maxHr }),
     })
   }
   if (session.elevationM != null) {
-    heart.push({
+    stats.push({
       key: 'elevation',
       label: t('activity:workout.elevation'),
       value: t('activity:workout.metres', { value: session.elevationM }),
@@ -137,6 +140,7 @@ export default function WorkoutScreen() {
 
   const zones = session.hrZones
   const zoneTotal = zones ? ZONE_ORDER.reduce((sum, name) => sum + zones[name], 0) : 0
+  const rows = rowsOfThree(stats)
 
   return (
     <Screen>
@@ -159,10 +163,28 @@ export default function WorkoutScreen() {
         </View>
       </Card>
 
-      <StatRow stats={stats} />
+      {rows.map((row) => (
+        <View key={row[0].key} className="flex-row gap-md">
+          {row.map((stat) => (
+            <StatTile key={stat.key} className="flex-1" label={stat.label} value={stat.value} />
+          ))}
+          {/* A short last row keeps its column width instead of stretching to
+              fill it — five tiles are three and two, not three and two halves.
+              Only when there is a row above to line up with: a session with a
+              time and nothing else gets one tile the width of the screen
+              rather than a third of one and a gap. */}
+          {rows.length > 1
+            ? Array.from({ length: 3 - row.length }, (_, index) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: a spacer has no identity
+                <View key={index} className="flex-1" />
+              ))
+            : null}
+        </View>
+      ))}
 
-      <Card title={t('activity:workout.zonesTitle')}>
-        {zones && zoneTotal > 0 ? (
+      {/* Drawn only when there is something to draw. See the header. */}
+      {zones && zoneTotal > 0 ? (
+        <Card title={t('activity:workout.zonesTitle')}>
           <View className="gap-3.5">
             {/* One bar, four bands, then the durations as rows. The bar carries
                 the proportion and the rows carry the numbers — the same
@@ -194,39 +216,24 @@ export default function WorkoutScreen() {
               ))}
             </View>
           </View>
-        ) : session.avgHr ? (
-          // There IS a reading, just one of them. The copy names the writing app
-          // where we know it, because the fix — record with something that
-          // writes a sample a minute — only makes sense once you know which app
-          // to replace.
-          <View className="gap-1">
-            <Text variant="bodyStrong">{t('activity:workout.zonesNone')}</Text>
-            <Text variant="meta">
-              {session.sourceName
-                ? t('activity:workout.zonesNoneBody', { source: session.sourceName })
-                : t('activity:workout.zonesNoneBodyGeneric')}
-            </Text>
-          </View>
-        ) : (
-          /**
-           * No heart rate at all — not "one average". This branch is a
-           * phone-logged session, or a treadmill entered by hand, and it has no
-           * pulse data of any kind. The rest of the screen agrees: there is no
-           * AVG HR tile below, because there is no average.
-           *
-           * One line and no advice. The sentence under it named the writing app
-           * and told the reader a watch would have added a pulse, which for two
-           * weeks read "SourceProxy logged this session without heart rate" over
-           * games a watch had in fact measured. Naming the state is the whole of
-           * what this card can honestly say.
-           */
-          <Text variant="bodyStrong">{t('activity:workout.noHeartRate')}</Text>
-        )}
-      </Card>
-
-      {heart.length > 0 ? <StatRow stats={heart} /> : null}
+        </Card>
+      ) : null}
     </Screen>
   )
+}
+
+/**
+ * The tiles, three across.
+ *
+ * Three is what fits: `StatTile` shrinks its value to one line, and a fourth
+ * column on a 393pt screen shrinks "1:59:12" past reading.
+ */
+function rowsOfThree(stats: readonly Stat[]): Stat[][] {
+  const rows: Stat[][] = []
+  for (let index = 0; index < stats.length; index += 3) {
+    rows.push(stats.slice(index, index + 3))
+  }
+  return rows
 }
 
 /**

@@ -222,13 +222,6 @@ export const vi = {
       metres: '{{value}} m',
 
       zonesTitle: 'VÙNG NHỊP TIM',
-      zonesNone: 'Chỉ có trung bình cả buổi, không có vùng',
-      zonesNoneBody:
-        '{{source}} chỉ gửi một giá trị trung bình cho mỗi buổi. Kết nối một chiếc đồng hồ ghi theo từng phút để có vùng và chặng.',
-      zonesNoneBodyGeneric:
-        'Buổi này chỉ kèm một giá trị trung bình thay vì số đo mỗi phút, nên không có gì để chia vùng.',
-
-      noHeartRate: 'Không ghi nhịp tim',
 
       from: 'Từ {{source}}',
       missing: 'Buổi tập này không còn trong ứng dụng sức khoẻ của bạn.',

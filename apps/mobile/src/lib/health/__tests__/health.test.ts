@@ -1,6 +1,6 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config'
 import { energyFor, informativeHours } from '../androidHealth'
-import { summariseHeartRate } from '../apple'
+import { readHeartRate, summariseHeartRate } from '../apple'
 import { preferredOrigin, sourceLabel } from '../connectOrigins'
 import { ANDROID_HEALTH_PERMISSIONS } from '../connectPermissions'
 import { demoHealth } from '../demo'
@@ -244,6 +244,101 @@ describe("summarising a session's heart rate", () => {
    */
   it('has nothing to say about a session with no readings', () => {
     expect(summariseHeartRate([], 30)).toBeNull()
+  })
+})
+
+describe("asking HealthKit for a session's heart rate", () => {
+  const beats = (bpm: number[]) =>
+    bpm.map((value, index) => ({
+      quantity: value,
+      startDate: new Date(2026, 7, 22, 10, index),
+    }))
+
+  const window = { startDate: new Date(2026, 7, 22, 10, 0), endDate: new Date(2026, 7, 22, 11, 0) }
+
+  /**
+   * A fake store that answers the attached question and the window question
+   * differently, which is the whole point of there being two of them.
+   */
+  const store = (answers: { attached?: number[]; inWindow?: number[] }) => {
+    const queryQuantitySamples = jest.fn(async (_type: string, options: { filter: unknown }) => {
+      const filter = options.filter as { workout?: unknown }
+      return beats((filter.workout ? answers.attached : answers.inWindow) ?? [])
+    })
+    // biome-ignore lint/suspicious/noExplicitAny: a stand-in for the Nitro module
+    return { queryQuantitySamples } as any
+  }
+
+  const workout = (stored: { avg: number; max: number } | null) => ({
+    getStatistic: async () =>
+      stored
+        ? { averageQuantity: { quantity: stored.avg }, maximumQuantity: { quantity: stored.max } }
+        : null,
+  })
+
+  it('bands the samples the recorder attached to the session', async () => {
+    const hk = store({ attached: Array(30).fill(140) })
+
+    const hr = await readHeartRate(hk, workout(null), window, 40)
+
+    expect(hr?.avg).toBe(140)
+    expect(hr?.zones?.hard).toBeGreaterThan(0)
+    expect(hk.queryQuantitySamples).toHaveBeenCalledTimes(1)
+  })
+
+  /**
+   * The bug this rung exists for. An app that saves a session it imported
+   * attaches nothing, so a game a watch measured throughout reads as pulseless
+   * unless the session's own start and end are asked for as well.
+   */
+  it("falls back to the session's own window when nothing is attached", async () => {
+    const hk = store({ attached: [], inWindow: Array(30).fill(140) })
+
+    expect((await readHeartRate(hk, workout(null), window, 40))?.zones?.hard).toBeGreaterThan(0)
+  })
+
+  /**
+   * The half of that rule which was missing, and what it cost: an AVG HR tile
+   * over an empty zone card, on every session an account had. Six attached
+   * readings answer "did we get anything" and cannot be banded, so the window
+   * has to be asked anyway.
+   */
+  it('asks the window when too few readings were attached to band', async () => {
+    const hk = store({ attached: [120, 130, 140, 150, 160, 170], inWindow: Array(30).fill(140) })
+
+    const hr = await readHeartRate(hk, workout(null), window, 40)
+
+    expect(hk.queryQuantitySamples).toHaveBeenCalledTimes(2)
+    expect(hr?.zones?.hard).toBeGreaterThan(0)
+  })
+
+  /**
+   * And it must not trade a real reading for a thinner one. A window read that
+   * comes back with less than the workout carried is not an improvement on it.
+   */
+  it('keeps the fuller of the two answers', async () => {
+    const hk = store({ attached: [100, 110, 120, 130, 140], inWindow: [150] })
+
+    expect((await readHeartRate(hk, workout(null), window, 40))?.avg).toBe(120)
+  })
+
+  /**
+   * Last resort: the figures the Fitness app shows, which live on the workout
+   * itself and have no samples behind them. A card cannot be drawn from them,
+   * and the screen no longer pretends otherwise.
+   */
+  it('falls back to the figures stored on the workout when no samples come back', async () => {
+    const hk = store({ attached: [], inWindow: [] })
+
+    const hr = await readHeartRate(hk, workout({ avg: 129, max: 179 }), window, 40)
+
+    expect(hr).toEqual({ avg: 129, max: 179, zones: null })
+  })
+
+  it('has nothing to report for a session with no heart rate anywhere', async () => {
+    const hk = store({ attached: [], inWindow: [] })
+
+    expect(await readHeartRate(hk, workout(null), window, 40)).toBeNull()
   })
 })
 

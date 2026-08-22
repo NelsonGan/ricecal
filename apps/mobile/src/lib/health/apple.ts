@@ -1,7 +1,7 @@
 import { Platform } from 'react-native'
 
 import { dateKey } from '@/data/client'
-import { type HeartBeatSample, hrZonesFromSamples } from './hrZones'
+import { type HeartBeatSample, hrZonesFromSamples, MIN_ZONE_SAMPLES } from './hrZones'
 import { fromAppleWorkoutType } from './kinds'
 import type {
   AccessResult,
@@ -497,10 +497,21 @@ type HeartRate = { avg: number; max: number; zones: HrZones | null }
  * workout's heart rate; strictness is what keeps the beat before the whistle out
  * of it. Zones survive this rung, since it is still samples.
  *
+ * WHAT DECIDES WHETHER THE SECOND RUNG IS ASKED, and it is not emptiness.
+ *
+ * It was, and the screen showed what that costs: an average and a maximum over
+ * a zone card with nothing in it, on every session an account had. A recorder
+ * that attaches a HANDFUL of samples answers "did we get anything" without
+ * answering the question the card asks, which needs ten. So the window is read
+ * whenever the attached set is too thin to band, and the fuller of the two
+ * answers wins — never the thinner, since the attached samples are a subset of
+ * the window's on any watch that recorded the session itself.
+ *
  * The third rung is the average and maximum HealthKit stores ON the workout,
- * which is what the Fitness app shows. Two numbers and nothing to band.
+ * which is what the Fitness app shows. Two numbers and nothing to band, so it
+ * is the answer only when neither sample query returned a reading at all.
  */
-async function readHeartRate(
+export async function readHeartRate(
   hk: HealthKitModule,
   // biome-ignore lint/suspicious/noExplicitAny: WorkoutProxy is only typed on iOS
   workout: any,
@@ -508,15 +519,24 @@ async function readHeartRate(
   age: number | null,
 ): Promise<HeartRate | null> {
   const attached = await heartBeats(hk, { workout })
+
   const beats =
-    attached.length > 0
+    attached.length >= MIN_ZONE_SAMPLES
       ? attached
-      : await heartBeats(hk, {
-          date: { ...window, strictStartDate: true, strictEndDate: true },
-        })
+      : fuller(
+          attached,
+          await heartBeats(hk, {
+            date: { ...window, strictStartDate: true, strictEndDate: true },
+          }),
+        )
 
   return summariseHeartRate(beats, age) ?? storedHeartRate(workout)
 }
+
+const fuller = (
+  a: readonly HeartBeatSample[],
+  b: readonly HeartBeatSample[],
+): readonly HeartBeatSample[] => (b.length > a.length ? b : a)
 
 /**
  * Readings to an average, a maximum and four bands.
