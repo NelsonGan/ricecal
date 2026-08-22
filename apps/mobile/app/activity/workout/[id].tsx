@@ -30,6 +30,10 @@ import { AppBar, Card, EmptyState, Icon, Screen, Skeleton, Text } from '@/ui'
  * empty state there names the app and says what would fix it. Hiding the
  * section on Android would have been easier and would have left an Android user
  * assuming the feature does not exist.
+ *
+ * The third state — no pulse at all — says only that, because it is the one the
+ * screen cannot explain: `apple.ts` asks three ways before it accepts the
+ * answer, so by the time this card draws there is nothing left to suggest.
  */
 export default function WorkoutScreen() {
   const { t } = useTranslation(['activity', 'common'])
@@ -205,21 +209,18 @@ export default function WorkoutScreen() {
           </View>
         ) : (
           /**
-           * No heart rate at all — not "one average". The screen used to say
-           * "Session average only, no zones" here, which described an average it
-           * was not showing and the store had never sent: this branch is a phone
-           * -logged session, or a treadmill entered by hand, and it has no pulse
-           * data of any kind. The rest of the screen agrees — there is no AVG HR
-           * tile below, because there is no average.
+           * No heart rate at all — not "one average". This branch is a
+           * phone-logged session, or a treadmill entered by hand, and it has no
+           * pulse data of any kind. The rest of the screen agrees: there is no
+           * AVG HR tile below, because there is no average.
+           *
+           * One line and no advice. The sentence under it named the writing app
+           * and told the reader a watch would have added a pulse, which for two
+           * weeks read "SourceProxy logged this session without heart rate" over
+           * games a watch had in fact measured. Naming the state is the whole of
+           * what this card can honestly say.
            */
-          <View className="gap-1">
-            <Text variant="bodyStrong">{t('activity:workout.noHeartRate')}</Text>
-            <Text variant="meta">
-              {session.sourceName
-                ? t('activity:workout.noHeartRateBody', { source: session.sourceName })
-                : t('activity:workout.noHeartRateBodyGeneric')}
-            </Text>
-          </View>
+          <Text variant="bodyStrong">{t('activity:workout.noHeartRate')}</Text>
         )}
       </Card>
 

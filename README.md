@@ -2224,7 +2224,7 @@ real providers rather than seven.
 | Exercise minutes | `appleExerciseTime` | `ExerciseSession` durations | the Exercise tile |
 | Stand hours | `appleStandTime` | **nothing** | the Stand tile, Apple only |
 | Workouts | `HKWorkout` | `ExerciseSession` | the session list and detail |
-| Heart rate | `heartRate` samples | `HeartRate` samples | zones and averages |
+| Heart rate | `heartRate` samples, three ways | `HeartRate` samples in the window | zones and averages |
 | Body weight | `bodyMass` | `Weight` | **the calorie budget**, the weight chart |
 | Body fat | `bodyFatPercentage` | `BodyFat` | stored beside a weigh-in |
 
@@ -2254,6 +2254,17 @@ one is a value repeated rather than doubled. What the aggregate would cost is th
 answer itself: `cumulativeSum` over a Saturday's three weigh-ins is 217 kg. A
 day's weight is its last reading, so both providers read ascending and keep the
 last sample per local day.
+
+**A workout's heart rate is asked for three ways on iOS, and the first is not
+enough.** `predicateForObjects(from:)` matches the samples the recorder
+*attached* to the workout, so an app that saves a session it imported from
+somewhere else attaches none and the session reads as pulseless. `apple.ts`
+falls back to the session's own start and end, strictly on both sides — on a
+watch worn all day the readings inside a workout's window are that workout's
+heart rate — and then to `HKWorkout.statistics(for:)`, the average and maximum
+the Fitness app shows, which have no samples behind them and so cannot be
+banded. Android needs none of this: Health Connect has no notion of attachment
+and the window is the only question there is.
 
 **A percentage means different things on the two platforms.** HealthKit's `%`
 unit is a fraction (22% body fat reads as `0.22`) while Health Connect's
@@ -3462,6 +3473,24 @@ Connect dedupes Activity by a priority list the user owns and can empty, so a
 plain aggregate can return the same walk twice from two sources: read as 4,675
 steps against the 2,808 Samsung Health showed the same user. The provider picks
 one origin and re-reads with `dataOriginFilter`.
+
+**A read that came back empty never writes a null over a stored reading.** The
+rolling window re-reads the same seven days on every foreground, so a provider
+that stops being able to answer erases history rather than merely failing. It
+happened to heart rate: a fortnight of basketball and badminton lost its
+averages, maxima and zone charts a day at a time, and no screen said why.
+`sessionBatches` in `health-sync.ts` is where that rule lives: a session with no
+reading carries no heart columns at all, so the upsert never names them and the
+last good reading stays. Rows then go out one request per shape, because
+PostgREST builds its column list from the payload and rejects a batch whose
+objects disagree about their keys. A figure kept past its deletion is the
+smaller wrong.
+
+**A Nitro HybridObject's `name` is the name of its class.** `sourceRevision.source`
+in `@kingstinct/react-native-healthkit` is one, so `source.name` type-checks,
+compiles, and returns the string `"SourceProxy"` for every workout ever recorded.
+Read a proxy through `toJSON()`. `device` beside it is a plain struct, which is
+why the identical-looking line under it was right all along.
 
 **A "no" from the mirror is checked with RevenueCat before it is believed.** Two
 rules keep that from being a hole: it heals upward only, and the sandbox policy
