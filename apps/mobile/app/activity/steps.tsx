@@ -13,15 +13,7 @@ import {
   useActivitySummary,
   useSettings,
 } from '@/data'
-import {
-  busiestHour,
-  count,
-  distance,
-  HourBars,
-  hasHourlyShape,
-  hourLabel,
-  hourlySummary,
-} from '@/features/activity'
+import { count, distance, HourBars, hasHourlyShape, hourlySummary } from '@/features/activity'
 import { type Stat, StatRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { AppBar, Card, ProgressBar, Screen, SegmentedControl, Skeleton, Text } from '@/ui'
@@ -74,7 +66,14 @@ export default function StepsScreen() {
 
   const hourly = hours.data ?? []
   const detailed = hasHourlyShape(hourly)
-  const busiest = detailed ? busiestHour(hourly) : null
+  const patternKey =
+    PATTERN_KEY[
+      weekShape(
+        summary.data?.steps ?? null,
+        summary.data?.stepsBest ?? 0,
+        summary.data?.activeDays ?? 0,
+      )
+    ]
 
   /**
    * The chart is drawn in STEPS PER DAY, not steps per bucket.
@@ -212,27 +211,16 @@ export default function StepsScreen() {
           ) : hourly.length === 0 ? (
             <Text variant="meta">{t('activity:steps.noHours')}</Text>
           ) : (
-            <>
-              <HourBars
-                hours={hourly}
-                blocks={!detailed}
-                blockLabels={[
-                  t('activity:steps.morning'),
-                  t('activity:steps.afternoon'),
-                  t('activity:steps.evening'),
-                ]}
-                accessibilityLabel={hourlySummary(hourly)}
-              />
-              {/* No footnote when the chart falls back to three blocks. The
-                  grouping is legible from the labels themselves, and a sentence
-                  explaining the app's own data plumbing is not something the
-                  reader asked for. */}
-              {detailed && busiest != null ? (
-                <Text variant="meta">
-                  {t('activity:steps.busiest', { hour: hourLabel(busiest) })}
-                </Text>
-              ) : null}
-            </>
+            <HourBars
+              hours={hourly}
+              blocks={!detailed}
+              blockLabels={[
+                t('activity:steps.morning'),
+                t('activity:steps.afternoon'),
+                t('activity:steps.evening'),
+              ]}
+              accessibilityLabel={hourlySummary(hourly)}
+            />
           )}
         </View>
       </Card>
@@ -293,17 +281,7 @@ export default function StepsScreen() {
 
             <StatRow stats={stats} />
 
-            <Text variant="meta">
-              {t(
-                PATTERN_KEY[
-                  weekShape(
-                    summary.data?.steps ?? null,
-                    summary.data?.stepsBest ?? 0,
-                    summary.data?.activeDays ?? 0,
-                  )
-                ],
-              )}
-            </Text>
+            {patternKey ? <Text variant="meta">{t(patternKey)}</Text> : null}
           </View>
         )}
       </Card>
@@ -314,10 +292,14 @@ export default function StepsScreen() {
 /**
  * Which sentence goes under the week.
  *
- * Three outcomes with a real threshold between them, rather than one hedged
- * line that is true of every week. It reads the summary rather than the buckets
- * because the comparison it makes — best against average — is a range figure,
- * and `activity_summary` already weighted the days.
+ * Three shapes with a real threshold between them. Short and steady ranges get
+ * a status line; uneven ranges deliberately get none now that their advisory
+ * copy has been removed. The classifier still matters there, because calling
+ * visibly uneven bars "even" would be worse than leaving the chart alone.
+ *
+ * It reads the summary rather than the buckets because the comparison it makes
+ * — best against average — is a range figure, and `activity_summary` already
+ * weighted the days.
  *
  * Returns the shape rather than the copy so the caller keeps the typed `t`; see
  * `SPAN_KEY` in `features/progress/axis.ts` for the same reasoning about
@@ -335,16 +317,16 @@ function weekShape(average: number | null, best: number, activeDays: number): We
    * The threshold was 1.8 first, which is far too high — a week of 9,600 / 6,900
    * with the weekend at half the weekdays came out as "even", directly under a
    * chart with two obviously short bars in it. 1.35 is roughly one short day in
-   * seven, which is the point at which the suggestion is worth making.
+   * seven, which is the point at which calling the range steady becomes false.
    */
   return best / average > 1.35 ? 'uneven' : 'steady'
 }
 
 const PATTERN_KEY = {
   short: 'activity:steps.shortNote',
-  uneven: 'activity:steps.weekendNote',
+  uneven: null,
   steady: 'activity:steps.steadyNote',
-} as const satisfies Record<WeekShape, string>
+} as const satisfies Record<WeekShape, string | null>
 
 const RANGE_KEY = {
   '7d': 'progress:range.7d',

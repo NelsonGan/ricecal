@@ -182,7 +182,6 @@ export const vi = {
       burned: 'ĐÃ ĐỐT',
       left: 'CÒN LẠI',
       over: 'VƯỢT',
-      budgetNote: 'Calo đốt được kéo dài thanh này ra, chứ không bao giờ trừ đi phần bạn đã ăn.',
       budgetOff: 'Vận động chưa kéo dài hạn mức của bạn. Bật trong cài đặt Hoạt động.',
 
       todayTitle: 'HÔM NAY',
@@ -235,7 +234,6 @@ export const vi = {
       under: 'còn {{value}}',
       unit: 'bước · {{distance}}',
 
-      busiest: 'Giờ nhiều bước nhất là {{hour}}.',
       morning: 'Buổi sáng',
       afternoon: 'Buổi chiều',
       evening: 'Buổi tối',
@@ -246,15 +244,12 @@ export const vi = {
       goalDays: 'NGÀY ĐẠT',
       best: 'CAO NHẤT',
 
-      weekendNote:
-        'Chỉ vài ngày gánh cả tổng số. Đi bộ một đoạn ngắn vào những ngày ít vận động sẽ san đều lại.',
       steadyNote: 'Các ngày của bạn khá đều. Dù bạn đang làm gì, nó đã thành thói quen.',
       shortNote: 'Chưa đủ ngày để thấy quy luật.',
     },
 
     balance: {
       chartTitle: 'Vào so với ra',
-      chartBody: 'Đã ăn so với tổng lượng đốt',
       deficit: 'thiếu hụt {{value}}',
       surplus: 'dư {{value}}',
       even: 'Cân bằng',

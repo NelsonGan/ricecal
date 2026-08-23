@@ -32,7 +32,6 @@ export {
   syncedAgo,
 } from './format'
 export {
-  busiestHour,
   HourBars,
   type HourBarsProps,
   hasHourlyShape,

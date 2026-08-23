@@ -181,7 +181,6 @@ export const hi = {
       burned: 'खर्च',
       left: 'बचा',
       over: 'ऊपर',
-      budgetNote: 'खर्च हुई कैलोरी पट्टी को लंबा करती है, आपके खाए हुए में से कभी नहीं घटाती।',
       budgetOff: 'हलचल अभी आपका हिसाब नहीं बढ़ा रही। इसे गतिविधि सेटिंग में चालू करें।',
 
       todayTitle: 'आज',
@@ -233,7 +232,6 @@ export const hi = {
       under: '{{value}} बाक़ी',
       unit: 'कदम · {{distance}}',
 
-      busiest: 'सबसे व्यस्त घंटा {{hour}} रहा।',
       morning: 'सुबह',
       afternoon: 'दोपहर',
       evening: 'शाम',
@@ -244,14 +242,12 @@ export const hi = {
       goalDays: 'लक्ष्य वाले दिन',
       best: 'सबसे ज़्यादा',
 
-      weekendNote: 'कुल का बोझ कुछ ही दिन उठा रहे हैं। सुस्त दिनों में थोड़ी सैर इसे बराबर कर देगी।',
       steadyNote: 'आपके दिन एक जैसे हैं। आप जो भी कर रहे हैं, अब वह आदत बन चुका है।',
       shortNote: 'पैटर्न देखने के लिए अभी दिन कम हैं।',
     },
 
     balance: {
       chartTitle: 'अंदर बनाम बाहर',
-      chartBody: 'खाया हुआ बनाम कुल खर्च',
       deficit: '{{value}} की कमी',
       surplus: '{{value}} अधिक',
       even: 'बराबर',

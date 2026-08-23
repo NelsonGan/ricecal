@@ -124,8 +124,6 @@ export const activity = {
     burned: 'BURNED',
     left: 'LEFT',
     over: 'OVER',
-    /** The sentence this whole screen exists to keep true. */
-    budgetNote: 'Burned calories extend the bar, they never shrink what you ate.',
     budgetOff: 'Movement is not extending your budget. Turn it on in Activity settings.',
 
     todayTitle: 'TODAY',
@@ -213,7 +211,6 @@ export const activity = {
     under: '{{value}} to go',
     unit: 'steps · {{distance}}',
 
-    busiest: 'Busiest hour was {{hour}}.',
     /**
      * The three-block fallback's labels. It used to carry a footnote explaining
      * the grouping; the labels say it themselves, and the sentence was the app
@@ -230,26 +227,17 @@ export const activity = {
     best: 'BEST',
 
     /**
-     * Deliberately does NOT say "weekends".
-     *
-     * The summary knows the best day and the average, not which weekdays were
-     * quiet — and the design's "weekends drop by half" is a claim this screen
-     * cannot check. Naming the shape without naming the days is the version
-     * that is always true of the chart above it.
-     *
-     * It does not say "week" either, any more. `weekShape` compares a daily best
+     * Does not say "week". `weekShape` compares a daily best
      * against a daily average, so it is range-agnostic arithmetic — but the copy
      * was not, and the range switch above it left "Your week is even" sitting
      * under twelve months of columns.
      */
-    weekendNote: 'A few days carry the total. A short walk on the quiet ones would even it out.',
     steadyNote: 'Your days are even. Whatever you are doing, it is a habit now.',
     shortNote: 'Not enough days yet to see a pattern.',
   },
 
   balance: {
     chartTitle: 'In versus out',
-    chartBody: 'Eaten against total burn',
     deficit: '{{value}} deficit',
     surplus: '{{value}} surplus',
     even: 'Even',
