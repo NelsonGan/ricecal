@@ -26,7 +26,7 @@
     "android": {
       "package": "com.nelsongan.ricecal",
       "adaptiveIcon": {
-        "backgroundColor": "#FFF6E3",
+        "backgroundColor": "#F6F8F7",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },

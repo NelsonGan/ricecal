@@ -3054,12 +3054,16 @@ used yet and is kept because the set was drawn as a set.
 are full-colour illustrations and are not tinted by default; `tintColor` exists
 for the few places that need a monochrome treatment.
 
-**The six files at the top of `assets/` are not part of this.** `icon`,
-`icon-dark`, `icon-tinted`, the two `android-icon-*` layers and `splash-icon`
-are wired into `app.json` and feed the native pipelines, and `sync-icons.mjs`
-never touches them. They are stored losslessly, deliberately: do not quantise
-them to match the icon set. It turns all six into palette PNGs, and on softly
-shaded artwork it made `icon-tinted` bigger when it was tried.
+**The app icon files at the top of `assets/` are not part of this.**
+`app-icon-source` is the transparent master. `generate-app-icons.py` turns it
+into `icon`, `icon-dark`, `icon-tinted`, `favicon`, the two `android-icon-*`
+layers and `splash-icon`, which feed the native pipelines through `app.json`.
+Preview framing with `python3 scripts/generate-app-icons.py --preview <file>`;
+regenerate the chosen balanced framing with
+`python3 scripts/generate-app-icons.py --write balanced`. `sync-icons.mjs`
+never touches these files. Store them losslessly: do not quantise them to match
+the icon set. It turns softly shaded artwork into palette PNGs and can make the
+output larger.
 
 To re-import them after the source set changes: `node scripts/sync-icons.mjs`.
 That script downscales and quantises (38 MB → 8.4 MB) and needs the design system
