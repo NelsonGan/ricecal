@@ -65,6 +65,7 @@ export function ShareableCards({ message, onShared, children }: ShareableCardsPr
   const { t } = useTranslation('reviews')
 
   const [shot, setShot] = useState<Shot | null>(null)
+  const [shotIsBranded, setShotIsBranded] = useState(false)
   const [previewReady, setPreviewReady] = useState(false)
   const [sending, setSending] = useState(false)
   const preview = useRef<View>(null)
@@ -72,6 +73,7 @@ export function ShareableCards({ message, onShared, children }: ShareableCardsPr
   const capture = useCallback<Capture>(async (view) => {
     const taken = await captureView(view)
     if (taken) {
+      setShotIsBranded(false)
       setPreviewReady(false)
       setShot(taken)
     }
@@ -81,15 +83,30 @@ export function ShareableCards({ message, onShared, children }: ShareableCardsPr
     if (!shot || !previewReady) return
     setSending(true)
     try {
-      // The first capture is the untouched on-page card. Capture the preview a
-      // second time so the file handed to the OS includes the mark that exists
-      // only in this sheet.
-      const branded = await captureView(preview)
-      if (branded && (await sharePicture(branded, message))) onShared?.()
+      let outgoing = shot
+
+      if (!shotIsBranded) {
+        // The first capture is the untouched on-page card. Capture the preview
+        // a second time so the file handed to the OS includes the mark that
+        // exists only in this sheet.
+        const branded = await captureView(preview)
+        if (!branded) return
+
+        // `captureView` deletes the file it supersedes. Point the preview at
+        // the new branded file immediately so a cancelled share followed by a
+        // retry never reads the now-deleted clean capture. Once the image is
+        // branded the overlay below is omitted, preventing a doubled mark.
+        outgoing = branded
+        setPreviewReady(false)
+        setShotIsBranded(true)
+        setShot(branded)
+      }
+
+      if (await sharePicture(outgoing, message)) onShared?.()
     } finally {
       setSending(false)
     }
-  }, [message, shot, previewReady, onShared])
+  }, [message, shot, shotIsBranded, previewReady, onShared])
 
   return (
     <CaptureContext.Provider value={capture}>
@@ -125,16 +142,18 @@ export function ShareableCards({ message, onShared, children }: ShareableCardsPr
               onLoad={() => setPreviewReady(true)}
               accessibilityLabel={t('share.preview')}
             />
-            <View
-              pointerEvents="none"
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-              className="absolute flex-row items-center gap-1.5"
-              style={{ top: MARK_TOP, right: spacing.card }}
-            >
-              <Image source={MARK} style={{ width: 17, height: 17, borderRadius: 5 }} />
-              <Text variant="micro">{t('card.brand')}</Text>
-            </View>
+            {shotIsBranded ? null : (
+              <View
+                pointerEvents="none"
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                className="absolute flex-row items-center gap-1.5"
+                style={{ top: MARK_TOP, right: spacing.card }}
+              >
+                <Image source={MARK} style={{ width: 17, height: 17, borderRadius: 5 }} />
+                <Text variant="micro">{t('card.brand')}</Text>
+              </View>
+            )}
           </View>
         ) : null}
       </Sheet>
