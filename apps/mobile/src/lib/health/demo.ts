@@ -156,9 +156,8 @@ function workoutsFor(date: LocalDate): DemoWorkout[] {
  * How a day's steps are spread across its hours.
  *
  * Weighted by a Malaysian office day rather than uniformly: a walk to breakfast,
- * a lunch peak, a mid-afternoon errand, an evening spike. The design's copy for
- * this screen — "busiest hour was 3pm, likely your walk to the mamak" — is
- * derived from the data, so the data has to have a busiest hour worth naming.
+ * a lunch peak, a mid-afternoon errand, an evening spike. That gives the hourly
+ * chart a recognisable day rather than twenty-four interchangeable columns.
  */
 const HOUR_WEIGHTS: readonly number[] = [
   0, 0, 0, 0, 0, 1, 4, 7, 6, 4, 5, 6, 9, 7, 5, 10, 6, 7, 9, 8, 6, 4, 2, 1,

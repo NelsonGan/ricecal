@@ -187,7 +187,6 @@ export const zhHans = {
       burned: '消耗',
       left: '剩余',
       over: '超出',
-      budgetNote: '消耗的热量只会拉长这条进度条，绝不会扣掉你吃的。',
       budgetOff: '运动目前没有拉高你的额度。可以在活动设置里打开。',
 
       todayTitle: '今天',
@@ -239,7 +238,6 @@ export const zhHans = {
       under: '还差 {{value}}',
       unit: '步 · {{distance}}',
 
-      busiest: '最活跃的时段是 {{hour}}。',
       morning: '上午',
       afternoon: '下午',
       evening: '晚上',
@@ -250,14 +248,12 @@ export const zhHans = {
       goalDays: '达标天数',
       best: '最高',
 
-      weekendNote: '总数集中在少数几天。在安静的日子里走一小段就能匀开。',
       steadyNote: '你每天都很平均。不管你在做什么，它已经是习惯了。',
       shortNote: '天数还不够，看不出规律。',
     },
 
     balance: {
       chartTitle: '吃进和消耗',
-      chartBody: '摄入对比总消耗',
       deficit: '缺口 {{value}}',
       surplus: '盈余 {{value}}',
       even: '持平',

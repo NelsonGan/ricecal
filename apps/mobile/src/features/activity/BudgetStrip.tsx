@@ -23,8 +23,7 @@ export type BudgetStripProps = {
  * app in this category has at some point shipped the other version — quietly
  * subtracting exercise from intake so the day looks better — and it turns a
  * diary into a scoreboard people play against by moving more and eating less.
- * The arithmetic here is an addition, laid out as an addition, with a sentence
- * under it saying so.
+ * The arithmetic here is an addition, laid out as an addition.
  *
  * WHY `burned` IS ACTIVE ENERGY AND NOT TOTAL BURN
  *
@@ -92,7 +91,7 @@ export function BudgetStrip({
         accessibilityLabel={t('today.budgetTitle')}
       />
 
-      <Text variant="meta">{extending ? t('today.budgetNote') : t('today.budgetOff')}</Text>
+      {extending ? null : <Text variant="meta">{t('today.budgetOff')}</Text>}
     </View>
   )
 }

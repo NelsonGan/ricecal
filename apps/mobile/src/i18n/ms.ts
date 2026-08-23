@@ -189,8 +189,6 @@ export const ms = {
       burned: 'DIBAKAR',
       left: 'BAKI',
       over: 'LEBIH',
-      budgetNote:
-        'Kalori yang dibakar memanjangkan bar itu, ia tidak pernah mengurangkan apa yang anda makan.',
       budgetOff: 'Pergerakan tidak memanjangkan bajet anda. Hidupkannya dalam tetapan Aktiviti.',
 
       todayTitle: 'HARI INI',
@@ -243,7 +241,6 @@ export const ms = {
       under: '{{value}} lagi',
       unit: 'langkah · {{distance}}',
 
-      busiest: 'Jam paling sibuk ialah {{hour}}.',
       morning: 'Pagi',
       afternoon: 'Tengah hari',
       evening: 'Petang',
@@ -254,15 +251,12 @@ export const ms = {
       goalDays: 'HARI SASARAN',
       best: 'TERBAIK',
 
-      weekendNote:
-        'Beberapa hari sahaja yang membawa jumlah itu. Jalan kaki sekejap pada hari yang senyap akan meratakannya.',
       steadyNote: 'Hari anda sekata. Apa sahaja yang anda buat, ia sudah jadi tabiat.',
       shortNote: 'Belum cukup hari untuk melihat coraknya.',
     },
 
     balance: {
       chartTitle: 'Masuk lawan keluar',
-      chartBody: 'Dimakan berbanding jumlah bakaran',
       deficit: 'defisit {{value}}',
       surplus: 'lebihan {{value}}',
       even: 'Seimbang',

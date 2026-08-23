@@ -183,7 +183,6 @@ export const ko = {
       burned: '소모',
       left: '남음',
       over: '초과',
-      budgetNote: '소모한 칼로리는 막대를 늘릴 뿐, 먹은 양을 깎지 않습니다.',
       budgetOff: '움직임이 예산을 늘리고 있지 않습니다. 활동 설정에서 켜세요.',
 
       todayTitle: '오늘',
@@ -235,7 +234,6 @@ export const ko = {
       under: '{{value}} 남음',
       unit: '걸음 · {{distance}}',
 
-      busiest: '가장 많이 움직인 시간은 {{hour}}입니다.',
       morning: '오전',
       afternoon: '오후',
       evening: '저녁',
@@ -246,14 +244,12 @@ export const ko = {
       goalDays: '달성 일수',
       best: '최고',
 
-      weekendNote: '며칠이 전체를 떠받치고 있습니다. 한산한 날에 잠깐 걸으면 고르게 됩니다.',
       steadyNote: '하루하루가 고릅니다. 무엇을 하고 있든, 이제 습관입니다.',
       shortNote: '패턴을 보기에는 아직 날짜가 부족합니다.',
     },
 
     balance: {
       chartTitle: '들어온 것과 나간 것',
-      chartBody: '섭취량과 총 소모량 비교',
       deficit: '{{value}} 부족',
       surplus: '{{value}} 초과',
       even: '균형',
