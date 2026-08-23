@@ -183,7 +183,6 @@ export const ja = {
       burned: '消費',
       left: '残り',
       over: '超過',
-      budgetNote: '消費したカロリーはバーを伸ばすだけで、食べた分を削ることはありません。',
       budgetOff: '運動は今のところ枠を広げていません。活動の設定でオンにできます。',
 
       todayTitle: '今日',
@@ -236,7 +235,6 @@ export const ja = {
       under: 'あと {{value}}',
       unit: '歩 · {{distance}}',
 
-      busiest: 'いちばん動いたのは {{hour}} でした。',
       morning: '午前',
       afternoon: '午後',
       evening: '夜',
@@ -247,14 +245,12 @@ export const ja = {
       goalDays: '達成日数',
       best: '最高',
 
-      weekendNote: '合計を数日が支えています。静かな日に少し歩けば、ならされます。',
       steadyNote: '毎日が均等です。何をしているにせよ、もう習慣になっています。',
       shortNote: '傾向を見るにはまだ日数が足りません。',
     },
 
     balance: {
       chartTitle: '摂取と消費',
-      chartBody: '摂取と総消費の比較',
       deficit: '{{value}} の不足',
       surplus: '{{value}} の余剰',
       even: '同じ',
