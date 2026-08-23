@@ -26,9 +26,10 @@ const user = userEvent.setup()
 beforeEach(() => {
   jest.clearAllMocks()
   mockCaptureView.mockResolvedValueOnce(CLEAN).mockResolvedValueOnce(BRANDED)
+  mockSharePicture.mockReset().mockResolvedValueOnce(false).mockResolvedValueOnce(true)
 })
 
-it('keeps the mark off the original card and adds it to the preview and shared image', async () => {
+it('keeps the mark in the preview and safely reuses the branded image after a cancelled share', async () => {
   const onShared = jest.fn()
 
   await render(
@@ -59,5 +60,21 @@ it('keeps the mark off the original card and adds it to the preview and shared i
 
   await waitFor(() => expect(mockSharePicture).toHaveBeenCalledWith(BRANDED, 'A good week'))
   expect(mockCaptureView).toHaveBeenCalledTimes(2)
+  expect(onShared).not.toHaveBeenCalled()
+  // The mark now lives inside the branded image, not in a second overlay.
+  expect(screen.queryByText('RiceCal', { includeHiddenElements: true })).toBeNull()
+
+  // The clean file has been replaced on disk, so the sheet now reads the
+  // branded result directly and a retry reuses it rather than recapturing a
+  // preview whose source no longer exists.
+  const brandedPreview = screen.getByLabelText('The card as it will be sent')
+  await act(async () => brandedPreview.props.onLoad())
+  const retry = screen.getByRole('button', { name: 'Share' })
+  await waitFor(() => expect(retry).toBeEnabled())
+  await user.press(retry)
+
+  expect(mockCaptureView).toHaveBeenCalledTimes(2)
+  await waitFor(() => expect(mockSharePicture).toHaveBeenCalledTimes(2))
+  expect(mockSharePicture).toHaveBeenLastCalledWith(BRANDED, 'A good week')
   expect(onShared).toHaveBeenCalledTimes(1)
 })
