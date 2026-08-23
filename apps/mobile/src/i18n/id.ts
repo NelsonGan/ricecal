@@ -188,8 +188,6 @@ export const id = {
       burned: 'DIBAKAR',
       left: 'SISA',
       over: 'LEBIH',
-      budgetNote:
-        'Kalori yang dibakar memperpanjang bar itu, tidak pernah mengurangi yang kamu makan.',
       budgetOff: 'Gerakan tidak memperpanjang jatahmu. Nyalakan di pengaturan Aktivitas.',
 
       todayTitle: 'HARI INI',
@@ -242,7 +240,6 @@ export const id = {
       under: '{{value}} lagi',
       unit: 'langkah · {{distance}}',
 
-      busiest: 'Jam tersibuk adalah {{hour}}.',
       morning: 'Pagi',
       afternoon: 'Siang',
       evening: 'Malam',
@@ -253,15 +250,12 @@ export const id = {
       goalDays: 'HARI TARGET',
       best: 'TERBAIK',
 
-      weekendNote:
-        'Beberapa hari saja yang menopang totalnya. Jalan sebentar di hari yang sepi akan meratakannya.',
       steadyNote: 'Hari-harimu merata. Apa pun yang kamu lakukan, itu sudah jadi kebiasaan.',
       shortNote: 'Belum cukup hari untuk melihat polanya.',
     },
 
     balance: {
       chartTitle: 'Masuk versus keluar',
-      chartBody: 'Dimakan dibanding total bakaran',
       deficit: 'defisit {{value}}',
       surplus: 'surplus {{value}}',
       even: 'Seimbang',

@@ -120,7 +120,9 @@ finished.
 It lives in Cloudflare D1, behind the Worker in
 `apps/cloudflare/workers/catalogue`. `product` holds 3.25 million barcoded
 packets, and `food`, `food_serving` and `food_alias` hold about 53,000
-searchable dishes.
+searchable dishes. `site_search_count` is a separate one-row aggregate used by
+the marketing site; it records completed public searches without retaining
+queries or visitor data.
 
 It left Postgres because the barcode layer made the catalogue's size the
 diary's problem. It crossed a plan ceiling once and took the whole database
@@ -3165,9 +3167,12 @@ change cannot archive and submit a new binary for a change the app never sees.
 The trade is that the two filters have to stay opposites.
 
 **Everything shares one D1 database**, including PR versions. There is one copy
-of the catalogue, it is 257 MB, and it is read-only over HTTP. A preview pointed
-at a stub would prove nothing about a change to how 3.2 million packets are
-queried. What makes that safe is the route policy rather than the database.
+of the catalogue, it is 257 MB, and callers cannot submit arbitrary writes over
+HTTP. `/public/search` performs one internal increment of the aggregate search
+counter, while the existing service routes remain the only caller-directed
+write path. A preview pointed at a stub would prove nothing about a change to
+how 3.2 million packets are queried. What makes that safe is the route policy
+rather than the database.
 
 The one thing this costs: **the schema is applied on merge only.** A PR's version
 reads the database production is serving, so a migration in that PR is not in

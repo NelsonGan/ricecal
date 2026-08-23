@@ -31,6 +31,22 @@
 -- that has to order its statements around it.
 
 -- ---------------------------------------------------------------------------
+-- One aggregate for the marketing site's live search count.
+--
+-- This is telemetry, not catalogue content, so rebuilding the food and product
+-- tables does not reset it. The fixed primary key makes it impossible to grow
+-- into an event log by accident: one row, one number, updated by the catalogue
+-- Worker after every completed public search.
+-- ---------------------------------------------------------------------------
+create table if not exists site_search_count (
+  id         integer primary key check (id = 1),
+  total      integer not null default 0 check (total >= 0),
+  updated_at text not null default current_timestamp
+);
+
+insert or ignore into site_search_count (id, total) values (1, 0);
+
+-- ---------------------------------------------------------------------------
 -- The searchable catalogue: ~48,000 dishes and packaged goods people look up
 -- by typing. Small ON PURPOSE — every row here is a competitor for rank, and
 -- this table is scanned by four search arms on every query.

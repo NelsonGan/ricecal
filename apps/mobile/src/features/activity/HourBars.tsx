@@ -138,22 +138,6 @@ function toBlocks(
   }))
 }
 
-/**
- * The hour with the most steps, or null when nothing stands out.
- *
- * Null when the busiest hour is under a fifth of the day: on a day of even
- * pottering, naming one hour as "your walk to the mamak" is an invention. The
- * caller drops the sentence rather than softening it.
- */
-export function busiestHour(hours: readonly ActivityHour[]): number | null {
-  if (hours.length < 3) return null
-  const total = hours.reduce((sum, hour) => sum + hour.steps, 0)
-  if (total <= 0) return null
-
-  const busiest = hours.reduce((best, hour) => (hour.steps > best.steps ? hour : best))
-  return busiest.steps / total >= 0.2 ? busiest.hour : null
-}
-
 /** Whether there is enough shape in a day to draw it by the hour. */
 export const hasHourlyShape = (hours: readonly ActivityHour[]): boolean =>
   hours.filter((hour) => hour.steps > 0).length >= HOURLY_MIN_BUCKETS

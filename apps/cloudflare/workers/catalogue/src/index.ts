@@ -24,8 +24,8 @@
  * So reading this catalogue no longer costs an account. It costs an account at
  * scale. `/public/search` hands a trimmed row to anybody who asks, and the things
  * holding it in shape are the cache, the per-IP limit, and the fields
- * `publicShape` refuses to return. Writing is unchanged and still reachable only
- * from our own server.
+ * `publicShape` refuses to return. Callers still cannot submit writes; the one
+ * public-side mutation is the Worker's own aggregate search-count increment.
  */
 
 import { verifyUser } from './auth.ts'
@@ -89,6 +89,7 @@ const ROUTES: Record<string, 'public' | 'user' | 'service'> = {
   '/search': 'user',
   '/food': 'user',
   '/public/search': 'public',
+  '/public/search-count': 'public',
   '/public/food': 'public',
   '/barcode': 'service',
   '/product': 'service',
@@ -401,6 +402,72 @@ function corsFor(request: Request): Record<string, string> {
   }
 }
 
+type SearchCountRow = { total: number }
+
+/**
+ * Increment and read in one D1 batch so concurrent searches cannot lose a
+ * count and the number returned to this visitor includes their own search.
+ */
+async function incrementSearchCount(env: Env): Promise<number> {
+  const results = await env.DB.batch<SearchCountRow>([
+    env.DB.prepare(
+      `insert into site_search_count (id, total, updated_at)
+       values (1, 1, current_timestamp)
+       on conflict (id) do update set
+         total = total + 1,
+         updated_at = current_timestamp`,
+    ),
+    env.DB.prepare('select total from site_search_count where id = 1 limit 1'),
+  ])
+  const row = results[1]?.results[0]
+  if (!row) throw new Error('D1 returned no search-count row')
+  return Number(row.total)
+}
+
+/** Counting supports search; it never gets to break search. */
+async function tryIncrementSearchCount(env: Env): Promise<number | null> {
+  try {
+    return await incrementSearchCount(env)
+  } catch (error) {
+    console.error('catalogue worker search count increment', error)
+    return null
+  }
+}
+
+async function publicSearchCount(request: Request, env: Env): Promise<Response> {
+  const cors = corsFor(request)
+
+  try {
+    const row = await env.DB.prepare(
+      'select total from site_search_count where id = 1 limit 1',
+    ).first<SearchCountRow>()
+    return new Response(JSON.stringify({ ok: true, search_count: Number(row?.total ?? 0) }), {
+      headers: {
+        ...cors,
+        'content-type': 'application/json',
+        'cache-control': 'no-store',
+      },
+    })
+  } catch (error) {
+    console.error('catalogue worker search count read', error)
+    return new Response(JSON.stringify({ ok: false, error: 'query failed' }), {
+      status: 503,
+      headers: {
+        ...cors,
+        'content-type': 'application/json',
+        'cache-control': 'no-store',
+      },
+    })
+  }
+}
+
+function withSearchCount<T extends Record<string, unknown>>(
+  body: T,
+  searchCount: number | null,
+): T & { search_count?: number } {
+  return searchCount === null ? body : { ...body, search_count: searchCount }
+}
+
 /**
  * Whether this caller may have another one, and who is being charged for it.
  *
@@ -463,12 +530,14 @@ async function publicSearch(
 
   const cached = await cache.match(cacheKey)
   if (cached) {
-    return new Response(cached.body, {
+    const body = (await cached.json()) as { ok: true; foods: Record<string, unknown>[] }
+    const searchCount = await tryIncrementSearchCount(env)
+    return new Response(JSON.stringify(withSearchCount(body, searchCount)), {
       status: 200,
       headers: {
         ...cors,
         'content-type': 'application/json',
-        'cache-control': `public, max-age=${PUBLIC_CACHE_SECONDS}`,
+        'cache-control': 'no-store',
       },
     })
   }
@@ -477,12 +546,14 @@ async function publicSearch(
 
   try {
     const foods = (await search(env, qn, limit)) as FoodRow[]
-    const body = JSON.stringify({ ok: true, foods: foods.map(publicShape) })
+    const body = { ok: true, foods: foods.map(publicShape) }
+    const cachedBody = JSON.stringify(body)
+    const searchCount = await tryIncrementSearchCount(env)
 
     ctx.waitUntil(
       cache.put(
         cacheKey,
-        new Response(body, {
+        new Response(cachedBody, {
           headers: {
             'content-type': 'application/json',
             'cache-control': `public, max-age=${PUBLIC_CACHE_SECONDS}`,
@@ -491,12 +562,12 @@ async function publicSearch(
       ),
     )
 
-    return new Response(body, {
+    return new Response(JSON.stringify(withSearchCount(body, searchCount)), {
       status: 200,
       headers: {
         ...cors,
         'content-type': 'application/json',
-        'cache-control': `public, max-age=${PUBLIC_CACHE_SECONDS}`,
+        'cache-control': 'no-store',
       },
     })
   } catch (error) {
@@ -598,7 +669,7 @@ async function publicFood(
 }
 
 /**
- * The public tier's front door: the parts both routes share, then the split.
+ * The public tier's front door: the parts all routes share, then the split.
  *
  * Method and preflight are settled here because they are the same answer for
  * both, and because getting them wrong is the kind of thing that only shows up
@@ -633,9 +704,9 @@ function publicRoute(
     })
   }
 
-  return url.pathname === '/public/food'
-    ? publicFood(request, env, ctx, url)
-    : publicSearch(request, env, ctx, url)
+  if (url.pathname === '/public/food') return publicFood(request, env, ctx, url)
+  if (url.pathname === '/public/search-count') return publicSearchCount(request, env)
+  return publicSearch(request, env, ctx, url)
 }
 
 export default {

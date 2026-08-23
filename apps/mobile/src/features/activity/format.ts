@@ -57,7 +57,7 @@ export function speed(seconds: number, metres: number | null): string | null {
   return ((metres / 1000 / seconds) * 3600).toFixed(1)
 }
 
-/** "3pm", "9am" — the busiest-hour sentence, and the hourly axis. */
+/** "3pm", "9am" — labels on the hourly axis. */
 export function hourLabel(hour: number): string {
   if (hour === 0) return '12am'
   if (hour === 12) return '12pm'

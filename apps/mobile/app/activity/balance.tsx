@@ -162,7 +162,6 @@ export default function BalanceScreen() {
           <Skeleton className="h-[170px] w-full" />
         ) : (
           <View className="gap-3">
-            <Text variant="meta">{t('activity:balance.chartBody')}</Text>
             <BalanceBars bars={bars} accessibilityLabel={t('activity:balance.chartTitle')} />
             <BalanceLegend
               eatenLabel={t('activity:balance.eatenLegend')}

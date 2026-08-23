@@ -190,8 +190,6 @@ export const fil = {
       burned: 'NASUNOG',
       left: 'NATITIRA',
       over: 'LAMPAS',
-      budgetNote:
-        'Ang nasunog na calories ay humahaba sa bar, hindi nito binabawasan ang kinain mo.',
       budgetOff: 'Hindi pinahahaba ng galaw ang badyet mo. I-on ito sa Activity settings.',
 
       todayTitle: 'NGAYON',
@@ -244,7 +242,6 @@ export const fil = {
       under: '{{value}} pa',
       unit: 'hakbang · {{distance}}',
 
-      busiest: 'Ang pinakaabalang oras ay {{hour}}.',
       morning: 'Umaga',
       afternoon: 'Hapon',
       evening: 'Gabi',
@@ -255,15 +252,12 @@ export const fil = {
       goalDays: 'ARAW NA TARGET',
       best: 'PINAKAMATAAS',
 
-      weekendNote:
-        'Iilang araw lang ang bumubuhat sa kabuuan. Isang maikling lakad sa tahimik na araw ay makakapantay nito.',
       steadyNote: 'Pantay ang mga araw mo. Anuman ang ginagawa mo, ugali na ito ngayon.',
       shortNote: 'Kulang pa ang araw para makita ang pattern.',
     },
 
     balance: {
       chartTitle: 'Pasok laban sa labas',
-      chartBody: 'Nakain laban sa kabuuang nasunog',
       deficit: '{{value}} kulang',
       surplus: '{{value}} sobra',
       even: 'Patas',
