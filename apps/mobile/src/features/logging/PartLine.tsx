@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
+import { PixelRatio, View } from 'react-native'
 
 import { titleCase } from '@/lib/portions'
-import { Text, type TextVariant } from '@/ui'
+import { cn, Text, type TextVariant } from '@/ui'
 import { countLabel } from './parts'
 
 /**
@@ -20,9 +21,9 @@ import { countLabel } from './parts'
  * Rounded to a quarter, so it can disagree with an exact weight printed beside
  * it, which is what the "~" from `countLabel` says.
  *
- * HERE RATHER THAN IN THE TWO SCREENS because the × is a styled run of its own
- * and its metrics are fiddly (see below). Two copies of that would drift, which
- * is the argument the portion stepper's own comment makes about its quarters.
+ * HERE RATHER THAN IN THE TWO SCREENS because the × costs three elements and a
+ * paragraph to place. Two copies of that would drift, which is the argument the
+ * portion stepper's own comment makes about its quarters.
  */
 export function PartLine({
   quantity,
@@ -42,21 +43,46 @@ export function PartLine({
   children?: ReactNode
 }) {
   return (
-    <Text variant={variant} className={className}>
-      {countLabel(quantity)}
-      {/* THE × IS SMALLER THAN THE WORDS EITHER SIDE. At the full 17px, beside a
-          dish name, it read as part of the name rather than as the operator
-          between a number and a thing.
+    /* THREE BOXES IN A ROW RATHER THAN ONE RUN OF TEXT, and the × is why.
+       It has to be smaller than the words either side — at the full 17px, beside
+       a dish name, it read as part of the name rather than as the operator
+       between a number and a thing — and a smaller glyph nested inside a run
+       shares that run's baseline, which leaves it sitting about two points below
+       the middle of the letters around it. React Native has no baseline offset
+       for a nested run to correct that with; `verticalAlign` is Android only.
 
-          The leading is set explicitly and is NOT decoration. `Text` falls back
-          to the `body` variant's leading of 27 for any run that names a size and
-          no leading, and 27 is taller than the 24 `bodyStrong` uses — so an
-          unqualified × would grow the line box of the sheet's heading while
-          leaving the card's alone. 17 is under both, which is the only property
-          this needs: a nested run cannot shrink a line box, only stretch one. */}
-      <Text className="font-body text-[13px] leading-[17px] text-muted">{' × '}</Text>
-      {titleCase(name)}
-      {children}
-    </Text>
+       What it does have is that a Text of its own gets a line box of its own,
+       and centres its glyph inside it. So the × is a sibling, on the SAME
+       variant as the words — which is what makes this work, since the variant
+       carries the leading and two boxes of equal height centre their glyphs onto
+       the same line. Only the size and the colour are overridden.
+
+       Equal boxes get it to within a point, and the last point is the glyph
+       itself: what the boxes line up is each FONT's centre, and Nunito draws its
+       × a little under that. Measured on a 3x screen, the words centred on
+       device row 2004.5 and the × landed on 2007.5. So the box is nudged up by
+       the difference — as a transform rather than a margin, since an optical
+       correction should not move anything else on the row, and scaled by the
+       reader's own text size, since what it corrects is a fraction of an em and
+       grows with the type.
+
+       `items-start` so a name that wraps to a second line leaves the count where
+       it is. The name keeps the weight bracket inside its own run, so those two
+       still wrap together; what wrapping loses is the count, which now hangs to
+       the left of a name that runs on, the way a cart does it. */
+    <View className={cn('flex-row items-start gap-1', className)}>
+      <Text variant={variant}>{countLabel(quantity)}</Text>
+      <Text
+        variant={variant}
+        className="font-body text-[13px] text-muted"
+        style={{ transform: [{ translateY: -PixelRatio.getFontScale() }] }}
+      >
+        ×
+      </Text>
+      <Text variant={variant} className="min-w-0 flex-1">
+        {titleCase(name)}
+        {children}
+      </Text>
+    </View>
   )
 }
