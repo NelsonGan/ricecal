@@ -1,4 +1,5 @@
 import type { EntryIngredient } from '@/data/scan'
+import { formatPortion } from '@/lib/portions'
 
 /**
  * Staged changes to a scanned plate's parts, and the arithmetic that previews
@@ -162,4 +163,43 @@ export function stepPart(quantity: number, direction: 1 | -1): number | null {
   // Clamped rather than refused at the ends: a value that lands back on the one
   // it started from is not a change, which `partChanges` already works out.
   return Math.min(PART_MAX, Math.max(PART_STEP, quantity + direction * PART_STEP))
+}
+
+/**
+ * How many of a part its weight comes to, said in quarters.
+ *
+ * READ ONLY. The quantity a row stores stays exactly what the weight divides
+ * out to, and this rounds a COPY of it for the line that reads it back. That
+ * asymmetry is the whole design: grams are the thing somebody can check against
+ * the plate in front of them, so typing 200 has to leave the row weighing 200,
+ * and the quarter is there to answer the other question — is that about one
+ * piece, or about two.
+ *
+ * Rounding the stored amount instead would cost the weight its resolution: a
+ * 180 g part could then only ever be 45, 90, 135, 180 or 225 g, and `GRAM_STEP`
+ * would be a no-op, since 190 g rounds straight back to the 1x it started from.
+ *
+ * `exact` is false where the two readings have parted company, which is what the
+ * "~" on screen is for. A scan lands on whole counts, so a freshly scanned plate
+ * says "2" and only a hand-typed weight says "~2".
+ */
+export function roundedCount(quantity: number): { amount: number; exact: boolean } {
+  const amount = Math.max(PART_STEP, Math.round(quantity / PART_STEP) * PART_STEP)
+  // Half of the hundredth `food_log_ingredients.quantity` stores, so a row that
+  // IS a clean quarter is never called approximate by a floating-point hair.
+  return { amount, exact: Math.abs(amount - quantity) < 0.005 }
+}
+
+/**
+ * The count as a row prints it: "1", "¾", "~1¼".
+ *
+ * The "~" and the quarter glyphs are symbols rather than copy, which is why they
+ * are here and not in `en/logging.ts` — the same place and for the same reason
+ * `formatPortion` keeps ¼, ½ and ¾. The × that follows this on screen is a
+ * symbol too, and it stays in the screens because it is set smaller than the
+ * text either side of it and so has to be its own run.
+ */
+export const countLabel = (quantity: number): string => {
+  const { amount, exact } = roundedCount(quantity)
+  return `${exact ? '' : '~'}${formatPortion(amount)}`
 }

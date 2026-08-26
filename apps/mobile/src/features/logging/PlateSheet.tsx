@@ -6,6 +6,7 @@ import type { EntryIngredient } from '@/data'
 import { titleCase } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, cn, Divider, Icon, IconButton, Sheet, Text, useNumpadField } from '@/ui'
+import { PartLine } from './PartLine'
 import {
   PART_MAX,
   PART_STEP,
@@ -242,8 +243,14 @@ export function PlateSheet({
 
             {/* The name on a line of its own, with the whole width to wrap into.
                 Beside the controls it had about half the row, which is what this
-                sheet exists to give back. */}
-            <Text variant="bodyStrong">{titleCase(ingredient.name)}</Text>
+                sheet exists to give back.
+
+                THE COUNT LEADS IT, the same cart line the ingredient card shows,
+                and this is where it has room: under the weight field it would be
+                a name wrapping inside a 70pt column between two buttons. It moves
+                as the weight does — the buttons and the field below set grams,
+                and this is those grams read back as a number of the thing. */}
+            <PartLine quantity={ingredient.quantity} name={ingredient.name} variant="bodyStrong" />
 
             <View className="flex-row items-center justify-between gap-3">
               {/* What it costs. The amount used to be here too and has moved to
@@ -282,6 +289,13 @@ export function PlateSheet({
                     read-only: there is no weight to type, and a count is what the
                     buttons move. */}
                 {weighed ? (
+                  /* THE WEIGHT, EXACT, and the count that reads it back is in the
+                     heading above. Typing 200 g of something that comes in 180 g
+                     pieces leaves this reading 200 and the heading reading "~1 ×".
+                     Snapping the weight to the quarter instead would make the two
+                     always agree and this field useless: the buttons move 10 g at
+                     a time and every one of those taps would round straight back
+                     to where it started. */
                   <GramsField
                     grams={Math.round(ingredient.grams ?? 0)}
                     label={titleCase(ingredient.name)}

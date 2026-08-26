@@ -1407,12 +1407,25 @@ ingredients", never "Edit"), because three buttons announcing "Edit" tell a
 screen reader nothing. The glyph is not tinted: it is a yellow pencil with a red
 eraser whose whole meaning is the colour.
 
-**A part is edited by weight.** The card reads "Fried rice (90 g)". The
-multiplier is how `food_log_ingredients` stores an amount; the grams are the
-amount, and the only thing about a part somebody can check against the plate.
-`quantityForGrams` is the seam: `set_ingredient_quantity` takes a quantity and
-the column is `numeric(6, 2)`, so a weight lands within a gram or two of what
-was asked for. A part nobody weighed keeps its multiplier.
+**A part is edited by weight and read as a count.** The card reads "1 × Fried
+Rice (90 g)", and both halves earn their place: the grams are the only thing
+about a part somebody can check against the plate in front of them, and the
+count is the only thing they can check against themselves. `PartLine` renders
+the pair in both places that show it, and the sheet puts the same line in its
+row heading, which is the one spot with room for a long name.
+
+Editing moves the weight. `quantityForGrams` is the seam:
+`set_ingredient_quantity` takes a quantity, `food_log_ingredients.quantity` is
+`numeric(6, 2)`, so a weight lands within a gram or two of what was asked for.
+A part nobody weighed keeps its multiplier and cannot be typed into.
+
+**The count is rounded to a quarter and the weight is not**, which is why the
+two are allowed to disagree and why `countLabel` prefixes a "~" when they do:
+"~1¼ × Fried Rice (110 g)". Rounding the stored amount instead would cost the
+weight its resolution, since a 90 g part could then only ever weigh a multiple
+of 22.5 g and every 10 g tap of `GRAM_STEP` would round straight back to where
+it started. A scan lands on whole counts, so the "~" only ever appears on a
+part somebody has resized by hand.
 
 Each sheet holds a draft and its Save writes it; leaving any other way drops
 what was typed. `stagedParts` in `features/logging/parts.ts` is shared between
