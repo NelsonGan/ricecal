@@ -282,12 +282,6 @@ export async function chatJSON(
         max_tokens: maxTokens,
         temperature: 0.2,
         response_format: { type: 'json_object' },
-        // Off, not merely low. qwen3.7-flash reasons by default and burned
-        // 20-30s per call thinking about JSON echoes; three sequential calls
-        // put a scan past the iOS client's 60s request timeout, so the app
-        // reported failure while the entries landed anyway. Models without a
-        // reasoning mode ignore this field.
-        reasoning: { enabled: false },
       }),
     })
     if (!res.ok) {
