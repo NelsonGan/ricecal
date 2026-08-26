@@ -809,7 +809,6 @@ export const id = {
         'Tidak ada yang tersisa di piring. Catatannya kembali dihitung sebagai satu porsi.',
       times: '× {{amount}}',
       grams: '({{grams}} g)',
-      count: '(× {{amount}})',
       partKcal: '{{kcal}} kkal',
       gramsShort: '{{grams}} g',
       gramsField: 'Berat dalam gram',

@@ -799,7 +799,6 @@ export const ta = {
       plateEmptied: 'தட்டில் எதுவும் மீதமில்லை. இந்தப் பதிவு மீண்டும் ஒரு பங்காக எண்ணப்படும்.',
       times: '× {{amount}}',
       grams: '({{grams}} g)',
-      count: '(× {{amount}})',
       partKcal: '{{kcal}} kcal',
       gramsShort: '{{grams}} g',
       gramsField: 'கிராமில் எடை',

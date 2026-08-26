@@ -19,6 +19,7 @@ export {
   type NutritionSheetProps,
   type TypedFigures,
 } from './NutritionSheet'
+export { PartLine } from './PartLine'
 export { PlateSheet, type PlateSheetProps } from './PlateSheet'
 export { type PartEdits, partChanges, stagedParts } from './parts'
 export { QuickAction, type QuickActionProps } from './QuickAction'

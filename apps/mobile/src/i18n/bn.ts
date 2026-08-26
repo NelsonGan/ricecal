@@ -787,7 +787,6 @@ export const bn = {
       plateEmptied: 'থালায় কিছুই বাকি নেই। এই এন্ট্রি আবার এক পরিবেশন হিসেবে গোনা হবে।',
       times: '× {{amount}}',
       grams: '({{grams}} g)',
-      count: '(× {{amount}})',
       partKcal: '{{kcal}} kcal',
       gramsShort: '{{grams}} g',
       gramsField: 'গ্রামে ওজন',

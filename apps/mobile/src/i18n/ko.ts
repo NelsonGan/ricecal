@@ -792,7 +792,6 @@ export const ko = {
       plateEmptied: '접시에 남은 것이 없습니다. 이 기록은 다시 1인분으로 계산됩니다.',
       times: '× {{amount}}',
       grams: '({{grams}} g)',
-      count: '(× {{amount}})',
       partKcal: '{{kcal}} kcal',
       gramsShort: '{{grams}} g',
       gramsField: '무게(그램)',

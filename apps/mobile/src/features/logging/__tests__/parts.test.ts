@@ -1,11 +1,13 @@
 import type { EntryIngredient } from '@/data/scan'
 import {
+  countLabel,
   GRAM_STEP,
   PART_MAX,
   PART_STEP,
   partChanges,
   perUnitGrams,
   quantityForGrams,
+  roundedCount,
   stagedParts,
   stepGrams,
   stepPart,
@@ -125,4 +127,56 @@ it('takes the last of a part off the plate rather than shrinking it forever', ()
 
 it('stops a weight at the top of the range', () => {
   expect(stepGrams(PART_MAX * 220, 220, 1)).toBe(PART_MAX * 220)
+})
+
+/**
+ * The count read back beside the weight.
+ *
+ * The property under test is that it NEVER moves the amount it describes: the
+ * grams a row holds are what the person typed, and this rounds a copy of the
+ * multiplier for the line under the field. A test that let the rounding write
+ * back would still pass every case below and would break the weight field, so
+ * the exactness flag is what each of these actually pins down.
+ */
+it('says a whole count as itself, with no approximation', () => {
+  expect(roundedCount(2)).toEqual({ amount: 2, exact: true })
+})
+
+it('says a clean quarter as itself', () => {
+  expect(roundedCount(1.25)).toEqual({ amount: 1.25, exact: true })
+})
+
+it('rounds a typed weight to the nearest quarter and admits it is not exact', () => {
+  // 200 g of something that comes in 180 g pieces: 1.11, which is about one.
+  expect(roundedCount(1.11)).toEqual({ amount: 1, exact: false })
+  expect(roundedCount(1.22)).toEqual({ amount: 1.25, exact: false })
+})
+
+it('never rounds a part down to nothing', () => {
+  // The floor is a quarter of one unit, which is where `stepGrams` stops too:
+  // below it the row is removed rather than shrunk, so "0" is not an amount
+  // this can be asked to show.
+  expect(roundedCount(0.1)).toEqual({ amount: 0.25, exact: false })
+})
+
+it('does not call a stored quarter approximate over a floating-point hair', () => {
+  expect(roundedCount(0.25 * 3).exact).toBe(true)
+})
+
+/**
+ * The count as a row prints it. `PartLine` puts this in front of a part's name,
+ * so what is pinned here is the reading rather than the arithmetic above.
+ */
+it('prints a whole count as a bare number', () => {
+  expect(countLabel(2)).toBe('2')
+})
+
+it('prints a quarter as a glyph rather than a decimal', () => {
+  expect(countLabel(0.75)).toBe('¾')
+  expect(countLabel(1.25)).toBe('1¼')
+})
+
+it('marks a count the weight has moved off a quarter with a tilde', () => {
+  expect(countLabel(1.11)).toBe('~1')
+  expect(countLabel(1.22)).toBe('~1¼')
 })
