@@ -792,7 +792,6 @@ export const zhHans = {
       plateEmptied: '盘子里什么都不剩了。这条记录会回到按一份计算。',
       times: '× {{amount}}',
       grams: '（{{grams}} 克）',
-      count: '（× {{amount}}）',
       partKcal: '{{kcal}} 千卡',
       gramsShort: '{{grams}} 克',
       gramsField: '重量（克）',

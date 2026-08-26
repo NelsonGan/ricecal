@@ -797,7 +797,6 @@ export const vi = {
       plateEmptied: 'Không còn gì trên đĩa. Mục này quay lại tính như một khẩu phần.',
       times: '× {{amount}}',
       grams: '({{grams}} g)',
-      count: '(× {{amount}})',
       partKcal: '{{kcal}} kcal',
       gramsShort: '{{grams}} g',
       gramsField: 'Khối lượng tính bằng gam',

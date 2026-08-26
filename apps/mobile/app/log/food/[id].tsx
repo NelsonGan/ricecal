@@ -43,6 +43,7 @@ import {
   NO_FIGURES,
   NutritionSheet,
   type PartEdits,
+  PartLine,
   PlateSheet,
   partChanges,
   ScannedPacket,
@@ -56,7 +57,7 @@ import { formatTime, MacroBars, MealPhoto } from '@/features/shared'
 import { track } from '@/lib/analytics'
 import { useBack, useDismissTo } from '@/lib/navigation'
 import { entryTotals } from '@/lib/nutrition'
-import { servingUnit, titleCase } from '@/lib/portions'
+import { servingUnit } from '@/lib/portions'
 import { spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
 import {
@@ -1519,37 +1520,40 @@ export default function FoodDetail() {
           >
             {parts.map((ingredient) => (
               <View key={ingredient.id} className="flex-row items-start justify-between gap-3">
-                {/* THE NAME AND WHAT IT WEIGHS, ON ONE LINE. The weight used to
-                    sit on a second line behind a multiplier — "× 0.75 · 165 g" —
-                    which led with the number nobody can act on: the multiplier is
-                    how the row STORES an amount, and 165 g is the amount. In
-                    brackets after the name it reads as part of what the thing is,
-                    and the row is one line again.
+                {/* HOW MANY, THEN WHAT, THEN WHAT IT WEIGHS — a cart line, of
+                    which `PartLine` is the first two thirds.
+
+                    The weight used to sit on a second line behind a multiplier —
+                    "× 0.75 · 165 g" — which led with the number nobody can act
+                    on: the multiplier is how the row STORES an amount, and 165 g
+                    is the amount. So the weight moved into a bracket after the
+                    name, and the count came back in front of it.
+
+                    The two numbers answer different questions and the row needs
+                    both. 480 g is what to check against the plate in front of
+                    you; "1 ×" is what to check against yourself. The count is
+                    rounded to a quarter and the weight is not, which is why the
+                    two can disagree and why a "~" appears when they do.
 
                     NO `numberOfLines`. A part's name is what this card exists to
                     show — the model's own account of what was on the plate — and
                     truncated to one line "Stir fried pork belly with green
                     peppers" came out as three words and an ellipsis on the one
                     screen somebody opens to check exactly that. The bracket wraps
-                    with it, being part of the same run of text.
-
-                    A part nobody weighed falls back to its count, and a single
-                    unweighed one says nothing at all: "(× 1)" is a bracket that
-                    answers no question. */}
-                <Text variant="body" className="min-w-0 flex-1">
-                  {titleCase(ingredient.name)}
+                    with it, being part of the same run of text. */}
+                <PartLine
+                  quantity={ingredient.quantity}
+                  name={ingredient.name}
+                  className="min-w-0 flex-1"
+                >
                   {ingredient.grams ? (
                     <Text variant="meta">
                       {` ${t('logging:detail.grams', {
                         grams: Math.round(ingredient.grams).toLocaleString(),
                       })}`}
                     </Text>
-                  ) : ingredient.quantity === 1 ? null : (
-                    <Text variant="meta">
-                      {` ${t('logging:detail.count', { amount: ingredient.quantity })}`}
-                    </Text>
-                  )}
-                </Text>
+                  ) : null}
+                </PartLine>
                 <View className="flex-row items-baseline gap-1">
                   <Text variant="numeric">{ingredient.kcal.toLocaleString()}</Text>
                   <Text variant="caption">{t('common:unit.kcal')}</Text>

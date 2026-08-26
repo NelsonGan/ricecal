@@ -799,7 +799,6 @@ export const ja = {
       plateEmptied: 'お皿に何も残っていません。この記録は 1 人前として数え直されます。',
       times: '× {{amount}}',
       grams: '（{{grams}} g）',
-      count: '（× {{amount}}）',
       partKcal: '{{kcal}} kcal',
       gramsShort: '{{grams}} g',
       gramsField: '重さ（グラム）',

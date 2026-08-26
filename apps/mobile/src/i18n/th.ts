@@ -791,7 +791,6 @@ export const th = {
       plateEmptied: 'ไม่เหลืออะไรในจานแล้ว รายการนี้จะกลับไปนับเป็นหนึ่งที่',
       times: '× {{amount}}',
       grams: '({{grams}} ก.)',
-      count: '(× {{amount}})',
       partKcal: '{{kcal}} แคล',
       gramsShort: '{{grams}} ก.',
       gramsField: 'น้ำหนักเป็นกรัม',

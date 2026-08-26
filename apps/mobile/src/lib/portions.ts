@@ -94,3 +94,24 @@ export function portionLabel(quantity: number, raw: string | null | undefined, f
 export function titleCase(value: string): string {
   return value.replace(/\b[a-z][a-z']*/g, (word) => word[0].toUpperCase() + word.slice(1))
 }
+
+const VULGAR: Record<string, string> = { '0.25': '¼', '0.5': '½', '0.75': '¾' }
+
+/**
+ * Renders 1.5 as "1½".
+ *
+ * The design system leads with everyday serving units — half a plate, one and a
+ * half bowls — and "1.5 plates" reads like a spreadsheet. Falls back to a plain
+ * number for anything that is not a clean quarter.
+ *
+ * Here rather than in `Stepper`, which is where it was written, because a
+ * scanned plate now says the same kind of quantity in front of every part it
+ * broke into — see `PartLine`. Two renderings of "1¼" free to drift apart is the
+ * thing the portion stepper's own comment argues against.
+ */
+export function formatPortion(value: number) {
+  const whole = Math.floor(value)
+  const glyph = VULGAR[(value - whole).toFixed(2).replace(/0+$/, '').replace(/\.$/, '')]
+  if (!glyph) return String(Number(value.toFixed(2)))
+  return whole === 0 ? glyph : `${whole}${glyph}`
+}

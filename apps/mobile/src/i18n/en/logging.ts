@@ -292,12 +292,8 @@ export const logging = {
      * rather than as the amount every row has.
      */
     times: '× {{amount}}',
-    /**
-     * What a part weighs, in brackets after its name.
-     */
+    /** What a part weighs, in brackets after its name. */
     grams: '({{grams}} g)',
-    /** The same for a part nobody weighed, where the count is all there is. */
-    count: '(× {{amount}})',
     /** What a part costs, on the row in the sheet where its weight is edited. */
     partKcal: '{{kcal}} kcal',
     /** The weight in the sheet's own field, and what the number pad calls it. */
