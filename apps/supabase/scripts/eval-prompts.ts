@@ -71,7 +71,6 @@ async function call(system: string, user: string, maxTokens: number): Promise<un
         max_tokens: maxTokens,
         temperature: 0.2,
         response_format: { type: 'json_object' },
-        reasoning: { enabled: false },
       }
 
   // Running a whole suite fires more requests a minute than a scan ever will,
