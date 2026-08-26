@@ -787,7 +787,6 @@ export const hi = {
       plateEmptied: 'थाली में कुछ नहीं बचा। यह रिकॉर्ड फिर से एक हिस्से के रूप में गिना जाएगा।',
       times: '× {{amount}}',
       grams: '({{grams}} g)',
-      count: '(× {{amount}})',
       partKcal: '{{kcal}} kcal',
       gramsShort: '{{grams}} g',
       gramsField: 'ग्राम में वज़न',

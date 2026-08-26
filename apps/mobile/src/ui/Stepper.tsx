@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Platform, TextInput, View } from 'react-native'
 
+import { formatPortion } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
 import { Icon } from './Icon'
@@ -38,24 +39,8 @@ export type StepperProps = {
   className?: string
 }
 
-const VULGAR: Record<string, string> = { '0.25': '¼', '0.5': '½', '0.75': '¾' }
-
 /** The same correction `Text` applies, for the one input that carries display type. */
 const androidTightening = Platform.OS === 'android' ? { includeFontPadding: false } : null
-
-/**
- * Renders 1.5 as "1½".
- *
- * The design system leads with everyday serving units — half a plate, one and a
- * half bowls — and "1.5 plates" reads like a spreadsheet. Falls back to a plain
- * number for anything that is not a clean quarter.
- */
-function formatPortion(value: number) {
-  const whole = Math.floor(value)
-  const glyph = VULGAR[(value - whole).toFixed(2).replace(/0+$/, '').replace(/\.$/, '')]
-  if (!glyph) return String(Number(value.toFixed(2)))
-  return whole === 0 ? glyph : `${whole}${glyph}`
-}
 
 /**
  * A minus / value / plus control for portions, weights and goals.

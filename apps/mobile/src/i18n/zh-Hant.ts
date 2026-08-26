@@ -791,7 +791,6 @@ export const zhHant = {
       plateEmptied: '盤子裡什麼都不剩了。這筆紀錄會回到按一份計算。',
       times: '× {{amount}}',
       grams: '（{{grams}} 公克）',
-      count: '（× {{amount}}）',
       partKcal: '{{kcal}} 大卡',
       gramsShort: '{{grams}} 公克',
       gramsField: '重量（公克）',

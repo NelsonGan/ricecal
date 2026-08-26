@@ -821,7 +821,6 @@ export const ms = {
         'Tiada apa-apa tinggal pada pinggan. Rekod itu kembali dikira sebagai satu bahagian.',
       times: '× {{amount}}',
       grams: '({{grams}} g)',
-      count: '(× {{amount}})',
       partKcal: '{{kcal}} kcal',
       gramsShort: '{{grams}} g',
       gramsField: 'Berat dalam gram',
