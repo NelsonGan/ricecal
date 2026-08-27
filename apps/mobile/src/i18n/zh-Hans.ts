@@ -545,8 +545,6 @@ export const zhHans = {
       scans: '你的这盘已经算好了',
       nothingElse: '除此之外什么都不发',
       promise: '在「我的」里的提醒中随时关掉任何一项。',
-      enable: '开启通知',
-      later: '以后再说',
       blocked: 'RiceCal 的提醒是关着的。可以在「我的」里的提醒中打开。',
     },
 

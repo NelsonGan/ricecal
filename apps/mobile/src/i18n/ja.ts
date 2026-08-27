@@ -550,8 +550,6 @@ export const ja = {
       scans: 'お皿を数え終えました',
       nothingElse: 'それ以外は送りません',
       promise: '自分のリマインダーで、どれでもオフにできます。',
-      enable: '通知をオンにする',
-      later: 'あとで',
       blocked: 'RiceCal のリマインダーはオフです。自分のリマインダーからオンにできます。',
     },
 

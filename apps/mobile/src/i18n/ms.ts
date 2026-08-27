@@ -568,8 +568,6 @@ export const ms = {
       scans: 'Pinggan anda sudah dikira',
       nothingElse: 'Dan tiada apa-apa lagi',
       promise: 'Matikan mana-mana daripadanya dalam Saya, Peringatan.',
-      enable: 'Hidupkan pemberitahuan',
-      later: 'Mungkin nanti',
       blocked: 'Peringatan dimatikan untuk RiceCal. Anda boleh hidupkannya dalam Saya, Peringatan.',
     },
 

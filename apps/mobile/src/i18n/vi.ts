@@ -548,8 +548,6 @@ export const vi = {
       scans: 'Đĩa của bạn đã được tính',
       nothingElse: 'Và không có gì khác',
       promise: 'Tắt bất cứ mục nào trong Tôi, Lời nhắc.',
-      enable: 'Bật thông báo',
-      later: 'Có thể để sau',
       blocked: 'Lời nhắc đang tắt cho RiceCal. Bạn có thể bật trong Tôi, Lời nhắc.',
     },
 

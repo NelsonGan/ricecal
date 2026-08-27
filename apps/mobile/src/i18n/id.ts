@@ -559,8 +559,6 @@ export const id = {
       scans: 'Piringmu sudah dihitung',
       nothingElse: 'Dan tidak ada yang lain',
       promise: 'Matikan salah satunya di Saya, Pengingat.',
-      enable: 'Aktifkan notifikasi',
-      later: 'Mungkin nanti',
       blocked: 'Pengingat mati untuk RiceCal. Kamu bisa menyalakannya di Saya, Pengingat.',
     },
 

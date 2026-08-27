@@ -197,8 +197,13 @@ export const onboarding = {
     /** Said out loud because every other tracker turns these on for you. */
     nothingElse: 'And nothing else',
     promise: 'Turn any of these off in Me, Reminders.',
-    enable: 'Enable notifications',
-    later: 'Maybe later',
+    /**
+     * NO BUTTON LABELS HERE EITHER, for the reason the health step has none.
+     * "Enable notifications" and "Maybe later" were the two halves of guideline
+     * 5.1.1(iv) in one footer: a button worded as the ask, and a way past the
+     * request beside it. The step says `common:action.continue` now, and there
+     * is nothing next to it.
+     */
     /**
      * Only after a refusal. `canAskAgain` is false by then, so the dialog will
      * never appear again and the honest thing is to say where the switch is.
