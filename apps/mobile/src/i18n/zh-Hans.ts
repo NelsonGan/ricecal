@@ -134,10 +134,8 @@ export const zhHans = {
 
       privacy: '只读。我们从不写回任何数据，你的健康数据只会存在你自己的账号里。',
 
-      apple: 'Apple 健康',
-      appleBody: 'iPhone 和 Apple Watch',
-      connectHealth: 'Health Connect',
-      connectHealthBody: 'Samsung Health、Fitbit、Garmin',
+      appleBody: 'Apple Health，iPhone 和 Apple Watch',
+      connectHealthBody: 'Health Connect：Samsung Health、Fitbit、Garmin',
       heart: '心率',
       demo: '使用演示数据',
       demoBody: '在这台设备上生成，供开发使用',
@@ -534,14 +532,10 @@ export const zhHans = {
     health: {
       title: '让手表来数',
       subtitle: '你消耗掉的会加到今天的额度里。',
-      connectApple: '连接 Apple 健康',
-      connectAndroid: '连接 Health Connect',
       demo: '使用生成的活动数据',
-      later: '暂时不用',
       emptyToast: '健康应用没有返回任何数据。你可以之后在活动页面再连接。',
       failedToast: '我们连不上你的健康存储。你可以之后在活动页面再试。',
-      reassurance: '只读。之后也可以在活动页面连接。',
-      offline: '正在等待网络。可以先跳过，之后再连接。',
+      reassurance: '只读。我们从不写回任何内容。',
     },
 
     notifications: {
@@ -551,8 +545,6 @@ export const zhHans = {
       scans: '你的这盘已经算好了',
       nothingElse: '除此之外什么都不发',
       promise: '在「我的」里的提醒中随时关掉任何一项。',
-      enable: '开启通知',
-      later: '以后再说',
       blocked: 'RiceCal 的提醒是关着的。可以在「我的」里的提醒中打开。',
     },
 
@@ -1034,7 +1026,28 @@ export const zhHans = {
       tutorial: 'RiceCal 怎么用',
       help: '帮助中心',
       rate: '给 RiceCal 评分',
+      account: '账户',
       signOut: '退出登录',
+    },
+
+    account: {
+      title: '账户',
+      signedInAs: '当前登录账户',
+      legalTitle: '条款与政策',
+      privacy: '隐私政策',
+      terms: '使用条款',
+      deleteTitle: '删除账户',
+      deleteBody: '确认后，以下所有内容立即被删除。',
+      goesDiary: '每一餐、每次体重、饮水和备注',
+      goesPhotos: '你拍下的每一张照片',
+      goesRecipes: '你的食谱，包括已发布的',
+      goesProfile: '你的资料、设置和登录身份',
+      cancelFirst: '请先在商店里取消订阅，否则会继续扣费。',
+      action: '删除我的账户',
+      confirmTitle: '删除你的账户？',
+      confirmBody: '此操作无法撤销。之后你和我们都无法恢复你的记录。',
+      done: '你的账户已删除。',
+      failed: '无法删除你的账户，请重试。',
     },
 
     rate: {
@@ -1212,6 +1225,8 @@ export const zhHans = {
       start: '开始免费试用',
       startLifetime: '购买永久版',
       restore: '恢复购买',
+      terms: '条款',
+      privacy: '隐私',
       nothingToRestore: '这个账号没有可恢复的购买',
       notConfigured: '这个版本还没有配置好购买功能。',
       restored: '你的购买回来了',
@@ -1324,6 +1339,8 @@ export const zhHans = {
       kgDown: '减掉公斤',
       lockedEntry: '已锁定',
       resume: '继续使用 Pro',
+      terms: '每年 {{price}}，在你取消前自动续订。',
+      termsPending: '在你取消前每年自动续订。',
       browse: '继续免费浏览',
     },
 
@@ -1507,6 +1524,19 @@ export const zhHans = {
       deleteTitle: '删除这个食谱？',
       deleteBody: '你已经记录过的餐会留在你的记录里。',
       deleted: '食谱已删除',
+    },
+
+    report: {
+      title: '举报这道食谱',
+      body: '它会立刻不再出现在你这里。我们不会告诉作者。',
+      inappropriate: '冒犯内容或不是食物',
+      spam: '垃圾信息或广告',
+      dangerous: '烹饪或食用不安全',
+      stolen: '是别人的作品',
+      block: '隐藏 {{name}} 的全部食谱',
+      done: '已举报，你不会再看到它。',
+      blocked: '已隐藏，你不会再看到他们的食谱。',
+      failed: '没能完成，请重试。',
     },
 
     share: {

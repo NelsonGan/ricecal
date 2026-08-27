@@ -29,9 +29,26 @@ as $$
 $$;
 
 
+-- SECURITY DEFINER, and the reason is account deletion rather than anything
+-- this function does for a living.
+--
+-- `weight_logs` cascades from `auth.users`, and the DELETE trigger below fires
+-- inside that cascade — which GoTrue performs as `supabase_auth_admin`, a role
+-- with no privileges in `public` at all. Invoker-rights, the very first
+-- statement here (`select ... from public.profiles`) raised
+-- `permission denied for table profiles`, GoTrue answered
+-- "Database error deleting user", and `delete-account` could delete every
+-- account except one that had ever recorded a weight. Which is all of them.
+--
+-- Safe to make definer for the same two reasons `recipe_ingredients_after_write`
+-- is: `set search_path = ''` with every name schema qualified, so a caller
+-- cannot shadow anything this reads; and the account it acts on is taken from
+-- the ROW that fired it, never from an argument, so there is nothing a caller
+-- could point at somebody else's budget.
 create or replace function public.sync_daily_goals()
 returns trigger
 language plpgsql
+security definer
 set search_path = ''
 as $$
 declare
@@ -132,6 +149,11 @@ begin
   return null;
 end;
 $$;
+
+-- Nothing calls this by name; a trigger does not need the privilege. Revoked
+-- so that a definer function cannot be invoked directly by anyone who can
+-- reach the API.
+revoke execute on function public.sync_daily_goals from public, anon, authenticated;
 
 -- `update of <columns>` so that renaming yourself, changing your avatar or
 -- finishing onboarding does not rerun the budget.

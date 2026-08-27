@@ -128,10 +128,8 @@ export const ja = {
       privacy:
         '読み取り専用です。こちらから書き戻すことは一切なく、健康データはあなた自身のアカウントにのみ保存されます。',
 
-      apple: 'Apple ヘルスケア',
-      appleBody: 'iPhone と Apple Watch',
-      connectHealth: 'Health Connect',
-      connectHealthBody: 'Samsung Health、Fitbit、Garmin',
+      appleBody: 'Apple Health（iPhone と Apple Watch）',
+      connectHealthBody: 'Health Connect：Samsung Health、Fitbit、Garmin',
       heart: '心拍数',
       demo: 'デモデータを使う',
       demoBody: 'この端末で生成、開発用',
@@ -539,14 +537,10 @@ export const ja = {
     health: {
       title: '数えるのは時計にまかせる',
       subtitle: '消費した分は今日の枠に足されます。',
-      connectApple: 'Apple ヘルスケアをつなぐ',
-      connectAndroid: 'Health Connect をつなぐ',
       demo: '生成した活動を使う',
-      later: '今はしない',
       emptyToast: 'ヘルスケアから何も返ってきませんでした。活動画面から再度つなげます。',
       failedToast: 'ヘルスデータに接続できませんでした。活動画面からもう一度お試しください。',
-      reassurance: '読み取り専用です。あとから活動画面でつなげます。',
-      offline: '接続を待っています。ここは飛ばして、あとでつないでも大丈夫です。',
+      reassurance: '読み取りのみ。書き込むことはありません。',
     },
 
     notifications: {
@@ -556,8 +550,6 @@ export const ja = {
       scans: 'お皿を数え終えました',
       nothingElse: 'それ以外は送りません',
       promise: '自分のリマインダーで、どれでもオフにできます。',
-      enable: '通知をオンにする',
-      later: 'あとで',
       blocked: 'RiceCal のリマインダーはオフです。自分のリマインダーからオンにできます。',
     },
 
@@ -1042,7 +1034,28 @@ export const ja = {
       tutorial: 'RiceCal の使い方',
       help: 'ヘルプセンター',
       rate: 'RiceCal を評価する',
+      account: 'アカウント',
       signOut: 'ログアウト',
+    },
+
+    account: {
+      title: 'アカウント',
+      signedInAs: 'ログイン中のアカウント',
+      legalTitle: '規約とポリシー',
+      privacy: 'プライバシーポリシー',
+      terms: '利用規約',
+      deleteTitle: 'アカウントを削除',
+      deleteBody: '確認した時点で、以下のすべてが削除されます。',
+      goesDiary: 'すべての食事、体重、水分、メモ',
+      goesPhotos: '撮影したすべての写真',
+      goesRecipes: '公開したものも含め、すべてのレシピ',
+      goesProfile: 'プロフィール、設定、ログイン情報',
+      cancelFirst: '先にストアでサブスクリプションを解約してください。そのままでは請求が続きます。',
+      action: 'アカウントを削除する',
+      confirmTitle: 'アカウントを削除しますか',
+      confirmBody: '取り消せません。削除後は、あなたにも私たちにも記録を戻すことはできません。',
+      done: 'アカウントを削除しました。',
+      failed: 'アカウントを削除できませんでした。もう一度お試しください。',
     },
 
     rate: {
@@ -1222,6 +1235,8 @@ export const ja = {
       start: '無料トライアルを始める',
       startLifetime: '買い切りで購入',
       restore: '購入を復元',
+      terms: '利用規約',
+      privacy: 'プライバシー',
       nothingToRestore: 'このアカウントに復元できる購入はありません',
       notConfigured: 'このビルドではまだ購入が設定されていません。',
       restored: '購入が戻りました',
@@ -1334,6 +1349,8 @@ export const ja = {
       kgDown: '減った KG',
       lockedEntry: 'ロック中',
       resume: 'Pro で続ける',
+      terms: '年額 {{price}}。解約するまで自動更新されます。',
+      termsPending: '解約するまで毎年自動更新されます。',
       browse: '無料のまま見る',
     },
 
@@ -1520,6 +1537,19 @@ export const ja = {
       deleteTitle: 'このレシピを削除しますか',
       deleteBody: 'すでに記録した食事は、記録に残ります。',
       deleted: 'レシピを削除しました',
+    },
+
+    report: {
+      title: 'このレシピを報告',
+      body: 'あなたの画面にはすぐ表示されなくなります。作者には通知されません。',
+      inappropriate: '不快な内容、または食べ物ではない',
+      spam: 'スパムや宣伝',
+      dangerous: '調理や飲食に危険',
+      stolen: '他人の作品',
+      block: '{{name}} のレシピをすべて非表示',
+      done: '報告しました。もう表示されません。',
+      blocked: '非表示にしました。この人のレシピはもう表示されません。',
+      failed: '実行できませんでした。もう一度お試しください。',
     },
 
     share: {

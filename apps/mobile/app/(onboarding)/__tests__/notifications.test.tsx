@@ -13,14 +13,16 @@ import NotificationsStep from '../notifications'
  * Every `reminder_enabled` starts false in the signup trigger, deliberately — an
  * app that schedules notifications nobody asked for is an app that gets its
  * permission revoked. Which makes the obvious implementation of this screen a
- * lie: call `ensureNotificationPermission`, move on, and the user who tapped
- * "Enable notifications" and said yes to the system dialog never receives one.
- * So the assertion worth having is not that the permission was requested, it is
- * that the three meal reminders were turned ON.
+ * lie: call `ensureNotificationPermission`, move on, and the user who said yes
+ * to the system dialog never receives one. So the assertion worth having is not
+ * that the permission was requested, it is that the three meal reminders were
+ * turned ON.
  *
  * The second thing pinned here is that nothing on this screen is a wall. A
  * refusal, a failed write, a permission the SDK could not record: all of them
- * still advance. A minute-old account stuck behind a toast is the worse bug.
+ * still advance. A minute-old account stuck behind a toast is the worse bug,
+ * and since there is no longer a second button it is the ONLY bug — see the
+ * last case.
  */
 
 const mockReplace = jest.fn()
@@ -71,7 +73,7 @@ beforeEach(() => {
 it('turns the three meal reminders on when permission is granted', async () => {
   await render(<NotificationsStep />)
 
-  await user.press(screen.getByText('Enable notifications'))
+  await user.press(screen.getByText('Continue'))
 
   await waitFor(() => expect(mockUpdateMealTime).toHaveBeenCalledTimes(3))
   expect(mockUpdateMealTime.mock.calls.map(([patch]) => patch)).toEqual([
@@ -86,7 +88,7 @@ it('schedules nothing when the user says no, and still moves on', async () => {
   mockEnsure.mockResolvedValue(false)
   await render(<NotificationsStep />)
 
-  await user.press(screen.getByText('Enable notifications'))
+  await user.press(screen.getByText('Continue'))
 
   await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/paywall/intro'))
   expect(mockUpdateMealTime).not.toHaveBeenCalled()
@@ -96,7 +98,7 @@ it('carries on when the write fails', async () => {
   mockUpdateMealTime.mockRejectedValue(new Error('offline'))
   await render(<NotificationsStep />)
 
-  await user.press(screen.getByText('Enable notifications'))
+  await user.press(screen.getByText('Continue'))
 
   await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/paywall/intro'))
 })
@@ -113,7 +115,7 @@ it('does not wait on a write that will never settle', async () => {
   mockUpdateMealTime.mockReturnValue(new Promise(() => {}))
   await render(<NotificationsStep />)
 
-  await user.press(screen.getByText('Enable notifications'))
+  await user.press(screen.getByText('Continue'))
 
   await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/paywall/intro'))
   // Started all the same: the optimistic update has flipped the cache, so
@@ -121,12 +123,30 @@ it('does not wait on a write that will never settle', async () => {
   expect(mockUpdateMealTime).toHaveBeenCalledWith({ meal: 'breakfast', reminder_enabled: true })
 })
 
-it('asks for nothing when the ask is declined outright', async () => {
+/**
+ * Guideline 5.1.1(iv), as an assertion.
+ *
+ * A message shown before a permission request has to LEAD to the request, so
+ * the screen may not offer a way past it. It used to: "Maybe later" sat beside
+ * "Enable notifications" and skipped the dialog entirely, which is one of the
+ * two things this app was rejected for on the health step.
+ *
+ * Worth a test rather than a comment because the thing that would undo it is
+ * ordinary — somebody adding a skip back to raise completion — and nothing
+ * about that fails. The screen goes on working; it just stops being allowed.
+ */
+it('offers no way off the screen that skips the permission request', async () => {
   await render(<NotificationsStep />)
 
-  await user.press(screen.getByText('Maybe later'))
+  // Counted rather than named: asserting "Maybe later" is absent only holds
+  // while that is the exact string somebody would bring back, and one button is
+  // the property the guideline is about.
+  expect(screen.queryAllByRole('button')).toHaveLength(1)
 
-  expect(mockEnsure).not.toHaveBeenCalled()
-  expect(mockUpdateMealTime).not.toHaveBeenCalled()
+  // And the one button there is reaches the request rather than the next route.
+  mockEnsure.mockResolvedValue(false)
+  await user.press(screen.getByText('Continue'))
+
+  expect(mockEnsure).toHaveBeenCalled()
   expect(mockReplace).toHaveBeenCalledWith('/paywall/intro')
 })

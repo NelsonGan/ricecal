@@ -133,6 +133,7 @@ export function toRecipe(row: RecipeRow): Recipe {
     review: row.review_status ?? 'pending',
     reviewNote: row.review_note ?? undefined,
     authorName: row.author_name ?? '',
+    ownerId: row.owner_id ?? '',
     shareSlug: row.share_slug ?? '',
     savedCount: row.saved_count ?? 0,
 

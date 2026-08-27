@@ -21,7 +21,7 @@ export type StepHeaderProps = {
  *
  * The gesture was turned off in `(onboarding)/_layout.tsx` because half of this
  * flow REPLACES rather than pushes: after the account, the screen underneath
- * "Connect Apple Health" is still a question from before the account existed,
+ * the health step is still a question from before the account existed,
  * and a swipe walked a minute-old account back into "Where did you hear about
  * us?". Turning it off for the questions too is what makes the rule one rule —
  * onboarding moves forwards, and backwards only where this chevron says so.

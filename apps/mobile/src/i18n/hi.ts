@@ -127,10 +127,8 @@ export const hi = {
 
       privacy: 'सिर्फ़ पढ़ते हैं। हम कभी कुछ वापस नहीं लिखते, और आपका स्वास्थ्य डेटा सिर्फ़ आपके अपने खाते में रहता है।',
 
-      apple: 'Apple Health',
-      appleBody: 'iPhone और Apple Watch',
-      connectHealth: 'Health Connect',
-      connectHealthBody: 'Samsung Health, Fitbit, Garmin',
+      appleBody: 'Apple Health, iPhone और Apple Watch पर',
+      connectHealthBody: 'Health Connect: Samsung Health, Fitbit, Garmin',
       heart: 'हृदय गति',
       demo: 'डेमो डेटा इस्तेमाल करें',
       demoBody: 'इसी डिवाइस पर बना, डेवलपमेंट के लिए',
@@ -529,14 +527,10 @@ export const hi = {
     health: {
       title: 'गिनती घड़ी पर छोड़ दीजिए',
       subtitle: 'आप जो खर्च करते हैं वह आज के हिसाब में जुड़ जाता है।',
-      connectApple: 'Apple Health जोड़ें',
-      connectAndroid: 'Health Connect जोड़ें',
       demo: 'बनाई गई गतिविधि इस्तेमाल करें',
-      later: 'अभी नहीं',
       emptyToast: 'Health से कुछ नहीं आया। आप गतिविधि से दोबारा जोड़ सकते हैं।',
       failedToast: 'हम आपके स्वास्थ्य स्टोर से नहीं जुड़ सके। गतिविधि से फिर कोशिश कर सकते हैं।',
-      reassurance: 'सिर्फ़ पढ़ते हैं। बाद में गतिविधि से जोड़ सकते हैं।',
-      offline: 'कनेक्शन का इंतज़ार है। इसे छोड़कर बाद में जोड़ सकते हैं।',
+      reassurance: 'केवल पढ़ना। हम कभी कुछ वापस नहीं लिखते।',
     },
 
     notifications: {
@@ -546,8 +540,6 @@ export const hi = {
       scans: 'आपकी थाली गिन ली गई',
       nothingElse: 'और कुछ नहीं',
       promise: 'मैं, याद में इनमें से कोई भी बंद कर सकते हैं।',
-      enable: 'सूचनाएं चालू करें',
-      later: 'शायद बाद में',
       blocked: 'RiceCal की याद बंद है। इसे मैं, याद में चालू कर सकते हैं।',
     },
 
@@ -1031,7 +1023,28 @@ export const hi = {
       tutorial: 'RiceCal कैसे काम करता है',
       help: 'मदद केंद्र',
       rate: 'RiceCal को रेटिंग दें',
+      account: 'खाता',
       signOut: 'साइन आउट',
+    },
+
+    account: {
+      title: 'खाता',
+      signedInAs: 'साइन इन हैं',
+      legalTitle: 'बारीक अक्षर',
+      privacy: 'निजता नीति',
+      terms: 'उपयोग की शर्तें',
+      deleteTitle: 'अपना खाता मिटाएँ',
+      deleteBody: 'पुष्टि करते ही नीचे दी गई हर चीज़ मिट जाएगी।',
+      goesDiary: 'हर भोजन, वज़न, पानी और नोट',
+      goesPhotos: 'आपकी ली गई हर तस्वीर',
+      goesRecipes: 'आपकी रेसिपी, प्रकाशित की गई भी',
+      goesProfile: 'आपकी प्रोफ़ाइल, सेटिंग्स और साइन-इन',
+      cancelFirst: 'पहले स्टोर में अपना सब्सक्रिप्शन रद्द करें, वरना शुल्क लगता रहेगा।',
+      action: 'मेरा खाता मिटाएँ',
+      confirmTitle: 'खाता मिटाएँ?',
+      confirmBody: 'इसे वापस नहीं लिया जा सकता। इसके बाद आपकी डायरी न आप वापस पा सकेंगे, न हम।',
+      done: 'आपका खाता मिटा दिया गया है।',
+      failed: 'हम आपका खाता नहीं मिटा सके। फिर से कोशिश करें।',
     },
 
     rate: {
@@ -1211,6 +1224,8 @@ export const hi = {
       start: 'मुफ़्त ट्रायल शुरू करें',
       startLifetime: 'आजीवन पहुंच ख़रीदें',
       restore: 'ख़रीद वापस लाएं',
+      terms: 'शर्तें',
+      privacy: 'निजता',
       nothingToRestore: 'इस खाते पर वापस लाने को कुछ नहीं',
       notConfigured: 'इस बिल्ड में ख़रीदारी अभी सेट नहीं है।',
       restored: 'आपकी ख़रीद वापस आ गई',
@@ -1323,6 +1338,8 @@ export const hi = {
       kgDown: 'KG घटा',
       lockedEntry: 'बंद',
       resume: 'Pro के साथ जारी रखें',
+      terms: '{{price}} प्रति वर्ष, रद्द करने तक नवीनीकृत होता रहेगा।',
+      termsPending: 'रद्द करने तक हर साल नवीनीकृत होगा।',
       browse: 'मुफ़्त में देखते रहें',
     },
 
@@ -1508,6 +1525,19 @@ export const hi = {
       deleteTitle: 'यह रेसिपी हटाएं?',
       deleteBody: 'इससे जो भोजन आप पहले दर्ज कर चुके हैं वे आपकी डायरी में रहेंगे।',
       deleted: 'रेसिपी हटा दी',
+    },
+
+    report: {
+      title: 'इस रेसिपी की शिकायत करें',
+      body: 'यह आपको तुरंत दिखना बंद हो जाएगी। रसोइए को नहीं बताया जाता।',
+      inappropriate: 'आपत्तिजनक या खाना नहीं',
+      spam: 'स्पैम या विज्ञापन',
+      dangerous: 'पकाने या खाने के लिए असुरक्षित',
+      stolen: 'किसी और का काम',
+      block: '{{name}} का सब कुछ छिपाएँ',
+      done: 'शिकायत दर्ज। यह अब नहीं दिखेगी।',
+      blocked: 'छिपा दिया। उनकी रेसिपी अब नहीं दिखेंगी।',
+      failed: 'यह नहीं हो सका। फिर से कोशिश करें।',
     },
 
     share: {

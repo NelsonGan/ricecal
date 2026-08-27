@@ -1,7 +1,7 @@
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { Platform } from 'react-native'
 
-import { type SignInMethod, track } from '@/lib/analytics'
+import { forgetPerson, type SignInMethod, track } from '@/lib/analytics'
 import { env, isConfigured } from '@/lib/env'
 import { appScheme } from '@/lib/scheme'
 import { supabase } from '@/lib/supabase'
@@ -731,4 +731,46 @@ export async function signOut(): Promise<void> {
   // Before the provider's own `reset`, which the `SIGNED_OUT` event triggers a
   // tick later, so this event is still filed against the account it is about.
   track('Signed Out', {})
+}
+
+/**
+ * Delete the account, and everything attached to it.
+ *
+ * App Review guideline 5.1.1(v): an app that creates accounts must let somebody
+ * delete one from inside the app, with no email to write and nobody to ask. The
+ * server side is the `delete-account` function, which sweeps the user's
+ * photographs out of R2 and then deletes the `auth.users` row — every table
+ * cascades off that one. This half is what the phone has to do afterwards.
+ *
+ * THE SIGN-OUT IS LOCAL, and it has to be. There is no session left on the
+ * server to revoke: the user the token names does not exist, so a global
+ * sign-out asks GoTrue to end the sessions of a user it cannot find and answers
+ * an error onto a screen whose work actually succeeded. `scope: 'local'` is the
+ * same call `lib/revocation.ts` makes when the server has already ended a
+ * session, and for the same reason.
+ *
+ * `SIGNED_OUT` then does the rest, in `SessionProvider`: the query cache, the
+ * pictures on disk, the pending snaps, RevenueCat's identity and Mixpanel's.
+ * Nothing about deletion needs its own teardown, which is the point of putting
+ * all of it on the leaving edge.
+ *
+ * ORDER MATTERS TWICE OVER. The event and the profile delete both go BEFORE the
+ * sign-out, because both are filed against whoever the SDK currently thinks it
+ * is holding, and the sign-out resets that. And the whole of it goes after the
+ * server has answered, because until then nothing has been deleted and signing
+ * somebody out of an account that still exists is not what they asked for.
+ */
+export async function deleteAccount(): Promise<void> {
+  const { data, error } = await supabase.functions.invoke<{ ok: boolean; error?: string }>(
+    'delete-account',
+    { body: { confirm: true } },
+  )
+  // `invoke` reports a non-2xx as an error with an unread body, so the two
+  // failures are checked separately: the transport one, and a 200 that says no.
+  if (error) throw error
+  if (!data?.ok) throw new Error(data?.error ?? 'delete-account refused')
+
+  track('Account Deleted', {})
+  forgetPerson()
+  await supabase.auth.signOut({ scope: 'local' })
 }

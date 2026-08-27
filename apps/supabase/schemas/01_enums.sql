@@ -97,3 +97,12 @@ create type public.icon_set as enum ('body', 'dishes', 'food', 'system', 'ui');
 -- run on, and it is a value rather than a flag so a demo row can be found and
 -- deleted by the same query that would disconnect a real one.
 create type public.health_provider as enum ('apple_health', 'health_connect', 'demo');
+
+-- Why somebody reported a community recipe.
+--
+-- Four, and they are the four App Review guideline 1.2 is written about:
+-- objectionable material, spam, physical harm, and somebody else's work. A free
+-- text box is deliberately not offered — it would be a second moderation
+-- surface with its own abuse problem, and none of the four needs elaborating to
+-- be acted on.
+create type public.report_reason as enum ('inappropriate', 'spam', 'dangerous', 'stolen');

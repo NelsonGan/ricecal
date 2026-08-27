@@ -128,10 +128,8 @@ export const vi = {
       privacy:
         'Chỉ đọc. Chúng tôi không bao giờ ghi lại bất cứ gì, và dữ liệu sức khoẻ của bạn chỉ được lưu trong tài khoản của chính bạn.',
 
-      apple: 'Apple Health',
-      appleBody: 'iPhone và Apple Watch',
-      connectHealth: 'Health Connect',
-      connectHealthBody: 'Samsung Health, Fitbit, Garmin',
+      appleBody: 'Apple Health, trên iPhone và Apple Watch',
+      connectHealthBody: 'Health Connect: Samsung Health, Fitbit, Garmin',
       heart: 'Nhịp tim',
       demo: 'Dùng dữ liệu mẫu',
       demoBody: 'Được tạo trên máy này, phục vụ phát triển',
@@ -536,15 +534,11 @@ export const vi = {
     health: {
       title: 'Để đồng hồ đếm hộ bạn',
       subtitle: 'Lượng bạn đốt được cộng vào hạn mức hôm nay.',
-      connectApple: 'Kết nối Apple Health',
-      connectAndroid: 'Kết nối Health Connect',
       demo: 'Dùng hoạt động tạo sẵn',
-      later: 'Chưa phải bây giờ',
       emptyToast: 'Health không trả về gì cả. Bạn có thể kết nối lại từ mục Hoạt động.',
       failedToast:
         'Chúng tôi không kết nối được kho sức khoẻ. Bạn có thể thử lại từ mục Hoạt động.',
-      reassurance: 'Chỉ đọc. Bạn có thể kết nối sau từ mục Hoạt động.',
-      offline: 'Đang chờ kết nối. Bạn có thể bỏ qua và kết nối sau.',
+      reassurance: 'Chỉ đọc. Chúng tôi không bao giờ ghi lại bất cứ điều gì.',
     },
 
     notifications: {
@@ -554,8 +548,6 @@ export const vi = {
       scans: 'Đĩa của bạn đã được tính',
       nothingElse: 'Và không có gì khác',
       promise: 'Tắt bất cứ mục nào trong Tôi, Lời nhắc.',
-      enable: 'Bật thông báo',
-      later: 'Có thể để sau',
       blocked: 'Lời nhắc đang tắt cho RiceCal. Bạn có thể bật trong Tôi, Lời nhắc.',
     },
 
@@ -1041,7 +1033,29 @@ export const vi = {
       tutorial: 'RiceCal hoạt động thế nào',
       help: 'Trung tâm trợ giúp',
       rate: 'Đánh giá RiceCal',
+      account: 'Tài khoản',
       signOut: 'Đăng xuất',
+    },
+
+    account: {
+      title: 'Tài khoản',
+      signedInAs: 'ĐANG ĐĂNG NHẬP BẰNG',
+      legalTitle: 'ĐIỀU KHOẢN VÀ CHÍNH SÁCH',
+      privacy: 'Chính sách quyền riêng tư',
+      terms: 'Điều khoản sử dụng',
+      deleteTitle: 'XÓA TÀI KHOẢN CỦA BẠN',
+      deleteBody: 'Mọi thứ bên dưới sẽ bị xóa ngay khi bạn xác nhận.',
+      goesDiary: 'Mọi bữa ăn, lần cân, nước và ghi chú',
+      goesPhotos: 'Mọi ảnh bạn đã chụp',
+      goesRecipes: 'Công thức của bạn, kể cả công thức đã đăng',
+      goesProfile: 'Hồ sơ, cài đặt và thông tin đăng nhập của bạn',
+      cancelFirst: 'Hãy hủy đăng ký trong cửa hàng trước, nếu không bạn vẫn bị tính phí.',
+      action: 'Xóa tài khoản của tôi',
+      confirmTitle: 'Xóa tài khoản của bạn?',
+      confirmBody:
+        'Không thể hoàn tác. Sau đó, nhật ký của bạn không thể khôi phục, dù là bạn hay chúng tôi.',
+      done: 'Tài khoản của bạn đã bị xóa.',
+      failed: 'Chúng tôi không xóa được tài khoản của bạn. Vui lòng thử lại.',
     },
 
     rate: {
@@ -1223,6 +1237,8 @@ export const vi = {
       start: 'Bắt đầu dùng thử miễn phí',
       startLifetime: 'Mua quyền trọn đời',
       restore: 'Khôi phục giao dịch',
+      terms: 'Điều khoản',
+      privacy: 'Quyền riêng tư',
       nothingToRestore: 'Không có gì để khôi phục trên tài khoản này',
       notConfigured: 'Bản dựng này chưa thiết lập việc mua hàng.',
       restored: 'Giao dịch của bạn đã trở lại',
@@ -1335,6 +1351,8 @@ export const vi = {
       kgDown: 'KG GIẢM',
       lockedEntry: 'Đã khoá',
       resume: 'Tiếp tục với Pro',
+      terms: '{{price}} mỗi năm, tự động gia hạn cho đến khi bạn hủy.',
+      termsPending: 'Tự động gia hạn hằng năm cho đến khi bạn hủy.',
       browse: 'Tiếp tục xem miễn phí',
     },
 
@@ -1521,6 +1539,19 @@ export const vi = {
       deleteTitle: 'Xoá công thức này?',
       deleteBody: 'Những bữa bạn đã ghi từ nó vẫn nằm trong nhật ký.',
       deleted: 'Đã xoá công thức',
+    },
+
+    report: {
+      title: 'Báo cáo công thức này',
+      body: 'Công thức này sẽ không hiện với bạn nữa, ngay lập tức. Người nấu không được báo.',
+      inappropriate: 'Phản cảm hoặc không phải đồ ăn',
+      spam: 'Spam hoặc quảng cáo',
+      dangerous: 'Không an toàn để nấu hoặc ăn',
+      stolen: 'Là công sức của người khác',
+      block: 'Ẩn mọi thứ của {{name}}',
+      done: 'Đã báo cáo. Bạn sẽ không thấy nó nữa.',
+      blocked: 'Đã ẩn. Bạn sẽ không thấy công thức của họ nữa.',
+      failed: 'Không thực hiện được. Vui lòng thử lại.',
     },
 
     share: {

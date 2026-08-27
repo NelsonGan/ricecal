@@ -76,6 +76,13 @@ export const paywall = {
     start: 'Start free trial',
     startLifetime: 'Buy lifetime access',
     restore: 'Restore purchase',
+    /**
+     * The two links guideline 3.1.2 requires beside a subscription price. Short
+     * because they sit side by side under the small print; the destination is
+     * unambiguous either way.
+     */
+    terms: 'Terms',
+    privacy: 'Privacy',
     /** Two outcomes, and they used to share one sentence that assumed failure. */
     nothingToRestore: 'Nothing to restore on this account',
     notConfigured: 'Purchases are not set up in this build yet.',
@@ -250,6 +257,20 @@ export const paywall = {
      */
     lockedEntry: 'Locked',
     resume: 'Continue with Pro',
+    /**
+     * What "Continue with Pro" charges for, said on the screen that charges.
+     *
+     * This screen sells one plan with one tap, and for a while it said nothing
+     * at all about price, period or renewal. Guideline 3.1.2 requires all
+     * three next to the button, and a user is owed them whatever Apple
+     * requires.
+     *
+     * Not `hard.smallPrintYearly`, which reads "Free for 7 days, then...".
+     * Everyone who sees this screen has just finished that trial.
+     */
+    terms: '{{price}} a year, renewing until you cancel.',
+    /** Until the store answers, so the sentence is never half a price. */
+    termsPending: 'Renews yearly until you cancel.',
     browse: 'Keep browsing free',
   },
 
