@@ -565,8 +565,6 @@ export const fil = {
       scans: 'Nabilang na ang plato mo',
       nothingElse: 'At wala nang iba',
       promise: 'I-off ang alinman dito sa Ako, Mga paalala.',
-      enable: 'I-on ang mga notification',
-      later: 'Baka mamaya',
       blocked:
         'Naka-off ang mga paalala para sa RiceCal. Puwede mo itong i-on sa Ako, Mga paalala.',
     },

@@ -545,8 +545,6 @@ export const ko = {
       scans: '접시 계산이 끝났습니다',
       nothingElse: '그 외에는 아무것도 보내지 않습니다',
       promise: '내 정보의 알림에서 어느 것이든 끌 수 있습니다.',
-      enable: '알림 켜기',
-      later: '나중에',
       blocked: 'RiceCal 알림이 꺼져 있습니다. 내 정보의 알림에서 켤 수 있습니다.',
     },
 

@@ -17,9 +17,21 @@ import { Card, Icon, Text, useToast } from '@/ui'
  * an app that schedules notifications nobody asked for is an app that gets its
  * permission revoked. Which means a screen that only calls
  * `ensureNotificationPermission` and moves on grants the OS permission and then
- * schedules NOTHING: the user taps "Enable notifications", says yes to the
- * system dialog, and never receives one. So granting here also turns the three
- * meal reminders on, which is what the button says it does.
+ * schedules NOTHING: the user says yes to the system dialog and never receives
+ * one. So granting here also turns the three meal reminders on, which is what
+ * the rows on this screen promise.
+ *
+ * ONE BUTTON, AND IT SAYS "CONTINUE". Guideline 5.1.1(iv), the same rule the
+ * health step is shaped by: the message has to lead to the request, and the
+ * button in front of it may not be worded as the ask. It used to read "Enable
+ * notifications" with a "Maybe later" beside it, which is both halves of that
+ * at once.
+ *
+ * NOTHING HERE CAN TRAP ANYBODY, which is what makes losing the skip safe.
+ * `ensureNotificationPermission` is entirely local — no network, so nothing to
+ * pause offline — and `enable` calls `next()` from a `finally`, so a granted
+ * permission, a refusal, a phone that has already been asked and an SDK that
+ * threw all leave by the same door.
  *
  * The rows below are what will actually arrive, and the third row is there
  * because it is the one every other tracker gets wrong: water and weigh-in
@@ -115,11 +127,21 @@ function NotificationsStep() {
       accent="kaya"
       title={t('onboarding:notifications.title')}
       subtitle={t('onboarding:notifications.subtitle')}
-      primaryLabel={t('onboarding:notifications.enable')}
+      /* "Continue", and no second button, for the same reason the health step
+         has neither: guideline 5.1.1(iv). A message shown before a permission
+         request has to LEAD to the request, so a "Maybe later" beside it is a
+         way past the sheet the guideline does not allow; and the button in
+         front of the sheet may not be worded as the ask, so "Enable
+         notifications" is out. Apple's own examples are "Continue" and "Next".
+
+         Saying no is the system dialog's own "Don't Allow", which is where the
+         decision always actually was — and `enable` moves on regardless, so
+         this is a one-tap answer either way. */
+      primaryLabel={t('common:action.continue')}
       primaryDisabled={busy}
       onPrimary={enable}
-      secondaryLabel={t('onboarding:notifications.later')}
-      onSecondary={next}
+      secondaryLabel={undefined}
+      onSecondary={undefined}
     >
       {/* A clock and a bowl, which is the whole ask in one picture.
           96 because that is the ceiling `Icon` documents for art, and on an SE

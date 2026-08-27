@@ -639,23 +639,34 @@ screen to say so.
 ### The two permissions come after the account
 
 Both need one: a health connection is a row keyed by user, and enabling a meal
-reminder is a write to `meal_times`. Neither can block. A refusal, an unusable
-store or a failed write says so in a toast and carries on, because there is a
-whole tab for trying again and no version of a permission screen should stand
-between a new account and their diary.
+reminder is a write to `meal_times`. Neither can block. An unusable store, a
+sheet that could not be presented or a failed write says so in a toast and
+carries on, because there is a whole tab for trying again and no version of a
+permission screen should stand between a new account and their diary. A refusal
+says nothing at all: it is an answer rather than a failure, and the system has
+already recorded it in its own words.
 
-**The health step has one button and it says "Continue".** App Review reads a
-screen shown before a system permission sheet under guideline 5.1.1(iv), and it
-was rejected twice over: the button said "Connect Apple Health", which reads as
-the app doing the asking rather than Apple, and a "Not now" beside it let
-somebody dismiss the explanation without ever reaching the sheet. A message
-shown before a permission request has to lead to the request. Saying no is the
-sheet's own "Don't Allow" now, which is where the decision always actually was.
-The same rule applies to `ConnectPanel` on the Activity tab, whose button used
-to read "Apple Health".
+**Both steps have one button and it says "Continue".** App Review reads a screen
+shown before a system permission sheet under guideline 5.1.1(iv), and the health
+step was rejected twice over: the button said "Connect Apple Health", which reads
+as the app doing the asking rather than Apple, and a "Not now" beside it let
+somebody dismiss the explanation without ever reaching the sheet. A message shown
+before a permission request has to lead to the request. Saying no is the sheet's
+own "Don't Allow" now, which is where the decision always actually was.
 
-That is also why the step asks for the permission ITSELF rather than through
-`useConnectHealth`. Every write in the app is `networkMode: 'online'`, so
+The notifications step had the same pair — "Enable notifications" and "Maybe
+later" — and now has neither. `ConnectPanel` on the Activity tab is the third,
+whose button used to read "Apple Health". None of the three carries a label
+naming the permission, and none of them offers a way past the sheet.
+
+**Losing the skip means the step has to be impossible to get stuck on**, and the
+two are stuck in different places. Notifications was already safe:
+`ensureNotificationPermission` is entirely local and `enable` calls `next()` from
+a `finally`, so every outcome leaves by the same door. Health was not, which is
+the next paragraph.
+
+The health step asks for the permission ITSELF rather than through
+`useConnectHealth`, and that is why. Every write in the app is `networkMode: 'online'`, so
 react-query holds the connect mutation paused with no connection and never runs
 its body — no sheet, and with the skip gone, no way out of the step. The screen
 calls `requestAccess` directly (it is local, and answers offline), fires the
@@ -3565,8 +3576,10 @@ trial-ended screen bought a year off one button that named no figure.
 
 **A permission screen leads to the permission.** Guideline 5.1.1(iv): a message
 shown before a system sheet may not offer a way past it, and its button may not
-be worded as the ask ("Connect Apple Health"). One button, "Continue", and the
-answer is the system's own dialog. This app has been rejected for both halves.
+be worded as the ask ("Connect Apple Health", "Enable notifications"). One
+button, "Continue", and the answer is the system's own dialog. This app has been
+rejected for both halves. There are three such screens — the two onboarding
+steps and `ConnectPanel` — and a fourth would have to obey the same rule.
 
 **The captcha fails open on the client and closed on the server.** Failing closed
 in the app adds no protection the gate is not already providing, and does add a
