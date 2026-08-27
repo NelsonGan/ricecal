@@ -8,7 +8,7 @@
 // the six widgets are declared next to the native code that publishes them and
 // a seventh has to be named there before anything can report it.
 import type { WidgetKind } from '@modules/ricecal-widgets'
-import type { ActivityLevel, Meal } from '@/data/types'
+import type { ActivityLevel, Meal, ReportReason } from '@/data/types'
 // Type-only as well, and from a sibling in `lib` rather than a copy: the trigger
 // list and the skip reasons ARE the rating gate, so a trigger added there and
 // forgotten here should be a compile error rather than an event property nobody
@@ -181,6 +181,21 @@ export type Events = {
    */
   'Sign In Failed': { method: SignInMethod; reason: 'cancelled' | 'unavailable' | 'error' }
   'Signed Out': NoProps
+  /**
+   * The account is gone: rows, photographs and sign-in identity.
+   *
+   * Fired from the one place that can delete an account, after the server has
+   * said it did, and it is the last thing this person will ever be counted
+   * doing. Worth having despite that, because "how many people leave for good,
+   * and at what age of account" is a question about the product that nothing
+   * else can answer — a churned subscriber and a deleted account are not the
+   * same event, and only one of them is a decision.
+   *
+   * No properties, and no reason on it. A reason would have to be asked for,
+   * and a form standing between somebody and the button they came for is
+   * exactly what the guideline this feature exists for forbids.
+   */
+  'Account Deleted': NoProps
 
   // ── Logging ──────────────────────────────────────────────────────────────
   /**
@@ -332,6 +347,24 @@ export type Events = {
    */
   'Recipe Published': { outcome: 'approved' | 'rejected' | 'pending' }
   'Recipe Copied': NoProps
+  /**
+   * Somebody reported a community recipe.
+   *
+   * The reason and nothing else. WHICH recipe is in Postgres, next to the
+   * moderation that acts on it; what this answers is whether the four reasons
+   * offered are the right four, which is the only question about them a chart
+   * can settle. A fifth reason nobody would have picked is as much a finding as
+   * a reason everybody picks.
+   */
+  'Recipe Reported': { reason: ReportReason }
+  /**
+   * A cook hidden for good, by one reader.
+   *
+   * No properties: the person blocked is not a fact about the product, and the
+   * only question here is whether this happens at all. If it becomes common,
+   * the moderation gate before publishing is not doing its job.
+   */
+  'Author Blocked': NoProps
   'Review Opened': { kind: 'week' | 'month' }
   /**
    * The share sheet came back having actually shared something.

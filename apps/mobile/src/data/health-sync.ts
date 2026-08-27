@@ -6,7 +6,13 @@ import { createMMKV } from 'react-native-mmkv'
 
 import { setPersonProps, track } from '@/lib/analytics'
 import type { TablesInsert } from '@/lib/database.types'
-import type { HealthProvider, HealthReading, ProviderId, WorkoutReading } from '@/lib/health'
+import type {
+  AccessResult,
+  HealthProvider,
+  HealthReading,
+  ProviderId,
+  WorkoutReading,
+} from '@/lib/health'
 import { providerFor } from '@/lib/health'
 import { ageFrom, basalRate } from '@/lib/nutrition'
 import { supabase } from '@/lib/supabase'
@@ -489,6 +495,16 @@ export type ConnectResult = {
  * "connect" and then separately asks for their history. The permission sheet and
  * the backfill are the same wait, and splitting them would put an empty Activity
  * tab between them.
+ *
+ * `access` IS THE ONE WAY TO SPLIT THEM, and exactly one caller needs it. Every
+ * write in this app is `networkMode: 'online'`, so react-query holds this
+ * mutation PAUSED when there is no connection — which means the permission
+ * sheet, a purely local thing, never appears either. That is survivable on the
+ * Activity tab, which is a screen somebody can leave. It is not survivable in
+ * onboarding, where App Review requires the step to lead to the permission
+ * request and there is therefore no way past it. So that screen puts the sheet
+ * up itself and hands the answer here, and the sync behind it can wait for a
+ * connection as long as it likes.
  */
 export function useConnectHealth() {
   const userId = useUserId()
@@ -497,14 +513,17 @@ export function useConnectHealth() {
   return useMutation({
     mutationFn: async ({
       provider: id,
+      access: answered,
       onProgress,
     }: {
       provider: ProviderId
+      /** A permission answer the caller already has. See the note above. */
+      access?: AccessResult
       onProgress?: (progress: SyncProgress) => void
     }): Promise<ConnectResult> => {
       const provider = providerFor(id)
 
-      const access = await provider.requestAccess()
+      const access = answered ?? (await provider.requestAccess())
       // Stamped here too, so the sync that follows a connect does not turn straight
       // round and ask again for the list it was just granted.
       asked.set(askedKey(id), fingerprint(provider.readTypes))

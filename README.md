@@ -271,6 +271,8 @@ auth.users
        │    └── food_log_ingredients   what a scanned plate was made of
        ├── daily_logs ─────── water in ml, and a day note
        ├── recipes ────────── home cooking → recipe_ingredients
+       ├── recipe_reports ─── a community recipe somebody reported
+       ├── blocked_authors ── cooks this account never wants to see again
        ├── weight_logs ────── current weight, typed or synced
        └── health_connections  which health store, and how far back it has read
             ├── activity_days ───── one day of movement, keyed by local date
@@ -637,10 +639,40 @@ screen to say so.
 ### The two permissions come after the account
 
 Both need one: a health connection is a row keyed by user, and enabling a meal
-reminder is a write to `meal_times`. Neither can block. A refusal, an unusable
-store or a failed write says so in a toast and carries on, because there is a
-whole tab for trying again and no version of a permission screen should stand
-between a new account and their diary.
+reminder is a write to `meal_times`. Neither can block. An unusable store, a
+sheet that could not be presented or a failed write says so in a toast and
+carries on, because there is a whole tab for trying again and no version of a
+permission screen should stand between a new account and their diary. A refusal
+says nothing at all: it is an answer rather than a failure, and the system has
+already recorded it in its own words.
+
+**Both steps have one button and it says "Continue".** App Review reads a screen
+shown before a system permission sheet under guideline 5.1.1(iv), and the health
+step was rejected twice over: the button said "Connect Apple Health", which reads
+as the app doing the asking rather than Apple, and a "Not now" beside it let
+somebody dismiss the explanation without ever reaching the sheet. A message shown
+before a permission request has to lead to the request. Saying no is the sheet's
+own "Don't Allow" now, which is where the decision always actually was.
+
+The notifications step had the same pair — "Enable notifications" and "Maybe
+later" — and now has neither. `ConnectPanel` on the Activity tab is the third,
+whose button used to read "Apple Health". None of the three carries a label
+naming the permission, and none of them offers a way past the sheet.
+
+**Losing the skip means the step has to be impossible to get stuck on**, and the
+two are stuck in different places. Notifications was already safe:
+`ensureNotificationPermission` is entirely local and `enable` calls `next()` from
+a `finally`, so every outcome leaves by the same door. Health was not, which is
+the next paragraph.
+
+The health step asks for the permission ITSELF rather than through
+`useConnectHealth`, and that is why. Every write in the app is `networkMode: 'online'`, so
+react-query holds the connect mutation paused with no connection and never runs
+its body — no sheet, and with the skip gone, no way out of the step. The screen
+calls `requestAccess` directly (it is local, and answers offline), fires the
+backfill without waiting for it, and moves on. The toasts hang off
+`mutateAsync` rather than off `mutate`'s callbacks for the same reason: this
+component is gone a tick later, and those callbacks go with it.
 
 The flow opens on `setup`, which asks for a language and a unit system before
 anything is measured. See [Language](#language) for why both are on one screen
@@ -979,6 +1011,56 @@ the reason that provider sits outside the navigator: the sign-out empties the
 cache and the layout guards send the user out to sign-in a tick later, so a
 message belonging to the screen they were on would go with it. Arriving there
 unannounced is the other half of the complaint.
+
+### Deleting an account
+
+`app/settings/account.tsx`, reached from **Me, Account**, and it exists because
+App Review guideline 5.1.1(v) requires it: an app that lets somebody create an
+account has to let them delete it from inside the app. Not by email, not by
+asking somebody. This app was rejected for offering only the email route that
+`ricecal.app/data-deletion` used to describe.
+
+Two taps, which is the most the guideline allows: a red button, then a sheet
+that says it cannot be undone. Nothing bargains, nothing asks for a reason, and
+there is no typed confirmation. A subscription that renews gets one extra line,
+because billing lives with Apple or Google and deleting the account here stops
+none of it.
+
+The server half is `functions/delete-account`, and it does two things in an
+order that is the whole design:
+
+1. **Every object under the user's two R2 prefixes**, by listing the folder
+   rather than reading `photo_path` off the rows. A key is minted before the row
+   that will hold it exists, so an upload whose insert failed is an object no
+   row has ever named, and listing is the only thing that finds it.
+2. **The `auth.users` row**, with the admin API. Every table in the schema
+   hangs off it with `on delete cascade`, so nothing in that function
+   enumerates tables — a list of tables there is a list a future migration
+   silently makes wrong.
+
+**Objects first.** The retention sweep runs the other way round (delete the
+object, then forget the key) because there the row is the only record of the
+key. Here the keys are *derived from the user id*, so the id is the thing that
+has to outlive the sweep: delete the account first and a failed sweep strands
+every photograph for good, with nothing left that knows the prefix. A failure
+therefore leaves the account entirely intact and says so, and pressing the
+button again is cheaper than the first attempt, because the objects that did go
+are really gone.
+
+The phone then signs out with `scope: 'local'`, for the reason
+[the section above](#signing-out-when-the-server-already-has) gives: there is no
+session left on the server, and the user the token names no longer exists.
+`SIGNED_OUT` does the rest through `SessionProvider` — cache, pictures on disk,
+pending snaps, RevenueCat, Mixpanel. The Mixpanel *profile* is deleted
+explicitly first (`forgetPerson`), because `$email` lives on it and is the one
+identifier in the whole analytics plan that names a person; it has to happen
+before the reset, or it lands on the fresh anonymous profile instead.
+
+What survives, and `ricecal.app/data-deletion` says the same in the user's own
+words: a recipe somebody else saved into their own diary (`source_recipe_id` is
+`on delete set null`, and the copy became theirs when they saved it), the
+anonymous catalogue-widening rows, which carry a search term and no account,
+and whatever Apple, Google or RevenueCat hold about a purchase, which is theirs.
 
 ### The eight auth emails
 
@@ -1754,6 +1836,46 @@ scans on it would be the app billing them for its own check.
 `claim_recipe_review` is ten an hour, per account, atomic, with no client write
 grant. Refused, the recipe stays `pending`.
 
+### Reporting a recipe, and blocking its cook
+
+App Review guideline 1.2 asks four things of an app whose users read each other's
+writing, and the community shelf is exactly that. Three of them the publishing
+gate above already covered: a filter before anything is posted, the ability to
+take something down, and published contact. The two halves a READER controls are
+`schemas/24_moderation.sql`.
+
+- **Report** writes a `recipe_reports` row, one per person per recipe, and the
+  recipe disappears for the reporter immediately.
+- **Block** writes a `blocked_authors` row, and everything by that cook
+  disappears at once. Not your own saved copy of theirs: that has your
+  `owner_id`, and it became yours when you saved it.
+
+**Both are enforced in a RESTRICTIVE read policy on `recipes`**, which is the one
+place in this schema that word appears. A permissive policy is ORed with the
+others, so a second `for select` policy would WIDEN what is visible; a
+restrictive one is ANDed, which is the shape of "and also not from somebody they
+blocked". Enforced in a query instead, it would be a filter the next call site
+forgets — and the failure mode is showing somebody exactly what they asked never
+to see again. The shelf, the detail screen, `recipe_details` and the ingredient
+policy that defers to this one all go through it.
+
+**Three separate people take a recipe off the shelf for everybody.** One would
+make the report button a weapon; ten would leave something genuinely offensive up
+until ten people had seen it, and the guideline asks for a timely response rather
+than a popular one. `report_threshold()` is the number, and the trigger parks the
+row at `pending` rather than `rejected`: both are invisible, and only one of them
+is a claim, so re-running the review is all it takes to put back a recipe three
+people were wrong about.
+
+**Neither table is readable by anyone but the person who wrote the row, and the
+author is never told.** A report is an accusation and a block is a judgement
+about a person; either one visible to its subject turns a moderation tool into a
+way to start an argument.
+
+`tests/16_moderation.test.sql` runs all of it as `authenticated` with a forged
+claim, for the reason `02_rls.test.sql` does: run as the owner, every query
+returns the rows it is meant to hide and every assertion passes.
+
 ### Filling the form in, from a photo or a sentence
 
 Two offers on a new recipe, answering different situations rather than different
@@ -2355,6 +2477,11 @@ the server to name it. A launch into a familiar diary draws off the disk and
 invokes the function not at all. An upload seeds that cache with what it just
 sent, so the phone never downloads back a plate it photographed.
 
+Deleting an account is the one operation that goes at the folder rather than at
+a key: `deleteUserObjects` lists `meals/<id>/` and `avatars/<id>/` and empties
+both. See [Deleting an account](#deleting-an-account) for why it lists rather
+than reading the rows, and why it runs before anything is deleted in Postgres.
+
 Two things the Supabase buckets used to enforce for free are worth knowing about.
 The mime allowlist survives as a **signed header**, so an upload sending a
 different content type fails R2's own signature check. The size limit does not: a
@@ -2375,6 +2502,16 @@ Three products on both stores and in RevenueCat: monthly, yearly, and a one-off
 lifetime. The two subscriptions carry a seven-day free trial and lifetime does
 not, which is why the button and the small print on `paywall/intro.tsx` change
 with the selection.
+
+**A screen that can charge somebody says what it charges, and links the two
+documents.** Guideline 3.1.2: title, length, price, and functional links to the
+terms of use and the privacy policy. The first three were on `ProPitch` already;
+the links are `PurchaseTerms`, which is a component rather than a copied pair
+because "every screen that can start a purchase" is a set that grows. There are
+three of them — `paywall/intro`, `paywall/index` and `paywall/ended` — and the
+third sold a year with one tap and had no price, period or renewal anywhere on
+it at all. `lib/legal.ts` holds the two addresses, and the same pair is on
+**Me, Account** for everybody who never reaches a paywall.
 
 ### What each tier gets
 
@@ -3423,6 +3560,27 @@ turns the form into an oracle for who uses this app.
 other way into that stack and wrong for this one. The layout exempts
 `new-password` by name.
 
+**Deleting an account sweeps the objects BEFORE it deletes the row.** The keys
+are derived from the user id (`meals/<id>/`, `avatars/<id>/`), so the id is the
+only thing that knows where the photographs are. Delete the account first and a
+sweep that fails leaves every one of them in the bucket with nothing left in the
+system that could ever name them. The other order is safe in both directions: a
+failure deletes nothing at all, and a retry finishes what the last attempt
+started. This is the opposite of the retention sweep's order, which deletes the
+object first because there the ROW is the only record of the key.
+
+**A screen that can start a purchase carries its own small print.** Price,
+period, renewal, and the two links — `PurchaseTerms`. Guideline 3.1.2, and the
+trap is that the screens that sell are not only the ones called "paywall": the
+trial-ended screen bought a year off one button that named no figure.
+
+**A permission screen leads to the permission.** Guideline 5.1.1(iv): a message
+shown before a system sheet may not offer a way past it, and its button may not
+be worded as the ask ("Connect Apple Health", "Enable notifications"). One
+button, "Continue", and the answer is the system's own dialog. This app has been
+rejected for both halves. There are three such screens — the two onboarding
+steps and `ConnectPanel` — and a fourth would have to obey the same rule.
+
 **The captcha fails open on the client and closed on the server.** Failing closed
 in the app adds no protection the gate is not already providing, and does add a
 way for a broken WebView to lock somebody out. The consequence is an ordering
@@ -3449,6 +3607,11 @@ It looked perfect at the small limits it was tested with.
 anything that is not a clean answer, so react-query reaches its error state.
 Answering `[]` for a Worker that is down tells somebody their dish does not
 exist.
+
+**Anything a user can read that another user wrote needs a report and a block.**
+Guideline 1.2, and the community shelf is the only such surface here. Both are
+RLS rather than a query filter, so nothing that reads `recipes` has to remember
+them. See [Reporting a recipe](#reporting-a-recipe-and-blocking-its-cook).
 
 **A recipe reaches the community only when a reviewer says so.** `is_public` and
 `review_status` are outside the client's column grant, and the community query
@@ -3594,6 +3757,12 @@ viewfinder that took it.
 **An image column holds a key, never a URL.** That is what made a change of
 storage provider a change of base URL rather than a migration over every row.
 
+**The bucket is the authority on what a user has stored, not the rows.** A key
+is minted before the row that will hold it exists, so an upload whose insert
+failed is an object no column has ever named. Anything that has to account for
+*everything* a user stored — account deletion is the one that does — lists the
+prefix rather than selecting `photo_path`.
+
 **A key names one object, for good.** `newKey` mints a UUID per upload and
 nothing ever writes over an existing one. That is what lets the client cache the
 picture under the key instead of under a signature that rotates hourly, and it is
@@ -3620,6 +3789,19 @@ file. `$email` is the one exception, explained above.
 Things that will bite you.
 
 ### Database
+
+**A trigger that fires inside the `auth.users` cascade runs as
+`supabase_auth_admin`, which has no privileges in `public`.** GoTrue performs
+the delete, so every `on delete cascade` and every trigger those deletes fire
+happen under its role. `sync_daily_goals` is attached to `weight_logs` for
+DELETE and its first statement reads `public.profiles`; invoker-rights, that was
+`permission denied for table profiles`, which GoTrue reports as the wonderfully
+unhelpful "Database error deleting user". The symptom is the shape to remember:
+account deletion worked perfectly for an account with nothing in it and failed
+for every account anyone had actually used. The fix is `security definer` (with
+`set search_path = ''` and every name qualified, as ever), and
+`tests/15_account_deletion.test.sql` asserts the property over every table the
+cascade can reach rather than over the one function that had the bug.
 
 **`supabase db diff` misses function grants.** Against the full local stack it
 reports no changes for `revoke`/`grant` deltas; the CI `migrations` job catches

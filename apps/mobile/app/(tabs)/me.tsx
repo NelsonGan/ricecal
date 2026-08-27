@@ -295,8 +295,19 @@ export default function MeScreen() {
         <SettingRow
           icon={{ set: 'system', name: 'star' }}
           title={t('profile:home.rate')}
-          divider={false}
           onPress={() => askForRating(userId)}
+        />
+        {/* Last in the card, because it is the one row nobody is looking for
+            until they are — and it has to be findable when they are. App Review
+            works from the guideline text alone (5.1.1(v): an app that creates
+            accounts must offer deletion inside itself), so the word on the row
+            is "Account", which is what they will look under. The screen behind
+            it holds the address and the delete. */}
+        <SettingRow
+          icon={{ set: 'system', name: 'profile-card' }}
+          title={t('profile:home.account')}
+          divider={false}
+          onPress={() => router.push('/settings/account')}
         />
       </Card>
 

@@ -7,6 +7,7 @@ import { usePlanPrices } from '@/data'
 import { PlanPicker } from '@/features/shared'
 import { Button, Icon, Text } from '@/ui'
 import { PlanTable } from './PlanTable'
+import { PurchaseTerms } from './PurchaseTerms'
 
 /**
  * The app's icon.
@@ -106,6 +107,10 @@ export function ProPitch({ plan, onPlanChange, onRestore }: ProPitchProps) {
             {t('hard.restore')}
           </Button>
         ) : null}
+
+        {/* Guideline 3.1.2. The sentence above says what it costs and how long
+            it lasts; this is the pair of links that has to sit beside it. */}
+        <PurchaseTerms />
       </View>
     </>
   )

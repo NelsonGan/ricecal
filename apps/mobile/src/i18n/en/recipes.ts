@@ -212,6 +212,34 @@ export const recipes = {
     deleted: 'Recipe deleted',
   },
 
+  /**
+   * Reporting somebody else's recipe, and hiding the cook who wrote it.
+   *
+   * App Review guideline 1.2 requires both of a community shelf, and the
+   * writing has one job the guideline does not mention: it must not read as an
+   * accusation form. Nobody is asked to justify anything, there is no free-text
+   * box, and each button says plainly what it does about the ONE recipe in
+   * front of the reader. What happens beyond that — three people reporting the
+   * same recipe takes it off the shelf for everyone — is deliberately not
+   * promised here, because the reader cannot know whether anyone else will.
+   *
+   * The four reasons are the enum, in the enum's own order. See
+   * `report_reason` in `schemas/01_enums.sql`.
+   */
+  report: {
+    title: 'Report this recipe',
+    body: 'It stops showing up for you straight away. The cook is not told.',
+    inappropriate: 'Offensive or not food',
+    spam: 'Spam or advertising',
+    dangerous: 'Unsafe to cook or eat',
+    stolen: "Somebody else's work",
+    /** The cook's own name, or "Someone" when there is none. */
+    block: 'Hide everything by {{name}}',
+    done: 'Reported. You will not see it again.',
+    blocked: 'Hidden. You will not see their recipes again.',
+    failed: 'Could not do that. Try again.',
+  },
+
   share: {
     action: 'Share',
     title: 'Share this recipe',

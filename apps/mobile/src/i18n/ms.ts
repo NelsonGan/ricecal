@@ -134,10 +134,8 @@ export const ms = {
       privacy:
         'Baca sahaja. Kami tidak pernah menulis apa-apa kembali, dan data kesihatan anda hanya disimpan dalam akaun anda sendiri.',
 
-      apple: 'Apple Health',
-      appleBody: 'iPhone dan Apple Watch',
-      connectHealth: 'Health Connect',
-      connectHealthBody: 'Samsung Health, Fitbit, Garmin',
+      appleBody: 'Apple Health, pada iPhone dan Apple Watch',
+      connectHealthBody: 'Health Connect: Samsung Health, Fitbit, Garmin',
       heart: 'Kadar denyutan jantung',
       demo: 'Guna data demo',
       demoBody: 'Dijana pada peranti ini, untuk pembangunan',
@@ -556,15 +554,11 @@ export const ms = {
     health: {
       title: 'Biar jam tangan yang kira',
       subtitle: 'Apa yang anda bakar ditambah kepada bajet hari ini.',
-      connectApple: 'Sambungkan Apple Health',
-      connectAndroid: 'Sambungkan Health Connect',
       demo: 'Guna aktiviti yang dijana',
-      later: 'Bukan sekarang',
       emptyToast: 'Tiada apa-apa kembali daripada Health. Anda boleh sambung semula dari Aktiviti.',
       failedToast:
         'Kami tidak dapat menyambung ke stor kesihatan anda. Anda boleh cuba lagi dari Aktiviti.',
-      reassurance: 'Baca sahaja. Anda boleh sambung kemudian dari Aktiviti.',
-      offline: 'Menunggu sambungan. Anda boleh langkau ini dan sambung kemudian.',
+      reassurance: 'Baca sahaja. Kami tidak pernah menulis apa-apa kembali.',
     },
 
     notifications: {
@@ -574,8 +568,6 @@ export const ms = {
       scans: 'Pinggan anda sudah dikira',
       nothingElse: 'Dan tiada apa-apa lagi',
       promise: 'Matikan mana-mana daripadanya dalam Saya, Peringatan.',
-      enable: 'Hidupkan pemberitahuan',
-      later: 'Mungkin nanti',
       blocked: 'Peringatan dimatikan untuk RiceCal. Anda boleh hidupkannya dalam Saya, Peringatan.',
     },
 
@@ -1066,7 +1058,29 @@ export const ms = {
       tutorial: 'Bagaimana RiceCal berfungsi',
       help: 'Pusat bantuan',
       rate: 'Nilai RiceCal',
+      account: 'Akaun',
       signOut: 'Log keluar',
+    },
+
+    account: {
+      title: 'Akaun',
+      signedInAs: 'LOG MASUK SEBAGAI',
+      legalTitle: 'CETAKAN HALUS',
+      privacy: 'Dasar Privasi',
+      terms: 'Terma Penggunaan',
+      deleteTitle: 'PADAM AKAUN ANDA',
+      deleteBody: 'Semua di bawah ini dipadam sebaik anda mengesahkan.',
+      goesDiary: 'Setiap hidangan, timbangan, air dan nota',
+      goesPhotos: 'Setiap gambar yang anda ambil',
+      goesRecipes: 'Resipi anda, termasuk yang diterbitkan',
+      goesProfile: 'Profil, tetapan dan log masuk anda',
+      cancelFirst: 'Batalkan langganan anda di stor dahulu, atau caj akan diteruskan.',
+      action: 'Padam akaun saya',
+      confirmTitle: 'Padam akaun anda?',
+      confirmBody:
+        'Ini tidak boleh dibatalkan. Selepas itu diari anda tidak dapat dipulihkan, oleh anda mahupun oleh kami.',
+      done: 'Akaun anda telah dipadam.',
+      failed: 'Kami tidak dapat memadam akaun anda. Cuba lagi.',
     },
 
     rate: {
@@ -1248,6 +1262,8 @@ export const ms = {
       start: 'Mula percubaan percuma',
       startLifetime: 'Beli akses seumur hidup',
       restore: 'Pulihkan pembelian',
+      terms: 'Terma',
+      privacy: 'Privasi',
       nothingToRestore: 'Tiada apa-apa untuk dipulihkan pada akaun ini',
       notConfigured: 'Pembelian belum disediakan dalam binaan ini.',
       restored: 'Pembelian anda sudah kembali',
@@ -1360,6 +1376,8 @@ export const ms = {
       kgDown: 'KG TURUN',
       lockedEntry: 'Berkunci',
       resume: 'Teruskan dengan Pro',
+      terms: '{{price}} setahun, diperbaharui sehingga anda batalkan.',
+      termsPending: 'Diperbaharui setiap tahun sehingga anda batalkan.',
       browse: 'Terus melayari secara percuma',
     },
 
@@ -1549,6 +1567,19 @@ export const ms = {
       deleteTitle: 'Padam resipi ini?',
       deleteBody: 'Hidangan yang sudah anda rekod daripadanya kekal dalam diari anda.',
       deleted: 'Resipi dipadam',
+    },
+
+    report: {
+      title: 'Laporkan resipi ini',
+      body: 'Ia berhenti muncul untuk anda serta-merta. Tukang masak tidak diberitahu.',
+      inappropriate: 'Menyinggung atau bukan makanan',
+      spam: 'Spam atau iklan',
+      dangerous: 'Tidak selamat dimasak atau dimakan',
+      stolen: 'Hasil kerja orang lain',
+      block: 'Sembunyikan semua daripada {{name}}',
+      done: 'Dilaporkan. Anda tidak akan melihatnya lagi.',
+      blocked: 'Disembunyikan. Anda tidak akan melihat resipi mereka lagi.',
+      failed: 'Tidak dapat berbuat demikian. Cuba lagi.',
     },
 
     share: {

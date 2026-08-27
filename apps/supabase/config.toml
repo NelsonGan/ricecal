@@ -575,6 +575,19 @@ verify_jwt = false
 import_map = "./functions/photos/deno.json"
 entrypoint = "./functions/photos/index.ts"
 
+# Account deletion, which App Review requires an app that creates accounts to
+# offer from inside itself. Sweeps the caller's two R2 prefixes and then deletes
+# the `auth.users` row, which cascades every table in the schema. Objects first,
+# because the keys are derived from the id that is about to stop existing.
+# Same self-inspected Authorization header as its neighbours. Secrets it reads:
+# the R2 four (without them it refuses rather than half-deleting) plus
+# SUPABASE_SERVICE_ROLE_KEY, which the platform injects.
+[functions.delete-account]
+enabled = true
+verify_jwt = false
+import_map = "./functions/delete-account/deno.json"
+entrypoint = "./functions/delete-account/index.ts"
+
 # Recipes: fill a form in from a photograph of the pot, and review one somebody
 # asked to publish. Same auth pattern as the others. Secrets it reads:
 # OPENROUTER_API_KEY (absent locally, which switches it into mock mode) and the

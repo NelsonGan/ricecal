@@ -133,10 +133,8 @@ export const zhHant = {
 
       privacy: '唯讀。我們從不寫回任何資料，你的健康資料只會存在你自己的帳號裡。',
 
-      apple: 'Apple 健康',
-      appleBody: 'iPhone 和 Apple Watch',
-      connectHealth: 'Health Connect',
-      connectHealthBody: 'Samsung Health、Fitbit、Garmin',
+      appleBody: 'Apple Health，iPhone 和 Apple Watch',
+      connectHealthBody: 'Health Connect：Samsung Health、Fitbit、Garmin',
       heart: '心率',
       demo: '使用示範資料',
       demoBody: '在這台裝置上產生，供開發使用',
@@ -533,14 +531,10 @@ export const zhHant = {
     health: {
       title: '讓手錶來數',
       subtitle: '你消耗掉的會加到今天的額度裡。',
-      connectApple: '連接 Apple 健康',
-      connectAndroid: '連接 Health Connect',
       demo: '使用產生的活動資料',
-      later: '先不要',
       emptyToast: '健康 App 沒有回傳任何資料。你可以之後在活動頁面再連接。',
       failedToast: '我們連不上你的健康資料庫。你可以之後在活動頁面再試。',
-      reassurance: '唯讀。之後也可以在活動頁面連接。',
-      offline: '正在等待網路。可以先略過，之後再連接。',
+      reassurance: '唯讀。我們從不寫回任何內容。',
     },
 
     notifications: {
@@ -550,8 +544,6 @@ export const zhHant = {
       scans: '你這盤已經算好了',
       nothingElse: '除此之外什麼都不發',
       promise: '在「我的」裡的提醒中隨時關掉任何一項。',
-      enable: '開啟通知',
-      later: '以後再說',
       blocked: 'RiceCal 的提醒是關著的。可以在「我的」裡的提醒中開啟。',
     },
 
@@ -1033,7 +1025,28 @@ export const zhHant = {
       tutorial: 'RiceCal 怎麼用',
       help: '說明中心',
       rate: '為 RiceCal 評分',
+      account: '帳戶',
       signOut: '登出',
+    },
+
+    account: {
+      title: '帳戶',
+      signedInAs: '目前登入帳戶',
+      legalTitle: '條款與政策',
+      privacy: '隱私政策',
+      terms: '使用條款',
+      deleteTitle: '刪除帳戶',
+      deleteBody: '確認後，以下所有內容立即被刪除。',
+      goesDiary: '每一餐、每次體重、飲水和備註',
+      goesPhotos: '你拍下的每一張照片',
+      goesRecipes: '你的食譜，包括已發佈的',
+      goesProfile: '你的資料、設定和登入身分',
+      cancelFirst: '請先在商店裡取消訂閱，否則會繼續扣款。',
+      action: '刪除我的帳戶',
+      confirmTitle: '刪除你的帳戶？',
+      confirmBody: '此操作無法復原。之後你和我們都無法恢復你的紀錄。',
+      done: '你的帳戶已刪除。',
+      failed: '無法刪除你的帳戶，請重試。',
     },
 
     rate: {
@@ -1211,6 +1224,8 @@ export const zhHant = {
       start: '開始免費試用',
       startLifetime: '購買永久版',
       restore: '恢復購買',
+      terms: '條款',
+      privacy: '隱私',
       nothingToRestore: '這個帳號沒有可恢復的購買',
       notConfigured: '這個版本還沒設定好購買功能。',
       restored: '你的購買回來了',
@@ -1323,6 +1338,8 @@ export const zhHant = {
       kgDown: '減掉公斤',
       lockedEntry: '已鎖定',
       resume: '繼續使用 Pro',
+      terms: '每年 {{price}}，在你取消前自動續訂。',
+      termsPending: '在你取消前每年自動續訂。',
       browse: '繼續免費瀏覽',
     },
 
@@ -1506,6 +1523,19 @@ export const zhHant = {
       deleteTitle: '刪除這個食譜？',
       deleteBody: '你已經記錄過的餐會留在你的紀錄裡。',
       deleted: '食譜已刪除',
+    },
+
+    report: {
+      title: '檢舉這道食譜',
+      body: '它會立刻不再出現在你這裡。我們不會告訴作者。',
+      inappropriate: '冒犯內容或不是食物',
+      spam: '垃圾訊息或廣告',
+      dangerous: '烹調或食用不安全',
+      stolen: '是別人的作品',
+      block: '隱藏 {{name}} 的全部食譜',
+      done: '已檢舉，你不會再看到它。',
+      blocked: '已隱藏，你不會再看到他們的食譜。',
+      failed: '沒能完成，請重試。',
     },
 
     share: {
