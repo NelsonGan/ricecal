@@ -164,21 +164,29 @@ export const onboarding = {
     title: 'Let your watch do the counting',
     /** Short, and about what the user GETS. The long version listed workouts. */
     subtitle: 'What you burn is added to today’s budget.',
-    connectApple: 'Connect Apple Health',
-    connectAndroid: 'Connect Health Connect',
+    /**
+     * NO BUTTON LABELS HERE ANY MORE, and their absence is the point.
+     *
+     * The step had two — "Connect Apple Health" and "Not now" — and App Review
+     * rejected both under guideline 5.1.1(iv): a message shown before a
+     * permission request may not dress itself as the request, and it may not
+     * offer a way past without one. The button says `common:action.continue`
+     * now, and there is no second button. See `(onboarding)/health.tsx`.
+     */
     /** A development build with no usable store. Says what it is, plainly. */
     demo: 'Use generated activity',
-    later: 'Not now',
     /** After a connect that read nothing, which on iOS is the only sign of a no. */
     emptyToast: 'Nothing came back from Health. You can connect again from Activity.',
     failedToast: 'We could not connect to your health store. You can try again from Activity.',
-    /** Under the CTA, so the promise is where the permission is asked for. */
-    reassurance: 'Read only. You can connect later from Activity.',
     /**
-     * Paused rather than failed: react-query holds an online-only mutation until
-     * a connection returns, so there is no error to report and nothing to retry.
+     * Under the CTA, so the promise is where the permission is asked for.
+     *
+     * It used to end "You can connect later from Activity", which was an
+     * invitation to postpone printed under a button that no longer allows it.
+     * What is left is the part that is about the permission itself, and it is
+     * literally true: `toShare` is empty in every request.
      */
-    offline: 'Waiting for a connection. You can skip this and connect later.',
+    reassurance: 'Read only. We never write anything back.',
   },
 
   notifications: {

@@ -135,10 +135,8 @@ export const fil = {
       privacy:
         'Basa lang. Hindi kami kailanman nagsusulat pabalik, at ang health data mo ay nasa sarili mong account lamang.',
 
-      apple: 'Apple Health',
-      appleBody: 'iPhone at Apple Watch',
-      connectHealth: 'Health Connect',
-      connectHealthBody: 'Samsung Health, Fitbit, Garmin',
+      appleBody: 'Apple Health, sa iPhone at Apple Watch',
+      connectHealthBody: 'Health Connect: Samsung Health, Fitbit, Garmin',
       heart: 'Tibok ng puso',
       demo: 'Gumamit ng demo data',
       demoBody: 'Ginawa sa device na ito, para sa development',
@@ -553,15 +551,11 @@ export const fil = {
     health: {
       title: 'Hayaang ang relo ang magbilang',
       subtitle: 'Ang nasunog mo ay idinadagdag sa badyet ngayong araw.',
-      connectApple: 'Ikonekta ang Apple Health',
-      connectAndroid: 'Ikonekta ang Health Connect',
       demo: 'Gumamit ng ginawang aktibidad',
-      later: 'Hindi muna ngayon',
       emptyToast: 'Walang bumalik mula sa Health. Puwede kang kumonekta ulit mula sa Aktibidad.',
       failedToast:
         'Hindi kami makakonekta sa health store mo. Puwede mong subukan ulit mula sa Aktibidad.',
-      reassurance: 'Basa lang. Puwede kang kumonekta mamaya mula sa Aktibidad.',
-      offline: 'Naghihintay ng koneksyon. Puwede mo itong laktawan at kumonekta mamaya.',
+      reassurance: 'Basahin lang. Wala kaming isinusulat pabalik.',
     },
 
     notifications: {
@@ -1062,7 +1056,30 @@ export const fil = {
       tutorial: 'Paano gumagana ang RiceCal',
       help: 'Help centre',
       rate: 'I-rate ang RiceCal',
+      account: 'Account',
       signOut: 'Mag-sign out',
+    },
+
+    account: {
+      title: 'Account',
+      signedInAs: 'NAKA-SIGN IN BILANG',
+      legalTitle: 'ANG SMALL PRINT',
+      privacy: 'Patakaran sa Privacy',
+      terms: 'Mga Tuntunin ng Paggamit',
+      deleteTitle: 'BURAHIN ANG IYONG ACCOUNT',
+      deleteBody: 'Mabubura ang lahat ng nasa ibaba sa oras na kumpirmahin mo.',
+      goesDiary: 'Bawat pagkain, timbang, tubig at tala',
+      goesPhotos: 'Bawat larawang kinuha mo',
+      goesRecipes: 'Ang mga recipe mo, pati ang mga na-publish',
+      goesProfile: 'Ang profile, mga setting at sign-in mo',
+      cancelFirst:
+        'Kanselahin muna ang subscription mo sa store, kung hindi ay patuloy kang sisingilin.',
+      action: 'Burahin ang aking account',
+      confirmTitle: 'Burahin ang account mo?',
+      confirmBody:
+        'Hindi ito maibabalik. Pagkatapos nito ay hindi na mababawi ang talaarawan mo, ng iyo man o namin.',
+      done: 'Nabura na ang account mo.',
+      failed: 'Hindi namin nabura ang account mo. Subukan ulit.',
     },
 
     rate: {
@@ -1244,6 +1261,8 @@ export const fil = {
       start: 'Simulan ang libreng trial',
       startLifetime: 'Bilhin ang habambuhay na access',
       restore: 'Ibalik ang binili',
+      terms: 'Mga tuntunin',
+      privacy: 'Privacy',
       nothingToRestore: 'Walang maibabalik sa account na ito',
       notConfigured: 'Hindi pa naka-set up ang pagbili sa build na ito.',
       restored: 'Nakabalik na ang binili mo',
@@ -1356,6 +1375,8 @@ export const fil = {
       kgDown: 'KG NA BUMABA',
       lockedEntry: 'Naka-lock',
       resume: 'Magpatuloy sa Pro',
+      terms: "{{price}} bawat taon, mag-re-renew hangga't hindi mo kinakansela.",
+      termsPending: "Mag-re-renew taon-taon hangga't hindi mo kinakansela.",
       browse: 'Magpatuloy nang libre',
     },
 
@@ -1545,6 +1566,19 @@ export const fil = {
       deleteTitle: 'Burahin ang recipe na ito?',
       deleteBody: 'Mananatili sa diary mo ang mga pagkaing ni-log mo na mula rito.',
       deleted: 'Nabura ang recipe',
+    },
+
+    report: {
+      title: 'I-report ang recipe na ito',
+      body: 'Titigil itong lumabas sa iyo agad. Hindi sinasabihan ang nagluto.',
+      inappropriate: 'Nakakasakit o hindi pagkain',
+      spam: 'Spam o advertising',
+      dangerous: 'Delikadong lutuin o kainin',
+      stolen: 'Gawa ng iba',
+      block: 'Itago ang lahat ni {{name}}',
+      done: 'Na-report na. Hindi mo na ito makikita.',
+      blocked: 'Naitago na. Hindi mo na makikita ang mga recipe nila.',
+      failed: 'Hindi nagawa iyon. Subukan ulit.',
     },
 
     share: {

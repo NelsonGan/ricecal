@@ -233,3 +233,89 @@ export async function deleteObject(key: string): Promise<void> {
     throw new Error(`R2 DELETE ${key} failed: ${response.status}`)
   }
 }
+
+/**
+ * How many keys one list page asks for. S3's own ceiling is 1,000.
+ */
+const LIST_PAGE = 1000
+
+/**
+ * How many deletes are in flight at once.
+ *
+ * R2's S3 surface has a bulk delete, and this deliberately does not use it: it
+ * requires a `Content-MD5` over the request body, which Web Crypto does not
+ * offer and which would mean an MD5 dependency in the one module that signs
+ * everything. Sixteen concurrent single-object deletes clear a thousand
+ * objects in a couple of seconds, which is well inside what the one caller
+ * needs. (The retention sweep, which really does move hundreds of thousands of
+ * objects, uses the R2 *binding* from the jobs Worker instead — see
+ * `apps/cloudflare/workers/jobs/src/jobs/retention.ts`.)
+ */
+const DELETE_CONCURRENCY = 16
+
+/**
+ * Every key under a prefix, one page at a time.
+ *
+ * The keys come back XML-escaped in principle. In practice they cannot be:
+ * every key this system mints matches `SAFE_KEY`, which has no character XML
+ * would escape, and `ownsKey` refuses anything else before it is ever signed.
+ * So the extraction is a regex rather than a parser, and `SAFE_KEY` is what
+ * keeps that true — do not widen one without revisiting the other.
+ */
+export async function listKeys(prefix: string): Promise<string[]> {
+  const { client, base } = mustR2()
+  const keys: string[] = []
+  let token: string | undefined
+
+  // Bounded by `IsTruncated`, which S3 sets false on the last page. The loop
+  // cannot spin: a page either yields a continuation token or ends it.
+  for (;;) {
+    const target = new URL(base)
+    target.searchParams.set('list-type', '2')
+    target.searchParams.set('prefix', prefix)
+    target.searchParams.set('max-keys', String(LIST_PAGE))
+    if (token) target.searchParams.set('continuation-token', token)
+
+    const response = await client.fetch(target.toString(), { method: 'GET' })
+    if (!response.ok) throw new Error(`R2 LIST ${prefix} failed: ${response.status}`)
+    const xml = await response.text()
+
+    for (const match of xml.matchAll(/<Key>([^<]+)<\/Key>/g)) keys.push(match[1])
+
+    if (!/<IsTruncated>\s*true\s*<\/IsTruncated>/i.test(xml)) break
+    token = xml.match(/<NextContinuationToken>([^<]+)<\/NextContinuationToken>/)?.[1]
+    // A truncated page with no token is a broken answer rather than more work.
+    // Stopping is the safe reading: the caller re-lists, and anything missed is
+    // still there to be found.
+    if (!token) break
+  }
+
+  return keys
+}
+
+/**
+ * Every object this user has, gone. Returns how many were deleted.
+ *
+ * BY PREFIX, NOT FROM THE DATABASE. `food_logs.photo_path` and
+ * `profiles.avatar_path` name most of them, but not all: a key is minted
+ * before the row that will hold it exists, so an upload whose insert failed is
+ * an object no row has ever named. Listing the folder finds those too, and it
+ * is the only way that does.
+ *
+ * IT IS SAFE TO RUN TWICE. Deleting an absent object is a no-op, and a second
+ * list simply returns what the first did not reach — so a sweep that dies
+ * halfway through has made real progress rather than none, and the caller's
+ * retry is cheaper than the attempt before it.
+ */
+export async function deleteUserObjects(userId: string): Promise<number> {
+  const keys = (
+    await Promise.all(Object.values(PREFIX).map((prefix) => listKeys(`${prefix}/${userId}/`)))
+  ).flat()
+
+  for (let index = 0; index < keys.length; index += DELETE_CONCURRENCY) {
+    const chunk = keys.slice(index, index + DELETE_CONCURRENCY)
+    await Promise.all(chunk.map((key) => deleteObject(key)))
+  }
+
+  return keys.length
+}

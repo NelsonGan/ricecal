@@ -271,6 +271,24 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_authors: {
+        Row: {
+          author_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          author_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          author_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_goals: {
         Row: {
           carbs_g: number
@@ -837,6 +855,42 @@ export type Database = {
           },
           {
             foreignKeyName: 'recipe_ingredients_recipe_id_fkey'
+            columns: ['recipe_id']
+            isOneToOne: false
+            referencedRelation: 'recipes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      recipe_reports: {
+        Row: {
+          created_at: string
+          reason: Database['public']['Enums']['report_reason']
+          recipe_id: string
+          reporter_id: string
+        }
+        Insert: {
+          created_at?: string
+          reason: Database['public']['Enums']['report_reason']
+          recipe_id: string
+          reporter_id: string
+        }
+        Update: {
+          created_at?: string
+          reason?: Database['public']['Enums']['report_reason']
+          recipe_id?: string
+          reporter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'recipe_reports_recipe_id_fkey'
+            columns: ['recipe_id']
+            isOneToOne: false
+            referencedRelation: 'recipe_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'recipe_reports_recipe_id_fkey'
             columns: ['recipe_id']
             isOneToOne: false
             referencedRelation: 'recipes'
@@ -1688,6 +1742,7 @@ export type Database = {
         Args: { p_ingredient_id: string }
         Returns: undefined
       }
+      report_threshold: { Args: never; Returns: number }
       review_days: {
         Args: { p_from: string; p_to: string; p_user_id?: string }
         Returns: {
@@ -1902,6 +1957,7 @@ export type Database = {
       meal: 'breakfast' | 'lunch' | 'dinner' | 'snack'
       recipe_review: 'pending' | 'approved' | 'rejected'
       recipe_unit: 'g' | 'ml' | 'piece'
+      report_reason: 'inappropriate' | 'spam' | 'dangerous' | 'stolen'
       sex: 'female' | 'male'
       subscription_plan: 'monthly' | 'yearly' | 'lifetime'
       subscription_status: 'none' | 'trial' | 'active' | 'expired' | 'billing_retry'
@@ -2043,6 +2099,7 @@ export const Constants = {
       meal: ['breakfast', 'lunch', 'dinner', 'snack'],
       recipe_review: ['pending', 'approved', 'rejected'],
       recipe_unit: ['g', 'ml', 'piece'],
+      report_reason: ['inappropriate', 'spam', 'dangerous', 'stolen'],
       sex: ['female', 'male'],
       subscription_plan: ['monthly', 'yearly', 'lifetime'],
       subscription_status: ['none', 'trial', 'active', 'expired', 'billing_retry'],

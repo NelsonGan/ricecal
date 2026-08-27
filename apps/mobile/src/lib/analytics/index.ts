@@ -1,5 +1,6 @@
 export {
   type AnalyticsClient,
+  forgetPerson,
   identifyUser,
   registerAnalytics,
   resetAnalyticsForTest,

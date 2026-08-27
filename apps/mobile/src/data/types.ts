@@ -241,6 +241,14 @@ export type RecipeIngredient = {
   position: number
 }
 
+/**
+ * Why somebody reported a community recipe. Mirrors `public.report_reason`.
+ *
+ * Four, and they are the four App Review guideline 1.2 is written about:
+ * objectionable material, spam, physical harm, and somebody else's work.
+ */
+export type ReportReason = 'inappropriate' | 'spam' | 'dangerous' | 'stolen'
+
 export type Recipe = {
   id: string
   name: string
@@ -262,6 +270,15 @@ export type Recipe = {
   reviewNote?: string
   /** Who to credit on a community card. Empty on your own and on official ones. */
   authorName: string
+  /**
+   * The account that owns it, and the only thing on this type that names a
+   * person rather than describing one. Empty on an official recipe, which has
+   * no owner by design.
+   *
+   * It exists for `useBlockAuthor`, which needs an id rather than a display
+   * name: two cooks can be called Farah, and a block is about one of them.
+   */
+  ownerId: string
   shareSlug: string
   savedCount: number
 

@@ -3,9 +3,18 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { dateKey, today, useCurrentWeight, useDayLog, useNutritionRange, useWeighIns } from '@/data'
+import {
+  dateKey,
+  today,
+  useCurrentWeight,
+  useDayLog,
+  useNutritionRange,
+  usePlanPrices,
+  useWeighIns,
+} from '@/data'
 import { PurchasesUnavailable, purchasePlan, purchasesAvailable } from '@/data/purchases'
 import {
+  PurchaseTerms,
   trackPurchaseAbandoned,
   trackPurchaseStarted,
   useTrackPaywallShown,
@@ -31,6 +40,10 @@ export default function TrialEnded() {
   const dropped = Math.max(0, (weighIns[0]?.kg ?? current) - current)
 
   const locked = day.entries.slice(0, 2)
+
+  // The only plan this screen sells, so the only price it has to state.
+  const { data: prices } = usePlanPrices()
+  const yearly = prices?.yearly?.priceString
 
   useTrackPaywallShown('ended')
 
@@ -60,6 +73,19 @@ export default function TrialEnded() {
           <Button fullWidth onPress={resume}>
             {t('paywall:ended.resume')}
           </Button>
+          {/* WHAT THE BUTTON ABOVE ACTUALLY DOES, which it used to keep to
+              itself. "Continue with Pro" starts a yearly subscription in one
+              tap, and this screen carried no price, no period and no renewal
+              anywhere on it — a charge with nothing on screen to have consented
+              to, and guideline 3.1.2 in as many words. The links beside it are
+              the other half of the same rule.
+
+              The sentence waits for the store rather than printing half of
+              itself, exactly as `ProPitch` does. */}
+          <Text variant="caption" className="text-center text-faint">
+            {yearly ? t('paywall:ended.terms', { price: yearly }) : t('paywall:ended.termsPending')}
+          </Text>
+          <PurchaseTerms />
           <Button variant="ghost" fullWidth onPress={() => router.replace('/today')}>
             {t('paywall:ended.browse')}
           </Button>
