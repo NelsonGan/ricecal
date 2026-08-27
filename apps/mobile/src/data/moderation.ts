@@ -34,18 +34,16 @@ import type { ReportReason } from './types'
  * everybody, and that is the database's job rather than this one's — see
  * `report_threshold`. From here it always looks the same.
  *
- * `ignoreDuplicates` rather than a plain insert, keyed on the pair: reporting
- * twice is the same as reporting once, and a duplicate-key error shown to
- * somebody who tapped Report on a recipe they had already reported would be a
- * bug report about a feature working.
- *
- * IGNORE, NOT MERGE, and the difference is a grant. PostgREST turns a merging
- * upsert into `on conflict do update`, which needs UPDATE on the table —
- * `recipe_reports` deliberately has no update grant, so the request comes back
- * 403 and the screen says "could not do that" for a report that is simply
- * already filed. Ignoring conflicts is `on conflict do nothing`, which needs
- * only INSERT, and it keeps the reason somebody gave the FIRST time, which is
- * the right one: a report is a record rather than a setting.
+ * `ignoreDuplicates`, keyed on the pair, and both halves of that matter.
+ * Reporting twice is the same as reporting once, so a duplicate-key error shown
+ * to somebody who had already reported this recipe would be a bug report about
+ * a feature working. And IGNORE rather than MERGE, because the difference is a
+ * grant: PostgREST turns a merging upsert into `on conflict do update`, which
+ * needs UPDATE, and `recipe_reports` deliberately has none — so the merging
+ * form comes back 403 and the screen says "could not do that" about a report
+ * that is simply already filed. Ignoring conflicts needs only INSERT, and it
+ * keeps the reason given the FIRST time, which is the right one: a report is a
+ * record rather than a setting.
  */
 export function useReportRecipe() {
   const userId = useUserId()
