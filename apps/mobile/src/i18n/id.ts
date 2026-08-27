@@ -133,10 +133,8 @@ export const id = {
       privacy:
         'Hanya baca. Kami tidak pernah menulis apa pun kembali, dan data kesehatanmu hanya tersimpan di akunmu sendiri.',
 
-      apple: 'Apple Health',
-      appleBody: 'iPhone dan Apple Watch',
-      connectHealth: 'Health Connect',
-      connectHealthBody: 'Samsung Health, Fitbit, Garmin',
+      appleBody: 'Apple Health, di iPhone dan Apple Watch',
+      connectHealthBody: 'Health Connect: Samsung Health, Fitbit, Garmin',
       heart: 'Detak jantung',
       demo: 'Pakai data demo',
       demoBody: 'Dibuat di perangkat ini, untuk pengembangan',
@@ -546,16 +544,12 @@ export const id = {
     health: {
       title: 'Biar jam tanganmu yang menghitung',
       subtitle: 'Yang kamu bakar ditambahkan ke jatah hari ini.',
-      connectApple: 'Hubungkan Apple Health',
-      connectAndroid: 'Hubungkan Health Connect',
       demo: 'Pakai aktivitas buatan',
-      later: 'Nanti saja',
       emptyToast:
         'Tidak ada yang kembali dari Health. Kamu bisa menghubungkan lagi dari Aktivitas.',
       failedToast:
         'Kami tidak bisa terhubung ke penyimpanan kesehatanmu. Kamu bisa coba lagi dari Aktivitas.',
-      reassurance: 'Hanya baca. Kamu bisa menghubungkan nanti dari Aktivitas.',
-      offline: 'Menunggu koneksi. Kamu bisa lewati ini dan hubungkan nanti.',
+      reassurance: 'Hanya baca. Kami tidak pernah menulis apa pun kembali.',
     },
 
     notifications: {
@@ -1053,7 +1047,29 @@ export const id = {
       tutorial: 'Cara kerja RiceCal',
       help: 'Pusat bantuan',
       rate: 'Beri nilai RiceCal',
+      account: 'Akun',
       signOut: 'Keluar',
+    },
+
+    account: {
+      title: 'Akun',
+      signedInAs: 'MASUK SEBAGAI',
+      legalTitle: 'KETENTUAN RINCI',
+      privacy: 'Kebijakan Privasi',
+      terms: 'Ketentuan Penggunaan',
+      deleteTitle: 'HAPUS AKUN ANDA',
+      deleteBody: 'Semua di bawah ini terhapus begitu Anda mengonfirmasi.',
+      goesDiary: 'Setiap makanan, timbangan, air dan catatan',
+      goesPhotos: 'Setiap foto yang Anda ambil',
+      goesRecipes: 'Resep Anda, termasuk yang dipublikasikan',
+      goesProfile: 'Profil, pengaturan dan info masuk Anda',
+      cancelFirst: 'Batalkan langganan Anda di toko dulu, atau tagihan akan terus berjalan.',
+      action: 'Hapus akun saya',
+      confirmTitle: 'Hapus akun Anda?',
+      confirmBody:
+        'Ini tidak bisa dibatalkan. Setelah itu catatan Anda tidak bisa dipulihkan, oleh Anda maupun oleh kami.',
+      done: 'Akun Anda sudah dihapus.',
+      failed: 'Kami tidak dapat menghapus akun Anda. Coba lagi.',
     },
 
     rate: {
@@ -1233,6 +1249,8 @@ export const id = {
       start: 'Mulai uji coba gratis',
       startLifetime: 'Beli akses seumur hidup',
       restore: 'Pulihkan pembelian',
+      terms: 'Ketentuan',
+      privacy: 'Privasi',
       nothingToRestore: 'Tidak ada yang bisa dipulihkan di akun ini',
       notConfigured: 'Pembelian belum disiapkan di build ini.',
       restored: 'Pembelianmu sudah kembali',
@@ -1345,6 +1363,8 @@ export const id = {
       kgDown: 'KG TURUN',
       lockedEntry: 'Terkunci',
       resume: 'Lanjutkan dengan Pro',
+      terms: '{{price}} per tahun, diperpanjang sampai Anda batalkan.',
+      termsPending: 'Diperpanjang tiap tahun sampai Anda batalkan.',
       browse: 'Terus jelajahi gratis',
     },
 
@@ -1531,6 +1551,19 @@ export const id = {
       deleteTitle: 'Hapus resep ini?',
       deleteBody: 'Makanan yang sudah kamu catat darinya tetap ada di buku harianmu.',
       deleted: 'Resep dihapus',
+    },
+
+    report: {
+      title: 'Laporkan resep ini',
+      body: 'Resep ini langsung berhenti muncul untuk Anda. Pembuatnya tidak diberi tahu.',
+      inappropriate: 'Menyinggung atau bukan makanan',
+      spam: 'Spam atau iklan',
+      dangerous: 'Tidak aman dimasak atau dimakan',
+      stolen: 'Karya orang lain',
+      block: 'Sembunyikan semua dari {{name}}',
+      done: 'Dilaporkan. Anda tidak akan melihatnya lagi.',
+      blocked: 'Disembunyikan. Anda tidak akan melihat resep mereka lagi.',
+      failed: 'Tidak bisa melakukannya. Coba lagi.',
     },
 
     share: {

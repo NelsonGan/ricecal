@@ -6,14 +6,17 @@ import { View } from 'react-native'
 
 import {
   isRecipeLimit,
+  type ReportReason,
   snapshotFromRecipe,
   storedImageSource,
+  useBlockAuthor,
   useDeleteRecipe,
   useLogFood,
   useMealPhotoUrl,
   useRecipe,
   useRecipeIngredients,
   useRecipeQuota,
+  useReportRecipe,
   useSaveRecipeCopy,
   useSelectedDate,
 } from '@/data'
@@ -75,6 +78,8 @@ export default function RecipeDetailScreen() {
   const saveCopy = useSaveRecipeCopy()
   const quota = useRecipeQuota()
   const remove = useDeleteRecipe()
+  const report = useReportRecipe()
+  const block = useBlockAuthor()
 
   /**
    * How many servings are being logged. Not a portion id: the mirror's base
@@ -85,9 +90,50 @@ export default function RecipeDetailScreen() {
   const [sharing, setSharing] = useState(false)
   const [menu, setMenu] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [reporting, setReporting] = useState(false)
 
   const { data: photoUrl, isLoading: resolvingPhoto } = useMealPhotoUrl(recipe?.photoPath)
   const photo = storedImageSource(recipe?.photoPath, photoUrl)
+
+  /**
+   * Whether this recipe has an author who could be reported or blocked.
+   *
+   * Somebody else's AND not the kitchen's. An official recipe has no owner by
+   * design — `owner_id is null` is what "official" means — so there is nobody
+   * to block, and a report about one belongs in the help sheet with everything
+   * else that is our fault.
+   */
+  const reportable = Boolean(recipe && !recipe.isMine && !recipe.isOfficial && recipe.ownerId)
+
+  /**
+   * Both of these leave the screen, because the recipe they were about is no
+   * longer visible to this account: the restrictive read policy takes effect on
+   * the next fetch, and staying here would leave the reader looking at the thing
+   * they just asked never to see again while the query behind it 404s.
+   */
+  const submitReport = async (reason: ReportReason) => {
+    if (!recipe) return
+    setReporting(false)
+    try {
+      await report.mutateAsync({ recipeId: recipe.id, reason })
+      toast.show({ title: t('recipes:report.done') })
+      router.replace('/recipes')
+    } catch {
+      toast.show({ title: t('recipes:report.failed'), tone: 'error' })
+    }
+  }
+
+  const blockCook = async () => {
+    if (!recipe) return
+    setReporting(false)
+    try {
+      await block.mutateAsync(recipe.ownerId)
+      toast.show({ title: t('recipes:report.blocked') })
+      router.replace('/recipes')
+    } catch {
+      toast.show({ title: t('recipes:report.failed'), tone: 'error' })
+    }
+  }
 
   if (isPending) {
     return (
@@ -221,12 +267,17 @@ export default function RecipeDetailScreen() {
         titleLines={2}
         onBack={() => goBack()}
         backLabel={t('common:a11y.back')}
+        /* On a community recipe too, and that is guideline 1.2 rather than a
+           nicety: an app whose users read each other's writing has to offer a
+           way to report it and a way to never see that cook again. `isOfficial`
+           is excluded because the RiceCal kitchen is us — there is nobody to
+           block and a report has nowhere to go. */
         action={
-          recipe.isMine ? (
+          recipe.isMine || reportable ? (
             <IconButton
               size="sm"
               accessibilityLabel={t('common:a11y.more')}
-              onPress={() => setMenu(true)}
+              onPress={() => (recipe.isMine ? setMenu(true) : setReporting(true))}
             >
               <Icon set="ui" name="more-vertical" size={20} tintColor={colors.muted} />
             </IconButton>
@@ -420,6 +471,40 @@ export default function RecipeDetailScreen() {
         </Button>
       </Sheet>
 
+      {/* REPORTING IS ONE TAP AND IT IS FINAL, deliberately. There is no
+          confirmation and no "are you sure": a reader who has just seen
+          something they want gone should not have to look at it through a
+          second dialog, and the cost of a mis-tap is one recipe hidden from one
+          person, which they can live with.
+
+          What each button promises is exactly what happens. A reason hides this
+          recipe from this reader immediately; three separate people reporting
+          it takes it off the shelf for everybody, which `report_threshold` in
+          the database decides rather than anything here. Blocking hides
+          everything by that cook at once. Neither tells the author. */}
+      <Sheet
+        visible={reporting}
+        onClose={() => setReporting(false)}
+        title={t('recipes:report.title')}
+        description={t('recipes:report.body')}
+        closeLabel={t('common:action.cancel')}
+        scrollable={false}
+      >
+        {REPORT_REASONS.map((reason) => (
+          <Button key={reason} variant="secondary" fullWidth onPress={() => submitReport(reason)}>
+            {t(`recipes:report.${reason}`)}
+          </Button>
+        ))}
+        <Button
+          variant="danger"
+          fullWidth
+          leftIcon={<Icon set="ui" name="close" size={20} />}
+          onPress={blockCook}
+        >
+          {t('recipes:report.block', { name: recipe.authorName || t('recipes:someCook') })}
+        </Button>
+      </Sheet>
+
       <ConfirmSheet
         visible={deleting}
         onClose={() => setDeleting(false)}
@@ -438,3 +523,15 @@ export default function RecipeDetailScreen() {
     </Screen>
   )
 }
+
+/**
+ * The four reasons, in the order they are offered.
+ *
+ * A list rather than four buttons written out, so the copy keys and the enum
+ * cannot drift: `report_reason` in `schemas/01_enums.sql` has these four and
+ * `recipes:report.*` has a line for each. Adding a fifth is a change in three
+ * files that the compiler notices in two of them.
+ *
+ * Ordered by how likely it is to be the true reason rather than by severity.
+ */
+const REPORT_REASONS: readonly ReportReason[] = ['inappropriate', 'spam', 'dangerous', 'stolen']

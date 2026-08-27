@@ -15,6 +15,7 @@
  * 3. Reads go through hooks, not through a client. No screen imports
  *    `supabase` directly.
  */
+
 export {
   type ActivityBucket,
   type ActivityDay,
@@ -66,6 +67,7 @@ export {
 } from './health-sync'
 export { keys } from './keys'
 export { toEntry, toFood, toIcon, toRecipe, toRecipeIngredient } from './mappers'
+export { useBlockAuthor, useReportRecipe } from './moderation'
 export {
   type PendingSnap,
   PendingSnapProvider,

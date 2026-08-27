@@ -476,6 +476,10 @@ grant update (name, photo_path, icon_set, icon_name, servings, steps)
   on public.recipes to authenticated;
 grant select, insert, update, delete on public.recipes to service_role;
 
+-- A SECOND, RESTRICTIVE read policy sits on top of this one, in
+-- `24_moderation.sql`: it removes recipes by a cook this account has blocked,
+-- and recipes this account has reported. It is there rather than here because
+-- the two tables it consults reference this one and so cannot precede it.
 create policy "recipes: read own, official and approved public"
   on public.recipes for select
   to authenticated

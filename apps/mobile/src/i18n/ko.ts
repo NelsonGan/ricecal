@@ -128,10 +128,8 @@ export const ko = {
       privacy:
         '읽기 전용입니다. 어떤 것도 다시 쓰지 않으며, 건강 데이터는 오직 본인 계정에만 저장됩니다.',
 
-      apple: 'Apple 건강',
-      appleBody: 'iPhone과 Apple Watch',
-      connectHealth: 'Health Connect',
-      connectHealthBody: 'Samsung Health, Fitbit, Garmin',
+      appleBody: 'Apple Health, iPhone과 Apple Watch',
+      connectHealthBody: 'Health Connect: Samsung Health, Fitbit, Garmin',
       heart: '심박수',
       demo: '데모 데이터 사용',
       demoBody: '이 기기에서 생성, 개발용',
@@ -534,14 +532,10 @@ export const ko = {
     health: {
       title: '시계에게 세는 일을 맡기세요',
       subtitle: '소모한 만큼 오늘의 예산에 더해집니다.',
-      connectApple: 'Apple 건강 연결',
-      connectAndroid: 'Health Connect 연결',
       demo: '생성된 활동 사용',
-      later: '지금은 안 할래요',
       emptyToast: '건강 앱에서 아무것도 오지 않았습니다. 활동 화면에서 다시 연결할 수 있습니다.',
       failedToast: '건강 저장소에 연결하지 못했습니다. 활동 화면에서 다시 시도할 수 있습니다.',
-      reassurance: '읽기 전용입니다. 나중에 활동 화면에서 연결할 수 있습니다.',
-      offline: '연결을 기다리는 중입니다. 건너뛰고 나중에 연결해도 됩니다.',
+      reassurance: '읽기 전용입니다. 아무것도 기록하지 않습니다.',
     },
 
     notifications: {
@@ -1036,7 +1030,28 @@ export const ko = {
       tutorial: 'RiceCal 사용법',
       help: '고객 지원',
       rate: 'RiceCal 평가하기',
+      account: '계정',
       signOut: '로그아웃',
+    },
+
+    account: {
+      title: '계정',
+      signedInAs: '로그인 계정',
+      legalTitle: '약관과 정책',
+      privacy: '개인정보 처리방침',
+      terms: '이용약관',
+      deleteTitle: '계정 삭제',
+      deleteBody: '확인하는 즉시 아래의 모든 것이 삭제됩니다.',
+      goesDiary: '모든 식사, 체중, 물, 메모',
+      goesPhotos: '촬영한 모든 사진',
+      goesRecipes: '공개한 것을 포함한 모든 레시피',
+      goesProfile: '프로필, 설정, 로그인 정보',
+      cancelFirst: '먼저 스토어에서 구독을 해지하세요. 그러지 않으면 계속 청구됩니다.',
+      action: '내 계정 삭제',
+      confirmTitle: '계정을 삭제할까요?',
+      confirmBody: '되돌릴 수 없습니다. 그 뒤에는 회원님도 저희도 기록을 복구할 수 없습니다.',
+      done: '계정이 삭제되었습니다.',
+      failed: '계정을 삭제하지 못했습니다. 다시 시도해 주세요.',
     },
 
     rate: {
@@ -1216,6 +1231,8 @@ export const ko = {
       start: '무료 체험 시작',
       startLifetime: '평생 이용권 구매',
       restore: '구매 복원',
+      terms: '이용약관',
+      privacy: '개인정보',
       nothingToRestore: '이 계정에 복원할 구매가 없습니다',
       notConfigured: '이 빌드에서는 아직 구매가 설정되지 않았습니다.',
       restored: '구매가 돌아왔습니다',
@@ -1328,6 +1345,8 @@ export const ko = {
       kgDown: '줄어든 KG',
       lockedEntry: '잠김',
       resume: 'Pro로 계속하기',
+      terms: '연 {{price}}, 해지할 때까지 자동 갱신됩니다.',
+      termsPending: '해지할 때까지 매년 자동 갱신됩니다.',
       browse: '무료로 계속 둘러보기',
     },
 
@@ -1512,6 +1531,19 @@ export const ko = {
       deleteTitle: '이 레시피를 삭제할까요?',
       deleteBody: '이미 기록한 식사는 기록에 그대로 남습니다.',
       deleted: '레시피를 삭제했습니다',
+    },
+
+    report: {
+      title: '이 레시피 신고',
+      body: '바로 회원님에게 보이지 않게 됩니다. 작성자에게는 알리지 않습니다.',
+      inappropriate: '불쾌하거나 음식이 아님',
+      spam: '스팸 또는 광고',
+      dangerous: '조리하거나 먹기에 위험함',
+      stolen: '다른 사람의 창작물',
+      block: '{{name}}의 레시피 모두 숨기기',
+      done: '신고했습니다. 다시 보이지 않습니다.',
+      blocked: '숨겼습니다. 이 사람의 레시피는 다시 보이지 않습니다.',
+      failed: '처리하지 못했습니다. 다시 시도해 주세요.',
     },
 
     share: {

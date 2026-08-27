@@ -1,5 +1,6 @@
 import {
   type AnalyticsClient,
+  forgetPerson,
   identifyUser,
   registerAnalytics,
   resetAnalyticsForTest,
@@ -53,6 +54,9 @@ function fakeClient() {
       set: (props) => {
         calls.push('people')
         people.push(props)
+      },
+      deleteUser: () => {
+        calls.push('people delete')
       },
     }),
   }
@@ -186,6 +190,25 @@ describe('the analytics seam', () => {
     global.__DEV__ = true
 
     expect(identifyUser('user-1', null)).toBeNull()
+  })
+
+  /**
+   * The account-deletion path, and the one ordering in this file that removes
+   * rather than records. A people delete is filed against whichever distinct id
+   * the SDK is holding, so a reset first would aim it at the anonymous profile
+   * the reset had just created and leave the real one — `$email` and all —
+   * exactly where it was. `data/auth.ts` is the only caller and keeps this
+   * order; this is the assertion that says why it matters.
+   */
+  it('deletes the profile against the identity it was signed in as', () => {
+    const fake = fakeClient()
+    registerAnalytics(fake.client)
+
+    identifyUser('user-1', 'one@example.com')
+    forgetPerson()
+    resetIdentity()
+
+    expect(fake.calls).toEqual(['identify', 'people', 'people delete'])
   })
 })
 

@@ -37,7 +37,7 @@ export function ConnectPanel({
   onConnect,
   onRecheck,
 }: ConnectPanelProps) {
-  const { t } = useTranslation('activity')
+  const { t } = useTranslation(['activity', 'common'])
 
   const isApple = Platform.OS === 'ios'
   const nativeId: ProviderId = isApple ? 'apple_health' : 'health_connect'
@@ -98,6 +98,12 @@ export function ConnectPanel({
               </View>
             ) : null}
 
+            {/* "Continue", not the store's name.
+                The same rule as the onboarding step, and the same rejection
+                behind it: guideline 5.1.1(iv) reads a button that names the
+                permission as the app doing the asking. Nothing is lost, because
+                the line under the button still says which store this is and
+                what it covers. */}
             <Button
               onPress={() => onConnect(nativeId)}
               loading={busy}
@@ -105,7 +111,7 @@ export function ConnectPanel({
               fullWidth
               leftIcon={<Icon set="system" name="watch" size={22} />}
             >
-              {isApple ? t('connect.apple') : t('connect.connectHealth')}
+              {t('common:action.continue')}
             </Button>
             <Text variant="meta" className="text-center">
               {busy && progress

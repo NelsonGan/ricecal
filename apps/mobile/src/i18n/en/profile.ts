@@ -69,7 +69,66 @@ export const profile = {
      * dismissed it and then changed their mind has no other route back.
      */
     rate: 'Rate RiceCal',
+    /** The row that leads to deletion. See the `account` block below. */
+    account: 'Account',
     signOut: 'Sign out',
+  },
+
+  /**
+   * The account screen, which exists so that deleting an account is something
+   * a person can do rather than something they have to ask for.
+   *
+   * App Review guideline 5.1.1(v) is the reason it is in the app at all, and it
+   * shapes the copy more than it looks: no form, no reason to give, nobody to
+   * write to, and no wording that reads as a plea to stay. A screen that
+   * bargains is a screen a reviewer fails.
+   *
+   * IT SAYS WHAT GOES, in four lines, and that is the whole defence against a
+   * mis-tap. "This cannot be undone" is a sentence everybody has learned to
+   * scroll past; "every meal, every weigh-in, every photograph" is the same
+   * fact in terms of the thing the person would actually miss.
+   *
+   * THE SUBSCRIPTION LINE IS NOT A WARNING ABOUT US. Billing lives with Apple
+   * and Google, so an account deleted with a renewing subscription behind it
+   * goes on being charged, and we cannot stop it from here. It is only shown
+   * to somebody who has one.
+   */
+  account: {
+    title: 'Account',
+    signedInAs: 'SIGNED IN AS',
+
+    /** Card title, so caps, like the ones around it. */
+    legalTitle: 'THE SMALL PRINT',
+    privacy: 'Privacy Policy',
+    terms: 'Terms of Use',
+
+    /** A card title, so caps, like `home.settings` and `connect.readTitle`. */
+    deleteTitle: 'DELETE YOUR ACCOUNT',
+    deleteBody: 'Everything below is erased the moment you confirm.',
+    goesDiary: 'Every meal, weigh-in, water and note',
+    goesPhotos: 'Every photograph you took',
+    goesRecipes: 'Your recipes, published ones included',
+    goesProfile: 'Your profile, settings and sign-in',
+    /** Only where a renewing subscription exists. */
+    cancelFirst: 'Cancel your subscription in the store first, or it keeps being charged.',
+    action: 'Delete my account',
+
+    confirmTitle: 'Delete your account?',
+    confirmBody:
+      'This cannot be undone. Your diary cannot be recovered afterwards, by you or by us.',
+    /**
+     * No `confirmAction`. The sheet's confirm button says `common:action.delete`
+     * — the same word every other destructive confirmation in the app uses, and
+     * the exact answer to the question above it.
+     *
+     * It said "Delete for ever" for about an hour. `ConfirmSheet` gives its two
+     * buttons equal width, so on an iPhone that broke as "Delete for / ever",
+     * and the finality it was carrying is already in the sentence above it,
+     * where somebody actually reads it.
+     */
+
+    done: 'Your account has been deleted.',
+    failed: 'We could not delete your account. Please try again.',
   },
 
   /**

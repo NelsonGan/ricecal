@@ -16,7 +16,7 @@ const client = {
   identify: jest.fn(),
   reset: jest.fn(),
   registerSuperProperties: jest.fn(),
-  getPeople: () => ({ set: people }),
+  getPeople: () => ({ set: people, deleteUser: jest.fn() }),
 }
 const people = jest.fn()
 

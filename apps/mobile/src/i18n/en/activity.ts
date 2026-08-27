@@ -34,10 +34,14 @@ export const activity = {
     privacy:
       'Read only. We never write anything back, and your health data is only ever stored in your own account.',
 
-    apple: 'Apple Health',
-    appleBody: 'iPhone and Apple Watch',
-    connectHealth: 'Health Connect',
-    connectHealthBody: 'Samsung Health, Fitbit, Garmin',
+    /**
+     * The line UNDER the connect button, on each platform. There is no longer a
+     * label for the button itself: it says `common:action.continue`, because
+     * App Review reads a button naming the permission as the app doing the
+     * asking rather than the system. See `ConnectPanel`.
+     */
+    appleBody: 'Apple Health, on iPhone and Apple Watch',
+    connectHealthBody: 'Health Connect: Samsung Health, Fitbit, Garmin',
     /**
      * Only ever a ROW LABEL on the health-settings screen, which is why it is
      * here beside the other three rather than reusing `workout.zonesTitle` —

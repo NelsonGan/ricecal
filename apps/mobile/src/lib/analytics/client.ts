@@ -30,7 +30,11 @@ export type AnalyticsClient = {
   identify(distinctId: string): Promise<void> | void
   reset(): void
   registerSuperProperties(properties: Record<string, unknown>): void
-  getPeople(): { set(properties: Record<string, unknown>): void }
+  getPeople(): {
+    set(properties: Record<string, unknown>): void
+    /** See `forgetPerson`. The one call here that removes rather than records. */
+    deleteUser(): void
+  }
 }
 
 let client: AnalyticsClient | null = null
@@ -185,6 +189,29 @@ export function resetIdentity(): void {
     return
   }
   enqueue((target) => target.reset())
+}
+
+/**
+ * Delete the profile Mixpanel holds for whoever is currently identified.
+ *
+ * Only ever called from the account-deletion path, and it is the reason
+ * `deleteUser` is on the seam at all. `$email` is the one thing in this whole
+ * plan that names a person (see the note in the README), and it lives on the
+ * people profile, so an account deleted everywhere else and left here would
+ * leave the address behind in the one place a search by address would find it.
+ *
+ * IT MUST RUN BEFORE `resetIdentity`. The delete is filed against whichever
+ * distinct id the SDK is holding, so a reset first would aim it at the fresh
+ * anonymous profile the reset just created and leave the real one untouched.
+ *
+ * What it does not remove is the events themselves. Those carry no diary and no
+ * address — see the rules the plan was written against — and Mixpanel offers no
+ * client-side way to withdraw them. `ricecal.app/data-deletion` says so.
+ */
+export function forgetPerson(): void {
+  trace('person delete')
+  if (!sending()) return
+  enqueue((target) => target.getPeople().deleteUser())
 }
 
 /** Facts about the person, for segmenting. See `PersonProps` for what is allowed. */
