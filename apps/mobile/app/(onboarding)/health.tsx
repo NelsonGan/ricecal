@@ -46,10 +46,12 @@ import { Button, Card, Text, useToast } from '@/ui'
  *
  * WHAT HAPPENS WHEN IT FAILS
  *
- * Nothing that stops the flow. A refused permission, an unusable store, a read
- * that comes back empty: all of them say so in a toast and move to the next
- * step, because there is a whole tab devoted to trying again and no version of
- * this screen should be a wall between a new account and their diary.
+ * Nothing that stops the flow. An unusable store, a sheet that could not be
+ * presented, a read that comes back empty: each says so in a toast and moves to
+ * the next step, because there is a whole tab devoted to trying again and no
+ * version of this screen should be a wall between a new account and their
+ * diary. A refusal is the one that says NOTHING — see `attempt` — because a
+ * refusal is an answer rather than a failure.
  */
 
 /** The session guard, for the same two reasons as `settings/health.tsx`. */
