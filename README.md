@@ -1583,12 +1583,27 @@ ingredients", never "Edit"), because three buttons announcing "Edit" tell a
 screen reader nothing. The glyph is not tinted: it is a yellow pencil with a red
 eraser whose whole meaning is the colour.
 
-**The plate can gain a part, not only lose one.** The ingredients card carries a
-plus beside the pencil, and it opens a catalogue search (`AddPartSheet`). Before
-it, the only ways to answer "the scan missed the fried egg" were to retype the
-entry's four figures or to spend a model call on a sentence, and both guess at a
-number the catalogue already knows. The part lands at the food's own serving and
-at one of it; resizing belongs to the sheet that is already for exactly that.
+**The plate can gain a part, not only lose one.** Before it, the only ways to
+answer "the scan missed the fried egg" were to retype the entry's four figures
+or to spend a model call on a sentence, and both guess at a number the
+catalogue already knows. The part lands at the food's own serving and at one of
+it, and is resized like any other.
+
+**It is behind the same pencil as the resizing**, and that is one decision the
+layout turned on twice. A plus sat beside the pencil in the card header for a
+while, which made the header ask two questions about one thing: putting a part
+on a plate and changing how much of it there was are the same edit, and the card
+is a reading of the plate rather than a place to change it. So `PlateSheet`
+carries an "Add an ingredient" button under its list, and it leaves for
+`AddPartSheet`'s catalogue search and comes back — the two sheets hand the
+screen back and forth rather than stacking, because a `Sheet` is a `Modal` and
+presenting one inside another is two windows for what reads as one panel
+drilling into a search. Coming back is what makes adding two things in a row one
+job.
+
+The pencil is offered on an entry with **no** breakdown too, which is the only
+way the seeding below is ever reached: there the sheet is one line and one
+button, and Save is absent because there is nothing yet to write.
 
 **Adding to an entry with NO breakdown seeds the entry as its own first part**,
 and that is the interesting half of `add_ingredient`. `food_log_details` prefers

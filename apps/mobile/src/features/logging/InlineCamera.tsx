@@ -3,7 +3,7 @@ import * as Device from 'expo-device'
 import * as ImagePicker from 'expo-image-picker'
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { Linking, View } from 'react-native'
 
 import { photoCropFill } from '@/lib/photo'
 import { useThemeColors } from '@/theme/useTheme'
@@ -155,6 +155,16 @@ export function InlineCamera({ mode = 'meal', onCapture, onScanned }: InlineCame
     onCapture(result.assets[0]?.uri)
   }
 
+  /**
+   * Whether the system will still present the dialog.
+   *
+   * `canAskAgain` is false once iOS has a refusal on record, and from then on
+   * `requestPermission` resolves denied without showing anything. Undefined on
+   * a permission object that has not resolved yet, which is treated as "yes":
+   * the panel is not drawn until `permission` exists at all.
+   */
+  const canAskForCamera = permission?.canAskAgain !== false
+
   if (permission && !permission.granted) {
     return (
       <View className="gap-3 rounded-tile bg-track p-4">
@@ -167,9 +177,30 @@ export function InlineCamera({ mode = 'meal', onCapture, onScanned }: InlineCame
         <Text variant="meta">
           {t(scanning ? 'logging:barcode.permissionBody' : 'logging:camera.permissionBody')}
         </Text>
-        <Button fullWidth onPress={requestPermission}>
-          {t('logging:camera.permissionGrant')}
-        </Button>
+        {/* TWO DIFFERENT BUTTONS, and which one shows is the whole point.
+            `requestPermission` is a NO-OP once iOS has recorded a refusal: the
+            promise resolves to the same denied status without presenting
+            anything. So after a "Don't Allow" this button did nothing at all,
+            for ever — the user taps it, the panel does not change, and there is
+            no other way to a camera in the app. Apple's own advice for a
+            feature that cannot work without a permission is to send the person
+            to Settings, which is what the second branch does.
+
+            The label is `common:action.continue` rather than "Allow camera"
+            for the reason the onboarding steps carry it: guideline 5.1.1(iv)
+            reads a button worded as the ask as the app doing the asking. This
+            panel is a feature's empty state rather than an interstitial — the
+            user came here to photograph a plate — but the wording costs nothing
+            to get right and it is the last place in the app that had it. */}
+        {canAskForCamera ? (
+          <Button fullWidth onPress={requestPermission}>
+            {t('common:action.continue')}
+          </Button>
+        ) : (
+          <Button fullWidth onPress={() => Linking.openSettings().catch(() => {})}>
+            {t('logging:camera.permissionSettings')}
+          </Button>
+        )}
         {/* The library needs no camera permission, so a denied camera does not
             have to be the end of the flow — for a PHOTO. There is nothing in a
             photo library that answers "what is this barcode". */}

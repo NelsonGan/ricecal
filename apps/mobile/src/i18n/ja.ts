@@ -741,7 +741,7 @@ export const ja = {
       permissionTitle: 'カメラへのアクセスが必要です',
       permissionBody:
         'RiceCal はカメラでお皿を読み取ります。端末から何かが出ていくことはありません。',
-      permissionGrant: 'カメラを許可',
+      permissionSettings: '設定を開く',
       shutter: '撮影',
       library: '写真から選ぶ',
       flip: 'カメラを切り替え',
@@ -800,7 +800,7 @@ export const ja = {
       fixFailed: '送信できませんでした。もう一度お試しください',
       plateTitle: '材料',
       plateTotal: '合計',
-      plateNone: 'これはひとつのものとして数えています。お皿にあったものを足すと内訳になります。',
+      plateNone: 'これはひとつのものとして数えています。編集すると材料に分けられます。',
       addPart: '材料を追加',
       addPartTitle: '材料を追加',
       partAdded: '{{food}} をお皿に追加しました',

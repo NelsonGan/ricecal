@@ -750,7 +750,7 @@ export const id = {
       permissionTitle: 'Butuh akses kamera',
       permissionBody:
         'RiceCal memakai kamera untuk membaca piringmu. Tidak ada yang keluar dari ponselmu.',
-      permissionGrant: 'Izinkan kamera',
+      permissionSettings: 'Buka Pengaturan',
       shutter: 'Ambil foto',
       library: 'Pilih dari galeri',
       flip: 'Balik kamera',
@@ -809,8 +809,7 @@ export const id = {
       fixFailed: 'Itu tidak berhasil dikirim. Coba lagi',
       plateTitle: 'BAHAN',
       plateTotal: 'Total',
-      plateNone:
-        'Ini dihitung sebagai satu hal. Tambahkan apa yang ada di piring untuk memerincinya.',
+      plateNone: 'Ini dihitung sebagai satu hal. Edit untuk memerincinya jadi bahan.',
       addPart: 'Tambah bahan',
       addPartTitle: 'Tambah bahan',
       partAdded: '{{food}} ditambahkan ke piring',

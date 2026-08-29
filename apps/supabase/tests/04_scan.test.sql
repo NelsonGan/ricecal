@@ -23,7 +23,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(29);
+select plan(32);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -319,6 +319,45 @@ select is(
   (select count(*)::integer from public.food_log_ingredients where food_log_id = :'plain_id'::uuid),
   3,
   'the parent is not seeded twice'
+);
+
+-- Each addition lands AFTER what is already there, and the positions are read
+-- off the rows rather than counted. A plate somebody has removed the middle of
+-- has fewer parts than its highest position, so a row numbered by the count
+-- would land on top of one that is still there — and `food_log_ingredient_details`
+-- is ordered by this column, so two rows sharing a number is a list that
+-- reorders itself between reads.
+select is(
+  (select array_agg(position order by position)
+   from public.food_log_ingredients where food_log_id = :'plain_id'::uuid),
+  array[0, 1, 2]::smallint[],
+  'each part is added after the last, at its own position'
+);
+
+reset role;
+
+-- The middle one goes, and the next addition still lands last rather than
+-- reusing the number the count would have given it.
+select i.id as middle_id
+from public.food_log_ingredients i
+where i.food_log_id = :'plain_id'::uuid and i.position = 1 \gset
+
+delete from public.food_log_ingredients where id = :'middle_id'::uuid;
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', :'user_a', 'role', 'authenticated')::text, true);
+set local role authenticated;
+
+select lives_ok(
+  format('select public.add_ingredient(%L::uuid, %L, 40, 8, 1, 0)', :'plain_id', 'Kopi o'),
+  'a food goes onto a plate with a gap in it'
+);
+
+select is(
+  (select array_agg(position order by position)
+   from public.food_log_ingredients where food_log_id = :'plain_id'::uuid),
+  array[0, 2, 3]::smallint[],
+  'and it lands past the highest position rather than on top of one'
 );
 
 reset role;

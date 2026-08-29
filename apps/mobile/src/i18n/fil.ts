@@ -759,7 +759,7 @@ export const fil = {
       permissionTitle: 'Kailangan ng access sa camera',
       permissionBody:
         'Ginagamit ng RiceCal ang camera para basahin ang plato mo. Walang umaalis sa telepono mo.',
-      permissionGrant: 'Payagan ang camera',
+      permissionSettings: 'Buksan ang Settings',
       shutter: 'Kumuha ng litrato',
       library: 'Pumili mula sa mga litrato',
       flip: 'Baligtarin ang camera',
@@ -818,7 +818,7 @@ export const fil = {
       fixFailed: 'Hindi ito natuloy. Subukan ulit',
       plateTitle: 'MGA SANGKAP',
       plateTotal: 'Kabuuan',
-      plateNone: 'Isang bagay ang bilang nito. Idagdag ang nasa plato para hatiin ito.',
+      plateNone: 'Isang bagay ang bilang nito. I-edit para hatiin sa mga sangkap.',
       addPart: 'Magdagdag ng sangkap',
       addPartTitle: 'Magdagdag ng sangkap',
       partAdded: 'Naidagdag sa plato ang {{food}}',

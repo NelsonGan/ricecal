@@ -167,33 +167,6 @@ function CardEdit({ label, onPress }: { label: string; onPress: () => void }) {
 }
 
 /**
- * The other control a card header can carry: put something IN this card.
- *
- * Its own component beside `CardEdit` rather than a prop on it, because they are
- * different verbs and the difference has to survive being unlabelled. The pencil
- * changes what is already there; this adds a row that is not. They sit together
- * on the ingredients card, add first, in the order the two are reached — you
- * cannot resize a part that is not on the plate yet.
- *
- * TINTED, unlike the pencil beside it. That one is a yellow pencil with a red
- * eraser and its whole meaning is in the colour; a plus is a silhouette, and a
- * silhouette flattened to one colour still reads as itself.
- */
-function CardAdd({ label, onPress }: { label: string; onPress: () => void }) {
-  const colors = useThemeColors()
-  return (
-    <Tappable
-      className="-m-2.5 p-2.5"
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      <Icon set="ui" name="plus" size={20} tintColor={colors.ink} />
-    </Tappable>
-  )
-}
-
-/**
  * The food detail screen, in both of its jobs.
  *
  * With an `entryId` it edits something already logged; without one it composes a
@@ -966,9 +939,21 @@ export default function FoodDetail() {
    */
   const addPart = async (picked: Food) => {
     if (!existing) return
+    // Back to the plate, either way. The search is a detour out of that sheet
+    // and returning to it is what makes adding two things in a row one job
+    // rather than two — and on the refusal below it is where the toast makes
+    // sense, over the list the user was looking at.
     setAddingPart(false)
+    setEditingPlate(true)
     const snapshot = snapshotFromFood(picked)
     const scale = snapshot.servingFactor
+    // A weight the row cannot hold is sent as no weight at all. `grams` is
+    // `numeric(7, 1) check (grams > 0 and grams <= 20000)`, and a catalogue row
+    // carrying a zero or something absurd would otherwise turn "add an
+    // ingredient" into "could not add that" over a number nobody asked to see.
+    // Null renders as nothing, which is the honest answer for a part whose
+    // weight we have no usable figure for.
+    const grams = (snapshot.servingGrams ?? 0) * scale
     try {
       await addIngredient.mutateAsync({
         entryId: existing.id,
@@ -978,7 +963,7 @@ export default function FoodDetail() {
         carbs: snapshot.base.carbs * scale,
         protein: snapshot.base.protein * scale,
         fat: snapshot.base.fat * scale,
-        grams: snapshot.servingGrams === undefined ? undefined : snapshot.servingGrams * scale,
+        grams: grams > 0 && grams <= 20_000 ? grams : undefined,
         foodId: snapshot.foodId,
         servingId: snapshot.servingId,
         servingLabel: snapshot.servingLabel,
@@ -1648,17 +1633,16 @@ export default function FoodDetail() {
           <Card
             title={t('logging:detail.plateTitle')}
             action={
-              <View className="flex-row items-center gap-4">
-                <CardAdd label={t('logging:detail.addPart')} onPress={() => setAddingPart(true)} />
-                {/* Nothing to resize with no parts on the plate, and a pencil
-                    that opens an empty sheet is worse than no pencil. */}
-                {parts.length ? (
-                  <CardEdit
-                    label={t('logging:detail.editPlate')}
-                    onPress={() => setEditingPlate(true)}
-                  />
-                ) : null}
-              </View>
+              /* One glyph, for both halves of the job. The plus used to sit
+                 beside this pencil, which made the header ask two questions
+                 about one thing — resizing a part and putting one on are the
+                 same edit, and they are both behind here now. It is offered on
+                 an entry with NO breakdown too: adding the first part is what
+                 that sheet is for there. */
+              <CardEdit
+                label={t('logging:detail.editPlate')}
+                onPress={() => setEditingPlate(true)}
+              />
             }
           >
             {parts.map((ingredient) => (
@@ -1775,7 +1759,7 @@ export default function FoodDetail() {
           />
         ) : null}
 
-        {existing && parts.length ? (
+        {existing ? (
           <PlateSheet
             visible={editingPlate}
             onClose={() => setEditingPlate(false)}
@@ -1783,6 +1767,14 @@ export default function FoodDetail() {
             edits={partEdits}
             onSave={savePlate}
             onError={saveFailed}
+            // The two sheets hand the screen back and forth rather than
+            // stacking: a `Sheet` is a `Modal`, and presenting one from inside
+            // another is a window on top of a window for what the user reads as
+            // one panel drilling into a search.
+            onAdd={() => {
+              setEditingPlate(false)
+              setAddingPart(true)
+            }}
           />
         ) : null}
 

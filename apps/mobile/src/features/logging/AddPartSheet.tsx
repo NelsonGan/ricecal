@@ -1,9 +1,9 @@
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { type TextInput, View } from 'react-native'
+import type { TextInput } from 'react-native'
 
 import type { Food } from '@/data'
-import { Icon, Sheet, Text } from '@/ui'
+import { Sheet, Text } from '@/ui'
 import { FoodSearchPanel } from './FoodSearchPanel'
 
 export type AddPartSheetProps = {
@@ -58,10 +58,11 @@ export function AddPartSheet({ visible, onClose, onPick }: AddPartSheetProps) {
          from `onShow`, after the window is up and its height is known. */
       fullHeight
     >
-      <View className="flex-row items-center gap-2">
-        <Icon set="ui" name="plus" size={20} />
-        <Text variant="subtitle">{t('logging:detail.addPartTitle')}</Text>
-      </View>
+      {/* The words alone. A plus beside them was the glyph off the button that
+          opened this sheet, repeated as decoration on the panel it opened —
+          which says nothing the heading does not, on the one screen where the
+          heading is already the answer to "where am I". */}
+      <Text variant="subtitle">{t('logging:detail.addPartTitle')}</Text>
 
       <FoodSearchPanel fieldRef={field} onPick={onPick} />
     </Sheet>
