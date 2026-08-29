@@ -799,6 +799,7 @@ export const ja = {
       fixNoChange: 'お皿のなかに当てはまるものがありませんでした',
       fixFailed: '送信できませんでした。もう一度お試しください',
       plateTitle: '材料',
+      plateHeading: '材料',
       plateTotal: '合計',
       plateNone: 'これはひとつのものとして数えています。編集すると材料に分けられます。',
       addPart: '材料を追加',

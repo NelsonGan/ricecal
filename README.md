@@ -1593,16 +1593,29 @@ it, and is resized like any other.
 layout turned on twice. A plus sat beside the pencil in the card header for a
 while, which made the header ask two questions about one thing: putting a part
 on a plate and changing how much of it there was are the same edit, and the card
-is a reading of the plate rather than a place to change it. So `PlateSheet`
-carries an "Add an ingredient" button under its list, and it leaves for
-`AddPartSheet`'s catalogue search and comes back — the two sheets hand the
-screen back and forth rather than stacking, because a `Sheet` is a `Modal` and
-presenting one inside another is two windows for what reads as one panel
-drilling into a search. Coming back is what makes adding two things in a row one
-job.
+is a reading of the plate rather than a place to change it. So `PlateEditor`
+carries an "Add an ingredient" button under its list.
+
+**That editor is a PAGE, and it is the only one of the dish's three editors that
+is not a sheet.** The figures and the details are forms that answer themselves;
+this one leads somewhere else, and a `Sheet` is a `Modal`, so it cannot host the
+catalogue search without one of the two closing. It was a sheet swap for a
+while: the plate dismissed itself, `AddPartSheet` came up, and the host brought
+the plate back when a food was picked. That works for the one path where a food
+IS picked and is wrong for every other way out of a search — dismissing it left
+nothing holding the editor open, so the user landed two panels back on the food
+detail. As a page the search is a sheet **on** it, and dismissing a sheet
+reveals what it was covering.
+
+Being a route took state off the screen rather than adding it. The staged edits
+used to live on the food detail so the card could preview them under the open
+sheet; the page owns them, writes them on Save, and the card behind simply
+refetches — so `stagedParts` has one caller now instead of two. A route also
+mounts fresh, which is the seeding a `Modal` that stays in the tree with
+`visible={false}` had to do by hand.
 
 The pencil is offered on an entry with **no** breakdown too, which is the only
-way the seeding below is ever reached: there the sheet is one line and one
+way the seeding below is ever reached: there the page is one line and one
 button, and Save is absent because there is nothing yet to write.
 
 **Adding to an entry with NO breakdown seeds the entry as its own first part**,

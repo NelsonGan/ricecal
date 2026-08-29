@@ -792,6 +792,7 @@ export const ko = {
       fixNoChange: '접시에서 맞는 것이 없었어요',
       fixFailed: '전달되지 않았어요. 다시 시도해 주세요',
       plateTitle: '재료',
+      plateHeading: '재료',
       plateTotal: '합계',
       plateNone: '지금은 하나로 세고 있어요. 편집하면 재료로 나눌 수 있어요.',
       addPart: '재료 추가',

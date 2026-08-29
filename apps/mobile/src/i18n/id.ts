@@ -808,6 +808,7 @@ export const id = {
       fixNoChange: 'Tidak ada di piring yang cocok dengan itu',
       fixFailed: 'Itu tidak berhasil dikirim. Coba lagi',
       plateTitle: 'BAHAN',
+      plateHeading: 'Bahan',
       plateTotal: 'Total',
       plateNone: 'Ini dihitung sebagai satu hal. Edit untuk memerincinya jadi bahan.',
       addPart: 'Tambah bahan',

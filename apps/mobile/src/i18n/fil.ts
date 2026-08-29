@@ -817,6 +817,7 @@ export const fil = {
       fixNoChange: 'Walang tumugma diyan sa plato',
       fixFailed: 'Hindi ito natuloy. Subukan ulit',
       plateTitle: 'MGA SANGKAP',
+      plateHeading: 'Mga sangkap',
       plateTotal: 'Kabuuan',
       plateNone: 'Isang bagay ang bilang nito. I-edit para hatiin sa mga sangkap.',
       addPart: 'Magdagdag ng sangkap',

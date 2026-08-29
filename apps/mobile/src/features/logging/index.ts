@@ -21,7 +21,7 @@ export {
   type TypedFigures,
 } from './NutritionSheet'
 export { PartLine } from './PartLine'
-export { PlateSheet, type PlateSheetProps } from './PlateSheet'
+export { PlateEditor, type PlateEditorProps } from './PlateEditor'
 export { type PartEdits, partChanges, stagedParts } from './parts'
 export { QuickAction, type QuickActionProps } from './QuickAction'
 export { ScannedPacket, type ScannedPacketProps } from './ScannedPacket'

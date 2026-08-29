@@ -322,6 +322,16 @@ export const logging = {
     fixFailed: 'That did not go through. Try again',
     /** The plate's ingredient breakdown. */
     plateTitle: 'INGREDIENTS',
+    /**
+     * The same word as `plateTitle`, in the case a page title takes.
+     *
+     * `plateTitle` is a section marker on a card and is set in capitals; this
+     * one names a screen, where capitals would read as shouting rather than as
+     * typography. Two keys rather than one string cased at the call site,
+     * because which of the two a language wants is a translator's decision and
+     * `toUpperCase()` is wrong in several of them.
+     */
+    plateHeading: 'Ingredients',
     plateTotal: 'Total',
     /**
      * An entry nothing has broken down, which is most of them: a dish from

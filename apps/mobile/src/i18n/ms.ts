@@ -821,6 +821,7 @@ export const ms = {
       fixNoChange: 'Tiada apa di dalam pinggan yang sepadan dengan itu',
       fixFailed: 'Itu tidak berjaya dihantar. Cuba lagi',
       plateTitle: 'BAHAN',
+      plateHeading: 'Bahan',
       plateTotal: 'Jumlah',
       plateNone: 'Ini dikira sebagai satu benda. Edit untuk memecahkannya kepada bahan.',
       addPart: 'Tambah bahan',
