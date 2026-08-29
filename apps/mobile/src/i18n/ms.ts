@@ -824,10 +824,8 @@ export const ms = {
       plateHeading: 'Bahan',
       plateTotal: 'Jumlah',
       plateNone: 'Ini dikira sebagai satu benda. Edit untuk memecahkannya kepada bahan.',
-      addPart: 'Tambah bahan',
+      addPart: 'Tambah',
       addPartTitle: 'Tambah bahan',
-      partAdded: '{{food}} ditambah ke dalam pinggan',
-      addPartFailed: 'Tidak dapat menambah itu. Cuba lagi',
       addPartTyped:
         'Entri ini menggunakan angka kalori anda sendiri, jadi ia tidak boleh dipecahkan',
       plateEmptied:
