@@ -81,6 +81,72 @@ export function partChanges(
 }
 
 /**
+ * A part the user has chosen but which is not on the plate yet.
+ *
+ * Adding used to write straight through, and that made it the one edit on this
+ * page that did not wait for Save: a part picked and then thought better of
+ * stayed on the meal, because backing out only ever discarded the resizing. So
+ * an addition is staged like everything else now, and the figures it will be
+ * written with are carried until then.
+ *
+ * The figures are PER ONE of the part, which is what `add_ingredient` stores
+ * against a factor of one. `quantity` is not among them: how many there are is
+ * the `PartEdits` overlay's business here exactly as it is for a row that
+ * already exists, which is what lets one stepper serve both.
+ */
+export type PendingPart = {
+  /**
+   * A local id, so a staged part can be keyed, stepped and taken off again
+   * before the server has issued a real one.
+   *
+   * Prefixed, and the prefix is load-bearing: these ids share the `PartEdits`
+   * overlay with real ingredient ids, and `food_log_ingredients.id` is a uuid,
+   * so nothing here can collide with one.
+   */
+  id: string
+  name: string
+  /** Per one of the part. */
+  kcal: number
+  carbs: number
+  protein: number
+  fat: number
+  /** What one of them weighs, when the catalogue row says. */
+  grams?: number
+  /** Provenance only, exactly as on an entry. */
+  foodId?: string
+  servingId?: string
+  servingLabel?: string
+}
+
+let pendingSeq = 0
+
+/** A local id for a part that has not been written. See `PendingPart.id`. */
+export function pendingId(): string {
+  pendingSeq += 1
+  return `new:${pendingSeq}`
+}
+
+/**
+ * A staged part as the row the editor draws, AT ONE OF IT.
+ *
+ * One of, because `PendingPart` holds per-unit figures and the amount lives in
+ * the overlay — so `stagedParts` scales this the same way it scales a fetched
+ * row, and the steppers, the weight field and the bin all work on a part the
+ * server has never seen without knowing it is different.
+ */
+export const pendingRow = (part: PendingPart): EntryIngredient => ({
+  id: part.id,
+  name: part.name,
+  quantity: 1,
+  servingLabel: part.servingLabel ?? '',
+  kcal: part.kcal,
+  carbs: part.carbs,
+  protein: part.protein,
+  fat: part.fat,
+  grams: part.grams ?? null,
+})
+
+/**
  * Quarters, whatever the part is sitting at.
  *
  * This used to step in whole units for a counted part and quarters only below

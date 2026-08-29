@@ -811,10 +811,8 @@ export const id = {
       plateHeading: 'Bahan',
       plateTotal: 'Total',
       plateNone: 'Ini dihitung sebagai satu hal. Edit untuk memerincinya jadi bahan.',
-      addPart: 'Tambah bahan',
+      addPart: 'Tambah',
       addPartTitle: 'Tambah bahan',
-      partAdded: '{{food}} ditambahkan ke piring',
-      addPartFailed: 'Tidak bisa menambahkan itu. Coba lagi',
       addPartTyped: 'Entri ini memakai angka kalori Anda sendiri, jadi tidak bisa dirinci',
       plateEmptied:
         'Tidak ada yang tersisa di piring. Catatannya kembali dihitung sebagai satu porsi.',

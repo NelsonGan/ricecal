@@ -820,10 +820,8 @@ export const fil = {
       plateHeading: 'Mga sangkap',
       plateTotal: 'Kabuuan',
       plateNone: 'Isang bagay ang bilang nito. I-edit para hatiin sa mga sangkap.',
-      addPart: 'Magdagdag ng sangkap',
+      addPart: 'Idagdag',
       addPartTitle: 'Magdagdag ng sangkap',
-      partAdded: 'Naidagdag sa plato ang {{food}}',
-      addPartFailed: 'Hindi maidagdag iyon. Subukan ulit',
       addPartTyped: 'Sarili mong bilang ng calories ang ginagamit nito, kaya hindi ito mahahati',
       plateEmptied:
         'Wala nang natira sa plato. Babalik ang entry sa pagbibilang bilang isang serving.',
