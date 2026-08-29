@@ -71,6 +71,9 @@ async function call(system: string, user: string, maxTokens: number): Promise<un
         max_tokens: maxTokens,
         temperature: 0.2,
         response_format: { type: 'json_object' },
+        // The same as the pipeline sends. An eval that graded a prompt against
+        // a reasoning model would be grading something the app never runs.
+        reasoning: { enabled: false },
       }
 
   // Running a whole suite fires more requests a minute than a scan ever will,

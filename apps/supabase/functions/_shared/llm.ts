@@ -129,9 +129,9 @@ export type Vision = {
   /**
    * The photo has nothing edible in it.
    *
-   * Distinct from "unclear": a blurred plate is still a meal and gets the archetype
-   * floor, but a photo of a cat is not a meal and must not become 600 kcal in
-   * someone's diary. The scan answers "no food" and writes nothing.
+   * Distinct from "unclear": a blurred plate is still a meal and the cascade will
+   * do its best with it, but a photo of a cat is not a meal and must not become
+   * calories in someone's diary. The scan answers "no food" and writes nothing.
    */
   noFood?: boolean
 }
@@ -151,7 +151,6 @@ export type MockSteer = {
   /** Candidate index the pick call "chooses", or 'none'. */
   pick?: number | 'none'
   nutrition?: Nutrition | 'invalid'
-  archetype?: string
   /** What the refine interpreter "decides". */
   interpret?: Interpretation
   /** 'vision' fails the vision call; 'all' fails every model call. */
@@ -223,7 +222,26 @@ export type Interpretation =
       total: number | null
     }
   | { action: 'redescribe'; item: VisionItem }
-  | { action: 'none'; reason: string }
+  | {
+      action: 'none'
+      /**
+       * Why nothing is going to happen, and the two answers are not the same
+       * failure.
+       *
+       * `not_a_correction` is the model reading the text and deciding it has no
+       * calories in it, which is a RESULT: "extra spicy" is a fine thing to type
+       * and the honest answer is that the entry does not change. `unusable` is
+       * the model answering in a shape this function cannot act on, which is a
+       * failure of the call and worth one more try before the user is told
+       * anything.
+       *
+       * The client says different things for the two, because "that does not
+       * change the calories" and "we could not read that" send somebody to
+       * different next actions.
+       */
+      code: 'not_a_correction' | 'unusable'
+      reason: string
+    }
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 // Qwen vision model: supports image input and JSON output. Overridable because
@@ -247,10 +265,22 @@ export function mockActive(): boolean {
  * timeouts. Everything below a model call is a cheaper tier, so a transient 429
  * costing the user a catalogue match is the expensive way to save 700ms.
  */
+/**
+ * How much room an answer gets when a call site does not say.
+ *
+ * Generous, because a ceiling is not a bill: tokens are charged as they are
+ * generated, so an answer that fits in 200 costs 200 whatever this number says.
+ * The only thing a tight ceiling buys is `finish_reason: length` with no
+ * content in the body — the model spent the whole allowance thinking and never
+ * got to the JSON — which is a silent failure of whatever feature asked. It has
+ * cost this app one already; see `INTERPRET_MAX_TOKENS`.
+ */
+const DEFAULT_MAX_TOKENS = 2000
+
 export async function chatJSON(
   meter: Meter,
   messages: unknown[],
-  maxTokens = 1200,
+  maxTokens = DEFAULT_MAX_TOKENS,
 ): Promise<unknown> {
   const key = Deno.env.get('OPENROUTER_API_KEY')
   if (!key) throw new Error('OPENROUTER_API_KEY not set')
@@ -282,6 +312,25 @@ export async function chatJSON(
         max_tokens: maxTokens,
         temperature: 0.2,
         response_format: { type: 'json_object' },
+        // OFF, NOT MERELY LOW, and this is the second time it has had to be.
+        //
+        // qwen3.7-flash reasons by default. The first symptom was speed: it
+        // burned 20-30s per call thinking about a JSON echo, and three
+        // sequential calls put a scan past the client's 60s request timeout, so
+        // the app reported failure while the entries landed anyway.
+        //
+        // The second symptom was worse, because nothing reported it. Reasoning
+        // tokens come out of `max_tokens`, so a model that thinks past the
+        // ceiling returns `finish_reason: length` with an EMPTY body — no JSON,
+        // no error, nothing to parse. Every caller here had somewhere quiet to
+        // put that: the vision call fell to the archetype floor and wrote a
+        // guessed "Mixed meal" onto somebody's day, and the fix-by-typing
+        // interpreter answered "could not apply that, try rewording it" to
+        // corrections that were fine. Both of the bugs this was reported as are
+        // this line being absent.
+        //
+        // Models with no reasoning mode ignore the field.
+        reasoning: { enabled: false },
       }),
     })
     if (!res.ok) {
@@ -295,14 +344,19 @@ export async function chatJSON(
     const text: string = choice?.message?.content ?? ''
     // An empty body is a provider hiccup, not an answer — and JSON.parse('')
     // throws "Unexpected end of JSON input", which reads like a bad model
-    // rather than no model at all. Retryable, and it says why.
+    // rather than no model at all. It says why, and whether saying it again
+    // could possibly help.
+    //
+    // `finish_reason: length` is NOT retryable, and that distinction cost a
+    // feature. It means the model spent the whole ceiling before it wrote any
+    // JSON, so the identical request with the identical ceiling has nothing new
+    // to run into — the retry was a second bill for the same failure. The fix
+    // for that case is a ceiling with room in it, at the call site.
     if (!text.trim()) {
-      throw Object.assign(
-        new Error(
-          `OpenRouter returned no content (finish_reason: ${choice?.finish_reason ?? 'none'})`,
-        ),
-        { retryable: true },
-      )
+      const reason = choice?.finish_reason ?? 'none'
+      throw Object.assign(new Error(`OpenRouter returned no content (finish_reason: ${reason})`), {
+        retryable: reason !== 'length',
+      })
     }
     // Some models fence JSON in markdown despite response_format.
     const clean = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '')
@@ -847,8 +901,8 @@ export async function analysePhoto(
     ],
     // Headroom for a full plate with all fields: a response truncated mid-JSON
     // fails to parse, and a parse failure costs the whole vision tier — a
-    // chicken rice with six components ran out at 1600 and landed on the
-    // archetype floor as "Mixed meal".
+    // chicken rice with six components ran out at 1600 and took the scan down
+    // with it.
     2400,
   )
   return shapeVision(raw)
@@ -866,10 +920,9 @@ export const DESCRIBE_MEAL_PROMPT =
   'portion is one ordinary serving as a stall or home kitchen serves it. ' +
   // Emphatic, and with the consequence spelled out, because the failure is
   // silent and expensive: one run in three answered "hello, how are you doing
-  // today" with an item, and the cascade's floor — which exists so that a real
-  // meal is never lost — dutifully logged it as a 600 kcal "Mixed meal". There
-  // is nothing downstream that can tell an invented meal from a vague one, so
-  // this sentence is the only place it can be stopped.
+  // today" with an item, and an item is a meal as far as everything downstream
+  // is concerned. Nothing below this call can tell an invented meal from a
+  // vague one, so this sentence is the only place it can be stopped.
   'FIRST, DECIDE WHETHER THERE IS A MEAL HERE AT ALL. If the text does not say ' +
   'that someone ate something — a greeting, a question, a note to self, a name, ' +
   'an empty or nonsense string — answer {"no_food": true} and nothing else. ' +
@@ -986,7 +1039,10 @@ export async function describeMeal(
     // a leading number becomes the count, and the band is a plain serving.
     const trimmed = text.trim()
     const count = Math.min(12, Math.max(1, Number(trimmed.match(/^(\d+)\b/)?.[1] ?? 1)))
-    const name = trimmed.replace(/^\d+\s*/, '').slice(0, 120) || 'Mixed meal'
+    // Empty text never reaches here — the endpoint rejects a request with
+    // neither a photo nor words — so the fallback is a name for a string of
+    // digits and not a stand-in meal.
+    const name = trimmed.replace(/^\d+\s*/, '').slice(0, 120) || 'A serving'
     return shapeVision({
       scene: 'single',
       items: [
@@ -1307,7 +1363,7 @@ function shapeInterpretation(raw: unknown): Interpretation {
   if (o.action === 'quantity') {
     const factor = Number(o.factor)
     if (Number.isFinite(factor) && factor > 0 && factor <= 10) return { action: 'quantity', factor }
-    return { action: 'none', reason: 'unusable quantity' }
+    return { action: 'none', code: 'unusable', reason: 'unusable quantity' }
   }
   if (o.action === 'adjust') {
     const delta = Number(o.kcal_delta)
@@ -1326,7 +1382,15 @@ function shapeInterpretation(raw: unknown): Interpretation {
     // A swap is the one adjustment that may cost nothing: chicken for chicken
     // of a different kind can come out even, and the plate still has to change.
     const swapping = Boolean(part && replaces && replaces.toLowerCase() !== part.toLowerCase())
-    if (Number.isFinite(delta) && (delta !== 0 || swapping) && Math.abs(delta) <= 2000 && name) {
+    // A STATED COUNT IS A CHANGE ON ITS OWN, delta or no delta. "Only 3
+    // skewers" against six of them is the plate halving, and the model
+    // reasonably answers 0 for a field it has been told is about calories — so
+    // requiring a non-zero delta threw the whole correction away and answered
+    // "could not apply that" to one of the clearest sentences a user can type.
+    const counted = Number.isFinite(count) && count !== 0
+    const stated = Number.isFinite(total) && total > 0
+    const acts = delta !== 0 || swapping || counted || stated
+    if (Number.isFinite(delta) && acts && Math.abs(delta) <= 2000 && name) {
       return {
         action: 'adjust',
         kcal_delta: Math.round(delta),
@@ -1337,20 +1401,24 @@ function shapeInterpretation(raw: unknown): Interpretation {
           swapping && Number.isFinite(partKcal) && partKcal > 0 && partKcal <= 5000
             ? Math.round(partKcal)
             : null,
-        count:
-          Number.isFinite(count) && count !== 0 && Math.abs(count) <= 20 ? Math.round(count) : null,
+        count: counted && Math.abs(count) <= 20 ? Math.round(count) : null,
         // Zero is not a total: "no sambal" is a removal, which the negative
         // delta already says, and a part set to none is a part deleted.
-        total: Number.isFinite(total) && total > 0 && total <= 20 ? Math.round(total) : null,
+        total: stated && total <= 20 ? Math.round(total) : null,
       }
     }
-    return { action: 'none', reason: 'unusable adjustment' }
+    return { action: 'none', code: 'unusable', reason: 'unusable adjustment' }
   }
   if (o.action === 'redescribe' && o.item) {
     const item = shapeVision({ scene: 'single', items: [o.item] }).items[0]
     return { action: 'redescribe', item }
   }
-  return { action: 'none', reason: String(o.reason ?? 'not understood') }
+  // The model's own "there is nothing to change here" carries a reason it
+  // wrote; anything else that lands here is an answer in a shape this function
+  // does not recognise, which is a different problem with a different remedy.
+  return o.action === 'none'
+    ? { action: 'none', code: 'not_a_correction', reason: String(o.reason ?? 'no calorie change') }
+    : { action: 'none', code: 'unusable', reason: 'not understood' }
 }
 
 /**
@@ -1459,6 +1527,25 @@ export const refineUserMessage = (context: RefineContext, instruction: string): 
   `\n\nUser typed: "${instruction}"`
 
 /**
+ * How much room the interpreter is given to answer in.
+ *
+ * IT WAS 600, AND THAT IS THE BUG BEHIND "Could not fix that, try rewording
+ * it". The bottom rung of this prompt asks for a whole `VisionItem` —
+ * name, two queries, a component list with four figures each, a serving hint,
+ * a calorie band — which is the same shape `analysePhoto` is given 2400 for,
+ * and it is written after however much the model thinks first. Production logs
+ * showed the call ending `finish_reason: length` with no content at all: the
+ * ceiling was spent before any JSON was written, `chatJSON` threw, and the
+ * screen said the words could not be applied. The correction was fine every
+ * time.
+ *
+ * The ceiling is not a bill. Tokens are charged as generated, and an answer
+ * that fits in 200 costs 200 whatever this says — so the only thing a small
+ * number buys is the failure above.
+ */
+const INTERPRET_MAX_TOKENS = 2400
+
+/**
  * The fix-by-typing interpreter: entry state + free text in, one of three
  * decisions out. Cheap and text-only — the expensive work (search, estimate)
  * only happens when the answer is `redescribe`, and then it is the same
@@ -1549,90 +1636,47 @@ export async function interpretInstruction(
     }
   }
 
-  const raw = await chatJSON(
-    meter,
-    [
-      { role: 'system', content: INTERPRET_INSTRUCTION_PROMPT },
-      { role: 'user', content: refineUserMessage(context, instruction) },
-    ],
-    600,
-  )
-  return shapeInterpretation(raw)
-}
-
-/**
- * One row of `public.archetypes`.
- *
- * The macros are here for the snapshot rather than for the classifier, which is
- * shown the name and nothing else. A model choosing between "fried rice" and
- * "noodle soup" has no use for a fat figure, and putting seven numbers a row in
- * front of it is sixty rows of noise in a prompt whose whole virtue is that it
- * cannot return a no-match.
- */
-export type Archetype = {
-  id: string
-  slug: string
-  name: string
-  kcal: number
-  carbs_g: number
-  protein_g: number
-  fat_g: number
-}
-
-/**
- * Tier 5: classification over the fixed archetype list — never search, so it
- * cannot return no-match. Throws only on model failure, which the caller
- * answers with the terminal row.
- */
-export async function classifyArchetype(
-  item: VisionItem,
-  archetypes: Archetype[],
-  mock: MockSteer | undefined,
-  meter: Meter,
-): Promise<Archetype> {
-  const bySlug = (slug: string) => archetypes.find((a) => a.slug === slug)
-
-  if (mockActive()) {
-    if (mock?.fail === 'all') throw new Error('mocked classify failure')
-    if (mock?.archetype) {
-      const hit = bySlug(mock.archetype)
-      if (hit) return hit
-    }
-    // Crude keyword match, then the terminal row — same guarantees as the
-    // real call: always one of the fixed list.
-    const needle = `${item.name} ${item.generic_query}`.toLowerCase()
-    const hit = archetypes.find((a) =>
-      a.name
-        .toLowerCase()
-        .split(/[^a-z]+/)
-        .filter((w) => w.length > 3)
-        .some((w) => needle.includes(w)),
+  /**
+   * Asked twice when the first answer was unreadable, and only then.
+   *
+   * `chatJSON` already retries the transport — a 429, a 5xx, a timeout, an
+   * empty body — and deliberately does not retry a bad parse, on the argument
+   * that the same question mostly buys the same answer. That argument is right
+   * for a vision call and wrong here, because the two failures look identical
+   * from the outside and the user pays for the difference: "Could not apply
+   * that" for a sentence the model simply answered in the wrong shape sends
+   * somebody away to reword a correction that was fine.
+   *
+   * A considered `not_a_correction` is NOT retried. The model read the words
+   * and said they have no calories in them, which is an answer, and asking
+   * again is asking the same model the same question hoping for a different
+   * result.
+   */
+  const ask = async () =>
+    shapeInterpretation(
+      await chatJSON(
+        meter,
+        [
+          { role: 'system', content: INTERPRET_INSTRUCTION_PROMPT },
+          { role: 'user', content: refineUserMessage(context, instruction) },
+        ],
+        INTERPRET_MAX_TOKENS,
+      ),
     )
-    return hit ?? (bySlug('archetype-mixed-meal') as Archetype)
-  }
 
-  const raw = await chatJSON(
-    meter,
-    [
-      {
-        role: 'system',
-        content:
-          'Classify a dish into exactly one category from the provided list. Respond with ' +
-          'JSON only: {"slug": string}. If nothing fits well, use "archetype-mixed-meal".',
-      },
-      {
-        role: 'user',
-        content:
-          `Dish: ${item.name}` +
-          (item.generic_query && item.generic_query !== item.name
-            ? ` (broadly: ${item.generic_query})`
-            : '') +
-          `\n\nCategories:\n` +
-          archetypes.map((a) => `- ${a.slug}: ${a.name}`).join('\n'),
-      },
-    ],
-    100,
-  )
-  const slug = String((raw as Record<string, unknown>)?.slug ?? '')
-  return bySlug(slug) ?? (bySlug('archetype-mixed-meal') as Archetype)
+  const first = await ask()
+  if (first.action !== 'none' || first.code !== 'unusable') return first
+  return ask().catch(() => first)
 }
+
+/**
+ * There was an `Archetype` type and a `classifyArchetype` call here, and they
+ * were tier 5: a classification over sixty seeded generic rows that ended, when
+ * nothing else fit, at a hardcoded "Mixed meal" of 600 kcal.
+ *
+ * They are gone, and the cascade has no floor now. What the floor bought was
+ * that a scan always produced a diary row; what it cost was that the row could
+ * be a guess nobody made, sitting in somebody's day wearing their photograph.
+ * A scan that cannot say what the food is now says so and asks to be tried
+ * again. See the note at the top of `cascade.ts`.
+ */

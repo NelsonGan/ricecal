@@ -543,9 +543,9 @@ export const suggestUserMessage = (day: DayContext): string => {
  * Empty is a real answer and the endpoint treats it as one. It is what a model
  * that would not answer in the shape asked for comes to, and the screen says "we
  * could not think of anything, try again" rather than showing a broken list.
- * There is no archetype floor here and there should not be: a scan that falls
- * back to "Mixed meal" is still telling somebody what they ate, while a
- * suggestion that falls back to a generic is telling them nothing.
+ * There is no fallback here and there is none in the scan cascade either: an
+ * answer nobody worked out, wearing the same clothes as one that was, is the
+ * failure both of them are written to avoid.
  */
 export async function suggestMeals(
   day: DayContext,

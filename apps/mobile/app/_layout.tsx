@@ -334,6 +334,12 @@ function RootStack() {
           rather than something glanced at over the day, and it is reached from
           search, which is now a page too. */}
       <Stack.Screen name="log/food/[id]" />
+      {/* The plate pushes, and it is the one of the dish's three editors that
+          is not a sheet. Adding a part opens a catalogue search, and a sheet
+          cannot host a second sheet without one of them closing — so dismissing
+          the search dropped the user two panels back, onto the dish. A page
+          keeps the search over it and reveals the plate again. */}
+      <Stack.Screen name="log/ingredients" />
       {/* ONE recipe pushes; the LIST is a tab. Singular and plural, and the
           split is the information hierarchy rather than a naming quirk: the
           collection is somewhere the app IS, and a recipe is somewhere you go,

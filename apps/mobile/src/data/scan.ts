@@ -143,6 +143,79 @@ export function useUpdateIngredient() {
 }
 
 /**
+ * Put a food ON the plate.
+ *
+ * The list could only ever shrink until now: the sheet under an entry offered a
+ * stepper and a bin, and anything the scan had missed had to be answered either
+ * by retyping the whole entry's figures or by spending a model call on "add a
+ * fried egg". Naming it out of the catalogue is cheaper than both and more
+ * exact than either.
+ *
+ * The figures sent are per ONE of the part, which is what `add_ingredient`
+ * stores against a factor of one — so a dish chosen at its "large" portion is
+ * sent as that portion's own numbers rather than as a base and a multiplier
+ * this row has nowhere to keep.
+ *
+ * NOT OPTIMISTIC, unlike the two above. Those move a row that is already on
+ * screen and can be put back exactly as it was; this one has no id until the
+ * server issues it, and a placeholder row that has to be reconciled with a real
+ * one is the pending-snap problem again for a write that takes a moment.
+ */
+export function useAddIngredient() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: {
+      entryId: string
+      logDate: string
+      name: string
+      /** Per one of this part, at the portion the user picked. */
+      kcal: number
+      carbs: number
+      protein: number
+      fat: number
+      quantity?: number
+      /** What one of them weighs, when the catalogue row says. */
+      grams?: number
+      /** Provenance only, exactly as on an entry. */
+      foodId?: string
+      servingId?: string
+      servingLabel?: string
+    }) => {
+      const { error } = await supabase.rpc('add_ingredient', {
+        p_food_log_id: input.entryId,
+        p_name: input.name,
+        p_kcal: input.kcal,
+        p_carbs_g: input.carbs,
+        p_protein_g: input.protein,
+        p_fat_g: input.fat,
+        p_quantity: input.quantity ?? 1,
+        p_grams: input.grams,
+        p_food_id: input.foodId,
+        p_serving_id: input.servingId,
+        p_serving_label: input.servingLabel,
+      })
+      // Rewrapped rather than rethrown, unlike the two mutations above, and the
+      // difference matters here because the caller READS this message. A
+      // `PostgrestError` is a plain object, so `error instanceof Error` is false
+      // for it and a screen that narrows on `Error` to reach `.message` would
+      // silently take the generic branch every time — which is how the one
+      // refusal worth explaining ("this entry uses your own calorie figure")
+      // would have come out as "could not add that".
+      if (error) throw new Error(error.message)
+    },
+    onSettled: (_data, _error, input) => {
+      queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) })
+      queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
+      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+      queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
+      queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+    },
+  })
+}
+
+/**
  * Take one ingredient off a scanned plate.
  *
  * Its own mutation rather than "set the quantity to zero": the database
@@ -187,9 +260,40 @@ export function useRemoveIngredient() {
   })
 }
 
+/**
+ * Why a correction changed nothing, in the words the user gets told.
+ *
+ * The server answers with these; the screen translates them. One message for
+ * every way `scan-refine` can decline was what made the feature feel broken —
+ * "Could not apply that, try rewording it" was shown to somebody who typed
+ * "extra spicy", where there is nothing to apply and rewording will not help.
+ *
+ * `unknown` is the client's own: an older function, or a shape this build does
+ * not know about, and it keeps the general apology those used to get.
+ */
+export type RefineDeclined =
+  | 'not_a_correction'
+  | 'not_understood'
+  | 'no_match'
+  | 'no_change'
+  | 'failed'
+  | 'unknown'
+
+const DECLINED: readonly RefineDeclined[] = [
+  'not_a_correction',
+  'not_understood',
+  'no_match',
+  'no_change',
+  'failed',
+]
+
+const declinedFrom = (code: string | undefined): RefineDeclined =>
+  DECLINED.includes(code as RefineDeclined) ? (code as RefineDeclined) : 'unknown'
+
 type RefineResponse = {
   ok: boolean
   applied?: boolean
+  code?: string
   reason?: string
   error?: string
 }
@@ -233,8 +337,11 @@ export function useRefineEntry() {
        * types.
        */
       fromChip?: boolean
-      /** Called when the server understood the request and applied nothing. */
-      onNotApplied?: () => void
+      /**
+       * Called when the server understood the request and applied nothing,
+       * with which of the five ways that happened. See `RefineDeclined`.
+       */
+      onNotApplied?: (reason: RefineDeclined) => void
     }) => {
       refining.add(input.entryId)
       const startedAt = Date.now()
@@ -275,7 +382,7 @@ export function useRefineEntry() {
       work()
         .then((data) => {
           settled(data.applied === false ? 'not_applied' : 'applied')
-          if (data.applied === false) input.onNotApplied?.()
+          if (data.applied === false) input.onNotApplied?.(declinedFrom(data.code))
         })
         .catch((error: unknown) => {
           // The two refusals ARE announced, unlike everything else here. A

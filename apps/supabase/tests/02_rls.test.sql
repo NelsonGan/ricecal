@@ -13,7 +13,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(24);
+select plan(22);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -38,13 +38,6 @@ values
 
 insert into public.weight_logs (user_id, measured_on, weight_kg) values (:'user_a', current_date, 68.0);
 insert into public.weight_logs (user_id, measured_on, weight_kg) values (:'user_b', current_date, 74.0);
-
--- The sixty tier-5 archetypes, captured as the owner and before any role
--- switch. The assertion below is "a user sees all of them", not "a user sees
--- sixty": the seed is the thing that decides how many there are, and a
--- hard-coded count fails on the next added archetype while saying nothing
--- about RLS.
-select count(*)::integer as archetype_count from public.archetypes \gset
 
 
 -- AS USER A ------------------------------------------------------------------
@@ -71,16 +64,11 @@ select is(
   'a user sees only their own profile'
 );
 
--- The archetypes are shared and undivided: there are no per-user rows for a
--- policy to hide, so this is simply everything in the table. It is the last
--- shared reference table left in this database — the catalogue itself is in
--- Cloudflare D1, reached through the `catalogue` edge function, and no RLS
--- policy here has anything to say about it.
-select is(
-  (select count(*)::integer from public.archetypes),
-  :archetype_count,
-  'a user sees the whole archetype list'
-);
+-- There was an assertion here that a user could read the whole `archetypes`
+-- table, the last shared reference table in this database. It went with the
+-- table: the scan cascade has no archetype floor any more, and every shared
+-- food row now lives in Cloudflare D1 behind the catalogue Worker, where no RLS
+-- policy in this database has anything to say about it.
 
 -- The views are `security_invoker`, so the table policies filter them. A view
 -- left on the default would run as its owner and leak everything.
@@ -134,23 +122,23 @@ select throws_ok(
   'a user cannot grant themselves a subscription'
 );
 
--- The archetypes are read-only to clients for the same reason and by the same
--- mechanism: no insert GRANT at all, so this is a privilege error rather than a
--- policy miss. A user who could write one could change what every failed scan
--- in the app falls back to.
+-- A breakdown is read-only to clients for the same reason and by the same
+-- mechanism: no write GRANT at all, so this is a privilege error rather than a
+-- policy miss. The three functions below are the only way to change one, and
+-- each checks the owner itself. A user who could write these rows directly
+-- could write any calorie total they liked into `food_log_details`.
 select throws_ok(
-  $q$insert into public.archetypes (slug, name, kcal, carbs_g, protein_g, fat_g)
-     values ('fake', 'Fake', 1, 0, 0, 0)$q$,
+  $q$update public.food_log_ingredients set base_kcal = 1$q$,
   '42501',
   null,
-  'a user cannot insert an archetype'
+  'a user cannot rewrite what a part of their plate costs'
 );
 
 select throws_ok(
-  $q$update public.archetypes set kcal = 1$q$,
+  $q$delete from public.food_log_ingredients$q$,
   '42501',
   null,
-  'nor rewrite the figure an existing one carries'
+  'nor delete one without going through remove_ingredient'
 );
 
 reset role;
@@ -166,14 +154,6 @@ select is(
   (select count(*)::integer from public.food_logs),
   1,
   'the other user sees only their own log'
-);
-
--- Both users see the same archetypes. There is nothing user-scoped in them,
--- which is the point: one set of rows, one policy, no divergence to test for.
-select is(
-  (select count(*)::integer from public.archetypes),
-  :archetype_count,
-  'the other user sees the same archetypes'
 );
 
 reset role;
@@ -203,23 +183,23 @@ select is(
    from pg_catalog.pg_proc p
    join pg_catalog.pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
-     and p.proname in ('seed_archetype_foods', 'set_ingredient_quantity',
+     and p.proname in ('add_ingredient', 'set_ingredient_quantity',
                        'remove_ingredient')
      and pg_catalog.has_function_privilege('public', p.oid, 'EXECUTE')),
   0,
   'the scan write functions are not executable by PUBLIC'
 );
 
--- And the two the client legitimately calls still are. Revoking is only right
--- if the ingredient steppers keep working.
+-- And the three the client legitimately calls still are. Revoking is only right
+-- if the ingredient steppers, the bin and the add button keep working.
 select is(
   (select count(*)::integer
    from pg_catalog.pg_proc p
    join pg_catalog.pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
-     and p.proname in ('set_ingredient_quantity', 'remove_ingredient')
+     and p.proname in ('add_ingredient', 'set_ingredient_quantity', 'remove_ingredient')
      and pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE')),
-  2,
+  3,
   'but a signed-in user can still edit the parts of their own plate'
 );
 

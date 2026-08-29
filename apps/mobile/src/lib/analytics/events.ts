@@ -58,7 +58,23 @@ export type TrackedCuisine = 'malay' | 'chinese' | 'indian' | 'custom'
  */
 
 /** How an entry reached the diary. The one property most reports break down by. */
-export type LogMethod = 'camera' | 'describe' | 'search' | 'barcode' | 'recipe' | 'quick_add'
+export type LogMethod =
+  | 'camera'
+  | 'describe'
+  | 'search'
+  | 'barcode'
+  | 'recipe'
+  | 'quick_add'
+  /**
+   * Re-logged out of this account's own diary, from the search panel's second
+   * tab.
+   *
+   * Its own value rather than folded into `search`: it is the same field and the
+   * same screen, and it is a completely different act — one is finding a food in
+   * a shared catalogue and the other is saying "the same again". Which of the two
+   * people actually use is the question the tab was built to answer.
+   */
+  | 'history'
 
 /**
  * Which button was refused, when the paywall came up because of one.
@@ -269,8 +285,13 @@ export type Events = {
    * A result was opened. `position` is 1-based rank, and its distribution is
    * the live version of what `pnpm foods:gate` measures against thirty fixed
    * queries.
+   *
+   * `source` says which of the panel's two lists it came from, because the rank
+   * means different things in each: in the catalogue it grades the Worker's
+   * ranking, and in the history it is simply how far back the meal was. Without
+   * it the two would be averaged into one number that measures neither.
    */
-  'Food Picked': { position: number; results: number }
+  'Food Picked': { position: number; results: number; source?: 'history' }
 
   // ── Money, up to the store sheet and no further ──────────────────────────
   /**

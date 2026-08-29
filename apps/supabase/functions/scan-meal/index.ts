@@ -4,23 +4,29 @@
 // this file is auth, the first model call, and the loop. Which model call is
 // the only difference between the two inputs: a photo goes to `analysePhoto`
 // and a sentence to `describeMeal`, both answer in the same `Vision` shape,
-// and from there the catalogue search, the verifier, the estimate and the
-// archetype floor are line-for-line the same. Text is not a lesser path with
-// its own arithmetic; it is the same pipeline asked a question in words.
+// and from there the catalogue search, the verifier and the estimate are
+// line-for-line the same. Text is not a lesser path with its own arithmetic; it
+// is the same pipeline asked a question in words.
 //
 // Once the caller is authenticated, the body parses AND the account is allowed
-// to be here, this function does not return an HTTP error: any failure in
-// tiers 1-4 falls to the archetype floor, and a floor failure still answers 200
-// with `ok: false` so the client can keep its pending row and retry. Whichever
-// tier answers, the numbers are that tier's alone — an LLM figure is never
-// averaged with a catalogue figure.
+// to be here, this function does not return an HTTP error: a scan that could
+// not be resolved answers 200 with `ok: false`, and the client turns its
+// pending row into "we could not read that, try again". Whichever tier answers,
+// the numbers are that tier's alone — an LLM figure is never averaged with a
+// catalogue figure.
 //
-// The two REFUSALS are the deliberate exception to that, and they sit beside
-// the auth check rather than inside the cascade because they are the same kind
-// of thing: a statement about who is asking, settled before any work starts.
-// Falling to the archetype floor would be wrong twice over — it would write a
-// guessed meal nobody asked for, and it would hand out the answer the paywall
-// exists to sell.
+// A FAILED SCAN WRITES NOTHING, and that is why every item is resolved before
+// any of them is written. There used to be a floor under the cascade that could
+// not fail, so the loop resolved and wrote one item at a time; without it, a
+// plate whose second component cannot be priced would otherwise leave the first
+// one on the diary as half a meal.
+//
+// The two REFUSALS still answer with a status rather than with `ok: false`, and
+// they sit beside the auth check rather than inside the cascade because they
+// are the same kind of thing: a statement about who is asking, settled before
+// any work starts. The client tells them apart from a scan that simply failed,
+// because "you are out of scans" and "we could not read the plate" are answered
+// by different things.
 //
 // THE TWO ARE ASKED OF DIFFERENT INPUTS, which is the freemium shape. A typed
 // meal needs a subscription; a photographed one does not, and instead spends
@@ -33,7 +39,7 @@ import { createClient } from '@supabase/supabase-js'
 
 import {
   describe,
-  resolveByArchetype,
+  type Resolved,
   resolveByLabel,
   resolveItem,
   type WrittenEntry,
@@ -114,11 +120,10 @@ Deno.serve(async (req: Request) => {
   // Steering is a test affordance; outside mock mode it is ignored entirely.
   const mock = mockActive() ? body.mock : undefined
 
-  // NEITHER A PHOTOGRAPH NOR WORDS. There is nothing here to recognise, so the
-  // cascade would fall to the archetype floor and write a guessed "Mixed meal"
-  // — having first spent one of the day's scans on it. Checked before the
-  // claim, because a request that carries no evidence is a bad request rather
-  // than a scan that went badly.
+  // NEITHER A PHOTOGRAPH NOR WORDS. There is nothing here to recognise, and
+  // asking anyway would spend one of the day's scans to be told so. Checked
+  // before the claim, because a request that carries no evidence is a bad
+  // request rather than a scan that went badly.
   if (!photoPath && !description) {
     return json({ ok: false, error: 'photo_path or text is required' }, 400)
   }
@@ -200,8 +205,8 @@ Deno.serve(async (req: Request) => {
 
   try {
     // -- The first model call. A failure here — network, model, no photo —
-    // skips straight to the archetype floor with no item context: the
-    // terminal row.
+    // ends the scan: there is no item to resolve and nothing left to guess
+    // with.
     //
     // One meal, one entry, whichever way it was described: if the model split
     // the tray into per-side items, `foldMealItems` puts them back into a
@@ -215,8 +220,8 @@ Deno.serve(async (req: Request) => {
           : await analysePhoto(photoBase64, mock, meter),
       )
     } catch (error) {
-      // Anything that goes wrong here is a model failure, and the archetype
-      // floor answers it. Running out of scans cannot arrive this way: the
+      // Anything that goes wrong here is a model failure, and a model failure
+      // is a failed scan. Running out of scans cannot arrive this way: the
       // claim is taken above, before a single request is sent, so the one
       // outcome this catch used to have to re-throw is now unreachable.
       const message = `[vision] ${describe(error)}`
@@ -264,25 +269,82 @@ Deno.serve(async (req: Request) => {
       trace.push('[label] could not create a row for the panel')
     }
 
-    // Nothing edible in the photo. No entry, no archetype floor, no calories —
-    // the floor exists to keep a MEAL from being lost, and this is not a meal.
-    // The client keeps its row and says so, with a way to dismiss it.
+    // Nothing edible in the photo, said deliberately by the model rather than
+    // arrived at by a cascade that ran out of tiers. It answers `ok: true` and a
+    // row that offers to be dismissed, where a scan that FAILED answers
+    // `ok: false` and a row that offers another go — "there is no food here" and
+    // "we could not read this" are different things to be told.
     if (vision?.noFood) {
       return json({ ok: true, scanId, food: false, entries: [], ...(wantDebug ? { trace } : {}) })
     }
 
-    const items: Array<VisionItem | null> = vision?.items ?? [null]
+    const items: VisionItem[] = vision?.items ?? []
     const scene = vision?.scene ?? 'unclear'
+
+    // The model answered and named no food. Not `noFood`, which is the model
+    // saying so deliberately and has its own reply above — this is an answer
+    // that came back empty, or a vision call that threw and left `vision` null.
+    if (items.length === 0) {
+      trace.push('[vision] the model named no food')
+      return json({
+        ok: false,
+        scanId,
+        entries: [],
+        error: 'could not work out what this was',
+        ...(wantDebug ? { trace } : {}),
+      })
+    }
+
+    /**
+     * Everything resolved first, and only then written.
+     *
+     * The cascade can now come back with nothing, and a meal is one or more
+     * items, so a plate that half resolves has to be reported as a failure
+     * rather than logged as the half that worked. Resolution touches no diary
+     * row — `resolveItem` reads the catalogue and calls models — so abandoning
+     * it here leaves nothing behind.
+     */
+    const resolutions: Array<{ item: VisionItem; resolved: Resolved }> = []
+    for (const [index, item] of items.entries()) {
+      const resolved = await resolveItem(db, scanId, item, mock, meter, trace)
+      if (resolved) {
+        resolutions.push({ item, resolved })
+        continue
+      }
+      // The eval row is still written, and it is the most interesting one in
+      // the table: what the model saw, and no tier that could price it. This is
+      // the catalogue-widening backlog, so losing it because the scan failed
+      // would lose exactly the scans worth looking at.
+      await db.from('food_scan_items').insert({
+        user_id: userId,
+        scan_id: scanId,
+        item_index: index,
+        described_text: description || null,
+        scene,
+        specific_query: item.specific_query,
+        generic_query: item.generic_query,
+        components: item.components,
+        serving_hint: item.serving_hint,
+        llm_kcal_low: Math.round(item.kcal_low),
+        llm_kcal_high: Math.round(item.kcal_high),
+        confidence: item.confidence,
+        resolved_tier: null,
+        food_log_id: null,
+      })
+      trace.push(`[cascade] no tier could price "${item.name}"`)
+      return json({
+        ok: false,
+        scanId,
+        entries: [],
+        error: 'could not work out what this was',
+        ...(wantDebug ? { trace } : {}),
+      })
+    }
 
     const written: WrittenEntry[] = []
     let firstEntry = true
 
-    for (const [index, item] of items.entries()) {
-      const resolved = item
-        ? ((await resolveItem(db, scanId, item, mock, meter, trace)) ??
-          (await resolveByArchetype(db, item, mock, meter)))
-        : await resolveByArchetype(db, null, mock, meter)
-
+    for (const [index, { item, resolved }] of resolutions.entries()) {
       const entry = await writeEntry(db, {
         userId,
         logDate,
@@ -291,11 +353,11 @@ Deno.serve(async (req: Request) => {
         // On the first row only: N copies of one photo would render the same
         // plate N times in the diary.
         photoPath: firstEntry ? photoPath : null,
-        suggestedEdits: item?.suggested_edits ?? [],
+        suggestedEdits: item.suggested_edits ?? [],
         source,
         // Only ever set on the typed path — the prompt that asks for it is the
         // one with no photograph behind it. See `writeEntry`.
-        icon: item?.icon ?? null,
+        icon: item.icon ?? null,
       })
       firstEntry = false
       written.push(entry)
@@ -310,13 +372,13 @@ Deno.serve(async (req: Request) => {
         // badly" is only answerable with both halves on the row.
         described_text: description || null,
         scene,
-        specific_query: item?.specific_query ?? null,
-        generic_query: item?.generic_query ?? null,
-        components: item?.components ?? null,
-        serving_hint: item?.serving_hint ?? null,
-        llm_kcal_low: item ? Math.round(item.kcal_low) : null,
-        llm_kcal_high: item ? Math.round(item.kcal_high) : null,
-        confidence: item?.confidence ?? null,
+        specific_query: item.specific_query,
+        generic_query: item.generic_query,
+        components: item.components,
+        serving_hint: item.serving_hint,
+        llm_kcal_low: Math.round(item.kcal_low),
+        llm_kcal_high: Math.round(item.kcal_high),
+        confidence: item.confidence,
         resolved_tier: resolved.tier,
         resolved_food_id: resolved.food.id,
         catalogue_kcal: resolved.food.kcal,
@@ -333,8 +395,9 @@ Deno.serve(async (req: Request) => {
       ...(wantDebug ? { trace } : {}),
     })
   } catch (error) {
-    // Even the cascade's floor failed (database down, terminal row missing).
-    // Still not an HTTP error: the client keeps its pending row and retries.
+    // The database went away mid-write, or something else nobody planned for.
+    // Still not an HTTP error: the client turns its pending row into one that
+    // says the plate could not be read, with a way to try again.
     console.error('[scan-meal] unrecoverable:', error)
     return json({
       ok: false,

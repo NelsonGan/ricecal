@@ -21,10 +21,10 @@ const TOKEN = Deno.env.get('CATALOGUE_TOKEN') ?? ''
 /**
  * How long to wait on the catalogue before giving up.
  *
- * Short on purpose. Every caller here has something sensible to do without an
- * answer — the scan cascade falls to its archetype floor, the scanner offers
- * Describe — and a diary that hangs is worse than one that is briefly less
- * clever.
+ * Short on purpose. Every caller here has something sensible to say without an
+ * answer — the scan reports that it could not read the plate, the scanner
+ * offers Describe — and a diary that hangs is worse than one that admits it is
+ * briefly less clever.
  */
 const TIMEOUT_MS = 4000
 
