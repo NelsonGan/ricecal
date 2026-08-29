@@ -100,6 +100,11 @@ export function useLogFood() {
       // below it is at risk. See `lib/rating`.
       recordMealLogged(userId)
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
+      // And the search panel's "My foods" tab, whose whole content is the
+      // newest of these. Invalidated on the write rather than left to go stale,
+      // because the common way back into that list is straight after using it:
+      // add a dish, notice the portion was wrong, come back.
+      queryClient.invalidateQueries({ queryKey: keys.recentFoods(userId) })
       // A first entry can start a streak, and both feed the badges.
       queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
       // A meal moves this day's column, the range average and "days under goal"
@@ -381,6 +386,10 @@ export function useRemoveEntry() {
     },
     onSettled: (_data, _error, { logDate }) => {
       queryClient.invalidateQueries({ queryKey: keys.day(userId, logDate) })
+      // A deleted meal leaves the "My foods" list too. It is the one write that
+      // can take a row OUT of it, and a list still offering a meal the user has
+      // just thrown away is the app arguing with them.
+      queryClient.invalidateQueries({ queryKey: keys.recentFoods(userId) })
       queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })

@@ -6,6 +6,7 @@ import { View } from 'react-native'
 import {
   type LogSnapshot,
   packetFoodId,
+  snapshotFromEntry,
   snapshotFromRecipe,
   today,
   useActivityDay,
@@ -196,10 +197,11 @@ export default function LogSheet() {
   const openFood = (foodId: string) =>
     router.replace({ pathname: '/log/food/[id]', params: { id: foodId } })
 
-  // Takes the snapshot rather than a food, because one of the two things this
-  // sheet adds is a recipe and the other is a catalogue dish. They build one
-  // the same way and nothing downstream needs to know which it was.
-  const add = (snapshot: LogSnapshot, method: LogMethod) => {
+  // Takes the snapshot rather than a food, because the three things this sheet
+  // can add outright — a recipe, a catalogue dish, a meal out of this account's
+  // own history — build one the same way and nothing downstream needs to know
+  // which it was.
+  const add = (snapshot: LogSnapshot, method: LogMethod, quantity?: number) => {
     // NOT GATED. Adding a dish from the catalogue, a scanned packet or a saved
     // recipe reaches no model and costs nothing to serve, and a free tier that
     // could not write those is a catalogue with a read-only diary attached.
@@ -209,7 +211,7 @@ export default function LogSheet() {
     // The column says how the numbers were obtained; `method` says which door
     // the user came through, which `entry_source` has no value for. See
     // `LogInput` in `data/entries.ts`.
-    logFood.mutate({ snapshot, logDate: selectedDate, source: 'quickAdd', method })
+    logFood.mutate({ snapshot, quantity, logDate: selectedDate, source: 'quickAdd', method })
     goBack()
   }
 
@@ -390,7 +392,20 @@ export default function LogSheet() {
           }}
         />
       ) : null}
-      {panel === 'search' ? <FoodSearchPanel autoFocus onPick={openFood} /> : null}
+      {panel === 'search' ? (
+        <FoodSearchPanel
+          autoFocus
+          onPick={(food) => openFood(food.id)}
+          /* A meal out of this account's own diary is WRITTEN HERE, the way a
+             recipe is, rather than opening the portion screen a catalogue dish
+             opens. An entry already states its own numbers AND the size it was
+             eaten at — which is what `snapshotFromEntry` copies verbatim rather
+             than deriving, so "the same again" lands on the same calories to
+             the digit. The quantity travels with it for the same reason: two
+             plates yesterday is two plates today. */
+          onPickHistory={(entry) => add(snapshotFromEntry(entry), 'history', entry.quantity)}
+        />
+      ) : null}
       {panel === 'recipes' ? (
         // `replace` for the same reason `openFood` does it: a push from inside a
         // transparent modal lands on the stack WITHIN that presentation, so the

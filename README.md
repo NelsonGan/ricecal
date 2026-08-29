@@ -180,6 +180,24 @@ the row itself as `service_role`. It has to, because a scan also writes
 `food_scan_items`, which is the pipeline's working notes and is granted to
 `service_role` alone.
 
+**Every call sends `reasoning: { enabled: false }`, and it is not an
+optimisation.** `qwen3.7-flash` reasons by default, reasoning tokens come out of
+`max_tokens`, and a model that thinks past the ceiling returns
+`finish_reason: length` with an EMPTY body — no JSON, no error message, nothing
+to parse. Every caller in `llm.ts` had somewhere quiet to put that, so removing
+the line does not break loudly: it makes the vision call fail, which used to
+write a guessed "Mixed meal" onto real diaries, and it makes the fix-by-typing
+interpreter fail, which answered "could not apply that, try rewording it" to
+corrections that were fine. The line has been removed twice and put back twice,
+the first time for speed (20-30s a call, three calls past the client's 60s
+timeout) and the second for this. Models with no reasoning mode ignore it.
+
+The ceilings themselves are generous for the same reason. A ceiling is not a
+bill — tokens are charged as they are generated, so an answer that fits in 200
+costs 200 whatever `max_tokens` says — and the only thing a tight one buys is
+the silent failure above. The interpreter was at 600 for a prompt whose bottom
+rung asks for the same object `analysePhoto` gets 2400 for.
+
 ### Caching
 
 Cached queries persist to MMKV, so a relaunch has yesterday's answers before the
@@ -245,12 +263,17 @@ Three kinds of change have to be hand-written into a migration, because
 
 | what | why |
 |---|---|
-| `select seed_archetype_foods()` | the rows are data, and a diff only emits structure |
+| a `REVOKE` on a new function | the diff emits the grants a function ENDS UP with, not the revoke that shaped them, so `create function`'s default EXECUTE-to-PUBLIC survives into the migration |
+| seed data of any kind | the rows are data, and a diff only emits structure |
 | `create extension` / `drop extension` | the diff engine does not track extensions at all |
 | `cron.schedule(…)` calls | a schedule is a row in `cron.job`, so it is data too |
 
-Nothing schedules anything here any more, but the rule is what made both the
-arrival and the removal hand-written.
+Nothing schedules anything here any more, and there is no seed function left
+either — `seed_archetype_foods()` went with the archetypes — but the rule is
+what made both the arrival and the removal hand-written. The revoke is the one
+that bites regularly: a green local `db diff` is not evidence that it reached a
+migration, and `02_rls.test.sql` asserts it in the database rather than in the
+file.
 
 The `auth` schema is **not** one of these. The diff tracks triggers on
 `auth.users` perfectly well, and putting `on_auth_user_created` in a migration
@@ -279,7 +302,6 @@ auth.users
             ├── activity_sessions  one workout, keyed by the store's own id
             └── activity_hours ──── steps by local hour, last month only
 
-archetypes            the ~60 tier-5 fallbacks the scan cascade lands on
 food_scan_items       what the model claimed, and where it landed
 food_scan_misses      the catalogue-widening backlog
 barcode_misses        the same, for packets
@@ -289,9 +311,10 @@ job_runs              what each periodic job did, written by the job itself
 `foods`, `food_servings`, `food_aliases` and `food_sources` are **not** here.
 They are in Cloudflare D1, and nothing in Postgres joins to them.
 
-The archetypes are here, and that is deliberate. Tier 5 is where a scan lands
-when the catalogue, the model or the network has failed it, so reading it over
-HTTP would make the fallback for "the network failed" another network call.
+There WAS an `archetypes` table here — sixty generic rows the scan cascade fell
+back on, ending at a terminal "Mixed meal" — and it is gone with the tier that
+read it. See "The scan cascade" for why a cascade with no floor is the safer
+shape.
 
 Read shapes are views, all `security_invoker`: `food_log_details`,
 `food_log_ingredient_details`, `daily_nutrition`, `user_food_stats`,
@@ -367,8 +390,9 @@ copy.
 Two belong to the catalogue, read by `functions/_shared/catalogue.ts`:
 `CATALOGUE_URL` and `CATALOGUE_TOKEN`. The same token is set on the Worker with
 `wrangler secret put CATALOGUE_TOKEN`, and the two must match or every catalogue
-read from a function answers 401. The scan cascade turns that into an archetype
-rather than an error, so the symptom is dull scans and not a failure.
+read from a function answers 401. The scan cascade turns that into a failed scan
+rather than a wrong one: with tiers 1 to 3 unable to reach the catalogue, tier 4
+estimates or nothing does, and the row on Today says it could not be read.
 
 Only the server uses these. The app reads the catalogue directly with the
 signed-in user's JWT.
@@ -444,7 +468,6 @@ and no query time.
 | other national composition tables | 4,574 | Singapore, Vietnam, Indonesia, Taiwan, India, Thailand, Japan |
 | MyFCD | 1,412 | the Malaysian composition table |
 | hawker / chain / drinks | 451 | recipe-derived from measured rows |
-| archetypes | 65 | the tier-5 fallbacks, which also live in Postgres |
 
 Seven other countries publish a composition table, and reading one beats a
 research round on every axis: the figures are measured rather than reasoned, the
@@ -1240,10 +1263,45 @@ is the evidence: the widget did its job.
 
 Four ways in, and the FAB opens all of them in one sheet (`app/log/index.tsx`):
 **Snap** a photo, **Describe** it in words, **Scan** the barcode, or **Search**
-the catalogue. Whatever the route, the entry is written against `selectedDate`,
-the day the strip on Today has selected.
+— for a dish in the catalogue, or for a meal this account has eaten before.
+Whatever the route, the entry is written against `selectedDate`, the day the
+strip on Today has selected.
 
 Search, scan and quick-add are ordinary writes. The other two run the cascade.
+
+### Search has two tabs, and the second one is the diary
+
+`FoodSearchPanel` puts one field over two lists. **All foods** is the catalogue:
+48,000 shared rows, ranked by the Worker, asked over the network on a debounce.
+**My foods** is what this account has eaten before, newest first, filtered on the
+phone as you type.
+
+**One field above both**, because the word somebody types is the same word
+whichever list they meant it for — and a field per tab would lose it on exactly
+the switch that wants it, since "not in the catalogue, was it something I have
+eaten?" is the question the second tab answers.
+
+**It is folded to one row per dish**, keeping the most recent of each, and the
+key is name plus per-serving calories plus portion label. Unfolded it is the
+diary again, and a diary is the screen the user just came from: three weeks of
+the same breakfast, in order, is not a list of foods. Folded on the name alone,
+a 108 kcal packet of soy milk would hide behind the 511 kcal hawker one it
+shares a word with, offering one of them under the other's calories. Which row
+survives matters too: the newest carries the portion and the photograph the user
+last accepted.
+
+**A pick from this tab is WRITTEN, where a catalogue pick opens the portion
+screen.** The catalogue knows a food and not how much of it; an entry is a meal
+somebody already ate at a size they already accepted, so `snapshotFromEntry`
+copies the figures verbatim — a repeat lands on the same calories to the digit —
+and the quantity travels with it. There is no id to hand over instead: an
+entry's `food_id` is null for everything the cascade estimated, and repricing
+from the catalogue row it names is the bug `withCataloguePortions` exists to
+stop.
+
+The rows carry their own picture, which is most of the point. A meal somebody
+photographed is recognisable from six weeks away in a way its name is not, and
+the catalogue's side has a drawing at best.
 
 ### Scanning a barcode
 
@@ -1325,6 +1383,23 @@ misses Malaysian packets" above.
 4. On success the pending row is dropped and the day refetches. A pending row
    whose entry arrived by another route is recognised by source and timestamp
    and dropped, or the meal appears twice for a second.
+5. **A snap the app was suspended during is polled for.** This is the one people
+   report as "the notification said my plate was counted, I tapped it, and the
+   row was still spinning — it was fine after I restarted the app", and it is
+   the whole reason `PendingSnap.suspended` exists.
+
+   iOS takes the in-flight request down with the process, so nothing calls back;
+   the edge function writes the entry anyway. Coming back to the app refetches
+   the day ONCE, on focus, and a scan that lands a few seconds after that missed
+   the only chance anything had to notice — the poll only ran for rows already
+   in `waiting`. The row then span for two more minutes and called itself
+   failed, over a meal sitting in the database. Force quitting fixed it because
+   a restored row IS `waiting`, which is the shape of the fix: an `analysing`
+   row that crossed a suspension is polled for on the same terms, without a
+   restart and without taking the progress bar off a scan the user watched the
+   whole time. The flag is set on `background` and not on `inactive`, because
+   the second is what a permission dialog produces and the notification prompt
+   fires at the shutter of the first scan an account ever takes.
 
 **Server** (`functions/scan-meal/index.ts`, cascade in `_shared/cascade.ts`,
 model calls in `_shared/llm.ts`). One vision call returns queries, per-component
@@ -1363,13 +1438,32 @@ Then, in order:
 - **Tier 4, estimate** → a second model call, Atwater-checked, kept as numbers
   on the entry. It used to write a shared catalogue row; a guess reused is still
   a guess.
-- **Tier 5, archetype** → classification over the seeded generic rows, bottoming
-  out at a terminal "Mixed meal" at a hardcoded id that needs no model and no
-  network.
 
-Once the caller is authenticated and the body parses, this endpoint does not
-return an HTTP error. Every failure falls to the archetype floor, because a
-diary that refuses the meal is worse than one that logs it roughly.
+**There is no tier 5, and there was.** It classified the plate into one of sixty
+seeded generic rows and, failing that, wrote a terminal "Mixed meal" of 600 kcal
+at a hardcoded id that needed no model and no network. The argument for it was
+that a diary refusing a meal is worse than one logging it roughly.
+
+That argument is wrong in the direction that matters, and the database says so.
+Nothing downstream can tell a rough answer from a real one: the row sat on the
+day with the user's own photograph on it, counted in the ring, the week, the
+trends and the review. Real diaries carried "Mixed meal" at 600 kcal wearing the
+labels "Popcorn", "Coconut Latte", "Ice kachang" and "Chilli pan mee" — meals of
+150 to 400 calories, every one of them, all logged in the two days after a model
+setting made the vision call start failing silently. Nobody could have known:
+the floor's whole purpose was to make a failure look like an answer.
+
+So `resolveItem` returns null when every tier declines, the endpoint writes
+nothing and answers `ok: false`, and the row on Today says it could not be read
+and offers to be logged by hand. Once the caller is authenticated and the body
+parses this endpoint still does not return an HTTP error — a failed scan is a
+result, not a protocol problem — but the result can now be "no".
+
+**A failed scan writes nothing at all, which is why every item is resolved
+before any of them is written.** With a floor that could not fail, the loop
+resolved and wrote one item at a time; without one, a plate whose second
+component cannot be priced would otherwise leave the first on the diary as half
+a meal.
 
 ### Typed and photographed are the same pipeline
 
@@ -1489,6 +1583,24 @@ ingredients", never "Edit"), because three buttons announcing "Edit" tell a
 screen reader nothing. The glyph is not tinted: it is a yellow pencil with a red
 eraser whose whole meaning is the colour.
 
+**The plate can gain a part, not only lose one.** The ingredients card carries a
+plus beside the pencil, and it opens a catalogue search (`AddPartSheet`). Before
+it, the only ways to answer "the scan missed the fried egg" were to retype the
+entry's four figures or to spend a model call on a sentence, and both guess at a
+number the catalogue already knows. The part lands at the food's own serving and
+at one of it; resizing belongs to the sheet that is already for exactly that.
+
+**Adding to an entry with NO breakdown seeds the entry as its own first part**,
+and that is the interesting half of `add_ingredient`. `food_log_details` prefers
+the sum of the parts over the row's own figures, so one added ingredient would
+otherwise redefine a 780 kcal nasi lemak as the 90 kcal egg just put on it. The
+seeded row carries the entry's own base figures, factor AND quantity, so the sum
+the view now takes is the same arithmetic it was already doing. Two entries are
+refused outright, both because the addition would not show: one whose calorie
+total the user typed over — `override_kcal` sits above the parts — and one
+logged at more than twenty servings, which is past what a part's portion may be
+set to.
+
 **A part is edited by weight and read as a count.** The card reads "1 × Fried
 Rice (90 g)", and both halves earn their place: the grams are the only thing
 about a part somebody can check against the plate in front of them, and the
@@ -1598,6 +1710,40 @@ Three consequences:
   `food_log_details`, so an entry with a breakdown would show the typed figure
   over an ingredient list adding to something else. Rescaling pays for it in
   granularity, hence twentieths in `refineQuantity`.
+
+**A correction that changes nothing says WHICH nothing**, and one apology for
+all of them is what made this feature read as broken. `applied: false` carries a
+code, and the client has a line for each:
+
+| code | when | what it leaves the reader to do |
+|---|---|---|
+| `not_a_correction` | the words have no calories in them | nothing; "extra spicy" is a fine thing to type and the honest answer is that the entry does not change |
+| `not_understood` | the interpreter could not be read, twice | say it another way |
+| `no_match` | a redescribe whose corrected dish nothing could price | try again; the entry is untouched |
+| `no_change` | an adjustment that named nothing on the plate | name a part that is on it |
+| `failed` | something threw | try again |
+
+Three things were behind "Could not apply that. Try rewording it", and only one
+of them was ever the user's wording:
+
+- **The interpreter had 600 tokens.** Its bottom rung asks for a whole
+  `VisionItem` — the same object `analysePhoto` is given 2400 for — written
+  after however much the model thought first. See "Edge functions own the
+  model": with reasoning on, the ceiling was spent before any JSON was written.
+- **A stated count with no calorie delta was thrown away.** "Only 3 skewers" is
+  the clearest correction a user can type and the model reasonably answers 0 for
+  a field it has been told is about calories, so `shapeInterpretation` rejected
+  the whole thing. A `count` or a `total` now qualifies an adjustment on its own.
+- **An adjustment that matched no part still reported success.** The chain of
+  arms has holes in it, and falling through all of them ran `rebuildFromParts`
+  on an untouched list: arithmetically a no-op, but it renamed the entry, cleared
+  its `food_id` and answered `applied: true`. The user watched a row rework
+  itself for ten seconds and got the same numbers under a new name.
+
+An unreadable answer is asked for **once more** before any of this is reported.
+A considered `not_a_correction` is not: the model read the words and said they
+have no calories in them, and asking the same model the same question again is
+not a plan.
 
 ---
 
@@ -3487,8 +3633,8 @@ changed only the calories.
 
 **An entry states its own numbers, and `food_id` is only a note about where they
 came from.** It is nullable and unconstrained, and null is ordinary: a tier-4
-estimate, a tier-5 archetype and a plate rebuilt from its own parts are none of
-them catalogue rows. Anything that needs to exclude guesses filters on
+estimate, a plate rebuilt from its own parts and a part somebody added by hand
+are none of them catalogue rows. Anything that needs to exclude guesses filters on
 `food_id is not null`. `serving_id` is text, not a uuid: D1 keys a portion
 `(food_id, slug)` and the Worker names one `"<food id>:<slug>"`.
 
@@ -3511,6 +3657,22 @@ on update.
 **An LLM figure is never averaged with a catalogue figure**, and the nutrition
 call is never told the vision call's guess. Anchored, the model answered 450 kcal
 for a plate of apple slices, and 120 without.
+
+**A scan that failed says so, and writes nothing.** There is no floor under the
+cascade and there must not be one again. A guessed row is indistinguishable, on
+the day and in every total built from it, from a row the app actually worked out
+— so the failure the floor was hiding surfaced as real meals logged at 600 kcal
+under the model's own labels for them. `resolveItem` returns null, `scan-meal`
+answers `ok: false`, and the pending row on Today becomes "could not read this
+one" with a way to log it by hand. The same rule downstream: `scan-refine`
+declines rather than replacing a real entry with something generic.
+
+**Every model call sends `reasoning: { enabled: false }`.** Reasoning tokens
+come out of `max_tokens`, and a model that thinks past the ceiling answers
+`finish_reason: length` with an empty body — which is a failure with no error
+message in it, and every caller in `llm.ts` has somewhere quiet to put one. This
+has been removed twice; see [Edge functions own the
+model](#edge-functions-own-the-model).
 
 **`StoreReview.requestReview()` is called from one place, on one branch.** It
 lives behind "I like it" in `lib/rating/prompt.ts` and nowhere else. The OS

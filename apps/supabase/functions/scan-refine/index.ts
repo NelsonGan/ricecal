@@ -36,16 +36,24 @@
 // updates in place rather than being replaced. Applied or not, the answer after
 // validation is HTTP 200: `applied: false` with a reason is a result, not an
 // error.
+//
+// AND `applied: false` NOW SAYS WHICH KIND, because one message for every way
+// this can decline is what made the feature feel broken. "Could not apply that,
+// try rewording it" was shown to somebody who typed "extra spicy" — where there
+// is nothing to apply and rewording will not help — and to somebody whose
+// perfectly clear correction hit a model answering in the wrong shape. The
+// `code` on the response is what the client says something specific about:
+//
+//   not_a_correction  the words have no calories in them
+//   not_understood    the interpreter could not be read, twice
+//   no_match          a redescribe whose corrected dish nothing could price
+//   no_change         an adjustment that named nothing on the plate
+//   failed            something threw
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-import {
-  refineQuantity,
-  resolveByArchetype,
-  resolveItem,
-  writeIngredients,
-} from '../_shared/cascade.ts'
+import { refineQuantity, resolveItem, writeIngredients } from '../_shared/cascade.ts'
 import {
   claimScan,
   createMeter,
@@ -395,6 +403,20 @@ Deno.serve(async (req: Request) => {
       const match = findPart(interpretation.part)
       const swapped = findPart(interpretation.replaces)
 
+      /**
+       * Whether any arm of the chain below actually moved something.
+       *
+       * The chain has holes in it — a reduction naming nothing on a
+       * single-part plate, a swap whose `replaces` matches no row — and
+       * falling through all of them used to be indistinguishable from
+       * succeeding: `rebuildFromParts` ran on an untouched list, which is a
+       * no-op arithmetically but still renames the entry, clears its `food_id`
+       * and answers `applied: true`. So the user was told the correction had
+       * been made, watched the row rework itself for ten seconds, and got the
+       * same numbers under a new name.
+       */
+      let changed = true
+
       if (swapped && interpretation.part) {
         // ONE PART BECAME A DIFFERENT FOOD. The row is replaced in place: same
         // count, same position, priced from what it used to cost plus the
@@ -512,6 +534,11 @@ Deno.serve(async (req: Request) => {
             Math.max(0.25, (biggest.kcal + interpretation.kcal_delta) / Math.max(1, perUnit)),
           )
           await db.from('food_log_ingredients').update({ quantity: next }).eq('id', biggest.id)
+        } else {
+          // A breakdown whose parts all cost nothing. Nothing to take the
+          // reduction out of, and saying so is better than re-pricing a plate
+          // that did not move.
+          changed = false
         }
       } else if (interpretation.kcal_delta > 0) {
         // An addition: its own row, priced by the model's delta for that one
@@ -533,6 +560,18 @@ Deno.serve(async (req: Request) => {
           quantity: 1,
           display_label: added.slice(0, 120),
           position: parts.length,
+        })
+      } else {
+        changed = false
+      }
+
+      if (!changed) {
+        await recordRefine(null, entry.food_id, null)
+        return json({
+          ok: true,
+          applied: false,
+          code: 'no_change',
+          reason: 'nothing on the plate answered to that',
         })
       }
 
@@ -630,9 +669,17 @@ Deno.serve(async (req: Request) => {
     if (interpretation.action === 'redescribe') {
       const scanId = entry.scan_id ?? crypto.randomUUID()
       const item = interpretation.item
-      const resolved =
-        (await resolveItem(db, scanId, item, mock, meter)) ??
-        (await resolveByArchetype(db, item, mock, meter))
+      const resolved = await resolveItem(db, scanId, item, mock, meter)
+      // Nothing could price the corrected dish. There used to be an archetype
+      // floor here that always answered, which meant a correction the cascade
+      // could not resolve REPLACED a real entry with a generic "Mixed meal" —
+      // the one outcome worse than declining, since the meal the user was
+      // fixing is gone and what is left is a guess. The entry is untouched
+      // instead and the user is told to try again.
+      if (!resolved) {
+        await recordRefine(null, null, null)
+        return json({ ok: true, applied: false, code: 'no_match', reason: 'nothing matched' })
+      }
 
       const { error } = await db
         .from('food_logs')
@@ -692,12 +739,18 @@ Deno.serve(async (req: Request) => {
     }
 
     await recordRefine(null, null, null)
-    return json({ ok: true, applied: false, reason: interpretation.reason })
+    return json({
+      ok: true,
+      applied: false,
+      code: interpretation.code === 'unusable' ? 'not_understood' : 'not_a_correction',
+      reason: interpretation.reason,
+    })
   } catch (error) {
     console.error('[scan-refine] failed:', error)
     return json({
       ok: true,
       applied: false,
+      code: 'failed',
       reason: error instanceof Error ? error.message : 'could not apply the correction',
     })
   }

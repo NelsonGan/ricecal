@@ -56,7 +56,7 @@ export {
   useRemoveEntry,
   useUpdateEntry,
 } from './entries'
-export { useFood, useFoodSearch } from './foods'
+export { foldToDishes, useFood, useFoodSearch, useRecentFoods } from './foods'
 export { type GoalsInput, useSetTargets, useTargets } from './goals'
 export {
   type ConnectResult,
@@ -69,6 +69,7 @@ export { keys } from './keys'
 export { toEntry, toFood, toIcon, toRecipe, toRecipeIngredient } from './mappers'
 export { useBlockAuthor, useReportRecipe } from './moderation'
 export {
+  needsPolling,
   type PendingSnap,
   PendingSnapProvider,
   pendingAsEntry,
@@ -121,6 +122,8 @@ export {
 } from './reviews'
 export {
   type EntryIngredient,
+  type RefineDeclined,
+  useAddIngredient,
   useEntryIngredients,
   useRefineEntry,
   useRemoveIngredient,

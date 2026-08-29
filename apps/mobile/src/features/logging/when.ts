@@ -1,6 +1,7 @@
-import { format, parseISO, subDays } from 'date-fns'
+import { format, isToday, isYesterday, parseISO, subDays } from 'date-fns'
 
 import { dateKey } from '@/data/client'
+import { datePattern } from '@/lib/dates'
 
 /**
  * WHEN an entry happened, and the two columns that say so.
@@ -123,3 +124,26 @@ export function dayLabel(
  * `Text` in a scroll view and costs nothing until somebody spins down to it.
  */
 export const DAYS_BACK = 365
+
+/**
+ * "Today, 8:20 am" / "Yesterday, 1:15 pm" / "17 Aug, 8:20 am".
+ *
+ * Named days rather than "2 hours ago" for the reason written beside
+ * `common:date`: an elapsed phrase is one the reader has to convert, and a meal
+ * at 11pm last night is both "9 hours ago" and yesterday, which is the word
+ * somebody scanning their own diary is looking for.
+ *
+ * Exported for its own test. The named days are the part worth pinning: they
+ * are calendar comparisons rather than arithmetic on elapsed hours, and getting
+ * that wrong reads as the app being confused about what day it is.
+ */
+export function whenLabel(iso: string, named: { today: string; yesterday: string }): string {
+  const at = parseISO(iso)
+  const time = format(at, datePattern('time')).toLowerCase()
+  const day = isToday(at)
+    ? named.today
+    : isYesterday(at)
+      ? named.yesterday
+      : format(at, datePattern('dayMonth'))
+  return `${day}, ${time}`
+}

@@ -5,10 +5,10 @@ import { lookupPacket } from './barcodes'
 import { catalogueGet } from './catalogue'
 import { unwrap } from './client'
 import { keys } from './keys'
-import { type FoodStats, toFood } from './mappers'
+import { type FoodStats, toEntry, toFood } from './mappers'
 import { useUserId } from './session'
 import { packetCode } from './snapshot'
-import type { Food, FoodDetailsRow } from './types'
+import type { Entry, Food, FoodDetailsRow, FoodLogRow } from './types'
 
 /**
  * The catalogue, which is no longer in this database.
@@ -123,13 +123,108 @@ export function useFood(id: string | undefined) {
   })
 }
 
-// Three hooks used to live here and none of them has a screen any more.
+/**
+ * How far back "recently eaten" reads, and how much of it is kept.
+ *
+ * The fetch is a window over the rows rather than a window over the calendar: a
+ * diary with three meals a day has about two months in it at this size, and one
+ * with twenty has a fortnight, which is the right shape either way — somebody
+ * who logs more has more recent food to choose from.
+ *
+ * `KEPT` is what survives folding the window down to one row per dish. It is
+ * smaller than the fetch on purpose: the fold is what makes this list useful,
+ * and a list long enough to scroll past what you recognise is a search field
+ * with extra steps.
+ */
+const HISTORY_ROWS = 200
+const KEPT = 60
+
+/**
+ * One dish, however many times it has been eaten.
+ *
+ * Name, portion and per-serving calories together: "Nasi lemak" at a hawker
+ * portion and "Nasi lemak" off a packet are two different foods that share a
+ * word, and folding them would offer one of them under the other's calories.
+ * Lowercased because the same dish reaches the diary from a search result, a
+ * scan and a typed sentence, each with its own idea of capitals.
+ */
+const dishKey = (entry: Entry) =>
+  `${entry.foodName.trim().toLowerCase()}|${entry.base.kcal}|${entry.servingLabel}`
+
+/**
+ * The diary, folded to one row per dish, newest first.
+ *
+ * Exported for its own test. The rule is short and every part of it has a way of
+ * being wrong that shows up as a list rather than as an error: fold too hard and
+ * a packaged drink hides the hawker one it shares a name with, fold too little
+ * and this is the diary again.
+ *
+ * The input is assumed to arrive newest first, which is how the query orders it,
+ * so the first of each key is the one kept.
+ */
+export function foldToDishes(entries: readonly Entry[], keep: number): Entry[] {
+  const seen = new Set<string>()
+  const recent: Entry[] = []
+  for (const entry of entries) {
+    // A row the scan wrote with no name yet, or one whose dish came back blank.
+    // There is nothing to offer and nothing to fold it against.
+    if (!entry.foodName.trim()) continue
+    const key = dishKey(entry)
+    if (seen.has(key)) continue
+    seen.add(key)
+    recent.push(entry)
+    if (recent.length >= keep) break
+  }
+  return recent
+}
+
+/**
+ * WHAT THIS ACCOUNT HAS EATEN BEFORE, newest first.
+ *
+ * The second half of the log sheet's search, beside the catalogue. What it is
+ * for is the meal somebody has already had a dozen times: the catalogue can
+ * find "nasi lemak", but not the nasi lemak this person eats, at the portion
+ * they eat it in, with the photograph they took of it.
+ *
+ * FOLDED TO ONE ROW PER DISH, keeping the most recent of each. Unfolded it is
+ * the diary again, and a diary is what the user was looking at before they
+ * opened this — three weeks of the same breakfast, in order, is not a list of
+ * foods. Which one survives matters: the newest carries the portion and the
+ * picture the user last accepted, and the older ones are earlier drafts of the
+ * same answer.
+ *
+ * A pending snap is not in here. This reads `food_log_details`, so a row exists
+ * only once the cascade has named a dish, which is exactly the point at which
+ * it is worth offering again.
+ */
+export function useRecentFoods() {
+  const userId = useUserId()
+
+  return useQuery({
+    queryKey: keys.recentFoods(userId),
+    queryFn: async (): Promise<Entry[]> => {
+      const rows = unwrap(
+        await supabase
+          .from('food_log_details')
+          .select('*')
+          .eq('user_id', userId)
+          .order('logged_at', { ascending: false })
+          .limit(HISTORY_ROWS),
+      ) as FoodLogRow[]
+
+      return foldToDishes(rows.map(toEntry), KEPT)
+    },
+  })
+}
+
+// Three hooks used to live here and two of them still have no screen.
 //
 // `useTopFoods` read `user_food_stats` by frequency for the nutrition screen's
-// "top foods", `useUsualFoods` was its per-meal twin for the quick selector,
-// and `useRecentFoods` was the recency answer that replaced them — the LAST
-// LOGGED block under the quick selector's five buttons.
+// "top foods", and `useUsualFoods` was its per-meal twin for the quick
+// selector. The third was `useRecentFoods`, the recency answer that replaced
+// both — the LAST LOGGED block under the quick selector's five buttons — and it
+// is above, in a shape that owes nothing to that block: a tab of its own beside
+// the catalogue, folded per dish, carrying the photograph.
 //
-// `user_food_stats` and the history are both still there, so a future screen
-// that wants "what I eat most" can have this back out of git rather than
-// inheriting a hook nothing calls.
+// `user_food_stats` is still there, so a future screen that wants "what I eat
+// most" can have that back out of git.

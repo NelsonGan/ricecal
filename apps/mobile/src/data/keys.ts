@@ -91,6 +91,16 @@ export const keys = {
 
   foodSearch: (userId: string, query: string) => ['food-search', userId, query] as const,
   food: (id: string) => ['food', id] as const,
+  /**
+   * What this account has eaten before, newest first, folded to one row per
+   * dish.
+   *
+   * Not keyed by date and deliberately not under the `day` prefix: it reads
+   * across every day there has ever been, so no day's invalidation is the right
+   * one for it. The three writes that change what "recently eaten" means —
+   * logging a meal, deleting one, and a scan landing — name it explicitly.
+   */
+  recentFoods: (userId: string) => ['recent-foods', userId] as const,
 
   /**
    * One shelf of the recipe list: mine, the RiceCal kitchen, or the community,
