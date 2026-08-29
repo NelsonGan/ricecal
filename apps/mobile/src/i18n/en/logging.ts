@@ -346,15 +346,28 @@ export const logging = {
      * for.
      */
     plateNone: 'This counts as one thing. Edit to break it into ingredients.',
-    /** The plus in the ingredients card's header, and the sheet it opens. */
-    addPart: 'Add an ingredient',
-    addPartTitle: 'Add an ingredient',
-    partAdded: '{{food}} added to the plate',
-    addPartFailed: 'Could not add that. Try again',
     /**
-     * The one refusal worth naming. An entry whose calorie total the user typed
-     * cannot be broken down: the typed figure sits above the parts, so the plate
-     * would gain a row and not a calorie.
+     * The button in the plate page's bar, and the sheet it opens.
+     *
+     * One word, because it sits in a title bar beside a heading and anything
+     * longer pushes that heading into an ellipsis on a 340pt phone. It said
+     * "Add an ingredient" while it was a full-width button under the list, and
+     * the sheet's own heading still does — there is room for the sentence on
+     * the panel it opens, and that is where somebody needs to be told what they
+     * are adding TO.
+     */
+    addPart: 'Add',
+    addPartTitle: 'Add an ingredient',
+    /**
+     * The one refusal worth naming, said when Save carries the addition to the
+     * server. An entry whose calorie total the user typed cannot be broken
+     * down: the typed figure sits above the parts, so the plate would gain a row
+     * and not a calorie.
+     *
+     * There was a `partAdded` toast beside this and an `addPartFailed`, from
+     * when picking a food WROTE it. Nothing is written on the pick any more —
+     * the row appearing in the list is the whole of the feedback — so the
+     * success had nothing to announce and the failure moved to `saveFailed`.
      */
     addPartTyped: 'This entry uses your own calorie figure, so it cannot be broken down',
     /**

@@ -10,9 +10,16 @@ import {
   useRemoveIngredient,
   useUpdateIngredient,
 } from '@/data'
-import { AddPartSheet, type PartEdits, PlateEditor, partChanges } from '@/features/logging'
+import {
+  AddPartSheet,
+  type PartEdits,
+  type PendingPart,
+  PlateEditor,
+  partChanges,
+  pendingId,
+} from '@/features/logging'
 import { useBack } from '@/lib/navigation'
-import { AppBar, Screen, useToast } from '@/ui'
+import { AppBar, Button, Screen, useToast } from '@/ui'
 
 /**
  * EDIT THE PLATE, as a page of its own.
@@ -56,8 +63,32 @@ export default function IngredientsScreen() {
   const addIngredient = useAddIngredient()
 
   const [addingPart, setAddingPart] = useState(false)
+  /**
+   * Parts picked out of the catalogue and not written yet.
+   *
+   * Adding used to write straight through, which made it the one edit on this
+   * page that did not wait for Save: a part picked and then thought better of
+   * stayed on the meal, because backing out only discarded the resizing. Now
+   * nothing here reaches the server until Save, and leaving takes all of it
+   * with you.
+   */
+  const [pending, setPending] = useState<PendingPart[]>([])
 
-  const saveFailed = () => toast.show({ title: t('logging:detail.saveFailed'), tone: 'error' })
+  /**
+   * What a failed save says, and there is one refusal worth naming.
+   *
+   * `add_ingredient` will not break down an entry whose calorie total the user
+   * has typed over, because the override sits above the parts and the plate
+   * would gain a row without gaining a calorie. Everything else is the general
+   * apology.
+   */
+  const saveFailed = (error: unknown) => {
+    const typedFigures = error instanceof Error && error.message.includes('typed figures')
+    toast.show({
+      title: t(typedFigures ? 'logging:detail.addPartTyped' : 'logging:detail.saveFailed'),
+      tone: 'error',
+    })
+  }
 
   /**
    * The plate's parts, one statement each, because `set_ingredient_quantity`
@@ -70,6 +101,31 @@ export default function IngredientsScreen() {
    * that got all the way through leaves.
    */
   const savePlate = async (next: PartEdits) => {
+    // ADDITIONS FIRST, and the order is not cosmetic. `add_ingredient` seeds the
+    // entry as its own first part when the plate is empty, so a save that
+    // removed every existing part before adding would find an empty plate and
+    // seed the parent back onto it — the meal counted twice. Adding first means
+    // the removals run against a plate that already has the new rows on it.
+    for (const part of pending) {
+      // Added and then taken off again before Save. It never existed, so there
+      // is nothing to write and nothing to undo.
+      if (next[part.id] === null) continue
+      await addIngredient.mutateAsync({
+        entryId,
+        logDate,
+        name: part.name,
+        kcal: part.kcal,
+        carbs: part.carbs,
+        protein: part.protein,
+        fat: part.fat,
+        grams: part.grams,
+        quantity: next[part.id] ?? 1,
+        foodId: part.foodId,
+        servingId: part.servingId,
+        servingLabel: part.servingLabel,
+      })
+    }
+
     for (const ingredient of partChanges(ingredients, next)) {
       const staged = next[ingredient.id]
       if (staged === null) {
@@ -91,32 +147,38 @@ export default function IngredientsScreen() {
   }
 
   /**
-   * A food out of the catalogue, onto the plate.
+   * A food out of the catalogue, STAGED onto the plate.
    *
-   * WRITTEN AT ONCE rather than staged, unlike the resizing beside it, and for
-   * a reason the staging cannot get around: `PartEdits` is an overlay keyed by
-   * ingredient id, and this row has no id until the server issues one.
+   * Nothing is written here. The part joins `pending`, is drawn among the rows
+   * the server already has, takes the same steppers and the same bin, and is
+   * only sent when Save is. That is the whole of this change: it used to write
+   * on the pick, so a part chosen and then abandoned stayed on the meal.
    *
-   * The figures sent are per ONE of the part, at the portion the catalogue
+   * No toast either, for the same reason a stepper does not have one — the row
+   * appearing in the list IS the feedback, and "added to the plate" over
+   * something that has not been added would be the sentence that made the old
+   * behaviour so easy to believe.
+   *
+   * The figures kept are per ONE of the part, at the portion the catalogue
    * quotes: `base` is per base serving and `servingFactor` scales it, so a food
    * whose default portion is not its base has to be multiplied here or the part
-   * lands at the wrong size. `snapshotFromFood` is what sanitises the two soft
+   * lands at the wrong size. `snapshotFromFood` sanitises the two soft
    * references on the way — the placeholder ids this app mints for routing are
    * not catalogue ids, and `food_id` is a uuid column.
    */
-  const addPart = async (picked: Food) => {
+  const addPart = (picked: Food) => {
     setAddingPart(false)
     const snapshot = snapshotFromFood(picked)
     const scale = snapshot.servingFactor
-    // A weight the row cannot hold is sent as no weight at all. `grams` is
+    // A weight the row cannot hold is kept as no weight at all. `grams` is
     // `numeric(7, 1) check (grams > 0 and grams <= 20000)`, and a catalogue row
-    // carrying a zero or something absurd would otherwise turn "add an
-    // ingredient" into "could not add that" over a number nobody asked to see.
+    // carrying a zero or something absurd would otherwise fail the save over a
+    // number nobody asked to see.
     const grams = (snapshot.servingGrams ?? 0) * scale
-    try {
-      await addIngredient.mutateAsync({
-        entryId,
-        logDate,
+    setPending((current) => [
+      ...current,
+      {
+        id: pendingId(),
         name: snapshot.name,
         kcal: Math.round(snapshot.base.kcal * scale),
         carbs: snapshot.base.carbs * scale,
@@ -126,23 +188,8 @@ export default function IngredientsScreen() {
         foodId: snapshot.foodId,
         servingId: snapshot.servingId,
         servingLabel: snapshot.servingLabel,
-      })
-      toast.show({
-        title: t('logging:detail.partAdded', { food: snapshot.name }),
-        tone: 'success',
-        icon: { set: 'ui', name: 'check' },
-      })
-    } catch (error) {
-      // The one refusal worth naming. `add_ingredient` will not break down an
-      // entry whose calorie total the user has typed over, because the override
-      // sits above the parts and the plate would gain a row without gaining a
-      // calorie — which reads as the button not working.
-      const typedFigures = error instanceof Error && error.message.includes('typed figures')
-      toast.show({
-        title: t(typedFigures ? 'logging:detail.addPartTyped' : 'logging:detail.addPartFailed'),
-        tone: 'error',
-      })
-    }
+      },
+    ])
   }
 
   return (
@@ -153,6 +200,18 @@ export default function IngredientsScreen() {
         title={t('logging:detail.plateHeading')}
         onBack={() => goBack()}
         backLabel={t('common:a11y.back')}
+        /* Small, and in the bar rather than under the list. Add and Save are not
+           a pair of choices about the same thing — one opens a search over this
+           page and the other finishes it — and side by side at full width they
+           read as one. Up here it also stays put as the plate grows, where a
+           button under the rows walks further down the page with every part. */
+        action={
+          entryId ? (
+            <Button size="sm" variant="secondary" onPress={() => setAddingPart(true)}>
+              {t('logging:detail.addPart')}
+            </Button>
+          ) : undefined
+        }
       />
 
       {/* Nothing at all while the parts are being fetched. An editor that draws
@@ -167,17 +226,13 @@ export default function IngredientsScreen() {
       {entryId && !isLoading ? (
         <PlateEditor
           ingredients={ingredients}
+          pending={pending}
           onSave={savePlate}
           onError={saveFailed}
-          onAdd={() => setAddingPart(true)}
         />
       ) : null}
 
-      <AddPartSheet
-        visible={addingPart}
-        onClose={() => setAddingPart(false)}
-        onPick={(picked) => void addPart(picked)}
-      />
+      <AddPartSheet visible={addingPart} onClose={() => setAddingPart(false)} onPick={addPart} />
     </Screen>
   )
 }
