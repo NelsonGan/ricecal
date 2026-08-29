@@ -109,6 +109,17 @@ export type PlateSheetProps = {
   onSave: (next: PartEdits) => Promise<void>
   /** Said when the write failed. The sheet stays where it is. */
   onError: () => void
+  /**
+   * Put a new food on the plate. The host owns the catalogue search and brings
+   * this sheet back when it is done.
+   *
+   * IN HERE RATHER THAN ON THE CARD BEHIND IT. Adding a part and resizing one
+   * are the same job — "what was actually on this plate" — and splitting them
+   * across a card header and a sheet made the header carry two glyphs for one
+   * question. One way in, and everything the plate can be changed to is on the
+   * other side of it.
+   */
+  onAdd: () => void
 }
 
 /**
@@ -139,6 +150,7 @@ export function PlateSheet({
   edits,
   onSave,
   onError,
+  onAdd,
 }: PlateSheetProps) {
   const { t } = useTranslation(['logging', 'common'])
   const colors = useThemeColors()
@@ -322,10 +334,16 @@ export function PlateSheet({
         )
       })}
 
-      {/* Every part taken off. The entry survives as whatever its own portion
-          costs — `food_log_details` falls back to it when there are no parts
-          left — so this says what will happen rather than blocking the way out. */}
-      {parts.length === 0 ? <Text variant="body">{t('logging:detail.plateEmptied')}</Text> : null}
+      {/* Nothing on the plate, and the two ways to arrive there read differently.
+          An entry that never had a breakdown is being offered one; a plate whose
+          parts have all been taken off is being told what that will cost, which
+          is nothing — `food_log_details` falls back to the entry's own portion —
+          so it says what will happen rather than blocking the way out. */}
+      {parts.length === 0 ? (
+        <Text variant="body">
+          {t(ingredients.length === 0 ? 'logging:detail.plateNone' : 'logging:detail.plateEmptied')}
+        </Text>
+      ) : null}
 
       {parts.length ? (
         <>
@@ -342,11 +360,28 @@ export function PlateSheet({
         </>
       ) : null}
 
-      {/* After the rows rather than in the sheet's footer: at full height a footer
-          lands behind the keys. */}
-      <Button fullWidth loading={saving} onPress={() => void save()}>
-        {t('logging:detail.save')}
+      {/* THE WAY TO PUT SOMETHING ON, under the list it adds to. It leaves for
+          the catalogue search and the host brings this sheet back, so a plate is
+          built and resized without ever returning to the page behind.
+
+          Secondary, and above Save, because the two are different kinds of
+          thing: this one goes somewhere and Save is what finishes here. */}
+      <Button variant="secondary" fullWidth disabled={saving} onPress={onAdd}>
+        {t('logging:detail.addPart')}
       </Button>
+
+      {/* After the rows rather than in the sheet's footer: at full height a footer
+          lands behind the keys.
+
+          Absent with nothing to write. A sheet opened on an entry that has no
+          breakdown yet has exactly one thing to offer, and a Save that would
+          close it having changed nothing is a second button competing with the
+          one that does something. */}
+      {ingredients.length ? (
+        <Button fullWidth loading={saving} onPress={() => void save()}>
+          {t('logging:detail.save')}
+        </Button>
+      ) : null}
     </Sheet>
   )
 }

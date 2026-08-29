@@ -761,7 +761,7 @@ export const ms = {
       permissionTitle: 'Akses kamera diperlukan',
       permissionBody:
         'RiceCal guna kamera untuk membaca pinggan anda. Tiada apa-apa meninggalkan telefon anda.',
-      permissionGrant: 'Benarkan kamera',
+      permissionSettings: 'Buka Tetapan',
       shutter: 'Ambil gambar',
       library: 'Pilih dari galeri',
       flip: 'Tukar kamera',
@@ -822,8 +822,7 @@ export const ms = {
       fixFailed: 'Itu tidak berjaya dihantar. Cuba lagi',
       plateTitle: 'BAHAN',
       plateTotal: 'Jumlah',
-      plateNone:
-        'Ini dikira sebagai satu benda. Tambah apa yang ada di dalam pinggan untuk memecahkannya.',
+      plateNone: 'Ini dikira sebagai satu benda. Edit untuk memecahkannya kepada bahan.',
       addPart: 'Tambah bahan',
       addPartTitle: 'Tambah bahan',
       partAdded: '{{food}} ditambah ke dalam pinggan',

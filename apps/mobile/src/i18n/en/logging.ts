@@ -219,7 +219,13 @@ export const logging = {
     analysing: 'Working out what is on the plate',
     permissionTitle: 'Camera access needed',
     permissionBody: 'RiceCal uses the camera to read your plate. Nothing leaves your phone.',
-    permissionGrant: 'Allow camera',
+    /**
+     * The label is `common:action.continue` now, not this. Guideline 5.1.1(iv):
+     * a button in front of a system permission sheet may not be worded as the
+     * ask, and "Allow camera" is the app saying Apple's line for it.
+     */
+    /** When iOS has a refusal on record, so the dialog will never appear again. */
+    permissionSettings: 'Open Settings',
     shutter: 'Take a photo',
     library: 'Choose from photos',
     flip: 'Flip camera',
@@ -322,8 +328,14 @@ export const logging = {
      * search, a recipe, a scan that landed on one row. Said rather than left
      * blank, because an INGREDIENTS card with nothing under it reads as a plate
      * whose parts went missing.
+     *
+     * It names the pencil, because the pencil is the only way in. The plus that
+     * used to sit beside it on the card has moved inside the sheet, where the
+     * rest of the plate is edited. Shown in both places: on the card as the
+     * reason it looks empty, and in the sheet as what the one button there is
+     * for.
      */
-    plateNone: 'This counts as one thing. Add what was on the plate to break it down.',
+    plateNone: 'This counts as one thing. Edit to break it into ingredients.',
     /** The plus in the ingredients card's header, and the sheet it opens. */
     addPart: 'Add an ingredient',
     addPartTitle: 'Add an ingredient',

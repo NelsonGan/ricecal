@@ -330,6 +330,16 @@ export function useUpdateEntry() {
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
+      // The search panel's "My foods" tab, and ONLY for the two fields it shows.
+      // Renaming a meal or changing its drawing changes how it reads in that
+      // list, so leaving it stale is the app disagreeing with itself about what
+      // a dish is called. A portion tap is deliberately not on that list: the
+      // stepper is debounced to one write but it is still the most frequent
+      // patch there is, and re-reading two hundred rows of diary for a number
+      // this list does not print would be a refetch per edit for nothing.
+      if (patch.name !== undefined || patch.icon !== undefined) {
+        queryClient.invalidateQueries({ queryKey: keys.recentFoods(userId) })
+      }
     },
   })
 }
