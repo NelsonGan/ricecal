@@ -11,6 +11,8 @@ import {
   PART_MAX,
   PART_STEP,
   type PartEdits,
+  type PendingPart,
+  pendingRow,
   perUnitGrams,
   quantityForGrams,
   stagedParts,
@@ -102,21 +104,25 @@ export type PlateEditorProps = {
   /** The plate as it stands. The staging below is laid over this. */
   ingredients: readonly EntryIngredient[]
   /**
+   * Parts chosen out of the catalogue and not written yet.
+   *
+   * They are drawn among the fetched ones and take the same overlay, so a part
+   * can be added, stepped to two and taken off again without a single request.
+   * The host owns the list because the host owns the search that fills it and
+   * the Save that writes it.
+   */
+  pending: readonly PendingPart[]
+  /**
    * Writes the staged changes. Throws to leave the page as it is with the draft
    * still in it; resolves and the host navigates away.
    */
   onSave: (next: PartEdits) => Promise<void>
-  /** Said when the write failed. The page stays where it is. */
-  onError: () => void
   /**
-   * Put a new food on the plate. The host owns the catalogue search.
-   *
-   * IN HERE RATHER THAN ON THE CARD THAT LEADS TO THIS PAGE. Adding a part and
-   * resizing one are the same job — "what was actually on this plate" — and
-   * splitting them across a card header and an editor made the header carry two
-   * glyphs for one question.
+   * Said when the write failed, with whatever was thrown: the host has a
+   * sentence for one of the refusals and a general one for the rest. The page
+   * stays where it is either way.
    */
-  onAdd: () => void
+  onError: (error: unknown) => void
 }
 
 /**
@@ -145,7 +151,7 @@ export type PlateEditorProps = {
  * re-seeded on every opening or the second visit showed the first one's
  * discarded edits behind a disabled button. A route mounts fresh.
  */
-export function PlateEditor({ ingredients, onSave, onError, onAdd }: PlateEditorProps) {
+export function PlateEditor({ ingredients, pending, onSave, onError }: PlateEditorProps) {
   const { t } = useTranslation(['logging', 'common'])
   const colors = useThemeColors()
 
@@ -159,7 +165,15 @@ export function PlateEditor({ ingredients, onSave, onError, onAdd }: PlateEditor
   const [draft, setDraft] = useState<PartEdits>({})
   const [saving, setSaving] = useState(false)
 
-  const parts = stagedParts(ingredients, draft)
+  /**
+   * Every row on the plate: what the server has, then what is waiting to be
+   * written, both under the same overlay.
+   *
+   * Appended rather than interleaved, because a staged part has no position yet
+   * — `add_ingredient` gives it one past the highest — so the order the editor
+   * shows is the order it will land in.
+   */
+  const parts = [...stagedParts(ingredients, draft), ...stagedParts(pending.map(pendingRow), draft)]
 
   /**
    * A tap on the plus or the minus, IN GRAMS wherever grams are known.
@@ -197,10 +211,11 @@ export function PlateEditor({ ingredients, onSave, onError, onAdd }: PlateEditor
     setSaving(true)
     try {
       await onSave(draft)
-    } catch {
+    } catch (error) {
       // The page stays, with the draft still in it, so nothing typed is lost to
-      // a failed round trip. The host is what leaves on success.
-      onError()
+      // a failed round trip. The host is what leaves on success, and what says
+      // which failure this was.
+      onError(error)
       setSaving(false)
     }
   }
@@ -328,26 +343,23 @@ export function PlateEditor({ ingredients, onSave, onError, onAdd }: PlateEditor
         </>
       ) : null}
 
-      {/* THE WAY TO PUT SOMETHING ON, under the list it adds to. It raises the
-          catalogue search over this page, so a plate is built and resized
-          without going anywhere.
-
-          Secondary, and above Save, because the two are different kinds of
-          thing: this one opens something and Save is what finishes here. */}
-      <Button variant="secondary" fullWidth disabled={saving} onPress={onAdd}>
-        {t('logging:detail.addPart')}
-      </Button>
-
       {/* After the rows rather than in the screen's footer, which is where a
           page's action usually goes: the weight is typed on the app's own pad,
           and a pinned footer lands behind the keys exactly as it did when this
           was a capped sheet.
 
-          Absent with nothing to write. An entry with no breakdown yet has
-          exactly one thing to offer, and a Save that would leave having changed
-          nothing is a second button competing with the one that does
-          something. */}
-      {ingredients.length ? (
+          The way to ADD one is in the bar at the top rather than beside this,
+          and the two are not the same kind of control: Save finishes the page,
+          while Add opens something over it. A full-width button under the list
+          made them look like a pair of choices about the same thing, and pushed
+          Save further from the rows it commits the further down the plate you
+          scrolled.
+
+          Absent with nothing to write. An entry with no breakdown yet, and
+          nothing staged onto it, has exactly one thing to offer — and a Save
+          that would leave having changed nothing is a button competing with the
+          one that does something. */}
+      {ingredients.length || pending.length ? (
         <Button fullWidth loading={saving} onPress={() => void save()}>
           {t('logging:detail.save')}
         </Button>

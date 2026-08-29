@@ -1593,8 +1593,22 @@ it, and is resized like any other.
 layout turned on twice. A plus sat beside the pencil in the card header for a
 while, which made the header ask two questions about one thing: putting a part
 on a plate and changing how much of it there was are the same edit, and the card
-is a reading of the plate rather than a place to change it. So `PlateEditor`
-carries an "Add an ingredient" button under its list.
+is a reading of the plate rather than a place to change it. So the way in is
+"Add", small, in the plate page's own bar — not a full-width button under the
+list, which read as one of a pair of choices beside Save and walked further down
+the page with every part added.
+
+**And it stages, like everything else on that page.** Picking a food used to
+write it straight through, which made adding the one edit there that did not
+wait for Save: a part chosen and then thought better of stayed on the meal,
+because backing out only ever discarded the resizing. A staged part is a
+`PendingPart` carrying per-unit figures and a local `new:` id, drawn among the
+fetched rows under the same `PartEdits` overlay — so it takes the same steppers,
+the same weight field and the same bin, and one stepper serves a row the server
+has and a row it has not. Save writes the additions FIRST and the resizes after,
+because `add_ingredient` seeds the entry as its own first part on an empty
+plate: removing everything before adding would find one and seed the parent back
+on, counting the meal twice.
 
 **That editor is a PAGE, and it is the only one of the dish's three editors that
 is not a sheet.** The figures and the details are forms that answer themselves;
