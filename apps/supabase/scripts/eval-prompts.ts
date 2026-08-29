@@ -8,35 +8,23 @@
  *   … eval-prompts.ts suggest           # just the what-to-eat suite
  *   … eval-prompts.ts refine 3          # three runs of each case
  *
- * WHY THIS EXISTS
- *
- * Four of the model calls decide something the code below them cannot check.
- * `describeMeal` decides what a sentence names and how much of it there was;
- * `interpretInstruction` decides whether a correction is a portion change, a
- * part change or a different dish; `describeRecipe` decides what a pot holds
- * and how it is cooked; `suggestMeals` decides what somebody could eat next.
+ * Four model calls decide something the code below them cannot check:
+ * `describeMeal`, `interpretInstruction`, `describeRecipe` and `suggestMeals`.
  * Each is a paragraph of English with no test around it, and each was changed by
- * hand more than once on the strength of a single example that happened to be on
- * screen at the time.
+ * hand more than once on the strength of a single example.
  *
- * So the cases below are the examples, written down. They assert the SHAPE of
- * the answer — which action, how many components, whether the count matched,
- * whether the calorie band brackets a sane figure — and never an exact number,
- * because the model is sampled and the cascade underneath is what turns a band
- * into calories. A case that fails is either a prompt to fix or an expectation
- * that was wrong; both are worth arguing with, which is more than the prompt
- * had before.
+ * So the cases below are the examples, written down. They assert the shape of the
+ * answer, never an exact number, because the model is sampled and the cascade
+ * underneath is what turns a band into calories. A case that fails is either a
+ * prompt to fix or an expectation that was wrong.
  *
- * The prompts are IMPORTED, not copied. A harness with its own copy grades a
- * prompt nobody ships.
+ * The prompts are imported rather than copied: a harness with its own copy grades
+ * a prompt nobody ships.
  *
- * THE KEY
- *
- * `OPENROUTER_API_KEY` normally lives only in the project's function secrets,
- * so a machine that never deploys does not have one. `EVAL_ENDPOINT` (plus
- * `EVAL_TOKEN`) is the way out: point it at anything that takes
- * `{system, user, max_tokens}` and answers with an OpenAI-shaped completion,
- * and the suite runs against the deployed key instead of a local one.
+ * `OPENROUTER_API_KEY` normally lives only in the project's function secrets, so
+ * a machine that never deploys has none. `EVAL_ENDPOINT` (plus `EVAL_TOKEN`)
+ * points at anything that takes `{system, user, max_tokens}` and answers with an
+ * OpenAI-shaped completion, and runs against the deployed key instead.
  */
 
 import { resolveIcon } from '../functions/_shared/icons.ts'
@@ -157,12 +145,9 @@ const named = (answer: DescribeAnswer, word: string) =>
   (only(answer).components ?? []).some((c) => (c.name ?? '').toLowerCase().includes(word))
 
 /**
- * What every typed meal has to get right, whatever it was.
- *
- * These are the failures that are invisible one case at a time: a band with
- * the same number at both ends, a breakdown of one part, no edit chips. Each
- * one shipped at some point because the case in front of the person changing
- * the prompt happened not to show it.
+ * What every typed meal has to get right, whatever it was: the failures that are
+ * invisible one case at a time, such as a band with the same number at both ends
+ * or a breakdown of one part. Each shipped at some point.
  */
 const universal = (answer: DescribeAnswer): Check[] => {
   if (answer.no_food) return []
@@ -803,11 +788,10 @@ const REFINE_CASES: RefineCase[] = [
 // ---------------------------------------------------------------------------
 // Suite 3: a recipe typed out
 //
-// The failures this catches are the ones that survive a single example. Asked
-// for beef tacos the prompt answered "Nasi goreng kampung", and asked for coq
-// au vin it answered nothing at all — both because the prompt described the app
-// as Malaysian and the model read that as an instruction about the FOOD. Every
-// Malaysian case passed throughout.
+// The failures this catches survive a single example. Asked for beef tacos the
+// prompt answered "Nasi goreng kampung" and asked for coq au vin it answered
+// nothing, both because it described the app as Malaysian and the model read
+// that as an instruction about the food. Every Malaysian case passed throughout.
 // ---------------------------------------------------------------------------
 
 type RecipeAnswer = {
@@ -841,13 +825,11 @@ const ingredient = (answer: RecipeAnswer, word: RegExp) =>
   parts(answer).find((part) => word.test(part.name ?? ''))
 
 /**
- * What every drafted recipe has to get right, whatever the dish was.
- *
- * The physical ones are worth more than they look. Nothing edible carries more
- * than about 9 kcal a gram, so an ingredient above that is a decimal point in
- * the wrong place, and macros heavier than the ingredient itself are the same
- * mistake wearing different units. `shapeIngredients` clamps both, but a prompt
- * that needs the clamp is a prompt that is drifting.
+ * What every drafted recipe has to get right, whatever the dish was. The physical
+ * checks are worth more than they look: nothing edible carries more than about
+ * 9 kcal a gram, and macros heavier than the ingredient are the same mistake in
+ * other units. `shapeIngredients` clamps both, but a prompt that needs the clamp
+ * is drifting.
  */
 const universalRecipe = (answer: RecipeAnswer): Check[] => {
   const list = parts(answer)
@@ -1050,13 +1032,12 @@ const RECIPE_CASES: Array<Case<RecipeAnswer>> = [
 ]
 
 // ---------------------------------------------------------------------------
-// WHAT TO EAT NEXT
+// What to eat next
 //
-// Every check here is about a rule the prompt had to be TOLD, and each one was
-// added after the model broke it on a live run. There is nothing about which
-// which dishes come back, because that is taste rather than correctness — what
-// is gradeable is whether they are meals, whether they are the right kitchen,
-// whether they fit the ceiling, and whether the reasons say anything.
+// Every check here is a rule the prompt had to be told, added after the model
+// broke it on a live run. Nothing about which dishes come back, which is taste:
+// what is gradeable is whether they are meals, the right kitchen, inside the
+// ceiling, and whether the reasons say anything.
 
 type SuggestAnswer = {
   picks?: Array<{
@@ -1075,12 +1056,9 @@ type SuggestAnswer = {
 const picksOf = (answer: SuggestAnswer) => answer.picks ?? []
 
 /**
- * Words that are an ingredient rather than a meal.
- *
- * Matched on the WHOLE name rather than as a substring, because "grilled
- * chicken breast" is not a meal and "nasi ayam" is, and the difference is
- * whether anything else is on the plate. A dish that merely contains one of
- * these words passes.
+ * Words that are an ingredient rather than a meal. Matched on the whole name
+ * rather than as a substring, because "grilled chicken breast" is not a meal and
+ * "nasi ayam" is.
  */
 const BARE_INGREDIENT =
   /^(grilled |steamed |boiled |plain |poached )?(chicken breast|egg|eggs|white fish|fish fillet|tofu|yoghurt|yogurt|protein shake)( with soy sauce)?$/i

@@ -19,45 +19,34 @@ import {
 /**
  * Asking a user to rate the app, in two stages.
  *
- * WHY TWO. `StoreReview.requestReview()` is a single-use thing: the OS allows a
- * handful per year per device, silently drops the rest, and tells the app
- * nothing either way. Fired at everybody, most of those go to people who are
- * about to leave a two-star review or who close the dialog without reading it.
- * So the app asks its own question first, and only somebody who answers "I like
- * it" ever reaches the store's dialog. Somebody who does not is offered the
- * Discord instead, which is the same conversation held somewhere it can be
- * answered.
+ * `StoreReview.requestReview()` is single-use: the OS allows a handful per year
+ * per device, silently drops the rest and tells the app nothing. Fired at
+ * everybody, most go to people about to leave a two-star review. So the app asks
+ * its own question first, and only somebody who answers "I like it" reaches the
+ * store's dialog; the rest are offered the Discord.
  *
- * Stage one is the gate in `state.ts`, which is silent and arithmetic. Stage two
- * is `RatePromptSheet`, which is the only thing that puts the question on a
- * screen, and this module is what decides when to hand it one.
+ * Stage one is the silent gate in `state.ts`. Stage two is `RatePromptSheet`,
+ * and this module decides when to hand it a question.
  *
- * The state is MMKV rather than a column, for the reason `features/paywall/nudge.ts`
- * gives: it is a question about this handset and this launch, answered before
- * anything can be shown, and an offline launch could not answer a query at all.
- * KEYED BY USER for the same reason as well, since a phone two people sign into
- * in turn would otherwise ask the second person a question the first one
- * answered.
+ * MMKV rather than a column, for the reason `features/paywall/nudge.ts` gives,
+ * and keyed by user, so a phone two people sign into does not ask the second
+ * person a question the first one answered.
  */
 const storage = createMMKV({ id: 'ricecal-rating' })
 
 /**
- * `expo-store-review`, if this binary actually has it.
- *
- * REQUIRED RATHER THAN IMPORTED, for the reason `features/auth/turnstile.tsx`
- * gives about the WebView: `requireNativeModule` throws at module scope on a
- * build made before the dependency landed, and this module is imported by
+ * `expo-store-review`, if this binary has it. Required rather than imported, for
+ * the reason `turnstile.tsx` gives: `requireNativeModule` throws at module scope
+ * on a build made before the dependency landed, and this is imported by
  * `src/data`, so a static import would put that throw in the graph of every
- * screen that logs a meal. On a dev client from before this shipped the symptom
- * would be the whole app failing to start.
+ * screen that logs a meal.
  *
  * Absent, the sheet still works and the answer is still recorded; only the
- * store's own dialog is missing, which is what `isAvailableAsync` already
- * reports on TestFlight and on old Androids.
+ * store's own dialog is missing, which `isAvailableAsync` already reports on
+ * TestFlight and old Androids.
  *
- * One thing the catch cannot suppress: on a stale DEV client the throw still
- * reaches LogBox, so tapping "I like it" there shows a redbox that dismisses to
- * an app carrying on normally. Dev only, and one rebuild away.
+ * On a stale dev client the throw still reaches LogBox, so tapping "I like it"
+ * shows a redbox that dismisses to an app carrying on normally.
  */
 function loadStoreReview(): typeof StoreReviewModule | null {
   try {
@@ -71,10 +60,9 @@ function loadStoreReview(): typeof StoreReviewModule | null {
 const key = (userId: string) => `state:${userId}`
 
 /**
- * `1.0.0` is a fallback and not a real answer. `expoConfig` is null in a few
- * corners (a bare runtime, a test), and treating that as "some version" keeps
- * the version gates working on a number that never changes rather than throwing
- * inside a counter that a meal write is waiting on.
+ * `1.0.0` is a fallback rather than a real answer. `expoConfig` is null in a bare
+ * runtime and in tests, and treating that as "some version" keeps the version
+ * gates working rather than throwing inside a counter a meal write is waiting on.
  */
 function appVersion(): string {
   return Constants.expoConfig?.version ?? '1.0.0'
@@ -95,12 +83,10 @@ function write(userId: string, state: RatingState): void {
 // ---------------------------------------------------------------------------
 
 /**
- * The account is carried WITH the trigger rather than read again by the sheet.
- *
- * Two reasons. The sheet is then pure UI with no session dependency, and more
- * importantly the answer is filed against whoever the question was put to: a
- * sheet that read the session on the tap would write the cooldown under the
- * wrong account if it were still open across a sign-out.
+ * The account is carried with the trigger rather than read again by the sheet, so
+ * the sheet is pure UI and the answer is filed against whoever the question was
+ * put to. Reading the session on the tap would write the cooldown under the wrong
+ * account for a sheet still open across a sign-out.
  */
 export type RatingRequest = { trigger: RatingTrigger; userId: string }
 
@@ -109,12 +95,10 @@ type Listener = (request: RatingRequest) => void
 const listeners = new Set<Listener>()
 
 /**
- * Hand the question to whatever is on screen, and say how many took it.
- *
- * The count is the point. Nothing is stamped and nothing is tracked unless a
- * sheet actually received the request: without that, a trigger that fired before
- * the root had mounted would spend the account's one ask on a dialog nobody ever
- * saw, and the sixty-day silence afterwards would be real.
+ * Hand the question to whatever is on screen, and say how many took it. Nothing
+ * is stamped or tracked unless a sheet received it: a trigger firing before the
+ * root had mounted would spend the account's one ask on a dialog nobody saw, and
+ * the sixty-day silence afterwards would be real.
  */
 function deliver(request: RatingRequest): number {
   for (const listener of listeners) listener(request)
@@ -133,18 +117,14 @@ export function subscribeToRatingPrompt(listener: Listener): () => void {
 // ---------------------------------------------------------------------------
 
 /**
- * Nothing here awaits, and nothing here throws.
+ * Nothing here awaits, and nothing here throws. These sit inside a mutation's
+ * `onSuccess` and a screen's effect, on the paths that put a meal on the day, and
+ * a counter that could reject would let a rating prompt break logging. MMKV is
+ * synchronous; the async store call happens later, behind the sheet.
  *
- * These sit inside a mutation's `onSuccess` and a screen's effect, on the paths
- * that put a meal on the day. A counter that could reject would make a rating
- * prompt able to break logging, which is a trade nobody would take. MMKV is
- * synchronous, so there is nothing to await in the first place; the store call
- * that IS async happens later, behind the sheet.
- *
- * `userId` is a `string` rather than a nullable one, and it is not a shortcut.
- * Every caller reads it from `useUserId`, which THROWS without a session for the
- * reason written out there, so a null guard here would be a branch that cannot
- * run standing in for a routing bug that should be loud.
+ * `userId` is a `string` rather than nullable: every caller reads it from
+ * `useUserId`, which throws without a session, so a null guard would be a branch
+ * that cannot run standing in for a routing bug that should be loud.
  */
 
 /**
@@ -168,26 +148,19 @@ export function recordReviewOpened(userId: string, now = Date.now()): void {
 }
 
 /**
- * Deliberately NOT a trigger: a settled purchase.
- *
- * It is the strongest signal of goodwill the app has, and it is still the wrong
- * moment. `paywall/welcome` is already a celebration, a sheet over it is two,
- * and a favour asked in the same breath as taking somebody's money reads as
- * exactly that. The next meal they log is a few hours away and carries the ask
- * just as well.
+ * Deliberately not a trigger: a settled purchase. The strongest signal of
+ * goodwill the app has, and still the wrong moment, because `paywall/welcome` is
+ * already a celebration and a favour asked in the same breath as taking somebody's
+ * money reads as one. The next meal carries the ask just as well.
  */
 
 /**
- * The row in Me, which is the only way in that skips the gate.
+ * The row in Me, the only way in that skips the gate: somebody who went looking
+ * for "Rate RiceCal" has asked the question themselves. The cooldown is still
+ * stamped, because what follows is the same one-per-year store dialog.
  *
- * Somebody who went looking for "Rate RiceCal" has asked the question
- * themselves, so every threshold above is beside the point. The COOLDOWN is
- * still stamped, because what follows is the same one-per-year store dialog and
- * an automatic ask a week later would be spending an allowance this one already
- * used.
- *
- * No delay either, for the same reason: this one is the answer to a tap, and a
- * control that does nothing for a second is a control somebody taps again.
+ * No delay either: this is the answer to a tap, and a control that does nothing
+ * for a second is one somebody taps again.
  */
 export function askForRating(userId: string): void {
   if (deliver({ trigger: 'manual', userId }) > 0) {
@@ -196,27 +169,20 @@ export function askForRating(userId: string): void {
 }
 
 /**
- * How long the trigger waits before the sheet arrives.
+ * How long the trigger waits before the sheet arrives, on the same reasoning as
+ * `useProNudge`. A trigger fires when a write lands, and two of the three routes
+ * into `useLogFood` navigate away in the same breath, so the `onSuccess` that
+ * counts the meal can land while a dismissal is unwinding. A native modal
+ * presented into the middle of that is a shape this app's sheets have gone wrong
+ * in before.
  *
- * The same reasoning and nearly the same number as `useProNudge`, which holds
- * the standing paywall offer back for 1.4 seconds. A trigger fires at the moment
- * a write lands, and two of the three routes into `useLogFood` navigate away in
- * the same breath: the dish screen calls `finish()` immediately after
- * `mutate`, so the `onSuccess` that counts the meal can land while a dismissal
- * is still unwinding. A native modal window presented into the middle of that is
- * the one shape this app's sheets have gone wrong in before.
- *
- * A beat later the user is on the diary looking at the meal they just logged,
- * which is a better moment to be asked anything at all.
+ * A beat later the user is looking at the meal they just logged.
  */
 export const ASK_DELAY_MS = 1200
 
 /**
- * One pending ask at a time.
- *
- * Two triggers can be in flight together (a review read, then a meal logged
- * before the timer fires) and two sheets racing for one answer would stamp the
- * cooldown twice and report two of everything.
+ * One pending ask at a time. Two triggers can be in flight together, and two
+ * sheets racing for one answer would stamp the cooldown twice.
  */
 let pending: ReturnType<typeof setTimeout> | null = null
 
@@ -239,24 +205,19 @@ function ask(userId: string, trigger: RatingTrigger, now: number): void {
 
 /**
  * Every answer stamps the cooldown, including the one that is not an answer.
- *
- * "Maybe later" and a tap on the scrim mean the same thing as "not really" as
- * far as the next sixty days are concerned: the question has been put, and
- * putting it again next week is how an app earns the one-star review it was
- * trying to avoid.
+ * "Maybe later" and a tap on the scrim mean the same as "not really" for the next
+ * sixty days: the question has been put, and putting it again next week is how an
+ * app earns the review it was trying to avoid.
  */
 function stamp(userId: string, now = Date.now()): void {
   write(userId, markAsked(read(userId, now), now, appVersion()))
 }
 
 /**
- * They like it. Stamp, then hand over to the OS.
- *
- * `isAvailableAsync` is false on TestFlight and on Android below 5.0, and
- * `requestReview` does nothing visible when the device has already had its three
- * dialogs this year. Neither is reportable, which is why there is no "Rating
- * Submitted" event anywhere in this file: what happens past this line belongs to
- * the store, and an app-side count of it would be a guess.
+ * They like it. Stamp, then hand over to the OS. `isAvailableAsync` is false on
+ * TestFlight and Android below 5.0, and `requestReview` does nothing visible once
+ * the device has had its three dialogs this year. Neither is reportable, which is
+ * why there is no "Rating Submitted" event.
  */
 export async function ratingLiked({ userId, trigger }: RatingRequest): Promise<void> {
   track('Rating Prompt Answered', { trigger, answer: 'liked' })
@@ -271,11 +232,10 @@ export async function ratingLiked({ userId, trigger }: RatingRequest): Promise<v
 }
 
 /**
- * They do not. Stamp, and let the sheet offer the conversation.
- *
- * The browser is NOT opened here. Somebody who has just said they are not
- * enjoying the app should not have it throw them into Discord as well; the sheet
- * asks first, and `ratingFeedbackOpened` is what a yes reports.
+ * They do not. Stamp, and let the sheet offer the conversation. The browser is
+ * not opened here: somebody who has just said they are not enjoying the app
+ * should not be thrown into Discord as well, so the sheet asks first and
+ * `ratingFeedbackOpened` reports a yes.
  */
 export function ratingDisliked({ userId, trigger }: RatingRequest): void {
   track('Rating Prompt Answered', { trigger, answer: 'disliked' })
@@ -288,12 +248,8 @@ export function ratingDismissed({ userId, trigger }: RatingRequest): void {
 }
 
 /**
- * They took the offer of a conversation.
- *
- * There is no matching "declined" event, for the reason the analytics plan gives
- * about `Paywall Shown`: an answer of `disliked` that is not followed by this
- * one IS the decline, and a second event would be a worse way to count the same
- * subtraction.
+ * They took the offer of a conversation. There is no matching "declined" event: a
+ * `disliked` answer not followed by this one is the decline.
  */
 export function ratingFeedbackOpened({ trigger }: RatingRequest): void {
   track('Rating Feedback Opened', { trigger })

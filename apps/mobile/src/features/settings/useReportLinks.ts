@@ -24,15 +24,15 @@ const isReport = (kind: unknown): kind is ReportKind => kind === 'weekly' || kin
 /**
  * Opens the review a report notification is about.
  *
- * TWO WAYS IN, and missing either one loses half the taps.
- * `getLastNotificationResponseAsync` covers the notification that LAUNCHED the
- * app — the app was not running, so no listener existed when the tap happened —
- * and the listener covers every tap after that. A cold launch is the common case
- * for a notification that fires at nine in the morning.
+ * Two ways in, and missing either loses half the taps.
+ * `getLastNotificationResponseAsync` covers the notification that launched the
+ * app, where no listener existed when the tap happened, and the listener covers
+ * every tap after that. A cold launch is the common case for a notification that
+ * fires at nine in the morning.
  *
- * Navigation rather than a param on some screen: the reminders are local and
- * fire whether or not anything is mounted, so the only thing that can act on one
- * is a hook living where the router already is.
+ * Navigation rather than a param on some screen: the reminders are local and fire
+ * whether or not anything is mounted, so the only thing that can act on one is a
+ * hook living where the router already is.
  */
 export function useReportLinks(): void {
   useEffect(() => {

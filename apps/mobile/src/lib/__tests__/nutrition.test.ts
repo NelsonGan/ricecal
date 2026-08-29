@@ -14,17 +14,14 @@ import {
 } from '../nutrition'
 
 /**
- * The calorie budget.
+ * The calorie budget. Every number asserted here traces to published guidance
+ * rather than taste, which is what makes them worth pinning: a plausible edit to
+ * any one constant changes what the app tells somebody to eat.
  *
- * Every number asserted here traces to published guidance rather than to taste,
- * which is what makes them worth pinning: a plausible-looking edit to any one
- * constant changes what the app tells someone to eat, and nothing else in the
- * pipeline would notice.
- *
- * The last test in this file is the important one. This arithmetic exists twice —
- * here and in `compute_targets()` — because onboarding shows a budget before the
- * account that would store it, and the two drifting is a bug the user sees as
- * "the number changed after I signed up".
+ * The last test is the important one. This arithmetic exists twice, here and in
+ * `compute_targets()`, because onboarding shows a budget before the account that
+ * would store it, and the two drifting reads as "the number changed after I
+ * signed up".
  */
 
 /**
@@ -111,14 +108,11 @@ describe('the energy delta', () => {
 })
 
 /**
- * The two weights, which are now the whole plan.
- *
- * There was a lose/maintain/gain enum beside them, and the first three cases
- * here are answers the app gave while it was the only thing consulted: the same
- * deficit for someone 30 kg out and someone 1 kg out, a cut that carried on
- * after the target was reached, and a cut prescribed toward a target ABOVE the
- * user's own weight. The last of those is not a rule any more — it is
- * unrepresentable, which is the point.
+ * The two weights, which are now the whole plan. There was a lose/maintain/gain
+ * enum beside them, and the first three cases are answers the app gave while it
+ * was the only thing consulted: the same deficit at 30 kg out and 1 kg out, a cut
+ * that carried on past the target, and a cut toward a target above the user's own
+ * weight. The last is unrepresentable now, which is the point.
  */
 describe('the distance to the target', () => {
   it('reads the direction off the sign of the gap', () => {
@@ -132,13 +126,9 @@ describe('the distance to the target', () => {
   })
 
   /**
-   * The taper. Four weeks is the shortest horizon the plan will close the gap
-   * in, so the last two kilograms — and only those — come off gently.
-   *
-   * Read on a body large enough that the maintenance cap never binds, because
-   * otherwise the two caps are indistinguishable: `woman` is small enough that a
-   * fifth of her maintenance is the smaller number at every distance, and the
-   * taper would be invisible behind it.
+   * The taper: four weeks is the shortest horizon the plan will close the gap in,
+   * so only the last two kilograms come off gently. Read on a body large enough
+   * that the maintenance cap never binds, or the two caps are indistinguishable.
    */
   it('slows as the target comes within a month', () => {
     const big = { ...man, weightKg: 110, activity: 'onFeet' as const }
@@ -292,13 +282,10 @@ describe('the goal date', () => {
 })
 
 /**
- * Structural, not behavioural — this cannot run SQL. It reads the function body
- * and checks that every constant this file asserts on also appears there, so
- * changing one copy and not the other fails here rather than in production.
- *
- * A blunt instrument on purpose. The alternative is a pgTAP test, which belongs
- * in `apps/supabase/tests` and cannot see this file; until one exists, matching
- * the numbers is what stops silent drift.
+ * Structural rather than behavioural, since this cannot run SQL: it reads the
+ * function body and checks that every constant this file asserts on appears
+ * there. Blunt on purpose, because the alternative is a pgTAP test that cannot
+ * see this file.
  */
 describe('the database copy', () => {
   const sql = readFileSync(join(__dirname, '../../../../supabase/schemas/02_functions.sql'), 'utf8')
@@ -342,13 +329,10 @@ describe('the database copy', () => {
 })
 
 /**
- * The trigger that runs it.
- *
- * Structural for the same reason as the block above, and pinned for a specific
- * failure: `target_weight_kg` reaching `compute_targets` is worth nothing if the
- * write that changes it never fires the recompute. The column list on
- * `profiles_sync_daily_goals` is the whole of that decision, and it is exactly
- * the kind of line an edit to the function body leaves behind.
+ * The trigger that runs it. Structural for the reason above, and pinned for a
+ * specific failure: `target_weight_kg` reaching `compute_targets` is worth
+ * nothing if the write that changes it never fires the recompute, and the column
+ * list on `profiles_sync_daily_goals` is the whole of that decision.
  */
 describe('the recompute trigger', () => {
   const sql = readFileSync(
@@ -373,13 +357,10 @@ describe('the recompute trigger', () => {
 })
 
 /**
- * What one entry counts as.
- *
- * This arithmetic exists twice as well — here and in the `coalesce` inside
- * `food_log_details` — because the view answers for the diary and this answers
- * for the screen editing the entry, where an edit that has not reached the
- * database yet is still the truth on screen. The two disagreeing is a bug the
- * user sees as "the number changed when I went back".
+ * What one entry counts as. This arithmetic exists twice as well, here and in the
+ * `coalesce` inside `food_log_details`, because the view answers for the diary
+ * and this answers for the screen editing the entry. The two disagreeing reads as
+ * "the number changed when I went back".
  */
 describe('entryTotals', () => {
   const portion = { kcal: 600, carbs: 70, protein: 25, fat: 22 }

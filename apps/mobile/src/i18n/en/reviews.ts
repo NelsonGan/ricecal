@@ -1,17 +1,13 @@
 /**
  * Reviews: a finished week or month, read as a column of cards.
  *
- * Two shapes of copy, and the split is worth knowing before adding to it.
+ * Two shapes of copy. The list speaks in periods: a name, a week number, an
+ * average. The review speaks in one period's numbers, and every headline is a
+ * figure with a word after it rather than a sentence with a figure in it.
  *
- * The LIST speaks in periods: a name, a week number, an average. The REVIEW
- * speaks in one period's numbers, and every headline in it is a figure with a
- * word after it rather than a sentence with a figure in it — the number is what
- * the eye lands on, and a label under it says only what it was.
- *
- * Where a string differs between a weekly review and a monthly one it is
- * written out twice rather than assembled: "Under it on 5 of 7 days" and "Under
- * it on 18 of 27 days" read the same in English and do not in every language,
- * and a panel choosing between two whole sentences is what keeps that possible.
+ * Where a string differs between a weekly review and a monthly one it is written
+ * out twice rather than assembled: two sentences that read the same in English do
+ * not in every language.
  */
 export const reviews = {
   title: 'Reviews',

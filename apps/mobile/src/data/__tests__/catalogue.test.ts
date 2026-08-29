@@ -9,21 +9,16 @@ const { supabase } = require('@/lib/supabase') as {
 }
 
 /**
- * The app reading the catalogue as itself.
+ * The app reading the catalogue as itself. Two things about this module are
+ * load-bearing and neither is visible at the call site.
  *
- * Two things about this module are load-bearing and neither is visible at the
- * call site, which is why they are pinned here rather than left to a screen.
+ * Unreachable is not empty: every failure has to throw, so react-query lands in
+ * its error state and the search panel says something went wrong. Answering `[]`
+ * for a Worker that is down tells somebody their dish does not exist.
  *
- * UNREACHABLE IS NOT EMPTY. Every failure has to THROW, so react-query lands in
- * its error state and the search panel says something went wrong. An answer of
- * `[]` for a Worker that is down tells somebody their dish does not exist —
- * that exact collapse cost an hour when the catalogue moved to D1 and is
- * written into the invariants because of it.
- *
- * AND THE TOKEN IS FETCHED, NOT REMEMBERED. `getSession()` refreshes one that
- * is close to expiring. An access token lives about an hour, a diary is an app
- * people leave open, and a stale token is a 401 that looks exactly like a
- * catalogue outage.
+ * And the token is fetched, not remembered, because `getSession()` refreshes one
+ * close to expiring. An access token lives about an hour, a diary is an app people
+ * leave open, and a stale token is a 401 that looks like a catalogue outage.
  */
 
 const SESSION = { data: { session: { access_token: 'jwt-abc' } }, error: null }

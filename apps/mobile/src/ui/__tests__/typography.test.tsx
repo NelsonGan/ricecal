@@ -5,19 +5,16 @@ import { Text } from '../Text'
 import { TextScriptProvider } from '../TextScript'
 
 /**
- * The line height, which is the one part of the ramp that is not a class.
+ * The line height, the one part of the ramp that is not a class.
  *
- * Worth pinning because the failure is silent and only visible in a language
- * the person changing the code probably does not read: a leading tuned for
- * Baloo 2's Latin shears the tops off 没有上限, and nothing throws. The bug
- * reached a user as "title slightly cut off in mandarin".
- *
- * Appearance is otherwise left to the gallery route on a device. These are
- * arithmetic.
+ * Pinned because the failure is silent and only visible in a language the person
+ * changing the code probably does not read: a leading tuned for Baloo 2's Latin
+ * shears the tops off 没有上限, and nothing throws. It reached a user as "title
+ * slightly cut off in mandarin". Appearance is otherwise left to the gallery
+ * route on a device.
  *
  * React Native's jest preset reports a font scale of 2. Pinned to 1 here so the
- * numbers below are the ramp's own; the scaling itself is the subject of the
- * last test.
+ * numbers are the ramp's own; the scaling is the subject of the last test.
  */
 beforeEach(() => {
   jest.spyOn(PixelRatio, 'getFontScale').mockReturnValue(1)

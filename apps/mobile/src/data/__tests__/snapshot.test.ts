@@ -12,18 +12,15 @@ import type { Food } from '@/data/types'
 /**
  * The ids this app invents, and where they stop.
  *
- * Three kinds of food reach the detail screen without a catalogue row behind
- * them: an entry the scan wrote itself, a recipe, and a SCANNED PACKET — which
- * lives in D1 keyed by its barcode and has no `foods.id` at all. Each one still
- * needs something to put in a `[id]` route segment and something for the
- * portion picker to select, so each one travels under a placeholder.
+ * Three kinds of food reach the detail screen with no catalogue row behind them:
+ * an entry the scan wrote itself, a recipe, and a scanned packet, which lives in
+ * D1 keyed by its barcode and has no `foods.id` at all. Each still needs
+ * something for the `[id]` route segment, so each travels under a placeholder.
  *
- * `food_logs.food_id` is a uuid column. A placeholder reaching it is not a
- * dangling reference that a later job could tidy up: it is a 22P02 that fails
- * the save, on the last tap of the flow. That is the whole reason these tests
- * exist, and both directions matter — the filter that drops a placeholder must
- * not also drop a real id, or every entry logged from search would lose its
- * provenance silently.
+ * `food_logs.food_id` is a uuid column, so a placeholder reaching it is a 22P02
+ * that fails the save on the last tap of the flow. Both directions matter: the
+ * filter that drops a placeholder must not also drop a real id, or every entry
+ * logged from search would lose its provenance silently.
  */
 
 const food = (over: Partial<Food> = {}): Food => ({

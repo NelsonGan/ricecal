@@ -29,19 +29,17 @@ const SWEEP_MS = 1100
 const FLOAT_MS = 1600
 
 /**
- * A bar that says WORK IS HAPPENING rather than how much is done.
+ * A bar that says work is happening rather than how much is done.
  *
- * One model call takes between five and fifteen seconds and nothing on this
- * side knows where in that it is, so a determinate bar would be a number made
- * up — and a bar parked at 66% for ten seconds reads as a bar that has stopped.
- * A shuttle crossing the track says the same thing honestly and keeps moving
- * for as long as the wait lasts.
+ * One model call takes five to fifteen seconds and nothing on this side knows
+ * where in that it is, so a determinate bar would be a made-up number, and one
+ * parked at 66% for ten seconds reads as stopped. A shuttle crossing the track
+ * keeps moving for as long as the wait lasts.
  *
- * `translateX` on a fixed-width child rather than an animated `width`, because
- * a transform runs on the UI thread and a width does not: the layout pass a
- * width animation costs every frame is exactly what a JS thread busy parsing a
- * model's answer cannot afford, and the bar would stutter at the moment it is
- * meant to be reassuring.
+ * `translateX` on a fixed-width child rather than an animated `width`, because a
+ * transform runs on the UI thread and a width does not: the layout pass a width
+ * animation costs every frame is what a JS thread busy parsing a model's answer
+ * cannot afford.
  */
 function Shuttle() {
   const travel = useSharedValue(0)

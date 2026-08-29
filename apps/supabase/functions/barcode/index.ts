@@ -1,30 +1,21 @@
 // The barcode endpoint: what to do when the catalogue has never seen a packet.
 //
 // Most scans never reach the live fallback. The catalogue holds 3.2 million
-// packaged products and answers a code in one index probe; Open Food Facts
-// holds ~4.7 million, so everything else lives one request away, here.
+// packaged products and answers a code in one index probe; Open Food Facts holds
+// ~4.7 million, so everything else is one request away, here.
 //
-// THE ROW IS WRITTEN, NOT JUST RETURNED
+// The row is written rather than only returned. A product fetched live is
+// inserted as `service_role` and becomes an ordinary catalogue row, so the second
+// person to scan that packet gets the fast path.
 //
-// A product fetched live is inserted as `service_role` and becomes an ordinary
-// catalogue row, so the second person to scan that packet gets the fast path
-// and so the entry logged against it references a real `foods.id` like every
-// other entry. This is the same reason `scan-meal` writes its estimate rows
-// rather than returning loose macros: `food_logs.food_id` is not null, and a
-// diary that cannot reference what it logged has nowhere to put it.
+// No client writes the catalogue (see the invariant in README.md), which is why a
+// lookup the client could have done itself is a function at all: it could fetch
+// openfoodfacts.org, and it could not turn the answer into a row.
 //
-// No client writes the catalogue — see the invariant in README.md — which is
-// why a lookup the client could have done itself is a function at all. The
-// client could fetch openfoodfacts.org directly; it could not turn the answer
-// into a row.
-//
-// WHAT IT REFUSES TO INVENT
-//
-// A product with no energy figure, or with no macro panel behind it, is not
-// written. `foods.carbs_g` and its neighbours are `not null`, so the only way
-// to store such a product is to fabricate zeros — and "0 g protein" against a
-// tin of tuna is worse than an honest "we do not know this one". The client
-// offers Describe instead, which is a path that produces a real number.
+// A product with no energy figure or no macro panel is not written.
+// `foods.carbs_g` and its neighbours are `not null`, so storing one would mean
+// fabricating zeros, and "0 g protein" against a tin of tuna is worse than an
+// honest "we do not know this one". The client offers Describe instead.
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
@@ -291,21 +282,13 @@ Deno.serve(async (req: Request) => {
 })
 
 /**
- * A catalogue product in the shape the client expects.
+ * A catalogue product in the shape the client expects, which was written against
+ * `food_details` rows and should not learn a second shape because the data moved.
+ * The portion is the row's own basis, so the factor is 1 by definition.
  *
- * The client was written against `food_details` rows and should not have to
- * learn a second shape because the data moved. The portion is the row's own
- * basis: these products are stored per the serving their numbers are quoted
- * per, so the factor is 1 by definition.
- *
- * THE DRAWING IS DERIVED, NOT STORED
- *
- * `product` has no icon columns, and giving 3.2 million rows a pair of them to
- * hold a value computable from the name they already carry would be a migration
- * and a bulk write for nothing. The searchable half of the catalogue stores its
- * icon because a person authored it; a packet's is read off its own name here,
- * so a product cached last year draws the same as one fetched a moment ago and
- * nothing has to be backfilled.
+ * The drawing is derived rather than stored: `product` has no icon columns, and
+ * giving 3.2 million rows a pair of them to hold a value computable from the name
+ * would be a migration and a bulk write for nothing.
  */
 function asFood(p: CatalogueProduct, label?: string) {
   const icon = iconFor(p.name)

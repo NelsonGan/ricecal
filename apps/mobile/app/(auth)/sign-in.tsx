@@ -20,18 +20,16 @@ type Mode = 'sign-in' | 'sign-up'
 /**
  * The gate. Nothing behind it renders without a session.
  *
- * THREE WAYS IN, and this screen's only job is to find out which. Apple and
- * Google hand back an identity token and are done in one tap. Email is a
- * question, so it takes an address here and asks the rest on the next screen:
- * a password, or a code in the post, whichever the person wants.
+ * Three ways in, and this screen's job is to find out which. Apple and Google
+ * hand back an identity token in one tap; email takes an address here and asks
+ * the rest on the next screen.
  *
- * `mode` decides the heading and which side of the next screen opens. It does
- * NOT change what any of these buttons do: Supabase makes the account when the
- * identity is new either way.
+ * `mode` decides the heading and which side of the next screen opens. It does not
+ * change what the buttons do: Supabase makes the account when the identity is new
+ * either way.
  *
- * Nothing here explains the app any more. Both ways in pass through welcome or
- * the questions first, so by the time anyone reads this screen the pitch has
- * been made.
+ * Nothing here explains the app, because both ways in pass through welcome or the
+ * questions first.
  */
 export default function SignInScreen() {
   const { t } = useTranslation(['auth', 'onboarding', 'common'])
@@ -51,20 +49,14 @@ export default function SignInScreen() {
   const mode: Mode = params.mode === 'sign-up' ? 'sign-up' : 'sign-in'
 
   /**
-   * The onboarding bar, when onboarding is what sent us here.
+   * The onboarding bar, when onboarding is what sent us here. This screen belongs
+   * to two flows: in the middle of onboarding it is one numbered step of eight,
+   * and dropping the bar on exactly the screen that asks for an email is where a
+   * flow stops reading as a flow. Reached on its own there is no bar.
    *
-   * This screen belongs to two flows. In the middle of onboarding it is one
-   * numbered step of eight, and dropping the bar for exactly the screen that
-   * asks for an email is where a flow reads as having stopped being a flow — the
-   * question the user is weighing at that moment is "how much more of this is
-   * there", and the answer was on every screen but this one. Reached on its own,
-   * by a returning user tapping "I already have an account", there is no flow
-   * and no bar.
-   *
-   * Passed as params rather than read from a store because the position is a
-   * property of the route that pushed this one, and this file must not learn the
-   * shape of a flow it is only borrowed by. It is passed onward to the password
-   * and code screens for the same reason.
+   * Passed as params rather than read from a store, because the position is a
+   * property of the route that pushed this one and this file must not learn the
+   * shape of a flow it is borrowed by.
    */
   const step = Number(params.step)
   const total = Number(params.total)

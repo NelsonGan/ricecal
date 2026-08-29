@@ -40,21 +40,16 @@ export type NutritionSheetProps = {
 }
 
 /**
- * TYPE YOUR OWN FIGURES for a logged entry.
+ * Type your own figures for a logged entry, for the dish the app got close but
+ * not right and the person eating it knows the answer. Each field stands alone,
+ * the way `food_logs`'s four `override_*` columns do, so correcting only the
+ * protein keeps the catalogue's carbs.
  *
- * For the dish the app got close but not right, where the person eating it knows
- * the answer: off a packet, off a recipe, off the kitchen scale. Each field
- * stands alone, the way `food_logs`'s four `override_*` columns do, so somebody
- * who corrects only the protein keeps the catalogue's carbs.
+ * It saves itself: a sheet whose button said "Done" and wrote nothing was a
+ * second staging level nobody asked for. A failure leaves the draft where it is.
  *
- * IT SAVES ITSELF. The screen had one Save button in its footer that wrote every
- * staged section at once, and a sheet whose button said "Done" and wrote nothing
- * was a second staging level nobody asked for. This is a form now: Save writes the
- * four figures and closes, a failure leaves the draft where it is.
- *
- * Full height because it raises the pad, and the button is in the BODY rather
- * than a footer: at full height a footer lands behind the keyboard. Both rules
- * are in README.md.
+ * Full height because it raises the pad, and the button is in the body rather
+ * than a footer, which at full height lands behind the keyboard.
  */
 export function NutritionSheet({
   visible,

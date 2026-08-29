@@ -31,28 +31,20 @@ const AGE = { min: 13, max: 100 }
 const TARGET = { min: 40, max: 120 }
 
 /**
- * 02 ABOUT YOU
+ * About you, and nothing on this screen starts answered.
  *
- * NOTHING ON THIS SCREEN STARTS ANSWERED.
+ * It used to open on a plausible body, every field of which is a real answer as
+ * far as `compute_targets()` is concerned, so Continue was live on arrival and a
+ * user who tapped through got a budget worked out for somebody else. The five
+ * controls are empty and the CTA is dead until all five are filled.
  *
- * It used to open on a plausible body — 164 cm, 65 kg, 29, female, target
- * weight wherever the current one landed — and every one of those is a real
- * answer as far as `compute_targets()` is concerned. So Continue was live on
- * arrival, and a user who tapped through it got a budget worked out for
- * somebody else with nothing on screen to say so. The five controls are empty,
- * the CTA is dead until all five are filled, and the only way past is to answer.
+ * The cost is that the target-weight slider has no honest place for its thumb
+ * until the weight above it exists, which is why it is held until then.
  *
- * The cost is that the target-weight slider has no honest place to put its thumb
- * until the weight above it exists, which is why it is held until then: the
- * question it asks is "how far from where you are", and it cannot be asked of
- * somebody whose weight the screen does not know.
- *
- * EVERY BOUND BELOW IS METRIC, and the fields are not. `setup` asked which
- * system to use one screen ago, so a height may be typed as feet and inches and
- * a weight as pounds. Both are converted before anything is clamped or stored:
- * the draft, `profiles` and `weight_logs` are centimetres and kilograms in every
- * language and every unit system, and the display unit is a property of the
- * person reading rather than of the number.
+ * Every bound below is metric and the fields are not: `setup` asked which system
+ * to use one screen ago, so both are converted before anything is clamped or
+ * stored. The draft, `profiles` and `weight_logs` are centimetres and kilograms
+ * everywhere, and the display unit belongs to the person reading.
  */
 export default function AboutStep() {
   const { t } = useTranslation(['onboarding', 'common'])

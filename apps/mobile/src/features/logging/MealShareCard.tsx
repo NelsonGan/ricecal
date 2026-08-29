@@ -10,30 +10,22 @@ import { captureView, sharePicture } from '@/lib/share'
 import { cn, Icon, Text } from '@/ui'
 
 /**
- * How wide the picture is drawn, and so how wide it is sent.
- *
- * A CONSTANT rather than the screen's width. The capture comes out at the
- * device's pixel ratio, so a phone decides the resolution either way — but it
- * must not decide the SHAPE. Laid out against the screen, the same meal shared
- * from a small phone and a tablet would come back as two differently
- * proportioned cards, and the type on one of them would be the wrong size
- * against the plate. 340 is the frame the design system's cards are drawn on.
+ * How wide the picture is drawn, and so how wide it is sent. A constant rather
+ * than the screen's width: the capture comes out at the device's pixel ratio, so
+ * a phone decides the resolution either way, and must not also decide the shape.
+ * 340 is the frame the design system's cards are drawn on.
  */
 const CARD_WIDTH = 340
 
 /**
- * And the card is SQUARE, at that width.
- *
- * The whole card rather than the plate inside it. A share of a meal is read in
- * somebody else's feed or story, and every one of those places crops to a
- * square or pads to one — so a card that is taller than it is wide is a card
- * whose caption is the part that gets cut off, which is every figure on it.
- * Sent square, what leaves the phone is what lands.
+ * And the card is square at that width, the whole card rather than the plate
+ * inside it. A share is read in somebody else's feed, and every one of those
+ * places crops to a square or pads to one, so a taller card loses its caption,
+ * which is every figure on it.
  *
  * The plate takes whatever the caption leaves, which is why the media box is
  * `flex-1` rather than a height: the dish name runs to two lines on plenty of
- * entries, and a fixed plate plus a caption that grew would have made the card
- * square only for short names.
+ * entries, and a fixed plate would make the card square only for short names.
  */
 const CARD_HEIGHT = CARD_WIDTH
 
@@ -45,11 +37,9 @@ const CARD_HEIGHT = CARD_WIDTH
 const OFFSCREEN = { position: 'absolute', left: -(CARD_WIDTH + 40), top: 0 } as const
 
 /**
- * The drawing, when a dish has one instead of a photograph.
- *
- * A size rather than a box: an illustration is drawn at a size and stays that
- * size, so it is centred in whatever the caption leaves it rather than filling
- * it the way a photograph does.
+ * The drawing, when a dish has one instead of a photograph. A size rather than a
+ * box, so it is centred in whatever the caption leaves rather than filling it the
+ * way a photograph does.
  */
 const DRAWING_SIZE = 165
 
@@ -61,13 +51,10 @@ const MACROS = [
 ] as const
 
 /**
- * The caption's voice.
- *
- * Regular body at 11 rather than any of the `Text` variants, because every
- * variant small enough for this line is a BLACK weight — they exist for
- * headings and overlines on screens where something has to carry a section, and
- * six of them in a row read as six labels competing. `SMALL_STRONG` is for the
- * amount at the end of a phrase, which is the half anybody is reading.
+ * The caption's voice. Regular body at 11 rather than a `Text` variant, because
+ * every variant small enough for this line is a black weight meant for headings,
+ * and six in a row read as six labels competing. `SMALL_STRONG` is for the amount
+ * at the end of a phrase.
  */
 const SMALL = 'font-body text-[11px] leading-[15px]'
 const SMALL_STRONG = 'font-body-bold text-[11px] leading-[15px]'
@@ -93,30 +80,23 @@ export type MealShareCardProps = {
 /**
  * One logged meal, as a picture somebody can send.
  *
- * NOT ON SCREEN. This is drawn off to the side of the page and captured on
- * demand — see `useMealShare` — so nothing here is laid out against a device,
- * pressed, or read by a screen reader. It exists to be photographed.
+ * Not on screen: drawn off to the side of the page and captured on demand (see
+ * `useMealShare`), so nothing here is laid out against a device, pressed or read
+ * by a screen reader.
  *
- * THE PLATE IS THE CARD. A share of a meal is a share of the picture of it, so
- * the photograph takes every pixel the caption does not need and one caption
- * sits under it on the app's own surface. The colours are the design system's
- * unchanged — the same three macros in the same order as Today, the entry and
- * the weekly report, so somebody who has seen one of those reads this without a
- * legend — and only the type is set by hand, for the reason on `SMALL`.
+ * The plate is the card. The photograph takes every pixel the caption does not
+ * need, and the colours are the design system's unchanged, so somebody who has
+ * seen Today or the weekly report reads this without a legend. Only the type is
+ * set by hand, for the reason on `SMALL`.
  *
- * SQUARE, AND SQUARE-CORNERED. See `CARD_HEIGHT` for the first. The second
- * follows from it: a rounded corner is what tells the eye a card is sitting ON
- * something, and there is nothing under this one — it is not a tile in the app,
- * it is the whole picture that leaves the phone. Rounded, it arrived in a feed
- * with four little wedges of whatever that app paints behind an image, which is
- * white in one client and black in the next.
+ * Square, and square-cornered: a rounded corner tells the eye a card is sitting
+ * on something, and there is nothing under this one. Rounded, it arrived in a
+ * feed with four wedges of whatever that app paints behind an image.
  *
- * WHAT IS DELIBERATELY NOT ON IT: the day and the time it was eaten, any
- * comparison against a budget, and the portion. The first two are the diary's
- * business rather than the plate's — a card that says how far under goal
- * somebody was is a card they have to think about before sending — and the
- * third is a word that earns its width on the entry screen and not here, where
- * "serving" would be the fourth thing on a line of four already.
+ * Deliberately absent: the day and time, any comparison against a budget, and the
+ * portion. The first two are the diary's business rather than the plate's, and a
+ * card saying how far under goal somebody was is one they have to think about
+ * before sending.
  */
 export function MealShareCard({ name, macros, photo, icon, ref }: MealShareCardProps) {
   const { t } = useTranslation(['logging', 'common'])
@@ -273,13 +253,9 @@ export function MealShareCard({ name, macros, photo, icon, ref }: MealShareCardP
 }
 
 /**
- * How a share turned out.
- *
- * Three, not a boolean, because two of them look the same from the outside and
- * mean opposite things. `failed` is the app: the capture came back with
- * nothing, and the user is owed a message. `dismissed` is somebody opening the
- * sheet and changing their mind, which is not a failure and must not be
- * announced as one.
+ * How a share turned out. Three rather than a boolean, because two of them look
+ * the same from outside and mean opposite things: `failed` is the capture coming
+ * back with nothing, and `dismissed` is somebody changing their mind.
  */
 export type ShareOutcome = 'sent' | 'dismissed' | 'failed'
 
@@ -287,11 +263,9 @@ export type MealShare = {
   /** Goes on the card. What gets captured is whatever this points at. */
   card: RefObject<View | null>
   /**
-   * Capture and hand it to the OS.
-   *
-   * The picture goes out ALONE — see `pictureAlone` on `sharePicture`. The
-   * sentence is the ANDROID fallback and nothing else, because the share intent
-   * there cannot carry a file; it is not a caption, and iOS never sees it.
+   * Capture and hand it to the OS. The picture goes out alone; the sentence is
+   * the Android fallback, because the share intent there cannot carry a file, and
+   * iOS never sees it.
    */
   share: (androidText: string) => Promise<ShareOutcome>
   /** A capture and a share sheet are in flight. */
@@ -299,19 +273,13 @@ export type MealShare = {
 }
 
 /**
- * Tie a share button to a `MealShareCard`.
+ * Tie a share button to a `MealShareCard`. Straight to the OS sheet with no
+ * preview: the review cards preview because a story is four screens of cards, and
+ * here there is one card already filling the screen behind the button.
  *
- * Straight to the OS sheet, with no preview in between. The review cards do
- * preview, and they have a reason to: a story is four screens of cards and the
- * sheet is the only thing that says WHICH of them was tapped. Here there is one
- * card, it is a picture of the plate already filling the screen behind the
- * button, and a confirmation step would be asking somebody to approve their own
- * photograph.
- *
- * And THE PICTURE ALONE, with no sentence beside it. The card carries the dish,
- * the calories and the macros already, so a message repeating them is the same
- * meal described twice in one share sheet. What the argument is for is Android,
- * which cannot send the file at all.
+ * The picture alone, with no sentence beside it, since the card carries the dish
+ * and the figures already. The argument exists for Android, which cannot send the
+ * file at all.
  */
 export function useMealShare(): MealShare {
   const card = useRef<View>(null)

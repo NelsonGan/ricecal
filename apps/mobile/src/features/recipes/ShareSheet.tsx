@@ -16,18 +16,17 @@ export type ShareSheetProps = {
 }
 
 /**
- * Sharing a recipe, and the two quite different things that means.
+ * Sharing a recipe, and the two different things that means.
  *
- * A LINK is private sharing: anybody who has it can open the recipe and save a
- * copy, and nobody who does not have it can find the recipe at all. Nothing is
- * reviewed, because nothing has been published — it is the cook handing a piece
- * of paper to a friend.
+ * A link is private sharing: anybody who has it can open the recipe and save a
+ * copy, and nobody else can find it at all. Nothing is reviewed, because nothing
+ * has been published.
  *
- * PUBLIC is the other thing, and it is the toggle at the foot of the sheet. It
- * puts the recipe in front of every user of the app, which is why it goes
- * through a review first and why the switch coming back on does not mean the
- * recipe is listed — `usePublishRecipe` reports what the reviewer said, and
- * this sheet says so plainly rather than letting the switch imply it.
+ * Public is the toggle at the foot of the sheet. It puts the recipe in front of
+ * every user of the app, which is why it goes through a review first and why the
+ * switch coming back on does not mean the recipe is listed: `usePublishRecipe`
+ * reports what the reviewer said, and this sheet says so rather than letting the
+ * switch imply it.
  */
 export function ShareSheet({ visible, onClose, recipe }: ShareSheetProps) {
   const { t } = useTranslation(['recipes', 'common'])

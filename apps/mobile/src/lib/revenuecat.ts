@@ -8,23 +8,19 @@ import { env, isConfigured } from './env'
  *
  * Its own file rather than a corner of `startup.ts`, because `session.tsx` needs
  * the identify half and `startup.ts` imports Mixpanel at module scope, which jest
- * cannot transform, so pulling the session provider into a test dragged in an
- * untransformable dependency and took three unrelated suites down with it. This
- * module imports nothing but the env.
+ * cannot transform. This module imports nothing but the env.
  *
- * The import is the fragile part, not the key. `react-native-purchases` reaches
- * for its native module at module scope, so merely pulling it in threw on any
- * build with no RevenueCat pod, from app start, before anything had rendered.
- * Hence the dynamic import in `loadPurchases`, and hence every call being
- * wrapped.
+ * The import is the fragile part rather than the key: `react-native-purchases`
+ * reaches for its native module at module scope, so pulling it in threw on any
+ * build with no RevenueCat pod, before anything had rendered. Hence the dynamic
+ * import in `loadPurchases`, and every call being wrapped.
  */
 
 /**
  * The slice of the SDK this app uses, written out for the reason
- * `AnalyticsClient` is (see `lib/analytics/client.ts`): naming the real type
- * would mean importing the module, which is the one thing this file exists to
- * defer. It is checked against the real thing at exactly one place — the loader
- * below — where a mismatch is a compile error.
+ * `AnalyticsClient` is: naming the real type would import the module, which is
+ * what this file exists to defer. Checked against the real thing at the loader
+ * below, where a mismatch is a compile error.
  */
 type PurchasesSdk = {
   configure(options: { apiKey: string }): void
@@ -38,12 +34,10 @@ type PurchasesSdk = {
 }
 
 /**
- * The slice of RevenueCat's `CustomerInfo` this app reads.
- *
- * Written out for the same reason the rest of `PurchasesSdk` is, and checked
- * against the real thing at the loader below. The methods above are declared
- * with method shorthand deliberately: TypeScript checks those bivariantly, so
- * a listener typed against this subset still accepts the SDK's own wider one.
+ * The slice of RevenueCat's `CustomerInfo` this app reads, written out for the
+ * reason the rest of `PurchasesSdk` is. The methods above use method shorthand
+ * deliberately: TypeScript checks those bivariantly, so a listener typed against
+ * this subset still accepts the SDK's own wider one.
  */
 type StoreCustomerInfo = {
   entitlements: {
@@ -66,12 +60,10 @@ const loadPurchases = async (): Promise<PurchasesSdk> =>
 let load = loadPurchases
 
 /**
- * Hand this module a stand-in SDK, and start from nothing.
- *
- * For tests, and it is the only way there is one. Jest keeps the dynamic import
- * above a real one and the VM refuses it without `--experimental-vm-modules`, so
- * a suite cannot reach these calls through `jest.mock`. The configure latch and
- * the queue are reset with it, since both are module state.
+ * Hand this module a stand-in SDK, and start from nothing. The only way there is
+ * one: jest keeps the dynamic import above a real one and the VM refuses it
+ * without `--experimental-vm-modules`, so a suite cannot reach these calls
+ * through `jest.mock`. The configure latch and the queue reset with it.
  */
 export function setPurchasesForTest(fake: PurchasesSdk | null): void {
   load = fake ? async () => fake : loadPurchases
@@ -84,16 +76,13 @@ let configured: Promise<boolean> | null = null
 /**
  * Whether the SDK is usable, configuring it if nobody has yet.
  *
- * One promise, shared. `initServices` fires this from a `useEffect` and does not
- * await it, so for a moment after launch the SDK is not configured, and a
- * synchronous "is it ready" check answered false in that window. That was a real
- * race with a sticky consequence: `usePlanPrices` runs with `retry: false`, so
- * one early call cached "unavailable" and the paywall showed dashes for the rest
- * of the session on a perfectly good build.
+ * One shared promise. `initServices` fires this from a `useEffect` without
+ * awaiting it, so a synchronous "is it ready" check answered false for a moment
+ * after launch, and `usePlanPrices` runs with `retry: false`, so one early call
+ * cached "unavailable" and the paywall showed dashes for the session.
  *
- * Awaiting a shared promise removes the window entirely: whoever needs the SDK
- * first starts the work, everybody else waits on the same result, and `configure`
- * still runs exactly once.
+ * Awaiting a shared promise removes the window: whoever needs the SDK first
+ * starts the work, everybody else waits on the same result.
  */
 export function ensurePurchasesConfigured(): Promise<boolean> {
   configured ??= configureOnce()
@@ -140,21 +129,17 @@ async function configureOnce(): Promise<boolean> {
 /**
  * The identity calls, one at a time and in the order they were made.
  *
- * Both of the functions below are fired and forgotten from the session provider,
- * and each is several awaits deep with a native round trip in the middle. Left to
- * overlap, an account switch reorders them, and each way of losing that race is a
- * real one:
+ * Both functions below are fired and forgotten from the session provider, each
+ * several awaits deep with a native round trip in the middle, and an account
+ * switch reorders them:
  *
  * - A sign-out landing between a log in and the attributes that follow it files
- *   one person's email against whoever the SDK is holding by then, which after a
- *   `logOut` is a fresh anonymous customer and after a second sign-in is somebody
- *   else.
+ *   one person's email against whoever the SDK is holding by then.
  * - A `logOut` completing after the `logIn` it was meant to precede leaves the
- *   SDK anonymous while somebody is signed in, which is the exact failure this
- *   file exists to prevent.
+ *   SDK anonymous while somebody is signed in.
  *
- * Ordering by call rather than by completion costs nothing here, and it is the
- * only ordering that matches what the auth events actually said.
+ * Ordering by call rather than completion costs nothing and matches what the auth
+ * events said.
  */
 let lifecycle: Promise<void> = Promise.resolve()
 
@@ -169,12 +154,10 @@ function inOrder(work: () => Promise<void>): Promise<void> {
 }
 
 /**
- * What RevenueCat is told about the person, beside which account they are.
- *
- * Both are nullable and null is ordinary rather than a failure: an account made
- * through a provider that gave no address has no email, and Mixpanel knows nobody
- * at all in a build that does not send. Written out as a type rather than two
- * optional arguments so a new call site has to decide about each of them.
+ * What RevenueCat is told about the person, beside which account they are. Both
+ * are nullable and null is ordinary: a provider that gave no address has no
+ * email, and Mixpanel knows nobody in a build that does not send. A type rather
+ * than two optional arguments, so a new call site decides about each.
  */
 export type PurchaserTraits = {
   /** The address on the Supabase account, for support to search the dashboard by. */
@@ -186,19 +169,16 @@ export type PurchaserTraits = {
 /**
  * Tell RevenueCat which account is buying, and what we know about them.
  *
- * The webhook depends on the id. `app_user_id` is what arrives at the
- * `revenuecat` edge function, and it is the only thing tying a purchase to a row
- * in `subscriptions`. Left anonymous, every purchase lands as
- * `$RCAnonymousID:...`, the webhook has no account to credit, and somebody who
- * has paid stays behind the paywall for good.
+ * The webhook depends on the id: `app_user_id` is what arrives at the
+ * `revenuecat` edge function and the only thing tying a purchase to a row in
+ * `subscriptions`. Left anonymous, the webhook has no account to credit and
+ * somebody who has paid stays behind the paywall for good.
  *
- * The id is the Supabase uuid and must not become the email. It is tempting,
- * because it would make the dashboard readable, but an address changes and the id
- * it is compared against is the primary key of `subscriptions`. The moment
- * somebody changed their email the SDK would log in as a different customer and a
- * paying user would silently stop being entitled. An email is also guessable, and
- * a guessable app user id plus the public SDK key is enough to ask about somebody
- * else's purchases. The address travels as an attribute below instead.
+ * The id is the Supabase uuid and must not become the email. An address changes,
+ * and the moment somebody changed theirs the SDK would log in as a different
+ * customer and a paying user would stop being entitled. An email is also
+ * guessable, and a guessable app user id plus the public SDK key is enough to ask
+ * about somebody else's purchases.
  */
 export function identifyPurchaser(userId: string, traits: PurchaserTraits): Promise<void> {
   return inOrder(async () => {
@@ -207,26 +187,23 @@ export function identifyPurchaser(userId: string, traits: PurchaserTraits): Prom
       const Purchases = await load()
       await Purchases.logIn(userId)
 
-      // After the log in, never before. An attribute is filed against whichever app
-      // user id the SDK is holding at the time, and before this call that is the
-      // anonymous one the process started with, so an email set first lands on a
-      // customer nobody will ever look up. This is also why the two live in one
-      // function rather than beside it: a second call from the session provider would
-      // race the log in it depends on.
+      // After the log in, never before: an attribute is filed against whichever
+      // app user id the SDK holds at the time, which before this call is the
+      // anonymous one. This is also why the two live in one function rather than
+      // beside it.
       //
-      // Null deletes the attribute, which is the honest answer for an account that has
-      // no address.
+      // Null deletes the attribute, which is honest for an account with no
+      // address.
       await Purchases.setEmail(traits.email)
 
-      // The tie between the two platforms, and the reason it is passed in rather than
-      // assumed. RevenueCat funnels its own purchase events into Mixpanel and files
-      // each one under this attribute, falling back to the app user id when it is not
-      // set. Both are the Supabase uuid today, so the fallback happens to be right, and
-      // "happens to be right" is exactly what stops being true when one side changes.
+      // The tie between the two platforms, passed in rather than assumed.
+      // RevenueCat files the purchase events it forwards to Mixpanel under this
+      // attribute, falling back to the app user id. Both are the Supabase uuid
+      // today, which is what stops being true when one side changes.
       //
-      // Null means Mixpanel was told nothing, and the attribute is then left alone
-      // rather than cleared: claiming a distinct id for a person Mixpanel has never
-      // heard of would file real purchases against a profile with no behaviour on it.
+      // Null means Mixpanel was told nothing, and the attribute is left alone
+      // rather than cleared: a distinct id for a person Mixpanel has never heard
+      // of would file real purchases against a profile with no behaviour on it.
       if (traits.mixpanelDistinctId) {
         await Purchases.setMixpanelDistinctID(traits.mixpanelDistinctId)
       }
@@ -238,11 +215,8 @@ export function identifyPurchaser(userId: string, traits: PurchaserTraits): Prom
 
 /**
  * Forget them on the way out, so the next account on this handset does not
- * inherit the last one's entitlement.
- *
- * Through `inOrder` for the reason given there: this is the call that races the
- * identify before it, and it is the one whose reordering leaves a signed-in
- * person anonymous.
+ * inherit the last one's entitlement. Through `inOrder`, because this is the call
+ * whose reordering leaves a signed-in person anonymous.
  */
 export function forgetPurchaser(): Promise<void> {
   return inOrder(async () => {
@@ -265,20 +239,16 @@ export const PRO_ENTITLEMENT = 'pro'
 /**
  * What the store says this account is entitled to, as RevenueCat's SDK holds it.
  *
- * The second source, and the app needs both. `subscriptions` in Postgres is what
- * the server reads and the only thing that can refuse a request, but it is filled
- * by a webhook, so it lags the purchase by however long RevenueCat takes to
- * deliver one, and in a sandbox it never arrives at all. Read as the sole answer,
- * that gap is a user who has just paid being shown the paywall again on the next
- * tap.
+ * The second source, and the app needs both. `subscriptions` is what the server
+ * reads and the only thing that can refuse a request, but it is filled by a
+ * webhook, so it lags the purchase and in a sandbox never arrives at all. Read
+ * alone, that gap is a user who has just paid being shown the paywall.
  *
  * The SDK knows the moment the store settles, because it holds the receipt it
- * just validated. It is not a claim the client is making about itself, it is the
- * store's own answer cached on the device, so reading it unlocks the buttons
- * without weakening anything.
+ * validated: the store's own answer cached on the device rather than a claim the
+ * client is making about itself.
  *
- * Null means there is nothing to ask: a build with a placeholder key, or one with
- * no RevenueCat pod in it. That is deliberately not the same as "not entitled".
+ * Null means there is nothing to ask, which is not the same as "not entitled".
  */
 export type StoreEntitlement = {
   active: boolean
@@ -296,10 +266,9 @@ export type StoreEntitlement = {
 }
 
 /**
- * Reads the `pro` entitlement out of a customer info payload.
- *
- * Exported for tests, which is the only way to exercise this: the SDK is behind
- * a dynamic import that jest cannot follow.
+ * Reads the `pro` entitlement out of a customer info payload. Exported for tests,
+ * which is the only way to exercise it: the SDK is behind a dynamic import jest
+ * cannot follow.
  */
 export function proEntitlementOf(info: StoreCustomerInfo): StoreEntitlement {
   const pro = info?.entitlements?.active?.[PRO_ENTITLEMENT]
@@ -333,12 +302,9 @@ export async function readStoreEntitlement(): Promise<StoreEntitlement | null> {
 
 /**
  * Calls back whenever RevenueCat's idea of this customer changes, and returns the
- * way to stop.
- *
- * This is what makes a purchase land without a refetch. The SDK fires it on a
- * purchase, a restore, a renewal, an expiry and on its own periodic refresh. It
- * is also the app's earliest warning that the webhook is about to write our own
- * mirror, which is why the subscriber invalidates that query too.
+ * way to stop. This is what makes a purchase land without a refetch, and it is
+ * the earliest warning that the webhook is about to write our own mirror, which
+ * is why the subscriber invalidates that query too.
  *
  * A no-op unsubscribe when the SDK is unusable, so a caller's cleanup is the same
  * shape either way.

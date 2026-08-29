@@ -59,24 +59,14 @@ export default function WelcomeToPro() {
   const { state } = usePlanSummary()
 
   /**
-   * Land on Today, and stop there.
-   *
-   * IT USED TO RAISE THE LOG SHEET AS WELL, and that put a camera in front of
-   * somebody who had just paid. `/log` with no `panel` param does not open on
-   * the four tiles: `openingPanel` falls through to `'camera'`, so the viewfinder
-   * is what a bare push presents. Whatever the user was doing when they hit the
-   * paywall — reading their trends, opening a recipe, finishing onboarding —
-   * they were not asking to photograph a plate, and being handed a live camera
-   * as the first thing Pro does is a demand rather than a reward.
-   *
-   * So the button goes to the diary and the FloatingAction is right there when
-   * they want it. A purchase should return people to the app, not redirect them
-   * into one feature of it.
+   * Land on Today, and stop there. It used to raise the log sheet as well, which
+   * put a camera in front of somebody who had just paid: `/log` with no `panel`
+   * falls through to the viewfinder, and whatever the user was doing when they
+   * hit the paywall, they were not asking to photograph a plate.
    *
    * `enterApp` rather than a bare replace, because this screen is the end of
-   * onboarding as often as it is a purchase made from the app — and a replace
-   * leaves every screen the user walked to get here standing under the diary.
-   * See `useEnterApp`.
+   * onboarding as often as it is a purchase, and a replace leaves every screen
+   * the user walked through standing under the diary. See `useEnterApp`.
    */
   const goToDiary = () => enterApp()
 
@@ -158,22 +148,17 @@ export default function WelcomeToPro() {
 const RING_GROWTH = 0.9
 
 /**
- * The check, arriving.
+ * The check, arriving. It used to be a static squished square, which is the app's
+ * mechanic for a control you press, and this one cannot be pressed: a
+ * confirmation that simply is there is indistinguishable from a screen that was
+ * already there.
  *
- * IT USED TO BE A STATIC SQUISHED SQUARE, which is the app's mechanic for a
- * control you press — and this one cannot be pressed. A confirmation that just
- * IS there is indistinguishable from a screen that was already there: the whole
- * of this page is one beat of "that worked", and a mark that lands is the only
- * part of it that can say so without another sentence.
- *
- * So the mark springs in from nothing, and two rings travel out from under it
- * and fade. The rings run TWICE and stop, rather than repeating: a ring pulsing
- * for as long as the screen is open reads as something still in progress, which
- * is the opposite of what a receipt is for.
+ * So the mark springs in from nothing and two rings travel out and fade. They run
+ * twice and stop, because a ring pulsing for as long as the screen is open reads
+ * as something still in progress.
  *
  * Nothing here closes over anything but shared values and numbers, which is the
- * rule the numpad's frozen ref taught: a worklet freezes the object graph it
- * captures, and a captured object holding mutable state stops being mutable.
+ * rule the numpad's frozen ref taught.
  */
 function SuccessMark() {
   const colors = useThemeColors()

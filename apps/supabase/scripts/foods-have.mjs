@@ -6,22 +6,18 @@
  *   pnpm foods:have --place kopitiam --all
  *   pnpm foods:have --packaged milkis bento
  *
- * The importer will refuse a duplicate whatever anyone does, so this is not
- * a correctness tool — it is a cost one. A research agent handed "Malaysian
- * kuih" with no idea that 140 kuih are already in there spends its whole run
- * rediscovering them, and the import reports 140 skips and nothing gained.
- * Reading this first turns that run into one that only writes down what is
- * missing.
+ * The importer refuses duplicates whatever anyone does, so this is a cost tool
+ * rather than a correctness one. A research agent handed "Malaysian kuih" with no
+ * idea that 140 are already in there spends its run rediscovering them.
  *
- * Packaged goods are excluded by default. They are 97% of the catalogue, none
- * of them is a dish anybody researches, and including them buries the answer.
+ * Packaged goods are excluded by default: they are 97% of the catalogue, none is
+ * a dish anybody researches, and including them buries the answer.
  *
- * But silence about them is its own trap, and it has now caught two rounds: a
- * Korean round wrote Milkis and lost it to a slug collision with a packaged
- * row, and a Japanese one concluded three of its own bento were missing from
- * the catalogue when they were sitting there as `place = 'packaged'`. So when
- * the filter is what hid the answer, this says so and gives the flag rather
- * than reporting a confident zero.
+ * Silence about them is its own trap, and it has caught two rounds: a Korean one
+ * wrote Milkis and lost it to a slug collision with a packaged row, and a
+ * Japanese one concluded three of its bento were missing when they were sitting
+ * there as `place = 'packaged'`. So when the filter is what hid the answer, this
+ * says so and gives the flag rather than reporting a confident zero.
  */
 
 import { d1 } from './lib/d1.mjs'

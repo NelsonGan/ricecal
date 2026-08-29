@@ -1,21 +1,17 @@
 /**
  * What an entry has to carry about the food it is.
  *
- * An entry used to be a foreign key and a quantity: `food_id`, `serving_id`, and
- * every calorie derived at read time by joining the catalogue. The catalogue is
- * in Cloudflare D1 now, and a foreign key cannot cross into another database, so
- * the numbers travel with the entry instead.
+ * An entry used to be a foreign key and a quantity, with every calorie derived at
+ * read time by joining the catalogue. The catalogue is in D1 now and a foreign
+ * key cannot cross into another database, so the numbers travel with the entry.
  *
- * That makes this the shape every write path has to produce, and there are four
- * of them: a dish picked out of search, a recipe, a repeat of an existing entry,
- * and the scan cascade, which builds its own on the server. The three client ones
- * are the builders below.
+ * Four write paths produce this shape: a dish picked out of search, a recipe, a
+ * repeat of an existing entry, and the scan cascade, which builds its own on the
+ * server. The three client ones are the builders below.
  *
- * Builders rather than three inline object literals, because the portion is the
- * part that is easy to get wrong. `base` is per one base serving and
- * `servingFactor` scales it, so a snapshot that puts the chosen portion's figures
- * in `base` and keeps its factor counts the portion twice, silently, and only on
- * the portions that are not 1.0.
+ * Builders rather than inline literals, because the portion is easy to get wrong:
+ * `base` is per one base serving and `servingFactor` scales it, so putting the
+ * chosen portion's figures in `base` counts the portion twice, silently.
  */
 
 import type { ExtraNutrients, Food, IconRef, Macros, Place, Recipe } from './types'
@@ -46,11 +42,9 @@ export type LogSnapshot = {
 
 /**
  * An id, unless it is one this app invented to fill a route with.
- *
- * There are three of those (`ENTRY_FOOD_ID`, `ENTRY_SERVING_ID` and anything
- * under `packet:`) and they exist so a food with no catalogue row behind it can
- * still be addressed and selected. None of them means anything to anybody else,
- * so this is where they stop.
+ * `ENTRY_FOOD_ID`, `ENTRY_SERVING_ID` and anything under `packet:` exist so a
+ * food with no catalogue row can still be addressed, and mean nothing to anybody
+ * else, so this is where they stop.
  */
 function catalogueId(id: string | undefined): string | undefined {
   if (!id || id === ENTRY_FOOD_ID || id === ENTRY_SERVING_ID) return undefined
@@ -58,12 +52,10 @@ function catalogueId(id: string | undefined): string | undefined {
 }
 
 /**
- * A dish out of the catalogue, at the portion the user chose.
- *
- * The serving is looked up by id rather than taken on trust, because the id comes
- * off a screen that may have been showing a different food a moment ago. Falling
- * back to the base serving is the safe direction: a factor of 1 logs the dish at
- * its quoted size, where a missing factor would log it at nothing.
+ * A dish out of the catalogue, at the portion the user chose. The serving is
+ * looked up by id rather than taken on trust, because the id comes off a screen
+ * that may have been showing a different food. Falling back to the base serving
+ * logs the dish at its quoted size, where a missing factor logs it at nothing.
  */
 export function snapshotFromFood(food: Food, servingId?: string): LogSnapshot {
   const serving = food.servings.find((s) => s.id === servingId) ?? food.servings[0]
@@ -87,16 +79,11 @@ export function snapshotFromFood(food: Food, servingId?: string): LogSnapshot {
 }
 
 /**
- * A pot, at one serving of it.
+ * A pot, at one serving of it. `perServing` is the base and the factor is 1, so
+ * the stepper counts servings, which is the unit a recipe is for.
  *
- * `perServing` is the base here and the factor is 1, so the stepper beside the
- * entry counts servings, which is the unit a recipe is for. The detail screen
- * offers half, one, two and the whole pot as quantities against that.
- *
- * No `servingGrams`. A recipe is measured in servings, and while the ingredient
- * list has weights in it, their sum is the raw weight of what went into the pot
- * rather than what comes out of it. Water boils off, and quoting the input as the
- * output would put a number on the row that is wrong for every cooked dish.
+ * No `servingGrams`: the ingredient list's weights sum to what went into the pot
+ * rather than what comes out of it, and water boils off.
  */
 export function snapshotFromRecipe(recipe: Recipe): LogSnapshot {
   return {
@@ -110,12 +97,10 @@ export function snapshotFromRecipe(recipe: Recipe): LogSnapshot {
 }
 
 /**
- * The same thing again: what "repeat yesterday" writes.
- *
- * A straight copy of the snapshot rather than anything derived. `Entry.macros`
- * has already been through the portion and the quantity and been rounded, so
- * dividing it back out to a base would land a calorie or two off the row being
- * repeated, on the one action whose whole promise is that it is the same.
+ * What "repeat yesterday" writes: a straight copy of the snapshot rather than
+ * anything derived. `Entry.macros` has been through the portion and the quantity
+ * and been rounded, so dividing it back out would land a calorie or two off the
+ * row being repeated, on the one action whose promise is that it is the same.
  */
 export function snapshotFromEntry(entry: {
   foodId?: string
@@ -146,20 +131,14 @@ export function snapshotFromEntry(entry: {
 }
 
 /**
- * An entry as the `Food` the detail screen wants, for an entry that has no
- * catalogue row behind it.
+ * An entry as the `Food` the detail screen wants, for an entry with no catalogue
+ * row behind it. The other direction from `snapshotFromEntry`, and it exists
+ * because `food_id` became nullable: an estimate, a rebuilt plate, a typed meal
+ * and a recipe are none of them catalogue rows, and opening one went to
+ * `+not-found`, since `undefined` cannot fill a `[id]` segment.
  *
- * This is the other direction from `snapshotFromEntry`, and it exists because
- * `food_id` became nullable and null became ordinary. A tier-4 estimate, a
- * tier-5 archetype, a plate rebuilt from its own parts, a typed meal and a recipe
- * are none of them catalogue rows, and the detail screen was written when every
- * entry had a food behind it. Opening one of those went to `+not-found`, because
- * `router.push({ params: { id: undefined } })` cannot fill a `[id]` segment.
- *
- * The entry already holds everything the screen reads off a food. The one thing
- * it cannot hold is the other portions: a catalogue food offers "half plate" and
- * "large", and an entry knows only the size it was logged at. So there is exactly
- * one serving here, which is the honest answer.
+ * The entry holds everything the screen reads off a food except the other
+ * portions, so there is exactly one serving here.
  */
 export function foodFromEntry(entry: {
   foodId?: string
@@ -202,23 +181,19 @@ export function foodFromEntry(entry: {
 /**
  * A saved entry's own food, offering the catalogue's other portions.
  *
- * An entry states its own numbers. `base_kcal` and its neighbours are a snapshot
- * and `food_id` is only a note about where they came from, so the catalogue row
- * is not what prices the detail screen. It is fetched for one thing, the other
- * portions, which an entry cannot know.
+ * An entry states its own numbers: `base_kcal` and its neighbours are a snapshot
+ * and `food_id` is a note about where they came from, so the catalogue row is
+ * fetched only for the other portions, which an entry cannot know.
  *
- * Read the other way round, this is the bug it exists to stop. A soy milk logged
- * off its own nutrition panel at 108 kcal opened at 511, priced from an unrelated
- * catalogue row while wearing the entry's own name and photograph, and the day
- * went on showing the 108 the row actually holds. The narrow cause was a
- * `food_id` that reached the route without belonging to the entry; the wide one
- * is that any entry whose catalogue row has since been re-costed had the same
- * disagreement, quietly and with no bad id involved.
+ * The bug it exists to stop: a soy milk logged off its own nutrition panel at
+ * 108 kcal opened at 511, priced from an unrelated catalogue row while wearing
+ * the entry's own name and photograph. The narrow cause was a `food_id` that did
+ * not belong to the entry; the wide one is that any entry whose catalogue row has
+ * since been re-costed had the same disagreement.
  *
  * The portion list is adopted only when it still contains the portion this entry
- * was logged at. A row that has been re-cut since would otherwise drop that
- * portion off the picker, and the screen would fall through to `servings[0]` and
- * reprice the meal on arrival.
+ * was logged at, or the screen falls through to `servings[0]` and reprices the
+ * meal on arrival.
  */
 export function withCataloguePortions(entry: Food, catalogue: Food | null | undefined): Food {
   const own = entry.servings[0]
@@ -235,12 +210,10 @@ export function withCataloguePortions(entry: Food, catalogue: Food | null | unde
 }
 
 /**
- * The id a route carries for an entry with no catalogue food behind it.
- *
- * A `[id]` segment cannot be empty and cannot be `undefined`, so an entry that
- * points at nothing still needs something to put there. It is deliberately not a
- * plausible id: `useFood` skips it, and anything that reaches the catalogue with
- * it would be a bug rather than a miss.
+ * The id a route carries for an entry with no catalogue food behind it. A `[id]`
+ * segment cannot be empty or `undefined`, and this is deliberately not a
+ * plausible id: `useFood` skips it, so anything reaching the catalogue with it is
+ * a bug rather than a miss.
  */
 export const ENTRY_FOOD_ID = 'entry'
 
@@ -248,17 +221,13 @@ export const ENTRY_FOOD_ID = 'entry'
 export const ENTRY_SERVING_ID = 'entry:base'
 
 /**
- * The id a scanned packet travels under, for the same reason and with a different
- * answer behind it.
+ * The id a scanned packet travels under. A packaged product lives in D1's
+ * `product` table keyed by the barcode and has no `foods.id`, so the scanner had
+ * nothing for the `[id]` segment and the app said "page not found" on a packet it
+ * had just identified.
  *
- * A packaged product lives in D1's `product` table, keyed by the barcode. It has
- * no `foods.id` and never will, so the scanner had nothing to put in the `[id]`
- * segment and the app said "page not found" on a packet it had just identified
- * correctly.
- *
- * Carrying the code instead makes the food detail screen work unchanged: the
- * route is addressable, `useFood` knows to ask the scanner's endpoint rather than
- * the catalogue's, and the answer caches under the packet like any other dish.
+ * Carrying the code makes the detail screen work unchanged: the route is
+ * addressable, `useFood` asks the scanner's endpoint, and the answer caches.
  */
 const PACKET_PREFIX = 'packet:'
 

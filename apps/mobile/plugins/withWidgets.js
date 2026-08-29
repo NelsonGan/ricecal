@@ -11,26 +11,23 @@ const {
 /**
  * Puts the WidgetKit extension into the generated Xcode project.
  *
- * `ios/` is build output — see the Continuous Native Generation note in
- * `.gitignore` — so a widget extension cannot simply be committed the way it
- * would be in a bare React Native app. Everything Xcode needs has to be
- * produced at prebuild time, from sources that ARE tracked:
+ * `ios/` is build output, so a widget extension cannot be committed the way it
+ * would be in a bare React Native app: everything Xcode needs is produced at
+ * prebuild time from tracked sources.
  *
  *   widgets/ios/*.swift                 the extension itself
  *   modules/ricecal-widgets/ios/…Store  the file the app and the widget share
  *   assets/icons/**                     the four icons the widgets draw
  *   node_modules/@expo-google-fonts     Baloo 2 and Nunito
  *
- * Android needs none of this. Its widgets are an `AppWidgetProvider` and some
- * layouts, and both live inside the local Expo module, where Gradle finds them
- * and the manifest merger registers them. A widget extension is a separate
- * BINARY with its own bundle, which is the whole reason this file exists.
+ * Android needs none of this: its widgets are an `AppWidgetProvider` and some
+ * layouts inside the local Expo module, where Gradle finds them. A widget
+ * extension is a separate binary with its own bundle.
  *
- * THE APP GROUP IS DERIVED, NOT CONSTANT. `group.<bundleId>` follows the build
- * variant, because a dev client's bundle id carries a `.dev` suffix and an App
- * Group has to be a real entitlement on whichever app is running. It is written
- * into the entitlements of both targets and into both Info.plists, which is how
- * `RiceCalWidgetStore` finds it without hardcoding anything.
+ * The App Group is derived rather than constant. `group.<bundleId>` follows the
+ * build variant, because a dev client's bundle id carries a `.dev` suffix. It is
+ * written into the entitlements of both targets and both Info.plists, which is
+ * how `RiceCalWidgetStore` finds it without hardcoding anything.
  */
 
 /** The extension's target name, its folder under `ios/`, and its product name. */
@@ -52,12 +49,10 @@ const ICONS = [
 ]
 
 /**
- * The three faces, by the PostScript names `WidgetTheme.swift` asks for.
- *
- * Copied out of node_modules rather than out of `assets`, because that is where
- * the app's own five come from too — `theme/fonts.ts` loads them at runtime
- * from the same packages. A widget cannot load a font asynchronously, so these
- * are embedded in the extension and declared in `UIAppFonts`.
+ * The three faces, by the PostScript names `WidgetTheme.swift` asks for. Copied
+ * out of node_modules rather than `assets`, because that is where the app's own
+ * five come from too. A widget cannot load a font asynchronously, so these are
+ * embedded in the extension and declared in `UIAppFonts`.
  */
 const FONTS = [
   ['@expo-google-fonts/baloo-2/800ExtraBold/Baloo2_800ExtraBold.ttf', 'Baloo2-ExtraBold.ttf'],
@@ -71,14 +66,10 @@ const widgetBundleId = (bundleId) => `${bundleId}.widgets`
 
 /**
  * The three derived names, exported because `app.config.ts` needs the same
- * answers and must not work them out again.
- *
- * EAS reads the extension's bundle id and entitlements out of app config, not
- * out of the Xcode project — `ios/` is build output and does not exist when
- * credentials are resolved. So the target this plugin creates has to be
- * declared there as well, and a second copy of `${bundleId}.widgets` written
- * by hand is a credential for a bundle id that no longer matches the one being
- * built the first time either moves.
+ * answers and must not work them out again. EAS reads the extension's bundle id
+ * and entitlements out of app config rather than the Xcode project, which does
+ * not exist when credentials are resolved, so a second hand-written copy is a
+ * credential for a bundle id that stops matching the first time either moves.
  */
 module.exports = function withWidgets(config) {
   const bundleId = config.ios?.bundleIdentifier
@@ -101,13 +92,10 @@ module.exports = function withWidgets(config) {
 }
 
 /**
- * Copies the extension's sources, its assets and its two plists into `ios/`.
- *
- * Runs on every prebuild rather than only the first, so editing a widget and
- * rebuilding is enough. The Xcode surgery below is what only happens once — a
- * NEW source file therefore needs a `--clean` prebuild to be picked up, which
- * is written on the guard rather than solved, because the alternative is a mod
- * that tears a target out of a project it did not create.
+ * Copies the extension's sources, assets and two plists into `ios/`. Runs on
+ * every prebuild, so editing a widget and rebuilding is enough. The Xcode surgery
+ * below happens once, so a new source file needs a `--clean` prebuild: the
+ * alternative is a mod that tears a target out of a project it did not create.
  */
 function withWidgetFiles(config, { appGroup, scheme }) {
   return withDangerousMod(config, [
@@ -154,14 +142,10 @@ function withWidgetFiles(config, { appGroup, scheme }) {
 }
 
 /**
- * The Swift the extension compiles: its own sources, plus the one file it
- * shares with the app.
- *
- * The store is COPIED rather than referenced where it lives. Xcode can compile
- * one file into two targets, but the second target's reference would have to
- * point up and out of `ios/` into `modules/`, which is a path that only holds
- * while the two directories are siblings. A copy into build output cannot go
- * stale: it is rewritten on every prebuild.
+ * The Swift the extension compiles: its own sources plus the one file it shares
+ * with the app. The store is copied rather than referenced, because the reference
+ * would have to point out of `ios/` into `modules/`, a path that only holds while
+ * the two are siblings. A copy into build output is rewritten every prebuild.
  */
 function swiftSources(projectRoot) {
   const own = path.join(projectRoot, 'widgets/ios')
@@ -174,12 +158,9 @@ function swiftSources(projectRoot) {
 }
 
 /**
- * A font inside a workspace package, without assuming a layout.
- *
- * pnpm does not flatten `node_modules`, so `apps/mobile/node_modules/@expo-google-fonts/...`
- * is a symlink into a content-addressed store and the path above the app is not
- * one of these packages' homes. `require.resolve` follows whatever the installer
- * actually did.
+ * A font inside a workspace package, without assuming a layout. pnpm does not
+ * flatten `node_modules`, so the path is a symlink into a content-addressed
+ * store; `require.resolve` follows whatever the installer did.
  */
 function resolveFont(projectRoot, request) {
   return require.resolve(request, { paths: [projectRoot] })
@@ -205,13 +186,10 @@ function withAppInfoPlist(config, appGroup) {
 }
 
 /**
- * Creates the extension target, once.
- *
- * The guard is the whole of the idempotency story. `expo prebuild` without
- * `--clean` applies its mods to the project that is already there, so a second
- * run would otherwise add a second target with the same name — and Xcode's
- * failure for that is a build that succeeds and installs an app with two
- * identical widget bundles in it.
+ * Creates the extension target, once. The guard is the whole idempotency story:
+ * `expo prebuild` without `--clean` applies its mods to the project already
+ * there, so a second run adds a second target with the same name, and Xcode's
+ * failure for that is a build that succeeds with two identical widget bundles.
  */
 function withWidgetTarget(config, { bundleId, appGroup }) {
   return withXcodeProject(config, (cfg) => {
@@ -224,13 +202,10 @@ function withWidgetTarget(config, { bundleId, appGroup }) {
     const resources = [...ICONS.map(([, to]) => to), ...FONTS.map(([, to]) => to)]
 
     /**
-     * The navigator group, so the extension is browsable in Xcode.
-     *
-     * Basenames, because the group carries the folder in its own `path`. The
-     * build phases below name the same files as `RiceCalWidgets/<name>`, which
-     * resolves from the project root — so each file ends up with two references
-     * pointing at one path. Only the build phase's is in a phase, so nothing is
-     * compiled twice; the group's exists to be clicked on.
+     * The navigator group, so the extension is browsable in Xcode. Basenames,
+     * because the group carries the folder in its own `path`, while the build
+     * phases name the same files from the project root. Only the build phase's
+     * reference is in a phase, so nothing is compiled twice.
      */
     const group = project.addPbxGroup([...sources, ...resources], TARGET, TARGET)
     // The project's own root group, by reference rather than by scanning for
@@ -272,12 +247,10 @@ function withWidgetTarget(config, { bundleId, appGroup }) {
 }
 
 /**
- * The extension's build settings, over the defaults `addTarget` writes.
- *
- * Deliberately explicit about the deployment target and the Swift version
- * rather than inheriting: the app's are set by `expo-build-properties` on the
- * app target, and a target created by hand inherits the PROJECT's, which is not
- * the same thing.
+ * The extension's build settings, over the defaults `addTarget` writes. Explicit
+ * about the deployment target and the Swift version rather than inheriting: the
+ * app's are set by `expo-build-properties` on the app target, and a hand-created
+ * target inherits the project's instead.
  */
 function applyBuildSettings(project, target, { bundleId, appGroup, version }) {
   const listId = project.pbxNativeTargetSection()[target.uuid].buildConfigurationList

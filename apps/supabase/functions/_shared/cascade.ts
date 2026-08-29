@@ -11,16 +11,12 @@
 // the dish tiers. The parent's macros are the catalogue sum of its parts, so the
 // diary and the breakdown cannot disagree.
 //
-// THERE IS NO FLOOR UNDER TIER 4, and there used to be. Tier 5 classified the
-// plate into one of sixty seeded generic rows and, failing that, wrote a
-// terminal "Mixed meal" at 600 kcal that needed no model and no network. The
-// argument for it was that a diary which refuses a meal is worse than one that
-// logs it roughly. That was wrong in the direction that matters: the roughly
-// logged meal is indistinguishable, on the day and in every total built from
-// it, from one the app actually recognised — so a failed scan quietly became
-// 600 kcal the user never ate and never knew to check. `resolveItem` returns
-// null when nothing fits, the endpoints write nothing, and the row on Today
-// says it could not be read and offers another go.
+// There is no floor under tier 4, and there used to be: tier 5 wrote a terminal
+// "Mixed meal" at 600 kcal that needed no model and no network. A roughly logged
+// meal is indistinguishable on the day, and in every total built from it, from
+// one the app actually recognised, so a failed scan quietly became calories the
+// user never ate and never knew to check. `resolveItem` returns null when
+// nothing fits, and the row on Today offers another go.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { type CatalogueFood, searchFoods } from './catalogue.ts'
@@ -48,12 +44,10 @@ import {
 } from './portion.ts'
 
 /**
- * A food, as everything downstream of resolution needs it.
- *
- * This is the snapshot an entry keeps: a foreign key cannot cross into D1, so the
- * numbers travel with the entry rather than being joined back at read time.
- *
- * `id` is nullable. A tier-4 estimate is numbers rather than a row.
+ * A food, as everything downstream of resolution needs it. The snapshot an
+ * entry keeps: a foreign key cannot cross into D1, so the numbers travel with
+ * the entry rather than being joined back at read time. `id` is null for a
+ * tier-4 estimate, which is numbers rather than a row.
  */
 export type FoodRow = {
   /** Soft reference into the catalogue, for provenance. Null for an estimate. */
@@ -80,9 +74,9 @@ export type Ingredient = {
   quantity: number
   displayLabel: string | null
   /**
-   * What one of the part weighs, when the model said. Carried through to the row so
-   * the breakdown can show "6 x 25 g" rather than "x 6": the weight is what a
-   * person can check against the plate in front of them.
+   * What one of the part weighs, when the model said. Carried to the row so the
+   * breakdown reads "6 x 25 g" rather than "x 6", which is what a person can
+   * check against the plate in front of them.
    */
   grams: number | null
 }
@@ -99,8 +93,8 @@ export type Resolved = {
 
 /**
  * Whatever was thrown, as one readable line. Half of what reaches a catch here
- * is a PostgREST error — a plain object, which `String()` renders as
- * "[object Object]" and a trace then carries all the way to a bug report.
+ * is a PostgREST error, which is a plain object and renders as "[object
+ * Object]".
  */
 export const describe = (error: unknown): string => {
   if (error instanceof Error) return error.message
@@ -115,29 +109,25 @@ export const describe = (error: unknown): string => {
 }
 
 // Quarter steps, not two decimals. The rescale ratio is one rough estimate
-// divided by another, so "1.08 servings" is precision the data does not have —
-// it reads as hallucination on the row. Quarters match how people actually
-// talk about portions, and anything near 1 IS 1.
+// divided by another, so "1.08 servings" is precision the data does not have.
+// Quarters match how people talk about portions, and anything near 1 is 1.
 export const clampQuantity = (q: number): number =>
   Math.round(Math.min(3.0, Math.max(0.5, q)) * 4) / 4
 
 /**
- * The same clamp for a fix-by-typing edit: wider, and in twentieths.
- *
- * `clampQuantity` rounds a scan to quarters because its ratio is one rough
- * estimate divided by another. A refine factor comes from what the person typed,
- * and needs the finer step: "more like 400 calories" against a 365 kcal entry is
- * a factor of 1.096, which quarters round back to no change at all.
+ * The same clamp for a fix-by-typing edit: wider, and in twentieths. A refine
+ * factor comes from what the person typed, so it needs the finer step: "more
+ * like 400 calories" against a 365 kcal entry is 1.096, which quarters round
+ * back to no change at all.
  */
 export const refineQuantity = (q: number): number =>
   Math.round(Math.min(10, Math.max(0.25, q)) * 20) / 20
 
 /**
- * A query, folded the way the catalogue folds it, or the empty string when there
- * is nothing left worth asking about.
- *
- * An approximation of the Worker's own `normalize`. That one decides what
- * matches; this only decides whether a round trip is worth making.
+ * A query, folded the way the catalogue folds it, or the empty string when
+ * nothing is left worth asking about. An approximation of the Worker's own
+ * `normalize`: that one decides what matches, this only decides whether a round
+ * trip is worth making.
  */
 const usable = (q: string | null | undefined): string => {
   const norm = (q ?? '')
@@ -173,22 +163,19 @@ export type SearchRow = {
 }
 
 /**
- * The catalogue search, shaped to what the cascade needs.
- *
- * It carries the macros as well as the calories, so a tier that has chosen a row
- * does not need a second query to price it.
+ * The catalogue search, shaped to what the cascade needs. It carries the macros
+ * as well as the calories, so a tier that has chosen a row needs no second query
+ * to price it.
  */
 async function search(q: string, limit: number): Promise<SearchRow[]> {
-  // `?? []` on purpose: an unreachable catalogue and an empty one are the same
-  // thing to the cascade, which has four more tiers below this one and a floor that
-  // needs no network at all. The distinction matters to the person typing in the
-  // search panel, and `data/catalogue.ts` is where it is made.
+  // An unreachable catalogue and an empty one are the same thing here, since
+  // there are tiers below this one either way. The distinction matters to the
+  // person typing in the search panel; `data/catalogue.ts` makes it.
   const foods = (await searchFoods(q, limit)) ?? []
 
-  // The Worker already shapes a food the way `food_details` did, including
-  // `default_serving_id` and the default portion's label and weight — so this
-  // renames rather than derives. Deriving it here as well is how the two ends
-  // of one seam start disagreeing about which portion is the base.
+  // The Worker already shapes a food the way `food_details` did, so this
+  // renames rather than derives. Deriving it again is how the two ends of one
+  // seam start disagreeing about which portion is the base.
   return foods
     .map(
       (f: CatalogueFood): SearchRow => ({
@@ -212,14 +199,10 @@ async function search(q: string, limit: number): Promise<SearchRow[]> {
 }
 
 /**
- * What one serving of a row weighs: the stated weight first, and the label only
- * as a fallback.
- *
- * Reading the label alone switches the weight path off for exactly the rows that
- * have the number. `servingGrams` answers for "100 g" and "1 bowl (400 g)" and
- * gives up on "1 plate", which is how nearly every curated Malaysian dish states
- * its portion, so a half plate of char kuey teow fell through to the calorie
- * ratio and was logged as a whole one.
+ * What one serving of a row weighs: the stated weight first, the label only as a
+ * fallback. `servingGrams` answers for "100 g" and "1 bowl (400 g)" and gives up
+ * on "1 plate", which is how nearly every curated Malaysian dish states its
+ * portion, so reading the label alone logged a half plate as a whole one.
  */
 const rowGrams = (row: SearchRow): number | null =>
   row.serving_grams ?? servingGrams(row.serving_label)
@@ -241,16 +224,13 @@ const asFood = (r: SearchRow): FoodRow => ({
 })
 
 /**
- * What one unit of a candidate row costs, and how much confidence that figure
- * deserves.
+ * What one unit of a candidate row costs, and how much confidence that deserves.
  *
- * By weight: the row states what its serving weighs, so it knows its own energy
- * density and the price of the model's `grams` is multiplication. Nothing here
- * depends on the model's calorie guess, which is the point.
+ * By weight: the row states what its serving weighs, so pricing the model's
+ * `grams` is multiplication and nothing depends on the model's calorie guess.
  *
  * By unit: the row is countable, so its figure divided by that count is what one
- * costs. This stays the answer for the two thirds of the catalogue measured in
- * cups and spoons.
+ * costs. The answer for the two thirds of the catalogue measured in cups.
  */
 type Priced = {
   row: SearchRow
@@ -271,12 +251,10 @@ export const priceRow = (row: SearchRow, grams: number | null): Priced => {
 }
 
 /**
- * Grams of protein this row would put on the plate for a part of this size.
- *
- * The same two paths `priceRow` takes, because it has to be the same arithmetic.
- * The second path is the one that matters here: a row with no stated weight is
- * handed over whole, which is how a part named "steamed white rice" came to carry
- * 27.5 g of protein.
+ * Grams of protein this row would put on the plate for a part of this size. The
+ * same two paths `priceRow` takes, because it has to be the same arithmetic. A
+ * row with no stated weight is handed over whole, which is how a part named
+ * "steamed white rice" came to carry 27.5 g of protein.
  */
 const rowProteinFor = (row: SearchRow, grams: number | null): number | null => {
   if (row.protein_g === null) return null
@@ -286,40 +264,28 @@ const rowProteinFor = (row: SearchRow, grams: number | null): number | null => {
 }
 
 /**
- * A row that is one of the thing, so an entry can point straight at it and let
- * the catalogue's own figure stand.
- *
- * Both halves matter. `units === 1` says the row is not priced by the ten, and
- * `!byWeight` says its figure was not converted, since a row read by weight has
- * been rescaled to the model's grams and no longer says what its own serving
- * costs.
+ * A row that is one of the thing, so an entry can point at it and let the
+ * catalogue's figure stand. `units === 1` says the row is not priced by the ten,
+ * and `!byWeight` says its figure was not rescaled to the model's grams.
  */
 const isWholeUnit = (fit: Priced): boolean => !fit.byWeight && fit.units === 1
 
 /**
- * What one of this part weighs when the row it matched IS one of the thing, and
+ * What one of this part weighs when the row it matched is one of the thing, and
  * null when the row is a helping like any other.
  *
- * `bestFit` prices a row by weight whenever both sides state one, which is right
- * for a helping and wrong for an article: the catalogue knows what one
- * Filet-O-Fish weighs and a photograph does not, so scaling its 330 kcal up to
- * the model's guess of 180 g charged 418 for a burger the catalogue had exactly
- * right. Answering the weight here rather than a boolean lets the caller both
- * re-price the row as the whole unit it is and put the article's own weight on
- * the ingredient, so the row does not read "180 g" beside a figure for 142.
+ * `bestFit` prices by weight whenever both sides state one, which is right for a
+ * helping and wrong for an article: the catalogue knows what a Filet-O-Fish
+ * weighs and a photograph does not, so scaling its 330 kcal up to a guessed
+ * 180 g charged 418. Returning the weight rather than a boolean lets the caller
+ * re-price the row and label the ingredient with the article's own weight.
  *
- * Upwards only, and only as far as the helping cap already allows, so the two
- * hand off cleanly: at or under `PORTION_OVER_SERVING` the article's own weight
- * settles it, and past that the part is no longer one of them and the cap takes
- * over. Under the article's weight nothing happens either, because pricing a
- * smaller-looking portion by weight is what the path below already does and a
- * weight is only ever allowed to bound a figure downwards.
+ * Upwards only, and only as far as the helping cap allows, so the two hand off
+ * cleanly at `PORTION_OVER_SERVING`. Under the article's weight nothing happens,
+ * because a weight may only bound a figure downwards.
  *
  * The dish tier never had this bug: `SAME_PORTION_LOW`/`HIGH` let the row stand
- * whenever the two weights are within 0.7-1.4 of each other, so the same burger
- * photographed as a whole dish was logged at 330 all along. The breakdown was the
- * one path with nothing to say that a small disagreement about weight is a
- * disagreement about weight rather than a different amount of food.
+ * when the two weights are within 0.7-1.4 of each other.
  */
 export const oneArticleGrams = (fit: Priced | null, grams: number | null): number | null => {
   if (!fit || !grams || !namesOneArticle(fit.row.serving_label)) return null
@@ -330,58 +296,45 @@ export const oneArticleGrams = (fit: Priced | null, grams: number | null): numbe
 
 /**
  * The rows a part of a meal may be priced from: two checks about identity, where
- * everything in `bestFit` below is about size.
+ * everything in `bestFit` is about size.
  *
- * A part is not priced from a food made of something else. Every other gate here
- * is a calorie gate, so a rice component matched "Rice, Chicken (Nasi Ayam)" at
- * 7 g of protein per 100 g against plain rice's 2.7, and an omelette was priced
- * from pan-fried Canadian bacon, which fit the calories to three percent and
- * tripled the protein. `rowIsMeatier` compares protein's share of energy, the
- * row's against the model's.
+ * A part is not priced from a food made of something else. Every other gate is a
+ * calorie gate, so an omelette was priced from pan-fried Canadian bacon, which
+ * fit the calories to three percent and tripled the protein. `rowIsMeatier`
+ * compares protein's share of energy.
  *
  * A part is not charged for a whole plate. A row with no stated weight cannot be
- * asked for a helping: `priceRow` hands back its entire figure, so a 600 kcal
- * "1 plate" row would charge one component for the whole meal.
+ * asked for a helping, so a 600 kcal "1 plate" row would charge one component
+ * for the whole meal.
  *
- * The two are not redundant. The composition check misses a row whose composition
- * matches the part it is swallowing: a nasi lemak against its own coconut rice is
- * 11% against 6%, well inside the gate.
+ * Neither check is redundant: a nasi lemak against its own coconut rice is 11%
+ * protein against 6%, well inside the composition gate.
  *
- * The plate rule is scoped to weightless rows rather than to every plate-shaped
- * label. Unscoped it also threw out "Rice, Coconut Milk (Nasi Lemak)", which is
- * just the rice, a plate being how a composition table states a household
- * portion.
+ * The plate rule is scoped to weightless rows rather than every plate-shaped
+ * label, which also threw out "Rice, Coconut Milk (Nasi Lemak)".
  *
- * A part with no usable row falls back to the model's own figures, so rejecting
- * one costs an estimate rather than a missing part.
- *
- * The dish tier does not use this and must not: a dish is allowed to contain
- * meat.
+ * A rejected part falls back to the model's figures, so this costs an estimate
+ * rather than a missing part. The dish tier does not use it, and must not: a
+ * dish is allowed to contain meat.
  */
 export function componentCandidates(
   rows: SearchRow[],
-  /**
-   * What the model said ONE unit of the part holds, and what it weighs — a
-   * `VisionComponent`, passed whole so the two shapes cannot drift apart.
-   */
+  /** What the model said one unit of the part holds, and what it weighs. */
   part: { protein_g: number | null; kcal: number; grams: number | null } | null = null,
 ): SearchRow[] {
-  // A weight is NOT required here any more. The share test does not need one, and
-  // insisting on it switched the whole check off for exactly the rows that state
-  // no weight either — which are the ones charged in full.
+  // No weight required: the share test does not need one, and insisting on it
+  // switched the check off for exactly the rows charged in full.
   const claim =
     part && part.protein_g !== null ? { protein: part.protein_g, kcal: part.kcal } : null
 
   return rows.filter((row) => {
-    // Would this row be charged WHOLE? `priceRow` converts by weight only when
-    // both sides have one, so either side missing means the part pays the row's
-    // full figure — and a full plate is not a part of a meal.
+    // Would this row be charged whole? `priceRow` converts by weight only when
+    // both sides have one, and a full plate is not a part of a meal.
     if ((!part?.grams || !rowGrams(row)) && isWholeMealServing(row.serving_label)) return false
 
-    // Composition, which needs no weight from either side: a share of energy is
-    // scale free, so a row quoting "1 serving" of something is judged exactly like
-    // one quoting 100 g. Only the size of the DISAGREEMENT needs the arithmetic,
-    // and `rowProteinFor` does it the way the pricing will.
+    // Composition needs no weight from either side: a share of energy is scale
+    // free. Only the size of the disagreement needs arithmetic, and
+    // `rowProteinFor` does it the way the pricing will.
     const contributed = rowProteinFor(row, part?.grams ?? null)
     if (!claim || contributed === null) return true
     return !rowIsMeatier(
@@ -395,55 +348,50 @@ export function componentCandidates(
 /**
  * The candidate closest in size to what the model described, or null.
  *
- * The gate is physical rather than a band around the model's calorie figure. A
+ * The gate is physical rather than a band around the model's calorie figure: a
  * row is eligible if what it charges for this many grams is a believable energy
- * density at all; only then does the model's figure act as a tie-break.
+ * density, and only then is the model's figure a tie-break. As a band it turned
+ * one bad guess into a bad entry, excluding the catalogue's own 36 kcal a satay
+ * stick because the model had said 180.
  *
- * As a calorie band it was the mechanism by which one bad guess became a bad
- * entry: told a satay stick was 180 kcal, the band ran 45-360 and excluded the
- * catalogue's own 36 kcal a stick, and four skewers were logged at 720.
- *
- * Identity is `componentCandidates`' business, not this function's.
+ * Identity is `componentCandidates`' business.
  */
 export function bestFit(rows: SearchRow[], grams: number | null, kcal: number): Priced | null {
   const priced = rows.map((row) => priceRow(row, grams))
   if (kcal <= 0) {
-    // No price to compare against — a part the model named and weighed but did
-    // not cost. Relevance order is the only ranking left, so take the top hit
-    // that is not absurd for the weight, and nothing at all if none of them
-    // qualifies: falling back to the top row regardless is how 50 g of
-    // meatball became a 720 kcal row, at fourteen calories a gram.
+    // A part the model named and weighed but did not price. Relevance order is
+    // the only ranking left, so take the top hit that is not absurd for the
+    // weight and nothing otherwise: falling back to the top row regardless is
+    // how 50 g of meatball became a 720 kcal row.
     if (!grams) return priced[0] ?? null
     return priced.find((c) => plausibleForGrams(c.kcal, grams)) ?? null
   }
   return (
     priced
       .filter((candidate) => {
-        // Physically possible for something of this weight. Catches the row
-        // that is a different food under a similar name — search ranks by
-        // NAME, so "white rice" can top-rank rice flour.
+        // Physically possible for this weight, which catches the different
+        // food under a similar name: search ranks by name, so "white rice" can
+        // top-rank rice flour.
         if (grams && !plausibleForGrams(candidate.kcal, grams)) return false
-        // And in the same order of magnitude as what the model said, which is worth
-        // something again now that the model's figure has been made to agree with its own
-        // weight. Wide, because the point is to throw out the row that is not this food
-        // at all: 40 g of lettuce matched a 140 kcal row and put a salad on the plate at
-        // fourteen times what the model, correctly, said a salad costs.
+        // And in the same order of magnitude as the model said, which is worth
+        // something now the model's figure agrees with its own weight. Wide,
+        // because the point is to throw out a row that is not this food at all:
+        // 40 g of lettuce matched a 140 kcal row.
         const ceiling = grams ? 2.5 : 2
         return candidate.kcal >= kcal * 0.25 && candidate.kcal <= kcal * ceiling
       })
-      // Closest in log space, so half-sized and double-sized rows lose to one
-      // that is nearly right in either direction.
+      // Closest in log space, so half- and double-sized rows lose to one that
+      // is nearly right in either direction.
       .sort((a, b) => Math.abs(Math.log(a.kcal / kcal)) - Math.abs(Math.log(b.kcal / kcal)))[0] ??
     null
   )
 }
 
 /**
- * A food the catalogue could not answer for, as numbers rather than as a row.
- *
- * Pure: no id, no round trip, no failure mode. It used to create a shared `foods`
- * row so two people photographing the same unlisted dish shared one estimate,
- * which was never worth much, since a guess reused is still a guess.
+ * A food the catalogue could not answer for, as numbers rather than a row. Pure:
+ * no id, no round trip, no failure mode. It used to create a shared `foods` row
+ * so two people photographing the same unlisted dish shared one estimate, which
+ * was never worth much: a guess reused is still a guess.
  */
 function estimateRow(input: {
   name: string
@@ -482,15 +430,14 @@ async function recordMisses(db: SupabaseClient, scanId: string, queries: string[
 /**
  * Tier 2: the plate as its parts, folded into one entry.
  *
- * Each component carries the model's own sizing, and the weight is what makes a
- * catalogue row comparable at all, since search ranks by name and "white rice"
- * can top-rank rice flour at 578 kcal. When no hit fits, the model's figures
- * price that component as an estimate, so one unsearchable side dish does not
- * kill the breakdown.
+ * The model's per-part weight is what makes a catalogue row comparable, since
+ * search ranks by name. When no hit fits, the model's figures price that
+ * component as an estimate, so one unsearchable side dish does not kill the
+ * breakdown.
  *
- * Everything is per single unit, with the count in the ingredient's quantity. Two
- * wings are a 125 kcal row at quantity 2, not a 250 kcal row at quantity 1: the
- * second shape is the same calories and a useless stepper.
+ * Everything is per single unit with the count in the quantity: two wings are a
+ * 125 kcal row at quantity 2, not a 250 kcal row at quantity 1, which is the
+ * same calories and a useless stepper.
  */
 async function resolveByComponents(
   db: SupabaseClient,
@@ -501,17 +448,13 @@ async function resolveByComponents(
   if (item.components.length < 2) return null
 
   /**
-   * How many of the whole described thing there were.
-   *
-   * The prompt asks for multiplicity on the components and the item's own count is
-   * meant to be 1, and it is not always: "two roti canai with dhal" came back as
+   * How many of the whole described thing there were. The prompt asks for
+   * multiplicity on the components, but "two roti canai with dhal" came back as
    * one item at count 2 with both parts priced for a single plate.
    *
-   * Folding it into every part is the only reading that keeps the parent equal to
-   * the sum of its parts, which is what `food_log_details` requires: the parts
-   * branch of its coalesce does not multiply by the entry's own quantity.
-   *
-   * A count below one is how a part portion arrives: "half a nasi lemak" is 0.5.
+   * Folding it into every part keeps the parent equal to the sum of its parts,
+   * which `food_log_details` requires: the parts branch of its coalesce does not
+   * multiply by the entry's own quantity. A count below one is a part portion.
    */
   const meals = item.count > 0 ? item.count : 1
 
@@ -524,30 +467,27 @@ async function resolveByComponents(
     grams: number | null
   }> = []
 
-  // One part's search failing is not the plate's problem: it means no catalogue
-  // answer for that part, which the model's own figures below already know how to
-  // price. A throw here used to take the whole stage with it.
+  // One part's search failing is not the plate's problem: the model's figures
+  // below price it. A throw here used to take the whole stage with it.
   //
-  // One at a time, deliberately. Fired together, five of these contend for a small
-  // instance and four of the five time out; run in turn each gets the whole box and
-  // a search answers in tens of milliseconds.
+  // One at a time. Fired together, five of these contend for a small instance
+  // and four time out; in turn, each answers in tens of milliseconds.
   for (const component of item.components) {
     const q = usable(component.name)
     if (!q) continue
 
     const rows = await search(q, 5).catch((error) => {
       // A PostgREST error is a plain object, which `String()` renders as
-      // "[object Object]" — the least useful thing a trace can say.
+      // "[object Object]".
       const message = `[cascade] components: search "${q}" failed: ${describe(error)}`
       console.error(message)
       trace?.push(message)
       return [] as SearchRow[]
     })
 
-    // Which of these rows can be THIS PART at all, before anything asks how big
-    // it is. It runs before `bestFit` rather than after for the obvious reason:
-    // rejected afterwards, the part would keep whichever wrong row ranked best
-    // and lose the runner-up that might have been the right food.
+    // Which rows can be this part at all, before anything asks how big it is.
+    // Rejected after `bestFit`, the part would keep whichever wrong row ranked
+    // best and lose the runner-up that might have been the right food.
     const candidates = componentCandidates(rows, component)
     if (candidates.length < rows.length) {
       trace?.push(
@@ -556,15 +496,13 @@ async function resolveByComponents(
       )
     }
 
-    // The catalogue row that best describes ONE of this part, at this weight.
-    // Catalogue servings are whatever the source recorded — "Chicken Satay
-    // (Satay Ayam)" is 365 kcal for TEN STICKS, and "Chicken, fried" is per
-    // 100 g — so a row's own figure is almost never the price of one of the
-    // thing on the plate. `bestFit` converts before it compares.
+    // The catalogue row that best describes one of this part, at this weight.
+    // Catalogue servings are whatever the source recorded ("Chicken Satay" is
+    // 365 kcal for ten sticks), so a row's own figure is almost never the price
+    // of one of the thing on the plate. `bestFit` converts before it compares.
     const ranked = bestFit(candidates, component.grams, component.kcal)
-    // A row that names one whole article and states its weight is one of the
-    // thing, however the ranking priced it, so it is re-priced as one before
-    // anything below asks whether it is.
+    // A row naming one whole article and stating its weight is one of the
+    // thing, however the ranking priced it, so it is re-priced as one.
     const article = oneArticleGrams(ranked, component.grams)
     const fit = ranked && article ? priceRow(ranked.row, null) : ranked
     if (ranked && article) {
@@ -575,17 +513,15 @@ async function resolveByComponents(
     }
 
     if (fit && isWholeUnit(fit)) {
-      // A row that IS one of the thing. The quantity is the count and nothing
-      // else: the row's own figure is what one of them costs, and rescaling it
-      // to chase the model's guess is how a single scoop of rice ended up
-      // logged as "0.75 ×" — a fraction nobody can act on and no evidence
-      // supports. Where the two disagree the catalogue wins, silently.
+      // A row that is one of the thing, so the quantity is the count: rescaling
+      // it to chase the model's guess is how a single scoop of rice was logged
+      // as "0.75 ×". Where the two disagree the catalogue wins.
       parts.push({
         food: asFood(fit.row),
         quantity: component.count * meals,
         label: component.name.slice(0, 120),
-        // The article's weight when that is what settled it, so the row cannot
-        // read "180 g" beside a figure the catalogue quotes for 142.
+        // The article's weight when that settled it, so the row cannot read
+        // "180 g" beside a figure the catalogue quotes for 142.
         grams: article ?? component.grams,
         kcal: fit.row.kcal * component.count * meals,
       })
@@ -593,15 +529,13 @@ async function resolveByComponents(
     }
 
     if (fit) {
-      // A row that is ten of the thing, or a hundred grams of it. Pointing at it would
-      // put "0.8" on a plate of eight skewers, so the ingredient gets a per-unit row of
-      // its own, priced by converting the catalogue figure rather than by asking the
-      // model again.
+      // A row that is ten of the thing, or a hundred grams of it. Pointing at
+      // it would put "0.8" on a plate of eight skewers, so the ingredient gets a
+      // per-unit row priced by converting the catalogue figure.
       //
-      // The amount is capped first. A label that names a helping and states what it
-      // weighs is the catalogue's own answer to "how much is one of these". Re-priced
-      // rather than re-picked: picking again with the capped weight could choose a
-      // different row, whose serving weight would cap it somewhere else again.
+      // The amount is capped first, by the row's own helping. Re-priced rather
+      // than re-picked: picking again with the capped weight could choose a
+      // different row, which would cap it somewhere else again.
       const capped = namesAPortion(fit.row.serving_label)
         ? boundGramsToServing(component.grams, rowGrams(fit.row))
         : component.grams
@@ -628,35 +562,28 @@ async function resolveByComponents(
         food: unitRow,
         quantity: component.count * meals,
         label: component.name.slice(0, 120),
-        // The capped weight, not the claimed one. A row reading "220 g" while
-        // priced as 180 would be a contradiction the user can see.
+        // The capped weight, not the claimed one: "220 g" beside a figure for
+        // 180 is a contradiction the user can see.
         grams: capped,
         kcal: unitRow.kcal * component.count * meals,
       })
       continue
     }
 
-    // A miss is a gap in the catalogue, and "nothing this part could use" is not the
-    // same thing. "chicken rice" answers eight rows and not one of them can be the
-    // rice under a chicken rice, so that is a real gap and the widening backlog
-    // should hear about it. A row turned down over its composition is not: it exists,
-    // and it is right about some other food. Recording those filled the backlog with
-    // queries the catalogue already answers well.
+    // A miss is a gap in the catalogue; "nothing this part could use" is not.
+    // A row turned down over its composition exists and is right about some
+    // other food, and recording those filled the widening backlog with queries
+    // the catalogue already answers well.
     const noAnswer = !rows.length || rows.every((r) => isWholeMealServing(r.serving_label))
     if (noAnswer) await recordMisses(db, scanId, [q])
 
-    // No catalogue answer at this size: the model's own figures become an estimate
-    // for the component. Macros are the model's when it gave them, else an
-    // Atwater-consistent default split; either way the ingredient exists and the
-    // breakdown survives.
-    //
-    // The figure used here is the reconciled one, already made to agree with the
-    // part's own weight in `shapeVision`, so the fallback is bounded even though
-    // nothing checked it against a real portion.
+    // No catalogue answer at this size: the model's figures become an estimate.
+    // Macros are the model's when it gave them, else an Atwater-consistent
+    // split. The figure is the reconciled one from `shapeVision`, already made
+    // to agree with the part's own weight, so the fallback is bounded.
     if (component.kcal <= 0) {
-      // Neither the catalogue nor the model will say what this is worth. It is
-      // dropped rather than invented, and the plate is one part short, which
-      // `parts.length < 2` below may yet decide is fatal.
+      // Neither the catalogue nor the model will price this. Dropped rather
+      // than invented, which `parts.length < 2` below may decide is fatal.
       trace?.push(`[cascade] components: "${component.name}" has no price anywhere`)
       continue
     }
@@ -675,11 +602,8 @@ async function resolveByComponents(
       protein: macros.protein,
       fat: macros.fat,
     })
-    // Priced for ONE, so the count is the quantity here too. That used to need
-    // an argument — the shared row was deduped on name AND size, so a part
-    // priced for a different-sized version of itself would not have been
-    // reused. Nothing is shared now, so the row is this part at this size by
-    // construction.
+    // Priced for one, so the count is the quantity. Nothing is shared any more,
+    // so the row is this part at this size by construction.
     parts.push({
       food: guess,
       quantity: component.count * meals,
@@ -700,17 +624,13 @@ async function resolveByComponents(
     sum.kcal += part.kcal
   }
 
-  // A breakdown has to be a breakdown of this meal.
+  // A breakdown has to be a breakdown of this meal. The parts and the band are
+  // two answers from the same model, and the breakdown is the one that is wrong
+  // when they disagree: a basket of wings came back as celery and a pot of dip,
+  // priced at 160 kcal against the model's own 780-900 band.
   //
-  // The parts and the calorie band are two answers from the same model, and when
-  // they contradict each other the breakdown is the one that is wrong, because the
-  // band is about the meal and the list is about whatever the model chose to
-  // enumerate. What it leaves out is the main food: a basket of wings came back as
-  // celery and a pot of dip, and the entry was priced at 160 kcal against the
-  // model's own 780-900 band.
-  //
-  // Tolerances are loose, because a band is not a measurement either. Failing this
-  // drops to the dish tier, which prices the whole plate at once.
+  // Tolerances are loose, because a band is not a measurement either. Failing
+  // this drops to the dish tier, which prices the whole plate at once.
   if (item.kcal_low > 0 && sum.kcal < item.kcal_low * 0.6) {
     const message = `[cascade] components: parts total ${Math.round(sum.kcal)} kcal against a meal the model put at ${item.kcal_low}-${item.kcal_high} — the main food is missing from the breakdown`
     console.error(message)
@@ -723,10 +643,8 @@ async function resolveByComponents(
     trace?.push(message)
     return null
   }
-  // Macros summed off the parts themselves. This was a sixth round trip until
-  // the resolved rows started carrying their own numbers: the parts were
-  // pointers, so the only way to add up what they were made of was to go and
-  // read the rows back by id.
+  // Summed off the parts themselves. This was a sixth round trip until the
+  // resolved rows started carrying their own numbers.
   for (const part of parts) {
     sum.carbs += part.food.carbs * part.quantity
     sum.protein += part.food.protein * part.quantity
@@ -758,11 +676,9 @@ async function resolveByComponents(
 }
 
 /**
- * Three durian are three, not "1 cup".
- *
- * When the photo is several of one countable thing, the entry's portion is the
- * count and the food has to be priced for one of them, or the row says "1 cup"
- * over three seeds and the stepper beside it counts cups.
+ * Three durian are three, not "1 cup". When the photo is several of one
+ * countable thing, the entry's portion is the count and the food is priced for
+ * one of them, or the stepper beside the row counts cups.
  */
 async function resolveByCount(
   db: SupabaseClient,
@@ -772,16 +688,15 @@ async function resolveByCount(
 ): Promise<Resolved | null> {
   if (item.count < 2) return null
   // The band divided by the count is what the model thinks one of them costs.
-  // Where it also said what one WEIGHS, that figure gets the same reconciling
-  // a component's does: ten wings banded at 1800-2200 is 200 kcal each, which
-  // is more than twice what 60 g of fried chicken can hold.
+  // Where it also said what one weighs, that figure is reconciled the way a
+  // component's is: ten wings banded at 1800-2200 is 200 kcal each, more than
+  // twice what 60 g of fried chicken can hold.
   let perUnit = Math.round((item.kcal_low + item.kcal_high) / 2 / item.count)
   if (item.grams) perUnit = Math.min(Math.round(item.grams * MAX_KCAL_PER_G), perUnit)
   if (perUnit <= 0) return null
 
   // The local name first, then the generic one: "har gow" is in no catalogue
-  // this app ships with, and "shrimp dumplings" is — at 230 kcal for six,
-  // which is what three of them should be priced from.
+  // this app ships with and "shrimp dumplings" is.
   const tried = new Set<string>()
   const queries = [item.specific_query, item.name, item.generic_query]
     .map(usable)
@@ -796,10 +711,9 @@ async function resolveByCount(
     if (rows.length) break
   }
 
-  // Same conversion the breakdown uses, for the same reason: "Durian, raw" is
-  // priced per cup and a durian is not a cup. With the item's own weight the
-  // catalogue's per-100g rows become answerable too, which is most of what the
-  // catalogue holds for a single ingredient.
+  // The same conversion the breakdown uses: "Durian, raw" is priced per cup and
+  // a durian is not a cup. With the item's own weight the per-100 g rows become
+  // answerable too, which is most of what the catalogue holds per ingredient.
   const fit = bestFit(rows, item.grams, perUnit)
 
   if (fit && isWholeUnit(fit)) {
@@ -811,9 +725,8 @@ async function resolveByCount(
     }
   }
 
-  // Either a row measured in cups or in grams, or nothing usable. All end in a
-  // row priced for one — from the catalogue when there is one, from the model
-  // when not.
+  // A row measured in cups or grams, or nothing usable. All end in a row priced
+  // for one, from the catalogue where there is one and the model otherwise.
   const scale = fit && fit.row.kcal > 0 ? fit.kcal / fit.row.kcal : 1
   const share = (value: number | null) =>
     value === null ? 0 : Math.round(Number(value) * scale * 10) / 10
@@ -827,9 +740,8 @@ async function resolveByCount(
       })
     : estimateRow({ name: item.name, kcal: perUnit, ...defaultMacros(perUnit) })
   if (!fit) {
-    // Worth recording: this is the tier where the catalogue had nothing at any
-    // size and the count is priced from the model alone, which is the weakest
-    // answer this path can give and the one a trace should be able to explain.
+    // The catalogue had nothing at any size, so the count is priced from the
+    // model alone: the weakest answer this path can give.
     trace?.push(`[cascade] count: no catalogue row for "${item.name}", priced from the model`)
   }
   if (!rows.length) await recordMisses(db, scanId, [q])
@@ -841,14 +753,10 @@ async function resolveByCount(
  * How far two estimates of the same portion may differ before the row is treated
  * as a different size of the dish.
  *
- * The model's grams and the catalogue's grams are two independent guesses and
- * neither was weighed. Held to 15%, ordinary disagreement read as a size
+ * Both weights are guesses. Held to 15%, ordinary disagreement read as a size
  * mismatch: a mee goreng priced at 657 kcal for 400 g was rescaled to 1.25
- * servings and logged at 821.
- *
- * A genuine mismatch is not subtle (a per-100 g row against a plateful, a bag of
- * ten against one) and clears this window easily, while a half portion still
- * falls outside it.
+ * servings and logged at 821. A genuine mismatch clears this window easily, and
+ * a half portion still falls outside it.
  */
 const SAME_PORTION_LOW = 0.7
 const SAME_PORTION_HIGH = 1.4
@@ -872,9 +780,8 @@ async function resolveByDish(
 
   let candidates: SearchRow[] = []
   const missed: string[] = []
-  // Specific first, then generic, then the head noun — the queries are already
-  // ordered that way, so the first that answers is the most specific one the
-  // catalogue holds.
+  // Ordered specific, generic, head noun, so the first that answers is the most
+  // specific one the catalogue holds.
   for (const q of queries) {
     candidates = await search(q, 5)
     if (candidates.length) break
@@ -882,8 +789,8 @@ async function resolveByDish(
   }
   await recordMisses(db, scanId, missed)
 
-  // Zero rows and "the verifier rejected all of them" are ONE outcome: this
-  // tier has no answer, so fall through rather than settling for a near miss.
+  // Zero rows and "the verifier rejected all of them" are one outcome: this
+  // tier has no answer, so fall through rather than settle for a near miss.
   let chosen: SearchRow | null = null
   if (candidates.length) {
     // A verifier that failed is "no match", and the tier below takes over.
@@ -892,46 +799,41 @@ async function resolveByDish(
   }
   if (!chosen) return null
 
-  // The model's name for the plate, worn over the matched row. The numbers
-  // stay the catalogue's; the LABEL is the model's, because imported row
-  // names are written for databases, not diaries — "MEAL KIT, KOREAN FRIED
-  // CHICKEN WITH SWEET GOCHUJANG SAUCE" is the right macros wearing the
-  // wrong name. Skipped when the two already read the same.
+  // The model's name for the plate, worn over the matched row: the numbers stay
+  // the catalogue's, and imported row names are written for databases rather
+  // than diaries. Skipped when the two already read the same.
   const label = usable(item.name) === usable(chosen.name) ? null : item.name.slice(0, 120)
 
-  // What was eaten, by weight, against what one serving of the row weighs. Only
-  // both or nothing: a ratio of two weights is a conversion, and a ratio of a
-  // weight and a guess is a guess.
+  // What was eaten, by weight, against what one serving of the row weighs. Both
+  // or nothing: a ratio of two weights is a conversion, and a ratio of a weight
+  // and a guess is a guess.
   //
   // `item.grams` is one unit and `item.count` is how many, so the numerator is
-  // their product. Weighing one durian against a 100 g row and logging that would
-  // put three of them on the diary as a third of one.
+  // their product: one durian against a 100 g row would log three of them as a
+  // third of one.
   const servingWeight = rowGrams(chosen)
   const byWeight = item.grams && servingWeight ? (item.grams * item.count) / servingWeight : null
 
   // A row the verifier says is this dish, at one portion.
   //
-  // The gate here used to be the model's calorie range, and that had it backwards:
+  // The gate used to be the model's calorie range, which had it backwards:
   // identity is what a vision model is good at and calories are what it is worst
-  // at. A plate of apple slices came back "400-500 kcal", so every sensible apple
-  // row looked wrong and the cascade fell through to the model's own figure. Within
-  // a factor of two and a half either way the row is simply taken.
+  // at. A plate of apple slices came back "400-500 kcal", so every sensible
+  // apple row looked wrong. Within a factor of 2.5 the row is simply taken.
   const ratio = chosen.kcal > 0 ? llmMid / chosen.kcal : 1
 
-  // The whole sizing decision, in one line, because it is the one thing about a
-  // scan that cannot be reconstructed afterwards. The entry records the portion
-  // it landed on and nothing about how: a plate logged at one serving looks
-  // identical whether the weights agreed, the weights were missing, or the
-  // calorie ratio was the only evidence there was. Three different bugs.
+  // The sizing decision in one line, because it is the one thing about a scan
+  // that cannot be reconstructed afterwards: a plate logged at one serving looks
+  // identical whether the weights agreed, were missing, or the calorie ratio was
+  // the only evidence there was.
   trace?.push(
     `[cascade] dish "${chosen.name}": model ${item.grams ?? '?'}g x${item.count} vs row ` +
       `${servingWeight ?? '?'}g — byWeight ${byWeight === null ? 'n/a' : byWeight.toFixed(2)}, ` +
       `ratio ${ratio.toFixed(2)} (${llmMid} vs ${chosen.kcal})`,
   )
-  // A weight settles it before the calorie ratio gets a say. "100 g" of a dish
-  // against a 450 g plate of it is 4.5 servings whatever either party thinks
-  // the plate costs, and the ratio would have called the same row a size
-  // mismatch or a match depending on a number the model is bad at.
+  // A weight settles it before the calorie ratio gets a say: "100 g" of a dish
+  // against a 450 g plate is 4.5 servings whatever either party thinks it
+  // costs.
   if (byWeight !== null && (byWeight < SAME_PORTION_LOW || byWeight > SAME_PORTION_HIGH)) {
     return {
       tier: 3,
@@ -944,10 +846,9 @@ async function resolveByDish(
     return { tier: 1, food: asFood(chosen), quantity: 1, displayLabel: label }
   }
 
-  // Further out, the row is a different SIZE of the right thing — a per-piece
-  // row against a plateful, or a whole cake against a slice — which is what
-  // quantity is for. Still bounded: one photo is one plate, and `clampQuantity`
-  // will not claim more than three of anything.
+  // Further out, the row is a different size of the right thing, which is what
+  // quantity is for. Still bounded: `clampQuantity` will not claim more than
+  // three of anything.
   if (item.confidence >= 0.5) {
     return {
       tier: 3,
@@ -960,20 +861,16 @@ async function resolveByDish(
 }
 
 /**
- * A photographed nutrition panel, taken at its word.
- *
- * No search, no verifier, no estimate. The cascade below exists to work out
- * numbers nobody wrote down, and here the manufacturer did. Nothing is written to
- * the catalogue: a panel read once is this meal's evidence, not everybody's.
+ * A photographed nutrition panel, taken at its word. No search, no verifier, no
+ * estimate: the cascade exists to work out numbers nobody wrote down, and here
+ * the manufacturer did. Nothing reaches the catalogue, because a panel read once
+ * is this meal's evidence rather than everybody's.
  */
 export async function resolveByLabel(label: NutritionLabel): Promise<Resolved | null> {
-  // A close-up of the panel alone has no product name in it, and the row must not
-  // be called after the table or after the model's way of shrugging. Two shapes to
-  // catch: the heading copied out as if it were the food ("Nutrition Facts"), and a
-  // stand-in for not knowing ("Unidentified Food Product", which is what a real
-  // scan came back with). The prompt asks for null in that case; this is the belt
-  // to its braces, because there are endless ways to write "I could not read it"
-  // and only one null.
+  // A close-up of the panel has no product name in it, so the row must not be
+  // named after the table ("Nutrition Facts") or after the model shrugging
+  // ("Unidentified Food Product", from a real scan). The prompt asks for null;
+  // this is the belt to its braces.
   const unnamed =
     /^(nutrition|nutritional)\s*(facts|information|panel)?$|\b(unidentified|unknown|unnamed|generic)\b/i
   const name = unnamed.test(label.name.trim()) ? 'Packaged food' : label.name
@@ -984,14 +881,14 @@ export async function resolveByLabel(label: NutritionLabel): Promise<Resolved | 
     carbs: Math.round(label.carbs_g * 10) / 10,
     protein: Math.round(label.protein_g * 10) / 10,
     fat: Math.round(label.fat_g * 10) / 10,
-    // The reason somebody photographs a panel rather than the food: these are
-    // printed there and nowhere else the app can reach.
+    // Why somebody photographs a panel rather than the food: these are printed
+    // there and nowhere else the app can reach.
     fibre: label.fibre_g,
     sugar: label.sugar_g,
     sodium: label.sodium_mg,
   })
-  // One serving, as the panel defines a serving. Somebody who ate two of them
-  // says so with the stepper — which is now counting the packet's own unit.
+  // One serving, as the panel defines one. The stepper is now counting the
+  // packet's own unit.
   return { tier: 1, food, quantity: 1, displayLabel: name }
 }
 
@@ -1008,22 +905,18 @@ async function resolveByEstimate(
   }
 
   /**
-   * And in the same world as the meal the vision call described.
+   * And in the same world as the meal the vision call described. Atwater only
+   * asks whether an answer agrees with itself, which a proportionally huge one
+   * does: a fried chicken tray came back at 3,260 kcal with matching macros
+   * against a photo the same model had bounded at 1,100-1,250.
    *
-   * Atwater only asks whether an answer agrees with itself, which a proportionally
-   * huge one does: a Korean fried chicken tray came back at 3,260 kcal with macros
-   * to match against a photo the same model had bounded at 1,100-1,250.
-   *
-   * The band is still not shown to the estimator. Anchored with "expected around
-   * 400-500 kcal" the model answered 450 for a plate of apple slices and 120
-   * without.
+   * The band is still not shown to the estimator, which would anchor it.
    */
   const inBand = (n: Nutrition): boolean =>
     item.kcal_high <= 0 || (n.kcal <= item.kcal_high * 2 && n.kcal >= item.kcal_low * 0.4)
 
   // One retry: a self-contradicting answer once may be noise, twice is the
-  // model not knowing this dish. Failing both is the end of the cascade, and
-  // the scan is reported as a failure rather than rounded to a generic.
+  // model not knowing this dish. Failing both ends the cascade.
   let nutrition: Nutrition | null = null
   for (let attempt = 0; attempt < 2 && !nutrition; attempt++) {
     const candidate = await estimateNutrition(item, mock, meter)
@@ -1049,14 +942,13 @@ async function resolveByEstimate(
 }
 
 /**
- * The full cascade for one item. Each stage guards itself, so one stage's crash
- * cannot skip the ones below it. Returns null when every tier declined, which
- * is a scan that failed rather than a scan with a rough answer.
+ * The full cascade for one item. Each stage guards itself, so one crash cannot
+ * skip the ones below it. Null when every tier declined, which is a failed scan
+ * rather than a rough answer.
  *
- * Nothing here reads the model's `scene` label. Whether a plate has parts is
- * decided by whether it listed parts: a banana leaf of satay came back "single"
- * with three components on it, and the label sent it to a one-row match for 365
- * kcal against the 525 its parts add up to.
+ * Nothing here reads the model's `scene` label: whether a plate has parts is
+ * decided by whether it listed parts. A banana leaf of satay came back "single"
+ * with three components on it, and the label sent it to a one-row match.
  */
 export async function resolveItem(
   db: SupabaseClient,
@@ -1067,11 +959,10 @@ export async function resolveItem(
   trace?: string[],
 ): Promise<Resolved | null> {
   const note = (stage: string, error: unknown) => {
-    // Every failure here is a tier failing, and the tier below takes over. That is
-    // only true because the daily quota is claimed at the top of the endpoint: while
-    // it was claimed per model request, running out arrived through this function
-    // like any other error and was retried by every tier below, so somebody who was
-    // owed an explanation got a guess instead.
+    // Every failure here is a tier failing and the tier below taking over, which
+    // is only safe because the daily quota is claimed at the top of the
+    // endpoint. Claimed per model request, running out arrived here like any
+    // other error and was retried by every tier below.
     const message = `[cascade] ${stage}: ${describe(error)}`
     console.error(message)
     trace?.push(message)
@@ -1084,9 +975,9 @@ export async function resolveItem(
       return null
     })
   }
-  // Several of one thing: the count belongs in the portion, not in a breakdown
-  // of a plate that has no parts. Only reached when decomposition declined,
-  // which is the case for three durian and not for a tray of fried chicken.
+  // Several of one thing: the count belongs in the portion rather than in a
+  // breakdown of a plate with no parts. Only reached when decomposition
+  // declined, which is the case for three durian and not for a chicken tray.
   if (!resolved && item.count >= 2) {
     resolved = await resolveByCount(db, scanId, item, trace).catch((error) => {
       note('count stage threw', error)
@@ -1133,18 +1024,16 @@ export async function writeEntry(
     suggestedEdits: string[]
     /**
      * How the meal was described. A photographed plate and a typed one run the
-     * identical cascade and land in the identical row shape, so this column is the
-     * only place the difference survives.
+     * same cascade into the same row shape, so this column is the only place the
+     * difference survives.
      */
     source: 'camera' | 'text'
     /**
      * The drawing the model picked for a typed meal, out of our own set.
      *
-     * `food_logs_one_picture` allows a row a photograph or a drawing and not both,
-     * which is not a constraint to work around here: a typed meal has no photograph
-     * by definition, and a photographed one has the better picture already. Passing
-     * an icon alongside a `photoPath` is a caller bug, so the insert drops it rather
-     * than letting the database refuse the whole entry.
+     * `food_logs_one_picture` allows a photograph or a drawing and not both.
+     * Passing an icon alongside a `photoPath` is a caller bug, so the insert
+     * drops it rather than letting the database refuse the whole entry.
      */
     icon?: { set: string; name: string } | null
   },
@@ -1155,13 +1044,12 @@ export async function writeEntry(
     .from('food_logs')
     .insert({
       user_id: input.userId,
-      // Soft now: no foreign key, and null for a tier-4 estimate. Kept for
-      // provenance and for a future job that re-snapshots against the
-      // catalogue, not for anything that reads this row today.
+      // Soft: no foreign key, and null for a tier-4 estimate. Kept for
+      // provenance rather than for anything that reads this row today.
       food_id: resolved.food.id,
       serving_id: resolved.food.serving_id,
-      // The snapshot. This is what the entry is worth, and it is the ONLY thing
-      // that says so — `food_log_details` has no catalogue left to join.
+      // The snapshot, and the only thing that says what the entry is worth:
+      // `food_log_details` has no catalogue left to join.
       item_name: resolved.food.name,
       item_place: resolved.food.place,
       base_kcal: Math.round(resolved.food.kcal),
@@ -1172,9 +1060,8 @@ export async function writeEntry(
       base_sugar_g: resolved.food.sugar,
       base_sodium_mg: resolved.food.sodium,
       serving_label: resolved.food.servingLabel,
-      // Always the base serving. The cascade picks a food, never a portion of
-      // one — the size it decided on is carried by `quantity`, which is what
-      // the stepper beside the entry adjusts.
+      // Always the base serving. The cascade picks a food rather than a portion
+      // of one, and the size it decided on is carried by `quantity`.
       serving_factor: 1,
       serving_grams: resolved.food.servingGrams,
       log_date: input.logDate,
@@ -1200,9 +1087,8 @@ export async function writeEntry(
     name: resolved.displayLabel ?? resolved.food.name,
     quantity: resolved.quantity,
     // The parts when there are parts, exactly as `food_log_details` reads it.
-    // The parent row is a reused estimate that may be priced a little either
-    // way, so quoting it here put a number in the "your plate is counted"
-    // notification that the diary row underneath did not show.
+    // Quoting the parent instead put a number in the notification that the diary
+    // row underneath did not show.
     kcal: ingredients.length
       ? ingredients.reduce((sum, part) => sum + part.kcal, 0)
       : Math.round(resolved.food.kcal * resolved.quantity),
@@ -1236,8 +1122,8 @@ export async function writeIngredients(
       position: index,
     })),
   )
-  // A failed breakdown never fails the entry: the parent's numbers stand on
-  // their own, and partial parts must not be left behind.
+  // A failed breakdown never fails the entry, but partial parts must not be
+  // left behind.
   if (error) {
     await db.from('food_log_ingredients').delete().eq('food_log_id', foodLogId)
     return []

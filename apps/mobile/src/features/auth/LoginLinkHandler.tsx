@@ -6,18 +6,17 @@ import { useToast } from '@/ui'
 import { useAuthMessage } from './useAuthMessage'
 
 /**
- * Watches for the login link coming back into the app.
+ * Watches for the login link coming back into the app. Renders nothing; it is
+ * here for the side effect.
  *
- * Renders nothing; it is here for the side effect. A link can land at any moment
- * — the app cold-starting from the mail, or coming forward from the background
- * while the user is looking at any screen at all — so listening has to happen
- * above the navigator rather than on the screen that sent the mail. There is not
- * necessarily a screen: the mail may well be opened days later.
+ * A link can land at any moment, on a cold start from the mail or from the
+ * background, so listening happens above the navigator rather than on the screen
+ * that sent the mail: the mail may well be opened days later.
  *
- * It has to sit under `ToastProvider`, because the one thing it has to be able to
- * do is say that a link had expired. `SessionProvider` is above the toast, which
- * is why this is not folded into it — and it does not need to be, since
- * `onAuthStateChange` picks the new session up on its own.
+ * It sits under `ToastProvider`, because the one thing it has to do is say that a
+ * link had expired. `SessionProvider` is above the toast, which is why this is not
+ * folded into it, and it need not be since `onAuthStateChange` picks the new
+ * session up on its own.
  */
 export function LoginLinkHandler() {
   // `useLinkingURL`, not the deprecated `useURL`: it returns the initial URL

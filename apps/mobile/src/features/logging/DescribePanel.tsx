@@ -13,23 +13,19 @@ export type DescribePanelProps = {
 /**
  * Typing the meal, inside the sheet the user opened it from.
  *
- * The third way to log, and the one that covers what the other two cannot: a
- * plate already eaten, a meal in a dark restaurant, a drink nobody photographs,
- * and anything the catalogue has no single row for. Search asks the user to
- * find a name the database already knows; this asks them to say what they ate.
+ * The third way to log, covering what the other two cannot: a plate already
+ * eaten, a dark restaurant, a drink nobody photographs, anything the catalogue
+ * has no single row for. Search asks for a name the database knows; this asks
+ * what they ate.
  *
- * MULTILINE, AND THAT IS THE POINT. A meal is "nasi lemak with fried chicken
- * and a teh tarik", and a one-line box that scrolls sideways teaches people to
- * type "nasi lemak" and stop — which logs a third of a lunch. Three lines of
- * room, and an example in the placeholder that is a whole meal with a drink on
- * the end.
+ * Multiline, because a meal is "nasi lemak with fried chicken and a teh tarik"
+ * and a one-line box teaches people to type "nasi lemak" and stop. Three lines of
+ * room, and a placeholder that is a whole meal with a drink on the end.
  *
- * The placeholder is the ONLY instruction. A line of hint text under the field
- * said the same thing again in the abstract, and prose explaining an example
- * that already demonstrates itself is prose nobody reads.
+ * The placeholder is the only instruction: a hint line under the field said the
+ * same thing in the abstract.
  *
- * Either way the sheet closes on it and the wait belongs on the row on Today,
- * not on a spinner in a sheet the user is finished with.
+ * The sheet closes on send, and the wait belongs on the row on Today.
  */
 export function DescribePanel({ onSubmit, autoFocus = false }: DescribePanelProps) {
   const { t } = useTranslation(['logging', 'common'])

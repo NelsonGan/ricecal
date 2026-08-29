@@ -5,17 +5,14 @@ import { useReportLinks } from '../useReportLinks'
 /**
  * Where a report notification goes when it is tapped.
  *
- * Unit-tested rather than walked on a device, because the tap itself cannot be
- * driven there: an iOS simulator dismisses a pushed banner instead of launching
- * the app from it about as often as not, so the one thing that would prove this
- * end to end is the one thing the simulator will not do reliably. What CAN be
- * pinned is everything either side of the OS — that both kinds route, that
- * nothing else does, and that the launch response is answered once.
+ * Unit-tested rather than walked on a device, because an iOS simulator dismisses
+ * a pushed banner instead of launching the app from it about as often as not.
+ * What can be pinned is everything either side of the OS: that both kinds route,
+ * that nothing else does, and that the launch response is answered once.
  *
- * The last of those is the one that bites. `getLastNotificationResponseAsync`
- * returns the launching tap every time it is asked, not once, so a hook that
- * re-ran on a remount would navigate again — over whatever the user had opened
- * in between.
+ * The last of those bites. `getLastNotificationResponseAsync` returns the
+ * launching tap every time it is asked, not once, so a hook that re-ran on a
+ * remount would navigate again over whatever the user had opened in between.
  */
 
 // `mock`-prefixed, which is the one naming rule a jest factory's closure has:

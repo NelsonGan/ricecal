@@ -36,26 +36,21 @@ export type EntryListProps = {
    */
   onDismissEntry?: (entry: Entry) => void
   /**
-   * Whether any row is parked open with its Delete showing.
-   *
-   * For a screen that draws something over this list: Today's floating log
-   * button lands on top of a revealed Delete and takes the tap. See
-   * `SwipeRow`'s `onOpenChange`. Counted rather than passed straight through,
-   * because nothing stops two rows being open at once.
+   * Whether any row is parked open with its Delete showing, for a screen that
+   * draws over this list: Today's floating log button lands on a revealed Delete
+   * and takes the tap. Counted rather than passed through, because nothing stops
+   * two rows being open at once.
    */
   onSwipeOpenChange?: (open: boolean) => void
 }
 
 /**
- * Everything logged today, in one list, in the order it was eaten.
+ * Everything logged today, in one list, in the order it was eaten, which is why
+ * the detail line carries the time: it is the only thing saying where in the day
+ * a row belongs.
  *
- * Which is why the detail line carries the time. It is the only thing saying where
- * in the day a row belongs, and it is the more useful half of what the meal headings
- * were doing.
- *
- * Nothing here looks a dish up. `food_log_details` returns each entry with its name,
- * its illustration and its macros already costed, so a row is one object and the
- * list is one loop.
+ * Nothing here looks a dish up. `food_log_details` returns each entry with its
+ * name, illustration and macros already costed.
  */
 export function EntryList({
   day,
@@ -69,13 +64,12 @@ export function EntryList({
 
   /**
    * How many rows are parked open, so "any" survives one closing as another
-   * opens — a boolean forwarded straight from each row would flicker shut on
-   * the closing one and leave the overlay back over the opening one.
+   * opens: a boolean forwarded from each row would flicker shut on the closing
+   * one.
    *
-   * A ref plus a call rather than state: nothing HERE renders differently, and
-   * a re-render of the whole list on every swipe would be a cost paid for
-   * nobody. `SwipeRow` reports closed on unmount, so a deleted row cannot
-   * leave the count above zero.
+   * A ref plus a call rather than state, since nothing here renders differently.
+   * `SwipeRow` reports closed on unmount, so a deleted row cannot leave the count
+   * above zero.
    */
   const openRows = useRef(0)
   /** What the screen above was last told, so it hears only the changes. */
@@ -252,26 +246,20 @@ function EntryRow({
 const PHRASE_MS = 4200
 
 /**
- * How long the bar takes to reach its ceiling.
- *
- * Paced for the slow end of a real scan, not the fast end. A photo is a vision
- * call, a handful of catalogue searches and often a second model call — twenty
- * seconds is ordinary and thirty happens. At eighteen seconds the bar was
- * parked at the ceiling for the half of the wait that felt longest, which is
- * the one thing a progress bar must not do.
+ * How long the bar takes to reach its ceiling, paced for the slow end of a real
+ * scan: twenty seconds is ordinary and thirty happens. At eighteen the bar was
+ * parked at the ceiling for the half of the wait that felt longest.
  */
 const FILL_MS = 45000
 
 /**
- * A snap being scanned: the photo, a line of rotating status text, and a bar
- * that fills most of the way and waits.
+ * A snap being scanned: the photo, a line of rotating status text, and a bar that
+ * fills most of the way and waits.
  *
- * The progress is honest theatre. The scan is three model calls whose timing
- * this client cannot observe, so the bar eases toward — never reaches — full:
- * what it communicates is "working, not stuck", which a static spinner said
- * too weakly for something that can take ten seconds. The row is replaced
- * wholesale by the real entry when the scan lands, so the bar never has to
- * finish; the phrases rotate so the wait reads as stages rather than a hang.
+ * The progress is honest theatre. The client cannot observe the scan's timing, so
+ * the bar eases toward full without reaching it, which says "working, not stuck"
+ * more strongly than a spinner. The row is replaced wholesale when the scan
+ * lands, so the bar never has to finish.
  */
 function AnalysingRow({
   entry,
@@ -287,13 +275,10 @@ function AnalysingRow({
   const photo = storedImageSource(entry.photoPath, photoUrl, entry.localPhotoUri)
 
   /**
-   * Whether this row is a typed meal, asked of the ENTRY and not of `mode`.
-   *
-   * `mode` is about the progress bar — which stages to name, and whether to
-   * draw a bar at all — and `resumed` answers that for a row read back from
-   * storage whichever way it was logged. Asking it what the row IS put a
-   * camera and "Reading your plate" over a sentence somebody typed, every time
-   * the app restarted mid-scan.
+   * Whether this row is a typed meal, asked of the entry rather than `mode`.
+   * `mode` is about the progress bar, and `resumed` answers that for a row read
+   * back from storage whichever way it was logged, so asking it what the row is
+   * put "Reading your plate" over a sentence somebody typed.
    */
   const typed = entry.source === 'text'
 
@@ -406,13 +391,10 @@ function AnalysingRow({
 }
 
 /**
- * A slow pulse over whatever is inside it.
- *
- * Reanimated rather than the `Animated` above it because this repeats forever
- * and belongs on the UI thread — the bar next to it is a one-shot and can
- * afford the bridge. Opacity rather than a gradient sweep, for the same reason
- * `Skeleton` uses opacity: a sweep needs a mask per element, and this is one
- * line of text.
+ * A slow pulse over whatever is inside it. Reanimated rather than `Animated`,
+ * because this repeats forever and belongs on the UI thread where the bar beside
+ * it is a one-shot. Opacity rather than a gradient sweep, which would need a mask
+ * per element for one line of text.
  */
 function Shimmer({ children }: { children: ReactNode }) {
   const pulse = useSharedValue(1)

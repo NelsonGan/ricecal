@@ -56,17 +56,12 @@ export type ProviderOffer = {
   /** The real store for this phone, and why it cannot be used if it cannot. */
   native: { provider: HealthProvider; availability: Availability }
   /**
-   * Whether to offer generated data up front.
+   * Whether to offer generated data up front. Development only, and gated on the
+   * native store being unusable rather than on the build type alone: a developer
+   * on a real iPhone should be connecting their real Health app.
    *
-   * Development only, and gated on the native store being unusable rather than
-   * on the build type alone: a developer on a real iPhone should be connecting
-   * their real Health app, and a "use demo data" button next to it is a trap
-   * they will fall into once and then debug for an hour.
-   *
-   * NOT the whole rule. A store that is available and EMPTY — which is what a
-   * simulator is — cannot be detected here, only by reading it. The connect
-   * screen offers demo data as a second chance after a connect that came back
-   * with nothing; see `canOfferDemo`.
+   * Not the whole rule. A store that is available and empty, which is what a
+   * simulator is, can only be detected by reading it; see `canOfferDemo`.
    */
   demo: boolean
 }
@@ -89,18 +84,14 @@ export async function offeredProviders(): Promise<ProviderOffer> {
 }
 
 /**
- * Whether generated data may be offered, given what we now know.
+ * Whether generated data may be offered, given what we now know. Split out from
+ * `offeredProviders` because this half of the answer only exists after a
+ * connection has been attempted.
  *
- * Split out from `offeredProviders` because the second half of the answer only
- * exists after a connection has been attempted.
- *
- * The iOS Simulator was long documented as having no Health app at all, and the
- * first version of this checked exactly that. It is no longer true — an iOS 26
- * simulator reports `isHealthDataAvailable()` true and shows the real
- * permission sheet — but its store is EMPTY, so a granted connection reads a
- * year and writes nothing. That state is indistinguishable, before the read,
- * from an iPhone whose owner has simply never worn a watch, which is why it
- * cannot be decided by `isAvailable()` and is decided by the outcome instead.
+ * An iOS 26 simulator reports `isHealthDataAvailable()` true and shows the real
+ * permission sheet, but its store is empty, so a granted connection reads a year
+ * and writes nothing. Before the read that is indistinguishable from an iPhone
+ * whose owner has never worn a watch, so it is decided by the outcome.
  */
 export function canOfferDemo(availability: Availability, connectReadNothing: boolean): boolean {
   return __DEV__ && (!availability.ok || connectReadNothing)

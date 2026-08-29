@@ -49,39 +49,26 @@ export const queryClient = new QueryClient({
        */
       gcTime: Number.POSITIVE_INFINITY,
       /**
-       * PAUSE WHEN THERE IS NO CONNECTION. DO NOT ASK ANYWAY.
+       * Pause when there is no connection rather than asking anyway.
        *
-       * This was `offlineFirst`, which sounds like the offline-tolerant choice
-       * and is the opposite: it fires the FIRST request whatever the connection
-       * and pauses only the retries after it. Every offline branch in this app
-       * keys on a query being PAUSED — the router, Today, the search panel — and
-       * none of them could fire until that doomed first request had failed.
+       * `offlineFirst` sounds like the offline-tolerant choice and is the
+       * opposite: it fires the first request whatever the connection and pauses
+       * only the retries. Every offline branch in this app keys on a query being
+       * paused, so none of them ran until that doomed request had failed, which
+       * took thirty seconds of spinner: Supabase refreshes a nearly-expired
+       * token before sending anything, so every query queued behind a backoff
+       * loop that gives up after `AUTO_REFRESH_TICK_DURATION_MS`.
        *
-       * Which took thirty seconds, because of what a request waits on. Supabase
-       * reads the access token before it sends anything, and a token within 90
-       * seconds of expiring is refreshed first — so a launch an hour after the
-       * last one, offline, queues every query in the app behind a backoff loop
-       * that gives up after `AUTO_REFRESH_TICK_DURATION_MS`. Measured on a cold
-       * launch with no connection: 30 seconds of spinner, then the offline
-       * screen the app could have drawn immediately.
+       * It also ate the diary. Only a `success` is written to disk, so an
+       * offline launch persisted a snapshot with the failed queries missing and
+       * the next offline launch had less to draw from. The profile went first,
+       * being the one query whose screen redirects away mid-flight.
        *
-       * It also QUIETLY ATE THE DIARY. A query that fails ends `error`, and only
-       * a `success` is written to disk — so an offline launch persisted a
-       * snapshot with the failed queries missing, and the next offline launch
-       * had less to draw from than the one before. The profile went first: it is
-       * the one query whose screen redirects away while it is still in flight,
-       * and losing its last observer cancels the retry that would have paused,
-       * settling it as an error over perfectly good data. Offline worked once.
+       * Paused, nothing is sent, the cache stays `success`, and react-query
+       * resumes when a connection returns. The mode gates the request, never the
+       * read, so cached data is served either way.
        *
-       * Paused, none of that happens: nothing is sent, nothing fails, the cache
-       * stays `success` and goes on being written, and react-query resumes by
-       * itself the moment a connection returns. Cached data is served either
-       * way — the mode gates the REQUEST, never the read.
-       *
-       * The cost is trusting `onlineManager`: a NetInfo that wrongly reports
-       * offline pauses reads until it corrects itself. Mutations below have
-       * always trusted exactly that, so this is one signal for the whole app
-       * rather than a new dependency.
+       * The cost is trusting `onlineManager`. Mutations already do.
        */
       networkMode: 'online',
       staleTime: 30_000,
@@ -108,25 +95,19 @@ export const persistOptions = {
   buster: SCHEMA_VERSION,
   dehydrateOptions: {
     /**
-     * Everything except where the photos are.
+     * Everything except where the photos are. Neither answer under that key
+     * survives a relaunch: a signed URL expires within the hour while this
+     * cache lives a week, and a rehydrated dead URL is served before the
+     * refetch that would replace it, so the plate renders as a failed load. The
+     * other answer is a path into expo-image's cache, which a reinstall
+     * renumbers.
      *
-     * Two kinds of answer live under that key and neither survives a relaunch
-     * intact. A signed URL is a credential with an expiry measured in the
-     * hour, and this cache survives for a week, so writing one to disk stores
-     * a string that is wrong by the time anything reads it — a rehydrated dead
-     * URL is even served before the refetch that would replace it, which
-     * renders as a plate that failed to load. A path into expo-image's own
-     * cache is the other, and it belongs to an app container that a reinstall
-     * renumbers and an eviction can empty.
+     * Leaving them out costs nothing, since `resolveStoredImage` asks the disk
+     * before the network.
      *
-     * It costs nothing to leave them out. `resolveStoredImage` asks the disk
-     * before it asks the network, so the tile that wants one usually gets it
-     * back without a request at all. Cheap to redo, dangerous to keep — the
-     * same test every persisted cache entry should pass.
-     *
-     * Composed with the library's own predicate rather than replacing it.
-     * Supplying this option overrides the default outright, and the default is
-     * what keeps a failed or half-finished query off the disk.
+     * Composed with the library's predicate rather than replacing it: supplying
+     * this option overrides the default, and the default is what keeps a failed
+     * query off the disk.
      */
     shouldDehydrateQuery: (query: Query) =>
       query.queryKey[0] !== 'photo' && defaultShouldDehydrateQuery(query),

@@ -126,19 +126,15 @@ data class WidgetSnapshot(
   }
 
   /**
-   * `theme` IS DELIBERATELY NOT READ ON ANDROID.
+   * `theme` is deliberately not read on Android. On iOS a WidgetKit view resolves
+   * its colours in Swift and can be handed the other palette; here a widget is a
+   * `RemoteViews` tree inflated by the launcher, and its colours come from
+   * `values/` and `values-night/`, picked by the launcher's configuration before
+   * this code runs.
    *
-   * On iOS the widgets follow the app's own light/dark choice, because a
-   * WidgetKit view resolves its colours in Swift and can simply be handed the
-   * other palette. Here a widget is a `RemoteViews` tree inflated by the
-   * launcher, and its colours come from `values/` and `values-night/`, which
-   * the system picks by the launcher's configuration before this code runs.
-   *
-   * Overriding that would mean setting every colour programmatically — which
-   * `RemoteViews` can only do for text, since `setBackgroundTintList` is API 31
-   * and this app's floor is 26 — or shipping a second copy of every drawable
-   * and swapping them by hand. Neither is worth it: an Android widget following
-   * the launcher's theme is what every other Android widget does, and it is
-   * what somebody who has themed their home screen expects.
+   * Overriding that would mean setting every colour programmatically, which
+   * `RemoteViews` can only do for text (`setBackgroundTintList` is API 31 and
+   * this app's floor is 26), or shipping a second copy of every drawable.
+   * Following the launcher's theme is what every other Android widget does.
    */
 }

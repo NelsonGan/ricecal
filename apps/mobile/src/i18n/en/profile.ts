@@ -16,12 +16,9 @@ export const profile = {
     proTrialIn_one: 'in {{count}} day',
     proTrialIn_other: 'in {{count}} days',
     /**
-     * THE PLAN IS INTERPOLATED, and it was written into the sentence.
-     *
-     * "Yearly plan, active" was printed to every subscriber there is: a monthly
-     * one, somebody who bought LIFETIME, and every account holding a
-     * promotional grant. The name comes from `paywall:plans` now, which is the
-     * same list the paywall sells them under, so the two cannot disagree.
+     * The plan is interpolated. "Yearly plan, active" was printed to every
+     * subscriber there is, including lifetime buyers and promotional grants. The
+     * name comes from `paywall:plans`, the list the paywall sells them under.
      */
     proActive: '{{plan}} plan, active',
     /**
@@ -41,23 +38,18 @@ export const profile = {
     reminders: 'Reminders',
     remindersValue: '{{count}} on',
     /**
-     * Beside the health-sync row when nothing is connected.
-     *
-     * The connected case reuses `activity:provider.*`, which already names each
-     * store — this is only the absence, and "Not connected" is the one thing
-     * that row has to be able to say without being opened.
+     * Beside the health-sync row when nothing is connected. The connected case
+     * reuses `activity:provider.*`, which names each store.
      */
     healthOff: 'Not connected',
     /**
-     * SHORT, and it has to be. This row carries a value ("Metric") and a
-     * chevron beside it, and the screen it opens puts the same words in an
-     * `AppBar`; both truncate past about twenty characters. "Language, units
-     * and appearance" named all three cards and rendered as "Language, units
-     * and a…" in the row and "Language, units and ap…" in the bar.
+     * Short, and it has to be: this row carries a value and a chevron, and the
+     * screen it opens puts the same words in an `AppBar`. Both truncate past
+     * about twenty characters, so "Language, units and appearance" rendered as
+     * "Language, units and a…".
      *
-     * So the name gives up the third card rather than the first two. Appearance
-     * is one segmented control found the moment the screen opens; language is
-     * what somebody would come to Me looking for, and it now says so.
+     * The name gives up the third card rather than the first two: appearance is
+     * one segmented control found the moment the screen opens.
      */
     units: 'Language and units',
     /** The four-card tour, which is offered once on Today and lives here after. */
@@ -75,23 +67,21 @@ export const profile = {
   },
 
   /**
-   * The account screen, which exists so that deleting an account is something
-   * a person can do rather than something they have to ask for.
+   * The account screen, which exists so deleting an account is something a
+   * person can do rather than ask for.
    *
-   * App Review guideline 5.1.1(v) is the reason it is in the app at all, and it
-   * shapes the copy more than it looks: no form, no reason to give, nobody to
-   * write to, and no wording that reads as a plea to stay. A screen that
-   * bargains is a screen a reviewer fails.
+   * App Review guideline 5.1.1(v) shapes the copy more than it looks: no form,
+   * no reason to give, nobody to write to, and no wording that reads as a plea
+   * to stay.
    *
-   * IT SAYS WHAT GOES, in four lines, and that is the whole defence against a
-   * mis-tap. "This cannot be undone" is a sentence everybody has learned to
-   * scroll past; "every meal, every weigh-in, every photograph" is the same
-   * fact in terms of the thing the person would actually miss.
+   * It says what goes, in four lines, which is the whole defence against a
+   * mis-tap: "this cannot be undone" is a sentence everybody scrolls past, where
+   * "every meal, every weigh-in, every photograph" is the same fact in terms of
+   * what the person would miss.
    *
-   * THE SUBSCRIPTION LINE IS NOT A WARNING ABOUT US. Billing lives with Apple
-   * and Google, so an account deleted with a renewing subscription behind it
-   * goes on being charged, and we cannot stop it from here. It is only shown
-   * to somebody who has one.
+   * The subscription line is not a warning about us. Billing lives with Apple and
+   * Google, so a deleted account with a renewing subscription goes on being
+   * charged, and it is only shown to somebody who has one.
    */
   account: {
     title: 'Account',
@@ -117,14 +107,10 @@ export const profile = {
     confirmBody:
       'This cannot be undone. Your diary cannot be recovered afterwards, by you or by us.',
     /**
-     * No `confirmAction`. The sheet's confirm button says `common:action.delete`
-     * — the same word every other destructive confirmation in the app uses, and
-     * the exact answer to the question above it.
-     *
-     * It said "Delete for ever" for about an hour. `ConfirmSheet` gives its two
-     * buttons equal width, so on an iPhone that broke as "Delete for / ever",
-     * and the finality it was carrying is already in the sentence above it,
-     * where somebody actually reads it.
+     * No `confirmAction`: the sheet's confirm button says `common:action.delete`,
+     * the word every other destructive confirmation uses. "Delete for ever" broke
+     * across two lines at `ConfirmSheet`'s equal button widths, and the finality
+     * is already in the sentence above it.
      */
 
     done: 'Your account has been deleted.',
@@ -132,19 +118,14 @@ export const profile = {
   },
 
   /**
-   * The question the app asks before the store does.
+   * The question the app asks before the store does, and it is a question rather
+   * than a request: "rate us five stars" is the copy that earns one star. Both
+   * answers are wanted, so "I like it" and "Not really" are the same size and
+   * neither is dressed as the correct one.
    *
-   * IT IS A QUESTION, not a request. "Rate us five stars" is the copy that earns
-   * one star, and the sheet has two answers because both of them are wanted: a
-   * yes goes to the store, a no goes to Discord where it can actually be
-   * answered. Neither word may lean on the other, so "I like it" and "Not
-   * really" are the same size and neither is dressed as the correct one.
-   *
-   * ONE LINE UNDER THE QUESTION, and it stays one line. There was a second
-   * saying a yes would open the store's own rating dialog, which is true and was
-   * still the wrong thing to put here: it explained a mechanism to somebody who
-   * had been asked an opinion, and it made a sheet with three sentences in it
-   * out of one that needed two.
+   * One line under the question. A second line explaining that a yes opens the
+   * store's own dialog was true and still wrong: it explained a mechanism to
+   * somebody who had been asked an opinion.
    */
   rate: {
     title: 'Enjoying RiceCal?',
@@ -154,12 +135,9 @@ export const profile = {
     later: 'Maybe later',
 
     /**
-     * The second screen, after "Not really".
-     *
-     * It does not apologise twice and it does not argue. What it offers is a
-     * place to be specific, which is the same Discord the help row opens: there
-     * is no support inbox behind this, and a form that pretended otherwise would
-     * be a slower way to reach the same three people.
+     * The second screen, after "Not really". It does not apologise twice and does
+     * not argue: what it offers is the same Discord the help row opens, because
+     * there is no support inbox behind this.
      */
     feedbackTitle: 'What would fix it?',
     feedbackBody: 'Tell us on Discord. Most of what is in the app got there that way.',
@@ -168,11 +146,9 @@ export const profile = {
   },
 
   /**
-   * The sheet behind the help row.
-   *
-   * It is all one destination, so the copy names it rather than hiding it: a
-   * button that says "Get help" and opens Discord is a surprise, and somebody
-   * who does not want a Discord account should be able to tell before they tap.
+   * The sheet behind the help row. One destination, so the copy names it: a
+   * button saying "Get help" that opens Discord is a surprise, and somebody who
+   * does not want an account there should be able to tell before they tap.
    */
   help: {
     title: 'Come and talk to us',
@@ -188,20 +164,15 @@ export const profile = {
   /**
    * Share & Earn Pro.
    *
-   * THE REWARD IS NAMED FIRST AND THE THRESHOLD SECOND, on every rung. "1 month
-   * of Pro" with "30+ likes" beside it reads as an offer with a condition;
-   * written the other way round the card is a list of numbers with prizes
-   * attached, and the thing somebody is deciding about is the prize.
+   * The reward is named first and the threshold second on every rung: "1 month of
+   * Pro" with "30+ likes" beside it reads as an offer with a condition, where the
+   * other way round is a list of numbers with prizes attached.
    *
-   * NOTHING HERE PROMISES A DATE. Rewards are granted by hand, from a Discord
-   * thread, so the copy says what happens rather than when — "we will send you
-   * a code" is a promise we keep, and "within 24 hours" is one we would break
-   * the first weekend somebody claimed on a Saturday night.
+   * Nothing promises a date. Rewards are granted by hand from a Discord thread,
+   * so the copy says what happens rather than when.
    *
    * "Likes" is the unit on every platform in the list, including the two that
-   * call it something else. It is the word everybody uses for the number under
-   * a post, and inventing a neutral one ("reactions") would be precise and
-   * unreadable.
+   * call it something else, because it is the word everybody uses.
    */
   shareEarn: {
     /** The row in Me, and the page's own bar. */
@@ -251,12 +222,10 @@ export const profile = {
     weeklyPace: 'Weekly pace',
     /**
      * Signed in words rather than with a minus, and without a period: the label
-     * beside these already says "Weekly pace", so "0.25 kg / week" under it
-     * would say week twice.
+     * beside these already says "Weekly pace".
      *
-     * The UNIT is interpolated rather than written in, because this screen is
-     * read in whichever one the account asked for and the figure beside it is
-     * converted. Spelt "kg" here it contradicted the pounds above it.
+     * The unit is interpolated, because this screen is read in whichever one the
+     * account asked for. Spelt "kg" here it contradicted the pounds above it.
      */
     paceLosing: 'Losing {{value}} {{unit}}',
     paceGaining: 'Gaining {{value}} {{unit}}',
@@ -325,13 +294,10 @@ export const profile = {
      * about what the screen is called. */
     title: 'Language and units',
     /**
-     * The card heading, and the name of the control inside it.
-     *
-     * `languageLabel` is no longer drawn: one card holding one picker was
-     * saying "LANGUAGE" and then "App language" directly under it, which is the
-     * same word twice for the price of a line. It is still the control's name
-     * for a screen reader and the title of the sheet that lists the thirteen
-     * languages, and both of those need a phrase rather than a section marker.
+     * The card heading, and the name of the control inside it. `languageLabel` is
+     * no longer drawn, since one card holding one picker said "LANGUAGE" and then
+     * "App language" under it. It is still the control's name for a screen reader
+     * and the title of the sheet that lists the languages.
      */
     language: 'LANGUAGE',
     languageLabel: 'App language',

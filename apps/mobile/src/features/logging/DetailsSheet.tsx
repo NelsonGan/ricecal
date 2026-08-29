@@ -42,24 +42,19 @@ export type DetailsSheetProps = {
 }
 
 /**
- * WHAT THIS ENTRY IS AND WHEN IT WAS EATEN: the two things about a logged meal
+ * What this entry is and when it was eaten: the two things about a logged meal
  * that are not figures.
  *
- * TWO PANELS, A PATH RATHER THAN TABS. The name and the when read as one short
- * form; tapping the when opens the picker over it, the way `IngredientSheet`
- * leads from a search to an amount. The when used to be laid out flat underneath
- * the name — a week strip that paged, an hour field, a minute field and an am/pm
- * control, five controls to say one thing — and typing digits into boxes is not
- * what anybody means by picking a time.
+ * Two panels on a path rather than tabs. The name and the when read as one short
+ * form, and tapping the when opens the picker over it, the way `IngredientSheet`
+ * leads from a search to an amount. The when used to be five controls laid out
+ * flat, and typing digits into boxes is not what anybody means by picking a time.
  *
- * IT SAVES ITSELF. The screen had one Save button in its footer that wrote every
- * staged section at once, and a sheet whose button said "Done" and wrote nothing
- * was a second staging level nobody asked for. Save writes the name and the when
- * and closes; a failure leaves the draft where it is.
+ * It saves itself. A sheet whose button said "Done" and wrote nothing was a
+ * second staging level nobody asked for; a failure leaves the draft where it is.
  *
  * Full height because the name field raises a keyboard, and the button is in the
- * BODY rather than a footer: at full height a footer lands behind the keyboard.
- * Both rules are in README.md.
+ * body rather than a footer, which at full height lands behind the keyboard.
  */
 export function DetailsSheet({
   visible,
@@ -261,23 +256,16 @@ function WhenWheels({
   const { t } = useTranslation(['logging', 'common'])
 
   /**
-   * Every day the wheel offers, and it is built from the entry's OWN day rather
-   * than from the one currently picked.
+   * Every day the wheel offers, built from the entry's own day rather than the
+   * one currently picked. Both ends stretch to reach it: an entry older than the
+   * window has no row to park on and `Wheel` falls back to its first, and a day
+   * after today is reachable by travelling west.
    *
-   * Both ends have to stretch to reach it. An entry older than the window would
-   * have no row to park on, and `Wheel` falls back to its first row — so the
-   * picker would show a day a year ago as selected while the sentence above it
-   * read the entry's real date, which is the one thing a picker must never do. And
-   * a day AFTER today is reachable too, by travelling west: an entry filed on the
-   * 18th in Sydney, opened on the 17th in Kuala Lumpur.
+   * `anchor` rather than `date` is the load-bearing part: depending on the live
+   * selection rebuilt a year of rows on every flick, under a scroll view that was
+   * still decelerating, which on iOS stops it where it stands.
    *
-   * `anchor`, not `date`, and that is the load-bearing part. Depending on the live
-   * selection rebuilt a year of rows on every flick of the wheel — under a scroll
-   * view that was still decelerating, which on iOS stops it where it stands. The
-   * anchor cannot change while the sheet is open, so the list is built once.
-   *
-   * The copy is read INSIDE the memo for the same reason: an object literal from
-   * above would be a new object on every render.
+   * The copy is read inside the memo for the same reason.
    */
   const days = useMemo<WheelOption[]>(() => {
     const labels = { today: t('common:date.today'), yesterday: t('common:date.yesterday') }

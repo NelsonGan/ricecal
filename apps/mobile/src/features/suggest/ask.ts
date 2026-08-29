@@ -5,10 +5,10 @@ import type { TrackedCuisine } from '@/lib/analytics'
  * What the sheet asks, and what it answers on the user's behalf before they
  * touch anything.
  *
- * Apart from the components so it can be tested without a device: picking the
- * sitting off the clock is the one part of this feature that is wrong in a way
- * nobody reports — the sheet opens on "Lunch" at nine at night and the user
- * simply changes it, every time, and never says so.
+ * Apart from the components so it can be tested without a device. Picking the
+ * sitting off the clock is the part of this feature that goes wrong without
+ * anybody reporting it: the sheet opens on "Lunch" at nine at night and the
+ * user simply changes it, every time.
  */
 
 /** The four sittings, in the order the chips are drawn. */
@@ -18,20 +18,14 @@ export const MEALS: readonly Meal[] = ['breakfast', 'lunch', 'dinner', 'snack']
 export const FOCUSES: readonly Focus[] = ['protein', 'balanced', 'carbs']
 
 /**
- * The kitchens a new account starts with, and nothing more than a starting
- * point.
+ * The kitchens a new account starts with, kept as the words that go on screen
+ * rather than as keys. `preferences.ts` holds the edited list, and
+ * `cuisinePhrase` on the server holds the curated wording.
  *
- * So these three are a DEFAULT the user edits, kept as the words that go on
- * screen rather than as keys — see `preferences.ts` for where the edited list
- * lives, and `cuisinePhrase` on the server for the four that still carry
- * curated wording when they are typed.
- *
- * The `satisfies` is what ties this list to `TrackedCuisine`, which is the
- * closed set of cuisine names allowed to reach Mixpanel. A fourth default added
- * here without a fourth member added there would compile fine and then report
- * itself as `custom` for ever — a silent wrong answer on the one dashboard that
- * exists to say whether these three are the right three. This way it does not
- * compile.
+ * The `satisfies` ties this to `TrackedCuisine`, the closed set of names
+ * allowed to reach Mixpanel. A fourth default added here and not there would
+ * report itself as `custom` for ever, on the one dashboard that exists to say
+ * whether three are enough.
  */
 export const DEFAULT_CUISINES = [
   'Malay',
@@ -43,16 +37,11 @@ export const DEFAULT_CUISINES = [
 export const MAX_CUISINE_LENGTH = 40
 
 /**
- * The cuisine, in a form that may be sent to Mixpanel.
- *
- * The list is the user's own now, so a cuisine is free text somebody typed on
- * their phone — and free text somebody typed is the one category the analytics
- * rule keeps out. One of the shipped defaults goes as itself, because those are
- * words this repo wrote; everything else goes as `custom`, which still answers
- * the only question worth asking about the list: whether three were enough.
- *
- * See `TrackedCuisine` in `lib/analytics/events.ts`, which is the type that
- * makes this the only route from one to the other.
+ * The cuisine, in a form that may be sent to Mixpanel. The list is the user's
+ * own, so a cuisine is free text somebody typed, which the analytics rule keeps
+ * out. A shipped default goes as itself because this repo wrote those words;
+ * everything else goes as `custom`, which still answers whether three were
+ * enough. `TrackedCuisine` makes this the only route between the two.
  */
 export function trackedCuisine(cuisine: Cuisine): TrackedCuisine {
   const typed = cuisine.trim().toLowerCase()
@@ -70,12 +59,10 @@ export const cleanCuisine = (value: string): string =>
   value.replace(/\s+/g, ' ').trim().slice(0, MAX_CUISINE_LENGTH)
 
 /*
- * No `FOCUS_ICONS`. There was a drawing beside each focus chip — a drumstick, a
- * target, a rice bowl — and the chips are a dropdown now. A dropdown row could
- * carry one, but the sitting and the cuisine beside it cannot: their lists are
- * four meals and whatever the user has typed. One of three fields wearing icons
- * reads as three different kinds of question, which is the thing the dropdowns
- * were adopted to stop.
+ * No `FOCUS_ICONS`. The focus chips carried a drawing each and are a dropdown
+ * now. A dropdown row could carry one, but the sitting and the cuisine beside
+ * it cannot, and one of three fields wearing icons reads as three different
+ * kinds of question.
  */
 
 /** The drawing beside a reason on the detail screen. */
@@ -102,21 +89,16 @@ const minutesOf = (at: string): number => {
 }
 
 /**
- * Which sitting it is, from the user's OWN meal times.
+ * Which sitting it is, from the user's own meal times. `meal_times` already
+ * answers "when does this person eat", and it is a `time` rather than a
+ * timestamp so it stays true when they fly somewhere. Somebody whose dinner is
+ * at nine gets Dinner at nine, where hardcoded windows would say Snacks.
  *
- * `meal_times` is already the answer to "when does this person eat", set in
- * onboarding and editable in Settings, and it is a `time` rather than a
- * timestamp precisely so that it stays true when they fly somewhere. Reading it
- * here means somebody who has told the app their dinner is at nine gets Dinner
- * at nine, where a table of hardcoded windows would have handed them Snacks.
+ * A time far from every meal is a snack, which is also the answer before the
+ * meal times have loaded: it is the only choice that makes no claim about what
+ * sitting this is.
  *
- * A time far from every meal is a SNACK, which is what eating between meals is.
- * That is also the answer before the meal times have loaded and on an account
- * that somehow has none — and it is the safe one, because snack is the only
- * choice here that makes no claim about what sitting this is.
- *
- * Nothing is remembered between openings. The sheet is opened at a time of day,
- * and the time of day is the better guess than the last one they made.
+ * Nothing is remembered between openings. The time of day is the better guess.
  */
 export function mealAt(now: Date, times: MealTime[] | undefined): Meal {
   if (!times?.length) return 'snack'
@@ -127,7 +109,7 @@ export function mealAt(now: Date, times: MealTime[] | undefined): Meal {
   for (const row of times) {
     if (!MEALS.includes(row.meal as Meal)) continue
     // Round the clock rather than along it: 00:30 is twenty minutes from a
-    // 00:10 supper, not twenty-three hours and forty minutes from it.
+    // 00:10 supper, not twenty-three hours from it.
     const raw = Math.abs(minutes - minutesOf(row.at))
     const distance = Math.min(raw, 24 * 60 - raw)
     if (!best || distance < best.distance) best = { meal: row.meal as Meal, distance }
@@ -137,14 +119,10 @@ export function mealAt(now: Date, times: MealTime[] | undefined): Meal {
 }
 
 /**
- * How many dishes a request comes back with.
- *
- * The client's copy of the server's `PICK_COUNT`, and it is a copy for the
- * ordinary reason: the two live either side of the Deno / React Native line and
- * cannot import each other. Nothing here DEPENDS on it being right — the list
- * draws whatever arrives — but the wait draws a skeleton row per pick, and a
- * skeleton that does not match what lands is a panel that changes height at the
- * one moment it must not.
+ * How many dishes a request comes back with. A copy of the server's
+ * `PICK_COUNT`, since the two are either side of the Deno / React Native line.
+ * The list draws whatever arrives, but the wait draws a skeleton row per pick,
+ * and a mismatch is a panel that changes height as the answer lands.
  */
 export const PICK_COUNT = 7
 
@@ -155,13 +133,10 @@ export const MAX_KCAL = 2000
 export const KCAL_STEP = 50
 
 /**
- * What to put in the ceiling before the user touches it.
- *
- * The rest of the day's budget, rounded to a step, and capped at what one
- * sitting plausibly is — because a fresh morning has the whole 2,000 kcal left
- * and "suggest me a 2,000 kcal breakfast" is not the question anybody is
- * asking. Floored at the minimum so a day already over budget still opens on
- * something askable rather than on a dead button.
+ * What to put in the ceiling before the user touches it: the rest of the day's
+ * budget, rounded to a step and capped at what one sitting plausibly is, since
+ * a fresh morning has the whole 2,000 kcal left. Floored at the minimum so a
+ * day already over budget still opens on something askable.
  */
 export function defaultKcal(left: number, meal: Meal): number {
   const ceiling = meal === 'snack' ? 300 : 800

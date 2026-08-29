@@ -2,24 +2,17 @@ import { env } from '@/lib/env'
 import { supabase } from '@/lib/supabase'
 
 /**
- * The catalogue, reached directly.
+ * The catalogue, reached directly. The Worker verifies the user's own Supabase
+ * JWT against the public key the project publishes, so the phone holds no secret
+ * and the hop is gone. See `workers/catalogue/src/auth.ts`.
  *
- * The Worker verifies the user's own Supabase JWT now, against the public key
- * the project publishes. So the phone still holds no secret, and the hop is
- * gone. See `apps/cloudflare/workers/catalogue/src/auth.ts`.
+ * Two things to get right. A fresh token: `getSession()` refreshes one close to
+ * expiring, where reading it off a stored session hands the Worker something it
+ * will correctly refuse.
  *
- * WHAT THIS FILE HAS TO GET RIGHT
- *
- * A FRESH token. `getSession()` refreshes one that is close to expiring, where
- * reading the access token off a stored session hands the Worker something it
- * will correctly refuse. An access token lives about an hour and a diary is an
- * app people leave open.
- *
- * AND UNREACHABLE IS NOT EMPTY. This throws for anything that is not a clean
- * answer, so react-query goes to its error state and the search panel says
- * something went wrong. Returning `[]` for a Worker that is down tells somebody
- * their dish does not exist, which is the bug that cost an hour when the
- * catalogue moved and is written into the invariants for that reason.
+ * And unreachable is not empty. This throws for anything that is not a clean
+ * answer, so the search panel says something went wrong: returning `[]` for a
+ * Worker that is down tells somebody their dish does not exist.
  */
 
 /** How long to wait before deciding the catalogue is not going to answer. */

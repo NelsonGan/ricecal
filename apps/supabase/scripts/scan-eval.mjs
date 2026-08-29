@@ -1,11 +1,10 @@
 /**
  * Grades the meal-recognition pipeline end to end, against the deployed stack.
  *
- * `eval:prompts` grades the PROMPTS — it imports them, calls the model, and
- * checks what came back. This grades the PIPELINE: upload, vision call,
- * catalogue search, verifier, ratio gate, portion sizing, the estimate and the
- * archetype floor, and the row that lands in the diary at the end of it. The
- * two fail differently, and the second is where a scan usually goes wrong.
+ * `eval:prompts` grades the prompts by importing them and calling the model.
+ * This grades the pipeline: upload, vision call, catalogue search, verifier,
+ * ratio gate, portion sizing, the estimate, and the row that lands in the diary.
+ * The two fail differently, and the second is where a scan usually goes wrong.
  *
  *   pnpm eval:scan                 every case
  *   pnpm eval:scan --only=text     one kind (text | photo)
@@ -14,24 +13,17 @@
  *   pnpm eval:scan --keep          leave the entries in the diary to look at
  *   pnpm eval:scan --save out.json the full result, traces and all
  *
- * USE --repeat WHEN YOU ARE CHANGING SOMETHING. A single pass over these cases
- * is not a measurement: the same sentence resolved to tier 1 at 657 kcal, tier
- * 4 at 525 and tier 3 at 821 on three consecutive runs of identical code, which
- * is wide enough to credit a prompt change with an improvement it did not make
- * or to hide a regression behind a lucky sample.
+ * Use --repeat when changing something. A single pass is not a measurement: the
+ * same sentence resolved to tier 1 at 657 kcal, tier 4 at 525 and tier 3 at 821
+ * on three consecutive runs of identical code.
  *
- * A case says what it expects LOOSELY, and on purpose. The dish a model names
- * and the row the catalogue picks are both allowed to move; what is not allowed
- * is a plate of nasi lemak coming back at 90 kcal or at 2,400. So a case states
- * a calorie band it must land inside, words the name must and must not contain,
- * and how many parts a breakdown should have. That is the level at which this
- * pipeline is actually wrong when it is wrong.
+ * A case says what it expects loosely, on purpose. The dish a model names and the
+ * row the catalogue picks are both allowed to move; a plate of nasi lemak coming
+ * back at 90 kcal is not. So a case states a calorie band, words the name must
+ * and must not contain, and how many parts a breakdown should have.
  *
- * A case may also band a MACRO — `protein`, `carbs`, `fat` — and one of them
- * does. Calories were the only thing graded here for a long time, and the bug
- * that changed that is written up beside the check in `grade()`: a plate can be
- * defensible on energy and twice the dish on protein, and the half nobody looks
- * at is the half that goes wrong quietly.
+ * A case may also band a macro, and one does: a plate can be defensible on energy
+ * and twice the dish on protein. See the check in `grade()`.
  */
 
 import { createHash } from 'node:crypto'
@@ -134,21 +126,17 @@ function grade(kase, entry, breakdown) {
     }
   }
 
-  // A breakdown that does not add up to its parent is the invariant this
-  // pipeline breaks most quietly: the diary shows one number and the list under
-  // it shows another, and neither looks wrong on its own.
+  // A breakdown that does not add up to its parent is the invariant this pipeline
+  // breaks most quietly: the diary shows one number and the list under it shows
+  // another, and neither looks wrong on its own.
   //
-  // All four figures, not just the calories. `food_log_details` coalesces the
-  // parts branch for every one of them, so a parent that agrees about energy and
-  // disagrees about protein is the same broken invariant showing a subtler face —
-  // and it is exactly the shape a scaling bug takes, which is how editing an
-  // ingredient once moved only the calories.
+  // All four figures rather than just the calories. `food_log_details` coalesces
+  // the parts branch for every one, and a parent that agrees about energy and
+  // disagrees about protein is the shape a scaling bug takes.
   //
-  // The half-gram tolerance is not slack, it is a double rounding: the parent
-  // sums the parts UNROUNDED and rounds once, while each part row rounds its own
-  // product to a decimal, so summing what the rows report can miss the parent by
-  // up to 0.05 a part. Tighten it and a six-part plate fails on arithmetic that
-  // is correct.
+  // The half-gram tolerance is a double rounding rather than slack: the parent
+  // sums the parts unrounded and rounds once, while each row rounds its own
+  // product, so summing what the rows report can miss by 0.05 a part.
   if (breakdown.length) {
     for (const [field, tolerance] of [
       ['kcal', 3],

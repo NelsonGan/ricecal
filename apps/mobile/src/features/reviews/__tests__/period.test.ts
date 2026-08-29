@@ -9,20 +9,16 @@ import {
 } from '../period'
 
 /**
- * How a review is addressed, named, and cut into steps.
+ * How a review is addressed, named, and cut into steps. Three things, all of
+ * which fail quietly:
  *
- * Three things worth pinning, and all three fail quietly:
- *
- *   1. THE ID. It is the one value in the flow that arrives from outside the
- *      app, and a story that takes an unparseable one on trust asks the server
- *      for the review of `NaN`.
- *   2. THE STEPS. How many there are is decided from what came back, so a
- *      period with no scale and no watch has to lose its last step outright —
- *      the progress bar counts these, and a fourth segment leading to an empty
- *      card is a promise the tap does not keep.
- *   3. THE SHARE. `daysUnderGoal / daysLogged` divides by zero on a period with
- *      a budget and nothing logged, and a progress bar handed `NaN` renders
- *      full — which reads as a perfect week.
+ *   1. The id, the one value in the flow arriving from outside the app. Taken on
+ *      trust, an unparseable one asks the server for the review of `NaN`.
+ *   2. The steps, decided from what came back, so a period with no scale and no
+ *      watch has to lose its last step: the progress bar counts these, and a
+ *      fourth segment leading to an empty card is a promise the tap does not keep.
+ *   3. The share. `daysUnderGoal / daysLogged` divides by zero on a period with a
+ *      budget and nothing logged, and a progress bar handed `NaN` renders full.
  */
 
 const summary = (over: Partial<ReviewSummary> = {}): ReviewSummary => ({

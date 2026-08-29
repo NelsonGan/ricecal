@@ -16,15 +16,13 @@ export type ProviderButtonProps = {
  * "Continue with Apple" and "Continue with Google", built the same way.
  *
  * Both are the app's own `Button` rather than each vendor's drop-in widget.
- * `AppleAuthenticationButton` renders a UIKit control — its own height, its own
- * corner radius, no slab — so beside anything else on this screen it read as a
- * component from a different app. Both vendors allow a custom button provided
- * it carries their mark, their wording, and enough contrast; that is exactly
- * what this does, and it inherits the design system's size, radius and press
- * mechanic for free.
+ * `AppleAuthenticationButton` renders a UIKit control with its own height and
+ * corner radius, so beside anything else on this screen it read as a component
+ * from a different app. Both vendors allow a custom button provided it carries
+ * their mark, their wording and enough contrast.
  *
- * Apple's guidance is black on light, white on dark. `bg-inverse` is precisely
- * that pair, so the button follows the theme without a branch.
+ * Apple's guidance is black on light, white on dark, which is what `bg-inverse`
+ * is, so the button follows the theme without a branch.
  */
 export function ProviderButton({ provider, onPress, disabled, loading }: ProviderButtonProps) {
   const { t } = useTranslation('onboarding')

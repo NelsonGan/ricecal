@@ -9,17 +9,14 @@ export type PasswordFieldProps = Omit<TextFieldProps, 'secureTextEntry' | 'right
 /**
  * A password box with an eye on it.
  *
- * The eye is not a nicety on a phone. A password typed on a soft keyboard into
- * a field of dots is the single most mistyped thing in any app, and the failure
- * is silent: the field looks the same whether it says what you meant or not.
- * Both password screens use this, so "show" behaves the same in both, and the
- * confirm box gets one too — a mismatch is exactly the case where seeing the
- * two is the whole answer.
+ * A password typed on a soft keyboard into a field of dots is the most mistyped
+ * thing in any app, and the failure is silent. Both password screens use this, so
+ * "show" behaves the same in both, and the confirm box gets one too: a mismatch
+ * is the case where seeing the two is the whole answer.
  *
- * `autoComplete` and `textContentType` are the caller's to set, because they
- * are the difference between the keychain offering to save a NEW password and
- * offering to fill an existing one, and only the caller knows which screen this
- * is.
+ * `autoComplete` and `textContentType` are the caller's to set, since they are
+ * the difference between the keychain offering to save a new password and
+ * offering to fill an existing one.
  */
 export const PasswordField = forwardRef<TextInput, PasswordFieldProps>(
   function PasswordField(props, ref) {
@@ -42,16 +39,13 @@ export const PasswordField = forwardRef<TextInput, PasswordFieldProps>(
             variant="ghost"
             /**
              * `self-center`, because `IconButton` puts `self-start` on its own
-             * container and align-self beats the row's `items-center`. Left to
-             * itself the eye sits against the top of a 60pt field, a few points
-             * above the text it belongs to.
+             * container and align-self beats the row's `items-center`; left alone
+             * the eye sits against the top of a 60pt field.
              *
-             * And pulled RIGHT, because a 44pt tap target centres its 22pt icon
-             * 22pt from its own edge and the field already pads 20pt more — so
-             * an untouched eye floats 42pt in from the border with a band of
-             * empty field to its right, reading as though it had come loose from
-             * the edge it belongs to. The negative margin spends the field's
-             * padding rather than the tap target, which stays 44pt.
+             * And pulled right, because a 44pt tap target centres its 22pt icon
+             * 22pt from its own edge and the field pads 20pt more, so an
+             * untouched eye floats 42pt in from the border. The negative margin
+             * spends the field's padding, not the tap target, which stays 44pt.
              */
             className="-mr-3 self-center"
             onPress={() => setShown((was) => !was)}

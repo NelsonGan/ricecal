@@ -24,18 +24,18 @@ const WORKDIR = fileURLToPath(new URL('../..', import.meta.url))
 const OUT = `${REPO_ROOT}apps/mobile/src/lib/database.types.ts`
 
 const BANNER = `/**
- * GENERATED FILE — do not edit.
+ * Generated file, do not edit.
  *
  *   pnpm db:types
  *
- * which runs \`supabase gen types typescript --local\` against the local stack,
- * so the local database must be up to date: \`pnpm db:reset\` first if you have
- * just pulled a migration. Nothing in CI checks this file against the schema,
- * so a stale copy shows up as a type error on a column that plainly exists.
+ * runs \`supabase gen types typescript --local\` against the local stack, so the
+ * local database must be up to date: \`pnpm db:reset\` first if you have just
+ * pulled a migration. Nothing in CI checks this file against the schema, so a
+ * stale copy shows up as a type error on a column that plainly exists.
  *
- * Postgres enums arrive as string-literal unions, which is the reason the
- * schema uses enums for its closed domains — \`Database['public']['Enums']['meal']\`
- * is exactly the \`Meal\` union the screens already speak.
+ * Postgres enums arrive as string-literal unions, which is why the schema uses
+ * enums for its closed domains: \`Database['public']['Enums']['meal']\` is the
+ * \`Meal\` union the screens already speak.
  */
 
 `

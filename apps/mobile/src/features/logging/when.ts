@@ -4,22 +4,18 @@ import { dateKey } from '@/data/client'
 import { datePattern } from '@/lib/dates'
 
 /**
- * WHEN an entry happened, and the two columns that say so.
+ * When an entry happened, and the two columns that say so. `log_date` is which
+ * day it counts towards and `logged_at` is the instant, which orders the rows
+ * inside that day and prints "8:20 am" on each. See `30_food_logs.sql`.
  *
- * `food_logs` keeps them apart on purpose — see the header of `30_food_logs.sql`.
- * `log_date` is which day the entry counts towards, a calendar fact about the
- * user's own day; `logged_at` is the instant, which is what orders the rows
- * inside it and prints "8:20 am" on each one.
- *
- * They can disagree, and ordinarily do: a meal logged this afternoon against
- * yesterday's strip is filed on yesterday with this afternoon's timestamp. So
- * the screen reads the DAY off `log_date` and the TIME off `logged_at`, which is
- * exactly what the diary already shows, and writing the two back together is
- * what makes the timestamp agree with the day it is filed under.
+ * They ordinarily disagree: a meal logged this afternoon against yesterday's
+ * strip is filed on yesterday with this afternoon's timestamp. So the screen
+ * reads the day off `log_date` and the time off `logged_at`, and writing the two
+ * back together makes the timestamp agree with the day.
  *
  * Apart from the screens so it can be tested without a device, and imported from
- * the narrow data module rather than the `@/data` barrel — which drags in the
- * notification scheduler and with it a native module Jest has no answer for.
+ * the narrow data module rather than the `@/data` barrel, which drags in a native
+ * module Jest has no answer for.
  */
 
 /**

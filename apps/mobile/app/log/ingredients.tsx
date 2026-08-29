@@ -15,25 +15,19 @@ import { useBack } from '@/lib/navigation'
 import { AppBar, Screen, useToast } from '@/ui'
 
 /**
- * EDIT THE PLATE, as a page of its own.
+ * Edit the plate, as a page of its own.
  *
- * It was a sheet, and the reason it is not any more is the catalogue search that
- * puts a new part on the plate. That search is a second panel, so from a sheet
- * this one had to dismiss itself, hand over, and be reopened by the host on the
- * way back — which works for the one path where a food is picked and is wrong
- * for every other way out of a search. Closing it dropped the user past the
- * editor entirely, onto the food detail behind, because by then nothing was
- * holding the editor open.
+ * It was a sheet, and the catalogue search that puts a new part on the plate is
+ * why it is not: that search is a second panel, so this one had to dismiss
+ * itself and be reopened by the host, which works when a food is picked and drops
+ * the user past the editor on every other way out.
  *
- * A page does not have that problem. `AddPartSheet` is a sheet ON it, and
- * dismissing a sheet reveals what it was covering — which is the plate, with
- * whatever was already staged on it still there.
+ * A page does not have that problem: `AddPartSheet` is a sheet on it, and
+ * dismissing a sheet reveals the plate with whatever was staged still there.
  *
- * IT OWNS ITS OWN DATA, unlike the sheet, which was handed the ingredients and
- * an overlay of staged edits by the screen that hosted it. A route cannot be
- * handed state, and it turns out not to want any: the edits live here until
- * Save, Save writes them, and the food detail behind simply refetches into the
- * result. That took a piece of staging off that screen rather than adding one.
+ * It owns its own data, unlike the sheet, which was handed the ingredients and an
+ * overlay of staged edits. The edits live here until Save, and the food detail
+ * behind refetches into the result.
  */
 export default function IngredientsScreen() {
   const { t } = useTranslation(['logging', 'common'])

@@ -14,22 +14,18 @@ export type StatTrioProps = {
 }
 
 /**
- * The three-figure row that sits under each chart.
+ * The three-figure row that sits under each chart. Two details are load-bearing,
+ * and both were bugs first.
  *
- * Two details here are load-bearing, and both were bugs first.
- *
- * The label gets two lines' worth of room whether or not it needs it. Three
+ * The label gets two lines' worth of room whether or not it needs it: three
  * columns inside a card leave about 95pt each, and "MONTHS LOGGED" does not fit
- * that on one line at this size — it is also the shortest thing English has to
- * say. Reserving the height rather than letting the row grow is what keeps the
- * three VALUES on one baseline when only one label wraps.
+ * one line. Reserving the height keeps the three values on one baseline when only
+ * one label wraps.
  *
- * The value carries NO `leading-`, and that is not an oversight.
- * `adjustsFontSizeToFit` beside an explicit lineHeight is a long-standing React
- * Native bug: it shrinks text that has plenty of room, worst when the layout
- * hands it a fractional height — which `flex-1` across a row of three on a 393pt
- * screen produces every time. The symptom was "6.1 cups" rendering at about four
- * points. `StatTile` carries the same warning for the same reason.
+ * The value carries no `leading-`. `adjustsFontSizeToFit` beside an explicit
+ * lineHeight is a long-standing React Native bug that shrinks text with plenty of
+ * room, worst on the fractional heights `flex-1` produces; the symptom was
+ * "6.1 cups" rendering at about four points.
  */
 export function StatTrio({ stats }: StatTrioProps) {
   return (

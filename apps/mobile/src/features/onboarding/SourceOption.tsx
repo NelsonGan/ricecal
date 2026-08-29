@@ -41,11 +41,9 @@ export type SourceOptionProps = {
 /**
  * One answer in the acquisition grid.
  *
- * A tile rather than a `ChoiceCard`, and the reason is the count: eleven
- * options is two screens of full-width rows with a radio on each, and the thing
- * a user is scanning for is a LOGO they recognise rather than a sentence they
- * read. Two columns puts every option in one screenful, and the mark does the
- * work the radio dot was doing.
+ * A tile rather than a `ChoiceCard`, because of the count: eleven options is two
+ * screens of full-width rows, and what a user scans for is a logo they recognise
+ * rather than a sentence. Two columns puts every option in one screenful.
  *
  * Selection is the border and the fill, not a tick. With a recognisable mark in
  * every tile there is nowhere for a tick to go that is not on top of somebody's

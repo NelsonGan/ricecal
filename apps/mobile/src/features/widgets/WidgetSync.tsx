@@ -31,11 +31,11 @@ import { buildWidgetSnapshot } from './snapshot'
  * Renderless. Keeps the home screen and the diary saying the same thing.
  *
  * A component rather than a call in the layout, for the reason `EntitlementSync`
- * beside it is one: the root layout is a stack of providers and a hook in its
- * body would sit above `SessionProvider`, which is the thing this needs to read.
+ * is one: a hook in the root layout's body would sit above `SessionProvider`,
+ * which this needs to read.
  *
- * Three jobs, and they are here together because all three are about the same
- * boundary between the app and a process it does not control:
+ * Three jobs, together because all three are about the boundary between the app
+ * and a process it does not control:
  *
  * 1. Publish today into the App Group whenever it changes.
  * 2. Send the drinks somebody logged on the water widget, which could not.
@@ -45,24 +45,18 @@ export function WidgetSync() {
   const { userId } = useSession()
 
   /**
-   * How a widget tap addresses this build, told once.
-   *
-   * Signed out as well as in, and before anything else here: a widget showing
-   * the placeholder is still tappable, and the answer is a property of the
-   * build rather than of the account. Only Android acts on it — see
-   * `setWidgetScheme`.
+   * How a widget tap addresses this build, told once. Signed out as well as in,
+   * because a widget showing the placeholder is still tappable and the answer is
+   * a property of the build. Only Android acts on it.
    */
   useEffect(() => {
     setWidgetScheme(appScheme())
   }, [])
 
   /**
-   * Signed out clears the store, and it is not a tidy-up.
-   *
-   * A widget is a screenshot of somebody's day pinned to a home screen. It
-   * survives the app being closed and it survives an account being signed out
-   * of, so without this the next person to sign in on a shared handset would
-   * find the last one's calories, weight and meals still sitting there.
+   * Signed out clears the store, and it is not a tidy-up: a widget is a
+   * screenshot of somebody's day pinned to a home screen, and it survives an
+   * account being signed out of.
    */
   useEffect(() => {
     if (!userId) clearWidgetSnapshot()
@@ -79,28 +73,19 @@ function SignedInWidgetSync() {
   const { preference } = useTheme()
 
   /**
-   * TODAY, not the selected day.
-   *
-   * The strip can put last Tuesday on screen, and a widget is not showing last
-   * Tuesday. Reading `selectedDate` here would mean that paging back through
-   * the diary quietly rewrote the home screen, and the user would find it there
+   * Today, not the selected day. Reading `selectedDate` would mean paging back
+   * through the diary quietly rewrote the home screen, which the user would find
    * an hour later with no idea what changed it.
    */
   const day = useDayLog(todayKey)
   /**
-   * READINESS COMES FROM THE QUERY, not from the view above it.
+   * Readiness comes from the query rather than the view above it. `useDayLog`
+   * reports a day carrying an unresolved snap as settled, which is right for a
+   * screen and wrong here: everything around the snap is still the empty-day
+   * fallback, so publishing writes "nothing eaten today" onto a home screen.
    *
-   * `useDayLog` reports a day carrying an unresolved snap as settled however
-   * the request is doing, and that is right for a SCREEN: the photograph is
-   * content, and Today hiding behind a skeleton would take it off the day it
-   * was just added to. It is wrong here. Everything around the snap is still
-   * the empty-day fallback at that point, so publishing it writes "nothing
-   * eaten today" onto a home screen for as long as the request takes, on the
-   * one kind of launch where somebody has just logged something.
-   *
-   * Not a second request: `useDayLog` is reading this very query underneath,
-   * and react-query keys on the query key, so the two share one cache entry
-   * and one fetch in flight.
+   * Not a second request: `useDayLog` reads this very query underneath, and
+   * react-query keys on the query key.
    */
   const dayQuery = useDay(todayKey)
   const targets = useTargets()
@@ -118,19 +103,13 @@ function SignedInWidgetSync() {
     settings.data?.activity_extends_budget === false ? 0 : (activity.data?.activeKcal ?? 0)
 
   /**
-   * Whether there is an answer worth publishing yet.
+   * Whether there is an answer worth publishing yet. A pending query has no data,
+   * and every value below falls back to a confident statement, which published is
+   * a home screen announcing that somebody has eaten nothing today.
    *
-   * A query that is pending has no data, and every value below reads through a
-   * fallback that turns that into a confident statement — a full budget
-   * remaining, an empty tank, no meals. Published, that is a home screen
-   * announcing that somebody has eaten nothing today, on a day they have eaten
-   * three meals, until the requests land.
-   *
-   * `isPaused` is the other half. Offline with nothing cached a query is held
-   * rather than sent, so `isPending` stays true indefinitely and a wait that
-   * cannot end is not a wait: the widget keeps whatever it already had, which
-   * is the right answer for a phone with no signal. Paired per query rather
-   * than or-ed across all of them, for the reason written out on Today.
+   * `isPaused` is the other half: offline with nothing cached, `isPending` stays
+   * true indefinitely, and the widget keeps what it had. Paired per query rather
+   * than or-ed, for the reason written out on Today.
    */
   const ready =
     settled(dayQuery.isPending, dayQuery.isPaused) &&
@@ -163,16 +142,12 @@ function SignedInWidgetSync() {
   }, [ready, todayKey, preference, targets.data, day, burned, weighIns.data, settings.data])
 
   /**
-   * Published only when it actually changed.
-   *
-   * Every write crosses into another process and asks WidgetKit (or the
-   * `AppWidgetManager`) to redraw. This effect's inputs include the whole day,
-   * which is a new array identity on every refetch — most of which return
-   * exactly what was already there — so without the comparison a diary left
-   * open would repaint the home screen every time a query refocused.
+   * Published only when it actually changed. Every write crosses into another
+   * process and asks WidgetKit to redraw, and this effect's inputs include the
+   * whole day, which is a new array identity on every refetch.
    *
    * Compared as JSON rather than field by field, because `updatedAt` is the one
-   * field that always differs and is the one nothing draws.
+   * field that always differs and the one nothing draws.
    */
   const published = useRef<string | null>(null)
   useEffect(() => {
@@ -193,13 +168,9 @@ function SignedInWidgetSync() {
 const settled = (isPending: boolean, isPaused: boolean) => !isPending || isPaused
 
 /**
- * What happens when the app comes forward: drain the queue, then look at the
- * home screen.
- *
- * Foreground rather than a timer, because both of these can only change while
- * the app is NOT running. A widget is added in the OS and a preset is pressed
- * in a process of its own, so the only interesting moment is the one where the
- * app finds out what happened while it was away.
+ * What happens when the app comes forward: drain the queue, then look at the home
+ * screen. Foreground rather than a timer, because both can only change while the
+ * app is not running.
  */
 function useWidgetForeground() {
   // The mutation's own function rather than the object around it. React Query
@@ -210,14 +181,10 @@ function useWidgetForeground() {
 
   const sync = useCallback(async () => {
     /**
-     * The drinks first.
-     *
-     * `takePendingWidgetActions` empties the queue as it reads it, so a failure
-     * here loses the drink. That is the accepted trade rather than an oversight:
-     * the alternative is a queue that has to be acknowledged, and every version
-     * of that ends with a drink being logged twice on a phone that was killed
-     * mid-sync. Water is the cheapest thing in the app to lose, and doubling one
-     * is worse than dropping one.
+     * The drinks first. `takePendingWidgetActions` empties the queue as it reads
+     * it, so a failure loses the drink. The alternative is a queue that has to be
+     * acknowledged, and every version of that logs a drink twice on a phone
+     * killed mid-sync.
      */
     for (const action of takePendingWidgetActions()) {
       try {

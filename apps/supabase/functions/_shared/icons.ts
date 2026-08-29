@@ -1,16 +1,14 @@
 // Which drawing goes on a typed meal or a described recipe.
 //
-// Neither arrives with a photograph, which is the whole difference between them
-// and a snap, so the row would otherwise be a name over an empty grey square in a
-// diary where the meals beside it have pictures. The catalogue cannot be
-// illustrated, a few hundred drawings against half a million imported rows, but
-// the model that just read "nasi lemak with fried chicken" knows which of our
-// drawings that is.
+// Neither arrives with a photograph, so the row would otherwise be a name over
+// an empty square in a diary where the meals beside it have pictures. The
+// catalogue cannot be illustrated (a few hundred drawings against half a million
+// rows), but the model that just read "nasi lemak with fried chicken" knows
+// which of our drawings that is.
 //
-// So the prompt carries the list and the model picks a name out of it. It is the
-// one thing on this path that cannot be hallucinated usefully: an invented name
-// renders nothing, so `resolveIcon` below only ever answers with something that
-// exists.
+// So the prompt carries the list and the model picks a name out of it. An
+// invented name renders nothing, so `resolveIcon` only ever answers with
+// something that exists.
 //
 // The names come from `icons.generated.ts`, written by the same script that
 
@@ -24,21 +22,19 @@ export type IconChoice = { set: IconSet; name: string }
 /**
  * The drawings that are not food.
  *
- * `food` is a mixed set: alongside the ingredients and drinks it carries the
- * kitchen (a wok, a spatula, a scale), the dietary badges (halal, vegan,
- * gluten-free) and the nutrient markers (a fibre block, a kcal tag). Every one
- * of those is a legitimate thing for a SCREEN to draw and none of them is a
- * meal, so they are excluded here rather than in the generated file — the
- * generator knows what exists, this knows what a plate looks like.
+ * `food` is a mixed set: alongside the ingredients it carries the kitchen (a
+ * wok, a scale), the dietary badges and the nutrient markers. All are legitimate
+ * for a screen to draw and none is a meal, so they are excluded here rather than
+ * in the generated file: the generator knows what exists, this knows what a
+ * plate looks like.
  *
- * The list is hand-kept and the default is to INCLUDE, which is the safe
- * direction for drift: a drawing added to the design system and not listed here
- * becomes offerable, and the worst case is a model picking an odd picture. The
- * reverse default would silently stop offering new food.
+ * Hand-kept, and the default is to include, which is the safe direction for
+ * drift: a new drawing becomes offerable and the worst case is an odd picture,
+ * where the reverse default would silently stop offering new food.
  *
- * The picker the user taps through offers all of these, and that is not an
- * inconsistency: somebody choosing "vegan" for their salad means it, and a
- * model choosing "kitchen-scale" for a plate of rice is a bug.
+ * The picker the user taps through offers all of these: somebody choosing
+ * "vegan" for their salad means it, and a model choosing "kitchen-scale" for a
+ * plate of rice is a bug.
  */
 const NOT_A_MEAL = new Set([
   // The kitchen itself.
@@ -117,33 +113,25 @@ for (const set of Object.keys(ICON_NAMES) as IconSet[]) {
 }
 
 /**
- * The names, for the prompt.
+ * The names, for the prompt. Built once at module load: about 200 slugs and
+ * 2 kB, which is real money on every typed meal.
  *
- * Built once at module load rather than per request. About 200 slugs and 2 kB,
- * which is real money on every typed meal, and it buys the difference between
- * a row with a picture and a row without one.
- *
- * `dishes` first, because that is where the local food is and the first thing
- * in a list is what a model reaches for when two answers fit: a plate of nasi
- * lemak should be the drawing OF nasi lemak, not a bowl of rice.
+ * `dishes` first, because that is where the local food is and the first thing in
+ * a list is what a model reaches for when two answers fit.
  */
 export const ICON_LIST: string = [...SET_OF.keys()].join(', ')
 
 /**
  * An icon id that has turned up somewhere it does not belong, unslugged.
  *
- * The prompt fences the list off (see ICON_INSTRUCTION) and the fence is not
- * airtight: the ids are the largest block of text in the prompt and a model
- * reads a long list of names as the vocabulary it should answer in. This is the
- * belt, and it can afford to be blunt because it only fires on an EXACT member
- * of a list we wrote — "chicken-rice" is one of ours and becomes "chicken
- * rice", while a real hyphenated food name is left alone because it is not in
- * the list.
+ * ICON_INSTRUCTION fences the list off and the fence is not airtight, since a
+ * model reads a long list of names as the vocabulary to answer in. This is the
+ * belt, and it can be blunt because it only fires on an exact member of a list
+ * we wrote, leaving a real hyphenated food name alone.
  *
- * Only worth doing for text that is about to be searched. A hyphen costs
- * nothing in the catalogue's own matching, which folds punctuation at both
- * ends; what it costs is the EXACT-name arm, which compares whole strings, and
- * the misses backlog, which is read by a person.
+ * Only worth doing for text about to be searched: a hyphen costs nothing in the
+ * catalogue's own matching, but it costs the exact-name arm and fills the misses
+ * backlog, which a person reads.
  */
 export function unslug(text: string): string {
   const trimmed = text.trim()
@@ -151,14 +139,10 @@ export function unslug(text: string): string {
 }
 
 /**
- * The model's answer as a real icon, or nothing.
- *
- * Nothing is a perfectly good outcome and the callers treat it as one: a row
- * with no drawing shows no drawing, which is what every catalogue row does. The
- * failure this prevents is the other one — writing `icon_name: 'nasi lemak'`
- * with a space in it, or `'ramen'`, either of which passes the database's
- * checks (the column is free text, only the SET is an enum) and renders blank
- * forever.
+ * The model's answer as a real icon, or nothing. Nothing is a good outcome and
+ * the callers treat it as one. What this prevents is writing `icon_name: 'nasi
+ * lemak'` or `'ramen'`, either of which passes the database's checks (the column
+ * is free text, only the set is an enum) and renders blank forever.
  */
 export function resolveIcon(raw: unknown): IconChoice | null {
   if (typeof raw !== 'string') return null
@@ -173,34 +157,25 @@ export function resolveIcon(raw: unknown): IconChoice | null {
   const set = SET_OF.get(name)
   if (set) return { set, name }
 
-  // Logged, because this is the one failure on the path that has no symptom.
-  // A rejected name is a row with no drawing on it, which is what a row
-  // without a drawing looks like — so a prompt that has started answering
-  // `char-kway-teow` for a picture filed under `char-kuey-teow` degrades
-  // silently and forever. The near miss is the whole point: it says the model
-  // is trying and the LIST is what needs a word adding to it.
+  // Logged, because this failure has no symptom: a rejected name looks exactly
+  // like a row without a drawing, so a prompt answering `char-kway-teow` for a
+  // picture filed under `char-kuey-teow` degrades silently. A near miss says the
+  // model is trying and the list is what needs a word adding to it.
   console.warn(`[icons] the model named a drawing we do not have: ${name}`)
   return null
 }
 
 /**
- * A drawing worked out from the dish's own name, when the model gave none.
+ * A drawing worked out from the dish's own name, when the model gave none or
+ * answered in a spelling we do not carry. Our slugs have one spelling of each
+ * dish and the world has several, and a near miss is indistinguishable, on the
+ * row, from having no drawing at all.
  *
- * The backstop for the honest failure: the model is asked for an icon and
- * answers null, or answers a name in a spelling we do not carry. Our slugs have
- * one spelling of each dish and the world has several — the list says
- * `char-kuey-teow` and a model will happily write `char-kway-teow` — and a near
- * miss is indistinguishable, on the row, from having no drawing at all.
+ * Two shared words minimum. One is far too loose: "Chicken soup" shares
+ * `chicken` with `chicken-rice`. Two is enough for `char kway teow` to find
+ * `char-kuey-teow`, and it stops a single common word carrying a match.
  *
- * TWO SHARED WORDS, minimum, and that threshold is the whole design. One is far
- * too loose: "Chicken soup" shares `chicken` with `chicken-rice`, and putting a
- * plate of chicken rice beside somebody's soup is worse than the plain pot they
- * would otherwise get. Two is enough for `char kway teow` to find
- * `char-kuey-teow` on `char` and `teow`, and it is what stops a single common
- * word from carrying a match on its own.
- *
- * An exact slug wins outright, which is the ordinary case: "Nasi lemak" is
- * `nasi-lemak` and needs none of the scoring below.
+ * An exact slug wins outright, which is the ordinary case.
  */
 export function guessIcon(name: unknown): IconChoice | null {
   if (typeof name !== 'string') return null
@@ -238,25 +213,17 @@ export function guessIcon(name: unknown): IconChoice | null {
 }
 
 /**
- * What to say to the model about picking one.
+ * What to say to the model about picking one. Shared by the meal and recipe
+ * prompts so the two cannot drift on the rule that matters: an exact name from
+ * the list, or nothing. Told to "choose the closest", a model handed a bowl of
+ * pho picks `laksa` and the diary shows the wrong dish rather than no dish.
  *
- * Shared by the meal and recipe prompts so the two cannot drift on the rule
- * that matters: an exact name from the list, or nothing. Told to "choose the
- * closest" without the escape, a model handed a bowl of pho picks `laksa` and
- * the diary shows the wrong dish rather than no dish.
- *
- * Two things about the wording were learnt the moment this shipped, and both
- * are about the LIST rather than the rule. Two hundred hyphenated slugs is by
- * far the largest block of example text in either prompt, and a model reads a
- * long list of names as the vocabulary it is supposed to answer in: asked for
- * "Fried flat rice noodles with prawns" it came back named `Char-kuey-teow`,
- * the slug, filed under a picture it then declined to pick. So the block goes
- * LAST, after every field it could contaminate, and it says outright that
- * these are filenames and belong in no other field.
- *
- * That is also why the list is the last thing in the sentence: whatever
- * follows a 2 kB run of slugs is read in their shadow, so the fence has to
- * come first and the list has to be what the block trails off into.
+ * Two hundred hyphenated slugs is the largest block of example text in either
+ * prompt, and a model reads a long list of names as the vocabulary to answer in:
+ * asked for "Fried flat rice noodles with prawns" it came back named
+ * `Char-kuey-teow`. So the block goes last, after every field it could
+ * contaminate, it says outright that these are filenames, and the fence comes
+ * before the list, since whatever follows 2 kB of slugs is read in their shadow.
  */
 export const ICON_INSTRUCTION =
   'Last, "icon". This is the little picture the app draws next to it, and the ' +
@@ -264,13 +231,10 @@ export const ICON_INSTRUCTION =
   'copied character for character, or null. ' +
   // Said before the list, because after it is too late.
   //
-  // The fields are ENUMERATED rather than covered by "any other field", which
-  // is what this used to say. The leak had simply moved: names came back clean
-  // and the SEARCH fields came back slugged — "chicken-rice",
-  // "banana-leaf-rice", "kaya-toast", on every typed meal — because a query
-  // reads to a model as more filename-like than a name does. It searched anyway,
-  // since the catalogue folds punctuation, so nothing looked broken; what it
-  // cost was the exact-name arm, which cannot match a slug, and a backlog of
+  // The fields are enumerated rather than covered by "any other field", which is
+  // what this used to say: the leak simply moved to the search fields, since a
+  // query reads as more filename-like than a name does. It searched anyway, so
+  // nothing looked broken; what it cost was the exact-name arm and a backlog of
   // hyphenated nonsense in the misses table.
   'These ids are not names of anything, and they are not search terms. Never ' +
   'copy one into "name", "specific_query", "generic_query", a component name, an ' +

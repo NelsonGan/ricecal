@@ -1,24 +1,21 @@
 /**
  * What a home screen widget is allowed to know, and the shape it arrives in.
  *
- * A widget process is not the app. It gets a few milliseconds, no session, no
- * network worth relying on and no react-query cache, so everything it draws has
- * to be sitting in shared storage before it wakes up. This type is that store.
+ * A widget process is not the app: a few milliseconds, no session, no network
+ * worth relying on and no react-query cache, so everything it draws has to be in
+ * shared storage before it wakes up.
  *
- * TWO RULES SHAPED IT, and both are the same rule from different ends:
+ * Two rules shaped it, and they are the same rule from different ends.
  *
- * 1. **The widget does no arithmetic.** Every bar arrives as a `fraction`
- *    already clamped to 0..1 and every figure as the string to print. A ring
- *    that divided for itself would be a second implementation of the sum on
- *    Today, in another language, and the two would disagree the first time
- *    movement extended the budget.
- * 2. **The widget does no formatting.** `toLocaleString`, the pounds/kilograms
- *    preference and the real minus sign in a weight change are all decided in
- *    the app, where they already are. Native code that formatted its own
- *    numbers would be an English-only copy of `features/progress/units.ts`.
+ * 1. The widget does no arithmetic. Every bar arrives as a `fraction` already
+ *    clamped to 0..1 and every figure as the string to print, or a ring would be
+ *    a second implementation of the sum on Today, in another language.
+ * 2. The widget does no formatting. `toLocaleString`, the pounds/kilograms
+ *    preference and the real minus sign are decided in the app, or native code
+ *    would be an English-only copy of `features/progress/units.ts`.
  *
  * The one number the widget reads rather than prints is `water.ml`, because the
- * two preset buttons add to it in place — see `WidgetAction`.
+ * preset buttons add to it in place. See `WidgetAction`.
  */
 
 /** A bar, as the widget draws it: how full, and what to write beside it. */
@@ -38,21 +35,18 @@ export type WidgetEntry = {
 
 export type WidgetSnapshot = {
   /**
-   * Bumped when a field changes shape.
-   *
-   * The store outlives the build that wrote it — a widget keeps rendering the
-   * last snapshot while the app updates underneath it — so native code checks
-   * this and draws the placeholder rather than a half-read layout.
+   * Bumped when a field changes shape. The store outlives the build that wrote
+   * it, since a widget keeps rendering the last snapshot while the app updates,
+   * so native code checks this and draws the placeholder instead.
    */
   version: 1
   /** When the app last wrote this, as milliseconds since the epoch. */
   updatedAt: number
   /**
-   * The day the figures describe, `yyyy-MM-dd`, in the phone's own zone.
-   *
-   * Not decoration: the widget compares it against the current date and shows
-   * its "open RiceCal" placeholder once they differ, so a phone left alone
-   * overnight does not present yesterday's total as today's.
+   * The day the figures describe, `yyyy-MM-dd`, in the phone's own zone. The
+   * widget compares it against the current date and shows its placeholder once
+   * they differ, so a phone left alone overnight does not present yesterday's
+   * total as today's.
    */
   date: string
   /**
@@ -111,13 +105,10 @@ export type WidgetSnapshot = {
     /** "−1.8 kg", with a real minus sign. Empty when nothing has moved. */
     change: string
     /**
-     * Whether that change is a gain, which is what decides the pill's colour.
-     *
-     * A COLOUR THE APP OWNS, like every other verdict here. Trends paints a
-     * gain in kaya and a loss in pandan, so a widget that painted both green
-     * would be the same figure disagreeing with itself one tap away. The
-     * widget cannot work it out for itself either: `change` is a formatted
-     * string by the time it arrives.
+     * Whether that change is a gain, which decides the pill's colour. A colour
+     * the app owns, like every other verdict here: Trends paints a gain in kaya
+     * and a loss in pandan, and the widget could not work it out anyway, since
+     * `change` is a formatted string by the time it arrives.
      *
      * Meaningless when `change` is empty, since nothing is drawn then.
      */
@@ -136,16 +127,13 @@ export type WidgetSnapshot = {
 }
 
 /**
- * Something the user did on the widget that the app still owes the server.
+ * Something the user did on the widget that the app still owes the server. A
+ * widget cannot reach Supabase, and a `+250` that waited for a round trip would
+ * be a button that does nothing for a second and then maybe fails, so the tap
+ * writes here and bumps `water.ml` in the snapshot.
  *
- * A widget cannot reach Supabase: it has no session, and a `+250` that waited
- * for a round trip would be a button that does nothing for a second and then
- * maybe fails. So the tap writes here and bumps `water.ml` in the snapshot, and
- * the app drains this queue the next time it is in front of somebody.
- *
- * `at` is the tap, not the drain, and `date` is the day the tap belonged to.
- * A drink logged at 11pm and synced at 8am the next morning goes on the night
- * it was drunk.
+ * `at` is the tap rather than the drain, and `date` is the day it belonged to, so
+ * a drink logged at 11pm and synced at 8am goes on the night it was drunk.
  */
 export type WidgetAction = {
   /** One kind so far. The field is what keeps a second one cheap. */
@@ -159,12 +147,10 @@ export type WidgetAction = {
 }
 
 /**
- * The widgets this app publishes, in the app's own words.
- *
- * The native side has its own identifiers — a WidgetKit `kind`, an Android
- * provider class — and `installedWidgets()` translates to these before anything
- * else sees them. That is deliberate: these strings end up in Mixpanel, and a
- * breakdown should not be reading `RiceCalQuickLogWidgetProvider`.
+ * The widgets this app publishes, in the app's own words. The native side has its
+ * own identifiers and `installedWidgets()` translates to these first, because
+ * these strings end up in Mixpanel and a breakdown should not read
+ * `RiceCalQuickLogWidgetProvider`.
  */
 export type WidgetKind = 'kcal' | 'water' | 'weight' | 'day' | 'quick_log' | 'today'
 

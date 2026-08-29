@@ -50,41 +50,30 @@ function Summary({ request }: { request: SuggestRequest }) {
 }
 
 /**
- * L9 PICKS SHEET: seven things to eat, the one being read, and the way back to
+ * The picks sheet: seven things to eat, the one being read, and the way back to
  * the question.
  *
- * ONE SHEET FOR ALL OF IT, rather than a thinking sheet that closes and a picks
- * sheet that opens, and rather than a pick that pushes a page. Two modals in
- * sequence is two rises, two scrims and a frame of the diary in between; a
- * pushed page is worse, because a `Sheet` is a native window drawing over the
- * whole app, so the panel had to be closed on the way into a pick and raised
- * again on the way out. Reading two picks was four transitions. The wait, the
- * answer and the pick are three bodies in one panel now: the body changes, the
- * panel does not move.
+ * One sheet for all of it. Two modals in sequence is two rises, two scrims and a
+ * frame of the diary in between, and a pushed page is worse, because a `Sheet` is
+ * a native window over the whole app, so reading two picks was four transitions.
+ * The wait, the answer and the pick are three bodies in one panel.
  *
- * FULL HEIGHT, so the panel is the same size throughout. A capped sheet sizes
- * itself to its content, so the wait and the answer would be two different
- * heights and the panel would jump at the one moment this screen has to feel
- * settled — with the reader's eye on it. At full height nothing moves but the
- * content, which is also why the wait draws as many skeleton rows as there are
- * picks coming: it stands in for exactly what is on its way.
+ * Full height, so the panel is the same size throughout: a capped sheet sizes
+ * itself to its content, so the panel would jump at the one moment this screen
+ * has to feel settled. That is also why the wait draws as many skeleton rows as
+ * there are picks coming.
  *
- * It ASKS AGAIN rather than reopening the question — see `onRetry` in
- * `SuggestAction` — so the skeleton comes straight back up in the list's place
- * and the sheet never closes. That control is ABSENT while a pick is being read
- * rather than disabled: it would answer with a different list under the dish on
- * screen, which is reached by index.
+ * It asks again rather than reopening the question (see `onRetry` in
+ * `SuggestAction`), so the skeleton comes back up in the list's place. That
+ * control is absent rather than disabled while a pick is being read, since a
+ * different list under a dish reached by index would answer the wrong thing.
  *
- * The rows are `ItemRow`, which is what every other list in this app is made
- * of, and the detail under each name is its PROTEIN. That is a choice about
- * this screen rather than a default: the calorie figure is already on the right
- * of the row, and protein is the number that distinguishes a list of dishes that
- * all come in under the same ceiling.
+ * The rows are `ItemRow` and the detail under each name is its protein: the
+ * calorie figure is already on the right, and protein distinguishes a list of
+ * dishes that all come in under the same ceiling.
  *
- * VIEW ONLY. There is no add button on a row and no "Log it" in the detail
- * behind it. These are guesses about meals nobody has eaten, and a diary priced
- * from a guess is the thing the cascade's estimate tier had to be unwound for.
- * Somebody who eats one logs it the ordinary way, and the catalogue prices it.
+ * View only. These are guesses about meals nobody has eaten, and a diary priced
+ * from a guess is what the cascade's estimate tier had to be unwound for.
  */
 export function PicksSheet({
   visible,

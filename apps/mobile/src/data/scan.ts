@@ -21,12 +21,10 @@ export type EntryIngredient = {
   servingLabel: string
   kcal: number
   /**
-   * What this much of it weighs, when the scan was able to say.
-   *
-   * Already multiplied by the quantity — the view does it, so the figure moves
-   * with the stepper. Null for a part nobody weighed: an entry scanned before
-   * the cascade started asking for grams, or one added by a typed correction,
-   * where the model gives a calorie delta and never a mass.
+   * What this much of it weighs, when the scan was able to say. Already
+   * multiplied by the quantity, so the figure moves with the stepper. Null for a
+   * part nobody weighed: an entry scanned before the cascade asked for grams, or
+   * one added by a typed correction, which gives a delta and never a mass.
    */
   grams: number | null
   /** Its own macros, which are what the entry's totals are summed from. */
@@ -66,14 +64,13 @@ export function useEntryIngredients(entryId: string | undefined) {
 }
 
 /**
- * Set one ingredient's portion. The database function recomputes the parent
- * entry's quantity in the same transaction, so the plate total and the parts
- * can never disagree — which is why this is an RPC and not a table update.
+ * Set one ingredient's portion. An RPC rather than a table update, because the
+ * database function recomputes the parent entry's quantity in the same
+ * transaction, so the plate total and the parts cannot disagree.
  *
- * Optimistic on the ingredient list: the row's numbers move under the finger,
- * and the server's answer reconciles quietly afterwards. The day totals are
- * only invalidated once the write settles, so tapping a stepper does not
- * ripple a refetch through the whole screen mid-gesture.
+ * Optimistic on the ingredient list, with the day totals invalidated only once
+ * the write settles, so tapping a stepper does not ripple a refetch through the
+ * screen mid-gesture.
  */
 export function useUpdateIngredient() {
   const userId = useUserId()
@@ -143,23 +140,17 @@ export function useUpdateIngredient() {
 }
 
 /**
- * Put a food ON the plate.
+ * Put a food on the plate. The list could only shrink until now: anything the
+ * scan missed had to be answered by retyping the entry's figures or spending a
+ * model call on "add a fried egg".
  *
- * The list could only ever shrink until now: the sheet under an entry offered a
- * stepper and a bin, and anything the scan had missed had to be answered either
- * by retyping the whole entry's figures or by spending a model call on "add a
- * fried egg". Naming it out of the catalogue is cheaper than both and more
- * exact than either.
+ * The figures sent are per one of the part, which is what `add_ingredient` stores
+ * against a factor of one, so a dish chosen at its "large" portion is sent as
+ * that portion's own numbers.
  *
- * The figures sent are per ONE of the part, which is what `add_ingredient`
- * stores against a factor of one — so a dish chosen at its "large" portion is
- * sent as that portion's own numbers rather than as a base and a multiplier
- * this row has nowhere to keep.
- *
- * NOT OPTIMISTIC, unlike the two above. Those move a row that is already on
- * screen and can be put back exactly as it was; this one has no id until the
- * server issues it, and a placeholder row that has to be reconciled with a real
- * one is the pending-snap problem again for a write that takes a moment.
+ * Not optimistic, unlike the two above: those move a row already on screen, where
+ * this has no id until the server issues one, and a placeholder to reconcile is
+ * the pending-snap problem for a write that takes a moment.
  */
 export function useAddIngredient() {
   const userId = useUserId()
@@ -196,13 +187,11 @@ export function useAddIngredient() {
         p_serving_id: input.servingId,
         p_serving_label: input.servingLabel,
       })
-      // Rewrapped rather than rethrown, unlike the two mutations above, and the
-      // difference matters here because the caller READS this message. A
+      // Rewrapped rather than rethrown, because the caller reads this message. A
       // `PostgrestError` is a plain object, so `error instanceof Error` is false
-      // for it and a screen that narrows on `Error` to reach `.message` would
-      // silently take the generic branch every time — which is how the one
-      // refusal worth explaining ("this entry uses your own calorie figure")
-      // would have come out as "could not add that".
+      // and a screen narrowing on `Error` takes the generic branch, which is how
+      // "this entry uses your own calorie figure" came out as "could not add
+      // that".
       if (error) throw new Error(error.message)
     },
     onSettled: (_data, _error, input) => {
@@ -216,11 +205,9 @@ export function useAddIngredient() {
 }
 
 /**
- * Take one ingredient off a scanned plate.
- *
- * Its own mutation rather than "set the quantity to zero": the database
- * function deletes the row and recomputes the parent from what is left, and a
- * portion of zero is not a portion.
+ * Take one ingredient off a scanned plate. Its own mutation rather than a
+ * quantity of zero: the database function deletes the row and recomputes the
+ * parent from what is left, and a portion of zero is not a portion.
  */
 export function useRemoveIngredient() {
   const userId = useUserId()
@@ -261,15 +248,12 @@ export function useRemoveIngredient() {
 }
 
 /**
- * Why a correction changed nothing, in the words the user gets told.
+ * Why a correction changed nothing, in the words the user gets told. The server
+ * answers with these and the screen translates them: one message for every way
+ * `scan-refine` can decline is what made the feature feel broken.
  *
- * The server answers with these; the screen translates them. One message for
- * every way `scan-refine` can decline was what made the feature feel broken —
- * "Could not apply that, try rewording it" was shown to somebody who typed
- * "extra spicy", where there is nothing to apply and rewording will not help.
- *
- * `unknown` is the client's own: an older function, or a shape this build does
- * not know about, and it keeps the general apology those used to get.
+ * `unknown` is the client's own, for an older function or a shape this build does
+ * not know, and keeps the general apology.
  */
 export type RefineDeclined =
   | 'not_a_correction'
@@ -299,22 +283,18 @@ type RefineResponse = {
 }
 
 /**
- * Fix-by-typing: sends the correction to the `scan-refine` function, which
- * interprets it against the entry's current state and either rescales the
- * quantity, re-resolves the food through the scan cascade, or declines.
+ * Fix-by-typing: sends the correction to `scan-refine`, which interprets it
+ * against the entry's current state and either rescales the quantity,
+ * re-resolves the food, or declines.
  *
- * Fire-and-forget, like `useSnapFood` and for the same reason: the caller
- * navigates back to Today the moment the correction is sent, and a mutation
- * tied to the detail screen would die with it. The entry's id goes into the
- * refining set so its row on Today shows the work; when the server answers,
- * the day refetches into the corrected entry and the id comes back out.
+ * Fire-and-forget, like `useSnapFood`: the caller navigates back to Today the
+ * moment it is sent, and a mutation tied to the detail screen would die with it.
+ * The entry's id goes into the refining set so its row shows the work.
  *
- * A correction the server DECLINES is the one outcome the row cannot express.
- * The function answers 200 with `applied: false` for text it could not read as
- * a food correction, and the entry then comes back looking exactly as it did —
- * so without `onNotApplied` the user watched a row work for ten seconds and
- * change nothing, with no way to tell that from a correction that had simply
- * made no difference.
+ * A declined correction is the one outcome the row cannot express: the function
+ * answers 200 with `applied: false` and the entry comes back looking exactly as
+ * it did, so without `onNotApplied` the user watched a row work for ten seconds
+ * and change nothing.
  */
 export function useRefineEntry() {
   const userId = useUserId()
@@ -329,12 +309,8 @@ export function useRefineEntry() {
       logDate: string
       /**
        * Whether the words came from a suggested chip rather than the field.
-       *
-       * Carried for analytics alone — nothing in this hook or on the server
-       * treats a chip differently, which is the point: a chip IS the sentence,
-       * not a shortcut the client performs itself. What the property answers is
-       * whether the four chips are being used at all, or whether everybody
-       * types.
+       * Analytics alone: nothing here or on the server treats a chip differently,
+       * because a chip is the sentence. It answers whether the chips are used.
        */
       fromChip?: boolean
       /**

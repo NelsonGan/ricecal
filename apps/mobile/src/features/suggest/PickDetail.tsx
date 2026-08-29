@@ -35,28 +35,19 @@ function Why({ reason }: { reason: Reason }) {
 }
 
 /**
- * L10 PICK DETAIL: one suggestion, read.
+ * One suggestion, read, inside the picks sheet rather than on a page of its own.
+ * A pushed screen meant the panel closed on the way in and rose again on the way
+ * out, so reading two picks was four transitions, and the way back had to be
+ * reconstructed from a counter on a provider. The body swaps and the panel does
+ * not move.
  *
- * INSIDE THE PICKS SHEET rather than on a page of its own, which is what it was.
- * A pushed screen meant the panel had to close on the way in and rise again on
- * the way out, so reading two picks was four transitions and two frames of the
- * diary in between — and the way back had to be reconstructed from a counter on
- * a provider, because a screen under a transparent presentation never loses
- * focus. The list and the pick it drills into are the same panel now: the body
- * swaps, the panel does not move, and going back is a chevron in the title row.
+ * There is no way to log from here, which is the feature. A pick is the model's
+ * guess about a dish nobody has cooked, priced from a sentence rather than a
+ * catalogue row, and an entry written from one would sit in the diary wearing the
+ * same face as a measured meal. The estimate tier was unwound for exactly this.
  *
- * THERE IS NO WAY TO LOG FROM HERE, and that is the feature rather than an
- * unfinished corner of it. A pick is the model's guess about a dish nobody has
- * cooked: its calorie figure came from a sentence rather than from a catalogue
- * row, and an entry written from one would be a guess sitting in the diary
- * wearing the same face as a measured meal. The estimate tier had to be unwound
- * for exactly this, and it was writing rows for food somebody had actually
- * eaten. Whoever eats one of these logs it the ordinary way, and the catalogue
- * prices it.
- *
- * So what it owes the reader is the OTHER thing: enough to decide. The figures,
- * what they are a figure for, what the day would look like afterwards, and why
- * this one was offered.
+ * So what it owes the reader is enough to decide: the figures, what they are a
+ * figure for, what the day would look like afterwards, and why this was offered.
  */
 export function PickDetail({ pick, date }: PickDetailProps) {
   const { t } = useTranslation('suggest')

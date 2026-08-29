@@ -10,30 +10,22 @@ import { birthDateFromAge } from '@/lib/nutrition'
 import { Button, EmptyState, Screen, Spinner, Text } from '@/ui'
 
 /**
- * SAVING — the hinge between the questions and the permissions.
- *
- * The one write the flow makes.
+ * Saving: the hinge between the questions and the permissions, and the one write
+ * the flow makes.
  *
  * Four screens of answers were kept on the phone because there was no account to
- * put them in; this is where they land, and the first screen in the flow that
- * needs a session. It is reached two ways — straight from the target screen when
- * the user already had one, or from the index route the moment signing in creates
- * one — and both come here rather than writing at the call site, so one place
- * knows what "finished" means.
+ * put them in. Two routes reach this screen, and both come here rather than
+ * writing at the call site, so one place knows what "finished" means.
  *
- * It carries no progress bar of its own. There is no decision on it and it is
- * gone in a second on any working connection; a mark that appears and vanishes
- * before it can be read is worse than the bar simply pausing.
+ * No progress bar of its own: there is no decision on it and it is gone in a
+ * second on any working connection.
  *
- * Deliberately a screen rather than an effect somewhere invisible: this is a
- * network write that can fail, and a failure needs somewhere to say so and a
- * button to try again. Losing four screens of answers to a dropped connection
- * would be the worst moment in the app to be silent.
+ * A screen rather than an invisible effect, because this is a network write that
+ * can fail and a failure needs somewhere to say so and a button to try again.
  *
- * Split in two because the guards have to run before the hooks. `useFinishOnboarding`
+ * Split in two because the guards run before the hooks: `useFinishOnboarding`
  * calls `useUserId`, which throws without a session, and a route is deep-linkable
- * whether or not the flow ever points at it — so the session and the draft are
- * checked out here, where no hook has been called yet.
+ * whether or not the flow points at it.
  */
 export default function FinishStep() {
   const { session, loading } = useSession()

@@ -7,13 +7,9 @@ import { SessionProvider, useSession } from '../session'
 
 /**
  * What a launch does to the cache, and what it makes of a session it cannot
- * check.
- *
- * Both of these are about the same morning: the phone is opened with no signal,
- * and everything the app saved yesterday is sitting on disk. Each bug on its own
- * was enough to hide the lot, and neither shows up online — a cleared cache is
- * refilled before the eye catches it, and a session dropped for want of a
- * refresh is restored by the next request.
+ * check. Both are about the same morning: the phone is opened with no signal and
+ * everything saved yesterday is on disk. Either bug alone hides the lot, and
+ * neither shows up online.
  */
 
 const authListeners: Array<(event: string, session: unknown) => void> = []
@@ -85,11 +81,8 @@ function mount(client: QueryClient) {
 }
 
 /**
- * Whatever supabase announces, announced to everyone listening.
- *
- * Inside `act` because these arrive from outside React the way the real ones do
- * — off a promise the auth client owns — and the state they set is the thing
- * every assertion below reads.
+ * Whatever supabase announces, announced to everyone listening. Inside `act`,
+ * because these arrive from outside React the way the real ones do.
  */
 const emit = (event: string, session: unknown) =>
   act(() => {
@@ -117,11 +110,10 @@ beforeEach(() => {
 const neverAnswers = () => new Promise(() => {})
 
 /**
- * The one that made every other offline fix pointless.
- *
- * `_recoverAndRefresh` announces SIGNED_IN on every launch that finds a usable
- * session in the keychain, so clearing on the event threw away the cache MMKV
- * had just rehydrated — and the persister wrote the empty result back over it.
+ * The one that made every other offline fix pointless. `_recoverAndRefresh`
+ * announces SIGNED_IN on every launch that finds a usable session, so clearing on
+ * the event threw away the cache MMKV had just rehydrated, and the persister
+ * wrote the empty result back over it.
  */
 it('keeps the cache a relaunch just rehydrated', async () => {
   const client = primed()
@@ -229,15 +221,11 @@ it('reports no session when the answer really is that there is none', async () =
 })
 
 /**
- * THE ONE THAT LEFT THE APP ON A SPINNER.
- *
- * Everything above is about what supabase ANSWERS with no connection. This is
- * about how long it takes to answer at all: `_recoverAndRefresh` refreshes an
- * access token within 90 seconds of expiring — an hour after the last launch,
- * so ordinarily — and offline that is a backoff loop of at least thirty seconds
- * before `getSession()` resolves, longer when the requests hang rather than
- * fail. `loading` was true throughout, so the router's own offline branch and
- * the diary sitting in MMKV were both below a screen nobody could get past.
+ * The one that left the app on a spinner. Everything above is about what supabase
+ * answers with no connection; this is about how long it takes to answer at all.
+ * `_recoverAndRefresh` refreshes a token within 90 seconds of expiring, which
+ * offline is a backoff loop of at least thirty seconds before `getSession()`
+ * resolves, and `loading` was true throughout.
  */
 it('routes off storage while supabase is still trying to refresh', async () => {
   mockGetSession.mockReturnValue(neverAnswers())
@@ -349,17 +337,14 @@ it('signs out when the refresh was refused rather than undeliverable', async () 
 })
 
 /**
- * The half of the paywall that lives outside the paywall.
+ * The half of the paywall that lives outside the paywall. RevenueCat is
+ * configured before anybody has signed in, so it starts anonymous: left that way,
+ * a purchase reaches the webhook as `$RCAnonymousID:...` and there is no account
+ * to credit.
  *
- * RevenueCat is configured before anybody has signed in, so it starts
- * anonymous and has to be TOLD who this is. Left anonymous, a purchase reaches
- * the webhook as `$RCAnonymousID:...`, there is no account to credit, and
- * somebody who has paid stays behind the paywall for good.
- *
- * The first version keyed this off the same "has the person changed" flag the
- * cache clearing uses, which is false on a cold start by construction — so it
- * only ever fired when somebody switched accounts, and the ordinary case of
- * opening the app and buying something identified nobody.
+ * The first version keyed off the same "has the person changed" flag the cache
+ * clearing uses, which is false on a cold start, so it only fired on an account
+ * switch.
  */
 it('tells RevenueCat who is signed in on an ordinary launch', async () => {
   await mount(primed())
@@ -375,13 +360,10 @@ it('tells RevenueCat who is signed in on an ordinary launch', async () => {
 })
 
 /**
- * ONE PERSON ACROSS BOTH PLATFORMS.
- *
- * RevenueCat forwards its purchase events into Mixpanel under the distinct id
- * it was given, so the two identifiers have to be the same string or a
- * subscription lands on a profile with no behaviour on it while the behaviour
- * sits on a profile that never bought anything. Nothing about that failure is
- * visible from either dashboard — both look plausible on their own.
+ * One person across both platforms. RevenueCat forwards its purchase events into
+ * Mixpanel under the distinct id it was given, so the two identifiers have to be
+ * the same string or a subscription lands on a profile with no behaviour on it.
+ * Neither dashboard shows that failure; both look plausible alone.
  */
 it('names the same person to Mixpanel and to RevenueCat', async () => {
   await mount(primed())

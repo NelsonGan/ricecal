@@ -49,16 +49,14 @@ export type BadgeProps = ViewProps & {
 /**
  * A static status pill: "On track", "1 day streak", "Active".
  *
- * Not pressable by design. If it needs to respond to a tap it is a `Chip`, and
- * the difference matters — a pill that looks tappable and is not is worse than
- * either.
+ * Not pressable by design. If it needs to respond to a tap it is a `Chip`.
  *
- * Only *text* children get wrapped in `Text`. Wrapping unconditionally is what
- * misaligned the flame on the streak pill: an `<Image>` nested inside a `<Text>`
- * is laid out by the text engine as an inline attachment, sitting on the
- * baseline rather than centred against the label, and no amount of `items-center`
- * on the row could move it. It also read as `￼0 day streak` to VoiceOver — the
- * object-replacement character the attachment leaves in the string.
+ * Only text children get wrapped in `Text`. Wrapping unconditionally misaligned
+ * the flame on the streak pill: an `<Image>` inside a `<Text>` is laid out by the
+ * text engine as an inline attachment, sitting on the baseline rather than
+ * centred, and no `items-center` on the row could move it. It also read as
+ * `￼0 day streak` to VoiceOver, from the object-replacement character the
+ * attachment leaves in the string.
  */
 export function Badge({
   children,

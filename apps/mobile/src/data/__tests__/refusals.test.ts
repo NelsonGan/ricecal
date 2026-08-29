@@ -24,18 +24,15 @@ const failure = (status: number, body: unknown) => ({
 })
 
 /**
- * The same failure, carrying a response that is NOT the global `Response`.
+ * The same failure, carrying a response that is not the global `Response`.
  *
- * THIS IS THE CASE THE APP ACTUALLY MEETS, and the reason every case above
- * passed while nothing worked on a phone. Expo 57 ships its own fetch, so what
- * hangs off a `FunctionsHttpError` there is a `FetchResponse` that does not
- * subclass `Response` — and the check used to be `instanceof Response`, which
- * is true under jest (Node has the global) and false in the app. Every refusal
- * the server has ever sent was read as an ordinary failure: no toast, no
- * paywall, just "could not read this one".
+ * This is the case the app actually meets, and why every case above passed while
+ * nothing worked on a phone. Expo 57 ships its own fetch, so what hangs off a
+ * `FunctionsHttpError` is a `FetchResponse` that does not subclass `Response`,
+ * and the check used to be `instanceof Response`: true under jest, false in the
+ * app. Every refusal the server sent was read as an ordinary failure.
  *
- * Written without `clone` as well, since a foreign implementation is not
- * obliged to have it.
+ * Written without `clone` as well, since a foreign implementation need not have it.
  */
 const foreignFailure = (status: number, body: unknown) => ({
   name: 'FunctionsHttpError',

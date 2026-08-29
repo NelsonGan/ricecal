@@ -54,26 +54,21 @@ export type ThemeProviderProps = {
 }
 
 /**
- * Owns the colour scheme and publishes the matching palette as CSS variables,
- * so every `bg-surface` and `text-muted` in the app resolves to the right mode.
+ * Owns the colour scheme and publishes the matching palette as CSS variables, so
+ * every `bg-surface` and `text-muted` resolves to the right mode.
  *
- * Two decisions worth knowing about, both learned the hard way:
+ * A `.dark:root` block in global.css does nothing: NativeWind reads a
+ * stylesheet's `:root` variables once and has no dark-scoped root. `vars()` binds
+ * variables to a React subtree, which also reaches into Modals, as Sheet and
+ * Select depend on.
  *
- * A `.dark:root { --color-…: … }` block in global.css does nothing. NativeWind
- * reads a stylesheet's `:root` variables once and has no dark-scoped root, so
- * the dark values compiled and were then never referenced. `vars()` is the
- * supported mechanism: it binds variables to a React subtree, which also means
- * the scope reaches into Modals — what Sheet and Select depend on.
+ * The scheme comes from React Native's `useColorScheme` rather than NativeWind's
+ * store, so the source of truth is the platform's own, with a user override
+ * layered on top here.
  *
- * The scheme comes from React Native's `useColorScheme` — the `Appearance` API
- * — rather than NativeWind's store, so the one source of truth is the platform's
- * own. A user override is layered on top here instead of in a second store that
- * could disagree with it.
- *
- * Following the OS also needs `userInterfaceStyle: "automatic"` in app.json.
- * Set to `"light"`, Expo writes `UIUserInterfaceStyle: Light` into Info.plist
- * and iOS pins the whole app, so `Appearance` reports light on a device in dark
- * mode and no amount of JS will notice.
+ * Following the OS also needs `userInterfaceStyle: "automatic"` in app.json: set
+ * to `"light"`, iOS pins the whole app and `Appearance` reports light on a device
+ * in dark mode.
  */
 export function ThemeProvider({
   children,

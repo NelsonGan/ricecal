@@ -1,23 +1,19 @@
 /**
- * The workout types RiceCal draws, and how each provider's numbering reaches
- * one of them.
+ * The workout types RiceCal draws, and how each provider's numbering reaches one
+ * of them.
  *
- * WHY THIS IS NOT AN ENUM ANYWHERE
+ * Not an enum anywhere: Apple ships around eighty `HKWorkoutActivityType` values
+ * and adds to them in point releases, and Health Connect has its own ninety-odd.
+ * `activity_sessions.kind` is `text` and this map is a floor rather than a gate,
+ * so an unknown type lands as `other`, keeps the provider's label, and costs an
+ * illustration rather than failing a sync mid-backfill.
  *
- * Apple ships around eighty `HKWorkoutActivityType` values and adds to them in
- * point releases; Health Connect has its own ninety-odd, numbered differently.
- * `activity_sessions.kind` is `text` and this map is a floor rather than a
- * gate: a type nobody here has heard of lands as `other`, keeps the provider's
- * own label, and costs an illustration instead of failing a sync mid-backfill.
+ * The set is chosen for what a Malaysian phone records: badminton is first-class,
+ * and everything Apple splits fine-grained that nobody distinguishes on a list
+ * row is folded into one.
  *
- * The set is chosen for what a Malaysian phone actually records. Badminton is
- * first-class — it is the sport here, and Apple has had a type for it since
- * watchOS 2. Everything Apple splits fine-grained that nobody distinguishes on
- * a list row is folded: `traditionalStrengthTraining`,
- * `functionalStrengthTraining` and `coreTraining` are all `strength`.
- *
- * Icons and copy for these live in `features/activity/workoutKind.ts`. This
- * file is the part the platform adapters need, and it imports nothing.
+ * Icons and copy live in `features/activity/workoutKind.ts`. This is the part the
+ * platform adapters need, and it imports nothing.
  */
 
 export const WORKOUT_KINDS = [

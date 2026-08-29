@@ -12,28 +12,24 @@ import { useBack } from '@/lib/navigation'
 import { AppBar, Button, Card, ConfirmSheet, Screen, Text, useToast } from '@/ui'
 
 /**
- * U9 ACCOUNT
+ * Account.
  *
- * One screen, and it exists for one paragraph of App Review guideline 5.1.1(v):
- * an app that lets somebody create an account has to let them delete it from
- * inside the app. Not a form, not an email, not a reply from a person. This app
- * was rejected for having only the email route, which
- * `ricecal.app/data-deletion` used to describe.
+ * This screen exists for one paragraph of App Review guideline 5.1.1(v): an app
+ * that lets somebody create an account has to let them delete it from inside the
+ * app. Not a form, not an email, not a reply from a person. This app was rejected
+ * for having only the email route.
  *
- * WHY IT IS ITS OWN ROUTE rather than a row at the foot of the Me tab. A
- * reviewer has to be able to FIND it, working from the guideline text alone and
- * nothing else, and "Account" is the word they will look under. It is also the
- * only screen in settings that is about the account rather than about the
- * diary, so it is where the address belongs too.
+ * Its own route rather than a row at the foot of the Me tab, because a reviewer
+ * has to be able to find it from the guideline text alone, and "Account" is the
+ * word they will look under. It is also the only settings screen about the
+ * account rather than the diary, so the address belongs here too.
  *
- * TWO STEPS, WHICH IS THE MOST THE GUIDELINE ALLOWS. A button, then a sheet
- * that says the thing cannot be undone. Anything beyond that — a typed
- * confirmation, a reason, a cooling-off period — is friction the guideline
- * reads as an obstacle, and none of it would prevent a mis-tap that two taps
- * and a red button do not.
+ * Two steps, which is the most the guideline allows: a button, then a sheet
+ * saying it cannot be undone. Anything beyond that is friction the guideline
+ * reads as an obstacle.
  *
- * WHAT IT DOES NOT DO IS BARGAIN. No offer of a discount, no "are you sure you
- * want to lose your streak", no survey. Somebody who came here came here.
+ * It does not bargain. No discount, no "are you sure you want to lose your
+ * streak", no survey.
  */
 export default function AccountScreen() {
   const { t } = useTranslation(['profile', 'common'])

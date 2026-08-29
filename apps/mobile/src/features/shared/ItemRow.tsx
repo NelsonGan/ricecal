@@ -12,18 +12,17 @@ const valueTones = {
 } as const
 
 /**
- * The picture tile, and the indent owed to anything that lines up with the
- * text beside it.
+ * The picture tile, and the indent owed to anything lining up with the text
+ * beside it.
  *
  * Exported because four places have to agree on one number: this row, the
- * analysing row that stands in for it mid-scan, the review badge that indents
- * to a recipe's text column, and the recipes skeleton. They drifted once
- * already — 56pt in one place and 48 in another — which is what the note on
- * `ItemRow` is about.
+ * analysing row that stands in mid-scan, the review badge that indents to a
+ * recipe's text column, and the recipes skeleton. They drifted once already, 56pt
+ * in one place and 48 in another.
  *
  * Literal class strings rather than a number interpolated into one: NativeWind
- * compiles the stylesheet from the source text, so a class it cannot read
- * before the app runs produces no style at all.
+ * compiles the stylesheet from the source text, so a class it cannot read before
+ * the app runs produces no style at all.
  */
 export const ROW_TILE = 'h-[72px] w-[72px]'
 /** Tile plus the row's `gap-3`. */

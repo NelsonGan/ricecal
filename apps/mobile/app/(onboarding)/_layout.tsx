@@ -1,28 +1,20 @@
 import { Stack } from 'expo-router'
 
 /**
- * The onboarding flow.
+ * The onboarding flow, and nothing here has an edge swipe.
  *
- * NOTHING HERE HAS AN EDGE SWIPE, and that is the whole shape of it.
- *
- * The gesture was off for the second half already, for a concrete reason:
- * everything from the flush onwards REPLACES its predecessor, so the top of the
- * stack under "Connect Apple Health" is still a question from before the account
- * existed. A swipe there walked a minute-old account back into "Where did you
- * hear about us?", and one on the tour walked them into "Save your progress"
- * while already signed in.
+ * The gesture was already off for the second half: everything from the flush
+ * onwards replaces its predecessor, so the top of the stack under "Connect Apple
+ * Health" is a question from before the account existed, and a swipe walked a
+ * minute-old account back into "Where did you hear about us?".
  *
  * The questions kept it, on the reasoning that walking an answer back is the
- * point of a questionnaire. What that missed is that the flow crosses out of
- * this group and back — the account screen is in `(auth)`, and the flush
- * replaces it — so the stack a swipe unwinds is not the one the user walked. The
- * complaint was exactly that: sign in, and a swipe from the next screen lands
- * somewhere that "looks weird".
+ * point of a questionnaire, which missed that the flow crosses out of this group
+ * and back: the account screen is in `(auth)`, and the flush replaces it, so the
+ * stack a swipe unwinds is not the one the user walked.
  *
- * So the rule is one rule now. Onboarding moves forwards, and backwards only
- * where a chevron says so — `StepHeader` draws it, and each screen decides where
- * it goes, which is a decision the gesture could never make. `(auth)` and
- * `(tabs)` are pinned the same way in the root stack.
+ * So onboarding moves forwards, and backwards only where a chevron says so.
+ * `(auth)` and `(tabs)` are pinned the same way in the root stack.
  */
 export default function OnboardingLayout() {
   return (

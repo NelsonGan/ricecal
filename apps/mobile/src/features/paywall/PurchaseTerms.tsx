@@ -7,21 +7,18 @@ import { Button, Text } from '@/ui'
 /**
  * The line every screen that can start a purchase has to carry.
  *
- * Guideline 3.1.2 asks a subscription purchase screen for four things: what is
- * being sold, how long it lasts, what it costs, and working links to the terms
- * of use and the privacy policy. The first three are the sentence above this
- * one (`hard.smallPrint*`, or `ended.terms` on the trial-ended screen); these
- * are the last two, and they were on none of the three screens that can charge
- * somebody.
+ * Guideline 3.1.2 asks for four things: what is being sold, how long it lasts,
+ * what it costs, and working links to the terms of use and the privacy policy.
+ * The first three are the sentence above this one (`hard.smallPrint*`, or
+ * `ended.terms`); these are the last two, and they were on none of the three
+ * screens that can charge somebody.
  *
- * A component rather than a copied pair of links, because "every screen that
- * can start a purchase" is a set that grows: `ProPitch` covers the onboarding
- * and standing paywalls, and `paywall/ended.tsx` is the third, which sells a
- * year with one tap and had no small print of its own at all.
+ * A component rather than a copied pair of links, because the set of screens that
+ * can start a purchase grows.
  *
- * Ghost buttons rather than underlined text inside a sentence. `Text` here is
- * not a link primitive, and the accessibility of a tappable span inside a
- * paragraph is worse than two adjacent buttons that each say what they open.
+ * Ghost buttons rather than underlined text inside a sentence: `Text` here is not
+ * a link primitive, and a tappable span inside a paragraph is less accessible
+ * than two buttons that each say what they open.
  */
 export function PurchaseTerms() {
   const { t } = useTranslation('paywall')

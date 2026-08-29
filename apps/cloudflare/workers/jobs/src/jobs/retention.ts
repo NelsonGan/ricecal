@@ -1,34 +1,25 @@
 /**
  * The photograph sweep: a free account's plates are kept for thirty days.
  *
- * WHAT IS DELETED IS THE PICTURE AND NOTHING ELSE. The entry stays: its name,
- * its macros, its portion and its place in the diary are the calorie history
- * the user came for, and an app that quietly deleted those would be deleting
- * their record of their own year. `clear_meal_photos` puts a drawing where the
- * plate was, so a swept month reads as a diary of illustrated meals rather
- * than as a column of grey placeholder tiles.
+ * The picture goes and nothing else. The entry's name, macros, portion and place
+ * in the diary are the calorie history the user came for, and
+ * `clear_meal_photos` puts a drawing where the plate was, so a swept month reads
+ * as a diary of illustrated meals rather than grey placeholder tiles.
  *
- * THE ORDER IS THE WHOLE PROBLEM, and it is the same order this had as an edge
- * function. Delete the object, THEN forget the key. A crash between the two
- * leaves a row naming an object that is gone; the next run asks R2 to delete a
- * key that is already absent, which is a no-op, and finishes the job. The
- * other order strands the bytes for ever — the key is the only name they have,
- * and nothing else in the system records it.
+ * The order is the whole problem: delete the object, then forget the key. A crash
+ * between the two leaves a row naming an object that is gone, and the next run
+ * asks R2 to delete an absent key, which is a no-op. The other order strands the
+ * bytes for ever, since the key is the only name they have.
  *
- * WHAT CHANGED WHEN IT MOVED HERE, beyond losing a public endpoint and a
- * shared secret:
+ * What changed when it moved here, beyond losing a public endpoint and a shared
+ * secret:
  *
- *   1. R2 IS A BINDING. `env.PHOTOS.delete(keys)` takes an array, so five
- *      hundred deletes are one call rather than five hundred signed S3 round
- *      trips fanned out ten at a time. `aws4fetch`, the concurrency loop and
- *      the four `R2_*` credentials all went with it.
- *   2. THE DRAIN LOOP CAME BACK. Under `pg_net` the caller could not read its
- *      own response, so "is there more" could not drive anything and the
- *      backlog was spread over twenty-four hourly batches instead. A cron on
- *      an hourly interval gets fifteen minutes of CPU, so this simply keeps
- *      going until it runs dry.
- *   3. THE NAME COMES BACK WITH THE ROW. `expired_meal_photos` returns
- *      `item_name`, so the icon match no longer needs a second query.
+ *   1. R2 is a binding. `env.PHOTOS.delete(keys)` takes an array, so five hundred
+ *      deletes are one call rather than five hundred signed S3 round trips.
+ *   2. The drain loop came back. Under `pg_net` the caller could not read its own
+ *      response, so the backlog was spread over twenty-four hourly batches; a
+ *      cron gets fifteen minutes of CPU and simply runs until it is dry.
+ *   3. The name comes back with the row, so the icon match needs no second query.
  */
 import { iconFor } from '../../../../../supabase/functions/_shared/icon-match.ts'
 import type { Job } from '../job.ts'
