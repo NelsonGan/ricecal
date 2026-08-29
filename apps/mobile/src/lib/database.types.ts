@@ -196,36 +196,6 @@ export type Database = {
         }
         Relationships: []
       }
-      archetypes: {
-        Row: {
-          carbs_g: number
-          fat_g: number
-          id: string
-          kcal: number
-          name: string
-          protein_g: number
-          slug: string
-        }
-        Insert: {
-          carbs_g: number
-          fat_g: number
-          id?: string
-          kcal: number
-          name: string
-          protein_g: number
-          slug: string
-        }
-        Update: {
-          carbs_g?: number
-          fat_g?: number
-          id?: string
-          kcal?: number
-          name?: string
-          protein_g?: number
-          slug?: string
-        }
-        Relationships: []
-      }
       barcode_misses: {
         Row: {
           code: string
@@ -1616,6 +1586,22 @@ export type Database = {
           walking_kcal: number
         }[]
       }
+      add_ingredient: {
+        Args: {
+          p_carbs_g: number
+          p_fat_g: number
+          p_food_id?: string
+          p_food_log_id: string
+          p_grams?: number
+          p_kcal: number
+          p_name: string
+          p_protein_g: number
+          p_quantity?: number
+          p_serving_id?: string
+          p_serving_label?: string
+        }
+        Returns: string
+      }
       add_water: { Args: { p_date?: string; p_ml: number }; Returns: number }
       barcode_hourly_limit: { Args: never; Returns: number }
       claim_barcode_scan: {
@@ -1859,7 +1845,6 @@ export type Database = {
         }[]
       }
       search_normalize: { Args: { txt: string }; Returns: string }
-      seed_archetype_foods: { Args: never; Returns: undefined }
       set_ingredient_quantity: {
         Args: { p_ingredient_id: string; p_quantity: number }
         Returns: undefined

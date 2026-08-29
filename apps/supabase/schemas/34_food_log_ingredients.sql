@@ -66,9 +66,11 @@ create index food_log_ingredients_log_idx on public.food_log_ingredients (food_l
 
 alter table public.food_log_ingredients enable row level security;
 
--- Clients read their own; only the scan function writes, as service_role —
--- the breakdown is derived data, and a hand-edited ingredient list that no
--- longer sums to the parent would be a lie the UI cannot detect. Deleting
+-- Clients read their own and have no write grant at all: the breakdown is what
+-- the entry's totals are summed from, and a table a client could UPDATE freely
+-- is a total anybody could write anything into. The three things a user may do
+-- to a plate — resize a part, take one off, put one on — are the security
+-- definer functions below, each of which checks the owner itself. Deleting
 -- rides the parent's cascade.
 grant select on public.food_log_ingredients to authenticated;
 grant select, insert, update, delete on public.food_log_ingredients to service_role;
@@ -179,3 +181,160 @@ comment on function public.remove_ingredient is
 
 revoke execute on function public.remove_ingredient from public, anon;
 grant execute on function public.remove_ingredient to authenticated, service_role;
+
+
+-- ---------------------------------------------------------------------------
+-- Putting something ON the plate.
+--
+-- The list could only ever shrink. A scan that missed the fried egg left the
+-- user two ways to say so — retype the whole entry's figures, or spend a model
+-- call on "add a fried egg" — and both of those are worse than naming the thing
+-- out of the catalogue the app already searches.
+--
+-- The part is a snapshot like every other row here: `food_id` is provenance and
+-- nothing joins it, so a catalogue dish and a part somebody typed land in the
+-- same shape.
+--
+-- THE ENTRY BECOMES ITS OWN FIRST PART when it has none. `food_log_details`
+-- prefers the sum of the parts over the row's own figures, so adding one
+-- ingredient to an entry with no breakdown would silently redefine a 780 kcal
+-- nasi lemak as the 78 kcal egg that was just added to it. Seeding the parent in
+-- first is exact rather than approximate: the seeded row carries the entry's own
+-- base figures, factor and quantity, so the sum the view now takes is the same
+-- arithmetic it was already doing on the row.
+--
+-- Two entries it refuses, both because the addition would not show:
+--   * one whose calorie total the user has typed over — `override_kcal` sits
+--     ABOVE the parts, so the plate would gain a row and not a calorie;
+--   * one logged at more than twenty servings, which is past what a part's own
+--     portion may be set to, so the seeded parent could never be edited back.
+-- ---------------------------------------------------------------------------
+create or replace function public.add_ingredient(
+  p_food_log_id   uuid,
+  p_name          text,
+  p_kcal          numeric,
+  p_carbs_g       numeric,
+  p_protein_g     numeric,
+  p_fat_g         numeric,
+  p_quantity      numeric default 1,
+  p_grams         numeric default null,
+  p_food_id       uuid    default null,
+  p_serving_id    text    default null,
+  p_serving_label text    default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_entry public.food_logs;
+  v_parts integer;
+  v_name  text := left(btrim(coalesce(p_name, '')), 120);
+  v_label text := left(btrim(coalesce(p_serving_label, '')), 120);
+  v_id    uuid;
+begin
+  select * into v_entry from public.food_logs where id = p_food_log_id;
+  if v_entry.id is null or v_entry.user_id is distinct from auth.uid() then
+    raise exception 'entry not found';
+  end if;
+
+  if v_name = '' then
+    raise exception 'ingredient needs a name';
+  end if;
+  if p_kcal is null or p_kcal < 0 or p_kcal > 20000 then
+    raise exception 'kcal out of range';
+  end if;
+  if p_quantity is null or p_quantity < 0.25 or p_quantity > 20 then
+    raise exception 'quantity out of range';
+  end if;
+  if p_grams is not null and (p_grams <= 0 or p_grams > 20000) then
+    raise exception 'grams out of range';
+  end if;
+
+  select count(*) into v_parts
+  from public.food_log_ingredients
+  where food_log_id = v_entry.id;
+
+  -- A plate is a handful of things. The ceiling is here so a stuck client
+  -- cannot grow one row's breakdown without limit.
+  if v_parts >= 30 then
+    raise exception 'too many ingredients on this entry';
+  end if;
+
+  if v_parts = 0 then
+    if v_entry.override_kcal is not null then
+      raise exception 'entry has typed figures';
+    end if;
+    if v_entry.quantity < 0.25 or v_entry.quantity > 20 then
+      raise exception 'entry portion is too large to break down';
+    end if;
+
+    insert into public.food_log_ingredients (
+      food_log_id, food_id, serving_id, quantity, item_name,
+      base_kcal, base_carbs_g, base_protein_g, base_fat_g,
+      serving_label, serving_factor, display_label, grams, position
+    )
+    values (
+      v_entry.id, v_entry.food_id, v_entry.serving_id, v_entry.quantity,
+      -- The two names copied as the two names, not folded into one. A part
+      -- coalesces them exactly as the parent does, so keeping them apart is
+      -- what makes the seeded row read back as the entry it came from.
+      v_entry.item_name,
+      v_entry.base_kcal, v_entry.base_carbs_g, v_entry.base_protein_g, v_entry.base_fat_g,
+      v_entry.serving_label, v_entry.serving_factor,
+      v_entry.display_label,
+      -- What one of the parent serving weighs, at the factor it was logged at.
+      -- Null rather than clamped where that lands outside what the column
+      -- accepts: a weight nobody can store is not a weight worth guessing.
+      case
+        when v_entry.serving_grams is null then null
+        when round(v_entry.serving_grams * v_entry.serving_factor, 1) between 0.1 and 20000
+          then round(v_entry.serving_grams * v_entry.serving_factor, 1)
+      end,
+      0
+    );
+  end if;
+
+  insert into public.food_log_ingredients (
+    food_log_id, food_id, serving_id, quantity, item_name,
+    base_kcal, base_carbs_g, base_protein_g, base_fat_g,
+    serving_label, serving_factor, display_label, grams, position
+  )
+  values (
+    v_entry.id,
+    p_food_id,
+    nullif(left(btrim(coalesce(p_serving_id, '')), 200), ''),
+    round(p_quantity, 2),
+    v_name,
+    round(p_kcal),
+    least(2000, greatest(0, round(coalesce(p_carbs_g, 0), 1))),
+    least(2000, greatest(0, round(coalesce(p_protein_g, 0), 1))),
+    least(2000, greatest(0, round(coalesce(p_fat_g, 0), 1))),
+    nullif(v_label, ''),
+    -- One, always. The figures above are per ONE of this part, which is what
+    -- the caller was shown; a factor as well would be a second place for the
+    -- portion to live and a second chance to count it twice.
+    1,
+    v_name,
+    case when p_grams is null then null else round(p_grams, 1) end,
+    -- After whatever is already there, read off the rows rather than off the
+    -- count: a plate somebody has removed the middle of has fewer parts than
+    -- its highest position, and a new row numbered by the count would land on
+    -- top of one that is still there.
+    (select coalesce(max(i.position), -1) + 1
+     from public.food_log_ingredients i where i.food_log_id = v_entry.id)
+  )
+  returning id into v_id;
+
+  return v_id;
+end;
+$$;
+
+comment on function public.add_ingredient is
+  'Put one food on a logged entry''s plate. Seeds the entry itself as the first '
+  'part when it has no breakdown yet, so the totals the view sums stay the '
+  'entry''s own. Owner-checked.';
+
+revoke execute on function public.add_ingredient from public, anon;
+grant execute on function public.add_ingredient to authenticated, service_role;

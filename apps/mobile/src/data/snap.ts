@@ -93,8 +93,11 @@ async function scanMeal(input: {
     // failing, which says nothing about what the function is doing.
     throw settled(error, (error as { name?: string }).name === 'FunctionsHttpError')
   }
-  // The cascade's own floor gave way (the database was down, the terminal
-  // archetype row is missing). The function answered, and its answer is no.
+  // The scan failed: no tier could say what the food was, the vision call would
+  // not answer, or the write broke. The function answered, and its answer is no
+  // — which it can now be, since the cascade lost the archetype floor that used
+  // to guarantee a row. `settled`, so the pending row says so at once instead of
+  // spinning out a deadline over an answer that has already arrived.
   if (!data?.ok) throw settled(new Error(data?.error ?? 'scan failed'), true)
   return data
 }
@@ -260,6 +263,10 @@ function useRecogniseMeal() {
           recordMealLogged(userId)
           pending.remove(id)
           queryClient.invalidateQueries({ queryKey: keys.day(userId, logDate) })
+          // And the search panel's "My foods" tab: a scan is the third write
+          // that changes what this account has recently eaten, and the newest
+          // meal is the one most likely to be wanted again.
+          queryClient.invalidateQueries({ queryKey: keys.recentFoods(userId) })
           queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
           queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
           queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })

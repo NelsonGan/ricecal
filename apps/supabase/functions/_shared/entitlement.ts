@@ -205,10 +205,11 @@ export async function requireEntitlement(
  * one scan is what the user did. `Meter` below counts the model requests
  * separately, for the logs and the bill.
  *
- * The claim is not refunded when the cascade goes badly. A scan that bottomed out
- * at the archetype floor has still spent a plate's worth of model time and the
- * user has still had an answer. Refunding would also mean deciding what "went
- * badly" means, which is a judgement the meter has no business making.
+ * The claim is not refunded when the cascade goes badly. A scan the cascade
+ * could not price has still spent a plate's worth of model time, and refunding
+ * would mean deciding what "went badly" means, which is a judgement the meter
+ * has no business making. The user is told the scan failed and can try again,
+ * which is the honest trade for a request that really was sent.
  *
  * A failed claim lets the request through, uncounted. This is the opposite call
  * from `isEntitled` above because the risk is opposite: entitlement decides

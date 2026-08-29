@@ -253,12 +253,11 @@ Deno.serve(async (req: Request) => {
   /**
    * A failure here is an empty list, not an HTTP error.
    *
-   * The same reasoning as the cascade's archetype floor, arrived at from the
-   * other end: there a diary that refuses the meal is worse than one that logs
-   * it roughly, and here there is nothing to log — so the honest answer to "the
-   * model would not answer" is to say so and offer the button again. The screen
-   * reads `picks: []` as "we could not think of anything", which is the truth
-   * and is one tap from another try.
+   * The same answer the scan cascade gives now that it has no floor under it:
+   * a guess dressed as an answer is worse than an admission, because nothing
+   * downstream can tell the two apart. The screen reads `picks: []` as "we
+   * could not think of anything", which is the truth and is one tap from
+   * another try.
    */
   let picks: Awaited<ReturnType<typeof suggestMeals>> = []
   try {
