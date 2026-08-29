@@ -237,6 +237,24 @@ export const logging = {
     title: 'Search',
     placeholder: 'Search any dish',
     clear: 'Clear search',
+    /**
+     * The two lists one field searches.
+     *
+     * "All foods" rather than "Catalogue", which is our word for it and not
+     * anybody else's, and "My foods" rather than "Recent" or "History": what
+     * makes the second list worth a tab is that the meals in it are the user's
+     * own, at their own portions, with their own photographs on them. The
+     * recency is how it is sorted, not what it is.
+     */
+    tabs: 'Which foods to search',
+    tabCatalogue: 'All foods',
+    tabMine: 'My foods',
+    /** Nobody has logged anything yet. Not a failure, so not phrased as one. */
+    mineEmptyTitle: 'Nothing logged yet',
+    mineEmptyBody: 'Meals you log turn up here, ready to add again.',
+    /** There is a history; nothing in it matches what was typed. */
+    mineNoMatchBody: 'Nothing you have eaten matches that.',
+    mineOfflineBody: 'Your diary lives on the server. This will load once you are back online.',
     /** Where a dish is usually eaten. Shown under its name in a result. */
     place: {
       mamak: 'Mamak',
@@ -277,10 +295,46 @@ export const logging = {
      * else they might have been sending.
      */
     fixAction: 'Fix it',
+    /**
+     * Why a correction changed nothing, and there are five of them because one
+     * apology for all five is what made this feature feel broken.
+     *
+     * "Could not apply that. Try rewording it" was shown to somebody who typed
+     * "extra spicy", where there is nothing to apply and rewording will not
+     * help, and to somebody whose perfectly clear sentence hit a model
+     * answering in the wrong shape, where the words were never the problem.
+     * Each of these has to leave the reader with a different next move.
+     *
+     * `fixNotApplied` survives as the last resort, for a server older than the
+     * build reading it.
+     */
     fixNotApplied: 'Could not apply that. Try rewording it',
-    /** The scanned plate's ingredient breakdown. */
+    fixNoCalories: 'That does not change the calories, so nothing moved',
+    fixNotUnderstood: 'Could not read that one. Try saying it another way',
+    fixNoMatch: 'Could not work out that dish. Your meal is unchanged',
+    fixNoChange: 'Nothing on the plate matched that',
+    fixFailed: 'That did not go through. Try again',
+    /** The plate's ingredient breakdown. */
     plateTitle: 'INGREDIENTS',
     plateTotal: 'Total',
+    /**
+     * An entry nothing has broken down, which is most of them: a dish from
+     * search, a recipe, a scan that landed on one row. Said rather than left
+     * blank, because an INGREDIENTS card with nothing under it reads as a plate
+     * whose parts went missing.
+     */
+    plateNone: 'This counts as one thing. Add what was on the plate to break it down.',
+    /** The plus in the ingredients card's header, and the sheet it opens. */
+    addPart: 'Add an ingredient',
+    addPartTitle: 'Add an ingredient',
+    partAdded: '{{food}} added to the plate',
+    addPartFailed: 'Could not add that. Try again',
+    /**
+     * The one refusal worth naming. An entry whose calorie total the user typed
+     * cannot be broken down: the typed figure sits above the parts, so the plate
+     * would gain a row and not a calorie.
+     */
+    addPartTyped: 'This entry uses your own calorie figure, so it cannot be broken down',
     /**
      * Every part taken off. The entry survives as whatever its own portion costs,
      * so this says what will happen rather than standing in the way.

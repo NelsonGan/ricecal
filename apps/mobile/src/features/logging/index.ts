@@ -1,3 +1,4 @@
+export { AddPartSheet, type AddPartSheetProps } from './AddPartSheet'
 export { DayMeals, type DayMealsProps } from './DayMeals'
 export { DescribePanel, type DescribePanelProps } from './DescribePanel'
 export { DetailsSheet, type DetailsSheetProps, type EntryDetails } from './DetailsSheet'
@@ -27,4 +28,12 @@ export { ScannedPacket, type ScannedPacketProps } from './ScannedPacket'
 export { TANK_HEIGHT, TankFigure, type TankFigureProps, TankLabel } from './TankFigure'
 export { WaterCard, type WaterCardProps } from './WaterCard'
 export { WeekPicker } from './WeekPicker'
-export { type Clock, clockLabel, clockOf, dayLabel, instantOn, sameClock } from './when'
+export {
+  type Clock,
+  clockLabel,
+  clockOf,
+  dayLabel,
+  instantOn,
+  sameClock,
+  whenLabel,
+} from './when'

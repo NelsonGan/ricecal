@@ -2,73 +2,54 @@
 -- The scan cascade's database half.
 --
 -- The cascade itself runs in the scan-meal edge function; what the database
--- guarantees — and what this file asserts — is the floor under it: the
--- archetypes it falls back to always exist, a display_label changes what an
--- entry SAYS without touching what it COUNTS, and the three-source coalesce in
--- `food_log_details` resolves in the right order.
+-- guarantees — and what this file asserts — is what happens to a scanned row
+-- once it is written: a display_label changes what an entry SAYS without
+-- touching what it COUNTS, the three-source coalesce in `food_log_details`
+-- resolves in the right order, and the three functions a client may edit a
+-- plate with cannot be made to lie about the total.
+--
+-- WHAT LEFT THIS FILE WITH THE ARCHETYPES
+--
+-- Three assertions about `public.archetypes` used to open it: that the list was
+-- seeded, that the terminal "Mixed meal" sat at the id the edge function
+-- hardcoded, and that no archetype priced a plate at nothing. The cascade has
+-- no archetype floor any more — a scan that cannot say what the food is fails
+-- and asks to be tried again — so the table is gone and the numbers below are
+-- literals. They are the terminal row's old figures, kept so the arithmetic in
+-- this file reads the way it always did.
 --
 -- WHAT LEFT THIS FILE WITH THE CATALOGUE
 begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(25);
+select plan(29);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
-\set terminal 'a0000000-0000-4000-8000-000000000000'
+\set user_b '22222222-2222-2222-2222-222222222222'
+
+-- One plate's worth of figures, used as the fixture throughout.
+\set fixture_kcal 600
 
 insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
-values (:'user_a', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'a@example.test', '{}'::jsonb, '{}'::jsonb, now(), now());
-
-
--- The floor the cascade lands on ---------------------------------------------
---
--- These are in Postgres rather than in D1 with the rest of the catalogue, and
--- that is the point: tier 5 is where a scan lands when the catalogue, the model
--- or the NETWORK has failed it, and a fallback reached over the network is not
--- a fallback.
-
--- Tier 5 classifies over this fixed list, so the list must be there on any
--- database the edge function points at. The count moves as archetypes are
--- curated; what cannot move is the order of magnitude.
-select cmp_ok(
-  (select count(*)::integer from public.archetypes),
-  '>=', 50,
-  'the archetype list is seeded'
-);
-
--- The terminal row's id is a constant in the edge function — reached with no
--- model call and no query of any kind — so it has to exist at exactly this id.
-select is(
-  (select count(*)::integer from public.archetypes where id = :'terminal'::uuid),
-  1,
-  'the terminal archetype is at the id the edge function hardcodes'
-);
-
--- Every archetype has to be able to price a plate. A zero would resolve a
--- failed scan to a free meal, which is the one direction a calorie app must
--- never round towards.
-select is(
-  (select count(*)::integer from public.archetypes where kcal <= 0),
-  0,
-  'no archetype prices a meal at nothing'
-);
+values
+  (:'user_a', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'a@example.test', '{}'::jsonb, '{}'::jsonb, now(), now()),
+  (:'user_b', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'b@example.test', '{}'::jsonb, '{}'::jsonb, now(), now());
 
 
 -- display_label changes the name, never the numbers ---------------------------
 --
--- A scanned entry landing on the terminal archetype, wearing the model's own
--- specific name. The snapshot is what the cascade writes: the archetype's
--- figures, at "1 serving", which is the only portion an archetype has.
+-- A scanned entry the cascade priced as an estimate, wearing the model's own
+-- specific name over the blunter one the snapshot carries.
 
 insert into public.food_logs
   (user_id, log_date, quantity, source, scan_id, display_label,
    item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g,
    serving_label, serving_factor)
-select :'user_a', current_date, 1, 'camera',
-       'e0000000-0000-4000-8000-000000000001', 'Nasi campur with rendang',
-       a.name, a.kcal, a.carbs_g, a.protein_g, a.fat_g, '1 serving', 1
-from public.archetypes a where a.id = :'terminal'::uuid;
+values
+  (:'user_a', current_date, 1, 'camera',
+   'e0000000-0000-4000-8000-000000000001', 'Nasi campur with rendang',
+   'Rice with dishes', :fixture_kcal, 70.0, 20.0, 25.0, '1 serving', 1);
 
 select is(
   (select food_name from public.food_log_details where user_id = :'user_a'),
@@ -78,22 +59,22 @@ select is(
 
 select is(
   (select kcal from public.food_log_details where user_id = :'user_a'),
-  (select kcal from public.archetypes where id = :'terminal'::uuid),
-  'the labelled entry still counts the archetype''s calories'
+  :fixture_kcal,
+  'the labelled entry still counts its own calories'
 );
 
 select is(
   (select kcal from public.daily_nutrition where user_id = :'user_a' and log_date = current_date),
-  (select kcal from public.archetypes where id = :'terminal'::uuid),
+  :fixture_kcal,
   'daily_nutrition includes the labelled entry — display_label breaks nothing'
 );
 
 -- Habits: a guessed entry never becomes a "usual at this time" suggestion.
 --
 -- This used to be a join to `foods` filtering on `is_estimate`/`is_archetype`.
--- The filter is now `food_id is not null`, and it catches the same three cases
--- for a better reason: an estimate, an archetype and a rebuilt plate are
--- exactly the entries that reference no catalogue row.
+-- The filter is now `food_id is not null`, and it catches the same cases for a
+-- better reason: an estimate and a rebuilt plate are exactly the entries that
+-- reference no catalogue row.
 select is(
   (select count(*)::integer from public.user_food_stats where user_id = :'user_a'),
   0,
@@ -152,9 +133,9 @@ insert into public.food_log_ingredients
    item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g,
    serving_label, serving_factor)
 select e.id, 1, 'crispy chicken', 0,
-       a.name, a.kcal, a.carbs_g, a.protein_g, a.fat_g, '1 serving', 1
-from public.food_logs e, public.archetypes a
-where e.user_id = :'user_a' and a.id = :'terminal'::uuid;
+       'Fried chicken', :fixture_kcal, 70.0, 20.0, 25.0, '1 serving', 1
+from public.food_logs e
+where e.user_id = :'user_a';
 
 select is(
   (select count(*)::integer from public.food_log_ingredient_details i
@@ -176,7 +157,7 @@ select is(
   (select i.kcal from public.food_log_ingredient_details i
    join public.food_logs e on e.id = i.food_log_id
    where e.user_id = :'user_a'),
-  (select kcal from public.archetypes where id = :'terminal'::uuid),
+  :fixture_kcal,
   'the ingredient view prices the part from its own figures'
 );
 
@@ -204,12 +185,12 @@ select is(
 );
 
 -- The entry's numbers ARE its parts: the one ingredient at half a portion makes
--- the plate half the archetype's figure, and the entry's own `quantity` never
+-- the plate half the fixture's figure, and the entry's own `quantity` never
 -- moves — rescaling it would have dragged every macro along in lockstep, which
 -- is how adding rice used to add fat.
 select is(
   (select kcal from public.food_log_details where user_id = :'user_a'),
-  (select round(kcal / 2.0)::integer from public.archetypes where id = :'terminal'::uuid),
+  (:fixture_kcal / 2),
   'the entry total is the sum of its parts'
 );
 
@@ -239,7 +220,7 @@ update public.food_logs set override_kcal = null where user_id = :'user_a';
 
 select is(
   (select kcal from public.food_log_details where user_id = :'user_a'),
-  (select round(kcal / 2.0)::integer from public.archetypes where id = :'terminal'::uuid),
+  (:fixture_kcal / 2),
   'and clearing it hands the total back to the parts'
 );
 
@@ -266,7 +247,7 @@ select is(
 -- guards against.
 select is(
   (select kcal from public.food_log_details where user_id = :'user_a'),
-  (select kcal from public.archetypes where id = :'terminal'::uuid),
+  :fixture_kcal,
   'the last part removed falls back to the entry''s own portion'
 );
 
@@ -281,6 +262,108 @@ select is(
   0,
   'deleting the entry cascades to its ingredients'
 );
+
+
+-- Putting something ON the plate ----------------------------------------------
+--
+-- The list could only ever shrink until now. `add_ingredient` is the third and
+-- last thing a client may do to a breakdown, and the interesting half of it is
+-- what happens to an entry that has NO breakdown: `food_log_details` prefers
+-- the sum of the parts over the row's own figures, so one added ingredient
+-- would otherwise redefine a 600 kcal plate as the 90 kcal egg just put on it.
+-- The function seeds the entry as its own first part to stop that, and these
+-- assertions are that the seeding is exact rather than approximate.
+
+insert into public.food_logs
+  (user_id, log_date, quantity, source, item_name,
+   base_kcal, base_carbs_g, base_protein_g, base_fat_g,
+   serving_label, serving_factor)
+values
+  (:'user_a', current_date, 2, 'search', 'Roti canai',
+   300, 39.0, 6.0, 13.0, '1 piece', 1);
+
+select e.id as plain_id from public.food_logs e where e.user_id = :'user_a' limit 1 \gset
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', :'user_a', 'role', 'authenticated')::text, true);
+set local role authenticated;
+
+select lives_ok(
+  format('select public.add_ingredient(%L::uuid, %L, 90, 1, 6, 7)', :'plain_id', 'Fried egg'),
+  'the owner can put a food on an entry that had no breakdown'
+);
+
+-- Two rows: the entry as it was, and the thing just added to it.
+select is(
+  (select count(*)::integer from public.food_log_ingredients where food_log_id = :'plain_id'::uuid),
+  2,
+  'the entry became its own first part'
+);
+
+-- 300 kcal at a factor of 1, twice over, plus one 90 kcal egg. The seeded row
+-- carries the entry's own base figures, factor AND quantity, so this is the
+-- same arithmetic the view was already doing on the row itself.
+select is(
+  (select kcal from public.food_log_details where id = :'plain_id'::uuid),
+  690,
+  'the total is what the entry counted, plus what was added'
+);
+
+select lives_ok(
+  format('select public.add_ingredient(%L::uuid, %L, 50, 12, 1, 0)', :'plain_id', 'Teh o ais'),
+  'a second food goes on the same plate'
+);
+
+-- Three, not four: the parent is seeded once, when the list is empty.
+select is(
+  (select count(*)::integer from public.food_log_ingredients where food_log_id = :'plain_id'::uuid),
+  3,
+  'the parent is not seeded twice'
+);
+
+reset role;
+
+-- Somebody else's diary. The function runs as security definer, so the owner
+-- check inside it is the only thing standing between a uuid and a stranger's
+-- plate.
+select set_config('request.jwt.claims',
+  json_build_object('sub', :'user_b', 'role', 'authenticated')::text, true);
+set local role authenticated;
+
+select throws_ok(
+  format('select public.add_ingredient(%L::uuid, %L, 90, 1, 6, 7)', :'plain_id', 'Fried egg'),
+  'P0001',
+  'entry not found',
+  'a stranger cannot add to someone else''s entry'
+);
+
+reset role;
+
+-- An entry whose calorie total the user typed. The override sits ABOVE the
+-- parts, so the plate would gain a row and not a calorie; refusing says so
+-- where a silent no-op would read as the button not working.
+insert into public.food_logs
+  (user_id, log_date, quantity, source, item_name,
+   base_kcal, base_carbs_g, base_protein_g, base_fat_g,
+   serving_label, serving_factor, override_kcal)
+values
+  (:'user_b', current_date, 1, 'search', 'Kaya toast',
+   260, 30.0, 6.0, 12.0, '1 serving', 1, 400);
+
+select e.id as typed_id from public.food_logs e where e.user_id = :'user_b' limit 1 \gset
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', :'user_b', 'role', 'authenticated')::text, true);
+set local role authenticated;
+
+select throws_ok(
+  format('select public.add_ingredient(%L::uuid, %L, 90, 1, 6, 7)', :'typed_id', 'Fried egg'),
+  'P0001',
+  'entry has typed figures',
+  'an entry with a typed calorie figure refuses the addition'
+);
+
+reset role;
 
 
 -- The paper trail is service_role's alone -------------------------------------

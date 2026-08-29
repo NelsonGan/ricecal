@@ -778,6 +778,14 @@ export const ms = {
       title: 'Cari',
       placeholder: 'Cari mana-mana hidangan',
       clear: 'Kosongkan carian',
+      tabs: 'Cari dalam makanan yang mana',
+      tabCatalogue: 'Semua makanan',
+      tabMine: 'Makanan saya',
+      mineEmptyTitle: 'Belum ada yang direkod',
+      mineEmptyBody: 'Hidangan yang anda rekod muncul di sini, sedia ditambah semula.',
+      mineNoMatchBody: 'Tiada apa yang anda pernah makan sepadan dengan itu.',
+      mineOfflineBody:
+        'Diari anda berada di pelayan. Ini akan dimuatkan sebaik anda kembali dalam talian.',
       place: {
         mamak: 'Mamak',
         kopitiam: 'Kopitiam',
@@ -807,8 +815,21 @@ export const ms = {
       fixPlaceholder: 'tiada sambal, dan ia separuh pinggan',
       fixAction: 'Betulkan',
       fixNotApplied: 'Tidak dapat menggunakannya. Cuba ubah ayatnya',
+      fixNoCalories: 'Itu tidak mengubah kalorinya, jadi tiada apa yang berubah',
+      fixNotUnderstood: 'Itu tidak dapat dibaca. Cuba katakan dengan cara lain',
+      fixNoMatch: 'Hidangan itu tidak dapat difahami. Makanan anda kekal sama',
+      fixNoChange: 'Tiada apa di dalam pinggan yang sepadan dengan itu',
+      fixFailed: 'Itu tidak berjaya dihantar. Cuba lagi',
       plateTitle: 'BAHAN',
       plateTotal: 'Jumlah',
+      plateNone:
+        'Ini dikira sebagai satu benda. Tambah apa yang ada di dalam pinggan untuk memecahkannya.',
+      addPart: 'Tambah bahan',
+      addPartTitle: 'Tambah bahan',
+      partAdded: '{{food}} ditambah ke dalam pinggan',
+      addPartFailed: 'Tidak dapat menambah itu. Cuba lagi',
+      addPartTyped:
+        'Entri ini menggunakan angka kalori anda sendiri, jadi ia tidak boleh dipecahkan',
       plateEmptied:
         'Tiada apa-apa tinggal pada pinggan. Rekod itu kembali dikira sebagai satu bahagian.',
       times: '× {{amount}}',

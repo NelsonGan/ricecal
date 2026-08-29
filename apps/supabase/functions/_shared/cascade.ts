@@ -5,19 +5,27 @@
 //   1. catalogue match        search, verifier pick, kcal band check
 //   3. nearest dish, rescaled right identity, wrong amount: adjust quantity
 //   4. LLM nutrition          numbers only, Atwater-checked; no row is written
-//   5. archetype              classification over the seeded rows
 //
 // Tier 2 outranks tier 1 for composite scenes, and stays all-or-nothing: either
 // every part resolves and the sum lands in band, or the plate falls through to
 // the dish tiers. The parent's macros are the catalogue sum of its parts, so the
 // diary and the breakdown cannot disagree.
+//
+// THERE IS NO FLOOR UNDER TIER 4, and there used to be. Tier 5 classified the
+// plate into one of sixty seeded generic rows and, failing that, wrote a
+// terminal "Mixed meal" at 600 kcal that needed no model and no network. The
+// argument for it was that a diary which refuses a meal is worse than one that
+// logs it roughly. That was wrong in the direction that matters: the roughly
+// logged meal is indistinguishable, on the day and in every total built from
+// it, from one the app actually recognised — so a failed scan quietly became
+// 600 kcal the user never ate and never knew to check. `resolveItem` returns
+// null when nothing fits, the endpoints write nothing, and the row on Today
+// says it could not be read and offers another go.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { type CatalogueFood, searchFoods } from './catalogue.ts'
 import type { Meter } from './entitlement.ts'
 import {
-  type Archetype,
-  classifyArchetype,
   estimateNutrition,
   type MockSteer,
   type Nutrition,
@@ -38,9 +46,6 @@ import {
   servingGrams,
   servingUnitCount,
 } from './portion.ts'
-
-/** The terminal archetype. Seeded with this exact id by seed_archetype_foods(). */
-export const TERMINAL_ARCHETYPE_ID = 'a0000000-0000-4000-8000-000000000000'
 
 /**
  * A food, as everything downstream of resolution needs it.
@@ -83,10 +88,10 @@ export type Ingredient = {
 }
 
 export type Resolved = {
-  tier: 1 | 2 | 3 | 4 | 5
+  tier: 1 | 2 | 3 | 4
   food: FoodRow
   quantity: number
-  /** Kept when the row's own name is generic (estimate/archetype rows). */
+  /** Kept when the row's own name is generic (an estimate row). */
   displayLabel: string | null
   /** Tier 2 only: the parts the parent's sum came from. */
   ingredients?: Ingredient[]
@@ -1017,9 +1022,8 @@ async function resolveByEstimate(
     item.kcal_high <= 0 || (n.kcal <= item.kcal_high * 2 && n.kcal >= item.kcal_low * 0.4)
 
   // One retry: a self-contradicting answer once may be noise, twice is the
-  // model not knowing this dish. Failing both leaves the archetype floor, which
-  // prices the plate by scaling a generic row to the band — a rougher answer,
-  // and one that cannot be off by a factor of three.
+  // model not knowing this dish. Failing both is the end of the cascade, and
+  // the scan is reported as a failure rather than rounded to a generic.
   let nutrition: Nutrition | null = null
   for (let attempt = 0; attempt < 2 && !nutrition; attempt++) {
     const candidate = await estimateNutrition(item, mock, meter)
@@ -1044,73 +1048,10 @@ async function resolveByEstimate(
   }
 }
 
-/** Tier 5. The only tier that cannot fail: worst case is the terminal row. */
-export async function resolveByArchetype(
-  db: SupabaseClient,
-  item: VisionItem | null,
-  mock: MockSteer | undefined,
-  meter: Meter,
-): Promise<Resolved> {
-  // `public.archetypes`, not the catalogue, and that is why the table exists: this
-  // tier is where a scan lands when the catalogue, the model or the network has
-  // failed it. Reading the sixty rows over HTTP from D1 would make the fallback for
-  // "the network failed" another network call.
-  //
-  // Every archetype is quoted per "1 serving" with no stated weight, which is why
-  // nothing here reads a serving label.
-  const columns = 'id, slug, name, kcal, carbs_g, protein_g, fat_g'
-  const snapshot = (row: Archetype): FoodRow => ({
-    id: row.id,
-    name: row.name,
-    kcal: row.kcal,
-    carbs: Number(row.carbs_g ?? 0),
-    protein: Number(row.protein_g ?? 0),
-    fat: Number(row.fat_g ?? 0),
-    fibre: null,
-    sugar: null,
-    sodium: null,
-    place: null,
-    servingLabel: '1 serving',
-    servingGrams: null,
-    serving_id: null,
-  })
-
-  let archetype: Archetype | null = null
-  if (item) {
-    try {
-      const { data } = await db.from('archetypes').select(columns)
-      if (data?.length) archetype = await classifyArchetype(item, data as Archetype[], mock, meter)
-    } catch {
-      archetype = null
-    }
-  }
-
-  let food: FoodRow
-  if (archetype) {
-    food = snapshot(archetype)
-  } else {
-    // The terminal row: hardcoded id, no model call, no search.
-    const { data: terminal } = await db
-      .from('archetypes')
-      .select(columns)
-      .eq('id', TERMINAL_ARCHETYPE_ID)
-      .single()
-    if (!terminal) throw new Error('terminal archetype row missing — run seed_archetype_foods()')
-    food = snapshot(terminal as Archetype)
-  }
-
-  // The model's range is still better portion evidence than nothing: scale
-  // quantity, never the archetype's macros.
-  const llmMid = item ? (item.kcal_low + item.kcal_high) / 2 : 0
-  const quantity = llmMid > 0 && food.kcal > 0 ? clampQuantity(llmMid / food.kcal) : 1
-
-  return { tier: 5, food, quantity, displayLabel: item ? item.name : null }
-}
-
 /**
  * The full cascade for one item. Each stage guards itself, so one stage's crash
- * cannot skip the ones below it. Returns null when only the archetype floor is
- * left.
+ * cannot skip the ones below it. Returns null when every tier declined, which
+ * is a scan that failed rather than a scan with a rough answer.
  *
  * Nothing here reads the model's `scene` label. Whether a plate has parts is
  * decided by whether it listed parts: a banana leaf of satay came back "single"
@@ -1129,8 +1070,8 @@ export async function resolveItem(
     // Every failure here is a tier failing, and the tier below takes over. That is
     // only true because the daily quota is claimed at the top of the endpoint: while
     // it was claimed per model request, running out arrived through this function
-    // like any other error, was retried by every tier below, and finally answered
-    // with a guessed "Mixed meal" for somebody who was owed an explanation.
+    // like any other error and was retried by every tier below, so somebody who was
+    // owed an explanation got a guess instead.
     const message = `[cascade] ${stage}: ${describe(error)}`
     console.error(message)
     trace?.push(message)

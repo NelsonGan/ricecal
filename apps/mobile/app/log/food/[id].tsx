@@ -8,14 +8,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   ENTRY_FOOD_ID,
   type EntryPatch,
+  type Food,
   foodFromEntry,
   type IconRef,
   keys,
   packetCode,
+  type RefineDeclined,
   removeMealPhoto,
   snapshotFromFood,
   storedImageSource,
   uploadMealPhoto,
+  useAddIngredient,
   useDayLog,
   useEntryIngredients,
   useFood,
@@ -31,6 +34,7 @@ import {
   withCataloguePortions,
 } from '@/data'
 import {
+  AddPartSheet,
   type Clock,
   clockOf,
   DetailsSheet,
@@ -111,6 +115,24 @@ const CONTENT_LIFT = 22
 const PORTION_DEBOUNCE_MS = 500
 
 /**
+ * What the user is told when a correction changed nothing.
+ *
+ * A table rather than a chain of ternaries at the call site, because the five
+ * are a closed set the server names and the mapping is the whole content of the
+ * decision. Each one has to leave somebody with a different next move: reword
+ * it, name the part, try again, or accept that the words had no calories in
+ * them and nothing was owed.
+ */
+const FIX_DECLINED = {
+  not_a_correction: 'logging:detail.fixNoCalories',
+  not_understood: 'logging:detail.fixNotUnderstood',
+  no_match: 'logging:detail.fixNoMatch',
+  no_change: 'logging:detail.fixNoChange',
+  failed: 'logging:detail.fixFailed',
+  unknown: 'logging:detail.fixNotApplied',
+} as const satisfies Record<RefineDeclined, string>
+
+/**
  * The edit control in a card's own header, which is how every editable group on
  * this screen is opened.
  *
@@ -140,6 +162,33 @@ function CardEdit({ label, onPress }: { label: string; onPress: () => void }) {
           at 20pt it came out as a plain green lozenge, which is the worst thing
           an unlabelled control can be. */}
       <Icon set="ui" name="edit" size={20} />
+    </Tappable>
+  )
+}
+
+/**
+ * The other control a card header can carry: put something IN this card.
+ *
+ * Its own component beside `CardEdit` rather than a prop on it, because they are
+ * different verbs and the difference has to survive being unlabelled. The pencil
+ * changes what is already there; this adds a row that is not. They sit together
+ * on the ingredients card, add first, in the order the two are reached — you
+ * cannot resize a part that is not on the plate yet.
+ *
+ * TINTED, unlike the pencil beside it. That one is a yellow pencil with a red
+ * eraser and its whole meaning is in the colour; a plus is a silhouette, and a
+ * silhouette flattened to one colour still reads as itself.
+ */
+function CardAdd({ label, onPress }: { label: string; onPress: () => void }) {
+  const colors = useThemeColors()
+  return (
+    <Tappable
+      className="-m-2.5 p-2.5"
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <Icon set="ui" name="plus" size={20} tintColor={colors.ink} />
     </Tappable>
   )
 }
@@ -230,15 +279,21 @@ export default function FoodDetail() {
     ? day.entries.find((entry) => entry.id === params.entryId)
     : undefined
 
-  // The plate's parts, for a scanned entry that decomposed. Everything else
-  // gets an empty list and no section.
-  //
-  // `isLoading` rather than `isPending`: a disabled query is pending forever,
-  // and every hand-logged entry disables this one. What is being asked is "is
-  // there a request out for this plate's parts right now".
-  const { data: ingredients = [], isLoading: partsLoading } = useEntryIngredients(
-    existing?.scanId ? existing.id : undefined,
-  )
+  /**
+   * The plate's parts.
+   *
+   * ASKED FOR EVERY ENTRY, not only a scanned one. It used to be gated on
+   * `scanId`, on the reasoning that only the cascade wrote a breakdown — which
+   * stopped being true the moment a user could put an ingredient on a plate by
+   * hand. A dish added from search and then broken down would have shown its
+   * parts to the sheet that wrote them and to nothing else.
+   *
+   * `isLoading` rather than `isPending`: a disabled query is pending forever,
+   * and this one is still disabled while the day is loading and there is no
+   * entry yet. What is being asked is "is there a request out for this plate's
+   * parts right now".
+   */
+  const { data: ingredients = [], isLoading: partsLoading } = useEntryIngredients(existing?.id)
 
   /**
    * The food this screen is about, and which one depends on why we are here.
@@ -259,6 +314,7 @@ export default function FoodDetail() {
   const refineEntry = useRefineEntry()
   const updateIngredient = useUpdateIngredient()
   const removeIngredient = useRemoveIngredient()
+  const addIngredient = useAddIngredient()
 
   const [quantity, setQuantity] = useState(existing?.quantity ?? 1)
   const [servingId, setServingId] = useState(existing?.servingId ?? '')
@@ -353,6 +409,13 @@ export default function FoodDetail() {
   /** Which of the three sheets is open, if any. */
   const [editingFigures, setEditingFigures] = useState(false)
   const [editingPlate, setEditingPlate] = useState(false)
+  /**
+   * The catalogue search that puts a new part on the plate.
+   *
+   * A fourth sheet rather than a mode inside `PlateSheet`, because it asks a
+   * different shape of question — see the note on `AddPartSheet`.
+   */
+  const [addingPart, setAddingPart] = useState(false)
   /**
    * The entry's own details — the name and the when — behind the pencil on the
    * line under the title. One flag, because they are one sheet: an entry's
@@ -885,6 +948,60 @@ export default function FoodDetail() {
   }
 
   /**
+   * A food out of the catalogue, onto the plate.
+   *
+   * WRITTEN AT ONCE rather than staged, unlike everything else on this screen,
+   * and the two reasons are the same reason twice. There is nothing to hold it
+   * in — `partEdits` is an overlay keyed by ingredient id and this row has no id
+   * until the server issues one — and there is nothing for the user to decide
+   * afterwards that the plate sheet does not already ask better. So the sheet
+   * closes on the pick and the list comes back with the part on it.
+   *
+   * The figures sent are per ONE of the part, at the portion the catalogue
+   * quotes: `base` is per base serving and `servingFactor` scales it, so a food
+   * whose default portion is not its base has to be multiplied here or the part
+   * lands at the wrong size. `snapshotFromFood` is what sanitises the two soft
+   * references on the way — the placeholder ids this app mints for routing are
+   * not catalogue ids, and `food_id` is a uuid column.
+   */
+  const addPart = async (picked: Food) => {
+    if (!existing) return
+    setAddingPart(false)
+    const snapshot = snapshotFromFood(picked)
+    const scale = snapshot.servingFactor
+    try {
+      await addIngredient.mutateAsync({
+        entryId: existing.id,
+        logDate: selectedDate,
+        name: snapshot.name,
+        kcal: Math.round(snapshot.base.kcal * scale),
+        carbs: snapshot.base.carbs * scale,
+        protein: snapshot.base.protein * scale,
+        fat: snapshot.base.fat * scale,
+        grams: snapshot.servingGrams === undefined ? undefined : snapshot.servingGrams * scale,
+        foodId: snapshot.foodId,
+        servingId: snapshot.servingId,
+        servingLabel: snapshot.servingLabel,
+      })
+      toast.show({
+        title: t('logging:detail.partAdded', { food: snapshot.name }),
+        tone: 'success',
+        icon: { set: 'ui', name: 'check' },
+      })
+    } catch (error) {
+      // The one refusal worth naming. `add_ingredient` will not break down an
+      // entry whose calorie total the user has typed over, because the override
+      // sits above the parts and the plate would gain a row without gaining a
+      // calorie — which reads as the button not working.
+      const typedFigures = error instanceof Error && error.message.includes('typed figures')
+      toast.show({
+        title: t(typedFigures ? 'logging:detail.addPartTyped' : 'logging:detail.addPartFailed'),
+        tone: 'error',
+      })
+    }
+  }
+
+  /**
    * The portion is the one section that saves itself on a debounce.
    *
    * Everything else on this screen is a sheet with a Save button, because a sheet
@@ -1008,7 +1125,14 @@ export default function FoodDetail() {
       // provider sits above the navigator, and this screen is gone a frame
       // after the send. A row that worked and then changed nothing is
       // otherwise indistinguishable from a correction that did not matter.
-      onNotApplied: () => toast.show({ title: t('logging:detail.fixNotApplied'), tone: 'warning' }),
+      //
+      // WHICH KIND, not one apology for all five. "Could not apply that, try
+      // rewording it" was shown for "extra spicy", where there is nothing to
+      // apply and rewording will not help, and for a model that answered in the
+      // wrong shape, where the words were fine all along. The four the server
+      // can name send somebody to four different next actions; `unknown` keeps
+      // the old sentence for a function older than this build.
+      onNotApplied: (reason) => toast.show({ title: t(FIX_DECLINED[reason]), tone: 'warning' }),
     })
     finish()
   }
@@ -1499,23 +1623,42 @@ export default function FoodDetail() {
           ) : null}
         </Card>
 
-        {/* What the scan decided the plate was made of. Read here, edited in
-          `PlateSheet`, and each part written through `set_ingredient_quantity`.
+        {/* What the plate is made of. Read here, edited in `PlateSheet`, and each
+          part written through `set_ingredient_quantity`.
 
           That function deliberately does NOT touch the parent row — see the note in
           `34_food_log_ingredients.sql`, which used to rescale the entry's own
           `quantity` and stopped because scaling a parent moves all four of its
           macros at once. The totals follow because `food_log_details` SUMS the
           parts whenever there are any, so the plate and the entry cannot disagree
-          without one of them being wrong about arithmetic. */}
-        {parts.length ? (
+          without one of them being wrong about arithmetic.
+
+          IT IS HERE FOR EVERY ENTRY NOW, not only a scanned one that decomposed.
+          The card used to be the scan's own account of a photograph and appeared
+          nowhere else, which meant the one thing a user could not do to a plate
+          was put something on it: a dish logged from search that turned out to
+          have come with a fried egg had to be renamed, re-costed by hand, or
+          handed to the model. With nothing broken down the card is one line and
+          a plus, and adding the first part seeds the entry as its own — see
+          `add_ingredient`.
+
+          Not while the parts are still being fetched, though. An empty card that
+          fills in a moment later reads as a plate that lost its ingredients. */}
+        {existing && !partsLoading ? (
           <Card
             title={t('logging:detail.plateTitle')}
             action={
-              <CardEdit
-                label={t('logging:detail.editPlate')}
-                onPress={() => setEditingPlate(true)}
-              />
+              <View className="flex-row items-center gap-4">
+                <CardAdd label={t('logging:detail.addPart')} onPress={() => setAddingPart(true)} />
+                {/* Nothing to resize with no parts on the plate, and a pencil
+                    that opens an empty sheet is worse than no pencil. */}
+                {parts.length ? (
+                  <CardEdit
+                    label={t('logging:detail.editPlate')}
+                    onPress={() => setEditingPlate(true)}
+                  />
+                ) : null}
+              </View>
             }
           >
             {parts.map((ingredient) => (
@@ -1560,16 +1703,26 @@ export default function FoodDetail() {
                 </View>
               </View>
             ))}
-            <Divider />
-            <View className="flex-row items-baseline justify-between gap-3">
-              <Text variant="bodyStrong">{t('logging:detail.plateTotal')}</Text>
-              <View className="flex-row items-baseline gap-1">
-                <Text variant="numeric">
-                  {parts.reduce((sum, item) => sum + item.kcal, 0).toLocaleString()}
-                </Text>
-                <Text variant="caption">{t('common:unit.kcal')}</Text>
-              </View>
-            </View>
+            {/* One line and the plus above it, for an entry nothing has broken
+                down. Said rather than left blank, because an INGREDIENTS card
+                with nothing under it reads as a plate whose parts went missing
+                rather than as one that never had any. */}
+            {parts.length ? (
+              <>
+                <Divider />
+                <View className="flex-row items-baseline justify-between gap-3">
+                  <Text variant="bodyStrong">{t('logging:detail.plateTotal')}</Text>
+                  <View className="flex-row items-baseline gap-1">
+                    <Text variant="numeric">
+                      {parts.reduce((sum, item) => sum + item.kcal, 0).toLocaleString()}
+                    </Text>
+                    <Text variant="caption">{t('common:unit.kcal')}</Text>
+                  </View>
+                </View>
+              </>
+            ) : (
+              <Text variant="meta">{t('logging:detail.plateNone')}</Text>
+            )}
           </Card>
         ) : null}
 
@@ -1611,6 +1764,14 @@ export default function FoodDetail() {
             computed={appFigures}
             onSave={saveFigures}
             onError={saveFailed}
+          />
+        ) : null}
+
+        {existing ? (
+          <AddPartSheet
+            visible={addingPart}
+            onClose={() => setAddingPart(false)}
+            onPick={(picked) => void addPart(picked)}
           />
         ) : null}
 

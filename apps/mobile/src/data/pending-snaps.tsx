@@ -73,6 +73,28 @@ export type PendingSnap = {
    * began two minutes ago would be theatre about a lie.
    */
   restored?: boolean
+  /**
+   * The app was suspended while this scan was in flight.
+   *
+   * iOS suspends a backgrounded app within seconds and the request goes with it,
+   * so the promise that was going to call back may never settle — but the edge
+   * function writes the entry itself, so the meal lands anyway. The row is
+   * `analysing` and nothing is listening: that combination is what has to be
+   * polled for.
+   *
+   * THIS IS THE BUG IT EXISTS FOR, and it is the one people report as "the
+   * notification said it was done and the row was still spinning". The scan
+   * notice fires on a timer 25 seconds after the shutter; tapping it brings the
+   * app forward, which refetches the day ONCE on focus, and a scan that lands at
+   * 35 seconds misses that one chance. After that nothing asked again — the poll
+   * below only ran for `waiting` rows — so the row span for another two minutes
+   * and then called itself failed, over a meal sitting in the database. Force
+   * quitting fixed it, because a restored row IS `waiting`, which is the whole
+   * shape of the fix: this flag makes a suspended `analysing` row polled for on
+   * exactly the same terms, without a restart and without taking the progress
+   * bar off a scan the user has been watching the whole time.
+   */
+  suspended?: boolean
 }
 
 type PendingValue = {
@@ -116,6 +138,29 @@ const RESTORE_MS = 24 * 60 * 60 * 1000
 
 /** How often the day is re-asked while a scan is running without us. */
 const POLL_MS = 6_000
+
+/**
+ * Whether the day has to be polled for a scan nobody is holding.
+ *
+ * A `waiting` row is one whose promise is definitely gone: the request timed out
+ * or the app restarted. An `analysing` row whose app has been SUSPENDED since it
+ * started is the same thing wearing a different name — iOS takes the request
+ * down with the process, so the callback may never come, while the edge function
+ * writes the entry regardless.
+ *
+ * That second half is the fix for "the notification said it was done and the row
+ * was still spinning". Coming back to the app refetches the day once; a scan
+ * that lands a few seconds after that missed the only chance anything had to
+ * notice, and the row span until it timed out over a meal already in the
+ * database. Force quitting fixed it because a restored row is `waiting`.
+ *
+ * Exported for its own test. It is one line and both halves of it have been
+ * wrong, in ways that show up as a spinner rather than as an error.
+ */
+export const needsPolling = (snaps: readonly PendingSnap[]): boolean =>
+  snaps.some(
+    (snap) => snap.status === 'waiting' || (snap.status === 'analysing' && snap.suspended === true),
+  )
 
 const store = createMMKV({ id: 'ricecal-pending-snaps' })
 const STORE_KEY = 'snaps'
@@ -188,6 +233,32 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
   }, [])
 
   /**
+   * The app went to the background with this scan still running.
+   *
+   * `background` and not `inactive`: the second is what a permission dialog or
+   * the app switcher's first frame produces, and the notification permission
+   * prompt fires at the shutter of the very first scan an account ever takes.
+   * Treating that as a suspension would put every first scan on the poll.
+   *
+   * The row keeps its status. This is not `detach`: that one is called when the
+   * request has definitely gone, and it says so on the row by moving it to
+   * `waiting`. A suspended app very often comes back with its promise intact,
+   * and taking the progress bar off a scan the user is still watching would be
+   * a worse lie than the one being fixed. All this buys is the poll.
+   */
+  const suspend = useCallback(() => {
+    setSnaps((current) => {
+      let changed = false
+      const next = current.map((snap) => {
+        if (snap.status !== 'analysing' || snap.suspended) return snap
+        changed = true
+        return { ...snap, suspended: true }
+      })
+      return changed ? next : current
+    })
+  }, [])
+
+  /**
    * The request went away; the scan did not.
    *
    * Called when the round trip rejects for a reason that says nothing about whether
@@ -229,10 +300,13 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
    * already fetches it, and a second way to ask the same question is a second way
    * for the two to disagree.
    *
-   * The poll only runs while a row is in `waiting`. A request still in flight will
-   * call back on its own.
+   * The poll runs for a row in `waiting`, and for one still called `analysing`
+   * whose app has been suspended since it started — see `suspended`. A request in
+   * flight in a process that has stayed awake will call back on its own.
    */
-  const watching = snaps.some((snap) => snap.status === 'waiting')
+  const watching = needsPolling(snaps)
+  /** Anything at all that has not finished, which is what a return to the app asks about. */
+  const unfinished = snaps.some((snap) => snap.status === 'analysing' || snap.status === 'waiting')
 
   useEffect(() => {
     const tick = () => {
@@ -258,7 +332,14 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
     }
 
     const listener = AppState.addEventListener('change', (state) => {
-      if (state === 'active') tick()
+      if (state === 'background') suspend()
+      if (state !== 'active') return
+      // Coming back to the app asks about every unfinished scan, not only the
+      // ones being polled. `staleTime` is thirty seconds and refetch-on-focus
+      // fires once, so a day that was refetched a moment before the meal landed
+      // would otherwise sit on that answer.
+      if (unfinished) queryClient.invalidateQueries({ queryKey: ['day'] })
+      tick()
     })
     // Fast while something is genuinely outstanding, idle otherwise: with
     // nothing in `waiting` this is only here to turn a stuck row over to
@@ -269,7 +350,7 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
       listener.remove()
       clearInterval(timer)
     }
-  }, [queryClient, watching])
+  }, [queryClient, watching, unfinished, suspend])
 
   const value = useMemo(
     () => ({ snaps, add, detach, fail, noFood, remove }),
