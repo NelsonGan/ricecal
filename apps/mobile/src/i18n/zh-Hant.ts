@@ -791,6 +791,7 @@ export const zhHant = {
       fixNoChange: '盤子裡沒有對得上的東西',
       fixFailed: '沒有送出去。再試一次',
       plateTitle: '食材',
+      plateHeading: '食材',
       plateTotal: '合計',
       plateNone: '現在當作一樣東西計算。編輯就能拆成食材。',
       addPart: '新增一樣食材',

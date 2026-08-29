@@ -16,16 +16,18 @@ export type AddPartSheetProps = {
 /**
  * PUT SOMETHING ON THE PLATE, by naming it out of the catalogue.
  *
- * The plate could only ever shrink before this: `PlateSheet` resizes a part and
+ * The plate could only ever shrink before this: `PlateEditor` resizes a part and
  * takes one off, and anything the scan MISSED had to be answered either by
  * retyping the whole entry's four figures or by spending a model call on "add a
  * fried egg". Both of those guess at a number the catalogue already knows.
  *
- * A sheet of its own rather than a mode inside `PlateSheet`, because the two are
- * different shapes of question. That one is a list of things with steppers and
- * one Save; this is a search field with the keyboard up, and a pick that writes
- * immediately and leaves. Folding them together would mean a panel that changes
- * what its footer means depending on which half is showing.
+ * A sheet OVER the page that edits the plate, rather than a mode inside it,
+ * because the two are different shapes of question. That one is a list of things
+ * with steppers and one Save; this is a search field with the keyboard up, and a
+ * pick that writes immediately and dismisses. Being a sheet over a page rather
+ * than a second sheet is what makes closing it reveal the plate again: it was a
+ * sheet swap for a while, and dismissing the search then landed the user two
+ * panels back on the food detail.
  *
  * THE CATALOGUE ONLY, with no "My foods" tab. `FoodSearchPanel`'s second list is
  * whole meals this account has eaten, and a meal is not an ingredient of another

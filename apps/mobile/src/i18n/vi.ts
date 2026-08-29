@@ -797,6 +797,7 @@ export const vi = {
       fixNoChange: 'Không có thứ gì trên đĩa khớp với điều đó',
       fixFailed: 'Không gửi được. Hãy thử lại',
       plateTitle: 'NGUYÊN LIỆU',
+      plateHeading: 'Nguyên liệu',
       plateTotal: 'Tổng',
       plateNone: 'Món này đang tính là một thứ. Sửa để tách thành nguyên liệu.',
       addPart: 'Thêm một nguyên liệu',

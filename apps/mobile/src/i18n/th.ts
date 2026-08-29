@@ -791,6 +791,7 @@ export const th = {
       fixNoChange: 'ไม่มีอะไรในจานตรงกับสิ่งนั้น',
       fixFailed: 'ส่งไม่สำเร็จ ลองอีกครั้ง',
       plateTitle: 'ส่วนประกอบ',
+      plateHeading: 'ส่วนประกอบ',
       plateTotal: 'รวม',
       plateNone: 'นับเป็นอย่างเดียว แก้ไขเพื่อแยกเป็นส่วนประกอบ',
       addPart: 'เพิ่มส่วนประกอบ',

@@ -792,6 +792,7 @@ export const zhHans = {
       fixNoChange: '盘子里没有对得上的东西',
       fixFailed: '没有送出去。再试一次',
       plateTitle: '食材',
+      plateHeading: '食材',
       plateTotal: '合计',
       plateNone: '现在按一样东西计。编辑就能拆成食材。',
       addPart: '添加一样食材',

@@ -8,7 +8,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   ENTRY_FOOD_ID,
   type EntryPatch,
-  type Food,
   foodFromEntry,
   type IconRef,
   keys,
@@ -18,7 +17,6 @@ import {
   snapshotFromFood,
   storedImageSource,
   uploadMealPhoto,
-  useAddIngredient,
   useDayLog,
   useEntryIngredients,
   useFood,
@@ -26,15 +24,12 @@ import {
   useMealPhotoUrl,
   useRefineEntry,
   useRemoveEntry,
-  useRemoveIngredient,
   useSelectedDate,
   useTargets,
   useUpdateEntry,
-  useUpdateIngredient,
   withCataloguePortions,
 } from '@/data'
 import {
-  AddPartSheet,
   type Clock,
   clockOf,
   DetailsSheet,
@@ -46,13 +41,9 @@ import {
   MealShareCard,
   NO_FIGURES,
   NutritionSheet,
-  type PartEdits,
   PartLine,
-  PlateSheet,
-  partChanges,
   ScannedPacket,
   sameClock,
-  stagedParts,
   type TypedFigures,
   useMealShare,
 } from '@/features/logging'
@@ -285,9 +276,6 @@ export default function FoodDetail() {
     ? withCataloguePortions(foodFromEntry(existing), catalogueFood)
     : (catalogueFood ?? null)
   const refineEntry = useRefineEntry()
-  const updateIngredient = useUpdateIngredient()
-  const removeIngredient = useRemoveIngredient()
-  const addIngredient = useAddIngredient()
 
   const [quantity, setQuantity] = useState(existing?.quantity ?? 1)
   const [servingId, setServingId] = useState(existing?.servingId ?? '')
@@ -379,16 +367,8 @@ export default function FoodDetail() {
    * Typed in `NutritionSheet` now, all four at once, and staged here.
    */
   const [typed, setTyped] = useState<TypedFigures>(NO_FIGURES)
-  /** Which of the three sheets is open, if any. */
+  /** Which of the two sheets is open, if any. */
   const [editingFigures, setEditingFigures] = useState(false)
-  const [editingPlate, setEditingPlate] = useState(false)
-  /**
-   * The catalogue search that puts a new part on the plate.
-   *
-   * A fourth sheet rather than a mode inside `PlateSheet`, because it asks a
-   * different shape of question — see the note on `AddPartSheet`.
-   */
-  const [addingPart, setAddingPart] = useState(false)
   /**
    * The entry's own details — the name and the when — behind the pencil on the
    * line under the title. One flag, because they are one sheet: an entry's
@@ -398,14 +378,6 @@ export default function FoodDetail() {
 
   /** What this entry is called, staged. Written to `display_label`. */
   const [name, setName] = useState('')
-  /**
-   * Parts of a scanned plate that have been moved or taken off, not yet written.
-   *
-   * An overlay on the fetched list rather than a copy of it, so a refetch landing
-   * mid-edit cannot silently drop a staged change, and so "stepped up and back down
-   * again" is not a change at all. `null` is a part on its way off the plate.
-   */
-  const [partEdits, setPartEdits] = useState<PartEdits>({})
   /**
    * When this was eaten, staged as the two things the user is shown: the day it
    * counts towards, and the time on the row.
@@ -436,12 +408,15 @@ export default function FoodDetail() {
   }
 
   /**
-   * The plate as the screen shows it. In `features/logging/parts.ts` because
-   * `PlateSheet` shows the same rows off a draft of the same overlay, and two
-   * copies of that arithmetic would be two previews of one plate. Which parts
-   * actually changed is `savePlate`'s question, asked of the draft it is handed.
+   * The plate as the screen shows it, which is simply what the server has.
+   *
+   * It used to be an overlay of staged edits over the fetched list, because the
+   * sheet that edited a plate lived on this screen and its draft had to be
+   * previewed under it. The editor is a page of its own now and writes before it
+   * comes back, so there is nothing here left to stage — the card reads the
+   * query, and the query refetches on the way back.
    */
-  const parts = stagedParts(ingredients, partEdits)
+  const parts = ingredients
 
   /**
    * Whether the controls have been filled in from the row yet.
@@ -466,7 +441,6 @@ export default function FoodDetail() {
     // holding the previous entry's choice.
     setServingId(existing.servingId ?? '')
     setName(existing.foodName)
-    setPartEdits({})
     setWhenDate(existing.logDate)
     setClock(clockOf(existing.loggedAt))
     setTyped({
@@ -887,103 +861,6 @@ export default function FoodDetail() {
       protein: overrides.protein === null ? '' : String(overrides.protein),
       fat: overrides.fat === null ? '' : String(overrides.fat),
     })
-  }
-
-  /**
-   * The plate's parts, one statement each, because `set_ingredient_quantity` takes
-   * one ingredient.
-   *
-   * It leaves the parent row alone on purpose, and the entry's totals follow
-   * anyway, because `food_log_details` sums the parts whenever an entry has any.
-   */
-  const savePlate = async (next: PartEdits) => {
-    if (!existing) return
-    for (const ingredient of partChanges(ingredients, next)) {
-      const staged = next[ingredient.id]
-      if (staged === null) {
-        await removeIngredient.mutateAsync({
-          ingredientId: ingredient.id,
-          entryId: existing.id,
-          logDate: selectedDate,
-        })
-      } else if (staged !== undefined) {
-        await updateIngredient.mutateAsync({
-          ingredientId: ingredient.id,
-          quantity: staged,
-          entryId: existing.id,
-          logDate: selectedDate,
-        })
-      }
-    }
-    // Cleared rather than kept: the server has these amounts now, so the overlay
-    // has nothing left to lay over the refetched list.
-    setPartEdits({})
-  }
-
-  /**
-   * A food out of the catalogue, onto the plate.
-   *
-   * WRITTEN AT ONCE rather than staged, unlike everything else on this screen,
-   * and the two reasons are the same reason twice. There is nothing to hold it
-   * in — `partEdits` is an overlay keyed by ingredient id and this row has no id
-   * until the server issues one — and there is nothing for the user to decide
-   * afterwards that the plate sheet does not already ask better. So the sheet
-   * closes on the pick and the list comes back with the part on it.
-   *
-   * The figures sent are per ONE of the part, at the portion the catalogue
-   * quotes: `base` is per base serving and `servingFactor` scales it, so a food
-   * whose default portion is not its base has to be multiplied here or the part
-   * lands at the wrong size. `snapshotFromFood` is what sanitises the two soft
-   * references on the way — the placeholder ids this app mints for routing are
-   * not catalogue ids, and `food_id` is a uuid column.
-   */
-  const addPart = async (picked: Food) => {
-    if (!existing) return
-    // Back to the plate, either way. The search is a detour out of that sheet
-    // and returning to it is what makes adding two things in a row one job
-    // rather than two — and on the refusal below it is where the toast makes
-    // sense, over the list the user was looking at.
-    setAddingPart(false)
-    setEditingPlate(true)
-    const snapshot = snapshotFromFood(picked)
-    const scale = snapshot.servingFactor
-    // A weight the row cannot hold is sent as no weight at all. `grams` is
-    // `numeric(7, 1) check (grams > 0 and grams <= 20000)`, and a catalogue row
-    // carrying a zero or something absurd would otherwise turn "add an
-    // ingredient" into "could not add that" over a number nobody asked to see.
-    // Null renders as nothing, which is the honest answer for a part whose
-    // weight we have no usable figure for.
-    const grams = (snapshot.servingGrams ?? 0) * scale
-    try {
-      await addIngredient.mutateAsync({
-        entryId: existing.id,
-        logDate: selectedDate,
-        name: snapshot.name,
-        kcal: Math.round(snapshot.base.kcal * scale),
-        carbs: snapshot.base.carbs * scale,
-        protein: snapshot.base.protein * scale,
-        fat: snapshot.base.fat * scale,
-        grams: grams > 0 && grams <= 20_000 ? grams : undefined,
-        foodId: snapshot.foodId,
-        servingId: snapshot.servingId,
-        servingLabel: snapshot.servingLabel,
-      })
-      toast.show({
-        title: t('logging:detail.partAdded', { food: snapshot.name }),
-        tone: 'success',
-        icon: { set: 'ui', name: 'check' },
-      })
-    } catch (error) {
-      // The one refusal worth naming. `add_ingredient` will not break down an
-      // entry whose calorie total the user has typed over, because the override
-      // sits above the parts and the plate would gain a row without gaining a
-      // calorie — which reads as the button not working.
-      const typedFigures = error instanceof Error && error.message.includes('typed figures')
-      toast.show({
-        title: t(typedFigures ? 'logging:detail.addPartTyped' : 'logging:detail.addPartFailed'),
-        tone: 'error',
-      })
-    }
   }
 
   /**
@@ -1608,8 +1485,8 @@ export default function FoodDetail() {
           ) : null}
         </Card>
 
-        {/* What the plate is made of. Read here, edited in `PlateSheet`, and each
-          part written through `set_ingredient_quantity`.
+        {/* What the plate is made of. Read here, edited on `log/ingredients`,
+          and each part written through `set_ingredient_quantity`.
 
           That function deliberately does NOT touch the parent row — see the note in
           `34_food_log_ingredients.sql`, which used to rescale the entry's own
@@ -1636,12 +1513,24 @@ export default function FoodDetail() {
               /* One glyph, for both halves of the job. The plus used to sit
                  beside this pencil, which made the header ask two questions
                  about one thing — resizing a part and putting one on are the
-                 same edit, and they are both behind here now. It is offered on
-                 an entry with NO breakdown too: adding the first part is what
-                 that sheet is for there. */
+                 same edit, and both are behind here now. It is offered on an
+                 entry with NO breakdown too: adding the first part is what that
+                 page is for there.
+
+                 It PUSHES, unlike the other two pencils on this screen, which
+                 open sheets. The plate is the one of the three that leads
+                 somewhere else — the catalogue search that adds a part — and a
+                 sheet cannot host a second sheet without one of them having to
+                 close, which is what dropped the user two panels back when they
+                 dismissed the search. See `log/ingredients`. */
               <CardEdit
                 label={t('logging:detail.editPlate')}
-                onPress={() => setEditingPlate(true)}
+                onPress={() =>
+                  router.push({
+                    pathname: '/log/ingredients',
+                    params: { entryId: existing.id, logDate: existing.logDate },
+                  })
+                }
               />
             }
           >
@@ -1748,33 +1637,6 @@ export default function FoodDetail() {
             computed={appFigures}
             onSave={saveFigures}
             onError={saveFailed}
-          />
-        ) : null}
-
-        {existing ? (
-          <AddPartSheet
-            visible={addingPart}
-            onClose={() => setAddingPart(false)}
-            onPick={(picked) => void addPart(picked)}
-          />
-        ) : null}
-
-        {existing ? (
-          <PlateSheet
-            visible={editingPlate}
-            onClose={() => setEditingPlate(false)}
-            ingredients={ingredients}
-            edits={partEdits}
-            onSave={savePlate}
-            onError={saveFailed}
-            // The two sheets hand the screen back and forth rather than
-            // stacking: a `Sheet` is a `Modal`, and presenting one from inside
-            // another is a window on top of a window for what the user reads as
-            // one panel drilling into a search.
-            onAdd={() => {
-              setEditingPlate(false)
-              setAddingPart(true)
-            }}
           />
         ) : null}
 

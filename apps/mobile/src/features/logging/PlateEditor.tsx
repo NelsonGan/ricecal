@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TextInput, View } from 'react-native'
 
 import type { EntryIngredient } from '@/data'
 import { titleCase } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, cn, Divider, Icon, IconButton, Sheet, Text, useNumpadField } from '@/ui'
+import { Button, cn, Divider, Icon, IconButton, Text, useNumpadField } from '@/ui'
 import { PartLine } from './PartLine'
 import {
   PART_MAX,
@@ -98,34 +98,32 @@ function GramsField({
   )
 }
 
-export type PlateSheetProps = {
-  visible: boolean
-  onClose: () => void
-  /** The plate as the scan left it. The staging below is laid over this. */
+export type PlateEditorProps = {
+  /** The plate as it stands. The staging below is laid over this. */
   ingredients: readonly EntryIngredient[]
-  /** What is staged on the screen behind, which is what this opens on. */
-  edits: PartEdits
-  /** Writes them. Throws to leave the sheet open with the draft still in it. */
+  /**
+   * Writes the staged changes. Throws to leave the page as it is with the draft
+   * still in it; resolves and the host navigates away.
+   */
   onSave: (next: PartEdits) => Promise<void>
-  /** Said when the write failed. The sheet stays where it is. */
+  /** Said when the write failed. The page stays where it is. */
   onError: () => void
   /**
-   * Put a new food on the plate. The host owns the catalogue search and brings
-   * this sheet back when it is done.
+   * Put a new food on the plate. The host owns the catalogue search.
    *
-   * IN HERE RATHER THAN ON THE CARD BEHIND IT. Adding a part and resizing one
-   * are the same job — "what was actually on this plate" — and splitting them
-   * across a card header and a sheet made the header carry two glyphs for one
-   * question. One way in, and everything the plate can be changed to is on the
-   * other side of it.
+   * IN HERE RATHER THAN ON THE CARD THAT LEADS TO THIS PAGE. Adding a part and
+   * resizing one are the same job — "what was actually on this plate" — and
+   * splitting them across a card header and an editor made the header carry two
+   * glyphs for one question.
    */
   onAdd: () => void
 }
 
 /**
- * EDIT THE PLATE: how much of each part of a scanned meal there was.
+ * EDIT THE PLATE: how much of each part of a meal there was, and what else was
+ * on it.
  *
- * IT SAVES ITSELF, one part at a time, because `set_ingredient_quantity` takes one
+ * IT SAVES ONE PART AT A TIME, because `set_ingredient_quantity` takes one
  * ingredient. The taps in here are free; only Save is a round trip.
  *
  * That function leaves the PARENT ROW alone, and the note in
@@ -133,53 +131,33 @@ export type PlateSheetProps = {
  * moves all four of its macros together. The entry's totals follow the parts
  * anyway, because `food_log_details` sums them whenever an entry has any.
  *
- * FULL HEIGHT, AND THE BUTTON IS IN THE BODY. It was capped with a pinned footer
- * while its rows were only buttons, and that stopped being true the moment the
- * weight became a field: a capped panel grows by the pad's height and is anchored
- * to the bottom, so a list of ingredients plus 314pt of keys ran off the top of
- * the screen and took the first row's name behind the notch with it. README.md's
- * rule is written about the system keyboard and the geometry is the same for the
- * app's own pad — full height keeps the panel where it is and lets the list inset
- * itself instead, which also moves the action out of a footer, since a footer at
- * full height lands behind the keys.
+ * THE BODY OF A PAGE, and it was a sheet. Adding a part means leaving for a
+ * catalogue search, and a search is a second panel — so as a sheet this had to
+ * dismiss itself, hand over, and be reopened by the host on the way back. That
+ * works for the path where a food is picked and is wrong for every other way out
+ * of the search: closing it dropped the user past the editor entirely, onto the
+ * page behind, because nothing was left holding the editor open. A page does not
+ * have that problem. The search is a sheet ON it, and dismissing a sheet reveals
+ * what it was covering.
+ *
+ * It also drops the state a sheet needed. A `Sheet` is a `Modal` that stays in
+ * the tree with `visible={false}`, so the draft and the saving flag had to be
+ * re-seeded on every opening or the second visit showed the first one's
+ * discarded edits behind a disabled button. A route mounts fresh.
  */
-export function PlateSheet({
-  visible,
-  onClose,
-  ingredients,
-  edits,
-  onSave,
-  onError,
-  onAdd,
-}: PlateSheetProps) {
+export function PlateEditor({ ingredients, onSave, onError, onAdd }: PlateEditorProps) {
   const { t } = useTranslation(['logging', 'common'])
   const colors = useThemeColors()
 
   /**
-   * The staging, while the sheet is open.
+   * The staging, until Save.
    *
-   * Seeded from the screen every time it opens rather than only at mount: a
-   * `Sheet` is a `Modal` that stays in the tree with `visible={false}`, so the
-   * state here outlives one opening. Without this, a plate edited, discarded and
-   * opened again would show the discarded edits.
-   *
-   * `NutritionSheet` gets the same effect for free by mounting its form only
-   * while the sheet is up. This one cannot: the Done button is in the sheet's
-   * FOOTER, which is outside the body, so the draft has to live above both.
+   * An overlay keyed by ingredient id rather than a copy of the list, so a
+   * refetch landing mid-edit — the one an added part triggers — cannot silently
+   * drop a staged change. See `PartEdits`.
    */
-  const [draft, setDraft] = useState(edits)
+  const [draft, setDraft] = useState<PartEdits>({})
   const [saving, setSaving] = useState(false)
-  // biome-ignore lint/correctness/useExhaustiveDependencies: opening is the seed, not `edits` changing
-  useEffect(() => {
-    if (!visible) return
-    setDraft(edits)
-    // AND the spinner, which does not reset itself here. A successful save closes
-    // the sheet without unmounting this component — a `Modal` stays in the tree
-    // with `visible={false}` — so `saving` stayed true, and the second time the
-    // sheet was opened its button was already disabled and could not be pressed.
-    // The sheets that mount their form only while open get this for free.
-    setSaving(false)
-  }, [visible])
 
   const parts = stagedParts(ingredients, draft)
 
@@ -220,25 +198,15 @@ export function PlateSheet({
     try {
       await onSave(draft)
     } catch {
+      // The page stays, with the draft still in it, so nothing typed is lost to
+      // a failed round trip. The host is what leaves on success.
       onError()
       setSaving(false)
-      return
     }
-    onClose()
   }
 
   return (
-    <Sheet
-      visible={visible}
-      onClose={onClose}
-      /* NO TITLE AND NO DESCRIPTION. The rows are the ingredients by name with a
-         pair of buttons each and a total under them, opened from a pencil on a
-         card headed INGREDIENTS — a heading asking "How much of each?" and a
-         line explaining that nothing is saved yet were two sentences saying what
-         the controls already say. */
-      closeLabel={t('common:action.close')}
-      fullHeight
-    >
+    <>
       {parts.map((ingredient, index) => {
         const perUnit = perUnitGrams(ingredient)
         const weighed = perUnit !== null && ingredient.grams !== null
@@ -360,28 +328,30 @@ export function PlateSheet({
         </>
       ) : null}
 
-      {/* THE WAY TO PUT SOMETHING ON, under the list it adds to. It leaves for
-          the catalogue search and the host brings this sheet back, so a plate is
-          built and resized without ever returning to the page behind.
+      {/* THE WAY TO PUT SOMETHING ON, under the list it adds to. It raises the
+          catalogue search over this page, so a plate is built and resized
+          without going anywhere.
 
           Secondary, and above Save, because the two are different kinds of
-          thing: this one goes somewhere and Save is what finishes here. */}
+          thing: this one opens something and Save is what finishes here. */}
       <Button variant="secondary" fullWidth disabled={saving} onPress={onAdd}>
         {t('logging:detail.addPart')}
       </Button>
 
-      {/* After the rows rather than in the sheet's footer: at full height a footer
-          lands behind the keys.
+      {/* After the rows rather than in the screen's footer, which is where a
+          page's action usually goes: the weight is typed on the app's own pad,
+          and a pinned footer lands behind the keys exactly as it did when this
+          was a capped sheet.
 
-          Absent with nothing to write. A sheet opened on an entry that has no
-          breakdown yet has exactly one thing to offer, and a Save that would
-          close it having changed nothing is a second button competing with the
-          one that does something. */}
+          Absent with nothing to write. An entry with no breakdown yet has
+          exactly one thing to offer, and a Save that would leave having changed
+          nothing is a second button competing with the one that does
+          something. */}
       {ingredients.length ? (
         <Button fullWidth loading={saving} onPress={() => void save()}>
           {t('logging:detail.save')}
         </Button>
       ) : null}
-    </Sheet>
+    </>
   )
 }
