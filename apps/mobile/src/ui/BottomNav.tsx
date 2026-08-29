@@ -31,24 +31,19 @@ export type NavTab<T extends string> = {
 }
 
 /**
- * The bar itself: safe-area padding, the surface pill, and the row.
+ * The bar itself: safe-area padding, the surface pill, and the row. Exported
+ * separately from `BottomNav`, because a router-driven tab bar interleaves its
+ * own trigger components with the FAB, which a controlled component cannot
+ * express. Both paths render the same three pieces.
  *
- * Exported separately from `BottomNav` because a router-driven tab bar has to
- * interleave its own trigger components with the FAB, which a fully controlled
- * component cannot express. Both paths render the same three pieces, so there
- * is one place to change the bar's look.
+ * The centre action does not rise above the pill, which is the whole shape of
+ * this component. Overhanging it, the top third of the button took no touches on
+ * iOS and was clipped on Android, and reserving the height inside the bar instead
+ * bought a band of bare canvas the height of the button.
  *
- * The centre action does not rise above the pill, and that is the whole shape of
- * this component. It used to, and the raise cost more than it was worth three
- * times over. Overhanging the pill, the top third of the button took no touches
- * on iOS and was clipped outright on Android — a view drawn outside its parent's
- * frame is decoration. Reserving the height inside the bar instead fixed that and
- * bought a band of bare canvas the height of the button, sitting between the
- * screen's content and the pill, which is what it looked like: a grey gap.
- *
- * So the pill is the row again, one view, and the button is a tile in it. The tab
- * column is 73pt tall and the tile is 68 with its slab, so it fits with room to
- * spare and needs nothing reserved, nothing absolute, and no negative margins.
+ * So the pill is the row, one view, and the button is a tile in it: the tab
+ * column is 73pt tall and the tile is 68 with its slab, so nothing is reserved,
+ * absolute or negatively margined.
  */
 export function NavBar({ children, className }: { children: ReactNode; className?: string }) {
   const insets = useSafeAreaInsets()

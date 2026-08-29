@@ -6,19 +6,16 @@ import { currentLanguage, DEFAULT_LANGUAGE } from '@/i18n'
 import { Icon, IconButton, Sheet, Text } from '@/ui'
 
 /**
- * What the language setting does NOT change, said where it is chosen.
+ * What the language setting does not change, said where it is chosen.
  *
- * Everything on screen is translated. The scanning, the describing and the
- * suggestions are not: they go to a model that reads English best, and they
- * come back against a catalogue whose dish names, ingredients and serving
- * labels are stored in English. Somebody who sets the app to Thai and then
- * types a Thai description gets a worse read than they would have in English,
- * and the answer arrives in English either way.
+ * Everything on screen is translated. The scanning, describing and suggestions
+ * are not: they go to a model that reads English best, against a catalogue whose
+ * dish names and serving labels are stored in English. Somebody who sets the app
+ * to Thai and types a Thai description gets a worse read, and the answer arrives
+ * in English either way.
  *
- * That is a real limit rather than a bug to hide. It is said in two strengths:
- * a line under the control for anybody who has actually chosen a language other
- * than English, and the full version behind an info button that is always there
- * for anybody who wants it.
+ * Said in two strengths: a line under the control for anybody who chose a
+ * language other than English, and the full version behind an info button.
  */
 
 /**

@@ -30,23 +30,16 @@ import {
 } from '@/ui'
 
 /**
- * The session guard, as its own component.
+ * The session guard, as its own component. Everything below reaches `useUserId`,
+ * which throws by design without a session, and two things reach this screen
+ * without one: a deep link, which never passes the guard at `/`, and a Fast
+ * Refresh, where `SessionProvider` re-initialises and every mounted screen
+ * re-renders into the gap.
  *
- * Everything below reaches `useUserId`, which THROWS by design when there is no
- * session — that is what stops a query running under the wrong identity. Two
- * ways to reach this screen without one: a deep link
- * (`ricecal://settings/health`, which never passes the guard at `/`), and a
- * Fast Refresh, where `SessionProvider` re-initialises and every mounted screen
- * re-renders into the gap. The second is development-only and is how this was
- * found — editing this file while looking at it crashed it every time.
- *
- * A wrapper rather than an early return inside the screen, because the hooks
- * below cannot be skipped: the check has to happen before any of them runs, and
- * a conditional return in the middle of a hook list is the rule this exists to
- * honour. The sibling screens in `app/settings/` have the same exposure and are
- * left alone — a shared `_layout.tsx` would fix all six at once but would also
- * nest them in a new navigator, which is a change to five screens this work has
- * no business touching.
+ * A wrapper rather than an early return, because the check has to happen before
+ * any hook below runs. The sibling screens in `app/settings/` have the same
+ * exposure and are left alone: a shared `_layout.tsx` would fix all six and would
+ * also nest them in a new navigator.
  */
 export default function HealthSettingsRoute() {
   const { session, loading } = useSession()

@@ -1,18 +1,16 @@
 import { deleteAccount } from '../auth'
 
 /**
- * Deleting an account, from the phone's side.
+ * Deleting an account, from the phone's side. The server does the deleting; this
+ * half decides what happens around it, and every case here is one where getting
+ * it wrong is invisible on a happy path.
  *
- * The server does the deleting; this half decides what happens around it, and
- * every case here is one where getting it wrong is invisible on a happy path.
- *
- * A sign-out that runs before the server has answered signs somebody out of an
- * account that still exists. A sign-out with the default scope asks GoTrue to
- * end the sessions of a user it can no longer find, which fails, on a screen
- * whose work actually succeeded. And the event and the analytics-profile delete
- * are filed against whichever identity the SDK is holding, so either of them
- * arriving after the sign-out lands on an anonymous profile and leaves the real
- * one, address and all, exactly where it was.
+ * A sign-out before the server has answered signs somebody out of an account that
+ * still exists. A sign-out with the default scope asks GoTrue to end the sessions
+ * of a user it can no longer find, which fails on a screen whose work succeeded.
+ * And the event and the analytics-profile delete are filed against whichever
+ * identity the SDK is holding, so either arriving after the sign-out lands on an
+ * anonymous profile and leaves the real one, address and all, where it was.
  */
 
 jest.mock('expo-apple-authentication', () => ({

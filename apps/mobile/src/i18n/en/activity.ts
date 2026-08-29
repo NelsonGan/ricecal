@@ -1,19 +1,14 @@
 /**
  * Activity: what the phone's health store says you did.
  *
- * The voice here has one job the other namespaces do not: it has to keep saying
- * that burned calories are a BONUS. Every app in this category quietly
- * subtracts exercise from what you ate, and the number that comes out is a
- * number people chase. So the budget line reads as an addition, the copy under
- * it says so in words, and nothing anywhere phrases movement as permission to
- * eat less.
+ * The voice here has to keep saying that burned calories are a bonus. Every app
+ * in this category quietly subtracts exercise from what you ate, so the budget
+ * line reads as an addition and nothing phrases movement as permission to eat
+ * less.
  *
- * The second job is Android. Health Connect is an aggregator, so what is
- * present depends on which app wrote it — no stand hours ever, often no resting
- * energy, heart rate at whatever resolution the writer chose. Every one of
- * those gaps has its own sentence naming the app responsible, because "not
- * available" tells a user nothing they can act on and "Samsung Health does not
- * report stand hours, so we show steps instead" tells them everything.
+ * The second job is Android. Health Connect is an aggregator, so what is present
+ * depends on which app wrote it, and every gap has its own sentence naming the
+ * app responsible: "not available" tells a user nothing they can act on.
  */
 export const activity = {
   title: 'Activity',
@@ -101,12 +96,10 @@ export const activity = {
     standUnit: '/ {{goal}} hr',
     stepsUnit: '/ {{goal}}',
     /**
-     * The reference when the store sets no goal — which on Apple is always, and
-     * used to leave three tiles drawing an empty track for the life of the app.
-     *
-     * Reads in the same grammar as the goal units above, and drops the quantity
-     * for the same reason `stepsUnit` does: the tile is a third of a phone wide
-     * and the label above it already says what is being counted.
+     * The reference when the store sets no goal, which on Apple is always and
+     * used to leave three tiles drawing an empty track. Reads in the same grammar
+     * as the goal units above, and drops the quantity like `stepsUnit`: the tile
+     * is a third of a phone wide and the label already says what is counted.
      */
     avgUnit: '/ {{value}} avg',
     /**
@@ -249,12 +242,9 @@ export const activity = {
     burnedLegend: 'Burned',
 
     /**
-     * The heading names the RANGE, because the figures under it are range
-     * totals.
-     *
-     * It did not, and the numbers were unreadable for it: "Resting 48,775 kcal"
-     * on the 30-day view is either a month's resting burn or a claim that the
-     * user is a furnace, and nothing on the card said which.
+     * The heading names the range, because the figures under it are range totals.
+     * Without it, "Resting 48,775 kcal" on the 30-day view is either a month's
+     * resting burn or a claim that the user is a furnace.
      */
     splitTitle7d: 'WHERE THE BURN CAME FROM · 7 DAYS',
     splitTitle30d: 'WHERE THE BURN CAME FROM · 30 DAYS',
@@ -303,12 +293,10 @@ export const activity = {
     extendBudget: 'Movement extends my budget',
     extendBudgetBody: 'Burned calories are added to the day, never subtracted from what you ate.',
     /**
-     * "Step goal", not "Daily step goal".
-     *
-     * It shares a row with a stepper, and separating the number ("8,000" rather
-     * than "8000") took the one character that pushed the label from two wrapped
-     * lines to three. The row sits under a movement toggle on a health-sync
-     * screen, so "daily" was carrying no weight the context did not already.
+     * "Step goal", not "Daily step goal". It shares a row with a stepper, and
+     * separating the number took the character that pushed the label to three
+     * wrapped lines. The row sits under a movement toggle, so "daily" carried no
+     * weight the context did not.
      */
     stepGoal: 'Step goal',
     disconnect: 'Disconnect',
@@ -362,12 +350,10 @@ export const activity = {
   },
 
   /**
-   * Units used across the tab.
-   *
-   * One, now. There were five; `km`, `steps`, `minutes` and `hoursMinutes` were
-   * never rendered, because the formats they duplicate live in
-   * `features/activity/format.ts` where the decision about when NOT to show a
-   * figure lives with them.
+   * Units used across the tab. One, now: `km`, `steps`, `minutes` and
+   * `hoursMinutes` were never rendered, because the formats they duplicate live
+   * in `features/activity/format.ts` beside the decision about when not to show a
+   * figure at all.
    */
   unit: {
     kcal: '{{value}} kcal',

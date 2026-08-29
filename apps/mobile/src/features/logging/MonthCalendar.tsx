@@ -37,19 +37,15 @@ const outlines: Record<DateStripMark, { on: string; off: string }> = {
 }
 
 /**
- * THE SELECTED CELL IS FILLED IN ITS OWN VERDICT'S COLOUR.
+ * The selected cell is filled in its own verdict's colour. `bg-pandan` for every
+ * selected day was right while the outline alone carried the verdict, and stopped
+ * being right once both were on the same cell: an over-goal day drew a kaya ring
+ * around a green square, so the one cell the reader is looking at was the one
+ * whose colour did not mean anything.
  *
- * It was `bg-pandan` for every selected day, which is the fill the week strip
- * uses and was right while the outline was the only thing carrying the verdict.
- * It stopped being right the moment both were on the same cell: an over-goal day
- * that happened to be selected drew a kaya ring around a green square, so
- * picking a day changed what the grid appeared to say about it, and the one cell
- * the reader is looking at was the one cell whose colour did not mean anything.
- *
- * The ink is paired with the fill here rather than assumed, because `kaya-ink`
- * is the same value as `kaya` in the dark palette — the trap the water figure
- * fell into. `on-kaya` and `on-pandan` are the two that hold in all four
- * combinations of theme and verdict.
+ * The ink is paired with the fill rather than assumed, because `kaya-ink` is the
+ * same value as `kaya` in the dark palette. `on-kaya` and `on-pandan` hold in all
+ * four combinations of theme and verdict.
  */
 const selections: Record<DateStripMark, { fill: string; ink: string }> = {
   under: { fill: 'bg-pandan', ink: 'text-on-pandan' },
@@ -90,28 +86,17 @@ type CellProps = {
 
 /**
  * One day of the month: its number, the biggest thing eaten on it, and how the
- * day went.
+ * day went. The picture is why this view exists, since a month of dots is
+ * `day_marks` in a different shape, so the cell is almost entirely picture.
  *
- * The picture is the whole reason this view exists — a month of dots is
- * `day_marks` in a different shape, while a month of plates is a thing nobody
- * can get at any other way. So the cell is almost entirely picture: the number
- * above it, and the verdict in the outline around both.
+ * Selection is the fill rather than the outline, which is what makes the outline
+ * usable for the verdict: a pandan border meant both selected and under goal, so
+ * one cell claimed two things with one mark. Which fill is the verdict's own; see
+ * `selections`.
  *
- * SELECTION IS THE FILL, not the outline, and that separation is what makes the
- * outline usable for the verdict at all. They collided while the selected day
- * was drawn with a pandan border, which is also what an under-goal day looks
- * like — one cell claiming two different things with one mark. The selected day
- * is filled and its number takes the ink that reads on that fill.
- *
- * WHICH fill is the verdict's own — see `selections`. A cell says one thing in
- * two ways rather than two things in two ways, and selecting a day no longer
- * changes what the grid appears to say about it.
- *
- * A day that has been and gone with nothing on it is the dashed outline; today
- * before breakfast, a day still ahead and a day the account had no budget on
- * have NO outline at all. That last distinction is load-bearing: a day nobody
- * has had yet has not been missed, and drawing it like a day that was skipped is
- * the app inventing a failure.
+ * A day that has been and gone with nothing on it gets the dashed outline. Today
+ * before breakfast, a day still ahead and a day the account had no budget on get
+ * none: a day nobody has had yet has not been missed.
  */
 function Cell({ date, plate, mark, selected, ahead, onSelect, label }: CellProps) {
   // Called unconditionally, on `undefined` for a day with no photograph, which
@@ -192,21 +177,16 @@ export type MonthCalendarProps = {
 }
 
 /**
- * A month of meals, at a glance.
+ * A month of meals, at a glance: the second way of reading the diary, answering
+ * "what have I been eating" rather than "what did I eat". A month of totals is a
+ * chart, and Trends already draws it.
  *
- * The second way of reading the diary, and it answers a question the day view
- * cannot: not "what did I eat" but "what have I been eating". A row of pictures
- * is the only form of that answer somebody actually reads — a month of totals
- * is a chart, and Trends already draws it.
+ * Arrows rather than a pager, unlike the week strip: twelve taps reaches a year
+ * where the strip would need fifty-two swipes, and a paging grid a screen tall
+ * would fight the vertical scroll under it.
  *
- * ARROWS RATHER THAN A PAGER, unlike the week strip. A week is swiped through
- * constantly and a month is not: twelve taps reaches a year, where the strip
- * would need fifty-two swipes, and a paging grid a screen tall would fight the
- * vertical scroll of everything under it.
- *
- * The two queries are the month's, not the year's. Paging back fetches the
- * month arrived at and react-query keeps it, so going back and forth over the
- * same three months is three requests in total.
+ * The two queries are the month's rather than the year's, and react-query keeps
+ * what paging fetches.
  */
 export function MonthCalendar({
   month,

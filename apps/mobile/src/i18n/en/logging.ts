@@ -2,17 +2,15 @@ export const logging = {
   today: {
     title: 'Today',
     /**
-     * The floating button that comes back from an older day. Its label is the
-     * word above — the button IS the heading it puts back — so what a screen
-     * reader needs is the sentence the visual arrow and position are saying.
+     * The floating button back to today. Its visible label is the word above, so
+     * this is the sentence the arrow and the position are saying.
      */
     backToTodayA11y: 'Go back to today',
     kcalLeft: 'KCAL LEFT',
     kcalOver: 'KCAL OVER',
     /**
-     * The same ring, tapped: eaten so far against the day's allowance. The big
-     * number above it is what has been eaten, so this is the second half of a
-     * fraction — a slash rather than the word "of", matching the macro bars.
+     * The same ring, tapped: eaten so far against the day's allowance. A slash
+     * rather than the word "of", matching the macro bars.
      */
     kcalOfGoal: '/{{goal}} KCAL',
     showGoals: 'Show the day’s allowance',
@@ -21,40 +19,33 @@ export const logging = {
     overNote: 'A bit over today, tomorrow is a new count.',
     /**
      * The same, for a day reached through the week strip. "Tomorrow is a new
-     * count" is a kindness about a day that is still running; said about last
-     * Tuesday it is just wrong, and the tomorrow it promises has been and gone.
+     * count" is a kindness about a day still running and wrong about last
+     * Tuesday, whose tomorrow has been and gone.
      */
     overNoteOn: 'A bit over that day.',
     /**
-     * Under the ring when a health store credited movement.
-     *
-     * Present so the goal reading higher than the one in Settings is explained where
-     * it is noticed. "+360 from moving" and not "360 burned": the plus sign is the
-     * whole message, and this feature's one invariant is that movement adds.
+     * Under the ring when a health store credited movement, so a goal higher
+     * than the one in Settings is explained where it is noticed. "+360 from
+     * moving" rather than "360 burned": movement adds, and the plus says so.
      */
     burnedNote: '+{{kcal}} from moving today',
     /** The same line about a day the strip went back to. */
     burnedNoteOn: '+{{kcal}} from moving that day',
-    /**
-     * Everything logged today, in one list. It was a heading per meal, and the
-     * meals are not headings any more — see `EntryList` for why.
-     */
+    /** Everything logged today, in one list. See `EntryList` for why. */
     logHeading: 'EATEN · {{kcal}} KCAL',
     /** A snapped plate whose dish is still being worked out. */
     analysing: 'Reading your plate',
     analysingHint: 'Counting once it knows what this is',
     /**
-     * The same row for a meal that was TYPED rather than photographed. It says
-     * "reading" too, because the same cascade is doing the same work — but
-     * there is no plate on screen to read, so the words are what the row shows
-     * while it waits, and the title has to name that instead.
+     * The same row for a typed meal. It says "reading" too, since the cascade is
+     * the same, but there is no plate on screen, so the title names the words.
      */
     describing: 'Reading what you wrote',
     describingRead: 'Reading what you wrote…',
     /**
-     * The rotating status line over the scan progress bar. Stages, not facts:
-     * the client cannot see where the scan actually is, so these describe the
-     * cascade truthfully without claiming to track it.
+     * The rotating status line over the scan progress bar. Stages rather than
+     * facts: the client cannot see where a scan is, so these describe the
+     * cascade without claiming to track it.
      */
     scanningRead: 'Reading your plate…',
     scanningMatch: 'Finding it in the catalogue…',
@@ -64,9 +55,8 @@ export const logging = {
     refiningApply: 'Applying your fix…',
     refiningCount: 'Recounting the calories…',
     /**
-     * The notification, posted only when the scan lands while the app is in
-     * the background — a plate takes half a minute to read and nobody should
-     * have to watch it.
+     * The notification, posted only when the scan lands with the app in the
+     * background. A plate takes half a minute to read.
      */
     scanDoneTitle: 'Your plate is counted',
     /** The same banner for a meal that was typed: there was no plate. */
@@ -76,9 +66,8 @@ export const logging = {
     /** On the panel behind a row being swiped away, and to a screen reader. */
     deleteEntry: 'Delete',
     /**
-     * The photo had nothing edible in it. Nothing was logged — the row is
-     * there to say so and to be dismissed, which is why the copy is not an
-     * apology and not an error.
+     * The photo had nothing edible in it. Nothing was logged, so the row exists
+     * to say so and be dismissed: not an apology and not an error.
      */
     noFoodTitle: 'No food in this photo',
     /** The same outcome for a typed meal: the words named nothing edible. */
@@ -87,9 +76,9 @@ export const logging = {
     noFoodDismiss: 'Dismiss',
     analysisFailedTitle: 'Could not read this one',
     analysisFailedHint: 'Tap to pick the dish yourself',
-    // No `emptyTitle` / `emptyBody`. A day before its first meal is the state
-    // this screen is in every morning, and a card announcing it pushed the ring
-    // and the water tracker apart to say what the empty list already said.
+    // No `emptyTitle` / `emptyBody`. A day before its first meal is where this
+    // screen starts every morning, and a card announcing it pushed the ring and
+    // the water tracker apart to say what the empty list already said.
 
     /** No `daily_goals` row yet — onboarding is what computes the first one. */
     noBudgetTitle: 'No daily budget yet',
@@ -98,11 +87,8 @@ export const logging = {
   },
 
   /**
-   * The week strip above the ring.
-   *
-   * All of it is for a screen reader. The cell itself is two glyphs and a dot,
-   * which is legible at a glance and says nothing at all read aloud — "M 21"
-   * is not a date and a coloured circle is not a word.
+   * The week strip above the ring, all of it for a screen reader. The cell is
+   * two glyphs and a dot, which is legible at a glance and says nothing aloud.
    */
   week: {
     a11y: {
@@ -117,9 +103,8 @@ export const logging = {
   },
 
   /**
-   * The month view, which is the second way of reading the diary: not "what did
-   * I eat" but "what have I been eating". Its own block rather than more keys
-   * under `week`, because the two views share only their dots.
+   * The month view: not "what did I eat" but "what have I been eating". Its own
+   * block, because the two views share only their dots.
    */
   calendar: {
     /** The toggle names the view it is OFFERING, in both directions. */
@@ -134,10 +119,8 @@ export const logging = {
       missed: 'Not logged',
     },
     /**
-     * The card under the grid, headed by the day it is about and nothing else.
-     * It carried the number of meals as well — "Thursday 14, 4 meals" — which is
-     * a count said twice, once as a figure and once as the list directly under
-     * it.
+     * The card under the grid, headed by the day and nothing else. It carried
+     * the meal count too, which the list directly under it already gives.
      */
     dayHeading: '{{day}}',
     dayKcal: '{{kcal}} kcal',
@@ -154,22 +137,19 @@ export const logging = {
   },
 
   /**
-   * The two sides of one camera.
-   *
-   * "Meal" rather than "Photo" and "Barcode" rather than "Scan": the tabs name
-   * WHAT IS BEING POINTED AT, not the mechanism, because the mechanism is the
-   * same on both and naming it twice would make them read as two cameras.
+   * The two sides of one camera. "Meal" rather than "Photo" and "Barcode" rather
+   * than "Scan": the tabs name what is being pointed at, since the mechanism is
+   * the same on both and naming it twice reads as two cameras.
    */
   capture: {
     tabs: 'What are you pointing at',
     meal: 'Meal',
     barcode: 'Barcode',
     /**
-     * What a free account has left today, under the viewfinder.
-     *
-     * Plural because the last one is the one that matters: "1 scan left today" is the
-     * line somebody reads before deciding whether to spend it. Zero reads as none
-     * rather than as a number, since by then the sentence is about tomorrow.
+     * What a free account has left today, under the viewfinder. "1 scan left
+     * today" is the line somebody reads before deciding whether to spend it, and
+     * zero reads as none rather than a number, since by then it is about
+     * tomorrow.
      */
     scansLeft_zero: 'No scans left today. They come back tomorrow.',
     scansLeft_one: '{{count}} scan left today',
@@ -179,14 +159,13 @@ export const logging = {
   /**
    * The barcode scanner, and the page a scan lands on.
    *
-   * The viewfinder says one thing and only one: point the camera. It used to carry
-   * four lines under the window, because the lookup happened there and the user
-   * watched it. A scan leaves the sheet the moment a code is read, so three of those
-   * four belong to the page it leaves for.
+   * The viewfinder says one thing: point the camera. It carried four lines while
+   * the lookup happened there, and a scan now leaves the sheet as soon as a code
+   * is read, so three of them belong to the page it leaves for.
    *
-   * "We do not have this one yet" rather than "not found": the packet exists, it is
-   * in the user's hand, and our record of it is what is missing. The difference
-   * matters because the next thing offered is Describe rather than an apology.
+   * "We do not have this one yet" rather than "not found": the packet is in the
+   * user's hand and our record is what is missing, which is why the next thing
+   * offered is Describe rather than an apology.
    */
   barcode: {
     permissionTitle: 'Let RiceCal use the camera',
@@ -204,10 +183,9 @@ export const logging = {
 
   /**
    * Typing the meal instead of photographing it. The example in the placeholder
-   * is doing real work, and it is the only instruction there is: it tells the
-   * user that a whole meal with its sides belongs in ONE box, which is not
-   * obvious from an empty field. A hint line under the field used to say the
-   * same thing in the abstract, which is the shape of copy people skip.
+   * is the only instruction there is: it shows that a whole meal with its sides
+   * belongs in one box, which an empty field does not. A hint line under the
+   * field said the same thing in the abstract and was skipped.
    */
   describe: {
     placeholder: 'Nasi lemak with fried chicken and a teh tarik',
@@ -220,9 +198,8 @@ export const logging = {
     permissionTitle: 'Camera access needed',
     permissionBody: 'RiceCal uses the camera to read your plate. Nothing leaves your phone.',
     /**
-     * The label is `common:action.continue` now, not this. Guideline 5.1.1(iv):
-     * a button in front of a system permission sheet may not be worded as the
-     * ask, and "Allow camera" is the app saying Apple's line for it.
+     * The label is `common:action.continue` now. Guideline 5.1.1(iv): a button in
+     * front of a system permission sheet may not be worded as the ask.
      */
     /** When iOS has a refusal on record, so the dialog will never appear again. */
     permissionSettings: 'Open Settings',
@@ -244,13 +221,10 @@ export const logging = {
     placeholder: 'Search any dish',
     clear: 'Clear search',
     /**
-     * The two lists one field searches.
-     *
-     * "All foods" rather than "Catalogue", which is our word for it and not
-     * anybody else's, and "My foods" rather than "Recent" or "History": what
-     * makes the second list worth a tab is that the meals in it are the user's
-     * own, at their own portions, with their own photographs on them. The
-     * recency is how it is sorted, not what it is.
+     * The two lists one field searches. "All foods" rather than "Catalogue",
+     * which is our word and nobody else's, and "My foods" rather than "Recent":
+     * what makes the second list worth a tab is that the meals are the user's
+     * own, at their own portions. Recency is how it is sorted, not what it is.
      */
     tabs: 'Which foods to search',
     tabCatalogue: 'All foods',
@@ -273,7 +247,7 @@ export const logging = {
     emptyBody: 'Try a shorter word, or fewer of them.',
     /**
      * A search that could not run is not a search that found nothing, so these
-     * two do not borrow the copy above.
+     * do not borrow the copy above.
      */
     offlineTitle: 'No connection',
     offlineBody: 'The dish list lives on the server. This will run as soon as you are back online.',
@@ -295,24 +269,19 @@ export const logging = {
     fixTitle: 'Fix it by typing',
     fixPlaceholder: 'no sambal, and it was half a plate',
     /**
-     * The sparkle button in the footer, and the sheet's own submit. The same
-     * two words twice on purpose: the sheet is that button's second half, not a
-     * new question, and "Send this correction" invited the user to wonder what
-     * else they might have been sending.
+     * The sparkle button in the footer, and the sheet's own submit. The same two
+     * words twice, because the sheet is that button's second half rather than a
+     * new question.
      */
     fixAction: 'Fix it',
     /**
-     * Why a correction changed nothing, and there are five of them because one
-     * apology for all five is what made this feature feel broken.
+     * Why a correction changed nothing. Five of them, because one apology for
+     * all five made the feature feel broken: "Could not apply that. Try
+     * rewording it" was shown for "extra spicy", where rewording will not help,
+     * and for a model answering in the wrong shape, where the words were fine.
+     * Each has to leave the reader with a different next move.
      *
-     * "Could not apply that. Try rewording it" was shown to somebody who typed
-     * "extra spicy", where there is nothing to apply and rewording will not
-     * help, and to somebody whose perfectly clear sentence hit a model
-     * answering in the wrong shape, where the words were never the problem.
-     * Each of these has to leave the reader with a different next move.
-     *
-     * `fixNotApplied` survives as the last resort, for a server older than the
-     * build reading it.
+     * `fixNotApplied` survives as the last resort, for an older server.
      */
     fixNotApplied: 'Could not apply that. Try rewording it',
     fixNoCalories: 'That does not change the calories, so nothing moved',
@@ -324,26 +293,19 @@ export const logging = {
     plateTitle: 'INGREDIENTS',
     /**
      * The same word as `plateTitle`, in the case a page title takes.
-     *
-     * `plateTitle` is a section marker on a card and is set in capitals; this
-     * one names a screen, where capitals would read as shouting rather than as
-     * typography. Two keys rather than one string cased at the call site,
-     * because which of the two a language wants is a translator's decision and
-     * `toUpperCase()` is wrong in several of them.
+     * `plateTitle` is a section marker set in capitals; this names a screen.
+     * Two keys rather than one cased at the call site, because which a language
+     * wants is a translator's decision and `toUpperCase()` is wrong in several.
      */
     plateHeading: 'Ingredients',
     plateTotal: 'Total',
     /**
-     * An entry nothing has broken down, which is most of them: a dish from
-     * search, a recipe, a scan that landed on one row. Said rather than left
-     * blank, because an INGREDIENTS card with nothing under it reads as a plate
-     * whose parts went missing.
+     * An entry nothing has broken down, which is most of them. Said rather than
+     * left blank, because an INGREDIENTS card with nothing under it reads as a
+     * plate whose parts went missing.
      *
-     * It names the pencil, because the pencil is the only way in. The plus that
-     * used to sit beside it on the card has moved inside the sheet, where the
-     * rest of the plate is edited. Shown in both places: on the card as the
-     * reason it looks empty, and in the sheet as what the one button there is
-     * for.
+     * It names the pencil, which is the only way in. Shown on the card as the
+     * reason it looks empty, and in the sheet as what the one button is for.
      */
     plateNone: 'This counts as one thing. Edit to break it into ingredients.',
     /** The plus in the ingredients card's header, and the sheet it opens. */
@@ -352,20 +314,19 @@ export const logging = {
     partAdded: '{{food}} added to the plate',
     addPartFailed: 'Could not add that. Try again',
     /**
-     * The one refusal worth naming. An entry whose calorie total the user typed
+     * The one refusal worth naming. An entry whose calorie total was typed
      * cannot be broken down: the typed figure sits above the parts, so the plate
      * would gain a row and not a calorie.
      */
     addPartTyped: 'This entry uses your own calorie figure, so it cannot be broken down',
     /**
-     * Every part taken off. The entry survives as whatever its own portion costs,
-     * so this says what will happen rather than standing in the way.
+     * Every part taken off. The entry survives as whatever its own portion
+     * costs, so this says what will happen rather than standing in the way.
      */
     plateEmptied: 'Nothing left on the plate. The entry goes back to counting as one serving.',
     /**
-     * How many of an ingredient are on the plate. Shown at one as well: a
-     * count that appears only above one reads as a badge on the busy rows
-     * rather than as the amount every row has.
+     * How many of an ingredient are on the plate. Shown at one as well, or it
+     * reads as a badge on the busy rows rather than the amount every row has.
      */
     times: '× {{amount}}',
     /** What a part weighs, in brackets after its name. */
@@ -380,26 +341,22 @@ export const logging = {
     moreOf: 'More {{name}}',
     removeOf: 'Remove {{name}}',
     /**
-     * Typing a number in by hand, for the dish the app got close but not right: off a
-     * packet, off a recipe, off the kitchen scale.
-     *
-     * All four figures are edited together, in `NutritionSheet`, so this labels a
-     * form rather than one control. The three macros need no label of their own,
-     * because the bar beside each one already carries its name.
+     * Typing a number in by hand, for the dish the app got close but not right.
+     * All four figures are edited together in `NutritionSheet`, so this labels a
+     * form rather than a control; the macros need no label, because the bar
+     * beside each carries its name.
      */
     editKcal: 'Calories',
     /**
-     * The sheet those four figures are typed in, and the three "Edit" controls
-     * that open one. Each label names the card rather than repeating the word,
-     * because a screen reader hearing three "Edit" buttons on one screen learns
-     * nothing from any of them.
+     * The sheet those four figures are typed in, and the three controls that
+     * open one. Each label names its card, because a screen reader hearing three
+     * "Edit" buttons learns nothing from any of them.
      */
     figuresTitle: 'Your own figures',
     macrosTitle: 'Macros',
     /**
-     * The three pencils, and they are the only words those controls have: the
-     * button itself is the icon alone, so a screen reader hearing three of them
-     * on one screen needs each to say WHICH card it opens.
+     * The three pencils, which are icon-only buttons, so these are the only
+     * words they have and each has to say which card it opens.
      */
     editFigures: 'Edit the calories and macros',
     editPlate: 'Edit the ingredients',
@@ -407,26 +364,23 @@ export const logging = {
     /** On the card, when at least one figure was typed. See the reset link. */
     yourFigures: 'Your own figures, not the app’s.',
     /**
-     * The two field labels in the details sheet, and they are one word each. "What to
-     * call this" and "When you ate it" were sentences where a label was wanted: a
-     * field with a value in it and a heading over it does not need the heading to
-     * also explain the field.
+     * The two field labels in the details sheet, one word each. "What to call
+     * this" and "When you ate it" were sentences where a label was wanted.
      *
-     * Renaming one logged entry writes `display_label`, so it does not rename the
-     * dish for anyone else who logged it.
+     * Renaming one logged entry writes `display_label`, so it does not rename
+     * the dish for anyone else who logged it.
      */
     nameField: 'Name',
     numbersReset: 'Use the app’s figures',
     /**
-     * Stands in for a serving label the catalogue import left unusable — a
-     * measurement ("1 medium paper (8-5/8\" dia)") or a code ("383 GRM").
+     * Stands in for a serving label the import left unusable: a measurement
+     * ("1 medium paper (8-5/8\" dia)") or a code ("383 GRM").
      */
     servingWord: 'serving',
     /**
      * The fallback chips, for an entry the model suggested nothing for. They go
      * into the fix box as text and are read by `scan-refine` like anything else
-     * typed there, so each one has to be a sentence a model can act on rather
-     * than a label the client understands.
+     * typed there, so each has to be a sentence a model can act on.
      */
     quickFix: {
       halfPortion: 'Half portion',
@@ -436,17 +390,14 @@ export const logging = {
     },
     editByHand: 'Edit the details by hand',
     /**
-     * WHEN it was eaten: the day it counts towards and the time on the row.
-     *
-     * Two columns and one question — see `features/logging/when.ts`. It reads as
-     * one line under the title, the same pair of facts the diary row prints under
-     * a dish name, and the sheet asks once.
+     * When it was eaten: the day it counts towards and the time on the row. Two
+     * columns and one question (see `features/logging/when.ts`), read as one line
+     * under the title, and the sheet asks once.
      */
     whenValue: '{{day}} at {{time}}',
     /**
-     * The row in the details sheet that opens the picker. A value with a way in
-     * rather than the controls themselves — five of those laid out flat is what
-     * the picker replaced.
+     * The row in the details sheet that opens the picker: a value with a way in
+     * rather than the five controls laid out flat that it replaced.
      */
     whenRow: 'Date',
     /** The four wheels, to a screen reader. Each is a run of near-identical rows. */
@@ -457,24 +408,20 @@ export const logging = {
     am: 'am',
     pm: 'pm',
     /**
-     * Said when the entry has left the day the user is looking at. Without it
-     * the diary they land back on has one fewer row and a meal moved to
-     * yesterday reads as a meal deleted.
+     * Said when the entry has left the day the user is looking at. Without it, a
+     * meal moved to yesterday reads as a meal deleted.
      */
     movedTo: 'Moved to {{day}}',
-    /**
-     * The footer. Short because it shares the row with "Fix it" — "Save
-     * changes" and a sparkle button do not both fit on a small phone.
-     */
+    /** The footer. Short because it shares the row with "Fix it". */
     save: 'Save',
     /**
-     * A write that failed. The screen stays where it is with everything still
-     * filled in, so this says what happened rather than what to do about it.
+     * A write that failed. The screen stays where it is with everything filled
+     * in, so this says what happened rather than what to do about it.
      */
     saveFailed: 'Could not save those changes',
     /**
-     * Leaving with edits staged. Nothing on this screen is written until Save,
-     * so the back chevron is a discard and has to say so.
+     * Leaving with edits staged. Nothing is written until Save, so the back
+     * chevron is a discard and has to say so.
      */
     discardTitle: 'Leave without saving?',
     discardBody: 'What you changed here is dropped and the entry stays as it was.',
@@ -494,8 +441,8 @@ export const logging = {
     photoFailed: 'Could not save that photo',
     replacePhoto: 'Replace the photo with a picture',
     /**
-     * A row holds a photo or a drawing, never both, so picking one discards the
-     * other — and the photo is of the actual plate, which no drawing replaces.
+     * A row holds a photo or a drawing and never both, so picking one discards
+     * the other, and the photo is of the actual plate.
      */
     replacePhotoTitle: 'Replace your photo?',
     replacePhotoBody:
@@ -506,48 +453,43 @@ export const logging = {
   },
 
   /**
-   * Sending one logged meal out of the app as a picture.
-   *
-   * The card itself carries none of this except the wordmark: the dish name,
-   * the figures and the macro labels are all the entry's own, read from where
-   * the screen reads them.
+   * Sending one logged meal out of the app as a picture. The card carries none
+   * of this except the wordmark: the dish name, the figures and the macro labels
+   * are the entry's own.
    */
   share: {
     /**
-     * The signature under the figures, in two halves. "Logged by" is the small
-     * half and the name is the half being said, so they are separate strings: a
-     * translation that wanted the name first can put it first, and neither can
-     * be interpolated into the other's weight.
+     * The signature under the figures, in two halves, so a translation that
+     * wants the name first can put it first and neither is interpolated into the
+     * other's weight.
      */
     loggedBy: 'Logged by',
     /** The name on the picture. Not translated: it is a name. */
     brand: 'RiceCal',
     /**
-     * ANDROID ONLY, now. The share intent there carries a message and nothing
-     * else, so a meal shared on Android is this sentence or it is nothing. iOS
-     * sends the picture ALONE — the card already says the dish and the calories,
-     * and a sentence repeating them beside it is the same facts twice.
+     * Android only. Its share intent carries a message and nothing else, so a
+     * meal shared there is this sentence or nothing. iOS sends the picture
+     * alone, since the card already says the dish and the calories.
      */
     text: '{{food}}, {{kcal}} kcal. Logged with RiceCal',
     /**
-     * The capture came back with nothing. Rare and not worth explaining: the
-     * only thing the user can do about it is press the button again.
+     * The capture came back with nothing. Not worth explaining: the only thing
+     * to do about it is press the button again.
      */
     failed: 'Could not make that picture',
   },
 
   /**
-   * Picking an illustration for one logged item.
-   *
-   * Needed because the catalogue cannot be illustrated: a few hundred drawings
-   * against hundreds of megabytes of imported foods, so most rows have none.
+   * Picking an illustration for one logged item. Needed because the catalogue
+   * cannot be illustrated: a few hundred drawings against hundreds of megabytes
+   * of imported foods, so most rows have none.
    */
   icon: {
     title: 'Pick a picture',
     /**
-     * The two halves of the sheet, as a pair of tiles at the top — the same shape
-     * the quick selector uses. There is no "or choose a picture" heading between
-     * them any more: with the two visibly exclusive, nothing has to say so.
+     * The two halves of the sheet, as a pair of tiles at the top, the same shape
+     * the quick selector uses. No heading between them: with the two visibly
+     * exclusive, nothing has to say so.
      */
     searchTab: 'Search',
     cameraTab: 'Camera',
@@ -557,49 +499,44 @@ export const logging = {
   },
 
   /**
-   * The water card on Today, which is a tank that fills rather than eight boxes
-   * you tick. Everything here is a VOLUME, and in MILLILITRES: see
-   * `lib/water.ts` for why the glasses went and which unit belongs where.
+   * The water card on Today: a tank that fills rather than eight boxes to tick.
+   * Everything here is a volume in millilitres. See `lib/water.ts` for why the
+   * glasses went and which unit belongs where.
    */
   water: {
     title: 'Water',
     /**
-     * Drunk against the goal. A slash rather than the word "of", the same way
-     * the ring and the macro bars write a fraction — and ONE unit, printed
-     * once at the end, because "0 ml / 2 L" is a fraction whose halves are in
-     * different units and reads as a fault.
+     * Drunk against the goal. A slash rather than "of", as the ring and the
+     * macro bars write a fraction, and one unit printed once at the end, because
+     * "0 ml / 2 L" reads as a fault.
      */
     count: '{{filled}} / {{goal}} ml',
     /**
      * The sheet behind Add, and what is left of the goal beside its heading.
-     *
      * "left" rather than "to go", and clamped at zero rather than swapped for a
-     * congratulation, because the sheet this one is a sibling of writes "1,460 kcal
-     * left" in the same corner. Two ways of saying the same thing in two sheets
-     * opened by two buttons on one screen is one too many.
+     * congratulation, because its sibling sheet writes "1,460 kcal left" in the
+     * same corner.
      */
     addTitle: 'Add water',
     left: '{{amount}} ml left',
     /**
-     * A quick-add button, to a screen reader. The label on screen is the size
-     * alone, and the vessel is the drawing above it — a button reading "Glass
-     * 250 ml" says the same thing twice in a space with room for one.
+     * A quick-add button, to a screen reader. On screen the label is the size
+     * alone and the vessel is the drawing above it.
      */
     add: 'Add {{amount}} ml',
     customLabel: 'Another amount',
     /** The example in the empty field. A figure none of the three presets is. */
     customPlaceholder: '600',
     /**
-     * The two buttons under it, which are icons on screen — so these are what a
-     * screen reader has to go on, and they name the DIRECTION rather than the
-     * figure, which is in the field above and already announced.
+     * The two buttons under it, which are icons on screen. They name the
+     * direction rather than the figure, which the field above already announces.
      */
     customAdd: 'Add this amount',
     customRemove: 'Take this amount off',
     /**
-     * The toast after a drink, and the way back out of it. The amount is in the
-     * message rather than on the button, because "Undo" is what somebody is
-     * looking for and the figure is what tells them whether they want it.
+     * The toast after a drink, and the way out of it. The amount is in the
+     * message rather than on the button, because "Undo" is what somebody looks
+     * for and the figure is what tells them whether they want it.
      */
     added: '{{amount}} ml of water',
     removed: '{{amount}} ml taken off',

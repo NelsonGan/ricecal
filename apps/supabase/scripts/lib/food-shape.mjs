@@ -1,23 +1,18 @@
 /**
  * A researched dish, checked and turned into the row the catalogue wants.
  *
- * This is the half of the old `import-foods.mjs` worth keeping. The other half
- * called `public.import_foods`, a Postgres function that did the dedup and the
- * write inside one statement; the catalogue is in D1 now and that function is
- * gone, so the write lives in `catalogue-import.mjs` and the SHAPE lives here.
+ * The half of the old `import-foods.mjs` worth keeping: the write lives in
+ * `catalogue-import.mjs` now that `public.import_foods` has gone with the
+ * catalogue, and the shape lives here.
  *
- * Splitting them was not just tidiness. The checks below are the ones no
- * database can make — a name with no ASCII in it has no slug, an icon naming a
- * drawing nobody drew renders as a blank square, calories that disagree with
- * their own macros are a number somebody will diet against, and 160 g of
- * macronutrient does not fit in a 140 g packet. They are worth being able to
- * run against a payload without a database at all, which is what a research
- * agent wants: `--dry-run` should be able to say "this file is wrong" offline.
+ * The checks below are the ones no database can make: a name with no ASCII in it
+ * has no slug, an icon naming a drawing nobody drew renders blank, calories that
+ * disagree with their own macros are a number somebody will diet against, and
+ * 160 g of macronutrient does not fit in a 140 g packet. `--dry-run` can say
+ * "this file is wrong" offline.
  *
- * INPUT
- *
- * A JSON array of dishes, or an object with a `foods` array and an optional
- * `source` and `source_id` every dish in the file inherits. One dish:
+ * Input is a JSON array of dishes, or an object with a `foods` array and an
+ * optional `source` and `source_id` every dish inherits. One dish:
  *
  *   {
  *     "name":      "Nasi Lemak Ayam Goreng",   // required, the local spelling
@@ -50,20 +45,14 @@ const ICON_ROOT = `${REPO_ROOT}apps/mobile/assets/icons`
 const PLACES = new Set(['mamak', 'kopitiam', 'hawker', 'packaged', 'home'])
 
 /**
- * The weight a serving label states, when it states one.
+ * The weight a serving label states, when it states one. `food_servings.grams` is
+ * what the scan cascade bounds a portion against, and a researched payload writes
+ * its portion in words, so reading the number out here turns those into a column.
  *
- * `food_servings.grams` is what the scan cascade bounds a portion against, and a
- * researched payload writes its portion in words — "1 plate (350 g)", "100 g",
- * "1 glass (250 ml)". Reading the number out of the label here is what turns
- * those into a column, and it is the same three shapes and the same convention
- * (millilitres as grams) that `servingGrams` in `functions/_shared/portion.ts`
- * applies as a FALLBACK for rows that never had the column. Deliberately the
- * same, deliberately not shared: one is Deno inside an edge function and one is
- * Node beside the payloads, and the day they disagree is the day a portion is
- * priced two ways.
- *
- * Cups and spoons are not read, for the reason set out at length there: a cup of
- * rice is 200 g and a cup of cornflakes is 30 g, and null is the honest answer.
+ * The same three shapes and the same convention (millilitres as grams) that
+ * `servingGrams` in `functions/_shared/portion.ts` applies as a fallback:
+ * deliberately the same, deliberately not shared, since one is Deno and one is
+ * Node. Cups and spoons are not read, for the reason set out there.
  */
 function labelGrams(label) {
   const text = String(label ?? '').trim()

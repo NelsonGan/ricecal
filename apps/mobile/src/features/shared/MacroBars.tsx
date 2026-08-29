@@ -23,17 +23,14 @@ export type MacroBarsProps = {
 }
 
 /**
- * Carbs, protein and fat as three labelled bars.
+ * Carbs, protein and fat as three labelled bars, always in that order and those
+ * colours: the same triple appears on Today, on a food's detail and in the weekly
+ * report, and a reader learns the colour once.
  *
- * Always in that order and always in those colours: the same triple appears on
- * Today, on a food's detail and in the weekly report, and a reader learns the
- * colour once.
- *
- * Like `MacroBar`, it carries no `flex-1`. On Today it sits beside the ring
- * and shares a row, so that screen asks for one; inside the entry card it is
- * stacked, where `flex-1` means "take the leftover height from a basis of
- * nothing" — and a card whose height is bounded, which is what a keyboard
- * does, then collapsed all three bars into a band with their labels gone.
+ * Like `MacroBar`, it carries no `flex-1`. On Today it shares a row with the ring
+ * and that screen asks for one; stacked inside the entry card, `flex-1` means
+ * "take the leftover height from a basis of nothing", and a card whose height is
+ * bounded then collapsed all three bars into a band with their labels gone.
  */
 export function MacroBars({ eaten, targets, showGoal = false, className }: MacroBarsProps) {
   const { t } = useTranslation()

@@ -8,21 +8,14 @@ import { ToastProvider } from '@/ui'
 import NotificationsStep from '../notifications'
 
 /**
- * The permission that has to do something.
+ * The permission that has to do something. Every `reminder_enabled` starts false
+ * in the signup trigger, so calling `ensureNotificationPermission` and moving on
+ * leaves a user who said yes to the system dialog receiving nothing. The
+ * assertion worth having is that the three meal reminders were turned on.
  *
- * Every `reminder_enabled` starts false in the signup trigger, deliberately — an
- * app that schedules notifications nobody asked for is an app that gets its
- * permission revoked. Which makes the obvious implementation of this screen a
- * lie: call `ensureNotificationPermission`, move on, and the user who said yes
- * to the system dialog never receives one. So the assertion worth having is not
- * that the permission was requested, it is that the three meal reminders were
- * turned ON.
- *
- * The second thing pinned here is that nothing on this screen is a wall. A
- * refusal, a failed write, a permission the SDK could not record: all of them
- * still advance. A minute-old account stuck behind a toast is the worse bug,
- * and since there is no longer a second button it is the ONLY bug — see the
- * last case.
+ * The second thing pinned is that nothing here is a wall: a refusal, a failed
+ * write and a permission the SDK could not record all still advance. With no
+ * second button, a minute-old account stuck behind a toast is the only bug.
  */
 
 const mockReplace = jest.fn()

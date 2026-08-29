@@ -10,29 +10,21 @@ import { useEnterApp } from '@/lib/navigation'
 import { EmptyState, Spinner } from '@/ui'
 
 /**
- * The entry point decides between onboarding, the account step and the app.
+ * The entry point decides between onboarding, the account step and the app. The
+ * questions come before the account, so "no session" no longer means "sign in":
+ * the local draft rather than the session says how far a visitor got.
  *
- * The order of these questions is the flow, and the flow changed: the questions
- * come before the account now, so "no session" no longer means "sign in". A
- * visitor answers seven screens first and is asked for an email at the end, which
- * makes the local draft — not the session — the thing that says how far they got.
- *
- * - **Looking.** The keychain read and the profile fetch both take a moment, and
- *   redirecting during either flashes the wrong screen at a returning user. A
- *   spinner is the honest answer to "we do not know yet".
- * - **No session.** Start at the beginning, every time. It used to resume at the
- *   target screen when a draft was complete, on the theory that somebody who had
- *   answered everything should not tap through it again — but a draft outlives the
- *   account it was flushed for, so signing out and relaunching landed on "that is
- *   about four meals" with no way back to the top. Answers are still on disk, so
- *   walking the questions again is a few taps with every choice already made.
- * - **A session whose account is gone.** Sign out, which turns the next render
- *   into the case above. See below.
- * - **Session, no `onboarded_at`, answers ready.** Signing in is what created
- *   this session, at the end of the flow. Flush.
- * - **Session, no `onboarded_at`, no answers.** An account that never finished, on
- *   a phone with no draft. Ask the questions.
- * - **Session and `onboarded_at`.** The app.
+ * - Looking. The keychain read and the profile fetch both take a moment, and
+ *   redirecting during either flashes the wrong screen at a returning user.
+ * - No session. Start at the beginning every time. Resuming at the target screen
+ *   looked right until a draft outlived the account it was flushed for, and
+ *   signing out landed on "that is about four meals" with no way back to the top.
+ * - A session whose account is gone. Sign out, which turns the next render into
+ *   the case above.
+ * - Session, no `onboarded_at`, answers ready. Signing in created this session at
+ *   the end of the flow, so flush.
+ * - Session, no `onboarded_at`, no answers. Ask the questions.
+ * - Session and `onboarded_at`. The app.
  *
  * A redirect rather than a screen, so there is never a back stack entry pointing
  * at nothing.
@@ -44,21 +36,15 @@ export default function Index() {
   const answered = isComplete(draft)
 
   /**
-   * A token in the keychain outlives the account it was issued for.
+   * A token in the keychain outlives the account it was issued for. Deleting a
+   * user reaches Postgres and nothing else, so the phone still holds a signed
+   * access token PostgREST accepts until it expires: every read returns nothing,
+   * which the router read as "signed in, never onboarded".
    *
-   * Deleting a user — in the dashboard, or through the account screen once that
-   * exists — reaches Postgres and nothing else, so the phone still holds a
-   * signed access token that PostgREST goes on accepting until it expires. Every
-   * read then returns nothing and every write matches no row: the router read
-   * that as "signed in, never onboarded" and walked a returning user into the
-   * questions, which ended on "we could not save your answers" because the row
-   * the flush updates was deleted with the account.
-   *
-   * A SUCCESSFUL select with NO ROW is what says so, and it is unambiguous:
+   * A successful select with no row is what says so, and it is unambiguous:
    * `on_auth_user_created` writes the profile in the same transaction as the
-   * account, so a live session always has one. Anything else — offline, a
-   * refused request, a token being refreshed — fails the query rather than
-   * answering it, and leaves this false.
+   * account, so a live session always has one. Anything else fails the query
+   * rather than answering it.
    */
   const abandoned = Boolean(session) && isSuccess && !profile
 
@@ -90,19 +76,13 @@ export default function Index() {
   if (abandoned) return <Loading />
 
   /**
-   * A read that FAILED says nothing about where this user belongs.
+   * A read that failed says nothing about where this user belongs. The line above
+   * was drawn for `signOut` alone, and everything past this point reads `profile`
+   * as though the answer had arrived, so a request that dropped took the same
+   * branch as a genuine `onboarded_at: null`.
    *
-   * The comment above already draws the line — only a successful select with no
-   * row means the account is gone — but the line was drawn for `signOut` alone,
-   * and everything past this point reads `profile` as though the answer had
-   * arrived. Undefined because the request failed then took the SAME branch as
-   * a genuine `onboarded_at: null`, so a request that dropped on a bad
-   * connection walked a returning user into the onboarding questions.
-   *
-   * The same wait as the paused case, and for the same reason: react-query
-   * refetches this on reconnect and on the next foreground, and the redirect
-   * happens then. Not reachable while there is a persisted profile to answer
-   * from, which after the fix in `SessionProvider` is the ordinary case.
+   * The same wait as the paused case: react-query refetches on reconnect and on
+   * the next foreground, and the redirect happens then.
    */
   if (!isSuccess) return <Offline />
 

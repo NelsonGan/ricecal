@@ -20,29 +20,21 @@ export type DropdownProps<T extends string> = {
 }
 
 /**
- * A dropdown that opens IN PLACE, under its own field.
+ * A dropdown that opens in place, under its own field.
  *
- * The three questions on the ask sheet were rows of chips: every answer visible
- * at once, one tap to change any of them. That reads well with four options and
- * badly with a list somebody can add to — the cuisine row was one line, then two,
- * and a wrapped row of pills is a control whose height depends on how much
- * typing the user has done. A field that says what is chosen and opens to say
- * what else there is has one height whatever the list holds.
+ * The ask sheet's questions were rows of chips, which reads well with four
+ * options and badly with a list somebody can add to: a wrapped row of pills is a
+ * control whose height depends on how much typing the user has done.
  *
- * `Select` in the design system is the same idea and opens its options in a
- * `Sheet`, which is a native `Modal`. This is used INSIDE a sheet, so that would
- * be a modal presented from within a modal — a stack this app has never had a
- * reason to build and would have to test on two platforms to trust. Opening
- * inline costs a scroll on a long list and nothing else, and the ask sheet is
- * full height and already scrolls.
+ * `Select` is the same idea and opens its options in a `Sheet`, which is a native
+ * `Modal`, and this is used inside a sheet. Opening inline costs a scroll on a
+ * long list, and the ask sheet already scrolls.
  *
  * Generic over the value type, for the reason `Select` is: `onChange` hands back
- * the literal union rather than `string`, so the sitting and the macros are set
- * without a cast at either call site — and a cast is exactly where a fourth meal
- * added to `MEALS` and forgotten in `Meal` would slip through.
+ * the literal union rather than `string`, so neither call site needs a cast.
  *
- * Feature-local, deliberately. If a second screen wants it, that is the moment
- * it becomes a design-system component with a gallery entry, and not before.
+ * Feature-local. A second screen wanting it is the moment it becomes a
+ * design-system component with a gallery entry.
  */
 export function Dropdown<T extends string>({
   options,

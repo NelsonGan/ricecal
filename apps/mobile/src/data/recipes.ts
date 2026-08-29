@@ -15,16 +15,14 @@ import type { IconRef, Macros, Recipe, RecipeIngredient, RecipeUnit } from './ty
 /**
  * Home cooking.
  *
- * A recipe is the one thing in this app a user authors. It used to become a
- * catalogue row as well, mirrored into `foods` so that logging it was an ordinary
- * entry against a foreign key, and that mirror went with the catalogue. Logging a
- * pot writes the same snapshot everything else does, built from `perServing` by
- * `snapshotFromRecipe`.
+ * A recipe is the one thing in this app a user authors. It used to be mirrored
+ * into `foods` so logging it was an entry against a foreign key, and that mirror
+ * went with the catalogue: logging a pot now writes the same snapshot everything
+ * else does, built by `snapshotFromRecipe`.
  *
- * Two writes are RPCs rather than updates, and both for the same reason: they
- * touch columns the client has no grant on. Publishing may only ever move a
- * recipe to `pending`, and saving a copy has to bump a counter on somebody else's
- * row.
+ * Two writes are RPCs rather than updates, because they touch columns the client
+ * has no grant on: publishing may only move a recipe to `pending`, and saving a
+ * copy bumps a counter on somebody else's row.
  */
 
 /** Which shelf of the list is on screen. Part of the query key. */
@@ -73,19 +71,15 @@ export function useRecipes(shelf: RecipeShelf, query = '') {
 /**
  * How many recipes this account owns, and whether it may write another.
  *
- * A count query rather than the list's length. The obvious shortcut is to read
- * `useRecipes('mine')` and count the rows, and it is wrong twice: that query is
- * filtered by whatever is in the search field, and it is capped at 100. Both
- * would let somebody past the ceiling by typing a word into a box.
+ * A count query rather than the list's length: `useRecipes('mine')` is filtered
+ * by the search field and capped at 100, either of which would let somebody past
+ * the ceiling by typing a word into a box.
  *
- * The database enforces this independently through the
- * `recipes_enforce_free_limit` trigger, because the client writes `recipes`
- * directly under RLS. This copy makes the button read honestly; that one actually
- * refuses. If they disagree the trigger wins, and the user sees an error where
- * they should have seen a paywall.
+ * The `recipes_enforce_free_limit` trigger enforces this independently, because
+ * the client writes `recipes` directly under RLS. This copy makes the button read
+ * honestly; that one refuses.
  *
- * `limit: null` is unlimited, not zero. It is what Pro has, and reading a null as
- * a number is exactly the mistake `current_period_end` taught.
+ * `limit: null` is unlimited rather than zero, which is what Pro has.
  */
 export type RecipeQuota = {
   count: number
@@ -118,16 +112,13 @@ export function useRecipeQuota(): RecipeQuota {
     count: owned,
     limit: entitled ? null : FREE_RECIPES,
     /**
-     * Never true while either answer is still in flight: a paywall shown to somebody
-     * with two recipes because the count had not landed is the same mistake as
-     * showing one to a subscriber mid-launch.
+     * Never true while either answer is in flight, or a paywall appears in front
+     * of somebody with two recipes because the count had not landed.
      *
-     * It errs the other way when the count fails. A query that errored, or that is
-     * paused offline with nothing cached, is not pending, so `owned` falls back to 0
-     * and this reads false. The button then opens a form the database refuses at
-     * Save. That is the right direction to be wrong in, and the screens route the
-     * refusal to the paywall through `isRecipeLimit` rather than showing "could not
-     * save".
+     * It errs the other way when the count fails: a query that errored or is
+     * paused offline is not pending, so `owned` falls back to 0 and the button
+     * opens a form the database refuses at Save. The screens route that refusal to
+     * the paywall through `isRecipeLimit`.
      */
     atLimit: !loading && !entitled && owned >= FREE_RECIPES,
     loading,
@@ -138,15 +129,12 @@ export function useRecipeQuota(): RecipeQuota {
  * Did this write hit the free tier's recipe ceiling?
  *
  * The rule lives in the `recipes_enforce_free_limit` trigger, because the client
- * writes `recipes` directly under RLS with no function in between, and a limit
- * the client is trusted to apply only applies to people running the client. What
- * comes back is a plpgsql exception, which PostgREST turns into a 400 with the
- * raised message on it.
+ * writes `recipes` directly under RLS. What comes back is a plpgsql exception,
+ * which PostgREST turns into a 400 carrying the raised message.
  *
- * Matched on a token, and the token is why the trigger raises
- * `recipe_limit_reached` rather than a sentence: an error message is not a place
- * to write copy, it cannot be translated, and matching on prose would break the
- * moment somebody improved the wording.
+ * Matched on a token, which is why the trigger raises `recipe_limit_reached`
+ * rather than a sentence: prose cannot be translated and would break the moment
+ * somebody improved the wording.
  */
 const RECIPE_LIMIT = 'recipe_limit_reached'
 
@@ -189,11 +177,8 @@ export function useRecipeIngredients(recipeId: string | undefined) {
 
 /**
  * An ingredient as the form holds it: no id, because the list is rewritten whole
- * on every save.
- *
- * `perUnit` and not a total, matching the column. The form multiplies for
- * display; what it stores is the density, which is what survives the amount being
- * corrected later.
+ * on every save. `perUnit` rather than a total, matching the column, since the
+ * density is what survives the amount being corrected later.
  */
 export type RecipeIngredientInput = {
   name: string
@@ -221,11 +206,9 @@ export type RecipeInput = {
 }
 
 /**
- * What a save did, beyond writing.
- *
- * `review` is present only when the recipe was public: editing one sends it back
- * through the reviewer, and the screen has to say which way that went. Absent
- * means there was nothing to review, not that a review passed.
+ * What a save did, beyond writing. `review` is present only when the recipe was
+ * public, since editing one sends it back through the reviewer. Absent means
+ * there was nothing to review rather than that a review passed.
  */
 export type SaveResult = { id: string; review?: PublishResult }
 
@@ -243,13 +226,10 @@ const toIngredientRow = (recipeId: string, input: RecipeIngredientInput, positio
 })
 
 /**
- * Create or replace a recipe, in one go.
- *
- * The form stages everything and Save writes the lot, so this takes the whole
- * ingredient list and replaces what is stored rather than diffing it. Nothing
- * anywhere references an ingredient by id across a save, so the ids churning
- * costs nothing and the alternative is a three-way diff to save a handful of
- * rows.
+ * Create or replace a recipe, in one go. The form stages everything and Save
+ * writes the lot, so this replaces the stored ingredient list rather than
+ * diffing it: nothing references an ingredient by id across a save, so the ids
+ * churning costs nothing.
  */
 export function useSaveRecipe() {
   const userId = useUserId()
@@ -370,24 +350,19 @@ export function useDeleteRecipe() {
 }
 
 /**
- * What happened when a recipe was sent for review.
- *
- * `pending` is not a third verdict, it is the absence of one: the review could
- * not run. The recipe is public and invisible, and the screen says "we are still
- * looking at it" rather than claiming either answer.
+ * What happened when a recipe was sent for review. `pending` is the absence of a
+ * verdict rather than a third one: the review could not run, so the recipe is
+ * public and invisible and the screen says "we are still looking at it".
  */
 export type PublishResult = { status: 'approved' | 'rejected' | 'pending'; reason?: string }
 
 /**
- * Send a recipe through the reviewer and report what it said.
+ * Send a recipe through the reviewer and report what it said. Shared by
+ * publishing and saving, because an edit to a published recipe needs a second
+ * reading. The database has already put the row back to `pending`, so a review
+ * that never happens leaves it public and unlisted rather than live and unread.
  *
- * Shared by publishing and by saving, because an edit to a published recipe needs
- * a second reading as much as the first publish did. The database has already put
- * the row back to `pending` by the time this runs, so a review that never happens
- * leaves it public and unlisted rather than live and unread.
- *
- * Never throws. Every failure resolves to `pending`, which is the honest answer:
- * nobody read it, so it is neither approved nor rejected.
+ * Never throws: every failure resolves to `pending`, which is the honest answer.
  */
 async function runReview(recipeId: string): Promise<PublishResult> {
   const { data, error } = await supabase.functions.invoke('recipes', {
@@ -406,12 +381,10 @@ async function runReview(recipeId: string): Promise<PublishResult> {
 /**
  * Ask for a recipe to be listed in the community, or take it back.
  *
- * Two steps, deliberately not one. `set_recipe_public` flips the flag and parks
- * the recipe at `pending`, which is a database write and cannot fail halfway.
- * Only then does the review run, and a review that never finishes leaves a recipe
- * that is public, pending, and therefore not listed. The opposite order would
- * have to hold an approval somewhere while the second write happened, and the
- * somewhere is a client.
+ * Two steps rather than one. `set_recipe_public` flips the flag and parks the
+ * recipe at `pending`, which cannot fail halfway; only then does the review run,
+ * and one that never finishes leaves a recipe public, pending and unlisted. The
+ * opposite order would have to hold an approval on a client.
  */
 export function usePublishRecipe() {
   const userId = useUserId()
@@ -469,10 +442,8 @@ export type ScannedRecipe = {
   servings: number
   steps: string
   /**
-   * The drawing the model picked for the pot, out of our own set.
-   *
-   * Only ever set on the described path: a photographed pot arrives with a
-   * photograph and the form shows that instead, so the server does not spend a
+   * The drawing the model picked for the pot. Only on the described path: a
+   * photographed pot arrives with a photograph, so the server does not spend a
    * vision call's tokens choosing a picture nothing displays.
    */
   icon?: IconRef
@@ -486,20 +457,16 @@ export type ScannedRecipe = {
 export type RecipeSource = { photoPath: string } | { text: string }
 
 /**
- * Read a pot out of a photograph, or out of a description of one.
+ * Read a pot out of a photograph, or out of a description of one. One hook for
+ * both, because everything after the request is the same shape and a draft is
+ * not written anywhere until Save.
  *
- * One hook for both, because everything after the request is the same shape and
- * the screen does the same thing with it. Only the model call on the far side
- * differs. It is folded into one here because a recipe draft is not written
- * anywhere until Save, so there is no second write path to keep apart.
+ * A mutation rather than a query, because it is an action with a cost taken at a
+ * moment the user chose.
  *
- * A mutation rather than a query because it is an action with a cost, taken once,
- * at a moment the user chose.
- *
- * Nothing is written. What comes back fills the form the user is looking at, and
- * a failure means they fill it in themselves, which is why this resolves to
- * `null` on a bad read rather than throwing at a screen that has a perfectly good
- * empty form to show.
+ * Nothing is written: what comes back fills the form, and a failure means they
+ * fill it in themselves, which is why this resolves to `null` rather than
+ * throwing at a screen with a perfectly good empty form.
  */
 export function useReadRecipe() {
   const queryClient = useQueryClient()
@@ -517,11 +484,9 @@ export function useReadRecipe() {
     mutationFn: async (source: RecipeSource): Promise<ScannedRecipe | null> => {
       /**
        * Which of the two offers was taken, and whether it produced anything.
-       *
-       * `empty` and `failed` mean opposite things about the prompt. `empty` is the
-       * model reading the evidence and finding no cooking in it, which is a judgement
-       * worth watching after the escape clause turned out to fire on "Coq au vin, feeds
-       * 6". `failed` is the request not landing at all.
+       * `empty` is the model finding no cooking in the evidence, worth watching
+       * after the escape clause fired on "Coq au vin, feeds 6"; `failed` is the
+       * request not landing at all.
        */
       const from = 'photoPath' in source ? 'photo' : 'text'
       const { data, error } = await supabase.functions.invoke('recipes', {

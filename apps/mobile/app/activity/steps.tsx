@@ -19,20 +19,14 @@ import { useBack } from '@/lib/navigation'
 import { AppBar, Card, ProgressBar, Screen, SegmentedControl, Skeleton, Text } from '@/ui'
 
 /**
- * A4 / N5: steps.
+ * Steps: today at the top with its hourly shape, the range under it as a strip of
+ * days. The range switch governs the lower half only, since today is today
+ * whichever window is selected.
  *
- * Today at the top with its hourly shape, the range under it as a strip of
- * days. The range switch governs the lower half only — today is today whichever
- * window is selected, and moving it would make the top of the screen change for
- * no reason the user asked for.
- *
- * THE HOURLY CHART DEGRADES ON PURPOSE
- *
- * Samsung Health writes steps in coarse blocks rather than by the hour. Twenty
- * four columns of which three are skyscrapers reads as "you sat still all
- * morning", which is a claim about the user rather than about the recording. So
- * when there is not enough shape the same component draws three blocks instead
- * — the N5 screen in the design.
+ * The hourly chart degrades on purpose. Samsung Health writes steps in coarse
+ * blocks rather than by the hour, and twenty-four columns of which three are
+ * skyscrapers reads as "you sat still all morning", which is a claim about the
+ * user rather than the recording. Without enough shape it draws three blocks.
  */
 export default function StepsScreen() {
   const { t } = useTranslation(['activity', 'progress', 'common'])
@@ -76,23 +70,15 @@ export default function StepsScreen() {
     ]
 
   /**
-   * The chart is drawn in STEPS PER DAY, not steps per bucket.
+   * The chart is drawn in steps per day rather than per bucket. On 7d the two are
+   * the same number; everywhere else the totals were wrong in a way that looked
+   * like data. On 30d the oldest column is the leftover after the seven-day
+   * blocks, so two days at 10,940 steps rendered as a 20% stub beside blocks of
+   * 48,000, and on 1y the newest column is the current month, which on the 3rd
+   * reads as "you have stopped walking".
    *
-   * A bucket is one day on 7d, so there the two are the same number and nothing
-   * below changes. They diverge everywhere else, and the totals were wrong in a
-   * way that looked like data: on 30d the oldest column is whatever is left over
-   * after the seven-day blocks — two days, 10,940 steps — drawn against 7-day
-   * blocks of around 48,000, so it rendered as a 20% stub. Its per-day average
-   * was 5,470 against their 6,900. The reader sees a collapse; the chart is
-   * showing them the width of a bucket.
-   *
-   * The 1y view has it worse, because the newest column is the CURRENT month:
-   * on the 3rd it is a nub beside eleven full months, which reads as "you have
-   * stopped walking" on a day the user walked 8,260 steps.
-   *
-   * Averages are also what the stat row under the chart already reports, and
-   * what `BalanceBars` has always drawn. This was the one chart in the feature
-   * comparing sums of unequal things.
+   * Averages are also what the stat row under the chart reports and what
+   * `BalanceBars` draws. This was the one chart comparing sums of unequal things.
    */
   const perDay = (bucket: { steps: number | null; stepsTotal: number; days: number }) =>
     bucket.steps ?? (bucket.days > 0 ? bucket.stepsTotal / bucket.days : 0)
@@ -112,26 +98,17 @@ export default function StepsScreen() {
       key: 'goal-days',
       label: t('activity:steps.goalDays'),
       /**
-       * OUT OF THE DAYS THAT WERE MEASURED, not out of the days in the range.
+       * Out of the days that were measured rather than the days in the range.
+       * `days` is every date in the window and `active_days` is the ones carrying
+       * a reading, which every other figure on this card already uses.
        *
-       * `days` is every date between the ends of the window; `active_days` is
-       * the ones carrying a reading. Every other figure on this card already
-       * uses the second — `activity_summary` filters each average on
-       * `has_data` — so reading `days` here made the goal ratio the one stat
-       * describing a different set of days from the two beside it.
+       * A first connection gets a week-deep backfill, so a fresh account opening
+       * the year view was told it hit its step goal on "1 of 351 days" while the
+       * average beside it was computed over nine. A day nobody counted is not a
+       * day the user failed.
        *
-       * What that looked like: a week-deep backfill is all a first connection
-       * gets, so a fresh account opening the year view was told it had hit its
-       * step goal on "1 of 351 days" while the average and the best beside it
-       * were computed over nine. 342 of those days predate the health store
-       * being connected at all — nobody counted them, and a day nobody counted
-       * is not a day the user failed. Same reasoning as null-is-not-zero in
-       * `activity_days`.
-       *
-       * Water and calories keep `days` on purpose, and the difference is who
-       * writes them: those are the user's own entries, so a day with nothing on
-       * it really is a day the goal was missed. Steps are somebody else's
-       * measurement, and its absence says nothing about the walking.
+       * Water and calories keep `days`, because those are the user's own entries
+       * and a day with nothing on it really is a day the goal was missed.
        */
       value: t('progress:ofDays', {
         done: summary.data?.stepGoalDays ?? 0,
@@ -290,20 +267,15 @@ export default function StepsScreen() {
 }
 
 /**
- * Which sentence goes under the week.
+ * Which sentence goes under the week. Short and steady ranges get a status line;
+ * uneven ranges get none, now that their advisory copy has gone. The classifier
+ * still matters there, because calling visibly uneven bars "even" would be worse
+ * than leaving the chart alone.
  *
- * Three shapes with a real threshold between them. Short and steady ranges get
- * a status line; uneven ranges deliberately get none now that their advisory
- * copy has been removed. The classifier still matters there, because calling
- * visibly uneven bars "even" would be worse than leaving the chart alone.
+ * It reads the summary rather than the buckets, because best against average is a
+ * range figure and `activity_summary` already weighted the days.
  *
- * It reads the summary rather than the buckets because the comparison it makes
- * — best against average — is a range figure, and `activity_summary` already
- * weighted the days.
- *
- * Returns the shape rather than the copy so the caller keeps the typed `t`; see
- * `SPAN_KEY` in `features/progress/axis.ts` for the same reasoning about
- * assembled keys.
+ * Returns the shape rather than the copy so the caller keeps the typed `t`.
  */
 type WeekShape = 'short' | 'uneven' | 'steady'
 

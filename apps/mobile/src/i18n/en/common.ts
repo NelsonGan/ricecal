@@ -96,17 +96,14 @@ export const common = {
   },
 
   /**
-   * What the language setting does NOT change.
+   * What the language setting does not change. Every word of the interface is
+   * translated; the model that reads a plate, reads a typed meal and answers "what
+   * should I eat" is not. It works best in English, and it answers against a
+   * catalogue whose dish names and serving labels are stored in English.
    *
-   * Every word of the interface is translated. The model that reads a plate,
-   * reads a typed meal and answers "what should I eat" is not: it works best in
-   * English, and it answers against a catalogue whose dish names, ingredients
-   * and serving labels are all stored in English.
-   *
-   * Said where a language is chosen rather than buried in a help centre, and
-   * said twice: `note` under the control for anybody who picked something other
-   * than English, and the longer version behind an info button for anybody who
-   * wants the reason.
+   * Said where a language is chosen, and said twice: `note` under the control for
+   * anybody who picked something other than English, and the longer version behind
+   * an info button.
    */
   aiLanguage: {
     open: 'What the AI features read and write',

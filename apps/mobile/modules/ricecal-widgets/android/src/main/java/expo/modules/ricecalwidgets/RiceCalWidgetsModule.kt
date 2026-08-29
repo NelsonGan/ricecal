@@ -8,16 +8,16 @@ import expo.modules.kotlin.modules.ModuleDefinition
  * The app's end of the widget store.
  *
  * The same five calls as the iOS module, and synchronous for the same reason:
- * every one of them is a few bytes into `SharedPreferences`, and the snapshot is
- * written from a react-query subscription that fires whenever the day changes.
+ * each is a few bytes into `SharedPreferences`, written from a react-query
+ * subscription that fires whenever the day changes.
  *
- * `installedWidgetsAsync` is async only to match the shape iOS needs — WidgetKit
- * answers on a completion handler where `AppWidgetManager` answers straight away.
- * One signature across both platforms is worth an unnecessary promise here.
+ * `installedWidgetsAsync` is async only to match the shape iOS needs, since
+ * WidgetKit answers on a completion handler where `AppWidgetManager` answers
+ * straight away.
  *
  * Every body goes through `withContext`, which is `?.let` rather than an early
  * `return@Function`: these lambdas are typed as returning a value, so a bare
- * return in one is a compile error rather than a no-op.
+ * return is a compile error rather than a no-op.
  */
 class RiceCalWidgetsModule : Module() {
   override fun definition() = ModuleDefinition {

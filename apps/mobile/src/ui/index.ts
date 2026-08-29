@@ -1,8 +1,6 @@
 /**
- * The RiceCal design system.
- *
- * Import from `@/ui`, never from a file inside it — the barrel is what lets a
- * component be split or renamed without touching every screen.
+ * The RiceCal design system. Import from `@/ui` rather than a file inside it, so
+ * a component can be split or renamed without touching every screen.
  *
  * Layers, bottom up:
  *   tokens (src/theme)  colour, spacing, radius, motion
@@ -10,15 +8,13 @@
  *   Squish              the press mechanic every raised control shares
  *   components          everything below
  *
- * Two conventions hold across every component here:
+ * Two conventions hold throughout. `className` targets the outer box, which is
+ * what the parent measures, and `contentClassName` the inner surface, rarely
+ * needed because appearance belongs to `variant` / `tone`.
  *
- *   `className` targets the OUTER box — layout, flex, margins. It is what the
- *   parent measures. `contentClassName` targets the inner surface, and is
- *   rarely needed because appearance belongs to `variant` / `tone`.
- *
- *   Anything that can be selected, toggled or typed into is CONTROLLED. No
- *   component holds the value it displays, so an optimistic update that the
- *   server rejects can always be rolled back by the caller.
+ * And anything selectable, toggleable or typed into is controlled: no component
+ * holds the value it displays, so a rejected optimistic update can be rolled back
+ * by the caller.
  */
 
 // Feedback and overlay

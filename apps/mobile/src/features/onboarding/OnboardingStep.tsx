@@ -77,17 +77,14 @@ export function OnboardingStep({
   const step = stepNumber(name)
 
   /**
-   * The whole funnel, from one place.
+   * The whole funnel, from one place. Fired here rather than in each screen's
+   * handler because six screens are six chances to forget, and the seventh added
+   * would silently end the funnel. The event is the CTA being pressed, not the
+   * screen being rendered: a step somebody scrolled through and abandoned is what
+   * a funnel is read to find.
    *
-   * Fired here rather than in each screen's own handler because six screens
-   * would be six chances to forget, and the seventh screen added would be the
-   * one that silently ends the funnel. The event is the CTA being pressed, not
-   * the screen being rendered: a step somebody scrolled through and abandoned
-   * is exactly the step a funnel is being read to find.
-   *
-   * The secondary action is deliberately not tracked. It is a skip or a "not
-   * now", and it lands on the same next screen — so what would distinguish the
-   * two events is a fact about which button, not about how far anybody got.
+   * The secondary action is not tracked. It is a skip, and it lands on the same
+   * next screen, so the two events would differ only in which button was pressed.
    */
   const advance = () => {
     track('Onboarding Step Completed', { step: name, step_number: step })

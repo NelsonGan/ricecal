@@ -26,22 +26,16 @@ type WeekProps = {
 /**
  * One page: seven cells, the query behind their dots, and the days themselves.
  *
- * The queries live here rather than in the pager so that swiping back a year
- * does not fetch a year. A week is asked for when it is rendered and
- * react-query keeps it, so the swipe back is a request and the swipe forward
- * is not.
+ * The queries live here rather than in the pager, so swiping back a year does not
+ * fetch a year: a week is asked for when it is rendered and react-query keeps it.
  *
- * WHY THE PAGE FETCHES THE DAYS AND NOT ONLY THE DOTS
+ * The page fetches the days as well as the dots, because every cell is a tap that
+ * puts its day on the screen below, so warming them makes picking one instant
+ * rather than a placeholder and then an answer. Two requests for the whole page;
+ * see `usePrefetchDays`.
  *
- * Every cell here is a tap that puts its day on the screen below, so the seven
- * days of a rendered page are exactly the set Today can be asked for next.
- * Warming them is what makes picking one instant instead of a placeholder and
- * then an answer — a swap the reader sees even when it is honest. It is two
- * requests for the whole page, not two per day; see `usePrefetchDays`.
- *
- * Clamped at today, because a day that has not happened cannot be picked: the
- * cells ahead of it are disabled, and seeding them would be claiming to know
- * something about a day nobody has had yet.
+ * Clamped at today: the cells ahead are disabled, and seeding them would claim to
+ * know something about a day nobody has had yet.
  */
 function Week({ start, width, selected, today, onSelect }: WeekProps) {
   const { t } = useTranslation('logging')
@@ -111,20 +105,14 @@ export function WeekPicker({ className }: { className?: string }) {
   const weeks = useMemo(() => weekStarts(todayKey), [todayKey])
 
   /**
-   * The page the strip OPENS on: the week holding the selected day, not always
-   * the current one.
+   * The page the strip opens on: the week holding the selected day rather than
+   * always the current one. Almost always the same week, since the selection
+   * starts on today; the exception is a mount with an older day selected, which
+   * the calendar toggle made ordinary, so switching back remounted the strip on
+   * this week with the selected day nowhere on it.
    *
-   * They are the same week almost always, because the selection starts on today
-   * and this component stays mounted while it is being changed. The exception is
-   * a MOUNT with an older day already selected, which the calendar toggle made
-   * ordinary: switching to the month view unmounts the strip, and switching back
-   * used to remount it on this week with the selected day nowhere on it — a row
-   * of seven days with no selection in it, under a heading naming a day in
-   * August.
-   *
-   * Read once, at mount, which is all `initialScrollIndex` is for. Picking a day
-   * inside the visible week must not scroll the pager, and paging back to look
-   * at an earlier week must not be undone by the day still being today's.
+   * Read once at mount, which is all `initialScrollIndex` is for: picking a day
+   * inside the visible week must not scroll the pager.
    */
   const initial = useRef(selectedDate).current
   const page = useMemo(() => {

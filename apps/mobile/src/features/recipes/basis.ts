@@ -3,28 +3,18 @@ import type { Food, Macros, RecipeUnit } from '@/data'
 /**
  * A catalogue dish, as an ingredient you can weigh.
  *
- * The catalogue quotes its macros PER BASE SERVING — one plate of nasi lemak,
- * one 100 g scoop, one 3 oz fillet — and a recipe needs them per gram, per
- * millilitre or per one of the thing. Something has to bridge the two, and the
- * only bridge available is the serving's own label, because that is where the
- * catalogue writes the weight down.
+ * The catalogue quotes its macros per base serving and a recipe needs them per
+ * gram, millilitre or piece. The only bridge available is the serving's own
+ * label, because that is where the catalogue writes the weight down.
  *
- * WHY GRAMS AT ALL, RATHER THAN COUNTING SERVINGS
+ * Grams rather than counting servings, because a recipe is written in kitchen
+ * amounts: "4 × 100 g" is arithmetic the cook does at the till, and a serving
+ * label nobody reads multiplied by a number nobody chose is a calorie figure
+ * with no way to check it. A weight can be checked against a scale.
  *
- * A recipe is written in kitchen amounts: 400 ml of santan, 1 kg of beef shin,
- * two eggs. Counting base servings instead — "4 × 100 g" — is arithmetic the
- * cook has to do at the till, and it goes wrong in the direction that matters:
- * a serving label nobody reads ("1 medium paper (8-5/8" dia)") multiplied by a
- * number nobody chose is a calorie figure with no way to check it. A weight can
- * be checked against a scale.
- *
- * WHEN THERE IS NO WEIGHT TO READ
- *
- * Most of the curated local rows are portions rather than measurements — "1
- * plate", "1 bowl" — and there is nothing to divide by. Those fall back to
- * `piece`, where one piece IS one base serving and the macros carry over
- * untouched. That is not a worse answer, it is a different unit: two roti canai
- * is a perfectly good ingredient line, and it is the one the label supports.
+ * Most curated local rows are portions rather than measurements, with nothing to
+ * divide by, and fall back to `piece`, where one piece is one base serving. That
+ * is a different unit rather than a worse answer.
  */
 
 /** How the picker starts an ingredient off, once a dish has been chosen. */
@@ -39,17 +29,13 @@ export type IngredientBasis = {
 /**
  * What one of each unit is worth, and which of the two families it belongs to.
  *
- * THE SAME TABLE AS `servingGrams` IN
- * `apps/supabase/functions/_shared/portion.ts`, deliberately, because these are
- * the same labels read for the same reason. It is duplicated rather than shared
- * because the edge functions are Deno and outside the pnpm workspace — there is
- * no module both runtimes can import — and the cost of the copy is that a unit
- * added there has to be added here. The spellings look the way they do because
- * they are REAL: they came out of a group-by over `food_servings.label`, which
- * is why `ONZ` and `OZA` are in the list and `millilitre` is not.
+ * The same table as `servingGrams` in `functions/_shared/portion.ts`, duplicated
+ * rather than shared because the edge functions are Deno and outside the pnpm
+ * workspace, so a unit added there has to be added here. The spellings came out
+ * of a group-by over `food_servings.label`, which is why `ONZ` and `OZA` are in
+ * the list and `millilitre` is not.
  *
- * `oza` is a FLUID ounce and `onz` is an ounce by weight — 29.6 ml against
- * 28.3 g. Four percent, and cheaper to get right than to explain.
+ * `oza` is a fluid ounce and `onz` an ounce by weight: 29.6 ml against 28.3 g.
  */
 const UNITS: Record<string, { unit: RecipeUnit; scale: number }> = {
   g: { unit: 'g', scale: 1 },

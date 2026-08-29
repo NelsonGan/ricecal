@@ -25,17 +25,15 @@ const SHELVES: RecipeShelf[] = ['mine', 'official', 'community']
 const SKELETON_ROWS = ['r1', 'r2', 'r3'] as const
 
 /**
- * R1 / R1B / R1D — the three shelves of the recipe list, and the Recipes tab.
+ * The three shelves of the recipe list, and the Recipes tab.
  *
  * One screen and not three, because they are one list read three ways: the same
  * row, the same tap target, the same numbers. What changes is who wrote the
- * recipe, and the segmented control says which of those is showing.
+ * recipe, and the segmented control says which is showing.
  *
- * A ROOT screen, so it carries a `ScreenTitle` rather than an `AppBar`: there is
- * nothing behind it to go back to. The heading changes with the shelf, which is
- * the one thing it does that the other tabs' titles do not — "My recipes" and
- * "From the community" are different places, and the segmented control under it
- * is what moved between them.
+ * A root screen, so it carries a `ScreenTitle` rather than an `AppBar`. The
+ * heading changes with the shelf, unlike the other tabs' titles: "My recipes" and
+ * "From the community" are different places.
  */
 export default function RecipesScreen() {
   const { t } = useTranslation(['recipes', 'common'])

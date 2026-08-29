@@ -21,19 +21,15 @@ type Mode = 'sign-in' | 'sign-up'
 /**
  * The password, on a screen of its own.
  *
- * SPLIT FROM SIGN-IN ON PURPOSE. The address and the password are two different
- * questions — one identifies you, the other proves it — and a single form
- * asking both cannot know which of the two it is running until both are filled
- * in. Apart, the first screen offers three ways in and this one is about the
- * one that was chosen, so it can say whose account it is signing into and put
- * "forgot your password" where somebody who has just failed to remember one
- * will look.
+ * Split from sign-in on purpose: the address and the password are two questions,
+ * and a single form asking both cannot know which it is running until both are
+ * filled in. Apart, the first screen offers three ways in and this one is about
+ * the one chosen, so it can name the account and put "forgot your password"
+ * where somebody who has just failed to remember one will look.
  *
- * NOTHING HERE IS A DEAD END, which is the whole design. Every failure has a
- * way forward on the same screen: a password that does not match offers a code,
- * an address that already has an account offers sign-in, an account that never
- * confirmed gets a fresh code posted rather than an error. A password is an
- * OPTION in this app, not a wall, and the mailed code is what makes that true.
+ * Nothing here is a dead end. A password that does not match offers a code, an
+ * address that already has an account offers sign-in, and an account that never
+ * confirmed gets a fresh code rather than an error.
  */
 export default function PasswordScreen() {
   const { t } = useTranslation(['auth', 'onboarding', 'common'])

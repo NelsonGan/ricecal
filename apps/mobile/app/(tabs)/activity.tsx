@@ -31,47 +31,28 @@ import { useThemeColors } from '@/theme/useTheme'
 import { Badge, Button, Card, Icon, ListRow, Screen, Skeleton, Text } from '@/ui'
 
 /**
- * A2 / N3: the Activity tab.
+ * The Activity tab: two screens in one route, split on whether this account has
+ * ever connected a health store rather than on whether it has data today. A user
+ * who connected last week and left their watch at home gets empty rings rather
+ * than the sales pitch again.
  *
- * Two screens in one route, and the split is on whether this account has ever
- * connected a health store rather than on whether it has data today. A user who
- * connected last week and left their watch at home gets the activity screen
- * with empty rings, not the sales pitch again.
+ * The sync is mounted here rather than in the tab layout, because
+ * `useHealthAutoSync` needs a provider id from a query and the tab layout renders
+ * before the session resolves. Today's budget refreshes for free, since the sync
+ * invalidates the day.
  *
- * WHY THE SYNC IS MOUNTED HERE AND NOT IN THE TAB LAYOUT
+ * The third tile is stand hours where the store reports them and steps where it
+ * never will, decided here because this is the screen that knows the provider.
+ * Keyed on the provider rather than on today's value: keying on `standHours !=
+ * null` changed the tile from Steps to Stand partway through a morning, since
+ * every day has no stand figure at 7am.
  *
- * `useHealthAutoSync` needs a provider id, which comes from a query, and the
- * tab layout renders before the session is even resolved. It also only matters
- * on the screens that show movement — and this is the one people open. Today's
- * budget gets its refresh for free, because the sync invalidates the day.
- *
- * WHAT THE THIRD TILE IS
- *
- * Stand hours where the store reports them, steps where it never will — decided
- * here, because this is the screen that knows what the provider is. `RingTrio`
- * never learns which platform it is on.
- *
- * It is keyed on the PROVIDER and not on today's value. Keying it on
- * `standHours != null` looked equivalent and is not: Apple has plenty of days
- * with no stand figure, and every day has no stand figure at 7am. The tile
- * therefore changed from Steps to Stand partway through a morning, and back
- * again on a day the watch was off — a column of the same layout measuring
- * something different each time you looked. A provider that reports stand hours
- * owns that tile whether or not it has an answer today; the em dash is what it
- * says when it does not.
- *
- * WHAT THE BARS ARE MEASURED AGAINST
- *
- * A provider's own ring goal when it gives one, and the user's 7-day average
- * when it does not. The second case is not an edge: HealthKit's ring goals live
- * on `HKActivitySummary`, which our library does not bind, so on iOS there is
- * NEVER a goal and all three tiles used to draw an empty grey track for the
- * lifetime of the app. An empty track next to a number reads as "you are at
- * zero", which was wrong every time.
- *
- * The average is honest — the user's own recent days, already computed by
- * `activity_summary` for the tiles further down — and it makes the bar answer
- * the question the tile is actually asked: is today a normal day?
+ * The bars are measured against a provider's own ring goal where it gives one and
+ * the user's 7-day average where it does not. That second case is not an edge:
+ * HealthKit's goals live on `HKActivitySummary`, which our library does not bind,
+ * so on iOS all three tiles drew an empty grey track, which reads as "you are at
+ * zero". The average is the user's own recent days, already computed by
+ * `activity_summary`, and it makes the bar answer whether today is a normal day.
  */
 export default function ActivityScreen() {
   const { t } = useTranslation(['activity', 'common'])
@@ -157,18 +138,14 @@ export default function ActivityScreen() {
   const eaten = sumMacros(food.entries).kcal
 
   /**
-   * The body of the screen waits as one, for the reason Today's does.
+   * The body waits as one, for the reason Today's does. Every figure falls back
+   * to zero or a dash and four of the five queries land in whatever order the
+   * network decides, so gated one at a time the screen assembled itself in front
+   * of the reader: rings at zero, and "No workouts this week" over a week with
+   * three in it.
    *
-   * Every figure here falls back to zero or to a dash, and four of the five
-   * queries behind them are separate requests that land in whatever order the
-   * network decides. Gated one at a time the screen assembled itself in front
-   * of the reader: rings at zero, a budget strip claiming the whole allowance
-   * was still there, "No workouts this week" over a week with three in it.
-   *
-   * The rings in particular are gated on the SUMMARY as well as on the day,
-   * because the summary is where a tile's reference figure comes from when the
-   * provider gives no goal — see `against` below. Without it the bars drew
-   * against nothing and then jumped to an average.
+   * The rings are gated on the summary as well as the day, because that is where
+   * a tile's reference figure comes from when the provider gives no goal.
    */
   const loading =
     day.isPending || sessions.isPending || summary.isPending || food.isPending || targets.isPending
@@ -234,15 +211,11 @@ export default function ActivityScreen() {
     {
       key: 'exercise',
       label: t('activity:today.exercise'),
-      // A dash, not a zero, when the store reported nothing.
-      //
-      // `exercise_minutes` is nullable precisely so this distinction survives
-      // the database, and rendering `?? 0` here threw it away at the last step:
-      // a Health store with steps and energy but no exercise minutes drew a
-      // confident "0 min", which is a claim about the user's day rather than
-      // about what the provider measured. Active energy and steps ARE non-null
-      // columns, so they keep their zero — a day with no steps really is a day
-      // of no steps.
+      // A dash rather than a zero when the store reported nothing.
+      // `exercise_minutes` is nullable so the distinction survives the database,
+      // and `?? 0` threw it away at the last step: a confident "0 min" is a claim
+      // about the user's day rather than about what the provider measured. Active
+      // energy and steps are non-null columns and keep their zero.
       value:
         activity?.exerciseMinutes == null
           ? t('activity:today.none')
@@ -298,13 +271,11 @@ export default function ActivityScreen() {
   return (
     <Screen
       /**
-       * The pull the freshness badge implies.
-       *
-       * `isSyncing` is the PULL, not every pass. A refreshing control holds the
-       * whole scroll view pushed down under its spinner, and the automatic sync
-       * runs on mount — so this tab opened with its header parked below the
-       * notch and stayed there until the sync landed, which reads as a screen
-       * stuck mid-swipe. An automatic pass reports itself in the badge instead.
+       * The pull the freshness badge implies. `isSyncing` is the pull rather than
+       * every pass: a refreshing control holds the scroll view pushed down under
+       * its spinner, and the automatic sync runs on mount, so the tab opened with
+       * its header parked below the notch. An automatic pass reports itself in
+       * the badge.
        */
       refreshControl={
         <RefreshControl refreshing={isSyncing} onRefresh={syncNow} tintColor={colors.muted} />

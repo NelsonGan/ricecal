@@ -17,20 +17,16 @@ export type DayMealsProps = {
 }
 
 /**
- * The day the calendar has selected, as a LIST of what was eaten on it.
+ * The day the calendar has selected, as a list of what was eaten on it.
  *
- * `ItemRow` rather than a row of this file's own, which is what makes it the
- * same list the diary draws — the same tile at the same size, the same figure on
- * the right. The month view and the day view are two ways of finding a meal, and
- * a meal should not look like two different things depending on which one found
- * it.
+ * `ItemRow` rather than a row of this file's own, so it is the same list the
+ * diary draws: the month view and the day view are two ways of finding a meal,
+ * and a meal should not look like two things depending on which found it.
  *
- * NO COUNT IN THE HEADING. It read "Thursday 14, 4 meals", and the four rows
- * under it are the count — said twice, once as a number to trust and once as a
- * list to check it against.
+ * No count in the heading, because the rows under it are the count.
  *
- * No swipe-to-delete either, unlike the diary's list. This is the day being
- * looked BACK at, the row opens the entry, and the delete is on the entry.
+ * No swipe-to-delete either, unlike the diary's list: this is the day being
+ * looked back at, the row opens the entry, and the delete is on the entry.
  */
 export function DayMeals({
   date,

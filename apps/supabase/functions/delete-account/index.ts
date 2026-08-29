@@ -1,41 +1,32 @@
 // Deleting an account, for good, from inside the app.
 //
-// App Review guideline 5.1.1(v): an app that lets somebody create an account
-// has to let them delete it, from the app, without writing to anybody. So this
-// is the whole of it — no ticket, no reply from a person, no waiting.
+// App Review guideline 5.1.1(v): an app that lets somebody create an account has
+// to let them delete it from the app, without writing to anybody.
 //
-// WHAT IT DELETES. Two things, and they are in different systems:
+// It deletes two things, in different systems:
 //
-//   1. Every object in R2 under this user's two prefixes. Photographs of meals
-//      and the profile picture.
-//   2. The `auth.users` row. Every table in the schema hangs off it with
-//      `on delete cascade`, so the profile, the diary, the goals, the recipes,
-//      the weigh-ins, the activity and the subscription mirror all go with it
-//      in one statement. Nothing here enumerates tables, deliberately: a list
-//      of tables in this file is a list that a future migration silently makes
-//      wrong, and the cascade is checked by the database rather than by me.
+//   1. Every object in R2 under this user's two prefixes: meal photographs and
+//      the profile picture.
+//   2. The `auth.users` row. Every table hangs off it with `on delete cascade`,
+//      so the profile, diary, goals, recipes, weigh-ins, activity and
+//      subscription mirror go with it. Nothing here enumerates tables: a list in
+//      this file is one a future migration silently makes wrong.
 //
-// THE ORDER IS THE POINT, and it is the opposite of the retention sweep's.
-// That one deletes the object before forgetting the key, because the row is the
-// only record of the key. Here the KEYS ARE DERIVED FROM THE USER ID, so the
-// user id is the thing that must outlive the sweep: delete the account first
-// and a failed sweep strands every photograph for ever, with nothing left in
-// the system that knows the prefix. Objects first, account second.
+// The order is the opposite of the retention sweep's. That deletes the object
+// before forgetting the key, because the row is the only record of it; here the
+// keys are derived from the user id, so deleting the account first strands every
+// photograph with nothing left that knows the prefix.
 //
-// SO A FAILURE LEAVES THE ACCOUNT INTACT, and says so. The caller can press the
-// button again, and the second attempt is cheaper than the first, because the
-// objects the first one did delete are really gone. Nothing here is a
-// half-deleted account: either the row is gone or nothing happened.
+// So a failure leaves the account intact and says so. The caller can press again,
+// and the second attempt is cheaper. There is no half-deleted account.
 //
-// WHAT IT DOES NOT DELETE. Recipes somebody else saved into their own diary
-// (`source_recipe_id` is `on delete set null`, and the copy became theirs when
-// they saved it); the anonymous catalogue-widening rows, which carry a search
-// term and no account; and whatever Apple, Google or RevenueCat hold about a
-// purchase, which is theirs. `ricecal.app/data-deletion` says all of this in
-// the user's own words, and the two must not drift apart.
+// It does not delete recipes somebody else saved into their own diary
+// (`source_recipe_id` is `on delete set null`), the anonymous
+// catalogue-widening rows, or whatever the stores hold about a purchase.
+// `ricecal.app/data-deletion` says all of this in the user's own words.
 //
-// `verify_jwt = false` and the header is inspected here, for the same reason as
-// every other function in this directory: a failure then says which half broke.
+// `verify_jwt = false` and the header is inspected here, as in every other
+// function in this directory, so a failure says which half broke.
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'

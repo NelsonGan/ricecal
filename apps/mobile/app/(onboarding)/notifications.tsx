@@ -9,38 +9,26 @@ import { ensureNotificationPermission } from '@/lib/notifications'
 import { Card, Icon, Text, useToast } from '@/ui'
 
 /**
- * 09 ENABLE NOTIFICATIONS
+ * Enable notifications: the one ask that has to do something.
  *
- * The one ask that has to do something.
+ * Every `reminder_enabled` starts false in the signup trigger, because an app
+ * that schedules notifications nobody asked for gets its permission revoked. So a
+ * screen that only calls `ensureNotificationPermission` grants the OS permission
+ * and schedules nothing, and granting here also turns the three meal reminders on.
  *
- * Every `reminder_enabled` starts false in the signup trigger, deliberately —
- * an app that schedules notifications nobody asked for is an app that gets its
- * permission revoked. Which means a screen that only calls
- * `ensureNotificationPermission` and moves on grants the OS permission and then
- * schedules NOTHING: the user says yes to the system dialog and never receives
- * one. So granting here also turns the three meal reminders on, which is what
- * the rows on this screen promise.
+ * One button, saying "Continue": guideline 5.1.1(iv), the rule the health step is
+ * shaped by. It used to read "Enable notifications" with a "Maybe later" beside
+ * it, which breaks both halves at once.
  *
- * ONE BUTTON, AND IT SAYS "CONTINUE". Guideline 5.1.1(iv), the same rule the
- * health step is shaped by: the message has to lead to the request, and the
- * button in front of it may not be worded as the ask. It used to read "Enable
- * notifications" with a "Maybe later" beside it, which is both halves of that
- * at once.
+ * Nothing here can trap anybody, which is what makes losing the skip safe.
+ * `ensureNotificationPermission` is entirely local, and `enable` calls `next()`
+ * from a `finally`, so every outcome leaves by the same door.
  *
- * NOTHING HERE CAN TRAP ANYBODY, which is what makes losing the skip safe.
- * `ensureNotificationPermission` is entirely local — no network, so nothing to
- * pause offline — and `enable` calls `next()` from a `finally`, so a granted
- * permission, a refusal, a phone that has already been asked and an SDK that
- * threw all leave by the same door.
+ * The rows are what will actually arrive, and the third is the one every other
+ * tracker gets wrong: water and weigh-in nudges stay off until asked for.
  *
- * The rows below are what will actually arrive, and the third row is there
- * because it is the one every other tracker gets wrong: water and weigh-in
- * nudges exist and stay OFF until somebody goes and asks for them.
- *
- * Nothing is scheduled from this screen. `useReminderSync` is mounted inside the
- * tabs and rewrites the whole queue from `meal_times` and `user_settings`; a
- * second scheduler here would race it, and cancel-then-schedule means the loser
- * of that race leaves an empty queue behind.
+ * Nothing is scheduled from this screen. `useReminderSync` rewrites the whole
+ * queue inside the tabs, and a second scheduler would race it.
  */
 
 /** The three that get turned on. Snack is a meal slot, not a reminder anybody wants. */
@@ -70,19 +58,14 @@ function NotificationsStep() {
   const next = () => router.replace('/paywall/intro')
 
   /**
-   * The three writes, started but NOT waited on.
+   * The three writes, started but not waited on. Sequential rather than parallel,
+   * because each carries an optimistic update over the same cache key, so three
+   * in flight means three snapshots of three different "previous" states.
    *
-   * Sequential rather than parallel, because each carries an optimistic update
-   * over the same cache key: three in flight at once means three snapshots of
-   * three different "previous" states, and one failure rolls the other two back
-   * with it.
-   *
-   * Detached, because writes are `networkMode: 'online'` across the app — so on
-   * a phone with no signal react-query PAUSES these rather than rejecting them,
-   * and an awaited `mutateAsync` simply never settles. That left the button
-   * disabled and the flow stopped dead on the last screen before the diary. The
-   * optimistic update has already flipped the cache, `useReminderSync` schedules
-   * from that the moment Today mounts, and the paused writes land by themselves
+   * Detached, because writes are `networkMode: 'online'`: with no signal
+   * react-query pauses them and an awaited `mutateAsync` never settles, which
+   * left the flow stopped dead on the last screen before the diary. The
+   * optimistic update has already flipped the cache, and the paused writes land
    * when the connection does.
    */
   const turnOnMealReminders = async () => {

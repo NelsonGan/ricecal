@@ -15,24 +15,19 @@
 // the numbers are that tier's alone — an LLM figure is never averaged with a
 // catalogue figure.
 //
-// A FAILED SCAN WRITES NOTHING, and that is why every item is resolved before
-// any of them is written. There used to be a floor under the cascade that could
-// not fail, so the loop resolved and wrote one item at a time; without it, a
-// plate whose second component cannot be priced would otherwise leave the first
-// one on the diary as half a meal.
+// A failed scan writes nothing, which is why every item is resolved before any
+// of them is written. There used to be a floor under the cascade that could not
+// fail, so the loop resolved and wrote one item at a time; without it a plate
+// whose second component cannot be priced leaves the first as half a meal.
 //
-// The two REFUSALS still answer with a status rather than with `ok: false`, and
-// they sit beside the auth check rather than inside the cascade because they
-// are the same kind of thing: a statement about who is asking, settled before
-// any work starts. The client tells them apart from a scan that simply failed,
-// because "you are out of scans" and "we could not read the plate" are answered
-// by different things.
+// The two refusals answer with a status rather than `ok: false`, and sit beside
+// the auth check rather than inside the cascade: they are statements about who
+// is asking, settled before any work starts.
 //
-// THE TWO ARE ASKED OF DIFFERENT INPUTS, which is the freemium shape. A typed
-// meal needs a subscription; a photographed one does not, and instead spends
-// one of the day's scans — three of them on a free account and fifty on a paid
-// one. So the same endpoint answers 402 to one input and 429 to either, and the
-// client tells them apart by the `code` in the body.
+// They are asked of different inputs, which is the freemium shape. A typed meal
+// needs a subscription; a photographed one spends one of the day's scans, three
+// on a free account and fifty on a paid one. So the same endpoint answers 402 to
+// one input and 429 to either, and the client reads the `code` in the body.
 
 import '@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from '@supabase/supabase-js'
@@ -133,20 +128,16 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   )
 
-  // -- May this account be here at all, and has it any scans left today?
+  // May this account be here at all, and has it any scans left today? Before the
+  // photo is read and before the first model call, because both cost money and
+  // neither is refundable once spent.
   //
-  // Before the photo is read and before the first model call, because both
-  // cost money and neither is refundable once spent.
+  // The two inputs are not the same product. Photographing a plate is what the
+  // app is for, and a free account gets three a day. Typing a meal costs the same
+  // model time for a meal the user could have photographed, so it is Pro.
   //
-  // THE TWO INPUTS ARE NOT THE SAME PRODUCT. Photographing a plate is what the
-  // app is FOR, and a free account gets three a day of it — a diary somebody
-  // can actually keep, which is the only version of a free tier worth having.
-  // Typing a meal is a convenience on top of that, and it is Pro: it costs the
-  // same model time for a meal the user could have photographed, and a free
-  // tier that includes it has nothing left to sell at the top of the funnel.
-  //
-  // Both checks run in mock mode too. A local stack where the gates did not
-  // exist would be the one place every gating bug is invisible.
+  // Both checks run in mock mode, or a local stack would be the one place every
+  // gating bug is invisible.
   if (description) {
     try {
       await requireEntitlement(db, userId, 'describe')
@@ -204,13 +195,11 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // -- The first model call. A failure here — network, model, no photo —
-    // ends the scan: there is no item to resolve and nothing left to guess
-    // with.
+    // The first model call. A failure here ends the scan: there is no item to
+    // resolve and nothing left to guess with.
     //
-    // One meal, one entry, whichever way it was described: if the model split
-    // the tray into per-side items, `foldMealItems` puts them back into a
-    // single composite plate with the parts as its breakdown.
+    // One meal, one entry, whichever way it was described: a model that split the
+    // tray into per-side items is put back together by `foldMealItems`.
     let vision: Vision | null = null
     try {
       const photoBase64 = photoPath && !mockActive() ? await fetchPhoto(photoPath) : null
@@ -296,13 +285,10 @@ Deno.serve(async (req: Request) => {
     }
 
     /**
-     * Everything resolved first, and only then written.
-     *
-     * The cascade can now come back with nothing, and a meal is one or more
-     * items, so a plate that half resolves has to be reported as a failure
-     * rather than logged as the half that worked. Resolution touches no diary
-     * row — `resolveItem` reads the catalogue and calls models — so abandoning
-     * it here leaves nothing behind.
+     * Everything resolved first, and only then written. The cascade can come back
+     * with nothing, so a plate that half resolves is reported as a failure rather
+     * than logged as the half that worked. Resolution touches no diary row, so
+     * abandoning it leaves nothing behind.
      */
     const resolutions: Array<{ item: VisionItem; resolved: Resolved }> = []
     for (const [index, item] of items.entries()) {

@@ -273,12 +273,11 @@ describe('the mailed code', () => {
   })
 
   /**
-   * THE SPINNER GOES ON THE BUTTON THAT WAS PRESSED.
-   *
-   * One `busy` boolean drove `loading` on the footer CTA, so asking for a code
-   * spun a button at the bottom of the screen that nobody had touched while the
-   * control that had been tapped sat there looking ignored — and the password
-   * field stayed editable throughout. Every screen in this stack had the shape.
+   * The spinner goes on the button that was pressed. One `busy` boolean drove
+   * `loading` on the footer CTA, so asking for a code spun a button nobody had
+   * touched while the control that was tapped sat there looking ignored, and the
+   * password field stayed editable throughout. Every screen in this stack had the
+   * shape.
    */
   /**
    * The one request that still waits here, because it IS the request: there is

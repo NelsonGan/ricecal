@@ -81,18 +81,13 @@ jest.mock('expo-haptics', () => ({
 }))
 
 /**
- * The two native modules the data layer reaches at IMPORT time, which is what
- * makes them different from the rest.
+ * The two native modules the data layer reaches at import time, which is what
+ * makes them different from the rest. `src/lib/supabase.ts` installs the keychain
+ * as its auth store and `src/data/photos.ts` pulls in the image resizer, both at
+ * module scope, so anything importing `@/data` needed them before a single test
+ * ran.
  *
- * `src/lib/supabase.ts` installs the keychain as its auth store and
- * `src/data/photos.ts` pulls in the image resizer, both at module scope — so
- * anything importing `@/data` needed them before a single test ran. Together with
- * the Supabase URL above, these three are the whole reason a module that uses a
- * data hook could not be unit-tested without replacing `@/data` wholesale.
- *
- * Neither is exercised: no test signs in, and no test uploads a photo. The real
- * adapter's interesting behaviour is its fallback for a build with no keychain,
- * which is a property of the build rather than of anything a test can reach.
+ * Neither is exercised: no test signs in, and no test uploads a photo.
  */
 jest.mock('expo-secure-store', () => {
   const store = new Map()
@@ -111,17 +106,13 @@ jest.mock('expo-image-manipulator', () => ({
 }))
 
 /**
- * The camera, in the three modules it takes to have one.
- *
- * Reached by anything that renders the picture picker, which now offers the
- * viewfinder as one of its two halves — so this is not only the snap flow's
- * problem any more. `expo-camera` throws at import with "Cannot find native module
- * 'ExpoCamera'", and the other two are what the viewfinder asks about the device
- * around it.
+ * The camera, in the three modules it takes to have one. Reached by anything that
+ * renders the picture picker, which offers the viewfinder as one of its halves.
+ * `expo-camera` throws at import with "Cannot find native module 'ExpoCamera'",
+ * and the other two are what the viewfinder asks about the device around it.
  *
  * `isDevice: false` deliberately: that is the truth here, and it is the branch the
- * viewfinder takes on a simulator — an illustration instead of a live feed, which
- * is the only one a test can render.
+ * viewfinder takes on a simulator, which is the only one a test can render.
  */
 jest.mock('expo-camera', () => ({
   CameraView: require('react-native').View,

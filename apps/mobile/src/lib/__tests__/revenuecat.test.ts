@@ -8,19 +8,17 @@ import {
 } from '../revenuecat'
 
 /**
- * The purchase SDK's identity lifecycle, which is the half of the paywall that
- * lives outside the paywall.
+ * The purchase SDK's identity lifecycle, the half of the paywall that lives
+ * outside the paywall.
  *
- * Everything here is about ORDER, because nothing else about these calls can go
- * wrong loudly. They are fired and forgotten from the session provider, each is
- * several awaits deep with a native round trip in the middle, and every way of
- * getting the order wrong leaves a customer record that reads perfectly
- * plausibly: an email on the wrong account, or a purchase filed against
+ * Everything here is about order. These calls are fired and forgotten from the
+ * session provider, each several awaits deep with a native round trip in the
+ * middle, and every way of getting the order wrong leaves a plausible-looking
+ * customer record: an email on the wrong account, or a purchase filed against
  * `$RCAnonymousID:...` by somebody who was signed in the whole time.
  *
- * The SDK is handed over rather than mocked. `jest.mock` cannot reach it — the
- * module is behind a dynamic import that jest keeps real — which is what
- * `setPurchasesForTest` is for.
+ * The SDK is handed over rather than mocked, because `jest.mock` cannot reach it
+ * behind a dynamic import. That is what `setPurchasesForTest` is for.
  */
 
 /**

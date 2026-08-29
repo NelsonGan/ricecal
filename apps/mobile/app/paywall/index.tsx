@@ -22,18 +22,15 @@ import { useBack } from '@/lib/navigation'
 import { AppBar, Button, Screen, useToast } from '@/ui'
 
 /**
- * W1 THE PAYWALL.
+ * The paywall.
  *
- * A FULL PAGE, not a modal, and the app's own rule is why. A modal is
- * something you answer and dismiss — the quick selector, a confirmation — and
- * carries a cross; a page is somewhere you go and come back from, and carries
- * a chevron. This is a page. It has ten features, three plans and small print
- * on it, which is more than a sheet's worth, and it is reached from somewhere
- * worth returning to: the dish that was about to be logged, the recipe that
- * was about to be saved.
+ * A full page, not a modal, by the app's own rule: a modal is something you
+ * answer and dismiss and carries a cross; a page is somewhere you go and come
+ * back from and carries a chevron. This has ten features, three plans and small
+ * print on it, and it is reached from somewhere worth returning to.
  *
- * The sales half is `ProPitch`, shared with the onboarding paywall. What
- * differs between the two is how you LEAVE, and that is all that lives here.
+ * The sales half is `ProPitch`, shared with the onboarding paywall. What differs
+ * between the two is how you leave, and that is all that lives here.
  */
 export default function Paywall() {
   const { t } = useTranslation(['paywall', 'common'])

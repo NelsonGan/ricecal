@@ -20,18 +20,17 @@ export const onboarding = {
 
   welcome: {
     /**
-     * WHO IT IS FOR, said first, because that is the whole of the pitch.
+     * Who it is for, said first, because that is the whole of the pitch.
      *
-     * "Every dish, already counted" was a claim any tracker could make and none
-     * of them would be lying: they all count what is in their catalogue. What
-     * they do not have is this food, which is the reason somebody downloads
-     * this app instead of the one they already deleted.
+     * "Every dish, already counted" was a claim any tracker could make without
+     * lying: they all count what is in their catalogue. What they do not have is
+     * this food, which is why somebody downloads this app instead of the one they
+     * already deleted.
      *
-     * Asian rather than Malaysian, and the reasoning is the same as the line
-     * below. The catalogue was never only Malaysian — seven national
-     * composition tables, the Open Food Facts slice and the researched dishes
-     * make it an Asian book with a Malaysian centre — and "Made for Malaysia"
-     * told everybody else in the region the app was not for them.
+     * Asian rather than Malaysian. The catalogue was never only Malaysian (seven
+     * national composition tables, the Open Food Facts slice and the researched
+     * dishes make it an Asian book with a Malaysian centre) and "Made for
+     * Malaysia" told everybody else in the region the app was not for them.
      */
     title: 'The calorie tracker made for Asians',
     /**

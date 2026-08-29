@@ -188,25 +188,17 @@ export function ToastProvider({ children, offset = 0 }: ToastProviderProps) {
 }
 
 /**
- * WHY A TOAST NEEDS A HOST AT ALL, when it is already at the top of the tree.
+ * Why a toast needs a host when it is already at the top of the tree: the top of
+ * the React tree is not the top of the screen. A sheet is a native modal and so
+ * its own window above the app's root view, and nothing in the app tree can draw
+ * over it. Same rule as `NumpadHost`, and the same fix.
  *
- * Because the top of the REACT tree is not the top of the screen. A sheet is
- * presented as a native modal — `Sheet`'s own `Modal`, or a route the navigator
- * presents as a `transparentModal` — and a native modal is its own window,
- * above the app's root view. Nothing rendered in the app tree can draw over it,
- * which is the same rule `NumpadHost` exists for and the same fix.
+ * The symptom was invisible rather than broken: the toast mounted, ran its timer
+ * and dismissed itself underneath the panel, so every message the log sheet gives
+ * without navigating away read as a button that did nothing.
  *
- * The symptom was invisible rather than broken, which is why it lasted: the
- * toast mounted, took its place in the accessibility tree, ran its timer and
- * dismissed itself, all underneath the panel. Every message the log sheet has
- * to give without navigating away went that way — the plan still being checked,
- * the subscription that could not be looked up, a purchase still confirming,
- * and a subscriber told they had reached fifty scans. Each of them read as a
- * button that did nothing.
- *
- * THE TOPMOST HOST WINS, and the provider's own outlet is the bottom of that
- * stack. Registration is by mount order, so the last sheet to open is the one
- * that draws, and closing it hands the job back to whatever is underneath.
+ * The topmost host wins and the provider's own outlet is the bottom of that
+ * stack. Registration is by mount order, so the last sheet to open draws.
  */
 export type ToastHostProps = {
   /** Extra bottom room, for an outlet that has a tab bar or a CTA under it. */

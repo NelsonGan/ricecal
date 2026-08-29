@@ -2,20 +2,17 @@ import { act, render, screen } from '@testing-library/react-native'
 import AuthLanding from '../[action]'
 
 /**
- * Where a link in an email lands.
+ * Where a link in an email lands. This route exists because
+ * `ricecal://auth/callback` matched no file, so a login link opened the app on
+ * "Page not found" while the sign-in went through invisibly behind it.
  *
- * This route exists because `ricecal://auth/callback` matched no file, so a
- * login link opened the app on "Page not found" while the sign-in it had just
- * performed went through invisibly behind it. Two behaviours are worth pinning.
+ * A reset is not a sign-in, even though both produce a session: sent to `/`,
+ * somebody resetting a password lands on Today with the password they came to
+ * change still in force.
  *
- * A RESET IS NOT A SIGN-IN, even though both produce a session. Sent to `/`,
- * somebody resetting a password lands on Today with everything working and the
- * password they came to change still in force.
- *
- * And the redirect lives HERE rather than in `LoginLinkHandler`, which renders
- * outside the navigator: an imperative navigation from there races the root
- * layout on a cold start from the mail. A `<Redirect>` in a route cannot happen
- * before the route is mounted.
+ * And the redirect lives here rather than in `LoginLinkHandler`, which renders
+ * outside the navigator, where an imperative navigation races the root layout on
+ * a cold start from the mail.
  */
 
 const mockParams: { action?: string } = {}

@@ -1,17 +1,15 @@
 /**
  * The order of the flow, in one array.
  *
- * The progress bar spans nine screens across three route groups — the questions
- * and the plan in `(onboarding)`, the account in `(auth)` — and every one of them
- * has to agree about which number it is and how many there are in total. Written
- * out per screen, that agreement lasted exactly as long as nobody inserted a
- * step: adding the calculating beat meant editing "4" into "5" in four files and
- * "of 4" into "of 9" in six, and a screen that got the second edit and not the
- * first says "step 3 of 9" twice.
+ * The progress bar spans nine screens across three route groups, and every one
+ * has to agree about which number it is and how many there are. Written out per
+ * screen, adding the calculating beat meant editing "4" into "5" in four files
+ * and "of 4" into "of 9" in six, and a screen that got the second edit and not
+ * the first says "step 3 of 9" twice.
  *
- * So the position is derived from this list and nothing else. Inserting a screen
- * is one line here; deleting one is one line here. A name that is not in the list
- * does not typecheck.
+ * So the position is derived from this list and nothing else. Inserting or
+ * deleting a screen is one line here, and a name not in the list does not
+ * typecheck.
  */
 export const ONBOARDING_STEPS = [
   // Language and units, and it is first because everything after it is read in

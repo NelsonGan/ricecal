@@ -19,20 +19,17 @@ export type FixSheetProps = {
 }
 
 /**
- * FIX IT — describe what the scan got wrong and let the model correct it.
+ * Fix it: describe what the scan got wrong and let the model correct it.
  *
- * This is the AI path, and the only thing in it. The words go to `scan-refine`,
- * which rescales the portion, edits one part of the plate, or re-resolves the
- * dish through the same cascade the scan used. That is true of a hand-logged
- * entry as much as a photographed one: the function reads `scan_id` as optional
- * throughout, so there is one behaviour here and not two. There was briefly a
- * second variant that saved the text as a note on the row, and it was a
- * different feature wearing this one's clothes.
+ * The words go to `scan-refine`, which rescales the portion, edits one part of
+ * the plate, or re-resolves the dish through the same cascade. That is true of a
+ * hand-logged entry as much as a photographed one, since the function reads
+ * `scan_id` as optional throughout.
  *
- * It is a sheet rather than a card on the detail screen because it is not one
- * of that screen's staged edits: the correction leaves for the server, comes
- * back as a different meal, and takes the screen with it. It also wants the
- * keyboard the instant it opens and nothing else competing for the first tap.
+ * A sheet rather than a card on the detail screen, because it is not one of that
+ * screen's staged edits: the correction leaves for the server, comes back as a
+ * different meal, and takes the screen with it. It also wants the keyboard the
+ * instant it opens.
  */
 export function FixSheet({
   visible,

@@ -1,13 +1,11 @@
 /**
  * Every periodic job the project runs.
  *
- * THERE IS NO `fetch` HANDLER, AND THAT IS DELIBERATE. Together with
- * `workers_dev: false` and no route in `wrangler.jsonc`, it means this Worker
- * has no hostname at all — nothing to POST to, nothing to authenticate, and
- * nothing to leave open by mistake. The sweep this replaced was a Supabase edge
- * function with `verify_jwt = false`, reachable by anyone on the internet and
- * gated by a shared secret held in two places; removing the endpoint removes
- * the whole class of question rather than answering it better.
+ * There is deliberately no `fetch` handler. With `workers_dev: false` and no
+ * route in `wrangler.jsonc`, this Worker has no hostname at all: nothing to POST
+ * to, nothing to authenticate, nothing to leave open by mistake. The sweep it
+ * replaced was an edge function with `verify_jwt = false`, reachable by anyone
+ * and gated by a shared secret held in two places.
  *
  * See the root `README.md` for the format, and `job.ts` for what a job is.
  */

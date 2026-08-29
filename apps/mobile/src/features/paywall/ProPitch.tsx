@@ -24,19 +24,17 @@ export type ProPitchProps = {
   plan: Plan
   onPlanChange: (plan: Plan) => void
   /**
-   * Restoring a purchase, as a LINK at the end of the page rather than a button
+   * Restoring a purchase, as a link at the end of the page rather than a button
    * in the footer.
    *
-   * Only the onboarding paywall passes it, and the placement is the point.
-   * Pinned under "Maybe later" it was a third full-width control in a stack of
-   * three, which made "Restore purchase" look like one of the ways forward from
-   * this screen — it is not, it is the escape hatch for somebody who has
-   * already paid on another phone. Under the small print it is where every
-   * other app puts it, and the two people a month who need it know to scroll.
+   * Only the onboarding paywall passes it. Pinned under "Maybe later" it was a
+   * third full-width control in a stack of three, which made "Restore purchase"
+   * look like a way forward from this screen rather than the escape hatch for
+   * somebody who has already paid on another phone.
    *
-   * The standing paywall keeps its footer button: it is reached from a refused
-   * tap rather than from a flow, and somebody arriving there having already
-   * paid is a likelier visitor.
+   * The standing paywall keeps its footer button: it is reached from a refused tap
+   * rather than from a flow, so somebody arriving there having already paid is a
+   * likelier visitor.
    */
   onRestore?: () => void
 }

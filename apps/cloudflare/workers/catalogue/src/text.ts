@@ -2,14 +2,11 @@
  * How text is folded before it is compared, in one place.
  *
  * Both ends of every comparison have to agree: a query normalized one way and a
- * column normalized another is a row nobody can find. That makes this the one
- * module in the catalogue that genuinely cannot be allowed to have two copies —
- * so the loader in `apps/supabase/scripts` imports THIS file rather than
- * reimplementing it, which Node can do because it strips types on the way in.
- *
- * The alternative was a fourth handwritten copy of `normalize` sitting next to
- * the payloads, agreeing with this one until the day somebody widened a
- * character class in one of them.
+ * column normalized another is a row nobody can find. So the loader in
+ * `apps/supabase/scripts` imports this file rather than reimplementing it, which
+ * Node can do because it strips types on the way in. The alternative was a fourth
+ * handwritten copy of `normalize`, agreeing with this one until somebody widened
+ * a character class in one of them.
  */
 
 /** The echo of what `public.search_normalize` did in Postgres. */
@@ -23,17 +20,13 @@ export function normalize(text: string): string {
 }
 
 /**
- * Any barcode spelling as a GTIN-14.
+ * Any barcode spelling as a GTIN-14. One packet carries up to four spellings
+ * (UPC-E, EAN-8, UPC-A, EAN-13) and an American scanner drops the leading zero an
+ * EAN-13 carries, so padding every spelling to fourteen digits makes them one key.
  *
- * One packet carries up to four spellings — UPC-E, EAN-8, UPC-A, EAN-13 — and
- * an American scanner drops the leading zero an EAN-13 carries. Padding every
- * spelling to fourteen digits makes them one key.
- *
- * The check digit is deliberately NOT validated: real packets and Open Food
- * Facts both carry codes that fail it, and a lookup that refuses to try is
- * worse than a miss. Kept in step with `_shared/barcode.ts` on the Supabase
- * side and `public.gtin14` in the diary's Postgres; see the header of the first
- * of those for why three copies is the right number.
+ * The check digit is deliberately not validated: real packets and Open Food Facts
+ * both carry codes that fail it. Kept in step with `_shared/barcode.ts` and
+ * `public.gtin14`; the header of the first says why three copies is right.
  */
 export function gtin14(code: string): string | null {
   const digits = (code ?? '').replace(/[^0-9]/g, '')

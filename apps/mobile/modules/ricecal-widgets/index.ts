@@ -8,23 +8,16 @@ export { WIDGET_KINDS } from './src/types'
 /**
  * The seam between the app and the home screen.
  *
- * `requireOptionalNativeModule` rather than `requireNativeModule`, and the
- * difference is what makes this file importable from a test. The strict form
- * throws the moment it cannot find the native side, so a data hook that wrote a
- * snapshot would drag "Cannot find native module" into every suite that renders
- * a screen — the same problem `lib/analytics/client.ts` exists to solve, one
- * level down. Absent, every call below is a no-op and `installedWidgets`
- * answers with an empty list.
+ * `requireOptionalNativeModule` rather than `requireNativeModule`, which is what
+ * makes this file importable from a test: the strict form throws the moment it
+ * cannot find the native side. Absent, every call is a no-op and
+ * `installedWidgets` answers with an empty list.
  *
- * Two shipping cases genuinely find it absent or incomplete, and both are why
- * every call below is optional twice over — `native?.thing?.()`:
- *
- * - A dev client built before this module landed. Absent entirely.
- * - **An over-the-air update.** `expo-updates` ships JS without the binary
- *   under it, so a build can be running JS that knows about a native function
- *   its own binary has never heard of. Guarding only the module would turn that
- *   into "undefined is not a function" on the first render of the root layout,
- *   which is a white screen rather than a missing widget.
+ * Two shipping cases find it absent or incomplete, which is why every call is
+ * optional twice over (`native?.thing?.()`): a dev client built before this
+ * module landed, and an over-the-air update, where `expo-updates` ships JS
+ * without the binary under it. Guarding only the module turns the second into
+ * "undefined is not a function" on the first render of the root layout.
  */
 type Native = {
   setSnapshot?(json: string): void

@@ -17,23 +17,18 @@ export const SPAN_KEY = {
 } as const satisfies Record<TrendRange, string>
 
 /**
- * The labels under a chart's columns.
+ * The labels under a chart's columns. Each range names its columns differently: a
+ * day gets its weekday, a month gets its number, and a seven-day block counted
+ * back from today has no name, so it gets an index, which is the one that needs
+ * translating and is therefore passed in rather than formatted here.
  *
- * Each range names its columns differently and none of the three is derivable
- * from the others: a day gets its weekday, a month gets its number, and a
- * seven-day block counted back from today has no name at all — so it gets an
- * index, which is the one that needs translating and therefore the one passed
- * in rather than formatted here.
+ * Three letters fit a seventh of the width and not a twelfth, so the year labels
+ * every other month rather than shortening the name: "8" for August makes you
+ * convert before it tells you where you are.
  *
- * Three letters fit a seventh of the width comfortably and a twelfth not at
- * all, so the year labels every OTHER month rather than shortening the name
- * further. A named month every eight weeks still tells you where you are; "8"
- * for August makes you convert before it does.
- *
- * The interval counts BACK from the newest bucket, so the month on the right is
- * always labelled. That is the one people orient by — it is the month the
- * headline figures describe — and anchoring at the left would drop it half the
- * time depending on where the year happens to start.
+ * The interval counts back from the newest bucket, so the month on the right is
+ * always labelled. That is the one people orient by, and anchoring at the left
+ * would drop it half the time.
  */
 export function bucketLabels(
   buckets: readonly TrendBucket[],

@@ -4,27 +4,20 @@ import { useSession } from '@/data'
 import { CaptchaProvider } from '@/features/auth'
 
 /**
- * The sign-in stack, and the guard that closes it.
+ * The sign-in stack, and the guard that closes it. A session appears while this
+ * stack is on screen, since signing in is what creates one, and the index route
+ * only decides where a signed-in user belongs on mount, so without this the user
+ * keeps looking at the form they just submitted.
  *
- * A session can appear while this stack is on screen — that is the normal case,
- * since signing in is what creates one. The index route decides where a
- * signed-in user belongs, but it only decides once, on mount, so without this
- * the user stays looking at the form they have just successfully submitted.
+ * Redirecting to `/` rather than `/today` keeps that decision in one place.
  *
- * Redirecting to `/` rather than to `/today` keeps that decision in one place:
- * index is what knows whether onboarding is finished.
+ * One screen is exempt. Choosing a new password begins by verifying a recovery
+ * code, which is what creates the session licensing the change, so guarded like
+ * everything else the reset carries the user off to Today with the old password
+ * still in force. `new-password` navigates itself once the password is saved.
  *
- * ONE SCREEN IS EXEMPT, and it has to be. Choosing a new password begins by
- * verifying a recovery code, and verifying a recovery code IS what creates the
- * session that licenses the change. Guarded like everything else, the reset
- * carries the user off to Today the instant it starts working, leaving the
- * password they could not remember still in force. So while `new-password` is
- * the screen on top, a session is not a reason to leave; that screen navigates
- * itself when the new password has actually been saved.
- *
- * Read off the segments rather than held in state on purpose: "which screen is
- * showing" is a fact the router already has, and a second copy of it in a
- * context is a second thing that can be wrong.
+ * Read off the segments rather than held in state: which screen is showing is a
+ * fact the router already has.
  */
 export default function AuthLayout() {
   const { session, loading } = useSession()

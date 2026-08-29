@@ -1,20 +1,16 @@
 // The registry and `wrangler.jsonc` must agree about which crons exist.
 //
-// THE FAILURE THIS PREVENTS IS SILENT AND PERMANENT. A job in `src/jobs` whose
-// cron is not in `triggers.crons` is never delivered to: it does not error, it
-// does not log, it simply never runs, and the first sign of it is whatever the
-// job was supposed to be preventing. Nothing at runtime can notice, because the
-// Worker is never woken up to notice with. So it is checked here instead, and
-// `pnpm typecheck` runs it.
+// The failure this prevents is silent and permanent: a job whose cron is not in
+// `triggers.crons` is never delivered to, does not error, does not log, and the
+// first sign of it is whatever the job was preventing. Nothing at runtime can
+// notice, because the Worker is never woken up to notice with, so it is checked
+// here and `pnpm typecheck` runs it.
 //
-// The other direction — a cron registered with no job behind it — is caught at
-// runtime by the dispatcher, but it is cheap to catch here too and a clearer
-// place to read it.
+// The other direction, a cron with no job behind it, is caught at runtime by the
+// dispatcher, and is cheap to catch here too.
 //
-// Node strips the types off the registry natively, which is what lets this
-// import the real list rather than pattern-matching the source. The same
-// mechanism lets `apps/supabase/scripts/catalogue-import.mjs` import the
-// catalogue Worker's `src/text.ts`.
+// Node strips the types off the registry natively, which is what lets this import
+// the real list rather than pattern-matching the source.
 
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'

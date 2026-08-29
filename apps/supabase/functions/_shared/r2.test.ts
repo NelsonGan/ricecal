@@ -5,15 +5,14 @@ import { deleteUserObjects, listKeys, ownsKey } from './r2.ts'
 /**
  * The two things in `r2.ts` that a mistake would make silently wrong.
  *
- * `ownsKey` is the only authorization there is, and it is tested here rather
- * than only in the functions that call it.
+ * `ownsKey` is the only authorization there is, so it is tested here rather than
+ * only in the functions that call it.
  *
- * The sweep is the other one, and it is the reason this file exists at all.
- * `deleteUserObjects` is what account deletion relies on to leave nothing
- * behind, and every way it can fail leaves a user's photographs in a bucket
- * with no row naming them: a second page never asked for, a prefix built
- * without its trailing slash, an escaped key the regex misses. None of those
- * throw. They just delete less than everything and report success.
+ * The sweep is the other. `deleteUserObjects` is what account deletion relies on
+ * to leave nothing behind, and every way it can fail leaves a user's photographs
+ * in a bucket with no row naming them: a second page never asked for, a prefix
+ * built without its trailing slash, an escaped key the regex misses. None of
+ * those throw; they delete less than everything and report success.
  */
 
 const USER = '11111111-2222-4333-8444-555555555555'

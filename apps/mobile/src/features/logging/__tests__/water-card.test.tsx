@@ -9,16 +9,14 @@ import { WaterCard } from '../WaterCard'
 /**
  * Recording a drink on Today.
  *
- * What is worth pinning is the arithmetic the buttons carry, because it is the
- * one thing that changed shape when water became a volume. Every control here
- * ADDS — the old glasses SET the day to a number — so a button that sent a
- * total instead of an amount would look correct on an empty day and be wrong
- * every time after it, which is the failure a screenshot cannot catch.
+ * What is pinned is the arithmetic the buttons carry, which changed shape when
+ * water became a volume. Every control here adds, where the old glasses set the
+ * day to a number, so a button sending a total instead of an amount would look
+ * correct on an empty day and be wrong every time after.
  *
- * The undo is the other half of the same contract: it sends the negative of the
- * amount that was just added and nothing else. It lives in the toast, so it is
- * also the one part of this card that has no place on screen to be checked by
- * eye.
+ * The undo is the other half of the contract: it sends the negative of the amount
+ * just added and nothing else. It lives in the toast, so there is nowhere on
+ * screen to check it by eye.
  */
 
 const mockMutate = jest.fn()

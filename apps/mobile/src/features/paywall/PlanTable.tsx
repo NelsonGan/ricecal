@@ -8,26 +8,20 @@ import { Card, Divider, Icon, Text } from '@/ui'
 /**
  * What each tier gets, row by row.
  *
- * A TWO-COLUMN TABLE, WHICH IT COULD NOT BE BEFORE. This was a single list of
- * everything Pro includes, and the note above it said a comparison table would
- * have an empty column and an argument to make — which was true while there was
- * no free tier: every row would have read "no" on one side, and a page whose
- * left column is a wall of crosses is a page that sells nothing.
+ * A two-column table, which it could not be before: with no free tier every row
+ * would have read "no" on one side, and a page whose left column is a wall of
+ * crosses sells nothing.
  *
- * There is a free tier now, and it can keep a diary: a photographed plate three
- * times a day, the barcode scanner, the whole food database, three recipes, the
- * week's trends, the newest review. So most of this table's left column is a
- * tick, and the rows where it is not are the ones worth paying for. That is the
- * argument, and only the table can make it — a list of what Pro includes cannot
- * say which of it you already have.
+ * The free tier can keep a diary, so most of the left column is a tick and the
+ * rows where it is not are the ones worth paying for. A list of what Pro includes
+ * cannot say which of it you already have.
  *
- * ORDERED BY USE, not by what is gated. The four ways a meal gets in, then what
- * the app does with it, then what it does over time. A table sorted to put the
- * crosses at the top would read as a list of complaints.
+ * Ordered by use rather than by what is gated: the four ways a meal gets in, what
+ * the app does with it, then what it does over time. Sorted to put the crosses at
+ * the top it would read as a list of complaints.
  *
- * `as const` so each `key` stays a literal: widened to `string`, the copy
- * lookups stop typechecking, and a row added without copy would ship as a blank
- * line rather than failing the build.
+ * `as const` so each `key` stays a literal: widened to `string` the copy lookups
+ * stop typechecking, and a row added without copy would ship as a blank line.
  */
 export const PLAN_FEATURES = [
   // 'text' on both sides: three a day against unlimited is the whole offer, and

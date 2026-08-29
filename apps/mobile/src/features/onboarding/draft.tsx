@@ -13,23 +13,17 @@ import { createMMKV } from 'react-native-mmkv'
 import type { ActivityLevel, Sex, Units } from '@/data'
 
 /**
- * The onboarding answers, before there is an account to put them in.
+ * The onboarding answers, before there is an account to put them in. The
+ * questions come first, so every answer has to live somewhere that is not
+ * `profiles`: that row does not exist yet, and the hooks that write it throw
+ * without a session.
  *
- * This exists because the questions come first now. A user answers four screens
- * and sees the budget they produce, and only THEN is asked for an email — which
- * means every answer has to live somewhere that is not `profiles`, since the
- * profile row does not exist yet and the hooks that write it throw without a
- * session rather than failing quietly.
+ * On disk through MMKV, for two reasons. Onboarding is the longest uninterrupted
+ * stretch of typing in the app and the most likely to be interrupted, so
+ * surviving a restart is the difference between resuming and starting again. And
+ * the router reads `isComplete` to decide where a returning visitor belongs.
  *
- * On disk rather than in memory, through MMKV, for two reasons. Onboarding is the
- * longest uninterrupted stretch of typing in the app and the most likely place to
- * be interrupted by something else on the phone, so answers surviving a restart
- * is the difference between resuming and starting again. And the router reads
- * `isComplete` to decide where a returning visitor belongs, which it cannot do
- * from state that died with the process.
- *
- * Reads are synchronous, so there is no loading state to thread through the
- * questions — the first render already has the answers.
+ * Reads are synchronous, so the first render already has the answers.
  */
 
 const storage = createMMKV({ id: 'ricecal-onboarding' })

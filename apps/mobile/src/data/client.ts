@@ -70,18 +70,13 @@ export function datesBetween(from: string, to: string): string[] {
 /**
  * Fills in cache entries that have none, and never touches one that has.
  *
- * How a range request warms the individual keys a screen actually reads. A day
- * fetched seven at a time still lives under `keys.day(user, date)`, so every
- * mutation's invalidation and every optimistic update goes on working exactly
- * as it did — the range is a way of ARRIVING at those entries, not a second
- * place the day is kept.
+ * How a range request warms the individual keys a screen reads: a day fetched
+ * seven at a time still lives under `keys.day(user, date)`, so every
+ * invalidation and optimistic update goes on working as it did.
  *
- * Only the empty ones, and that is the whole safety argument. `setQueryData`
- * over an existing entry would land on a glass of water the user has just
- * tapped and not yet had confirmed, with a figure read a moment before the tap;
- * the optimistic update would come undone under their finger. A key that
- * already holds something needs no warming anyway — it is exactly the case this
- * exists to produce.
+ * Only the empty ones, which is the whole safety argument: `setQueryData` over an
+ * existing entry would land on a glass of water the user has just tapped, undoing
+ * the optimistic update under their finger.
  */
 export function seedMissing<T>(
   queryClient: QueryClient,

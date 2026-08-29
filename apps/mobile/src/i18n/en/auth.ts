@@ -113,20 +113,16 @@ export const auth = {
   },
 
   /**
-   * The app signing somebody out on its own, which it does exactly once: when
-   * the server has stopped recognising the session this phone holds.
+   * The app signing somebody out on its own, which it does once: when the server
+   * has stopped recognising the session this phone holds.
    *
-   * Two lines rather than one because they answer different questions. The title
-   * is what happened, and it has to be the first thing read: the user is looking
-   * at the welcome screen a moment after tapping something in the app, and
-   * without this that reads as the app having crashed and forgotten them. The
-   * body is what to do, and it says their diary is waiting rather than gone,
-   * which is the fear a surprise sign-out produces.
+   * Two lines, because they answer different questions. The title is what
+   * happened, which without it reads as the app having crashed and forgotten
+   * them; the body says their diary is waiting rather than gone.
    *
-   * It does not say WHY, because this app cannot know. Signing out every device,
-   * an account deleted, a session revoked in the dashboard and a session timed
-   * out all arrive here as the same refusal, and guessing at one of them in the
-   * sentence would be wrong three times in four.
+   * It does not say why, because this app cannot know: signing out every device,
+   * a deleted account, a revoked session and a timed-out one all arrive as the
+   * same refusal.
    */
   ended: {
     title: 'Signed out',

@@ -14,11 +14,10 @@ import { useUserId } from './session'
 /**
  * Images, in Cloudflare R2.
  *
- * The app deals in keys; nothing here talks to a bucket. Every operation goes
- * through the `photos` edge function, which is the only thing holding an R2
- * credential and the only thing that can decide whether a key belongs to the
- * caller. R2 has no notion of a user, so that check cannot live in the database
- * the way it did under Supabase Storage.
+ * The app deals in keys and nothing here talks to a bucket. Every operation goes
+ * through the `photos` edge function, which holds the only R2 credential and is
+ * the only thing that can decide whether a key belongs to the caller: R2 has no
+ * notion of a user, so that check cannot live in the database.
  *
  * Uploads still go phone to R2 with no proxy: the function signs a PUT.
  */
@@ -36,22 +35,17 @@ type AssetKind = 'meal' | 'avatar'
 const READ_TTL_SECONDS = 60 * 60
 
 /**
- * How long signing waits for company.
- *
- * A day of diary mounts a dozen rows in the same frame, each wanting a URL for
- * its own plate, and against an edge function that is a dozen invocations and
- * possibly a dozen cold starts. Keys asked for within a frame or two are signed
- * in one request.
+ * How long signing waits for company. A day of diary mounts a dozen rows in one
+ * frame, each wanting a URL, which against an edge function is a dozen
+ * invocations and possibly a dozen cold starts.
  */
 const BATCH_WINDOW_MS = 24
 
 const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 
 /**
- * Base64 to bytes, by hand.
- *
- * `expo-file-system` is a native module, so adding it would invalidate every
- * installed dev client to save thirty lines of arithmetic, and `atob` is not
+ * Base64 to bytes, by hand. `expo-file-system` is a native module and would
+ * invalidate every installed dev client to save thirty lines, and `atob` is not
  * guaranteed on Hermes across the versions this app supports.
  *
  * React Native's networking layer takes a `Uint8Array` body directly, so these
@@ -82,15 +76,14 @@ function decodeBase64(input: string): Uint8Array {
 
 /**
  * Longest edge in pixels a stored meal photo is capped to; never upscales. The
- * one stored copy is what the diary renders and what the scan function sends to
- * the vision model, and image tokens are billed by resolution, so this cap is the
- * model bill as much as the storage bill.
+ * one stored copy is what the diary renders and what the scan sends to the vision
+ * model, and image tokens are billed by resolution, so this is the model bill as
+ * much as the storage bill.
  */
 const PHOTO_MAX_EDGE = 1024
 /**
- * An avatar is drawn at 64pt at its largest. Anything past this is bytes nobody
- * will ever see, and no model reads it, so it is smaller than a plate for the only
- * reason that matters: the screen.
+ * An avatar is drawn at 64pt at its largest, and no model reads it, so anything
+ * past this is bytes nobody will see.
  */
 const AVATAR_MAX_EDGE = 512
 /**
@@ -127,11 +120,10 @@ type PhotosResponse = {
 /**
  * One call to the `photos` function, with its errors flattened into throws.
  *
- * The `context` dance is not defensive noise. supabase-js turns any non-2xx into
- * a `FunctionsHttpError` whose message is the useless "Edge Function returned a
- * non-2xx status code" and sets `data` to null, so the function's own
- * `{error: "..."}`, the only sentence that says which rule was broken, is sitting
- * unread in the response body.
+ * The `context` dance is not noise: supabase-js turns any non-2xx into a
+ * `FunctionsHttpError` reading "Edge Function returned a non-2xx status code"
+ * and sets `data` to null, leaving the function's own `{error: "..."}` unread in
+ * the response body.
  */
 async function photos(body: Record<string, unknown>): Promise<PhotosResponse> {
   const { data, error } = await supabase.functions.invoke<PhotosResponse>('photos', { body })
@@ -153,11 +145,9 @@ async function photos(body: Record<string, unknown>): Promise<PhotosResponse> {
 }
 
 /**
- * Keys waiting to be signed, and the request they are waiting for.
- *
- * `inFlight` is created by the first caller of a batch and cleared by the timer
- * that sends it, so a key asked for after the send starts opens a new batch
- * rather than joining one that has already left.
+ * Keys waiting to be signed, and the request they are waiting for. `inFlight` is
+ * created by the first caller of a batch and cleared by the timer that sends it,
+ * so a key asked for after the send opens a new batch.
  */
 let queued: string[] = []
 let inFlight: Promise<Record<string, string>> | null = null
@@ -196,12 +186,9 @@ function signRead(key: string): Promise<string> {
 
 /**
  * Where the bytes for a key already sit on this device, as a `file://` uri, or
- * null when they do not.
- *
- * The bytes survive a relaunch, but nothing can be drawn until there is a
- * `source`, and the uri in that source was a signature this app never persists.
- * So a cold launch showed a day of grey tiles while it waited on the `photos`
- * function to sign for photographs already on the disk.
+ * null. The bytes survive a relaunch but the uri in the source was a signature
+ * this app never persists, so a cold launch showed a day of grey tiles while it
+ * waited to sign for photographs already on the disk.
  *
  * The path expo-image hands back is the cache entry rather than a copy of it.
  * Never throws: a device that cannot answer is one that has to sign.
@@ -221,14 +208,12 @@ async function cachedFile(key: string): Promise<string | null> {
 }
 
 /**
- * A uri to render for a stored key: the copy already on the device where there is
- * one, a freshly signed URL where there is not.
+ * A uri to render for a stored key: the copy on the device where there is one, a
+ * freshly signed URL where there is not. Disk first, and the signature is
+ * skipped rather than raced, so a launch into a diary of familiar plates invokes
+ * the `photos` function not at all.
  *
- * Disk first, and the signature is skipped rather than raced. A launch into a
- * diary of familiar plates invokes the `photos` function not at all.
- *
- * Exported for the tests: the order of these two is the whole feature, and it is
- * the kind of thing that gets quietly reversed by a later edit.
+ * Exported for the tests: the order of these two is the whole feature.
  */
 export function resolveStoredImage(key: string): Promise<string> {
   return cachedFile(key).then((local) => local ?? signRead(key))
@@ -237,13 +222,12 @@ export function resolveStoredImage(key: string): Promise<string> {
 /**
  * Downsizes an image and uploads it, returning the key to store on the row.
  *
- * The resize is what makes the upload possible: a phone camera produces 3 to 6 MB
- * a frame and the endpoint refuses anything over 10 MB. The cap is on the longer
- * edge, so the aspect ratio is preserved and an image already within budget is
- * re-encoded but never upscaled.
+ * The resize is what makes the upload possible: a phone camera produces 3 to
+ * 6 MB a frame and the endpoint refuses anything over 10 MB. The cap is on the
+ * longer edge, so an image already within budget is re-encoded but not upscaled.
  *
- * Shrink, ask for a URL, PUT. The key comes back from the server, because the
- * server is what enforces that a key sits inside the caller's own folder.
+ * Shrink, ask for a URL, PUT. The key comes back from the server, which is what
+ * enforces that it sits inside the caller's own folder.
  */
 async function uploadImage(kind: AssetKind, localUri: string): Promise<string> {
   const maxEdge = MAX_EDGE[kind]
@@ -293,13 +277,11 @@ async function uploadImage(kind: AssetKind, localUri: string): Promise<string> {
   if (!response.ok) throw new Error(`Upload failed (${response.status})`)
 
   /**
-   * File the picture under the key it now has, so the phone never downloads back a
-   * photograph it took.
+   * File the picture under the key it now has, so the phone never downloads back
+   * a photograph it took. `image.uri` is the downsized JPEG that was PUT a line
+   * ago, so it is byte for byte what the bucket holds.
    *
-   * `image.uri` is the downsized JPEG that was PUT a line ago, so it is byte for
-   * byte what the bucket holds.
-   *
-   * Never fails the upload. The object is in R2 by this point, and a cache that
+   * Never fails the upload: the object is in R2 by this point, and a cache that
    * would not take a copy is a slow first render rather than a lost photo.
    */
   try {
@@ -326,15 +308,11 @@ export function uploadAvatar(localUri: string): Promise<string> {
 }
 
 /**
- * Whether this key is one the caller could possibly be handed a URL for.
- *
- * The server's `ownsKey` is the real check; this is the same rule asked one round
- * trip earlier, and it exists because of what a refusal costs. `signRead` batches
- * every key in a 24 ms window into one call and rejects the whole promise if any
- * is refused, so a single foreign key takes down every photograph beside it.
- *
- * The community recipe shelf is where that showed up: asking for other people's
- * photographs blanked the user's own.
+ * Whether this key is one the caller could possibly be handed a URL for. The
+ * server's `ownsKey` is the real check; this is the same rule one round trip
+ * earlier, because `signRead` batches every key in a 24 ms window into one call
+ * and rejects the whole promise if any is refused. On the community recipe shelf
+ * that meant asking for other people's photographs blanked the user's own.
  */
 function ownKey(path: string | undefined, userId: string): boolean {
   if (!path) return false
@@ -344,18 +322,16 @@ function ownKey(path: string | undefined, userId: string): boolean {
 /**
  * A uri for a stored image: a local file, or a signed URL.
  *
- * The bucket is private and has no public route, so anything fetched over the
- * network carries a signature that expires within the hour. Held for slightly
- * less than that, so a diary left open across the hour re-signs rather than
- * drawing broken tiles.
+ * The bucket is private, so anything fetched over the network carries a
+ * signature that expires within the hour. Held for slightly less than that, so a
+ * diary left open across the hour re-signs rather than drawing broken tiles.
  *
  * Not persisted to disk: an hour-old URL is wrong by the time anything reads it,
  * and the local path beside it belongs to a container a reinstall renumbers.
  *
- * The one query that overrides the global `gcTime`, and the only one that should.
- * `Infinity` exists so the persister can write a query to disk before it is
- * collected, and this is the query never written to disk. Kept for ever it also
- * kept every key the user has ever deleted.
+ * The one query that overrides the global `gcTime`. `Infinity` exists so the
+ * persister can write a query to disk before it is collected, and this is the
+ * query never written to disk; kept for ever it also kept every deleted key.
  */
 function useStoredImageUri(path: string | undefined) {
   const userId = useUserId()
@@ -366,14 +342,12 @@ function useStoredImageUri(path: string | undefined) {
     staleTime: (READ_TTL_SECONDS - 300) * 1000,
     gcTime: READ_TTL_SECONDS * 1000,
     /**
-     * The one query in the app worth running with no connection.
+     * The one query worth running with no connection. `lib/query.ts` pauses a
+     * query rather than send a request that cannot arrive, which is wrong for the
+     * only one that asks the disk first: a paused query never runs its `queryFn`,
+     * so a diary of already-downloaded plates draws as empty tiles offline.
      *
-     * `lib/query.ts` pauses a query rather than send a request that cannot arrive,
-     * which is wrong for the only one that asks the disk first: a paused query never
-     * runs its `queryFn`, so a diary of plates this phone has already downloaded
-     * draws as a column of empty tiles the moment it goes offline.
-     *
-     * What it costs is a doomed round trip per photograph this device has not seen.
+     * It costs a doomed round trip per photograph this device has not seen.
      */
     networkMode: 'offlineFirst',
     queryFn: () => resolveStoredImage(path as string),
@@ -395,30 +369,25 @@ export function useAvatarUrl(path: string | undefined) {
 }
 
 /**
- * The two fields of `expo-image`'s `ImageSource` that this app fills in.
- *
- * Written out rather than imported because it is the shape that call sites need.
- * An `ImageSource` has a dozen optional fields and says nothing about which of
- * them matter here.
+ * The two fields of `expo-image`'s `ImageSource` that this app fills in. Written
+ * out rather than imported, because an `ImageSource` has a dozen optional fields
+ * and says nothing about which matter here.
  */
 export type StoredImageSource = { uri: string; cacheKey?: string }
 
 /**
  * What to hand `<Image source>` for a picture that lives in the bucket.
  *
- * The bytes never change, but the URL naming them expires within the hour, and
- * expo-image caches on the URL by default. So a stable photograph looked like a
- * new image every time it was signed for, and a cold launch re-downloaded every
- * plate on the day.
+ * The bytes never change but the URL naming them expires within the hour, and
+ * expo-image caches on the URL, so a stable photograph looked like a new image
+ * every time it was signed for.
  *
- * The cache is keyed on `photo_path` instead: minted per upload, never reused,
- * naming exactly one object, which makes it both a stable key and the
- * invalidation. An upload path that reused a key on replace would leave this
- * cache serving the previous photograph for ever.
+ * Keyed on `photo_path` instead: minted per upload, never reused, naming one
+ * object, which makes it both a stable key and the invalidation. An upload path
+ * that reused a key on replace would serve the previous photograph for ever.
  *
- * A local uri is given no cache key. A file on disk is not a download, and the
- * cache's own copy *is* the entry under that key, so filing it again would ask
- * the cache to store what it just produced.
+ * A local uri is given no cache key: the cache's own copy is the entry under
+ * that key, so filing it again asks the cache to store what it just produced.
  */
 export function storedImageSource(
   path: string | undefined,
@@ -437,28 +406,24 @@ export function storedImageSource(
  * Deletes stored images, when the row that owned one is deleted or a new picture
  * takes its place.
  *
- * Never rejects, and that is load-bearing. Every call site runs this *after* the
- * row is written, so an object deleted for a row that then failed to save cannot
- * leave an entry pointing at nothing. Rejecting would invert that: the database
- * work has succeeded, and throwing would fail the mutation around it, springing a
- * deleted entry back onto the day.
- *
- * A failure leaves an orphaned object and nothing worse.
+ * Never rejects, and that is load-bearing: every call site runs it after the row
+ * is written, so throwing would fail the mutation around work that has already
+ * succeeded and spring a deleted entry back onto the day. A failure leaves an
+ * orphaned object and nothing worse.
  */
 async function removeImages(paths: string[]): Promise<void> {
   if (paths.length === 0) return
 
   /**
-   * Nothing is evicted here, deliberately, and both halves look like omissions.
+   * Nothing is evicted here, deliberately.
    *
-   * The signed URL is left to `gcTime`. Removing it on the spot was worse than
-   * doing nothing: a screen replacing a photo is still mounted on the old key while
-   * its mutation runs, so the invalidation re-renders it and it signs the key that
-   * was deleted a moment ago. `signGet` does not check that an object exists, so
-   * that request succeeds.
+   * The signed URL is left to `gcTime`: removing it on the spot was worse, since
+   * a screen replacing a photo is still mounted on the old key while its mutation
+   * runs, so the invalidation re-renders it and it signs the deleted key, which
+   * `signGet` happily allows.
    *
    * The disk bytes are left alone because expo-image can clear its cache entirely
-   * or not at all. Its own LRU reclaims a key nothing asks for again.
+   * or not at all, and its own LRU reclaims a key nothing asks for.
    */
   try {
     await photos({ action: 'delete', keys: paths })
@@ -484,15 +449,13 @@ export function removeAvatar(path: string): Promise<void> {
 /**
  * Forgets every cached picture, on the way out of an account.
  *
- * Keyed on the signed URL, a plate was re-downloaded under a new name every hour
- * and the old entries aged out on their own. Keyed on `photo_path` they do not:
- * they are exactly the long-lived entries that change set out to create, and a
- * device that has been handed on should not still hold a year of somebody's
- * meals.
+ * Keyed on the signed URL, entries aged out on their own every hour. Keyed on
+ * `photo_path` they do not, and a device that has been handed on should not hold
+ * a year of somebody's meals.
  *
- * SIGNED_OUT only. Signing in cannot expose anything, and if a future supabase-js
- * reported a restored session as a sign-in, clearing here would throw away the
- * disk cache on every launch.
+ * SIGNED_OUT only: signing in cannot expose anything, and a future supabase-js
+ * reporting a restored session as a sign-in would throw the disk cache away on
+ * every launch.
  *
  * Never rejects: this runs while an account is being torn down.
  */

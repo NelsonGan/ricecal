@@ -26,40 +26,30 @@ export type ShareableCardsProps = {
    */
   message: string
   /**
-   * The share sheet closed having shared something.
+   * The share sheet closed having shared something. A callback rather than an
+   * event fired here, because this component knows nothing about which review it
+   * is drawing. `dismissedAction` is not reported: a sheet opened and closed is
+   * not a share.
    *
-   * A callback rather than an event fired in here, because this component is in
-   * `features/reviews` and knows nothing about which review it is drawing — the
-   * screen does. `dismissedAction` is not reported: a sheet opened and closed
-   * is not a share, and counting it would make the growth loop look twice as
-   * healthy as it is.
-   *
-   * That distinction is REAL ON iOS ONLY. Android's share intent never tells
-   * the app what the user did with it, so `Share` answers `sharedAction` there
-   * whatever happens — which means this fires on every Android tap and only on
-   * a real send on iOS. Worth knowing before the two platforms are compared on
-   * this number; it is not something the app can correct for.
+   * That distinction is real on iOS only. Android's share intent never tells the
+   * app what the user did, so this fires on every Android tap.
    */
   onShared?: () => void
   children: ReactNode
 }
 
 /**
- * Makes every card under it something the user can lift out and send.
- *
- * A card is tapped, it draws ITSELF into a picture, and the picture comes up in
- * a sheet with a Share button under it. The preview is the captured file rather
- * than a second rendering of the card, which is the whole reason to do it this
- * way round: what is on screen in the sheet is the exact image that leaves the
- * phone, and there is no second drawing to drift from the first.
+ * Makes every card under it something the user can lift out and send. A card is
+ * tapped, draws itself into a picture, and the picture comes up in a sheet with a
+ * Share button: the preview is the captured file rather than a second rendering,
+ * so what is on screen is the exact image that leaves the phone.
  *
  * `lib/share` does the capture and the sending, and the meal detail screen uses
- * the same two functions — the difference between the two features is entirely
- * this preview step, which a story needs because it has four cards on it and a
- * meal does not.
+ * the same two functions. The difference is this preview step, which a story
+ * needs because it has four cards on it and a meal does not.
  *
- * A context rather than a prop on each card: a section lays out two or three
- * cards and none of them should have to be told what a review is.
+ * A context rather than a prop on each card, so a section's two or three cards do
+ * not have to be told what a review is.
  */
 export function ShareableCards({ message, onShared, children }: ShareableCardsProps) {
   const { t } = useTranslation('reviews')

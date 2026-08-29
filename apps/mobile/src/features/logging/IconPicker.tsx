@@ -70,22 +70,17 @@ export type IconPickerProps = {
 type Tab = 'search' | 'camera'
 
 /**
- * Picks a picture for one logged item: a drawing, or a photo of the plate.
+ * Picks a picture for one logged item: a drawing, or a photo of the plate. The
+ * drawings exist because the catalogue cannot be illustrated, and a photo is the
+ * better answer whenever one is possible.
  *
- * The drawings exist because the catalogue cannot be illustrated — a few hundred of
- * them against hundreds of megabytes of imported foods, so most rows have none — and
- * a photo is the better answer whenever one is possible.
+ * Two ways in, one showing at a time, chosen by the tiles at the top: the same
+ * shape the quick selector uses, so nothing has to say the two are exclusive.
+ * Search comes up first and is not remembered between openings, or a sheet that
+ * was left on the camera opens the wrong way round for the next dish.
  *
- * Two ways in, one showing at a time, chosen by the pair of tiles at the top. The
- * same shape the quick selector uses for snap and search, and for the same reason:
- * with the two visibly exclusive, nothing has to say so in words. Search comes up
- * first because it is the answer for most dishes, and it is not remembered between
- * openings — a sheet that came back on the camera because that is where it was left
- * opens the wrong way round for the next dish.
- *
- * The drawings are searchable rather than a plain grid: two hundred choices is more
- * than anyone scrolls through, and the names are the dish names, so typing "mee"
- * narrows to the noodles.
+ * The drawings are searchable rather than a grid: two hundred choices is more
+ * than anyone scrolls through, and the names are dish names.
  */
 export function IconPicker({ visible, onClose, selected, onSelect, onPickPhoto }: IconPickerProps) {
   const { t } = useTranslation(['logging', 'common'])

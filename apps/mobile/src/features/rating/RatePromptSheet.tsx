@@ -130,24 +130,17 @@ export function RatePromptSheet() {
           name={asking ? 'star' : 'chat'}
           size={34}
           /**
-           * An optical nudge, measured off the simulator rather than guessed.
+           * An optical nudge, measured rather than guessed. `items-center`
+           * centres the icon's box against the title's line box, and a Baloo 2
+           * `subtitle` reserves most of its leading above the cap, so a 34pt
+           * square lands 4pt below the line the caps draw. `ListRow` does not
+           * need this, because its title is Nunito.
            *
-           * `items-center` centres the icon's BOX against the title's LINE BOX,
-           * and for a Baloo 2 `subtitle` those two do not agree: the face
-           * reserves most of its 26pt leading above the cap, so the glyphs sit
-           * high in the box and a 34pt square centred on it lands 4pt below the
-           * line the caps actually draw. `ListRow` has the same shape and does
-           * not need this, because its title is Nunito, whose box is nearly
-           * balanced (measured: 0.5pt out, which nobody can see).
+           * The 2pt across is the icon's own margin: every file in
+           * `assets/icons` carries about 5% of transparent canvas each side.
            *
-           * The 2pt across is the icon's own margin. Every file in
-           * `assets/icons` carries about 5% of transparent canvas on each side,
-           * so the box sits on the panel's padding while the ink starts inside
-           * it, a hair to the right of the line of text underneath.
-           *
-           * A TRANSFORM rather than margins, because this is a paint-time
-           * correction and not a layout one: the row keeps its height, the gap
-           * to the title keeps its width, and nothing else on the line moves.
+           * A transform rather than margins, because this is a paint-time
+           * correction: the row keeps its height and nothing else moves.
            */
           style={{ transform: [{ translateX: -2 }, { translateY: -4 }] }}
         />

@@ -1,20 +1,14 @@
 /**
- * The only way a job talks to Postgres.
+ * The only way a job talks to Postgres: RPCs and nothing else. There is no
+ * `from('table')` here and no supabase-js client to provide one, so a job's SQL
+ * lives in `apps/supabase/schemas` as a `security definer` function granted to
+ * `service_role`, where pgTAP and the grant checks can see it.
  *
- * RPCs, AND DELIBERATELY NOTHING ELSE. There is no `from('table')` here and no
- * supabase-js client to provide one. A job's SQL therefore has to live in
- * `apps/supabase/schemas` as a `security definer` function granted to
- * `service_role`, where it is reviewed, tested by pgTAP and covered by the
- * grant checks the `migrations` workflow runs — rather than as an ad-hoc query
- * inside a Worker that nothing in the database's own test suite can see.
+ * It keeps the division README.md draws: Postgres owns the numbers and the rules,
+ * and a job is only the part that has to reach something Postgres cannot.
  *
- * It also keeps the division README.md already draws: Postgres owns the
- * numbers and the rules, and a job is only the part that has to reach
- * something Postgres cannot. Enforced by what is reachable rather than by
- * anybody remembering.
- *
- * Plain `fetch` rather than a client library, because two RPC calls do not
- * need a dependency, a bundle or a `nodejs_compat` flag.
+ * Plain `fetch` rather than a client library, because two RPC calls do not need a
+ * dependency, a bundle or a `nodejs_compat` flag.
  */
 import type { Env } from './env.ts'
 

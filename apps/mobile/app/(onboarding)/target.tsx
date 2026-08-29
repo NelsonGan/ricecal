@@ -26,30 +26,20 @@ const MACROS = [
 ] as const satisfies ReadonlyArray<{ key: string; tone: StatTileTone; icon: IconProps }>
 
 /**
- * 06 YOUR TARGET
+ * Your target: the budget, worked out on the phone.
  *
- * The budget, worked out on the phone.
+ * Everywhere else this number comes from `current_daily_goals`, computed by a
+ * trigger and read back, but there is no row yet because there is no account.
+ * `computeTargets` is the same arithmetic as `compute_targets()` and exists for
+ * this screen; the database's copy takes over once the answers are flushed.
  *
- * Everywhere else in the app this number comes from `current_daily_goals`,
- * computed by a trigger and read back — but there is no row to read here, because
- * there is no account yet. `computeTargets` is the same arithmetic as
- * `compute_targets()` and exists for exactly this screen; the database's copy
- * takes over the moment the answers are flushed, and the two are kept in step on
- * purpose.
+ * Nothing here waits for the network, which is the point of showing it before
+ * asking for an email.
  *
- * Nothing on this screen waits for the network, which is the point of showing it
- * before asking for an email: the user sees what they get before being asked for
- * anything.
- *
- * WHAT WAS TAKEN OFF IT
- *
- * Two sentences, and both were the app talking about itself rather than about
- * the plan. "That is about 3 meals and a snack" divided the budget by a made-up
- * 600 and presented the quotient as advice; "We will nudge, never nag" is a
- * promise about notifications on a screen showing a calorie figure. What is left
- * is the number, what it is made of, and where it goes — the goal weight and the
- * date it lands on, as tiles rather than as prose, because they are figures and
- * a figure reads faster in a tile than in a sentence.
+ * Two sentences came off it, both the app talking about itself: "that is about 3
+ * meals and a snack" divided the budget by a made-up 600, and "we will nudge,
+ * never nag" is a promise about notifications on a screen showing calories. What
+ * is left is the number, what it is made of, and where it goes.
  */
 export default function TargetStep() {
   const { t } = useTranslation(['onboarding', 'common'])
@@ -110,21 +100,15 @@ export default function TargetStep() {
   }
 
   /**
-   * Back to the first question rather than into an editor.
+   * Back to the first question rather than into an editor. Every answer is in the
+   * draft, so walking the three screens again is three taps, and it is the only
+   * route that can change this number.
    *
-   * Every answer is already in the draft, so walking the three screens again is
-   * three taps with every choice made — and it is the only route that can change
-   * this number, since the number IS those answers.
-   *
-   * `dismissTo`, and the choice is load-bearing. `about` is already on the stack
-   * underneath this screen, so what is wanted is to UNWIND to it. `navigate`
-   * looks like it would — the name suggests going to a route rather than adding
-   * one — but in expo-router 57 it pushes unless the target is already the
-   * current screen, which put a second `about` ON TOP of `target`: the back
-   * swipe from "A few basics" then went FORWARD in time to the budget, and
-   * walking the questions again stacked another three. `dismissTo` pops to the
-   * href, and falls back to replacing this screen if it is not on the stack —
-   * which is what a deep link straight to `target` would hit.
+   * `dismissTo`, because `about` is already on the stack underneath and what is
+   * wanted is to unwind to it. `navigate` pushes in expo-router 57 unless the
+   * target is the current screen, which put a second `about` on top of `target`,
+   * so the back swipe went forward in time to the budget. `dismissTo` falls back
+   * to replacing this screen when the href is not on the stack.
    */
   const revise = () => router.dismissTo('/(onboarding)/about')
 
@@ -159,27 +143,18 @@ export default function TargetStep() {
           value={targets.kcal}
           goal={targets.kcal}
           /**
-           * 156 AND A THINNER STROKE, because at the default 196 this screen
-           * did not fit.
+           * 156 and a thinner stroke, because at the default 196 the ring, the
+           * card and the two plan tiles ran past the CTA on a 6.3" phone, so the
+           * two figures the plan is for were behind the footer. Forty points off
+           * the ring and five off its stroke buys 37, and dropping the card's
+           * heading another 28.
            *
-           * The ring, the split card and the two plan tiles ran past the CTA on
-           * a 6.3" phone: "GOAL WEIGHT" and "ON TRACK FOR" sat behind the
-           * footer until you scrolled, so the two figures the plan is FOR were
-           * the ones you had to go looking for. Forty points off the ring and
-           * five off its stroke buys 37, and dropping the card's heading buys
-           * another 28: there is 65 points of clear space under the tiles now.
+           * It still scrolls on an SE, and the ring is not why: the content runs
+           * 74 points past the CTA there, so the fix for a 4.7" screen is a
+           * slimmer `StatTile` or fewer of them.
            *
-           * IT STILL SCROLLS ON AN SE, and the ring is not why. Measured there,
-           * the content still runs 74 points past the CTA — take the ring out
-           * altogether and it would only just fit. What is left is five tall
-           * `StatTile`s at about 123 points each, so the fix for a 4.7" screen
-           * is a slimmer tile or fewer of them, not a smaller circle.
-           *
-           * It reads quieter too, which is right for what it is. A full ring is
-           * the whole budget rather than progress through one, so it has
-           * nothing to animate and no state to report — it is a number in a
-           * circle, and the number is the part worth looking at. The centre
-           * label scales with the ring, so it stays the biggest thing here.
+           * It reads quieter too, which suits a full ring: the whole budget
+           * rather than progress through one, with nothing to animate.
            */
           size={156}
           thickness={16}

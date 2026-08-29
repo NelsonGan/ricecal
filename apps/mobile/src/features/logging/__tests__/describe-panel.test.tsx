@@ -5,20 +5,18 @@ import { DescribePanel } from '../DescribePanel'
 /**
  * The third way to log a meal: typing it.
  *
- * What is worth pinning here is the contract with the host, because the host
- * writes a row and closes the sheet on the strength of it. An empty box must
- * not be sendable — a meal described as "" resolves to the archetype floor and
- * puts 600 kcal on the day — and what comes out has to be trimmed, since the
- * server slices to 500 characters and a leading space is a wasted one.
+ * What is pinned is the contract with the host, since the host writes a row and
+ * closes the sheet on the strength of it. An empty box must not be sendable, and
+ * what comes out has to be trimmed, since the server slices to 500 characters and
+ * a leading space is a wasted one.
  *
- * The multiline field is the other half of it, and it is deliberate: a meal is
- * "nasi lemak with fried chicken and a teh tarik", and a one-line box that
- * scrolls sideways teaches people to type "nasi lemak" and stop.
+ * The multiline field is deliberate: a meal is "nasi lemak with fried chicken and
+ * a teh tarik", and a one-line box that scrolls sideways teaches people to type
+ * "nasi lemak" and stop.
  *
- * Queried by ROLE AND NAME rather than by label. The send control used to be an
- * arrow inside the field carrying "Log this meal" as its accessibility label,
- * and is a full-width button wearing those words now — the role query holds
- * across both, and it is the one that describes what a user is looking for.
+ * Queried by role and name rather than by label. The send control used to be an
+ * arrow inside the field and is a full-width button now; the role query holds
+ * across both.
  */
 
 const onSubmit = jest.fn()

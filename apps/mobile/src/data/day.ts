@@ -21,12 +21,9 @@ import type {
 } from './types'
 
 /**
- * One day: what was eaten, and how much water.
- *
- * Two tables in one request rather than two, because every screen that wants one
- * wants the other, and a day that renders its meals before its water flickers.
- * `food_log_details` has already done the arithmetic, so nothing here multiplies
- * anything.
+ * One day: what was eaten, and how much water. Two tables in one request, because
+ * every screen that wants one wants the other and a day that renders its meals
+ * before its water flickers. `food_log_details` has done the arithmetic.
  */
 async function fetchDay(userId: string, date: string): Promise<DayLog> {
   const [entries, water] = await Promise.all([
@@ -63,17 +60,14 @@ export function useDay(date: string) {
 }
 
 /**
- * A day, plus whether it is the real one yet.
+ * A day, plus whether it is the real one yet. The empty day this falls back to is
+ * indistinguishable from a day nobody logged anything on, which is how switching
+ * dates drew "nothing logged" for as long as the request was out. `isPending`
+ * says which of the two it is.
  *
- * The empty day this hook falls back to is indistinguishable from a day nobody
- * logged anything on, which is how switching dates came to draw "nothing logged"
- * over every day for as long as its request was out. `isPending` is the one bit
- * that says which of the two this is.
- *
- * `isPaused` is the other half, and it is the half that matters offline: a query
- * with no cached day is held rather than sent, so `isPending` stays true for as
- * long as the phone has no connection. A screen that reads pending as "an answer
- * is coming" draws a skeleton nothing will ever replace.
+ * `isPaused` is the half that matters offline: a query with no cached day is held
+ * rather than sent, so `isPending` stays true and a screen reading it as "an
+ * answer is coming" draws a skeleton nothing will replace.
  */
 export type DayView = DayLog & { isPending: boolean; isPaused: boolean }
 
@@ -81,28 +75,23 @@ export type DayView = DayLog & { isPending: boolean; isPaused: boolean }
  * The pending rows whose meal has not turned up yet.
  *
  * The client removes its own pending row when the request resolves, but the day
- * can refetch before that, on focus or when a notification brings the app
- * forward, and for a second or two the meal appeared twice: once as the spinner,
- * once as itself. Recognition writes an entry stamped after the shutter, so an
- * unclaimed one of those is this snap arriving by another route.
+ * can refetch first, and for a second the meal appeared twice. Recognition writes
+ * an entry stamped after the shutter, so an unclaimed one of those is this snap
+ * arriving by another route.
  *
- * Matched on the source the pending row would become, not on `camera` alone: a
- * typed meal writes `text`, and a pending row that cannot recognise its own
- * arrival sits there over a meal already on the day.
+ * Matched on the source the pending row would become rather than `camera` alone,
+ * since a typed meal writes `text`.
  *
- * Every row about a scan gets to notice its arrival, not just the one still
- * holding a request. Reconciling `analysing` alone is how a slow scan became an
- * error message beside the meal it produced: the platform gives up on a request
- * at 60s, the row went `failed`, the entry landed five seconds later, and
- * nothing afterwards was going to connect the two.
+ * Every row about a scan gets to notice its arrival, not only the one still
+ * holding a request: reconciling `analysing` alone is how a slow scan became an
+ * error message beside the meal it produced.
  *
- * `nofood` is the one status left out, and it is not an unfinished scan: it is a
- * finished one that wrote nothing, so it has no entry to find, and letting it
- * claim the next camera row would delete the user's answer along with somebody
- * else's meal.
+ * `nofood` is left out. It is a finished scan that wrote nothing, so it has no
+ * entry to find, and letting it claim the next camera row would delete the
+ * user's answer along with somebody else's meal.
  *
- * Exported for its own test. The rule is four lines and every one of them has
- * been wrong at some point, in ways that read as a caching bug.
+ * Exported for its own test: four lines, every one of which has been wrong in
+ * ways that read as a caching bug.
  */
 export function unclaimedSnaps<S extends { loggedAt: string; text?: string; status: EntryStatus }>(
   snaps: S[],
@@ -129,10 +118,9 @@ export function unclaimedSnaps<S extends { loggedAt: string; text?: string; stat
 /**
  * The day currently on screen, never undefined. An unlogged day is empty.
  *
- * Snaps still being recognised are merged in here rather than being a second
- * list every screen has to remember to render. They have no row yet, so they
- * cannot come from the query, and sorting by time puts each one where it belongs
- * in its meal rather than at the end.
+ * Snaps still being recognised are merged in rather than being a second list
+ * every screen has to remember to render. They have no row yet, so sorting by
+ * time puts each where it belongs rather than at the end.
  */
 export function useDayLog(date: string): DayView {
   const { data, isPending, isPaused } = useDay(date)
@@ -150,13 +138,11 @@ export function useDayLog(date: string): DayView {
 
     const unresolved = unclaimedSnaps(mine, base.entries)
     /**
-     * A row whose meal turned up is done, not merely hidden.
-     *
-     * Claiming it only kept it out of this list, and for a snap the client resolved
-     * itself that is enough. But a snap nobody was holding (killed app, timed-out
-     * request) has nothing else to take it out of storage, so it sat there until it
-     * aged out, invisible and claiming an entry. Delete that meal later and it
-     * reappears: a "could not read the plate" row for a plate that was read.
+     * A row whose meal turned up is done rather than merely hidden. Claiming it
+     * only kept it out of this list, which is enough for a snap the client
+     * resolved itself; a snap nobody was holding sat in storage until it aged
+     * out, invisible and claiming an entry, and reappeared if that meal was
+     * deleted.
      */
     const settled = mine.filter((snap) => !unresolved.includes(snap)).map((snap) => snap.id)
 
@@ -166,15 +152,12 @@ export function useDayLog(date: string): DayView {
       ...base,
       settled,
       /**
-       * A snap is content, so a day carrying one is never "still loading".
+       * A snap is content, so a day carrying one is never "still loading". The
+       * shutter writes its row into MMKV before there is anything to fetch, and a
+       * skeleton would take the photograph off the day it was just added to.
        *
-       * The shutter writes its row into MMKV before there is anything to fetch, and a
-       * screen that hid the day behind a skeleton until the query answered would take
-       * the photograph off the day it was just added to, which is the one moment the
-       * user is watching that row.
-       *
-       * `isPaused` goes with it: a day with a snap on it has something to draw,
-       * whether or not the query behind it can run.
+       * `isPaused` goes with it: a day with a snap has something to draw whether
+       * or not the query behind it can run.
        */
       isPending: false,
       isPaused: false,
@@ -198,15 +181,11 @@ export function useDayLog(date: string): DayView {
 }
 
 /**
- * Every day in a range, in one request per table.
+ * Every day in a range, in one request per table: the same two selects `fetchDay`
+ * makes with `gte`/`lte` where it has `eq`, so seven days cost what one costs.
  *
- * The same two selects `fetchDay` makes, with `gte`/`lte` where it has `eq`, so
- * seven days cost what one costs. That is why warming a week is affordable:
- * asked a day at a time it would be fourteen requests to save one.
- *
- * Days with nothing on them are in the result, as empty days. They have to be:
- * the point of the warm-up is that the screen never has to wait to find out, and
- * "no rows came back for Tuesday" is the answer, not a gap.
+ * Days with nothing on them are in the result as empty days, because the point of
+ * the warm-up is that the screen never has to wait to find out.
  */
 async function fetchDays(userId: string, from: string, to: string): Promise<DayLog[]> {
   const [entries, water] = await Promise.all([
@@ -252,16 +231,13 @@ async function fetchDays(userId: string, from: string, to: string): Promise<DayL
 /**
  * Warms a week of the strip, so picking a day in it draws that day at once.
  *
- * Why this rather than a better placeholder: Today already refuses to draw a day
- * it has not got, which is what stopped the strip announcing every unfetched day
- * as a day nobody ate on. But a placeholder is still a swap, and on a tap that
- * resolves in a few hundred milliseconds the screen changes twice. The only
- * version with no swap is one where the day is already in the cache, and a week
- * is exactly the set of days one screen can reach.
+ * Today already refuses to draw a day it has not got, but a placeholder is still
+ * a swap, and on a tap that resolves in a few hundred milliseconds the screen
+ * changes twice. The only version with no swap is one where the day is already
+ * cached, and a week is the set of days one screen can reach.
  *
- * Fetched imperatively rather than through `useQuery`, because a query of its own
- * would be a second persisted copy of every entry in the week for a value nothing
- * reads after it has been spread out. A failure is deliberately silent: this is a
+ * Fetched imperatively rather than through `useQuery`, which would be a second
+ * persisted copy of every entry in the week. A failure is silent: this is a
  * warm-up, and the day the user picks fetches itself.
  */
 export function usePrefetchDays(from: string, to: string) {
@@ -297,14 +273,12 @@ export function usePrefetchDays(from: string, to: string) {
 /**
  * Records a drink: adds millilitres to a day, or takes them back.
  *
- * An RPC rather than an upsert, and the difference is why this hook changed shape
- * with the column. Glasses were set, because the tracker knew it wanted four,
- * while millilitres are added, and a read here plus a write here loses one of two
- * taps that overlap. Quick-add is a row of buttons people drum on, so that is the
- * ordinary case rather than the unlucky one.
+ * An RPC rather than an upsert. Glasses were set, because the tracker knew it
+ * wanted four; millilitres are added, and a read plus a write here loses one of
+ * two overlapping taps, which on a row of quick-add buttons is the ordinary case.
  *
- * A negative amount is an undo. The server clamps at zero rather than raising,
- * because somebody pressing undo has already made their only mistake.
+ * A negative amount is an undo, and the server clamps at zero rather than
+ * raising: somebody pressing undo has already made their only mistake.
  */
 export function useAddWater(date: string) {
   const userId = useUserId()
@@ -312,12 +286,10 @@ export function useAddWater(date: string) {
 
   return useMutation({
     mutationFn: (ml: number) => addWater(ml, date),
-    // The tank has to move under the finger, so the day is patched before the request
-    // leaves. Clamped exactly where the server clamps, which is what lets the answer
-    // be thrown away: `add_water` returns the day's new total, and writing it here
-    // would be a race for nothing. Two taps in flight resolve in whatever order the
-    // network hands them back, so the older answer can land last and take the newer
-    // drink off the screen.
+    // The tank has to move under the finger, so the day is patched before the
+    // request leaves, clamped exactly where the server clamps. `add_water`
+    // returns the new total and writing it back would be a race: two taps in
+    // flight resolve in whatever order the network hands them back.
     onMutate: async (ml) => {
       await queryClient.cancelQueries({ queryKey: keys.day(userId, date) })
       const previous = queryClient.getQueryData<DayLog>(keys.day(userId, date))
@@ -352,13 +324,10 @@ async function addWater(ml: number, date: string) {
 /**
  * The same drink, from a widget, with the day travelling in the variables.
  *
- * A hook of its own rather than a parameter on `useAddWater`, because the two
- * differ in the part that matters. That one is bound to the day on screen and
- * patches it optimistically, since the tank has to move under the finger. This
- * one drains a queue of taps that happened hours ago, possibly on several
- * different days, with nothing on screen at all — so there is no day to patch
- * and no finger to keep up with, and binding it to a date would mean a hook per
- * queued drink.
+ * A hook of its own rather than a parameter on `useAddWater`: that one is bound
+ * to the day on screen and patches it optimistically, where this drains a queue
+ * of taps from hours ago across several days with nothing on screen, so binding
+ * it to a date would mean a hook per queued drink.
  *
  * See `features/widgets/WidgetSync.tsx` for who calls it and when.
  */
@@ -377,10 +346,9 @@ export function useAddQueuedWater() {
 
 /**
  * Daily totals across a range, for the charts and the weekly report.
- *
  * `daily_nutrition` only has rows for days with something logged, so a caller
- * that wants a point per day fills the gaps itself. An absent day is a day with
- * nothing in it, which is not the same as a day of zeros that someone recorded.
+ * that wants a point per day fills the gaps itself: an absent day is not the same
+ * as a day of zeros somebody recorded.
  */
 export function useNutritionRange(from: string, to: string) {
   const userId = useUserId()
@@ -401,15 +369,13 @@ export function useNutritionRange(from: string, to: string) {
 }
 
 /**
- * How each day of a week went, for the dots under the strip on Today.
+ * How each day of a week went, for the dots under the strip on Today. Keyed by
+ * date so the strip asks about a day rather than searching a list.
  *
- * Keyed by date so the strip can ask about a day rather than search a list.
- *
- * The verdict is not here and is not in the database either. `day_marks` returns
- * what was eaten, the goal in force that day and what movement added to it.
- * Whether that reads as under or over is decided where the ring decides it,
- * because the two are on the same screen about the same day and must not
- * disagree.
+ * The verdict is neither here nor in the database. `day_marks` returns what was
+ * eaten, the goal in force and what movement added; whether that reads as under
+ * or over is decided where the ring decides it, since the two are on the same
+ * screen about the same day.
  */
 export function useDayMarks(from: string, to: string) {
   const userId = useUserId()
@@ -442,14 +408,11 @@ export function useDayMarks(from: string, to: string) {
 }
 
 /**
- * The dish drawn in each day's cell on the month calendar.
+ * The dish drawn in each day's cell on the month calendar. Keyed by date like
+ * `useDayMarks`, so a cell asks about its own day.
  *
- * Keyed by date like `useDayMarks`, so a cell asks about its own day rather than
- * searching a list.
- *
- * A day with nothing logged is absent from the map rather than present and empty,
- * which is what `day_plates` returns: the dot already says a day was missed, and
- * a second way of saying it here would be a picture of nothing.
+ * A day with nothing logged is absent rather than present and empty, which is
+ * what `day_plates` returns: the dot already says a day was missed.
  */
 export function useDayPlates(from: string, to: string) {
   const userId = useUserId()
@@ -477,11 +440,9 @@ export function useDayPlates(from: string, to: string) {
 }
 
 /**
- * Consecutive days with at least one entry.
- *
- * The gaps-and-islands arithmetic is in `logging_streak()` rather than here, so
- * the badge on Today and the same number on Me cannot drift apart, and a future
- * reminder job reads it without a client.
+ * Consecutive days with at least one entry. The gaps-and-islands arithmetic is in
+ * `logging_streak()`, so the badge on Today and the same number on Me cannot
+ * drift apart and a reminder job can read it without a client.
  *
  * A run ending yesterday still counts as current, or a 30-day streak would read
  * as zero every morning until breakfast is logged.

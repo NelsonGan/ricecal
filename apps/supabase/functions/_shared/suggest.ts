@@ -1,28 +1,21 @@
 // What to eat next: one model call, seven dishes, and why each one fits.
 //
-// The only model path in this app that does not start from something the user
-// already has. A scan reads a plate, a refine reads a correction, a recipe read
-// reads a pot, and each has a subject the model's job is to identify. Here there
-// is nothing to identify: the subject is the rest of the day, and the answer is a
-// suggestion rather than a fact.
+// The only model path here that does not start from something the user already
+// has. There is nothing to identify: the subject is the rest of the day, and the
+// answer is a suggestion rather than a fact. That decides the shape of the file.
 //
-// That difference decides the whole shape of this file.
+// Nothing it returns is written anywhere. A guess about a meal somebody has not
+// eaten must not become a row other people's diaries are priced from, which is
+// the mistake tier 4 made and had to be unwound.
 //
-// Nothing it returns is written anywhere. The picks are read and thrown away;
-// nothing lands in `food_logs` and nothing lands in the catalogue. A guess about
-// a meal somebody has not eaten is the last thing that should become a row other
-// people's diaries are priced from, which is the mistake tier 4 made and had to
-// be unwound.
+// So the figures may be approximate: they rank options against a budget rather
+// than being counted against it. What says so is the absence of a way to log,
+// since a suggestion has no add button anywhere.
 //
-// So the figures are allowed to be approximate. They exist to rank a few options
-// against a budget, not to be counted against it. Nothing on screen labels them
-// as estimates, and what carries that instead is the absence of a way to log: a
-// suggestion has no add button anywhere.
-//
-// And the reasons are the product. A list of dish names against a calorie figure
-// is a list anybody could write; "you are 39 g short on protein and one bowl
-// covers most of it" is what makes it a suggestion. Which is why `why` is
-// required per pick and a pick without one is dropped.
+// The reasons are the product. A list of dish names against a calorie figure is
+// a list anybody could write; "you are 39 g short on protein and one bowl covers
+// most of it" is a suggestion. So `why` is required and a pick without one is
+// dropped.
 
 import type { Meter } from './entitlement.ts'
 import { guessIcon, ICON_INSTRUCTION, type IconChoice, resolveIcon, unslug } from './icons.ts'
@@ -37,35 +30,26 @@ export type Focus = 'protein' | 'balanced' | 'carbs'
 /**
  * Which kitchen, in the words the person keeps it under.
  *
- * Free text, and it used to be a union of four. The four were the ones a
- * Malaysian eater picks between, and a list assembled from the catalogue would
- * have been a list of whatever happened to be imported. But a fixed list is also
- * a list somebody wanting Thai, Japanese or their own grandmother's Nyonya
- * cooking cannot reach, and the model has no trouble with the name of a cuisine
- * it was not told about in advance.
+ * Free text, and it used to be a union of four. A fixed list is one somebody
+ * wanting Thai or their grandmother's Nyonya cooking cannot reach, and the model
+ * has no trouble with a cuisine it was not told about.
  *
- * The list itself lives on the phone, which is why nothing here validates against
- * one. What this end does is bound the string, and keep the curated phrasing for
- * the four that had one, because those were worded to fix specific failures.
+ * The list lives on the phone, so nothing here validates against one. This end
+ * bounds the string and keeps the curated phrasing for the four that had one.
  */
 export type Cuisine = string
 
 /**
- * How salty, in three words rather than in milligrams.
- *
- * A sodium figure for a dish nobody has cooked yet is a number with no
- * provenance, and printing "1,840 mg" would borrow the authority of the macro
- * panel for a guess about a hawker's hand. Low, medium and high is what the model
- * can actually answer, and it is what the reader wants.
+ * How salty, in three words rather than milligrams. A sodium figure for a dish
+ * nobody has cooked is a number with no provenance, and "1,840 mg" borrows the
+ * macro panel's authority for a guess about a hawker's hand.
  */
 export type Sodium = 'low' | 'medium' | 'high'
 
 /**
- * What a reason is about, so the screen can put a picture beside it.
- *
- * A closed set rather than free text, for the reason the icon name is a closed
- * set: the client draws one of five drawings, and a sixth kind renders nothing.
- * The fallback is `calories`, which is true of every suggestion this makes.
+ * What a reason is about, so the screen can put a picture beside it. A closed set
+ * because the client draws one of five drawings and a sixth kind renders nothing.
+ * The fallback is `calories`, true of every suggestion this makes.
  */
 export type ReasonKind = 'protein' | 'carbs' | 'fat' | 'calories' | 'taste'
 
@@ -90,13 +74,10 @@ export type DayContext = {
   focus: Focus
   cuisine: Cuisine
   /**
-   * Lean towards the lighter of two dishes that both fit.
-   *
-   * A tie-break and not a filter, which is the whole difficulty: told to be healthy
-   * outright this model answers with boiled eggs and steamed fish, which is the
-   * bare-ingredient failure the system prompt exists to prevent. Off, it is told
-   * plainly that there is no preference, because silence here reads as the default
-   * rather than as its absence.
+   * Lean towards the lighter of two dishes that both fit. A tie-break rather
+   * than a filter: told to be healthy outright the model answers with boiled
+   * eggs and steamed fish. Off, it is told plainly that there is no preference,
+   * because silence reads as a default rather than its absence.
    */
   healthy: boolean
   /** The ceiling the user set on the sheet. */
@@ -118,11 +99,9 @@ export type SuggestMockSteer = {
 }
 
 /**
- * How many dishes come back.
- *
- * Seven rather than five. The sheet scrolls, so the count is not bounded by what
- * fits on a panel, and the retry button re-asks the same question with one tap,
- * which makes a short list the thing somebody spends a scan escaping.
+ * How many dishes come back. Seven rather than five: the sheet scrolls, and the
+ * retry button re-asks with one tap, which makes a short list the thing somebody
+ * spends a scan escaping.
  */
 export const PICK_COUNT = 7
 
@@ -138,17 +117,13 @@ const text = (value: unknown, max: number): string =>
   typeof value === 'string' ? value.trim().slice(0, max) : ''
 
 /**
- * A dish name with a capital on it, when the model sent none.
+ * A dish name with a capital on it, when the model sent none. Shown a prompt
+ * whose largest block is a list of hyphenated lowercase filenames, the model
+ * answers in that register, and `unslug` leaves the case alone.
  *
- * Shown a prompt whose largest block is a list of hyphenated lowercase filenames,
- * the model answers in that register: `nasi-lemak`, `roti-canai`, `teh-tarik`.
- * `unslug` takes the hyphens out and leaves the case, so the sheet drew a list of
- * dishes in lower case beside a diary whose every row is capitalised.
- *
- * Only when there is no capital anywhere in the name, so "nasi lemak" is fixed
- * and "Nasi Lemak" is left exactly as it came. Nothing else about the case is
- * touched: title case is a decision about a language this app does not make on
- * the user's behalf.
+ * Only when there is no capital anywhere, so "nasi lemak" is fixed and "Nasi
+ * Lemak" is left as it came. Title case is a decision about a language this app
+ * does not make on the user's behalf.
  */
 function titled(name: string): string {
   if (!name || name !== name.toLowerCase()) return name
@@ -156,30 +131,24 @@ function titled(name: string): string {
 }
 
 /**
- * Sentences that belong to a meal other than the one being asked about.
- *
- * Only the breakfast register, because that is the only one the model reaches for
- * unprompted: "to start your day", "in the morning", "after fasting overnight"
- * turn up on dinners no matter how the prompt is worded. There is no matching
- * problem in the other direction.
+ * Sentences that belong to a meal other than the one being asked about. Only the
+ * breakfast register, which is the one the model reaches for unprompted: "to
+ * start your day" turns up on dinners however the prompt is worded.
  */
 const BREAKFAST_TALK =
   // Loose around "start … your day", because the phrase mutates rather than
   // stopping: pinned on "start your day" it came back as "start your daily
-  // intake" on the next run. It still needs BOTH halves, so an ordinary
-  // "warming after a long day at work" is left alone.
+  // intake". Both halves are still needed, so "after a long day at work" is
+  // left alone.
   /\b(start\w*( to)? (your|the) da(y|ily)|morning|wake up|woke up|overnight|breakfast|first meal of the day)\b/i
 
 /**
- * The reasons, with the ones about the wrong sitting taken out.
+ * The reasons, with the ones about the wrong sitting taken out. A belt rather
+ * than the rule itself: the prompt says this three times, which took the leak
+ * from two reasons a request to about one in fifteen picks.
  *
- * A belt rather than the rule itself. The prompt says this three times and that
- * took the leak from roughly two reasons a request to about one in fifteen picks.
- * This removes that last one, on the screen where it is most read.
- *
- * It never empties a pick. A reason is dropped only when another survives,
- * because `shapePicks` drops a pick with nothing to say for itself and losing a
- * dish to a badly worded sentence is a worse answer than the sentence.
+ * It never empties a pick, since `shapePicks` drops a pick with nothing to say
+ * and losing a dish to a badly worded sentence is worse than the sentence.
  */
 function keepToTheSitting(why: Reason[], meal: Meal | undefined): Reason[] {
   if (!meal || meal === 'breakfast') return why
@@ -188,15 +157,13 @@ function keepToTheSitting(why: Reason[], meal: Meal | undefined): Reason[] {
 }
 
 /**
- * The model's answer, made safe to render.
+ * The model's answer, made safe to render. Every field is clamped or dropped,
+ * and a pick that loses its name or all of its reasons goes whole. The bar is
+ * low otherwise: a dish whose protein figure is implausible is still worth
+ * offering.
  *
- * Every field is clamped or dropped rather than trusted, and a pick that loses
- * its name or all of its reasons is dropped whole. The bar is deliberately low
- * otherwise: this is a suggestion, and a dish whose protein figure came back
- * implausible is still a dish worth offering.
- *
- * Exported for its own test. Everything here has a failure that renders as
- * something odd rather than as an error, which is the kind that ships.
+ * Exported for its own test: every failure here renders as something odd rather
+ * than as an error, which is the kind that ships.
  */
 export function shapePicks(raw: unknown, meal?: Meal): MealPick[] {
   const list = (raw as { picks?: unknown })?.picks
@@ -205,11 +172,10 @@ export function shapePicks(raw: unknown, meal?: Meal): MealPick[] {
   const picks: MealPick[] = []
   for (const item of list.slice(0, PICK_COUNT)) {
     const row = item as Record<string, unknown>
-    // Unslugged, because the icon list is the largest block of text in the prompt and
-    // a model reads a long list of filenames as the vocabulary it should answer in.
-    // Asked for Chinese breakfast it came back with five picks named
-    // `char-kuey-teow`, `hokkien-mee`, `mee-siam`. The fence in ICON_INSTRUCTION is
-    // not airtight and this is the belt behind it. It fires only on an exact member
+    // Unslugged, because the icon list is the largest block of text in the
+    // prompt and a model reads a long list of filenames as the vocabulary to
+    // answer in: asked for Chinese breakfast it named five picks
+    // `char-kuey-teow`, `hokkien-mee`, `mee-siam`. Fires only on an exact member
     // of a list we wrote, so a real hyphenated dish name is left alone.
     const name = titled(unslug(text(row.name, 80)))
     if (!name) continue
@@ -238,9 +204,8 @@ export function shapePicks(raw: unknown, meal?: Meal): MealPick[] {
       fat_g: clamp(row.fat_g, 0, 200),
       sodium: SODIUMS.has(row.sodium as Sodium) ? (row.sodium as Sodium) : 'medium',
       // The model's answer first, the dish's own name second. `guessIcon` is
-      // the same backstop a typed meal gets, and it earns more here than
-      // anywhere: a suggestion IS its picture in a list of five, and a row with
-      // a blank tile reads as a dish the app does not know about.
+      // the same backstop a typed meal gets, and it earns more here: a blank
+      // tile reads as a dish the app does not know about.
       icon: resolveIcon(row.icon) ?? guessIcon(name),
       why: reasons,
     })
@@ -250,10 +215,8 @@ export function shapePicks(raw: unknown, meal?: Meal): MealPick[] {
 }
 
 /**
- * The shape the model answers in.
- *
- * Written out as a literal because that is the only place in a prompt a model
- * reliably reads a field list from — the same reasoning as `recipeSchema`.
+ * The shape the model answers in, written out as a literal because that is the
+ * only place a model reliably reads a field list from. Same as `recipeSchema`.
  */
 const SUGGEST_SHAPE =
   'Respond with JSON only, in this exact shape: ' +
@@ -271,25 +234,22 @@ const SUGGEST_SHAPE =
 
 /**
  * Why each pick fits, which is the half of this feature that is not a list.
+ * Three rules, each a way the reasons went wrong without it.
  *
- * Three rules, and each is a way the reasons went wrong when it was absent.
+ * About this person's day: "high in protein" would be true if nobody had eaten
+ * anything, where "you are 39 g short on protein" is a suggestion.
  *
- * They must be about this person's day. "High in protein" is a fact about the
- * dish and would be true if nobody had eaten anything; "you are 39 g short on
- * protein" is the sentence that makes a suggestion a suggestion.
+ * Not a repeat of the panel: the calories are printed in 30pt directly above,
+ * and "only 420 calories" spends the most-read line on the number the eye has
+ * already landed on.
  *
- * They must not repeat the panel. The calories are printed in 30pt directly
- * above, and a first bullet reading "only 420 calories" spends the most-read line
- * on the number the eye has already landed on.
- *
- * And they are short. Three of them sit in a card under a macro panel, and the
- * model's instinct is a paragraph each.
+ * And short, because three of them sit in a card and the model writes
+ * paragraphs.
  */
 const WHY_RULES =
-  // ONE TO THREE, not "two or three". Asked for two it always found two, and the
-  // second was filler on any dish that only had one thing to say for itself:
-  // "it fits comfortably within your calorie budget", which is the sentence
-  // banned two lines below. A floor on the count is a floor on the padding.
+  // One to three, not "two or three": asked for two it always found two, and the
+  // second was filler on any dish with one thing to say for itself. A floor on
+  // the count is a floor on the padding.
   'Each pick carries 1 to 3 short reasons, one sentence each, at most 15 words. ' +
   'A reason is about THIS PERSON and the day they have had, not about the dish ' +
   'in general: what they are short of, what they have already eaten, what they ' +
@@ -312,33 +272,27 @@ const WHY_RULES =
   'Do not use em dashes or en dashes anywhere. Use British spelling. '
 
 /**
- * The prompt.
+ * The prompt. Exported like the others in `llm.ts`, so `pnpm eval:prompts` grades
+ * the string that is actually sent.
  *
- * Exported like the others in `llm.ts`, so `pnpm eval:prompts` grades the string
- * that is actually sent.
- *
- * What it is told not to do is most of it, and the reasons are the same ones the
- * scan prompts learnt. It must not invent the person's numbers, because a model
- * asked to reason about a budget it also gets to state will state a convenient
- * one. It must not offer the same dish twice under two names, which is what "five
- * suggestions" produced left to itself: nasi goreng ayam, nasi goreng kampung,
- * nasi goreng pattaya. And it must not exceed the ceiling, because a ceiling that
- * is a suggestion is not a ceiling.
+ * What it is told not to do is most of it. It must not invent the person's
+ * numbers, because a model that gets to state a budget states a convenient one.
+ * It must not offer the same dish twice under two names, which is what "five
+ * suggestions" produced: nasi goreng ayam, kampung, pattaya. And it must not
+ * exceed the ceiling, because a ceiling that is a suggestion is not a ceiling.
  */
 export const SUGGEST_MEAL_PROMPT =
   'You suggest what somebody could eat next, for a calorie-tracking app used in ' +
   'Malaysia. ' +
   KITCHEN +
   SUGGEST_SHAPE +
-  // What a pick is comes first, before any of the constraints, because it is the
-  // one thing that was got wrong repeatedly and every constraint below is wasted on
-  // an answer that is not a meal.
+  // What a pick is comes first, because every constraint below is wasted on an
+  // answer that is not a meal.
   //
-  // Named foods, because "not a plate of separate ingredients" was not enough on
-  // its own: released from a named cuisine the model answered with grilled chicken
-  // breast, two boiled eggs, steamed fish and a cup of yoghurt, three runs running.
-  // Every one of those is an ingredient wearing a meal's clothes, and it is the
-  // failure that makes this feature read as a diet app rather than as a diary.
+  // Named foods, because "not a plate of separate ingredients" was not enough:
+  // released from a named cuisine the model answered with grilled chicken breast,
+  // boiled eggs and steamed fish three runs running, which is what makes this
+  // read as a diet app rather than a diary.
   'Every pick is a DISH SOMEBODY ORDERS BY NAME: a hawker plate, a mamak order, ' +
   'something from a food court, a meal a person cooks and sits down to. A bare ' +
   'ingredient is not a pick and never can be, however well it fits the numbers: ' +
@@ -351,11 +305,9 @@ export const SUGGEST_MEAL_PROMPT =
   'Every pick must come in at or under the calorie ceiling you are given, and ' +
   'most of them should be within about a quarter of it. The ceiling is the SIZE ' +
   'of meal being asked for, not a limit to come in far beneath. ' +
-  // The dishonest way out of that, which the model took the moment the ceiling
-  // was tight: asked for a 300 kcal snack it offered "nasi lemak, one plate,
-  // 280 kcal", which is less than half what a plate of nasi lemak is. A figure
-  // bent to fit the request is worse than no suggestion, because it is the one
-  // number on the screen somebody might act on.
+  // The dishonest way out, taken as soon as the ceiling was tight: asked for a
+  // 300 kcal snack it offered "nasi lemak, one plate, 280 kcal". A figure bent to
+  // fit the request is worse than no suggestion.
   "NEVER shrink a dish's calories to make it fit. If it does not fit at the way " +
   'it is normally served, either say the smaller portion honestly in "portion" ' +
   '("half a plate", "two pieces") and price THAT, or suggest something else. ' +
@@ -363,11 +315,10 @@ export const SUGGEST_MEAL_PROMPT =
   // garnish changed.
   'Every pick is a different dish, not one dish in several styles. Vary the ' +
   'main ingredient and the way it is cooked. ' +
-  // THE SITTING GOVERNS, and it has to be said outright. Asked for dinner, the
-  // first live run answered with a reason about starting the day — the meal was
-  // in the message and the model read it as a label rather than as a
-  // constraint. Both halves are needed: the food has to suit the sitting, and so
-  // does the sentence written about it.
+  // The sitting governs, said outright: asked for dinner, the first live run
+  // answered with a reason about starting the day, having read the meal as a
+  // label rather than a constraint. Both the food and the sentence have to suit
+  // the sitting.
   'The meal you are given is the sitting this is for. Suggest what that sitting ' +
   'is actually eaten at, and never write a reason belonging to another one: ' +
   'nothing about starting the day unless it is breakfast, nothing about winding ' +
@@ -378,10 +329,9 @@ export const SUGGEST_MEAL_PROMPT =
   'A snack is a small thing eaten between meals: kuih, a drink, fruit, a piece ' +
   'of something fried, a few skewers. It is never a rice plate or a bowl of ' +
   'noodles, however few calories you claim for it. ' +
-  // The half of the healthy lean that holds WHICHEVER WAY IT IS SET. The lean
+  // The half of the healthy lean that holds whichever way it is set. The lean
   // itself is per-request and lives in the user message; this is the guard rail
-  // either side of it, and it is the same rule as the bare-ingredient one above
-  // said about writing rather than about food.
+  // either side of it.
   'Whatever the person asks for, never answer with diet food, plain ingredients ' +
   'or anything nobody orders by name, and never mention health, dieting or ' +
   'clean eating in the reasons. The dish speaks for itself. ' +
@@ -393,12 +343,10 @@ export const SUGGEST_MEAL_PROMPT =
   // The one thing the model must not do with the numbers it is handed.
   'The calories left, the macros left and what they have eaten are facts you are ' +
   'given. Use them and never restate them as something else. ' +
-  // AND THE MACROS ARE BACKGROUND, NOT A SPECIFICATION. This is the failure
-  // behind the bare ingredients above and it survived being told not to give
-  // them: on a day already over budget, with no carbs and no fat left to spend,
-  // the model read the shortfall as a recipe and answered with pure protein —
-  // chicken breast, boiled eggs, steamed fish. It was solving the numbers
-  // exactly, and a meal solved exactly is not a meal anybody eats.
+  // The macros are background rather than a specification. This is the failure
+  // behind the bare ingredients above: on a day with no carbs and no fat left to
+  // spend, the model read the shortfall as a recipe and answered with pure
+  // protein. A meal solved exactly is not a meal anybody eats.
   'The macros are context for the reasons, not a specification to hit. A day ' +
   'with no carbs left is not a day of eating no carbs: suggest real meals that ' +
   'lean the right way. Never assemble a pick to meet the numbers. ' +
@@ -407,26 +355,20 @@ export const SUGGEST_MEAL_PROMPT =
   ICON_INSTRUCTION
 
 /**
- * No constraint on the kitchen at all.
- *
- * Said as a release rather than as a category, or the model goes looking for a
- * cuisine literally called "other". "Still real food sold somewhere" is the half
- * that needed saying: released from a cuisine, the model reached for diet food
- * rather than for a wider menu.
+ * No constraint on the kitchen at all. Said as a release rather than a category,
+ * or the model looks for a cuisine called "other". "Still real food sold
+ * somewhere" is the half that needed saying: released from a cuisine, it reached
+ * for diet food rather than a wider menu.
  */
 const ANY_CUISINE = 'any cuisine at all, whatever fits best, as long as it is a dish people order'
 
 /**
- * The names that carry curated wording, which were the whole list once.
+ * The names that carry curated wording, which were the whole list once. Each
+ * phrase came from a failure: "Chinese" alone fetched mainland dishes nobody
+ * sells here. Everything else a user types is phrased as "<name> food".
  *
- * Each phrase was arrived at by a failure: "Chinese" alone fetched mainland
- * dishes nobody sells here, and the release above had to be spelled out twice.
- * Everything else a user types is phrased as "<name> food".
- *
- * A `Map` and not an object, because the key is whatever somebody typed into a
- * text field: an object literal answers `constructor` and `toString` off
- * `Object.prototype`, so those two words would come back as the phrase and be
- * interpolated into the prompt as `function Object() { [native code] }`.
+ * A `Map` rather than an object, because the key is whatever somebody typed: an
+ * object literal answers `constructor` and `toString` off `Object.prototype`.
  */
 const KNOWN_CUISINES = new Map<string, string>([
   ['malay', 'Malay food'],
@@ -438,20 +380,16 @@ const KNOWN_CUISINES = new Map<string, string>([
 ])
 
 /**
- * The longest a cuisine may be. The client holds the same bound, and the phone's
- * copy is the one a user meets — this is the one that holds for anything else
- * that reaches the endpoint.
+ * The longest a cuisine may be. The client holds the same bound; this one holds
+ * for anything else that reaches the endpoint.
  */
 export const MAX_CUISINE_LENGTH = 40
 
 /**
- * The cuisine, as a phrase the prompt can put after "It must be".
- *
- * Bounded rather than validated, because there is no list left to validate
- * against: the name is whatever the user typed on their own phone, so it is
- * trimmed, capped at a length no cuisine reaches, and stripped of the line breaks
- * that would let it pose as another instruction in the message. An empty one is
- * the release rather than an error.
+ * The cuisine, as a phrase the prompt can put after "It must be". Bounded rather
+ * than validated, because there is no list to validate against: trimmed, capped,
+ * and stripped of the line breaks that would let it pose as another instruction.
+ * An empty one is the release rather than an error.
  */
 export const cuisinePhrase = (cuisine: string): string => {
   const clean = String(cuisine ?? '')
@@ -469,19 +407,16 @@ const FOCUS: Record<Focus, string> = {
 }
 
 /**
- * The user message: the day, in the fewest facts that decide an answer.
+ * The user message: the day, in the fewest facts that decide an answer. Exported
+ * for the eval harness.
  *
- * Exported for the eval harness, for the reason `describeUserMessage` is.
+ * What they have already eaten is the least obvious of them. Without it the
+ * reasons are about a budget and nothing else, where the best line this feature
+ * produces connects the two ends of a day: "only 9 g carbs, so it balances the
+ * nasi lemak from breakfast". Names only, since the totals are already given.
  *
- * What they have already eaten is in here and is the least obvious of the facts.
- * Without it the reasons are about a budget and nothing else, and the best line
- * this feature produces is the one that connects the two ends of a day: "only 9 g
- * carbs, so it balances the nasi lemak from breakfast". Names only, and never the
- * figures beside them, since the totals are already given as what is left.
- *
- * What they are still short of, or that they are not short of anything. Zeroes
- * are left out rather than sent as zeroes: a zero in this line is read as a rule
- * about the food rather than as the absence of a shortfall.
+ * Shortfalls are left out rather than sent as zeroes: a zero here reads as a
+ * rule about the food rather than the absence of a shortfall.
  */
 const macroLine = (day: DayContext): string => {
   const short = [
@@ -500,18 +435,16 @@ export const suggestUserMessage = (day: DayContext): string => {
     day.kcalLeft > 0
       ? `They have ${day.kcalLeft} kcal left in today's budget.`
       : "They have already used today's calorie budget.",
-    // Only the macros they are ACTUALLY short of. Listing all three with zeros
-    // in it reads as a specification — "0 g carbs" told the model to suggest
-    // food with no carbs in it — where the question was only ever which way to
+    // Only the macros they are actually short of. "0 g carbs" told the model to
+    // suggest food with no carbs in it, where the question was which way to
     // lean.
     macroLine(day),
     day.eaten.length > 0
       ? `Already eaten today: ${day.eaten.slice(0, 8).join(', ')}.`
       : 'They have not eaten anything yet today.',
-    // The ask goes LAST. Written first, with the day's figures under it, the
-    // sitting read as a label on a report and the model answered a dinner
-    // request with a sentence about starting the day. The three constraints are
-    // the question; everything above them is the background to it.
+    // The ask goes last. Written first, with the day's figures under it, the
+    // sitting read as a label on a report. The three constraints are the
+    // question; everything above them is background.
     `Suggest ${PICK_COUNT} things to eat.`,
     `It must be ${cuisinePhrase(day.cuisine)}.`,
     FOCUS[day.focus],
@@ -522,14 +455,11 @@ export const suggestUserMessage = (day: DayContext): string => {
         'lighter version of a dish where one is genuinely sold.'
       : 'No health preference. Suggest what people actually enjoy eating, the rich ' +
         'and the fried included, and do not quietly lighten the list.',
-    // And the sitting is the very last line, twice stated.
-    //
-    // Named once at the top it was read as a label; moved into this group it was read
-    // as one constraint among four, and "to start your day" still came back on
-    // roughly a third of dinners. It is the constraint the model's prior fights
-    // hardest, so it gets the last word, which is the position a model weights most.
-    // It is spelled out as a rule about the words rather than only about the food,
-    // because the food had already stopped being wrong while the sentences had not.
+    // And the sitting is the very last line, twice stated. Named at the top it
+    // read as a label; as one constraint among four, "to start your day" still
+    // came back on a third of dinners. It is the constraint the model's prior
+    // fights hardest, so it gets the position a model weights most, and it is a
+    // rule about the words as well as the food.
     `This is for their ${day.meal.toUpperCase()}. Every pick and every reason ` +
       `must belong to that sitting: do not write about starting the day, ` +
       `breakfast, morning or waking up unless the meal is breakfast.`,
@@ -538,14 +468,11 @@ export const suggestUserMessage = (day: DayContext): string => {
 }
 
 /**
- * Seven things to eat, or an empty list.
- *
- * Empty is a real answer and the endpoint treats it as one. It is what a model
- * that would not answer in the shape asked for comes to, and the screen says "we
- * could not think of anything, try again" rather than showing a broken list.
- * There is no fallback here and there is none in the scan cascade either: an
- * answer nobody worked out, wearing the same clothes as one that was, is the
- * failure both of them are written to avoid.
+ * Seven things to eat, or an empty list. Empty is a real answer: the screen says
+ * "we could not think of anything, try again" rather than showing a broken list.
+ * There is no fallback here and none in the scan cascade either, because an
+ * answer nobody worked out wearing the clothes of one that was is the failure
+ * both are written to avoid.
  */
 export async function suggestMeals(
   day: DayContext,
@@ -573,11 +500,8 @@ export async function suggestMeals(
 }
 
 /**
- * What a local stack answers with.
- *
- * Real dishes with real-ish figures rather than "Mock dish 1", because the thing
- * being exercised locally is the screen, and lorem ipsum draws a layout nobody
- * can judge.
+ * What a local stack answers with. Real dishes with real-ish figures rather than
+ * "Mock dish 1", because what is being exercised locally is the screen.
  */
 const MOCK_PICKS = [
   {

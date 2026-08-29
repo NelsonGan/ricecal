@@ -23,21 +23,15 @@ export type ScannedPacketProps = {
 
 /**
  * The scanned packet, before there is a product to show and when there is not
- * going to be one.
+ * going to be one. A scan navigates the instant the camera reads a code, so this
+ * screen is where the waiting landed.
  *
- * A scan navigates the instant the camera reads a code, which is what took the
- * waiting off the viewfinder — so this screen is where the waiting landed, and
- * it has to be worth arriving at. Two rules follow from that.
+ * The wait is the product page drawn empty rather than a spinner: a spinner and
+ * then a full page of controls is two layouts, and the jump between them is what
+ * made the old scanner feel slow.
  *
- * THE WAIT IS THE PRODUCT PAGE, DRAWN EMPTY. Not a spinner: a spinner over a
- * blank screen and then a full page of controls is two layouts, and the jump
- * between them is exactly the thing that made the old scanner feel slow. The
- * blocks below are where the picture, the portion and the totals card are about
- * to be, so the answer arriving fills a shape that is already there.
- *
- * AND A MISS IS NOT AN ERROR. The packet exists — it is in the user's hand.
- * What is missing is our record of it, which is why the copy says so and the
- * offer underneath is Describe rather than an apology.
+ * A miss is not an error. The packet is in the user's hand and our record of it
+ * is what is missing, which is why the offer underneath is Describe.
  */
 export function ScannedPacket({ state, onRetry, onDescribe, onBack }: ScannedPacketProps) {
   const { t } = useTranslation(['logging', 'common'])

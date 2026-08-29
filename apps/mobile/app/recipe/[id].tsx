@@ -48,18 +48,16 @@ import {
 } from '@/ui'
 
 /**
- * R5 — one recipe, and the two things you can do with it.
+ * One recipe, and the two things you can do with it.
  *
- * WHICH TWO DEPENDS ON WHOSE IT IS, and that is the one decision on this
- * screen. Your own recipe logs straight into the day. Somebody else's — the
- * kitchen's, or the community's — is SAVED first, as a copy, and logged from
- * the copy.
+ * Which two depends on whose it is, and that is the one decision on this screen.
+ * Your own recipe logs straight into the day; somebody else's is saved first, as
+ * a copy, and logged from the copy.
  *
- * That is not a permissions detail, it is the point. A logged entry references
- * the recipe's mirror catalogue row, and editing a recipe reprices every entry
- * that ever pointed at it. Logging somebody else's directly would put their
- * future corrections into your past diary — they change the servings next month
- * and last Tuesday's dinner moves. A copy is yours, and so are its numbers.
+ * That is not a permissions detail. A logged entry references the recipe's mirror
+ * catalogue row, and editing a recipe reprices every entry that ever pointed at
+ * it, so logging somebody else's directly would put their future corrections into
+ * your past diary. A copy is yours, and so are its numbers.
  */
 export default function RecipeDetailScreen() {
   const { t } = useTranslation(['recipes', 'common'])

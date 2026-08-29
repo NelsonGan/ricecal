@@ -5,15 +5,12 @@
  *   pnpm foods:import --dry-run apps/supabase/data/foods
  *   pnpm foods:import --report thailand apps/supabase/data/foods/thailand.json
  *
- * The shape check is in `lib/food-shape.mjs` and runs with no database at all,
- * so `--dry-run` tells a researcher whether their file is wrong before anything
- * is written. This half is the write, and the dedup.
+ * The shape check is in `lib/food-shape.mjs` and needs no database, so
+ * `--dry-run` tells a researcher whether their file is wrong before anything is
+ * written. This half is the write and the dedup.
  *
- * WHY THE DEDUP IS HERE NOW
- *
- * IDEMPOTENT BY SLUG AND BY NAME. Re-running a payload writes nothing the
- * second time, which is what makes recovery from a half-finished run "run it
- * again" rather than a question about which rows landed.
+ * Idempotent by slug and by name, so re-running a payload writes nothing the
+ * second time and recovery from a half-finished run is "run it again".
  */
 
 import { randomUUID } from 'node:crypto'
@@ -28,20 +25,17 @@ import { expand, shapeFiles } from './lib/food-shape.mjs'
 const REPO_ROOT = fileURLToPath(new URL('../../..', import.meta.url))
 
 /**
- * What a `source_id` means for ranking and attribution.
+ * What a `source_id` means for ranking and attribution. `source_priority` breaks
+ * a tie in the search's final sort and `is_local` feeds the bounded locale prior,
+ * so this table is where "a Malaysian composition table outranks a researched
+ * guess" is written down.
  *
- * `source_priority` breaks a tie in the search's final sort, and `is_local`
- * feeds the bounded locale prior — so this table is where "a Malaysian
- * composition table outranks a researched guess" is actually written down.
- *
- * `is_local` is MALAYSIAN, not Asian. The neighbours' dishes belong in the
- * catalogue and should not outrank a local row for a local user, which is what
- * setting them local would do.
+ * `is_local` is Malaysian rather than Asian: the neighbours' dishes belong in the
+ * catalogue and should not outrank a local row for a local user.
  *
  * A payload picks one with a top-level `"source_id"`, and `research` is the
- * default because it is the weakest honest claim. An unknown key falls back to
- * it rather than failing the load: the consequence is a row that ranks a little
- * low, and refusing 200 dishes over a typo here would be the wrong trade.
+ * default because it is the weakest honest claim. An unknown key falls back to it
+ * rather than failing the load, costing a row that ranks a little low.
  */
 const SOURCES = {
   research: { name: 'RiceCal researched dishes', priority: 60, local: 0 },

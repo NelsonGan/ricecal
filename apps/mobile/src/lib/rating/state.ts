@@ -1,26 +1,22 @@
 /**
- * Whether this account has earned the question "do you like RiceCal?", as a
- * pure function of what it has done.
+ * Whether this account has earned the question "do you like RiceCal?", as a pure
+ * function of what it has done.
  *
- * SPLIT OUT FROM THE REST OF THE FEATURE ON PURPOSE. Every branch here is a way
- * to annoy somebody or to waste the one ask the store allows, and none of them
- * is observable from the app: a gate that is too tight shows nothing, and a gate
- * that is too loose shows itself once and is never seen again. So the whole of
- * the decision is arithmetic over a plain object with a clock passed in, and the
- * test file next door is where it is actually checked.
+ * Split out from the rest of the feature, because every branch is a way to annoy
+ * somebody or waste the one ask the store allows, and none of them is observable
+ * from the app: too tight shows nothing, too loose shows itself once. So the
+ * decision is arithmetic over a plain object with a clock passed in, and the test
+ * file next door is where it is checked.
  *
- * Nothing in this file touches MMKV, the store, or React. `prompt.ts` is what
- * holds it against a real user and a real clock.
+ * Nothing here touches MMKV, the store or React. `prompt.ts` holds it against a
+ * real user and a real clock.
  */
 
 /**
- * The shape kept on disk, and the number in front of it.
- *
- * Anything this parser does not recognise is thrown away and replaced with a
- * fresh state, which resets `installedAt` to now and so DELAYS the next ask by
- * five days. That is the safe direction to be wrong in: the cost of a state we
- * cannot read is a question asked later than it could have been, never one
- * asked twice.
+ * The shape kept on disk, and the number in front of it. Anything this parser
+ * does not recognise is replaced with a fresh state, which resets `installedAt`
+ * and delays the next ask by five days: the safe direction, since the cost is a
+ * question asked later rather than one asked twice.
  */
 export const RATING_STATE_VERSION = 1
 
@@ -50,49 +46,36 @@ export type RatingState = {
 export const MIN_DAYS_SINCE_INSTALL = 5
 
 /**
- * And after an update.
- *
- * An app that has just changed under somebody is the worst moment to ask what
- * they think of it: they have not used the version they would be rating, and a
- * release that broke something is a release whose first two days are its worst.
+ * And after an update. An app that has just changed under somebody is the worst
+ * moment to ask what they think of it: they have not used the version they would
+ * be rating, and a release that broke something is worst in its first two days.
  */
 export const MIN_DAYS_SINCE_VERSION_CHANGE = 2
 
 /**
- * Meals per checkpoint. The ask rides on crossing a multiple of this, so it is
- * the 15th meal, the 30th, the 45th.
- *
- * Fifteen is roughly a week of somebody logging what they actually eat. Below
- * that the app has not yet done the thing it is for, and a five-star rating from
- * somebody who logged three plates is worth less than the ask it spent.
+ * Meals per checkpoint. The ask rides on crossing a multiple of this, so the
+ * 15th meal, the 30th, the 45th. Fifteen is roughly a week of somebody logging
+ * what they actually eat; below that the app has not done the thing it is for.
  */
 export const MEALS_PER_CHECKPOINT = 15
 
 /**
- * Distinct days, not consecutive ones.
+ * Distinct days rather than consecutive ones, to exclude the person who logged a
+ * fortnight of meals in one sitting to see what the app did. A streak would be
+ * stricter and worse: somebody who logs on Monday and Thursday is a user.
  *
- * The point is to exclude the person who installed the app, logged a fortnight
- * of meals in one sitting to see what it did, and will not open it again. A
- * streak would be a stricter test and a worse one: somebody who logs on Monday
- * and Thursday is a user, and a rule that says otherwise is a rule about
- * weekends.
- *
- * THREE RATHER THAN TWO, and the reason is not that two felt lax. The state is
- * created by the first counted action, so `installedAt` is that day and the
- * gate above already requires five days between it and the ask; a fifteenth
- * meal that clears the install gate has therefore been logged on a second day
- * by definition. At two this gate could never turn anything down, which is a
- * worse thing for a threshold to be than lax.
+ * Three rather than two, because the state is created by the first counted
+ * action and the install gate already requires five days, so a fifteenth meal
+ * clearing that gate has been logged on a second day by definition. At two this
+ * gate could never turn anything down.
  */
 export const MIN_ACTIVE_DAYS = 3
 
 /**
- * How long the app leaves somebody alone after asking.
- *
- * Apple's own limit is three prompts a year per device, counted by the OS and
- * silently enforced: over it, `requestReview` does nothing at all and the app
- * cannot tell. Sixty days keeps us under it with room to spare, and the
- * same-version gate below means the realistic cadence is one ask per release.
+ * How long the app leaves somebody alone after asking. Apple's own limit is three
+ * prompts a year per device, silently enforced: over it, `requestReview` does
+ * nothing and the app cannot tell. Sixty days keeps us under it, and the
+ * same-version gate below makes the realistic cadence one ask per release.
  */
 export const MIN_DAYS_BETWEEN_ASKS = 60
 
@@ -162,13 +145,10 @@ export function parseState(raw: string | undefined): RatingState | null {
 }
 
 /**
- * `yyyy-MM-dd` in local time.
- *
- * The same three lines as `data/client.ts`'s `dateKey` rather than an import of
- * it, because `src/lib` does not reach into the data layer. Local rather than
- * `toISOString`, which reports UTC and so disagrees with the user's own day for
- * part of every one of them: two meals either side of that boundary would count
- * as two active days on one evening, or as one across two.
+ * `yyyy-MM-dd` in local time. The same three lines as `data/client.ts`'s
+ * `dateKey` rather than an import, because `src/lib` does not reach into the data
+ * layer. Local rather than `toISOString`, which reports UTC: two meals either
+ * side of that boundary would count as two active days on one evening.
  */
 export function dayKey(now: number): string {
   const date = new Date(now)
@@ -178,11 +158,8 @@ export function dayKey(now: number): string {
 }
 
 /**
- * Noticed at every counted moment rather than at launch.
- *
- * A launch is not evidence of anything: a notification opened and dismissed is
- * one. This only moves when a meal goes on the day or a review is read, which is
- * the app being used.
+ * Noticed at every counted moment rather than at launch, which is not evidence of
+ * anything. This only moves when a meal goes on the day or a review is read.
  */
 export function recordActivity(state: RatingState, now: number): RatingState {
   const today = dayKey(now)
@@ -209,12 +186,9 @@ export function markAsked(state: RatingState, now: number, appVersion: string): 
 const daysSince = (then: number, now: number): number => (now - then) / DAY_MS
 
 /**
- * Should the question be put?
- *
- * The order is deliberate: the cheapest and most common refusals first, so the
- * reason that reaches Mixpanel is the FIRST thing wrong rather than an arbitrary
- * one of several. A brand new account is `too_soon_after_install`, which is what
- * it is, rather than `too_few_meals`.
+ * Should the question be put? The order is deliberate: the cheapest and most
+ * common refusals first, so the reason that reaches Mixpanel is the first thing
+ * wrong rather than an arbitrary one of several.
  */
 export function checkRating(state: RatingState, now: number, appVersion: string): RatingVerdict {
   if (daysSince(state.installedAt, now) < MIN_DAYS_SINCE_INSTALL) {
@@ -242,12 +216,9 @@ export function checkRating(state: RatingState, now: number, appVersion: string)
 }
 
 /**
- * Did this meal cross a checkpoint?
- *
- * A CROSSING RATHER THAN AN EXACT MULTIPLE, which is the same one line and one
- * failure mode fewer: `meals % 15 === 0` is only correct while the counter moves
- * by exactly one, and a caller that ever records two would step over the 15th
- * meal and wait silently for the 30th. `before` is the count as it stood.
+ * Did this meal cross a checkpoint? A crossing rather than an exact multiple:
+ * `meals % 15 === 0` is only correct while the counter moves by one, and a caller
+ * recording two would step over the 15th meal and wait for the 30th.
  */
 export function crossedCheckpoint(before: number, after: number): boolean {
   if (after < MEALS_PER_CHECKPOINT) return false
@@ -255,12 +226,10 @@ export function crossedCheckpoint(before: number, after: number): boolean {
 }
 
 /**
- * And for reviews, which are rarer and worth less individually.
- *
- * The second one, then every fifth. The first review anybody opens is a
- * curiosity; the second is somebody who came back for it, which is the moment
- * this trigger exists for. A weekly review appears once a week, so "every fifth"
- * is a month or more apart and could never carry the ask on its own.
+ * And for reviews, which are rarer and worth less individually: the second one,
+ * then every fifth. The first is a curiosity and the second is somebody who came
+ * back for it. A weekly review appears once a week, so every fifth is a month
+ * apart and could never carry the ask on its own.
  */
 export function reviewWorthAsking(reviews: number): boolean {
   return reviews === 2 || (reviews > 2 && reviews % 5 === 0)

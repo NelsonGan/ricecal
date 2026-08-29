@@ -5,20 +5,16 @@ import type { MealTime, Settings } from '@/data/types'
 import { parseTime } from './meal-times'
 
 /**
- * Local reminders.
+ * Local reminders, all scheduled on the device. A meal reminder is "every day at
+ * 08:00 in the user's own timezone", which both platforms express as a repeating
+ * calendar trigger: no server, no push token, nothing to deliver if the phone is
+ * offline at breakfast.
  *
- * All of it is scheduled on the device. A meal reminder is "every day at
- * 08:00 in the user's own timezone", which iOS and Android both express as a
- * repeating calendar trigger — no server, no push token, and nothing to
- * deliver if the phone is offline at breakfast.
+ * That is why `meal_times.at` is a `time` rather than a timestamp. The OS
+ * re-evaluates a calendar trigger against the current timezone, where a stored
+ * instant would fire an hour early for the rest of a trip.
  *
- * That is why `meal_times.at` is a `time` and not a timestamp: the rule is
- * about the user's clock, and it stays true when they fly somewhere else. The
- * OS re-evaluates a calendar trigger against the current timezone; a stored
- * instant would fire an hour early for the rest of the trip.
- *
- * Push, when it exists, is for what the phone cannot know by itself — the
- * weekly report, a friend's nudge. Everything here is deliberately not that.
+ * Push, when it exists, is for what the phone cannot know by itself.
  */
 
 /** One category per kind, so a reschedule can replace its own and nothing else. */
@@ -216,25 +212,18 @@ export async function rescheduleReminders(
 }
 
 /**
- * "Your plate is counted" — for the scan the user walked away from.
+ * "Your plate is counted", for the scan the user walked away from. Scheduled at
+ * the shutter rather than at the answer: a scan takes fifteen to thirty seconds
+ * and iOS suspends the app well before that, so the code that runs when the
+ * answer arrives may never run. A notification booked in advance is honoured
+ * while an app is suspended, and this one is cancelled if the app is awake when
+ * the plate lands.
  *
- * SCHEDULED AT THE SHUTTER, NOT AT THE ANSWER.
+ * Which is why the copy is generic: at booking time nobody knows what the dish
+ * is, and `announceScan` replaces it with the name when the app can say so.
  *
- * A scan takes fifteen to thirty seconds, which is long enough to lock the
- * phone and put it in a pocket — and iOS suspends the app well before that,
- * so the code that runs when the answer arrives is code that may never run.
- * Posting from there produced nothing at all. What the system does honour
- * while an app is suspended is a notification that was already scheduled, so
- * this one is booked the moment the shutter fires and cancelled if the app is
- * still awake when the plate lands. The user is told either by the row in
- * front of them or by this, never by both.
- *
- * Which is also why the copy is generic: at booking time nobody knows what
- * the dish is. `announceScan` replaces it with the name when the app is alive
- * to say so.
- *
- * Best-effort throughout: a notification that cannot be posted must never take
- * a scan down with it.
+ * Best-effort throughout: a notification that cannot be posted must never take a
+ * scan down with it.
  */
 const SCAN_NOTICE_DELAY_S = 25
 

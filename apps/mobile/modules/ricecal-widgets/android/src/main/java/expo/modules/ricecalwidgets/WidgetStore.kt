@@ -166,17 +166,14 @@ object WidgetStore {
   /**
    * Redraw every RiceCal widget on every home screen.
    *
-   * PUSHED, NOT BROADCAST, and that is not a style choice. The obvious version
-   * of this sends `ACTION_APPWIDGET_UPDATE` at each provider — and that is a
-   * PROTECTED broadcast, which only the system may send. An app that tries gets
-   * a `SecurityException` from the activity manager and the widgets simply never
-   * move, which reads as "the snapshot is not being written" rather than as what
-   * it is.
+   * Pushed rather than broadcast: `ACTION_APPWIDGET_UPDATE` is a protected
+   * broadcast only the system may send, so an app that tries gets a
+   * `SecurityException` and the widgets never move, which reads as the snapshot
+   * not being written.
    *
    * `updateAppWidget(ComponentName, RemoteViews)` needs no broadcast and no
-   * permission: it hands the host a tree for every widget of that provider at
-   * once. The cost is that this has to know how to draw, which is why it goes
-   * through `WidgetRenderer` — the same function the provider itself calls.
+   * permission, at the cost of having to know how to draw, which is why it goes
+   * through `WidgetRenderer`.
    *
    * One call per provider, because there is no "everything this package
    * publishes" form.

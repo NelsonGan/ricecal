@@ -29,31 +29,25 @@ const VISIBLE = 5
 const PAD = ROW * ((VISIBLE - 1) / 2)
 
 /**
- * A SPINNING COLUMN — one of the wheels a date and a time are picked on.
+ * A spinning column: one of the wheels a date and a time are picked on.
  *
- * The control the platform would have given us, built out of a `ScrollView`,
- * because the platform's own is a native module and this app cannot take one:
- * a new native dependency means a new dev client, and the picker is wanted in
- * builds already on phones. `snapToInterval` does the work — the list comes to
- * rest on a row rather than between two — and the value is read off the offset
- * once the scroll settles rather than on every frame, so a flick through a year
- * of dates is one state change and not three hundred.
+ * Built out of a `ScrollView`, because the platform's own is a native module and
+ * a new native dependency means a new dev client, where this is wanted in builds
+ * already on phones. `snapToInterval` does the work, and the value is read off
+ * the offset once the scroll settles, so a flick through a year of dates is one
+ * state change rather than three hundred.
  *
- * Presentational and domain-free: it is handed rows and told which is selected.
- * Which dates are offered, and whether an hour is twelve-hour, belongs to the
- * caller.
+ * Presentational and domain-free: which dates are offered, and whether an hour is
+ * twelve-hour, belongs to the caller.
  *
- * IT WANTS MORE ROWS THAN IT SHOWS. A wheel with two options has a scrollable
- * range of one row, and iOS rounds a drag that short back to where it began — the
- * column renders correctly and cannot be moved. Anything with a handful of
- * choices is a control you tap, not a dial you spin; the picker's am/pm pair is
- * two buttons for exactly this reason.
+ * It wants more rows than it shows. A wheel with two options has a scrollable
+ * range of one row, and iOS rounds a drag that short back to where it began, so
+ * the column renders correctly and cannot be moved. A handful of choices is
+ * something you tap rather than a dial you spin.
  *
- * IT IS ALSO A CONTROL SOMEBODY MIGHT NOT BE ABLE TO SCROLL. A wheel is one of
- * the least accessible shapes in a phone interface — there is no discrete thing
- * to tap — so it declares itself `adjustable` and answers increment and
- * decrement, which is what VoiceOver's swipe up and down send. Without those it
- * is a control a screen-reader user can read and cannot move.
+ * It is also a control somebody might not be able to scroll, so it declares
+ * itself `adjustable` and answers increment and decrement, which is what
+ * VoiceOver's swipe up and down send.
  */
 export function Wheel({ options, value, onChange, accessibilityLabel, className }: WheelProps) {
   const scroller = useRef<ScrollView>(null)
@@ -89,22 +83,15 @@ export function Wheel({ options, value, onChange, accessibilityLabel, className 
   }, [])
 
   /**
-   * Where the wheel came to REST, which is the only offset worth reading.
+   * Where the wheel came to rest, which is the only offset worth reading. A flick
+   * ends in momentum and fires `onMomentumScrollEnd`; a slow drag released with no
+   * velocity fires `onScrollEndDrag` and nothing after it, so both are wired and
+   * the drag handler commits only when no momentum will follow.
    *
-   * A scroll can end two ways and only one of them is final. A flick ends in
-   * momentum and fires `onMomentumScrollEnd` when the coasting stops; a slow drag
-   * released with no velocity fires `onScrollEndDrag` and nothing after it, so a
-   * wheel that read the momentum event alone would ignore every careful one-row
-   * nudge. Both are wired, and the drag handler only commits when NO momentum will
-   * follow.
-   *
-   * Reading the release offset unconditionally was a bug with two faces. The Save
-   * button sits directly under these wheels, so a flick followed straight away by
-   * a tap wrote the row the finger passed over rather than the one on screen. And
-   * committing mid-coast re-rendered the list under a scroll view that was still
-   * decelerating — which on iOS kills the deceleration where it stands, so a flick
-   * toward the end of a long list could leave the wheel exactly where it started
-   * and report a value it was not showing.
+   * Reading the release offset unconditionally had two faces: Save sits directly
+   * under these wheels, so a flick followed by a tap wrote the row the finger
+   * passed over, and committing mid-coast re-rendered the list under a
+   * decelerating scroll view, which on iOS kills the deceleration where it is.
    */
   const commit = (offset: number) => {
     const row = Math.round(offset / ROW)
