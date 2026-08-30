@@ -29,20 +29,17 @@
 //               its ingredients
 //
 // A correction never silently loses the breakdown. It is the only part of an
-// entry the user can edit piece by piece, and every path through here either
-// keeps it, edits it, or replaces it with a new one.
+// entry the user can edit piece by piece, and every path here either keeps it,
+// edits it, or replaces it with a new one.
 //
 // The entry keeps its identity (id, photo, scan_id, date) so the diary row
-// updates in place rather than being replaced. Applied or not, the answer after
-// validation is HTTP 200: `applied: false` with a reason is a result, not an
-// error.
+// updates in place. Applied or not, the answer after validation is HTTP 200:
+// `applied: false` with a reason is a result rather than an error.
 //
-// AND `applied: false` NOW SAYS WHICH KIND, because one message for every way
-// this can decline is what made the feature feel broken. "Could not apply that,
-// try rewording it" was shown to somebody who typed "extra spicy" — where there
-// is nothing to apply and rewording will not help — and to somebody whose
-// perfectly clear correction hit a model answering in the wrong shape. The
-// `code` on the response is what the client says something specific about:
+// `applied: false` says which kind, because one message for every way this can
+// decline is what made the feature feel broken: "Could not apply that, try
+// rewording it" was shown for "extra spicy" and for a model answering in the
+// wrong shape. The `code` is what the client says something specific about:
 //
 //   not_a_correction  the words have no calories in them
 //   not_understood    the interpreter could not be read, twice
@@ -71,12 +68,9 @@ type RefineRequest = {
 
 /**
  * How much of a part a reduction has to account for before it takes the whole
- * thing off the plate.
- *
- * "No sambal" is a removal, and the model prices it at roughly what the sambal
- * costs — so most of the part. Well short of that the user asked for less of
- * something, not for none of it, and the difference matters because there is
- * no undo on an ingredient.
+ * thing off the plate. "No sambal" is a removal and the model prices it at
+ * roughly what the sambal costs; well short of that the user asked for less
+ * rather than none, and there is no undo on an ingredient.
  */
 const REMOVES_THE_PART = 0.6
 
@@ -126,12 +120,10 @@ function json(body: unknown, status = 200): Response {
 }
 
 /**
- * Re-price an entry from the ingredients currently under it.
- *
- * The same rule tier 2 writes a decomposed plate with: the parent is a shared
- * estimate row whose figures ARE the sum of the parts, at one portion. Running
- * it again after an edit is what lets a correction change the list and have the
- * total follow, instead of changing the total and having to bin the list.
+ * Re-price an entry from the ingredients currently under it: the same rule tier 2
+ * writes a decomposed plate with, where the parent's figures are the sum of the
+ * parts at one portion. Running it again after an edit lets a correction change
+ * the list and have the total follow, rather than binning the list.
  */
 async function rebuildFromParts(
   db: SupabaseClient,
@@ -236,17 +228,13 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   )
 
-  // Correcting a meal by describing it is a model call like any other, so it asks
-  // the same two questions scan-meal asks. Editing the portion by hand on the
-  // detail screen is not gated: no model is involved, and a subscription that
-  // lapses should not trap somebody's existing diary behind a paywall.
+  // A model call like any other, so it asks the same two questions scan-meal
+  // asks. Editing the portion by hand is not gated: no model is involved, and a
+  // lapsed subscription should not trap somebody's diary behind a paywall.
   //
-  // The whole endpoint is Pro, unlike the photographed plate that reaches
-  // `scan-meal`. Fixing a meal with a sentence is the most expensive thing a user
-  // can ask for per unit of value, since the entry already exists and already has
-  // numbers on it, and it is the one path with a free alternative sitting right
-  // beside it: every figure it would change is editable by hand, on the same
-  // screen, for nothing.
+  // The whole endpoint is Pro, unlike the photographed plate reaching
+  // `scan-meal`: the entry already exists and already has numbers on it, and
+  // every figure this would change is editable by hand for nothing.
   try {
     await requireEntitlement(db, userId, 'refine')
     await claimScan(db, userId)
@@ -274,17 +262,14 @@ Deno.serve(async (req: Request) => {
   }
   const meter = createMeter()
 
-  // The entry, with enough context for the interpreter. service_role reads it, so
-  // ownership is checked explicitly: this function must not be a way to edit
-  // someone else's diary.
+  // The entry, with enough context for the interpreter. service_role reads it,
+  // so ownership is checked explicitly: this must not be a way to edit somebody
+  // else's diary.
   //
   // The shape is declared rather than inferred. `createClient` here carries no
-  // `Database` generic, so supabase-js parses the select string on its own and
-  // gives up on the embedded relations, and every field of the result then comes
-  // back as an error union. Casting each relation separately bought silence for
-  // three of them and left the other forty unchecked. One name for the row is the
-  // honest version, and it is also the documentation for what this function needs
-  // from the diary.
+  // `Database` generic, so supabase-js gives up on the embedded relations and
+  // every field comes back as an error union. One name for the row is also the
+  // documentation for what this function needs from the diary.
   const { data } = await db
     .from('food_logs')
     .select(
@@ -358,11 +343,10 @@ Deno.serve(async (req: Request) => {
       const { error } = await db.from('food_logs').update({ quantity }).eq('id', entry.id)
       if (error) throw error
 
-      // Half the plate is half of everything on it. The parts move with the
-      // whole, because a breakdown that still describes a full plate under an
-      // entry counting half of one is worse than no breakdown at all — and
-      // deleting it, which is what used to happen to every correction, threw
-      // away the only thing on the screen the user can edit part by part.
+      // Half the plate is half of everything on it: a breakdown describing a
+      // full plate under an entry counting half is worse than none, and deleting
+      // it threw away the only thing on the screen the user can edit part by
+      // part.
       const applied = Math.max(0.01, quantity / Math.max(0.01, Number(entry.quantity)))
       for (const part of parts) {
         await db
@@ -376,19 +360,16 @@ Deno.serve(async (req: Request) => {
     }
 
     if (interpretation.action === 'adjust' && parts.length) {
-      // A plate that has a breakdown is corrected through it. "No sambal" means one row
-      // leaves the list and the plate is what is left; "add a fried egg" means one row
-      // joins it. Then the entry is re-priced from the sum of its parts, exactly the
-      // way tier 2 built it in the first place, so the total and the list can never
-      // drift apart.
+      // A plate with a breakdown is corrected through it: one row leaves or
+      // joins the list, and the entry is re-priced from the sum of its parts the
+      // way tier 2 built it, so the total and the list cannot drift apart.
       //
-      // The old path could only add the delta to the entry's own figure, and then had
-      // to delete the breakdown to stop it contradicting the total. That is the bug
-      // this replaces: one correction and the plate forgot what was on it.
+      // The old path added the delta to the entry's own figure and deleted the
+      // breakdown to stop it contradicting the total.
       //
-      // Exact name first, then either direction of containment: the model is asked to
-      // copy the ingredient's name and mostly does, but "the chicken" has to find
-      // "fried chicken wing" too.
+      // Exact name first, then either direction of containment: the model mostly
+      // copies the ingredient's name, but "the chicken" has to find "fried
+      // chicken wing" too.
       const findPart = (wanted: string | null) => {
         const needle = wanted?.toLowerCase().trim() ?? ''
         if (!needle) return undefined
@@ -404,16 +385,11 @@ Deno.serve(async (req: Request) => {
       const swapped = findPart(interpretation.replaces)
 
       /**
-       * Whether any arm of the chain below actually moved something.
-       *
-       * The chain has holes in it — a reduction naming nothing on a
-       * single-part plate, a swap whose `replaces` matches no row — and
-       * falling through all of them used to be indistinguishable from
-       * succeeding: `rebuildFromParts` ran on an untouched list, which is a
-       * no-op arithmetically but still renames the entry, clears its `food_id`
-       * and answers `applied: true`. So the user was told the correction had
-       * been made, watched the row rework itself for ten seconds, and got the
-       * same numbers under a new name.
+       * Whether any arm of the chain below actually moved something. The chain
+       * has holes in it, and falling through all of them used to be
+       * indistinguishable from succeeding: `rebuildFromParts` on an untouched
+       * list is a no-op arithmetically but still renames the entry, clears its
+       * `food_id` and answers `applied: true`.
        */
       let changed = true
 
@@ -489,14 +465,10 @@ Deno.serve(async (req: Request) => {
           .update({ quantity: refineQuantity(Number(match.quantity) + extra) })
           .eq('id', match.id)
       } else if (interpretation.kcal_delta < 0 && match) {
-        // Less of something, with no number given. How much less decides
-        // whether the part goes or shrinks.
-        //
-        // It used to always go, which is right for "no sambal" — a fifty
-        // calorie delta against a sixty calorie part IS the whole part — and
-        // destructive for anything else. A correction the interpreter read as
-        // a small reduction took a 384 kcal row of satay off the plate
-        // outright, and there is no undo on an ingredient.
+        // Less of something, with no number given, so how much less decides
+        // whether the part goes or shrinks. It used to always go, which is right
+        // for "no sambal" and destructive otherwise: a small reduction took a
+        // 384 kcal row of satay off the plate, and there is no undo.
         const { data: row } = await db
           .from('food_log_ingredient_details')
           .select('kcal, quantity')
@@ -596,15 +568,15 @@ Deno.serve(async (req: Request) => {
     }
 
     if (interpretation.action === 'adjust') {
-      // The same dish, one part changed. The base stays the catalogue figure the entry
-      // already trusts; only the delta is the model's, so "no sambal" can never
-      // re-guess the whole plate. Macros scale proportionally, which keeps Atwater
-      // consistency by construction.
+      // The same dish, one part changed. The base stays the catalogue figure the
+      // entry already trusts and only the delta is the model's, so "no sambal"
+      // cannot re-guess the whole plate. Macros scale proportionally, which keeps
+      // Atwater consistency by construction.
       //
-      // The delta is for the whole correction, so it has to be divided by the portion
-      // count before it is added to one portion, since the row below is priced per
-      // serving and then multiplied by the quantity again. Added flat, "add a fried
-      // egg" to an entry logged at half a plate put half an egg on it.
+      // The delta is for the whole correction, so it is divided by the portion
+      // count before being added to one portion, which the quantity multiplies
+      // again. Added flat, "add a fried egg" to half a plate put half an egg on
+      // it.
       const factor = Number(entry.serving_factor ?? 1)
       const portionKcal = Number(entry.base_kcal ?? 0) * factor
       const perPortionDelta = interpretation.kcal_delta / Math.max(0.25, Number(entry.quantity))
@@ -612,16 +584,14 @@ Deno.serve(async (req: Request) => {
       const scale = target / Math.max(1, portionKcal)
       const round1 = (value: number) => Math.round(value * 10) / 10
 
-      // The adjusted figures replace the entry's own, and the quantity does not move.
-      // It used to: the row was a shared estimate deduped on the name, so an earlier
-      // variant priced differently could come back instead, and the quantity absorbed
-      // that. Nothing is shared now, so `target` is what this entry is worth per
-      // portion and the portion count the user chose is left where they put it.
+      // The adjusted figures replace the entry's own and the quantity does not
+      // move. It used to, because the row was a shared estimate deduped on the
+      // name; nothing is shared now, so the portion count the user chose is left
+      // where they put it.
       //
-      // The portion collapses to a plain "1 serving" because these numbers are no
-      // longer per a catalogue serving that a factor scales: the factor is already in
-      // them, via `portionKcal`. Keeping a "Half" label over a base that already means
-      // half would double the discount at the next read.
+      // The portion collapses to "1 serving" because these numbers are no longer
+      // per a catalogue serving that a factor scales: the factor is already in
+      // them via `portionKcal`, so a "Half" label would double the discount.
       const quantity = refineQuantity(Number(entry.quantity))
       const { error: updateError } = await db
         .from('food_logs')
@@ -670,12 +640,9 @@ Deno.serve(async (req: Request) => {
       const scanId = entry.scan_id ?? crypto.randomUUID()
       const item = interpretation.item
       const resolved = await resolveItem(db, scanId, item, mock, meter)
-      // Nothing could price the corrected dish. There used to be an archetype
-      // floor here that always answered, which meant a correction the cascade
-      // could not resolve REPLACED a real entry with a generic "Mixed meal" —
-      // the one outcome worse than declining, since the meal the user was
-      // fixing is gone and what is left is a guess. The entry is untouched
-      // instead and the user is told to try again.
+      // Nothing could price the corrected dish. An archetype floor here always
+      // answered, so a correction the cascade could not resolve replaced a real
+      // entry with a generic "Mixed meal". The entry is untouched instead.
       if (!resolved) {
         await recordRefine(null, null, null)
         return json({ ok: true, applied: false, code: 'no_match', reason: 'nothing matched' })
@@ -706,12 +673,10 @@ Deno.serve(async (req: Request) => {
           quantity: resolved.quantity,
           display_label: resolved.displayLabel,
           scan_id: scanId,
-          // The drawing described the OLD food, the same way the breakdown
-          // below did. A typed meal is illustrated from its own name (see
-          // `icons.ts`), so a redescribe leaves a picture of the dish that was
-          // just corrected away sitting on the dish that replaced it. Cleared
-          // rather than re-chosen: the row falls back to the blank tile every
-          // hand-logged entry has, and the detail screen has a picker.
+          // The drawing described the old food, as the breakdown below did: a
+          // typed meal is illustrated from its own name, so a redescribe leaves
+          // a picture of the dish that was corrected away. Cleared rather than
+          // re-chosen, and the detail screen has a picker.
           icon_set: null,
           icon_name: null,
         })

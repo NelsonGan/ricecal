@@ -114,13 +114,12 @@ i18n.use(initReactI18next).init({
  *
  * Three things have to move together and this is the only place that knows it:
  * what i18next hands to `t`, what date-fns formats a date in, and what the next
- * launch opens in. The screens that offer a language — the onboarding picker
- * and the preferences card — call this and nothing else.
+ * launch opens in. The onboarding picker and the preferences card call this and
+ * nothing else.
  *
- * `user_settings.language` is NOT written here. This module is imported at the
- * root of the app and must not reach the data layer: doing so would build the
- * Supabase client at import time, which no test environment can do. The row is
- * caught up by `LanguageSync`, which lives where the session does.
+ * `user_settings.language` is not written here. This module is imported at the
+ * root of the app and must not reach the data layer, which would build the
+ * Supabase client at import time. `LanguageSync` catches the row up.
  */
 export function setLanguage(language: Language): void {
   storeLanguage(language)

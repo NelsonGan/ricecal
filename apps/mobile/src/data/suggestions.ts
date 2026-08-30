@@ -9,17 +9,13 @@ import type { IconRef, Meal } from './types'
 /**
  * "What should I eat?", answered by the model.
  *
- * A MUTATION AND NOT A QUERY, which is the one decision here worth explaining.
- * Everything about it looks like a read — nothing is written, and the same
- * request twice would be a fair thing to cache — but a query is a thing
- * react-query is entitled to RE-RUN: on focus, on reconnect, on a stale timer.
- * Each of those is a model call, a scan off the user's daily allowance, and a
- * different set of dishes appearing under a finger. The user presses a button and
- * gets an answer; that is a mutation whatever the verb.
+ * A mutation rather than a query, though nothing is written: react-query is
+ * entitled to re-run a query on focus, on reconnect and on a stale timer, and
+ * each of those is a model call, a scan off the daily allowance, and a different
+ * set of dishes appearing under a finger.
  *
- * What it costs is that the answer has nowhere to live, so `SuggestAction`
- * holds it: the picks, what was asked to get them, and which one is open. In
- * memory and nowhere else, because a suggestion is not a record of anything.
+ * What it costs is that the answer has nowhere to live, so `SuggestAction` holds
+ * it in memory: a suggestion is not a record of anything.
  */
 
 // `Meal` is the `public.meal` enum and is already declared in `types.ts`, off

@@ -16,22 +16,16 @@ import { useBack } from '@/lib/navigation'
 import { AppBar, Card, EmptyState, Screen, SegmentedControl, Skeleton, Text } from '@/ui'
 
 /**
- * A5: energy balance.
+ * Energy balance: in against out, then where the out came from.
  *
- * In against out, then where the out came from.
+ * The honesty of this screen is the `balanceDays` line. A daily balance needs
+ * food logged and a resting figure from the store, and plenty of days have one
+ * and not the other: a day with a watch and no breakfast logged is not a 2,000
+ * calorie deficit. `activity_summary` counts the days that had both, this screen
+ * prints that count, and the footnote says so when it is a minority.
  *
- * THE HONESTY OF THIS SCREEN IS THE `balanceDays` LINE
- *
- * A daily balance needs both halves: food logged AND a resting figure from the
- * store. Plenty of days have one and not the other, and averaging those in
- * would make the headline a story about missing data — a day with a watch and
- * no breakfast logged is not a 2,000 calorie deficit. `activity_summary` counts
- * the days that had both, this screen prints that count, and when it is a
- * minority of the range the footnote says so out loud.
- *
- * Health Connect frequently reports no resting energy at all, in which case
- * there is no balance to draw and the card says which half is missing rather
- * than showing an empty chart.
+ * Health Connect frequently reports no resting energy at all, in which case there
+ * is no balance to draw and the card says which half is missing.
  */
 export default function BalanceScreen() {
   const { t } = useTranslation(['activity', 'progress', 'common'])
@@ -59,27 +53,19 @@ export default function BalanceScreen() {
   }))
 
   /**
-   * The three-way split, as RANGE TOTALS.
+   * The three-way split, as range totals. As three daily figures they were not
+   * comparable with each other, which is the one thing a split has to be: resting
+   * used an average over the days that have a resting figure, while workouts and
+   * walking were range totals divided by every day. With one day of watch data in
+   * seven that reads "Resting 1,580, Walking 104" for a day whose real walking
+   * was 437.
    *
-   * This was three daily figures first, and they were not comparable with each
-   * other — which is the one thing a split has to be. Resting used
-   * `resting_kcal_avg`, an average over the days that HAVE a resting figure,
-   * while workouts and walking were range totals divided by every day in the
-   * range. With one day of watch data in seven that reads "Resting 1,580,
-   * Walking 104" for a day whose real walking was 437, and the bar inherits the
-   * skew because its shares come from the same numbers.
+   * Totals fix it, because all three are sums from the same function over the
+   * same window and `walking` is active energy minus sessions, so they add up to
+   * the range's whole burn by construction.
    *
-   * Totals fix it because all three come from the same function over the same
-   * window: `resting_kcal_total`, `session_kcal` and `walking_kcal` are sums,
-   * and `walking` is defined as active energy minus sessions, so the three add
-   * up to the range's whole burn by construction. The bar is then exactly
-   * proportional and the rows are exactly what it is proportional to.
-   *
-   * WHICH MAKES THE HEADING LOAD-BEARING. A total is only readable next to the
-   * window it is a total OF, and this card's heading did not name one — so
-   * "Resting 48,775 kcal" sat on the 30-day view with nothing to divide it by.
-   * `SPLIT_KEY` puts the range in the heading, which is where the rest of this
-   * comment always claimed it was.
+   * Which makes the heading load-bearing: a total is only readable next to the
+   * window it is a total of, and `SPLIT_KEY` puts the range in it.
    */
   const restingTotal = summary.data?.restingKcalTotal ?? 0
   const workoutsTotal = summary.data?.sessionKcal ?? 0

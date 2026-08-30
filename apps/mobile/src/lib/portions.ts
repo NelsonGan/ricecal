@@ -1,18 +1,13 @@
 /**
- * Serving labels, made fit to read.
+ * Serving labels, made fit to read. An imported label is written for a database
+ * row rather than a person: "1 medium paper (8-5/8" dia)", "383 GRM", "Quantity
+ * not specified". Rendered as they are, a user sees `2 × 1 medium paper 9-5 dia`
+ * on their lunch.
  *
- * The catalogue is imported, and an imported serving label is written for a
- * database row rather than for a person: "1 medium paper (8-5/8" dia)", "383
- * GRM", "1.0 cup, loosely packed", "Quantity not specified". Rendered as-is
- * next to a portion these read as gibberish — a user seeing `2 × 1 medium
- * paper 9-5 dia` on their lunch has no idea what the app is claiming.
- *
- * So a label earns its place: the count comes off (the quantity beside it
- * already says how many), the parenthetical measurements and the trailing
- * qualifiers come off, and what is left has to look like something a person
- * would say. Anything else is dropped, and the caller falls back to the plain
- * word for a portion. Dropping a label costs nothing — the calories next to it
- * are what the row is actually for.
+ * So a label earns its place: the count comes off, since the quantity beside it
+ * says how many, along with the parenthetical measurements and the trailing
+ * qualifiers, and what is left has to look like something a person would say.
+ * Anything else is dropped and the caller falls back to the plain word.
  */
 
 /** Unit codes from the import that mean nothing outside a spreadsheet. */

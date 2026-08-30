@@ -8,15 +8,14 @@ import { rescheduleReminders } from '@/lib/notifications'
  * Keeps the phone's scheduled reminders equal to the user's settings.
  *
  * Mounted once, inside the tabs. It watches the two queries that decide what
- * should be scheduled and rewrites the schedule whenever they change — which
- * covers turning a reminder on, moving a meal, editing quiet hours, and the
- * case nothing else does: signing in on a new phone, where the settings arrive
- * from Postgres and the device has nothing queued at all.
+ * should be scheduled and rewrites the schedule whenever they change: turning a
+ * reminder on, moving a meal, editing quiet hours, and the case nothing else
+ * covers, signing in on a new phone where the settings arrive from Postgres and
+ * the device has nothing queued.
  *
  * The copy is passed in rather than read inside the scheduler because a
- * notification is scheduled once and delivered days later: whatever language
- * the user had when they turned it on is the language it fires in, and
- * `t` is only available in a component.
+ * notification is scheduled once and delivered days later, so whatever language
+ * the user had when they turned it on is the language it fires in.
  */
 export function useReminderSync(): void {
   const { t } = useTranslation(['profile', 'common'])

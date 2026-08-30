@@ -19,16 +19,13 @@ export type Scene = 'single' | 'composite' | 'packaged' | 'unclear'
 /**
  * One visible part of a composite plate, with the model's own sizing.
  *
- * The kcal figure is what makes component resolution work at all: catalogue
- * search ranks by name, so "white rice" can top-rank rice flour at 578 kcal. The
- * model's per-portion estimate gives each part a band to match within, and when
- * nothing in the catalogue fits it prices that part as an estimate, so a
- * breakdown never dies because one side dish was unsearchable.
+ * The kcal figure is what makes component resolution work: catalogue search
+ * ranks by name, so "white rice" can top-rank rice flour at 578 kcal. The
+ * model's per-portion estimate gives each part a band to match within.
  *
  * `kcal` is for one of the thing and `count` says how many are on the plate,
- * which is the only shape that makes the breakdown editable. Two chicken wings
- * folded into a single 180 kcal row leaves the user a stepper that moves in units
- * of two wings.
+ * which is the only shape the breakdown can be edited in: two chicken wings
+ * folded into one row leaves a stepper that moves in units of two wings.
  */
 export type VisionComponent = {
   name: string
@@ -37,13 +34,11 @@ export type VisionComponent = {
   /**
    * What one of them weighs, edible parts only: no bone, no shell, no skewer.
    *
-   * The size signal that actually survives contact with a photograph. A model asked
-   * only for calories priced a satay stick at 180 kcal and a slice of lap cheong at
-   * 217, and because the catalogue was then searched within a band around those
-   * figures, the rows that would have corrected them were the ones the band
-   * excluded. Asked what the stick weighs it answers 30 g, which is both closer to
-   * true and, unlike a calorie count, checkable: against the macro grams it also
-   * reported, and against the catalogue rows that state their own serving weight.
+   * The size signal that survives contact with a photograph. Asked only for
+   * calories the model priced a satay stick at 180 kcal, and the band around
+   * that figure then excluded the very catalogue rows that would have corrected
+   * it. Asked what the stick weighs it answers 30 g, which is checkable against
+   * the macro grams beside it.
    */
   grams: number | null
   /** Calories for ONE of them, never the total for `count` of them. */
@@ -59,23 +54,18 @@ export type VisionItem = {
   specific_query: string
   generic_query: string
   /**
-   * How many whole units of this dish are on the table, when the dish is a
-   * countable thing rather than a plate of something: three durian seeds, two roti
-   * canai, six dumplings. 1 for a bowl of laksa.
-   *
-   * It becomes the entry's own portion, which is the only reading that makes sense
-   * of the row: three durian logged as "1 cup" is both wrong and unfixable by the
-   * stepper next to it, because the stepper counts cups.
+   * How many whole units of this dish are on the table, when the dish is
+   * countable: three durian seeds, two roti canai, six dumplings. 1 for a bowl
+   * of laksa. It becomes the entry's own portion, so three durian logged as
+   * "1 cup" is unfixable by the stepper beside it.
    */
   count: number
   components: VisionComponent[]
   /**
-   * What one unit of this dish weighs, edible parts only.
-   *
-   * Read for the same reason a component's is, one level up: three durian are
+   * What one unit of this dish weighs, edible parts only. Three durian are
    * priced per seed, and a seed is 40 g of flesh whatever the model guesses it
-   * costs. Null for a plate that came back as a list of parts, where the parts
-   * carry the mass and the dish is their sum.
+   * costs. Null when the plate came back as a list of parts, which carry the
+   * mass themselves.
    */
   grams: number | null
   serving_hint: string | null
@@ -90,21 +80,18 @@ export type VisionItem = {
    */
   suggested_edits: string[]
   /**
-   * The drawing for the row, chosen out of our own set.
-   *
-   * Filled in on the typed path only. A photographed meal has the photograph, and
-   * `food_logs` will not hold both.
+   * The drawing for the row, chosen out of our own set. Filled in on the typed
+   * path only: a photographed meal has the photograph, and `food_logs` will not
+   * hold both.
    */
   icon: IconChoice | null
 }
 
 /**
- * A nutrition panel read straight off the packet.
- *
- * Photographing the label instead of the food is a deliberate act: the person is
- * telling the app that the answer is printed here. So this path does not go near
- * the catalogue or the estimator. The numbers are the label's, and the only
- * judgement left is how many servings were eaten, which defaults to one.
+ * A nutrition panel read straight off the packet. Photographing the label
+ * instead of the food says the answer is printed there, so this path skips the
+ * catalogue and the estimator: the numbers are the label's, and the only
+ * judgement left is how many servings were eaten.
  */
 export type NutritionLabel = {
   /** What the packet is, as printed: "Milo Activ-Go", "Jacob's Cream Crackers". */
@@ -127,11 +114,9 @@ export type Vision = {
   /** Set when the photo is a nutrition panel rather than food. */
   label?: NutritionLabel
   /**
-   * The photo has nothing edible in it.
-   *
-   * Distinct from "unclear": a blurred plate is still a meal and the cascade will
-   * do its best with it, but a photo of a cat is not a meal and must not become
-   * calories in someone's diary. The scan answers "no food" and writes nothing.
+   * The photo has nothing edible in it. Distinct from "unclear": a blurred
+   * plate is still a meal, but a photo of a cat must not become calories in
+   * somebody's diary. The scan answers "no food" and writes nothing.
    */
   noFood?: boolean
 }
@@ -158,13 +143,10 @@ export type MockSteer = {
 }
 
 /**
- * What a fix-by-typing instruction means for the entry.
- *
- * Four shapes, because corrections come in four kinds: the amount was wrong
- * (quantity); a part of the same dish was added, removed or resized, priced as
- * the current catalogue figure plus a model-estimated delta rather than a
- * re-guess of the whole plate; the dish itself was wrong, which re-describes it
- * and re-runs the whole cascade; or the text is not about this food.
+ * What a fix-by-typing instruction means for the entry. Four kinds: the amount
+ * was wrong; a part was added, removed or resized, priced as a delta on the
+ * catalogue figure rather than a re-guess of the plate; the dish itself was
+ * wrong, which re-runs the cascade; or the text is not about this food.
  */
 export type Interpretation =
   | { action: 'quantity'; factor: number }
@@ -173,51 +155,44 @@ export type Interpretation =
       kcal_delta: number
       name: string
       /**
-       * The part the correction is about: an existing ingredient to drop, or the name
-       * of one to add. Null when the change is about the dish as a whole. Without it an
-       * adjustment could only be applied to the plate's total, which meant throwing the
-       * breakdown away to keep the arithmetic honest.
+       * The part the correction is about: an existing ingredient to drop, or
+       * the name of one to add. Null when the change is about the dish as a
+       * whole. Without it an adjustment could only move the plate's total,
+       * which meant throwing the breakdown away to keep the arithmetic honest.
        */
       part: string | null
       /**
-       * The part `part` takes the place of, when one thing on the plate turned out to
-       * be a different thing.
+       * The part `part` takes the place of, when one thing on the plate turned
+       * out to be a different thing. "It was rendang chicken not fried chicken"
+       * corrects one side of a four-part plate; without somewhere to put it the
+       * interpreter called the whole meal misidentified and re-resolved the
+       * rice, the sambal and the egg nobody had mentioned.
        *
-       * "It was rendang chicken not fried chicken" is one correction to one side of
-       * a four-part plate. Without somewhere to put it the interpreter had to call
-       * the whole meal misidentified, which re-resolved the rice, the sambal and the
-       * egg nobody had mentioned.
-       *
-       * Null for every other kind of adjustment, including additions and removals,
-       * which are the presence of a part changing rather than its identity.
+       * Null for every other adjustment, including additions and removals,
+       * which change a part's presence rather than its identity.
        */
       replaces: string | null
       /**
-       * What the new food costs, at the count the part it replaces is logged at. Only
-       * meaningful alongside `replaces`.
-       *
-       * A swap is the one adjustment where the delta is the wrong question to ask. "It
-       * was rendang chicken not fried chicken" against a 247 kcal fried chicken came
-       * back as a delta of -172, the model's arithmetic putting rendang at 75 kcal.
-       * Asked instead what rendang chicken costs, the same model answers 280.
+       * What the new food costs, at the count the part it replaces is logged
+       * at. Only meaningful alongside `replaces`, and the one adjustment where
+       * a delta is the wrong question: against a 247 kcal fried chicken the
+       * model answered -172, putting rendang at 75 kcal. Asked what rendang
+       * chicken costs, it answers 280.
        */
       part_kcal: number | null
       /**
-       * How many of that part were added or taken away, when the user counted them out
-       * loud. "Two more skewers" is 2, and applying it as calories instead turned seven
-       * skewers into ten: the model's estimate for two skewers divided by what one
-       * costs does not come back as two.
+       * How many of that part were added or taken away, when the user counted
+       * them out loud. "Two more skewers" is 2; applied as calories it turned
+       * seven skewers into ten.
        */
       count: number | null
       /**
-       * How many of that part there are, when the user states an amount rather than a
-       * change. "Only three skewers" is 3.
+       * How many of that part there are, when the user states an amount rather
+       * than a change. "Only three skewers" is 3.
        *
-       * Distinct from `count` because the two cannot be told apart after the fact and
-       * mean opposite things on a plate of six: as a change, three skewers is nine.
-       * Without it "only 3 skewers" had nowhere sensible to go and came back as
-       * `quantity` 0.5, which halved the plate, so the lontong nobody mentioned was
-       * halved along with the satay.
+       * Distinct from `count`, which means the opposite on a plate of six: as a
+       * change, three skewers is nine. Without it "only 3 skewers" came back as
+       * `quantity` 0.5 and halved the lontong nobody mentioned.
        */
       total: number | null
     }
@@ -225,19 +200,15 @@ export type Interpretation =
   | {
       action: 'none'
       /**
-       * Why nothing is going to happen, and the two answers are not the same
-       * failure.
+       * Why nothing is going to happen, and the two are not the same failure.
        *
-       * `not_a_correction` is the model reading the text and deciding it has no
-       * calories in it, which is a RESULT: "extra spicy" is a fine thing to type
-       * and the honest answer is that the entry does not change. `unusable` is
-       * the model answering in a shape this function cannot act on, which is a
-       * failure of the call and worth one more try before the user is told
-       * anything.
+       * `not_a_correction` is a result: the model read the text and decided it
+       * has no calories in it, which is the honest answer to "extra spicy".
+       * `unusable` is an answer this function cannot act on, which is a failed
+       * call and worth one more try.
        *
-       * The client says different things for the two, because "that does not
-       * change the calories" and "we could not read that" send somebody to
-       * different next actions.
+       * The client says different things for the two, because they send
+       * somebody to different next actions.
        */
       code: 'not_a_correction' | 'unusable'
       reason: string
@@ -255,28 +226,25 @@ export function mockActive(): boolean {
 }
 
 /**
- * One OpenRouter chat call returning parsed JSON. Throws on anything else.
- *
- * Exported for `recipe.ts`, which makes two calls of its own. They live in their
- * own file because they answer to recipes rather than to the scan cascade, but
- * there is no second way to talk to a model and this is it.
- *
- * One retry, only for failures a retry can fix: rate limits, provider hiccups,
- * timeouts. Everything below a model call is a cheaper tier, so a transient 429
- * costing the user a catalogue match is the expensive way to save 700ms.
- */
-/**
  * How much room an answer gets when a call site does not say.
  *
- * Generous, because a ceiling is not a bill: tokens are charged as they are
- * generated, so an answer that fits in 200 costs 200 whatever this number says.
- * The only thing a tight ceiling buys is `finish_reason: length` with no
- * content in the body — the model spent the whole allowance thinking and never
- * got to the JSON — which is a silent failure of whatever feature asked. It has
- * cost this app one already; see `INTERPRET_MAX_TOKENS`.
+ * Generous, because a ceiling is not a bill: tokens are charged as generated,
+ * so an answer that fits in 200 costs 200 whatever this says. A tight ceiling
+ * only buys `finish_reason: length` with no content in the body, which is a
+ * silent failure of whatever feature asked. See `INTERPRET_MAX_TOKENS`.
  */
 const DEFAULT_MAX_TOKENS = 2000
 
+/**
+ * One OpenRouter chat call returning parsed JSON. Throws on anything else.
+ *
+ * Exported for `recipe.ts`, which makes two calls of its own but has no second
+ * way to talk to a model.
+ *
+ * One retry, only for failures a retry can fix: rate limits, provider hiccups,
+ * timeouts. Everything below a model call is a cheaper tier, so a transient 429
+ * costing a catalogue match is the expensive way to save 700ms.
+ */
 export async function chatJSON(
   meter: Meter,
   messages: unknown[],
@@ -286,13 +254,10 @@ export async function chatJSON(
   if (!key) throw new Error('OPENROUTER_API_KEY not set')
 
   const attempt = async (): Promise<unknown> => {
-    // Counted before the request rather than after, so a call that times out still
-    // shows up in the trace as something we paid for. The retry below comes back
-    // through here and counts again, which is right: a retried 429 is a second
-    // request and OpenRouter bills it as one.
-    //
-    // Counting only. The ceiling is claimed once per scan at the top of the
-    // endpoint.
+    // Counted before the request, so a call that times out still shows in the
+    // trace as something we paid for. The retry counts again, since OpenRouter
+    // bills it as a second request. Counting only: the ceiling is claimed once
+    // per scan at the top of the endpoint.
     meter.record()
 
     const res = await fetch(OPENROUTER_URL, {
@@ -312,22 +277,13 @@ export async function chatJSON(
         max_tokens: maxTokens,
         temperature: 0.2,
         response_format: { type: 'json_object' },
-        // OFF, NOT MERELY LOW, and this is the second time it has had to be.
-        //
-        // qwen3.7-flash reasons by default. The first symptom was speed: it
-        // burned 20-30s per call thinking about a JSON echo, and three
-        // sequential calls put a scan past the client's 60s request timeout, so
-        // the app reported failure while the entries landed anyway.
-        //
-        // The second symptom was worse, because nothing reported it. Reasoning
-        // tokens come out of `max_tokens`, so a model that thinks past the
-        // ceiling returns `finish_reason: length` with an EMPTY body — no JSON,
-        // no error, nothing to parse. Every caller here had somewhere quiet to
-        // put that: the vision call fell to the archetype floor and wrote a
-        // guessed "Mixed meal" onto somebody's day, and the fix-by-typing
-        // interpreter answered "could not apply that, try rewording it" to
-        // corrections that were fine. Both of the bugs this was reported as are
-        // this line being absent.
+        // Off, not merely low. qwen3.7-flash reasons by default, which cost
+        // 20-30s per call and put three sequential calls past the client's 60s
+        // timeout. Worse, reasoning tokens come out of `max_tokens`, so a model
+        // that thinks past the ceiling returns `finish_reason: length` with an
+        // empty body: the vision call then wrote a guessed meal onto somebody's
+        // day, and the refine interpreter answered "could not apply that" to
+        // corrections that were fine.
         //
         // Models with no reasoning mode ignore the field.
         reasoning: { enabled: false },
@@ -342,16 +298,12 @@ export async function chatJSON(
     const body = await res.json()
     const choice = body?.choices?.[0]
     const text: string = choice?.message?.content ?? ''
-    // An empty body is a provider hiccup, not an answer — and JSON.parse('')
-    // throws "Unexpected end of JSON input", which reads like a bad model
-    // rather than no model at all. It says why, and whether saying it again
-    // could possibly help.
+    // An empty body is a provider hiccup rather than an answer, and
+    // JSON.parse('') throws a message that reads like a bad model.
     //
-    // `finish_reason: length` is NOT retryable, and that distinction cost a
-    // feature. It means the model spent the whole ceiling before it wrote any
-    // JSON, so the identical request with the identical ceiling has nothing new
-    // to run into — the retry was a second bill for the same failure. The fix
-    // for that case is a ceiling with room in it, at the call site.
+    // `finish_reason: length` is not retryable: the model spent the whole
+    // ceiling before writing any JSON, so an identical request has nothing new
+    // to run into. The fix is a bigger ceiling at the call site.
     if (!text.trim()) {
       const reason = choice?.finish_reason ?? 'none'
       throw Object.assign(new Error(`OpenRouter returned no content (finish_reason: ${reason})`), {
@@ -366,9 +318,8 @@ export async function chatJSON(
   try {
     return await attempt()
   } catch (error) {
-    // Timeouts abort as DOMException; treat those as retryable too. A parse
-    // error is NOT — the model answered, it just answered badly, and asking
-    // the identical question again mostly buys the identical answer.
+    // Timeouts abort as DOMException, so those are retryable too. A parse error
+    // is not: the model answered badly, and asking again buys the same answer.
     const retryable =
       (error as { retryable?: boolean }).retryable === true || error instanceof DOMException
     if (!retryable) throw error
@@ -383,14 +334,10 @@ const clampNumber = (v: unknown, lo: number, hi: number, fallback: number): numb
 }
 
 /**
- * The weight of one unit, or null.
- *
- * Null rather than a default, because everything that reads grams branches on
- * having them: a missing weight leaves the old kcal-only path in place, and a
- * defaulted one would put every unsized part at the same fictitious size. The
- * bounds are what a single piece of food on a plate can weigh. Under 2 g is a
- * garnish the model has confused for a portion, over 2 kg is a whole roast being
- * described as one of several.
+ * The weight of one unit, or null. Null rather than a default, because
+ * everything reading grams branches on having them and a default would put
+ * every unsized part at the same fictitious size. The bounds are what one piece
+ * of food can weigh: under 2 g is a garnish, over 2 kg is a whole roast.
  */
 const unitGrams = (v: unknown): number | null => {
   const n = Number(v)
@@ -399,14 +346,11 @@ const unitGrams = (v: unknown): number | null => {
 }
 
 /**
- * How many of the item there were, allowing for less than one of it.
- *
- * Whole numbers at one and above, because "1.5 plates" is a calorie figure
- * pretending to be a count. Below one it is quarters, and that range exists for a
- * single reason: a fraction of a serving has nowhere else to live. `grams` is
- * defined to the model as the weight of one whole unit, so it cannot also carry
- * the half. "Half a plate of char kuey teow" put the half in the bounds and in
- * the words, and the diary logged a whole plate every time.
+ * How many of the item there were, allowing for less than one. Whole numbers at
+ * one and above, because "1.5 plates" is a calorie figure pretending to be a
+ * count. Quarters below one, because `grams` is defined as the weight of one
+ * whole unit and cannot also carry the half: "half a plate of char kuey teow"
+ * put the half in the bounds and logged a whole plate every time.
  */
 const unitCount = (v: unknown): number => {
   const n = clampNumber(v, 0.25, 20, 1)
@@ -422,9 +366,8 @@ function shapeVision(raw: unknown): Vision {
   // the shape is about a meal, and there isn't one.
   if (o.no_food === true) return { scene: 'unclear', items: [], noFood: true }
 
-  // A nutrition panel. Everything below this line is about guessing what food
-  // is in a photo, and a label is the one case where nothing has to be
-  // guessed — so it short-circuits the whole shape.
+  // A nutrition panel short-circuits the whole shape: everything below is
+  // about guessing what food is in a photo, and a label needs no guessing.
   const raw_label = (o.nutrition_label ?? null) as Record<string, unknown> | null
   if (raw_label && Number(raw_label.kcal) > 0) {
     const opt = (v: unknown): number | null => {
@@ -502,20 +445,18 @@ function shapeVision(raw: unknown): Vision {
                   ? Math.min(n, 9999)
                   : null
               }
-              // A glass of water is not part of a meal's calories, and listing it made a durian
-              // into "Durian with water": two components, so the plate was decomposed instead
-              // of counted, and one of its parts was a search for the word "water".
+              // A glass of water is not part of a meal's calories, and listing
+              // it made a durian into "Durian with water": two components, so
+              // the plate was decomposed instead of counted.
               //
-              // Explicitly zero, and this is the whole distinction. `Number(null)` is 0, so a
-              // model that answered the name and the weight of a part but left its calories out
-              // had that part deleted, and the part a model is least willing to price is the
-              // plain base of the dish it is looking at. A basket of wings came back as celery
-              // and dip; a char kuey teow came back as prawns and lap cheong with no noodles
-              // under them. An unpriced part is the catalogue's question to answer, not a
-              // reason to pretend it is not on the plate.
+              // Explicitly zero is the whole distinction. `Number(null)` is 0,
+              // so treating that as zero deleted every unpriced part, and the
+              // part a model is least willing to price is the plain base of the
+              // dish: a char kuey teow came back as prawns and lap cheong with
+              // no noodles under them.
               //
-              // Written against the raw value rather than against `Number(...)` so that null
-              // and undefined are not zero, and loosely enough that "0" and 0.0 still are.
+              // Written against the raw value so null and undefined are not
+              // zero, and loosely enough that "0" and 0.0 still are.
               if (o.kcal !== null && o.kcal !== undefined && Number(o.kcal) === 0) return []
               return [
                 {
@@ -532,8 +473,8 @@ function shapeVision(raw: unknown): Vision {
               ]
             })
             // Made to agree with their own weight before anything downstream
-            // reads them: `reconcile` is where 180 kcal in a 30 g satay stick
-            // stops being a number the catalogue search has to work around.
+            // reads them. `reconcile` is where 180 kcal in a 30 g satay stick
+            // stops being a number the catalogue search works around.
             .map((component) => ({ ...component, ...reconcile(component) }))
             .slice(0, 8),
           low,
@@ -564,24 +505,16 @@ function shapeVision(raw: unknown): Vision {
 
 // The prompt a meal is described to the cascade in.
 //
-// Two entry points answer in the same shape, a photograph and a typed sentence,
-// and everything downstream of them is the same code, so the rules about that
-// shape have to be the same words. They were not: the size anchors below were
-// derived from a fortnight of watching the photo path price a satay stick at
-// three different numbers, and a text prompt written separately would have had to
-// learn all of it again, wrong, in its own time.
-//
-// What is not shared is the framing, because the two calls have different
-// authorities. A photo has one witness and it is the model. A sentence was
-// written by the person who ate the meal.
+// A photograph and a typed sentence answer in the same shape and everything
+// downstream is the same code, so the rules about that shape are the same words.
+// What is not shared is the framing: a photo has one witness and it is the
+// model, where a sentence was written by the person who ate the meal.
 
 /**
- * The shape sentence, and whether an item declares an icon.
- *
- * A function rather than a constant for the reason `recipeSchema` gives: the
- * literal schema is the strongest instruction in the prompt, and a key described
- * only in prose at the end is a key the model leaves out about half the time.
- * Only the typed path asks for one.
+ * The shape sentence, and whether an item declares an icon. A function rather
+ * than a constant for the reason `recipeSchema` gives: the literal schema is
+ * the strongest instruction in the prompt, and a key described only in prose is
+ * one the model leaves out about half the time.
  */
 const itemSchema = (withIcon: boolean): string =>
   '{"scene": "single|composite|packaged|unclear", ' +
@@ -605,10 +538,9 @@ const COUNT_VS_COMPONENTS =
   '— leave "components" empty for those. Several DIFFERENT foods are components: ' +
   'rice, the protein, each side, a drink with calories in it. Water, ice and an ' +
   'empty glass are not food and are never listed. ' +
-  // The two counts are one number in two places, and a model that reaches for
-  // the wrong one loses it: "two roti canai with dhal" came back as ONE item at
-  // count 2 whose parts were both priced for a single plate, so whichever end
-  // read the answer got half the meal or twice the dhal.
+  // The two counts are one number in two places: "two roti canai with dhal"
+  // came back as one item at count 2 whose parts were priced for a single
+  // plate, so either end of it got half the meal or twice the dhal.
   'THE TWO COUNTS ARE NOT INTERCHANGEABLE. As soon as you list components the ' +
   'item\'s own "count" is 1, always, and how many there are of each thing lives on ' +
   'that thing\'s component "count". Two roti canai with a dhal is count 1 with ' +
@@ -634,11 +566,9 @@ const COMPONENT_FIELDS =
   'A component name is the food alone ("coconut rice") — not the dish it came from, ' +
   'and never a parenthesised recipe. ' +
   // A part wearing the dish's name is looked up as the dish, and the catalogue
-  // is mostly whole dishes. A photographed chicken rice came back with parts
-  // "boiled chicken" and "chicken rice", and the second matched a composition
-  // table row for the complete plate — so the bird was counted once as itself
-  // and again inside the rice, and the entry carried 72.6 g of protein for a
-  // meal holding about 38.
+  // is mostly whole dishes. A chicken rice came back with parts "boiled
+  // chicken" and "chicken rice", so the bird was counted once as itself and
+  // again inside the rice: 72.6 g of protein for a meal holding about 38.
   "NEVER GIVE A PART THE WHOLE DISH'S NAME. The rice under a chicken rice is " +
   '"seasoned rice", never "chicken rice"; the noodles in a laksa are "rice noodles", ' +
   'never "laksa"; the rice under a nasi lemak is "coconut rice". A part that repeats ' +
@@ -649,42 +579,33 @@ const COMPONENT_FIELDS =
   'that dish and are never a part of their own — a fried noodle is already an oily food. ' +
   'Only a sauce served on the side, in its own dish, is separate. '
 
-// Size, as a weight rather than as a calorie count.
-//
-// Denominated in kcal it did not hold: a satay stick priced at 180, a slice of
-// lap cheong at 217. A model has no way to check a calorie figure, so an
-// inflated one stands, and the cascade then searched the catalogue within a
-// band around it, throwing out the very rows that disagreed. A weight it can
-// check, against the macro grams beside it and against food being mostly water.
+// Size, as a weight rather than as a calorie count. In kcal it did not hold: a
+// satay stick priced at 180, a lap cheong slice at 217. A model cannot check a
+// calorie figure, and the band around an inflated one then excluded the rows
+// that disagreed. A weight it can check, against the macro grams beside it.
 const SIZE_ANCHORS =
   'SIZE IS A WEIGHT AND THE WEIGHT COMES FIRST. For every part decide "grams" — what ONE of ' +
   'it weighs, edible parts only, no bone, shell, skewer or wrapper — and only then work out ' +
   'what that weight costs. A calorie figure not arrived at from a weight is a guess about a ' +
   'portion nobody measured, and it runs high. ' +
-  // Weighing one of a thing and counting how many there are are two different
-  // answers, and asking hard for the first cost the second: a plate of four
-  // satay came back as one 30 g stick, which is a correct weight and a third
-  // of a meal.
+  // Weighing one thing and counting how many there are are different answers,
+  // and asking hard for the first cost the second: four satay came back as one
+  // 30 g stick, which is a correct weight and a third of a meal.
   '"grams" and "kcal" describe ONE unit, and "count" is how many of them are there. Both are ' +
   'needed and neither substitutes for the other: four skewers on a plate are count 4 at 30 g ' +
   'each, never count 1 at 120 g and never count 1 at 30 g. Count what you can see and say so. ' +
   'Count whole units, not cut pieces: an egg sliced in half is one egg, an apple in slices ' +
   'is one apple. ' +
-  // Part of a serving is a COUNT below one, and it has to be, because "grams"
-  // is defined above as the weight of one whole unit and cannot also carry the
-  // fraction. Without this there was nowhere to put it: "half a plate of char
-  // kuey teow" arrived with the half in the calorie bounds and in the words,
-  // both of which the app has to disbelieve or ignore, and a whole plate was
-  // logged three times out of three.
+  // Part of a serving has to be a count below one, because "grams" is the
+  // weight of one whole unit and cannot also carry the fraction. Without this,
+  // "half a plate of char kuey teow" put the half in the bounds and the words,
+  // and logged a whole plate three times out of three.
   'LESS THAN ONE of something is a "count" below 1 — half a plate is count 0.5 at the ' +
   'grams and kcal of a WHOLE plate, a quarter is 0.25. Never shrink "grams" to express ' +
   'a part portion; grams is always one whole unit. Only for a portion that really is a ' +
   'fraction of one serving, and never as a way of saying "a small one". ' +
-  // Roti is here because it was the one part the anchors did not cover and the
-  // model doubled it: a photographed mamak breakfast came back with 240 g per
-  // roti canai, which the catalogue then priced at 808 kcal each and put a
-  // 1,981 kcal breakfast in the diary. A flatbread the size of a dinner plate
-  // is thin, and a plate of them is not half a kilogram.
+  // Roti was the gap the anchors did not cover: a mamak breakfast came back at
+  // 240 g per roti canai, priced at 808 kcal each, for a 1,981 kcal breakfast.
   'Grams for ONE: satay stick 25-35, dumpling 25-35, prawn 10-20, chicken wing piece 35-50, ' +
   'drumstick 90-120, fried chicken thigh 120-160, slice of lap cheong 10-15, boiled egg ' +
   '50-60, slice of bread 30-40, roti canai or paratha 90-120, chapati 45-60, naan 90-140, ' +
@@ -692,18 +613,15 @@ const SIZE_ANCHORS =
   'scoop of cooked rice 150-220, drained noodles 200-300, ladle of curry or soup 150-250, ' +
   'spoon of sambal or sauce 15-25, single-patty burger 100-130, medium fries 110-130, ' +
   'canned drink 330, ' +
-  // The gap this list had, and it is a Malaysian staple: a dish of sliced
-  // poached chicken beside a chicken rice came back at 180-260 g of meat three
-  // runs out of three, which is most of a bird and about twice what is on the
-  // plate. Meat is the densest thing in protein on a plate, so an overweighed
-  // piece of it is the single most expensive size mistake available.
+  // Poached chicken beside a chicken rice came back at 180-260 g three runs out
+  // of three, which is most of a bird. Meat is the densest thing in protein on a
+  // plate, so overweighing it is the most expensive size mistake available.
   'sliced poached, steamed or roast chicken served beside rice 90-140, ' +
   'quarter chicken off the bone 100-150, half chicken off the bone 200-280, ' +
   'grilled or steamed fish fillet 100-150, slice of char siu 15-25. ' +
-  // The general rule behind those, because a list cannot cover every dish. It
-  // says nothing about "count" on purpose: the two counts are settled further up
-  // and a second mention of them here, in a block about weight, is how a plate of
-  // toast came back as two slices of two slices.
+  // The general rule behind those, since a list cannot cover every dish. It
+  // says nothing about "count": that is settled further up, and mentioning it
+  // again here is how a plate of toast came back as two slices of two slices.
   "ONE PERSON'S HELPING OF MEAT OR FISH IS 80-150 g. Over 200 g is a sharing dish, and " +
   'is worth checking rather than assuming. Bone, shell and skin left on the plate are ' +
   'not food: a quarter chicken is 250 g on the scales and about 130 g to eat, and the ' +
@@ -719,9 +637,8 @@ const SIZE_ANCHORS =
   'together they must weigh LESS than the unit, and much less for anything cooked, because ' +
   'most of a cooked food is water. Check that 4*carbs + 4*protein + 9*fat lands on your kcal ' +
   'before answering; where they disagree the weight is right and the kcal is wrong. ' +
-  // The mass check one level up. Individually plausible parts still add up to
-  // an impossible meal: a bowl of laksa came back with four 120 g chicken
-  // thighs in it, which is most of a chicken in a bowl of soup.
+  // The mass check one level up: individually plausible parts still add up to
+  // an impossible meal, such as four 120 g chicken thighs in a bowl of laksa.
   'Last, weigh the meal. A bowl of soup or noodles is 400-700 g of food all in, a plate of ' +
   'rice with things on it 350-600 g, a snack or a side 100-250 g. If your parts add up to far ' +
   'more than that, one of them is too big or there are fewer of it than you counted — a ' +
@@ -730,15 +647,15 @@ const SIZE_ANCHORS =
 const TRAILING_FIELDS =
   '"scene" is "composite" when the meal has distinct parts. "serving_hint" ' +
   'is the portion as a person would say it ("1 plate", "1 bowl"). ' +
-  // The item's own weight. It is what the estimator is anchored on when the
-  // catalogue has nothing, which is the tier that most needs an anchor.
+  // The item's own weight, which is what the estimator anchors on when the
+  // catalogue has nothing.
   'The item\'s own "grams" is what ONE unit of the dish weighs, edible parts only — one ' +
   'plate, one bowl, one durian seed, one roti. When "count" is more than 1 it is the weight ' +
   'of ONE of them and never of all of them together: nine apple slices are "count": 9 with ' +
   '"grams": 18, not 160. ' +
-  // The band is arithmetic over the answer already given, and asking for it as
-  // a judgement got a plate of two roti and a dhal bounded at 380-380 while
-  // its own components added to 640.
+  // The band is arithmetic over the answer already given. Asked for as a
+  // judgement, two roti and a dhal came back bounded at 380-380 while their own
+  // components added to 640.
   'kcal_low and kcal_high bound the WHOLE meal, and they are the LAST thing you ' +
   'work out — arithmetic over the answer you have already given, not a second ' +
   'opinion beside it. Add up (kcal x count) over every component you listed, or ' +
@@ -746,11 +663,9 @@ const TRAILING_FIELDS =
   'two bounds: parts of 340 + 2x125 + 60 mean a total of 650, so bounds like ' +
   '550-750 and never 380-380. They are a range — kcal_low is always smaller than ' +
   'kcal_high, never equal to it, even when you are sure of the figure. ' +
-  // The components are what the app actually prices the meal from, so a
-  // disagreement between them and the bounds is a mispriced PART. Told only to
-  // derive the bounds, the model kept a nasi kandar whose four parts added to
-  // 405 and bounded it at 650-850 — the bounds were right and the plate was
-  // logged from the parts.
+  // The components are what the meal is priced from, so a disagreement with the
+  // bounds is a mispriced part. Told only to derive the bounds, the model kept a
+  // nasi kandar whose four parts added to 405 and bounded it at 650-850.
   'If that total does not look like the meal you were told about, the COMPONENT ' +
   'figures are what to correct — each one is a real portion of that food and the ' +
   'app prices the meal from them, so a plate that should be 700 kcal cannot be ' +
@@ -762,15 +677,13 @@ const TRAILING_FIELDS =
   'The item carries no macro fields — only components do.'
 
 /**
- * Where the food is from, said once for all three model prompts: the two here and
- * the recipe reader, which imports this rather than keeping its own copy.
+ * Where the food is from, said once for all three model prompts: the two here
+ * and the recipe reader.
  *
- * Each of these opened with "a Malaysian calorie-tracking app", and the model
- * read that as an instruction about the food rather than about the audience, so a
- * taco or a katsu curry came back as the nearest Malaysian dish. The catalogue is
- * Asian and beyond, so the bias belongs on the tie-break and never on a dish the
- * picture or the sentence names plainly. One constant, because three prompts
- * disagreeing about where food comes from is three different apps.
+ * Each opened with "a Malaysian calorie-tracking app", which the model read as
+ * an instruction about the food rather than the audience, so a taco came back
+ * as the nearest Malaysian dish. The bias belongs on the tie-break and never on
+ * a dish the picture or the sentence names plainly.
  */
 export const KITCHEN =
   'The food is mostly Asian, southeast Asian most of all, so read an ambiguous ' +
@@ -778,11 +691,9 @@ export const KITCHEN =
   'answered on its own terms rather than as the nearest Asian thing to it. '
 
 /**
- * The photo prompt.
- *
- * Exported, along with the other two below, because the eval harness sends these
- * exact strings to the model. A harness carrying its own copy grades a prompt
- * nobody ships.
+ * The photo prompt. Exported, like the other two, because the eval harness
+ * sends these exact strings: a harness with its own copy grades a prompt nobody
+ * ships.
  */
 export const ANALYSE_PHOTO_PROMPT =
   'You identify food in photos for a calorie-tracking app. ' +
@@ -804,14 +715,14 @@ export const ANALYSE_PHOTO_PROMPT =
   'If the panel is only readable per 100g, use those figures and say so in "serving". ' +
   'Otherwise respond with JSON only, matching: ' +
   itemSchema(false) +
-  // ONE MEAL. Anything else is a diary with four rows for one lunch.
+  // One meal. Anything else is a diary with four rows for one lunch.
   'The photo is ONE logged meal. Return ONE item, named as a local menu would print ' +
   'it ("Korean fried chicken with rice and sides"). Only return more than one item ' +
   "when the photo unambiguously shows separate meals — two people's plates. " +
   QUERY_FIELDS +
   COUNT_VS_COMPONENTS +
-  // Only what is on the plate: a guessed part is a control over a number
-  // nobody measured.
+  // Only what is on the plate: a guessed part is a control over a number nobody
+  // measured.
   'Only list components you can SEE as separate things on the plate. A curry, a ' +
   'fried rice, a soup, a sandwich, anything cooked or mixed together is ONE food — ' +
   'leave components empty rather than guessing what went into it. ' +
@@ -821,9 +732,9 @@ export const ANALYSE_PHOTO_PROMPT =
   TRAILING_FIELDS
 
 /**
- * The vision call. Deliberately returns queries and a kcal RANGE, never
- * per-nutrient values — identity comes from the model, numbers come from the
- * catalogue, and tier 4 is the only place model numbers are ever accepted.
+ * The vision call. Returns queries and a kcal range, never per-nutrient values:
+ * identity comes from the model, numbers come from the catalogue, and tier 4 is
+ * the only place model numbers are accepted.
  */
 export async function analysePhoto(
   photoBase64: string | null,
@@ -899,10 +810,9 @@ export async function analysePhoto(
         ],
       },
     ],
-    // Headroom for a full plate with all fields: a response truncated mid-JSON
-    // fails to parse, and a parse failure costs the whole vision tier — a
-    // chicken rice with six components ran out at 1600 and took the scan down
-    // with it.
+    // Headroom for a full plate with all fields. A response truncated mid-JSON
+    // fails to parse and costs the whole vision tier: a chicken rice with six
+    // components ran out at 1600 and took the scan down with it.
     2400,
   )
   return shapeVision(raw)
@@ -918,11 +828,9 @@ export const DESCRIBE_MEAL_PROMPT =
   'not mention, never drop one it does, and never overrule an amount, a size or a ' +
   'calorie figure it states. What it leaves out is yours to fill in — an unstated ' +
   'portion is one ordinary serving as a stall or home kitchen serves it. ' +
-  // Emphatic, and with the consequence spelled out, because the failure is
-  // silent and expensive: one run in three answered "hello, how are you doing
-  // today" with an item, and an item is a meal as far as everything downstream
-  // is concerned. Nothing below this call can tell an invented meal from a
-  // vague one, so this sentence is the only place it can be stopped.
+  // Emphatic, with the consequence spelled out, because the failure is silent:
+  // one run in three answered "hello, how are you doing today" with an item, and
+  // nothing below this call can tell an invented meal from a vague one.
   'FIRST, DECIDE WHETHER THERE IS A MEAL HERE AT ALL. If the text does not say ' +
   'that someone ate something — a greeting, a question, a note to self, a name, ' +
   'an empty or nonsense string — answer {"no_food": true} and nothing else. ' +
@@ -932,8 +840,7 @@ export const DESCRIBE_MEAL_PROMPT =
   'did not eat, and no_food costs them one tap. ' +
   'Otherwise respond with JSON only, matching: ' +
   itemSchema(true) +
-  // ONE MEAL, for the same reason the photo path folds its items: the diary
-  // gets one row per thing logged, and this is one thing logged.
+  // One meal, for the same reason the photo path folds its items.
   'The text is ONE logged meal however many dishes it names. Return ONE item, ' +
   'named the way the person would read it back ("Nasi lemak with fried chicken and ' +
   'teh tarik"). The name is the FOOD and never the portion: "half a plate of char ' +
@@ -941,20 +848,12 @@ export const DESCRIBE_MEAL_PROMPT =
   'calorie bounds. ' +
   QUERY_FIELDS +
   COUNT_VS_COMPONENTS +
-  // The mirror of the photo prompt's "only what you can see": there, parts must be
-  // visible; here, they must have been typed. Left looser than this, the model
-  // answered "nasi lemak" with five components, none of which the person mentioned
-  // and every one of which becomes a row they can edit and a search the catalogue
-  // runs.
+  // The mirror of the photo prompt's "only what you can see": there parts must
+  // be visible, here they must have been typed.
   //
-  // Written as a counting rule rather than as advice, because as advice it did not
-  // hold. The paragraph below said all of this in prose and the model went on
-  // decomposing dishes nobody decomposed: "a bowl of chicken porridge" came back as
-  // rice, chicken and broth; "chicken rice" as coconut rice and roast chicken.
-  //
-  // A count is checkable, and the model can execute it before it writes anything:
-  // read the sentence, count the foods in it, and let that be the length of the
-  // list.
+  // Written as a counting rule rather than as advice, because as prose it did
+  // not hold: "a bowl of chicken porridge" came back as rice, chicken and
+  // broth. A count is checkable before anything is written.
   'BEFORE ANYTHING ELSE, COUNT THE FOODS THE PERSON WROTE. Components are those ' +
   'foods and only those, so the list is exactly as long as the count and never ' +
   'longer. One food written means "components": [] — no exceptions, however many ' +
@@ -969,22 +868,17 @@ export const DESCRIBE_MEAL_PROMPT =
   'So "nasi lemak" has no components, "a bowl of chicken porridge" has none, ' +
   '"200g grilled chicken breast" has none, "nasi lemak with fried chicken" has ' +
   'exactly TWO, and "nasi lemak with an extra egg and a milo ais" has three. ' +
-  // A check the model can run on its own answer. The rule above is a rule, and
-  // rules about not doing something are the ones a model most often reads as
-  // advice: "chicken rice" came back as coconut rice plus roast chicken on
-  // three runs out of three with the rule already in place. Re-reading the
-  // sentence and deleting the surplus is an action, and it has a right answer.
+  // A check the model can run on its own answer. Rules about not doing
+  // something read as advice: "chicken rice" came back as coconut rice plus
+  // roast chicken three runs out of three with the rule already in place.
   'BEFORE YOU ANSWER, count the foods in the text again and compare it with the ' +
   'length of your "components". If the list is longer, you have taken a dish ' +
   'apart: delete the extra parts and leave the dish whole. ' +
   COMPONENT_FIELDS +
   SIZE_ANCHORS +
   // The three ways a sentence pins a portion down, in the order they override
-  // each other.
-  // A size word used to move only the bounds and the hint, and the app can act
-  // on neither: the bounds are a check on an answer and the hint is prose. The
-  // field it has to move is "count", which is the one number that survives into
-  // the logged portion.
+  // each other. A size word used to move only the bounds and the hint, neither
+  // of which the app can act on; the field it has to move is "count".
   'Size words are about the portion and never about the dish: "small", "large", ' +
   '"half a plate", "just a bit" move "count", kcal_low/high and "serving_hint" ' +
   'together, and never the name. A fraction of a serving is a "count" below 1 — ' +
@@ -999,12 +893,10 @@ export const DESCRIBE_MEAL_PROMPT =
   'high, "some rice and chicken" is low. Low is an honest answer, not a failure; ' +
   'the app has a cheaper way to price a vague meal and needs to be told when. ' +
   TRAILING_FIELDS +
-  // Only on this path, where there is no photograph and the row would otherwise be
-  // a name over an empty square. A photographed meal has its picture.
-  //
-  // Dead last in the prompt: the list of ids is the biggest block of text here and
-  // everything after it is read in its shadow. The key itself is declared up in the
-  // schema, which is where a model actually reads one from.
+  // Only on this path, where there is no photograph and the row would otherwise
+  // be a name over an empty square. Dead last in the prompt, because the list of
+  // ids is the biggest block of text here; the key itself is declared up in the
+  // schema, which is where a model reads one from.
   ' ' +
   ICON_INSTRUCTION
 
@@ -1014,18 +906,12 @@ export const describeUserMessage = (text: string): string => `The person typed: 
 /**
  * The text call: a typed meal, in the shape the photo call answers in.
  *
- * Everything after this returns is the same code the camera path runs, because
- * "what did they eat" is the same question however it was asked. Only the asking
- * differs, and it differs in who the authority is.
- *
- * A photo has one witness and it is the model: what is on the plate and how much
- * of it are both inferences, and the whole cascade below exists to check them
- * against a catalogue. A sentence was written by the person who ate the meal.
- * What it states is not evidence to weigh, it is the answer, and the model's job
- * is to name it in terms the catalogue can be searched with and to price the
- * portion it was told about. The prompt says so twice because a model asked to
- * identify food will otherwise reach for the average version of the dish it
- * recognises.
+ * Everything downstream is the same code the camera path runs. What differs is
+ * the authority: a photo has one witness and it is the model, where a sentence
+ * was written by the person who ate the meal. What it states is the answer
+ * rather than evidence, and the model's job is to name it searchably and price
+ * the portion it was told about. The prompt says so twice, because a model
+ * asked to identify food reaches for the average version of the dish.
  */
 export async function describeMeal(
   text: string,
@@ -1035,13 +921,12 @@ export async function describeMeal(
   if (mockActive()) {
     if (mock?.fail === 'vision' || mock?.fail === 'all') throw new Error('mocked describe failure')
     if (mock?.vision) return shapeVision(mock.vision)
-    // Enough of an answer to walk the flow offline: the text names the dish,
-    // a leading number becomes the count, and the band is a plain serving.
+    // Enough to walk the flow offline: the text names the dish, a leading
+    // number becomes the count, and the band is a plain serving.
     const trimmed = text.trim()
     const count = Math.min(12, Math.max(1, Number(trimmed.match(/^(\d+)\b/)?.[1] ?? 1)))
-    // Empty text never reaches here — the endpoint rejects a request with
-    // neither a photo nor words — so the fallback is a name for a string of
-    // digits and not a stand-in meal.
+    // Empty text never reaches here, so the fallback names a string of digits
+    // rather than standing in for a meal.
     const name = trimmed.replace(/^\d+\s*/, '').slice(0, 120) || 'A serving'
     return shapeVision({
       scene: 'single',
@@ -1057,9 +942,7 @@ export async function describeMeal(
           kcal_high: 600 * count,
           confidence: 0.7,
           suggested_edits: ['Half portion', 'Add a fried egg', 'No rice'],
-          // A local run exercises the icon path too, or the one thing that
-          // only happens on this path is the one thing never seen before it
-          // deploys.
+          // So a local run exercises the icon path, which only happens here.
           icon: 'nasi-lemak',
         },
       ],
@@ -1078,10 +961,8 @@ export async function describeMeal(
 }
 
 /**
- * Anything that can join two foods in a sentence.
- *
- * A number counts, because "2 roti canai" is a plural even with nothing else in
- * the line, and so does a slash — menus are written that way.
+ * Anything that can join two foods in a sentence. A number counts, because "2
+ * roti canai" is a plural on its own, and so does a slash.
  */
 const JOINS_TWO_FOODS =
   /(\b(and|with|plus|dan|dengan|serta)\b|[,+&/]|\b(\d+|two|three|four|five|six|seven|eight|nine|ten|a couple|a few)\b)/i
@@ -1089,23 +970,16 @@ const JOINS_TWO_FOODS =
 /**
  * A dish the person named as one thing stays one thing.
  *
- * The prompt says this at length and in three registers, and the model went on
- * taking dishes apart anyway: "chicken rice" came back as coconut rice plus roast
- * chicken, and "a bowl of chicken porridge" as rice, chicken and broth.
+ * The prompt asks for this three ways and the model took dishes apart anyway.
+ * The parts are what the entry is priced from, so an invented breakdown replaces
+ * a catalogue figure for a real dish with a sum of guesses.
  *
- * It matters more than it sounds. Every invented part is a row the user can edit,
- * a search against the catalogue, and a number that has to add back up, and the
- * parts are what the entry is priced from, so an invented breakdown replaces a
- * catalogue figure for a real dish with a sum of guesses about ingredients. It is
- * also just wrong on its face: the rice under a chicken rice is not coconut rice.
+ * Enforced rather than requested, which is possible only here: this is the one
+ * path where the app knows exactly what the person wrote, so a sentence with
+ * nothing that could join two foods had one food in it.
  *
- * So on the typed path it is enforced rather than requested, which is possible
- * here and only here, because this is the one path where the app knows exactly
- * what the person wrote. If their sentence contains nothing that could join two
- * foods, there was one food in it.
- *
- * Deliberately not applied to photographs. There is no sentence to count, and a
- * photo of a mixed plate genuinely does have parts nobody named.
+ * Not applied to photographs, where there is no sentence to count and a mixed
+ * plate genuinely has parts nobody named.
  */
 function keepDishesWhole(text: string, vision: Vision): Vision {
   if (JOINS_TWO_FOODS.test(text)) return vision
@@ -1119,10 +993,8 @@ function keepDishesWhole(text: string, vision: Vision): Vision {
 }
 
 /**
- * One photo, one entry, enforced in code rather than only asked of the model.
- *
- * The vision prompt says everything eaten together is one item, and a model
- * that splits a tray anyway put four rows in the diary for one meal.
+ * One photo, one entry, enforced in code as well as asked of the model: a model
+ * that split a tray anyway put four rows in the diary for one meal.
  */
 export function foldMealItems(vision: Vision): Vision {
   const items = vision.items
@@ -1136,15 +1008,14 @@ export function foldMealItems(vision: Vision): Vision {
     generic_query: primary.generic_query,
     // One meal, whatever it was made of.
     count: 1,
-    // Each folded item becomes a component under its own full name, priced by
-    // the middle of its own band — so the breakdown resolver has both a name
-    // to search and a size to accept a match at, for every part.
+    // Each folded item becomes a component under its own name, priced by the
+    // middle of its own band, so the resolver has a name to search and a size to
+    // accept a match at.
     components: items
       .map((item) => ({
         name: item.name,
         count: 1,
-        // Whatever weight the model gave that item, carried down with it. The
-        // fold changes what a thing is CALLED, not how heavy it was.
+        // The fold changes what a thing is called, not how heavy it was.
         grams: item.grams,
         kcal: Math.round((item.kcal_low + item.kcal_high) / 2),
         carbs_g: null,
@@ -1158,9 +1029,8 @@ export function foldMealItems(vision: Vision): Vision {
     kcal_high: items.reduce((sum, item) => sum + item.kcal_high, 0),
     confidence: Math.min(...items.map((item) => item.confidence)),
     suggested_edits: primary.suggested_edits,
-    // The biggest thing on the tray names the meal, so it draws it too — and
-    // when that one had no drawing, any other part's is still a picture of
-    // something on this plate, which beats the empty square.
+    // The biggest thing on the tray names the meal, so it draws it too. Failing
+    // that, any part's drawing beats the empty square.
     icon: primary.icon ?? items.find((item) => item.icon)?.icon ?? null,
   }
   return { scene: 'composite', items: [merged] }
@@ -1175,10 +1045,9 @@ export type Candidate = {
 }
 
 /**
- * The tier-1 verifier: given the top search hits, which — if any — IS the
- * photographed dish? Returns an index into `candidates`, or null for "none".
- * Zero candidates never reaches here; the caller folds that into the same
- * "no match" outcome.
+ * The tier-1 verifier: given the top search hits, which of them is the
+ * photographed dish? An index into `candidates`, or null. Zero candidates never
+ * reaches here; the caller folds that into the same "no match" outcome.
  */
 export async function pickCandidate(
   item: VisionItem,
@@ -1190,9 +1059,8 @@ export async function pickCandidate(
     if (mock?.fail === 'all') throw new Error('mocked pick failure')
     if (mock?.pick === 'none') return null
     if (typeof mock?.pick === 'number') return mock.pick < candidates.length ? mock.pick : null
-    // Default mock: prefer the candidate whose kcal sits inside the band,
-    // else the first one — deterministic, and exercises the same downstream
-    // paths a real pick would.
+    // Prefer the candidate whose kcal sits inside the band, else the first:
+    // deterministic, and exercises the paths a real pick would.
     const inBand = candidates.findIndex(
       (c) => c.kcal >= item.kcal_low * 0.75 && c.kcal <= item.kcal_high * 1.25,
     )
@@ -1256,8 +1124,8 @@ function shapeNutrition(raw: unknown): Nutrition {
 }
 
 /**
- * Tier 4: nutrition from model knowledge. A SEPARATE call made only after the
- * catalogue has failed — the vision call never returns nutrients, so a good
+ * Tier 4: nutrition from model knowledge. A separate call made only after the
+ * catalogue has failed, since the vision call returns no nutrients, so a good
  * catalogue match can never be averaged against a model opinion.
  */
 export async function estimateNutrition(
@@ -1304,8 +1172,7 @@ export async function estimateNutrition(
           '"carbs_g": number, "protein_g": number, "fat_g": number, "fibre_g": number|null, ' +
           '"sugar_g": number|null, "sodium_mg": number|null}. Values are for the stated ' +
           'portion. null means unknown — never guess fibre, sugar or sodium as 0. ' +
-          // The weight is the one part of the question that is not a guess, so
-          // it is the part the answer has to be built from.
+          // The weight is the one part of the question that is not a guess.
           'When a weight is given, it is the portion: price that many grams and no more — ' +
           'cooked rice and noodles about 1.3 kcal/g, grilled meat 1.5-2, fried chicken with ' +
           'skin 2.5-3, vegetables 0.3, nuts and crisps 5.5. Nothing edible is over 9.',
@@ -1317,14 +1184,14 @@ export async function estimateNutrition(
           `, portion: ${item.serving_hint ?? '1 serving'}` +
           (item.grams ? `, about ${item.grams} g${item.count > 1 ? ' each' : ''}` : '') +
           '.' +
-          // The visible parts pin the estimate to the actual plate: "nasi campur" alone
-          // could be anything, and its component list is the meal.
+          // The visible parts pin the estimate to the actual plate: "nasi
+          // campur" alone could be anything.
           //
-          // What is not passed is the vision call's own calorie range, and that is the
-          // whole point of this being a second call. Anchored with "expected around 400-500
-          // kcal" the model answered 450 for a plate of apple slices; asked the same
-          // question without the anchor it answered 120, which is what nine slices of apple
-          // cost. A second opinion that has been told the first opinion is not one.
+          // The vision call's calorie range is deliberately not passed, which is
+          // the point of this being a second call. Anchored with "expected
+          // around 400-500 kcal" the model answered 450 for a plate of apple
+          // slices; without the anchor it answered 120, which is what nine
+          // slices cost.
           (item.components.length
             ? ` Contains: ${item.components
                 .map(
@@ -1347,13 +1214,10 @@ export type RefineContext = {
   quantity: number
   servingLabel: string | null
   /**
-   * The breakdown, with its numbers.
-   *
-   * Names alone were not enough, and the failures all had the same shape: the model
-   * was asked for a calorie delta for a part whose size it had not been told. "I
-   * left half the rice" against a list of names can only be answered from what rice
-   * costs in general, so it came back -150 for a 340 kcal portion and -150 for a
-   * 90 kcal one. `kcal` here is what the part costs at its current quantity.
+   * The breakdown, with its numbers. Names alone left the model guessing a
+   * delta for a part whose size it had not been told: "I left half the rice"
+   * came back -150 for a 340 kcal portion and -150 for a 90 kcal one. `kcal` is
+   * what the part costs at its current quantity.
    */
   ingredients: Array<{ name: string; quantity: number; kcal: number }>
 }
@@ -1382,11 +1246,10 @@ function shapeInterpretation(raw: unknown): Interpretation {
     // A swap is the one adjustment that may cost nothing: chicken for chicken
     // of a different kind can come out even, and the plate still has to change.
     const swapping = Boolean(part && replaces && replaces.toLowerCase() !== part.toLowerCase())
-    // A STATED COUNT IS A CHANGE ON ITS OWN, delta or no delta. "Only 3
-    // skewers" against six of them is the plate halving, and the model
-    // reasonably answers 0 for a field it has been told is about calories — so
-    // requiring a non-zero delta threw the whole correction away and answered
-    // "could not apply that" to one of the clearest sentences a user can type.
+    // A stated count is a change on its own, delta or no delta. "Only 3
+    // skewers" against six halves the plate, and the model reasonably answers 0
+    // for a field it has been told is about calories, so requiring a non-zero
+    // delta threw the whole correction away.
     const counted = Number.isFinite(count) && count !== 0
     const stated = Number.isFinite(total) && total > 0
     const acts = delta !== 0 || swapping || counted || stated
@@ -1402,8 +1265,7 @@ function shapeInterpretation(raw: unknown): Interpretation {
             ? Math.round(partKcal)
             : null,
         count: counted && Math.abs(count) <= 20 ? Math.round(count) : null,
-        // Zero is not a total: "no sambal" is a removal, which the negative
-        // delta already says, and a part set to none is a part deleted.
+        // Zero is not a total: "no sambal" is a removal, which the delta says.
         total: stated && total <= 20 ? Math.round(total) : null,
       }
     }
@@ -1413,9 +1275,8 @@ function shapeInterpretation(raw: unknown): Interpretation {
     const item = shapeVision({ scene: 'single', items: [o.item] }).items[0]
     return { action: 'redescribe', item }
   }
-  // The model's own "there is nothing to change here" carries a reason it
-  // wrote; anything else that lands here is an answer in a shape this function
-  // does not recognise, which is a different problem with a different remedy.
+  // The model's own "nothing to change here" carries a reason it wrote.
+  // Anything else landing here is a shape this function does not recognise.
   return o.action === 'none'
     ? { action: 'none', code: 'not_a_correction', reason: String(o.reason ?? 'no calorie change') }
     : { action: 'none', code: 'unusable', reason: 'not understood' }
@@ -1424,17 +1285,13 @@ function shapeInterpretation(raw: unknown): Interpretation {
 /**
  * The fix-by-typing prompt. Exported for the eval harness.
  *
- * Written as a ladder rather than as four options, and that is the whole design.
- * Offered as a menu, the model reached for `redescribe` whenever it was unsure,
- * and `redescribe` is the one answer that discards everything the user has
- * already accepted about the entry. Two of the corrections people actually type
- * went that way in testing: "this was more like 500 calories", which re-guessed a
- * dish nobody had said was wrong, and "it was rendang chicken not fried chicken",
- * which threw away the rice, the sambal and the egg to fix one side.
+ * A ladder rather than four options. Offered as a menu the model reached for
+ * `redescribe` whenever it was unsure, and that is the one answer discarding
+ * everything the user has already accepted: "this was more like 500 calories"
+ * re-guessed a dish nobody said was wrong.
  *
- * So the rungs are ordered by how much of the entry survives them, the model is
- * told to stop at the first that fits, and the bottom rung is described by its
- * cost as much as by its meaning.
+ * So the rungs are ordered by how much of the entry survives them, the model
+ * stops at the first that fits, and the bottom rung is described by its cost.
  */
 export const INTERPRET_INSTRUCTION_PROMPT =
   'A user is correcting ONE logged food entry by typing. Decide what the correction ' +
@@ -1511,10 +1368,9 @@ export const INTERPRET_INSTRUCTION_PROMPT =
   'vegetables 0.3, and nothing on a plate is over 6 kcal/g.'
 
 /**
- * The entry state, as the interpreter is shown it. Exported with the prompt.
- *
- * Each part carries its count and what it costs at that count, so a delta for
- * "half the rice" can be arithmetic rather than recall.
+ * The entry state, as the interpreter is shown it. Each part carries its count
+ * and what it costs at that count, so a delta for "half the rice" is arithmetic
+ * rather than recall.
  */
 export const refineUserMessage = (context: RefineContext, instruction: string): string =>
   `Current entry: ${context.name} — ${context.kcal} kcal, quantity ${context.quantity}` +
@@ -1529,27 +1385,20 @@ export const refineUserMessage = (context: RefineContext, instruction: string): 
 /**
  * How much room the interpreter is given to answer in.
  *
- * IT WAS 600, AND THAT IS THE BUG BEHIND "Could not fix that, try rewording
- * it". The bottom rung of this prompt asks for a whole `VisionItem` —
- * name, two queries, a component list with four figures each, a serving hint,
- * a calorie band — which is the same shape `analysePhoto` is given 2400 for,
- * and it is written after however much the model thinks first. Production logs
- * showed the call ending `finish_reason: length` with no content at all: the
- * ceiling was spent before any JSON was written, `chatJSON` threw, and the
- * screen said the words could not be applied. The correction was fine every
- * time.
+ * It was 600, which is the bug behind "Could not fix that, try rewording it".
+ * The bottom rung asks for a whole `VisionItem`, the same shape `analysePhoto`
+ * gets 2400 for, so the call ended `finish_reason: length` with no content and
+ * the screen blamed corrections that were fine.
  *
- * The ceiling is not a bill. Tokens are charged as generated, and an answer
- * that fits in 200 costs 200 whatever this says — so the only thing a small
- * number buys is the failure above.
+ * The ceiling is not a bill: tokens are charged as generated, so a small number
+ * only buys that failure.
  */
 const INTERPRET_MAX_TOKENS = 2400
 
 /**
- * The fix-by-typing interpreter: entry state + free text in, one of three
- * decisions out. Cheap and text-only — the expensive work (search, estimate)
- * only happens when the answer is `redescribe`, and then it is the same
- * cascade a fresh scan runs.
+ * The fix-by-typing interpreter: entry state and free text in, one decision out.
+ * Text-only and cheap; search and estimation only happen when the answer is
+ * `redescribe`, and then it is the same cascade a fresh scan runs.
  */
 export async function interpretInstruction(
   context: RefineContext,
@@ -1561,13 +1410,13 @@ export async function interpretInstruction(
     if (mock?.fail === 'all' || mock?.fail === 'interpret')
       throw new Error('mocked interpret failure')
     if (mock?.interpret) return shapeInterpretation(mock.interpret)
-    // Crude but honest defaults so the flow is walkable offline: portion words
-    // become factors, add/remove words become small deltas, anything else
+    // Crude defaults so the flow is walkable offline: portion words become
+    // factors, add and remove words become small deltas, anything else
     // re-describes the dish with the instruction folded into the name.
     const text = instruction.toLowerCase()
     // A named part with a number in front of it: "only 3 skewers". Checked
-    // BEFORE the portion words, because "only 2 skewers" contains "2" and
-    // reading it as the plate rescales everything else on it too.
+    // before the portion words, because "only 2 skewers" contains "2" and
+    // reading that as the plate rescales everything else on it.
     const named = context.ingredients.find((ingredient) =>
       text.includes(ingredient.name.toLowerCase().split(' ')[0]),
     )?.name
@@ -1639,18 +1488,12 @@ export async function interpretInstruction(
   /**
    * Asked twice when the first answer was unreadable, and only then.
    *
-   * `chatJSON` already retries the transport — a 429, a 5xx, a timeout, an
-   * empty body — and deliberately does not retry a bad parse, on the argument
-   * that the same question mostly buys the same answer. That argument is right
-   * for a vision call and wrong here, because the two failures look identical
-   * from the outside and the user pays for the difference: "Could not apply
-   * that" for a sentence the model simply answered in the wrong shape sends
-   * somebody away to reword a correction that was fine.
+   * `chatJSON` retries the transport but not a bad parse, on the argument that
+   * the same question buys the same answer. That is right for a vision call and
+   * wrong here: "Could not apply that" for a sentence the model answered in the
+   * wrong shape sends somebody away to reword a correction that was fine.
    *
-   * A considered `not_a_correction` is NOT retried. The model read the words
-   * and said they have no calories in them, which is an answer, and asking
-   * again is asking the same model the same question hoping for a different
-   * result.
+   * A considered `not_a_correction` is not retried, since that is an answer.
    */
   const ask = async () =>
     shapeInterpretation(
@@ -1670,13 +1513,12 @@ export async function interpretInstruction(
 }
 
 /**
- * There was an `Archetype` type and a `classifyArchetype` call here, and they
- * were tier 5: a classification over sixty seeded generic rows that ended, when
- * nothing else fit, at a hardcoded "Mixed meal" of 600 kcal.
+ * There was an `Archetype` type and a `classifyArchetype` call here: tier 5, a
+ * classification over sixty seeded generic rows ending at a hardcoded "Mixed
+ * meal" of 600 kcal.
  *
- * They are gone, and the cascade has no floor now. What the floor bought was
- * that a scan always produced a diary row; what it cost was that the row could
- * be a guess nobody made, sitting in somebody's day wearing their photograph.
- * A scan that cannot say what the food is now says so and asks to be tried
- * again. See the note at the top of `cascade.ts`.
+ * They are gone and the cascade has no floor. The floor guaranteed a diary row,
+ * at the cost of that row being a guess nobody made sitting in somebody's day
+ * wearing their photograph. A scan that cannot say what the food is now says so.
+ * See the note at the top of `cascade.ts`.
  */

@@ -95,15 +95,12 @@ export type MacroBarProps = {
  * A labelled macro row: name, amount, thin bar.
  *
  * Carbs are kaya, protein hibiscus, fat teh tarik. Those pairings are fixed
- * across the app, so callers pass the tone rather than the component guessing
- * from the label.
+ * across the app, so callers pass the tone rather than the component guessing.
  *
- * No `flex-1` of its own. It used to carry one, which reads as "share the
- * space" and only means that in a row — three bars side by side. Stacked in a
- * column it means "take the leftover HEIGHT, starting from nothing", and a
- * column whose height is constrained then squeezes every bar to a few points
- * with its labels squashed out. A caller laying these out in a row asks for
- * `flex-1`; one stacking them says nothing and gets content height.
+ * No `flex-1` of its own. It used to carry one, which only means "share the
+ * space" in a row; stacked in a column it means "take the leftover height", and a
+ * column with a constrained height then squeezes every bar to a few points. A
+ * caller laying these out in a row asks for `flex-1`.
  */
 export function MacroBar({ label, amount, value, tone = 'kaya', className }: MacroBarProps) {
   return (

@@ -20,23 +20,16 @@ export type TankFigureProps = {
 // and could not have been.
 
 /**
- * The day's water, written on the tank.
+ * The day's water, written on the tank. Shared because the colour rule is: Today
+ * draws this with an Add button and Trends with nothing, and both are a figure
+ * over a surface that fills underneath it needing the same two inks.
  *
- * SHARED because the colour rule is, and it is the fiddly part: Today draws
- * this with an Add button beside it and Trends draws it with nothing, but both
- * are a figure over a surface that fills up underneath it, and both need the
- * same two inks. A second copy of that rule would be a second copy of a
- * decision that took two screenshots and a contrast check to get right.
+ * The drop identifies the card. Neither surface has a heading, so on a day the
+ * tank is nearly empty the drop does that work alone.
  *
- * The drop is what identifies the card. Neither surface has a heading over it
- * any more — the word "Water" over a tank of water is a label the picture
- * already carries — so on a day the tank is nearly empty and there is no blue
- * to recognise, the drop is doing that work alone.
- *
- * MILLILITRES, even on Trends, where every other figure is in litres. The unit
- * rule is per surface and this is the one card on that screen that is not a
- * summary: it is today, the same figure the home page is showing, and reading
- * "0.5 L" here against "500 ml" there would be two answers to one question.
+ * Millilitres, even on Trends, where every other figure is in litres: the unit
+ * rule is per surface, and this is the one card there that is not a summary, so
+ * "0.5 L" here against "500 ml" on Today would be two answers to one question.
  */
 export function TankFigure({ ml, goalMl, onWater }: TankFigureProps) {
   const { t } = useTranslation(['logging', 'common'])

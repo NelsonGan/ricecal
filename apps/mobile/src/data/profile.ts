@@ -175,24 +175,19 @@ export type OnboardingAnswers = ProfilePatch & {
 }
 
 /**
- * Writes the whole of onboarding, and marks it done.
+ * Writes the whole of onboarding, and marks it done. The questions come before
+ * the account, so this is the one write the flow makes.
  *
- * The questions come before the account, so none of them could be saved as they
- * were answered — this is the one write the flow makes, and it runs the moment a
- * session exists.
+ * Ordered rather than parallel, and the order is the point:
  *
- * Ordered, not parallel, and the order is the point:
- *
- * 1. **The profile.** `compute_targets()` reads sex, birth date, height, activity
- *    and goal, so all of them have to be in place before anything asks it to run.
- * 1b. **The units.** A different table and no bearing on the budget, so it rides
- *    along with the profile write rather than earning a step of its own. The row
- *    is seeded by the signup trigger, so this is always an update.
- * 2. **The weigh-in.** This is what asks. The trigger recomputes `daily_goals`
- *    from the newest reading, so a budget exists from here on.
- * 3. **`onboarded_at`.** Last, because it is what the router reads. Setting it
- *    before the other two means a failure strands the user in the app with no
- *    budget and no way back to the questions that would produce one.
+ * 1. The profile. `compute_targets()` reads sex, birth date, height, activity and
+ *    goal, so all of them have to be in place first. The units ride along with
+ *    it: a different table, no bearing on the budget, and always an update, since
+ *    the signup trigger seeds the row.
+ * 2. The weigh-in, which is what asks: the trigger recomputes `daily_goals` from
+ *    the newest reading, so a budget exists from here on.
+ * 3. `onboarded_at`, last, because it is what the router reads. Set first, a
+ *    failure strands the user in the app with no budget and no way back.
  */
 export function useFinishOnboarding() {
   const userId = useUserId()

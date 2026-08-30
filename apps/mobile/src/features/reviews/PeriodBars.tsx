@@ -24,16 +24,14 @@ export type PeriodBarsProps = {
 /**
  * This period against the four before it.
  *
- * Not `BarChart`, and the difference is the figure over each column. Five weeks
- * of somebody's eating land within a few hundred calories of each other, so the
- * bars alone answer "about the same" and nothing more precise — the number is
- * what makes the chart worth the space, and the bar is what makes the number
- * comparable at a glance.
+ * Not `BarChart`, and the difference is the figure over each column. Five weeks of
+ * somebody's eating land within a few hundred calories of each other, so the bars
+ * alone answer "about the same" and nothing more precise.
  *
- * The heights come from the caller rather than from the values, because they are
- * measured against the SPREAD of the five rather than from zero. Drawn from
- * zero, 1,770 and 1,880 are two bars the eye reads as identical, which is the
- * one thing this chart exists to tell apart.
+ * The heights come from the caller rather than the values, because they are
+ * measured against the spread of the five rather than from zero. Drawn from zero,
+ * 1,770 and 1,880 are two bars the eye reads as identical, which is the one thing
+ * this chart exists to tell apart.
  */
 export function PeriodBars({ bars, height = 108, accessibilityLabel, className }: PeriodBarsProps) {
   return (

@@ -4,15 +4,13 @@ import type { IconProps } from '@/ui'
 /**
  * The domain, as the screens see it.
  *
- * Two jobs. It names the database's enums, so a screen imports `Meal` rather
- * than `Database['public']['Enums']['meal']`. And it declares non-null shapes
- * for things the generated types call nullable.
+ * Two jobs: naming the database's enums, so a screen imports `Meal` rather than
+ * `Database['public']['Enums']['meal']`, and declaring non-null shapes for what
+ * the generated types call nullable.
  *
  * Every column of every view comes back as `T | null`, because Postgres cannot
- * promise a view's nullability and the generator will not guess. `kcal` on a
- * logged entry is never null in practice, but a screen that has to prove that on
- * every read grows `?? 0` in forty places, and one of them will be wrong. The
- * mappers coalesce once, at the edge.
+ * promise a view's nullability. A screen proving that on every read grows `?? 0`
+ * in forty places, one of which will be wrong, so the mappers coalesce once.
  */
 
 // Enums that mean the same thing on both sides.
@@ -28,12 +26,9 @@ export type Plan = Enums<'subscription_plan'>
 export const MEALS: readonly Meal[] = ['breakfast', 'lunch', 'dinner', 'snack']
 
 /**
- * The two enums whose spelling differs across the wire.
- *
- * Postgres enums are snake_case by convention and the client is camelCase, and
- * both spellings are load-bearing: the i18n bundle keys off `onFeet` and the
- * database column is `on_feet`. Converting in two named functions beats either a
- * snake_case key leaking into the copy files or a column named `onFeet`.
+ * The two enums whose spelling differs across the wire. Both spellings are
+ * load-bearing: the i18n bundle keys off `onFeet` and the column is `on_feet`.
+ * Two named converters beat a snake_case key in the copy files.
  */
 export type ActivityLevel = 'sedentary' | 'light' | 'onFeet' | 'veryActive'
 export type EntrySource = 'search' | 'quickAdd' | 'camera' | 'voice' | 'import' | 'text'
@@ -65,16 +60,13 @@ export const fromDbSource = (source: Enums<'entry_source'>): EntrySource =>
  * The `{ set, name }` half of `IconProps`, which is what a data record carries.
  * Size and tint belong to the screen that renders it.
  *
- * Written as a distributive conditional rather than `Pick<IconProps, …>` because
- * `Pick` over a union collapses it, which would let a `dishes` set pair with a
- * `ui` name.
+ * A distributive conditional rather than `Pick<IconProps, …>`, because `Pick`
+ * over a union collapses it and would let a `dishes` set pair with a `ui` name.
  *
- * NARROWED TO THE SETS THE DATABASE HAS, which is not all of them. `icon_set` is
- * a Postgres enum, so a set that exists only in the app cannot be stored in one
- * — `scenes` is onboarding art and no food row will ever point at it. Deriving
- * this from the enum means adding a set to `assets/icons` cannot silently break
- * every insert that carries an icon, and a set that genuinely belongs on a row
- * has to arrive with a migration.
+ * Narrowed to the sets the database has, since `icon_set` is a Postgres enum:
+ * `scenes` is onboarding art and no food row will point at it. Derived from the
+ * enum, so a new set in `assets/icons` cannot silently break every insert that
+ * carries an icon.
  */
 export type IconRef = IconProps extends infer T
   ? T extends { set: infer S; name: infer N }
@@ -92,11 +84,9 @@ export type Macros = {
 }
 
 /**
- * The nutrients beyond the four that drive the budget.
- *
- * Every one is optional and absent means unknown, never zero. Most of the
- * catalogue is imported and carries none of them, and "0 g of fibre" is a claim
- * about a dish rather than a gap in a spreadsheet.
+ * The nutrients beyond the four that drive the budget. Absent means unknown,
+ * never zero: most of the catalogue carries none of them, and "0 g of fibre" is
+ * a claim about a dish rather than a gap in a spreadsheet.
  */
 export type ExtraNutrients = {
   fibre?: number
@@ -138,21 +128,17 @@ export type Food = {
   barcode?: string
   /**
    * Who to credit for these numbers, when a licence requires it. Open Food Facts
-   * is ODbL and serving its facts through an app is a Produced Work, so the detail
-   * screen prints this. It travels with the row rather than living in a component,
-   * because a licence nobody can find is a licence nobody honours.
+   * is ODbL and serving its facts through an app is a Produced Work. It travels
+   * with the row, because a licence nobody can find is one nobody honours.
    */
   sourceAttribution?: string
 }
 
 /**
  * Where an entry is in the recognition round trip: a row that is not yet an
- * entry.
- *
- * Only ever set on a row that exists in the client's cache and not in the
- * database. `nofood` is the scan reporting that the photo had nothing edible in
- * it, so no entry was written and the row waits to be dismissed rather than
- * counted.
+ * entry, and only ever set on one in the client's cache. `nofood` is the scan
+ * reporting nothing edible, so no entry was written and the row waits to be
+ * dismissed rather than counted.
  */
 export type EntryStatus = 'analysing' | 'waiting' | 'failed' | 'nofood'
 
@@ -200,8 +186,8 @@ export type Entry = {
   macros: Macros
   /**
    * The snapshot as stored, per one base serving, before the portion and the
-   * quantity. Read by exactly one caller — "repeat yesterday", which copies an
-   * entry rather than reading it. See `snapshotFromEntry`.
+   * quantity. Read by one caller, "repeat yesterday", which copies an entry
+   * rather than reading it. See `snapshotFromEntry`.
    */
   base: Macros
   baseExtras?: ExtraNutrients
@@ -222,12 +208,10 @@ export type RecipeUnit = Enums<'recipe_unit'>
 export type RecipeReviewStatus = Enums<'recipe_review'>
 
 /**
- * One thing that went into the pot.
- *
- * Two sets of macros, and both are wanted on screen. `perUnit` is what the row
- * stores and what stays true when the amount moves, so it is what the stepper
- * rescales against. `macros` is `perUnit` times `amount`, already worked out by
- * `recipe_ingredient_details`, and is the number printed beside the row.
+ * One thing that went into the pot. Both sets of macros are wanted on screen:
+ * `perUnit` is what the row stores and what the stepper rescales against, and
+ * `macros` is `perUnit` times `amount`, worked out by
+ * `recipe_ingredient_details` and printed beside the row.
  */
 export type RecipeIngredient = {
   id: string
@@ -271,12 +255,9 @@ export type Recipe = {
   /** Who to credit on a community card. Empty on your own and on official ones. */
   authorName: string
   /**
-   * The account that owns it, and the only thing on this type that names a
-   * person rather than describing one. Empty on an official recipe, which has
-   * no owner by design.
-   *
-   * It exists for `useBlockAuthor`, which needs an id rather than a display
-   * name: two cooks can be called Farah, and a block is about one of them.
+   * The account that owns it, empty on an official recipe. It exists for
+   * `useBlockAuthor`, which needs an id rather than a display name: two cooks
+   * can be called Farah, and a block is about one of them.
    */
   ownerId: string
   shareSlug: string
@@ -306,10 +287,9 @@ export type WeighIn = {
 }
 
 /**
- * The three windows the range switch on Trends offers.
- *
- * Named rather than expressed as a pair of dates, because what "the last thirty
- * days" means depends on the user's timezone and only `local_today()` knows it.
+ * The three windows the range switch on Trends offers. Named rather than a pair
+ * of dates, because what "the last thirty days" means depends on the user's
+ * timezone and only `local_today()` knows it.
  */
 export type TrendRange = '7d' | '30d' | '1y'
 
@@ -317,14 +297,12 @@ export const TREND_RANGES = ['7d', '30d', '1y'] as const satisfies readonly Tren
 
 /**
  * One column of a Trends chart: a day, a seven-day block, or a calendar month.
- *
  * Carries all three tabs' numbers, because the tabs are three readings of one
- * range and switching between them must not go back to the server.
+ * range and switching must not go back to the server.
  *
- * Null and zero are not interchangeable. A null `kcal` is a bucket with nothing
- * logged in it, which a chart draws as a gap; a zero `water` is a real
- * measurement of a day nobody drank on. The mappers in `trends.ts` are where
- * that distinction is made.
+ * Null and zero are not interchangeable: a null `kcal` is a bucket with nothing
+ * logged in it and draws as a gap, where a zero `water` is a real measurement.
+ * `trends.ts` is where that distinction is made.
  */
 export type TrendBucket = {
   /** First day covered. The bucket's identity, and what it sorts by. */
@@ -350,11 +328,9 @@ export type TrendBucket = {
   waterBest: number
   waterGoalDays: number
   /**
-   * Days that cleared three quarters of the goal, which is the habit card's line.
-   *
-   * Counted in the database rather than here, because on a thirty-day range a
-   * bucket is a week: the client can only ask whether the week averaged above the
-   * line, which answers "0 of 30" for a month containing several full days.
+   * Days that cleared three quarters of the goal, which is the habit card's
+   * line. Counted in the database, because on a thirty-day range a bucket is a
+   * week and the client could only ask whether the week averaged above it.
    */
   waterHabitDays: number
   waterLoggedDays: number
@@ -408,12 +384,10 @@ export type TrendSummary = {
 }
 
 /**
- * A review is of a finished week or a finished month.
- *
- * The kind travels with every request and back with every answer, because a
- * period is identified by its first day and `2026-08-03` is a Monday and the
- * third of a month at the same time. It is also what the server works the
- * period's end out of, so nothing on this side has to know how long February is.
+ * A review is of a finished week or a finished month. The kind travels with
+ * every request and answer, because a period is identified by its first day and
+ * `2026-08-03` is a Monday and the third of a month at once. It is also what the
+ * server works the period's end out of.
  */
 export type ReviewKind = 'week' | 'month'
 
@@ -421,10 +395,8 @@ export const REVIEW_KINDS = ['week', 'month'] as const satisfies readonly Review
 
 /**
  * One row of the reviews list, and one bar of the comparison chart inside a
- * story.
- *
- * Every period in the window is one of these, however little was logged in it. A
- * thin week is the week you most want to see the shape of.
+ * story. Every period in the window is one of these, however little was logged:
+ * a thin week is the week you most want to see the shape of.
  */
 export type ReviewPeriod = {
   kind: ReviewKind
@@ -440,11 +412,9 @@ export type ReviewPeriod = {
   weightChange: number | null
 
   /**
-   * The sparkline: a week's seven days, or a month's four or five weeks.
-   *
-   * A null entry is a day nothing was logged on, and it draws as a gap. That is the
-   * point of drawing it at all, since the figure beside it is an average and an
-   * average cannot show that Tuesday is missing.
+   * The sparkline: a week's seven days, or a month's four or five weeks. A null
+   * entry draws as a gap, which is the point of drawing it: the figure beside it
+   * is an average, and an average cannot show that Tuesday is missing.
    */
   marks: (number | null)[]
 }
@@ -491,10 +461,8 @@ export type ReviewSummary = {
 
 /**
  * One column of the charts inside a story: a day of a week, a week of a month.
- *
- * Every field here is a mark on one of them. `daysLogged` is the block on the
- * share card, the macros are the stack on the calorie chart, `weight` is where
- * the line lands and `steps` is the bar under it.
+ * Every field is a mark on one of them, from the block on the share card to the
+ * stack on the calorie chart.
  */
 export type ReviewBucket = {
   start: string
@@ -511,21 +479,17 @@ export type ReviewBucket = {
 }
 
 /**
- * One dish of a review period, folded across every time it was eaten.
- *
- * The name is the identity: `review_meals` groups on the folded name, so two of
- * these can never say the same thing and a list of them needs no other key. They
- * arrive heaviest first.
+ * One dish of a review period, folded across every time it was eaten. The name
+ * is the identity, since `review_meals` groups on the folded name, so a list of
+ * them needs no other key. They arrive heaviest first.
  */
 export type ReviewMeal = {
   name: string
   icon?: IconRef
   /**
-   * The newest plate photographed under this name, as a stored key.
-   *
-   * Preferred over the icon where there is one, the same way round the diary
-   * prefers it. A dish logged by camera once and by hand twice can have both,
-   * which is why neither field displaces the other here.
+   * The newest plate photographed under this name, as a stored key. Preferred
+   * over the icon, as the diary prefers it. A dish logged by camera once and by
+   * hand twice can have both, so neither field displaces the other here.
    */
   photoPath?: string
   /** What one of them cost, averaged over any repeats. Not the period's total. */
@@ -544,11 +508,9 @@ export type DayLog = {
 }
 
 /**
- * One day of the week strip: enough to colour a dot, and nothing else.
- *
- * `goalKcal` is nullable and the others are not, which is the distinction the
- * strip turns on. A day before the account had a budget has no line to be over or
- * under, while a day with no entries genuinely ate nothing.
+ * One day of the week strip: enough to colour a dot. `goalKcal` is nullable and
+ * the others are not, which is the distinction the strip turns on: a day before
+ * the account had a budget has no line to be over or under.
  */
 export type DayMark = {
   date: string
@@ -559,11 +521,9 @@ export type DayMark = {
 }
 
 /**
- * `day_marks` as PostgREST sends it.
- *
- * Hand-written rather than taken from the generated types, which declare every
- * column of a returning function non-null. Three of these five are left joins and
- * arrive as null on any day with no food, no budget or no watch.
+ * `day_marks` as PostgREST sends it. Hand-written, because the generated types
+ * declare every column of a returning function non-null and three of these five
+ * are left joins.
  */
 export type DayMarkRow = {
   at: string
@@ -574,11 +534,9 @@ export type DayMarkRow = {
 }
 
 /**
- * The one dish drawn in a day's cell on the month calendar.
- *
- * A photograph and a drawing, because `day_plates` hands back both and the client
- * prefers the photograph exactly as the diary does. A swept month has only the
- * drawing left, and a cell that read the photo alone would go blank.
+ * The one dish drawn in a day's cell on the month calendar. Both a photograph
+ * and a drawing, because the client prefers the photograph as the diary does and
+ * a swept month has only the drawing left.
  */
 export type DayPlate = {
   date: string
@@ -612,14 +570,12 @@ export type RecipeIngredientRow = Database['public']['Views']['recipe_ingredient
 /**
  * One catalogue food, as the catalogue Worker hands it back.
  *
- * Written out rather than generated, because there is no longer a Postgres view
- * to generate it from: `food_details` was a view over `foods` and
- * `food_servings`, and both are in Cloudflare D1 now. The Worker shapes its
- * answer to match what that view returned, so `toFood` did not have to change.
+ * Written out because there is no Postgres view to generate it from any more:
+ * `food_details` was a view over `foods` and `food_servings`, both now in D1.
+ * The Worker shapes its answer to match, so `toFood` did not have to change.
  *
- * Every field is nullable for the same reason the generated view types were:
- * this comes off a network hop with no schema to prove it, and `toFood`
- * coalesces once at the edge.
+ * Every field is nullable for the reason the generated view types were: this
+ * comes off a network hop with no schema to prove it.
  */
 export type FoodDetailsRow = {
   id: string | null

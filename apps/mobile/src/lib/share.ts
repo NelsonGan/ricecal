@@ -12,21 +12,17 @@ export type Shot = {
 }
 
 /**
- * A FILE PER CAPTURE, named by the instant, with the one before it deleted as
+ * A file per capture, named by the instant, with the one before it deleted as
  * soon as its replacement is on disk.
  *
- * This wrote to one fixed name at first, on the reasoning that a name per shot
- * leaves PNGs in the cache nobody deletes. What that reasoning missed is the
- * rule this app already lives by: A KEY NAMES ONE OBJECT, FOR GOOD. expo-image
- * caches against the URI, so the second card captured produced a correct file at
- * a URI the cache already had an answer for — and the preview showed the FIRST
- * card, with its own numbers, over a Share button that would have sent the
- * right one.
+ * One fixed name misses the rule this app lives by: a key names one object, for
+ * good. expo-image caches against the URI, so the second card captured produced
+ * a correct file at a URI the cache already had an answer for, and the preview
+ * showed the first card over a Share button that would have sent the right one.
  *
- * A counter was the second attempt and the same bug wearing a longer name: it
- * starts at one on every app run, so the first capture of the day collides with
- * yesterday's, which is still in the image cache on disk. The clock is the only
- * part of a capture that cannot repeat.
+ * A counter was the same bug with a longer name: it starts at one on every app
+ * run, so the first capture of the day collides with yesterday's, which is still
+ * in the image cache on disk.
  */
 const shotName = () => `share-${Date.now()}.png`
 
@@ -91,20 +87,16 @@ export type SharePictureOptions = {
 /**
  * Hand a captured picture to the OS share sheet, and say whether it went.
  *
- * THE PICTURE ON iOS, THE SENTENCE ON ANDROID. React Native's `Share` takes
- * `url` on iOS only; on Android it carries `message` and drops everything else,
- * so asking it to send a file there shares nothing at all and reports success.
- * Sending the sentence is the honest degradation. Sharing the file on Android
- * needs a content:// provider, which needs a dependency, which needs a rebuild.
+ * The picture on iOS, the sentence on Android. React Native's `Share` takes `url`
+ * on iOS only; on Android it carries `message` and drops everything else, so
+ * asking it to send a file there shares nothing and reports success. Sharing a
+ * file on Android needs a content:// provider, a dependency and a rebuild.
  *
  * Which is why `pictureAlone` cannot be honoured on both: dropping the message
- * there would leave the share sheet with nothing in it at all, and a button
- * that opens an empty chooser is worse than one that sends a sentence.
+ * there leaves the share sheet with nothing in it.
  *
- * The answer is a REAL yes or no on iOS alone. Android's share intent never
- * tells the app what the user did with it, so `Share` reports `sharedAction`
- * there whatever happens. Worth knowing before the two platforms are compared
- * on a "shared" count; it is not something the app can correct for.
+ * The answer is a real yes or no on iOS alone. Android's share intent never tells
+ * the app what the user did, so `Share` reports `sharedAction` whatever happens.
  */
 export async function sharePicture(
   shot: Shot,

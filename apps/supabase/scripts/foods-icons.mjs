@@ -7,30 +7,21 @@
  *   pnpm foods:icons --grep beef        only names matching a pattern
  *   pnpm foods:icons --write            apply
  *
- * WHY THIS EXISTS
+ * A dish's icon is authored: `food-shape.mjs` reads the research payload's
+ * `"icon"` field and the loader writes `food.icon_set` / `food.icon_name`. That
+ * works for the seven thousand dishes somebody wrote, and not at all for the
+ * forty thousand imported from Open Food Facts, USDA and the composition tables.
  *
- * A dish's icon is authored: `food-shape.mjs` reads it out of the research
- * payload's `"icon"` field and the loader writes it to `food.icon_set` /
- * `food.icon_name`. That works for the seven thousand dishes somebody sat down
- * and wrote, and not at all for the forty thousand imported from Open Food
- * Facts, USDA and the composition tables — which is why two rows both called
- * "Nasi Lemak" can differ only in whether anybody typed a filename beside one
- * of them.
+ * The matching lives in `functions/_shared/icon-match.ts`, with the edge
+ * functions rather than beside this script because the barcode endpoint needs it
+ * too: `product` has no icon columns and 3.2 million rows, so a packet's drawing
+ * is derived from its name at read time instead of stored.
  *
- * The matching lives in `functions/_shared/icon-match.ts`; the header there
- * explains why it is a phrase table rather than the edge functions' own
- * `guessIcon`. It sits with the edge functions rather than beside this script
- * because the barcode endpoint needs it too: `product` has no icon columns and
- * 3.2 million of them, so a packet's drawing is derived from its name at read
- * time instead of stored.
- *
- * SAFETY
- *
- * Every icon this proposes is checked against the real registry before anything
- * is written, and a name that is not offerable stops the run. That check is the
- * whole reason to have it: `icon_name` is free text in D1 (only the SET is an
- * enum in Postgres), so a typo is not an error anywhere — it is a row that
- * renders blank for ever, and looks exactly like a row that never had a drawing.
+ * Every icon proposed is checked against the real registry before anything is
+ * written, and a name that is not offerable stops the run. `icon_name` is free
+ * text in D1 (only the set is an enum in Postgres), so a typo is not an error
+ * anywhere: it is a row that renders blank for ever and looks exactly like a row
+ * that never had a drawing.
  */
 
 import { matchIcon, PHRASE_COUNT, SCRIPT_TABLE, TABLE } from '../functions/_shared/icon-match.ts'

@@ -11,20 +11,15 @@ import { useUserId } from './session'
 import type { TrendRange } from './types'
 
 /**
- * Movement, on the read side.
+ * Movement, on the read side: the same three shapes Trends uses, plus the
+ * sessions and the hours of a day.
  *
- * The same three shapes Trends uses (a day, a bucketed series, a folded summary)
- * plus two lists the Activity tab needs: the sessions of a day, and the hours of
- * one.
- *
- * The bucketing and every average is in `activity_series` and `activity_summary`
- * rather than here, because a figure computed in the client is one the weekly
+ * The bucketing and every average live in `activity_series` and
+ * `activity_summary`, because a figure computed in the client is one the weekly
  * report cannot reuse.
  *
- * The write side is `data/health-sync.ts`. It is a separate file because it is a
- * different kind of thing: nothing on a screen calls it directly, it talks to the
- * phone's health store rather than to a user's tap, and it is the only place in
- * the app that writes these tables.
+ * The write side is `data/health-sync.ts`, a separate file because nothing on a
+ * screen calls it directly and it is the only place that writes these tables.
  */
 
 type SeriesRow = Database['public']['Functions']['activity_series']['Returns'][number]
@@ -523,18 +518,14 @@ export function useClearDemoActivity() {
   return useMutation({
     mutationFn: async () => {
       /**
-       * Hours first, and scoped by the days they belong to.
+       * Hours first, scoped by the days they belong to. `activity_hours` has no
+       * `provider` column, so the demo rows are identified by the demo days they
+       * were written with, which means reading those dates before deleting the
+       * days and keeps this out of the parallel batch below.
        *
-       * `activity_hours` has no `provider` column, since it is only ever written beside
-       * a day, so the demo rows have to be identified by the demo days they were
-       * written with. That means reading those dates before deleting the days, and it
-       * means this cannot be part of the parallel batch below.
-       *
-       * The first version deleted every hour the account had, on the reasoning that an
-       * account with demo data has nothing else. That is not true and was disproved on
-       * the first device it ran on: connecting Apple Health, finding the store empty
-       * and then loading demo data leaves both, and clearing the demo took the real
-       * hours with it.
+       * Deleting every hour the account had was disproved on the first device it
+       * ran on: connecting Apple Health, finding the store empty and then loading
+       * demo data leaves both.
        */
       const demoDays = unwrap(
         await supabase

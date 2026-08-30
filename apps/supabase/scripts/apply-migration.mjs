@@ -2,20 +2,18 @@
 /**
  * Applies one migration file to the linked project, and records it.
  *
- * `supabase db push` is the normal route and it needs a database password this
- * machine does not have; the Management API query endpoint is what it has
- * instead (see scripts/lib/sql.mjs). The endpoint will run the file perfectly
- * well — what it will not do is tell the migration ledger that it happened, and
- * a schema change applied without its ledger row is exactly what
- * `supabase-drift` goes red on the next night. So this does both, in that
- * order, and refuses to run a file whose version is already recorded.
+ * `supabase db push` is the normal route and needs a database password this
+ * machine does not have, so the Management API query endpoint is used instead
+ * (see scripts/lib/sql.mjs). It runs the file perfectly well but does not tell
+ * the migration ledger it happened, and a schema change without its ledger row is
+ * what `supabase-drift` goes red on the next night. So this does both, in that
+ * order, and refuses a file whose version is already recorded.
  *
  *   node apps/supabase/scripts/apply-migration.mjs 20260811093504_catalogue_revamp.sql
  *   node apps/supabase/scripts/apply-migration.mjs <file> --dry-run
  *
- * The version and the name come from the FILENAME rather than from arguments,
- * because the whole point is that the remote ledger and the repo agree about
- * which file was applied.
+ * The version and name come from the filename, so the remote ledger and the repo
+ * agree about which file was applied.
  */
 
 import { readFileSync } from 'node:fs'

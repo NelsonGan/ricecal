@@ -37,10 +37,9 @@ import { ToastHost } from './Toast'
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 
 /**
- * The body, taught `className` — NativeWind only converts it to a style for
- * React Native's own components, and a third-party one takes it as an ordinary
- * prop and drops it silently. Without this the panel's list loses the `flex-1`
- * that gives it any height at all.
+ * The body, taught `className`. NativeWind only converts it to a style for React
+ * Native's own components, and a third-party one drops it silently, which loses
+ * the panel's list the `flex-1` that gives it any height.
  */
 const ScrollBody = cssInterop(KeyboardAwareScrollView, {
   className: 'style',
@@ -52,10 +51,9 @@ const RISE_MS = 260
 /** And to fall, once a drag has decided it is leaving. Quicker than it arrived. */
 const FALL_MS = 180
 /**
- * How far down the handle has to be dragged for the release to dismiss.
- *
- * Also cleared by a flick: a fast downward release under this distance still
- * closes, because a short fast drag and a long slow one mean the same thing.
+ * How far down the handle has to be dragged for the release to dismiss. Also
+ * cleared by a flick, since a short fast drag and a long slow one mean the same
+ * thing.
  */
 const DISMISS_DISTANCE = 96
 const DISMISS_VELOCITY = 900
@@ -69,17 +67,12 @@ export type SheetSurfaceProps = Omit<SheetProps, 'visible' | 'onShow' | 'onBack'
    * Whether this surface should draw the app's toasts. See the outlet at the foot
    * of `SheetSurface`.
    *
-   * `Sheet` passes its own `visible` here, and that is the whole reason the prop
-   * exists. On iOS a `Modal` keeps its children mounted after `visible` goes false,
-   * until the native `modalDismissed` event arrives at least a tick later, so the
-   * outlet inside a sheet that has just been closed is still the topmost claim, and
-   * a toast fired in the same handler as the close is drawn inside a window on its
-   * way off the screen. Invisible, again, which is the exact failure the outlet was
-   * added to fix.
-   *
-   * It is not hypothetical: "this needs Pro" fired from a sheet's own button closes
-   * the sheet and pushes the paywall, and that toast is the only thing saying which
-   * button was refused.
+   * `Sheet` passes its own `visible`, which is why the prop exists: on iOS a
+   * `Modal` keeps its children mounted after `visible` goes false, so the outlet
+   * inside a just-closed sheet is still the topmost claim and a toast fired in
+   * the same handler is drawn inside a window on its way off screen. That is the
+   * failure the outlet was added to fix, and "this needs Pro" fired from a
+   * sheet's own button is the case that hits it.
    *
    * A route sheet has no window of its own and never passes it.
    */
@@ -90,57 +83,46 @@ export type SheetProps = {
   visible: boolean
   onClose: () => void
   /**
-   * Android's hardware back, for a sheet that has somewhere to go that is not
-   * closed: the body it has drilled into, with the list still behind it.
-   *
-   * Absent — which is every sheet at its top level — back dismisses, which is
-   * what it should do there. It is the same move a `titleLeading` chevron makes,
-   * and it exists because that chevron is otherwise the only way up: `Modal`
-   * hands the back press to `onRequestClose`, so a `BackHandler` listener inside
-   * the window never sees it.
+   * Android's hardware back, for a sheet with somewhere to go that is not closed:
+   * the body it has drilled into. Absent, which is every sheet at its top level,
+   * back dismisses. It is the move a `titleLeading` chevron makes, and it exists
+   * because `Modal` hands the back press to `onRequestClose`, so a `BackHandler`
+   * inside the window never sees it.
    */
   onBack?: () => void
   /**
    * The window is on screen. For a sheet that has to focus a field: `autoFocus`
-   * inside a `Modal` is applied while the field is still off screen and is
-   * routinely dropped, so the keyboard never comes up. This fires once the
-   * platform has actually presented the window, which is the moment a `focus()`
-   * takes. Ignored by `SheetSurface`, which has no window of its own.
+   * inside a `Modal` is applied while the field is off screen and is routinely
+   * dropped. Ignored by `SheetSurface`, which has no window of its own.
    */
   onShow?: () => void
   /**
    * What a screen reader calls the handle, which is a button as well as a drag
-   * target. Defaulted rather than required, the same way `Stepper` defaults its
-   * two — a sheet that forgot it would otherwise announce nothing at all.
+   * target. Defaulted rather than required, as `Stepper` defaults its two, or a
+   * sheet that forgot it would announce nothing at all.
    */
   /** Screen-reader name for the drag handle. Pass translated copy. */
   closeLabel: string
   title?: string
   /**
    * One control on the title's own line, right aligned: a refresh, a close, a
-   * filter.
-   *
-   * Beside the heading rather than in the `footer` because some sheet actions are
-   * about the panel rather than about what is in it. A full-height sheet has no
-   * footer to put them in, and a sheet whose body is a list would push such a
-   * control off the bottom.
+   * filter. Beside the heading rather than in the `footer`, because these are
+   * about the panel rather than what is in it, and a full-height sheet has no
+   * footer to put them in.
    */
   titleAction?: ReactNode
   /**
-   * One control on the other end of that line, left aligned: the way back up.
-   *
-   * For a sheet whose body DRILLS IN — the picks list and the pick being read
-   * are one panel, not a panel and a page. It belongs in the title row rather
-   * than at the top of the body because the body scrolls, and a back control
-   * that scrolls away is one somebody has to scroll back up to find.
+   * One control on the other end of that line, left aligned: the way back up,
+   * for a sheet whose body drills in. In the title row rather than at the top of
+   * the body, because the body scrolls and a back control that scrolls away is
+   * one somebody has to scroll back up to find.
    */
   titleLeading?: ReactNode
   /**
-   * How many lines the title may take before it truncates. One everywhere it
-   * names the SHEET, since those are short and fixed; two where it is a thing
-   * the model named, which "Nasi kandar ayam goreng berempah" is and one line
-   * of which identifies no dish at all. Same prop and the same reason as
-   * `AppBar`'s.
+   * How many lines the title may take before it truncates. One where it names
+   * the sheet, since those are short and fixed; two where the model named it, as
+   * one line of "Nasi kandar ayam goreng berempah" identifies no dish. Same prop
+   * and reason as `AppBar`'s.
    */
   titleLines?: 1 | 2
   description?: string
@@ -149,29 +131,23 @@ export type SheetProps = {
   /** Let the body scroll. Off for short, fixed content. */
   scrollable?: boolean
   /**
-   * Sends the scrolling body back to its top whenever this changes.
-   *
-   * For a sheet that swaps one body for another without closing. The scroll
-   * view is the same instance either side of the swap, so a list read half way
-   * down opened what it drilled into half way down as well. A key rather than a
-   * remount, which would take the incoming body's entrance animation with it —
-   * see `Sheet` on why a view mounting alongside its container loses one.
+   * Sends the scrolling body back to its top whenever this changes, for a sheet
+   * that swaps one body for another without closing: the scroll view is the same
+   * instance either side, so a list read half way down opened what it drilled
+   * into half way down too. A key rather than a remount, which would take the
+   * incoming body's entrance animation with it.
    */
   scrollResetKey?: string | number
   /**
-   * Grows the panel to the full height of the screen, less the status bar.
-   *
-   * For a sheet whose content is a list worth scrolling — search results — where
-   * the 440pt cap shows four rows and a keyboard. It stays a sheet: same rise,
-   * same scrim above it, dismissed the same way.
+   * Grows the panel to the full height of the screen, less the status bar, for a
+   * sheet whose content is a list worth scrolling: the 440pt cap shows four rows
+   * and a keyboard. It stays a sheet, dismissed the same way.
    */
   fullHeight?: boolean
-  // No `bodyClassName`. It existed to cap the body of a sheet whose own field
-  // raises the keyboard, which was the picture picker and nothing else — and the
-  // cap was the wrong answer: a capped sheet is padded up off the bottom edge by
-  // the keyboard, and the strip it leaves behind shows the scrim through the curve
-  // of the keyboard's corners. Those sheets are `fullHeight` now, which keeps the
-  // panel where it is and insets the list instead.
+  // No `bodyClassName`. It capped the body of a sheet whose own field raises the
+  // keyboard, and the cap was the wrong answer: a capped sheet is padded up off
+  // the bottom edge, and the strip it leaves shows the scrim through the
+  // keyboard's corners. Those sheets are `fullHeight` now.
   children?: ReactNode
   className?: string
 }
@@ -180,27 +156,22 @@ export type SheetProps = {
  * A bottom sheet.
  *
  * Built on the platform `Modal` rather than a portal inside the app tree, so it
- * renders above native pickers and the keyboard, and so Android's hardware back
- * button closes it through `onRequestClose` without extra wiring.
+ * renders above native pickers and the keyboard and Android's hardware back
+ * closes it through `onRequestClose`.
  *
- * The scrim is a Pressable that closes; the panel is a Pressable that swallows
- * the press. Without the inner one, every tap inside the sheet would bubble to
- * the scrim and dismiss it.
+ * The scrim is a Pressable that closes and the panel is a Pressable that
+ * swallows the press, or every tap inside would bubble to the scrim.
  *
- * A sheet with a text field in it rides above the keyboard. A `Modal` is its own
- * window, so the `Screen` shell's keyboard handling does not reach inside one.
+ * A sheet with a text field rides above the keyboard itself: a `Modal` is its
+ * own window, so the `Screen` shell's keyboard handling does not reach inside.
  */
 export function Sheet({ visible, onShow, ...rest }: SheetProps) {
   return (
     /**
-     * `animationType="none"`, not `"slide"`.
-     *
-     * The platform slide animates the modal's whole root, scrim included, so the dim
-     * swept up from the bottom edge with the panel and for the length of that
-     * transition the top of the screen was undimmed. It read as the background
-     * sliding rather than a sheet rising over a background.
-     *
-     * The scrim now paints at full strength on the first frame, and only the panel
+     * `animationType="none"`, not `"slide"`. The platform slide animates the
+     * modal's whole root, scrim included, so the dim swept up from the bottom
+     * edge and the top of the screen stayed undimmed for the transition. Now the
+     * scrim paints at full strength on the first frame and only the panel
      * travels.
      */
     <Modal
@@ -225,16 +196,13 @@ export function Sheet({ visible, onShow, ...rest }: SheetProps) {
 }
 
 /**
- * The sheet without a window of its own.
+ * The sheet without a window of its own, for a route that is itself a sheet and
+ * presented as a `transparentModal`. Those already have everything `Sheet`'s
+ * `Modal` provides, and nesting a second window costs a visible delay: the route
+ * transition has to finish before the inner `Modal` starts presenting.
  *
- * For a route that is itself a sheet, presented by the navigator as a
- * `transparentModal`. Those already have everything `Sheet`'s `Modal` provides,
- * and nesting a second window inside them costs a visible delay: the route
- * transition has to finish before the inner `Modal` starts presenting, and only
- * then does the panel begin its 220ms slide.
- *
- * Use `Sheet` for a sheet opening over an ordinary screen. The window is what
- * puts it above the keyboard and above native pickers.
+ * Use `Sheet` over an ordinary screen, where the window is what puts it above
+ * the keyboard and native pickers.
  */
 export function SheetSurface({
   hosting = true,
@@ -258,15 +226,13 @@ export function SheetSurface({
   /**
    * The panel rises; the scrim does not.
    *
-   * Driven by a shared value rather than by reanimated's `entering`, and that is
-   * the whole point. A layout animation on a view that mounts with its window is
-   * routinely dropped, so the panel simply appeared. This starts from an explicit
-   * offscreen offset on the first frame and animates to zero in an effect, which
-   * runs after mount and therefore always runs.
+   * Driven by a shared value rather than reanimated's `entering`, because a
+   * layout animation on a view that mounts with its window is routinely dropped
+   * and the panel simply appeared. This starts from an explicit offscreen offset
+   * and animates to zero in an effect, which always runs.
    *
-   * Offset by the window height rather than by the panel's own: the panel has not
-   * been measured on the frame that has to start offscreen, and a guess that is too
-   * small shows a band of surface before the animation begins.
+   * Offset by the window height rather than the panel's own, which has not been
+   * measured on the frame that has to start offscreen.
    */
   const rise = useSharedValue(height)
 
@@ -283,32 +249,26 @@ export function SheetSurface({
   /**
    * Drag the handle down to dismiss.
    *
-   * On the handle rather than on the whole panel, deliberately. Every sheet in this
-   * app has something scrollable or draggable in it, and a pan on the panel
-   * competes with all of them: it either steals the first few points of a scroll or
-   * has to be taught to yield, and the teaching is per-child. The handle is the one
-   * part of a sheet whose only job is to be grabbed.
+   * On the handle rather than the whole panel: every sheet here has something
+   * scrollable in it, and a pan on the panel either steals the first points of a
+   * scroll or has to be taught to yield per child. The handle's only job is to be
+   * grabbed.
    *
-   * It moves the same shared value the entrance animation uses, so a drag picks up
-   * exactly where the rise left off and the two cannot fight.
+   * It moves the same shared value the entrance animation uses, so a drag picks
+   * up where the rise left off.
    *
-   * The close fires once, whatever asks. A tap on the handle, a drag past the
-   * threshold and a press on the scrim can all arrive for one dismissal, and
-   * `onClose` unwinds a navigator for a sheet that is a route: called twice it
-   * dismisses the screen underneath. A ref rather than state, because this must be
-   * true on the same tick rather than after a render. The scrim goes through here
-   * too, and it did not, which is how a sheet still closed twice with this guard in
-   * place.
+   * The close fires once, whatever asks: a tap, a drag past the threshold and a
+   * press on the scrim can all arrive for one dismissal, and `onClose` unwinds a
+   * navigator for a sheet that is a route. A ref rather than state, because it
+   * must be true on the same tick. The scrim goes through here too, and it did
+   * not, which is how a sheet closed twice with this guard in place.
    */
   const closing = useRef(false)
   /**
-   * The same fact, on the UI thread, where the pan gesture can read it.
-   *
-   * A shared value rather than the ref beside it, because a worklet reading a ref
-   * would be reading an object it has frozen, which is the mistake `Numpad` paid an
-   * afternoon for. It exists so nothing writes `rise` once the panel is on its way
-   * out: an interrupted timing animation reports `finished: false`, and the
-   * callback below rightly declines to close on one.
+   * The same fact, on the UI thread, where the pan gesture can read it. A shared
+   * value rather than the ref beside it, because a worklet reading a ref reads an
+   * object it has frozen (see `Numpad`). It exists so nothing writes `rise` once
+   * the panel is on its way out.
    */
   const falling = useSharedValue(false)
 
@@ -320,14 +280,13 @@ export function SheetSurface({
       height,
       { duration: FALL_MS, easing: Easing.in(Easing.cubic) },
       (finished) => {
-        // After the panel is gone, not before: `onClose` unmounts this, and calling it
-        // first would take the surface off screen with no animation at all.
+        // After the panel is gone: `onClose` unmounts this, so calling it first
+        // takes the surface off screen with no animation at all.
         //
-        // Only when the animation ran to its end, and the guard above is not enough on
-        // its own. Reanimated calls this back a second time when the animation is
-        // cancelled, which is what unmounting the surface does to it, and unmounting the
-        // surface is precisely what `onClose` has just arranged. Written unconditionally,
-        // one dismissal therefore unwound two screens.
+        // Only when the animation ran to its end. Reanimated calls back a second
+        // time when the animation is cancelled, which is what unmounting the
+        // surface does to it, so written unconditionally one dismissal unwound
+        // two screens.
         if (finished) runOnJS(onClose)()
       },
     )
@@ -353,12 +312,9 @@ export function SheetSurface({
     })
 
   /**
-   * The number pad, which a sheet has to account for itself.
-   *
-   * A `Sheet` is a native modal window, so the pad a field inside it opens is drawn
-   * by the host below rather than the one in `Screen`. What is left here is the
-   * same two sums a screen does: room at the end of the list, and a scroll that
-   * brings the focused field back above the keys.
+   * The number pad, which a sheet accounts for itself: a `Sheet` is a native
+   * modal window, so the pad a field inside it opens is drawn by the host below
+   * rather than the one in `Screen`. The same two sums a screen does.
    */
   const numpad = useNumpadZone()
   const scroller = useRef<KeyboardAwareScrollViewRef>(null)
@@ -367,11 +323,9 @@ export function SheetSurface({
     scrolled.current = event.nativeEvent.contentOffset.y
   }, [])
 
-  // A new body starts at its top. Unanimated: the body it belongs to is not on
-  // screen yet, so there is nothing for a scroll to read as movement of. The
-  // early return is what a sheet that never swaps its body gets, and it is also
-  // what keeps the key an honest dependency rather than a bare trigger.
-  // See `scrollResetKey`.
+  // A new body starts at its top, unanimated, since it is not on screen yet.
+  // The early return is what a sheet that never swaps its body gets, and it
+  // keeps the key an honest dependency. See `scrollResetKey`.
   useEffect(() => {
     if (scrollResetKey === undefined) return
     scroller.current?.scrollTo({ y: 0, animated: false })
@@ -447,13 +401,12 @@ export function SheetSurface({
           runs the whole way down. */}
         <KeyboardAvoidingView
           behavior={fullHeight ? undefined : 'padding'}
-          // Styled rather than classed, unlike everything else here: this is the one
-          // element in the file that is not a plain RN view, and whether NativeWind
-          // reaches it is not worth depending on for the layout that decides whether
-          // the panel has any height at all.
+          // Styled rather than classed: this is the one element here that is not
+          // a plain RN view, and whether NativeWind reaches it is not worth
+          // depending on for the layout that decides the panel's height.
           //
-          // The margin keeps the scrim visible above a full-height panel. Flush to
-          // the top edge it reads as a screen that arrived from the wrong direction.
+          // The margin keeps the scrim visible above a full-height panel, which
+          // flush to the top edge reads as a screen from the wrong direction.
           style={fullHeight ? { flex: 1, marginTop: insets.top } : undefined}
         >
           <AnimatedPressable

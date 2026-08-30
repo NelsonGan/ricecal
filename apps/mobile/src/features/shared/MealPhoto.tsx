@@ -19,21 +19,16 @@ export type MealPhotoProps = {
  * A photographed plate, wherever one is drawn: the 56pt tile on a row, the hero
  * on an entry, a recipe's own picture.
  *
- * One component rather than five copies of the same three props, because the
- * crop is the sort of thing that gets applied to four of the five places a
- * photo appears and then looks like a bug on the fifth. It fills whatever box
- * it is put in — see `photoCropFill` for what "fills" means here, and why the
- * caller owes it a size and an `overflow-hidden` to crop against.
+ * One component rather than five copies of the same three props, because a crop
+ * applied to four of five places looks like a bug on the fifth. It fills whatever
+ * box it is put in; see `photoCropFill`, and note the caller owes it a size and
+ * an `overflow-hidden` to crop against.
  *
  * Faded in, because a plate can still be a moment late. It used to be late by a
- * request: signed URLs are deliberately kept OUT of the persisted cache — they
- * expire within the hour and that cache lives for a week — so every launch
- * re-signed them, and a day of snapped meals drew its rows as grey squares and
- * then hard-cut to photographs once the `photos` function answered. A launch
- * now asks the disk before it asks the network and usually finds the picture
- * there, so what is left to wait for is a local stat rather than a round trip.
- * The fade stays for the launch that does have to fetch, and for the plate this
- * device has never seen.
+ * request, since signed URLs are kept out of the persisted cache, so every launch
+ * re-signed them and a day of snapped meals hard-cut from grey squares to
+ * photographs. A launch now asks the disk first, and the fade stays for the
+ * launch that does have to fetch.
  */
 export function MealPhoto({ source, dimmed = false, accessibilityLabel }: MealPhotoProps) {
   return (

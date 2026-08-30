@@ -13,23 +13,18 @@ import { fetchPlanPrices } from './purchases'
 import { useSession, useUserId } from './session'
 
 /**
- * The subscription, as RevenueCat last reported it.
+ * The subscription, as RevenueCat last reported it. Read-only in every sense:
+ * the table has no client write grant, because entitlement is decided by the
+ * store and mirrored in by the `revenuecat` webhook.
  *
- * Read-only here in every sense: the table has no write grant for clients at
- * all, because entitlement is decided by the store and mirrored in by the
- * `revenuecat` webhook. A client that could write it could grant itself the app.
- *
- * No row means never subscribed, which is not an error. Most users are in that
- * state, and the paywall is what they see.
+ * No row means never subscribed, which is not an error.
  */
 export function useSubscription() {
-  // `useSession`, not `useUserId`, and the same for the store query below.
-  // `useUserId` throws when nobody is signed in, and these two are read by
-  // `useEntitlement`, which is read by `EntitlementSync` at the root of the app,
-  // above every session guard and before the keychain has been read. That was a
-  // red error screen on cold start. A query with no account to ask about is
-  // disabled rather than absent, which react-query reports as "not loading, no
-  // data": the right shape for "signed out is not subscribed".
+  // `useSession` rather than `useUserId`, here and for the store query below.
+  // `useUserId` throws when nobody is signed in, and these are read by
+  // `useEntitlement` through `EntitlementSync` at the root of the app, above
+  // every session guard. A query with no account to ask about is disabled rather
+  // than absent, which react-query reports as "not loading, no data".
   const { userId } = useSession()
 
   return useQuery({
@@ -58,17 +53,16 @@ export type EntitlementRow = {
 /**
  * The whole rule: an entitled status, and a period that has not run out.
  *
- * The date is part of it. Read on the status alone a missed ending is permanent
- * rather than temporary: a delivery that failed past RevenueCat's retries leaves
- * a row saying `active` with an expiry in the past, and the app goes on unlocking
- * itself for ever.
+ * The date is part of it. On the status alone, a webhook delivery that failed
+ * past RevenueCat's retries leaves a row saying `active` with an expiry in the
+ * past, and the app unlocks itself for ever.
  *
- * Null is no expiry. Lifetime renews never, so RevenueCat sends none, and reading
- * it as expired would refuse the one plan that cannot lapse.
+ * Null is no expiry: lifetime renews never, so reading it as expired would
+ * refuse the one plan that cannot lapse.
  *
- * The server enforces the same rule in `entitledBy`. The two cannot import each
- * other across the Deno / React Native line and change together: this copy
- * decides what the buttons say, that one actually refuses.
+ * The server enforces the same rule in `entitledBy`. The two are either side of
+ * the Deno / React Native line and change together: this decides what the
+ * buttons say, that one refuses.
  *
  * `now` is a parameter so the boundary can be tested from both sides.
  */
@@ -84,12 +78,9 @@ export type Entitlement = {
    */
   entitled: boolean
   /**
-   * Is the answer still being fetched?
-   *
-   * Separate from `entitled` because the two are read at different moments, and a
-   * screen that conflates them flashes the paywall at a paying user on every cold
-   * launch. Anything that gates should wait for this to be false; anything that
-   * merely decorates can read `entitled` straight away.
+   * Is the answer still being fetched? Separate from `entitled`, because a screen
+   * that conflates them flashes the paywall at a paying user on every cold
+   * launch. Anything that gates waits for this; anything that decorates does not.
    */
   loading: boolean
   /** True while the app is offline and has no cached answer to fall back on. */
@@ -97,15 +88,12 @@ export type Entitlement = {
 }
 
 /**
- * Whether this account may use the paid parts of the app.
+ * Whether this account may use the paid parts of the app. One hook, read by every
+ * gate, and the server enforces the same rule independently.
  *
- * One hook, read by every gate, so "what does Pro include" is answered in one
- * place. The server enforces the same rule independently.
- *
- * It defaults to false while loading, and callers wait on `loading` rather than
- * acting on the false. Assuming paid until told otherwise puts a non-paying user
- * into the camera, spends an upload and a model call, and refuses them at the
- * end.
+ * False while loading, and callers wait on `loading` rather than acting on it.
+ * Assuming paid puts a non-paying user into the camera, spends an upload and a
+ * model call, and refuses them at the end.
  */
 export function useEntitlement(): Entitlement {
   const { data, isLoading, isError, isPaused } = useSubscription()
@@ -139,12 +127,9 @@ export function useEntitlement(): Entitlement {
     // Only while nobody has said yes. Once one has, there is nothing left to
     // wait for and a gate should open rather than sit through the other.
     loading: !entitled && (mirrorLoading || store.isLoading),
-    // We asked and could not find out. The screens use this to say "we could not
-    // check" rather than "you have not paid", which are very different things to read
-    // when you have in fact paid.
-    //
-    // A cached store answer of no settles it even with the mirror unreachable, which
-    // is the ordinary offline case for a free account.
+    // We asked and could not find out, so the screens say "we could not check"
+    // rather than "you have not paid". A cached store answer of no settles it
+    // even with the mirror unreachable, which is the ordinary offline case.
     unknown: !entitled && !mirrorLoading && !store.isLoading && mirrorNoAnswer && !storeNo,
   }
 }
@@ -152,13 +137,11 @@ export function useEntitlement(): Entitlement {
 /**
  * What the store says, through the RevenueCat SDK.
  *
- * `networkMode: 'always'` is the one deliberate departure from the app-wide rule,
- * because this query does not go to the network: the SDK answers out of its own
- * cache offline. Paused with everything else it would sit pending for ever, and
- * the fallback it exists to be would be the thing that was missing.
+ * `networkMode: 'always'` is the one departure from the app-wide rule, because
+ * this does not go to the network: the SDK answers out of its own cache offline.
+ * Paused with everything else it would sit pending for ever.
  *
- * `retry: false` because the common failure is a build with no RevenueCat in it,
- * which does not become true on the third ask.
+ * `retry: false`, because the common failure is a build with no RevenueCat in it.
  */
 export function useStoreEntitlement() {
   const { userId } = useSession()
@@ -177,21 +160,17 @@ export function useStoreEntitlement() {
 
 /**
  * Keeps the two answers in step, from the one moment that knows they moved.
+ * Mounted once, near the root; the SDK fires its listener on a purchase, a
+ * restore, a renewal, an expiry and its own refresh.
  *
- * Mounted once, near the root. The SDK fires its listener on a purchase, a
- * restore, a renewal, an expiry and on its own refresh, which is every moment the
- * answer could have changed. Two things follow, and both are done here:
- *
- * - The store's answer is written straight into the cache, so a purchase unlocks
- *   the app in the frame after the store sheet closes rather than after a
- *   refetch.
+ * - The store's answer goes straight into the cache, so a purchase unlocks the
+ *   app in the frame after the store sheet closes.
  * - Our own mirror is invalidated, because RevenueCat having heard something is
- *   the earliest possible warning that the webhook is about to write that row.
- *   Waiting for a stale time instead is how the Me tab went on saying "Free plan"
- *   for a minute after a purchase landed.
+ *   the earliest warning that the webhook is about to write that row. Waiting for
+ *   a stale time is how the Me tab said "Free plan" for a minute after a
+ *   purchase.
  *
- * The scan quota goes with it: its ceiling is a property of the tier, so an
- * account that has just become Pro has fifty a day rather than three.
+ * The scan quota goes with it, since its ceiling is a property of the tier.
  */
 export function useEntitlementSync(): void {
   const queryClient = useQueryClient()
@@ -220,22 +199,19 @@ export function useEntitlementSync(): void {
 /**
  * The store says paid and our own row does not. Ask the server to settle it.
  *
- * Why the client has to prod. `reconcileEntitlement` on the server already
- * refills the row from RevenueCat when it is missing, but only from inside a
- * Pro-gated request, and two of the things this app draws are read straight out
- * of Postgres by the client instead. The scans-left line under the viewfinder and
- * the plan on the Me tab both come from that row, so an account whose webhook was
- * lost went on reading "3 scans left today" over an unlocked app until it
- * happened to press a Pro button.
+ * `reconcileEntitlement` refills the row from RevenueCat when it is missing, but
+ * only from inside a Pro-gated request, and the scans-left line and the plan on
+ * the Me tab are read straight out of Postgres. So an account whose webhook was
+ * lost read "3 scans left today" over an unlocked app until it happened to press
+ * a Pro button.
  *
- * Nothing is trusted from here. The endpoint takes an empty body, resolves the
- * account from the JWT, and asks RevenueCat, so the worst this call can do is
- * make the server look up a subscription that is already the server's business.
+ * Nothing is trusted from here: the endpoint takes an empty body and resolves the
+ * account from the JWT.
  *
- * Two guards, doing different jobs. The effect fires on the edge, the moment the
- * two answers start disagreeing, so it asks once and not on every render. The set
- * below is narrower: it stops a second call overlapping one already in flight. It
- * is released afterwards on purpose, so a later divergence can ask again.
+ * Two guards. The effect fires on the edge, the moment the two answers start
+ * disagreeing, so it asks once rather than on every render; the set below stops a
+ * second call overlapping one in flight, and is released so a later divergence
+ * can ask again.
  */
 const healing = new Set<string>()
 
@@ -267,19 +243,16 @@ async function healEntitlement(queryClient: QueryClient, userId: string): Promis
 /**
  * How many scans this account has left today.
  *
- * Shown, unlike the meter this replaced. `ai_usage_this_month()` existed for
- * support and an admin view nobody built, because the number it returned could
- * not be put in front of anybody: it counted requests to a model, and no user has
- * any idea how many of those a plate costs. This one counts the thing they did,
- * so "2 scans left today" is a sentence that answers itself.
+ * Shown, unlike the meter it replaced: `ai_usage_this_month()` counted requests
+ * to a model, and no user knows how many of those a plate costs. This counts the
+ * thing they did.
  *
  * Only the server knows. The count is claimed there, keyed by the user's own
- * local date, and a second copy in the client would be wrong the first time the
- * phone was offline, or a second device scanned, or the two disagreed about what
- * day it is.
+ * local date, and a client copy would be wrong the first time the phone was
+ * offline or a second device scanned.
  *
- * The row is always there, including for somebody who has never scanned, so a
- * screen never has to tell "no row yet" from "no answer yet".
+ * The row is always there, so a screen never has to tell "no row yet" from "no
+ * answer yet".
  */
 export type ScanQuota = {
   used: number
@@ -309,11 +282,9 @@ export function useScanQuota() {
 }
 
 /**
- * What each plan costs, read from the store through RevenueCat.
- *
- * `retry: false` on purpose. The common failure is a build that simply has no
- * products, such as a dev-variant bundle id with no App Store Connect app behind
- * it, and retrying that three times only delays the dash the screen will draw.
+ * What each plan costs, read from the store through RevenueCat. `retry: false`
+ * on purpose: the common failure is a build with no products, such as a
+ * dev-variant bundle id, and retrying only delays the dash the screen draws.
  */
 export function usePlanPrices() {
   return useQuery({
@@ -329,17 +300,14 @@ export function usePlanPrices() {
 /**
  * Waits for a just-completed purchase to reach our own mirror of it.
  *
- * The store is not the source this app reads. A purchase confirms in the store,
- * RevenueCat hears about it, and only then does the `revenuecat` webhook write
- * `subscriptions`, which is what `useEntitlement` reads. The gap is small and it
- * is not zero, so a screen that navigated on the store's confirmation alone could
- * hand a paying user the paywall again one tap later. That is the worst first
- * impression this app can make, and it is invisible in testing on a fast
- * connection.
+ * A purchase confirms in the store, RevenueCat hears about it, and only then does
+ * the webhook write `subscriptions`, which is what `useEntitlement` reads. The
+ * gap is small and not zero, so a screen navigating on the store's confirmation
+ * alone could hand a paying user the paywall one tap later.
  *
- * So the purchase screens await this before they move on. It polls rather than
- * assumes, and it gives up rather than blocking for ever: an entitlement that has
- * not landed in ten seconds will land on its own.
+ * So the purchase screens await this. It polls rather than assumes, and gives up
+ * rather than blocking: an entitlement that has not landed in ten seconds will
+ * land on its own.
  */
 const ENTITLEMENT_POLL_ATTEMPTS = 7
 const ENTITLEMENT_POLL_INTERVAL_MS = 1_500

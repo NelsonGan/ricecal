@@ -29,18 +29,15 @@ export type ReviewRowProps = {
 }
 
 /**
- * One row of the reviews list: what the period was called, what it came to, and
- * a sparkline of the days inside it.
+ * One row of the reviews list: what the period was called, what it came to, and a
+ * sparkline of the days inside it.
  *
- * The sparkline is the row's whole reason for being taller than a list item.
- * The sentence beside it is an average and a count, and neither can show that
- * the week was four heavy days and three missing ones — the bars can, in the
- * width of a thumbnail, and they are what makes two rows with the same average
- * look different from each other.
+ * The sparkline is why the row is taller than a list item. The sentence beside it
+ * is an average and a count, neither of which can show that the week was four
+ * heavy days and three missing ones; the bars can, in the width of a thumbnail.
  *
- * Only the newest row draws them in colour. A list where every row is green is
- * a list with no emphasis in it, and the newest review is the one somebody came
- * here to open.
+ * Only the newest row draws them in colour. A list where every row is green has
+ * no emphasis in it, and the newest review is the one somebody came here to open.
  */
 export function ReviewRow({
   period,

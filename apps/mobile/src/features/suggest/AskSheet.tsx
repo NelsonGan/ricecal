@@ -65,32 +65,24 @@ function Group({
 }
 
 /**
- * L7 ASK MODAL: four questions, none of which has to be answered.
+ * The ask sheet: four questions, none of which has to be answered.
  *
- * EVERY CONTROL OPENS ON AN ANSWER, which is the opposite of the rule
- * onboarding's first screen follows and is right for the opposite reason. There
- * a prefilled body is a calorie budget worked out for somebody else; here a
- * prefilled sitting is a guess that costs nothing to be wrong about, because
- * the answer is a list of suggestions rather than a plan. Somebody who opens
- * this at seven in the evening and presses the button straight away should get
- * dinner.
+ * Every control opens on an answer, which is the opposite of onboarding's first
+ * screen and right for the opposite reason: a prefilled sitting costs nothing to
+ * be wrong about, because the answer is a list of suggestions rather than a plan.
+ * Somebody who opens this at seven in the evening should get dinner.
  *
- * The sitting comes off the user's OWN meal times rather than off a table of
- * hours — see `mealAt` — and the ceiling off what is left of the day.
+ * The sitting comes off the user's own meal times (see `mealAt`) and the ceiling
+ * off what is left of the day.
  *
- * FULL HEIGHT, and now for two reasons. The form plus the ceiling comes to more
- * than the 440pt a capped body gets, and what a capped sheet does with the
- * overflow is hide the calorie limit behind the footer. And the cuisine editor
- * raises the KEYBOARD, which is the rule in README.md about a sheet with typing
- * in it: capped, `KeyboardAvoidingView` pads the panel up off the bottom edge
- * and the scrim shows through the curve of the keyboard's corners.
+ * Full height for two reasons: the form plus the ceiling exceeds the 440pt a
+ * capped body gets, so the calorie limit would sit behind the footer, and the
+ * cuisine editor raises the keyboard, which a capped sheet handles by padding the
+ * panel up off the bottom edge.
  *
- * It KEEPS its footer, unlike the other full-height sheets in the app. Theirs is
- * dropped because a footer sits outside the scroll view and lands behind the
- * keyboard — which is a real cost here only while the editor is open, and the
- * editor has an Add button of its own inside the body. The button that sends the
- * question is the sheet's whole purpose and belongs where every other primary
- * action in the app is.
+ * It keeps its footer, unlike the other full-height sheets, which drop theirs
+ * because a footer lands behind the keyboard. That costs only while the editor is
+ * open, and the editor has an Add button of its own inside the body.
  */
 export function AskSheet({
   visible,
@@ -105,12 +97,10 @@ export function AskSheet({
   const userId = useUserId()
 
   /**
-   * The three answers that are about TASTE, seeded from what was sent last time.
-   *
-   * Read once, at mount, rather than on every opening: the state below is the
-   * live answer from the moment the sheet is first drawn, and re-reading storage
-   * over it would undo a choice made and not yet sent. See `preferences.ts` for
-   * why the sitting and the ceiling are not among them.
+   * The three answers that are about taste, seeded from what was sent last time.
+   * Read once at mount rather than on every opening: re-reading storage would
+   * undo a choice made and not yet sent. See `preferences.ts` for why the sitting
+   * and the ceiling are not among them.
    */
   const remembered = useRef(readPreferences(userId)).current
 
@@ -124,24 +114,17 @@ export function AskSheet({
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   /**
-   * Bumped on every opening, and used as the dropdowns' `key`.
-   *
-   * A `Sheet` is a `Modal` that stays in the tree with `visible={false}`, so a
-   * `Dropdown` left expanded when the sheet was dismissed is still expanded the
-   * next time it rises — the same trap the food detail screen's sheets fell into
-   * with a saving flag. Whether a list is open is the one piece of state this
-   * screen does not own, so remounting is the honest way to clear it: the values
-   * all live up here and nothing is lost by it.
+   * Bumped on every opening, and used as the dropdowns' `key`. A `Sheet` stays in
+   * the tree with `visible={false}`, so a `Dropdown` left expanded is still
+   * expanded next time it rises. Whether a list is open is the one piece of state
+   * this screen does not own, so remounting clears it and nothing is lost.
    */
   const [session, setSession] = useState(0)
   /**
-   * Whether the ceiling is the user's number or the sheet's guess.
-   *
-   * The guess depends on the sitting — 300 for a snack, up to 800 for a meal —
-   * so changing the sitting has to move it, or somebody who opens the sheet
-   * mid-afternoon and taps Dinner is asked to find a dinner in 300 kcal. But
-   * once they have set a figure themselves it is theirs, and a chip tap that
-   * threw it away would be the sheet arguing with the person filling it in.
+   * Whether the ceiling is the user's number or the sheet's guess. The guess
+   * depends on the sitting, so changing the sitting has to move it, or somebody
+   * who taps Dinner mid-afternoon is asked to find one in 300 kcal. Once they
+   * have set a figure it is theirs.
    */
   const [ownCeiling, setOwnCeiling] = useState(false)
 
@@ -156,13 +139,10 @@ export function AskSheet({
   }
 
   /**
-   * A kitchen is added and the list is saved THERE, not when the question is
-   * asked.
-   *
-   * The three answers around it are saved on Ask, because a chip tapped and
-   * tapped back is not a preference. A cuisine somebody typed out is: dismissing
-   * the sheet afterwards would lose work rather than lose a tap, and the list is
-   * a thing they are curating rather than an answer they are giving.
+   * A kitchen is added and the list is saved there rather than when the question
+   * is asked. The three answers around it are saved on Ask, because a chip tapped
+   * and tapped back is not a preference; a cuisine somebody typed out is work,
+   * and the list is a thing they are curating rather than an answer.
    */
   const keepList = (next: Cuisine[]) => {
     setCuisines(next)
@@ -212,37 +192,26 @@ export function AskSheet({
   )
 
   /**
-   * The freshest values to seed FROM, without the seeding depending on them.
-   *
-   * Both change while the sheet is open — `kcalLeft` moves whenever the day
-   * does (a health sync re-reads the last seven days on every foreground), and
-   * react-query hands back a new `mealTimes` array on every refetch. Listed as
-   * dependencies below, either one re-runs the effect mid-edit and throws away
-   * the sitting and the ceiling the user has just chosen, `ownCeiling`
-   * included. A ref is read at the moment of seeding and never re-triggers it.
+   * The freshest values to seed from, without the seeding depending on them.
+   * Both change while the sheet is open, and as dependencies either one re-runs
+   * the effect mid-edit and throws away the sitting and the ceiling the user has
+   * just chosen. A ref is read at the moment of seeding and never re-triggers it.
    */
   const latest = useRef({ kcalLeft, mealTimes })
   latest.current = { kcalLeft, mealTimes }
 
   /**
-   * Re-answered on every OPENING, and only then.
-   *
-   * A `Sheet` is a `Modal` that stays in the tree with `visible={false}`, so
-   * state seeded at mount is state from whenever the screen was first drawn —
-   * which for Today is the launch. Opened at eight in the evening after a day
-   * in the app, the sitting would have been whatever it was at breakfast. The
-   * same rule the editing sheets on the food detail screen follow, and for the
-   * same reason.
+   * Re-answered on every opening, and only then. A `Sheet` stays in the tree with
+   * `visible={false}`, so state seeded at mount is state from the launch, and a
+   * sheet opened at eight in the evening would carry the sitting it had at
+   * breakfast.
    *
    * The editor is closed on the way in for the same reason: a sheet that opens
-   * showing a text field is a sheet asking to be typed into, and the question
-   * it is here to ask is the dropdown above it.
+   * showing a text field is asking to be typed into.
    *
-   * The trade for depending on `visible` alone is the cold case: meal times
-   * that arrive AFTER the sheet is opened do not move the sitting off `snack`.
-   * That is the documented fallback rather than a wrong answer, it is one tap
-   * from being corrected, and it is a far smaller thing to be wrong about than
-   * a form that resets itself while somebody is filling it in.
+   * Depending on `visible` alone means meal times arriving after the sheet is
+   * opened do not move the sitting off `snack`, which is the documented fallback
+   * and one tap from being corrected.
    */
   useEffect(() => {
     if (!visible) return
@@ -265,18 +234,13 @@ export function AskSheet({
         <View className="flex-row items-center gap-2">
           {/* THE LEAN, ON THE TITLE'S LINE, and tapping it flips it.
            *
-           * A two-state pill rather than a fourth dropdown, because it is not
-           * another thing to choose between: it is one dial on the question the
-           * rest of the sheet is asking, and a field labelled "Health" with two
-           * options in it would read as a choice of equal weight with the
-           * cuisine and the macros.
+           * A two-state pill rather than a fourth dropdown: it is one dial on the
+           * question the rest of the sheet is asking, and a field labelled
+           * "Health" would read as a choice of equal weight with the cuisine.
            *
-           * ALWAYS `selected`, so it is always the raised, filled chip — what
-           * changes is its COLOUR, pandan for the lean and kaya for the other.
-           * An unselected chip would read as a thing that is off rather than as
-           * the other half of a switch, and "Anything" is not off; it is the
-           * second of two answers. The colour carries the state, so it is
-           * legible without reading the word.
+           * Always `selected`, so it is always the raised, filled chip, and what
+           * changes is its colour. An unselected chip would read as off, and
+           * "Anything" is not off but the second of two answers.
            */}
           <Chip
             selected

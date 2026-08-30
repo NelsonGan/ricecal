@@ -8,22 +8,15 @@ import { estimatedMaxHr, hrZonesFromSamples } from '../hrZones'
 import { asWorkoutKind, fromAppleWorkoutType, fromConnectExerciseType } from '../kinds'
 
 /**
- * The arithmetic behind movement, tested where it is pure.
- *
- * Everything here is a function of its arguments — no store, no network, no
- * clock — which is exactly the part that a simulator cannot prove and a
- * screenshot cannot either.
+ * The arithmetic behind movement, tested where it is pure: everything here is a
+ * function of its arguments, which is the part a simulator cannot prove.
  */
 
 describe('the demo provider', () => {
   /**
-   * THE property the sync design rests on.
-   *
-   * The incremental pass re-reads a rolling window on every foreground and
-   * upserts it. If reading the same day twice produced different numbers, every
-   * chart would twitch and "syncing twice changes nothing" — the thing the
-   * demo provider exists to let anyone verify — would be the one thing it
-   * visibly failed to do.
+   * The property the sync design rests on. The incremental pass re-reads a
+   * rolling window on every foreground and upserts it, so reading the same day
+   * twice has to produce the same numbers or every chart twitches.
    */
   it('returns identical data when the same range is read twice', async () => {
     const first = await demoHealth.read('2026-03-01', '2026-03-07', {
@@ -41,13 +34,10 @@ describe('the demo provider', () => {
   })
 
   /**
-   * The same day read inside a WIDER window must be the same day.
-   *
-   * This is the case a naive generator gets wrong: seeding from an index into
-   * the range rather than from the date makes every day shift when the window
-   * moves, and the backfill and the incremental pass then disagree about
-   * yesterday. The two are chunked differently, so they really do read the same
-   * date through different ranges.
+   * The same day read inside a wider window must be the same day. A naive
+   * generator seeds from an index into the range rather than the date, so every
+   * day shifts when the window moves and the backfill and the incremental pass
+   * disagree about yesterday.
    */
   it('generates a day from its date, not from its position in the range', async () => {
     const narrow = await demoHealth.read('2026-03-05', '2026-03-05', {
@@ -160,15 +150,10 @@ describe('heart rate zones', () => {
   })
 
   /**
-   * The bands move with the user, which is the whole reason `read` carries an
-   * age at all.
-   *
-   * Nothing passed one for a long time — `hrZonesFromSamples(beats)` in both
-   * providers, with only these tests ever supplying the argument — so every
-   * session on every account was banded against a 40-year-old. 156 bpm is 83% of
-   * a 29-year-old's estimated maximum (188) and 87% of a 40-year-old's (180),
-   * and the Hard / Peak boundary sits at 85%: the same run came back "mostly
-   * Peak" for a user who was working hard, but not that hard.
+   * The bands move with the user, which is why `read` carries an age. Nothing
+   * passed one for a long time, so every session was banded against a
+   * 40-year-old: 156 bpm is 83% of a 29-year-old's estimated maximum and 87% of a
+   * 40-year-old's, with the Hard / Peak boundary at 85%.
    */
   it('bands the same session differently for different ages', () => {
     const beats = samples(Array(20).fill(156))
@@ -181,13 +166,10 @@ describe('heart rate zones', () => {
   })
 
   /**
-   * A missing birth date is null, NEVER zero.
-   *
-   * `ageFrom` returns 0 for a profile with no birth date, and 0 through Tanaka
-   * is a maximum of 208 — a ceiling nobody reaches, so every band would collapse
-   * into Easy and a genuinely hard session would report no effort at all.
-   * `health-sync` converts the absent date to null for this reason; this pins
-   * the difference the two produce.
+   * A missing birth date is null, never zero. `ageFrom` returns 0 for a profile
+   * with none, and 0 through Tanaka is a maximum of 208, so every band collapses
+   * into Easy. `health-sync` converts the absent date to null; this pins the
+   * difference the two produce.
    */
   it('treats an unknown age as unknown rather than as zero', () => {
     expect(estimatedMaxHr(null)).toBe(estimatedMaxHr(40))
@@ -220,11 +202,10 @@ describe("summarising a session's heart rate", () => {
   const beats = (bpm: number[]) => bpm.map((value, index) => ({ bpm: value, at: index * 30_000 }))
 
   /**
-   * The property the workout screen's tiles depend on.
-   *
-   * Zones and figures used to be one answer, so a session banded as null lost
-   * its average and its maximum with it. Six readings are too few to draw four
-   * bars and are plenty to say what the heart rate was.
+   * The property the workout screen's tiles depend on. Zones and figures used to
+   * be one answer, so a session banded as null lost its average and maximum with
+   * it: six readings are too few to draw four bars and plenty to say what the
+   * heart rate was.
    */
   it('reports an average without bands when there are too few readings to band', () => {
     const summary = summariseHeartRate(beats([120, 130, 140, 150, 160, 170]), 30)
@@ -389,18 +370,13 @@ describe('workout kinds', () => {
 })
 
 /**
- * The config as `expo prebuild` resolves it, for one variant.
+ * The config as `expo prebuild` resolves it, for one variant. Read through
+ * `app.config.ts` rather than `app.json`, because the variants sit between the
+ * two and rebuild `android` by spreading it: a variant that composed that object
+ * instead would drop the permissions for its own build and no other.
  *
- * Read through `app.config.ts` rather than off `app.json`, because the variants
- * are between the two and both of them rebuild `android` by spreading it. A
- * future variant that composed that object rather than spreading it would drop
- * the permissions for the build it applies to and no other, which on the
- * `development` profile means every EAS dev build silently back where this
- * started.
- *
- * `APP_VARIANT` is read at module scope, so the module has to be re-evaluated
- * per variant, and the surrounding value is put back — jest workers share a
- * process across files.
+ * `APP_VARIANT` is read at module scope, so the module is re-evaluated per
+ * variant and the surrounding value put back, since jest workers share a process.
  */
 function resolveConfig(variant?: string): ExpoConfig {
   const before = process.env.APP_VARIANT
@@ -438,24 +414,14 @@ const VARIANTS: Array<[string, string | undefined]> = [
 
 describe('the Health Connect manifest declaration', () => {
   /**
-   * The manifest is the other half of the Android permission request, and
-   * nothing at runtime can tell you it is missing.
+   * The manifest is the other half of the Android permission request, and nothing
+   * at runtime can tell you it is missing: an undeclared health permission is
+   * left off the permission sheet and `requestAccess` reports a refusal the user
+   * was never given the chance to make. Android health sync shipped that way.
    *
-   * Android grants only what was DECLARED, and an undeclared health permission
-   * is not an error anywhere: the record type is left off the permission sheet,
-   * `requestPermission` resolves without it, and `requestAccess` reports a
-   * refusal the user was never given the chance to make. Android health sync
-   * shipped exactly that way — `app.json` declared CAMERA and RECORD_AUDIO and
-   * nothing else, `react-native-health-connect`'s config plugin adds only the
-   * rationale intent-filter and the `ViewPermissionUsageActivity` alias, and
-   * Health Connect listed the phone it was installed on under "No compatible
-   * apps installed".
-   *
-   * It cannot be a derivation. Expo's config loader transpiles `app.config.ts`
-   * and then requires its relative imports through plain Node, which will not
-   * load a `.ts` module, so the manifest list has to be literal. This is what
-   * makes the second copy safe: adding a record type without declaring its
-   * permission fails here rather than on a phone.
+   * It cannot be a derivation, because Expo's config loader requires
+   * `app.config.ts`'s relative imports through plain Node, which will not load a
+   * `.ts` module. This is what makes the second copy safe.
    */
   it.each(VARIANTS)('declares every record type the provider reads, for %s', (_name, variant) => {
     const permissions = resolveConfig(variant).android?.permissions ?? []
@@ -481,22 +447,16 @@ describe('the Health Connect manifest declaration', () => {
 })
 
 /**
- * The three decisions that stop Health Connect lying to the diary.
- *
- * All of them are pure functions of an aggregate's shape, which is the only
- * part of this that can be tested off a phone — and it is the part that was
- * wrong. Each case here is a real reading off a real Samsung account, kept as
- * numbers rather than as prose so that a change which reintroduces the bug
- * fails rather than merely reads differently.
+ * The three decisions that stop Health Connect lying to the diary. All are pure
+ * functions of an aggregate's shape, which is the part that can be tested off a
+ * phone and the part that was wrong. Each case is a real reading off a real
+ * Samsung account, kept as numbers rather than prose.
  */
 describe('choosing whose numbers to read', () => {
   /**
-   * The bug this whole mechanism exists for.
-   *
-   * The account read 4,675 steps against Samsung Health's own 2,808 for the
-   * same day, because a second stream had written the same walk and the
-   * aggregate returned the sum. An app the user can open beats the phone's own
-   * pedometer, so the total becomes one they can check.
+   * The bug this mechanism exists for: the account read 4,675 steps against
+   * Samsung Health's own 2,808 for the same day, because a second stream had
+   * written the same walk and the aggregate returned the sum.
    */
   it('prefers an app the user can open over the phone recording itself', () => {
     expect(preferredOrigin(['android', 'com.sec.android.app.shealth'])).toBe(
@@ -596,14 +556,11 @@ describe('splitting a day of energy', () => {
   })
 
   /**
-   * The empty-store case, with the figure a real device actually returned.
-   *
-   * Probed on a Pixel API 36 emulator whose Health Connect held nothing at all,
-   * `BasalMetabolicRate` still answered 1,564.5 kcal — derived rather than
-   * measured, and marked as such only by an empty `dataOrigins`. `hasOrigins`
-   * is what keeps it out of `measuredBasal`; this asserts what happens if it
-   * ever gets through, which is that the day is priced off a number nobody
-   * recorded.
+   * The empty-store case, with the figure a real device returned: on an emulator
+   * whose Health Connect held nothing, `BasalMetabolicRate` still answered
+   * 1,564.5 kcal, marked as derived only by an empty `dataOrigins`. `hasOrigins`
+   * keeps it out of `measuredBasal`, and this asserts what happens if it gets
+   * through.
    */
   it('would price a day off a derived basal, which is why hasOrigins drops it first', () => {
     const leaked = energyFor({

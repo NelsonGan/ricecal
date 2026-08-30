@@ -5,15 +5,14 @@ import { useSession } from '@/data'
 /**
  * The reviews, behind a session.
  *
- * The same guard the Activity detail screens have, and it is here for the same
- * two reasons: every screen below reaches `useUserId`, which THROWS by design
- * when there is no session, so a deep link straight to `ricecal://reviews` or a
- * Fast Refresh mid-session would be a red error screen rather than a redirect.
+ * The same guard the Activity detail screens have: every screen below reaches
+ * `useUserId`, which throws with no session, so a deep link to
+ * `ricecal://reviews` or a Fast Refresh mid-session would be a red error screen.
  *
- * The list and one review share this group rather than sitting in `reviews/`
- * and `review/` the way the recipes do. The split there is a TAB and a page;
- * these are both pages, one of which is only ever reached from the other, and
- * two groups would mean two copies of this guard.
+ * The list and one review share this group rather than sitting in `reviews/` and
+ * `review/` the way the recipes do. That split is a tab and a page; these are both
+ * pages, one only reached from the other, and two groups would mean two copies of
+ * this guard.
  */
 export default function ReviewsLayout() {
   const { session, loading } = useSession()

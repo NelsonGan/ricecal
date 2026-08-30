@@ -4,20 +4,17 @@ import { cn } from './cn'
 import { useTextScript } from './TextScript'
 
 /**
- * The type ramp from section 02 of the design system.
+ * The type ramp from section 02 of the design system. Baloo 2 (`font-display*`)
+ * carries numbers, greetings and button labels; Nunito (`font-body*`) carries
+ * anything read as a sentence.
  *
- * Baloo 2 (`font-display*`) carries numbers, greetings and button labels.
- * Nunito (`font-body*`) carries anything you read as a sentence. Mixing them up
- * is the fastest way to make the app stop looking like itself.
+ * Size and leading are data as well as classes, because the leading is recomputed
+ * at runtime from the reader's Dynamic Type setting and the script being
+ * rendered. See `resolveLineHeight`.
  *
- * Size and leading are DATA as well as classes, because the leading has to be
- * recomputed at runtime from two things a stylesheet cannot see: the reader's
- * Dynamic Type setting and the script being rendered. See `resolveLineHeight`.
- *
- * The numbers are unchanged from the design: every Baloo 2 leading is about
- * 1.2x its size rather than the 1.0 the document specifies, because a browser
- * lets glyphs overflow their line box and React Native clips them. `lineHeight:
- * 52` on 52px type shears the top off "1,847" and the tail off a "7".
+ * Every Baloo 2 leading is about 1.2x its size rather than the 1.0 the design
+ * specifies, because a browser lets glyphs overflow their line box and React
+ * Native clips them: `lineHeight: 52` on 52px type shears the top off "1,847".
  */
 const variants = {
   /** Hero numerals: the calorie count on Today. */

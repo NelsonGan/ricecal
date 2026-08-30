@@ -97,14 +97,12 @@ export const showsPace = (kind: string) => PACE_KINDS.has(asWorkoutKind(kind))
 /**
  * Kilometres per hour, for the kinds that travel but are not read in pace.
  *
- * The `showsDistance` half is the part that was missing, and its absence was on
- * the screen. A basketball game is not a `PACE_KIND`, so "not a pace kind"
- * alone said "show a speed" — computed from the same shuffling distance that
- * `showsDistance` exists to suppress. The detail screen rendered
- * "PACE 2.0 km/h" over a 53-minute game.
+ * The `showsDistance` half was missing, and it showed. A basketball game is not a
+ * `PACE_KIND`, so "not a pace kind" alone said "show a speed", computed from the
+ * shuffling distance `showsDistance` exists to suppress, and the detail screen
+ * rendered "PACE 2.0 km/h" over a 53-minute game.
  *
- * A speed is a distance divided by a time. If the distance is not worth showing
- * then neither is anything derived from it, so both questions are asked here
- * rather than one at each call site.
+ * If the distance is not worth showing then neither is anything derived from it,
+ * so both questions are asked here rather than one at each call site.
  */
 export const showsSpeed = (kind: string) => showsDistance(kind) && !showsPace(kind)

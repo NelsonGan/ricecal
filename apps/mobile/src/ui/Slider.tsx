@@ -86,20 +86,14 @@ export function Slider({
     })
 
   /**
-   * THE THUMB TRAVELS INSIDE THE TRACK, not across it.
+   * The thumb travels inside the track rather than across it. At `ratio * width -
+   * THUMB / 2` half the thumb hangs outside the track at each end, which in the
+   * ask sheet was a thumb cut in half at both extremes, since a sheet's body
+   * clips at its own edge.
    *
-   * It used to be laid out at `ratio * width - THUMB / 2`, which puts half the
-   * thumb outside the track at each end — 17pt of it, hanging into whatever the
-   * slider is sitting in. In a card with padding that is a thumb overlapping the
-   * gutter; in the ask sheet it was a thumb CUT IN HALF at both ends of the
-   * calorie limit, because a sheet's body clips at its own edge and the value
-   * somebody drags to most often is one of the two extremes.
-   *
-   * So the travel is the track less the thumb's own width, and the fill runs to
-   * the thumb's CENTRE rather than to its leading edge — otherwise the two come
-   * apart by 17pt in the middle of the range, which reads as a fill that does
-   * not reach its own handle. Both halves have to move together, and so does
-   * `positionToValue`, or the finger and the thumb disagree near the ends.
+   * So the travel is the track less the thumb's width, and the fill runs to the
+   * thumb's centre rather than its leading edge, or the two come apart by 17pt in
+   * the middle. Both halves move together, and so does `positionToValue`.
    */
   const fillStyle = useAnimatedStyle(() => {
     const travel = Math.max(0, width.value - THUMB)

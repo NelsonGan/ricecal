@@ -37,16 +37,15 @@ export function useTutorialOffer(): void {
   /**
    * The pending timer, and whether the offer has already been made.
    *
-   * REFS RATHER THAN A DEPENDENCY LIST, because this effect reads four values
-   * that a re-render could hand back with a new identity — and the naive shape,
-   * where the cleanup clears the timer and a guard stops it being rescheduled,
-   * drops the toast entirely if anything re-runs inside the delay. It would
-   * then never be shown AND never be marked, which reads as the feature not
-   * existing until the next cold start.
+   * Refs rather than a dependency list, because this effect reads four values a
+   * re-render could hand back with a new identity. In the naive shape, where the
+   * cleanup clears the timer and a guard stops it being rescheduled, anything
+   * re-running inside the delay drops the toast entirely: never shown and never
+   * marked, which reads as the feature not existing until the next cold start.
    *
-   * So the timer is booked exactly once, survives every re-run, and is cleared
-   * only on unmount. What the callback closes over is a `t` and a `router` from
-   * one render, which over 1.2 seconds cannot differ in any way that matters.
+   * So the timer is booked once, survives every re-run, and is cleared only on
+   * unmount. The callback closes over a `t` and a `router` from one render, which
+   * over 1.2 seconds cannot differ in any way that matters.
    */
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const offered = useRef(false)

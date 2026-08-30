@@ -8,17 +8,14 @@ import { markPaywallSeen } from './nudge'
 /**
  * The paywall half of the tracking plan, shared by the screens that have one.
  *
- * THE PURCHASE ITSELF IS NOT TRACKED HERE, on purpose. RevenueCat funnels its
- * own events into Mixpanel and it is the only party that knows whether the
- * store settled a transaction — an app-side "purchased" would be a second,
- * worse answer to the same question, and would count a receipt that later
- * failed validation.
+ * The purchase itself is not tracked here. RevenueCat funnels its own events into
+ * Mixpanel and is the only party that knows whether the store settled a
+ * transaction; an app-side "purchased" would be a worse second answer, and would
+ * count a receipt that later failed validation.
  *
- * What RevenueCat cannot see is the two ends: the sheet being ASKED for, and
- * the sheet closing with nothing bought. The store never reports a purchase
- * that did not happen, so without these the funnel simply stops at "paywall
- * shown" and resumes at "subscription started", with the entire abandonment
- * step missing.
+ * What RevenueCat cannot see is the two ends: the sheet being asked for, and the
+ * sheet closing with nothing bought. Without these the funnel stops at "paywall
+ * shown" and resumes at "subscription started", missing abandonment entirely.
  */
 
 /**

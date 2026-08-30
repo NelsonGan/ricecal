@@ -142,26 +142,18 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   const border = error ? 'border-hibiscus' : focused ? 'border-pandan' : 'border-line'
 
   /**
-   * A SECURE FIELD DRAWS ITS OWN PLACEHOLDER, because iOS restyles the native
-   * one and there is no prop that stops it.
+   * A secure field draws its own placeholder, because iOS restyles the native one
+   * and no prop stops it. Once the keychain has a credential to offer, iOS treats
+   * a `password` field as an AutoFill target and renders its placeholder with its
+   * own tracking, so "At least 8 characters" comes out spaced and truncated on
+   * the first such field only. It is invisible on a simulator with no saved
+   * passwords.
    *
-   * Once the keychain has a credential to offer, iOS treats a `password` or
-   * `newPassword` field as an AutoFill target and renders its placeholder with
-   * its own tracking: "At least 8 characters" comes out as
-   * "A t   l e a s t   8   c h a r …", wide enough to truncate, on the first
-   * such field only — so a signup screen shows one spaced placeholder above one
-   * normal one and looks broken. It is invisible on a simulator with no saved
-   * passwords, which is why it has to be reasoned about rather than watched.
+   * So a secure field passes no `placeholder` and lays the text over the input
+   * instead, in the app's own type. The overlay takes no touches, so the tap
+   * still lands on the field.
    *
-   * Handing `placeholder` to the native input is what invites that, so a secure
-   * field does not: it passes none and lays the text over the input itself, in
-   * the app's own type. Nothing native is left to restyle. The overlay takes no
-   * touches, so the tap still lands on the field and the caret still blinks in
-   * front of it.
-   *
-   * Only while the value is EMPTY, and only for a secure field. Everything else
-   * keeps the platform's placeholder, which is better behaved and one view
-   * cheaper.
+   * Only while the value is empty, and only for a secure field.
    */
   const ownPlaceholder = Boolean(secureTextEntry) && !value && Boolean(placeholder)
 

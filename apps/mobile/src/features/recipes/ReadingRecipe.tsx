@@ -30,20 +30,15 @@ export type ReadingRecipeProps = {
 }
 
 /**
- * The form while the pot is being read, and it is the WHOLE form.
+ * The form while the pot is being read, and it is the whole form. It replaces the
+ * fields rather than sitting above them: a banner over a live form invites the
+ * cook to type a name into a box about to be filled in for them, and `applyDraft`
+ * only writes over empty fields, so a half-typed name is one the draft then
+ * declines to correct.
  *
- * It replaces the fields rather than sitting above them, which is the point. A
- * banner over a live form invites the cook to start typing a name into a box
- * that is about to be filled in for them, and `applyDraft` only writes over
- * empty fields — so a name half-typed while the model was thinking is a name
- * the draft then politely declines to correct, and the servings and the
- * ingredients arrive around it. Nothing here is editable because for these few
- * seconds there is no answer to edit.
- *
- * The bar is honest theatre, exactly as the scanning row on Today is: the call
- * takes as long as it takes and this client cannot observe its stages, so the
- * fill eases toward the end without reaching it. What it communicates is
- * "working, not stuck".
+ * The bar is honest theatre, as the scanning row on Today is: the client cannot
+ * observe the call's stages, so the fill eases toward the end without reaching
+ * it.
  */
 export function ReadingRecipe({ source }: ReadingRecipeProps) {
   const { t } = useTranslation('recipes')

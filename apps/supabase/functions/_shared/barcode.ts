@@ -1,29 +1,22 @@
 /**
  * One packet, one key.
  *
- * A single product carries up to four spellings of its code — UPC-E, EAN-8,
- * UPC-A, EAN-13 — and an American scanner drops the leading zero an EAN-13
- * carries. Zero-padding every spelling to fourteen digits makes them one key,
- * which is the only reason a scan on one phone finds a row written by another.
+ * A single product carries up to four spellings of its code, and an American
+ * scanner drops the leading zero an EAN-13 carries. Zero-padding every spelling
+ * to fourteen digits makes them one key, which is the only reason a scan on one
+ * phone finds a row written by another.
  *
- * THERE ARE THREE COPIES OF THIS RULE and that is deliberate, because the three
- * places that need it cannot reach each other cheaply:
+ * Three copies of the rule, deliberately, because the three places cannot reach
+ * each other cheaply: `public.gtin14` in Postgres, this file for the edge
+ * function, and `gtin14` in the catalogue Worker, where the barcode is the
+ * primary key. Each is four lines and each is tested.
  *
- *   `public.gtin14`                          in Postgres, for the client's own use
- *   this file                                the edge function, which must normalize
- *                                            before it can ask Open Food Facts anything
- *   `gtin14` in apps/cloudflare/workers/catalogue        the Worker, in front of D1, where the
- *                                            barcode IS the primary key
+ * In `_shared` rather than inside the `barcode` function, so a test can import it
+ * without starting a server: `barcode/index.ts` calls `Deno.serve` at the top
+ * level.
  *
- * Each is four lines and each is tested, because what they must not do is
- * drift. It lives in `_shared` rather than inside the `barcode` function so
- * that a test can import it without starting a server — `barcode/index.ts`
- * calls `Deno.serve` at the top level, so importing it from a test took the
- * whole test run down with it.
- *
- * The check digit is NOT validated, on purpose. Real packets and Open Food
- * Facts both carry codes that fail it, and a lookup that refuses to try is
- * worse than a miss.
+ * The check digit is not validated: real packets and Open Food Facts both carry
+ * codes that fail it, and a lookup that refuses to try is worse than a miss.
  */
 export function gtin14(code: string): string | null {
   const digits = (code ?? '').replace(/[^0-9]/g, '')

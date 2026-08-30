@@ -13,23 +13,18 @@ import { Stepper } from '../Stepper'
 import { Switch } from '../Switch'
 
 /**
- * Behaviour, not appearance.
- *
- * Styling is verified on a device through the gallery route, where the real
- * fonts and the real theme are involved. What is worth pinning here is the
- * logic a screen would otherwise re-derive and get subtly wrong: whether a
- * press fires, whether a value clamps, whether a control is honest about being
- * controlled.
+ * Behaviour, not appearance. Styling is verified on a device through the gallery
+ * route; what is pinned here is the logic a screen would otherwise re-derive:
+ * whether a press fires, whether a value clamps, whether a control is honest
+ * about being controlled.
  *
  * Two things about @testing-library/react-native v14 that cost real time:
  *
- * - `render` and every interaction are async. A missing `await` does not fail
- *   loudly; the next line reports "`render` function has not been called",
- *   which points nowhere near the cause.
+ * - `render` and every interaction are async. A missing `await` reports
+ *   "`render` function has not been called", which points nowhere near the cause.
  * - `userEvent`, not `fireEvent`. `fireEvent.press` walks up past the host tree
- *   and invokes the `onPress` prop of the composite component itself, so it
- *   reports a press even when nothing in the rendered output is pressable —
- *   which makes it useless for asserting that a disabled control did nothing.
+ *   and invokes the composite component's own `onPress`, so it reports a press
+ *   even when nothing rendered is pressable.
  *
  * `render` comes from `src/test-utils`, which wraps the tree in ThemeProvider.
  */

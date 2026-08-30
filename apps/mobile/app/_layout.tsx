@@ -182,19 +182,14 @@ function TextScriptScope({ children }: { children: ReactNode }) {
 }
 
 /**
- * Holds the two ends of `ThemeProvider`'s persistence contract together.
+ * Holds the two ends of `ThemeProvider`'s persistence contract together: the
+ * provider takes an initial preference and reports every change, and the store is
+ * `src/theme/preference.ts`. Both here rather than split across two files, which
+ * is how they came to disagree, with the read existing and the write not.
  *
- * The provider takes an initial preference and reports every change; the store
- * is `src/theme/preference.ts`. Both here rather than split across the layout
- * and the settings screen, because a read in one file and a write in another is
- * how they came to disagree in the first place — the read existed, the write
- * did not, and Dark lasted until the app was next killed.
- *
- * `useState` for the initial read so it happens ONCE, before the first paint,
- * rather than on every re-render of the root. `storeThemePreference` is passed
- * by reference rather than wrapped in an arrow, because the provider memoises
- * its setter on this prop and a new function each render would re-render every
- * consumer of the theme.
+ * `useState` for the initial read, so it happens once before the first paint.
+ * `storeThemePreference` is passed by reference rather than wrapped in an arrow,
+ * because the provider memoises its setter on this prop.
  */
 function ThemeScope({ children }: { children: ReactNode }) {
   const [initial] = useState(storedThemePreference)
@@ -244,24 +239,17 @@ function OnboardingDraftScope({ children }: { children: ReactNode }) {
 
 /**
  * Every screen draws its own title bar, so the native header is off everywhere.
+ * Presentation is declared here rather than per screen, because it is a property
+ * of how a route enters the app rather than of what it renders.
  *
- * Presentation is declared here rather than per screen because it is a property
- * of how a route enters the app, not of what the route renders.
+ * - Full pages push: settings, the progress reports and the gallery slide in from
+ *   the right, keep the screen behind them, and pop with the edge swipe.
+ * - Modals present: the quick selector and the paywalls come up over the app and
+ *   are dismissed rather than navigated back from. Search and the dish used to be
+ *   here and are pages now, being somewhere you go, work, and come back from.
  *
- * Two shapes, and the difference is deliberate:
- *
- * - **Full pages push.** Settings, the progress reports and the gallery slide in
- *   from the right, keep the screen behind them on the stack, and pop with the
- *   edge swipe. They carry a chevron in their own `AppBar`.
- * - **Modals present.** The quick selector and the paywalls come up over the app
- *   and are dismissed rather than navigated back from — a cross in the `AppBar`,
- *   plus the native pull-down. Search and the dish used to be here and are pages
- *   now: both are somewhere you go, work, and come back from.
- *
- * `animation` is left at the platform default rather than forced to
- * `slide_from_right`: setting it globally also reaches the `presentation: modal`
- * screens below, which then slide in sideways instead of rising, and the cross
- * in their bar stops matching how they arrived.
+ * `animation` is left at the platform default: forced to `slide_from_right` it
+ * also reaches the modal screens, which then slide in sideways instead of rising.
  */
 function RootStack() {
   return (

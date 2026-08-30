@@ -14,25 +14,20 @@ import { Text } from '@/ui'
 import AboutStep from '../about'
 
 /**
- * What this suite is for: NOTHING ON THIS SCREEN IS ANSWERED FOR THE USER, and
- * the answers it does record are the ones on screen, recorded without touching
- * the network.
+ * Nothing on this screen is answered for the user, and the answers it records are
+ * the ones on screen, recorded without touching the network.
  *
- * All three halves have bitten. The screen used to write to `profiles` on every
- * interaction, which on the target weight slider is one request per frame of a
- * drag — `Slider` reports continuously — with the value that landed last decided
- * by whichever response came back last. It then used to open on a plausible
- * body — 164 cm, 65 kg, 29, female — and commit the lot on Continue, so a user
- * who tapped straight through got a calorie budget worked out for somebody else
- * with nothing on screen to say so. And the clamp cannot live on blur alone,
- * because a user who taps Continue from inside a field never fires one.
+ * All three have bitten. The screen wrote to `profiles` on every interaction,
+ * which on the target weight slider is one request per frame of a drag. It opened
+ * on a plausible body and committed the lot on Continue, so tapping straight
+ * through gave a budget worked out for somebody else. And the clamp cannot live
+ * on blur alone, because Continue from inside a field never fires one.
  *
- * Everything here types by appending, and nothing re-renders. `fireEvent.changeText`
- * against these fields leaves React's root unusable for the rest of the file —
- * every later render comes back empty — and `user.clear()` ends in a blur, which
- * is where a field is normalised. Seeding the store is how a test starts from an
- * answer already given, and it is the only way to arrange the target weight,
- * which is a drag.
+ * Everything here types by appending. `fireEvent.changeText` against these fields
+ * leaves React's root unusable for the rest of the file, and `user.clear()` ends
+ * in a blur, which is where a field is normalised. Seeding the store is how a
+ * test starts from an answer already given, and the only way to arrange the
+ * target weight.
  */
 
 // `mock`-prefixed so the factory below may close over it: everything else is out

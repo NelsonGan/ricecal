@@ -35,15 +35,13 @@ import { sumMacros } from '@/lib/nutrition'
 import { SheetSurface, Tabs, Text, useToast } from '@/ui'
 
 /**
- * Which of the four quick actions has its panel open below the row, if any.
+ * Which of the four quick actions has its panel open below the row, if any. A
+ * union rather than a flag each, because they share the space: opening the camera
+ * has to put search away.
  *
- * A union rather than a flag each, because they share the space under the row:
- * opening the camera has to put search away, and the other way round.
- *
- * Scanning a packet is NOT one of them any more. It is a tab inside the camera,
- * because it was never a different action — it is the same gesture, pointing
- * the phone at the thing, and a fifth tile made the row of choices longer to
- * answer a question the user had already answered by reaching for the camera.
+ * Scanning a packet is a tab inside the camera rather than a fifth tile. It is
+ * the same gesture, and a fifth tile made the row longer to answer a question the
+ * user had already answered by reaching for the camera.
  */
 type Panel = 'camera' | 'describe' | 'search' | 'recipes' | null
 
@@ -54,13 +52,10 @@ const isPanel = (value: string | undefined): value is NonNullable<Panel> =>
   PANELS.includes(value as (typeof PANELS)[number])
 
 /**
- * `?panel=barcode` still means something, and it is the reason this mapping
- * exists rather than a rename.
- *
- * A packet nothing could identify offers "Scan again", which has to land on the
- * day with the scanner live — see `reopenLog` in the food detail screen. That
- * link predates the tabs and points at a panel that is now a tab, so it resolves
- * to the camera opened on the barcode side rather than to nothing.
+ * `?panel=barcode` still means something, which is why this mapping exists rather
+ * than a rename. A packet nothing could identify offers "Scan again", which has
+ * to land on the day with the scanner live; that link predates the tabs, so it
+ * resolves to the camera opened on the barcode side.
  */
 const openingPanel = (value: string | undefined): NonNullable<Panel> =>
   value === 'barcode' ? 'camera' : isPanel(value) ? value : 'camera'
@@ -69,17 +64,15 @@ const openingMode = (value: string | undefined): CaptureMode =>
   value === 'barcode' ? 'barcode' : 'meal'
 
 /**
- * L2 QUICK SELECTOR, and L3's backdrop.
+ * The quick selector.
  *
- * Presented as a transparent modal so Today stays visible behind the scrim,
- * which is what the design shows and what makes the sheet feel attached to the
- * day rather than replacing it.
+ * A transparent modal, so Today stays visible behind the scrim and the sheet
+ * reads as attached to the day rather than replacing it.
  *
- * `SheetSurface`, not `Sheet`: the route IS the sheet, so it already has
- * everything `Sheet`'s own native `Modal` would provide. Nesting one inside it
- * meant the route transition had to finish before a second window began
- * presenting, and only then did the panel start its slide — which is why tapping
- * the log button felt slow.
+ * `SheetSurface` rather than `Sheet`: the route is the sheet, so it already has
+ * everything `Sheet`'s own `Modal` provides. Nesting one meant the route
+ * transition had to finish before a second window began presenting, which is why
+ * tapping the log button felt slow.
  */
 export default function LogSheet() {
   const { t } = useTranslation(['logging', 'recipes', 'common'])
@@ -94,24 +87,20 @@ export default function LogSheet() {
   const { data: activity } = useActivityDay(selectedDate)
   const { data: settings } = useSettings()
   /**
-   * Which panel to open with, for the routes that arrive knowing.
-   *
-   * The scan flow is the one that needs it: a packet nothing could identify
-   * offers "Scan again", and what that has to mean is the day with the
-   * viewfinder already open on it — not the sheet as if the user had just
-   * pressed the log button and had to find Scan for themselves.
+   * Which panel to open with, for the routes that arrive knowing. The scan flow
+   * needs it: "Scan again" has to mean the day with the viewfinder already open,
+   * not the sheet as if the log button had been pressed.
    */
   const { panel: opening } = useLocalSearchParams<{ panel?: string }>()
 
   /**
-   * The viewfinder, the search field and the recipe list all live inside this
-   * sheet rather than in a screen of their own, so the day stays visible behind
-   * them and nothing has to be dismissed twice. See the `Panel` union above.
+   * The viewfinder, the search field and the recipe list live inside this sheet
+   * rather than in screens of their own, so the day stays visible and nothing has
+   * to be dismissed twice.
    *
-   * Snap is the default, so the log button opens on a camera pointed at the
-   * food. It is what people came to do — the other three are how you log a meal
-   * you are not looking at — and an extra tap to reach it was a tap spent on the
-   * common case. Tapping Snap again closes it.
+   * Snap is the default, so the log button opens on a camera pointed at the food:
+   * the other three are how you log a meal you are not looking at. Tapping Snap
+   * again closes it.
    */
   const [panel, setPanel] = useState<Panel>(() => openingPanel(opening))
   /**
@@ -133,18 +122,14 @@ export default function LogSheet() {
     setPanel((current) => (current === next ? null : next))
 
   /**
-   * The top of the logging funnel: the sheet is up, and nothing has been
-   * written yet.
+   * The top of the logging funnel: the sheet is up and nothing has been written.
    *
-   * ONCE PER PRESENTATION, on mount, with the panel it OPENED on — not on every
-   * switch between the four. Which panel a user ends up logging from is already
-   * on `Meal Logged`; tracking each toggle would add an event per undecided tap
-   * and answer the same question worse.
+   * Once per presentation, on mount, with the panel it opened on rather than on
+   * every switch. Which panel a user ends up logging from is already on `Meal
+   * Logged`, and tracking each toggle would add an event per undecided tap.
    *
-   * The ref is what makes "once" true through a re-render: this route is
-   * remounted per presentation, so a plain effect with an empty dependency list
-   * would already be right — but Fast Refresh re-runs it, and a funnel is not
-   * worth debugging twice.
+   * The ref makes "once" true through a re-render: the route is remounted per
+   * presentation, but Fast Refresh re-runs the effect.
    */
   const announced = useRef(false)
   useEffect(() => {
@@ -157,16 +142,13 @@ export default function LogSheet() {
   }, [opening, selectedDate])
 
   /**
-   * `goal + active - eaten`, the same sum the ring on Today draws.
+   * `goal + active - eaten`, the same sum the ring on Today draws. It was `goal -
+   * eaten`, and this sheet opens over that ring, so a day with a walk on it had
+   * the ring reading "382 kcal left" behind a header saying "0 kcal left".
+   * Movement extends the budget everywhere or nowhere.
    *
-   * IT USED TO BE `goal - eaten`, and this sheet opens over that ring. A day
-   * with a walk on it therefore had two figures for one number on screen at
-   * once — the ring reading "382 kcal left" behind a sheet whose header said
-   * "0 kcal left" — which is the disagreement the invariant exists to stop.
-   * Movement extends the budget everywhere or it extends it nowhere.
-   *
-   * `activeKcal` rather than the total burn, and skipped when the user has
-   * turned the extension off, for the reasons written out beside the ring.
+   * `activeKcal` rather than the total burn, and skipped when the user has turned
+   * the extension off, for the reasons written beside the ring.
    */
   const burned = settings?.activity_extends_budget === false ? 0 : (activity?.activeKcal ?? 0)
   const left = (targets?.kcal ?? 0) + burned - sumMacros(day.entries).kcal
@@ -183,16 +165,13 @@ export default function LogSheet() {
   /**
    * A dish was picked out of the inline search.
    *
-   * `replace`, not `push`. This route is a `transparentModal`, and a push from
-   * inside one lands on the stack that lives WITHIN that presentation — the dish
-   * would come up as a second modal stacked on the sheet, which is the same
-   * mistake search itself used to make. Replacing this entry puts the dish on the
-   * stack above Today, where a page belongs.
+   * `replace` rather than `push`: this route is a `transparentModal`, and a push
+   * from inside one lands on the stack within that presentation, so the dish
+   * would come up as a second modal stacked on the sheet. Replacing puts it on
+   * the stack above Today, where a page belongs.
    *
-   * The cost is that back from the dish lands on the day rather than on the
-   * results. That is the right trade for the common path — pick a dish, set the
-   * portion, done — and the alternative was the flash the user saw: the sheet
-   * dismissing before a search screen pushed in behind it.
+   * The cost is that back from the dish lands on the day rather than the results,
+   * which is the right trade for pick a dish, set the portion, done.
    */
   const openFood = (foodId: string) =>
     router.replace({ pathname: '/log/food/[id]', params: { id: foodId } })
@@ -202,43 +181,34 @@ export default function LogSheet() {
   // own history — build one the same way and nothing downstream needs to know
   // which it was.
   const add = (snapshot: LogSnapshot, method: LogMethod, quantity?: number) => {
-    // NOT GATED. Adding a dish from the catalogue, a scanned packet or a saved
-    // recipe reaches no model and costs nothing to serve, and a free tier that
-    // could not write those is a catalogue with a read-only diary attached.
-    // What is metered is the SCAN — see the shutter below.
+    // Not gated. A catalogue dish, a scanned packet and a saved recipe reach no
+    // model and cost nothing to serve, and a free tier that could not write those
+    // is a catalogue with a read-only diary attached. The scan is what is metered.
     //
-    // `method` and `source` are two different questions and both are answered.
-    // The column says how the numbers were obtained; `method` says which door
-    // the user came through, which `entry_source` has no value for. See
-    // `LogInput` in `data/entries.ts`.
+    // `method` and `source` answer different questions: the column says how the
+    // numbers were obtained, and `method` says which door the user came through.
+    // See `LogInput` in `data/entries.ts`.
     logFood.mutate({ snapshot, quantity, logDate: selectedDate, source: 'quickAdd', method })
     goBack()
   }
 
   return (
     /**
-     * Capped with nothing open, full height with anything open. Two separate
-     * reasons land on the same rule.
+     * Capped with nothing open, full height with anything open, for two separate
+     * reasons.
      *
-     * Search, describe and recipes RAISE THE KEYBOARD. A capped sheet is padded
-     * up off the bottom edge by `KeyboardAvoidingView`, and the strip left
-     * behind shows the scrim through the curve of the keyboard's top corners —
-     * the panel stops reading as attached to the bottom of the screen. Full
-     * height keeps it where it is and lets the body inset itself instead.
+     * Search, describe and recipes raise the keyboard, and a capped sheet is
+     * padded up off the bottom edge, leaving a strip that shows the scrim through
+     * the keyboard's top corners. Full height keeps the panel where it is and
+     * lets the body inset itself.
      *
-     * And describe is not scrollable. Its content is a field, a hint and a
-     * button, so there is nothing to scroll — but a scroll view scrolls ITSELF
-     * to reveal the first responder when the keyboard opens, and on the first
-     * open, before the keyboard's real height is known, it overshoots and
-     * carries the field off the top of the panel. With nothing to scroll there
-     * is no scroll to get wrong.
+     * Describe is also not scrollable: there is nothing to scroll, and a scroll
+     * view scrolls itself to reveal the first responder when the keyboard opens,
+     * overshooting on the first open before the keyboard's height is known.
      *
-     * The camera raises no keyboard at all, and is full height for a different
-     * reason: it now holds two tabs, and a sheet that changed height when you
-     * moved between them would read as two features rather than one camera
-     * doing two jobs. That was the argument for the scanner matching the
-     * viewfinder's height back when they were separate panels; keeping the
-     * sheet one size is the same argument, one level up.
+     * The camera raises no keyboard and is full height because it holds two tabs,
+     * and a sheet that changed height between them would read as two features
+     * rather than one camera doing two jobs.
      */
     <SheetSurface
       closeLabel={t('common:action.close')}
@@ -337,17 +307,14 @@ export default function LogSheet() {
           <InlineCamera
             mode={captureMode}
             onCapture={(photoUri) => {
-              // What this is is the ceiling ARRIVING BEFORE THE REQUEST. The
-              // count is still the server's and it still refuses; but the panel
-              // is already drawing "0 scans left" from that same figure two
-              // lines below, so sending the photograph anyway spends an upload
-              // and several seconds to be told something this screen has
-              // printed on it — and leaves a failed row on the diary saying so.
-              // Answered here, the fourth plate is a toast and the paywall, in
-              // the moment the shutter is pressed.
+              // The ceiling arriving before the request. The count is still the
+              // server's and it still refuses, but the panel is already drawing
+              // "0 scans left" from that figure, so sending the photograph spends
+              // an upload and several seconds to be told what the screen has
+              // printed on it, and leaves a failed row saying so.
               //
-              // `replace` because this route is a `transparentModal`: a push
-              // from inside one lands on the stack WITHIN that presentation.
+              // `replace` because this route is a `transparentModal`: a push from
+              // inside one lands on the stack within that presentation.
               const ahead = scanLimitAhead(quota.data)
               if (ahead && announceRefusal(toast, ahead, 'camera', { navigate: 'replace' })) return
               snapFood({ photoUri, logDate: selectedDate })

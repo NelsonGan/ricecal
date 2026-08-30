@@ -14,29 +14,22 @@ export type AddPartSheetProps = {
 }
 
 /**
- * PUT SOMETHING ON THE PLATE, by naming it out of the catalogue.
+ * Put something on the plate, by naming it out of the catalogue. The plate could
+ * only shrink before this, so anything the scan missed had to be answered by
+ * retyping the entry's four figures or spending a model call on "add a fried
+ * egg", both of which guess at a number the catalogue knows.
  *
- * The plate could only ever shrink before this: `PlateEditor` resizes a part and
- * takes one off, and anything the scan MISSED had to be answered either by
- * retyping the whole entry's four figures or by spending a model call on "add a
- * fried egg". Both of those guess at a number the catalogue already knows.
+ * A sheet over the page that edits the plate rather than a mode inside it: that
+ * one is a list with steppers and one Save, where this is a search field with the
+ * keyboard up. A sheet over a page is also what makes closing it reveal the
+ * plate; as a sheet swap, dismissing the search landed two panels back.
  *
- * A sheet OVER the page that edits the plate, rather than a mode inside it,
- * because the two are different shapes of question. That one is a list of things
- * with steppers and one Save; this is a search field with the keyboard up, and a
- * pick that writes immediately and dismisses. Being a sheet over a page rather
- * than a second sheet is what makes closing it reveal the plate again: it was a
- * sheet swap for a while, and dismissing the search then landed the user two
- * panels back on the food detail.
- *
- * THE CATALOGUE ONLY, with no "My foods" tab. `FoodSearchPanel`'s second list is
- * whole meals this account has eaten, and a meal is not an ingredient of another
- * meal — offering last Tuesday's nasi lemak as a component of today's plate is a
- * way to double a day's calories in two taps.
+ * The catalogue only, with no "My foods" tab: a meal is not an ingredient of
+ * another meal, and offering last Tuesday's nasi lemak as a component doubles a
+ * day's calories in two taps.
  *
  * The part is added at the food's own serving and at one of it. Resizing belongs
- * to the sheet that is already for exactly that, where the weight can be typed
- * and read back as a count.
+ * to the sheet that is already for that.
  */
 export function AddPartSheet({ visible, onClose, onPick }: AddPartSheetProps) {
   const { t } = useTranslation(['logging', 'common'])

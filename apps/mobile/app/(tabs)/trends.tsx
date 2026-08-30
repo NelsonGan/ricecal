@@ -76,20 +76,14 @@ export default function TrendsScreen() {
             }))}
             value={range}
             /**
-             * A free account sees the week and nothing else.
+             * A free account sees the week and nothing else. The control keeps
+             * all three segments and refuses the two it cannot serve rather than
+             * hiding them: a hidden option is a feature nobody knows they are
+             * missing, and a greyed-out one gives them nowhere to go.
              *
-             * The control keeps all three segments and refuses the two it
-             * cannot serve, rather than hiding them: a hidden option is a
-             * feature nobody knows they are missing, and the whole job of a
-             * free tier is to show what the paid one is for. Same argument as
-             * the gated buttons everywhere else — a greyed-out control tells
-             * somebody they cannot do something and gives them nowhere to go.
-             *
-             * The seven-day range is not an arbitrary slice either: it is the
-             * one the app is built around. The strip on Today is a week, the
-             * review is a week, and a free user is not being shown a crippled
-             * chart — they are being shown the week, and offered the shape only
-             * a month or a year can carry.
+             * Seven days is not an arbitrary slice: the strip on Today is a week
+             * and the review is a week, so a free user is shown the week and
+             * offered the shape only a month or a year can carry.
              */
             onChange={(next) => {
               if (next !== '7d' && !requirePro('trend_range')) return

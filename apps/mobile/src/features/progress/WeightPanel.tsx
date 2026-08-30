@@ -34,18 +34,16 @@ const HISTORY_ROWS = 6
 const QUARTER = 3
 
 /**
- * T1 / T5 / T8 — the weight tab.
+ * The weight tab: the line, then the three figures, then the readings behind them.
  *
- * The line, then the three figures, then the readings behind them. Only the last
- * card changes with the range, and it changes because the useful grain does: at
- * seven days the readings themselves are worth listing and each one is editable,
- * at thirty days they are too many and the weeks say it better, and over a year
- * only the quarters are legible at all.
+ * Only the last card changes with the range, because the useful grain does. At
+ * seven days the readings are worth listing and each is editable, at thirty they
+ * are too many and the weeks say it better, and over a year only the quarters are
+ * legible.
  *
- * The chart is a line rather than bars — see `TrendLine` for why — and the card
- * under it is the one place on this screen that reads the profile, because "3.4
- * kg to your 65.0 kg goal" is the only sentence here about a target rather than
- * about what happened.
+ * The chart is a line rather than bars (see `TrendLine`), and the card under it
+ * is the one place on this screen that reads the profile, because "3.4 kg to your
+ * 65.0 kg goal" is the only sentence here about a target.
  */
 export function WeightPanel({ range, buckets, summary, unit, onEdit }: WeightPanelProps) {
   const { t } = useTranslation(['progress', 'common'])

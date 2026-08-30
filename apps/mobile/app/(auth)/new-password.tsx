@@ -16,23 +16,17 @@ const RESEND_COOLDOWN_S = 60
 /**
  * The end of a password reset: the code and the new password, on one screen.
  *
- * ONE SCREEN RATHER THAN TWO, and the reason is a race rather than a taste.
- * Verifying a recovery code CREATES A SESSION — that is what makes it a licence
- * to set a new password — and `(auth)/_layout` redirects the moment a session
- * appears, which is the correct behaviour for every other way into this stack.
- * Split across two screens, the code screen verifies, the session lands, and
- * the guard carries the user off to Today before the second screen has drawn:
- * signed in, with the password they could not remember still in force, and
- * nothing on screen to say the reset did not finish.
+ * One screen rather than two, for a race rather than a taste. Verifying a
+ * recovery code creates a session, which is what makes it a licence to set a new
+ * password, and `(auth)/_layout` redirects the moment a session appears. Split
+ * across two screens the guard carried the user off to Today with the password
+ * they could not remember still in force.
  *
- * Together, nothing is verified until Save, the passwords are checked locally
- * first, and the session and the new password land within a few milliseconds of
- * each other. The guard is told to leave this one screen alone (see the layout)
+ * Together, nothing is verified until Save and the session and the new password
+ * land within milliseconds of each other. The guard leaves this one screen alone,
  * so the last step cannot be interrupted by its own success.
  *
- * It reads better too. The code is next to the field it unlocks, and somebody
- * switching to their mail app and back comes back to one screen rather than
- * wondering which of two they were on.
+ * It reads better too: the code is next to the field it unlocks.
  */
 export default function NewPasswordScreen() {
   const { t } = useTranslation(['auth', 'common'])

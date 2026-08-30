@@ -17,23 +17,19 @@ import {
 import { Card, SegmentedControl, Select, Text } from '@/ui'
 
 /**
- * 01 SETUP: the language the app is read in and the units it is measured in.
+ * Setup: the language the app is read in and the units it is measured in.
  *
- * FIRST, and both questions are here because both are answered by the screen
- * immediately after this one. `about` asks for a height and a weight, and the
- * fields it draws are centimetres and kilograms or feet and pounds depending on
- * what is chosen here. Asking afterwards would mean either converting what
- * somebody had already typed or asking them to type it again.
+ * First, because both are answered by the screen immediately after: `about` asks
+ * for a height and a weight in whichever system is chosen here, and asking
+ * afterwards would mean converting what somebody had typed or asking again.
  *
- * Neither answer is a fact about the body, which is why neither goes to
- * `profiles`: the language is MMKV's, the units are `user_settings`', and the
- * database stores kilograms and centimetres whatever this screen says.
+ * Neither answer is a fact about the body, so neither goes to `profiles`: the
+ * language is MMKV's, the units are `user_settings`', and the database stores
+ * kilograms and centimetres whatever this screen says.
  *
- * Nothing here can be got wrong. Both controls open on an answer — the phone's
- * own language, and metric — so Continue is live on arrival, unlike every
- * question after it. There is no version of this screen a person can fail to
- * fill in, and holding the CTA hostage to a preference somebody already agrees
- * with is a tap for nothing.
+ * Both controls open on an answer, so Continue is live on arrival, unlike every
+ * question after it: there is no version of this screen a person can fail to fill
+ * in.
  */
 export default function SetupStep() {
   const { t } = useTranslation(['onboarding', 'profile', 'common'])

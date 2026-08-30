@@ -43,28 +43,25 @@ type ScanResponse = {
 }
 
 /**
- * Mark an error as one whose outcome is known.
- *
- * The distinction the pending row turns on: a settled error means no entry is
- * coming and the row should say so now, while an unsettled one means only that
- * this process stopped hearing about it. Attached to the error rather than
- * decided at the catch, because by the time it gets there a timeout and a
- * refusal are the same rejected promise.
+ * Mark an error as one whose outcome is known: the distinction the pending row
+ * turns on. A settled error means no entry is coming; an unsettled one means only
+ * that this process stopped hearing about it. Attached to the error rather than
+ * decided at the catch, where a timeout and a refusal are the same rejection.
  */
 const settled = <E>(error: E, known = true): E =>
   known ? (Object.assign(error as object, { settled: true }) as E) : error
 
 /**
- * The recognition call. The photo is already in the bucket, and everything else
- * happens inside the `scan-meal` edge function, which also writes the entries
- * itself as service_role. It has to: a scan records what the model claimed in
- * `food_scan_items`, and no client is granted that table.
+ * The recognition call. The photo is already in the bucket and everything else
+ * happens inside `scan-meal`, which writes the entries itself as service_role: a
+ * scan records what the model claimed in `food_scan_items`, and no client is
+ * granted that table.
  *
- * That the function writes the entry itself is why a rejection here is not the
- * same as a failed scan. The work does not stop when the caller stops listening,
- * so this throws two kinds of error and marks which is which. The function's
- * contract is that once the caller is authenticated and the body parses it never
- * returns an HTTP error, so a status is an answer and anything else is the wire.
+ * That is why a rejection here is not a failed scan: the work does not stop when
+ * the caller stops listening, so this throws two kinds of error and marks which
+ * is which. Once the caller is authenticated and the body parses, the function
+ * never returns an HTTP error, so a status is an answer and anything else is the
+ * wire.
  */
 async function scanMeal(input: {
   photoPath?: string
@@ -104,22 +101,15 @@ async function scanMeal(input: {
 
 /**
  * Logs a snapped plate optimistically: the row appears now, the dish arrives
- * later.
+ * later. Waiting for the upload and the model call would make snapping the
+ * slowest way to log rather than the fastest.
  *
- * Recognition is a model call and the upload is a network round trip, so waiting
- * for either would make snapping the slowest way to log rather than the fastest.
- * Instead the row goes on the day immediately as a pending snap, the sheet
- * closes, and the slow work happens behind it.
+ * The upload comes first rather than in parallel, because the edge function reads
+ * the photo out of the bucket. The ordering also keeps `photo_path` naming a real
+ * object, and an orphan from a failed scan is harmless.
  *
- * The upload comes first rather than in parallel with recognition: the edge
- * function reads the photo out of the bucket, so there is nothing to recognise
- * until the object exists. The ordering also keeps `photo_path` on an entry
- * always naming a real object, and an orphaned object from a failed scan is
- * harmless.
- *
- * Nothing is cancelled when the caller unmounts. The sheet is gone a frame later
- * by design, and a snap that stopped because the user navigated away would be the
- * app losing their food.
+ * Nothing is cancelled when the caller unmounts: the sheet is gone a frame later
+ * by design, and a snap that stopped there would be the app losing their food.
  */
 function useRecogniseMeal() {
   const userId = useUserId()
@@ -147,16 +137,12 @@ function useRecogniseMeal() {
       pending.add({ id, logDate, photoUri, text })
 
       /**
-       * Two events for one meal, and they answer different questions.
-       *
-       * `Meal Logged` is fired here, at the commit, because that is what the user did
-       * and what the day already shows. `Meal Scan Completed` follows when the cascade
-       * answers, carrying which tier priced it and how long it took.
+       * Two events for one meal. `Meal Logged` fires here, at the commit, because
+       * that is what the user did and what the day shows; `Meal Scan Completed`
+       * follows when the cascade answers, carrying the tier and the duration.
        *
        * One event at the end would drop every meal whose request broke, which is
-       * exactly the case the pending row exists to survive: the edge function writes
-       * the entry itself, so a scan that stopped reporting to this process very
-       * probably still landed.
+       * the case the pending row exists to survive.
        */
       const method = text ? 'describe' : 'camera'
       const startedAt = Date.now()
@@ -179,13 +165,13 @@ function useRecogniseMeal() {
       // words instead of the plate. Same work underneath, different noun.
       const doneTitle = text ? 'logging:today.describeDoneTitle' : 'logging:today.scanDoneTitle'
 
-      // Asked here rather than on launch, and effectively once: the OS shows its dialog
-      // while a permission is undetermined and `ensure` declines to ask again after a
-      // refusal. This is the moment it makes sense, because the user has just started
-      // something that takes half a minute.
+      // Asked here rather than on launch, and effectively once: the OS shows its
+      // dialog while a permission is undetermined and `ensure` declines to ask
+      // again after a refusal. This is the moment it makes sense, since the user
+      // has just started something that takes half a minute.
       //
-      // The notice is booked here for the same reason: by the time the answer comes
-      // back the app may be suspended, and a suspended app cannot post anything.
+      // The notice is booked here too: by the time the answer comes back the app
+      // may be suspended, and a suspended app cannot post anything.
       let notice: string | null = null
       const booked = ensureNotificationPermission()
         .catch(() => false)
@@ -199,15 +185,11 @@ function useRecogniseMeal() {
         .catch(() => null)
 
       /**
-       * Failures in here mean two different things, and only one of them is a failure
-       * of the scan.
-       *
-       * If the upload throws there is no object in the bucket, so nothing was ever
-       * asked to recognise anything: settled, and the row should say so at once. If the
-       * request to the function breaks, the function on the other end is very probably
-       * still working, because it writes the entry itself rather than handing it back
-       * for us to write. Calling that one "failed" is how a scan that succeeded
-       * produced an error message.
+       * Failures here mean two different things, and only one is a failed scan. An
+       * upload that throws leaves no object in the bucket, so nothing was asked to
+       * recognise anything: settled. A broken request to the function leaves the
+       * function still working, because it writes the entry itself, and calling
+       * that "failed" is how a scan that succeeded produced an error message.
        */
       const work = async (): Promise<ScanResponse> => {
         let path: string | undefined
@@ -253,13 +235,11 @@ function useRecogniseMeal() {
           // the day refetches into them. Removing first avoids one frame with
           // both on screen.
           completed('logged', result)
-          // HERE rather than beside `Meal Logged` above, which fires at the
-          // commit. The counter is the same either way, but crossing a
-          // checkpoint can put a sheet on screen, and the commit is the moment a
-          // scan STARTS: the banner is up, the placeholder row is spinning, and
-          // a question about the app over the top of it is the app interrupting
-          // itself. A plate with nothing edible in it does not count for the
-          // same reason it is not a meal.
+          // Here rather than beside `Meal Logged`, which fires at the commit.
+          // The counter is the same either way, but crossing a checkpoint can put
+          // a sheet on screen, and the commit is the moment a scan starts, with
+          // the placeholder row still spinning. A plate with nothing edible in it
+          // does not count, for the reason it is not a meal.
           recordMealLogged(userId)
           pending.remove(id)
           queryClient.invalidateQueries({ queryKey: keys.day(userId, logDate) })
@@ -282,14 +262,13 @@ function useRecogniseMeal() {
           queryClient.invalidateQueries({ queryKey: keys.scanQuota(userId) })
         })
         .catch((error: unknown) => {
-          // The two refusals. A snapped plate is refused for a different reason now than it
-          // used to be: the camera is not behind the paywall any more, so what lands here
-          // is a free account's fourth plate of the day, and the answer to that is the
-          // paywall rather than an apology. The exception is a subscriber who has somehow
-          // reached fifty, who is told and shown nothing to buy.
+          // The two refusals. The camera is not behind the paywall any more, so
+          // what lands here is a free account's fourth plate of the day and the
+          // answer is the paywall rather than an apology. The exception is a
+          // subscriber who has reached fifty, who is shown nothing to buy.
           //
-          // Typing a meal is still Pro, so a described one can also arrive here as
-          // `not_entitled` when a subscription lapsed between the send and the request.
+          // Typing a meal is still Pro, so a described one can arrive here as
+          // `not_entitled` when a subscription lapsed mid-request.
           queryClient.invalidateQueries({ queryKey: keys.scanQuota(userId) })
           if (announceRefusal(toast, error, method === 'describe' ? 'describe' : 'camera')) {
             void booked.then(() => cancelScanNotice(notice))
@@ -308,13 +287,13 @@ function useRecogniseMeal() {
             completed('failed')
             return
           }
-          // The request broke; the scan probably did not. The row keeps its spinner and its
-          // photo, the day is polled until the entry appears, and only a deadline with
-          // nothing on it turns this into a failure.
+          // The request broke; the scan probably did not. The row keeps its
+          // spinner and its photo, the day is polled until the entry appears, and
+          // only a deadline with nothing on it is a failure.
           //
-          // The booked notice stays for this one. It is the case it was written for: the
-          // answer is still coming, this process is no longer the thing that will hear it,
-          // and a scheduled notification fires whether or not the app is alive.
+          // The booked notice stays, which is the case it was written for: the
+          // answer is still coming, this process will not hear it, and a scheduled
+          // notification fires whether or not the app is alive.
           completed('detached')
           pending.detach(id)
         })
@@ -332,11 +311,9 @@ export function useSnapFood() {
 }
 
 /**
- * The typing path: the same recognition, described in words.
- *
- * Optimistic for the same reason and in the same way. There is nothing to upload,
- * so the wait is one model call shorter, but it is still long enough that holding
- * the user on a spinner would make typing the slow way to log a meal.
+ * The typing path: the same recognition, described in words. Optimistic for the
+ * same reason. There is nothing to upload, so the wait is shorter, and still long
+ * enough that a spinner would make typing the slow way to log a meal.
  */
 export function useDescribeFood() {
   const recognise = useRecogniseMeal()

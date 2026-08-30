@@ -6,29 +6,24 @@ import { useSession } from '@/data'
 import { Spinner } from '@/ui'
 
 /**
- * WHERE A LINK IN AN EMAIL ACTUALLY LANDS.
+ * Where a link in an email lands.
  *
- * `ricecal://auth/callback` and `ricecal://auth/reset` are paths, and the
- * router matches paths against files. There was no file, so tapping the button
- * in a login mail opened the app on "Page not found" with a button offering to
- * take you to Today — while, out of sight, `LoginLinkHandler` was signing the
- * person in perfectly well. The link worked and looked broken, which is the
- * worst of both.
+ * `ricecal://auth/callback` and `ricecal://auth/reset` are paths, and the router
+ * matches paths against files. There was no file, so tapping the button in a
+ * login mail opened the app on "Page not found" while `LoginLinkHandler` was
+ * signing the person in perfectly well behind it.
  *
  * So this exists to be matched. It redeems nothing: the URL is handled above the
- * navigator, because a link can arrive at any moment and there is not
- * necessarily a screen. All this does is wait for the session that handler is
- * fetching, and then send the person where the link meant them to go.
+ * navigator, because a link can arrive when there is not necessarily a screen.
+ * All this does is wait for the session that handler is fetching, then send the
+ * person where the link meant them to go.
  *
- * IT IS ALSO WHERE THE RECOVERY REDIRECT LIVES, and that is a mounting rule
- * rather than a preference. `LoginLinkHandler` renders outside the navigator, so
- * an imperative `router.replace` from it races the root layout on a cold start
- * from the mail — expo-router's "attempted to navigate before mounting the Root
- * Layout" is exactly that race. A `<Redirect>` in a route cannot happen before
- * the route is mounted, because being mounted is what renders it.
+ * The recovery redirect lives here rather than in `LoginLinkHandler`, which
+ * renders outside the navigator: an imperative `router.replace` from there races
+ * the root layout on a cold start from the mail. A `<Redirect>` in a route cannot
+ * happen before the route is mounted.
  *
- * `[action]` rather than two files because the two differ only in where they
- * go, and the difference is one line.
+ * `[action]` rather than two files because the two differ only in where they go.
  */
 export default function AuthLanding() {
   const { action } = useLocalSearchParams<{ action?: string }>()

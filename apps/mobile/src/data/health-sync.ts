@@ -22,36 +22,33 @@ import { keys } from './keys'
 import { useUserId } from './session'
 
 /**
- * Reading the phone's health store into the database. The only place in the app
- * that writes `activity_days`, `activity_sessions` and `activity_hours`.
+ * Reading the phone's health store into the database. The only place that writes
+ * `activity_days`, `activity_sessions` and `activity_hours`.
  *
- * Three mechanisms, each covering what the others cannot: a week-deep backfill on
- * connect, chunked so the UI keeps painting; a rolling window on every
- * foreground; and a refetch of the affected queries when either lands.
+ * Three mechanisms: a week-deep backfill on connect, chunked so the UI keeps
+ * painting; a rolling window on every foreground; and a refetch of the affected
+ * queries when either lands.
  *
- * The incremental pass re-reads a window rather than tracking a cursor, and that
- * is the decision the file is shaped around. Health data arrives late and arrives
- * edited: a watch out of range writes Tuesday on Wednesday, Strava back-dates an
- * upload, Apple recomputes a day when a second source appears. "Everything since
- * the last sync" misses all three permanently, because the data's timestamp is
- * older than the cursor by the time it exists.
+ * The incremental pass re-reads a window rather than tracking a cursor, and the
+ * file is shaped around that. Health data arrives late and edited: a watch out of
+ * range writes Tuesday on Wednesday, Strava back-dates an upload, Apple
+ * recomputes a day when a second source appears. "Everything since the last
+ * sync" misses all three permanently.
  *
- * Every key in the schema exists to make that repetition free: days by date,
- * hours by date and hour, sessions by the store's own id.
+ * Every key in the schema makes that repetition free: days by date, hours by date
+ * and hour, sessions by the store's own id.
  *
- * No edge function, because there is nothing to authenticate against: the data is
- * on the device behind a permission the user granted to this app.
+ * No edge function, because the data is on the device behind a permission the
+ * user granted to this app.
  */
 
 /**
- * How far back a first connection reads.
+ * How far back a first connection reads. A week, so the Activity tab has
+ * something in it on the day it is turned on and the ask inside onboarding costs
+ * one query.
  *
- * A week. The backfill exists so the Activity tab has something in it on the day
- * it is turned on, and a week answers that in a single query, which matters
- * because the ask sits inside onboarding.
- *
- * What it costs is the 30-day range, which starts three quarters empty and fills
- * in over the following weeks. Deeper history is unread rather than lost, and
+ * It costs the 30-day range, which starts three quarters empty and fills in over
+ * the following weeks. Deeper history is unread rather than lost, and
  * `backfilled_from` records how far this account has gone.
  */
 const BACKFILL_DAYS = 7
@@ -68,13 +65,10 @@ const WINDOW_DAYS = 7
 const HOURLY_DAYS = 30
 
 /**
- * The backfill's chunk size, in days.
- *
- * A long statistics query blocks the JS thread long enough to drop frames on the
- * screen that started it. Thirty days is about a tenth of a second on an iPhone,
- * so a week-deep backfill is one chunk. The chunking stays because the depth is
- * a constant somebody will raise again, and a re-read of a wider window must not
- * hang the screen that asked.
+ * The backfill's chunk size, in days. A long statistics query blocks the JS
+ * thread long enough to drop frames; thirty days is about a tenth of a second on
+ * an iPhone, so a week-deep backfill is one chunk. The chunking stays because
+ * the depth is a constant somebody will raise again.
  */
 const CHUNK_DAYS = 30
 
@@ -98,22 +92,19 @@ type SessionRow = TablesInsert<'activity_sessions'>
 /**
  * Sessions as rows, grouped into the batches PostgREST will accept.
  *
- * A HEART RATE WE COULD NOT READ LEAVES ITS COLUMNS OUT, rather than writing
- * nulls into them. An upsert only touches the columns the payload names, so an
- * omitted one keeps whatever the last good read stored.
+ * A heart rate we could not read leaves its columns out rather than writing
+ * nulls. An upsert only touches the columns the payload names, so an omitted one
+ * keeps whatever the last good read stored.
  *
- * That is the rule the whole function exists for. An empty read is not a
- * measurement of nothing, and this window is re-read on every foreground: one
- * release that could not associate heart-rate samples with a workout erased a
- * fortnight of averages and zone charts, a day at a time, with nothing on any
- * screen to say why. What it costs is a session whose heart rate somebody
- * DELETES in Health keeping the figure we already had. Stale beats wrong, the
- * same call the Android reader makes when its second aggregate fails.
+ * An empty read is not a measurement of nothing, and this window is re-read on
+ * every foreground: one release that could not associate heart-rate samples with
+ * a workout erased a fortnight of averages a day at a time. What it costs is a
+ * session whose heart rate somebody deletes in Health keeping the old figure.
+ * Stale beats wrong.
  *
- * Hence the grouping. PostgREST builds its column list from the payload and
+ * Hence the grouping: PostgREST builds its column list from the payload and
  * rejects a batch whose objects disagree about their keys, so rows go out one
- * request per shape: at most three, and one whenever a phone answers the same
- * way for every session it wrote, which is the ordinary case.
+ * request per shape, at most three and usually one.
  */
 export function sessionBatches(
   userId: string,
@@ -124,9 +115,8 @@ export function sessionBatches(
 
   for (const workout of workouts) {
     // Avg and max go together because they are one reading: all three ways
-    // `apple.ts` asks for a heart rate return both or neither. Zones are their
-    // own question, since a writer that sent a single average has a real
-    // average and nothing to band.
+    // `apple.ts` asks return both or neither. Zones are their own question,
+    // since a writer that sent a single average has nothing to band.
     const heart = {
       ...(workout.avgHr == null ? {} : { avg_hr: workout.avgHr, max_hr: workout.maxHr }),
       ...(workout.hrZones == null ? {} : { hr_zones: workout.hrZones }),
@@ -159,11 +149,9 @@ export function sessionBatches(
 }
 
 /**
- * Writes one reading.
- *
- * Every statement is an upsert onto a key the provider cannot collide with, so
- * calling this twice with the same reading is indistinguishable from calling it
- * once. That is the property the whole design rests on.
+ * Writes one reading. Every statement is an upsert onto a key the provider
+ * cannot collide with, so calling this twice with the same reading is
+ * indistinguishable from calling it once.
  */
 async function persist(
   userId: string,
@@ -204,17 +192,15 @@ async function persist(
   }
 
   /**
-   * Hours are replaced for the window rather than upserted into it.
+   * Hours are replaced for the window rather than upserted into it, because an
+   * upsert cannot express "this hour no longer has any steps" and that happens
+   * when a duplicate source is removed in Health.
    *
-   * An upsert cannot express "this hour no longer has any steps", and that happens:
-   * a duplicate source is removed in Health and the hour that had 400 steps now has
-   * none. Nothing would ever write a zero over it.
-   *
-   * Safe only because the delete covers exactly the dates the reading can contain.
-   * The insert is an `insert`, not an upsert, so a row the delete missed is a
-   * duplicate-key error that fails the entire sync. Clamping the delete to the
-   * hourly retention window while the providers returned the whole chunk did
-   * exactly that: invisible on a first backfill, a hard failure on the second.
+   * Safe only because the delete covers exactly the dates the reading can
+   * contain. The insert is not an upsert, so a row the delete missed is a
+   * duplicate-key error that fails the whole sync: clamping the delete to the
+   * hourly retention window while the providers returned the whole chunk was
+   * invisible on a first backfill and a hard failure on the second.
    */
   if (window.withHours) {
     const { error: deleteError } = await supabase
@@ -241,15 +227,13 @@ async function persist(
   }
 
   /**
-   * Weigh-ins go through a function rather than an upsert, and that is the one
-   * asymmetry in this file.
+   * Weigh-ins go through a function rather than an upsert, the one asymmetry
+   * here. The three tables above are the sync's own; `weight_logs` is shared with
+   * the user, and one row per day means the two authors compete for the same key
+   * on every foreground.
    *
-   * The three tables above are the sync's own, so an upsert onto their key is
-   * unambiguous. `weight_logs` is shared with the user, and one row per day means
-   * the two authors compete for the same key on every foreground.
-   *
-   * A reading the user typed always wins. That is a WHERE on the DO UPDATE, which
-   * PostgREST's `.upsert()` cannot express, so `sync_weight_readings` owns it.
+   * A reading the user typed always wins, which is a WHERE on the DO UPDATE that
+   * PostgREST's `.upsert()` cannot express.
    */
   if (reading.weights.length > 0) {
     const { error } = await supabase.rpc('sync_weight_readings', {
@@ -267,22 +251,20 @@ async function persist(
 /**
  * The two facts about the person that a provider needs and cannot know.
  *
- * `age` bands a heart rate: the zones are fractions of an estimated maximum.
- * Without it every session was banded against a 40-year-old, which for a
- * 29-year-old puts the Peak threshold seven beats too low. Not `ageFrom` alone,
- * which returns 0 for a missing birth date, and 0 through Tanaka is a maximum of
- * 208.
+ * `age` bands a heart rate, since the zones are fractions of an estimated
+ * maximum. Without it every session was banded against a 40-year-old. Not
+ * `ageFrom` alone, which returns 0 for a missing birth date, and 0 through
+ * Tanaka is a maximum of 208.
  *
  * `basalKcal` splits a store's total energy into the active half that may extend
  * a budget and the resting half that may not. Null unless all four inputs are on
- * the profile: every fallback would be a number invented on the client and then
+ * the profile, because a fallback would be a number invented on the client and
  * written as if a watch had measured it.
  */
 async function personOf(userId: string): Promise<{ age: number | null; basalKcal: number | null }> {
   // Two rows, because a body is spread over two tables: the parts that do not
   // change live on the profile, and the weight is the latest weigh-in, which is
-  // the same place `compute_targets()` reads it from rather than a copy that would
-  // drift the first time somebody stood on a scale.
+  // where `compute_targets()` reads it from too.
   const [profile, weighIn] = await Promise.all([
     supabase.from('profiles').select('birth_date, sex, height_cm').eq('id', userId).maybeSingle(),
     supabase
@@ -326,12 +308,10 @@ async function personOf(userId: string): Promise<{ age: number | null; basalKcal
 /**
  * Read a range from a provider and write it, a chunk at a time.
  *
- * Returns the number of days actually written, which is what tells a caller
- * whether a granted-looking permission produced anything. On iOS that is the only
- * way to know, since HealthKit will not say whether a read was denied.
- *
- * It also returns whatever hardware named itself along the way, so every sync
- * keeps the device name current rather than only a connect.
+ * Returns the number of days written, which is how a caller knows whether a
+ * granted-looking permission produced anything: on iOS that is the only way,
+ * since HealthKit will not say whether a read was denied. It also returns
+ * whatever hardware named itself, so every sync keeps the device name current.
  */
 export async function syncRange(
   userId: string,
@@ -366,10 +346,9 @@ export async function syncRange(
   const total = chunks.length
 
   for (const chunk of chunks) {
-    // Only chunks inside the retention window pay for the hourly read: 24 rows a day
-    // to answer a question only ever asked about this month. The backfill is a week
-    // deep, so in practice every chunk qualifies. The guard stays for the
-    // incremental pass and any future deeper backfill.
+    // Only chunks inside the retention window pay for the hourly read: 24 rows
+    // a day to answer a question only asked about this month. The backfill is a
+    // week deep, so in practice every chunk qualifies.
     const withHours = chunk.to >= hourlyFrom
     const reading = await provider.read(chunk.from, chunk.to, { withHours, ...person })
     // The hour window is the chunk, not the retention window. A provider hands back
@@ -414,15 +393,13 @@ async function noteSync(
 }
 
 /**
- * What a sync can have moved.
- *
- * Shared by the connect and the incremental pass because they write the same
- * tables, and a list that drifted between the two would mean a screen that
- * refreshes after one kind of sync and not the other.
+ * What a sync can have moved. Shared by the connect and the incremental pass,
+ * because a list that drifted between the two would refresh a screen after one
+ * kind of sync and not the other.
  *
  * The weight three are easy to miss: a synced weigh-in fires
- * `weight_logs_sync_daily_goals`, so a sync can change the user's calorie target
- * without anything in the app having asked it to.
+ * `weight_logs_sync_daily_goals`, so a sync can change the calorie target
+ * without anything in the app asking it to.
  */
 function invalidateAfterSync(queryClient: QueryClient, userId: string): void {
   queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
@@ -443,12 +420,10 @@ function invalidateAfterSync(queryClient: QueryClient, userId: string): void {
  * What each provider was last asked to read, on this device.
  *
  * MMKV rather than `health_connections.permissions`: a permission is granted to
- * an install, while that column belongs to an account, and the same account on a
- * new phone has been asked nothing.
+ * an install, and the same account on a new phone has been asked nothing.
  *
- * The incremental pass deliberately does not ask for access, because it runs on
- * every foreground. So when a release starts reading a type the last one did not,
- * nobody already connected is ever asked for it, and the feature is silently dead
+ * The incremental pass does not ask for access, since it runs on every
+ * foreground. So a release that starts reading a new type would be silently dead
  * for every existing install while working perfectly on a fresh one.
  *
  * The stored value is the list itself rather than a version number somebody has
@@ -461,12 +436,10 @@ const fingerprint = (types: readonly string[]): string => [...types].sort().join
 const askedKey = (provider: ProviderId) => `asked.${provider}`
 
 /**
- * Ask for anything this device has not been asked for, once.
- *
- * Stamped whatever the answer. A refusal is a decision, and re-opening the sheet
- * on the next foreground because the user said no is the behaviour that makes
- * people uninstall an app. The next change to the read list asks again, which is
- * the only time there is a new question to put.
+ * Ask for anything this device has not been asked for, once. Stamped whatever
+ * the answer: a refusal is a decision, and re-opening the sheet on the next
+ * foreground is what makes people uninstall an app. The next change to the read
+ * list asks again, which is the only time there is a new question.
  */
 async function ensureAccess(userId: string, provider: HealthProvider): Promise<void> {
   const want = fingerprint(provider.readTypes)
@@ -489,22 +462,16 @@ export type ConnectResult = {
 }
 
 /**
- * Ask for access, then read the recent past.
+ * Ask for access, then read the recent past. One mutation, because nobody taps
+ * "connect" and then separately asks for their history; splitting them would put
+ * an empty Activity tab between the sheet and the backfill.
  *
- * One mutation rather than two because they are one user action: nobody taps
- * "connect" and then separately asks for their history. The permission sheet and
- * the backfill are the same wait, and splitting them would put an empty Activity
- * tab between them.
- *
- * `access` IS THE ONE WAY TO SPLIT THEM, and exactly one caller needs it. Every
- * write in this app is `networkMode: 'online'`, so react-query holds this
- * mutation PAUSED when there is no connection — which means the permission
- * sheet, a purely local thing, never appears either. That is survivable on the
- * Activity tab, which is a screen somebody can leave. It is not survivable in
- * onboarding, where App Review requires the step to lead to the permission
- * request and there is therefore no way past it. So that screen puts the sheet
- * up itself and hands the answer here, and the sync behind it can wait for a
- * connection as long as it likes.
+ * `access` is the one way to split them, and one caller needs it. Every write
+ * here is `networkMode: 'online'`, so react-query holds this mutation paused
+ * with no connection and the permission sheet, a purely local thing, never
+ * appears. Survivable on the Activity tab, which can be left; not survivable in
+ * onboarding, where App Review requires the step to lead to the request. So that
+ * screen puts the sheet up itself and hands the answer here.
  */
 export function useConnectHealth() {
   const userId = useUserId()
@@ -548,11 +515,9 @@ export function useConnectHealth() {
 
     onSuccess: (result, { provider }) => {
       /**
-       * `granted: false` and `days: 0` are two different failures wearing one empty
-       * tab, which is why both are on the event. A refused permission sheet is a copy
-       * problem, and a granted store that returned nothing is a device problem, most
-       * often a simulator, whose Health app reports itself as available and holds
-       * nothing at all.
+       * `granted: false` and `days: 0` are two failures wearing one empty tab, so
+       * both are on the event. A refused sheet is a copy problem; a granted store
+       * that returned nothing is a device problem, most often a simulator.
        */
       track('Health Connected', {
         provider,
@@ -566,10 +531,9 @@ export function useConnectHealth() {
 }
 
 /**
- * The incremental pass: the last seven days, re-read and upserted.
- *
- * Exposed as a mutation so the pull-to-refresh on Activity and the automatic
- * pass below share one implementation and one set of invalidations.
+ * The incremental pass: the last seven days, re-read and upserted. A mutation so
+ * the pull-to-refresh on Activity and the automatic pass share one
+ * implementation and one set of invalidations.
  */
 export function useSyncHealth() {
   const userId = useUserId()
@@ -603,27 +567,22 @@ export function useSyncHealth() {
 }
 
 /**
- * Keeps a connected account in step, without anybody asking.
+ * Keeps a connected account in step, without anybody asking. Mounted once, high
+ * in the tree, because it is a background rule about the account rather than
+ * anything a screen owns.
  *
- * Mounted once, high in the tree: it is a background rule about the account
- * rather than anything a screen owns.
- *
- * Runs on mount and on every foreground, throttled so flicking between apps does
- * not become a request per switch. The throttle is a ref rather than state,
- * because it must not cause a render and it is read inside an effect that would
- * otherwise re-subscribe on every tick.
+ * Runs on mount and on every foreground, throttled so flicking between apps is
+ * not a request per switch. The throttle is a ref, because it must not cause a
+ * render and it is read inside an effect that would otherwise re-subscribe.
  */
 export function useHealthAutoSync(provider: ProviderId | null): {
   syncNow: () => void
   /**
-   * A sync the user asked for is in flight. Not the automatic ones.
-   *
-   * The distinction exists because the only consumer is a `RefreshControl`, and
-   * one that is `refreshing` holds the whole scroll view pushed down under its
-   * spinner. The automatic pass runs on mount, so opening the Activity tab parked
-   * the header below the notch and left it there for the length of the sync, which
-   * reads as a screen stuck mid-swipe rather than as progress. The badge in the
-   * header is where an automatic pass reports itself.
+   * A sync the user asked for is in flight, and not the automatic ones. The only
+   * consumer is a `RefreshControl`, which while `refreshing` holds the scroll
+   * view pushed down under its spinner: the automatic pass runs on mount, so
+   * opening the Activity tab parked the header below the notch for the length of
+   * the sync. An automatic pass reports itself in the header badge.
    */
   isSyncing: boolean
   /**
@@ -653,12 +612,11 @@ export function useHealthAutoSync(provider: ProviderId | null): {
       // After the guards, so a pull that was thrown away for want of a provider does
       // not leave the control spinning over nothing.
       if (force) setForced(true)
-      // Fire and forget. A failed sync is not something to interrupt anybody over: the
-      // numbers are as fresh as the last successful pass, and the screen says when
-      // that was.
+      // Fire and forget: a failed sync leaves the numbers as fresh as the last
+      // successful pass, and the screen says when that was.
       //
-      // `onSettled` rather than `onSuccess`, or a pull that fails leaves the spinner
-      // running for ever.
+      // `onSettled` rather than `onSuccess`, or a pull that fails leaves the
+      // spinner running for ever.
       syncRef.current.mutate(provider, {
         onSettled: () => {
           if (force) setForced(false)

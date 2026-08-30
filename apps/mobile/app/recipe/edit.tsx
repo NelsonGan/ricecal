@@ -53,10 +53,9 @@ import {
 } from '@/ui'
 
 /**
- * A staged ingredient. The key is local and exists only to give React a stable
- * identity across reorders and removals — the rows have no database id until
- * Save writes them, and using the index would make removing the second of three
- * rows animate as if the third had changed.
+ * A staged ingredient. The key is local and gives React a stable identity across
+ * reorders: the rows have no database id until Save writes them, and using the
+ * index would make removing the second of three animate as if the third changed.
  */
 type StagedIngredient = RecipeIngredientInput & { key: string }
 
@@ -67,32 +66,23 @@ const stage = (input: RecipeIngredientInput): StagedIngredient => ({
 })
 
 /**
- * What a recipe is drawn as until somebody says otherwise.
- *
- * A recipe is ALWAYS pictured, which is the difference between this and a
- * catalogue food. A food out of the import has no drawing and shows none,
- * because there are a few hundred illustrations against half a million rows and
- * the same stand-in plate beside a thousand different dishes is a lie dressed
- * up as an answer. A recipe is one dish that one person entered, and there is
- * one tap between the pot and the right picture — so the pot is a starting
- * point rather than a stand-in, and it is never what the list ends up full of.
+ * What a recipe is drawn as until somebody says otherwise. A recipe is always
+ * pictured, unlike a catalogue food, which shows nothing rather than putting the
+ * same stand-in plate beside a thousand dishes. A recipe is one dish one person
+ * entered, with one tap between the pot and the right picture.
  */
 const DEFAULT_RECIPE_ICON: IconRef = { set: 'food', name: 'cooking-pot' }
 
 /**
- * R2 / R3 / R1C — one form for a new recipe and for editing one.
+ * One form for a new recipe and for editing one.
  *
- * The form STAGES everything and the footer writes the lot, exactly as the
- * logged-entry screen does. That is what makes the totals card a preview rather
- * than a report: it reads the staged values through `potTotals`, so what Save
- * commits is what was being read. Writing as you type would be four round trips
- * for a pot corrected in four places, and would make changing your mind a
- * matter of changing the control back.
+ * The form stages everything and the footer writes the lot, which is what makes
+ * the totals card a preview rather than a report: it reads the staged values
+ * through `potTotals`. Writing as you type would be four round trips for a pot
+ * corrected in four places.
  *
- * The photograph is the exception and is uploaded the moment it is taken. It
- * has to be: the reader on the server fetches the object out of the bucket, so
- * there is nothing to read until the object exists — the same order the meal
- * scan uses, and for the same reason.
+ * The photograph is the exception and is uploaded the moment it is taken,
+ * because the reader on the server fetches the object out of the bucket.
  */
 export default function RecipeFormScreen() {
   const { t } = useTranslation(['recipes', 'common', 'paywall'])
@@ -121,14 +111,10 @@ export default function RecipeFormScreen() {
   const [items, setItems] = useState<StagedIngredient[]>([])
 
   /**
-   * The cook has answered the picture question themselves.
-   *
-   * A ref rather than state because nothing renders differently for it: its
-   * only job is to stop `applyDraft` from replacing a drawing that was CHOSEN
-   * with one the model picked. The form's default counts as unanswered, which
-   * is the whole reason a plain boolean is not enough — `icon` is never null on
-   * a new recipe, so "is it empty" cannot be the test the way it is for the
-   * name and the steps.
+   * The cook has answered the picture question themselves. A ref, because nothing
+   * renders differently for it: its job is to stop `applyDraft` replacing a chosen
+   * drawing with one the model picked. The form's default counts as unanswered,
+   * so "is it empty" cannot be the test the way it is for the name.
    */
   const pictureChosen = useRef(false)
   /** The upload behind the picture tile, which is a second or two on a real photo. */
@@ -148,15 +134,11 @@ export default function RecipeFormScreen() {
   const [camera, setCamera] = useState(false)
   const [describing, setDescribing] = useState(false)
   /**
-   * Which read is in flight, and the form is not editable while it is.
-   *
-   * It names the SOURCE rather than being a boolean because nothing else on
-   * screen still knows: the describe sheet is dismissed before the call is
-   * made, and `filled` is not set until the answer lands, so a wait that
-   * reasoned from those two said "Reading your photo…" over somebody's typing.
-   *
-   * Preferred to `read.isPending` for the same reason — the mutation knows it
-   * is running and not what it was given.
+   * Which read is in flight, and the form is not editable while it is. It names
+   * the source rather than being a boolean, because nothing else on screen still
+   * knows: the describe sheet is dismissed before the call is made, so a wait
+   * reasoning from that said "Reading your photo…" over somebody's typing.
+   * `read.isPending` has the same problem.
    */
   const [reading, setReading] = useState<'photo' | 'text' | null>(null)
   // The describe sheet has actually been presented. `autoFocus` inside a
@@ -170,12 +152,11 @@ export default function RecipeFormScreen() {
   const [filled, setFilled] = useState(false)
 
   /**
-   * Seed the form from the recipe being edited, exactly once.
-   *
-   * A ref rather than a `useEffect` dependency list, because the queries settle
-   * at different moments and the form is editable in between: re-seeding when
-   * the ingredients arrive would wipe a name already typed. The ref holds the id
-   * that has been seeded, so navigating from one recipe to another still works.
+   * Seed the form from the recipe being edited, exactly once. A ref rather than a
+   * dependency list, because the queries settle at different moments and the form
+   * is editable in between, so re-seeding when the ingredients arrive would wipe
+   * a name already typed. The ref holds the id, so navigating between recipes
+   * still works.
    */
   const seeded = useRef<string | null>(null)
   useEffect(() => {
@@ -205,26 +186,20 @@ export default function RecipeFormScreen() {
 
   /**
    * The two refusals, shown and swallowed. Anything else is re-thrown for the
-   * caller's own "we could not read it" message, which is the ordinary
-   * failure and the one the user can do something about by typing.
+   * caller's own "we could not read it" message.
    *
-   * It used to answer them differently — a toast for one, a silent push to the
-   * paywall for the other — and both halves were wrong in the same way: a
-   * paywall that arrives with no statement of what just failed reads as the app
-   * deciding to sell something, and a message with no way to act on it leaves
-   * the user to go and find the paywall themselves. `announceRefusal` does both,
-   * and does them the same way everywhere a refusal can land.
+   * They used to be answered differently, a toast for one and a silent push to
+   * the paywall for the other, and both were wrong the same way: a paywall with
+   * no statement of what failed reads as the app deciding to sell something, and
+   * a message with no way to act on it leaves the user to find the paywall.
    */
   const showRefusal = (error: unknown): boolean => announceRefusal(toast, error, 'read_recipe')
 
   /**
-   * A photo of the pot: attach it, then read it.
-   *
-   * The upload has to finish before the read starts, and both have to finish
-   * before the form is filled — so this is one sequence rather than two
-   * handlers. A failure at either step leaves the form exactly as it was, with
-   * the photograph attached if it got that far, because a picture the user took
-   * is worth keeping even when nothing could be read off it.
+   * A photo of the pot: attach it, then read it. The upload has to finish before
+   * the read starts and both before the form is filled, so this is one sequence.
+   * A failure at either step leaves the form as it was, with the photograph
+   * attached if it got that far.
    */
   const readPhoto = async (uri: string | undefined) => {
     setCamera(false)
@@ -256,12 +231,9 @@ export default function RecipeFormScreen() {
 
   /**
    * A picture into the form: upload it, put it on the row, drop the drawing.
-   *
-   * Shared by the two ways one arrives — the "Photo" tile that also READS the
-   * pot, and the picker that only changes the picture — so the pair cannot
-   * drift on the orphan sweep below, which is the part with a cost attached.
-   * Answers the key, or null when the upload failed; the caller says so,
-   * because the two have different things to apologise for.
+   * Shared by the "Photo" tile that also reads the pot and the picker that only
+   * changes the picture, so the two cannot drift on the orphan sweep. Answers the
+   * key, or null when the upload failed, and the caller says so.
    */
   const attachPhoto = async (uri: string): Promise<string | null> => {
     setPicking(false)
@@ -314,11 +286,9 @@ export default function RecipeFormScreen() {
   }
 
   /**
-   * The pot in words: read it, then fill the form.
-   *
-   * Shorter than the photo path by exactly the upload, which is the only thing
-   * that path does that this one does not. Everything after the model call is
-   * the same, hence `applyDraft`.
+   * The pot in words: read it, then fill the form. Shorter than the photo path by
+   * exactly the upload; everything after the model call is the same, hence
+   * `applyDraft`.
    */
   const readText = async (described: string) => {
     setDescribing(false)
@@ -343,12 +313,9 @@ export default function RecipeFormScreen() {
   }
 
   /**
-   * A draft into the form, ONLY OVER EMPTY FIELDS.
-   *
-   * Somebody who typed a name and then reached for the camera meant it to fill
-   * in the parts they had not done, not to overwrite the part they had. Shared
-   * by both paths so the two cannot drift on which fields they are willing to
-   * clobber.
+   * A draft into the form, only over empty fields: somebody who typed a name and
+   * then reached for the camera meant it to fill in the rest. Shared by both
+   * paths, so the two cannot drift on which fields they will clobber.
    */
   const applyDraft = (draft: ScannedRecipe) => {
     setFilled(true)
@@ -383,13 +350,11 @@ export default function RecipeFormScreen() {
         ingredients: items.map(({ key: _key, ...input }) => input),
       })
     } catch (error) {
-      // The free tier's ceiling, met at the write rather than at the button.
-      // The plus button on the shelf checks the count first, so this is what is
-      // left: a third recipe saved on another phone since this count was read,
-      // or a form opened before a subscription lapsed. `recipes_enforce_free_limit`
-      // is a trigger and raises a token rather than a sentence, because a
-      // PostgREST error is not a place to write copy — so the words are ours and
-      // the answer is the paywall, not "save failed".
+      // The free tier's ceiling, met at the write rather than the button. The
+      // plus button checks the count first, so what is left is a third recipe
+      // saved on another phone, or a form opened before a subscription lapsed.
+      // `recipes_enforce_free_limit` raises a token rather than a sentence, so
+      // the words are ours and the answer is the paywall.
       if (isRecipeLimit(error)) {
         // Through `openPaywall` rather than three lines here, so the toast comes
         // from the top like every other one that opens this screen — the
@@ -774,22 +739,17 @@ export default function RecipeFormScreen() {
 /**
  * One of the two offers to fill the form in.
  *
- * A SQUARE-ISH TILE, side by side with its sibling, rather than a full-width
- * row. Two stacked rows read as a list of settings and pushed the form's first
- * real field below the fold; two tiles read as a choice, which is what this is.
- * The same shape as the quick actions on the log sheet, and for the same
- * reason.
+ * A square-ish tile beside its sibling rather than a full-width row: two stacked
+ * rows read as a list of settings and pushed the form's first real field below
+ * the fold, where two tiles read as a choice. The same shape as the quick actions
+ * on the log sheet.
  *
- * The label is one word and the explanation is GONE, not truncated. At this
- * width a sentence wraps to three lines and makes the tile taller than the
- * field it is offering to fill; "Photo" and "Describe" under an icon say what
- * happens, and the sheet that opens says the rest — the describe panel's own
- * placeholder is a worked example, which is a better explanation than a caption
- * would have been.
+ * The label is one word and the explanation is gone rather than truncated. At
+ * this width a sentence wraps to three lines and makes the tile taller than the
+ * field it is offering to fill, and the sheet that opens says the rest.
  *
- * A component rather than two near-copies, because near-copies drift: the two
- * differ by an icon, a word and a tint, and everything else about them is one
- * control.
+ * A component rather than two near-copies, which differ by an icon, a word and a
+ * tint.
  */
 function FillOption({
   icon,
@@ -825,11 +785,9 @@ function FillOption({
 }
 
 /**
- * The picture, in whichever of its states it is in: a local file still
- * uploading, a key in the bucket, or a drawing.
- *
- * There is no empty state and no "add a picture" prompt: a recipe always has
- * one, because the form opens with `DEFAULT_RECIPE_ICON` in it.
+ * The picture, in whichever state it is in: a local file still uploading, a key
+ * in the bucket, or a drawing. No empty state and no "add a picture" prompt,
+ * because the form opens with `DEFAULT_RECIPE_ICON` in it.
  */
 function RecipePicture({
   icon,
@@ -848,18 +806,16 @@ function RecipePicture({
   const { data: photoUrl, isLoading: resolvingPhoto } = useMealPhotoUrl(photoPath ?? undefined)
   const photo = storedImageSource(photoPath ?? undefined, photoUrl, localPhoto ?? undefined)
   /**
-   * The box is tall when a PHOTOGRAPH is in it, and the test has to agree with
-   * what the body below actually draws — the photo wins there, so it wins here.
+   * The box is tall when a photograph is in it, and the test has to agree with
+   * what the body draws: the photo wins there, so it wins here.
    *
-   * Asking `&& !icon` as well looked right (it is what the logged-entry screen
-   * asks, where a drawing overrides the photo) and was wrong here: this form
-   * clears one when the other is chosen, but a recipe saved before it existed
-   * can carry both, and that row drew its photograph inside the short box —
-   * which is the letterboxing this height exists to stop.
+   * Asking `&& !icon` as well is what the logged-entry screen does and is wrong
+   * here: this form clears one when the other is chosen, but a recipe saved
+   * before it existed can carry both, and that row drew its photograph inside the
+   * short box.
    *
-   * `resolvingPhoto` counts as having one: it means the recipe HAS a photograph and
-   * we are waiting on a URL for it. Left out, the box opens short and grows by
-   * 130pt under the reader a moment later.
+   * `resolvingPhoto` counts as having one: the recipe has a photograph and we are
+   * waiting on a URL. Left out, the box opens short and grows by 130pt.
    */
   const tall = Boolean(photo || resolvingPhoto || attaching)
 

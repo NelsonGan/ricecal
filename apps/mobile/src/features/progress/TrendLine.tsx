@@ -34,29 +34,21 @@ const DOT = 3.5
 const LAST_DOT = 5
 
 /**
- * Weight over time, as a line.
+ * Weight over time, as a line rather than the bars every other chart uses.
+ * Weight moves by about one percent a week, so bars from zero are seven
+ * identical rectangles, and the eye reads bars as amounts and a line as a
+ * direction, which is the entire question.
  *
- * A line rather than the bars every other chart here uses, and the reason is in
- * the data: weight moves by about one percent a week, so bars drawn from zero
- * are seven identical rectangles. `BarChart`'s `scale="range"` fixes the height
- * problem but not the reading problem — the eye reads a row of bars as a set of
- * amounts and a line as a direction, and direction is the entire question.
+ * A day with no weigh-in holds the last reading rather than being interpolated
+ * across. A straight line between Monday and Friday claims to know Wednesday;
+ * carrying Monday forward claims only that nothing was recorded.
  *
- * A day with no weigh-in HOLDS the last reading rather than being interpolated
- * across. Nobody weighs themselves daily, so most columns are empty, and the two
- * ways of filling them say different things: a straight line between Monday and
- * Friday claims to know Wednesday, which it does not. Carrying Monday forward
- * claims only that nothing was recorded in between, which is exactly what
- * happened — the line goes flat and then steps when the scale is next used.
+ * The dots stay on the real readings, which is what tells the held stretches
+ * apart from the measured ones.
  *
- * The dots stay on the real readings. They are what tells the held stretches
- * apart from the measured ones, and without them a step chart looks like a
- * measurement that stopped moving.
- *
- * Skia because the alternative is a hundred absolutely-positioned Views; the
- * canvas is one node and the path is rebuilt only when the width or the data
- * changes. No animation, deliberately — a line that draws itself in on every tab
- * switch is a line nobody can compare against the one before it.
+ * Skia, because the alternative is a hundred absolutely-positioned Views. No
+ * animation: a line that draws itself in on every tab switch cannot be compared
+ * against the one before it.
  */
 export function TrendLine({
   points,

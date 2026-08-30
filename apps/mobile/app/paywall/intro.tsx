@@ -22,26 +22,19 @@ import { useEnterApp } from '@/lib/navigation'
 import { Button, Screen, useToast } from '@/ui'
 
 /**
- * THE PAYWALL AT THE END OF ONBOARDING.
+ * The paywall at the end of onboarding. The tour hands over to this rather than
+ * to Today, so the offer is made once, at the moment the user has answered the
+ * questions, seen their budget and been told how logging works.
  *
- * The tour hands over to this rather than to Today, so the offer is made once,
- * at the moment the user is most ready to hear it: they have answered the
- * questions, seen their budget and been told how logging works, and the next
- * thing they were going to do is log something.
+ * "Later" is a real way out. It lands on the actual app: everything reads, search
+ * works, the catalogue is open, and the only thing behind the wall is writing an
+ * entry. There is no close chevron, because a modal presented over nothing has
+ * nothing to go back to.
  *
- * "LATER" IS A REAL WAY OUT and not a dark pattern in reverse. It lands on the
- * actual app, not a preview of one — everything reads, search works, the
- * catalogue is open, and the only thing behind the wall is writing an entry.
- * A user who declines here is not stuck on a sales page, and the app they walk
- * into is the honest version of what they would be buying.
- *
- * There is no close chevron. A modal presented over nothing has nothing to go
- * back to, and the ghost button says plainly what it does.
- *
- * The three plans are all offered here, unlike the feature gates, because this
- * is the one screen with room to weigh them up. Lifetime has no trial, so the
- * button and the small print both change when it is selected — a "start free
- * trial" over a one-off purchase would be a promise the store does not keep.
+ * The three plans are all offered here, unlike the feature gates, because this is
+ * the one screen with room to weigh them up. Lifetime has no trial, so the button
+ * and the small print both change when it is selected: a "start free trial" over
+ * a one-off purchase would be a promise the store does not keep.
  */
 export default function IntroPaywall() {
   const { t } = useTranslation(['paywall', 'common'])

@@ -1,50 +1,33 @@
 /**
- * How much tighter a photograph is SHOWN than it was taken.
+ * How much tighter a photograph is shown than it was taken.
  *
- * There are two readers of a plate and they want opposite things. The MODEL
- * wants the widest frame it can get: the table, the cutlery and the rest of the
- * plate are what a portion is judged against, and a plate cropped at its rim is
- * a plate with nothing beside it to size it by. The PERSON wants back the
- * picture they framed — food filling the square, not floating in a photo of a
- * table.
+ * The model needs the widest frame it can get, since the table and the cutlery
+ * are what a portion is judged against. The person wants back the picture they
+ * framed. So the shutter records and stores the wide frame, and everything that
+ * draws the photo afterwards crops back in by this much, which is exactly how
+ * much tighter the viewfinder already was.
  *
- * So the shutter records the wide frame, the wide frame is what is stored and
- * what the cascade reads, and everything that DRAWS the photo afterwards crops
- * back in by this much — which is exactly the amount the viewfinder was already
- * tighter than the capture. One constant serves both ends: the same box lays
- * out the camera preview (`InlineCamera`) and every stored photo the app shows
- * (`MealPhoto`), so what comes back in the diary is what was on screen when the
- * shutter went.
- *
- * Change it and both move together, which is the property worth having. Two
- * numbers, one for the preview and one for the display, is a diary whose
- * pictures are quietly framed differently from the viewfinder that took them.
- *
- * It lives here rather than beside either of them because those two are the
- * ends of one decision, in different feature folders, and whichever of them
- * owned the number would have the other importing a camera to draw a thumbnail
- * or a row component to open a camera.
+ * One constant, so the camera preview (`InlineCamera`) and every stored photo
+ * (`MealPhoto`) cannot drift apart. It lives here rather than beside either,
+ * because whichever owned it would have the other importing a camera to draw a
+ * thumbnail.
  */
 export const PHOTO_CROP = 1.15
 
 /**
  * Percentages, for a box whose size is only known once it is laid out. Rounded
- * because `1.15 * 100` is not 115 in binary floating point, and the width of a
- * view is not the place to find that out.
+ * because `1.15 * 100` is not 115 in binary floating point.
  */
 const pct = (fraction: number): `${number}%` => `${Math.round(fraction * 1e4) / 1e2}%`
 
 /**
- * Fills the parent and then some, centred, so the overflow is cropped evenly.
+ * Fills the parent and then some, centred, so the parent's `overflow-hidden`
+ * crops it evenly.
  *
- * This is LAYOUT rather than a transform, and the parent's `overflow-hidden` is
- * what does the cropping. It HAS to be layout for the camera: a transform is
- * applied after layout to a view whose contents are a native preview surface
- * rather than anything React Native draws. A stored photo would take either, and
- * uses this one so the two cannot drift.
- *
- * Half the overhang is pulled back on each axis, so the middle of what is shown
- * is the middle of what was taken.
+ * Layout rather than a transform, because the camera needs it to be: a
+ * transform is applied after layout to a view whose contents are a native
+ * preview surface. A stored photo would take either, and uses this so the two
+ * cannot drift.
  */
 export const photoCropFill = {
   position: 'absolute',

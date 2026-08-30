@@ -10,14 +10,12 @@ import { showChange, showWeight, type WeightUnit } from '@/lib/units'
 /**
  * Today, flattened into the one document the home screen can read.
  *
- * PURE, and deliberately so: everything that decides what a widget says is in
- * here, where a test can reach it, rather than in Swift and Kotlin where it
- * would be two implementations to keep in step. The native side draws what this
- * produces and computes nothing — see the header of `types.ts` in the module.
+ * Pure, so everything that decides what a widget says is where a test can reach
+ * it rather than in Swift and Kotlin as two implementations to keep in step. The
+ * native side draws what this produces and computes nothing.
  *
- * It also settles the questions the widgets are not allowed to answer for
- * themselves, because Today has already answered them and two surfaces about
- * one day must not disagree:
+ * It also settles the questions the widgets may not answer for themselves,
+ * because Today has already answered them:
  *
  * - Movement extends the budget, unless the account turned that off.
  * - Over budget is a full bar, never a longer one.

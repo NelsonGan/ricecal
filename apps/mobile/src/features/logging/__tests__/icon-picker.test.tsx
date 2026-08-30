@@ -8,20 +8,17 @@ import { IconPicker } from '../IconPicker'
 
 /**
  * The picker exists because the catalogue cannot be illustrated: a few hundred
- * drawings against hundreds of megabytes of imported foods. So what is worth
- * pinning is what makes it usable at that scale — searching by dish name — and
- * that it hands back the tagged pair `Icon` takes rather than two loose props.
+ * drawings against hundreds of megabytes of imported foods. So what is pinned is
+ * what makes it usable at that scale, searching by dish name, and that it hands
+ * back the tagged pair `Icon` takes rather than two loose props.
  *
- * There is no "use no picture" row any more. Nothing arrives here carrying a
- * picture it did not ask for, so the only thing that button could undo was a
- * choice made in this sheet a moment earlier.
+ * There is no "use no picture" row any more: nothing arrives here carrying a
+ * picture it did not ask for.
  *
- * One thing to know before adding a case here: the grid arrives in two parts. Forty
- * tiles on the frame the sheet opens and the remaining two hundred and twenty-nine
- * once the thread is free, because building all of them at once is what made this
- * sheet stick before it moved. A tile past the first forty needs `findBy`, not
- * `getBy` — the note at the foot of this file says why there is no test for the
- * split itself.
+ * Before adding a case, know that the grid arrives in two parts: forty tiles on
+ * the frame the sheet opens and the rest once the thread is free, because
+ * building all of them at once made this sheet stick. A tile past the first forty
+ * needs `findBy`, not `getBy`.
  */
 
 function Providers({ children }: { children: ReactNode }) {

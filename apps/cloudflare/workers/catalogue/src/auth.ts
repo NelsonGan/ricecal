@@ -1,32 +1,22 @@
 /**
- * Who is asking, and are they allowed to.
+ * Who is asking, and are they allowed to. Two kinds of caller, authenticated
+ * completely differently.
  *
- * There are two kinds of caller and they are authenticated completely
- * differently, which is the whole point of this file.
+ * A Supabase edge function carries a shared secret: our own server, needing every
+ * route including the write, settled by a constant-time compare.
  *
- * A Supabase edge function carries a shared secret. It is our own server, it
- * needs every route including the write, and a constant-time compare is the end
- * of it.
+ * The app carries the signed-in user's Supabase JWT and reads the catalogue
+ * directly. That used to be impossible, since a secret shipped in a phone is not
+ * a secret, so every search went phone to edge function to here.
  *
- * The app itself carries the signed-in user's Supabase JWT and reads the
- * catalogue directly. That used to be impossible: the only credential this Worker
- * understood was the shared secret, and a secret shipped in a phone is not a
- * secret, so every search went phone to Supabase edge function to here, which is
- * a detour to Singapore and back for a query that takes D1 about two
- * milliseconds.
+ * What makes it possible is that the project signs its tokens asymmetrically:
+ * Supabase publishes an ES256 public key, so this Worker checks a signature while
+ * holding nothing that could forge one. On the legacy HS256 setup the verifying
+ * and signing keys are the same string.
  *
- * What makes it possible now is that the project signs its tokens
- * asymmetrically. Supabase publishes an ES256 public key at
- * `/auth/v1/.well-known/jwks.json`, so this Worker can check a user's signature
- * while holding nothing that could forge one. On the legacy HS256 setup the
- * verifying key and the signing key are the same string, and putting that here
- * would mean a Worker that can mint a token for any user in the project.
- *
- * What this does not do is ask Supabase whether the user still exists. A
- * signature is checked locally, so a token stays good until it expires even if
- * the account was deleted a minute ago. That is the trade for the round trip we
- * just removed, and it is why only the read routes accept one: the worst a stale
- * token buys is a minute of reading a public food catalogue.
+ * It does not ask Supabase whether the user still exists, so a token stays good
+ * until it expires even if the account was deleted. That is the trade for the
+ * round trip removed, and why only the read routes accept one.
  */
 
 /** The claims worth reading off a verified token. */

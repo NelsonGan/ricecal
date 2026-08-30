@@ -3,23 +3,18 @@
  * Builds the auth emails out of `apps/supabase/templates/` and, with `--push`,
  * sends them to the project.
  *
- * THE TEMPLATES ARE A FOLDER IN THIS REPO, and the dashboard is a mirror of it.
- * Edited in the dashboard they live in one text box per message, with no way to
- * see two of them side by side, no history, and no review; the first person to
- * change the shared footer changes it in one of eight places. Here they are
- * eight bodies over one layout, and the layout is where the design lives.
- *
- * Three modes:
+ * The templates are a folder in this repo and the dashboard is a mirror of it.
+ * Edited there they are one text box per message, with no history and no review,
+ * and the first person to change the shared footer changes it in one of eight
+ * places. Here they are eight bodies over one layout.
  *
  *   pnpm email:build    write templates/build/*.html
  *   pnpm email:check    fail if templates/build/*.html is out of date (CI)
  *   pnpm email:push     build, then PATCH the project's auth config
  *
- * `build/` is COMMITTED, the same bargain `theme:gen` makes with its CSS: the
- * local stack reads those files straight off disk (see the
- * `auth.email.template.*` blocks in config.toml), a reviewer can read the email
- * that will actually be sent, and `--check` in CI is what stops the two
- * drifting.
+ * `build/` is committed, the same bargain `theme:gen` makes with its CSS: the
+ * local stack reads those files off disk, a reviewer can read the email that
+ * will be sent, and `--check` in CI stops the two drifting.
  */
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -163,19 +158,13 @@ function fieldsFor({ key, subject, html }) {
 }
 
 /**
- * The local stack has its own copy of every subject, and this is what stops it
- * drifting.
+ * The local stack has its own copy of every subject, and this stops it drifting.
+ * The CLI takes a subject separately from its body, so `config.toml` repeats what
+ * each file's metadata block says, and the symptom of a divergence is a local
+ * mail with a different subject line from the one production sends.
  *
- * The CLI takes a template's subject separately from its body, so `config.toml`
- * repeats what each file's metadata block already says. Repeated by hand, those
- * two agree until somebody edits one — and the symptom is the worst kind: the
- * mail a developer reads on a local stack has a different subject line from the
- * one production sends, so the difference is invisible until a user mentions it.
- *
- * `[auth.email.notification.*]` is deliberately not checked. Its `content_path`
- * is resolved from a DIFFERENT directory than a template's (see the note in
- * config.toml), and a check that pretended otherwise would be wrong about the
- * one thing worth being right about.
+ * `[auth.email.notification.*]` is deliberately not checked: its `content_path`
+ * resolves from a different directory than a template's.
  */
 function configDrift(built) {
   const config = readFileSync(fileURLToPath(new URL('../config.toml', import.meta.url)), 'utf8')

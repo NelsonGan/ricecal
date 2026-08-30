@@ -159,21 +159,13 @@ export default function GoalsScreen() {
 
   /**
    * `is_custom` is the flag the recompute trigger reads and stops on, and it is
-   * EARNED rather than assumed.
+   * earned rather than assumed. Written as `true` unconditionally, opening this
+   * screen and pressing Save froze the calorie budget for good.
    *
-   * It used to be written as `true` unconditionally, which meant opening this
-   * screen and pressing Save — to change the water goal, or to change nothing at
-   * all — froze the calorie budget for good: no later weigh-in and no later
-   * change of plan could move it again.
-   *
-   * Read off INTENT rather than off the number. Comparing `currentKcal` to
-   * `recommended` looks equivalent and is not: the recommendation is this
-   * client's copy of the formula, and it can disagree with the stored budget by
-   * a rounding step without anybody having typed anything — the two compute age
-   * against different clocks, and in UTC+8 the phone's date and the server's
-   * differ for eight hours out of every day. A birthday landing in that window
-   * would silently freeze a budget nobody chose to freeze, which is the exact
-   * bug this replaced.
+   * Read off intent rather than the number. Comparing `currentKcal` to
+   * `recommended` is not equivalent: the recommendation is this client's copy of
+   * the formula and can disagree by a rounding step, since the two compute age
+   * against different clocks and in UTC+8 the dates differ for eight hours a day.
    */
   const isCustom = kcal !== undefined ? true : planChanged ? false : (targets?.isCustom ?? false)
 

@@ -21,18 +21,14 @@ export type BalanceBarsProps = {
 /**
  * Eaten against burned, a pair of columns a day.
  *
- * WHY A PAIR AND NOT A DIVERGING BAR
+ * A pair rather than a diverging bar. Surplus up and deficit down is the compact
+ * version and hides what people want from this chart: a 300 deficit on a
+ * 1,400-calorie day and on a 2,900-calorie day are the same bar and not the same
+ * week. Two columns keep the magnitudes visible and let the gap carry the
+ * balance.
  *
- * A single bar above and below a line — surplus up, deficit down — is the
- * compact version and it was the first attempt. It hides the thing people want
- * from this chart: a 300 deficit on a 1,400-calorie day and a 300 deficit on a
- * 2,900-calorie day are the same bar, and they are not the same week. Two
- * columns keep the magnitudes visible and let the gap between them carry the
- * balance, which is the reading the design's headline number describes.
- *
- * BOTH COLUMNS SHARE ONE SCALE. Scaling each series to its own peak would make
- * a day where eating exactly matched burning look like a day of two different
- * heights, which is the one thing this chart must never do.
+ * Both columns share one scale. Scaled to their own peaks, a day where eating
+ * exactly matched burning would draw as two different heights.
  */
 export function BalanceBars({
   bars,

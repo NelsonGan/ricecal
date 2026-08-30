@@ -33,14 +33,13 @@ export type WaterTankProps = {
   /** Names the level to a screen reader. Pass translated copy. */
   accessibilityLabel?: string
   /**
-   * Drawn over the tank, TWICE: once on the dry ground and once inside the
-   * water, so a figure written across it stays legible whatever the level.
+   * Drawn over the tank twice, once on the dry ground and once inside the water,
+   * so a figure across it stays legible whatever the level.
    *
-   * A render prop rather than plain children because the two copies are not the
-   * same pixels — the caller is told which ground it is drawing on and picks the
-   * colour (`text-water-ink` on the dry part, `text-on-water` in the wet). One
-   * colour cannot do both: in dark mode the water and the water ink are the
-   * same value, so a figure that reads on the empty tank vanishes as it fills.
+   * A render prop rather than children, because the caller is told which ground
+   * it is drawing on and picks the colour. One colour cannot do both: in dark
+   * mode the water and the water ink are the same value, so a figure that reads
+   * on the empty tank vanishes as it fills.
    */
   children?: (onWater: boolean) => ReactNode
   className?: string
@@ -53,20 +52,16 @@ const AMPLITUDE = 3
 const STEP = 4
 
 /**
- * One full trip of each wave, in milliseconds. Slow: this is water, not a
- * loading bar.
+ * One full trip of each wave, in milliseconds. Slow: this is water, not a loading
+ * bar.
  *
- * TWO PERIODS RATHER THAN ONE PHASE AND TWO SPEEDS, and that is a bug fix
- * rather than a preference. A phase that ramps 0 to 1 and repeats is only
- * seamless if the wave built from it advances a WHOLE cycle over that ramp —
- * multiply it by 0.62 to slow one wave down and the wrap leaves 38% of a cycle
- * unaccounted for, so every 3.6 seconds that wave jumped backwards. It read as
- * the animation resetting, because it was.
+ * Two periods rather than one phase and two speeds, which is a bug fix: a phase
+ * that ramps 0 to 1 and repeats is only seamless if the wave advances a whole
+ * cycle over that ramp, so multiplying by 0.62 left 38% unaccounted for and that
+ * wave jumped backwards every 3.6 seconds.
  *
- * Each wave gets its own value looping over its own duration instead, so both
- * advance exactly one cycle per wrap. The difference between the two durations
- * is what makes them beat against each other, which is what the second wave is
- * for.
+ * Each wave loops over its own duration instead, and the difference between them
+ * is what makes them beat against each other.
  */
 const PERIOD = 3600
 const BACK_PERIOD = 5800
@@ -81,49 +76,36 @@ const STROKE = 2
 const BRIM = 2
 
 /**
- * Water left in an empty tank, in points.
+ * Water left in an empty tank, in points. A tank with nothing in it read as a
+ * component that had failed to load rather than a day nobody had drunk on. A
+ * shallow puddle is the same fact drawn as a state rather than an absence.
  *
- * A tank with NOTHING in it read as a component that had failed to load rather
- * than as a day nobody had drunk on — an outlined box with a figure in the
- * corner. A shallow puddle says "this holds water and there is none in it yet",
- * which is the same fact drawn as a state rather than as an absence.
- *
- * It does mean a day at zero and a day at one mouthful draw alike. That is the
- * figure's job, and the figure is right there: nothing here claims a quantity.
+ * A day at zero and a day at one mouthful draw alike, which is the figure's job.
  */
 const EMPTY_FILL = 5
 
 /**
  * A day's water, as a tank of it.
  *
- * WIDE AND SHORT, which is the whole design. It was a tall glass beside a
- * column of buttons, and between them they took a third of the screen on the
- * one card that is not about food — on a diary whose subject is the meals
- * underneath. A tank is the same reading in a band, and on Today it IS the
- * card: pass it the card's own `radius` and let it fill, and what a user sees
- * is one object filling up rather than a chart sitting in a box.
+ * Wide and short, which is the whole design. It was a tall glass beside a column
+ * of buttons taking a third of the screen on the one card that is not about food.
+ * On Today the tank is the card: pass it the card's own `radius` and let it fill.
  *
- * The surface does two things. It carries two waves at different speeds, which
- * is what makes it read as liquid rather than as a moving graph — one sine is a
- * chart, two crossing is a surface. And it TIPS, left and right, when the card
- * first appears and again whenever water is added: a tank that has just been
- * poured into sloshes and settles, and that half second is the difference
- * between a picture of water and a progress bar that happens to be blue.
+ * The surface carries two waves at different speeds, because one sine is a chart
+ * and two crossing is a surface, and it tips when the card appears and whenever
+ * water is added, which is the difference between a picture of water and a
+ * progress bar that happens to be blue. The level springs for the same reason.
  *
- * The level springs rather than eases, for the same reason.
- *
- * The wave never stops while this is mounted, which is a deliberate cost: it is
- * two paths of about sixty points rebuilt per frame on the UI thread, and it
- * buys the one thing a static fill cannot say, which is that this is a liquid.
+ * The wave never stops while this is mounted, which is two paths of about sixty
+ * points rebuilt per frame on the UI thread.
  */
 /**
  * Where the surface sits, in points from the top of the tank.
  *
- * ONE FORMULA, called from two places: the waves are drawn around it on the UI
+ * One formula called from two places: the waves are drawn around it on the UI
  * thread, and the overlay's wet copy is clipped to it. Written twice they
- * drifted — the clip used a plain fraction of the height, which ignores both
- * the puddle at the bottom and the brim at the top, so the figure's colours
- * changed a few points before or after the water actually reached them.
+ * drifted, because the clip used a plain fraction of the height and ignored the
+ * puddle and the brim.
  *
  * A worklet, because one of its two callers is.
  */
@@ -211,18 +193,14 @@ export function WaterTank({
     .detach()
 
   /**
-   * The outline, drawn on a path pulled IN by half its own width.
+   * The outline, drawn on a path pulled in by half its own width. A stroke
+   * straddles the path it follows, so a full-size path puts half the weight
+   * outside the canvas, and the bottom edge loses more again to the card's
+   * rounded clip: the border was solid on three edges and a hairline along the
+   * bottom.
    *
-   * A stroke straddles the path it follows, so an outline on the full-size
-   * tank puts half its weight outside the canvas, where it is clipped away —
-   * and the bottom edge loses a little more again to the card's own rounded
-   * clip underneath. What that left was a border that was solid along the top
-   * and the sides and a washed-out hairline along the bottom. Inset by half,
-   * the whole stroke lands inside the canvas and the four edges match.
-   *
-   * Inset by a WHOLE stroke width and the border would sit a point clear of the
-   * canvas edge, which shows the card through the gap — the white line this was
-   * meant to remove, one point further in.
+   * Inset by a whole stroke width the border sits a point clear of the canvas
+   * edge, which shows the card through the gap.
    */
   const outline = Skia.PathBuilder.Make()
     .addRRect({
@@ -333,13 +311,10 @@ const styles = StyleSheet.create({
 })
 
 /**
- * One moving surface, as a path rebuilt per frame on the UI thread.
- *
- * The three shared values are passed rather than closed over from a context or
- * a ref holder, and that is not a style choice: a worklet FREEZES every object
- * reachable from what it captures, so a wave reading its level out of an object
- * that owns one would quietly stop the level ever moving again. Primitives and
- * shared values only.
+ * One moving surface, as a path rebuilt per frame on the UI thread. The three
+ * shared values are passed rather than closed over from a context: a worklet
+ * freezes every object reachable from what it captures, so a wave reading its
+ * level out of an object that owns one would stop the level moving.
  */
 function useWavePath({
   width,

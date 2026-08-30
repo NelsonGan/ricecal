@@ -5,23 +5,18 @@ import { useSession, useSettings, useUpdateSettings } from '@/data'
 import { currentLanguage, type Language } from '@/i18n'
 
 /**
- * Renderless. Copies the chosen language into `user_settings.language`.
- *
- * ONE DIRECTION ONLY, and that is the whole design. `src/i18n/preference.ts` is
- * the owner: it is MMKV, it is read synchronously before the first frame, and
- * it is the only store that exists during onboarding, where the language is
- * chosen on screen one and the account does not appear until the last. The row
- * is a copy the server can read — for the language an email, a notification or
- * a model prompt should come back in — and it never decides what is on screen.
+ * Renderless. Copies the chosen language into `user_settings.language`, one
+ * direction only. `src/i18n/preference.ts` is the owner: MMKV, read
+ * synchronously before the first frame, and the only store that exists during
+ * onboarding. The row is a copy the server can read, for the language an email
+ * or a model prompt should come back in.
  *
  * Reading the row back would undo the setting: a phone switched to Thai would
- * flip to whatever the row said the moment the query resolved, one frame after
- * the user watched the screen change. The two can disagree while a write is in
- * flight and that is fine, because only one of them is ever consulted.
+ * flip to whatever the row said the moment the query resolved. The two can
+ * disagree while a write is in flight, because only one is ever consulted.
  *
- * A COMPONENT rather than a hook in the layout body, for the reason
- * `EntitlementSync` beside it is one: the root layout is a stack of providers
- * and a hook in its body would sit ABOVE `SessionProvider`.
+ * A component rather than a hook in the layout body, for the reason
+ * `EntitlementSync` is one: a hook there would sit above `SessionProvider`.
  */
 export function LanguageSync() {
   const { userId } = useSession()

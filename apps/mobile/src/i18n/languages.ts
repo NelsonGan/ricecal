@@ -7,19 +7,17 @@ import type { TextScript } from '@/ui'
 /**
  * Every language the interface is written in.
  *
- * LEFT TO RIGHT ONLY. Nothing in `src/ui` mirrors — padding, chevrons, the
- * progress bar and the week strip all read one way — so an Arabic or Urdu
- * bundle would render as a correctly translated app laid out backwards, which
- * is worse than English. Adding one is a layout project, not a translation.
+ * Left to right only. Nothing in `src/ui` mirrors, so an Arabic or Urdu bundle
+ * would render as a correctly translated app laid out backwards. Adding one is a
+ * layout project rather than a translation.
  *
- * FOOD IS NOT IN HERE. "nasi lemak" is a name, and a name is data: the
- * catalogue, the recipes people type and everything a model writes back stay in
- * the language they arrived in. See the note at the top of `en/index.ts`.
+ * Food is not in here: "nasi lemak" is a name, and a name is data. See the note
+ * at the top of `en/index.ts`.
  *
- * The order is the order the picker draws, and it is deliberate rather than
- * alphabetical: an alphabetical list across five scripts sorts by a spelling
- * nobody reading it can see. English first because it is the source, then the
- * region the catalogue is centred on, then outwards.
+ * The order is the order the picker draws, deliberately rather than
+ * alphabetically: an alphabetical list across five scripts sorts by a spelling
+ * nobody reading it can see. English first, then the region the catalogue is
+ * centred on, then outwards.
  */
 
 /**
@@ -79,17 +77,13 @@ export function dateLocaleFor(language: Language): Locale {
 
 /**
  * What the phone is set to, resolved to a bundle we actually have.
+ * `getLocales()` is synchronous and safe at module scope, which lets i18next be
+ * initialised before the first render.
  *
- * `getLocales()` is synchronous and safe at module scope, which is what lets
- * i18next be initialised before the first render — an async init would paint one
- * frame of raw keys.
- *
- * CHINESE IS THE REASON THIS IS NOT A LOOKUP. `languageCode` is `zh` for both
- * scripts, and the two are not mutually readable: a Taiwanese phone answering
- * `zh` and getting 简体中文 is the wrong app. The script code is the reliable
- * signal where the OS sets one (`zh-Hant-TW`), and the region is the fallback
- * for the phones that do not — Taiwan, Hong Kong and Macau write traditional,
- * everywhere else writes simplified.
+ * Chinese is why this is not a lookup: `languageCode` is `zh` for both scripts
+ * and the two are not mutually readable. The script code is the reliable signal
+ * where the OS sets one, and the region is the fallback, since Taiwan, Hong Kong
+ * and Macau write traditional and everywhere else simplified.
  *
  * Filipino answers `fil` on iOS and, on some Android builds, the older `tl`.
  */

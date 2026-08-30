@@ -175,19 +175,14 @@ function SearchPanel({ onPick, onOwn }: { onPick: (foodId: string) => void; onOw
 }
 
 /**
- * How much of something went in, and what that much costs.
+ * How much of something went in, and what that much costs. Shared by adding an
+ * ingredient and correcting one later, and short because per-unit storage does
+ * the work: `perUnit` is what one gram, millilitre or piece is worth, so a new
+ * amount reprices with a multiplication and no lookup.
  *
- * The one control shared by adding an ingredient and correcting one later, and
- * it is short because per-unit storage does all the work: `perUnit` is what one
- * gram, millilitre or piece is worth, so a new amount reprices with a
- * multiplication and no lookup. That is the property `recipe_ingredients` was
- * shaped for — 400 ml of santan changed to 250 needs no second opinion, because
- * the density was the part that was true.
- *
- * THE UNIT IS NOT EDITABLE HERE, and that is the same reasoning from the other
- * side. `perUnit` was derived against a unit; re-reading 250 g of santan as 250
- * pieces would keep a number that means nothing. Changing what a thing is
- * measured in is removing the row and adding it again.
+ * The unit is not editable here, from the same reasoning: `perUnit` was derived
+ * against a unit, so re-reading 250 g of santan as 250 pieces would keep a number
+ * that means nothing. Changing the unit is removing the row and adding it again.
  */
 function AmountForm({
   unit,

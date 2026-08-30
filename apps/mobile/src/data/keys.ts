@@ -30,11 +30,9 @@ export const keys = {
    */
   storeEntitlementAll: () => ['store-entitlement'] as const,
   /**
-   * How many of today's scans are left.
-   *
-   * Keyed by user and not by date. The date is the user's own and only the
-   * server knows which one that is, so a key carrying the phone's idea of today
-   * would go stale at the wrong midnight for anybody who has flown anywhere.
+   * How many of today's scans are left. Keyed by user, not by date: only the
+   * server knows which day is the user's, so a key carrying the phone's idea of
+   * today goes stale at the wrong midnight for anybody who has flown.
    */
   scanQuota: (userId: string) => ['scan-quota', userId] as const,
   /**
@@ -54,9 +52,7 @@ export const keys = {
    * budget, and the pass that wrote it has a window rather than a date.
    */
   dayAll: (userId: string) => ['day', userId] as const,
-  /**
-   * Totals for a date range, for the charts and the weekly report.
-   */
+  /** Totals for a date range, for the charts and the weekly report. */
   nutrition: (userId: string, from: string, to: string) => ['nutrition', userId, from, to] as const,
   /**
    * One week of dots under the strip on Today: eaten, goal and movement per day.
@@ -69,13 +65,10 @@ export const keys = {
    */
   dayMarksAll: (userId: string) => ['day-marks', userId] as const,
   /**
-   * The picture in each day's cell on the month calendar.
-   *
-   * Its own key rather than a wider `day_marks`, because the week strip wants
-   * the dots on every swipe while the calendar wants both, once a month. Still
-   * under the `day-marks` prefix, so a logged meal invalidating the dots moves
-   * the picture too: a meal that changes a day's verdict is usually the meal
-   * that changes its biggest plate.
+   * The picture in each day's cell on the month calendar. Its own key because
+   * the week strip wants the dots on every swipe while the calendar wants both
+   * once a month, but still under the `day-marks` prefix so a logged meal moves
+   * the picture as well as the dots.
    */
   dayPlates: (userId: string, from: string, to: string) =>
     ['day-marks', userId, 'plates', from, to] as const,
@@ -92,24 +85,16 @@ export const keys = {
   foodSearch: (userId: string, query: string) => ['food-search', userId, query] as const,
   food: (id: string) => ['food', id] as const,
   /**
-   * What this account has eaten before, newest first, folded to one row per
-   * dish.
-   *
-   * Not keyed by date and deliberately not under the `day` prefix: it reads
-   * across every day there has ever been, so no day's invalidation is the right
-   * one for it. The three writes that change what "recently eaten" means —
-   * logging a meal, deleting one, and a scan landing — name it explicitly.
+   * What this account has eaten before, newest first, one row per dish. Not
+   * under the `day` prefix: it reads across every day, so no single day's
+   * invalidation fits. The three writes that change it name it explicitly.
    */
   recentFoods: (userId: string) => ['recent-foods', userId] as const,
 
   /**
    * One shelf of the recipe list: mine, the RiceCal kitchen, or the community,
-   * with whatever is in the search field.
-   *
-   * The shelf is part of the key rather than a filter over one cached list,
-   * because the three are different queries with different ordering and
-   * visibility. Folded together, a write to my own recipe would invalidate the
-   * kitchen's.
+   * with whatever is in the search field. The shelf is part of the key because
+   * the three are different queries with different ordering and visibility.
    */
   recipes: (userId: string, shelf: string, query: string) =>
     ['recipes', userId, shelf, query] as const,
@@ -120,29 +105,20 @@ export const keys = {
    */
   recipesAll: (userId: string) => ['recipes', userId] as const,
   /**
-   * How many recipes this account owns, which is the free tier's ceiling.
-   *
-   * Under the same prefix as the shelves on purpose: every write that could
-   * change the count already invalidates `recipesAll`, so a new recipe, a
-   * deleted one and a saved copy all move this without being told. The literal
-   * segment cannot collide with a shelf name.
+   * How many recipes this account owns, which the free tier caps. Under the
+   * shelves' prefix so every write that could change the count already moves
+   * it; the literal segment cannot collide with a shelf name.
    */
   recipeCount: (userId: string) => ['recipes', userId, 'count'] as const,
-  /**
-   * One recipe. Keyed by id alone, since it is only ever asked for by id.
-   */
+  /** One recipe, asked for by id alone. */
   recipe: (id: string) => ['recipe', id] as const,
   recipeIngredients: (recipeId: string) => ['recipe-ingredients', recipeId] as const,
 
   weighIns: (userId: string) => ['weigh-ins', userId] as const,
 
-  /**
-   * The chart columns for one range of the Trends screen.
-   */
+  /** The chart columns for one range of the Trends screen. */
   trendSeries: (userId: string, range: string) => ['trends', userId, range, 'series'] as const,
-  /**
-   * The same range folded to one row: the metric tiles and the footnotes.
-   */
+  /** The same range folded to one row: the metric tiles and the footnotes. */
   trendSummary: (userId: string, range: string) => ['trends', userId, range, 'summary'] as const,
   /**
    * The prefix of both, across all three ranges, which is what the write side
@@ -152,18 +128,13 @@ export const keys = {
   trendsAll: (userId: string) => ['trends', userId] as const,
 
   /**
-   * Reviews: the list of finished weeks or months, and the three reads one
-   * story makes of a single period.
+   * Reviews: the finished weeks or months, and the three reads one story makes
+   * of a period. `reviewPeriods` is shared between Trends, the list and a
+   * story's comparison chart.
    *
-   * `reviewPeriods` is shared deliberately. Trends asks it whether there is
-   * anything to review, the list draws from it, and a story reads the same rows
-   * as its comparison chart.
-   *
-   * There is no `reviewsAll`, unlike every other area here, and that is a
-   * decision. A review covers a period that has ended, so nothing logged today
-   * can move one. The only write that can is a meal backdated into a finished
-   * week, and the thirty-second stale time already covers it. A prefix would
-   * mean a line in a dozen mutations for a case that repairs itself.
+   * No `reviewsAll`, unlike every other area here: a review covers a period
+   * that has ended, so only a backdated meal can move one, and the
+   * thirty-second stale time already covers that.
    */
   reviewPeriods: (userId: string, kind: string) => ['reviews', userId, kind, 'periods'] as const,
   reviewSummary: (userId: string, kind: string, start: string) =>
@@ -194,9 +165,7 @@ export const keys = {
    * and it does not know which range or date is on screen.
    */
   activityAll: (userId: string) => ['activity', userId] as const,
-  /**
-   * Keyed by session rather than by user, since it is only asked for by id.
-   */
+  /** Keyed by session, since it is only asked for by id. */
   activitySession: (id: string) => ['activity-session', id] as const,
   healthConnection: (userId: string) => ['health-connection', userId] as const,
 

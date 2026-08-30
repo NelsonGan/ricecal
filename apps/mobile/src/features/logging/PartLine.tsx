@@ -7,23 +7,17 @@ import { countLabel } from './parts'
 
 /**
  * A part of a scanned plate, named the way a cart names a line: how many, then
- * what.
+ * what. The count leads, which is what lets it name the food rather than a unit:
+ * "Pineapple Juice (¾ serving)" said nothing about which food a serving was of.
  *
- * The count leads rather than trailing after the food, and that is what lets it
- * name the food rather than a unit. It used to read "Pineapple Juice (¾
- * serving)", where "serving" said nothing about which food a serving was of and
- * the only way to say so was to print the name twice.
+ * Shown at one as well, for the reason `detail.times` gives: a count that appears
+ * only above one reads as a badge rather than the amount every row has.
  *
- * Shown at one as well — "1 × Pineapple Juice" — for the reason `detail.times`
- * gives: a count that appears only above one reads as a badge on the busy rows
- * rather than as the amount every row has.
+ * Rounded to a quarter, so it can disagree with an exact weight beside it, which
+ * is what the "~" from `countLabel` says.
  *
- * Rounded to a quarter, so it can disagree with an exact weight printed beside
- * it, which is what the "~" from `countLabel` says.
- *
- * HERE RATHER THAN IN THE TWO SCREENS because the × costs three elements and a
- * paragraph to place. Two copies of that would drift, which is the argument the
- * portion stepper's own comment makes about its quarters.
+ * Here rather than in the two screens, because the × costs three elements and a
+ * paragraph to place, and two copies would drift.
  */
 export function PartLine({
   quantity,

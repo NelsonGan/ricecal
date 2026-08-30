@@ -1,42 +1,32 @@
 /**
- * Grades the MACROS a photographed plate lands on, against a human reading.
+ * Grades the macros a photographed plate lands on, against a human reading.
  *
  *   pnpm bench:photos                  every case, once
  *   pnpm bench:photos --repeat=3       three passes, averaged
  *   pnpm bench:photos --grep=chicken   some of them
  *   pnpm bench:photos --save out.json  every figure, for a diff against a later run
  *
- * WHY THIS EXISTS, WHEN `eval:scan` ALREADY DRIVES THE SAME PIPELINE
- *
- * `eval:scan` asks whether an entry landed in a plausible BAND, which is the
- * right question for "is this feature broken". It could not answer the question
- * that actually came in from a user: the breakdowns overstate protein. Bands are
- * per-case and loose by design, so a systematic bias of thirty percent sits
+ * `eval:scan` drives the same pipeline but asks whether an entry landed in a
+ * plausible band, which is the right question for "is this feature broken". It
+ * could not answer the one that came in from a user: the breakdowns overstate
+ * protein. Bands are loose by design, so a systematic bias of thirty percent sits
  * inside them and shows up as every case passing.
  *
- * This measures the BIAS instead. Same photograph, one reference figure per
- * macro, and the number it reports is the signed mean error across the set — so
- * "protein runs +46% and is over on ten plates out of eleven" is a thing it can
- * say and `eval:scan` cannot. That was the reading that sent somebody looking, and
- * halving it is what this benchmark then measured. Reading the summary is the whole
- * point; the per-case rows are for finding out which plate to go and look at.
+ * This measures the bias instead: one reference figure per macro, and the number
+ * reported is the signed mean error across the set, so "protein runs +46% and is
+ * over on ten plates out of eleven" is a thing it can say. The summary is the
+ * point; the per-case rows are for finding which plate to go and look at.
  *
- * WHAT THE REFERENCE IS, AND IS NOT
+ * The reference is a careful reading of each photograph by a person or a strong
+ * model: every component named, weighed by eye against known portion sizes, and
+ * priced from composition tables. It is not a weighing. Treat a 15% disagreement
+ * as noise and a 40% one as a finding, and when a case looks wrong go and look at
+ * the photograph rather than trusting this file. The failures this was built to
+ * find are factor-of-two errors, and no reading this careful is out by that much.
  *
- * It is a careful reading of each photograph by a person or a strong model:
- * every component named, weighed by eye against known portion sizes, and priced
- * from composition tables. It is NOT a weighing. Treat a 15% disagreement as
- * noise and a 40% one as a finding, and when a case looks wrong go and look at
- * the photograph rather than trusting this file — `read` on every case says what
- * was seen, so the reference can be argued with.
- *
- * That is a real limitation and it is still worth having. The failures this was
- * built to find are factor-of-two errors, and no reading this careful is out by
- * a factor of two.
- *
- * THE PHOTOGRAPHS ARE NOT IN THE REPO. They are somebody's lunch, so they live
- * in `apps/supabase/data/photo-bench/`, gitignored, one file per `file` below.
- * Point it at your own plates by dropping images there and describing them in
+ * The photographs are not in the repo. They are somebody's lunch, so they live in
+ * `apps/supabase/data/photo-bench/`, gitignored, one file per `file` below. Point
+ * it at your own plates by dropping images there and describing them in
  * `photo-bench.cases.json`; the reference figures are the work, not the code.
  */
 

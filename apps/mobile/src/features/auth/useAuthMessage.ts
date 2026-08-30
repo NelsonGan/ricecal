@@ -6,14 +6,11 @@ import { asAuthProblem } from '@/data/auth'
 /**
  * Turns whatever an auth call threw into one sentence a person can act on.
  *
- * Every screen in `(auth)` uses this and none of them reads a Supabase message
- * directly. Those messages are written for a server log — "Invalid login
- * credentials", "Email link is invalid or has expired", "For security purposes,
- * you can only request this after 47 seconds" — and they were being shown
- * verbatim. That was survivable while the only failure was a stale link. With
- * passwords, codes, resends and a send limit in the way it is not: half of
- * those sentences do not say what to do next, and the rate limit's is the only
- * place the wait is written down at all.
+ * Every screen in `(auth)` uses this and none reads a Supabase message directly.
+ * Those messages are written for a server log ("Invalid login credentials", "For
+ * security purposes, you can only request this after 47 seconds") and were being
+ * shown verbatim. That was survivable while the only failure was a stale link;
+ * with passwords, codes, resends and a send limit in the way it is not.
  *
  * The reason-to-copy mapping lives in `auth.errors`, so the taxonomy is in
  * `data/auth.ts` and the wording is with the rest of the wording.

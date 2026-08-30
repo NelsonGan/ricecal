@@ -13,28 +13,18 @@ import type {
 /**
  * A health store that is not one: plausible movement, generated on the device.
  *
- * WHY THIS EXISTS AND IS NOT A TEST FIXTURE
+ * The iOS Simulator has no Health app and `isHealthDataAvailable()` returns false
+ * there, so the whole Activity feature is unreachable on the device most of it
+ * was built on.
  *
- * The iOS Simulator has no Health app and `HKHealthStore.isHealthDataAvailable()`
- * returns false there, so the entire Activity feature — six screens, a budget
- * that moves, three charts — is unreachable on the only device most of this was
- * built on. A demo provider is the difference between a feature that can be
- * looked at and one that can only be described.
+ * A `health_provider` enum value rather than a flag, so a demo row is found,
+ * counted and deleted by the same queries as a real one and nothing downstream
+ * has a branch in it. The one difference is a badge saying the numbers are made
+ * up.
  *
- * It is a `health_provider` enum value rather than a flag for a reason worth
- * keeping: a demo row is found, counted and deleted by exactly the same queries
- * as a real one, so disconnecting works, the charts work, and nothing
- * downstream has a branch in it. The one thing that differs is a badge on the
- * Activity screen saying the numbers are made up.
- *
- * WHY IT IS DETERMINISTIC
- *
- * The sync re-reads a rolling window on every foreground. A generator using
- * `Math.random()` would rewrite Tuesday's steps every thirty seconds, the
- * charts would twitch, and the one property this feature has to demonstrate —
- * that syncing twice changes nothing — would be the one it visibly lacked.
- * Everything below is a pure function of the date, so re-reading a day returns
- * the day.
+ * Deterministic, because the sync re-reads a rolling window on every foreground:
+ * `Math.random()` would rewrite Tuesday's steps every thirty seconds, and the one
+ * property this feature has to demonstrate is that syncing twice changes nothing.
  */
 
 /**
@@ -281,27 +271,18 @@ export const demoHealth: HealthProvider = {
     }
 
     /**
-     * NO WEIGH-INS, and this is the one place the demo provider deliberately
-     * declines to demonstrate something.
+     * No weigh-ins, which is the one thing the demo provider declines to
+     * demonstrate. A weigh-in is an input to the calorie budget rather than a
+     * statistic beside the diary: `weight_logs` is what `current_weight_kg` reads
+     * and what the recompute trigger fires on, so a generated 72 kg would rewrite
+     * a real user's daily target.
      *
-     * Everything else here is generated because the alternative is a feature
-     * nobody can look at on a simulator. Weight is different in a way that
-     * breaks the trade: a weigh-in is not a statistic beside the diary, it is an
-     * INPUT TO THE CALORIE BUDGET. `weight_logs` is what `current_weight_kg`
-     * reads and what the recompute trigger fires on, so a generated 72 kg would
-     * quietly rewrite a real user's daily target — on their real account, in a
-     * table `useClearDemoActivity` would then have to learn to clean up, and
-     * against a number they never entered.
+     * The rest of the demo is contained by `provider = 'demo'`, which a
+     * disconnect removes. A weight row has no such boundary, since it is the same
+     * table the user's own weigh-ins live in.
      *
-     * The rest of the demo is contained: `activity_days` and its neighbours are
-     * read by the Activity screens and nothing else, and every row carries
-     * `provider = 'demo'` so a disconnect removes them. A weight row has no such
-     * boundary — it is the same table the user's own weigh-ins live in, feeding
-     * the same budget.
-     *
-     * Nothing is lost by leaving it out. Weight already has a way in that works
-     * on a simulator, which is the field on the Trends tab, so this would be
-     * generating data for a chart a developer can fill in by typing.
+     * Nothing is lost: weight already has a way in that works on a simulator,
+     * which is the field on the Trends tab.
      */
     return { days, workouts, hours, weights: [], deviceName: 'Demo watch' }
   },

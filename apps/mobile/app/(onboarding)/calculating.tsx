@@ -20,35 +20,22 @@ import { useThemeColors } from '@/theme/useTheme'
 import { cn, Icon, Screen, Text } from '@/ui'
 
 /**
- * 05 CALCULATING
- *
  * A beat between the last question and the number.
  *
- * Nothing is computed here — `computeTargets` on the next screen is arithmetic
- * over five fields and returns in well under a millisecond. This screen exists
- * because the answer arriving instantly reads as a default rather than as a
- * result: the user gives their height, their weight, their target and how they
- * spend their day, and a budget that appears in the same frame as the tap looks
- * like it was in the app before they got there.
+ * Nothing is computed here: `computeTargets` is arithmetic over five fields. This
+ * screen exists because a budget that appears in the same frame as the tap reads
+ * as a default rather than a result.
  *
- * So the three lines are honest about what the number is made of — the budget,
- * the split, the catalogue it will be spent against — and the wait is the length
- * of reading them. It is deliberately short: a fake progress bar that outlasts
- * its own explanation is the other failure mode, and it is the more annoying one.
+ * So the three lines say what the number is made of, and the wait is the length
+ * of reading them. Deliberately short: a fake progress bar that outlasts its own
+ * explanation is the more annoying failure.
  *
- * WHY THE RING RATHER THAN A SPINNER
+ * A ring rather than a spinner, because this wait is not indefinite: three things
+ * are being worked out and the screen knows which one it is on. The shape is also
+ * the shape of the answer, since the next screen opens on a calorie ring.
  *
- * A spinner says "waiting" and nothing else, and this wait is not indefinite:
- * there are exactly three things being worked out and the screen knows which one
- * it is on. So the ring fills to the tally rather than turning for its own sake,
- * and the sweep on top of it is the only part that says "still going". The
- * shape is also the shape of the answer — the next screen opens on a calorie
- * ring — so the two screens read as one thought rather than as a loader and a
- * result.
- *
- * `replace`, not `push`. The back chevron from the target screen belongs on the
- * last QUESTION; a screen that immediately advances again is a trap you cannot
- * walk out of backwards.
+ * `replace` rather than `push`: the back chevron from the target screen belongs
+ * on the last question, and a screen that immediately advances is a trap.
  */
 
 /** How long each line holds before the next one starts. */

@@ -35,33 +35,26 @@ export type SquishProps = Omit<PressableProps, 'children' | 'style'> & {
  * identically: buttons, chips, steppers, the FAB, date cells, tiles.
  *
  * The slab is a view behind the surface rather than a `box-shadow`. It costs one
- * view, and buys three things a shadow cannot: the press animation is a pure
- * `translateY`, so it runs on the UI thread and never drops a frame; the slab is
- * a real layout box, so a pressed control cannot overflow its parent; and it
- * renders identically on both platforms instead of depending on Android's
- * elevation model.
+ * view and buys three things a shadow cannot: the press is a pure `translateY`
+ * on the UI thread, the slab is a real layout box so a pressed control cannot
+ * overflow its parent, and it renders identically on both platforms.
  *
- * Three layers, each with one job:
+ * Three layers:
  *
  *   container  reserves `depth` of extra height, clips, paints nothing
  *   slab       absolutely fills the container, so it shows in that extra height
  *   surface    sits at the top of the container and holds the content
  *
- * Both the slab and the surface translate down by `depth` on press. That is the
- * detail that makes it read as a squish rather than a slide: the slab travels
- * with the surface and stays hidden behind it, so the pressed control is just
- * the surface sitting `depth` lower, and the space it vacated at the top shows
- * the page. Translating only the surface leaves the slab behind and the button
- * appears to grow a dark rim along its top edge — the opposite of a shadow
- * collapsing, which is what the design calls for.
+ * Both the slab and the surface translate down by `depth` on press, which is what
+ * makes it read as a squish: the slab travels with the surface and stays hidden
+ * behind it, and the space vacated at the top shows the page. Translating only
+ * the surface grows a dark rim along the button's top edge.
  *
- * The container paints nothing for the same reason. Give it a background and
- * that vacated strip shows the background instead of the page.
+ * The container paints nothing for the same reason: a background would show in
+ * that vacated strip.
  *
- * Every layer is always rendered, even at `depth: 0`. Collapsing to one view
- * would mean layout props have to move between layers as a control becomes
- * selected, and a tree that restructures on state change is a tree that loses
- * its animation halfway through.
+ * Every layer is always rendered, even at `depth: 0`, because a tree that
+ * restructures on state change loses its animation halfway through.
  */
 export function Squish({
   depth = slab.lg,

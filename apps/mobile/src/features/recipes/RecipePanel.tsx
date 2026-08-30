@@ -33,31 +33,21 @@ export type RecipePanelProps = {
 /**
  * The fourth way to log: something somebody cooked.
  *
- * ALL THREE SHELVES, searched one at a time. It used to be four of your own
- * recipes and a link to the tab, which was right when the only recipes that
- * existed were yours: the kitchen's and the community's both have to be saved
- * as a copy before they can be logged, and a copy is a decision rather than a
- * log. But "I cannot reach it from here" is a worse answer than "reaching it
- * takes one more tap", and somebody who has just remembered a rendang they
- * saw on the community tab is in this sheet, not on that one.
+ * All three shelves, searched one at a time. It used to be four of your own
+ * recipes and a link to the tab, which was right when the only recipes were
+ * yours, but "I cannot reach it from here" is a worse answer than one more tap.
  *
- * So the shelf is a choice and the search is SCOPED TO IT. Searching all three
- * at once was the other option and it is worse: the three answer different
- * questions ("the one I wrote", "the one you wrote", "the one anybody wrote"),
- * and merged into one list the only way to tell them apart is a badge on every
- * row. The segmented control says which question is being asked.
+ * The shelf is a choice and the search is scoped to it. The three answer
+ * different questions, and merged into one list the only way to tell them apart
+ * is a badge on every row.
  *
- * That search is also the whole panel, which is why it takes the keyboard on
- * open exactly as the catalogue search does. There is no link to the tab any
- * more: it sat under a list the search can already reach every row of, and the
- * tab is a tap away on the bar behind this sheet.
+ * That search is the whole panel, which is why it takes the keyboard on open as
+ * the catalogue search does.
  *
- * THE PLUS IS ONLY ON YOUR OWN, and that is the invariant rather than a
- * simplification. A logged entry points at the recipe's mirror catalogue row,
- * so logging somebody else's directly would put their future corrections into
- * your past diary — they change the servings next month and last Tuesday's
- * dinner moves. Their rows open the recipe instead, which is where "Save to my
- * recipes" is, and the copy is what gets logged.
+ * The plus is only on your own, which is an invariant rather than a
+ * simplification: a logged entry points at the recipe's mirror catalogue row, so
+ * logging somebody else's would put their future corrections into your past
+ * diary. Their rows open the recipe, where "Save to my recipes" is.
  */
 export function RecipePanel({ onLog, onOpen, autoFocus = false }: RecipePanelProps) {
   const { t } = useTranslation(['recipes', 'common'])
